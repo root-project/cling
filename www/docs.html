@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+  <title>Cling Website</title>
+  <meta name="description" content="Official website of Cling" />
+  <meta name="keywords" content="cling, documents, tutorials, howtos" />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta http-equiv="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+  <link rel="stylesheet" type="text/css" href="style/menu.css" />
+</head>
+
+<body>
+  <div id="website">
+    <div id="header">
+      <div id="logo">
+        <div id="logo_text">
+          <!-- class="logo_colour", allows you to change the colour of the text -->
+          <h1><a href="index.html"><span class="logo_colour">Cling</span> Website</a></h1>
+          <h2>Interactive Compiler Interface</h2>
+        </div>
+      </div>
+      <div id="mainmenubar">
+        <ul id="mainmenu">
+          <!-- put class="selected" in the li tag for the selected page - to highlight which page you're on -->
+          <li><a class="tab_link" href="index.html">Home</a></li>
+          <li><a class="tab_link" href="download.html">Download</a></li>
+          <li><a class="tab_link" href="news.html">News</a></li>
+          <li class="selected root"><a class="tab_link" href="docs.html">Docs</a>
+            <div id="secondarymenu">
+              <div id="secondarymenu_content">
+                <div class="secondarymenu_header">Documentation</div>
+                <br class="clear" />
+                <div class="column">
+                  <div class="column_header">Developer</div>
+                  <ul>
+                    <li><a class="secm_link" href="docs/internal/doxygen.html">Doxygen</a></li>
+                    <li><a class="secm_link" href="docs/internal/extensions.html">Extensions</a></li>
+                    <li><a class="secm_link" href="#">Error Recovery</a></li>
+                    <li><a class="secm_link" href="#">Late Binding</a></li>
+                  </ul>
+                </div>
+                <div class="column">
+                  <div class="column_header">End User</div>
+                  <ul>
+                    <li><a class="secm_link" href="#">User Manual</a></li>
+                    <li><a class="secm_link" href="#">Status of ObjectiveC[++]</a></li>
+                  </ul>
+                </div>
+                
+              </div>
+            </div>
+          </li>
+          <li><a class="tab_link" href="contact.html">Get Involved</a></li>
+        </ul>
+      </div>
+    </div>
+    <div id="breadcrumb"></div>
+    <div id="content">
+      <div class="sidebar">
+        <!-- insert your sidebar items here -->
+        <h3>Latest News</h3>
+        <h4>Cling goes public</h4>
+        <h5>July 25th, 2011</h5>
+        <p> Cling was officially announced to the Clang community <br /><a href="news/ClingAnnouncement.html">Read more</a></p>
+        <p></p>
+        <h4>New website launched</h4>
+        <h5>July 1st, 2011</h5>
+        <p> Welcome to the new website of the project. <br /><a href="news/NewWebsiteLaunched.html">Read more</a></p>
+        <h3>Useful Links</h3>
+        <ul>
+          <li><a href="www.cern.ch" target="_blank">CERN</a></li>
+        </ul>
+      </div>
+      <div id="main">
+        <!-- insert the page content here -->
+        <h1>Documents</h1>
+
+        <table>
+          <tr><th>Talk</th><th>Event</th></tr>
+          <tr>
+            <td><a href="docs/talks/CreatingCling.pdf" target="_blank">Creating cling, an interactive interpreter interface for clang</a> <br /> <i>Axel Naumann, Philippe Canal, Paul Russo, Vassil Vassilev</i></td>
+            <td><a href="http://www.llvm.org/devmtg/2010-11/" target="_blank">LLVM Dev Meeting 2010, San Jose, USA</a></td>
+          </tr>
+          <tr>
+            <td><a href="docs/talks/ImplementingDynamicScopesInCling.pdf" target="_blank">Implementing Dynamic Scopes in Cling</a> <br /> <i>Vassil Vassilev</i></td>
+            <td><a href="http://www.llvm.org/devmtg/2011-09-16/" target="_blank">LLVM Euro Dev Meeting 2011, London, UK</a></td>
+          </tr>
+          <tr>
+            <td><a href="docs/talks/ClingTheLLVM-basedInterpreter.pdf" target="_blank">Cling - The LLVM-based Interpreter</a> <br /> <i>Vassil Vassilev</i></td>
+            <td><a href="http://indico.cern.ch/conferenceDisplay.py?confId=159088" target="_blank">PH/SFT Group Meeting, CERN, CH</a></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div id="footer">
+      <div id="copyright">
+        Copyright &copy; Cling Team
+      </div> 
+      <div id="links">
+        <a href="http://root.cern.ch/" target="_blank">The ROOT Framework</a> | 
+        <a href="http://llvm.org" target="_blank">LLVM</a> | 
+        <a href="http://clang.llvm.org" target="_blank">Clang</a> | 
+        <a href="http://www.html5webtemplates.co.uk" target="_blank">Web Design</a>
+      </div>
+      <div id="modified"><i>Page was modified on <b>$Date$</b> in $Rev$ by <b>$Author$</b></i></div>
+    </div>
+  </div>
+</body>
+</html>

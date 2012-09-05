@@ -1,0 +1,5 @@
+#ifdef __CINT__
+#include <set>
+#else
+#error "This header (multiset) is only expected to be used when emulating CINT"
+#endif

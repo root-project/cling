@@ -1,0 +1,395 @@
+html { 
+    height: 100%;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font: normal .90em 'trebuchet ms', arial, sans-serif;
+    background: #F4F4EE;
+    color: #5D5D5D;
+}
+
+p {
+    padding: 0 0 2em 0;
+    line-height: 1.7em;
+}
+
+img { 
+    border: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font: normal 200% 'century gothic', arial, sans-serif;
+    color: #43423F;
+    margin: 1em 0 1em 0;
+}
+
+h2 {
+    font: normal 185% 'century gothic', arial, sans-serif;
+    color: #B60000;
+}
+
+h3 { 
+    font: normal 155% 'century gothic', arial, sans-serif;
+}
+
+h4, h5, h6 { 
+    margin: 0;
+    padding: 0 0 5px 0;
+    font: normal 120% arial, sans-serif;
+    color: #B60000;
+}
+
+h5, h6 {
+    font: italic 95% arial, sans-serif;
+    color: #888;
+}
+
+h6 {
+    color: #362C20;
+}
+
+hr {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    border: none;
+    border-top: 1px dashed #D9D5CF;
+}
+
+.info, .see_also {
+    background-color: #FFFFAA;
+    font-size: 120%;
+    font-variant: small-caps;
+    padding-bottom: 1em;
+    padding-top: 1em;
+    text-align: center;
+}
+
+.see_also {
+    background-color: transparent;
+    font-weight: bold;
+    text-align: left;
+}
+
+.see_also_item {
+    padding-left: 2em;
+}
+
+.clear {
+    clear: both;
+}
+
+a, a:hover { 
+    outline: none;
+    text-decoration: underline;
+    color: #A4AA04;
+}
+
+a:hover {
+    text-decoration: none;
+    color: #5D5D5D;
+}
+
+a.readmore {
+    float: right;
+}
+
+.left {
+    float: left;
+    width: auto;
+    margin-right: 10px;
+}
+
+.right {
+    float: right; 
+    width: auto;
+    margin-left: 10px;
+}
+
+.center { 
+    display: block;
+    text-align: center;
+    margin: 20px auto;
+}
+
+blockquote {
+    margin: 20px 0; 
+    padding: 10px 20px 0 20px;
+    border: 1px solid #E5E5DB;
+    background: #FFF;
+}
+
+ul {
+    margin: 2px 0 22px 17px;
+}
+
+ul li {
+    list-style-type: circle;
+    margin: 0 0 6px 0; 
+    padding: 0 0 4px 5px;
+}
+
+ol {
+    margin: 8px 0 22px 20px;
+}
+
+ol li {
+    margin: 0 0 11px 0;
+}
+
+#website { 
+    padding-bottom: 20px;
+}
+
+#header {
+    background: #3A332D; /*url(menu_bg.jpg)  no-repeat right 0;*/
+    height: 180px;
+}
+
+#logo { 
+    min-width: 860px;
+    max-width: 1024px;
+    position: relative;
+    height: 140px;
+    background: url(logo.png) no-repeat transparent;
+    margin: auto;
+    padding: 0 0 0 4em;
+}
+
+#logo #logo_text {
+    position: absolute; 
+    top: 10px;
+    left: 0;
+}
+
+#logo h1, #logo h2 {
+    font: normal 300% 'century gothic', arial, sans-serif;
+    border-bottom: 0;
+    text-transform: none;
+    margin: 0 0 0 9px;
+}
+
+#logo_text h1, #logo_text h1 a, #logo_text h1 a:hover {
+    padding: 22px 0 0 0;
+    color: #FFF;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+}
+
+#logo_text h1 a .logo_colour { 
+    color: #ECEF01;
+}
+
+#logo_text h2 {
+    font-size: 120%;
+    padding: 4px 0 0 0;
+    color: #A8AA94;
+}
+
+#mainmenubar {
+    min-width: 860px;
+    max-width: 1024px;
+    height: 40px;
+    margin: auto;
+    padding: 0 0 0 4em;
+}
+
+#breadcrumb {
+    min-width: 860px;
+    max-width: 1024px;
+    margin: 0 auto;
+    min-height: 3em;
+    line-height: 3em;
+    text-align: right;
+    vertical-align: middle;
+    padding: 0 0em 0em 4em;
+}
+
+#content {
+    min-width: 860px;
+    max-width: 1024px;
+    overflow: hidden;
+    padding: 0 1em 3em 3em;
+    margin: 0 auto;
+    background: #FFF;
+    border-radius: 20px; -moz-border-radius: 20px;
+    border: 1px solid #ECECE0;
+} 
+
+.sidebar {
+    float: right;
+    width: 20%;
+    padding: 15px;
+    margin-top: 1em;
+    background-color: #EDEFF4; /*D8DFEA*/
+    -moz-border-radius: 20px; border-radius: 20px;
+}
+.sidebar ul {
+    width: 178px; 
+    padding: 4px 0 0 0; 
+    margin: 4px 0 30px 0;
+}
+
+.sidebar li {
+    list-style: none; 
+    padding: 0 0 7px 0; 
+}
+
+.sidebar li a, .sidebar li a:hover {
+    padding: 0 0 0 35px;
+    display: block;
+    background: transparent url(link.png) no-repeat left center;
+} 
+
+.sidebar li a.selected {
+    color: #444;
+    text-decoration: none;
+}
+
+#main {
+    float: left;
+    width: 75%;
+    text-align: left;
+    padding: 0;
+}
+
+#main ul {
+    margin: 2px 0 22px 0px;
+}
+
+#main ul li {
+    list-style-type: none;
+    background: url(bullet.png) no-repeat;
+    margin: 0.5em 0 0 0; 
+    padding: 0 0 0 25px;
+    line-height: 1.5em;
+}
+
+#footer {
+    font: normal 90% arial, sans-serif;
+    height: 28px;
+    margin-top: 20px;
+    padding: 20px 0 5px 0;
+    margin: 0 auto;
+    text-align: center; 
+    background: transparent;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+#footer a, #footer a:hover {
+    color: #888;
+    text-decoration: none;
+}
+
+#footer a:hover { 
+    color: #333;
+}
+
+#modified {
+    padding: 2em 0 1em 0;
+    text-transform: none;
+    text-align: center;
+    letter-spacing: normal;
+}
+
+.search {
+    color: #5D5D5D; 
+    border: 1px solid #BBB; 
+    width: 134px; 
+    padding: 4px; 
+    font: 100% arial, sans-serif;
+}
+
+.form_settings {
+    margin: 15px 0 0 0;
+}
+
+.form_settings p { 
+    padding: 0 0 4px 0;
+}
+
+.form_settings span {
+    float: left; 
+    width: 200px; 
+    text-align: left;
+}
+  
+.form_settings input, .form_settings textarea {
+    padding: 5px; 
+    width: 299px; 
+    font: 100% arial; 
+    border: 1px solid #E5E5DB; 
+    background: #FFF; 
+    color: #47433F;
+}
+  
+.form_settings .submit {
+    font: 100% arial; 
+    border: 1px solid; 
+    width: 99px; 
+    margin: 0 0 0 212px; 
+    height: 33px;
+    padding: 2px 0 3px 0;
+    cursor: pointer; 
+    background: #3B3B3B; 
+    color: #FFF;
+}
+
+.form_settings textarea, .form_settings select { 
+    font: 100% arial; 
+    width: 299px;
+}
+
+.form_settings select {
+    width: 310px;
+}
+
+.form_settings .checkbox {
+    margin: 4px 0; 
+    padding: 0; 
+    width: 14px;
+    border: 0;
+    background: none;
+}
+
+.separator {
+    width: 100%;
+    height: 0;
+    border-top: 1px solid #D9D5CF;
+    border-bottom: 1px solid #FFF;
+    margin: 0 0 20px 0;
+}
+
+table {
+    margin: 10px 0 30px 0;
+    width: 100%; 
+    border-spacing: 0;
+}
+
+table tr th, table tr td { 
+    background: #3B3B3B;
+    color: #FFF;
+    padding: 7px 4px;
+    text-align: left;
+}
+  
+table tr td {
+    background: #F4F4EE;
+    color: #47433F;
+    border-top: 1px solid #FFF;
+}
+
+pre, .code {
+    border: 1px solid #DDDDDD;
+    border-width: 1px 1px 1px 5px;
+    margin: 1em;
+    padding: 5px;
+    background: none repeat scroll 0 0 #F8F8F8;
+    font: 0.95em "Consolas","DejaVu Sans Mono",monospace;
+}

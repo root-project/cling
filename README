@@ -1,0 +1,70 @@
+          _  _  _      _         _  _  _   _           _      _  _  _
+       _ (_)(_)(_) _  (_)       (_)(_)(_) (_) _       (_)  _ (_)(_)(_) _
+      (_)         (_) (_)          (_)    (_)(_)_     (_) (_)         (_)
+      (_)             (_)          (_)    (_)  (_)_   (_) (_)    _  _  _
+      (_)             (_)          (_)    (_)    (_)_ (_) (_)   (_)(_)(_)
+      (_)          _  (_)          (_)    (_)      (_)(_) (_)         (_)
+      (_) _  _  _ (_) (_) _  _   _ (_) _  (_)         (_) (_) _  _  _ (_)
+         (_)(_)(_)    (_)(_)(_) (_)(_)(_) (_)         (_)    (_)(_)(_)(_)
+
+--------------------------------------------------------------------------------
+
+1. I N S T A L L A T I O N   I N S T R U C T I O N S
+
+1.1 Dependencies
+
+   CLING source depends on the LLVM [1] and CLANG [2] headers and libraries.
+You will also need CMake [3] >= 2.6.1 or GNU Make to build all of those
+packages and subversion [4] to get the source code.
+
+   [1] http://llvm.org
+   [2] http://clang.llvm.org
+   [3] http://cmake.org
+   [4] http://subversion.tigris.org/
+
+1.2 Building
+
+   To build LLVM and CLANG you must:
+
+   * Check out the sources:
+
+     mkdir src
+     cd src
+     svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
+     cd llvm/tools
+     svn co http://llvm.org/svn/llvm-project/cfe/trunk clang
+     svn co http://root.cern.ch/svn/root/trunk/interpreter/cling cling
+     cd ..
+
+   * Apply some patches
+
+     cat tools/cling/patches/* | patch -p0
+
+   * Configure, build and install them, either using CMake:
+
+     cd ..
+     mkdir build
+     cd build
+     cmake -DCMAKE_INSTALL_PREFIX=/some/install/dir \
+           -DLLVM_TARGETS_TO_BUILD=CBackend\;CppBackend\;X86 \
+           -DCMAKE_BUILD_TYPE=Debug \
+           -DCMAKE_CXX_COMPILER=`which c++` \
+           -DCMAKE_C_COMPILER=`which gcc` \
+           ../llvm
+     make
+     make install
+
+     or GNU Make (see ../src/configure --help for all options):
+
+     cd ..
+     mkdir build
+     cd build
+     ../llvm/configure --prefix=/some/install/dir
+     make
+     make install
+
+2. U S A G E
+
+   To interpret a C file type: "./cling test.c". To invoke cling in the
+interactive mode type "cling" without file name.  Use ".L filename" to 
+load libraries or C++ files.  Type C++ code at the prompt to interpret it.

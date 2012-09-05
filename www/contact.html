@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+  <title>Cling Website - Get Involved</title>
+  <meta name="description" content="Official website of Cling" />
+  <meta name="keywords" content="cling, interactive compiler interface, interpreter, clang, LLVM" />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta http-equiv="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+  <link rel="stylesheet" type="text/css" href="style/menu.css" />
+</head>
+
+<body>
+  <div id="website">
+    <div id="header">
+      <div id="logo">
+        <div id="logo_text">
+          <!-- class="logo_colour", allows you to change the colour of the text -->
+          <h1><a href="index.html"><span class="logo_colour">Cling</span> Website</a></h1>
+          <h2>Interactive Compiler Interface</h2>
+        </div>
+      </div>
+      <div id="mainmenubar">
+        <ul id="mainmenu">
+          <!-- put class="selected" in the li tag for the selected page - to highlight which page you're on -->
+          <li><a class="tab_link" href="index.html">Home</a></li>
+          <li><a class="tab_link" href="download.html">Download</a></li>
+          <li><a class="tab_link" href="news.html">News</a></li>
+          <li class="root"><a class="tab_link" href="docs.html">Docs</a>
+            <div id="secondarymenu">
+              <div id="secondarymenu_content">
+                <div class="secondarymenu_header">Documentation</div>
+                <br class="clear" />
+                <div class="column">
+                  <div class="column_header">Developer</div>
+                  <ul>
+                    <li><a class="secm_link" href="docs/internal/doxygen.html">Doxygen</a></li>
+                    <li><a class="secm_link" href="docs/internal/extensions.html">Extensions</a></li>
+                    <li><a class="secm_link" href="#">Error Recovery</a></li>
+                    <li><a class="secm_link" href="#">Late Binding</a></li>
+                  </ul>
+                </div>
+                <div class="column">
+                  <div class="column_header">End User</div>
+                  <ul>
+                    <li><a class="secm_link" href="#">User Manual</a></li>
+                    <li><a class="secm_link" href="#">Status of ObjectiveC[++]</a></li>
+                  </ul>
+                </div>
+                
+              </div>
+            </div>
+          </li>
+          <li class="selected"><a class="tab_link" href="contact.html">Get Involved</a></li>
+        </ul>
+      </div>
+    </div>
+    <div id="breadcrumb"></div>
+    <div id="content">
+      <div class="sidebar">
+        <!-- insert your sidebar items here -->
+        <h3>Latest News</h3>
+        <h4>Cling goes public</h4>
+        <h5>July 25th, 2011</h5>
+        <p> Cling was officially announced to the Clang community <br /><a href="news/ClingAnnouncement.html">Read more</a></p>
+        <p></p>
+        <h4>New website launched</h4>
+        <h5>July 1st, 2011</h5>
+        <p> Welcome to the new website of the project. <br /><a href="news/NewWebsiteLaunched.html">Read more</a></p>
+        <h3>Useful Links</h3>
+        <ul>
+          <li><a href="www.cern.ch" target="_blank">CERN</a></li>
+        </ul>
+      </div>
+      <div id="main">
+        <!-- insert the page content here -->
+        <h1>Get Involved</h1>
+        <h2>Where are we</h2>
+        <p>You can find us at: rootdev [at] root.cern.ch</p>
+        <h2>File a bug</h2>
+        <p>If there is something wrong please check our bug database <a href="http://savannah.cern.ch/projects/savroot/" target="_blank">here</a> and submit the bug description if it doesn't exist</p>
+        <h2>Open tasks</h2>
+        <p>We have lots of ideas how to make cling better, but we don't have enough time for realizing them all. Here are tasks that are on our todo lists since a while, but we still cannot manage to get them done. They are not difficult to implement and excellent for getting to know cling. If you find something interesting, please go ahead and get your hands dirty!</p>
+        <ul> The list is prioritized in descending order:
+          <li><b>Windows support</b> - By design cling needs <a href="http://sourcery.mentor.com/public/cxx-abi/abi.html#dso-dtor">__cxa_atexit and __dso_handle</a> to be present. In Linux for example they are defined in libc. However, Windows doesn't fully support Itanium C++ ABI and there is no definition for it. </li>
+          <li><b>Extending and improving the multiline input mode</b> - The multiline mode has to figure out automatically whether the user's input is still incomplete. For example "if (a < 0) {" is not fully completed input. Cling should'n try to process the line but to be smart enough to understand that it should wait for continuation. Currently cling switches multiline mode only when there is trailing "{". It has to be extended to detect trailing +, unbalanced '," and so on.</li>
+          <li><b>Implementing auto completion</b> - Clang has good interface for autocompletion which proposes possible completion options considering the current input.</li>
+          <li><b>Implementing error recovery verifier</b> - One of the most important parts in cling is the error recovery. The error recovery takes care of reverting clang's internal structures on error in the user input. For instance, user types int i; error_here;. int i should be reverted and the entire input should be invalidated. This is very complex because many implicit template instantiations could be triggered and so on. The idea of the future verifier is to serialize the AST with all the lookup structures (probably in pch or pcm), trigger an error causing a lot of things to happen in clang internally and serialize the new AST. The comparison with the old one must return perfect match.</li>
+          <li><b>Enabling clang's static analyzer</b> - coming soon</li>
+          <li><b>Enabling ObjectiveC/ObjectiveC++ support</b> - coming soon</li>
+        </ul>
+      </div>
+    </div>
+    <div id="footer">
+      <div id="copyright">
+        Copyright &copy; Cling Team
+      </div> 
+      <div id="links">
+        <a href="http://root.cern.ch/" target="_blank">The ROOT Framework</a> | 
+        <a href="http://llvm.org" target="_blank">LLVM</a> | 
+        <a href="http://clang.llvm.org" target="_blank">Clang</a> | 
+        <a href="http://www.html5webtemplates.co.uk" target="_blank">Web Design</a>
+      </div>
+      <div id="modified"><i>Page was modified on <b>$Date$</b> in $Rev$ by <b>$Author$</b></i></div>
+    </div>
+  </div>
+</body>
+</html>

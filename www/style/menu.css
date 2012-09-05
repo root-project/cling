@@ -1,0 +1,137 @@
+ul#mainmenu {
+    float: right;
+    margin: 0;
+    background-color: #000;
+}
+
+ul#mainmenu li {
+    float: left;
+    padding: 0;
+    list-style: none;
+    margin: 0 5px 0 5px;
+    height: 40px;
+    display: block;
+    position: relative;
+}
+
+.tab_link {
+    font: 1.0em Arial,Helvetica, sans-serif;
+    font-variant: small-caps;
+    display: block; 
+    float: left; 
+    text-align: center;
+    text-decoration: none;
+    line-height: 30px;
+    margin: 5px 5px 0px 5px;
+    padding: 0px 20px 5px 20px;
+    color: #DDD;
+} 
+
+li.selected a.tab_link {
+    background-color: #F4F4EE;
+    border-radius: 10px 10px 0 0; -moz-border-radius: 10px 10px 0 0;
+    border: none;
+    margin: 5px 5px 0px 5px;
+    padding: 0px 20px 5px 20px;
+    color: #000;
+
+}
+
+ul#mainmenu li.root:hover > a.tab_link {
+    line-height: 30px;
+}
+
+ul#mainmenu li a.tab_link:hover {
+    border-radius: 10px 10px 0 0; -moz-border-radius: 10px 10px 0 0;
+    border: none;
+    margin: 5px 5px 0px 5px;
+    padding: 0px 20px 5px 20px;
+    color: #DDD;
+}
+
+ul#mainmenu ul {
+    margin: 0;
+}
+
+ul#mainmenu ul li {
+    float: none;
+    font: Arial,Helvetica,sans-serif;
+    font-size: 0.9em;
+}
+
+ul#mainmenu li:hover {
+    position: relative;
+}
+
+ul#mainmenu li:hover > *{
+    display: block;
+}
+
+ul#mainmenu li:hover > a.tab_link {
+    background-color: #F4F4EE;
+    color: #000;
+    text-decoration: none;
+    border-radius: 10px 10px 0 0; -moz-border-radius: 10px 10px 0 0;
+
+}
+
+#secondarymenu {
+    position: absolute;
+    top: 100%;
+    right: 0px;
+    display: none;
+    margin: 0;
+    padding: 0;
+    width: 30em;
+    color: #ECEF01;
+}
+
+#secondarymenu_content {
+    border-radius: 10px; -moz-border-radius: 10px;
+    background: url(menu_bg.jpg) transparent;
+    padding: 1em;
+    margin-top: 10px;
+    float: left;
+    text-align: center;
+    width: 100%;
+}
+
+.secondarymenu_header {
+    font-weight: bold;
+}
+
+.column {
+    width: 45%;
+    float: left;
+    padding: 0 0 2em 1em;
+}
+
+.column_header {
+    width: 100%;
+    padding: 0.3em 0;
+    background-color: #000;
+    border: 1px solid #FFF;
+    border-radius: 5px; -moz-border-radius: 5px;
+    margin-bottom: 1em;
+    color: #FFF;
+}
+
+.column ul {
+    color: #FFF;
+    text-align: left;
+    margin-left: 1em;   
+}
+
+ul#mainmenu .column ul li {
+    line-height: 1.5em;
+    height: 1.5em;
+}
+
+ul#mainmenu ul li a:hover {
+    background-color: #FFF;
+    color: #000;
+}
+
+ul#mainmenu li a.secm_link {
+    text-decoration: none;
+}
