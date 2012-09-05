@@ -1,6 +1,5 @@
 // request symbols
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/Callable.h"
 #include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/LookupHelper.h"
@@ -22,7 +21,6 @@ void libcling__symbol_requester(const clang::FunctionDecl& Decl,
    printValueDefault(llvm::outs(), 0, VPI);
    cling_PrintValue(0, 0, 0);
    flushOStream(llvm::outs());
-   Callable C(Decl,Interp);
    LookupHelper h(0);
    h.findType("");
    h.findScope("");
