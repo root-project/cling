@@ -22,6 +22,9 @@ CXXFLAGS = -fno-rtti
 LINK_COMPONENTS := jit linker native
 USEDLIBS = clingUserInterface.a clingMetaProcessor.a clingInterpreter.a clingUITextInput.a clingUtils.a clangFrontend.a clangSerialization.a clangDriver.a clangCodeGen.a clangParse.a clangSema.a clangAnalysis.a clangAST.a clangLex.a clangBasic.a clangEdit.a
 
-
 include $(LEVEL)/Makefile.common
 
+ifeq ($(TARGET_OS),Cygwin)
+# cygwin, export all symbols
+LDFLAGS += -Wl,--export-all-symbols
+endif
