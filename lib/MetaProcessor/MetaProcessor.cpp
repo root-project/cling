@@ -20,6 +20,142 @@ using namespace clang;
 
 namespace cling {
 
+  namespace tok {
+    enum TokenKind {
+      commandstart,
+      ident,
+      l_paren,
+      r_paren,
+      anystring,
+      comma,
+      booltrue,
+      boolfalse,
+      eof,
+      unknown
+    };
+  }
+  class Token {
+  private:
+    tok::TokenKind kind;
+    const char* bufStart;
+    const char* bufEnd;
+    void startToken() {
+      bufStart = 0;
+      bufEnd = 0;
+      kind = tok::unknown;
+    }
+  public:
+    tok::TokenKind getKind() const { return kind; }
+    size_t getLength() const { return bufEnd - bufStart; }
+    const char* getBufStart() const { return bufStart; }
+
+    friend class CommandLexer;
+  };
+
+  class CommandLexer {
+  private:
+    const char* bufferStart;
+    const char* bufferEnd;
+    const char* curPos;
+    const InvocationOptions& m_Opts;
+  public:
+    CommandLexer(const char* bufStart, const char* bufEnd, 
+                 const InvocationOptions& Opts) 
+      : bufferStart(bufStart), bufferEnd(bufEnd), curPos(bufStart), m_Opts(Opts)
+    { }
+
+    void LexBlankSpace() {
+      // TODO: React on EOF.
+      while (*curPos == ' ' || *curPos == '\t')
+        ++curPos;
+    }
+
+    bool LexCommandSymbol(Token& Result) {
+      Result.startToken();
+      LexBlankSpace();
+      Result.bufStart = curPos;
+      for (size_t i = 0; i < m_Opts.MetaString.size(); ++i, ++curPos)
+        if (*curPos != m_Opts.MetaString[i]) {
+          Result.bufEnd = Result.bufStart;
+          return false;
+        }
+
+      Result.bufEnd = curPos;
+      return true;
+    }
+
+    bool LexIdent(Token& Result) {
+      Result.startToken();
+      Result.bufStart = curPos;
+      unsigned char C = *curPos;
+      while ((C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z'))
+        C = *++curPos;
+      Result.bufEnd = curPos;
+      if (Result.getLength() > 0) { 
+        Result.kind = tok::ident;
+        return true;
+      } 
+      return false;
+    }
+
+    bool LexAnyString(Token& Result) {
+      Result.startToken();
+      LexBlankSpace();
+      Result.bufStart = curPos;
+      unsigned char C = *curPos;
+      while (C != ' ' && C != '\n' && C != '\t' && 
+             C != '\0' && C != '(' && C != ')')
+        C = *++curPos;
+
+      Result.bufEnd = curPos;
+
+      if (Result.getLength() > 0) { 
+        Result.kind = tok::anystring;
+        return true;
+      }
+      return false;        
+    }
+
+    bool LexSpecialSymbol(Token& Result) {
+      Result.startToken();
+      LexBlankSpace();
+      Result.bufStart = curPos;
+      if (*curPos == '(') {
+        Result.kind = tok::l_paren;
+        ++curPos;
+      }
+      else if (*curPos == ')') {
+        Result.kind = tok::r_paren;
+        ++curPos;
+      }
+      else if (*curPos == ',') {
+        Result.kind = tok::comma;
+        ++curPos;
+      }
+      Result.bufEnd = curPos;
+      
+      return Result.kind != tok::unknown;
+    }
+
+    bool LexBool(Token& Result) {
+      Result.startToken();
+      LexBlankSpace();
+      Result.bufStart = curPos;
+      if (*curPos == '0') {
+        Result.kind = tok::boolfalse;
+        ++curPos;
+      }
+      else if (*curPos == '1') {
+        Result.kind = tok::booltrue;
+        ++curPos;
+      }
+      Result.bufEnd = curPos;
+      
+      return Result.kind != tok::unknown;
+    }
+
+  };
+
   MetaProcessor::MetaProcessor(Interpreter& interp) : m_Interp(interp) {
     m_InputValidator.reset(new InputValidator());
   }
@@ -38,14 +174,7 @@ namespace cling {
       return 0;
     }
     //  Check for and handle meta commands.
-    bool was_meta = false;
-    std::string& metaString = m_Interp.getOptions().MetaString;
-    std::string::size_type lenMetaString = metaString.length();
-    if (input_line.length() > lenMetaString
-        && !input_line.compare(0, lenMetaString, metaString)) {
-      was_meta = ProcessMeta(input_line.c_str() + lenMetaString, result);
-    }
-    if (was_meta) {
+    if (ProcessMeta(input_line, result)) {
       return 0;
     }
 
@@ -73,227 +202,181 @@ namespace cling {
     return m_Options;
   }
 
+  // Command syntax: meta_command := <command_symbol><command>[arg_list]
+  //                 command_symbol := '.' | '//.'
+  //                 command := ident
+  //                 arg_list := any_string[(extra_arg_list)] [' ' arg_list]
+  //                 extra_arg_list := any_string [, extra_arg_list]
+  //
   bool MetaProcessor::ProcessMeta(const std::string& input_line, Value* result){
 
    llvm::MemoryBuffer* MB = llvm::MemoryBuffer::getMemBuffer(input_line);
-   LangOptions LO;
-   LO.C99 = 1;
-   // necessary for the @ symbol
-   LO.ObjC1 = 1;
-   Lexer RawLexer(SourceLocation(), LO, MB->getBufferStart(),
-                  MB->getBufferStart(), MB->getBufferEnd());
    Token Tok;
 
-   // Read the command
-   RawLexer.LexFromRawLexer(Tok);
-   if (!Tok.isAnyIdentifier() && Tok.isNot(tok::at))
+   CommandLexer CmdLexer(MB->getBufferStart(), MB->getBufferEnd(), 
+                         m_Interp.getOptions());
+
+   if (!CmdLexer.LexCommandSymbol(Tok)) {
+     // No error because it may be line containing code
      return false;
+   }
 
-   const std::string Command = GetRawTokenName(Tok);
-   std::string Param;
+   if (!CmdLexer.LexIdent(Tok)) {
+     llvm::errs() << "Command name token expected. Try .help\n";
+     return false;
+   }
 
-   //  .q //Quits
-   if (Command == "q") {
+   llvm::StringRef Command (Tok.getBufStart(), Tok.getLength());
+   // Should be used for faster comparison if the command is only one char long.
+   unsigned char CmdStartChar = *Tok.getBufStart();
+
+   // .q Exits the process.
+   if (CmdStartChar == 'q') {
       m_Options.Quitting = true;
       return true;
    }
-   //  .L <filename>   //  Load code fragment.
-   else if (Command == "L") {
-     // TODO: Additional checks on params
-     bool success
-       = m_Interp.loadFile(SanitizeArg(ReadToEndOfBuffer(RawLexer, MB)));
-     if (!success) {
+   else if (CmdStartChar == 'L') {
+     if (!CmdLexer.LexAnyString(Tok)) {
+       llvm::errs() <<  "Filename expected.\n";
+       return false;
+     }
+     //TODO: Check if the file exists and is readable.
+     if (!m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(), Tok.getLength())))
        llvm::errs() << "Load file failed.\n";
-     }
+
      return true;
    }
-   //  .(x|X) <filename> //  Execute function from file, function name is
-   //                    //  filename without extension.
-   else if ((Command == "x") || (Command == "X")) {
-     // TODO: Additional checks on params
-     llvm::sys::Path path(SanitizeArg(ReadToEndOfBuffer(RawLexer, MB)));
-
-     if (!path.isValid())
+   else if (CmdStartChar == 'x' || CmdStartChar == 'X') {
+     if (!CmdLexer.LexAnyString(Tok)) {
+       llvm::errs() << "Filename expected.\n";
        return false;
-
-     bool success = executeFile(path.c_str(), result);
-      if (!success) {
-        llvm::errs()<< "Execute file failed.\n";
-      }
-      return true;
-   }
-   //  .printAST [0|1]  // Toggle the printing of the AST or if 1 or 0 is given
-   //                   // enable or disable it.
-   else if (Command == "printAST") {
-     // Check for params
-     RawLexer.LexFromRawLexer(Tok);
-     if (Tok.isNot(tok::numeric_constant) && Tok.isNot(tok::eof))
-       return false;
-
-     if (Tok.is(tok::eof)) {
-       // toggle:
-       bool print = !m_Interp.isPrintingAST();
-       m_Interp.enablePrintAST(print);
-       llvm::outs()<< (print?"P":"Not p") << "rinting AST\n";
-     } else {
-       Param = GetRawTokenName(Tok);
-
-       if (Param == "0")
-         m_Interp.enablePrintAST(false);
-       else
-         m_Interp.enablePrintAST(true);
      }
-
-     m_Options.PrintingAST = m_Interp.isPrintingAST();
-     return true;
-   }
-   //  .rawInput [0|1]  // Toggle the raw input or if 1 or 0 is given enable
-   //                   // or disable it.
-   else if (Command == "rawInput") {
-     // Check for params
-     RawLexer.LexFromRawLexer(Tok);
-     if (Tok.isNot(tok::numeric_constant) && Tok.isNot(tok::eof))
-       return false;
-
-     if (Tok.is(tok::eof)) {
-       // toggle:
-       m_Options.RawInput = !m_Options.RawInput;
-       llvm::outs() << (m_Options.RawInput?"U":"Not u") << "sing raw input\n";
-     } else {
-       Param = GetRawTokenName(Tok);
-
-       if (Param == "0")
-         m_Options.RawInput = false;
-       else
-         m_Options.RawInput = true;
-     }
-     return true;
-   }
-   //
-   //  .U <filename>
-   //
-   //  Unload code fragment.
-   //
-   if (Command == "U") {
-     // llvm::sys::Path path(param);
-     // if (path.isDynamicLibrary()) {
-     //   std::cerr << "[i] Failure: cannot unload shared libraries yet!"
-     //             << std::endl;
+     llvm::sys::Path file(llvm::StringRef(Tok.getBufStart(), Tok.getLength()));
+     llvm::StringRef args;
+     // TODO: Check whether the file exists using the compilers header search.
+     // if (!file.canRead()) {
+     //   llvm::errs() << "File doesn't exist or not readable.\n";
+     //   return false;       
      // }
+     CmdLexer.LexSpecialSymbol(Tok);
+     if (Tok.getKind() == tok::l_paren) {
+       // Good enough for now.
+       if (!CmdLexer.LexAnyString(Tok)) {
+         llvm::errs() << "Argument list expected.\n";
+         return false;
+       }
+       args = llvm::StringRef(Tok.getBufStart(), Tok.getLength());
+       if (!CmdLexer.LexSpecialSymbol(Tok) && Tok.getKind() == tok::r_paren) {
+         llvm::errs() << "Closing parenthesis expected.\n";
+         return false;
+       }
+     }
+     if (!executeFile(file.str(), args, result))
+       llvm::errs() << "Execute file failed.\n";
+     return true;     
+   }
+   else if (CmdStartChar == 'U') {
+     // if (!CmdLexer.LexAnyString(Tok)) {
+     //   llvm::errs() << "Filename expected.\n";
+     //   return false;
+     // }
+     // llvm::sys::Path file(llvm::StringRef(Tok.bufStart, Tok.getLength()));
+     // TODO: Check whether the file exists using the compilers header search.
+     // if (!file.canRead()) {
+     //   llvm::errs() << "File doesn't exist or not readable.\n";
+     //   return false;       
+     // } else
+     // if (file.isDynamicLibrary()) {
+     //   llvm::errs() << "cannot unload shared libraries yet!.\n";
+     //   return false;
+     // }
+     // TODO: Later comes more fine-grained unloading. For now just:
      m_Interp.unload();
      return true;
    }
-   //
-   //  Unrecognized command.
-   //
-   //fprintf(stderr, "Unrecognized command.\n");
-   else if (Command == "I") {
-
-     // Check for params
-     llvm::sys::Path path(SanitizeArg(ReadToEndOfBuffer(RawLexer, MB)));
-
-     if (path.isEmpty())
-       m_Interp.DumpIncludePath();
-     else {
-       // TODO: Additional checks on params
-
-       if (path.isValid())
-         m_Interp.AddIncludePath(path.c_str());
-       else
-         return false;
-     }
-     return true;
-   }
-  // Cancel the multiline input that has been requested
-   else if (Command == "@") {
+   else if (CmdStartChar == '@') {
      m_InputValidator->reset();
      return true;
    }
-   // Enable/Disable DynamicExprTransformer
-   else if (Command == "dynamicExtensions") {
-     // Check for params
-     RawLexer.LexFromRawLexer(Tok);
-     if (Tok.isNot(tok::numeric_constant) && Tok.isNot(tok::eof))
-       return false;
-
-     if (Tok.is(tok::eof)) {
-       // toggle:
-       bool dynlookup = !m_Interp.isDynamicLookupEnabled();
-       m_Interp.enableDynamicLookup(dynlookup);
-       llvm::outs() << (dynlookup?"U":"Not u") <<"sing dynamic extensions\n";
-     } else {
-       Param = GetRawTokenName(Tok);
-
-       if (Param == "0")
-         m_Interp.enableDynamicLookup(false);
-       else
-         m_Interp.enableDynamicLookup(true);
+   else if (CmdStartChar == 'I') {
+     if (CmdLexer.LexAnyString(Tok)) {
+       llvm::sys::Path path(llvm::StringRef(Tok.getBufStart(), Tok.getLength()));
+       // TODO: Check whether the file exists using the compilers header search.
+       // if (!path.canRead()) {
+       //   llvm::errs() << "Path doesn't exist or not readable.\n";
+       //   return false;       
+       // }
+       m_Interp.AddIncludePath(path.str());
      }
-
+     else {
+       m_Interp.DumpIncludePath();
+     }
      return true;
    }
-   // Print Help
-   else if (Command == "help") {
+   else if (Command.equals("printAST")) {
+     if (!CmdLexer.LexBool(Tok)) {
+       bool flag = !m_Interp.isPrintingAST();
+       m_Interp.enablePrintAST(flag);
+       llvm::outs() << (flag ? "P" : "Not p") << "rinting AST\n";
+     }
+     else {
+       if (Tok.getKind() == tok::boolfalse)
+         m_Interp.enablePrintAST(false);
+       else if (Tok.getKind() == tok::booltrue)
+         m_Interp.enablePrintAST(true);
+       else {
+         llvm::errs() << "Boolean value expected.\n";
+         return false;
+       }
+     }
+     //m_Options.PrintingAST = m_Interp.isPrintingAST(); ????
+     return true;
+   }
+   else if (Command.equals("rawInput")) {
+     if (!CmdLexer.LexBool(Tok)) {
+       m_Options.RawInput = !m_Options.RawInput;
+       llvm::outs() << (m_Options.RawInput ? "U" :"Not u") << "sing raw input\n";
+     }
+     else {
+       if (Tok.getKind() == tok::boolfalse)
+         m_Options.RawInput = false;
+       else if (Tok.getKind() == tok::booltrue)
+         m_Options.RawInput = true;
+       else {
+         llvm::errs() << "Boolean value expected.\n";
+         return false;
+       }
+     }
+     return true;
+   }
+   else if (Command.equals("dynamicExtensions")) {
+     if (!CmdLexer.LexBool(Tok)) {
+       bool flag = !m_Interp.isDynamicLookupEnabled();
+       m_Interp.enableDynamicLookup(flag);
+       llvm::outs() << (flag ? "U" : "Not u") << "sing dynamic extensions\n";
+     }
+     else {
+       if (Tok.getKind() == tok::boolfalse)
+         m_Interp.enableDynamicLookup(false);
+       else if (Tok.getKind() == tok::booltrue)
+         m_Interp.enableDynamicLookup(true);
+       else {
+         llvm::errs() << "Boolean value expected.\n";
+         return false;
+       }
+     }
+     return true;
+   }
+   else if (Command.equals("help")) {
      PrintCommandHelp();
      return true;
    }
-   // Print the loaded files
-   else if (Command == "file") {
+   else if (Command.equals("file")) {
      PrintFileStats();
      return true;
    }
 
    return false;
-  }
-
-  std::string MetaProcessor::GetRawTokenName(const Token& Tok) {
-
-    assert(!Tok.needsCleaning() && "Not implemented yet");
-
-    switch (Tok.getKind()) {
-    default:
-      assert("Unknown token");
-      return "";
-    case tok::at:
-      return "@";
-    case tok::l_paren:
-      return "(";
-    case tok::r_paren:
-      return ")";
-    case tok::period:
-      return ".";
-    case tok::slash:
-      return "/";
-    case tok::numeric_constant:
-      return StringRef(Tok.getLiteralData(), Tok.getLength()).str();
-    case tok::raw_identifier:
-      return StringRef(Tok.getRawIdentifierData(), Tok.getLength()).str();
-    }
-  }
-
-  llvm::StringRef MetaProcessor::ReadToEndOfBuffer(Lexer& RawLexer,
-                                                   llvm::MemoryBuffer* MB) {
-    const char* CurPtr = RawLexer.getBufferLocation();
-    if (CurPtr == MB->getBufferEnd()) {
-      // Already at end of the buffer, return just the zero byte at the end.
-      return StringRef(CurPtr, 0);
-    }
-    Token TmpTok;
-    RawLexer.getAndAdvanceChar(CurPtr, TmpTok);
-    return StringRef(CurPtr, MB->getBufferSize()-(CurPtr-MB->getBufferStart()));
-  }
-
-  llvm::StringRef MetaProcessor::SanitizeArg(const std::string& Str) {
-    if(Str.empty())
-      return Str;
-
-    size_t begins = Str.find_first_not_of(" \t\n");
-    size_t ends = Str.find_last_not_of(" \t\n") + 1;
-
-    if (begins == std::string::npos)
-      ends = begins + 1;
-
-    return llvm::StringRef(Str.c_str() + begins, ends - begins);
   }
 
   void MetaProcessor::PrintCommandHelp() {
@@ -332,31 +415,26 @@ namespace cling {
   }
 
   // Run a file: .x file[(args)]
-  bool MetaProcessor::executeFile(const std::string& fileWithArgs,
+  bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
                                   Value* result) {
     // Look for start of parameters:
-
     typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
-    StringRefPair pairFileArgs = llvm::StringRef(fileWithArgs).split('(');
-    if (pairFileArgs.second.empty()) {
-      pairFileArgs.second = ")";
-    }
-    StringRefPair pairPathFile = pairFileArgs.first.rsplit('/');
+    // StringRefPair pairFileArgs = llvm::StringRef(fileWithArgs).split('(');
+    // if (pairFileArgs.second.empty()) {
+    //   pairFileArgs.second = ")";
+    // }
+
+    StringRefPair pairPathFile = file.rsplit('/');
     if (pairPathFile.second.empty()) {
        pairPathFile.second = pairPathFile.first;
     }
     StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
 
-    Interpreter::CompilationResult interpRes
-       = m_Interp.declare(std::string("#include \"")
-                          + pairFileArgs.first.str()
-                          + std::string("\""));
-
-    if (interpRes != Interpreter::kFailure) {
-       std::string expression = pairFuncExt.first.str()
-          + "(" + pairFileArgs.second.str();
-       interpRes = m_Interp.evaluate(expression, result);
+    Interpreter::CompilationResult interpRes;
+    if (m_Interp.loadFile(file)) {
+      std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
+      interpRes = m_Interp.evaluate(expression, result);
     }
 
     return (interpRes != Interpreter::kFailure);

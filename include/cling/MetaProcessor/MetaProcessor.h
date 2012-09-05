@@ -93,22 +93,6 @@ namespace cling {
     ///
     bool ProcessMeta(const std::string& input_line, cling::Value* result);
 
-    ///\brief This method is used to get the token's value. That is usually done
-    /// by the Lexer by attaching the IdentifierInfo directly. However we are
-    /// in raw lexing mode and we cannot do that.
-    ///
-    ///\returns This function is the dummy implementation of
-    /// Token.getIdentifierInfo()->getName() for the raw lexer
-    ///
-    std::string GetRawTokenName(const clang::Token& Tok);
-
-    llvm::StringRef ReadToEndOfBuffer(clang::Lexer& RawLexer,
-                                      llvm::MemoryBuffer* MB);
-
-    ///\brief Removes leading and trailing spaces, new lines and tabs if any
-    ///
-    llvm::StringRef SanitizeArg(const std::string& Str);
-
     ///\brief Shows help for the use of interpreter's meta commands
     ///
     void PrintCommandHelp();
@@ -137,13 +121,15 @@ namespace cling {
     ///\brief Executes a file given the CINT specific rules. Mainly used as:
     /// .x filename[(args)], which in turn includes the filename and runs a
     /// function with signature void filename(args)
-    /// @param[in] fileWithArgs - the filename(args)
+    /// @param[in] file - the filename
+    /// @param[in] args - the args without ()
     /// @param[out] result - the cling::Value as result of the execution of the
     ///             last statement
     ///
     ///\returns true on success
     ///
-    bool executeFile(const std::string& fileWithArgs, cling::Value* result = 0);
+    bool executeFile(llvm::StringRef file, llvm::StringRef args, 
+                     cling::Value* result = 0);
 
   };
 } // end namespace cling
