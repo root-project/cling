@@ -431,7 +431,7 @@ namespace cling {
     }
     StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
 
-    Interpreter::CompilationResult interpRes;
+    Interpreter::CompilationResult interpRes = Interpreter::kSuccess;
     if (m_Interp.loadFile(file)) {
       std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
       interpRes = m_Interp.evaluate(expression, result);

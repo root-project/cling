@@ -2,7 +2,8 @@ Index: tools/clang/test/Modules/redecl-templates.mm
 ===================================================================
 --- tools/clang/test/Modules/redecl-templates.mm	(revision 0)
 +++ tools/clang/test/Modules/redecl-templates.mm	(revision 0)
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,30 @@
++// XFAIL: *
 +// template <typename T> int foo(T);
 +// int usesfootoo() { return foo((float)1); }
 +// template <typename T> int foo(T) { return 0; }
