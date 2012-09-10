@@ -32,7 +32,7 @@ CLINGCXXFLAGS = $(shell $(LLVMCONFIG) --cxxflags) -I$(CLINGDIR)/include \
 	-fno-strict-aliasing
 CLINGLIBEXTRA = -L$(shell $(LLVMCONFIG) --libdir) \
 	$(addprefix -lclang,\
-		Frontend Serialization Driver CodeGen Parse Sema Analysis Rewrite AST Lex Basic Edit) \
+		Frontend Serialization Driver CodeGen Parse Sema Analysis RewriteCore AST Lex Basic Edit) \
 	$(patsubst -lLLVM%Disassembler,,\
 	$(filter-out -lLLVMipa,\
 	$(shell $(LLVMCONFIG) --libs linker jit executionengine debuginfo \
@@ -54,6 +54,8 @@ distclean-$(MODNAME): clean-$(MODNAME)
 		@rm -f $(CLINGDEP) $(CLINGETC)
 
 distclean::     distclean-$(MODNAME)
+
+$(CLINGDIRS)/Module.mk: $(LLVMCONFIG)
 
 etc/cling/%.h: $(CLINGDIR)/include/cling/%.h
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
