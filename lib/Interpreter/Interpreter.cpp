@@ -7,6 +7,7 @@
 #include "cling/Interpreter/Interpreter.h"
 
 #include "cling/Interpreter/LookupHelper.h"
+#include "cling/Utils/AST.h"
 
 #include "CompilationOptions.h"
 #include "DynamicLookup.h"
@@ -138,43 +139,6 @@ namespace cling {
     // allow taking the address of ::main however.
     void *MainAddr = (void*) (intptr_t) GetExecutablePath;
     return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
-  }
-
-
-  Interpreter::NamedDeclResult::NamedDeclResult(llvm::StringRef Decl,
-                                                Interpreter* interp,
-                                                const DeclContext* Within)
-    : m_Interpreter(interp),
-      m_Context(m_Interpreter->getCI()->getASTContext()),
-      m_CurDeclContext(Within),
-      m_Result(0)
-  {
-    LookupDecl(Decl);
-  }
-
-  Interpreter::NamedDeclResult&
-  Interpreter::NamedDeclResult::LookupDecl(llvm::StringRef Decl) {
-    DeclarationName Name(&m_Context.Idents.get(Decl));
-    DeclContext::lookup_const_result Lookup = m_CurDeclContext->lookup(Name);
-    // If more than one found return 0. Cannot handle ambiguities.
-    if (Lookup.second - Lookup.first == 1) {
-      if (DeclContext* DC = dyn_cast<DeclContext>(*Lookup.first))
-        m_CurDeclContext = DC;
-      else
-        m_CurDeclContext = (*Lookup.first)->getDeclContext();
-
-      m_Result = (*Lookup.first);
-    }
-    else {
-      m_Result = 0;
-    }
-
-    return *this;
-  }
-
-  NamedDecl* Interpreter::NamedDeclResult::getSingleDecl() const {
-    // TODO: Check whether it is only one decl if (end-begin == 1 )
-    return dyn_cast<NamedDecl>(m_Result);
   }
 
   void Interpreter::unload() {
@@ -477,8 +441,7 @@ namespace cling {
     return (getCI()->getASTContext().Idents.getOwn(out)).getName();
   }
 
-  bool Interpreter::RunFunction(llvm::StringRef fname,
-                                llvm::GenericValue* res) {
+  bool Interpreter::RunFunction(llvm::StringRef fname, llvm::GenericValue* res) {
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return false;
 
@@ -487,14 +450,16 @@ namespace cling {
     }
 
     std::string mangledNameIfNeeded;
-    FunctionDecl* FD = cast_or_null<FunctionDecl>(LookupDecl(fname).
-                                                  getSingleDecl()
-                                                  );
+
+    Sema& S = getCI()->getSema();
+    FunctionDecl* FD 
+      = cast_or_null<FunctionDecl>(utils::Lookup::Named(&S, fname.data()));
+    
     if (FD) {
       if (!FD->isExternC()) {
         llvm::raw_string_ostream RawStr(mangledNameIfNeeded);
         llvm::OwningPtr<MangleContext>
-          Mangle(getCI()->getASTContext().createMangleContext());
+          Mangle(S.getASTContext().createMangleContext());
         Mangle->mangleName(FD, RawStr);
         RawStr.flush();
         fname = mangledNameIfNeeded;
@@ -731,13 +696,6 @@ namespace cling {
       ((ParserExt*)P)->ExitScope();
     }
   };
-
-  Interpreter::NamedDeclResult Interpreter::LookupDecl(llvm::StringRef Decl,
-                                                    const DeclContext* Within) {
-    if (!Within)
-      Within = getCI()->getASTContext().getTranslationUnitDecl();
-    return Interpreter::NamedDeclResult(Decl, this, Within);
-  }
 
   void Interpreter::installLazyFunctionCreator(
                                               void* (*fp)(const std::string&)) {

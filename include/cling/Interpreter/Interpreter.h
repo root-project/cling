@@ -219,33 +219,6 @@ namespace cling {
 
     void unload();
 
-    ///\brief Implements named parameter idiom - allows the idiom
-    /// LookupDecl().LookupDecl()...
-    ///
-    class NamedDeclResult {
-    private:
-      Interpreter* m_Interpreter;
-      clang::ASTContext& m_Context;
-      const clang::DeclContext* m_CurDeclContext;
-      clang::NamedDecl* m_Result;
-      NamedDeclResult(llvm::StringRef Decl, Interpreter* interp,
-                      const clang::DeclContext* Within = 0);
-    public:
-      NamedDeclResult& LookupDecl(llvm::StringRef);
-      operator clang::NamedDecl* () const { return getSingleDecl(); }
-      clang::NamedDecl* getSingleDecl() const;
-      template<class T> T* getAs(){
-        clang::NamedDecl *result = getSingleDecl();
-        if (result) {
-           return llvm::dyn_cast<T>(result);
-        } else {
-           return 0;
-        }
-      }
-
-      friend class Interpreter;
-    };
-
     Interpreter(int argc, const char* const *argv, const char* llvmdir = 0);
     virtual ~Interpreter();
 
@@ -393,15 +366,6 @@ namespace cling {
     ///
     Value Evaluate(const char* expr, clang::DeclContext* DC,
                    bool ValuePrinterReq = false);
-
-    ///\brief Looks up declaration within given declaration context. Does top
-    /// down lookup.
-    ///
-    ///@param[in] Decl Declaration name.
-    ///@param[in] Within Starting declaration context.
-    ///
-    NamedDeclResult LookupDecl(llvm::StringRef Decl,
-                               const clang::DeclContext* Within = 0);
 
     ///\brief Sets callbacks needed for the dynamic lookup.
     ///

@@ -10,6 +10,9 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
+#include "cling/Utils/AST.h"
+
+#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Lookup.h"
 
 namespace cling {
@@ -70,9 +73,12 @@ namespace cling {
       bool LookupObject(clang::LookupResult& R, clang::Scope* S) {
         // Only for demo resolve all unknown objects to cling::test::Tester
         if (m_Enabled) {
-          if (!m_TesterDecl)
-            m_TesterDecl = m_Interpreter->LookupDecl("cling").LookupDecl("test").LookupDecl("Tester");
-
+          if (!m_TesterDecl) {
+            clang::Sema& S = m_Interpreter->getCI()->getSema();
+            clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&S, "cling");
+            NSD = utils::Lookup::Namespace(&S, "test", NSD);
+            m_TesterDecl = utils::Lookup::Named(&S, "Tester", NSD);
+          }
           assert (m_TesterDecl && "Tester not found!");
           R.addDecl(m_TesterDecl);
           return true;
