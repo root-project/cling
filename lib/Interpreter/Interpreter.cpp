@@ -39,10 +39,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/raw_os_ostream.h"
 
-#include <cstdio>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -203,8 +200,6 @@ namespace cling {
     m_LookupHelper.reset(new LookupHelper(m_IncrParser->getParser()));
 
     m_ExecutionContext.reset(new ExecutionContext());
-
-    m_ValuePrintStream.reset(new llvm::raw_os_ostream(std::cout));
 
     // Add path to interpreter's include files
     // Try to find the headers in the src folder first

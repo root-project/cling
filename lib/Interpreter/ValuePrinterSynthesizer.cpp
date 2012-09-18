@@ -19,16 +19,23 @@
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
 
+#include "llvm/Support/raw_os_ostream.h"
+
+#include <iostream>
+
 using namespace clang;
 
 namespace cling {
 
+  ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S, 
+                                                   llvm::raw_ostream* Stream)
+    : TransactionTransformer(S), m_Context(&S->getASTContext()) {
+    if (Stream)
+      m_ValuePrinterStream.reset(Stream);
+    else 
+      m_ValuePrinterStream.reset(new llvm::raw_os_ostream(std::cout));
+  }
 
-  ValuePrinterSynthesizer::ValuePrinterSynthesizer(Interpreter* Interp, 
-                                                   clang::Sema* S)
-    : TransactionTransformer(S), m_Interpreter(Interp), 
-      m_Context(&S->getASTContext())
-  { }
 
   // pin the vtable here.
   ValuePrinterSynthesizer::~ValuePrinterSynthesizer()
@@ -146,8 +153,8 @@ namespace cling {
 
     Expr* RawOStreamTy
       = utils::Synthesize::CStyleCastPtrExpr(m_Sema, RawOStreamRDTy,
-                               (uint64_t)&m_Interpreter->getValuePrinterStream()
-                                      );
+                                             (uint64_t)m_ValuePrinterStream.get()
+                                             );
 
     Expr* ExprTy = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ExprRDTy, 
                                                         (uint64_t)E);

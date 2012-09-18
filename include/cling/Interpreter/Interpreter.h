@@ -97,13 +97,6 @@ namespace cling {
     ///
     bool m_DynamicLookupEnabled;
 
-    ///\brief Stream to dump values into.
-    ///
-    /// TODO: Since it is only used by the ValuePrinterSynthesizer it should be
-    /// somewhere else.
-    ///
-    llvm::OwningPtr<llvm::raw_ostream> m_ValuePrintStream;
-
     ///\breif Helper that manages when the destructor of an object to be called.
     ///
     /// The object is registered first as an CXAAtExitElement and then cling
@@ -384,9 +377,6 @@ namespace cling {
     llvm::Module* getModule() const;
 
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
-
-    llvm::raw_ostream& getValuePrinterStream() const {
-       return *m_ValuePrintStream; }
 
     void runStaticInitializersOnce() const;
 
