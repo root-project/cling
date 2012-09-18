@@ -370,7 +370,7 @@ namespace cling {
     if (!canWrapForCall(input))
       return declare(input, D);
 
-    if (Evaluate(input, CO, V) == Interpreter::kFailure) {
+    if (EvaluateInternal(input, CO, V) == Interpreter::kFailure) {
       if (D)
         *D = 0;
       return Interpreter::kFailure;
@@ -391,7 +391,7 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
 
-    return Declare(input, CO);
+    return DeclareInternal(input, CO);
   }
 
   Interpreter::CompilationResult
@@ -402,7 +402,7 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
 
-    return Declare(input, CO, D);
+    return DeclareInternal(input, CO, D);
   }
 
   Interpreter::CompilationResult
@@ -415,7 +415,7 @@ namespace cling {
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
 
-    return Evaluate(input, CO, V);
+    return EvaluateInternal(input, CO, V);
   }
 
   Interpreter::CompilationResult
@@ -424,7 +424,7 @@ namespace cling {
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = CompilationOptions::VPEnabled;
 
-    return Evaluate(input, CO, V);
+    return EvaluateInternal(input, CO, V);
   }
 
   void Interpreter::WrapInput(std::string& input, std::string& fname) {
@@ -477,8 +477,9 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
-  Interpreter::Declare(const std::string& input, const CompilationOptions& CO,
-                       const clang::Decl** D /* = 0 */) {
+  Interpreter::DeclareInternal(const std::string& input, 
+                               const CompilationOptions& CO,
+                               const clang::Decl** D /* = 0 */) {
 
     if (m_IncrParser->Compile(input, CO) != IncrementalParser::kFailed) {
       if (D)
@@ -490,8 +491,9 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
-  Interpreter::Evaluate(const std::string& input, const CompilationOptions& CO,
-                        Value* V /* = 0 */) {
+  Interpreter::EvaluateInternal(const std::string& input, 
+                                const CompilationOptions& CO,
+                                Value* V /* = 0 */) {
 
     Sema& TheSema = getCI()->getSema();
 

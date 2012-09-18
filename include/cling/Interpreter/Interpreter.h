@@ -159,9 +159,9 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult Declare(const std::string& input,
-                              const CompilationOptions& CO,
-                              const clang::Decl** D = 0);
+    CompilationResult DeclareInternal(const std::string& input,
+                                      const CompilationOptions& CO,
+                                      const clang::Decl** D = 0);
 
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.
@@ -174,9 +174,9 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult Evaluate(const std::string& input,
-                               const CompilationOptions& CO,
-                               Value* V = 0);
+    CompilationResult EvaluateInternal(const std::string& input,
+                                       const CompilationOptions& CO,
+                                       Value* V = 0);
 
     ///\brief Wraps a given input.
     ///
