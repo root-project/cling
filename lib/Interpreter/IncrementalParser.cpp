@@ -63,7 +63,7 @@ namespace cling {
     CreateSLocOffsetGenerator();
 
     // Add transformers to the IncrementalParser, which owns them
-    m_TTransformers.push_back(new EvaluateTSynthesizer(interp, &CI->getSema()));
+    m_TTransformers.push_back(new EvaluateTSynthesizer(&CI->getSema()));
 
     m_TTransformers.push_back(new DeclExtractor(&getCI()->getSema()));
     m_TTransformers.push_back(new ValuePrinterSynthesizer(interp, &CI->getSema()));

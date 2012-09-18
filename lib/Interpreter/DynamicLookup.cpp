@@ -7,7 +7,6 @@
 #include "DynamicLookup.h"
 #include "Transaction.h"
 
-#include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Utils/AST.h"
 
@@ -184,10 +183,10 @@ namespace {
 namespace cling {
 
   // Constructors
-  EvaluateTSynthesizer::EvaluateTSynthesizer(Interpreter* interp, Sema* S)
+  EvaluateTSynthesizer::EvaluateTSynthesizer(Sema* S)
     : TransactionTransformer(S), m_EvalDecl(0), m_LifetimeHandlerDecl(0),
       m_LHgetMemoryDecl(0), m_DynamicExprInfoDecl(0), m_DeclContextDecl(0), 
-      m_CurDeclContext(0), m_Interpreter(interp), m_Context(&S->getASTContext()) 
+      m_CurDeclContext(0), m_Context(&S->getASTContext()), m_UniqueNameCounter(0)
   { }
 
   // pin the vtable here.
@@ -422,7 +421,7 @@ namespace cling {
         // 2.1 Get unique name for the LifetimeHandler instance and
         // initialize it
         std::string UniqueName;
-        m_Interpreter->createUniqueName(UniqueName);
+        createUniqueName(UniqueName);
         IdentifierInfo& II = m_Context->Idents.get(UniqueName);
 
         // Prepare the initialization Exprs.
@@ -874,6 +873,11 @@ namespace cling {
       Children.push_back(*I);
     }
     return true;
+  }
+
+  void EvaluateTSynthesizer::createUniqueName(std::string& out) {
+    out = "autoGenName";
+    llvm::raw_string_ostream(out) << m_UniqueNameCounter++;
   }
 
   // end Helpers

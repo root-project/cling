@@ -13,6 +13,8 @@ namespace clang {
 }
 
 namespace cling {
+  class Interpreter;
+
   /// \brief  This interface provides a way to observe the actions of the
   /// interpreter as it does its thing.  Clients can define their hooks here to
   /// implement interpreter level tools.

@@ -104,7 +104,6 @@ namespace cling {
 } //end namespace cling
 
 namespace cling {
-  class Interpreter;
   class DynamicIDHandler;
 
   typedef llvm::DenseMap<clang::Stmt*, clang::Stmt*> MapTy;
@@ -190,9 +189,6 @@ namespace cling {
     /// being visited.
     clang::DeclContext* m_CurDeclContext;
 
-    /// \brief Stores pointer to cling, mainly used for declaration lookup.
-    Interpreter* m_Interpreter;
-
     /// \brief Use instead of clang::SourceRange().
     clang::SourceRange m_NoRange;
 
@@ -202,8 +198,11 @@ namespace cling {
     /// \brief Use instead of clang::SourceLocation() as end location.
     clang::SourceLocation m_NoELoc;
 
-    /// \brief Needed for the AST transformations, owned by Sema
+    /// \brief Needed for the AST transformations, owned by Sema.
     clang::ASTContext* m_Context;
+
+    /// \brief Counter used when we need unique names.
+    unsigned long long m_UniqueNameCounter;
 
   public:
 
@@ -212,7 +211,7 @@ namespace cling {
 
     using BaseStmtVisitor::Visit;
 
-    EvaluateTSynthesizer(Interpreter* interp, clang::Sema* S);
+    EvaluateTSynthesizer(clang::Sema* S);
 
     ~EvaluateTSynthesizer();
 
@@ -325,6 +324,11 @@ namespace cling {
     /// \brief Gets all children of a given node.
     ///
     bool GetChildren(ASTNodes& Children, clang::Stmt* Node);
+
+    /// \brief Creates unique name (eg. of a variable). Used internally for 
+    /// AST node synthesis.
+    ///
+    void createUniqueName(std::string& out);
     /// @}
   };
 } // end namespace cling
