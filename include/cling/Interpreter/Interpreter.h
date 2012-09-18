@@ -11,9 +11,6 @@
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/Casting.h"
-
-#include <string>
 
 namespace llvm {
   class raw_ostream;
