@@ -28,8 +28,8 @@ INCLUDEFILES += $(CLINGDEP)
 # include dir for picking up RuntimeUniverse.h etc - need to
 # 1) copy relevant headers to include/
 # 2) rely on TCling to addIncludePath instead of using CLING_..._INCL below
-CLINGCXXFLAGS = $(shell $(LLVMCONFIG) --cxxflags) -I$(CLINGDIR)/include \
-	-fno-strict-aliasing
+CLINGCXXFLAGS = $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags) -I$(CLINGDIR)/include \
+	-fno-strict-aliasing)
 CLINGLIBEXTRA = -L$(shell $(LLVMCONFIG) --libdir) \
 	$(addprefix -lclang,\
 		Frontend Serialization Driver CodeGen Parse Sema Analysis RewriteCore AST Lex Basic Edit) \
