@@ -105,7 +105,7 @@ namespace utils {
                                const llvm::SmallSet<const Type*, 4>& TypesToSkip,
                                                 bool fullyQualify /*=true*/){
     // If there are no constains - use the standard desugaring.
-    if (!TypesToSkip.size())
+    if (!TypesToSkip.size() && !fullyQualify)
       return QT.getDesugaredType(Ctx);
 
     // In case of Int_t* we need to strip the pointer first, desugar and attach
@@ -202,10 +202,11 @@ namespace utils {
       
       // If desugaring happened allocate new type in the AST.
       if (mightHaveChanged) {
+        // This lose any qualifiers in the original QT (intentional for now)
         QT = Ctx.getTemplateSpecializationType(TST->getTemplateName(), 
-                                              desArgs.data(),
-                                              desArgs.size(),
-                                              TST->getCanonicalTypeInternal());
+                                               desArgs.data(),
+                                               desArgs.size(),
+                                               TST->getCanonicalTypeInternal());
       }
     }
     if (prefix) {
