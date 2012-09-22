@@ -100,6 +100,31 @@ namespace utils {
      }
   }
 
+  static bool ShouldKeepTypedef(QualType QT, 
+                           const llvm::SmallSet<const Type*, 4>& TypesToSkip)
+  {
+    // Return true, if we should keep this typedef rather than desugaring it.
+
+    if ( 0 != TypesToSkip.count(QT.getTypePtr()) ) 
+      return true;
+     
+    const TypedefType* typedeftype = 
+       llvm::dyn_cast_or_null<clang::TypedefType>(QT.getTypePtr());
+    const TypedefNameDecl* decl = typedeftype ? typedeftype->getDecl() : 0;
+    if (decl) {
+       const NamedDecl* outer 
+          = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
+       while ( outer && outer->getName().size() ) {
+        // NOTE: Net is being cast to widely, replace by a lookup. 
+        if (outer->getName().compare("std") == 0) {
+          return true;
+        }
+        outer = llvm::dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
+      }
+    }
+    return false;
+  }
+
   QualType Transform::GetPartiallyDesugaredType(const ASTContext& Ctx, 
                                                 QualType QT, 
                                const llvm::SmallSet<const Type*, 4>& TypesToSkip,
@@ -118,6 +143,7 @@ namespace utils {
       QT = Ctx.getPointerType(QT);
       // Add back the qualifiers.
       QT = Ctx.getQualifiedType(QT, quals);
+      return QT;
     }
 
     // In case of Int_t& we need to strip the pointer first, desugar and attach
@@ -135,39 +161,156 @@ namespace utils {
         QT = Ctx.getRValueReferenceType(QT);
       // Add back the qualifiers.
       QT = Ctx.getQualifiedType(QT, quals);
+      return QT;
+    }
+
+    // If the type is elaborated, first remove the prefix and then
+    // when we are done we will as needed add back the (new) prefix.
+    // for example for std::vector<int>::iterator, we work on 
+    // just 'iterator' (which remember which scope its from)
+    // and remove the typedef to get (for example),
+    //   __gnu_cxx::__normal_iterator
+    // which is *not* in the std::vector<int> scope and it is
+    // the __gnu__cxx part we should use as the prefix.
+    // NOTE: however we problably want to add the std::vector typedefs
+    // to the list of things to skip!
+
+    NestedNameSpecifier* original_prefix = 0;
+    const ElaboratedType* etype_input 
+      = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
+    if (etype_input) {
+      // We have to also desugar the prefix. 
+      fullyQualify = true;
+      original_prefix = etype_input->getQualifier();
+      QT = QualType(etype_input->getNamedType().getTypePtr(),QT.getLocalFastQualifiers());
     }
 
     while(isa<TypedefType>(QT.getTypePtr())) {
-      if (!TypesToSkip.count(QT.getTypePtr())) 
+      if (!ShouldKeepTypedef(QT,TypesToSkip))
         QT = QT.getSingleStepDesugaredType(Ctx);
-      else
+      else if (fullyQualify) {
+        // We might have stripped the namespace/scope part,
+        // se we must go on if fullyQualify is true.
+        break;
+      } else
         return QT;
     }
+
     NestedNameSpecifier* prefix = 0;
     const ElaboratedType* etype 
       = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
     if (etype) {
       // We have to also desugar the prefix.
- 
-      prefix = GetPartiallyDesugaredNNS(Ctx, etype->getQualifier(), TypesToSkip);
+       
+      prefix = etype->getQualifier();
+      if (original_prefix) {
+        // We had a scope prefix as input, let see if it is still
+        // the same as the scope of the result and if it is, then
+        // we use it.
+        const clang::Type *newtype = prefix->getAsType();
+        if (newtype) {
+          // Deal with a class
+          const clang::Type *oldtype = original_prefix->getAsType();
+          if (oldtype && 
+              // NOTE: Should we compare the RecordDecl instead?
+              oldtype->getAsCXXRecordDecl() == newtype->getAsCXXRecordDecl())
+          { 
+            // This is the same type, use the original prefix as a starting
+            // point.
+            prefix = GetPartiallyDesugaredNNS(Ctx,original_prefix,TypesToSkip);
+          } else {
+            prefix = GetPartiallyDesugaredNNS(Ctx,prefix,TypesToSkip);
+          }
+        } else {
+          // Deal with namespace.  This is mostly about dealing with
+          // namespace aliases (i.e. keeping the on the user used).
+          const NamespaceDecl *new_ns = prefix->getAsNamespace();
+          if (new_ns) {
+            new_ns = new_ns->getCanonicalDecl();
+          } 
+          else if (NamespaceAliasDecl *alias = prefix->getAsNamespaceAlias())
+          {
+            new_ns = alias->getNamespace()->getCanonicalDecl();
+          }
+          if (new_ns) {
+            const NamespaceDecl *old_ns = original_prefix->getAsNamespace();
+            if (old_ns) {
+              old_ns = old_ns->getCanonicalDecl();
+            }
+            else if (NamespaceAliasDecl *alias = 
+                     original_prefix->getAsNamespaceAlias())
+            {
+              old_ns = alias->getNamespace()->getCanonicalDecl();
+            }
+            if (old_ns == new_ns) {
+              // This is the same namespace, use the original prefix
+              // as a starting point.
+              prefix = original_prefix;
+            }
+          }
+        }
+      }
       QT = QualType(etype->getNamedType().getTypePtr(),QT.getLocalFastQualifiers());
     } else if (fullyQualify) {
       // Let's check whether this type should have been an elaborated type.
       // in which case we want to add it ... but we can't really preserve
       // the typedef in this case ...
-      CXXRecordDecl* cl = QT->getAsCXXRecordDecl();
-      if (cl) {
-         NamedDecl* outer 
-            = llvm::dyn_cast_or_null<NamedDecl>(cl->getDeclContext());
-         if (outer && outer->getName ().size()) {
-            if (cl->getDeclContext()->isNamespace()) {
-               prefix = CreateNestedNameSpecifier(Ctx,
-                                          llvm::dyn_cast<NamespaceDecl>(outer));
-            } else {
-               prefix = CreateNestedNameSpecifier(Ctx,
-                                          llvm::dyn_cast<TagDecl>(outer));
+
+      Decl *decl = 0;
+      const TypedefType* typedeftype = 
+        llvm::dyn_cast_or_null<clang::TypedefType>(QT.getTypePtr());
+      if (typedeftype) {
+        decl = typedeftype->getDecl();
+      } else {
+        // There are probably other cases ...
+        const TagType* tagdecltype = 
+           llvm::dyn_cast_or_null<clang::TagType>(QT.getTypePtr());
+        if (tagdecltype) {
+          decl = tagdecltype->getDecl();
+        } else {
+          decl = QT->getAsCXXRecordDecl();
+        }
+      }
+      if (decl) {
+        NamedDecl* outer 
+           = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
+        if (original_prefix) {
+          const clang::Type *oldtype = original_prefix->getAsType();
+          if (oldtype) {
+            if (oldtype->getAsCXXRecordDecl() == outer) {
+              // Same type, use the original spelling
+              prefix = GetPartiallyDesugaredNNS(Ctx,original_prefix,TypesToSkip);
+              outer = 0; // Cancel the later creation.
             }
-         }
+          } else {
+            const NamespaceDecl *old_ns = original_prefix->getAsNamespace();
+            if (old_ns) {
+              old_ns = old_ns->getCanonicalDecl();
+            }
+            else if (NamespaceAliasDecl *alias = 
+                     original_prefix->getAsNamespaceAlias())
+            {
+              old_ns = alias->getNamespace()->getCanonicalDecl();
+            }
+            const NamespaceDecl *new_ns = llvm::dyn_cast<NamespaceDecl>(outer);
+            if (new_ns) new_ns = new_ns->getCanonicalDecl();
+            if (old_ns == new_ns) {
+              // This is the same namespace, use the original prefix
+              // as a starting point.
+              prefix = original_prefix;
+              outer = 0; // Cancel the later creation.
+            }
+          }
+        }
+        if (outer && outer->getName ().size()) {
+          if (decl->getDeclContext()->isNamespace()) {
+            prefix = CreateNestedNameSpecifier(Ctx,
+                                          llvm::dyn_cast<NamespaceDecl>(outer));
+          } else {
+            prefix = CreateNestedNameSpecifier(Ctx,
+                                          llvm::dyn_cast<TagDecl>(outer));
+          }
+        }
       }
     }
 
