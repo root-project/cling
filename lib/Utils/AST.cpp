@@ -223,7 +223,7 @@ namespace utils {
           }
         } else {
           // Deal with namespace.  This is mostly about dealing with
-          // namespace aliases (i.e. keeping the on the user used).
+          // namespace aliases (i.e. keeping the one the user used).
           const NamespaceDecl *new_ns = prefix->getAsNamespace();
           if (new_ns) {
             new_ns = new_ns->getCanonicalDecl();
