@@ -453,18 +453,11 @@ namespace cling {
 
     Sema& S = getCI()->getSema();
     FunctionDecl* FD 
-      = cast_or_null<FunctionDecl>(utils::Lookup::Named(&S, fname.data()));
+      = cast_or_null<FunctionDecl>(utils::Lookup::Named(&S, fname.str().c_str()));
     
     if (FD) {
-      if (!FD->isExternC()) {
-        llvm::raw_string_ostream RawStr(mangledNameIfNeeded);
-        llvm::OwningPtr<MangleContext>
-          Mangle(S.getASTContext().createMangleContext());
-        Mangle->mangleName(FD, RawStr);
-        RawStr.flush();
-        fname = mangledNameIfNeeded;
-      }
-      m_ExecutionContext->executeFunction(fname, res);
+      getMangledName(FD, mangledNameIfNeeded);
+      m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(), res);
       return true;
     }
 
@@ -769,12 +762,38 @@ namespace cling {
     return 0; // happiness
   }
 
-  bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress){
+  void Interpreter::getMangledName(const clang::NamedDecl* D,
+                                   std::string& mangledName) const {
+    ///Get the mangled name of a NamedDecl.
+    ///
+    ///D - mangle this decl's name
+    ///mangledName - put the mangled name in here
+    llvm::OwningPtr<MangleContext>
+      Mangle(getCI()->getASTContext().createMangleContext());
+    if (Mangle->shouldMangleDeclName(D)) {
+      llvm::raw_string_ostream RawStr(mangledName);
+      Mangle->mangleName(D, RawStr);
+      RawStr.flush();
+    } else {
+      mangledName = D->getNameAsString();
+    }
+  }
+
+  bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress) {
     // Forward to ExecutionContext;
     if (!symbolName || !symbolAddress )
       return false;
 
     return m_ExecutionContext->addSymbol(symbolName,  symbolAddress);
+  }
+
+
+  void* Interpreter::getAddressOfGlobal(const clang::NamedDecl* D,
+                                        bool* fromJIT /*=0*/) const {
+    // Return a symbol's address, and whether it was jitted.
+    std::string mangledName;
+    getMangledName(D, mangledName);
+    return m_ExecutionContext->getAddressOfGlobal(mangledName.c_str(),  fromJIT);
   }
 
 } // namespace cling

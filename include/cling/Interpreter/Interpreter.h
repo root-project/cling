@@ -212,6 +212,13 @@ namespace cling {
     ///
     bool addSymbol(const char* symbolName,  void* symbolAddress);
 
+    ///\brief Get the mangled name of a NamedDecl.
+    ///
+    ///\param [in]  D - mangle this decl's name
+    ///\param [out] mangledName - put the mangled name in here
+    void getMangledName(const clang::NamedDecl* D,
+                        std::string& mangledName) const;
+
   public:
 
     void unload();
@@ -367,6 +374,16 @@ namespace cling {
     ///\brief Sets callbacks needed for the dynamic lookup.
     ///
     void setCallbacks(InterpreterCallbacks* C);
+
+    ///\brief Gets the address of an existing global and whether it was JITted.
+    ///
+    /// JIT symbols might not be immediately convertible to e.g. a function
+    /// pointer as their call setup is different.
+    ///
+    ///\param[in]  D       - the global's Decl to find
+    ///\param[out] fromJIT - whether the symbol was JITted.
+    ///
+    void* getAddressOfGlobal(const clang::NamedDecl* D, bool* fromJIT = 0) const;
 
     friend class runtime::internal::LifetimeHandler;
   };

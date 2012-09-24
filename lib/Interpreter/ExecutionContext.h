@@ -56,6 +56,16 @@ namespace cling {
     ///
     bool addSymbol(const char* symbolName,  void* symbolAddress);
 
+    ///\brief Gets the address of an existing global and whether it was JITted.
+    ///
+    /// JIT symbols might not be immediately convertible to e.g. a function
+    /// pointer as their call setup is different.
+    ///
+    ///\param[in]  D       - the global's Decl to find
+    ///\param[out] fromJIT - whether the symbol was JITted.
+    ///
+    void* getAddressOfGlobal(const char* mangledName, bool* fromJIT = 0) const;
+
     llvm::ExecutionEngine* getExecutionEngine() const {
       return m_engine;
     }
