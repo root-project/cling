@@ -456,7 +456,7 @@ namespace cling {
       = cast_or_null<FunctionDecl>(utils::Lookup::Named(&S, fname.str().c_str()));
     
     if (FD) {
-      getMangledName(FD, mangledNameIfNeeded);
+      mangleName(FD, mangledNameIfNeeded);
       m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(), res);
       return true;
     }
@@ -764,8 +764,8 @@ namespace cling {
     return 0; // happiness
   }
 
-  void Interpreter::getMangledName(const clang::NamedDecl* D,
-                                   std::string& mangledName) const {
+  void Interpreter::mangleName(const clang::NamedDecl* D,
+                               std::string& mangledName) const {
     ///Get the mangled name of a NamedDecl.
     ///
     ///D - mangle this decl's name
@@ -795,7 +795,7 @@ namespace cling {
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
     std::string mangledName;
-    getMangledName(D, mangledName);
+    mangleName(D, mangledName);
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     return m_ExecutionContext->getAddressOfGlobal(module,
                                                   mangledName.c_str(),

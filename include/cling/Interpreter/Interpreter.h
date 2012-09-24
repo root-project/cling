@@ -221,7 +221,7 @@ namespace cling {
     ///
     ///\param [in]  D - mangle this decl's name
     ///\param [out] mangledName - put the mangled name in here
-    void getMangledName(const clang::NamedDecl* D,
+    void mangleName(const clang::NamedDecl* D,
                         std::string& mangledName) const;
 
   public:
