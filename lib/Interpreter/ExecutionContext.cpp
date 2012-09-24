@@ -285,7 +285,7 @@ void* ExecutionContext::getAddressOfGlobal(llvm::Module* m,
       if (fromJIT) *fromJIT = true;
       llvm::GlobalVariable* gvar
         = m->getGlobalVariable(symbolName, true);
-      address = m_engine->getPointerToGlobalIfAvailable(gvar);
+      address = m_engine->getPointerToGlobal(gvar);
     }
     return address;
   }
