@@ -768,11 +768,12 @@ namespace cling {
     ///
     ///D - mangle this decl's name
     ///mangledName - put the mangled name in here
-    llvm::OwningPtr<MangleContext>
-      Mangle(getCI()->getASTContext().createMangleContext());
-    if (Mangle->shouldMangleDeclName(D)) {
+    if (!m_MangleCtx) {
+      m_MangleCtx.reset(getCI()->getASTContext().createMangleContext());
+    }
+    if (m_MangleCtx->shouldMangleDeclName(D)) {
       llvm::raw_string_ostream RawStr(mangledName);
-      Mangle->mangleName(D, RawStr);
+      m_MangleCtx->mangleName(D, RawStr);
       RawStr.flush();
     } else {
       mangledName = D->getNameAsString();
@@ -793,7 +794,10 @@ namespace cling {
     // Return a symbol's address, and whether it was jitted.
     std::string mangledName;
     getMangledName(D, mangledName);
-    return m_ExecutionContext->getAddressOfGlobal(mangledName.c_str(),  fromJIT);
+    llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
+    return m_ExecutionContext->getAddressOfGlobal(module,
+                                                  mangledName.c_str(),
+                                                  fromJIT);
   }
 
 } // namespace cling

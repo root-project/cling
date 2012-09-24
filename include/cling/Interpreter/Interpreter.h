@@ -26,6 +26,7 @@ namespace clang {
   class Decl;
   class DeclContext;
   class NamedDecl;
+  class MangleContext;
 }
 
 namespace cling {
@@ -81,6 +82,10 @@ namespace cling {
     ///\brief Cling's reflection information query.
     ///
     llvm::OwningPtr<LookupHelper> m_LookupHelper;
+
+    ///\brief Helper object for mangling names.
+    ///
+    mutable llvm::OwningPtr<clang::MangleContext> m_MangleCtx;
 
     ///\brief Counter used when we need unique names.
     ///

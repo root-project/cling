@@ -61,10 +61,12 @@ namespace cling {
     /// JIT symbols might not be immediately convertible to e.g. a function
     /// pointer as their call setup is different.
     ///
-    ///\param[in]  D       - the global's Decl to find
+    ///\param[in]  m       - the module to use for finging the global
+    ///\param[in]  mangledName - the globa's name
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
-    void* getAddressOfGlobal(const char* mangledName, bool* fromJIT = 0) const;
+    void* getAddressOfGlobal(llvm::Module* m, const char* mangledName,
+                             bool* fromJIT = 0) const;
 
     llvm::ExecutionEngine* getExecutionEngine() const {
       return m_engine;
