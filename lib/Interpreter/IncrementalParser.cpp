@@ -215,7 +215,7 @@ namespace cling {
     SourceManager& SM = getCI()->getSourceManager();
     FileManager& FM = SM.getFileManager();
     const FileEntry* FE
-      = FM.getVirtualFile("Interactrive/InputLineIncluder", 1U << 15U, time(0));
+      = FM.getVirtualFile("Interactive/InputLineIncluder", 1U << 15U, time(0));
     m_VirtualFileID = SM.createFileID(FE, SourceLocation(), SrcMgr::C_User);
 
     assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
