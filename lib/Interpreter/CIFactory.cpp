@@ -258,6 +258,7 @@ namespace cling {
     Opts.Exceptions = 1;
     Opts.CXXExceptions = 1;
     Opts.Deprecated = 1;
+    Opts.Modules = 1;
   }
 
   void CIFactory::SetClingTargetLangOpts(LangOptions& Opts,
