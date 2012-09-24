@@ -497,6 +497,8 @@ namespace cling {
                               clang::diag::MAP_IGNORE, SourceLocation());
     Diag.setDiagnosticMapping(clang::diag::warn_unused_call,
                               clang::diag::MAP_IGNORE, SourceLocation());
+    Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
+                              clang::diag::MAP_IGNORE, SourceLocation());
 
     // Wrap the expression
     std::string WrapperName;
