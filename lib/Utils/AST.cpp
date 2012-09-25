@@ -176,13 +176,15 @@ namespace utils {
     // to the list of things to skip!
 
     NestedNameSpecifier* original_prefix = 0;
+    clang::Qualifiers prefix_qualifiers;
     const ElaboratedType* etype_input 
       = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
     if (etype_input) {
       // We have to also desugar the prefix. 
       fullyQualify = true;
       original_prefix = etype_input->getQualifier();
-      QT = QualType(etype_input->getNamedType().getTypePtr(),QT.getLocalFastQualifiers());
+      prefix_qualifiers = QT.getLocalQualifiers();
+      QT = QualType(etype_input->getNamedType().getTypePtr(),0);
     }
 
     while(isa<TypedefType>(QT.getTypePtr())) {
@@ -250,7 +252,8 @@ namespace utils {
           }
         }
       }
-      QT = QualType(etype->getNamedType().getTypePtr(),QT.getLocalFastQualifiers());
+      prefix_qualifiers.addQualifiers(QT.getLocalQualifiers());
+      QT = QualType(etype->getNamedType().getTypePtr(),0);
     } else if (fullyQualify) {
       // Let's check whether this type should have been an elaborated type.
       // in which case we want to add it ... but we can't really preserve
@@ -301,6 +304,10 @@ namespace utils {
               outer = 0; // Cancel the later creation.
             }
           }
+        } else { // if (!original_prefix)
+           // move the qualifiers on the outer type (avoid 'std::const string'!)
+           prefix_qualifiers = QT.getLocalQualifiers();
+           QT.setLocalFastQualifiers(0);
         }
         if (outer && outer->getName ().size()) {
           if (decl->getDeclContext()->isNamespace()) {
@@ -333,6 +340,7 @@ namespace utils {
         // Check if the type needs more desugaring and recurse.
         if (isa<TypedefType>(SubTy) 
             || isa<TemplateSpecializationType>(SubTy)
+            || isa<ElaboratedType>(SubTy)
             || fullyQualify) {
           mightHaveChanged = true;
           desArgs.push_back(TemplateArgument(GetPartiallyDesugaredType(Ctx,
@@ -345,15 +353,17 @@ namespace utils {
       
       // If desugaring happened allocate new type in the AST.
       if (mightHaveChanged) {
-        // This lose any qualifiers in the original QT (intentional for now)
+        unsigned int qualifiers = QT.getLocalFastQualifiers();
         QT = Ctx.getTemplateSpecializationType(TST->getTemplateName(), 
                                                desArgs.data(),
                                                desArgs.size(),
                                                TST->getCanonicalTypeInternal());
+        QT.setLocalFastQualifiers(qualifiers);
       }
     }
     if (prefix) {
-       QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
+      QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
+      QT.setLocalFastQualifiers(prefix_qualifiers.getFastQualifiers()); // Note: Is that copying _all_ the qualifiers?
     }
     return QT;   
   }
