@@ -277,45 +277,47 @@ namespace utils {
       if (decl) {
         NamedDecl* outer 
            = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
-        if (original_prefix) {
-          const clang::Type *oldtype = original_prefix->getAsType();
-          if (oldtype) {
-            if (oldtype->getAsCXXRecordDecl() == outer) {
-              // Same type, use the original spelling
-              prefix = GetPartiallyDesugaredNNS(Ctx,original_prefix,TypesToSkip);
-              outer = 0; // Cancel the later creation.
-            }
-          } else {
-            const NamespaceDecl *old_ns = original_prefix->getAsNamespace();
-            if (old_ns) {
-              old_ns = old_ns->getCanonicalDecl();
-            }
-            else if (NamespaceAliasDecl *alias = 
-                     original_prefix->getAsNamespaceAlias())
-            {
-              old_ns = alias->getNamespace()->getCanonicalDecl();
-            }
-            const NamespaceDecl *new_ns = llvm::dyn_cast<NamespaceDecl>(outer);
-            if (new_ns) new_ns = new_ns->getCanonicalDecl();
-            if (old_ns == new_ns) {
-              // This is the same namespace, use the original prefix
-              // as a starting point.
-              prefix = original_prefix;
-              outer = 0; // Cancel the later creation.
-            }
-          }
-        } else { // if (!original_prefix)
-           // move the qualifiers on the outer type (avoid 'std::const string'!)
-           prefix_qualifiers = QT.getLocalQualifiers();
-           QT.setLocalFastQualifiers(0);
-        }
         if (outer && outer->getName ().size()) {
-          if (decl->getDeclContext()->isNamespace()) {
-            prefix = CreateNestedNameSpecifier(Ctx,
+          if (original_prefix) {
+            const clang::Type *oldtype = original_prefix->getAsType();
+            if (oldtype) {
+              if (oldtype->getAsCXXRecordDecl() == outer) {
+                // Same type, use the original spelling
+                prefix = GetPartiallyDesugaredNNS(Ctx,original_prefix,TypesToSkip);
+                outer = 0; // Cancel the later creation.
+              }
+            } else {
+              const NamespaceDecl *old_ns = original_prefix->getAsNamespace();
+              if (old_ns) {
+                old_ns = old_ns->getCanonicalDecl();
+              }
+              else if (NamespaceAliasDecl *alias = 
+                       original_prefix->getAsNamespaceAlias())
+              {
+                old_ns = alias->getNamespace()->getCanonicalDecl();
+              }
+              const NamespaceDecl *new_ns = llvm::dyn_cast<NamespaceDecl>(outer);
+              if (new_ns) new_ns = new_ns->getCanonicalDecl();
+              if (old_ns == new_ns) {
+                // This is the same namespace, use the original prefix
+                // as a starting point.
+                prefix = original_prefix;
+                outer = 0; // Cancel the later creation.
+              }
+            }
+          } else { // if (!original_prefix)
+            // move the qualifiers on the outer type (avoid 'std::const string'!)
+            prefix_qualifiers = QT.getLocalQualifiers();
+            QT = QualType(QT.getTypePtr(),0);
+          }
+          if (outer) {
+            if (decl->getDeclContext()->isNamespace()) {
+              prefix = CreateNestedNameSpecifier(Ctx,
                                           llvm::dyn_cast<NamespaceDecl>(outer));
-          } else {
-            prefix = CreateNestedNameSpecifier(Ctx,
+            } else {
+              prefix = CreateNestedNameSpecifier(Ctx,
                                           llvm::dyn_cast<TagDecl>(outer));
+            }
           }
         }
       }
@@ -353,17 +355,17 @@ namespace utils {
       
       // If desugaring happened allocate new type in the AST.
       if (mightHaveChanged) {
-        unsigned int qualifiers = QT.getLocalFastQualifiers();
+        Qualifiers qualifiers = QT.getLocalQualifiers();
         QT = Ctx.getTemplateSpecializationType(TST->getTemplateName(), 
                                                desArgs.data(),
                                                desArgs.size(),
                                                TST->getCanonicalTypeInternal());
-        QT.setLocalFastQualifiers(qualifiers);
+        QT = Ctx.getQualifiedType(QT, qualifiers);
       }
     }
     if (prefix) {
       QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
-      QT.setLocalFastQualifiers(prefix_qualifiers.getFastQualifiers()); // Note: Is that copying _all_ the qualifiers?
+      QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
     }
     return QT;   
   }
