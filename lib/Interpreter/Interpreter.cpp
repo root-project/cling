@@ -203,7 +203,7 @@ namespace cling {
       //FIXME: Find proper fix.
       declare("#ifdef __CLING__ \n#endif");  
 #endif
-	  declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
+      declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
       declare("#include \"cling/Interpreter/ValuePrinter.h\"");
 
       // Set up the gCling variable
@@ -694,8 +694,7 @@ namespace cling {
     }
   };
 
-  void Interpreter::installLazyFunctionCreator(
-                                              void* (*fp)(const std::string&)) {
+  void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
     m_ExecutionContext->installLazyFunctionCreator(fp);
   }
 

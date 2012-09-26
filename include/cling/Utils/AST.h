@@ -59,6 +59,9 @@ namespace utils {
 
   };
 
+  ///\brief Class containing static utility functions looking up names. Very
+  /// useful for quick, simple lookups.
+  /// 
   class Lookup {
   public:
     static clang::NamespaceDecl* Namespace(clang::Sema* S,
