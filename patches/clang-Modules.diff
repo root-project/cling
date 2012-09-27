@@ -1,0 +1,503 @@
+Index: tools/clang/test/Modules/redecl-templates.mm
+===================================================================
+--- tools/clang/test/Modules/redecl-templates.mm	(revision 0)
++++ tools/clang/test/Modules/redecl-templates.mm	(revision 0)
+@@ -0,0 +1,30 @@
++// XFAIL: *
++// template <typename T> int foo(T);
++// int usesfootoo() { return foo((float)1); }
++// template <typename T> int foo(T) { return 0; }
++
++// class Redecl;
++// class RedeclImp { Redecl* p; };
++// class Redecl { public: int M; };
++
++@__experimental_modules_import redecl_templates_left;
++@__experimental_modules_import redecl_templates_right;
++
++int call() {
++   // L::AB b;
++
++   // Redecl r;
++
++  //usesfwddeclThenDefinedInLeftRight();
++  //usesfwddeclThenDefinedInLeftRightToo();
++  definedInLeft((double)0.);
++//   L::definedInLeftSpecializedInRight((float)0);
++//   L::definedInLeftSpecializedInRight((char)0);
++   return 0;
++}
++// RUN: rm -rf %t
++// RUN: %clang_cc1 -fmodules -x objective-c++ -fmodule-cache-path %t -emit-module -fmodule-name=redecl_templates_left %S/Inputs/module.map
++// RUN: %clang_cc1 -fmodules -x objective-c++ -fmodule-cache-path %t -emit-module -fmodule-name=redecl_templates_right %S/Inputs/module.map
++// RUN: %clang_cc1 -fmodules -fmodule-cache-path %t -w %s -emit-obj -o %t.obj
++// RUN: echo 'int call(); int main(int,char*[]) { return call(); }' | %clang -x objective-c++ -fmodules -fmodule-cache-path %t - -c -o %t_main.obj
++// RUN: %clang -lstdc++ %t_main.obj %t.obj
+Index: tools/clang/test/Modules/Inputs/module.map
+===================================================================
+--- tools/clang/test/Modules/Inputs/module.map	(revision 162896)
++++ tools/clang/test/Modules/Inputs/module.map	(working copy)
+@@ -38,6 +38,8 @@
+ module redeclarations_right { header "redeclarations_right.h" }
+ module redecl_namespaces_left { header "redecl_namespaces_left.h" }
+ module redecl_namespaces_right { header "redecl_namespaces_right.h" }
++module redecl_templates_left { header "redecl_templates_left.h" }
++module redecl_templates_right { header "redecl_templates_right.h" }
+ module load_failure { header "load_failure.h" }
+ 
+ module decldef {
+Index: tools/clang/test/Modules/Inputs/redecl_templates_right.h
+===================================================================
+--- tools/clang/test/Modules/Inputs/redecl_templates_right.h	(revision 0)
++++ tools/clang/test/Modules/Inputs/redecl_templates_right.h	(revision 0)
+@@ -0,0 +1,23 @@
++//namespace L {
++   /*
++   template <typename T> class AA;
++   template <typename T> class AA {};
++   class AB: public virtual AA<char> {};
++   */
++
++  //template <typename T> int fwddeclThenDefinedInLeftRight(T);
++
++  // int usesfwddeclThenDefinedInLeftRightToo() {
++  //   return fwddeclThenDefinedInLeftRight((float)1); 
++  // }
++
++  // template <typename T> int fwddeclThenDefinedInLeftRight(T) { return 0; }
++
++  template <typename T> int definedInLeft(T);
++
++  // template <typename T> int definedInLeftSpecializedInRight(T);
++  // template <> int definedInLeftSpecializedInRight<char>(char) { return 1; }
++  // int usesdefinedInLeftSpecializedInRightChar() {
++  //   return definedInLeftSpecializedInRight((char)0); 
++  // }
++//}
+
+Property changes on: tools/clang/test/Modules/Inputs/redecl_templates_right.h
+___________________________________________________________________
+Added: svn:eol-style
+   + LF
+Added: svn:keywords
+   + Id
+
+Index: tools/clang/test/Modules/Inputs/redecl_templates_left.h
+===================================================================
+--- tools/clang/test/Modules/Inputs/redecl_templates_left.h	(revision 0)
++++ tools/clang/test/Modules/Inputs/redecl_templates_left.h	(revision 0)
+@@ -0,0 +1,31 @@
++//namespace L {
++   // template <typename T> class AA;
++   // template <typename T> class AA {};
++   // class AB: public virtual AA<char> {};
++
++   // class Redecl;
++   // class RedeclImp { Redecl* p; };
++
++   // class Redecl { public: int M; };
++
++   // class Redecl;
++
++   // class RedeclUse { Redecl* use; };
++
++   // class Redecl;
++
++   //template <typename T> int fwddeclThenDefinedInLeftRight(T);
++
++   //int usesfwddeclThenDefinedInLeftRight() {
++   //  return fwddeclThenDefinedInLeftRight((char)1); 
++   //}
++
++   // template <typename T> int fwddeclThenDefinedInLeftRight(T) { return 0; }
++
++   template <typename T> int definedInLeft(T) { return 1; }
++   //int usesdefinedInLeft() { return definedInLeft((int)0); }
++
++   // template <typename T> int definedInLeftSpecializedInRight(T) { return 2; }
++   // int usesdefinedInLeftSpecializedInRightInt() {
++   //    return definedInLeftSpecializedInRight((int)0); }
++  //}
+
+Property changes on: tools/clang/test/Modules/Inputs/redecl_templates_left.h
+___________________________________________________________________
+Added: svn:eol-style
+   + LF
+Added: svn:keywords
+   + Id
+
+Index: tools/clang/include/clang/Serialization/ASTReader.h
+===================================================================
+--- tools/clang/include/clang/Serialization/ASTReader.h	(revision 162896)
++++ tools/clang/include/clang/Serialization/ASTReader.h	(working copy)
+@@ -686,7 +686,15 @@
+   /// need to be emitted, such as inline function definitions or
+   /// Objective-C protocols.
+   std::deque<Decl *> InterestingDecls;
++public:
++  /// \brief Currently deserializing Decls
++  ///
++  /// Decls that are currently read but have not been completed yet.
++  llvm::SmallPtrSet<Decl *, 16> DeclsInFlight;
+ 
++  llvm::SmallPtrSet<Decl *, 16> RedeclsAddedToAST;
++
++private:
+   /// \brief The set of redeclarable declaraations that have been deserialized
+   /// since the last time the declaration chains were linked.
+   llvm::SmallPtrSet<Decl *, 16> RedeclsDeserialized;
+@@ -738,7 +746,7 @@
+   /// the given canonical declaration.
+   MergedDeclsMap::iterator
+   combineStoredMergedDecls(Decl *Canon, serialization::GlobalDeclID CanonID);
+-  
++
+   /// \brief Ready to load the previous declaration of the given Decl.
+   void loadAndAttachPreviousDecl(Decl *D, serialization::DeclID ID);
+ 
+@@ -853,6 +861,8 @@
+ 
+   void finishPendingActions();
+ 
++  bool needPendingInstantiation(ValueDecl* D) const;
++
+   /// \brief Produce an error diagnostic and return true.
+   ///
+   /// This routine should only be used for fatal errors that have to
+Index: tools/clang/include/clang/Lex/HeaderSearch.h
+===================================================================
+--- tools/clang/include/clang/Lex/HeaderSearch.h	(revision 162896)
++++ tools/clang/include/clang/Lex/HeaderSearch.h	(working copy)
+@@ -283,6 +283,11 @@
+   
+   /// \brief Retrieve the path to the module cache.
+   StringRef getModuleCachePath() const { return ModuleCachePath; }
++
++  /// \brief Consider modules when including files from this directory.
++  void setDirectoryHasModuleMap(const DirectoryEntry* Dir) {
++    DirectoryHasModuleMap[Dir] = true;
++  }
+   
+   /// \brief Forget everything we know about headers so far.
+   void ClearFileInfo() {
+Index: tools/clang/lib/Serialization/ASTReaderDecl.cpp
+===================================================================
+--- tools/clang/lib/Serialization/ASTReaderDecl.cpp	(revision 162896)
++++ tools/clang/lib/Serialization/ASTReaderDecl.cpp	(working copy)
+@@ -520,7 +520,9 @@
+   FD->IsConstexpr = Record[Idx++];
+   FD->EndRangeLoc = ReadSourceLocation(Record, Idx);
+ 
+-  switch ((FunctionDecl::TemplatedKind)Record[Idx++]) {
++  FunctionDecl::TemplatedKind TmpltKind
++    = (FunctionDecl::TemplatedKind) Record[Idx++];
++  switch (TmpltKind) {
+   case FunctionDecl::TK_NonTemplate:
+     mergeRedeclarable(FD, Redecl);      
+     break;
+@@ -623,6 +625,9 @@
+   for (unsigned I = 0; I != NumParams; ++I)
+     Params.push_back(ReadDeclAs<ParmVarDecl>(Record, Idx));
+   FD->setParams(Reader.getContext(), Params);
++
++  if (TmpltKind != FunctionDecl::TK_NonTemplate)
++    Reader.DeclsInFlight.erase(FD);
+ }
+ 
+ void ASTDeclReader::VisitObjCMethodDecl(ObjCMethodDecl *MD) {
+@@ -901,6 +906,7 @@
+   // Only true variables (not parameters or implicit parameters) can be merged.
+   if (VD->getKind() == Decl::Var)
+     mergeRedeclarable(VD, Redecl);
++  else Reader.DeclsInFlight.erase(VD);
+   
+   if (uint64_t Val = Record[Idx++]) {
+     VD->setInit(Reader.ReadExpr(F));
+@@ -1311,7 +1317,7 @@
+      
+   VisitTemplateDecl(D);
+   D->IdentifierNamespace = Record[Idx++];
+-  
++  mergeRedeclarable(D, Redecl);
+   return Redecl;
+ }
+ 
+@@ -1515,6 +1521,7 @@
+ template <typename T>
+ ASTDeclReader::RedeclarableResult 
+ ASTDeclReader::VisitRedeclarable(Redeclarable<T> *D) {
++  Reader.DeclsInFlight.insert(static_cast<T *>(D));
+   DeclID FirstDeclID = ReadDeclID(Record, Idx);
+   
+   // 0 indicates that this declaration was the only declaration of its entity,
+@@ -1545,6 +1552,7 @@
+ void ASTDeclReader::mergeRedeclarable(Redeclarable<T> *D, 
+                                       RedeclarableResult &Redecl) {
+   // If modules are not available, there is no reason to perform this merge.
++  Reader.DeclsInFlight.erase(static_cast<T*>(D));
+   if (!Reader.getContext().getLangOpts().Modules)
+     return;
+   
+@@ -1731,7 +1739,7 @@
+     return (FuncX->getLinkage() == FuncY->getLinkage()) &&
+       FuncX->getASTContext().hasSameType(FuncX->getType(), FuncY->getType());
+   }
+-  
++    
+   // Variables with the same type and linkage match.
+   if (VarDecl *VarX = dyn_cast<VarDecl>(X)) {
+     VarDecl *VarY = cast<VarDecl>(Y);
+@@ -1744,20 +1752,26 @@
+     NamespaceDecl *NamespaceY = cast<NamespaceDecl>(Y);
+     return NamespaceX->isInline() == NamespaceY->isInline();
+   }
+-      
++
+   // FIXME: Many other cases to implement.
+   return false;
+ }
+ 
+ ASTDeclReader::FindExistingResult::~FindExistingResult() {
+-  if (!AddResult || Existing)
++  if (!AddResult || Existing) {
+     return;
++  }
+   
+   DeclContext *DC = New->getDeclContext()->getRedeclContext();
+   if (DC->isTranslationUnit() && Reader.SemaObj) {
+-    Reader.SemaObj->IdResolver.tryAddTopLevelDecl(New, New->getDeclName());
++    if (Reader.SemaObj->IdResolver.tryAddTopLevelDecl(New, New->getDeclName()))
++      Reader.RedeclsAddedToAST.insert(New);
+   } else if (DC->isNamespace()) {
++    DeclContext* oldCtx = New->getLexicalDeclContext();
++    New->setLexicalDeclContext(DC);
+     DC->addDecl(New);
++    New->setLexicalDeclContext(oldCtx);
++    Reader.RedeclsAddedToAST.insert(New);
+   }
+ }
+ 
+@@ -1779,7 +1793,7 @@
+     for (IdentifierResolver::iterator I = IdResolver.begin(Name), 
+                                    IEnd = IdResolver.end();
+          I != IEnd; ++I) {
+-      if (isSameEntity(*I, D))
++      if (*I != D && isSameEntity(*I, D))
+         return FindExistingResult(Reader, D, *I);
+     }
+   }
+@@ -1787,7 +1801,9 @@
+   if (DC->isNamespace()) {
+     for (DeclContext::lookup_result R = DC->lookup(Name);
+          R.first != R.second; ++R.first) {
+-      if (isSameEntity(*R.first, D))
++      if (*R.first != D
++          && !Reader.DeclsInFlight.count(*R.first)
++          && isSameEntity(*R.first, D))
+         return FindExistingResult(Reader, D, *R.first);
+     }
+   }
+@@ -1798,22 +1814,41 @@
+ void ASTDeclReader::attachPreviousDecl(Decl *D, Decl *previous) {
+   assert(D && previous);
+   if (TagDecl *TD = dyn_cast<TagDecl>(D)) {
+-    TD->RedeclLink.setNext(cast<TagDecl>(previous));
++    //TD->RedeclLink.setNext(cast<TagDecl>(previous));
++    TD->RedeclLink
++      = Redeclarable<TagDecl>::PreviousDeclLink(cast<TagDecl>(previous));    
+   } else if (FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
+-    FD->RedeclLink.setNext(cast<FunctionDecl>(previous));
++    //FD->RedeclLink.setNext(cast<FunctionDecl>(previous));
++    FD->RedeclLink
++      = Redeclarable<FunctionDecl>::PreviousDeclLink(cast<FunctionDecl>(previous));
+   } else if (VarDecl *VD = dyn_cast<VarDecl>(D)) {
+-    VD->RedeclLink.setNext(cast<VarDecl>(previous));
++    //VD->RedeclLink.setNext(cast<VarDecl>(previous));
++    VD->RedeclLink
++      = Redeclarable<VarDecl>::PreviousDeclLink(cast<VarDecl>(previous));
+   } else if (TypedefNameDecl *TD = dyn_cast<TypedefNameDecl>(D)) {
+-    TD->RedeclLink.setNext(cast<TypedefNameDecl>(previous));
++    //TD->RedeclLink.setNext(cast<TypedefNameDecl>(previous));
++    TD->RedeclLink
++      = Redeclarable<TypedefNameDecl>::PreviousDeclLink(cast<TypedefNameDecl>(previous));
+   } else if (ObjCInterfaceDecl *ID = dyn_cast<ObjCInterfaceDecl>(D)) {
+-    ID->RedeclLink.setNext(cast<ObjCInterfaceDecl>(previous));
++    //ID->RedeclLink.setNext(cast<ObjCInterfaceDecl>(previous));
++    ID->RedeclLink
++      = Redeclarable<ObjCInterfaceDecl>::PreviousDeclLink(cast<ObjCInterfaceDecl>(previous));
+   } else if (ObjCProtocolDecl *PD = dyn_cast<ObjCProtocolDecl>(D)) {
+-    PD->RedeclLink.setNext(cast<ObjCProtocolDecl>(previous));
++    //  PD->RedeclLink.setNext(cast<ObjCProtocolDecl>(previous));
++    PD->RedeclLink
++      = Redeclarable<ObjCProtocolDecl>::PreviousDeclLink(cast<ObjCProtocolDecl>(previous));
+   } else if (NamespaceDecl *ND = dyn_cast<NamespaceDecl>(D)) {
+-    ND->RedeclLink.setNext(cast<NamespaceDecl>(previous));
++    // ND->RedeclLink.setNext(cast<NamespaceDecl>(previous));
++    ND->RedeclLink
++      = Redeclarable<NamespaceDecl>::PreviousDeclLink(cast<NamespaceDecl>(previous));
+   } else {
+     RedeclarableTemplateDecl *TD = cast<RedeclarableTemplateDecl>(D);
+-    TD->RedeclLink.setNext(cast<RedeclarableTemplateDecl>(previous));
++    RedeclarableTemplateDecl *PrevTD = cast<RedeclarableTemplateDecl>(previous);
++    TD->RedeclLink
++      = Redeclarable<RedeclarableTemplateDecl>::PreviousDeclLink(PrevTD);
++    // We should attach the templated decl as well:
++    attachPreviousDecl(TD->getTemplatedDecl(), PrevTD->getTemplatedDecl());
++    //TD->RedeclLink.setNext(cast<RedeclarableTemplateDecl>(previous));
+   }
+ }
+ 
+@@ -1846,9 +1881,11 @@
+                                                    cast<NamespaceDecl>(Latest));
+   } else {
+     RedeclarableTemplateDecl *TD = cast<RedeclarableTemplateDecl>(D);
++    RedeclarableTemplateDecl *LatestTD = cast<RedeclarableTemplateDecl>(Latest);
+     TD->RedeclLink
+-      = Redeclarable<RedeclarableTemplateDecl>::LatestDeclLink(
+-                                        cast<RedeclarableTemplateDecl>(Latest));
++      = Redeclarable<RedeclarableTemplateDecl>::LatestDeclLink(LatestTD);
++    // We should attach the templated decl as well:
++    attachLatestDecl(TD->getTemplatedDecl(), LatestTD->getTemplatedDecl());
+   }
+ }
+ 
+@@ -2125,9 +2162,16 @@
+   // AST consumer might need to know about, queue it.
+   // We don't pass it to the consumer immediately because we may be in recursive
+   // loading, and some declarations may still be initializing.
+-  if (isConsumerInterestedIn(D))
++  bool HaveModules = getContext().getLangOpts().Modules;
++  if (HaveModules) {
++    if (RedeclsAddedToAST.count(D)) {
++      RedeclsAddedToAST.erase(D);
++      if (isConsumerInterestedIn(D))
++        InterestingDecls.push_back(D);
++    }
++  } else if (isConsumerInterestedIn(D))
+     InterestingDecls.push_back(D);
+-  
++
+   return D;
+ }
+ 
+@@ -2273,7 +2317,7 @@
+   }
+   MergedDeclsMap::iterator MergedPos = combineStoredMergedDecls(CanonDecl, ID);
+   if (MergedPos != MergedDecls.end())
+-    SearchDecls.append(MergedPos->second.begin(), MergedPos->second.end());  
++    SearchDecls.append(MergedPos->second.begin(), MergedPos->second.end());
+   
+   // Build up the list of redeclarations.
+   RedeclChainVisitor Visitor(*this, SearchDecls, RedeclsDeserialized, CanonID);
+@@ -2475,3 +2519,60 @@
+     }
+   }
+ }
++
++/// \brief Return a template specialization of ND (should be a TemplateDecl)
++///  that matches FD or TD.
++static NamedDecl* findMatchingSpecialization(FunctionDecl* FD,
++                                             ClassTemplateSpecializationDecl*TD,
++                                             NamedDecl* ND) {
++  TemplateDecl* Templt = dyn_cast<TemplateDecl>(ND);
++  if (!Templt) return 0;
++  if (FD) {
++    FunctionTemplateDecl* FTD = dyn_cast<FunctionTemplateDecl>(Templt);
++    if (!FTD) return 0;
++    const TemplateArgumentList* TmpltArgs = FD->getTemplateSpecializationArgs();
++    assert(TmpltArgs || "Template without arguments");
++    void* InsertionPoint;
++    return FTD->findSpecialization(TmpltArgs->data(), TmpltArgs->size(),
++                                   InsertionPoint);
++  } else {
++    ClassTemplateDecl* CTD = dyn_cast<ClassTemplateDecl>(Templt);
++    if (!CTD) return 0;
++    const TemplateArgumentList& TmpltArgs = TD->getTemplateArgs();
++    void* InsertionPoint;
++    return CTD->findSpecialization(TmpltArgs.data(), TmpltArgs.size(),
++                                   InsertionPoint);
++  }
++  return 0;
++}
++
++/// \brief Find out whether an instantiation (outside the module) already exists
++bool ASTReader::needPendingInstantiation(ValueDecl* D) const {
++  DeclContext *DC = D->getDeclContext()->getRedeclContext();
++  DeclarationName Name = D->getDeclName();
++  assert(Name && "unnamed template");
++
++  FunctionDecl* FD = dyn_cast<FunctionDecl>(D);
++  ClassTemplateSpecializationDecl* CD
++    = FD ? 0 : dyn_cast<ClassTemplateSpecializationDecl>(D);
++
++  NamedDecl* FoundSpecialization = 0;
++  if (DC->isTranslationUnit() && SemaObj) {
++    IdentifierResolver &IdResolver = SemaObj->IdResolver;
++    for (IdentifierResolver::iterator I = IdResolver.begin(Name), 
++           IEnd = IdResolver.end();
++         I != IEnd && !FoundSpecialization; ++I)
++      FoundSpecialization = findMatchingSpecialization(FD, CD, *I);
++  } else {
++    // templates are redeclarables, i.e. they must have been merged into
++    // the primary context. Use localUncachedLookup to not pick up template
++    // decls from modules again.
++    llvm::SmallVector<NamedDecl*, 6> Results;
++    DC->getPrimaryContext()->localUncachedLookup(Name, Results);
++    for (llvm::SmallVector<NamedDecl *, 6>::const_iterator
++           I = Results.begin(), E = Results.end();
++         I != E && FoundSpecialization; ++I)
++      FoundSpecialization = findMatchingSpecialization(FD, CD, *I);
++  }
++  return FoundSpecialization && isSameEntity(FoundSpecialization, D);
++}
+Index: tools/clang/lib/Serialization/ASTReader.cpp
+===================================================================
+--- tools/clang/lib/Serialization/ASTReader.cpp	(revision 162896)
++++ tools/clang/lib/Serialization/ASTReader.cpp	(working copy)
+@@ -4928,6 +4928,9 @@
+         if (!ND)
+           continue;
+ 
++        if (This->Reader.DeclsInFlight.count(ND))
++          continue;
++
+         if (ND->getDeclName() != This->Name) {
+           assert(!This->Name.getCXXNameType().isNull() && 
+                  "Name mismatch without a type");
+@@ -5569,7 +5572,11 @@
+     ValueDecl *D = cast<ValueDecl>(GetDecl(PendingInstantiations[Idx++]));
+     SourceLocation Loc
+       = SourceLocation::getFromRawEncoding(PendingInstantiations[Idx++]);
+-    Pending.push_back(std::make_pair(D, Loc));
++
++    // For modules, find out whether an instantiation already exists
++    if (!getContext().getLangOpts().Modules
++        || needPendingInstantiation(D))
++      Pending.push_back(std::make_pair(D, Loc));
+   }  
+   PendingInstantiations.clear();
+ }
+@@ -6466,6 +6473,9 @@
+ }
+ 
+ ASTReader::~ASTReader() {
++  assert(DeclsInFlight.empty() && "DeclsInFlight not empty!");
++  assert(RedeclsAddedToAST.empty() && "RedeclsAddedToAST not empty!");
++
+   for (DeclContextVisibleUpdatesPending::iterator
+            I = PendingVisibleUpdates.begin(),
+            E = PendingVisibleUpdates.end();
+Index: tools/clang/lib/AST/Decl.cpp
+===================================================================
+--- tools/clang/lib/AST/Decl.cpp	(revision 162896)
++++ tools/clang/lib/AST/Decl.cpp	(working copy)
+@@ -936,7 +936,8 @@
+ }
+ 
+ bool NamedDecl::declarationReplaces(NamedDecl *OldD) const {
+-  assert(getDeclName() == OldD->getDeclName() && "Declaration name mismatch");
++  assert((!getDeclName() || OldD->getDeclName() \
++          || getDeclName() == OldD->getDeclName()) && "Declaration name mismatch");
+ 
+   // UsingDirectiveDecl's are not really NamedDecl's, and all have same name.
+   // We want to keep it, unless it nominates same namespace.
