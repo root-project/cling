@@ -25,7 +25,7 @@ namespace {
   static const OptTable::Info ClingInfoTable[] = {
 #define OPTION(NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM,              \
                HELPTEXT, METAVAR)                                       \
-    { NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, FLAGS, PARAM, \
+    { NAME, HELPTEXT, METAVAR, Option::KIND##Class, FLAGS, PARAM,       \
       OPT_##GROUP, OPT_##ALIAS },
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
