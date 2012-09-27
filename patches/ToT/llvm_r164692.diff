@@ -1,34 +1,29 @@
-Index: tools/cling/patches/ToT/llvm_r164692.diff
+Index: tools/cling/lib/Interpreter/LookupHelper.cpp
 ===================================================================
---- tools/cling/patches/ToT/llvm_r164692.diff	(revision 46225)
-+++ tools/cling/patches/ToT/llvm_r164692.diff	(working copy)
-@@ -1,26 +0,0 @@
--Index: tools/cling/lib/Interpreter/LookupHelper.cpp
--===================================================================
----- tools/cling/lib/Interpreter/LookupHelper.cpp	(revision 46197)
--+++ tools/cling/lib/Interpreter/LookupHelper.cpp	(working copy)
--@@ -617,7 +617,7 @@
--           //  Do template argument deduction and function argument matching.
--           //
--           FunctionDecl* Specialization;
---          sema::TemplateDeductionInfo TDI(Context, SourceLocation());
--+          sema::TemplateDeductionInfo TDI( (SourceLocation()) );
--           Sema::TemplateDeductionResult TDR 
--             = S.DeduceTemplateArguments(FTD,
--                          const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
--Index: tools/cling/lib/Interpreter/InvocationOptions.cpp
--===================================================================
----- tools/cling/lib/Interpreter/InvocationOptions.cpp	(revision 46197)
--+++ tools/cling/lib/Interpreter/InvocationOptions.cpp	(working copy)
--@@ -25,7 +25,7 @@
--   static const OptTable::Info ClingInfoTable[] = {
-- #define OPTION(NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM,              \
--                HELPTEXT, METAVAR)                                       \
---    { NAME, HELPTEXT, METAVAR, Option::KIND##Class, FLAGS, PARAM,       \
--+    { NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, FLAGS, PARAM, \
--       OPT_##GROUP, OPT_##ALIAS },
-- #include "cling/Interpreter/ClingOptions.inc"
-- #undef OPTION
+--- tools/cling/lib/Interpreter/LookupHelper.cpp	(revision 46225)
++++ tools/cling/lib/Interpreter/LookupHelper.cpp	(working copy)
+@@ -617,7 +617,7 @@
+           //  Do template argument deduction and function argument matching.
+           //
+           FunctionDecl* Specialization;
+-          sema::TemplateDeductionInfo TDI(Context, SourceLocation());
++          sema::TemplateDeductionInfo TDI( (SourceLocation()) );
+           Sema::TemplateDeductionResult TDR 
+             = S.DeduceTemplateArguments(FTD,
+                          const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
+Index: tools/cling/lib/Interpreter/InvocationOptions.cpp
+===================================================================
+--- tools/cling/lib/Interpreter/InvocationOptions.cpp	(revision 46225)
++++ tools/cling/lib/Interpreter/InvocationOptions.cpp	(working copy)
+@@ -25,7 +25,7 @@
+   static const OptTable::Info ClingInfoTable[] = {
+ #define OPTION(NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM,              \
+                HELPTEXT, METAVAR)                                       \
+-    { NAME, HELPTEXT, METAVAR, Option::KIND##Class, FLAGS, PARAM,       \
++    { NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, FLAGS, PARAM, \
+       OPT_##GROUP, OPT_##ALIAS },
+ #include "cling/Interpreter/ClingOptions.inc"
+ #undef OPTION
 Index: tools/cling/test/Lookup/func.C
 ===================================================================
 --- tools/cling/test/Lookup/func.C	(revision 46225)
@@ -62,29 +57,3 @@ Index: tools/cling/test/Lookup/func.C
  //CHECK-NEXT: }
  
  printf("func_B_ctr4_proto: 0x%lx\n", (unsigned long) func_B_ctr4_proto);
-Index: tools/cling/lib/Interpreter/LookupHelper.cpp
-===================================================================
---- tools/cling/lib/Interpreter/LookupHelper.cpp	(revision 46225)
-+++ tools/cling/lib/Interpreter/LookupHelper.cpp	(working copy)
-@@ -617,7 +617,7 @@
-           //  Do template argument deduction and function argument matching.
-           //
-           FunctionDecl* Specialization;
--          sema::TemplateDeductionInfo TDI(Context, SourceLocation());
-+          sema::TemplateDeductionInfo TDI( (SourceLocation()) );
-           Sema::TemplateDeductionResult TDR 
-             = S.DeduceTemplateArguments(FTD,
-                          const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-Index: tools/cling/lib/Interpreter/InvocationOptions.cpp
-===================================================================
---- tools/cling/lib/Interpreter/InvocationOptions.cpp	(revision 46225)
-+++ tools/cling/lib/Interpreter/InvocationOptions.cpp	(working copy)
-@@ -25,7 +25,7 @@
-   static const OptTable::Info ClingInfoTable[] = {
- #define OPTION(NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM,              \
-                HELPTEXT, METAVAR)                                       \
--    { NAME, HELPTEXT, METAVAR, Option::KIND##Class, FLAGS, PARAM,       \
-+    { NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, FLAGS, PARAM, \
-       OPT_##GROUP, OPT_##ALIAS },
- #include "cling/Interpreter/ClingOptions.inc"
- #undef OPTION
