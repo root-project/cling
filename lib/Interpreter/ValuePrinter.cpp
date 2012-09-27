@@ -27,7 +27,7 @@ extern "C" void cling_PrintValue(void* /*clang::Expr**/ E,
   clang::Expr* Exp = (clang::Expr*)E;
   clang::ASTContext* Context = (clang::ASTContext*)C;
   cling::ValuePrinterInfo VPI(Exp, Context);
-  cling::printValue(llvm::outs(), value, value, VPI);
+  cling::printValuePublic(llvm::outs(), value, value, VPI);
 
   cling::flushOStream(llvm::outs());
 }
@@ -155,8 +155,8 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
 }
 
 namespace cling {
-  void printValueDefault(llvm::raw_ostream& o, const void* const p,
-                         const ValuePrinterInfo& VPI) {
+  void printValuePublicDefault(llvm::raw_ostream& o, const void* const p,
+                               const ValuePrinterInfo& VPI) {
     const clang::Expr* E = VPI.getExpr();
     o << "(";
     o << E->getType().getAsString();

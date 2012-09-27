@@ -18,7 +18,7 @@ void libcling__symbol_requester(const clang::FunctionDecl& Decl,
    cling::Interpreter I(1, argv);
    cling::UserInterface U(I);
    cling::ValuePrinterInfo VPI(0, 0); // asserts, but we don't call.
-   printValueDefault(llvm::outs(), 0, VPI);
+   printValuePublicDefault(llvm::outs(), 0, VPI);
    cling_PrintValue(0, 0, 0);
    flushOStream(llvm::outs());
    LookupHelper h(0);
