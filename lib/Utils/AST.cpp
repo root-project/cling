@@ -332,13 +332,12 @@ namespace utils {
       llvm::SmallVector<TemplateArgument, 4> desArgs;
       for(TemplateSpecializationType::iterator I = TST->begin(), E = TST->end();
           I != E; ++I) {
-        QualType SubTy = I->getAsType();
-       
-        if (SubTy.isNull()) {
-           desArgs.push_back(*I);
-           continue;
+        if (I->getKind() != clang::TemplateArgument::Type) {
+          desArgs.push_back(*I);
+          continue;
         }
 
+        QualType SubTy = I->getAsType();
         // Check if the type needs more desugaring and recurse.
         if (isa<TypedefType>(SubTy) 
             || isa<TemplateSpecializationType>(SubTy)
