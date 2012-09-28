@@ -271,6 +271,7 @@ namespace cling {
               break;
             case NestedNameSpecifier::TypeSpec:
                 // Type name.
+                // Intentional fall-though
             case NestedNameSpecifier::TypeSpecWithTemplate: {
                 // Type name qualified with "template".
                 // Note: Do we need to check for a dependent type here?
