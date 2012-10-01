@@ -15,7 +15,7 @@
 
 namespace clang {
   class Decl;
-  class PrintingPolicy;
+  struct PrintingPolicy;
 }
 
 namespace llvm {
