@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: Transaction.h 45164 2012-07-23 15:22:40Z vvassilev $
+// version: $Id$
 // author:  Vassil Vassilev <vvasilev@cern.ch>
 //------------------------------------------------------------------------------
 

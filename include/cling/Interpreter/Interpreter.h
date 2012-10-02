@@ -99,6 +99,10 @@ namespace cling {
     ///
     bool m_DynamicLookupEnabled;
 
+    ///\brief Interpreter callbacks.
+    ///
+    llvm::OwningPtr<InterpreterCallbacks> m_Callbacks;
+
     ///\breif Helper that manages when the destructor of an object to be called.
     ///
     /// The object is registered first as an CXAAtExitElement and then cling
@@ -376,9 +380,12 @@ namespace cling {
     Value Evaluate(const char* expr, clang::DeclContext* DC,
                    bool ValuePrinterReq = false);
 
-    ///\brief Sets callbacks needed for the dynamic lookup.
+    ///\brief Interpreter callbacks accessors.
+    /// Note that this class takes ownership of any callback object given to it.
     ///
     void setCallbacks(InterpreterCallbacks* C);
+    const InterpreterCallbacks* getCallbacks() const {return m_Callbacks.get();}
+    InterpreterCallbacks* getCallbacks() { return m_Callbacks.get(); }
 
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///

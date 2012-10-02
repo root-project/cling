@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include "ASTDumper.h"
-#include "Transaction.h"
+#include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"

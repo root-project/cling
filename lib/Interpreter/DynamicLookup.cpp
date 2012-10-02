@@ -5,9 +5,9 @@
 //------------------------------------------------------------------------------
 
 #include "DynamicLookup.h"
-#include "Transaction.h"
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
+#include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
@@ -26,9 +26,7 @@ namespace cling {
   {}
 
   // pin the vtable to this file
-  DynamicIDHandler::~DynamicIDHandler(){
-    delete Callbacks;
-    Callbacks = 0;
+  DynamicIDHandler::~DynamicIDHandler() {
   }
 
   bool DynamicIDHandler::LookupUnqualified(LookupResult& R, Scope* S) {

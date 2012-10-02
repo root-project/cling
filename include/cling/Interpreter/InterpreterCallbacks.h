@@ -14,6 +14,7 @@ namespace clang {
 
 namespace cling {
   class Interpreter;
+  class Transaction;
 
   /// \brief  This interface provides a way to observe the actions of the
   /// interpreter as it does its thing.  Clients can define their hooks here to
@@ -43,8 +44,30 @@ namespace cling {
 
     /// \brief This callback is invoked whenever the interpreter needs to
     /// resolve the type and the adress of an object, which has been marked for
-    /// delayed evaluation from the interpreter's dynamic lookup extension
-    virtual bool LookupObject(clang::LookupResult& R, clang::Scope* S) = 0;
+    /// delayed evaluation from the interpreter's dynamic lookup extension.
+    ///
+    /// \param[out] R - Lookup result
+    /// \param[in] S - Scope
+    ///
+    /// \returns true if lookup result is found and should be used.
+    ///
+    virtual bool LookupObject(clang::LookupResult&, clang::Scope*) {
+      return false;
+    }
+
+    ///\brief This callback is invoked whenever interpreter has committed new
+    /// portion of declarations.
+    ///
+    ///\param[out] - The transaction that was committed.
+    ///
+    virtual void TransactionCommitted(const Transaction&) {}
+
+    ///\brief This callback is invoked whenever interpreter has reverted a
+    /// portion of declarations.
+    ///
+    ///\param[out] - The transaction that was reverted.
+    ///
+    virtual void TransactionUnloaded(const Transaction&) {};
   };
 } // end namespace cling
 

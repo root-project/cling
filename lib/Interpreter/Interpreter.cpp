@@ -6,17 +6,16 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
-#include "cling/Interpreter/LookupHelper.h"
-#include "cling/Utils/AST.h"
-
-#include "CompilationOptions.h"
 #include "DynamicLookup.h"
 #include "ExecutionContext.h"
 #include "IncrementalParser.h"
 
 #include "cling/Interpreter/CIFactory.h"
+#include "cling/Interpreter/CompilationOptions.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
+#include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Mangle.h"
@@ -652,9 +651,12 @@ namespace cling {
   }
 
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
+    m_Callbacks.reset(C);
+    // FIXME: Terrible hack breaking the encapsulation.
     Sema& S = getCI()->getSema();
-    assert(S.ExternalSource && "No ExternalSource set!");
-    static_cast<DynamicIDHandler*>(S.ExternalSource)->Callbacks = C;
+
+    if (S.ExternalSource)
+      static_cast<DynamicIDHandler*>(S.ExternalSource)->Callbacks = C;
   }
 
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {

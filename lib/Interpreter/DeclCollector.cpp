@@ -6,7 +6,7 @@
 
 #include "DeclCollector.h"
 
-#include "Transaction.h"
+#include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclGroup.h"

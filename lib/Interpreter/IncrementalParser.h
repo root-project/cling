@@ -8,8 +8,6 @@
 #define CLING_INCREMENTAL_PARSER_H
 
 #include "DeclCollector.h"
-#include "CompilationOptions.h"
-#include "Transaction.h"
 
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclGroup.h"
@@ -39,10 +37,12 @@ namespace clang {
 
 
 namespace cling {
+  class CompilationOptions;
   class CIFactory;
   class DeclCollector;
   class ExecutionContext;
   class Interpreter;
+  class Transaction;
   class TransactionTransformer;
 
   ///\brief Responsible for the incremental parsing and compilation of input.
