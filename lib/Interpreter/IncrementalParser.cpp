@@ -14,6 +14,7 @@
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
+#include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
