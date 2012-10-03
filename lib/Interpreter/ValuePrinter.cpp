@@ -97,23 +97,32 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
            = llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
     switch (BT->getKind()) {
     case clang::BuiltinType::Bool:
-      if (*(bool*)p) o << "true\n";
+      if (*(const bool*)p) o << "true\n";
       else o << "false\n"; break;
     case clang::BuiltinType::Char_U:
     case clang::BuiltinType::UChar:
     case clang::BuiltinType::Char_S:
-    case clang::BuiltinType::SChar:  StreamChar(o, *(char*)p); break;
-    case clang::BuiltinType::Short:  o << *(short*)p << "\n"; break;
-    case clang::BuiltinType::UShort: o << *(unsigned short*)p << "\n"; break;
-    case clang::BuiltinType::Int:    o << *(int*)p << "\n"; break;
-    case clang::BuiltinType::UInt:   o << *(unsigned int*)p << "\n"; break;
-    case clang::BuiltinType::Long:   o << *(long*)p << "\n"; break;
-    case clang::BuiltinType::ULong:  o << *(unsigned long*)p << "\n"; break;
-    case clang::BuiltinType::LongLong:  o << *(long long*)p << "\n"; break;
-    case clang::BuiltinType::ULongLong: o << *(unsigned long long*)p << "\n";
+    case clang::BuiltinType::SChar:  StreamChar(o, *(const char*)p); break;
+    case clang::BuiltinType::Short:  o << *(const short*)p << "\n"; break;
+    case clang::BuiltinType::UShort:
+      o << *(const unsigned short*)p << "\n";
       break;
-    case clang::BuiltinType::Float:  o << *(float*)p << "\n"; break;
-    case clang::BuiltinType::Double: o << *(double*)p << "\n"; break;
+    case clang::BuiltinType::Int:    o << *(const int*)p << "\n"; break;
+    case clang::BuiltinType::UInt:
+      o << *(const unsigned int*)p << "\n";
+      break;
+    case clang::BuiltinType::Long:   o << *(const long*)p << "\n"; break;
+    case clang::BuiltinType::ULong:
+      o << *(const unsigned long*)p << "\n";
+      break;
+    case clang::BuiltinType::LongLong:
+      o << *(const long long*)p << "\n";
+      break;
+    case clang::BuiltinType::ULongLong:
+      o << *(const unsigned long long*)p << "\n";
+      break;
+    case clang::BuiltinType::Float:  o << *(const float*)p << "\n"; break;
+    case clang::BuiltinType::Double: o << *(const double*)p << "\n"; break;
     default:
       StreamObj(o, p, VPI);
     }
@@ -126,7 +135,7 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
   else if (Ty->isEnumeralType()) {
     StreamObj(o, p, VPI);
     clang::EnumDecl* ED = Ty->getAs<clang::EnumType>()->getDecl();
-    uint64_t value = *(uint64_t*)p;
+    uint64_t value = *(const uint64_t*)p;
     bool IsFirst = true;
     llvm::APSInt ValAsAPSInt = C.MakeIntValue(value, Ty);
     for (clang::EnumDecl::enumerator_iterator I = ED->enumerator_begin(),
