@@ -827,14 +827,14 @@ printf("func_B_ctr1_args: 0x%lx\n", (unsigned long) func_B_ctr1_args);
 //CHECK: func_B_ctr1_args: 0x{{[1-9a-f][0-9a-f]*$}}
 
 func_B_ctr1_args->print(llvm::outs());
-//CHECK-NEXT: B() : m_B_i(0), m_B_d(0), m_B_ip(0) {
+//CHECK-NEXT: B() : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT: }
 
 printf("func_B_ctr1_proto: 0x%lx\n", (unsigned long) func_B_ctr1_proto);
 //CHECK: func_B_ctr1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 
 func_B_ctr1_proto->print(llvm::outs());
-//CHECK-NEXT: B() : m_B_i(0), m_B_d(0), m_B_ip(0) {
+//CHECK-NEXT: B() : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT: }
 
 const clang::FunctionDecl* func_B_ctr2_args = lookup.findFunctionArgs(class_B, "B", "0,0.0");
@@ -897,9 +897,9 @@ printf("func_B_ctr4_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr4_args name: B::B<char>
 
 func_B_ctr4_args->print(llvm::outs());
-//CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0), m_B_ip(0) {
+//CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT:     this->m_B_i = (long)(char *)v;
-//CHECK-NEXT:     this->m_B_d = 1;
+//CHECK-NEXT:     this->m_B_d = 1.;
 //CHECK-NEXT: }
 
 printf("func_B_ctr4_proto: 0x%lx\n", (unsigned long) func_B_ctr4_proto);

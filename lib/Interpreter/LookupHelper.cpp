@@ -618,7 +618,7 @@ namespace cling {
           //  Do template argument deduction and function argument matching.
           //
           FunctionDecl* Specialization;
-          sema::TemplateDeductionInfo TDI(Context, SourceLocation());
+          sema::TemplateDeductionInfo TDI( (SourceLocation()) );
           Sema::TemplateDeductionResult TDR 
             = S.DeduceTemplateArguments(FTD,
                          const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
