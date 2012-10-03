@@ -6,6 +6,7 @@
 
 #include "DynamicLookup.h"
 
+#include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
@@ -20,10 +21,9 @@ using namespace clang;
 
 namespace cling {
 
-  // Constructor
-  DynamicIDHandler::DynamicIDHandler(Sema* Sema)
-    : Callbacks(0), m_Sema(Sema), m_Context(Sema->getASTContext())
-  {}
+  DynamicIDHandler::DynamicIDHandler(Interpreter* interp)
+    : m_Interpreter(interp) { }
+
 
   // pin the vtable to this file
   DynamicIDHandler::~DynamicIDHandler() {
@@ -34,19 +34,21 @@ namespace cling {
     if (!IsDynamicLookup(R, S))
       return false;
 
-    if (Callbacks && Callbacks->isEnabled()) {
-      return Callbacks->LookupObject(R, S);
+    InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
+    if (callbacks && callbacks->isEnabled()) {
+      return callbacks->LookupObject(R, S);
     }
 
     DeclarationName Name = R.getLookupName();
     IdentifierInfo* II = Name.getAsIdentifierInfo();
     SourceLocation Loc = R.getNameLoc();
-    VarDecl* Result = VarDecl::Create(m_Context,
+    ASTContext& C = m_Interpreter->getSema().getASTContext();
+    VarDecl* Result = VarDecl::Create(C,
                                       R.getSema().getFunctionLevelDeclContext(),
                                       Loc,
                                       Loc,
                                       II,
-                                      m_Context.DependentTy,
+                                      C.DependentTy,
                                       /*TypeSourceInfo*/0,
                                       SC_None,
                                       SC_None);
@@ -74,7 +76,7 @@ namespace cling {
     //   or function template.
     //
     // We want to ignore object(.|->)member<template>
-    if (m_Sema->PP.LookAhead(0).getKind() == tok::less)
+    if (m_Interpreter->getSema().PP.LookAhead(0).getKind() == tok::less)
       // TODO: check for . or -> in the cached token stream
       return false;
 

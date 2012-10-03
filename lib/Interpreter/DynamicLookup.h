@@ -23,7 +23,7 @@ namespace clang {
 
 namespace cling {
 
-  class InterpreterCallbacks;
+  class Interpreter;
 
   /// \brief Provides last chance of recovery for clang semantic analysis.
   /// When the compiler doesn't find the symbol in its symbol table it asks
@@ -36,9 +36,13 @@ namespace cling {
   /// One have to be carefull in the cases, in which the compiler expects that
   /// the lookup will fail!
   class DynamicIDHandler : public clang::ExternalSemaSource {
+  private:
+
+    ///\brief The interpreter, whose callbacks we are using.
+    ///
+    Interpreter* m_Interpreter;
   public:
-    InterpreterCallbacks* Callbacks;
-    DynamicIDHandler(clang::Sema* Sema);
+    DynamicIDHandler(Interpreter* interp);
     ~DynamicIDHandler();
 
     /// \brief Provides last resort lookup for failed unqualified lookups
@@ -54,8 +58,6 @@ namespace cling {
     virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S);
 
   private:
-    clang::Sema* m_Sema;
-    clang::ASTContext& m_Context;
 
     /// \brief Checks whether the failed lookup is not expected from the
     /// compiler to fail.
@@ -178,9 +180,6 @@ namespace cling {
     /// in EvaluateT call.
     clang::CXXRecordDecl* m_DeclContextDecl;
 
-    /// \brief Sema's external source, which provides last resort lookup.
-    llvm::OwningPtr<DynamicIDHandler> m_DynIDHandler;
-
     /// \brief Keeps track of the replacements being made. If an AST node is
     /// changed with another it should be added to the map (newNode->oldNode).
     MapTy m_SubstSymbolMap;
@@ -252,17 +251,6 @@ namespace cling {
     ASTNodeInfo VisitDeclRefExpr(clang::DeclRefExpr* DRE);
     ASTNodeInfo VisitDependentScopeDeclRefExpr(
                                         clang::DependentScopeDeclRefExpr* Node);
-
-    ///\brief Sets callbacks so that DynamicIDHandler can use them, when it sees
-    /// the unknown symbol again at runtime. This time the implementation of the
-    /// LookupObject callback should provide the actual definition of the object
-    /// and the lookup may succeed.
-    ///
-    /// @param[in] C The concrete implementation of the callback interface.
-    ///
-    void SetCallbacks(InterpreterCallbacks* C) {
-      m_DynIDHandler->Callbacks = C;
-    }
 
   protected:
 

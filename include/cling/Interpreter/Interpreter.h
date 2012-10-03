@@ -27,6 +27,7 @@ namespace clang {
   class DeclContext;
   class NamedDecl;
   class MangleContext;
+  class Sema;
 }
 
 namespace cling {
@@ -358,6 +359,7 @@ namespace cling {
     void enablePrintAST(bool print = true) { m_PrintAST = print;}
 
     clang::CompilerInstance* getCI() const;
+    const clang::Sema& getSema() const;
     llvm::ExecutionEngine* getExecutionEngine() const;
 
     llvm::Module* getModule() const;
