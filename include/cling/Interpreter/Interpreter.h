@@ -360,6 +360,7 @@ namespace cling {
 
     clang::CompilerInstance* getCI() const;
     const clang::Sema& getSema() const;
+    clang::Sema& getSema();
     llvm::ExecutionEngine* getExecutionEngine() const;
 
     llvm::Module* getModule() const;
