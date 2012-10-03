@@ -8,7 +8,7 @@
 #include "cling/Utils/AST.h"
 #include "clang/AST/Type.h"
 #include "llvm/ADT/SmallSet.h"
-#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Sema.h"
 
 .rawInput 1
 
@@ -50,7 +50,7 @@ namespace NS {
 
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
 
-const clang::ASTContext& Ctx = gCling->getCI()->getASTContext();
+const clang::ASTContext& Ctx = gCling->getSema().getASTContext();
 llvm::SmallSet<const clang::Type*, 4> skip;
 skip.insert(lookup.findType("Double32_t").getTypePtr());
 const clang::Type* t = 0;

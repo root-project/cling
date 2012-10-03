@@ -12,7 +12,6 @@
 
 #include "cling/Utils/AST.h"
 
-#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Lookup.h"
 
 namespace cling {
@@ -74,7 +73,7 @@ namespace cling {
         // Only for demo resolve all unknown objects to cling::test::Tester
         if (m_Enabled) {
           if (!m_TesterDecl) {
-            clang::Sema& S = m_Interpreter->getCI()->getSema();
+            clang::Sema& S = m_Interpreter->getSema();
             clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&S, "cling");
             NSD = utils::Lookup::Namespace(&S, "test", NSD);
             m_TesterDecl = utils::Lookup::Named(&S, "Tester", NSD);

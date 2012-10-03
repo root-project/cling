@@ -5,7 +5,6 @@ extern "C" int printf(const char*,...);
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/AST.h"
 #include "clang/AST/Decl.h"
-#include "clang/Frontend/CompilerInstance.h"
 .rawInput
 const char* comp(void* A, void* B) {
   if (A == B) { return "equal"; }
@@ -14,7 +13,7 @@ const char* comp(void* A, void* B) {
 .rawInput
 
 bool fromJIT = false;
-clang::Sema& sema = gCling->getCI()->getSema();
+clang::Sema& sema = gCling->getSema();
 int gMyGlobal = 12;
 void* addr1 = &gMyGlobal;
 clang::NamedDecl* D = cling::utils::Lookup::Named(&sema, "gMyGlobal");

@@ -8,10 +8,10 @@ extern "C" int cling_testlibrary_function();
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Interpreter/Callable.h"
-#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Sema.h"
 #include "clang/AST/ASTContext.h"
 
-const clang::Decl* TU = gCling->getCI()->getASTContext().getTranslationUnitDecl();
+const clang::Decl* TU = gCling->Sema().getASTContext().getTranslationUnitDecl();
 const clang::FunctionDecl* F = gCling->lookupFunctionProto(TU, "cling_testlibrary_function", "");
 assert(F && "cling_testlibrary_function() decl not found");
 cling::Callable Call(*F, *gCling);

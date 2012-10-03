@@ -5,7 +5,6 @@
 #include "cling/Interpreter/LookupHelper.h"
 
 #include "clang/AST/Expr.h"
-#include "clang/Frontend/CompilerInstance.h"
 
 #include "llvm/ADT/SmallVector.h"
 
@@ -24,8 +23,8 @@ clang::PrintingPolicy Policy(G->getASTContext().getPrintingPolicy());
 
 lookup.findArgList("a, a", exprs);
 
-exprs[0]->dumpPretty(getCI()->getASTContext());
+exprs[0]->dumpPretty(gCling->getSema().getASTContext());
 //CHECK: a
-exprs[1]->dumpPretty(getCI()->getASTContext());
+exprs[1]->dumpPretty(gCling->getSema().getASTContext());
 //CHECK: a
 .q
