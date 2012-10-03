@@ -46,9 +46,6 @@ namespace cling {
     /// resolve the type and the adress of an object, which has been marked for
     /// delayed evaluation from the interpreter's dynamic lookup extension.
     ///
-    /// \param[out] R - Lookup result
-    /// \param[in] S - Scope
-    ///
     /// \returns true if lookup result is found and should be used.
     ///
     virtual bool LookupObject(clang::LookupResult&, clang::Scope*) {
