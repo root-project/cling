@@ -40,7 +40,7 @@ namespace cling {
 
     ///\brief The interpreter, whose callbacks we are using.
     ///
-    Interpreter* m_Interpreter;
+    Interpreter* m_Interpreter; // doesn't own it.
   public:
     DynamicIDHandler(Interpreter* interp);
     ~DynamicIDHandler();
