@@ -60,7 +60,7 @@ static void StreamObj(llvm::raw_ostream& o, const void* v,
   const clang::Type* Ty = VPI.getExpr()->getType().getTypePtr();
   if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl())
     if (CXXRD->getQualifiedNameAsString().compare("cling::Value") == 0) {
-      cling::Value* V = (cling::Value*)v;
+      const cling::Value* V = (const cling::Value*)v;
       if (V->isValid()) {
         o << "boxes [";
         const clang::ASTContext& C = *VPI.getASTContext();
