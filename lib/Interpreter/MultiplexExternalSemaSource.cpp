@@ -11,6 +11,13 @@
 using namespace clang;
 
 namespace cling {
+  MultiplexExternalSemaSource::MultiplexExternalSemaSource(
+                                   llvm::ArrayRef<ExternalSemaSource*> sources) {
+    for (size_t i = 0; i < sources.size(); ++i)
+      m_Sources.push_back(sources[i]);
+  }
+
+
   // pin the vtable here.
   MultiplexExternalSemaSource::~MultiplexExternalSemaSource() {}
 

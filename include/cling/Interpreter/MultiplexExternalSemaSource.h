@@ -10,6 +10,7 @@
 #include "clang/Sema/ExternalSemaSource.h"
 #include "clang/Sema/Weak.h"
 
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 
 #include <utility>
@@ -36,10 +37,15 @@ namespace cling {
 class MultiplexExternalSemaSource : public clang::ExternalSemaSource {
 
 private:
-  llvm::SmallVector<ExternalSemaSource*, 4> m_Sources;
+  llvm::SmallVector<ExternalSemaSource*, 4> m_Sources; // doesn't own them.
 
 public:
-  MultiplexExternalSemaSource() { }
+
+  ///\brief Constructs the external source with given elements.
+  ///
+  ///\param[in] sources - Array of ExternalSemaSources.
+  ///
+  MultiplexExternalSemaSource(llvm::ArrayRef<ExternalSemaSource*> sources);
 
   ~MultiplexExternalSemaSource();
 
