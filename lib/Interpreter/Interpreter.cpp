@@ -193,6 +193,10 @@ namespace cling {
     m_ExecutionContext->addSymbol("local_cxa_atexit",
                   (void*)(intptr_t)&cling::runtime::internal::local_cxa_atexit);
 
+    // Enable incremental processing, which prevents the preprocessor destroying
+    // the lexer on EOF token.
+    getSema().getPreprocessor().enableIncrementalProcessing();
+
     if (getCI()->getLangOpts().CPlusPlus) {
       // Set up common declarations which are going to be available
       // only at runtime
@@ -659,6 +663,11 @@ namespace cling {
 
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
     m_Callbacks.reset(C);
+    Sema& S = getCI()->getSema();
+    if (!C)
+      delete S.ExternalSource;
+    else
+      S.ExternalSource = new DynamicIDHandler(this);
   }
 
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {

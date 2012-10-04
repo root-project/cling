@@ -276,6 +276,7 @@ namespace cling {
        PP.EnterSourceFile(m_CI->getSourceManager().getMainFileID(),
                           0, SourceLocation());
     }
+    assert(PP.isIncrementalProcessingEnabled() && "Not in incremental mode!?");
     PP.enableIncrementalProcessing();
 
     DClient.BeginSourceFile(m_CI->getLangOpts(), &PP);
@@ -327,8 +328,6 @@ namespace cling {
     S.PerformPendingInstantiations();
 
     DClient.EndSourceFile();
-
-    PP.enableIncrementalProcessing(false);
 
     DiagnosticsEngine& Diag = S.getDiagnostics();
     if (Diag.hasErrorOccurred())
