@@ -27,19 +27,16 @@ namespace cling {
       /// of our type
       int64_t getAllocSizeInBytes(const clang::ASTContext& ctx) const;
 
-      /// \brief Take ownership of an existing char[]
-      void adopt(char* addr);
-
       /// \brief Memory allocated for value, owned by this value
       ///
       /// Points to memory allocated for storing the value, if it
       /// does not fit into Value::value.
-      char* Mem;
+      char* m_Mem;
     };
 
-    llvm::IntrusiveRefCntPtr<StoredValue> fValue;
+    llvm::IntrusiveRefCntPtr<StoredValue> m_Value;
 
-    StoredValueRef(StoredValue* value): fValue(value) {}
+    StoredValueRef(StoredValue* value): m_Value(value) {}
 
   public:
     /// \brief Allocate an object of type t and return a StoredValueRef to it.
@@ -51,7 +48,7 @@ namespace cling {
     /// \brief Create a bitwise copy of svalue.
     static StoredValueRef bitwiseCopy(const clang::ASTContext& ctx,
                                       const StoredValueRef svalue) {
-      return bitwiseCopy(ctx, *svalue.fValue);
+      return bitwiseCopy(ctx, *svalue.m_Value);
     }
 
     static StoredValueRef invalidValue() { return StoredValueRef(); }
@@ -63,33 +60,12 @@ namespace cling {
     //
     /// Determine whether the Value has been set by checking
     /// whether the type is valid.
-    bool isValid() const { return fValue; }
+    bool isValid() const { return m_Value; }
 
     /// \brief Determine whether the Value needs to manage an allocation.
-    bool needsManagedAllocation() const { return fValue->Mem; }
+    bool needsManagedAllocation() const { return m_Value->m_Mem; }
 
-    /// \brief Determine whether the Value is set but void.
-    /// For compatibility with cling::Value.
-    bool isVoid(const clang::ASTContext&) const { return isVoid(); }
-    /// \brief Determine whether the Value is set but void.
-    /// For compatibility with cling::Value.
-    bool isVoid() const { return false; }
-
-    /// \brief Determine whether the Value is set and not void.
-    //
-    /// Determine whether the Value is set and not void.
-    /// Only in this case can getAs() or simplisticCastAs() be called.
-    /// For compatibility with cling::Value.
-    bool hasValue(const clang::ASTContext& ASTContext) const {
-      return hasValue(); }
-    /// \brief Determine whether the Value is set and not void.
-    //
-    /// Determine whether the Value is set and not void.
-    /// Only in this case can getAs() or simplisticCastAs() be called.
-    /// For compatibility with cling::Value.
-    bool hasValue() const { return isValid(); }
-
-    const Value& get() const { return *fValue; }
+    const Value& get() const { return *m_Value; }
   };
 } // end namespace cling
 

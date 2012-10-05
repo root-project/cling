@@ -12,29 +12,23 @@ using namespace clang;
 using namespace llvm;
 
 StoredValueRef::StoredValue::StoredValue(const ASTContext& ctx, QualType t):
-Mem(0) {
+m_Mem(0) {
   type = t;
   if (!(t->isIntegralOrEnumerationType()
         || t->isRealFloatingType()
         || t->hasPointerRepresentation())) {
-    Mem = new char[getAllocSizeInBytes(ctx)];
-    value = llvm::PTOGV(Mem);
+    m_Mem = new char[getAllocSizeInBytes(ctx)];
+    value = llvm::PTOGV(m_Mem);
   };
 }
 
 StoredValueRef::StoredValue::~StoredValue() {
-  delete [] Mem;
+  delete [] m_Mem;
 }
 
 int64_t StoredValueRef::StoredValue::getAllocSizeInBytes(
                                                   const ASTContext& ctx) const {
   return ctx.getTypeSizeInChars(type).getQuantity();
-}
-
-void StoredValueRef::StoredValue::adopt(char* addr) {
-  delete [] Mem;
-  Mem = addr;
-  value.PointerVal = Mem;
 }
 
 
@@ -47,8 +41,8 @@ StoredValueRef StoredValueRef::allocate(const ASTContext& ctx, QualType t) {
 StoredValueRef StoredValueRef::bitwiseCopy(const ASTContext& ctx,
                                            const Value& value) {
   StoredValue* SValue = new StoredValue(ctx, value.type);
-  if (SValue->Mem) {
-    memcpy(SValue->Mem, value.value.PointerVal,
+  if (SValue->m_Mem) {
+    memcpy(SValue->m_Mem, value.value.PointerVal,
            SValue->getAllocSizeInBytes(ctx));
   } else {
     SValue->value = value.value;
