@@ -33,6 +33,7 @@ add_cling_library(clingInterpreter
   InvocationOptions.cpp
   LookupHelper.cpp
   MultiplexExternalSemaSource.cpp
+  StoredValueRef.cpp
   Transaction.cpp
   ValuePrinter.cpp
   ValuePrinterInfo.cpp
