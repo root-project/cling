@@ -6,7 +6,7 @@
 
 #include "ExecutionContext.h"
 
-#include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/StoredValueRef.h"
 
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
@@ -123,7 +123,9 @@ ExecutionContext::NotifyLazyFunctionCreators(const std::string& mangled_name)
 
 void
 ExecutionContext::executeFunction(llvm::StringRef funcname,
-                                  llvm::GenericValue* returnValue)
+                                  const clang::ASTContext& Ctx,
+                                  clang::QualType retType,
+                                  StoredValueRef* returnValue)
 {
   // Call a function without arguments, or with an SRet argument, see SRet below
 
@@ -172,22 +174,26 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
 
   std::vector<llvm::GenericValue> args;
   bool wantReturn = (returnValue);
+  StoredValueRef aggregateRet;
 
   if (f->hasStructRetAttr()) {
     // Function expects to receive the storage for the returned aggregate as
-    // first argument. Make sure returnValue is able to receive it, i.e.
-    // that it has the pointer set:
-    assert(returnValue && GVTOP(*returnValue) && \
-           "must call function returning aggregate with returnValue pointing " \
-           "to the storage space for return value!");
-
-    args.push_back(*returnValue);
+    // first argument. Allocate returnValue:
+    aggregateRet = StoredValueRef::allocate(Ctx, retType);
+    if (returnValue) {
+      *returnValue = aggregateRet;
+    } else {
+      returnValue = &aggregateRet;
+    }
+    args.push_back(returnValue->get().value);
     // will get set as arg0, must not assign.
     wantReturn = false;
   }
 
   if (wantReturn) {
-    *returnValue = m_engine->runFunction(f, args);
+    llvm::GenericValue gvRet = m_engine->runFunction(f, args);
+    // rescue the ret value (which might be aggregate) from the stack
+    *returnValue = StoredValueRef::bitwiseCopy(Ctx, Value(gvRet, retType));
   } else {
     m_engine->runFunction(f, args);
   }

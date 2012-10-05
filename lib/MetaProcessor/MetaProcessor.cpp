@@ -162,7 +162,8 @@ namespace cling {
 
   MetaProcessor::~MetaProcessor() {}
 
-  int MetaProcessor::process(const char* input_text, Value* result /*=0*/) {
+  int MetaProcessor::process(const char* input_text,
+                             StoredValueRef* result /*=0*/) {
     if (!input_text) { // null pointer, nothing to do.
       return 0;
     }
@@ -208,7 +209,8 @@ namespace cling {
   //                 arg_list := any_string[(extra_arg_list)] [' ' arg_list]
   //                 extra_arg_list := any_string [, extra_arg_list]
   //
-  bool MetaProcessor::ProcessMeta(const std::string& input_line, Value* result){
+  bool MetaProcessor::ProcessMeta(const std::string& input_line,
+                                  StoredValueRef* result){
 
    llvm::MemoryBuffer* MB = llvm::MemoryBuffer::getMemBuffer(input_line);
    Token Tok;
@@ -416,7 +418,7 @@ namespace cling {
 
   // Run a file: .x file[(args)]
   bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
-                                  Value* result) {
+                                  StoredValueRef* result) {
     // Look for start of parameters:
     typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 

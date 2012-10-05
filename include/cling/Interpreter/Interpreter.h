@@ -27,6 +27,7 @@ namespace clang {
   class DeclContext;
   class NamedDecl;
   class MangleContext;
+  class QualType;
   class Sema;
 }
 
@@ -45,7 +46,7 @@ namespace cling {
   class IncrementalParser;
   class InterpreterCallbacks;
   class LookupHelper;
-  class Value;
+  class StoredValueRef;
 
   ///\brief Class that implements the interpreter-like behavior. It manages the
   /// incremental compilation.
@@ -186,7 +187,7 @@ namespace cling {
     ///
     CompilationResult EvaluateInternal(const std::string& input,
                                        const CompilationOptions& CO,
-                                       Value* V = 0);
+                                       StoredValueRef* V = 0);
 
     ///\brief Wraps a given input.
     ///
@@ -207,7 +208,8 @@ namespace cling {
     ///
     ///\returns true if successful otherwise false.
     ///
-    bool RunFunction(llvm::StringRef fname, llvm::GenericValue* res = 0);
+     bool RunFunction(llvm::StringRef fname, clang::QualType retType,
+                      StoredValueRef* res = 0);
 
     ///\brief Super efficient way of creating unique names, which will be used
     /// as a part of the compilation process.
@@ -283,7 +285,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult process(const std::string& input, Value* V = 0,
+    CompilationResult process(const std::string& input, StoredValueRef* V = 0,
                               const clang::Decl** D = 0);
 
     ///\brief Parses input line, which doesn't contain statements. No code 
@@ -325,7 +327,7 @@ namespace cling {
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult evaluate(const std::string& input,
-                               Value* V = 0);
+                               StoredValueRef* V = 0);
 
     ///\brief Compiles input line, which contains only expressions and prints
     /// out the result of its execution.
@@ -340,7 +342,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult echo(const std::string& input, Value* V = 0);
+    CompilationResult echo(const std::string& input, StoredValueRef* V = 0);
 
     ///\brief Loads header file or shared library.
     ///
@@ -380,8 +382,8 @@ namespace cling {
     ///
     ///\returns The result of the evaluation if the expression.
     ///
-    Value Evaluate(const char* expr, clang::DeclContext* DC,
-                   bool ValuePrinterReq = false);
+    StoredValueRef Evaluate(const char* expr, clang::DeclContext* DC,
+                            bool ValuePrinterReq = false);
 
     ///\brief Interpreter callbacks accessors.
     /// Note that this class takes ownership of any callback object given to it.

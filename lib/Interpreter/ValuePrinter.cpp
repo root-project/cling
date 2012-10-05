@@ -8,6 +8,7 @@
 
 #include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/ValuePrinterInfo.h"
+#include "cling/Interpreter/StoredValueRef.h"
 #include "cling/Interpreter/Value.h"
 
 #include "clang/AST/ASTContext.h"
@@ -58,31 +59,42 @@ static void StreamPtr(llvm::raw_ostream& o, const void* v) {
 static void StreamObj(llvm::raw_ostream& o, const void* v,
                       const cling::ValuePrinterInfo& VPI) {
   const clang::Type* Ty = VPI.getExpr()->getType().getTypePtr();
-  if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl())
-    if (CXXRD->getQualifiedNameAsString().compare("cling::Value") == 0) {
-      const cling::Value* V = (const cling::Value*)v;
-      if (V->isValid()) {
+  if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl()) {
+    const cling::Value* value = 0;
+    if (CXXRD->getQualifiedNameAsString().compare("cling::StoredValueRef") == 0) {
+      const cling::StoredValueRef* VR = (const cling::StoredValueRef*)v;
+      if (VR->isValid()) {
+        value = &VR->get();
+      } else {
+        o << "<<<invalid>>> ";
+      }
+    } else if (CXXRD->getQualifiedNameAsString().compare("cling::Value") == 0) {
+      value = (const cling::Value*)v;
+    }
+    if (value) {
+      if (value->isValid()) {
         o << "boxes [";
         const clang::ASTContext& C = *VPI.getASTContext();
         o <<
           "(" <<
-          V->type.getAsString(C.getPrintingPolicy()) <<
+          value->type.getAsString(C.getPrintingPolicy()) <<
           ") ";
-        clang::QualType valType = V->type.getDesugaredType(C);
+        clang::QualType valType = value->type.getDesugaredType(C);
         if (valType->isPointerType())
-          o << V->value.PointerVal;
+          o << value->value.PointerVal;
         else if (valType->isFloatingType())
-          o << V->value.DoubleVal;
+          o << value->value.DoubleVal;
         else if (valType->isIntegerType())
-          o << V->value.IntVal.getSExtValue();
+          o << value->value.IntVal.getSExtValue();
         else if (valType->isBooleanType())
-          o << V->value.IntVal.getBoolValue();
+          o << value->value.IntVal.getBoolValue();
         o << "]\n";
 
         return;
       } else
         o << "<<<invalid>>> ";
     }
+  } // if CXXRecordDecl
 
   // TODO: Print the object members.
   o << "@" << v << "\n";

@@ -15,17 +15,15 @@
 namespace llvm {
   class Module;
   class ExecutionEngine;
-  struct GenericValue;
 }
 
 namespace clang {
-  class CompilerInstance;
-  class CodeGenerator;
+  class QualType;
+  class ASTContext;
 }
 
 namespace cling {
-  class Interpreter;
-  class Value;
+  class StoredValueRef;
 
   class ExecutionContext {
   public:
@@ -42,7 +40,9 @@ namespace cling {
     void runStaticDestructorsOnce(llvm::Module* m);
 
     void executeFunction(llvm::StringRef function,
-                         llvm::GenericValue* returnValue = 0);
+                         const clang::ASTContext& Ctx,
+                         clang::QualType retType,
+                         StoredValueRef* returnValue = 0);
 
     ///\brief Adds a symbol (function) to the execution engine.
     ///

@@ -5,10 +5,10 @@
 
 // PR #96277
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/StoredValueRef.h"
 #include <stdio.h>
 gCling->declare("int print() { printf(\"print is run.\\n\"); return 1; }");
-cling::Value V;
+cling::StoredValueRef V;
 gCling->process("int a = print();",&V);
 //CHECK: print is run.
 gCling->process("a", &V);

@@ -21,7 +21,7 @@ namespace cling {
 
   class Interpreter;
   class InputValidator;
-  class Value;
+  class StoredValueRef;
 
   class MetaProcessorOpts {
   public:
@@ -91,7 +91,8 @@ namespace cling {
     ///
     ///\returns true if the command was known and thus handled.
     ///
-    bool ProcessMeta(const std::string& input_line, cling::Value* result);
+    bool ProcessMeta(const std::string& input_line,
+                     cling::StoredValueRef* result);
 
     ///\brief Shows help for the use of interpreter's meta commands
     ///
@@ -110,26 +111,26 @@ namespace cling {
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement
     /// @param[in] input_line - the user input
-    /// @param[out] result - the cling::Value as result of the execution of the
-    ///             last statement
+    /// @param[out] result - the cling::StoredValueRef as result of the
+    ///             execution of the last statement
     ///
     ///\returns 0 on success or the indentation of the next input line should
     /// have in case of multi input mode.
     ///
-    int process(const char* input_line, cling::Value* result = 0);
+    int process(const char* input_line, cling::StoredValueRef* result = 0);
 
     ///\brief Executes a file given the CINT specific rules. Mainly used as:
     /// .x filename[(args)], which in turn includes the filename and runs a
     /// function with signature void filename(args)
     /// @param[in] file - the filename
     /// @param[in] args - the args without ()
-    /// @param[out] result - the cling::Value as result of the execution of the
-    ///             last statement
+    /// @param[out] result - the cling::StoredValueRef as result of the
+    ///             execution of the last statement
     ///
     ///\returns true on success
     ///
     bool executeFile(llvm::StringRef file, llvm::StringRef args, 
-                     cling::Value* result = 0);
+                     cling::StoredValueRef* result = 0);
 
   };
 } // end namespace cling

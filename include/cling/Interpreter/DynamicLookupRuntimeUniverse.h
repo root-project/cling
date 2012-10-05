@@ -15,7 +15,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/ValuePrinter.h"
-#include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/StoredValueRef.h"
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -48,13 +48,13 @@ namespace runtime {
     /// evaluated at runtime.
     template<typename T>
     T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      Value result(gCling->Evaluate(ExprInfo->getExpr(), DC,
-                                    ExprInfo->isValuePrinterRequested())
-                   );
+      StoredValueRef result(gCling->Evaluate(ExprInfo->getExpr(), DC,
+                                            ExprInfo->isValuePrinterRequested())
+                            );
       // Check whether the expected return type and the actual return type are
       // compatible with Sema::CheckAssingmentConstraints or
       // ASTContext::typesAreCompatible.
-      return result.getAs<T>();
+      return result.get().getAs<T>();
     }
 
     /// \brief EvaluateT specialization for the case where we instantiate with
@@ -109,10 +109,10 @@ namespace runtime {
         std::string ctor("new ");
         ctor += type;
         ctor += ExprInfo->getExpr();
-        Value res = gCling->Evaluate(ctor.c_str(), DC,
+        StoredValueRef res = gCling->Evaluate(ctor.c_str(), DC,
                                      ExprInfo->isValuePrinterRequested()
                                      );
-        m_Memory = (void*)res.value.PointerVal;
+        m_Memory = (void*)res.get().value.PointerVal;
       }
 
       ///\brief Returns the created object.
