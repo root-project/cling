@@ -31,13 +31,13 @@ namespace cling {
 
   bool DynamicIDHandler::LookupUnqualified(LookupResult& R, Scope* S) {
 
-    if (!IsDynamicLookup(R, S))
-      return false;
-
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
     if (callbacks && callbacks->isEnabled()) {
       return callbacks->LookupObject(R, S);
     }
+
+    if (!IsDynamicLookup(R, S))
+      return false;
 
     DeclarationName Name = R.getLookupName();
     IdentifierInfo* II = Name.getAsIdentifierInfo();
