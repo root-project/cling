@@ -179,6 +179,6 @@ public:
   static bool classof(const MultiplexExternalSemaSource*) { return true; }
 }; 
 
-} // end namespace clang
+} // end namespace cling
 
 #endif // CLING_MULTIPLEX_EXTERNAL_SEMA_SOURCE_H
