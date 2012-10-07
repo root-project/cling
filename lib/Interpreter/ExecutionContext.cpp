@@ -102,7 +102,10 @@ void unresolvedSymbol()
 void* ExecutionContext::HandleMissingFunction(const std::string& mangled_name)
 {
   // Not found in the map, add the symbol in the list of unresolved symbols
-  m_unresolvedSymbols.insert(mangled_name);
+  if (m_unresolvedSymbols.insert(mangled_name).second) {
+    llvm::errs() << "ExecutionContext: use of undefined symbol '"
+                 << mangled_name << "'!\n";
+  }
 
   // Avoid "ISO C++ forbids casting between pointer-to-function and
   // pointer-to-object":
