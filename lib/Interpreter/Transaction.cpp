@@ -28,16 +28,16 @@ namespace cling {
   }
 
   void Transaction::dump() const {
-		ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
-		PrintingPolicy Policy = C.getPrintingPolicy();
-		Policy.DumpSourceManager = &C.getSourceManager();
-		print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+    ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
+    PrintingPolicy Policy = C.getPrintingPolicy();
+    Policy.DumpSourceManager = &C.getSourceManager();
+    print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::dumpPretty() const {
-		ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
-		PrintingPolicy Policy(C.getLangOpts());
-		print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+    ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
+    PrintingPolicy Policy(C.getLangOpts());
+    print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::print(llvm::raw_ostream& Out, const PrintingPolicy& Policy,
@@ -57,7 +57,7 @@ namespace cling {
         Out<<"+====================================================+\n";
       }
       for (DeclGroupRef::const_iterator J = I->begin(), L = I->end(); J != L;++J)
-				(*J)->print(Out, Policy, Indent, PrintInstantiation);
+        (*J)->print(Out, Policy, Indent, PrintInstantiation);
     }
   }
 
