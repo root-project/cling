@@ -389,8 +389,12 @@ namespace utils {
 
   NamedDecl* Lookup::Named(Sema* S, const char* Name, DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);
+    return Lookup::Named(S, DName, Within);
+  }
 
-    LookupResult R(*S, DName, SourceLocation(), Sema::LookupOrdinaryName,
+  NamedDecl* Lookup::Named(Sema* S, const DeclarationName& Name, 
+                           DeclContext* Within) {
+    LookupResult R(*S, Name, SourceLocation(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
     if (!Within)
       S->LookupName(R, S->TUScope);

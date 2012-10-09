@@ -13,6 +13,7 @@ namespace clang {
   class ASTContext;
   class Expr;
   class DeclContext;
+  class DeclarationName;
   class NamedDecl;
   class NamespaceDecl;
   class QualType;
@@ -64,11 +65,45 @@ namespace utils {
   /// 
   class Lookup {
   public:
+
+    ///\brief Quick lookup for a single namespace declaration in a given 
+    /// declaration context.
+    ///
+    ///\param[in] S - Semantic Analysis object doing the lookup.
+    ///\param[in] Name - The name we are looking up.
+    ///\param[in] Within - The context within the lookup is done. If 0 the 
+    ///                    TranslationUnitDecl is used.
+    ///\returns the found result (if single) or 0.
+    ///
     static clang::NamespaceDecl* Namespace(clang::Sema* S,
                                            const char* Name,
                                            clang::DeclContext* Within = 0);
+
+    ///\brief Quick lookup for a single named declaration in a given 
+    /// declaration context.
+    ///
+    ///\param[in] S - Semantic Analysis object doing the lookup.
+    ///\param[in] Name - The name we are looking up.
+    ///\param[in] Within - The context within the lookup is done. If 0 the 
+    ///                    TranslationUnitDecl is used.
+    ///\returns the found result (if single) or 0.
+    ///
     static clang::NamedDecl* Named(clang::Sema* S,
                                    const char* Name,
+                                   clang::DeclContext* Within = 0);
+
+    ///\brief Quick lookup for a single namespace declaration in a given 
+    /// declaration context.
+    ///
+    ///\param[in] S - Semantic Analysis object doing the lookup.
+    ///\param[in] Name - The name we are looking up. The & avoids inclusion of 
+    ///                  DeclarationName.h (faster at runtime).
+    ///\param[in] Within - The context within the lookup is done. If 0 the 
+    ///                    TranslationUnitDecl is used.
+    ///\returns the found result (if single) or 0.
+    ///
+    static clang::NamedDecl* Named(clang::Sema* S,
+                                   const clang::DeclarationName& Name,
                                    clang::DeclContext* Within = 0);
 
   };
