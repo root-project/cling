@@ -659,7 +659,7 @@ namespace cling {
     TheSema.CurContext = DC;
 
     StoredValueRef Result;
-    if (TheSema.ExternalSource) {
+    if (TheSema.getExternalSource()) {
       getCallbacks()->setEnabled();
       (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, &Result);
       getCallbacks()->setEnabled(false);
@@ -674,11 +674,6 @@ namespace cling {
 
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
     m_Callbacks.reset(C);
-    Sema& S = getCI()->getSema();
-    if (!C)
-      delete S.ExternalSource;
-    else
-      S.ExternalSource = new DynamicIDHandler(this);
   }
 
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {
@@ -686,14 +681,15 @@ namespace cling {
 
     Sema& S = getCI()->getSema();
     if (isDynamicLookupEnabled()) {
-      assert(!S.ExternalSource && "Already set Sema ExternalSource");
+      assert(!S.getExternalSource() && "Already set Sema ExternalSource");
       // Load the dynamic lookup specifics.
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
-      S.ExternalSource = new DynamicIDHandler(this);
+      S.addExternalSource(new DynamicIDHandler(this));
     }
     else {
-      delete S.ExternalSource;
-      S.ExternalSource = 0;
+      // FIXME: delete only the external source we own.
+      //delete S.ExternalSource;
+      //S.ExternalSource = 0;
     }
   }
 
