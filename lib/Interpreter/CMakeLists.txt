@@ -30,6 +30,7 @@ add_cling_library(clingInterpreter
   ExecutionContext.cpp
   IncrementalParser.cpp
   Interpreter.cpp
+  InterpreterCallbacks.cpp
   InvocationOptions.cpp
   LookupHelper.cpp
   MultiplexExternalSemaSource.cpp
