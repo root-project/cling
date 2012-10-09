@@ -445,14 +445,6 @@ namespace cling {
     input.append("\n;\n}");
   }
 
-  llvm::StringRef Interpreter::createUniqueWrapper() {
-    const size_t size = sizeof("__cling_Un1Qu3") + sizeof(m_UniqueCounter);
-    llvm::SmallString<size> out("__cling_Un1Qu3");
-    llvm::raw_svector_ostream(out) << m_UniqueCounter++;
-
-    return (getCI()->getASTContext().Idents.getOwn(out)).getName();
-  }
-
   bool Interpreter::RunFunction(llvm::StringRef fname,
                                 clang::QualType retType,
                                 StoredValueRef* res) {
@@ -483,6 +475,22 @@ namespace cling {
   void Interpreter::createUniqueName(std::string& out) {
     out = "Un1Qu3";
     llvm::raw_string_ostream(out) << m_UniqueCounter++;
+  }
+
+  bool Interpreter::isUniqueName(llvm::StringRef name) {
+    return name.startswith("Un1Qu3");
+  }
+
+  llvm::StringRef Interpreter::createUniqueWrapper() {
+    const size_t size = sizeof("__cling_Un1Qu3") + sizeof(m_UniqueCounter);
+    llvm::SmallString<size> out("__cling_Un1Qu3");
+    llvm::raw_svector_ostream(out) << m_UniqueCounter++;
+
+    return (getCI()->getASTContext().Idents.getOwn(out)).getName();
+  }
+
+  bool Interpreter::isUniqueWrapper(llvm::StringRef name) {
+    return name.startswith("__cling_Un1Qu3");
   }
 
   Interpreter::CompilationResult
