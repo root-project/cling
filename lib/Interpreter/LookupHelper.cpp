@@ -352,40 +352,6 @@ namespace cling {
     return TheDecl;
   }
 
-  static bool FuncArgTypesMatch(const ASTContext& C, 
-                             const llvm::SmallVector<QualType, 4>& GivenArgTypes,
-                                const FunctionProtoType* FPT) {
-    // FIXME: What if FTP->arg_size() != GivenArgTypes.size()?
-    FunctionProtoType::arg_type_iterator ATI = FPT->arg_type_begin();
-    FunctionProtoType::arg_type_iterator E = FPT->arg_type_end();
-    llvm::SmallVector<QualType, 4>::const_iterator GAI = GivenArgTypes.begin();
-    for (; ATI && (ATI != E); ++ATI, ++GAI) {
-      if (!C.hasSameType(*ATI, *GAI)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  static bool IsOverload(const ASTContext& C,
-                         const TemplateArgumentListInfo* FuncTemplateArgs,
-                         const llvm::SmallVector<QualType, 4>& GivenArgTypes, 
-                         FunctionDecl* FD, bool UseUsingDeclRules) {
-    //FunctionTemplateDecl* FTD = FD->getDescribedFunctionTemplate();
-    QualType FQT = C.getCanonicalType(FD->getType());
-    if (llvm::isa<FunctionNoProtoType>(FQT.getTypePtr())) {
-      // A K&R-style function (no prototype), is considered to match the args.
-      return false;
-    }
-    const FunctionProtoType* FPT = llvm::cast<FunctionProtoType>(FQT);
-    if ((GivenArgTypes.size() != FPT->getNumArgs()) ||
-        //(GivenArgsAreEllipsis != FPT->isVariadic()) ||
-        !FuncArgTypesMatch(C, GivenArgTypes, FPT)) {
-      return true;
-    }
-    return false;
-  }
-
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
                                                       llvm::StringRef funcName, 
                                                llvm::StringRef funcProto) const {
@@ -502,10 +468,13 @@ namespace cling {
       QT = QT.getCanonicalType();
       GivenArgTypes.push_back(QT);
       {
-        // FIXME: Make an attempt to release these.
+        ExprValueKind VK = VK_RValue;
+        if (QT->getAs<LValueReferenceType>()) {
+          VK = VK_LValue;
+        }
         clang::QualType NonRefQT(QT.getNonReferenceType());
         Expr* val = new (Context) OpaqueValueExpr(SourceLocation(), NonRefQT,
-          Expr::getValueKindForType(NonRefQT));
+          VK);
         GivenArgs.push_back(val);
       }
       // Type names should be comma separated.
