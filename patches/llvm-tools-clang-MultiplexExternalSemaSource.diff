@@ -1,7 +1,7 @@
 Index: tools/clang/include/clang/Sema/Sema.h
 ===================================================================
---- tools/clang/include/clang/Sema/Sema.h	(revision 46396)
-+++ tools/clang/include/clang/Sema/Sema.h	(revision 46397)
+--- tools/clang/include/clang/Sema/Sema.h	(revision 165095)
++++ tools/clang/include/clang/Sema/Sema.h	(working copy)
 @@ -190,6 +190,13 @@
    Sema(const Sema &) LLVM_DELETED_FUNCTION;
    void operator=(const Sema &) LLVM_DELETED_FUNCTION;
@@ -45,8 +45,8 @@ Index: tools/clang/include/clang/Sema/Sema.h
 Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 ===================================================================
 --- tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h	(revision 0)
-+++ tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h	(revision 46397)
-@@ -0,0 +1,188 @@
++++ tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h	(revision 0)
+@@ -0,0 +1,189 @@
 +//===--- MultiplexExternalSemaSource.h - External Sema Interface-*- C++ -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -93,13 +93,14 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  llvm::SmallVector<ExternalSemaSource*, 2> Sources; // doesn't own them.
 +
 +public:
-+
++  
 +  ///\brief Constructs a new multiplexing external sema source and appends the
 +  /// given element to it.
 +  ///
-+  ///\param[in] source - A non-null ExternalSemaSource.
++  ///\param[in] s1 - A non-null (old) ExternalSemaSource.
++  ///\param[in] s2 - A non-null (new) ExternalSemaSource.
 +  ///
-+  MultiplexExternalSemaSource(ExternalSemaSource &source);
++  MultiplexExternalSemaSource(ExternalSemaSource& s1, ExternalSemaSource& s2);
 +
 +  ~MultiplexExternalSemaSource();
 +
@@ -237,8 +238,8 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +#endif // LLVM_CLANG_SEMA_MULTIPLEX_EXTERNAL_SEMA_SOURCE_H
 Index: tools/clang/lib/Sema/SemaCodeComplete.cpp
 ===================================================================
---- tools/clang/lib/Sema/SemaCodeComplete.cpp	(revision 46396)
-+++ tools/clang/lib/Sema/SemaCodeComplete.cpp	(revision 46397)
+--- tools/clang/lib/Sema/SemaCodeComplete.cpp	(revision 165095)
++++ tools/clang/lib/Sema/SemaCodeComplete.cpp	(working copy)
 @@ -5339,11 +5339,11 @@
      
      // If we have an external source, load the entire class method
@@ -256,8 +257,8 @@ Index: tools/clang/lib/Sema/SemaCodeComplete.cpp
          
 Index: tools/clang/lib/Sema/SemaDeclObjC.cpp
 ===================================================================
---- tools/clang/lib/Sema/SemaDeclObjC.cpp	(revision 46396)
-+++ tools/clang/lib/Sema/SemaDeclObjC.cpp	(revision 46397)
+--- tools/clang/lib/Sema/SemaDeclObjC.cpp	(revision 165095)
++++ tools/clang/lib/Sema/SemaDeclObjC.cpp	(working copy)
 @@ -2582,7 +2582,7 @@
      // with this selector before.
      Sema::GlobalMethodPool::iterator it = S.MethodPool.find(selector);
@@ -270,8 +271,8 @@ Index: tools/clang/lib/Sema/SemaDeclObjC.cpp
 Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 ===================================================================
 --- tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp	(revision 0)
-+++ tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp	(revision 46397)
-@@ -0,0 +1,126 @@
++++ tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp	(revision 0)
+@@ -0,0 +1,127 @@
 +//===--- MultiplexExternalSemaSource.cpp  ---------------------------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -294,9 +295,10 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +///
 +///\param[in] source - An ExternalSemaSource.
 +///
-+MultiplexExternalSemaSource::MultiplexExternalSemaSource(
-+                                                   ExternalSemaSource &source) {
-+  Sources.push_back(&source);
++MultiplexExternalSemaSource::MultiplexExternalSemaSource(ExternalSemaSource &s1,
++                                                         ExternalSemaSource &s2){
++  Sources.push_back(&s1);
++  Sources.push_back(&s2);
 +}
 +
 +// pin the vtable here.
@@ -334,7 +336,7 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +bool MultiplexExternalSemaSource::LookupUnqualified(LookupResult &R, Scope *S){ 
 +  for(size_t i = 0; i < Sources.size(); ++i)
 +    Sources[i]->LookupUnqualified(R, S);
-+    
++  
 +  return !R.empty();
 +}
 +
@@ -400,8 +402,8 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +}
 Index: tools/clang/lib/Sema/CMakeLists.txt
 ===================================================================
---- tools/clang/lib/Sema/CMakeLists.txt	(revision 46396)
-+++ tools/clang/lib/Sema/CMakeLists.txt	(revision 46397)
+--- tools/clang/lib/Sema/CMakeLists.txt	(revision 165095)
++++ tools/clang/lib/Sema/CMakeLists.txt	(working copy)
 @@ -13,6 +13,7 @@
    DelayedDiagnostic.cpp
    IdentifierResolver.cpp
@@ -412,8 +414,8 @@ Index: tools/clang/lib/Sema/CMakeLists.txt
    Sema.cpp
 Index: tools/clang/lib/Sema/SemaExprMember.cpp
 ===================================================================
---- tools/clang/lib/Sema/SemaExprMember.cpp	(revision 46396)
-+++ tools/clang/lib/Sema/SemaExprMember.cpp	(revision 46397)
+--- tools/clang/lib/Sema/SemaExprMember.cpp	(revision 165095)
++++ tools/clang/lib/Sema/SemaExprMember.cpp	(working copy)
 @@ -354,7 +354,7 @@
    // Now look up the TypeDefDecl from the vector type. Without this,
    // diagostics look bad. We want extended vector types to appear built-in.
@@ -425,8 +427,8 @@ Index: tools/clang/lib/Sema/SemaExprMember.cpp
      if ((*I)->getUnderlyingType() == VT)
 Index: tools/clang/lib/Sema/Sema.cpp
 ===================================================================
---- tools/clang/lib/Sema/Sema.cpp	(revision 46396)
-+++ tools/clang/lib/Sema/Sema.cpp	(revision 46397)
+--- tools/clang/lib/Sema/Sema.cpp	(revision 165095)
++++ tools/clang/lib/Sema/Sema.cpp	(working copy)
 @@ -22,6 +22,7 @@
  #include "clang/Sema/CXXFieldCollector.h"
  #include "clang/Sema/TemplateDeduction.h"
@@ -480,7 +482,7 @@ Index: tools/clang/lib/Sema/Sema.cpp
 +  if (isMultiplexExternalSource)
 +    ((MultiplexExternalSemaSource*) ExternalSource)->addSource(*E);
 +  else {
-+    ExternalSource = new MultiplexExternalSemaSource(*E);
++    ExternalSource = new MultiplexExternalSemaSource(*ExternalSource, *E);
 +    isMultiplexExternalSource = true;
 +  }
 +}
@@ -490,8 +492,8 @@ Index: tools/clang/lib/Sema/Sema.cpp
    llvm::errs() << "\n*** Semantic Analysis Stats:\n";
 Index: tools/clang/lib/Serialization/ASTReader.cpp
 ===================================================================
---- tools/clang/lib/Serialization/ASTReader.cpp	(revision 46396)
-+++ tools/clang/lib/Serialization/ASTReader.cpp	(revision 46397)
+--- tools/clang/lib/Serialization/ASTReader.cpp	(revision 165095)
++++ tools/clang/lib/Serialization/ASTReader.cpp	(working copy)
 @@ -5289,7 +5289,7 @@
  
  void ASTReader::InitializeSema(Sema &S) {
