@@ -427,6 +427,23 @@ namespace cling {
       PP.getDiagnostics().getSuppressAllDiagnostics();
     PP.getDiagnostics().setSuppressAllDiagnostics(true);
     //
+    //  If we are looking up a member function, construct
+    //  the implicit object argument.
+    //
+    //  Note: For now this is always a non-CV qualified lvalue.
+    //
+    QualType ClassType;
+    Expr* ObjExpr = 0;
+    Expr::Classification ObjExprClassification;
+    if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
+      ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
+      ObjExpr = new (Context) OpaqueValueExpr(SourceLocation(),
+        ClassType, VK_LValue);
+      ObjExprClassification = ObjExpr->Classify(Context);
+      //GivenArgTypes.insert(GivenArgTypes.begin(), ClassType);
+      //GivenArgs.insert(GivenArgs.begin(), ObjExpr);
+    }
+    //
     //  Tell the parser to not attempt spelling correction.
     //
     bool OldSpellChecking = PP.getLangOpts().SpellChecking;
@@ -587,66 +604,134 @@ namespace cling {
         // Lookup failed.
         return TheDecl;
       }
-      //
-      //  Now that we have a set of matching function names
-      //  in the class, we have to choose the one being asked
-      //  for given the passed template args and prototype.
-      //
-      for (LookupResult::iterator I = Result.begin(), E = Result.end();
-          I != E; ++I) {
-        NamedDecl* ND = *I;
+      {
         //
-        //  Check if this decl is from a using decl, it will not
-        //  be a match in some cases.
+        //  Construct the overload candidate set.
         //
-        bool IsUsingDecl = false;
-        if (llvm::isa<UsingShadowDecl>(ND)) {
-          IsUsingDecl = true;
-          ND = llvm::cast<UsingShadowDecl>(ND)->getTargetDecl();
+        OverloadCandidateSet Candidates(FuncNameInfo.getLoc());
+        for (LookupResult::iterator I = Result.begin(), E = Result.end();
+            I != E; ++I) {
+          NamedDecl* ND = *I;
+          if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
+            if (isa<CXXMethodDecl>(FD) &&
+                !cast<CXXMethodDecl>(FD)->isStatic() &&
+                !isa<CXXConstructorDecl>(FD)) {
+              // Class method, not static, not a constructor, so has
+              // an implicit object argument.
+              CXXMethodDecl* MD = cast<CXXMethodDecl>(FD);
+              //{
+              //  std::string buf;
+              //  llvm::raw_string_ostream tmp(buf);
+              //  MD->print(tmp, 0);
+              //  fprintf(stderr, "Considering method: %s\n",
+              //    tmp.str().c_str());
+              //}
+              if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
+                // Explicit template args were given, cannot use a plain func.
+                //fprintf(stderr, "rejected: template args given\n");
+                continue;
+              }
+              S.AddMethodCandidate(MD, I.getPair(), MD->getParent(),
+                                   /*ObjectType=*/ClassType,
+                                  /*ObjectClassification=*/ObjExprClassification,
+                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                                   Candidates);
+            }
+            else {
+              //{
+              //  std::string buf;
+              //  llvm::raw_string_ostream tmp(buf);
+              //  FD->print(tmp, 0);
+              //  fprintf(stderr, "Considering func: %s\n", tmp.str().c_str());
+              //}
+              const FunctionProtoType* Proto = dyn_cast<FunctionProtoType>(
+                FD->getType()->getAs<clang::FunctionType>());
+              if (!Proto) {
+                // Function has no prototype, cannot do overloading.
+                //fprintf(stderr, "rejected: no prototype\n");
+                continue;
+              }
+              if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
+                // Explicit template args were given, cannot use a plain func.
+                //fprintf(stderr, "rejected: template args given\n");
+                continue;
+              }
+              S.AddOverloadCandidate(FD, I.getPair(),
+                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                                     Candidates);
+            }
+          }
+          else if (FunctionTemplateDecl* FTD =
+              dyn_cast<FunctionTemplateDecl>(ND)) {
+            if (isa<CXXMethodDecl>(FTD->getTemplatedDecl()) &&
+                !cast<CXXMethodDecl>(FTD->getTemplatedDecl())->isStatic() &&
+                !isa<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
+              // Class method template, not static, not a constructor, so has
+              // an implicit object argument.
+              //{
+              //  std::string buf;
+              //  llvm::raw_string_ostream tmp(buf);
+              //  FTD->print(tmp, 0);
+              //  fprintf(stderr, "Considering method template: %s\n",
+              //    tmp.str().c_str());
+              //}
+              S.AddMethodTemplateCandidate(FTD, I.getPair(),
+                                      cast<CXXRecordDecl>(FTD->getDeclContext()),
+                         const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
+                                           /*ObjectType=*/ClassType,
+                                  /*ObjectClassification=*/ObjExprClassification,
+                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                                           Candidates);
+            }
+            else {
+              //{
+              //  std::string buf;
+              //  llvm::raw_string_ostream tmp(buf);
+              //  FTD->print(tmp, 0);
+              //  fprintf(stderr, "Considering func template: %s\n",
+              //    tmp.str().c_str());
+              //}
+              S.AddTemplateOverloadCandidate(FTD, I.getPair(),
+                const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
+                llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                Candidates, /*SuppressUserConversions=*/false);
+            }
+          }
+          else {
+            //{
+            //  std::string buf;
+            //  llvm::raw_string_ostream tmp(buf);
+            //  FD->print(tmp, 0);
+            //  fprintf(stderr, "Considering non-func: %s\n",
+            //    tmp.str().c_str());
+            //  fprintf(stderr, "rejected: not a function\n");
+            //}
+          }
         }
         //
-        //  If found declaration was introduced by a using declaration,
-        //  we'll need to use slightly different rules for matching.
-        //  Essentially, these rules are the normal rules, except that
-        //  function templates hide function templates with different
-        //  return types or template parameter lists.
+        //  Find the best viable function from the set.
         //
-        bool UseMemberUsingDeclRules = IsUsingDecl && foundDC->isRecord();
-        if (FunctionTemplateDecl* FTD = dyn_cast<FunctionTemplateDecl>(ND)) {
-          // This decl is a function template.
-          //
-          //  Do template argument deduction and function argument matching.
-          //
-          FunctionDecl* Specialization;
-          sema::TemplateDeductionInfo TDI( (SourceLocation()) );
-          Sema::TemplateDeductionResult TDR 
-            = S.DeduceTemplateArguments(FTD,
-                         const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                        Specialization, TDI);
-          if (TDR == Sema::TDK_Success) {
-            // We have a template argument match and func arg match.
-            TheDecl = Specialization;
-            break;
-          }
-        } else if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
-          // This decl is a function.
-          //
-          //  Do function argument matching.
-          //
-          if (!IsOverload(Context, FuncTemplateArgs, GivenArgTypes, FD,
-                          UseMemberUsingDeclRules)) {
-            // We have a function argument match.
-            if (UseMemberUsingDeclRules && IsUsingDecl) {
-              // But it came from a using decl and we are
-              // looking up a class member func, ignore it.
-              continue;
-            }
-            TheDecl = dyn_cast<clang::FunctionDecl>(*I);
-            break;
+        {
+          OverloadCandidateSet::iterator Best;
+          OverloadingResult OR = Candidates.BestViableFunction(S, 
+                                                             Result.getNameLoc(),
+                                                               Best);
+          if (OR == OR_Success) {
+            TheDecl = Best->Function;
           }
         }
       }
+      //
+      //  Dump the overloading result.
+      //
+      //if (TheDecl) {
+      //  std::string buf;
+      //  llvm::raw_string_ostream tmp(buf);
+      //  TheDecl->print(tmp, 0);
+      //  fprintf(stderr, "Match: %s\n", tmp.str().c_str());
+      //  TheDecl->dump();
+      //  fprintf(stderr, "\n");
+      //}
     }
     return TheDecl;
   }
