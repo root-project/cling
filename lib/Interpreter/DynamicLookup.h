@@ -52,15 +52,6 @@ namespace cling {
     /// @param[in] S The scope in which the lookup failed.
     virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S);
 
-  private:
-
-    /// \brief Checks whether the failed lookup is not expected from the
-    /// compiler to fail.
-    ///
-    /// @param[out] R The symbol to be checked.
-    /// @param[in] S The scope, where the lookup failed.
-    bool IsDynamicLookup (clang::LookupResult& R, clang::Scope* S);
-
   };
 } // end namespace cling
 

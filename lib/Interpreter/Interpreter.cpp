@@ -683,8 +683,6 @@ namespace cling {
 
     if (isDynamicLookupEnabled()) {
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
-      setCallbacks(new test::SymbolResolverCallback(this, /*Enabled*/false, 
-                                                    new DynamicIDHandler()));
     }
     else
       setCallbacks(0);

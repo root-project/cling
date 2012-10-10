@@ -1,8 +1,11 @@
 // RUN: cat %s | %cling -I%p | FileCheck %s
 
+#include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
 .dynamicExtensions
+
+gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling, /*Enabled*/true));
 
 // Fixed size arrays
 int a[5] = {1,2,3,4,5};

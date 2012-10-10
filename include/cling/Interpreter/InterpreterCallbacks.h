@@ -149,6 +149,8 @@ namespace cling {
       ~SymbolResolverCallback();
 
       bool LookupObject(clang::LookupResult& R, clang::Scope* S);
+
+      static bool IsDynamicLookup(clang::LookupResult& R, clang::Scope* S);
     };
   } // end test
 } // end cling
