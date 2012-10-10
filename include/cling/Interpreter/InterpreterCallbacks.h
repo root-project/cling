@@ -26,7 +26,7 @@ namespace cling {
   /// events into interpreter callbacks.
   ///
   class InterpreterExternalSemaSource : public clang::ExternalSemaSource {
-  private:
+  protected:
 
     ///\brief The interpreter callback which are subscribed for the events.
     ///
@@ -37,9 +37,12 @@ namespace cling {
     InterpreterCallbacks* m_Callbacks; // we don't own it.
 
   public:
-    InterpreterExternalSemaSource(InterpreterCallbacks* cb) : m_Callbacks(cb){}
+    InterpreterExternalSemaSource() : m_Callbacks(0){}
 
     ~InterpreterExternalSemaSource();
+
+    InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
+    void setCallbacks(InterpreterCallbacks* C) { m_Callbacks = C; }
 
     /// \brief Provides last resort lookup for failed unqualified lookups.
     ///
@@ -76,9 +79,14 @@ namespace cling {
     ///
     llvm::OwningPtr<InterpreterExternalSemaSource> m_SemaExternalSource;
   public:
-    InterpreterCallbacks(Interpreter* interp, bool enabled = false);
+    InterpreterCallbacks(Interpreter* interp, bool enabled = false, 
+                         InterpreterExternalSemaSource* IESS = 0);
 
     virtual ~InterpreterCallbacks();
+
+    InterpreterExternalSemaSource* getInterpreterExternalSemaSource() const {
+      return m_SemaExternalSource.get();
+    }
 
     void setEnabled(bool e = true) {
       m_Enabled = e;
@@ -109,5 +117,40 @@ namespace cling {
     virtual void TransactionUnloaded(const Transaction&) {}
   };
 } // end namespace cling
+
+// TODO: Make the build system in the testsuite aware how to build that class
+// and extract it out there again.
+namespace cling {
+  namespace test {
+    class TestProxy {
+    public:
+      TestProxy();
+      int Draw();
+      const char* getVersion();
+
+      int Add(int a, int b);
+      int Add10(int num);
+      void PrintString(std::string s);
+      bool PrintArray(int a[], size_t size);
+
+      void PrintArray(float a[][5], size_t size);
+
+      void PrintArray(int a[][4][5], size_t size);
+    };
+
+    extern TestProxy* Tester;
+
+    class SymbolResolverCallback: public cling::InterpreterCallbacks {
+    private:
+      clang::NamedDecl* m_TesterDecl;
+    public:
+      SymbolResolverCallback(Interpreter* interp, bool enabled = false,
+                             InterpreterExternalSemaSource* IESS = 0);
+      ~SymbolResolverCallback();
+
+      bool LookupObject(clang::LookupResult& R, clang::Scope* S);
+    };
+  } // end test
+} // end cling
 
 #endif // CLING_INTERPRETER_CALLBACKS_H

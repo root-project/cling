@@ -673,24 +673,21 @@ namespace cling {
   }
 
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
+    // We need it to enable LookupObject callback.
+    getSema().addExternalSource(C->getInterpreterExternalSemaSource());
     m_Callbacks.reset(C);
   }
 
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {
     m_DynamicLookupEnabled = value;
 
-    Sema& S = getCI()->getSema();
     if (isDynamicLookupEnabled()) {
-      assert(!S.getExternalSource() && "Already set Sema ExternalSource");
-      // Load the dynamic lookup specifics.
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
-      S.addExternalSource(new DynamicIDHandler(this));
+      setCallbacks(new test::SymbolResolverCallback(this, /*Enabled*/false, 
+                                                    new DynamicIDHandler()));
     }
-    else {
-      // FIXME: delete only the external source we own.
-      //delete S.ExternalSource;
-      //S.ExternalSource = 0;
-    }
+    else
+      setCallbacks(0);
   }
 
   void Interpreter::runStaticInitializersOnce() const {

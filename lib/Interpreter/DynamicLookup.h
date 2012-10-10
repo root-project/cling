@@ -7,10 +7,11 @@
 #ifndef CLING_DYNAMIC_LOOKUP_H
 #define CLING_DYNAMIC_LOOKUP_H
 
+#include "cling/Interpreter/InterpreterCallbacks.h"
+
 #include "TransactionTransformer.h"
 
 #include "clang/AST/StmtVisitor.h"
-#include "clang/Sema/ExternalSemaSource.h"
 #include "clang/Sema/Ownership.h"
 
 #include "llvm/ADT/OwningPtr.h"
@@ -35,14 +36,8 @@ namespace cling {
   /// by the compiler symbols to be with delayed lookup (evaluation).
   /// One have to be carefull in the cases, in which the compiler expects that
   /// the lookup will fail!
-  class DynamicIDHandler : public clang::ExternalSemaSource {
-  private:
-
-    ///\brief The interpreter, whose callbacks we are using.
-    ///
-    Interpreter* m_Interpreter; // doesn't own it.
-  public:
-    DynamicIDHandler(Interpreter* interp);
+  class DynamicIDHandler : public InterpreterExternalSemaSource {
+  public:  
     ~DynamicIDHandler();
 
     /// \brief Provides last resort lookup for failed unqualified lookups

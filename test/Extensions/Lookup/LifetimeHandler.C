@@ -3,12 +3,9 @@
 // its destructor uses gCling and the CompilerInstance, which are 
 // already gone
 
-#include "SymbolResolverCallback.h"
+#include "cling/Interpreter/InterpreterCallbacks.h"
 
 .dynamicExtensions 1
-
-cling::test::SymbolResolverCallback* SRC = new cling::test::SymbolResolverCallback(gCling, /*Enabled=*/ false);
-gCling->setCallbacks(SRC);
 
 .x LifetimeHandler.h
 // CHECK: Alpha's single arg ctor called {{.*Interpreter.*}}

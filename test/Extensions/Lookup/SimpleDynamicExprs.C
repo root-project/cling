@@ -1,10 +1,9 @@
 // RUN: cat %s | %cling -I%p | FileCheck %s
 
-#include "SymbolResolverCallback.h"
+#include "cling/Interpreter/InterpreterCallbacks.h"
 
 .dynamicExtensions
 
-gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling, /*Enabled=*/false));
 jksghdgsjdf->getVersion() // CHECK: {{.*Interpreter.*}}
 hsdghfjagsp->Draw() // CHECK: (int const) 12
 

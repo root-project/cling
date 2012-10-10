@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling -I%p | FileCheck %s
+// RUN: cat %s | %cling | FileCheck %s
 
 // The test verifies the expected behavior in cling::utils::Transform class,
 // which is supposed to provide different transformation of AST nodes and types.

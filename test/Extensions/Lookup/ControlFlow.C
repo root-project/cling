@@ -17,10 +17,10 @@
 // expression.
 
 
-#include "SymbolResolverCallback.h"
+#include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/InterpreterCallbacks.h"
 
 .dynamicExtensions
-gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling, /*Enabled=*/false));
 
 int a[5] = {1,2,3,4,5};
 if (h->PrintArray(a, 5)) { // runtime result type bool

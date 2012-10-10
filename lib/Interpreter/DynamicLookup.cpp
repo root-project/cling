@@ -21,28 +21,22 @@ using namespace clang;
 
 namespace cling {
 
-  DynamicIDHandler::DynamicIDHandler(Interpreter* interp)
-    : m_Interpreter(interp) { }
-
-
   // pin the vtable to this file
-  DynamicIDHandler::~DynamicIDHandler() {
-  }
+  DynamicIDHandler::~DynamicIDHandler() { }
 
   bool DynamicIDHandler::LookupUnqualified(LookupResult& R, Scope* S) {
 
     if (!IsDynamicLookup(R, S))
       return false;
 
-    InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
-    if (callbacks && callbacks->isEnabled()) {
-      return callbacks->LookupObject(R, S);
+    if (getCallbacks() && getCallbacks()->isEnabled()) {
+      return getCallbacks()->LookupObject(R, S);
     }
 
     DeclarationName Name = R.getLookupName();
     IdentifierInfo* II = Name.getAsIdentifierInfo();
     SourceLocation Loc = R.getNameLoc();
-    ASTContext& C = m_Interpreter->getSema().getASTContext();
+    ASTContext& C = R.getSema().getASTContext();
     VarDecl* Result = VarDecl::Create(C,
                                       R.getSema().getFunctionLevelDeclContext(),
                                       Loc,
@@ -76,7 +70,7 @@ namespace cling {
     //   or function template.
     //
     // We want to ignore object(.|->)member<template>
-    if (m_Interpreter->getSema().PP.LookAhead(0).getKind() == tok::less)
+    if (R.getSema().PP.LookAhead(0).getKind() == tok::less)
       // TODO: check for . or -> in the cached token stream
       return false;
 

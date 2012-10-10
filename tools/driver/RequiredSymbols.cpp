@@ -2,6 +2,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
+#include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/ValuePrinter.h"
 #include "cling/Interpreter/ValuePrinterInfo.h"
@@ -28,5 +29,6 @@ void libcling__symbol_requester(const clang::FunctionDecl& Decl,
    h.findFunctionArgs(0, "", "");
    cling::runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
+   cling::InterpreterCallbacks cb(0);
 }
 }
