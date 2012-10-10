@@ -70,16 +70,12 @@ namespace cling {
     ///
     Interpreter* m_Interpreter; // we don't own
 
-    ///\brief Whether or not the callbacks are enabled.
-    ///
-    bool m_Enabled;
-    
     ///\brief Our custom SemaExternalSource, translating interesting events into
     /// callbacks.
     ///
     llvm::OwningPtr<InterpreterExternalSemaSource> m_SemaExternalSource;
   public:
-    InterpreterCallbacks(Interpreter* interp, bool enabled = false, 
+    InterpreterCallbacks(Interpreter* interp,
                          InterpreterExternalSemaSource* IESS = 0);
 
     virtual ~InterpreterCallbacks();
@@ -87,12 +83,6 @@ namespace cling {
     InterpreterExternalSemaSource* getInterpreterExternalSemaSource() const {
       return m_SemaExternalSource.get();
     }
-
-    void setEnabled(bool e = true) {
-      m_Enabled = e;
-    }
-
-    bool isEnabled() { return m_Enabled; }
 
     /// \brief This callback is invoked whenever the interpreter needs to
     /// resolve the type and the adress of an object, which has been marked for
@@ -144,7 +134,7 @@ namespace cling {
     private:
       clang::NamedDecl* m_TesterDecl;
     public:
-      SymbolResolverCallback(Interpreter* interp, bool enabled = false,
+      SymbolResolverCallback(Interpreter* interp,
                              InterpreterExternalSemaSource* IESS = 0);
       ~SymbolResolverCallback();
 

@@ -21,15 +21,15 @@ namespace cling {
 
   bool InterpreterExternalSemaSource::LookupUnqualified(LookupResult& R, 
                                                         Scope* S) {
-    if (m_Callbacks && m_Callbacks->isEnabled())
+    if (m_Callbacks)
       return m_Callbacks->LookupObject(R, S);
     
     return false;
   }
 
-  InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp, bool enabled,
+  InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
                                              InterpreterExternalSemaSource* IESS)
-    : m_Interpreter(interp), m_Enabled(enabled), m_SemaExternalSource(IESS) {
+    : m_Interpreter(interp),  m_SemaExternalSource(IESS) {
     if (!IESS)
       m_SemaExternalSource.reset(new InterpreterExternalSemaSource());
     m_SemaExternalSource->setCallbacks(this);
@@ -92,9 +92,8 @@ namespace test {
   }
 
   SymbolResolverCallback::SymbolResolverCallback(Interpreter* interp, 
-                                                 bool enabled,
                                              InterpreterExternalSemaSource* IESS)
-    : InterpreterCallbacks(interp, enabled, IESS), m_TesterDecl(0) {
+    : InterpreterCallbacks(interp, IESS), m_TesterDecl(0) {
     m_Interpreter->process("cling::test::Tester = new cling::test::TestProxy();");
   }
 
@@ -105,18 +104,15 @@ namespace test {
       return false;
 
     // Only for demo resolve all unknown objects to cling::test::Tester
-    if (m_Enabled) {
-      if (!m_TesterDecl) {
-        clang::Sema& S = m_Interpreter->getSema();
-        clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&S, "cling");
-        NSD = utils::Lookup::Namespace(&S, "test", NSD);
-        m_TesterDecl = utils::Lookup::Named(&S, "Tester", NSD);
-      }
-      assert (m_TesterDecl && "Tester not found!");
-      R.addDecl(m_TesterDecl);
-      return true;
+    if (!m_TesterDecl) {
+      clang::Sema& S = m_Interpreter->getSema();
+      clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&S, "cling");
+      NSD = utils::Lookup::Namespace(&S, "test", NSD);
+      m_TesterDecl = utils::Lookup::Named(&S, "Tester", NSD);
     }
-    return false;
+    assert (m_TesterDecl && "Tester not found!");
+    R.addDecl(m_TesterDecl);
+    return true;
   }
 
   bool SymbolResolverCallback::IsDynamicLookup(LookupResult& R, Scope* S) {

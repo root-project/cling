@@ -30,7 +30,7 @@ namespace cling {
     if (!test::SymbolResolverCallback::IsDynamicLookup(R, S))
       return false;
 
-    if (getCallbacks() && getCallbacks()->isEnabled()) {
+    if (getCallbacks()) {
       return getCallbacks()->LookupObject(R, S);
     }
 

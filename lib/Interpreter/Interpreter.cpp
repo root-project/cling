@@ -660,9 +660,7 @@ namespace cling {
 
     StoredValueRef Result;
     if (TheSema.getExternalSource()) {
-      getCallbacks()->setEnabled();
       (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, &Result);
-      getCallbacks()->setEnabled(false);
     }
     else
       (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, &Result);

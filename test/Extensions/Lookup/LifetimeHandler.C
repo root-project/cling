@@ -8,7 +8,7 @@
 
 .dynamicExtensions 1
 
-cling::test::SymbolResolverCallback* SRC = new cling::test::SymbolResolverCallback(gCling, /*Enabled=*/ true);
+cling::test::SymbolResolverCallback* SRC = new cling::test::SymbolResolverCallback(gCling);
 gCling->setCallbacks(SRC);
 
 .x LifetimeHandler.h

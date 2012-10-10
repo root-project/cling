@@ -5,7 +5,7 @@
 
 .dynamicExtensions
 
-gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling, /*Enabled*/true));
+gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling));
 
 // Fixed size arrays
 int a[5] = {1,2,3,4,5};

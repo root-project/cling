@@ -173,7 +173,7 @@ namespace cling {
 
     CurT->setState(Transaction::kCommitted);
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
-    if (callbacks && callbacks->isEnabled())
+    if (callbacks)
       callbacks->TransactionCommitted(*CurT);
   }
 
@@ -351,7 +351,7 @@ namespace cling {
     NodeEraser.RevertTransaction(T);
 
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
-    if (callbacks && callbacks->isEnabled())
+    if (callbacks)
       callbacks->TransactionUnloaded(*T);
   }
 
