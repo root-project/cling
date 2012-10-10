@@ -46,7 +46,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 ===================================================================
 --- tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h	(revision 0)
 +++ tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h	(revision 0)
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,188 @@
 +//===--- MultiplexExternalSemaSource.h - External Sema Interface-*- C++ -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -230,7 +230,6 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +
 +  // isa/cast/dyn_cast support
 +  static bool classof(const MultiplexExternalSemaSource*) { return true; }
-+  //static bool classof(const ExternalSemaSource*) { return true; }
 +}; 
 +
 +} // end namespace clang
