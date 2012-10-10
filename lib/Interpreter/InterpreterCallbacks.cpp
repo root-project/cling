@@ -8,8 +8,6 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
-#include "clang/Lex/Preprocessor.h"
-#include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
 
 using namespace clang;
@@ -31,8 +29,7 @@ namespace cling {
                                              InterpreterExternalSemaSource* IESS)
     : m_Interpreter(interp),  m_SemaExternalSource(IESS) {
     if (!IESS)
-      m_SemaExternalSource.reset(new InterpreterExternalSemaSource());
-    m_SemaExternalSource->setCallbacks(this);
+      m_SemaExternalSource.reset(new InterpreterExternalSemaSource(this));
   }
 
   // pin the vtable here
@@ -46,8 +43,12 @@ namespace cling {
 
 // TODO: Make the build system in the testsuite aware how to build that class
 // and extract it out there again.
+#include "DynamicLookup.h"
 #include "cling/Utils/AST.h"
+
 #include "clang/Sema/Lookup.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Sema/Scope.h"
 namespace cling {
 namespace test {
   TestProxy* Tester = 0;
@@ -91,9 +92,8 @@ namespace test {
     printf("%s", "\n");
   }
 
-  SymbolResolverCallback::SymbolResolverCallback(Interpreter* interp, 
-                                             InterpreterExternalSemaSource* IESS)
-    : InterpreterCallbacks(interp, IESS), m_TesterDecl(0) {
+  SymbolResolverCallback::SymbolResolverCallback(Interpreter* interp)
+    : InterpreterCallbacks(interp, new DynamicIDHandler(this)), m_TesterDecl(0) {
     m_Interpreter->process("cling::test::Tester = new cling::test::TestProxy();");
   }
 

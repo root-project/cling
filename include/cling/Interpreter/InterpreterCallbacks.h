@@ -37,12 +37,11 @@ namespace cling {
     InterpreterCallbacks* m_Callbacks; // we don't own it.
 
   public:
-    InterpreterExternalSemaSource() : m_Callbacks(0){}
+    InterpreterExternalSemaSource(InterpreterCallbacks* C) : m_Callbacks(C){}
 
     ~InterpreterExternalSemaSource();
 
     InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
-    void setCallbacks(InterpreterCallbacks* C) { m_Callbacks = C; }
 
     /// \brief Provides last resort lookup for failed unqualified lookups.
     ///
@@ -134,8 +133,7 @@ namespace cling {
     private:
       clang::NamedDecl* m_TesterDecl;
     public:
-      SymbolResolverCallback(Interpreter* interp,
-                             InterpreterExternalSemaSource* IESS = 0);
+      SymbolResolverCallback(Interpreter* interp);
       ~SymbolResolverCallback();
 
       bool LookupObject(clang::LookupResult& R, clang::Scope* S);

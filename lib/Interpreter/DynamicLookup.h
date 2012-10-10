@@ -37,7 +37,9 @@ namespace cling {
   /// One have to be carefull in the cases, in which the compiler expects that
   /// the lookup will fail!
   class DynamicIDHandler : public InterpreterExternalSemaSource {
-  public:  
+  public:
+    DynamicIDHandler(InterpreterCallbacks* C) 
+      : InterpreterExternalSemaSource(C) { }
     ~DynamicIDHandler();
 
     /// \brief Provides last resort lookup for failed unqualified lookups
