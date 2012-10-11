@@ -107,6 +107,9 @@ public:
    void operator delete(void* vp, void* arena) {}
    void operator delete[](void* vp) { ::operator delete[](vp); }
    void operator delete[](void* vp, void* arena) {}
+   
+   void A_n(B& b) { b.B_f(); }
+   void A_n(const char *msg, int ndim = 0) { if (ndim) ++msg; }
 };
 // Note: In CINT, looking up a class template specialization causes
 //       instantiation, but looking up a function template specialization
@@ -635,6 +638,47 @@ func_A_m_proto->print(llvm::outs());
 //CHECK-NEXT:     int y = v;
 //CHECK-NEXT: }
 
+//
+//  Test finding a member function taking an obj reference arg.
+//
+const clang::FunctionDecl* func_A_n_args = lookup.findFunctionArgs(class_A, "A_n", "*(new B()");
+const clang::FunctionDecl* func_A_n_proto = lookup.findFunctionProto(class_A, "A_n", "B&");
+
+printf("func_A_n_args: 0x%lx\n", (unsigned long) func_A_n_args);
+//CHECK: func_A_n_args: 0x{{[1-9a-f][0-9a-f]*$}}
+func_A_n_args->print(llvm::outs());
+//CHECK-NEXT: void A_n(B &b) {
+//CHECK-NEXT:   b.B_f();
+//CHECK-NEXT: }
+
+printf("func_A_n_proto: 0x%lx\n", (unsigned long) func_A_n_proto);
+//CHECK: func_A_n_proto: 0x{{[1-9a-f][0-9a-f]*$}}
+func_A_n_proto->print(llvm::outs());
+//CHECK-NEXT: void A_n(B &b) {
+//CHECK-NEXT:   b.B_f();
+//CHECK-NEXT: }
+
+//
+//  Test finding a member function taking with a default argument.
+//
+const clang::FunctionDecl* func_A_n2_args = lookup.findFunctionArgs(class_A, "A_n", "\"\"");
+const clang::FunctionDecl* func_A_n2_proto = lookup.findFunctionProto(class_A, "A_n", "const char *");
+
+printf("func_A_n2_args: 0x%lx\n", (unsigned long) func_A_n2_args);
+//CHECK: func_A_n2_args: 0x{{[1-9a-f][0-9a-f]*$}}
+func_A_n2_args->print(llvm::outs());
+//CHECK-NEXT: void A_n(const char *msg, int ndim = 0) {
+//CHECK-NEXT:    if (ndim) 
+//CHECK-NEXT:       ++msg;
+//CHECK-NEXT: }
+
+printf("func_A_n2_proto: 0x%lx\n", (unsigned long) func_A_n2_proto);
+//CHECK: func_A_n2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
+func_A_n2_proto->print(llvm::outs());
+//CHECK-NEXT: void A_n(const char *msg, int ndim = 0) {
+//CHECK-NEXT:    if (ndim) 
+//CHECK-NEXT:       ++msg;
+//CHECK-NEXT: }
 
 
 //
@@ -905,21 +949,18 @@ func_B_ctr4_args->print(llvm::outs());
 printf("func_B_ctr4_proto: 0x%lx\n", (unsigned long) func_B_ctr4_proto);
 //CHECK: func_B_ctr4_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 
-// Note: The lookupFunctionArgs() routine does not do overload resolution,
-//       so the template constructor taking T and not T* is selected.
 buf.clear();
 cast<clang::NamedDecl>(func_B_ctr4_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
 printf("func_B_ctr4_proto name: %s\n", buf.c_str());
-//CHECK-NEXT: func_B_ctr4_proto name: B::B<char *>
+//CHECK-NEXT: func_B_ctr4_proto name: B::B<char>
 
-// Note: The lookupFunctionArgs() routine does not do overload resolution,
-//       so the uninstantiated constructor template was chosen, there is no body.
 printf("func_B_ctr4_proto has body: %d\n", func_B_ctr4_proto->hasBody());
-//CHECK-NEXT: func_B_ctr4_proto has body: 0
+//CHECK-NEXT: func_B_ctr4_proto has body: 1
 func_B_ctr4_proto->print(llvm::outs());
-// Note: The test framework does not let us check for the absence of output here.
-
-
+//CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
+//CHECK-NEXT:     this->m_B_i = (long)(char *)v;
+//CHECK-NEXT:     this->m_B_d = 1.;
+//CHECK-NEXT: }
 
 //
 //  Test finding destructors.
@@ -929,7 +970,7 @@ const clang::FunctionDecl* func_B_dtr_args = lookup.findFunctionArgs(class_B, "~
 const clang::FunctionDecl* func_B_dtr_proto = lookup.findFunctionProto(class_B, "~B", "");
 
 printf("func_B_dtr_args: 0x%lx\n", (unsigned long) func_B_dtr_args);
-//CHECK-NEXT: func_B_dtr_args: 0x{{[1-9a-f][0-9a-f]*$}}
+//CHECK: func_B_dtr_args: 0x{{[1-9a-f][0-9a-f]*$}}
 
 buf.clear();
 cast<clang::NamedDecl>(func_B_dtr_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
