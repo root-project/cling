@@ -269,8 +269,8 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  /// out according to the ABI.
 +  ///
 +  /// \param VirtualBaseOffsets The offset of each of the virtual base classes
-+  /// (either direct or not). If any bases are not given offsets, the bases will be laid 
-+  /// out according to the ABI.
++  /// (either direct or not). If any bases are not given offsets, the bases will 
++  /// be laid out according to the ABI.
 +  /// 
 +  /// \returns true if the record layout was provided, false otherwise.
 +  virtual bool 
@@ -278,7 +278,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +                   uint64_t &Size, uint64_t &Alignment,
 +                   llvm::DenseMap<const FieldDecl *, uint64_t> &FieldOffsets,
 +                 llvm::DenseMap<const CXXRecordDecl *, CharUnits> &BaseOffsets,
-+           llvm::DenseMap<const CXXRecordDecl *, CharUnits> &VirtualBaseOffsets);
++          llvm::DenseMap<const CXXRecordDecl *, CharUnits> &VirtualBaseOffsets);
 +
 +  /// Return the amount of memory used by memory buffers, breaking down
 +  /// by heap-backed versus mmap'ed memory.
@@ -286,7 +286,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +
 +  //===--------------------------------------------------------------------===//
 +  // ExternalSemaSource.
-+  //===--------------------------------------------------------------------===// 
++  //===--------------------------------------------------------------------===//
 +
 +  /// \brief Initialize the semantic source with the Sema instance
 +  /// being used to perform semantic analysis on the abstract syntax
@@ -321,7 +321,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  /// given vector of tentative definitions. Note that this routine may be
 +  /// invoked multiple times; the external source should take care not to
 +  /// introduce the same declarations repeatedly.
-+  virtual void ReadTentativeDefinitions(SmallVectorImpl<VarDecl*>&TentativeDefs);
++  virtual void ReadTentativeDefinitions(SmallVectorImpl<VarDecl*> &Defs);
 +  
 +  /// \brief Read the set of unused file-scope declarations known to the
 +  /// external Sema source.
@@ -331,7 +331,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  /// invoked multiple times; the external source should take care not to
 +  /// introduce the same declarations repeatedly.
 +  virtual void ReadUnusedFileScopedDecls(
-+                                  SmallVectorImpl<const DeclaratorDecl*> &Decls);
++                                 SmallVectorImpl<const DeclaratorDecl*> &Decls);
 +  
 +  /// \brief Read the set of delegating constructors known to the
 +  /// external Sema source.
@@ -341,7 +341,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  /// invoked multiple times; the external source should take care not to
 +  /// introduce the same declarations repeatedly.
 +  virtual void ReadDelegatingConstructors(
-+                                    SmallVectorImpl<CXXConstructorDecl*> &Decls);
++                                   SmallVectorImpl<CXXConstructorDecl*> &Decls);
 +
 +  /// \brief Read the set of ext_vector type declarations known to the
 +  /// external Sema source.
@@ -377,7 +377,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  /// may be invoked multiple times; the external source should take care not 
 +  /// to introduce the same selectors repeatedly.
 +  virtual void ReadReferencedSelectors(SmallVectorImpl<std::pair<Selector, 
-+                                                        SourceLocation> > &Sels);
++                                                       SourceLocation> > &Sels);
 +
 +  /// \brief Read the set of weak, undeclared identifiers known to the
 +  /// external Sema source.
@@ -387,7 +387,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  /// the external source should take care not to introduce the same identifiers
 +  /// repeatedly.
 +  virtual void ReadWeakUndeclaredIdentifiers(
-+                     SmallVectorImpl<std::pair<IdentifierInfo*, WeakInfo> > &WI);
++                    SmallVectorImpl<std::pair<IdentifierInfo*, WeakInfo> > &WI);
 +
 +  /// \brief Read the set of used vtables known to the external Sema source.
 +  ///
@@ -404,7 +404,7 @@ Index: tools/clang/include/clang/Sema/MultiplexExternalSemaSource.h
 +  /// external source should take care not to introduce the same instantiations
 +  /// repeatedly.
 +  virtual void ReadPendingInstantiations(
-+               SmallVectorImpl<std::pair<ValueDecl*, SourceLocation> >& Pending);
++              SmallVectorImpl<std::pair<ValueDecl*, SourceLocation> >& Pending);
 +
 +  // isa/cast/dyn_cast support
 +  static bool classof(const MultiplexExternalSemaSource*) { return true; }
@@ -450,7 +450,7 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 ===================================================================
 --- tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp	(revision 0)
 +++ tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp	(revision 0)
-@@ -0,0 +1,270 @@
+@@ -0,0 +1,271 @@
 +//===--- MultiplexExternalSemaSource.cpp  ---------------------------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -476,7 +476,7 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +///\param[in] source - An ExternalSemaSource.
 +///
 +MultiplexExternalSemaSource::MultiplexExternalSemaSource(ExternalSemaSource &s1,
-+                                                         ExternalSemaSource &s2){
++                                                        ExternalSemaSource &s2){
 +  Sources.push_back(&s1);
 +  Sources.push_back(&s2);
 +}
@@ -492,9 +492,9 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +  Sources.push_back(&source);
 +}
 +
-+//===-----------------------------------------------------------------------===//
++//===----------------------------------------------------------------------===//
 +// ExternalASTSource.
-+//===-----------------------------------------------------------------------===//
++//===----------------------------------------------------------------------===//
 +
 +Decl *MultiplexExternalSemaSource::GetExternalDecl(uint32_t ID) {
 +  for(size_t i = 0; i < Sources.size(); ++i)
@@ -528,10 +528,10 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +}
 +
 +CXXBaseSpecifier *MultiplexExternalSemaSource::GetExternalCXXBaseSpecifiers(
-+                                                                uint64_t Offset){
++                                                               uint64_t Offset){
 +  for(size_t i = 0; i < Sources.size(); ++i)
-+    if (CXXBaseSpecifier *Res = Sources[i]->GetExternalCXXBaseSpecifiers(Offset))
-+      return Res;
++    if (CXXBaseSpecifier *R = Sources[i]->GetExternalCXXBaseSpecifiers(Offset))
++      return R;
 +  return 0; 
 +}
 +
@@ -556,7 +556,8 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +}
 +
 +ExternalLoadResult MultiplexExternalSemaSource::
-+FindExternalLexicalDecls(const DeclContext *DC, bool (*isKindWeWant)(Decl::Kind),
++FindExternalLexicalDecls(const DeclContext *DC,
++                         bool (*isKindWeWant)(Decl::Kind),
 +                         SmallVectorImpl<Decl*> &Result) {
 +  for(size_t i = 0; i < Sources.size(); ++i)
 +    // FIXME: The semantics of the return result is unclear to me...
@@ -568,7 +569,7 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +void MultiplexExternalSemaSource::FindFileRegionDecls(FileID File, 
 +                                                      unsigned Offset,
 +                                                      unsigned Length,
-+                                                 SmallVectorImpl<Decl *> &Decls){
++                                                SmallVectorImpl<Decl *> &Decls){
 +  for(size_t i = 0; i < Sources.size(); ++i)
 +    Sources[i]->FindFileRegionDecls(File, Offset, Length, Decls);
 +}
@@ -612,8 +613,8 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +                                                   uint64_t &Size, 
 +                                                   uint64_t &Alignment,
 +                      llvm::DenseMap<const FieldDecl *, uint64_t> &FieldOffsets,
-+                   llvm::DenseMap<const CXXRecordDecl *, CharUnits> &BaseOffsets,
-+           llvm::DenseMap<const CXXRecordDecl *, CharUnits> &VirtualBaseOffsets){
++                  llvm::DenseMap<const CXXRecordDecl *, CharUnits> &BaseOffsets,
++          llvm::DenseMap<const CXXRecordDecl *, CharUnits> &VirtualBaseOffsets){
 +  for(size_t i = 0; i < Sources.size(); ++i)
 +    if (Sources[i]->layoutRecordType(Record, Size, Alignment, FieldOffsets, 
 +                                     BaseOffsets, VirtualBaseOffsets))
@@ -628,9 +629,9 @@ Index: tools/clang/lib/Sema/MultiplexExternalSemaSource.cpp
 +
 +}
 +
-+//===-----------------------------------------------------------------------===//
++//===----------------------------------------------------------------------===//
 +// ExternalSemaSource.
-+//===-----------------------------------------------------------------------===//
++//===----------------------------------------------------------------------===//
 +
 +
 +void MultiplexExternalSemaSource::InitializeSema(Sema &S) {
