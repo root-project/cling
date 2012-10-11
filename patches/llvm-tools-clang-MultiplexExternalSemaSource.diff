@@ -801,7 +801,7 @@ Index: tools/clang/lib/Sema/Sema.cpp
 +  }
 +
 +  if (isMultiplexExternalSource)
-+    ((MultiplexExternalSemaSource*) ExternalSource)->addSource(*E);
++    static_cast<MultiplexExternalSemaSource*>(ExternalSource)->addSource(*E);
 +  else {
 +    ExternalSource = new MultiplexExternalSemaSource(*ExternalSource, *E);
 +    isMultiplexExternalSource = true;
