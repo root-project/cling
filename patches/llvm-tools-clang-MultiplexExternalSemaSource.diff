@@ -779,7 +779,7 @@ Index: tools/clang/lib/Sema/Sema.cpp
      ExternalSema->ForgetSema();
 +
 +  // If Sema's ExternalSource is the multiplexer - we own it.
-+  if (ExternalSource && isMultiplexExternalSource)
++  if (isMultiplexExternalSource)
 +    delete ExternalSource;
  }
  
