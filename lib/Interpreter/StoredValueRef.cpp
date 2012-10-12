@@ -17,7 +17,7 @@ m_Mem(0) {
   if (!(t->isIntegralOrEnumerationType()
         || t->isRealFloatingType()
         || t->hasPointerRepresentation())) {
-    const int64_t size = getAllocSizeInBytes(ctx);
+    const uint64_t size = (uint64_t)getAllocSizeInBytes(ctx);
     if (size > sizeof(m_Buf))
       m_Mem = new char[size];
     else m_Mem = m_Buf;
