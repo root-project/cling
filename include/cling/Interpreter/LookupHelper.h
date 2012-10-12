@@ -27,15 +27,18 @@ namespace llvm {
 namespace cling {
 
   ///\brief Reflection information query interface. The class performs lookups
-  /// in the currently loaded information in the AST, using the same Parser, Sema
-  /// and Preprocessor objects.
+  /// in the currently loaded information in the AST, using the same Parser, 
+  /// Sema and Preprocessor objects.
   ///
   class LookupHelper {
   private:
-    clang::Parser* m_Parser; //doesn't own it.
+    clang::Parser* m_Parser; // doesn't own it.
+    mutable bool m_PPSuppressAllDiags; // helps parser recovery from lookup
+    mutable bool m_PPSpellChecking; // helps parser recovery
+    mutable bool m_PPResetIncrProcessing; // helps parser recovery
   public:
 
-    LookupHelper(clang::Parser* P) : m_Parser(P) {}
+    LookupHelper(clang::Parser* P);
 
     ///\brief Lookup a type by name, starting from the global
     /// namespace.
@@ -77,6 +80,10 @@ namespace cling {
     void findArgList(llvm::StringRef argList,
                      llvm::SmallVector<clang::Expr*, 4>& argExprs) const;
 
+  private:
+    void prepareForParsing(llvm::StringRef code, 
+                           llvm::StringRef bufferName) const;
+    void recoverFromParsing() const;
   };
 
 } // end namespace

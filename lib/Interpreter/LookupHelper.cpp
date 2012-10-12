@@ -65,6 +65,13 @@ namespace cling {
     }
   };
 
+  LookupHelper::LookupHelper(clang::Parser* P) : m_Parser(P) {
+    const Preprocessor& PP = P->getPreprocessor();
+    m_PPSuppressAllDiags = PP.getDiagnostics().getSuppressAllDiagnostics();
+    m_PPResetIncrProcessing = PP.isIncrementalProcessingEnabled();
+  }
+
+
   QualType LookupHelper::findType(llvm::StringRef typeName) const {
     //
     //  Our return value.
@@ -73,48 +80,9 @@ namespace cling {
 
     // Use P for shortness
     Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    Preprocessor& PP = P.getPreprocessor();
-    //
-    //  Tell the diagnostic engine to ignore all diagnostics.
-    //
-    bool OldSuppressAllDiagnostics =
-      PP.getDiagnostics().getSuppressAllDiagnostics();
-    PP.getDiagnostics().setSuppressAllDiagnostics(true);
-    //
-    //  Tell the parser to not attempt spelling correction.
-    //
-    bool OldSpellChecking = PP.getLangOpts().SpellChecking;
-    const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = 0;
-    //
-    //  Tell the diagnostic consumer we are switching files.
-    //
-    DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
-    DClient->BeginSourceFile(PP.getLangOpts(), &PP);
-    //
-    //  Create a fake file to parse the type name.
-    //
-    llvm::MemoryBuffer* SB = llvm::MemoryBuffer::getMemBufferCopy(
-      std::string(typeName) + "\n", "lookup.type.by.name.file");
-    FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
-    //
-    //  Turn on ignoring of the main file eof token.
-    //
-    //  Note: We need this because token readahead in the following
-    //        routine calls ends up parsing it multiple times.
-    //
-    bool ResetIncrementalProcessing = false;
-    if (!PP.isIncrementalProcessingEnabled()) {
-      ResetIncrementalProcessing = true;
-      PP.enableIncrementalProcessing();
-    }
-    //
-    //  Switch to the new file the way #include does.
-    //
-    //  Note: To switch back to the main file we must consume an eof token.
-    //
-    PP.EnterSourceFile(FID, /*DirLookup=*/0, SourceLocation());
-    PP.Lex(const_cast<Token&>(P.getCurToken()));
+    //Sema& S = P.getActions();
+    //Preprocessor& PP = P.getPreprocessor();
+    prepareForParsing(typeName, llvm::StringRef("lookup.type.by.name.file"));
     //
     //  Try parsing the type name.
     //
@@ -128,20 +96,7 @@ namespace cling {
         TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
       }
     }
-    //
-    // Advance the parser to the end of the file, and pop the include stack.
-    //
-    // Note: Consuming the EOF token will pop the include stack.
-    //
-    P.SkipUntil(tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
-                /*StopAtCodeCompletion*/false);
-    if (ResetIncrementalProcessing) {
-      PP.enableIncrementalProcessing(false);
-    }
-    DClient->EndSourceFile();
-    S.getDiagnostics().Reset();
-    S.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
-    const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = OldSpellChecking;
+    recoverFromParsing();
     return TheQT;
   }
 
@@ -1186,6 +1141,72 @@ namespace cling {
     const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = OldSpellChecking;    
   }
 
+  void LookupHelper::prepareForParsing(llvm::StringRef code, 
+                                       llvm::StringRef bufferName) const {
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    Preprocessor& PP = P.getPreprocessor();
+    //
+    //  Tell the diagnostic engine to ignore all diagnostics.
+    //
+    m_PPSuppressAllDiags = PP.getDiagnostics().getSuppressAllDiagnostics();
+    PP.getDiagnostics().setSuppressAllDiagnostics(true);
+    //
+    //  Tell the parser to not attempt spelling correction.
+    //
+    m_PPSpellChecking = PP.getLangOpts().SpellChecking;
+    const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = 0;
+    //
+    //  Tell the diagnostic consumer we are switching files.
+    //
+    DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
+    DClient->BeginSourceFile(PP.getLangOpts(), &PP);
+    //
+    //  Create a fake file to parse the type name.
+    //
+    llvm::MemoryBuffer* SB 
+      = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
+                                             bufferName.str());
+    FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+    //
+    //  Turn on ignoring of the main file eof token.
+    //
+    //  Note: We need this because token readahead in the following
+    //        routine calls ends up parsing it multiple times.
+    //
+    m_PPResetIncrProcessing = PP.isIncrementalProcessingEnabled();
+    if (!PP.isIncrementalProcessingEnabled()) {
+      m_PPResetIncrProcessing = true;
+      PP.enableIncrementalProcessing();
+    }
+    //
+    //  Switch to the new file the way #include does.
+    //
+    //  Note: To switch back to the main file we must consume an eof token.
+    //
+    PP.EnterSourceFile(FID, /*DirLookup=*/0, SourceLocation());
+    PP.Lex(const_cast<Token&>(P.getCurToken()));
 
+  }
+
+  void LookupHelper::recoverFromParsing() const {
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    Preprocessor& PP = P.getPreprocessor(); 
+    //
+    // Advance the parser to the end of the file, and pop the include stack.
+    //
+    // Note: Consuming the EOF token will pop the include stack.
+    //
+    P.SkipUntil(tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
+                /*StopAtCodeCompletion*/false);
+    if (!m_PPResetIncrProcessing) {
+      PP.enableIncrementalProcessing(false);
+    }
+    S.getDiagnostics().getClient()->EndSourceFile();
+    S.getDiagnostics().Reset();
+    S.getDiagnostics().setSuppressAllDiagnostics(m_PPSuppressAllDiags);
+    const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = m_PPSpellChecking;
+  }
 
 } // end namespace cling
