@@ -46,7 +46,14 @@ StoredValueRef StoredValueRef::bitwiseCopy(const ASTContext& ctx,
                                            const Value& value) {
   StoredValue* SValue = new StoredValue(ctx, value.type);
   if (SValue->m_Mem) {
-    memcpy(SValue->m_Mem, value.value.PointerVal,
+    const char* src = (const char*)value.value.PointerVal;
+    // It's not a pointer. LLVM stores a char[5] (i.e. 5 x i8) as an i40,
+    // so use that instead. We don't keep it as an int; instead, we "allocate"
+    // it as a "proper" char[5] in the m_Mem. "Allocate" because it uses the
+    // m_Buf, so no actual allocation happens.
+    uint64_t IntVal = value.value.IntVal.getSExtValue();
+    if (!src) src = (const char*)&IntVal;
+    memcpy(SValue->m_Mem, src,
            SValue->getAllocSizeInBytes(ctx));
   } else {
     SValue->value = value.value;
