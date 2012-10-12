@@ -17,13 +17,17 @@ m_Mem(0) {
   if (!(t->isIntegralOrEnumerationType()
         || t->isRealFloatingType()
         || t->hasPointerRepresentation())) {
-    m_Mem = new char[getAllocSizeInBytes(ctx)];
+    const int64_t size = getAllocSizeInBytes(ctx);
+    if (size > sizeof(m_Buf))
+      m_Mem = new char[size];
+    else m_Mem = m_Buf;
     value = llvm::PTOGV(m_Mem);
   };
 }
 
 StoredValueRef::StoredValue::~StoredValue() {
-  delete [] m_Mem;
+  if (m_Mem != m_Buf)
+    delete [] m_Mem;
 }
 
 int64_t StoredValueRef::StoredValue::getAllocSizeInBytes(

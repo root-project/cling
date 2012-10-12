@@ -32,6 +32,12 @@ namespace cling {
       /// Points to memory allocated for storing the value, if it
       /// does not fit into Value::value.
       char* m_Mem;
+
+      /// \brief Pre-allocated buffer for value
+      ///
+      /// Can be pointed-to by m_Mem to avoid extra memory allocation for
+      /// small values.
+      char m_Buf[80]; // increases sizeof(*this) from 48->128
     };
 
     llvm::IntrusiveRefCntPtr<StoredValue> m_Value;
