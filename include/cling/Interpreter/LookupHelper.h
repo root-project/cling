@@ -83,7 +83,6 @@ namespace cling {
   private:
     void prepareForParsing(llvm::StringRef code, 
                            llvm::StringRef bufferName) const;
-    void recoverFromParsing() const;
   };
 
 } // end namespace
