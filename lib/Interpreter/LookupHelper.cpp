@@ -929,7 +929,6 @@ namespace cling {
     // Use P for shortness
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
-    Preprocessor &PP = S.getPreprocessor();
     prepareForParsing(argList, llvm::StringRef("arg.list.file"));
     ParserStateRAII ResetParserState(S, &P, m_PPResetIncrProcessing,
                                      m_PPSuppressAllDiags, 
