@@ -56,6 +56,9 @@ namespace cling {
     }
 
     /// \}
+
+    // dyn_cast/isa support
+    static bool classof(const clang::ASTConsumer*) { return true; }
   };
 } // namespace cling
 
