@@ -177,6 +177,7 @@ namespace cling {
     // We have specialized EvaluateT but we don't care because the templated 
     // decl is needed.
     TemplateDecl* TplD = dyn_cast_or_null<TemplateDecl>(*R.begin());
+    assert(TplD && "Cannot be null");
     m_EvalDecl = dyn_cast<FunctionDecl>(TplD->getTemplatedDecl());
     assert(m_EvalDecl && "The Eval function not found!");
 
