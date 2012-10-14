@@ -163,16 +163,17 @@ namespace cling {
 
   void EvaluateTSynthesizer::Initialize() {
     // Most of the declaration we are looking up are in cling::runtime::internal
-    NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
-    NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
-    NSD = utils::Lookup::Namespace(m_Sema, "internal", NSD);
+    DeclContext* DC = m_Context->getTranslationUnitDecl();
+    DC = utils::Lookup::Namespace(m_Sema, "cling");
+    DC = utils::Lookup::Namespace(m_Sema, "runtime", DC);
+    DC = utils::Lookup::Namespace(m_Sema, "internal", DC);
 
     // Find and set up EvaluateT
     DeclarationName Name = &m_Context->Idents.get("EvaluateT");
 
     LookupResult R(*m_Sema, Name, SourceLocation(), Sema::LookupOrdinaryName,
                      Sema::ForRedeclaration);
-    m_Sema->LookupQualifiedName(R, NSD);
+    m_Sema->LookupQualifiedName(R, DC);
     // We have specialized EvaluateT but we don't care because the templated 
     // decl is needed.
     TemplateDecl* TplD = dyn_cast_or_null<TemplateDecl>(*R.begin());
@@ -183,7 +184,7 @@ namespace cling {
     R.clear();
     Name = &m_Context->Idents.get("LifetimeHandler");
     R.setLookupName(Name);
-    m_Sema->LookupQualifiedName(R, NSD);
+    m_Sema->LookupQualifiedName(R, DC);
     m_LifetimeHandlerDecl = R.getAsSingle<CXXRecordDecl>();
     assert(m_LifetimeHandlerDecl && "LifetimeHandler could not be found.");
 
@@ -199,7 +200,7 @@ namespace cling {
     R.clear();
     Name = &m_Context->Idents.get("DynamicExprInfo");
     R.setLookupName(Name);
-    m_Sema->LookupQualifiedName(R, NSD);
+    m_Sema->LookupQualifiedName(R, DC);
     m_DynamicExprInfoDecl = R.getAsSingle<CXXRecordDecl>();
     assert(m_DynamicExprInfoDecl && "DynExprInfo could not be found.");
 
@@ -207,8 +208,10 @@ namespace cling {
     R.clear();
     Name = &m_Context->Idents.get("DeclContext");
     R.setLookupName(Name);
-    NamespaceDecl* clangNSD = utils::Lookup::Namespace(m_Sema, "clang");
-    m_Sema->LookupQualifiedName(R, clangNSD);
+
+    DeclContext* clangDC = m_Context->getTranslationUnitDecl();
+    clangDC = utils::Lookup::Namespace(m_Sema, "clang");
+    m_Sema->LookupQualifiedName(R, clangDC);
     m_DeclContextDecl = R.getAsSingle<CXXRecordDecl>();
     assert(m_DeclContextDecl && "clang::DeclContext decl could not be found.");
 
@@ -219,7 +222,7 @@ namespace cling {
                                "InterpreterGeneratedCodeDiagnosticsMaybeIncorrect");
     R.setLookupName(Name);
 
-    m_Sema->LookupQualifiedName(R, NSD);
+    m_Sema->LookupQualifiedName(R, DC);
     assert(!R.empty() && "Cannot find PrintValue(...)");
 
     NamedDecl* ND = R.getFoundDecl();
