@@ -266,6 +266,7 @@ namespace cling {
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
                                                       llvm::StringRef funcName, 
                                                llvm::StringRef funcProto) const {
+    assert(scopeDecl && "Decl cannot be null");
     //
     //  Our return value.
     //
