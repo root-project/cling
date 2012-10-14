@@ -29,7 +29,6 @@ namespace cling {
   ///
   class ParserStateRAII {
   private:
-    Sema& S;
     Parser* P;
     Preprocessor& PP;
     DiagnosticConsumer* DClient;
@@ -38,9 +37,9 @@ namespace cling {
     bool OldSpellChecking;
 
   public:
-    ParserStateRAII(Sema& s, Parser* p, bool rip, bool sad, bool sc)
-       : S(s), P(p), PP(s.getPreprocessor()), 
-         DClient(s.getDiagnostics().getClient()), 
+    ParserStateRAII(Parser* p, bool rip, bool sad, bool sc)
+       : P(p), PP(P->getPreprocessor()), 
+         DClient(P->getActions().getDiagnostics().getClient()), 
          ResetIncrementalProcessing(rip),
          OldSuppressAllDiagnostics(sad), OldSpellChecking(sc)
     {}
@@ -56,7 +55,7 @@ namespace cling {
                    /*StopAtCodeCompletion*/false);
       PP.enableIncrementalProcessing(ResetIncrementalProcessing);
       DClient->EndSourceFile();
-      S.getDiagnostics().Reset();
+      P->getActions().getDiagnostics().Reset();
       PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
       const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking =
          OldSpellChecking;
@@ -79,10 +78,8 @@ namespace cling {
     // Use P for shortness
     Parser& P = *m_Parser;
     prepareForParsing(typeName, llvm::StringRef("lookup.type.by.name.file"));
-    ParserStateRAII ResetParserState(P.getActions(), &P, 
-                                     m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, 
-                                     m_PPSpellChecking);
+    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
+                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Try parsing the type name.
     //
@@ -111,9 +108,8 @@ namespace cling {
     ASTContext& Context = S.getASTContext();
     prepareForParsing(className.str() + "::", 
                       llvm::StringRef("lookup.class.by.name.file"));
-    ParserStateRAII ResetParserState(S, &P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, 
-                                     m_PPSpellChecking);
+    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
+                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Our return values.
     //
@@ -187,7 +183,9 @@ namespace cling {
                 // Note: Do we need to check for a dependent type here?
                 NestedNameSpecifier *prefix = NNS->getPrefix();
                 if (prefix) {
-                   QualType temp = Context.getElaboratedType(ETK_None,prefix,QualType(NNS->getAsType(),0));
+                   QualType temp 
+                     = Context.getElaboratedType(ETK_None,prefix,
+                                                 QualType(NNS->getAsType(),0));
                    *setResultType = temp.getTypePtr();
                 } else {
                    *setResultType = NNS->getAsType();
@@ -279,9 +277,8 @@ namespace cling {
     Preprocessor& PP = S.getPreprocessor();
     ASTContext& Context = S.getASTContext();
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
-    ParserStateRAII ResetParserState(S, &P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, 
-                                     m_PPSpellChecking);
+    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
+                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Get the DeclContext we will search for the function.
     //
@@ -458,16 +455,8 @@ namespace cling {
               // Class method, not static, not a constructor, so has
               // an implicit object argument.
               CXXMethodDecl* MD = cast<CXXMethodDecl>(FD);
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  MD->print(tmp, 0);
-              //  fprintf(stderr, "Considering method: %s\n",
-              //    tmp.str().c_str());
-              //}
               if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
                 // Explicit template args were given, cannot use a plain func.
-                //fprintf(stderr, "rejected: template args given\n");
                 continue;
               }
               S.AddMethodCandidate(MD, I.getPair(), MD->getParent(),
@@ -477,22 +466,14 @@ namespace cling {
                                    Candidates);
             }
             else {
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  FD->print(tmp, 0);
-              //  fprintf(stderr, "Considering func: %s\n", tmp.str().c_str());
-              //}
               const FunctionProtoType* Proto = dyn_cast<FunctionProtoType>(
                 FD->getType()->getAs<clang::FunctionType>());
               if (!Proto) {
                 // Function has no prototype, cannot do overloading.
-                //fprintf(stderr, "rejected: no prototype\n");
                 continue;
               }
               if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
                 // Explicit template args were given, cannot use a plain func.
-                //fprintf(stderr, "rejected: template args given\n");
                 continue;
               }
               S.AddOverloadCandidate(FD, I.getPair(),
@@ -507,13 +488,6 @@ namespace cling {
                 !isa<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
               // Class method template, not static, not a constructor, so has
               // an implicit object argument.
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  FTD->print(tmp, 0);
-              //  fprintf(stderr, "Considering method template: %s\n",
-              //    tmp.str().c_str());
-              //}
               S.AddMethodTemplateCandidate(FTD, I.getPair(),
                                       cast<CXXRecordDecl>(FTD->getDeclContext()),
                          const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
@@ -523,28 +497,11 @@ namespace cling {
                                            Candidates);
             }
             else {
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  FTD->print(tmp, 0);
-              //  fprintf(stderr, "Considering func template: %s\n",
-              //    tmp.str().c_str());
-              //}
               S.AddTemplateOverloadCandidate(FTD, I.getPair(),
                 const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
                 llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
                 Candidates, /*SuppressUserConversions=*/false);
             }
-          }
-          else {
-            //{
-            //  std::string buf;
-            //  llvm::raw_string_ostream tmp(buf);
-            //  FD->print(tmp, 0);
-            //  fprintf(stderr, "Considering non-func: %s\n",
-            //    tmp.str().c_str());
-            //  fprintf(stderr, "rejected: not a function\n");
-            //}
           }
         }
         //
@@ -560,17 +517,6 @@ namespace cling {
           }
         }
       }
-      //
-      //  Dump the overloading result.
-      //
-      //if (TheDecl) {
-      //  std::string buf;
-      //  llvm::raw_string_ostream tmp(buf);
-      //  TheDecl->print(tmp, 0);
-      //  fprintf(stderr, "Match: %s\n", tmp.str().c_str());
-      //  TheDecl->dump();
-      //  fprintf(stderr, "\n");
-      //}
     }
     return TheDecl;
   }
@@ -592,9 +538,8 @@ namespace cling {
     ASTContext& Context = S.getASTContext();
 
     prepareForParsing(funcArgs, llvm::StringRef("func.args.file"));
-    ParserStateRAII ResetParserState(S, &P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, 
-                                     m_PPSpellChecking);
+    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
+                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Convert the passed decl into a nested name specifier,
     //  a scope spec, and a decl context.
@@ -775,20 +720,6 @@ namespace cling {
         // Lookup failed.
         return TheDecl;
       }
-      //
-      //  Dump what was found.
-      //
-      //if (Result.getResultKind() == LookupResult::Found) {
-      //  NamedDecl* ND = Result.getFoundDecl();
-      //  std::string buf;
-      //  llvm::raw_string_ostream tmp(buf);
-      //  ND->print(tmp, 0);
-      //  fprintf(stderr, "Found: %s\n", tmp.str().c_str());
-      //} else if (Result.getResultKind() == LookupResult::FoundOverloaded) {
-      //  fprintf(stderr, "Found overload set!\n");
-      //  Result.print(llvm::outs());
-      //  fprintf(stderr, "\n");
-      //}
       {
         //
         //  Construct the overload candidate set.
@@ -804,16 +735,8 @@ namespace cling {
               // Class method, not static, not a constructor, so has
               // an implicit object argument.
               CXXMethodDecl* MD = cast<CXXMethodDecl>(FD);
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  MD->print(tmp, 0);
-              //  fprintf(stderr, "Considering method: %s\n",
-              //    tmp.str().c_str());
-              //}
               if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
                 // Explicit template args were given, cannot use a plain func.
-                //fprintf(stderr, "rejected: template args given\n");
                 continue;
               }
               S.AddMethodCandidate(MD, I.getPair(), MD->getParent(),
@@ -823,22 +746,14 @@ namespace cling {
                                    Candidates);
             }
             else {
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  FD->print(tmp, 0);
-              //  fprintf(stderr, "Considering func: %s\n", tmp.str().c_str());
-              //}
               const FunctionProtoType* Proto = dyn_cast<FunctionProtoType>(
                 FD->getType()->getAs<clang::FunctionType>());
               if (!Proto) {
                 // Function has no prototype, cannot do overloading.
-                //fprintf(stderr, "rejected: no prototype\n");
                 continue;
               }
               if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
                 // Explicit template args were given, cannot use a plain func.
-                //fprintf(stderr, "rejected: template args given\n");
                 continue;
               }
               S.AddOverloadCandidate(FD, I.getPair(),
@@ -853,13 +768,6 @@ namespace cling {
                 !isa<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
               // Class method template, not static, not a constructor, so has
               // an implicit object argument.
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  FTD->print(tmp, 0);
-              //  fprintf(stderr, "Considering method template: %s\n",
-              //    tmp.str().c_str());
-              //}
               S.AddMethodTemplateCandidate(FTD, I.getPair(),
                                       cast<CXXRecordDecl>(FTD->getDeclContext()),
                          const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
@@ -869,13 +777,6 @@ namespace cling {
                                            Candidates);
             }
             else {
-              //{
-              //  std::string buf;
-              //  llvm::raw_string_ostream tmp(buf);
-              //  FTD->print(tmp, 0);
-              //  fprintf(stderr, "Considering func template: %s\n",
-              //    tmp.str().c_str());
-              //}
               S.AddTemplateOverloadCandidate(FTD, I.getPair(),
                 const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
                 llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
@@ -883,14 +784,6 @@ namespace cling {
             }
           }
           else {
-            //{
-            //  std::string buf;
-            //  llvm::raw_string_ostream tmp(buf);
-            //  FD->print(tmp, 0);
-            //  fprintf(stderr, "Considering non-func: %s\n",
-            //    tmp.str().c_str());
-            //  fprintf(stderr, "rejected: not a function\n");
-            //}
           }
         }
         //
@@ -906,17 +799,6 @@ namespace cling {
           }
         }
       }
-      //
-      //  Dump the overloading result.
-      //
-      //if (TheDecl) {
-      //  std::string buf;
-      //  llvm::raw_string_ostream tmp(buf);
-      //  TheDecl->print(tmp, 0);
-      //  fprintf(stderr, "Match: %s\n", tmp.str().c_str());
-      //  TheDecl->dump();
-      //  fprintf(stderr, "\n");
-      //}
     }
     return TheDecl;
   }
@@ -928,12 +810,10 @@ namespace cling {
     //
     // Use P for shortness
     Parser& P = *m_Parser;
-    Sema& S = P.getActions();
     prepareForParsing(argList, llvm::StringRef("arg.list.file"));
-    ParserStateRAII ResetParserState(S, &P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, 
-                                     m_PPSpellChecking);
-   //
+    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
+                                     m_PPSuppressAllDiags, m_PPSpellChecking);
+    //
     //  Parse the arguments now.
     //
     {
@@ -1005,6 +885,5 @@ namespace cling {
     PP.Lex(const_cast<Token&>(P.getCurToken()));
 
   }
-
 
 } // end namespace cling
