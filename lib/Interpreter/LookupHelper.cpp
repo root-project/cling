@@ -66,6 +66,7 @@ namespace cling {
     const Preprocessor& PP = P->getPreprocessor();
     m_PPSuppressAllDiags = PP.getDiagnostics().getSuppressAllDiagnostics();
     m_PPResetIncrProcessing = PP.isIncrementalProcessingEnabled();
+    m_PPSpellChecking = PP.getLangOpts().SpellChecking;
   }
 
 
