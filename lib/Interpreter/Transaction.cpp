@@ -56,8 +56,11 @@ namespace cling {
         Out<<"|         End Transaction" << nestedT << "           |\n";
         Out<<"+====================================================+\n";
       }
-      for (DeclGroupRef::const_iterator J = I->begin(), L = I->end(); J != L;++J)
-        (*J)->print(Out, Policy, Indent, PrintInstantiation);
+      for (DeclGroupRef::const_iterator J = I->begin(), L = I->end();J != L;++J)
+        if (*J)
+          (*J)->print(Out, Policy, Indent, PrintInstantiation);
+        else
+          Out << "<<NULL DECL>>";
     }
   }
 
