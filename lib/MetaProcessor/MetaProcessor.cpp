@@ -212,7 +212,8 @@ namespace cling {
   bool MetaProcessor::ProcessMeta(const std::string& input_line,
                                   StoredValueRef* result){
 
-   llvm::MemoryBuffer* MB = llvm::MemoryBuffer::getMemBuffer(input_line);
+   llvm::OwningPtr<llvm::MemoryBuffer> MB;
+   MB.reset(llvm::MemoryBuffer::getMemBuffer(input_line));
    Token Tok;
 
    CommandLexer CmdLexer(MB->getBufferStart(), MB->getBufferEnd(), 
