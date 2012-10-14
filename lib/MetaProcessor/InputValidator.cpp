@@ -20,7 +20,8 @@ namespace cling {
 
     m_Input.append(line);
 
-    llvm::MemoryBuffer* MB = llvm::MemoryBuffer::getMemBuffer(line);
+    llvm::OwningPtr<llvm::MemoryBuffer> MB;
+    MB.reset(llvm::MemoryBuffer::getMemBuffer(line));
     Lexer RawLexer(SourceLocation(), LO, MB->getBufferStart(),
                    MB->getBufferStart(), MB->getBufferEnd());
     Token Tok;
