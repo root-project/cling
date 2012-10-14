@@ -30,10 +30,16 @@ namespace cling {
     : m_Interpreter(interp),  m_SemaExternalSource(IESS) {
     if (!IESS)
       m_SemaExternalSource.reset(new InterpreterExternalSemaSource(this));
+    m_Interpreter->getSema().addExternalSource(m_SemaExternalSource.get());
+
   }
 
   // pin the vtable here
-  InterpreterCallbacks::~InterpreterCallbacks() {}
+  InterpreterCallbacks::~InterpreterCallbacks() {
+    // FIXME: we have to remove the external source at destruction time. Needs
+    // further tweaks of the patch in clang. This will be done later once the 
+    // patch is in clang's mainline.
+  }
 
   bool InterpreterCallbacks::LookupObject(LookupResult&, Scope*) {
     return false;

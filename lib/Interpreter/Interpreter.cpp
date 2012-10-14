@@ -672,7 +672,6 @@ namespace cling {
 
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
     // We need it to enable LookupObject callback.
-    getSema().addExternalSource(C->getInterpreterExternalSemaSource());
     m_Callbacks.reset(C);
   }
 
