@@ -130,7 +130,8 @@ namespace cling {
     if (CurT->isNestedTransaction()) {
       assert(!CurT->getParent()->isCompleted() 
              && "Parent transaction completed!?");
-      CurT = m_Consumer->getTransaction()->getParent();
+      // FIXME: Not sure what I meant :) REVISIT
+      //CurT = m_Consumer->getTransaction()->getParent();
     }
   }
 
