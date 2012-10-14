@@ -105,10 +105,10 @@ namespace test {
 
     // Only for demo resolve all unknown objects to cling::test::Tester
     if (!m_TesterDecl) {
-      clang::Sema& S = m_Interpreter->getSema();
-      clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&S, "cling");
-      NSD = utils::Lookup::Namespace(&S, "test", NSD);
-      m_TesterDecl = utils::Lookup::Named(&S, "Tester", NSD);
+      clang::Sema& SemaRef = m_Interpreter->getSema();
+      clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&SemaRef, "cling");
+      NSD = utils::Lookup::Namespace(&SemaRef, "test", NSD);
+      m_TesterDecl = utils::Lookup::Named(&SemaRef, "Tester", NSD);
     }
     assert (m_TesterDecl && "Tester not found!");
     R.addDecl(m_TesterDecl);
