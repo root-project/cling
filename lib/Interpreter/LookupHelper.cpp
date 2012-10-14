@@ -589,7 +589,7 @@ namespace cling {
     //
     QualType ClassType;
     Expr* ObjExpr = 0;
-    Expr::Classification ObjExprClassification;
+    Expr::Classification ObjExprClassification = Expr::Classification();
     if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
       ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
       ObjExpr = new (Context) OpaqueValueExpr(SourceLocation(),
