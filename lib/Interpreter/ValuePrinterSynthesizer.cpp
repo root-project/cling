@@ -42,13 +42,14 @@ namespace cling {
   { }
 
   void ValuePrinterSynthesizer::Transform() {
-    if (!getTransaction()->getCompilationOpts().ValuePrinting)
+    if (getTransaction()->getCompilationOpts().ValuePrinting 
+        == CompilationOptions::VPDisabled)
       return;
 
     for (Transaction::const_iterator I = getTransaction()->decls_begin(), 
            E = getTransaction()->decls_end(); I != E; ++I)
       if(!tryAttachVP(*I))
-        return setTransaction(0); // On error set the to NULL.
+        return setTransaction(0); // On error set to NULL.
   }
 
   bool ValuePrinterSynthesizer::tryAttachVP(DeclGroupRef DGR) {
@@ -56,36 +57,75 @@ namespace cling {
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I)) {
         if (FD->getNameAsString().find("__cling_Un1Qu3"))
           return true;
+        const CompilationOptions& CO(getTransaction()->getCompilationOpts());
+        if (CO.ValuePrinting == CompilationOptions::VPDisabled)
+          return true; // Nothing to do.
 
+        // We have to be able to mark the expression for printout. There are
+        // three scenarios:
+        // 0: Expression printing disabled - don't do anything just exit
+        //    even if there wasn't missing ';'.
+        // 1: Expression printing enabled - print no matter what.
+        // 2: Expression printing auto - analyze - rely on the omitted ';' to
+        //    not produce the suppress marker.
         if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
-          for (CompoundStmt::body_iterator
-                 J = CS->body_begin(), E = CS->body_end(); J != E; ++J) {
-            if (J+1 ==  E || !isa<NullStmt>(*(J+1))) {
-              Expr* To = 0;
-              ReturnStmt* RS = dyn_cast<ReturnStmt>(*J);
-              if (RS)
-                To = RS->getRetValue();
-              else
-                To = dyn_cast<Expr>(*J);
+          // Collect all Stmts, contained in the CompoundStmt
+          llvm::SmallVector<Stmt *, 4> Stmts;
+          for (CompoundStmt::body_iterator iStmt = CS->body_begin(),
+                 eStmt = CS->body_end(); iStmt != eStmt; ++iStmt)
+            Stmts.push_back(*iStmt);
 
-              if (To) {
-                Expr* Result = 0;
-                if (m_Sema->getLangOpts().CPlusPlus)
-                  Result = SynthesizeCppVP(To);
-                else
-                  Result = SynthesizeVP(To);
-
-                if (Result) {
-                  if (RS)
-                    RS->setRetValue(Result);
-                  else
-                    *J = Result;
-                }
-              }
+          int indexOfLastExpr = Stmts.size();
+          while(indexOfLastExpr--) {
+            // find the trailing expression statement (skip e.g. null statements)
+            if (isa<Expr>(Stmts[indexOfLastExpr])) {
+              // even if void: we found an expression
+              break;
             }
+          }
+
+          // If no expressions found quit early.
+          if (indexOfLastExpr < 0)
+            return true; 
+
+          // Update the CompoundStmt body
+          Expr* To = cast<Expr>(Stmts[indexOfLastExpr]);// We know it is an expr
+          switch (CO.ValuePrinting) {
+          case CompilationOptions::VPDisabled:
+            assert("Don't wait that long. Exit early!");
+            break;
+          case CompilationOptions::VPEnabled:
+            break;
+          case CompilationOptions::VPAuto:
+            if ((int)Stmts.size() > indexOfLastExpr+1 
+                && Stmts[indexOfLastExpr+1] 
+                && isa<NullStmt>(Stmts[indexOfLastExpr+1]))
+              return true; // If prev is NullStmt disable VP is disabled - exit.
+            break;
+          }
+
+          // We can't PushDeclContext, because we don't have scope.
+          Sema::ContextRAII pushedDC(*m_Sema, FD);
+
+          if (To) {
+            // Strip the parenthesis if any
+            if (ParenExpr* PE = dyn_cast<ParenExpr>(To))
+              To = PE->getSubExpr();
+            
+            Expr* Result = 0;
+            if (m_Sema->getLangOpts().CPlusPlus)
+              Result = SynthesizeCppVP(To);
+            else
+              Result = SynthesizeVP(To);
+
+            if (Result)
+              Stmts[indexOfLastExpr] = Result;
+
+            CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
           }
           // Clear the artificial NullStmt-s
           if (!ClearNullStmts(CS)) {
+            // FIXME: Why it is here? Shouldn't it be in DeclExtractor?
             // if no body remove the wrapper
             DeclContext* DC = FD->getDeclContext();
             Scope* S = m_Sema->getScopeForContext(DC);
@@ -95,6 +135,7 @@ namespace cling {
           }
         }
       }
+
     return true;
   }
 

@@ -37,7 +37,7 @@ namespace cling {
     llvm::OwningPtr<llvm::raw_ostream> m_ValuePrinterStream;
 
 public:
-    ///\ brief Construct the value printer synthesizer.
+    ///\ brief Constructs the value printer synthesizer.
     ///
     ///\param[in] S - The semantic analysis object
     ///\param[in] Stream - The output stream where the value printer will write
@@ -49,6 +49,15 @@ public:
     virtual void Transform();
 
   private:
+    ///\brief Tries to attach a value printing mechanism to the given decl group
+    /// ref.
+    ///
+    ///\param[in] DGR - A decl group ref the value printer is being attached to.
+    ///
+    ///\returns true if the attachment was considered as success. I.e. even if
+    /// even if the value printer wasn't attached because of the compilation 
+    /// options disallowint it - it will return still true. Returns false on
+    /// critical error.
     bool tryAttachVP(clang::DeclGroupRef DGR);
     clang::Expr* SynthesizeCppVP(clang::Expr* E);
     clang::Expr* SynthesizeVP(clang::Expr* E);

@@ -81,7 +81,7 @@ namespace cling {
 
     ///\brief Contains the transaction transformers.
     ///
-    llvm::SmallVector<TransactionTransformer*, 4> m_TTransformers;
+    llvm::SmallVector<TransactionTransformer*, 6> m_TTransformers;
 
   public:
     enum EParseResult {
@@ -140,6 +140,10 @@ namespace cling {
 
     ///\brief Compiles the given input with the given compilation options.
     ///
+    ///\param[in] input - The code to compile.
+    ///\param[in] Opts - The compilation options to use.
+    ///\returns whether the operation was successful.
+    ///
     EParseResult Compile(llvm::StringRef input, const CompilationOptions& Opts);
 
     ///\brief Parses the given input without calling the custom consumers and 
@@ -149,9 +153,10 @@ namespace cling {
     /// different executable code.
     ///
     ///\param[in] input - The code to parse.
-    ///\returns The transaction coresponding to the input.
+    ///\param[in] Opts - The compilation options to use.
+    ///\returns The transaction corresponding to the input.
     ///
-    Transaction* Parse(llvm::StringRef input);
+    Transaction* Parse(llvm::StringRef input, const CompilationOptions& Opts);
 
     void unloadTransaction(Transaction* T);
 

@@ -376,6 +376,7 @@ namespace cling {
     CompilationOptions CO;
     CO.DeclarationExtraction = 1;
     CO.ValuePrinting = CompilationOptions::VPAuto;
+    CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
 
@@ -400,6 +401,7 @@ namespace cling {
     CO.CodeGeneration = 0;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
 
@@ -411,6 +413,7 @@ namespace cling {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
 
@@ -426,6 +429,7 @@ namespace cling {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
+    CO.ResultEvaluation = (bool)V;
 
     return EvaluateInternal(input, CO, V);
   }
@@ -435,6 +439,7 @@ namespace cling {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = CompilationOptions::VPEnabled;
+    CO.ResultEvaluation = 0;
 
     return EvaluateInternal(input, CO, V);
   }
@@ -512,8 +517,6 @@ namespace cling {
                                 const CompilationOptions& CO,
                                 StoredValueRef* V /* = 0 */) {
 
-    Sema& TheSema = getCI()->getSema();
-
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
@@ -531,7 +534,7 @@ namespace cling {
     QualType RetTy = getCI()->getASTContext().VoidTy;
 
     if (V) {
-      const Transaction* CurT = m_IncrParser->Parse(Wrapper);
+      const Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
       assert(CurT->size() && "No decls created by Parse!");
 
       // Find the wrapper function declaration.
@@ -540,67 +543,30 @@ namespace cling {
       //       instantiation happened.  Our wrapper function should be the
       //       last decl in the set.
       //
-      FunctionDecl* TopLevelFD 
+      FunctionDecl* FD 
         = dyn_cast<FunctionDecl>(CurT->getLastDecl().getSingleDecl());
-      assert(TopLevelFD && "No Decls Parsed?");
-      DeclContext* CurContext = TheSema.CurContext;
-      TheSema.CurContext = TopLevelFD;
-      ASTContext& Context(getCI()->getASTContext());
-      // We have to be able to mark the expression for printout. There are three
-      // scenarios:
-      // 0: Expression printing disabled - don't do anything just disable the
-      //    consumer
-      //    is our marker, even if there wasn't missing ';'.
-      // 1: Expression printing enabled - make sure we don't have NullStmt,
-      //    which is used as a marker to suppress the print out.
-      // 2: Expression printing auto - do nothing - rely on the omitted ';' to
-      //    not produce the suppress marker.
-      if (CompoundStmt* CS = dyn_cast<CompoundStmt>(TopLevelFD->getBody())) {
+      assert(FD && "No Decls Parsed?");
+      if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
         // Collect all Stmts, contained in the CompoundStmt
         llvm::SmallVector<Stmt *, 4> Stmts;
         for (CompoundStmt::body_iterator iStmt = CS->body_begin(),
                eStmt = CS->body_end(); iStmt != eStmt; ++iStmt)
           Stmts.push_back(*iStmt);
-
-        size_t indexOfLastExpr = Stmts.size();
+          
+        int indexOfLastExpr = Stmts.size();
         while(indexOfLastExpr--) {
           // find the trailing expression statement (skip e.g. null statements)
-          if (Expr* E = dyn_cast_or_null<Expr>(Stmts[indexOfLastExpr])) {
-            RetTy = E->getType();
-            if (!RetTy->isVoidType()) {
-              // Change the void function's return type
-              FunctionProtoType::ExtProtoInfo EPI;
-              QualType FuncTy = Context.getFunctionType(RetTy,/* ArgArray = */0,
-                                                        /* NumArgs = */0, EPI);
-              TopLevelFD->setType(FuncTy);
-              // Strip the parenthesis if any
-              if (ParenExpr* PE = dyn_cast<ParenExpr>(E))
-                E = PE->getSubExpr();
-
-              // Change it with return stmt
-              Stmts[indexOfLastExpr]
-                = TheSema.ActOnReturnStmt(SourceLocation(), E).take();
-            }
+          if (isa<Expr>(Stmts[indexOfLastExpr])) {
             // even if void: we found an expression
             break;
           }
         }
-
-        // case 1:
-        if (CO.ValuePrinting == CompilationOptions::VPEnabled)
-          if (indexOfLastExpr < Stmts.size() - 1 &&
-              isa<NullStmt>(Stmts[indexOfLastExpr + 1]))
-            Stmts.erase(Stmts.begin() + indexOfLastExpr);
-        // Stmts.insert(Stmts.begin() + indexOfLastExpr + 1,
-        //              TheSema.ActOnNullStmt(SourceLocation()).take());
-
-        // Update the CompoundStmt body
-        CS->setStmts(TheSema.getASTContext(), Stmts.data(), Stmts.size());
-
+        if (indexOfLastExpr >= 0) {
+          Expr* lastExpr = dyn_cast<Expr>(Stmts[indexOfLastExpr]);
+          assert(lastExpr && "Last expr not found.");
+          RetTy = lastExpr->getType();
+        }
       }
-
-      TheSema.CurContext = CurContext;
-
       m_IncrParser->commitCurrentTransaction();
     }
     else
@@ -611,7 +577,8 @@ namespace cling {
        if (RunFunction(WrapperName, RetTy)) {
         return Interpreter::kSuccess;
       }
-    } else if (RunFunction(WrapperName, RetTy, V)) {
+    } else if (RunFunction(WrapperName, RetTy, V)) { // Why we have to pass-in
+      // the type again?
       return Interpreter::kSuccess;
     } else {
        *V = StoredValueRef::invalidValue();

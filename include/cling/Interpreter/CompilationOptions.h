@@ -26,6 +26,10 @@ namespace cling {
     unsigned ValuePrinting : 2;
     enum ValuePrinting { VPDisabled, VPEnabled, VPAuto };
 
+    ///\brief Whether or not to return result from an execution.
+    ///
+    unsigned ResultEvaluation: 1;
+
     ///\brief Whether or not to extend the static scope with new information
     /// about the names available only at runtime
     ///
@@ -43,6 +47,7 @@ namespace cling {
     CompilationOptions() {
       DeclarationExtraction = 1;
       ValuePrinting = VPAuto;
+      ResultEvaluation = 0;
       DynamicScoping = 0;
       Debug = 0;
       CodeGeneration = 1;

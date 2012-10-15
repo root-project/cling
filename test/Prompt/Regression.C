@@ -12,7 +12,7 @@ cling::StoredValueRef V;
 gCling->process("int a = print();",&V);
 //CHECK: print is run.
 gCling->process("a", &V);
-//CHECK: (int const) 1
+//CHECK: (int) 1
 gCling->process("a;", &V);
 //CHECK-NOT: print is run.
 // End PR #96277

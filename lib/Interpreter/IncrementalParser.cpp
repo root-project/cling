@@ -10,6 +10,7 @@
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
+#include "ReturnSynthesizer.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/Interpreter.h"
@@ -69,6 +70,7 @@ namespace cling {
 
     m_TTransformers.push_back(new DeclExtractor(&getCI()->getSema()));
     m_TTransformers.push_back(new ValuePrinterSynthesizer(&CI->getSema(), 0));
+    m_TTransformers.push_back(new ReturnSynthesizer(&CI->getSema()));
     m_TTransformers.push_back(new ASTDumper());
 
     m_Parser.reset(new Parser(CI->getPreprocessor(), CI->getSema(),
@@ -247,8 +249,9 @@ namespace cling {
     return Result;
   }
 
-  Transaction* IncrementalParser::Parse(llvm::StringRef input) {
-    beginTransaction(CompilationOptions());
+  Transaction* IncrementalParser::Parse(llvm::StringRef input,
+                                        const CompilationOptions& Opts) {
+    beginTransaction(Opts);
     ParseInternal(input);
     endTransaction();
 

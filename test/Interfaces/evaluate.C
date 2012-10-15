@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify | FileCheck %s
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/StoredValueRef.h"
@@ -19,9 +19,10 @@ V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 cling::StoredValueRef Result;
 gCling->evaluate("V", &Result);
-Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef) ]
+Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef)]
 V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 // Savannah #96277
 gCling->evaluate("double sin(double); double one = sin(3.141/2);", &V);
-one // CHECK: (double) 1.000000e+00
+V // CHECK: (cling::StoredValueRef) boxes [(void)]
+one // expected-error {{use of undeclared identifier 'one'}}  
