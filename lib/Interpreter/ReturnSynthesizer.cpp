@@ -36,7 +36,7 @@ namespace cling {
           if (FD->getNameAsString().find("__cling_Un1Qu3"))
             return;
 
-          int foundAtPos;
+          int foundAtPos = -1;
           if (Expr* lastExpr = utils::Analyze::GetLastExpr(FD, &foundAtPos)) {
             QualType RetTy = lastExpr->getType();
             if (!RetTy->isVoidType()) {
