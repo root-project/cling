@@ -78,16 +78,16 @@ static void StreamObj(llvm::raw_ostream& o, const void* v,
         o <<
           "(" <<
           value->type.getAsString(C.getPrintingPolicy()) <<
-          ") ";
+          ")";
         clang::QualType valType = value->type.getDesugaredType(C);
         if (valType->isPointerType())
-          o << value->value.PointerVal;
+          o << " " << value->value.PointerVal;
         else if (valType->isFloatingType())
-          o << value->value.DoubleVal;
+          o << " " << value->value.DoubleVal;
         else if (valType->isIntegerType())
-          o << value->value.IntVal.getSExtValue();
+          o << " " << value->value.IntVal.getSExtValue();
         else if (valType->isBooleanType())
-          o << value->value.IntVal.getBoolValue();
+          o << " " << value->value.IntVal.getBoolValue();
         o << "]\n";
 
         return;
