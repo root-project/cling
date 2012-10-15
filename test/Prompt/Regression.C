@@ -16,3 +16,9 @@ gCling->process("a", &V);
 gCling->process("a;", &V);
 //CHECK-NOT: print is run.
 // End PR #96277
+// PR #98146
+gCling->process("\"Root\"", &V);
+// CHECK: (const char [5]) @0x{{[1-9a-f][0-9a-f]*$}}
+V
+// CHECK: (cling::StoredValueRef) boxes [(const char [5])]
+// End PR #98146
