@@ -546,27 +546,10 @@ namespace cling {
       FunctionDecl* FD 
         = dyn_cast<FunctionDecl>(CurT->getLastDecl().getSingleDecl());
       assert(FD && "No Decls Parsed?");
-      if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
-        // Collect all Stmts, contained in the CompoundStmt
-        llvm::SmallVector<Stmt *, 4> Stmts;
-        for (CompoundStmt::body_iterator iStmt = CS->body_begin(),
-               eStmt = CS->body_end(); iStmt != eStmt; ++iStmt)
-          Stmts.push_back(*iStmt);
-          
-        int indexOfLastExpr = Stmts.size();
-        while(indexOfLastExpr--) {
-          // find the trailing expression statement (skip e.g. null statements)
-          if (isa<Expr>(Stmts[indexOfLastExpr])) {
-            // even if void: we found an expression
-            break;
-          }
-        }
-        if (indexOfLastExpr >= 0) {
-          Expr* lastExpr = dyn_cast<Expr>(Stmts[indexOfLastExpr]);
-          assert(lastExpr && "Last expr not found.");
-          RetTy = lastExpr->getType();
-        }
+      if (Expr* lastExpr = utils::Analyze::GetLastExpr(FD)) {
+        RetTy = lastExpr->getType();
       }
+
       m_IncrParser->commitCurrentTransaction();
     }
     else

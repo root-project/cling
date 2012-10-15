@@ -11,10 +11,34 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Lookup.h"
 
+#include "llvm/ADT/ArrayRef.h"
+
 using namespace clang;
 
 namespace cling {
 namespace utils {
+
+  Expr* Analyze::GetLastExpr(FunctionDecl* FD, int* FoundAt /* =0 */) {
+    if (FoundAt)
+      *FoundAt = -1;
+
+    if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
+      llvm::ArrayRef<Stmt*> Stmts 
+        = llvm::makeArrayRef(CS->body_begin(), CS->size());
+          
+      int indexOfLastExpr = Stmts.size();
+      while(indexOfLastExpr--) 
+        if (isa<Expr>(Stmts[indexOfLastExpr]))
+          break;
+      if (FoundAt)
+        *FoundAt = indexOfLastExpr;
+      if (indexOfLastExpr < 0)
+        return 0;
+      return cast<Expr>(Stmts[indexOfLastExpr]);
+    }
+    return 0;
+  }
+
   Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, uint64_t Ptr) {
     ASTContext& Ctx = S->getASTContext();
     if (!Ty->isPointerType())

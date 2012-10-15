@@ -14,6 +14,7 @@ namespace clang {
   class Expr;
   class DeclContext;
   class DeclarationName;
+  class FunctionDecl;
   class NamedDecl;
   class NamespaceDecl;
   class QualType;
@@ -23,6 +24,19 @@ namespace clang {
 
 namespace cling {
 namespace utils {
+
+  ///\brief Class containing static utility functions analizing ASTNodes or 
+  /// types.
+  class Analyze {
+  public:
+    ///\brief Retrieves the last expression of a function body. 
+    ///
+    /// Useful for value printing (deciding where to attach the value printer)
+    /// and value evaluation (deciding that is the type of a value)
+    /// 
+    static clang::Expr* GetLastExpr(clang::FunctionDecl* FD, int* FoundAt = 0);
+  };
+
   ///\brief Class containing static utility functions synthesizing AST nodes or
   /// types.
   ///

@@ -68,28 +68,12 @@ namespace cling {
         // 1: Expression printing enabled - print no matter what.
         // 2: Expression printing auto - analyze - rely on the omitted ';' to
         //    not produce the suppress marker.
-        if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
-          // Collect all Stmts, contained in the CompoundStmt
-          llvm::SmallVector<Stmt *, 4> Stmts;
-          for (CompoundStmt::body_iterator iStmt = CS->body_begin(),
-                 eStmt = CS->body_end(); iStmt != eStmt; ++iStmt)
-            Stmts.push_back(*iStmt);
+        int indexOfLastExpr = -1;
+        if (Expr* To = utils::Analyze::GetLastExpr(FD, &indexOfLastExpr)) {
+          // Update the CompoundStmt body, avoiding alloc/dealloc of all the el.
+          CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
+          assert(CS && "Missing body?");
 
-          int indexOfLastExpr = Stmts.size();
-          while(indexOfLastExpr--) {
-            // find the trailing expression statement (skip e.g. null statements)
-            if (isa<Expr>(Stmts[indexOfLastExpr])) {
-              // even if void: we found an expression
-              break;
-            }
-          }
-
-          // If no expressions found quit early.
-          if (indexOfLastExpr < 0)
-            return true; 
-
-          // Update the CompoundStmt body
-          Expr* To = cast<Expr>(Stmts[indexOfLastExpr]);// We know it is an expr
           switch (CO.ValuePrinting) {
           case CompilationOptions::VPDisabled:
             assert("Don't wait that long. Exit early!");
@@ -97,10 +81,10 @@ namespace cling {
           case CompilationOptions::VPEnabled:
             break;
           case CompilationOptions::VPAuto:
-            if ((int)Stmts.size() > indexOfLastExpr+1 
-                && Stmts[indexOfLastExpr+1] 
-                && isa<NullStmt>(Stmts[indexOfLastExpr+1]))
-              return true; // If prev is NullStmt disable VP is disabled - exit.
+            if ((int)CS->size() > indexOfLastExpr+1 
+                && (*(CS->body_begin() + indexOfLastExpr + 1))
+                && isa<NullStmt>(*(CS->body_begin() + indexOfLastExpr + 1)))
+              return true; // If next is NullStmt disable VP is disabled - exit.
             break;
           }
 
@@ -119,9 +103,7 @@ namespace cling {
               Result = SynthesizeVP(To);
 
             if (Result)
-              Stmts[indexOfLastExpr] = Result;
-
-            CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
+              *(CS->body_begin()+indexOfLastExpr) = Result;
           }
           // Clear the artificial NullStmt-s
           if (!ClearNullStmts(CS)) {

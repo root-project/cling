@@ -7,6 +7,7 @@
 #include "ReturnSynthesizer.h"
 
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclGroup.h"
@@ -34,45 +35,25 @@ namespace cling {
         if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I)) {
           if (FD->getNameAsString().find("__cling_Un1Qu3"))
             return;
-          if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
-            // Collect all Stmts, contained in the CompoundStmt
-            llvm::SmallVector<Stmt *, 4> Stmts;
-            for (CompoundStmt::body_iterator iStmt = CS->body_begin(),
-                   eStmt = CS->body_end(); iStmt != eStmt; ++iStmt)
-              Stmts.push_back(*iStmt);
 
-            int indexOfLastExpr = Stmts.size();
-            while(indexOfLastExpr--) {
-              // find the trailing expression statement (skip e.g. null statements)
-              if (isa<Expr>(Stmts[indexOfLastExpr])) {
-                // even if void: we found an expression
-                break;
-              }
-            }
-            
-            // If no expressions found quit early.
-            if (indexOfLastExpr < 0)
-              return; 
-            // We can't PushDeclContext, because we don't have scope.
-            Sema::ContextRAII pushedDC(*m_Sema, FD);
-            Expr* lastExpr = cast<Expr>(Stmts[indexOfLastExpr]); // It is an expr
-            if (lastExpr) {
-              QualType RetTy = lastExpr->getType();
-              if (!RetTy->isVoidType()) {
-                // Change the void function's return type
-                FunctionProtoType::ExtProtoInfo EPI;
-                QualType FnTy = m_Context->getFunctionType(RetTy,
-                                                           /* ArgArray = */0,
-                                                           /* NumArgs = */0, 
-                                                           EPI);
-                FD->setType(FnTy);
-                
-                // Change it with return stmt
-                Stmts[indexOfLastExpr]
-                  = m_Sema->ActOnReturnStmt(lastExpr->getExprLoc(), 
+          int foundAtPos;
+          if (Expr* lastExpr = utils::Analyze::GetLastExpr(FD, &foundAtPos)) {
+            QualType RetTy = lastExpr->getType();
+            if (!RetTy->isVoidType()) {
+              // Change the void function's return type
+              // We can't PushDeclContext, because we don't have scope.
+              Sema::ContextRAII pushedDC(*m_Sema, FD);
+              FunctionProtoType::ExtProtoInfo EPI;
+              QualType FnTy = m_Context->getFunctionType(RetTy,
+                                                         /* ArgArray = */0,
+                                                         /* NumArgs = */0, EPI);
+              FD->setType(FnTy);
+              CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
+              assert(CS && "Missing body?");
+              // Change it with return stmt (Avoid dealloc/alloc of all el.)
+              *(CS->body_begin() + foundAtPos)
+                = m_Sema->ActOnReturnStmt(lastExpr->getExprLoc(), 
                                             lastExpr).take();
-              }
-              CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
             }
           }
         }
