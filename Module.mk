@@ -22,6 +22,14 @@ CLINGETC     := $(addprefix etc/cling/Interpreter/,RuntimeUniverse.h ValuePrinte
 # used in the main Makefile
 ALLHDRS      += $(CLINGETC)
 
+ifneq ($(LLVMDEV),)
+CLINGEXES    := $(wildcard $(MODDIR)/tools/driver/*.cpp) \
+                $(wildcard $(MODDIR)/lib/UserInterface/*.cpp)
+CLINGEXEO    := $(call stripsrc,$(CLINGEXES:.cpp=.o))
+CLINGEXE     := $(LLVMDIRO)/Debug+Asserts/bin/cling
+ALLEXECS     += $(CLINGEXE)
+endif
+
 # include all dependency files
 INCLUDEFILES += $(CLINGDEP)
 
@@ -86,4 +94,17 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(CLINGCXXFLAGS)  -D__cplusplus -- $<
 	$(CXX) $(OPT) $(CLINGCXXFLAGS) $(CXXOUT)$@ -c $<
 
+ifneq ($(LLVMDEV),)
+$(CLINGEXE): $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO)
+	$(RSYNC) --exclude '.svn' $(CLINGDIR) $(LLVMDIRO)/tools
+	@cd $(LLVMDIRS)/tools && ln -sf ../../../cling # yikes
+	@mkdir -p $(dir $@)
+	$(LD) $(CLINGLIBEXTRA) -o $@ $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO)
+endif
+
 ##### extra rules ######
+ifneq ($(LLVMDEV),)
+$(CLINGO)   : CLINGCXXFLAGS += '-DCLING_SRCDIR_INCL="$(CLINGDIR)/include"' \
+	'-DCLING_INSTDIR_INCL="$(shell cd $(LLVMDIRI); pwd)/include"'
+$(CLINGEXEO): CLINGCXXFLAGS += -I$(TEXTINPUTDIRS)
+endif
