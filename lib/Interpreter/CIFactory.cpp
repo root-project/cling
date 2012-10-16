@@ -152,7 +152,7 @@ namespace cling {
       return 0;
     }
     clang::CompilerInvocation*
-      Invocation = new clang::CompilerInvocation; // LEAKS!
+      Invocation = new clang::CompilerInvocation;
     clang::CompilerInvocation::CreateFromArgs(*Invocation, CC1Args->data() + 1,
                                               CC1Args->data() + CC1Args->size(),
                                               *Diagnostics);
