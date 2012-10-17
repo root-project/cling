@@ -33,7 +33,8 @@ namespace cling {
       for (DeclGroupRef::const_iterator I = (*iDGR).begin(), E = (*iDGR).end();
            I != E; ++I)
         if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I)) {
-          if (FD->getNameAsString().find("__cling_Un1Qu3"))
+          if (FD->getNameAsString().compare(0, strlen("__cling_Un1Qu3"),
+                                            "__cling_Un1Qu3"))
             continue;
 
           int foundAtPos = -1;

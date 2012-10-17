@@ -42,7 +42,8 @@ namespace cling {
     FunctionDecl* FD = dyn_cast<FunctionDecl>(D);
 
     if (FD) {
-      if (FD->getNameAsString().find("__cling_Un1Qu3"))
+      if (FD->getNameAsString().compare(0, strlen("__cling_Un1Qu3"),
+                                        "__cling_Un1Qu3"))
         return true;
 
       llvm::SmallVector<NamedDecl*, 4> TouchedDecls;
