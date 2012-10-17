@@ -133,16 +133,15 @@ namespace cling {
     // 1.1. Find gCling
     SourceLocation NoSLoc = SourceLocation();
 
-    DeclContext* DC = m_Context->getTranslationUnitDecl();
-    DC = utils::Lookup::Namespace(m_Sema, "cling");
-    DC = utils::Lookup::Namespace(m_Sema, "valuePrinterInternal", DC);
+    NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
+    NSD = utils::Lookup::Namespace(m_Sema, "valuePrinterInternal", NSD);
 
 
     DeclarationName PVName = &m_Context->Idents.get("PrintValue");
     LookupResult R(*m_Sema, PVName, NoSLoc, Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
-
-    m_Sema->LookupQualifiedName(R, DC);
+    assert(NSD && "There must be a valid namespace.");
+    m_Sema->LookupQualifiedName(R, NSD);
     assert(!R.empty() && "Cannot find PrintValue(...)");
 
     CXXScopeSpec CSS;
