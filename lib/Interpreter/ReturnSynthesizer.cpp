@@ -34,7 +34,7 @@ namespace cling {
            I != E; ++I)
         if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I)) {
           if (FD->getNameAsString().find("__cling_Un1Qu3"))
-            return;
+            continue;
 
           int foundAtPos = -1;
           if (Expr* lastExpr = utils::Analyze::GetLastExpr(FD, &foundAtPos)) {
