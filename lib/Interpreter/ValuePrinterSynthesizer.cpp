@@ -63,8 +63,7 @@ namespace cling {
 
         // We have to be able to mark the expression for printout. There are
         // three scenarios:
-        // 0: Expression printing disabled - don't do anything just exit
-        //    even if there wasn't missing ';'.
+        // 0: Expression printing disabled - don't do anything just exit.
         // 1: Expression printing enabled - print no matter what.
         // 2: Expression printing auto - analyze - rely on the omitted ';' to
         //    not produce the suppress marker.
