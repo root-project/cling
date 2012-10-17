@@ -1,4 +1,5 @@
-// RUN: cat %s | %cling -Xclang -verify | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify
+// RUN: cat %s | %cling --nologo | FileCheck %s
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/StoredValueRef.h"
@@ -26,3 +27,8 @@ V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 gCling->evaluate("double sin(double); double one = sin(3.141/2);", &V);
 V // CHECK: (cling::StoredValueRef) boxes [(void)]
 one // expected-error {{use of undeclared identifier 'one'}}  
+
+gCling->process("double sin(double); double one = sin(3.141/2);", &V);
+V // CHECK: (cling::StoredValueRef) boxes [(void)]
+one // CHECK: (double) 1.000
+int one; // expected-error {{saying something like redecl but verify is broken!}}  
