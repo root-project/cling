@@ -29,6 +29,16 @@ namespace utils {
   /// types.
   class Analyze {
   public:
+
+    ///\brief Checks whether the declaration is a interpreter-generated wrapper
+    /// function.
+    ///
+    ///\param[in] D - The decl being checked. If null returns false. 
+    ///
+    ///\returns true if the decl is a interpreter-generated wrapper function.
+    ///
+    static bool IsWrapper(const clang::NamedDecl* ND);
+
     ///\brief Retrieves the last expression of a function body. 
     ///
     /// Useful for value printing (deciding where to attach the value printer)
@@ -42,6 +52,7 @@ namespace utils {
   ///
   class Synthesize {
   public:
+    static const char* UniquePrefix;
 
     ///\brief Synthesizes c-style cast in the AST from given pointer and type to
     /// cast to.

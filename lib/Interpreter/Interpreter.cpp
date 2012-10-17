@@ -478,24 +478,25 @@ namespace cling {
   }
 
   void Interpreter::createUniqueName(std::string& out) {
-    out = "Un1Qu3";
+    out = utils::Synthesize::UniquePrefix;
     llvm::raw_string_ostream(out) << m_UniqueCounter++;
   }
 
   bool Interpreter::isUniqueName(llvm::StringRef name) {
-    return name.startswith("Un1Qu3");
+    return name.startswith(utils::Synthesize::UniquePrefix);
   }
 
   llvm::StringRef Interpreter::createUniqueWrapper() {
-    const size_t size = sizeof("__cling_Un1Qu3") + sizeof(m_UniqueCounter);
-    llvm::SmallString<size> out("__cling_Un1Qu3");
+    const size_t size 
+      = sizeof(utils::Synthesize::UniquePrefix) + sizeof(m_UniqueCounter);
+    llvm::SmallString<size> out(utils::Synthesize::UniquePrefix);
     llvm::raw_svector_ostream(out) << m_UniqueCounter++;
 
     return (getCI()->getASTContext().Idents.getOwn(out)).getName();
   }
 
   bool Interpreter::isUniqueWrapper(llvm::StringRef name) {
-    return name.startswith("__cling_Un1Qu3");
+    return name.startswith(utils::Synthesize::UniquePrefix);
   }
 
   Interpreter::CompilationResult

@@ -12,11 +12,20 @@
 #include "clang/Sema/Lookup.h"
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/StringRef.h"
 
 using namespace clang;
 
 namespace cling {
 namespace utils {
+
+  bool Analyze::IsWrapper(const NamedDecl* ND) {
+    if (!ND)
+      return false;
+
+    return llvm::StringRef(ND->getNameAsString())
+      .startswith(Synthesize::UniquePrefix);
+  }
 
   Expr* Analyze::GetLastExpr(FunctionDecl* FD, int* FoundAt /* =0 */) {
     if (FoundAt)
@@ -38,6 +47,8 @@ namespace utils {
     }
     return 0;
   }
+
+  const char* Synthesize::UniquePrefix = "__cling_Un1Qu3";
 
   Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, uint64_t Ptr) {
     ASTContext& Ctx = S->getASTContext();

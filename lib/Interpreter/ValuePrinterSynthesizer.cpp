@@ -55,8 +55,7 @@ namespace cling {
   bool ValuePrinterSynthesizer::tryAttachVP(DeclGroupRef DGR) {
     for (DeclGroupRef::iterator I = DGR.begin(), E = DGR.end(); I != E; ++I)
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I)) {
-        if (FD->getNameAsString().compare(0, strlen("__cling_Un1Qu3"),
-                                        "__cling_Un1Qu3"))
+        if (!utils::Analyze::IsWrapper(FD))
           continue;
         const CompilationOptions& CO(getTransaction()->getCompilationOpts());
         if (CO.ValuePrinting == CompilationOptions::VPDisabled)

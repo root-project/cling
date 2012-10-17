@@ -848,7 +848,8 @@ namespace cling {
   }
 
   void EvaluateTSynthesizer::createUniqueName(std::string& out) {
-    out = "autoGenName";
+    out = "__dynamic";
+    out += utils::Synthesize::UniquePrefix;
     llvm::raw_string_ostream(out) << m_UniqueNameCounter++;
   }
 
