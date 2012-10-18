@@ -453,15 +453,12 @@ namespace cling {
     CO.DynamicScoping = 0;
     CO.Debug = isPrintingAST();
 
-    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_call,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
-                              clang::diag::MAP_IGNORE, SourceLocation());
+    // TODO: Here might be useful to issue unused variable diagnostic,
+    // because we don't do declaration extraction and the decl won't be visible
+    // anymore.
+    ignoreFakeDiagnostics();
 
     // Wrap the expression
     std::string WrapperName;
@@ -546,16 +543,9 @@ namespace cling {
   Interpreter::EvaluateInternal(const std::string& input, 
                                 const CompilationOptions& CO,
                                 StoredValueRef* V /* = 0 */) {
-
-    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_call,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
-                              clang::diag::MAP_IGNORE, SourceLocation());
+    ignoreFakeDiagnostics();
 
     // Wrap the expression
     std::string WrapperName;
@@ -690,6 +680,19 @@ namespace cling {
     } else {
       mangledName = D->getNameAsString();
     }
+  }
+
+  void Interpreter::ignoreFakeDiagnostics() const {
+    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    // Disable warnings which doesn't make sense when using the prompt
+    // This gets reset with the clang::Diagnostics().Reset()
+    Diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+    Diag.setDiagnosticMapping(clang::diag::warn_unused_call,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+    Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+
   }
 
   bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress) {

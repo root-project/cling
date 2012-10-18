@@ -210,8 +210,8 @@ namespace cling {
     ///
     ///\returns true if successful otherwise false.
     ///
-     bool RunFunction(llvm::StringRef fname, clang::QualType retType,
-                      StoredValueRef* res = 0);
+    bool RunFunction(llvm::StringRef fname, clang::QualType retType,
+                     StoredValueRef* res = 0);
 
     ///\brief Forwards to cling::ExecutionContext::addSymbol.
     ///
@@ -221,8 +221,12 @@ namespace cling {
     ///
     ///\param [in]  D - mangle this decl's name
     ///\param [out] mangledName - put the mangled name in here
-    void mangleName(const clang::NamedDecl* D,
-                        std::string& mangledName) const;
+    void mangleName(const clang::NamedDecl* D, std::string& mangledName) const;
+
+    ///\brief Ignores meaningless diagnostics in the context of the incremental
+    /// compilation. Eg. unused expression warning and so on.
+    ///
+    void ignoreFakeDiagnostics() const;
 
   public:
 
