@@ -463,7 +463,7 @@ namespace cling {
 
     Sema& S = getCI()->getSema();
     FunctionDecl* FD 
-      = cast_or_null<FunctionDecl>(utils::Lookup::Named(&S, fname.str().c_str()));
+      = cast_or_null<FunctionDecl>(utils::Lookup::Named(&S, fname.data()));
     
     if (FD) {
       mangleName(FD, mangledNameIfNeeded);
