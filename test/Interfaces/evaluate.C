@@ -1,5 +1,5 @@
 // RUN: cat %s | %cling -Xclang -verify
-// RUN: cat %s | %cling --nologo | FileCheck %s
+// RUN: cat %s | %cling | FileCheck %s
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/StoredValueRef.h"
