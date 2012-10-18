@@ -412,7 +412,7 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
-  Interpreter::evaluate(const std::string& input, StoredValueRef* V /* = 0 */) {
+  Interpreter::evaluate(const std::string& input, StoredValueRef& V) {
     // Here we might want to enforce further restrictions like: Only one
     // ExprStmt can be evaluated and etc. Such enforcement cannot happen in the
     // worker, because it is used from various places, where there is no such
@@ -420,9 +420,9 @@ namespace cling {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
-    CO.ResultEvaluation = (bool)V;
+    CO.ResultEvaluation = 1;
 
-    return EvaluateInternal(input, CO, V);
+    return EvaluateInternal(input, CO, &V);
   }
 
   Interpreter::CompilationResult
@@ -615,10 +615,10 @@ namespace cling {
 
     StoredValueRef Result;
     if (TheSema.getExternalSource()) {
-      (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, &Result);
+      (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, Result);
     }
     else
-      (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, &Result);
+      (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, Result);
 
     TheSema.CurContext = CurContext;
 

@@ -437,7 +437,10 @@ namespace cling {
     Interpreter::CompilationResult interpRes = Interpreter::kSuccess;
     if (m_Interp.loadFile(file)) {
       std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
-      interpRes = m_Interp.evaluate(expression, result);
+      if (result)
+        interpRes = m_Interp.evaluate(expression, *result);
+      else
+        interpRes = m_Interp.execute(expression);
     }
 
     return (interpRes != Interpreter::kFailure);

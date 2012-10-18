@@ -126,7 +126,7 @@ namespace runtime {
         llvm::raw_string_ostream stream(str);
         stream<<"delete ("<< m_Type << "*) "<< m_Memory << ";";
         stream.flush();
-        gCling->evaluate(str);
+        gCling->execute(str);
       }
     };
   }

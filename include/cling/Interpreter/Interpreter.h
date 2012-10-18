@@ -350,8 +350,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult evaluate(const std::string& input,
-                               StoredValueRef* V = 0);
+    CompilationResult evaluate(const std::string& input, StoredValueRef& V);
 
     ///\brief Compiles input line, which contains only expressions and prints
     /// out the result of its execution.
