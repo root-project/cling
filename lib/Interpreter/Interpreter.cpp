@@ -450,9 +450,8 @@ namespace cling {
     input.append("\n;\n}");
   }
 
-  bool Interpreter::RunFunction(llvm::StringRef fname,
-                                clang::QualType retType,
-                                StoredValueRef* res) {
+  bool Interpreter::RunFunction(llvm::StringRef fname, clang::QualType retType,
+                                StoredValueRef* res /* = 0 */) {
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return false;
 
@@ -557,15 +556,12 @@ namespace cling {
       m_IncrParser->Compile(Wrapper, CO);
 
     // get the result
-    if (!V) {
-       if (RunFunction(WrapperName, RetTy)) {
-        return Interpreter::kSuccess;
-      }
-    } else if (RunFunction(WrapperName, RetTy, V)) { // Why we have to pass-in
+    if (RunFunction(WrapperName, RetTy, V)) { // Why we have to pass-in
       // the type again?
       return Interpreter::kSuccess;
     } else {
-       *V = StoredValueRef::invalidValue();
+      if (V)
+        *V = StoredValueRef::invalidValue();
     }
 
     return Interpreter::kFailure;
