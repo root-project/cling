@@ -33,7 +33,7 @@ namespace utils {
     ///\brief Checks whether the declaration is a interpreter-generated wrapper
     /// function.
     ///
-    ///\param[in] D - The decl being checked. If null returns false. 
+    ///\param[in] ND - The decl being checked. If null returns false. 
     ///
     ///\returns true if the decl is a interpreter-generated wrapper function.
     ///
