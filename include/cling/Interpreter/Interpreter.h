@@ -16,7 +16,7 @@
 
 namespace llvm {
   class raw_ostream;
-  class GenericValue;
+  struct GenericValue;
   class ExecutionEngine;
   class LLVMContext;
   class Module;
