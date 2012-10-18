@@ -213,7 +213,7 @@ namespace cling {
       // Set up the gCling variable
       std::stringstream initializer;
       initializer << "gCling=(cling::Interpreter*)" << (uintptr_t)this << ";";
-      evaluate(initializer.str());
+      execute(initializer.str());
     }
     else {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");
@@ -442,6 +442,36 @@ namespace cling {
     CO.ResultEvaluation = 0;
 
     return EvaluateInternal(input, CO, V);
+  }
+
+  Interpreter::CompilationResult
+  Interpreter::execute(const std::string& input) {
+    CompilationOptions CO;
+    CO.DeclarationExtraction = 0;
+    CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
+    CO.DynamicScoping = 0;
+    CO.Debug = isPrintingAST();
+
+    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    // Disable warnings which doesn't make sense when using the prompt
+    // This gets reset with the clang::Diagnostics().Reset()
+    Diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+    Diag.setDiagnosticMapping(clang::diag::warn_unused_call,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+    Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+
+    // Wrap the expression
+    std::string WrapperName;
+    std::string Wrapper = input;
+    WrapInput(Wrapper, WrapperName);
+    if (m_IncrParser->Compile(Wrapper, CO) == IncrementalParser::kSuccess)
+      if (RunFunction(WrapperName, QualType()))
+        return Interpreter::kSuccess;
+
+    return Interpreter::kFailure;
   }
 
   void Interpreter::WrapInput(std::string& input, std::string& fname) {

@@ -364,6 +364,18 @@ namespace cling {
     ///
     CompilationResult echo(const std::string& input, StoredValueRef* V = 0);
 
+    ///\brief Compiles input line and runs.
+    ///
+    /// The interface is the fastest way to compile and run a statement or
+    /// expression. It just wraps the input and runs the wrapper, without any
+    /// other "magic"
+    ///
+    /// @param[in] input - The input containing only expressions.
+    ///
+    ///\returns Whether the operation was fully successful.
+    ///
+    CompilationResult execute(const std::string& input);
+
     ///\brief Loads header file or shared library.
     ///
     ///\param [in] filename - The file to loaded.
