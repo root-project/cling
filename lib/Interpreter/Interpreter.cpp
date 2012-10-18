@@ -556,13 +556,10 @@ namespace cling {
       m_IncrParser->Compile(Wrapper, CO);
 
     // get the result
-    if (RunFunction(WrapperName, RetTy, V)) { // Why we have to pass-in
-      // the type again?
+    if (RunFunction(WrapperName, RetTy, V))
       return Interpreter::kSuccess;
-    } else {
-      if (V)
+    else if (V)
         *V = StoredValueRef::invalidValue();
-    }
 
     return Interpreter::kFailure;
   }
