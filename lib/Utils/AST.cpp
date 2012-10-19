@@ -210,7 +210,7 @@ namespace utils {
 
     // In case of Int_t* we need to strip the pointer first, desugar and attach
     // the pointer once again.
-    if (QT->isPointerType()) {
+    if (isa<PointerType>(QT.getTypePtr())) {
       // Get the qualifiers.
       Qualifiers quals = QT.getQualifiers();      
       QT = GetPartiallyDesugaredType(Ctx, QT->getPointeeType(), TypesToSkip, 
@@ -223,7 +223,7 @@ namespace utils {
 
     // In case of Int_t& we need to strip the pointer first, desugar and attach
     // the pointer once again.
-    if (QT->isReferenceType()) {
+    if (isa<ReferenceType>(QT.getTypePtr())) {
       // Get the qualifiers.
       bool isLValueRefTy = isa<LValueReferenceType>(QT.getTypePtr());
       Qualifiers quals = QT.getQualifiers();
@@ -271,6 +271,14 @@ namespace utils {
         break;
       } else
         return QT;
+    }
+
+    // If we have a reference or pointer we still need to
+    // desugar what they point to.
+    if (isa<PointerType>(QT.getTypePtr()) || 
+        isa<ReferenceType>(QT.getTypePtr()) ) {
+      return GetPartiallyDesugaredType(Ctx, QT, TypesToSkip, 
+                                        fullyQualify);
     }
 
     NestedNameSpecifier* prefix = 0;
