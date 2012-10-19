@@ -113,6 +113,7 @@ namespace cling {
       return;
     }
 
+    getLastTransaction()->setNext(NewCurT);
     m_Transactions.push_back(NewCurT);
   }
 

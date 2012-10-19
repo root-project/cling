@@ -70,15 +70,24 @@ namespace cling {
     ///
     llvm::Module* m_Module;
 
-    ///\brief The wrapper function produced by the intepreter if any,
+    ///\brief The wrapper function produced by the intepreter if any.
     ///
     clang::FunctionDecl* m_WrapperFD;
+
+    ///\brief Next transaction in if any.
+    const Transaction* m_Next;
+
+  protected:
+
+    ///\brief Sets the next transaction in the list.
+    ///
+    void setNext(Transaction* T) { m_Next = T; }
 
   public:
 
     Transaction(const CompilationOptions& Opts, llvm::Module* M)
       : m_Completed(false), m_Parent(0), m_State(kUnknown), m_IssuedDiags(kNone),
-        m_Opts(Opts), m_Module(M), m_WrapperFD(0) 
+        m_Opts(Opts), m_Module(M), m_WrapperFD(0), m_Next(0)
     { }
 
     ~Transaction();
@@ -223,6 +232,8 @@ namespace cling {
     const clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
     clang::FunctionDecl* getWrapperFD() { return m_WrapperFD; }
 
+    const Transaction* getNext() const { return m_Next; }
+
     ///\brief Prints out all the declarations in the transaction.
     ///
     void dump() const;
@@ -236,6 +247,7 @@ namespace cling {
     void print(llvm::raw_ostream& Out, const clang::PrintingPolicy& Policy,
                unsigned Indent = 0, bool PrintInstantiation = false) const;
 
+    friend class IncrementalParser;
   };
 } // end namespace cling
 

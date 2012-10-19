@@ -136,6 +136,18 @@ namespace cling {
       return m_Transactions.back(); 
     }
 
+    ///\brief Returns the first transaction the incremental parser saw.
+    ///
+    Transaction* getFirstTransaction() { 
+      return m_Transactions.front(); 
+    }
+
+    ///\brief Returns the first transaction the incremental parser saw.
+    ///
+    const Transaction* getFirstTransaction() const { 
+      return m_Transactions.front(); 
+    }
+
     /// \}
 
     ///\brief Compiles the given input with the given compilation options.
