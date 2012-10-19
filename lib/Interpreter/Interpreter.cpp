@@ -480,10 +480,12 @@ namespace cling {
     std::string mangledNameIfNeeded;
 
     Sema& S = getCI()->getSema();
-    FunctionDecl* FD 
-      = cast_or_null<FunctionDecl>(utils::Lookup::Named(&S, fname.data()));
+    // We need 0-terminated string.
+    NamedDecl *ND = utils::Lookup::Named(&S, fname.str().c_str());
+    if (!ND)
+      return false;
     
-    if (FD) {
+    if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
       mangleName(FD, mangledNameIfNeeded);
       m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
                                           getCI()->getASTContext(),
