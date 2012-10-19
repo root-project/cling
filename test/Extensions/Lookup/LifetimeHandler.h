@@ -1,6 +1,6 @@
 #include <cstring>
 
-extern "C" extern int printf(const char* fmt, ...);
+extern "C" int printf(const char* fmt, ...);
 
 class Alpha {
 private:
