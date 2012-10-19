@@ -35,8 +35,6 @@ namespace clang {
 }
 
 namespace cling {
-  class CompilationOptions;
-
   namespace runtime {
     namespace internal {
       class DynamicExprInfo;
@@ -45,11 +43,13 @@ namespace cling {
       class LifetimeHandler;
     }
   }
+  class CompilationOptions;
   class ExecutionContext;
   class IncrementalParser;
   class InterpreterCallbacks;
   class LookupHelper;
   class StoredValueRef;
+  class Transaction;
 
   ///\brief Class that implements the interpreter-like behavior. It manages the
   /// incremental compilation.
@@ -427,6 +427,9 @@ namespace cling {
     void setCallbacks(InterpreterCallbacks* C);
     const InterpreterCallbacks* getCallbacks() const {return m_Callbacks.get();}
     InterpreterCallbacks* getCallbacks() { return m_Callbacks.get(); }
+
+    Transaction* getFirstTransaction();
+    const Transaction* getFirstTransaction() const;
 
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///
