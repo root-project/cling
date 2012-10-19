@@ -85,16 +85,6 @@ namespace cling {
             if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
               VD->setStorageClass(SC_None);
               VD->setStorageClassAsWritten(SC_None);
-
-              // if we want to print the result of the initializer of int i = 5
-              // or the default initializer int i
-              if (I+1 == EI || !isa<NullStmt>(*(I+1))) {
-                QualType VDTy = VD->getType().getNonReferenceType();
-                Expr* DRE = m_Sema->BuildDeclRefExpr(VD, VDTy,VK_LValue,
-                                                     SourceLocation()
-                                                     ).take();
-                Stmts.push_back(DRE);
-              }
             }
             // force recalc of the linkage (to external)
             ND->ClearLinkageCache();

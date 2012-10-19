@@ -37,7 +37,10 @@ namespace cling {
             continue;
 
           int foundAtPos = -1;
-          if (Expr* lastExpr = utils::Analyze::GetLastExpr(FD, &foundAtPos)) {
+          Expr* lastExpr = utils::Analyze::GetOrCreateLastExpr(FD, &foundAtPos, 
+                                                               /*omitDS*/false,
+                                                               m_Sema);
+          if (lastExpr) {
             QualType RetTy = lastExpr->getType();
             if (!RetTy->isVoidType()) {
               // Change the void function's return type

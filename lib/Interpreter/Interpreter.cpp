@@ -559,7 +559,8 @@ namespace cling {
       FunctionDecl* FD 
         = dyn_cast<FunctionDecl>(CurT->getLastDecl().getSingleDecl());
       assert(FD && "No Decls Parsed?");
-      if (Expr* lastExpr = utils::Analyze::GetLastExpr(FD)) {
+      // FIXME: Don't we have to create a DeclRefExpr if we had int a = 5;?
+      if (Expr* lastExpr = utils::Analyze::GetOrCreateLastExpr(FD)) {
         RetTy = lastExpr->getType();
       }
 

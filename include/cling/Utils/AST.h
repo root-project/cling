@@ -39,12 +39,26 @@ namespace utils {
     ///
     static bool IsWrapper(const clang::NamedDecl* ND);
 
-    ///\brief Retrieves the last expression of a function body. 
+    ///\brief Retrieves the last expression of a function body. If it was a
+    /// DeclStmt with a variable declaration, creates DeclRefExpr and adds it to
+    /// the function body.
     ///
     /// Useful for value printing (deciding where to attach the value printer)
     /// and value evaluation (deciding that is the type of a value)
-    /// 
-    static clang::Expr* GetLastExpr(clang::FunctionDecl* FD, int* FoundAt = 0);
+    ///
+    ///\param[in] FD            - The declaration being analyzed. 
+    ///\param[in] FoundAt       - The position of the expression to be returned
+    ///                           in function's body.
+    ///\param[in] omitDecmStmts - Whether or not to synthesize DeclRefExpr if
+    ///                           there is DeclStmt.
+    ///\param[in] S             - The semantic analysis object used for 
+    ///                           synthesis of the DeclRefExpr. 
+    ///\returns 0 if the operation wasn't successful.
+    ///
+    static clang::Expr* GetOrCreateLastExpr(clang::FunctionDecl* FD, 
+                                            int* FoundAt = 0,
+                                            bool omitDeclStmts = true,
+                                            clang::Sema* S = 0);
   };
 
   ///\brief Class containing static utility functions synthesizing AST nodes or

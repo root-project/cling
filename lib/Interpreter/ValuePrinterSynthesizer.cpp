@@ -68,7 +68,10 @@ namespace cling {
         // 2: Expression printing auto - analyze - rely on the omitted ';' to
         //    not produce the suppress marker.
         int indexOfLastExpr = -1;
-        if (Expr* To = utils::Analyze::GetLastExpr(FD, &indexOfLastExpr)) {
+        Expr* To = utils::Analyze::GetOrCreateLastExpr(FD, &indexOfLastExpr, 
+                                                       /*omitDS*/false,
+                                                       m_Sema);
+        if (To) {
           // Update the CompoundStmt body, avoiding alloc/dealloc of all the el.
           CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
           assert(CS && "Missing body?");
