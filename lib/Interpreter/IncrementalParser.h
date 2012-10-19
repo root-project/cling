@@ -71,9 +71,13 @@ namespace cling {
     // CI owns it
     DeclCollector* m_Consumer;
 
-    ///\brief Holds information for the all transactions.
+    ///\brief The head of the single list of transactions. 
     ///
-    llvm::SmallVector<Transaction*, 64> m_Transactions;
+    const Transaction* m_FirstTransaction;
+
+    ///\brief The last transaction
+    ///
+    Transaction* m_LastTransaction;
 
     ///\brief Code generator
     ///
@@ -97,7 +101,6 @@ namespace cling {
     clang::Parser* getParser() const { return m_Parser.get(); }
     clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen.get(); }
     bool hasCodeGenerator() const { return m_CodeGen.get(); }
-    
 
     /// \{
     /// \name Transaction Support
@@ -124,28 +127,22 @@ namespace cling {
     ///
     void rollbackTransaction(Transaction* T) const; 
 
+    ///\brief Returns the first transaction the incremental parser saw.
+    ///
+    const Transaction* getFirstTransaction() const { 
+      return m_FirstTransaction; 
+    }
+
     ///\brief Returns the last transaction the incremental parser saw.
     ///
     Transaction* getLastTransaction() { 
-      return m_Transactions.back(); 
+      return m_LastTransaction; 
     }
 
     ///\brief Returns the last transaction the incremental parser saw.
     ///
     const Transaction* getLastTransaction() const { 
-      return m_Transactions.back(); 
-    }
-
-    ///\brief Returns the first transaction the incremental parser saw.
-    ///
-    Transaction* getFirstTransaction() { 
-      return m_Transactions.front(); 
-    }
-
-    ///\brief Returns the first transaction the incremental parser saw.
-    ///
-    const Transaction* getFirstTransaction() const { 
-      return m_Transactions.front(); 
+      return m_LastTransaction; 
     }
 
     /// \}

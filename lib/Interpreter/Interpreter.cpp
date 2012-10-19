@@ -624,10 +624,6 @@ namespace cling {
     m_Callbacks.reset(C);
   }
 
-  Transaction* Interpreter::getFirstTransaction() {
-    return m_IncrParser->getFirstTransaction();
-  }
-
   const Transaction* Interpreter::getFirstTransaction() const {
     return m_IncrParser->getFirstTransaction();
   }
