@@ -66,7 +66,7 @@ namespace utils {
   ///
   class Synthesize {
   public:
-    static const char* UniquePrefix;
+    static const char* const UniquePrefix;
 
     ///\brief Synthesizes c-style cast in the AST from given pointer and type to
     /// cast to.

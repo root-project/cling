@@ -89,7 +89,7 @@ namespace utils {
     return result;
   }
 
-  const char* Synthesize::UniquePrefix = "__cling_Un1Qu3";
+  const char* const Synthesize::UniquePrefix = "__cling_Un1Qu3";
 
   Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, uint64_t Ptr) {
     ASTContext& Ctx = S->getASTContext();
