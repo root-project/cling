@@ -68,10 +68,10 @@ namespace cling {
     // Add transformers to the IncrementalParser, which owns them
     m_TTransformers.push_back(new EvaluateTSynthesizer(&CI->getSema()));
 
-    m_TTransformers.push_back(new DeclExtractor(&getCI()->getSema()));
     m_TTransformers.push_back(new ValuePrinterSynthesizer(&CI->getSema(), 0));
     m_TTransformers.push_back(new ReturnSynthesizer(&CI->getSema()));
     m_TTransformers.push_back(new ASTDumper());
+    m_TTransformers.push_back(new DeclExtractor(&getCI()->getSema()));
 
     m_Parser.reset(new Parser(CI->getPreprocessor(), CI->getSema(),
                               false /*skipFuncBodies*/));
