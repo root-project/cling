@@ -27,10 +27,10 @@ namespace utils {
       .startswith(Synthesize::UniquePrefix);
   }
 
-  Expr* Analyze::GetOrCreateLastExpr(clang::FunctionDecl* FD, 
+  Expr* Analyze::GetOrCreateLastExpr(FunctionDecl* FD, 
                                      int* FoundAt /*=0*/,
                                      bool omitDeclStmts /*=true*/,
-                                     clang::Sema* S /*=0*/) {
+                                     Sema* S /*=0*/) {
     assert(FD && "We need a function declaration!");
     assert((omitDeclStmts || S)
            && "Sema needs to be set when omitDeclStmts is false");

@@ -27,6 +27,7 @@ namespace clang {
   class CompilerInstance;
   class Decl;
   class DeclContext;
+  class FunctionDecl;
   class NamedDecl;
   class MangleContext;
   class QualType;
@@ -210,7 +211,7 @@ namespace cling {
     ///
     ///\returns true if successful otherwise false.
     ///
-    bool RunFunction(llvm::StringRef fname, clang::QualType retType,
+    bool RunFunction(const clang::FunctionDecl* FD, clang::QualType resTy,
                      StoredValueRef* res = 0);
 
     ///\brief Forwards to cling::ExecutionContext::addSymbol.

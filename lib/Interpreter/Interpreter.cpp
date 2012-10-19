@@ -455,9 +455,11 @@ namespace cling {
     std::string WrapperName;
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
-    if (m_IncrParser->Compile(Wrapper, CO) == IncrementalParser::kSuccess)
-      if (RunFunction(WrapperName, QualType()))
+    if (m_IncrParser->Compile(Wrapper, CO) == IncrementalParser::kSuccess) {
+      const Transaction* lastT = m_IncrParser->getLastTransaction();
+      if (RunFunction(lastT->getWrapperFD(), QualType()))
         return Interpreter::kSuccess;
+    }
 
     return Interpreter::kFailure;
   }
@@ -468,8 +470,8 @@ namespace cling {
     input.append("\n;\n}");
   }
 
-  bool Interpreter::RunFunction(llvm::StringRef fname, clang::QualType retType,
-                                StoredValueRef* res /* = 0 */) {
+  bool Interpreter::RunFunction(const FunctionDecl* FD, clang::QualType resTy,
+                                StoredValueRef* res /*=0*/) {
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return false;
 
@@ -477,23 +479,16 @@ namespace cling {
       return true;
     }
 
-    std::string mangledNameIfNeeded;
-
-    Sema& S = getCI()->getSema();
-    // We need 0-terminated string.
-    NamedDecl *ND = utils::Lookup::Named(&S, fname.str().c_str());
-    if (!ND)
+    if (!FD)
       return false;
-    
-    if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
-      mangleName(FD, mangledNameIfNeeded);
-      m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
-                                          getCI()->getASTContext(),
-                                          retType, res);
-      return true;
-    }
 
-    return false;
+    std::string mangledNameIfNeeded;
+    mangleName(FD, mangledNameIfNeeded);
+    m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
+                                        getCI()->getASTContext(),
+                                        resTy, res);
+    // FIXME: Probably we need better handling of the error case.
+    return true;
   }
 
   void Interpreter::createUniqueName(std::string& out) {
@@ -544,24 +539,14 @@ namespace cling {
     std::string WrapperName;
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
-    QualType RetTy = getCI()->getASTContext().VoidTy;
-
+    QualType resTy = getCI()->getASTContext().VoidTy;
     if (V) {
-      const Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
+      Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
       assert(CurT->size() && "No decls created by Parse!");
 
-      // Find the wrapper function declaration.
-      //
-      // Note: The parse may have created a whole set of decls if a template
-      //       instantiation happened.  Our wrapper function should be the
-      //       last decl in the set.
-      //
-      FunctionDecl* FD 
-        = dyn_cast<FunctionDecl>(CurT->getLastDecl().getSingleDecl());
-      assert(FD && "No Decls Parsed?");
       // FIXME: Don't we have to create a DeclRefExpr if we had int a = 5;?
-      if (Expr* lastExpr = utils::Analyze::GetOrCreateLastExpr(FD)) {
-        RetTy = lastExpr->getType();
+      if (Expr* E = utils::Analyze::GetOrCreateLastExpr(CurT->getWrapperFD())) {
+        resTy = E->getType();
       }
 
       m_IncrParser->commitCurrentTransaction();
@@ -570,7 +555,8 @@ namespace cling {
       m_IncrParser->Compile(Wrapper, CO);
 
     // get the result
-    if (RunFunction(WrapperName, RetTy, V))
+    const Transaction* lastT = m_IncrParser->getLastTransaction();
+    if (RunFunction(lastT->getWrapperFD(), resTy, V))
       return Interpreter::kSuccess;
     else if (V)
         *V = StoredValueRef::invalidValue();
