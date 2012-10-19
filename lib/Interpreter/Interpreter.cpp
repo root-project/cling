@@ -457,7 +457,8 @@ namespace cling {
     WrapInput(Wrapper, WrapperName);
     if (m_IncrParser->Compile(Wrapper, CO) == IncrementalParser::kSuccess) {
       const Transaction* lastT = m_IncrParser->getLastTransaction();
-      if (RunFunction(lastT->getWrapperFD(), QualType()))
+      if (lastT->getState() == Transaction::kCommitted
+          && RunFunction(lastT->getWrapperFD(), QualType()))
         return Interpreter::kSuccess;
     }
 
@@ -544,8 +545,10 @@ namespace cling {
       Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
       assert(CurT->size() && "No decls created by Parse!");
 
-      // FIXME: Don't we have to create a DeclRefExpr if we had int a = 5;?
-      if (Expr* E = utils::Analyze::GetOrCreateLastExpr(CurT->getWrapperFD())) {
+      if (Expr* E = utils::Analyze::GetOrCreateLastExpr(CurT->getWrapperFD(), 
+                                                        /*foundAt*/0,
+                                                        /*omitDS*/false, 
+                                                        &getSema())) {
         resTy = E->getType();
       }
 
@@ -556,7 +559,9 @@ namespace cling {
 
     // get the result
     const Transaction* lastT = m_IncrParser->getLastTransaction();
-    if (RunFunction(lastT->getWrapperFD(), resTy, V))
+
+    if (lastT->getState() == Transaction::kCommitted
+        && RunFunction(lastT->getWrapperFD(), resTy, V))
       return Interpreter::kSuccess;
     else if (V)
         *V = StoredValueRef::invalidValue();
