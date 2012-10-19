@@ -16,6 +16,7 @@ typedef double Double32_t;
 typedef int Int_t;
 typedef long Long_t;
 typedef Int_t* IntPtr_t;
+typedef Int_t& IntRef_t;
 
 template <typename T> class A {};
 template <typename T, typename U> class B {};
@@ -73,6 +74,17 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 // CHECK:(const char * const) "int *const &"
 
 //TODO: QT = lookup.findType("IntPtr_t[32]");
+
+// To do: findType does not return the const below:
+// Test desugaring reference (both r- or l- value) types:
+//QT = lookup.findType("const IntRef_t");
+//Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+// should print:(const char * const) "int &const"
+
+// Test desugaring reference (both r- or l- value) types:
+QT = lookup.findType("IntRef_t");
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+// CHECK:(const char * const) "int &"
 
 
 //Desugar template parameters:
