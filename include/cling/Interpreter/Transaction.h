@@ -15,6 +15,7 @@
 
 namespace clang {
   class Decl;
+  class FunctionDecl;
   struct PrintingPolicy;
 }
 
@@ -69,11 +70,15 @@ namespace cling {
     ///
     llvm::Module* m_Module;
 
+    ///\brief The wrapper function produced by the intepreter if any,
+    ///
+    clang::FunctionDecl* m_WrapperFD;
+
   public:
 
     Transaction(const CompilationOptions& Opts, llvm::Module* M)
       : m_Completed(false), m_Parent(0), m_State(kUnknown), m_IssuedDiags(kNone),
-        m_Opts(Opts), m_Module(M) 
+        m_Opts(Opts), m_Module(M), m_WrapperFD(0) 
     { }
 
     ~Transaction();
@@ -214,6 +219,9 @@ namespace cling {
     }
 
     llvm::Module* getModule() const { return m_Module; }
+
+    const clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
+    clang::FunctionDecl* getWrapperFD() { return m_WrapperFD; }
 
     ///\brief Prints out all the declarations in the transaction.
     ///

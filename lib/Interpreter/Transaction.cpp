@@ -6,6 +6,8 @@
 
 #include "cling/Interpreter/Transaction.h"
 
+#include "cling/Utils/AST.h"
+
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/PrettyPrinter.h"
@@ -23,6 +25,14 @@ namespace cling {
     for (const_iterator I = decls_begin(), E = decls_end(); I != E; ++I) {
       if (DGR.isNull() || (*I).getAsOpaquePtr() == DGR.getAsOpaquePtr())
         return;
+    }
+    // register the wrapper if any.
+    if (DGR.isSingleDecl()) {
+      if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DGR.getSingleDecl()))
+        if (utils::Analyze::IsWrapper(FD)) {
+          assert(!m_WrapperFD && "Two wrappers in one transaction?");
+          m_WrapperFD = FD;
+        }
     }
     m_DeclQueue.push_back(DGR);
   }
