@@ -75,7 +75,7 @@ namespace utils {
               newBody.insert(newBody.begin() + indexOfLastExpr, DRE);
 
               // Attach the new body (note: it does dealloc/alloc of all nodes)
-              CS->setStmts(S->getASTContext(), newBody.data(), newBody.size());
+              CS->setStmts(S->getASTContext(), &newBody.front(), newBody.size());
               if (FoundAt)
                 *FoundAt = indexOfLastExpr;
               return DRE;
