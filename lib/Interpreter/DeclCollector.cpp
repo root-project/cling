@@ -28,8 +28,14 @@ namespace cling {
     assert("Not implemented yet!");
   }
 
+  // Does more than we want:
+  // if there is class A {enum E {kEnum = 1};};
+  // we get two different tag decls one for A and one for E. This is not that 
+  // bad because esentially it has no effect on codegen but it differs from what
+  // one'd expect. For now rely on the HandleTopLevelDecl to provide all the 
+  // declarations in the transaction.
   void DeclCollector::HandleTagDeclDefinition(TagDecl* TD) {
-    m_CurTransaction->appendUnique(DeclGroupRef(TD));
+    // Intentional no-op.
   }
 
   void DeclCollector::HandleVTable(CXXRecordDecl* RD,
