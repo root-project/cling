@@ -1,5 +1,4 @@
-// RUN: clang -shared %S/call_lib.c -olibcall_lib%shlibext
-// RUN: cat %s | %cling | FileCheck %s
+// RUN: clang -shared %S/call_lib.c -olibcall_lib%shlibext && cat %s | %cling | FileCheck %s
 
 .L libcall_lib
 extern "C" int cling_testlibrary_function();
