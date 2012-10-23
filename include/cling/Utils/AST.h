@@ -49,7 +49,7 @@ namespace utils {
     ///\param[in] FD            - The declaration being analyzed. 
     ///\param[in] FoundAt       - The position of the expression to be returned
     ///                           in function's body.
-    ///\param[in] omitDecmStmts - Whether or not to synthesize DeclRefExpr if
+    ///\param[in] omitDeclStmts - Whether or not to synthesize DeclRefExpr if
     ///                           there is DeclStmt.
     ///\param[in] S             - The semantic analysis object used for 
     ///                           synthesis of the DeclRefExpr. 
