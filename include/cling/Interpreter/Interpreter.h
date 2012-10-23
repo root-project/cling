@@ -428,7 +428,6 @@ namespace cling {
     const InterpreterCallbacks* getCallbacks() const {return m_Callbacks.get();}
     InterpreterCallbacks* getCallbacks() { return m_Callbacks.get(); }
 
-    Transaction* getFirstTransaction();
     const Transaction* getFirstTransaction() const;
 
     ///\brief Gets the address of an existing global and whether it was JITted.
