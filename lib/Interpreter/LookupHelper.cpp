@@ -516,6 +516,9 @@ namespace cling {
                                                                Best);
           if (OR == OR_Success) {
             TheDecl = Best->Function;
+            // We prefer to get the canonical decl for consistency and ease
+            // of comparison.
+            TheDecl = TheDecl->getCanonicalDecl();
           }
         }
       }
@@ -798,6 +801,9 @@ namespace cling {
                                                                Best);
           if (OR == OR_Success) {
             TheDecl = Best->Function;
+            // We prefer to get the canonical decl for consistency and ease
+            // of comparison.
+            TheDecl = TheDecl->getCanonicalDecl();
           }
         }
       }
