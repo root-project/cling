@@ -38,6 +38,9 @@ namespace cling {
   }
 
   void Transaction::dump() const {
+    if (!size())
+      return;
+
     ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
     PrintingPolicy Policy = C.getPrintingPolicy();
     Policy.DumpSourceManager = &C.getSourceManager();
@@ -45,6 +48,9 @@ namespace cling {
   }
 
   void Transaction::dumpPretty() const {
+    if (!size())
+      return;
+
     ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
     PrintingPolicy Policy(C.getLangOpts());
     print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
