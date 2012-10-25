@@ -125,7 +125,7 @@ ExecutionContext::NotifyLazyFunctionCreators(const std::string& mangled_name)
       return ret;
   }
 
-  if (!m_LazyFuncCreatorDiagsSuppressed)
+  if (m_LazyFuncCreatorDiagsSuppressed)
     return 0;
 
   return HandleMissingFunction(mangled_name);
