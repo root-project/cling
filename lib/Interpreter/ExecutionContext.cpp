@@ -58,7 +58,7 @@ std::set<std::string> ExecutionContext::m_unresolvedSymbols;
 std::vector<ExecutionContext::LazyFunctionCreatorFunc_t>
   ExecutionContext::m_lazyFuncCreator;
 
-bool ExecutionContext::m_LazyFuncCreatorDiagsSuppressed = true;
+bool ExecutionContext::m_LazyFuncCreatorDiagsSuppressed = false;
 
 ExecutionContext::ExecutionContext():
   m_engine(0),
