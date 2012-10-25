@@ -595,6 +595,10 @@ namespace cling {
     m_ExecutionContext->installLazyFunctionCreator(fp);
   }
 
+  void Interpreter::enableLazyFunctionCreator(bool enabled /*= true*/) {
+    m_ExecutionContext->enableLazyFunctionCreator(enabled);
+  }
+
   StoredValueRef Interpreter::Evaluate(const char* expr, DeclContext* DC,
                                        bool ValuePrinterReq) {
     Sema& TheSema = getCI()->getSema();

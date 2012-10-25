@@ -403,7 +403,9 @@ namespace cling {
 
     llvm::Module* getModule() const;
 
+    //FIXME: This must be in InterpreterCallbacks.
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
+    void enableLazyFunctionCreator(bool enable = true);
 
     //FIXME: Terrible hack to let the IncrementalParser run static inits on
     // transaction completed.
