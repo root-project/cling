@@ -405,6 +405,8 @@ namespace cling {
 
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
 
+    //FIXME: Terrible hack to let the IncrementalParser run static inits on
+    // transaction completed.
     void runStaticInitializersOnce() const;
 
     int CXAAtExit(void (*func) (void*), void* arg, void* dso);
