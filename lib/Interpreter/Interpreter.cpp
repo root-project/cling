@@ -595,8 +595,8 @@ namespace cling {
     m_ExecutionContext->installLazyFunctionCreator(fp);
   }
 
-  void Interpreter::enableLazyFunctionCreator(bool enabled /*= true*/) {
-    m_ExecutionContext->enableLazyFunctionCreator(enabled);
+  void Interpreter::suppressLazyFunctionCreatorDiags(bool suppressed/*=true*/) {
+    m_ExecutionContext->suppressLazyFunctionCreatorDiags(suppressed);
   }
 
   StoredValueRef Interpreter::Evaluate(const char* expr, DeclContext* DC,

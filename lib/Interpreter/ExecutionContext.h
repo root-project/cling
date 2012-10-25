@@ -35,8 +35,8 @@ namespace cling {
     ~ExecutionContext();
 
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
-    void enableLazyFunctionCreator(bool enabled = true) {
-      m_LazyFuncCreatorEnabled = enabled;
+    void suppressLazyFunctionCreatorDiags(bool suppressed = true) {
+      m_LazyFuncCreatorDiagsSuppressed = suppressed;
     }
 
     void runStaticInitializersOnce(llvm::Module* m);
@@ -87,7 +87,7 @@ namespace cling {
     static std::vector<LazyFunctionCreatorFunc_t> m_lazyFuncCreator;
 
     ///\ Whether or not the function creator to be queried.
-    static bool m_LazyFuncCreatorEnabled;
+    static bool m_LazyFuncCreatorDiagsSuppressed;
 
     llvm::ExecutionEngine* m_engine; // Owned by JIT
 

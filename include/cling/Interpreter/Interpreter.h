@@ -405,7 +405,7 @@ namespace cling {
 
     //FIXME: This must be in InterpreterCallbacks.
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
-    void enableLazyFunctionCreator(bool enable = true);
+    void suppressLazyFunctionCreatorDiags(bool suppressed = true);
 
     //FIXME: Terrible hack to let the IncrementalParser run static inits on
     // transaction completed.
