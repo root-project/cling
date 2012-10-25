@@ -117,15 +117,17 @@ void* ExecutionContext::HandleMissingFunction(const std::string& mangled_name)
 void*
 ExecutionContext::NotifyLazyFunctionCreators(const std::string& mangled_name)
 {
-  if (!m_LazyFuncCreatorEnabled)
-    return 0;
-
   for (std::vector<LazyFunctionCreatorFunc_t>::iterator it
          = m_lazyFuncCreator.begin(), et = m_lazyFuncCreator.end();
        it != et; ++it) {
     void* ret = (void*)((LazyFunctionCreatorFunc_t)*it)(mangled_name);
-    if (ret) return ret;
+    if (ret) 
+      return ret;
   }
+
+  if (!m_LazyFuncCreatorEnabled)
+    return 0;
+
   return HandleMissingFunction(mangled_name);
 }
 
