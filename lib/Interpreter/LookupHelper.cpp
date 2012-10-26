@@ -220,6 +220,18 @@ namespace cling {
         }
       }
     }
+    //
+    //  Cleanup after failed parse as a nested-name-specifier.
+    //
+    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
+                /*StopAtCodeCompletion*/false);
+    DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
+    DClient->EndSourceFile();
+    S.getDiagnostics().Reset();
+    //
+    //  Setup to reparse as a type.
+    //
+    DClient->BeginSourceFile(PP.getLangOpts(), &PP);
     {
       llvm::MemoryBuffer* SB =
         llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
@@ -344,6 +356,18 @@ namespace cling {
       // We did not consume all of the prototype, bad parse.
       return TheDecl;
     }
+    //
+    //  Cleanup after prototype parse.
+    //
+    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false, 
+                /*StopAtCodeCompletion*/false);
+    DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
+    DClient->EndSourceFile();
+    S.getDiagnostics().Reset();
+    //
+    //  Setup to reparse as a type.
+    //
+    DClient->BeginSourceFile(PP.getLangOpts(), &PP);
     //
     //  Create a fake file to parse the function name.
     //
@@ -626,6 +650,21 @@ namespace cling {
       return TheDecl;
     }
     {
+      //
+      //  Cleanup after the arg list parse.
+      //
+      P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
+                   /*StopAtCodeCompletion*/false);
+      DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
+      DClient->EndSourceFile();
+      S.getDiagnostics().Reset();
+      //
+      //  Setup to reparse as a type.
+      //
+      DClient->BeginSourceFile(PP.getLangOpts(), &PP);
+      //
+      //  Create a fake file to parse the function name.
+      //
       {
         llvm::MemoryBuffer* SB 
           = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
