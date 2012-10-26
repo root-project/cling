@@ -160,13 +160,27 @@ namespace cling {
       return;
     }
 
+    // Check for errors coming from our custom consumers.
+    DiagnosticConsumer& DClient = m_CI->getDiagnosticClient();
+    DClient.BeginSourceFile(getCI()->getLangOpts(),
+                            &getCI()->getPreprocessor());
+
     // We are sure it's safe to pipe it through the transformers
+    bool success = true;
     for (size_t i = 0; i < m_TTransformers.size(); ++i)
       if (!m_TTransformers[i]->TransformTransaction(*CurT)) {
-        // Roll back on error in a transformer
-        rollbackTransaction(CurT);
-        return;
+        success = false;
+        break;
       }
+
+    DClient.EndSourceFile();
+    m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
+
+    if (!success) {
+      // Roll back on error in a transformer
+      rollbackTransaction(CurT);
+      return;
+    }
 
     // Pull all template instantiations in that came from the consumers.
     getCI()->getSema().PerformPendingInstantiations();
@@ -250,14 +264,7 @@ namespace cling {
     EParseResult Result = ParseInternal(input);
     endTransaction();
 
-    // Check for errors coming from our custom consumers.
-    DiagnosticConsumer& DClient = m_CI->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(),
-                            &getCI()->getPreprocessor());
     commitCurrentTransaction();
-
-    DClient.EndSourceFile();
-    m_CI->getDiagnostics().Reset();
 
     return Result;
   }
