@@ -7,6 +7,7 @@
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Utils/AST.h"
 #include "clang/AST/Type.h"
+#include "clang/AST/ASTContext.h"
 #include "llvm/ADT/SmallSet.h"
 #include "clang/Sema/Sema.h"
 
@@ -47,6 +48,12 @@ namespace NS {
    typedef TDataPoint<Double32_t> TDataPointD32;
 }
 
+// Anonymous namespace
+namespace {
+   class InsideAnonymous {
+   };
+}
+
 .rawInput 0
 
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
@@ -57,6 +64,33 @@ skip.insert(lookup.findType("Double32_t").getTypePtr());
 const clang::Type* t = 0;
 clang::QualType QT;
 using namespace cling::utils;
+
+// Test the behavior on a simple class
+lookup.findScope("Details::Impl", &t);
+QT = clang::QualType(t, 0);
+//QT.getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+// CHECK: (const char * const) "Details::Impl"
+
+// Test the behavior for a class inside an anonymous namespace
+lookup.findScope("InsideAnonymous", &t);
+QT = clang::QualType(t, 0);
+//QT.getAsString().c_str()c
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+// CHECK: (const char * const) "class <anonymous>::InsideAnonymous"
+
+// The above result is not quite want we want, so the client must using 
+// the following:
+// The scope suppression is required for getting rid of the anonymous part of the name of a class defined in an anonymous namespace.
+// This gives us more control vs not using the clang::ElaboratedType and relying on the Policy.SuppressUnwrittenScope which would
+// strip both the anonymous and the inline namespace names (and we probably do not want the later to be suppressed).
+clang::PrintingPolicy Policy(Ctx.getPrintingPolicy());
+Policy.SuppressTagKeyword = true; // Never get the class or struct keyword
+Policy.SuppressScope = true;      // Force the scope to be coming from a clang::ElaboratedType.
+std::string name;
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsStringInternal(name,Policy);
+name.c_str()
+// CHECK: (const char * const) "InsideAnonymous"
 
 // Test desugaring pointers types:
 QT = lookup.findType("Int_t*");

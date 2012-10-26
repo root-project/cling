@@ -255,11 +255,19 @@ namespace utils {
     const ElaboratedType* etype_input 
       = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
     if (etype_input) {
-      // We have to also desugar the prefix. 
-      fullyQualify = true;
       original_prefix = etype_input->getQualifier();
-      prefix_qualifiers = QT.getLocalQualifiers();
-      QT = QualType(etype_input->getNamedType().getTypePtr(),0);
+      if (original_prefix) {
+        const NamespaceDecl *ns = original_prefix->getAsNamespace();
+        if (!(ns && ns->isAnonymousNamespace())) {
+          // We have to also desugar the prefix unless
+          // it does not have a name (anonymous namespaces).
+          fullyQualify = true;
+          prefix_qualifiers = QT.getLocalQualifiers();
+          QT = QualType(etype_input->getNamedType().getTypePtr(),0);
+        } else {
+          original_prefix = 0;
+        }
+      }
     }
 
     while(isa<TypedefType>(QT.getTypePtr())) {
@@ -360,7 +368,11 @@ namespace utils {
       if (decl) {
         NamedDecl* outer 
            = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
-        if (outer && outer->getName ().size()) {
+        NamespaceDecl* outer_ns
+           = llvm::dyn_cast_or_null<NamespaceDecl>(decl->getDeclContext());
+        if (outer
+            && !(outer_ns && outer_ns->isAnonymousNamespace())
+            && outer->getName().size() ) {
           if (original_prefix) {
             const clang::Type *oldtype = original_prefix->getAsType();
             if (oldtype) {
