@@ -60,5 +60,10 @@ int main( int argc, char **argv ) {
       ui.runInteractively(interp.getOptions().NoLogo);
    }
 
+   // if we are running with -verify a reported has to be returned as unsuccess.
+   // This is relevan especially for the test suite.
+   if (CI->getDiagnosticOpts().VerifyDiagnostics)
+     ret = !CI->getDiagnostics().getClient()->getNumErrors();
+
    return ret ? 0 : 1;
 }
