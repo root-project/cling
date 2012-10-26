@@ -53,13 +53,9 @@ namespace cling {
     /// does the actual transformation.
     ///
     ///\param[in] T - The transaction to be transformed.
-    ///\returns The transformed transaction.
+    ///\returns true on success.
     ///
-    Transaction* TransformTransaction(Transaction& T) {
-      m_Transaction = &T;
-      Transform();
-      return m_Transaction;
-    }
+    bool TransformTransaction(Transaction& T);
 
   protected:
     ///\brief Transforms the current transaction.

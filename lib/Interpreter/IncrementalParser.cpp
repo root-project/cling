@@ -100,10 +100,6 @@ namespace cling {
        delete m_TTransformers[i];
   }
 
-  // pin the vtable here since there is no point to create dedicated to that
-  // cpp file.
-  TransactionTransformer::~TransactionTransformer() {}
-
   void IncrementalParser::beginTransaction(const CompilationOptions& Opts) {
     llvm::Module* M = 0;
     if (hasCodeGenerator())

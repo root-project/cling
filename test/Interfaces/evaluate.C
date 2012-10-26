@@ -31,3 +31,8 @@ gCling->process("double sin(double); double one = sin(3.141/2);", &V);
 V // CHECK: (cling::StoredValueRef) boxes [(double) 1.000000e+00]
 one // CHECK: (double) 1.000
 int one; // expected-error {{saying something like redecl but verify is broken!}}  
+
+// Make sure that PR#98434 doesn't get reintroduced.
+void f(int);
+gCling->evaluate("f", V);
+// end PR#98434
