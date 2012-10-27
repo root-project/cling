@@ -104,9 +104,31 @@ namespace cling {
       Result.bufStart = curPos;
       unsigned char C = *curPos;
       while (C != ' ' && C != '\n' && C != '\t' && 
-             C != '\0' && C != '(' && C != ')')
+             C != '\0' && C != '(' && C != ')') {
+        if (C=='\"') {
+          do {
+            C = *++curPos;
+            if (C=='\\' && ( *(curPos+1) == '"') ) {
+              // Skip escaped "
+              C = *++curPos; // the "
+              C = *++curPos; // the next character after that
+            }
+          } while (C!='"' && C!='\0');
+          if (C == '\0') break;
+        } else if (C=='\'') {
+           do {
+              C = *++curPos;
+              if (C=='\\' && ( *(curPos+1) == '\'') ) {
+                // Skip escaped "
+                C = *++curPos; // the "
+                C = *++curPos; // the next character after that
+              }
+           } while (C!='\'' && C!='\0');
+           if (C == '\0') break; // Don't iterate past the end.
+        }
         C = *++curPos;
-
+      }
+       
       Result.bufEnd = curPos;
 
       if (Result.getLength() > 0) { 
