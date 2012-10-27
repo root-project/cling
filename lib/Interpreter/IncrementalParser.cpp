@@ -150,36 +150,40 @@ namespace cling {
     Transaction* CurT = m_Consumer->getTransaction();
     assert(CurT->isCompleted() && "Transaction not ended!?");
 
+    // Check for errors coming from our custom consumers.
+    DiagnosticConsumer& DClient = m_CI->getDiagnosticClient();
+
     // Check for errors...
     if (CurT->getIssuedDiags() == Transaction::kErrors) {
       rollbackTransaction(CurT);
+      DClient.EndSourceFile();
       return;
     }
 
-    // Check for errors coming from our custom consumers.
-    DiagnosticConsumer& DClient = m_CI->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(),
-                            &getCI()->getPreprocessor());
-
     // We are sure it's safe to pipe it through the transformers
     bool success = true;
-    for (size_t i = 0; i < m_TTransformers.size(); ++i)
-      if (!m_TTransformers[i]->TransformTransaction(*CurT)) {
-        success = false;
+    for (size_t i = 0; i < m_TTransformers.size(); ++i) {
+      DClient.BeginSourceFile(getCI()->getLangOpts(),
+                              &getCI()->getPreprocessor());
+      success = m_TTransformers[i]->TransformTransaction(*CurT); 
+      DClient.EndSourceFile();
+      if (!success) {
         break;
       }
+    }
 
-    DClient.EndSourceFile();
     m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
 
     if (!success) {
       // Roll back on error in a transformer
       rollbackTransaction(CurT);
+      DClient.EndSourceFile();
       return;
     }
 
     // Pull all template instantiations in that came from the consumers.
     getCI()->getSema().PerformPendingInstantiations();
+    DClient.EndSourceFile();
 
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
@@ -199,6 +203,7 @@ namespace cling {
 
     CurT->setState(Transaction::kCommitted);
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
+
     if (callbacks)
       callbacks->TransactionCommitted(*CurT);
   }
@@ -346,8 +351,6 @@ namespace cling {
     }
 
     S.PerformPendingInstantiations();
-
-    DClient.EndSourceFile();
 
     DiagnosticsEngine& Diag = S.getDiagnostics();
     if (Diag.hasErrorOccurred())
