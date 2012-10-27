@@ -30,9 +30,9 @@ V // CHECK: (cling::StoredValueRef) boxes [(double) 1.000000e+00]
 gCling->process("double sin(double); double one = sin(3.141/2);", &V);
 V // CHECK: (cling::StoredValueRef) boxes [(double) 1.000000e+00]
 one // CHECK: (double) 1.000
-int one; // expected-error {{saying something like redecl but verify is broken!}}  
+int one; // expected-error {{redefinition of 'one' with a different type: 'int' vs 'double'}} expected-note {{previous definition is here}}
 
 // Make sure that PR#98434 doesn't get reintroduced.
 void f(int);
-gCling->evaluate("f", V);
+gCling->evaluate("f // expected-error {{cannot initialize return object of type 'void (int)' with an lvalue of type 'void (int)'}}", V);
 // end PR#98434
