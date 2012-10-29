@@ -185,36 +185,46 @@ namespace cling {
   MetaProcessor::~MetaProcessor() {}
 
   int MetaProcessor::process(const char* input_text,
-                             StoredValueRef* result /*=0*/) {
-    if (!input_text) { // null pointer, nothing to do.
-      return 0;
+                             StoredValueRef* result /*=0*/,
+                             Interpreter::CompilationResult* compRes /*=0*/ ) {
+    int expectedIndent = m_InputValidator->getExpectedIndent();
+    if (compRes) {
+      if (expectedIndent) {
+        *compRes = Interpreter::kMoreInputExpected;
+      } else {
+        *compRes = Interpreter::kSuccess;
+      }
     }
-    if (!input_text[0]) { // empty string, nothing to do.
-      return m_InputValidator->getExpectedIndent();
+    if (!input_text || !input_text[0]) {
+      // nullptr / empty string, nothing to do.
+      return expectedIndent;
     }
     std::string input_line(input_text);
     if (input_line == "\n") { // just a blank line, nothing to do.
-      return 0;
+      return expectedIndent;
     }
     //  Check for and handle meta commands.
-    if (ProcessMeta(input_line, result)) {
-      return 0;
+    if (ProcessMeta(input_line, result, compRes)) {
+      return expectedIndent;
     }
 
     // Check if the current statement is now complete. If not, return to
     // prompt for more.
     if (m_InputValidator->validate(input_line, m_Interp.getCI()->getLangOpts())
         == InputValidator::kIncomplete) {
+      if (compRes) *compRes = Interpreter::kMoreInputExpected;
       return m_InputValidator->getExpectedIndent();
     }
 
     //  We have a complete statement, compile and execute it.
     std::string input = m_InputValidator->getInput();
     m_InputValidator->reset();
+    Interpreter::CompilationResult compResLocal;
     if (m_Options.RawInput)
-      m_Interp.declare(input);
+      compResLocal = m_Interp.declare(input);
     else
-      m_Interp.process(input, result);
+      compResLocal = m_Interp.process(input, result);
+    if (compRes) *compRes = compResLocal;
 
     return 0;
   }
@@ -232,7 +242,8 @@ namespace cling {
   //                 extra_arg_list := any_string [, extra_arg_list]
   //
   bool MetaProcessor::ProcessMeta(const std::string& input_line,
-                                  StoredValueRef* result){
+                                  StoredValueRef* result,
+                                Interpreter::CompilationResult* compRes /*=0*/){
 
    llvm::OwningPtr<llvm::MemoryBuffer> MB;
    MB.reset(llvm::MemoryBuffer::getMemBuffer(input_line));
@@ -248,32 +259,38 @@ namespace cling {
 
    if (!CmdLexer.LexIdent(Tok)) {
      llvm::errs() << "Command name token expected. Try .help\n";
+     if (compRes) *compRes = Interpreter::kFailure;
      return false;
    }
 
    llvm::StringRef Command (Tok.getBufStart(), Tok.getLength());
    // Should be used for faster comparison if the command is only one char long.
    unsigned char CmdStartChar = *Tok.getBufStart();
+   if (compRes) *compRes = Interpreter::kSuccess;
 
    // .q Exits the process.
    if (CmdStartChar == 'q') {
-      m_Options.Quitting = true;
-      return true;
+     m_Options.Quitting = true;
+     return true;
    }
    else if (CmdStartChar == 'L') {
      if (!CmdLexer.LexAnyString(Tok)) {
        llvm::errs() <<  "Filename expected.\n";
+       if (compRes) *compRes = Interpreter::kFailure;
        return false;
      }
      //TODO: Check if the file exists and is readable.
-     if (!m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(), Tok.getLength())))
+     if (!m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(), Tok.getLength()))) {
        llvm::errs() << "Load file failed.\n";
+       if (compRes) *compRes = Interpreter::kFailure;
+     }
 
      return true;
    }
    else if (CmdStartChar == 'x' || CmdStartChar == 'X') {
      if (!CmdLexer.LexAnyString(Tok)) {
        llvm::errs() << "Filename expected.\n";
+       if (compRes) *compRes = Interpreter::kFailure;
        return false;
      }
      llvm::sys::Path file(llvm::StringRef(Tok.getBufStart(), Tok.getLength()));
@@ -288,15 +305,17 @@ namespace cling {
        // Good enough for now.
        if (!CmdLexer.LexAnyString(Tok)) {
          llvm::errs() << "Argument list expected.\n";
+         if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
        args = llvm::StringRef(Tok.getBufStart(), Tok.getLength());
        if (!CmdLexer.LexSpecialSymbol(Tok) && Tok.getKind() == tok::r_paren) {
          llvm::errs() << "Closing parenthesis expected.\n";
+         if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
      }
-     if (!executeFile(file.str(), args, result))
+     if (!executeFile(file.str(), args, result, compRes))
        llvm::errs() << "Execute file failed.\n";
      return true;     
    }
@@ -351,6 +370,7 @@ namespace cling {
          m_Interp.enablePrintAST(true);
        else {
          llvm::errs() << "Boolean value expected.\n";
+         if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
      }
@@ -369,6 +389,7 @@ namespace cling {
          m_Options.RawInput = true;
        else {
          llvm::errs() << "Boolean value expected.\n";
+         if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
      }
@@ -387,6 +408,7 @@ namespace cling {
          m_Interp.enableDynamicLookup(true);
        else {
          llvm::errs() << "Boolean value expected.\n";
+         if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
      }
@@ -401,6 +423,7 @@ namespace cling {
      return true;
    }
 
+   if (compRes) *compRes = Interpreter::kFailure;
    return false;
   }
 
@@ -441,7 +464,8 @@ namespace cling {
 
   // Run a file: .x file[(args)]
   bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
-                                  StoredValueRef* result) {
+                                  StoredValueRef* result,
+                               Interpreter::CompilationResult* compRes /*=0*/) {
     // Look for start of parameters:
     typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
@@ -456,15 +480,15 @@ namespace cling {
     }
     StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
 
-    Interpreter::CompilationResult interpRes = Interpreter::kSuccess;
-    if (m_Interp.loadFile(file)) {
+    Interpreter::CompilationResult interpRes = m_Interp.loadFile(file);
+    if (interpRes == Interpreter::kSuccess) {
       std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
       if (result)
         interpRes = m_Interp.evaluate(expression, *result);
       else
         interpRes = m_Interp.execute(expression);
     }
-
+    if (compRes) *compRes = interpRes;
     return (interpRes != Interpreter::kFailure);
   }
 } // end namespace cling

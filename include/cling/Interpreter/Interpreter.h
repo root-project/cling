@@ -388,7 +388,8 @@ namespace cling {
     ///
     ///\returns true for happiness.
     ///
-    bool loadFile(const std::string& filename, bool allowSharedLib = true);
+    CompilationResult loadFile(const std::string& filename,
+                               bool allowSharedLib = true);
 
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() { return m_DynamicLookupEnabled; }
