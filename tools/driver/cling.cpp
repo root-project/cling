@@ -52,7 +52,8 @@ int main( int argc, char **argv ) {
    // If we are not interactive we're supposed to parse files
    if (!Interactive) {
      for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
-       ret = ui.getMetaProcessor()->process((".x " + Inputs[I].File).c_str());
+       ui.getMetaProcessor()->process((".x " + Inputs[I].File).c_str());
+       ret = !CI->getDiagnostics().getClient()->getNumErrors();
      }
    }
    else {
