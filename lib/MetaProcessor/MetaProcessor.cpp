@@ -16,6 +16,8 @@
 
 #include "llvm/Support/Path.h"
 
+#include <fstream>
+
 using namespace clang;
 
 namespace cling {
@@ -491,5 +493,52 @@ namespace cling {
     if (compRes) *compRes = interpRes;
     return (interpRes != Interpreter::kFailure);
   }
-} // end namespace cling
 
+  Interpreter::CompilationResult
+  MetaProcessor::readInputFromFile(llvm::StringRef filename,
+                                 StoredValueRef* result /* = 0 */,
+                                 bool ignoreOutmostBlock /*=false*/) {
+    static const char whitespace[] = " \t\r\n";
+    Interpreter::CompilationResult ret = Interpreter::kSuccess;
+    std::vector<std::string> lines;
+    std::ifstream in(filename.str().c_str());
+    std::string line;
+    while (in) {
+      std::getline(in, line);
+      if (line.find_first_not_of(whitespace) != std::string::npos) {
+        // collect all non-whitespace lines:
+        lines.push_back(line);
+      }
+    }
+    if (ignoreOutmostBlock && !lines.empty()) {
+      std::string::size_type posNonWS = lines[0].find_first_not_of(whitespace);
+      if (posNonWS != std::string::npos) {
+        if (lines[0][posNonWS] == '{') {
+          // hide the curly brace:
+          lines[0][posNonWS] = ' ';
+          // and the matching closing '}'
+          posNonWS = lines[lines.size() - 1].find_last_not_of(whitespace);
+          if (posNonWS != std::string::npos) {
+            lines[lines.size() - 1][posNonWS] = ' ';
+          } else {
+            llvm::errs() << "Error in Interpreter::readInputFromFile(): missing closing '}'!\n";
+            // be confident, just go on.
+           }
+        }
+      }
+    }
+    for (std::vector<std::string>::const_iterator i = lines.begin(),
+           e = lines.end(); i != e; ++i) {
+      Interpreter::CompilationResult resLine = Interpreter::kSuccess;
+      process(i->c_str(), result, &resLine);
+      if (ret != Interpreter::kFailure
+          && resLine != Interpreter::kSuccess) {
+         // ret == kFailure is immutable ("wins"),
+         // resLine == success is irrelevant.
+        ret = resLine;
+      }
+    }
+    return ret;
+  }
+
+} // end namespace cling

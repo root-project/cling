@@ -139,6 +139,20 @@ namespace cling {
                      cling::StoredValueRef* result = 0,
                      Interpreter::CompilationResult* compRes = 0);
 
+    ///\brief Reads prompt input from file.
+    ///
+    ///\param [in] filename - The file to read.
+    /// @param[out] result - the cling::StoredValueRef as result of the
+    ///             execution of the last statement
+    ///\param [in] ignoreOutmostBlock - Whether to ignore enlosing {}.
+    ///
+    ///\returns result of the compilation.
+    ///
+    Interpreter::CompilationResult
+    readInputFromFile(llvm::StringRef filename,
+                      StoredValueRef* result /* = 0 */,
+                      bool ignoreOutmostBlock = false);
+
   };
 } // end namespace cling
 
