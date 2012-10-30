@@ -386,7 +386,7 @@ namespace cling {
     ///\param [in] allowSharedLib - Whether to try to load the file as shared
     ///                             library.
     ///
-    ///\returns true for happiness.
+    ///\returns result of the compilation.
     ///
     CompilationResult loadFile(const std::string& filename,
                                bool allowSharedLib = true);
