@@ -31,4 +31,11 @@ void libcling__symbol_requester(const clang::FunctionDecl& Decl,
    DEI.getExpr();
    cling::InterpreterCallbacks cb(0);
 }
+
+static struct ForceSymbolsAsUsed {
+  typedef void (*SRType)(const clang::FunctionDecl& Decl,
+                         const cling::Interpreter& Interp);
+  ForceSymbolsAsUsed(): mPtr(libcling__symbol_requester) {}
+  SRType mPtr;
+} sForceSymbolsAsUsed;
 }
