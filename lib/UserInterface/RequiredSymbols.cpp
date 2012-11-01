@@ -13,6 +13,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace cling {
+namespace internal {
 void libcling__symbol_requester() {
    const char* const argv[] = {"libcling__symbol_requester", 0};
    cling::Interpreter I(1, argv);
@@ -30,5 +31,5 @@ void libcling__symbol_requester() {
    DEI.getExpr();
    cling::InterpreterCallbacks cb(0);
 }
-
+}
 }
