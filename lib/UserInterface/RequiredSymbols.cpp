@@ -13,8 +13,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace cling {
-void libcling__symbol_requester(const clang::FunctionDecl& Decl,
-                                const cling::Interpreter& Interp) {
+void libcling__symbol_requester() {
    const char* const argv[] = {"libcling__symbol_requester", 0};
    cling::Interpreter I(1, argv);
    cling::UserInterface U(I);
@@ -32,10 +31,4 @@ void libcling__symbol_requester(const clang::FunctionDecl& Decl,
    cling::InterpreterCallbacks cb(0);
 }
 
-static struct ForceSymbolsAsUsed {
-  typedef void (*SRType)(const clang::FunctionDecl& Decl,
-                         const cling::Interpreter& Interp);
-  ForceSymbolsAsUsed(): mPtr(libcling__symbol_requester) {}
-  SRType mPtr;
-} sForceSymbolsAsUsed;
 }
