@@ -4,6 +4,7 @@
 
 add_cling_library(clingUserInterface
   UserInterface.cpp
+  RequiredSymbols.cpp
   textinput/Editor.cpp
   textinput/History.cpp
   textinput/KeyBinding.cpp
