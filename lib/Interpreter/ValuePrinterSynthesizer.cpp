@@ -129,7 +129,7 @@ namespace cling {
   Expr* ValuePrinterSynthesizer::SynthesizeCppVP(Expr* E) {
     QualType QT = E->getType();
     // For now we skip void and function pointer types.
-    if (!QT.isNull() && (QT->isVoidType() || QT->isFunctionType()))
+    if (QT.isNull() || QT->isVoidType())
       return 0;
 
     // 1. Call gCling->getValuePrinterStream()
@@ -198,6 +198,13 @@ namespace cling {
       NeedsCleanup = true;
     }
 
+    if (QT->isFunctionPointerType()) {
+       // convert func ptr to void*:
+       E = m_Sema->BuildCStyleCastExpr(SourceLocation(),
+                                     m_Context->CreateTypeSourceInfo(m_Context->VoidPtrTy),
+                                       SourceLocation(),
+                                       E).take();
+    }
 
     llvm::SmallVector<Expr*, 4> CallArgs;
     CallArgs.push_back(RawOStreamTy);
