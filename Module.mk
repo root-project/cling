@@ -95,11 +95,12 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(CXX) $(OPT) $(CLINGCXXFLAGS) $(CXXOUT)$@ -c $<
 
 ifneq ($(LLVMDEV),)
+# -Wl,-E exports all symbols, such that the JIT can find them
 $(CLINGEXE): $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO)
 	$(RSYNC) --exclude '.svn' $(CLINGDIR) $(LLVMDIRO)/tools
 	@cd $(LLVMDIRS)/tools && ln -sf ../../../cling # yikes
 	@mkdir -p $(dir $@)
-	$(LD) -o $@ $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO) $(CLINGLIBEXTRA) 
+	$(LD) -Wl,-E -o $@ $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO) $(CLINGLIBEXTRA) 
 endif
 
 ##### extra rules ######
