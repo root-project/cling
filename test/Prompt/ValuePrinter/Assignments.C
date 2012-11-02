@@ -38,4 +38,12 @@ e2
 // CHECK: (E::e2) : (int) -11
 ::e1
 // CHECK: (E::e1) : (int) -12
+
+.rawInput
+typedef void (*F_t)(int);
+.rawInput
+F_t fp = 0;
+fp // CHECK: (F_t) 0x0
+#include <stdio.h>
+fp = (F_t)printf // (F_t) 0x{{[0-9A-Fa-f]{6,12}.}}
 .q
