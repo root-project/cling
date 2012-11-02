@@ -48,11 +48,7 @@ namespace cling {
 	
 //__cxa_atexit is declared later for WIN32
 #if (!_WIN32)
-      // Implemented in Interpreter.cpp
-      int local_cxa_atexit(void (*func) (void*), void* arg,
-                           void* dso, cling::Interpreter* interp);
-
-	  // Force the module to define __cxa_atexit, we need it.
+      // Force the module to define __cxa_atexit, we need it.
       struct __trigger__cxa_atexit {
         ~__trigger__cxa_atexit(); // implemented in Interpreter.cpp
       } S;
@@ -65,15 +61,7 @@ namespace cling {
 using namespace cling::runtime;
 
 // Global d'tors only for C++:
-#if !_WIN32
-
-extern "C"
-int cling_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
-  return cling::runtime::internal::local_cxa_atexit(func, arg, dso, gCling);
-}
-
-#else
-
+#if _WIN32
 extern "C" {
 
   ///\brief Fake definition to avoid compilation missing function in windows
@@ -84,19 +72,23 @@ extern "C" {
   int __cxa_atexit(void (*func) (), void* arg, void* dso) {
     return 0;
   }
-
-  ///\brief Manually provided by cling missing function resolution using
-  /// sys::DynamicLibrary::AddSymbol()
-  /// Included in extern C so its name is not mangled and easier to register
-  int local_cxa_atexit(void (*func) (void*), void* arg,
-                       void* dso, cling::Interpreter* interp);
-  //cling _cxa_atexit replacement
-  int cling_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
-    return local_cxa_atexit(func, arg, dso, cling::runtime::gCling);
-  }
 }
 #endif
 
+extern "C" {
+  ///\brief Manually provided by cling missing function resolution using
+  /// sys::DynamicLibrary::AddSymbol()
+  /// Included in extern C so its name is not mangled and easier to register
+  // Implemented in Interpreter.cpp
+  int cling__runtime__internal__local_cxa_atexit(void (*func) (void*),
+                                                 void* arg,
+                                                 void* dso,
+                                                 void* interp);
+  int cling_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
+    return cling__runtime__internal__local_cxa_atexit(func, arg, dso,
+                                                 (void*)cling::runtime::gCling);
+  }
+}
 #endif // __cplusplus
 
 #endif // CLING_RUNTIME_UNIVERSE_H (error)

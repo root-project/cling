@@ -104,21 +104,32 @@ static bool canWrapForCall(const std::string& input_line) {
 
 } // unnamed namespace
 
-namespace cling {
 
+// "Declared" to the JIT in RuntimeUniverse.h
+extern "C" 
+int cling__runtime__internal__local_cxa_atexit(void (*func) (void*), void* arg,
+                                               void* dso,
+                                               void* interp) {
+   return ((cling::Interpreter*)interp)->CXAAtExit(func, arg, dso);
+}
+
+namespace cling {
+#if (!_WIN32)
   // "Declared" to the JIT in RuntimeUniverse.h
   namespace runtime {
     namespace internal {
-      int local_cxa_atexit(void (*func) (void*), void* arg,
-                           void* dso, Interpreter* interp) {
-        return interp->CXAAtExit(func, arg, dso);
-      }
       struct __trigger__cxa_atexit {
         ~__trigger__cxa_atexit();
-      };
-      __trigger__cxa_atexit::~__trigger__cxa_atexit() {}
+      } S;
+      __trigger__cxa_atexit::~__trigger__cxa_atexit() {
+        if (std::getenv("bar") == (char*)-1) {
+          llvm::errs() <<
+            "UNEXPECTED cling::runtime::internal::__trigger__cxa_atexit\n";
+        }
+      }
     }
-  }
+#endif
+
 
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
@@ -181,8 +192,8 @@ namespace cling {
       }
     }
 
-    m_ExecutionContext->addSymbol("local_cxa_atexit",
-                  (void*)(intptr_t)&cling::runtime::internal::local_cxa_atexit);
+    m_ExecutionContext->addSymbol("cling__runtime__internal__local_cxa_atexit",
+                  (void*)(intptr_t)&cling__runtime__internal__local_cxa_atexit);
 
     // Enable incremental processing, which prevents the preprocessor destroying
     // the lexer on EOF token.
