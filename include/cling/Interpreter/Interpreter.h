@@ -448,6 +448,17 @@ namespace cling {
     friend class runtime::internal::LifetimeHandler;
   };
 
+  namespace internal {
+    // Force symbols needed by runtime to be included in binaries.
+    void symbol_requester();
+    static struct ForceSymbolsAsUsed {
+      ForceSymbolsAsUsed(){
+        // Never true, but don't tell the compiler.
+        // Prevents stripping the symbol due to dead-code optimization.
+        if (std::getenv("bar") == (char*) -1) symbol_requester();
+      }
+    } sForceSymbolsAsUsed;
+  }
 } // namespace cling
 
 #endif // CLING_INTERPRETER_H

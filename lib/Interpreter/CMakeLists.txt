@@ -34,6 +34,7 @@ add_cling_library(clingInterpreter
   InvocationOptions.cpp
   LookupHelper.cpp
   MultiplexExternalSemaSource.cpp
+  RequiredSymbols.cpp
   ReturnSynthesizer.cpp
   StoredValueRef.cpp
   Transaction.cpp
