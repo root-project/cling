@@ -282,7 +282,8 @@ namespace cling {
        return false;
      }
      //TODO: Check if the file exists and is readable.
-     if (!m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(), Tok.getLength()))) {
+     if (Interpreter::kSuccess 
+         != m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(), Tok.getLength()))) {
        llvm::errs() << "Load file failed.\n";
        if (compRes) *compRes = Interpreter::kFailure;
      }
