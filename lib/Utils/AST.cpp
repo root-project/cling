@@ -190,7 +190,7 @@ namespace utils {
        const NamedDecl* outer 
           = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
        while ( outer && outer->getName().size() ) {
-        // NOTE: Net is being cast to widely, replace by a lookup. 
+        // NOTE: Net is being cast too widely, replace by a lookup. 
         if (outer->getName().compare("std") == 0) {
           return true;
         }
