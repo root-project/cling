@@ -499,46 +499,40 @@ namespace cling {
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                  StoredValueRef* result /* = 0 */,
                                  bool ignoreOutmostBlock /*=false*/) {
-    static const char whitespace[] = " \t\r\n";
-    Interpreter::CompilationResult ret = Interpreter::kSuccess;
-    std::vector<std::string> lines;
+
     std::ifstream in(filename.str().c_str());
-    std::string line;
-    while (in) {
-      std::getline(in, line);
-      if (line.find_first_not_of(whitespace) != std::string::npos) {
-        // collect all non-whitespace lines:
-        lines.push_back(line);
-      }
-    }
-    if (ignoreOutmostBlock && !lines.empty()) {
-      std::string::size_type posNonWS = lines[0].find_first_not_of(whitespace);
+    in.seekg(0, std::ios::end);
+    size_t size = in.tellg();
+    std::string content(size, ' ');
+    in.seekg(0);
+    in.read(&content[0], size); 
+
+    if (ignoreOutmostBlock && !content.empty()) {
+      static const char whitespace[] = " \t\r\n";
+      std::string::size_type posNonWS = content.find_first_not_of(whitespace);
       if (posNonWS != std::string::npos) {
-        if (lines[0][posNonWS] == '{') {
+        if (content[posNonWS] == '{') {
           // hide the curly brace:
-          lines[0][posNonWS] = ' ';
+          content[posNonWS] = ' ';
           // and the matching closing '}'
-          posNonWS = lines[lines.size() - 1].find_last_not_of(whitespace);
+          posNonWS = content.find_last_not_of(whitespace);
           if (posNonWS != std::string::npos) {
-            lines[lines.size() - 1][posNonWS] = ' ';
-          } else {
-            llvm::errs() << "Error in Interpreter::readInputFromFile(): missing closing '}'!\n";
-            // be confident, just go on.
-           }
-        }
-      }
-    }
-    for (std::vector<std::string>::const_iterator i = lines.begin(),
-           e = lines.end(); i != e; ++i) {
-      Interpreter::CompilationResult resLine = Interpreter::kSuccess;
-      process(i->c_str(), result, &resLine);
-      if (ret != Interpreter::kFailure
-          && resLine != Interpreter::kSuccess) {
-         // ret == kFailure is immutable ("wins"),
-         // resLine == success is irrelevant.
-        ret = resLine;
-      }
-    }
+            if (content[posNonWS] == ';' && content[posNonWS-1] == '}') {
+              content[posNonWS--] = ' '; // replace ';' and enter next if
+            }
+            if (content[posNonWS] == '}') {
+              content[posNonWS] = ' '; // replace '}'
+            } else {
+              llvm::errs() << "Error in Interpreter::readInputFromFile(): missing closing '}'!\n";
+              // be confident, just go on.
+            }
+          } // find '}'
+        } // have '{'
+      } // have non-whitespace
+    } // ignore outmost block
+
+    Interpreter::CompilationResult ret = Interpreter::kSuccess;
+    process(content.c_str(), result, &ret);
     return ret;
   }
 
