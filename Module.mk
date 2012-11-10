@@ -95,12 +95,16 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(CXX) $(OPT) $(CLINGCXXFLAGS) $(CXXOUT)$@ -c $<
 
 ifneq ($(LLVMDEV),)
-# -Wl,-E exports all symbols, such that the JIT can find them
+ifneq ($(PLATFORM),macosx)
+# -Wl,-E exports all symbols, such that the JIT can find them.
+# Doesn't exist on MacOS where this behavior is default.
+CLINGLDEXPSYM := -Wl,-E
+endif
 $(CLINGEXE): $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO)
 	$(RSYNC) --exclude '.svn' $(CLINGDIR) $(LLVMDIRO)/tools
 	@cd $(LLVMDIRS)/tools && ln -sf ../../../cling # yikes
 	@mkdir -p $(dir $@)
-	$(LD) -Wl,-E -o $@ $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO) $(CLINGLIBEXTRA) 
+	$(LD) $(CLINGLDEXPSYM) -o $@ $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO) $(CLINGLIBEXTRA) 
 endif
 
 ##### extra rules ######
