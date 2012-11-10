@@ -10,7 +10,6 @@
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/HeaderSearchOptions.h"
 
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/PrettyStackTrace.h"
