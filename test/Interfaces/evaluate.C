@@ -7,7 +7,7 @@
 cling::StoredValueRef V;
 V // CHECK: (cling::StoredValueRef) <<<invalid>>> @0x{{.*}}
 
-gCling->evaluate("1;", V);
+gCling->evaluate("return 1;", V);
 V // CHECK: (cling::StoredValueRef) boxes [(int) 1]
 
 long LongV = 17;
