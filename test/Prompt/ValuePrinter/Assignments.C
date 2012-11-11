@@ -39,6 +39,11 @@ e2
 ::e1
 // CHECK: (E::e1) : (int) -12
 
+
+// Arrays:
+float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0.000000e+00, 1.000000e+00, 2.000000e+00, 3.000000e+00, 4.000000e+00... }
+std::string sarr[3] = {"A", "B", "C"} // CHECK: (std::string [3]) { @0x{{[0-9A-Fa-f]{6,12}.}} c_str: "A", @0x{{[0-9A-Fa-f]{6,12}.}} c_str: "B", @0x{{[0-9A-Fa-f]{6,12}.}} c_str: "C" }
+
 .rawInput
 typedef void (*F_t)(int);
 .rawInput
