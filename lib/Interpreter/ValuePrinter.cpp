@@ -83,7 +83,7 @@ static void StreamArr(llvm::raw_ostream& o, const void* p,
     size_t Size = (size_t)APSize.getZExtValue();
     o << "{ ";
     for (size_t i = 0; i < Size; ++i) {
-      StreamValue(o, ((char*)p) + i * ElBytes, VPI, ElementTy, " ");
+      StreamValue(o, ((const char*)p) + i * ElBytes, VPI, ElementTy, " ");
       if (i + 1 < Size) {
         if (i == 4) {
           o << "...";
