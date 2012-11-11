@@ -20,5 +20,5 @@ gCling->process("a;", &V);
 gCling->process("\"Root\"", &V);
 // CHECK: (const char [5]) "Root"
 V
-// CHECK: (cling::StoredValueRef) boxes [(const char [5]) "Root"]
+// CHECK: (cling::StoredValueRef) boxes [(const char *) "Root"]
 // End PR #98146
