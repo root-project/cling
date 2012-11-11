@@ -83,7 +83,7 @@ static void StreamArr(llvm::raw_ostream& o, const void* p,
     size_t Size = (size_t)APSize.getZExtValue();
     o << "{ ";
     for (size_t i = 0; i < Size; ++i) {
-      StreamValue(o, ((const char*)p) + i * ElBytes, VPI, ElementTy, " ");
+      StreamValue(o, ((const char*)p) + i * ElBytes, VPI, ElementTy, "");
       if (i + 1 < Size) {
         if (i == 4) {
           o << "...";
@@ -185,6 +185,7 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
   }
   else if (Ty.getAsString().compare("class std::basic_string<char>") == 0) {
     StreamObj(o, p, VPI, Ty, Sep);
+    if (!Sep[0]) o << " "; // force a space
     o <<"c_str: ";
     StreamCharPtr(o, ((const char*) (*(const std::string*)p).c_str()), Sep);
   }
