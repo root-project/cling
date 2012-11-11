@@ -8,15 +8,17 @@
 #define CLING_DECL_EXTRACTOR_H
 
 #include "TransactionTransformer.h"
-
-#include "clang/Sema/Lookup.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace clang {
   class ASTContext;
-  class Decl;
   class DeclContext;
+  class FunctionDecl;
+  class LookupResult;
   class NamedDecl;
   class Scope;
+  class Sema;
+  class TagDecl;
 }
 
 namespace cling {
