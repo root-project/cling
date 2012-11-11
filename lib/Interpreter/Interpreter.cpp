@@ -557,14 +557,9 @@ namespace cling {
       Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
       assert(CurT->size() && "No decls created by Parse!");
 
-      if (Expr* E = utils::Analyze::GetOrCreateLastExpr(CurT->getWrapperFD(), 
-                                                        /*foundAt*/0,
-                                                        /*omitDS*/false, 
-                                                        &getSema())) {
-        resTy = E->getType();
-      }
+      m_IncrParser->commitCurrentTransaction(); // might change resTy
 
-      m_IncrParser->commitCurrentTransaction();
+      resTy = CurT->getWrapperFD()->getResultType();
     }
     else
       m_IncrParser->Compile(Wrapper, CO);
@@ -698,7 +693,8 @@ namespace cling {
                               clang::diag::MAP_IGNORE, SourceLocation());
     Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
                               clang::diag::MAP_IGNORE, SourceLocation());
-
+    Diag.setDiagnosticMapping(clang::diag::ext_return_has_expr,
+                              clang::diag::MAP_IGNORE, SourceLocation());
   }
 
   bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress) {
