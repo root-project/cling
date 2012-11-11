@@ -32,105 +32,93 @@ namespace cling {
     if (!getTransaction()->getCompilationOpts().DeclarationExtraction)
       return;
 
-    for (Transaction::const_iterator I = getTransaction()->decls_begin(), 
-           E = getTransaction()->decls_end(); I != E; ++I)
-      for (DeclGroupRef::const_iterator J = (*I).begin(), 
-             JE = (*I).end(); J != JE; ++J)
-        if(!ExtractDecl(*J))
-          setTransaction(0); // On error set to NULL.
+    if(!ExtractDecl(getTransaction()->getWrapperFD()))
+       setTransaction(0); // On error set to NULL.
   }
 
-  bool DeclExtractor::ExtractDecl(Decl* D) {
-    FunctionDecl* FD = dyn_cast<FunctionDecl>(D);
+  bool DeclExtractor::ExtractDecl(FunctionDecl* FD) {
+    llvm::SmallVector<NamedDecl*, 4> TouchedDecls;
+    CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
+    assert(CS && "Function body not a CompoundStmt?");
+    DeclContext* DC = FD->getTranslationUnitDecl();
+    Scope* TUScope = m_Sema->TUScope;
+    assert(TUScope == m_Sema->getScopeForContext(DC) && "TU scope from DC?");
+    llvm::SmallVector<Stmt*, 4> Stmts;
 
-    if (FD) {
-      if (!utils::Analyze::IsWrapper(FD))
-        return true;
+    for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
+         I != EI; ++I) {
+      DeclStmt* DS = dyn_cast<DeclStmt>(*I);
+      if (!DS) {
+        Stmts.push_back(*I);
+        continue;
+      }
 
-      llvm::SmallVector<NamedDecl*, 4> TouchedDecls;
-      CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
-      assert(CS && "Function body not a CompoundStmt?");
-      DeclContext* DC = FD->getTranslationUnitDecl();
-      Scope* TUScope = m_Sema->TUScope;
-      assert(TUScope == m_Sema->getScopeForContext(DC) && "TU scope from DC?");
-      llvm::SmallVector<Stmt*, 4> Stmts;
+      for (DeclStmt::decl_iterator J = DS->decl_begin();
+           J != DS->decl_end(); ++J) {
+        NamedDecl* ND = dyn_cast<NamedDecl>(*J);
+        if (ND) {
+          DeclContext* OldDC = ND->getDeclContext();
 
-      for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
-           I != EI; ++I) {
-        DeclStmt* DS = dyn_cast<DeclStmt>(*I);
-        if (!DS) {
-          Stmts.push_back(*I);
-          continue;
-        }
-
-        for (DeclStmt::decl_iterator J = DS->decl_begin();
-             J != DS->decl_end(); ++J) {
-          NamedDecl* ND = dyn_cast<NamedDecl>(*J);
-          if (ND) {
-            DeclContext* OldDC = ND->getDeclContext();
-
-            // Make sure the decl is not found at its old possition
-            OldDC->removeDecl(ND);
-            if (Scope* S = m_Sema->getScopeForContext(OldDC)) {
-              S->RemoveDecl(ND);
-              m_Sema->IdResolver.RemoveDecl(ND);
-            }
-
-            if (ND->getDeclContext() == ND->getLexicalDeclContext())
-              ND->setLexicalDeclContext(DC);
-            else 
-              assert("Not implemented: Decl with different lexical context");
-            ND->setDeclContext(DC);
-
-            if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
-              VD->setStorageClass(SC_None);
-              VD->setStorageClassAsWritten(SC_None);
-            }
-            // force recalc of the linkage (to external)
-            ND->ClearLinkageCache();
-
-            TouchedDecls.push_back(ND);
+          // Make sure the decl is not found at its old possition
+          OldDC->removeDecl(ND);
+          if (Scope* S = m_Sema->getScopeForContext(OldDC)) {
+            S->RemoveDecl(ND);
+            m_Sema->IdResolver.RemoveDecl(ND);
           }
+
+          if (ND->getDeclContext() == ND->getLexicalDeclContext())
+            ND->setLexicalDeclContext(DC);
+          else 
+            assert("Not implemented: Decl with different lexical context");
+          ND->setDeclContext(DC);
+
+          if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
+            VD->setStorageClass(SC_None);
+            VD->setStorageClassAsWritten(SC_None);
+          }
+          // force recalc of the linkage (to external)
+          ND->ClearLinkageCache();
+
+          TouchedDecls.push_back(ND);
         }
       }
-      bool hasNoErrors = !CheckForClashingNames(TouchedDecls, DC, TUScope);
-      if (hasNoErrors) {
-        for (size_t i = 0; i < TouchedDecls.size(); ++i) {
-          m_Sema->PushOnScopeChains(TouchedDecls[i],
-                                    m_Sema->getScopeForContext(DC),
+    }
+    bool hasNoErrors = !CheckForClashingNames(TouchedDecls, DC, TUScope);
+    if (hasNoErrors) {
+      for (size_t i = 0; i < TouchedDecls.size(); ++i) {
+        m_Sema->PushOnScopeChains(TouchedDecls[i],
+                                  m_Sema->getScopeForContext(DC),
                     /*AddCurContext*/!isa<UsingDirectiveDecl>(TouchedDecls[i]));
 
-          // The transparent DeclContexts (eg. scopeless enum) doesn't have 
-          // scopes. While extracting their contents we need to update the
-          // lookup tables and telling them to pick up the new possitions
-          //  in the AST.
-          if (DeclContext* InnerDC = dyn_cast<DeclContext>(TouchedDecls[i])) {
-            if (InnerDC->isTransparentContext()) {
-              // We can't PushDeclContext, because we don't have scope.
-              Sema::ContextRAII pushedDC(*m_Sema, InnerDC);
+        // The transparent DeclContexts (eg. scopeless enum) doesn't have 
+        // scopes. While extracting their contents we need to update the
+        // lookup tables and telling them to pick up the new possitions
+        //  in the AST.
+        if (DeclContext* InnerDC = dyn_cast<DeclContext>(TouchedDecls[i])) {
+          if (InnerDC->isTransparentContext()) {
+            // We can't PushDeclContext, because we don't have scope.
+            Sema::ContextRAII pushedDC(*m_Sema, InnerDC);
 
-              for(DeclContext::decl_iterator DI = InnerDC->decls_begin(), 
-                    DE = InnerDC->decls_end(); DI != DE ; ++DI) {
-                if (NamedDecl* ND = dyn_cast<NamedDecl>(*DI))
-                  InnerDC->makeDeclVisibleInContext(ND);
-              }
+            for(DeclContext::decl_iterator DI = InnerDC->decls_begin(), 
+                  DE = InnerDC->decls_end(); DI != DE ; ++DI) {
+              if (NamedDecl* ND = dyn_cast<NamedDecl>(*DI))
+                InnerDC->makeDeclVisibleInContext(ND);
             }
           }
-
-          // Append the new top level decl to the current transaction.
-          getTransaction()->appendUnique(DeclGroupRef(TouchedDecls[i]));
         }
+
+        // Append the new top level decl to the current transaction.
+        getTransaction()->appendUnique(DeclGroupRef(TouchedDecls[i]));
       }
-
-      CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
-
-      // Put the wrapper after its declarations. (Nice when AST dumping)
-      DC->removeDecl(FD);
-      DC->addDecl(FD);
-
-      return hasNoErrors;
     }
-    return true;
+
+    CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
+
+    // Put the wrapper after its declarations. (Nice when AST dumping)
+    DC->removeDecl(FD);
+    DC->addDecl(FD);
+
+    return hasNoErrors;
   }
 
   ///\brief Checks for clashing names when trying to extract a declaration.

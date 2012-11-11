@@ -14,7 +14,7 @@
 namespace clang {
   class ASTContext;
   class CompoundStmt;
-  class DeclGroupRef;
+  class FunctionDecl;
   class Expr;
   class Sema;
 }
@@ -52,13 +52,13 @@ public:
     ///\brief Tries to attach a value printing mechanism to the given decl group
     /// ref.
     ///
-    ///\param[in] DGR - A decl group ref the value printer is being attached to.
+    ///\param[in] FD - wrapper function that the value printer will attached to.
     ///
     ///\returns true if the attachment was considered as success. I.e. even if
     /// even if the value printer wasn't attached because of the compilation 
     /// options disallowint it - it will return still true. Returns false on
     /// critical error.
-    bool tryAttachVP(clang::DeclGroupRef DGR);
+    bool tryAttachVP(clang::FunctionDecl* FD);
     clang::Expr* SynthesizeCppVP(clang::Expr* E);
     clang::Expr* SynthesizeVP(clang::Expr* E);
     unsigned ClearNullStmts(clang::CompoundStmt* CS);

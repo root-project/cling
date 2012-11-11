@@ -39,10 +39,10 @@ namespace cling {
     ///\brief Tries to extract the declaration on the global scope (translation
     /// unit scope).
     ///
-    ///\param D[in] - The declaration to be extracted.
+    ///\param D[in] - The function declaration to extract from.
     ///\returns true on success.
     ///
-    bool ExtractDecl(clang::Decl* D);
+    bool ExtractDecl(clang::FunctionDecl* FD);
 
     ///\brief Checks for clashing names when trying to extract a declaration.
     ///

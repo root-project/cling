@@ -46,79 +46,69 @@ namespace cling {
         == CompilationOptions::VPDisabled)
       return;
 
-    for (Transaction::const_iterator I = getTransaction()->decls_begin(), 
-           E = getTransaction()->decls_end(); I != E; ++I)
-      if(!tryAttachVP(*I))
-        return setTransaction(0); // On error set to NULL.
+    if (!tryAttachVP(getTransaction()->getWrapperFD()))
+      return setTransaction(0); // On error set to NULL.
   }
 
-  bool ValuePrinterSynthesizer::tryAttachVP(DeclGroupRef DGR) {
-    for (DeclGroupRef::iterator I = DGR.begin(), E = DGR.end(); I != E; ++I)
-      if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I)) {
-        if (!utils::Analyze::IsWrapper(FD))
-          continue;
-        const CompilationOptions& CO(getTransaction()->getCompilationOpts());
-        if (CO.ValuePrinting == CompilationOptions::VPDisabled)
-          return true; // Nothing to do.
+  bool ValuePrinterSynthesizer::tryAttachVP(FunctionDecl* FD) {
+    // We have to be able to mark the expression for printout. There are
+    // three scenarios:
+    // 0: Expression printing disabled - don't do anything just exit.
+    // 1: Expression printing enabled - print no matter what.
+    // 2: Expression printing auto - analyze - rely on the omitted ';' to
+    //    not produce the suppress marker.
+    int indexOfLastExpr = -1;
+    Expr* To = utils::Analyze::GetOrCreateLastExpr(FD, &indexOfLastExpr, 
+                                                   /*omitDS*/false,
+                                                   m_Sema);
+    if (To) {
+      // Update the CompoundStmt body, avoiding alloc/dealloc of all the el.
+      CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
+      assert(CS && "Missing body?");
 
-        // We have to be able to mark the expression for printout. There are
-        // three scenarios:
-        // 0: Expression printing disabled - don't do anything just exit.
-        // 1: Expression printing enabled - print no matter what.
-        // 2: Expression printing auto - analyze - rely on the omitted ';' to
-        //    not produce the suppress marker.
-        int indexOfLastExpr = -1;
-        Expr* To = utils::Analyze::GetOrCreateLastExpr(FD, &indexOfLastExpr, 
-                                                       /*omitDS*/false,
-                                                       m_Sema);
-        if (To) {
-          // Update the CompoundStmt body, avoiding alloc/dealloc of all the el.
-          CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
-          assert(CS && "Missing body?");
-
-          switch (CO.ValuePrinting) {
-          case CompilationOptions::VPDisabled:
-            assert("Don't wait that long. Exit early!");
-            break;
-          case CompilationOptions::VPEnabled:
-            break;
-          case CompilationOptions::VPAuto:
-            if ((int)CS->size() > indexOfLastExpr+1 
-                && (*(CS->body_begin() + indexOfLastExpr + 1))
-                && isa<NullStmt>(*(CS->body_begin() + indexOfLastExpr + 1)))
-              return true; // If next is NullStmt disable VP is disabled - exit.
-            break;
-          }
-
-          // We can't PushDeclContext, because we don't have scope.
-          Sema::ContextRAII pushedDC(*m_Sema, FD);
-
-          if (To) {
-            // Strip the parenthesis if any
-            if (ParenExpr* PE = dyn_cast<ParenExpr>(To))
-              To = PE->getSubExpr();
-            
-            Expr* Result = 0;
-            if (m_Sema->getLangOpts().CPlusPlus)
-              Result = SynthesizeCppVP(To);
-            else
-              Result = SynthesizeVP(To);
-
-            if (Result)
-              *(CS->body_begin()+indexOfLastExpr) = Result;
-          }
-          // Clear the artificial NullStmt-s
-          if (!ClearNullStmts(CS)) {
-            // FIXME: Why it is here? Shouldn't it be in DeclExtractor?
-            // if no body remove the wrapper
-            DeclContext* DC = FD->getDeclContext();
-            Scope* S = m_Sema->getScopeForContext(DC);
-            if (S)
-              S->RemoveDecl(FD);
-            DC->removeDecl(FD);
-          }
-        }
+      const CompilationOptions& CO(getTransaction()->getCompilationOpts());
+      switch (CO.ValuePrinting) {
+      case CompilationOptions::VPDisabled:
+        assert("Don't wait that long. Exit early!");
+        break;
+      case CompilationOptions::VPEnabled:
+        break;
+      case CompilationOptions::VPAuto:
+        if ((int)CS->size() > indexOfLastExpr+1 
+            && (*(CS->body_begin() + indexOfLastExpr + 1))
+            && isa<NullStmt>(*(CS->body_begin() + indexOfLastExpr + 1)))
+          return true; // If next is NullStmt disable VP is disabled - exit.
+        break;
       }
+
+      // We can't PushDeclContext, because we don't have scope.
+      Sema::ContextRAII pushedDC(*m_Sema, FD);
+
+      if (To) {
+        // Strip the parenthesis if any
+        if (ParenExpr* PE = dyn_cast<ParenExpr>(To))
+          To = PE->getSubExpr();
+            
+        Expr* Result = 0;
+        if (m_Sema->getLangOpts().CPlusPlus)
+          Result = SynthesizeCppVP(To);
+        else
+          Result = SynthesizeVP(To);
+
+        if (Result)
+          *(CS->body_begin()+indexOfLastExpr) = Result;
+      }
+      // Clear the artificial NullStmt-s
+      if (!ClearNullStmts(CS)) {
+        // FIXME: Why it is here? Shouldn't it be in DeclExtractor?
+        // if no body remove the wrapper
+        DeclContext* DC = FD->getDeclContext();
+        Scope* S = m_Sema->getScopeForContext(DC);
+        if (S)
+          S->RemoveDecl(FD);
+        DC->removeDecl(FD);
+      }
+    }
 
     return true;
   }
