@@ -70,14 +70,14 @@ lookup.findScope("Details::Impl", &t);
 QT = clang::QualType(t, 0);
 //QT.getAsString().c_str()
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
-// CHECK: (const char * const) "Details::Impl"
+// CHECK: (const char *) "Details::Impl"
 
 // Test the behavior for a class inside an anonymous namespace
 lookup.findScope("InsideAnonymous", &t);
 QT = clang::QualType(t, 0);
 //QT.getAsString().c_str()c
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
-// CHECK: (const char * const) "class <anonymous>::InsideAnonymous"
+// CHECK: (const char *) "class <anonymous>::InsideAnonymous"
 
 // The above result is not quite want we want, so the client must using 
 // the following:
@@ -90,16 +90,16 @@ Policy.SuppressScope = true;      // Force the scope to be coming from a clang::
 std::string name;
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsStringInternal(name,Policy);
 name.c_str()
-// CHECK: (const char * const) "InsideAnonymous"
+// CHECK: (const char *) "InsideAnonymous"
 
 // Test desugaring pointers types:
 QT = lookup.findType("Int_t*");
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
-// CHECK:(const char * const) "int *"
+// CHECK:(const char *) "int *"
 
 QT = lookup.findType("const IntPtr_t*");
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
-// CHECK:(const char * const) "int *const *"
+// CHECK:(const char *) "int *const *"
 
 
 // Test desugaring reference (both r- or l- value) types:

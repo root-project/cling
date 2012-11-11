@@ -22,6 +22,6 @@ my_int
 // CHECK: (int) 20
 
 my_funct()
-// CHECK: (int const) 20
+// CHECK: (int) 20
 
 .q

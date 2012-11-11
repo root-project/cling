@@ -7,7 +7,7 @@
 
 gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling));
 jksghdgsjdf->getVersion() // CHECK: {{.*Interpreter.*}}
-hsdghfjagsp->Draw() // CHECK: (int const) 12
+hsdghfjagsp->Draw() // CHECK: (int) 12
 
 h->PrintString(std::string("test")); // CHECK: test
 int a[5] = {1,2,3,4,5};

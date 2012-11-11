@@ -20,8 +20,8 @@ int OverloadedF(int i) { return i + 100;}
 int __my_i = 10
 // CHECK: (int) 10
 OverloadedF(__my_i)
-// CHECK: (int const) 110
+// CHECK: (int) 110
 TemplatedF(__my_i)
-// CHECK: (int const) 110
+// CHECK: (int) 110
 
 .q

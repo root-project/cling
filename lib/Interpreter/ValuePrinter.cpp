@@ -227,8 +227,6 @@ namespace cling {
     const clang::Expr* E = VPI.getExpr();
     o << "(";
     o << E->getType().getAsString();
-    if (E->isRValue()) // show the user that the var cannot be changed
-      o << " const";
     o << ") ";
     StreamValue(o, p, VPI, VPI.getExpr()->getType());
   }
