@@ -17,7 +17,7 @@ namespace cling {
   class ValuePrinterInfo {
   private:
     const clang::Expr* m_Expr;
-    const clang::ASTContext* m_Context;
+    clang::ASTContext* m_Context;
     unsigned m_Flags;
 
   public:
@@ -27,9 +27,9 @@ namespace cling {
       VPI_Polymorphic = 4
     };
 
-    ValuePrinterInfo(clang::Expr* E, clang::ASTContext* Ctx);
+    ValuePrinterInfo(const clang::Expr* E, clang::ASTContext* Ctx);
     const clang::Expr* getExpr() const { return m_Expr; }
-    const clang::ASTContext* getASTContext() const { return m_Context; }
+    clang::ASTContext* getASTContext() const { return m_Context; }
     unsigned getFlags() { return m_Flags; }
   };
 

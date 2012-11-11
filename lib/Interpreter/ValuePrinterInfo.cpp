@@ -13,7 +13,7 @@
 using namespace clang;
 
 namespace cling {
-  ValuePrinterInfo::ValuePrinterInfo(Expr* E, ASTContext* Ctx)
+  ValuePrinterInfo::ValuePrinterInfo(const Expr* E, ASTContext* Ctx)
     : m_Expr(E), m_Context(Ctx), m_Flags(0) {
     assert(E && "Expression cannot be null!");
     assert(Ctx && "ASTContext cannot be null!");

@@ -20,7 +20,7 @@ V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 cling::StoredValueRef Result;
 gCling->evaluate("V", Result);
-Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef)]
+Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef) boxes [(int *) 0x12]]
 V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 // Savannah #96277

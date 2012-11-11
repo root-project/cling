@@ -18,7 +18,7 @@ gCling->process("a;", &V);
 // End PR #96277
 // PR #98146
 gCling->process("\"Root\"", &V);
-// CHECK: (const char [5]) @0x{{[1-9a-f][0-9a-f]*$}}
+// CHECK: (const char [5]) "Root"
 V
-// CHECK: (cling::StoredValueRef) boxes [(const char [5])]
+// CHECK: (cling::StoredValueRef) boxes [(const char [5]) "Root"]
 // End PR #98146

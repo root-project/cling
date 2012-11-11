@@ -1311,7 +1311,7 @@ func_B_plus_proto->print(llvm::outs());
 //
 
 "abc"
-//CHECK: (const char [4]) @0x{{[0-9a-f]+}}
+//CHECK: (const char [4]) "abc"
 
 //
 //  Cleanup.
