@@ -211,8 +211,7 @@ namespace cling {
     ///
     ///\returns true if successful otherwise false.
     ///
-    bool RunFunction(const clang::FunctionDecl* FD, clang::QualType resTy,
-                     StoredValueRef* res = 0);
+    bool RunFunction(const clang::FunctionDecl* FD, StoredValueRef* res = 0);
 
     ///\brief Forwards to cling::ExecutionContext::addSymbol.
     ///

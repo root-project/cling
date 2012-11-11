@@ -470,7 +470,7 @@ namespace cling {
     if (m_IncrParser->Compile(Wrapper, CO) == IncrementalParser::kSuccess) {
       const Transaction* lastT = m_IncrParser->getLastTransaction();
       if (lastT->getState() == Transaction::kCommitted
-          && RunFunction(lastT->getWrapperFD(), QualType()))
+          && RunFunction(lastT->getWrapperFD()))
         return Interpreter::kSuccess;
     }
 
@@ -483,7 +483,7 @@ namespace cling {
     input.append("\n;\n}");
   }
 
-  bool Interpreter::RunFunction(const FunctionDecl* FD, clang::QualType resTy,
+  bool Interpreter::RunFunction(const FunctionDecl* FD,
                                 StoredValueRef* res /*=0*/) {
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return false;
@@ -499,7 +499,7 @@ namespace cling {
     mangleName(FD, mangledNameIfNeeded);
     m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
                                         getCI()->getASTContext(),
-                                        resTy, res);
+                                        FD->getResultType(), res);
     // FIXME: Probably we need better handling of the error case.
     return true;
   }
@@ -552,14 +552,11 @@ namespace cling {
     std::string WrapperName;
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
-    QualType resTy = getCI()->getASTContext().VoidTy;
     if (V) {
       Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
       assert(CurT->size() && "No decls created by Parse!");
 
-      m_IncrParser->commitCurrentTransaction(); // might change resTy
-
-      resTy = CurT->getWrapperFD()->getResultType();
+      m_IncrParser->commitCurrentTransaction();
     }
     else
       m_IncrParser->Compile(Wrapper, CO);
@@ -568,7 +565,7 @@ namespace cling {
     const Transaction* lastT = m_IncrParser->getLastTransaction();
 
     if (lastT->getState() == Transaction::kCommitted
-        && RunFunction(lastT->getWrapperFD(), resTy, V))
+        && RunFunction(lastT->getWrapperFD(), V))
       return Interpreter::kSuccess;
     else if (V)
         *V = StoredValueRef::invalidValue();
