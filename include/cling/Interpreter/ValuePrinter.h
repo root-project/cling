@@ -14,6 +14,7 @@ namespace llvm {
 }
 
 namespace cling {
+  class StoredValueRef;
 
   // Can be re-implemented to print type-specific details, e.g. as
   //   template <typename ACTUAL>
@@ -25,6 +26,9 @@ namespace cling {
 
   void printValuePublicDefault(llvm::raw_ostream& o, const void* const p,
                                const ValuePrinterInfo& PVI);
+
+  void StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
+                            clang::ASTContext& C, const char* Sep = "\n");
 
   void flushOStream(llvm::raw_ostream& o);
 

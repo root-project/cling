@@ -21,18 +21,24 @@
 
 #include <string>
 
+using namespace cling;
+
 // Implements the CValuePrinter interface.
 extern "C" void cling_PrintValue(void* /*clang::Expr**/ E,
                       void* /*clang::ASTContext**/ C,
                       const void* value) {
   clang::Expr* Exp = (clang::Expr*)E;
   clang::ASTContext* Context = (clang::ASTContext*)C;
-  cling::ValuePrinterInfo VPI(Exp, Context);
-  cling::printValuePublic(llvm::outs(), value, value, VPI);
+  ValuePrinterInfo VPI(Exp->getType(), Context);
+  printValuePublic(llvm::outs(), value, value, VPI);
 
-  cling::flushOStream(llvm::outs());
+  flushOStream(llvm::outs());
 }
 
+
+static void StreamValue(llvm::raw_ostream& o, const void* const p,
+                        const ValuePrinterInfo& VPI,
+                        const char* Sep = "\n");
 
 static void StreamChar(llvm::raw_ostream& o, const char v,
                        const char* Sep = "\n") {
@@ -60,16 +66,11 @@ static void StreamPtr(llvm::raw_ostream& o, const void* v,
   o << v << Sep;
 }
 
-static void StreamValue(llvm::raw_ostream& o, const void* const p,
-                        const cling::ValuePrinterInfo& VPI,
-                        clang::QualType Ty,
-                        const char* Sep = "\n");
-
 static void StreamArr(llvm::raw_ostream& o, const void* p,
-                      const cling::ValuePrinterInfo& VPI,
-                      clang::QualType Ty,
+                      const ValuePrinterInfo& VPI,
                       const char* Sep = "\n") {
-  const clang::ASTContext& C = *VPI.getASTContext();
+  const clang::QualType& Ty = VPI.getType();
+  clang::ASTContext& C = *VPI.getASTContext();
   const clang::ArrayType* ArrTy = Ty->getAsArrayTypeUnsafe();
   clang::QualType ElementTy = ArrTy->getElementType();
   if (ElementTy->isCharType())
@@ -82,8 +83,9 @@ static void StreamArr(llvm::raw_ostream& o, const void* p,
     size_t ElBytes = C.getTypeSize(ElementTy) / C.getCharWidth();
     size_t Size = (size_t)APSize.getZExtValue();
     o << "{ ";
+    ValuePrinterInfo ElVPI(ElementTy, &C);
     for (size_t i = 0; i < Size; ++i) {
-      StreamValue(o, ((const char*)p) + i * ElBytes, VPI, ElementTy, "");
+      StreamValue(o, ((const char*)p) + i * ElBytes, ElVPI, "");
       if (i + 1 < Size) {
         if (i == 4) {
           o << "...";
@@ -97,45 +99,53 @@ static void StreamArr(llvm::raw_ostream& o, const void* p,
     StreamPtr(o, p, Sep);
 }
 
-static void StreamObj(llvm::raw_ostream& o, const void* v,
-                      const cling::ValuePrinterInfo& VPI,
-                      clang::QualType QTy,
-                      const char* Sep = "\n") {
-  const clang::Type* Ty = QTy.getTypePtr();
-  if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl()) {
-    const cling::Value* value = 0;
-    if (CXXRD->getQualifiedNameAsString().compare("cling::StoredValueRef") == 0){
-      const cling::StoredValueRef* VR = (const cling::StoredValueRef*)v;
-      if (VR->isValid()) {
-        value = &VR->get();
-      } else {
-        o << "<<<invalid>>> ";
-      }
-    } else if (CXXRD->getQualifiedNameAsString().compare("cling::Value") == 0) {
-      value = (const cling::Value*)v;
-    }
-    if (value) {
-      if (value->isValid()) {
-        o << "boxes [";
-        const clang::ASTContext& C = *VPI.getASTContext();
-        o <<
-          "(" <<
-          value->type.getAsString(C.getPrintingPolicy()) <<
-          ") ";
-        clang::QualType valType = value->type.getDesugaredType(C);
-        if (valType->isFloatingType())
-          o << value->value.DoubleVal;
-        else if (valType->isIntegerType())
-          o << value->value.IntVal.getSExtValue();
-        else if (valType->isBooleanType())
-          o << value->value.IntVal.getBoolValue();
-        else
-          StreamValue(o, value->value.PointerVal, VPI, valType, "");
-        o << "]" << Sep;
+static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
+                             clang::ASTContext& C, const char* Sep = "\n") {
+  if (!value || !value->isValid()) {
+    o << "<<<invalid>>>" << Sep;
+  } else {
+    o << "boxes [";
+    o << "("
+      << value->type.getAsString(C.getPrintingPolicy())
+      << ") ";
+    clang::QualType valType = value->type.getDesugaredType(C);
+    if (valType->isFloatingType())
+      o << value->value.DoubleVal;
+    else if (valType->isIntegerType())
+      o << value->value.IntVal.getSExtValue();
+    else if (valType->isBooleanType())
+      o << value->value.IntVal.getBoolValue();
+    else
+      StreamValue(o, value->value.PointerVal,
+                  ValuePrinterInfo(valType, &C), "");
+    o << "]" << Sep;
+  }
+}
 
-        return;
-      } else
-        o << "<<<invalid>>> ";
+void cling::StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
+                                 clang::ASTContext& C,
+                                 const char* Sep /*= "\n"*/) {
+
+  if (VR->isValid()) {
+    StreamClingValue(o, &VR->get(), C, Sep);
+  } else {
+    o << "<<<invalid>>> @" << VR << Sep;
+  }
+}
+
+static void StreamObj(llvm::raw_ostream& o, const void* v,
+                      const ValuePrinterInfo& VPI,
+                      const char* Sep = "\n") {
+  const clang::Type* Ty = VPI.getType().getTypePtr();
+  if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl()) {
+    std::string QualName = CXXRD->getQualifiedNameAsString();
+    if (QualName == "cling::StoredValueRef"){
+      StreamStoredValueRef(o, (const StoredValueRef*)v,
+                           *VPI.getASTContext(), Sep);
+      return;
+    } else if (QualName == "cling::Value") {
+      StreamClingValue(o, (const Value*)v, *VPI.getASTContext(), Sep);
+      return;
     }
   } // if CXXRecordDecl
 
@@ -144,11 +154,10 @@ static void StreamObj(llvm::raw_ostream& o, const void* v,
 }
 
 static void StreamValue(llvm::raw_ostream& o, const void* const p,
-                        const cling::ValuePrinterInfo& VPI,
-                        clang::QualType Ty,
+                        const ValuePrinterInfo& VPI,
                         const char* Sep /*= "\n"*/) {
-  const clang::ASTContext& C = *VPI.getASTContext();
-  Ty = Ty.getDesugaredType(C);
+  clang::ASTContext& C = *VPI.getASTContext();
+  clang::QualType Ty = VPI.getType().getDesugaredType(C);
   if (const clang::BuiltinType *BT
            = llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
     switch (BT->getKind()) {
@@ -180,17 +189,17 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
     case clang::BuiltinType::Float:  o << *(const float*)p << Sep; break;
     case clang::BuiltinType::Double: o << *(const double*)p << Sep; break;
     default:
-      StreamObj(o, p, VPI, Ty, Sep);
+      StreamObj(o, p, ValuePrinterInfo(Ty, &C), Sep);
     }
   }
   else if (Ty.getAsString().compare("class std::basic_string<char>") == 0) {
-    StreamObj(o, p, VPI, Ty, Sep);
+    StreamObj(o, p, ValuePrinterInfo(Ty, &C), Sep);
     if (!Sep[0]) o << " "; // force a space
     o <<"c_str: ";
     StreamCharPtr(o, ((const char*) (*(const std::string*)p).c_str()), Sep);
   }
   else if (Ty->isEnumeralType()) {
-    StreamObj(o, p, VPI, Ty, Sep);
+    StreamObj(o, p, ValuePrinterInfo(Ty, &C), Sep);
     clang::EnumDecl* ED = Ty->getAs<clang::EnumType>()->getDecl();
     uint64_t value = *(const uint64_t*)p;
     bool IsFirst = true;
@@ -217,19 +226,18 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
       StreamPtr(o, p, Sep);
   }
   else if (Ty->isArrayType())
-    StreamArr(o, p, VPI, Ty, Sep);
+    StreamArr(o, p, ValuePrinterInfo(Ty, &C), Sep);
   else
-    StreamObj(o, p, VPI, Ty, Sep);
+    StreamObj(o, p, ValuePrinterInfo(Ty, &C), Sep);
 }
 
 namespace cling {
   void printValuePublicDefault(llvm::raw_ostream& o, const void* const p,
                                const ValuePrinterInfo& VPI) {
-    const clang::Expr* E = VPI.getExpr();
     o << "(";
-    o << E->getType().getAsString();
+    o << VPI.getType().getAsString();
     o << ") ";
-    StreamValue(o, p, VPI, VPI.getExpr()->getType());
+    StreamValue(o, p, VPI);
   }
 
   void flushOStream(llvm::raw_ostream& o) {
