@@ -102,7 +102,7 @@ static void StreamArr(llvm::raw_ostream& o, const void* p,
 static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
                              clang::ASTContext& C, const char* Sep = "\n") {
   if (!value || !value->isValid()) {
-    o << "<<<invalid>>>" << Sep;
+    o << "<<<invalid>>> @" << value << Sep;
   } else {
     o << "boxes [";
     o << "("
