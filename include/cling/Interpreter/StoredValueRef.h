@@ -72,6 +72,9 @@ namespace cling {
     bool needsManagedAllocation() const { return m_Value->m_Mem; }
 
     const Value& get() const { return *m_Value; }
+
+    /// \brief Dump the referenced value.
+    void dump(clang::ASTContext& ctx) const;
   };
 } // end namespace cling
 

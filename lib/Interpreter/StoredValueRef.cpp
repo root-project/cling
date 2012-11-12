@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/StoredValueRef.h"
+#include "cling/Interpreter/ValuePrinter.h"
 #include "clang/AST/ASTContext.h"
 
 using namespace cling;
@@ -36,7 +37,9 @@ int64_t StoredValueRef::StoredValue::getAllocSizeInBytes(
 }
 
 
-
+void StoredValueRef::dump(ASTContext& ctx) const {
+  StreamStoredValueRef(llvm::outs(), this, ctx);
+}
 
 StoredValueRef StoredValueRef::allocate(const ASTContext& ctx, QualType t) {
   return new StoredValue(ctx, t);
