@@ -150,7 +150,7 @@ namespace cling {
         return (T) getAs<long double>();
       */
     } else if (desugCanon->isPointerType() || desugCanon->isObjectType()) {
-      return (T) getAs<void*>();
+      return (T) (size_t) getAs<void*>();
     }
     assert("unsupported type in Value, cannot cast simplistically!" && 0);
     return T();
