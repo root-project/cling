@@ -7,22 +7,21 @@
 #ifndef CLING_VALUE_PRINTER_INFO_H
 #define CLING_VALUE_PRINTER_INFO_H
 
-#include "clang/AST/Type.h"
-
 namespace clang {
   class ASTContext;
   class Expr;
+  class QualType;
 }
 
 namespace cling {
 
   class ValuePrinterInfo {
   private:
-    clang::QualType m_Type;
+    void* /* clang::QualType */ m_Type; // QualType buffer to prevent #include
     clang::ASTContext* m_Context;
     unsigned m_Flags;
 
-    void Init();
+    void Init(clang::QualType Ty);
 
   public:
     enum ValuePrinterFlags {
@@ -33,7 +32,8 @@ namespace cling {
 
     ValuePrinterInfo(clang::Expr* Expr, clang::ASTContext* Ctx);
     ValuePrinterInfo(clang::QualType Ty, clang::ASTContext* Ctx);
-    const clang::QualType getType() const { return m_Type; }
+    const clang::QualType& getType() const {
+      return *reinterpret_cast<const clang::QualType*>(&m_Type); }
     clang::ASTContext* getASTContext() const { return m_Context; }
     unsigned getFlags() { return m_Flags; }
   };
