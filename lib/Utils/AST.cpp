@@ -410,6 +410,7 @@ namespace utils {
               prefix = CreateNestedNameSpecifier(Ctx,
                                           llvm::dyn_cast<NamespaceDecl>(outer));
             } else {
+              assert(llvm::isa<TagDecl>(outer)&& "not in namespace of TagDecl");
               prefix = CreateNestedNameSpecifier(Ctx,
                                           llvm::dyn_cast<TagDecl>(outer));
             }
