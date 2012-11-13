@@ -1,0 +1,555 @@
+Index: lib/Support/CMakeLists.txt
+===================================================================
+--- lib/Support/CMakeLists.txt	(revision 167609)
++++ lib/Support/CMakeLists.txt	(working copy)
+@@ -72,7 +72,6 @@ add_llvm_library(LLVMSupport
+   Process.cpp
+   Program.cpp
+   RWMutex.cpp
+-  SearchForAddressOfSpecialSymbol.cpp
+   Signals.cpp
+   system_error.cpp
+   TargetRegistry.cpp
+@@ -80,6 +79,7 @@ add_llvm_library(LLVMSupport
+   Threading.cpp
+   TimeValue.cpp
+   Valgrind.cpp
++  Unix/DynamicLibrary.inc
+   Unix/Host.inc
+   Unix/Memory.inc
+   Unix/Mutex.inc
+Index: lib/Support/SearchForAddressOfSpecialSymbol.cpp
+===================================================================
+--- lib/Support/SearchForAddressOfSpecialSymbol.cpp	(revision 167609)
++++ lib/Support/SearchForAddressOfSpecialSymbol.cpp	(working copy)
+@@ -1,58 +0,0 @@
+-//===- SearchForAddressOfSpecialSymbol.cpp - Function addresses -*- C++ -*-===//
+-//
+-//                     The LLVM Compiler Infrastructure
+-//
+-// This file is distributed under the University of Illinois Open Source
+-// License. See LICENSE.TXT for details.
+-//
+-//===----------------------------------------------------------------------===//
+-//
+-//  This file pulls the addresses of certain symbols out of the linker.  It must
+-//  include as few header files as possible because it declares the symbols as
+-//  void*, which would conflict with the actual symbol type if any header
+-//  declared it.
+-//
+-//===----------------------------------------------------------------------===//
+-
+-#include <string.h>
+-
+-// Must declare the symbols in the global namespace.
+-static void *DoSearch(const char* symbolName) {
+-#define EXPLICIT_SYMBOL(SYM) \
+-   extern void *SYM; if (!strcmp(symbolName, #SYM)) return &SYM
+-
+-  // If this is darwin, it has some funky issues, try to solve them here.  Some
+-  // important symbols are marked 'private external' which doesn't allow
+-  // SearchForAddressOfSymbol to find them.  As such, we special case them here,
+-  // there is only a small handful of them.
+-
+-#ifdef __APPLE__
+-  {
+-    // __eprintf is sometimes used for assert() handling on x86.
+-    //
+-    // FIXME: Currently disabled when using Clang, as we don't always have our
+-    // runtime support libraries available.
+-#ifndef __clang__
+-#ifdef __i386__
+-    EXPLICIT_SYMBOL(__eprintf);
+-#endif
+-#endif
+-  }
+-#endif
+-
+-#ifdef __CYGWIN__
+-  {
+-    EXPLICIT_SYMBOL(_alloca);
+-    EXPLICIT_SYMBOL(__main);
+-  }
+-#endif
+-
+-#undef EXPLICIT_SYMBOL
+-  return 0;
+-}
+-
+-namespace llvm {
+-void *SearchForAddressOfSpecialSymbol(const char* symbolName) {
+-  return DoSearch(symbolName);
+-}
+-}  // namespace llvm
+Index: lib/Support/Unix/DynamicLibrary.inc
+===================================================================
+--- lib/Support/Unix/DynamicLibrary.inc	(revision 0)
++++ lib/Support/Unix/DynamicLibrary.inc	(revision 0)
+@@ -0,0 +1,74 @@
++//===--- Unix/DynamicLibrary.cpp - Unix DL Implementation -------*- C++ -*-===//
++//
++//                     The LLVM Compiler Infrastructure
++//
++// This file is distributed under the University of Illinois Open Source
++// License. See LICENSE.TXT for details.
++//
++//===----------------------------------------------------------------------===//
++//
++// This file provides the dlsym specific implementation of DynamicLibrary.
++//
++//===----------------------------------------------------------------------===//
++
++#include <dlfcn.h>
++
++void *OpenLibraryImpl(const char *filename, std::string *errMsg) {
++  void *handle = dlopen(filename, RTLD_LAZY|RTLD_GLOBAL);
++  if (handle == 0) {
++    if (errMsg) *errMsg = dlerror();
++    return NULL;
++  }
++
++#ifdef __CYGWIN__
++  // Cygwin searches symbols only in the main
++  // with the handle of dlopen(NULL, RTLD_GLOBAL).
++  if (filename == NULL)
++    handle = RTLD_DEFAULT;
++#endif
++  return handle;
++}
++
++void CloseLibraryImpl(void *dlHandle) {
++   dlclose(dlHandle);
++}
++
++void *GetAddressOfSymbolImpl(void *dlHandle, const char *symbolName) {
++  return dlsym(dlHandle, symbolName);
++}
++
++#include <string.h>
++
++// Must declare the symbols in the global namespace.
++void PopulateSpecialSymbolsImpl(StringMap<void *>& symMap) {
++#define EXPLICIT_SYMBOL(SYM) \
++   extern "C" void *SYM; symMap[#SYM] = &SYM
++
++  // If this is darwin, it has some funky issues, try to solve them here.  Some
++  // important symbols are marked 'private external' which doesn't allow
++  // SearchForAddressOfSymbol to find them.  As such, we special case them here,
++  // there is only a small handful of them.
++
++#ifdef __APPLE__
++  {
++    // __eprintf is sometimes used for assert() handling on x86.
++    //
++    // FIXME: Currently disabled when using Clang, as we don't always have our
++    // runtime support libraries available.
++#ifndef __clang__
++#ifdef __i386__
++    EXPLICIT_SYMBOL(__eprintf);
++#endif
++#endif
++  }
++#endif
++
++#ifdef __CYGWIN__
++  {
++    EXPLICIT_SYMBOL(_alloca);
++    EXPLICIT_SYMBOL(__main);
++  }
++#endif
++
++#undef EXPLICIT_SYMBOL
++}
+Index: lib/Support/DynamicLibrary.cpp
+===================================================================
+--- lib/Support/DynamicLibrary.cpp	(revision 167609)
++++ lib/Support/DynamicLibrary.cpp	(working copy)
+@@ -14,29 +14,80 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "llvm/ADT/StringMap.h"
+-#include "llvm/ADT/DenseSet.h"
++#include "llvm/ADT/DenseMap.h"
+ #include "llvm/Support/DynamicLibrary.h"
+ #include "llvm/Support/Mutex.h"
+ #include "llvm/Config/config.h"
+ #include <cstdio>
+ #include <cstring>
+ 
+-// Collection of symbol name/value pairs to be searched prior to any libraries.
+-static llvm::StringMap<void *> *ExplicitSymbols = 0;
++using namespace llvm;
++using namespace llvm::sys;
+ 
++// Platform-specific implementations are required to define these function.
++// They do not need to be reentrant; locking is done by the caller.
++
++// Open the shared library called filename and return its handle. If filename
++// is NULL, return a dymalic loader handle for the whole process.
++static void *OpenLibraryImpl(const char *filename, std::string *errMsg);
++// Close the shared library.
++static void  CloseLibraryImpl(void *dlHandle);
++// Get the address of the symbol named symname from the library with dlhandle.
++static void *GetAddressOfSymbolImpl(void *dlHandle, const char *symbolName);
++// Inject special platform symbols into the map of explicitly defined symbols.
++static void PopulateSpecialSymbolsImpl(StringMap<void *>& symMap);
++
+ namespace {
++struct ExplicitSymbolHolder {
++  ExplicitSymbolHolder() {
++    PopulateSpecialSymbolsImpl(Map);
+ 
++// This macro returns the address of a well-known, explicit symbol
++#define EXPLICIT_SYMBOL(SYM) \
++    Map[#SYM] = &SYM
++
++// On linux we have a weird situation. The stderr/out/in symbols are both
++// macros and global variables because of standards requirements. So, we
++// boldly use the EXPLICIT_SYMBOL macro without checking for a #define first.
++#if defined(__linux__) and !defined(__ANDROID__)
++  {
++    EXPLICIT_SYMBOL(stderr);
++    EXPLICIT_SYMBOL(stdout);
++    EXPLICIT_SYMBOL(stdin);
++  }
++#else
++  // For everything else, we want to check to make sure the symbol isn't defined
++  // as a macro before using EXPLICIT_SYMBOL.
++  {
++#ifndef stdin
++    EXPLICIT_SYMBOL(stdin);
++#endif
++#ifndef stdout
++    EXPLICIT_SYMBOL(stdout);
++#endif
++#ifndef stderr
++    EXPLICIT_SYMBOL(stderr);
++#endif
++  }
++#endif
++#undef EXPLICIT_SYMBOL
++  }
++
++  // Symbol name/value pairs to be searched prior to any libraries.
++  StringMap<void *> Map;
++};
++}
++static ExplicitSymbolHolder* ExplicitSymbols = 0;
++
++namespace {
+ struct ExplicitSymbolsDeleter {
+   ~ExplicitSymbolsDeleter() {
+     delete ExplicitSymbols;
+   }
+ };
+-
+ }
+-
+ static ExplicitSymbolsDeleter Dummy;
+ 
+-
+ static llvm::sys::SmartMutex<true>& getMutex() {
+   static llvm::sys::SmartMutex<true> HandlesMutex;
+   return HandlesMutex;
+@@ -46,144 +97,85 @@ void llvm::sys::DynamicLibrary::AddSymbol(StringRe
+                                           void *symbolValue) {
+   SmartScopedLock<true> lock(getMutex());
+   if (ExplicitSymbols == 0)
+-    ExplicitSymbols = new llvm::StringMap<void*>();
+-  (*ExplicitSymbols)[symbolName] = symbolValue;
++    ExplicitSymbols = new ExplicitSymbolHolder();
++  ExplicitSymbols->Map[symbolName] = symbolValue;
+ }
+ 
+ char llvm::sys::DynamicLibrary::Invalid = 0;
+ 
+-#ifdef LLVM_ON_WIN32
++static DenseMap<void*, unsigned> *OpenedHandles;
+ 
+-#include "Windows/DynamicLibrary.inc"
+-
+-#else
+-
+-#if HAVE_DLFCN_H
+-#include <dlfcn.h>
+-using namespace llvm;
+-using namespace llvm::sys;
+-
+-//===----------------------------------------------------------------------===//
+-//=== WARNING: Implementation here must contain only TRULY operating system
+-//===          independent code.
+-//===----------------------------------------------------------------------===//
+-
+-static DenseSet<void *> *OpenedHandles = 0;
+-
+ DynamicLibrary DynamicLibrary::getPermanentLibrary(const char *filename,
+                                                    std::string *errMsg) {
+   SmartScopedLock<true> lock(getMutex());
+ 
+-  void *handle = dlopen(filename, RTLD_LAZY|RTLD_GLOBAL);
++  void *handle = OpenLibraryImpl(filename, errMsg);
+   if (handle == 0) {
+-    if (errMsg) *errMsg = dlerror();
+     return DynamicLibrary();
+   }
+-
+-#ifdef __CYGWIN__
+-  // Cygwin searches symbols only in the main
+-  // with the handle of dlopen(NULL, RTLD_GLOBAL).
+-  if (filename == NULL)
+-    handle = RTLD_DEFAULT;
+-#endif
+-
+   if (OpenedHandles == 0)
+-    OpenedHandles = new DenseSet<void *>();
++    OpenedHandles = new DenseMap<void *, unsigned>();
+ 
+   // If we've already loaded this library, dlclose() the handle in order to
+   // keep the internal refcount at +1.
+-  if (!OpenedHandles->insert(handle).second)
+-    dlclose(handle);
++  if (++(*OpenedHandles)[handle] > 1)
++    CloseLibraryImpl(handle);
+ 
+   return DynamicLibrary(handle);
+-}
++}  
+ 
+-void *DynamicLibrary::getAddressOfSymbol(const char *symbolName) {
+-  if (!isValid())
+-    return NULL;
+-  return dlsym(Data, symbolName);
+-}
+ 
+-#else
+-
+-using namespace llvm;
+-using namespace llvm::sys;
+-
+-DynamicLibrary DynamicLibrary::getPermanentLibrary(const char *filename,
+-                                                   std::string *errMsg) {
+-  if (errMsg) *errMsg = "dlopen() not supported on this platform";
+-  return DynamicLibrary();
++void* DynamicLibrary::getAddressOfSymbol(const char *symbolName) {
++  return GetAddressOfSymbolImpl(Data, symbolName);
+ }
+ 
+-void *DynamicLibrary::getAddressOfSymbol(const char *symbolName) {
+-  return NULL;
+-}
+-
+-#endif
+-
+-namespace llvm {
+-void *SearchForAddressOfSpecialSymbol(const char* symbolName);
+-}
+-
+ void* DynamicLibrary::SearchForAddressOfSymbol(const char *symbolName) {
+   SmartScopedLock<true> Lock(getMutex());
+ 
+   // First check symbols added via AddSymbol().
+   if (ExplicitSymbols) {
+-    StringMap<void *>::iterator i = ExplicitSymbols->find(symbolName);
++    StringMap<void *>::iterator i = ExplicitSymbols->Map.find(symbolName);
+ 
+-    if (i != ExplicitSymbols->end())
++    if (i != ExplicitSymbols->Map.end())
+       return i->second;
+   }
+ 
+-#if HAVE_DLFCN_H
+   // Now search the libraries.
+   if (OpenedHandles) {
+-    for (DenseSet<void *>::iterator I = OpenedHandles->begin(),
++    for (DenseMap<void *, unsigned>::iterator I = OpenedHandles->begin(),
+          E = OpenedHandles->end(); I != E; ++I) {
+       //lt_ptr ptr = lt_dlsym(*I, symbolName);
+-      void *ptr = dlsym(*I, symbolName);
++      void *ptr = GetAddressOfSymbolImpl(I->first, symbolName);
+       if (ptr) {
+         return ptr;
+       }
+     }
+   }
+-#endif
+ 
+-  if (void *Result = llvm::SearchForAddressOfSpecialSymbol(symbolName))
+-    return Result;
++  return 0;
++}
+ 
+-// This macro returns the address of a well-known, explicit symbol
+-#define EXPLICIT_SYMBOL(SYM) \
+-   if (!strcmp(symbolName, #SYM)) return &SYM
++#ifdef LLVM_ON_WIN32
+ 
+-// On linux we have a weird situation. The stderr/out/in symbols are both
+-// macros and global variables because of standards requirements. So, we
+-// boldly use the EXPLICIT_SYMBOL macro without checking for a #define first.
+-#if defined(__linux__) and !defined(__ANDROID__)
+-  {
+-    EXPLICIT_SYMBOL(stderr);
+-    EXPLICIT_SYMBOL(stdout);
+-    EXPLICIT_SYMBOL(stdin);
+-  }
++#include "Windows/DynamicLibrary.inc"
++
+ #else
+-  // For everything else, we want to check to make sure the symbol isn't defined
+-  // as a macro before using EXPLICIT_SYMBOL.
+-  {
+-#ifndef stdin
+-    EXPLICIT_SYMBOL(stdin);
+-#endif
+-#ifndef stdout
+-    EXPLICIT_SYMBOL(stdout);
+-#endif
+-#ifndef stderr
+-    EXPLICIT_SYMBOL(stderr);
+-#endif
+-  }
+-#endif
+-#undef EXPLICIT_SYMBOL
+ 
+-  return 0;
++#if HAVE_DLFCN_H
++#include "Unix/DynamicLibrary.inc"
++#else
++
++void *OpenLibraryImpl(const char *, std::string *errMsg) {
++  if (errMsg) *errMsg = "dlopen() not supported on this platform";
++  return NULL;
+ }
++void CloseLibraryImpl(void *) {
++}
++void *GetAddressOfSymbolImpl(void *, const char *) {
++  return NULL;
++}
+ 
++#endif
++
++
+ #endif // LLVM_ON_WIN32
+Index: lib/Support/Windows/DynamicLibrary.inc
+===================================================================
+--- lib/Support/Windows/DynamicLibrary.inc	(revision 167609)
++++ lib/Support/Windows/DynamicLibrary.inc	(working copy)
+@@ -1,4 +1,4 @@
+-//===- Win32/DynamicLibrary.cpp - Win32 DL Implementation -------*- C++ -*-===//
++//===- Windows/DynamicLibrary.cpp - Win32 DL Implementation -----*- C++ -*-===//
+ //
+ //                     The LLVM Compiler Infrastructure
+ //
+@@ -32,15 +32,9 @@
+ #endif
+ 
+ namespace llvm {
++
+ using namespace sys;
+ 
+-//===----------------------------------------------------------------------===//
+-//=== WARNING: Implementation here must contain only Win32 specific code
+-//===          and must not be UNIX code.
+-//===----------------------------------------------------------------------===//
+-
+-static DenseSet<HMODULE> *OpenedHandles;
+-
+ extern "C" {
+ 
+   static BOOL CALLBACK ELM_Callback(WIN32_ELMCB_PCSTR ModuleName,
+@@ -69,14 +63,11 @@ extern "C" {
+   }
+ }
+ 
+-DynamicLibrary DynamicLibrary::getPermanentLibrary(const char *filename,
+-                                                   std::string *errMsg) {
+-  SmartScopedLock<true> lock(getMutex());
+-
++void *OpenLibraryImpl(const char *filename, std::string *errMsg) {
+   if (!filename) {
+     // When no file is specified, enumerate all DLLs and EXEs in the process.
+     if (OpenedHandles == 0)
+-      OpenedHandles = new DenseSet<HMODULE>();
++      OpenedHandles = new DenseMap<void *, unsigned>();
+ 
+     EnumerateLoadedModules(GetCurrentProcess(), ELM_Callback, 0);
+     // Dummy library that represents "search all handles".
+@@ -88,65 +79,32 @@ extern "C" {
+ 
+   if (a_handle == 0) {
+     MakeErrMsg(errMsg, std::string(filename) + ": Can't open : ");
+-    return DynamicLibrary();
++    return NULL;
+   }
+ 
+-  if (OpenedHandles == 0)
+-    OpenedHandles = new DenseSet<HMODULE>();
++  return (void *) a_handle;
++}
+ 
+-  // If we've already loaded this library, FreeLibrary() the handle in order to
+-  // keep the internal refcount at +1.
+-  if (!OpenedHandles->insert(a_handle).second)
+-    FreeLibrary(a_handle);
++void CloseLibraryImpl(void *dlhandle) {
++  CloseLibrary((HMODULE)dlhandle);
++}
+ 
+-  return DynamicLibrary(a_handle);
++void *GetAddressOfSymbolImpl(void *dlHandle, const char *symbolName) {
++  return (void *)(intptr_t) GetProcAddress((HMODULE)*dlhandle, symbolName);
+ }
+ 
+-// Stack probing routines are in the support library (e.g. libgcc), but we don't
+-// have dynamic linking on windows. Provide a hook.
++void PopulateSpecialSymbolsImpl(StringMap<void *>& symMap) {
++
+ #define EXPLICIT_SYMBOL(SYM)                    \
+-  extern "C" { extern void *SYM; }
+-#define EXPLICIT_SYMBOL2(SYMFROM, SYMTO) EXPLICIT_SYMBOL(SYMTO)
++  extern "C" void *SYM; symMap[#SYM] = &SYM
++#define EXPLICIT_SYMBOL2(SYMFROM, SYMTO)        \
++  symMap[#SYMFROM] = &SYMTO
+ 
+ #include "explicit_symbols.inc"
+ 
+ #undef EXPLICIT_SYMBOL
+ #undef EXPLICIT_SYMBOL2
+ 
+-void* DynamicLibrary::SearchForAddressOfSymbol(const char* symbolName) {
+-  SmartScopedLock<true> Lock(getMutex());
+-
+-  // First check symbols added via AddSymbol().
+-  if (ExplicitSymbols) {
+-    StringMap<void *>::iterator i = ExplicitSymbols->find(symbolName);
+-
+-    if (i != ExplicitSymbols->end())
+-      return i->second;
+-  }
+-
+-  // Now search the libraries.
+-  if (OpenedHandles) {
+-    for (DenseSet<HMODULE>::iterator I = OpenedHandles->begin(),
+-         E = OpenedHandles->end(); I != E; ++I) {
+-      FARPROC ptr = GetProcAddress((HMODULE)*I, symbolName);
+-      if (ptr) {
+-        return (void *)(intptr_t)ptr;
+-      }
+-    }
+-  }
+-
+-  #define EXPLICIT_SYMBOL(SYM)                    \
+-    if (!strcmp(symbolName, #SYM)) return (void*)&SYM;
+-  #define EXPLICIT_SYMBOL2(SYMFROM, SYMTO)        \
+-    if (!strcmp(symbolName, #SYMFROM)) return (void*)&SYMTO;
+-
+-  {
+-    #include "explicit_symbols.inc"
+-  }
+-
+-  #undef EXPLICIT_SYMBOL
+-  #undef EXPLICIT_SYMBOL2
+-
+   return 0;
+ }
+ 
