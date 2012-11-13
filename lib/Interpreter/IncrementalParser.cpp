@@ -138,11 +138,17 @@ namespace cling {
       CurT->setIssuedDiags(Transaction::kErrors);
 
       
+    if (CurT->hasNestedTransactions()) {
+      for(Transaction::const_nested_iterator I = CurT->nested_decls_begin(),
+            E = CurT->nested_decls_end(); I != E; ++I)
+        assert(!(*I)->isCompleted() && "Parent transaction completed!?");
+    }
+
     if (CurT->isNestedTransaction()) {
-      assert(!CurT->getParent()->isCompleted() 
-             && "Parent transaction completed!?");
-      // FIXME: Not sure what I meant :) REVISIT
-      //CurT = m_Consumer->getTransaction()->getParent();
+      // TODO: Add proper logic in the case where there are multiple nested
+      // transaction. This now won't handle the case where there are more than
+      // one level 1 nested transactions.
+      m_Consumer->setTransaction(CurT->getParent());
     }
   }
 
