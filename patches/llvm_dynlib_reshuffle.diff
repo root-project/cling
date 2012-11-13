@@ -1,66 +1,3 @@
-Index: lib/Support/SearchForAddressOfSpecialSymbol.cpp
-===================================================================
---- lib/Support/SearchForAddressOfSpecialSymbol.cpp	(revision 167609)
-+++ lib/Support/SearchForAddressOfSpecialSymbol.cpp	(working copy)
-@@ -1,58 +0,0 @@
--//===- SearchForAddressOfSpecialSymbol.cpp - Function addresses -*- C++ -*-===//
--//
--//                     The LLVM Compiler Infrastructure
--//
--// This file is distributed under the University of Illinois Open Source
--// License. See LICENSE.TXT for details.
--//
--//===----------------------------------------------------------------------===//
--//
--//  This file pulls the addresses of certain symbols out of the linker.  It must
--//  include as few header files as possible because it declares the symbols as
--//  void*, which would conflict with the actual symbol type if any header
--//  declared it.
--//
--//===----------------------------------------------------------------------===//
--
--#include <string.h>
--
--// Must declare the symbols in the global namespace.
--static void *DoSearch(const char* symbolName) {
--#define EXPLICIT_SYMBOL(SYM) \
--   extern void *SYM; if (!strcmp(symbolName, #SYM)) return &SYM
--
--  // If this is darwin, it has some funky issues, try to solve them here.  Some
--  // important symbols are marked 'private external' which doesn't allow
--  // SearchForAddressOfSymbol to find them.  As such, we special case them here,
--  // there is only a small handful of them.
--
--#ifdef __APPLE__
--  {
--    // __eprintf is sometimes used for assert() handling on x86.
--    //
--    // FIXME: Currently disabled when using Clang, as we don't always have our
--    // runtime support libraries available.
--#ifndef __clang__
--#ifdef __i386__
--    EXPLICIT_SYMBOL(__eprintf);
--#endif
--#endif
--  }
--#endif
--
--#ifdef __CYGWIN__
--  {
--    EXPLICIT_SYMBOL(_alloca);
--    EXPLICIT_SYMBOL(__main);
--  }
--#endif
--
--#undef EXPLICIT_SYMBOL
--  return 0;
--}
--
--namespace llvm {
--void *SearchForAddressOfSpecialSymbol(const char* symbolName) {
--  return DoSearch(symbolName);
--}
--}  // namespace llvm
 Index: lib/Support/Unix/DynamicLibrary.inc
 ===================================================================
 --- lib/Support/Unix/DynamicLibrary.inc	(revision 0)
@@ -413,18 +350,6 @@ Index: lib/Support/DynamicLibrary.cpp
 +
 +
  #endif // LLVM_ON_WIN32
-Index: lib/Support/CMakeLists.txt
-===================================================================
---- lib/Support/CMakeLists.txt	(revision 167609)
-+++ lib/Support/CMakeLists.txt	(working copy)
-@@ -80,6 +80,7 @@ add_llvm_library(LLVMSupport
-   Threading.cpp
-   TimeValue.cpp
-   Valgrind.cpp
-+  Unix/DynamicLibrary.inc
-   Unix/Host.inc
-   Unix/Memory.inc
-   Unix/Mutex.inc
 Index: lib/Support/Windows/DynamicLibrary.inc
 ===================================================================
 --- lib/Support/Windows/DynamicLibrary.inc	(revision 167609)
@@ -443,12 +368,13 @@ Index: lib/Support/Windows/DynamicLibrary.inc
  #include "Windows.h"
  
  #ifdef __MINGW32__
-@@ -32,15 +33,9 @@
+@@ -31,16 +32,8 @@
+  #pragma comment(lib, "dbghelp.lib")
  #endif
  
- namespace llvm {
-+
- using namespace sys;
+-namespace llvm {
+-using namespace sys;
++using namespace llvm;
  
 -//===----------------------------------------------------------------------===//
 -//=== WARNING: Implementation here must contain only Win32 specific code
@@ -460,7 +386,7 @@ Index: lib/Support/Windows/DynamicLibrary.inc
  extern "C" {
  
    static BOOL CALLBACK ELM_Callback(WIN32_ELMCB_PCSTR ModuleName,
-@@ -48,6 +43,8 @@ extern "C" {
+@@ -48,6 +41,8 @@ extern "C" {
                                      ULONG ModuleSize,
                                      PVOID UserContext)
    {
@@ -469,17 +395,18 @@ Index: lib/Support/Windows/DynamicLibrary.inc
      // Ignore VC++ runtimes prior to 7.1.  Somehow some of them get loaded
      // into the process.
      if (stricmp(ModuleName, "msvci70") != 0 &&
-@@ -63,101 +60,62 @@ extern "C" {
+@@ -63,101 +58,62 @@ extern "C" {
  #endif
          stricmp(ModuleName, "msvcrt20") != 0 &&
          stricmp(ModuleName, "msvcrt40") != 0) {
 -      OpenedHandles->insert((HMODULE)ModuleBase);
-+      if (ProcessDynLibs.insert((HMODULE)ModuleBase)->second)
++      if (ProcessDynLibs.insert((HMODULE)ModuleBase).second)
 +        ++(*OpenedHandles)[(HMODULE)ModuleBase];
      }
      return TRUE;
    }
- }
+-}
++} // extern "C"
  
 -DynamicLibrary DynamicLibrary::getPermanentLibrary(const char *filename,
 -                                                   std::string *errMsg) {
@@ -598,3 +525,78 @@ Index: lib/Support/Windows/DynamicLibrary.inc
 -
 -
 -}
+Index: lib/Support/CMakeLists.txt
+===================================================================
+--- lib/Support/CMakeLists.txt	(revision 167609)
++++ lib/Support/CMakeLists.txt	(working copy)
+@@ -80,6 +80,7 @@ add_llvm_library(LLVMSupport
+   Threading.cpp
+   TimeValue.cpp
+   Valgrind.cpp
++  Unix/DynamicLibrary.inc
+   Unix/Host.inc
+   Unix/Memory.inc
+   Unix/Mutex.inc
+Index: lib/Support/SearchForAddressOfSpecialSymbol.cpp
+===================================================================
+--- lib/Support/SearchForAddressOfSpecialSymbol.cpp	(revision 167609)
++++ lib/Support/SearchForAddressOfSpecialSymbol.cpp	(working copy)
+@@ -1,58 +0,0 @@
+-//===- SearchForAddressOfSpecialSymbol.cpp - Function addresses -*- C++ -*-===//
+-//
+-//                     The LLVM Compiler Infrastructure
+-//
+-// This file is distributed under the University of Illinois Open Source
+-// License. See LICENSE.TXT for details.
+-//
+-//===----------------------------------------------------------------------===//
+-//
+-//  This file pulls the addresses of certain symbols out of the linker.  It must
+-//  include as few header files as possible because it declares the symbols as
+-//  void*, which would conflict with the actual symbol type if any header
+-//  declared it.
+-//
+-//===----------------------------------------------------------------------===//
+-
+-#include <string.h>
+-
+-// Must declare the symbols in the global namespace.
+-static void *DoSearch(const char* symbolName) {
+-#define EXPLICIT_SYMBOL(SYM) \
+-   extern void *SYM; if (!strcmp(symbolName, #SYM)) return &SYM
+-
+-  // If this is darwin, it has some funky issues, try to solve them here.  Some
+-  // important symbols are marked 'private external' which doesn't allow
+-  // SearchForAddressOfSymbol to find them.  As such, we special case them here,
+-  // there is only a small handful of them.
+-
+-#ifdef __APPLE__
+-  {
+-    // __eprintf is sometimes used for assert() handling on x86.
+-    //
+-    // FIXME: Currently disabled when using Clang, as we don't always have our
+-    // runtime support libraries available.
+-#ifndef __clang__
+-#ifdef __i386__
+-    EXPLICIT_SYMBOL(__eprintf);
+-#endif
+-#endif
+-  }
+-#endif
+-
+-#ifdef __CYGWIN__
+-  {
+-    EXPLICIT_SYMBOL(_alloca);
+-    EXPLICIT_SYMBOL(__main);
+-  }
+-#endif
+-
+-#undef EXPLICIT_SYMBOL
+-  return 0;
+-}
+-
+-namespace llvm {
+-void *SearchForAddressOfSpecialSymbol(const char* symbolName) {
+-  return DoSearch(symbolName);
+-}
+-}  // namespace llvm
