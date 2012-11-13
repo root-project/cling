@@ -435,7 +435,15 @@ Index: lib/Support/Windows/DynamicLibrary.inc
  //
  //                     The LLVM Compiler Infrastructure
  //
-@@ -32,15 +32,9 @@
+@@ -11,6 +11,7 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
++#include "llvm/ADT/DenseSet.h"
+ #include "Windows.h"
+ 
+ #ifdef __MINGW32__
+@@ -32,15 +33,9 @@
  #endif
  
  namespace llvm {
@@ -452,7 +460,7 @@ Index: lib/Support/Windows/DynamicLibrary.inc
  extern "C" {
  
    static BOOL CALLBACK ELM_Callback(WIN32_ELMCB_PCSTR ModuleName,
-@@ -48,6 +42,8 @@ extern "C" {
+@@ -48,6 +43,8 @@ extern "C" {
                                      ULONG ModuleSize,
                                      PVOID UserContext)
    {
@@ -461,7 +469,7 @@ Index: lib/Support/Windows/DynamicLibrary.inc
      // Ignore VC++ runtimes prior to 7.1.  Somehow some of them get loaded
      // into the process.
      if (stricmp(ModuleName, "msvci70") != 0 &&
-@@ -63,101 +59,63 @@ extern "C" {
+@@ -63,101 +60,62 @@ extern "C" {
  #endif
          stricmp(ModuleName, "msvcrt20") != 0 &&
          stricmp(ModuleName, "msvcrt40") != 0) {
@@ -525,7 +533,7 @@ Index: lib/Support/Windows/DynamicLibrary.inc
 +      DynamicLibrary::SearchForAddressOfSymbol(symbolName);
 +    }
 +  }
-+  return (void *)(intptr_t) GetProcAddress((HMODULE)*dlHandle, symbolName);
++  return (void *)(intptr_t) GetProcAddress((HMODULE)dlHandle, symbolName);
  }
  
 -// Stack probing routines are in the support library (e.g. libgcc), but we don't
@@ -534,10 +542,8 @@ Index: lib/Support/Windows/DynamicLibrary.inc
 +
  #define EXPLICIT_SYMBOL(SYM)                    \
 -  extern "C" { extern void *SYM; }
--#define EXPLICIT_SYMBOL2(SYMFROM, SYMTO) EXPLICIT_SYMBOL(SYMTO)
 +  extern "C" void *SYM; symMap[#SYM] = &SYM;
-+#define EXPLICIT_SYMBOL2(SYMFROM, SYMTO)        \
-+  symMap[#SYMFROM] = &SYMTO;
+ #define EXPLICIT_SYMBOL2(SYMFROM, SYMTO) EXPLICIT_SYMBOL(SYMTO)
  
  #include "explicit_symbols.inc"
  
