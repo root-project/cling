@@ -199,7 +199,7 @@ namespace cling {
     ///\param[in] nested - The transaction to be nested.
     ///
     void addNestedTransaction(Transaction* nested) {
-      nested->setParent(nested);
+      nested->setParent(this);
       // Leave a marker in the parent transaction, where the nested transaction
       // started. Using empty DeclGroupRef is save because append() filters
       // out possible empty DeclGroupRefs.
