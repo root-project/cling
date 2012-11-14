@@ -24,6 +24,7 @@ namespace llvm {
 
 namespace clang {
   class ASTContext;
+  class CodeGenerator;
   class CompilerInstance;
   class Decl;
   class DeclContext;
@@ -246,6 +247,7 @@ namespace cling {
 
     const LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
 
+    clang::CodeGenerator* getCodeGenerator() const;
 
     ///\brief Shows the current version of the project.
     ///

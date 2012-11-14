@@ -144,6 +144,10 @@ namespace cling {
     return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
   }
 
+  CodeGenerator* Interpreter::getCodeGenerator() const {
+    return m_IncrParser->getCodeGenerator();
+  }
+
   void Interpreter::unload() {
     m_IncrParser->unloadTransaction(0);
   }
