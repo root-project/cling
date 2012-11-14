@@ -100,7 +100,8 @@ namespace cling {
        delete m_TTransformers[i];
   }
 
-  void IncrementalParser::beginTransaction(const CompilationOptions& Opts) {
+  Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
+                                                   Opts) {
     llvm::Module* M = 0;
     if (hasCodeGenerator())
       M = getCodeGenerator()->GetModule();
@@ -112,7 +113,7 @@ namespace cling {
     // transaction - it must be nested transaction.
     if (OldCurT && !OldCurT->isCompleted()) {
       OldCurT->addNestedTransaction(NewCurT); // takes the ownership
-      return;
+      return NewCurT;
     }
 
     if (!m_FirstTransaction) {
@@ -123,9 +124,11 @@ namespace cling {
       m_LastTransaction->setNext(NewCurT);
       m_LastTransaction = NewCurT;
     }
+
+    return NewCurT;
   }
 
-  void IncrementalParser::endTransaction() const {
+  Transaction* IncrementalParser::endTransaction() const {
     Transaction* CurT = m_Consumer->getTransaction();
     CurT->setCompleted();
     const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
@@ -141,7 +144,7 @@ namespace cling {
     if (CurT->hasNestedTransactions()) {
       for(Transaction::const_nested_iterator I = CurT->nested_decls_begin(),
             E = CurT->nested_decls_end(); I != E; ++I)
-        assert(!(*I)->isCompleted() && "Parent transaction completed!?");
+        assert((*I)->isCompleted() && "Nested transaction not completed!?");
     }
 
     if (CurT->isNestedTransaction()) {
@@ -150,20 +153,28 @@ namespace cling {
       // one level 1 nested transactions.
       m_Consumer->setTransaction(CurT->getParent());
     }
+
+    return CurT;
   }
 
-  void IncrementalParser::commitCurrentTransaction() {
-    Transaction* CurT = m_Consumer->getTransaction();
-    assert(CurT->isCompleted() && "Transaction not ended!?");
+  void IncrementalParser::commitTransaction(Transaction* T) {
+    //Transaction* CurT = m_Consumer->getTransaction();
+    assert(T->isCompleted() && "Transaction not ended!?");
 
     // Check for errors coming from our custom consumers.
     DiagnosticConsumer& DClient = m_CI->getDiagnosticClient();
 
     // Check for errors...
-    if (CurT->getIssuedDiags() == Transaction::kErrors) {
-      rollbackTransaction(CurT);
+    if (T->getIssuedDiags() == Transaction::kErrors) {
+      rollbackTransaction(T);
       DClient.EndSourceFile();
       return;
+    }
+
+    if (T->hasNestedTransactions()) {
+      for(Transaction::const_nested_iterator I = T->nested_decls_begin(),
+            E = T->nested_decls_end(); I != E; ++I)
+        commitTransaction(*I);
     }
 
     // We are sure it's safe to pipe it through the transformers
@@ -171,7 +182,7 @@ namespace cling {
     for (size_t i = 0; i < m_TTransformers.size(); ++i) {
       DClient.BeginSourceFile(getCI()->getLangOpts(),
                               &getCI()->getPreprocessor());
-      success = m_TTransformers[i]->TransformTransaction(*CurT); 
+      success = m_TTransformers[i]->TransformTransaction(*T); 
       DClient.EndSourceFile();
       if (!success) {
         break;
@@ -182,7 +193,7 @@ namespace cling {
 
     if (!success) {
       // Roll back on error in a transformer
-      rollbackTransaction(CurT);
+      rollbackTransaction(T);
       DClient.EndSourceFile();
       return;
     }
@@ -193,13 +204,15 @@ namespace cling {
 
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
-    if (CurT->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
+    //assert(T->getCompilationOpts().CodeGeneration == 1 && !)
+
+    if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // Reset the module builder to clean up global initializers, c'tors, d'tors
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
       // codegen the transaction
-      for (Transaction::const_iterator I = CurT->decls_begin(), 
-             E = CurT->decls_end(); I != E; ++I) {
+      for (Transaction::const_iterator I = T->decls_begin(), 
+             E = T->decls_end(); I != E; ++I) {
         getCodeGenerator()->HandleTopLevelDecl(*I);
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
@@ -207,11 +220,11 @@ namespace cling {
       m_Interpreter->runStaticInitializersOnce();
     }
 
-    CurT->setState(Transaction::kCommitted);
+    T->setState(Transaction::kCommitted);
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
 
     if (callbacks)
-      callbacks->TransactionCommitted(*CurT);
+      callbacks->TransactionCommitted(*T);
   }
 
   void IncrementalParser::rollbackTransaction(Transaction* T) const {
@@ -221,6 +234,16 @@ namespace cling {
       T->setState(Transaction::kRolledBack);
     else
       T->setState(Transaction::kRolledBackWithErrors);
+  }
+
+  std::vector<const Transaction*> IncrementalParser::getAllTransactions() {
+    std::vector<const Transaction*> result;
+    const cling::Transaction* T = getFirstTransaction();
+    while (T) {
+      result.push_back(T);
+      T = T->getNext();
+    }
+    return result;
   }
 
   // Each input line is contained in separate memory buffer. The SourceManager
@@ -269,9 +292,7 @@ namespace cling {
 
     beginTransaction(Opts);
     EParseResult Result = ParseInternal(input);
-    endTransaction();
-
-    commitCurrentTransaction();
+    commitTransaction(endTransaction());
 
     return Result;
   }
@@ -280,9 +301,7 @@ namespace cling {
                                         const CompilationOptions& Opts) {
     beginTransaction(Opts);
     ParseInternal(input);
-    endTransaction();
-
-    return getLastTransaction();
+    return endTransaction();
   }
 
   // Add the input to the memory buffer, parse it, and add it to the AST.

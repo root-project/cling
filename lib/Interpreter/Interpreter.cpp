@@ -560,7 +560,7 @@ namespace cling {
       Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
       assert(CurT->size() && "No decls created by Parse!");
 
-      m_IncrParser->commitCurrentTransaction();
+      m_IncrParser->commitTransaction(CurT);
     }
     else
       m_IncrParser->Compile(Wrapper, CO);
