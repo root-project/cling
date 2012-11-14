@@ -204,8 +204,6 @@ namespace cling {
 
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
-    //assert(T->getCompilationOpts().CodeGeneration == 1 && !)
-
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // Reset the module builder to clean up global initializers, c'tors, d'tors
       getCodeGenerator()->Initialize(getCI()->getASTContext());
