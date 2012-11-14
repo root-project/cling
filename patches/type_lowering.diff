@@ -1,667 +1,253 @@
-Index: core/meta/src/TClingCallFunc.cxx
+Index: tools/clang/include/clang/Parse/Parser.h
 ===================================================================
---- core/meta/src/TClingCallFunc.cxx	(revision 47280)
-+++ core/meta/src/TClingCallFunc.cxx	(working copy)
-@@ -42,6 +42,8 @@
- #include "clang/AST/PrettyPrinter.h"
- #include "clang/AST/RecordLayout.h"
- #include "clang/AST/Type.h"
-+#include "clang/CodeGen/ModuleBuilder.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "clang/Frontend/CompilerInstance.h"
- #include "clang/Lex/Preprocessor.h"
+--- tools/clang/include/clang/Parse/Parser.h	(revision 47284)
++++ tools/clang/include/clang/Parse/Parser.h	(working copy)
+@@ -43,6 +43,7 @@
+   class InMessageExpressionRAIIObject;
+   class PoisonSEHIdentifiersRAIIObject;
+   class VersionTuple;
++  class DestroyTemplateIdAnnotationsRAIIObj;
  
-@@ -533,108 +535,18 @@
-    }
+ /// PrettyStackTraceParserEntry - If a crash happens while the parser is active,
+ /// an entry is printed for it.
+@@ -89,6 +90,7 @@
+   friend class ObjCDeclContextSwitch;
+   friend class ParenBraceBracketBalancer;
+   friend class BalancedDelimiterTracker;
++  friend class DestroyTemplateIdAnnotationsRAIIObj;
+ 
+   Preprocessor &PP;
+ 
+Index: tools/clang/lib/Parse/ParseCXXInlineMethods.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseCXXInlineMethods.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseCXXInlineMethods.cpp	(working copy)
+@@ -13,10 +13,10 @@
+ 
+ #include "clang/Parse/ParseDiagnostic.h"
+ #include "clang/Parse/Parser.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/DeclSpec.h"
+ #include "clang/Sema/Scope.h"
+ #include "clang/AST/DeclTemplate.h"
+-#include "RAIIObjectsForParser.h"
+ using namespace clang;
+ 
+ /// ParseCXXInlineMethodDef - We parsed and verified that the specified
+Index: tools/clang/lib/Parse/ParseDecl.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseDecl.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseDecl.cpp	(working copy)
+@@ -13,12 +13,12 @@
+ 
+ #include "clang/Parse/Parser.h"
+ #include "clang/Parse/ParseDiagnostic.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Basic/OpenCL.h"
+ #include "clang/Sema/Lookup.h"
+ #include "clang/Sema/Scope.h"
+ #include "clang/Sema/ParsedTemplate.h"
+ #include "clang/Sema/PrettyDeclStackTrace.h"
+-#include "RAIIObjectsForParser.h"
+ #include "llvm/ADT/SmallSet.h"
+ #include "llvm/ADT/SmallString.h"
+ #include "llvm/ADT/StringSwitch.h"
+Index: tools/clang/lib/Parse/ParseDeclCXX.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseDeclCXX.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseDeclCXX.cpp	(working copy)
+@@ -14,13 +14,13 @@
+ #include "clang/Basic/OperatorKinds.h"
+ #include "clang/Parse/Parser.h"
+ #include "clang/Parse/ParseDiagnostic.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/DeclSpec.h"
+ #include "clang/Sema/Scope.h"
+ #include "clang/Sema/ParsedTemplate.h"
+ #include "clang/Sema/PrettyDeclStackTrace.h"
+ #include "clang/Sema/SemaDiagnostic.h"
+ #include "llvm/ADT/SmallString.h"
+-#include "RAIIObjectsForParser.h"
+ using namespace clang;
+ 
+ /// ParseNamespace - We know that the current token is a namespace keyword. This
+Index: tools/clang/lib/Parse/ParseExpr.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseExpr.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseExpr.cpp	(working copy)
+@@ -22,12 +22,12 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "clang/Parse/Parser.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/DeclSpec.h"
+ #include "clang/Sema/Scope.h"
+ #include "clang/Sema/ParsedTemplate.h"
+ #include "clang/Sema/TypoCorrection.h"
+ #include "clang/Basic/PrettyStackTrace.h"
+-#include "RAIIObjectsForParser.h"
+ #include "llvm/ADT/SmallVector.h"
+ #include "llvm/ADT/SmallString.h"
+ using namespace clang;
+Index: tools/clang/lib/Parse/ParseExprCXX.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseExprCXX.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseExprCXX.cpp	(working copy)
+@@ -13,7 +13,7 @@
+ 
+ #include "clang/Parse/ParseDiagnostic.h"
+ #include "clang/Parse/Parser.h"
+-#include "RAIIObjectsForParser.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Basic/PrettyStackTrace.h"
+ #include "clang/Lex/LiteralSupport.h"
+ #include "clang/Sema/DeclSpec.h"
+Index: tools/clang/lib/Parse/ParseInit.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseInit.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseInit.cpp	(working copy)
+@@ -13,7 +13,7 @@
+ 
+ #include "clang/Parse/Parser.h"
+ #include "clang/Parse/ParseDiagnostic.h"
+-#include "RAIIObjectsForParser.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/Designator.h"
+ #include "clang/Sema/Scope.h"
+ #include "llvm/ADT/SmallString.h"
+Index: tools/clang/lib/Parse/ParseObjc.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseObjc.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseObjc.cpp	(working copy)
+@@ -13,7 +13,7 @@
+ 
+ #include "clang/Parse/ParseDiagnostic.h"
+ #include "clang/Parse/Parser.h"
+-#include "RAIIObjectsForParser.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/DeclSpec.h"
+ #include "clang/Sema/PrettyDeclStackTrace.h"
+ #include "clang/Sema/Scope.h"
+Index: tools/clang/lib/Parse/ParseStmt.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseStmt.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseStmt.cpp	(working copy)
+@@ -13,7 +13,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "clang/Parse/Parser.h"
+-#include "RAIIObjectsForParser.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/DeclSpec.h"
+ #include "clang/Sema/PrettyDeclStackTrace.h"
+ #include "clang/Sema/Scope.h"
+Index: tools/clang/lib/Parse/ParseTemplate.cpp
+===================================================================
+--- tools/clang/lib/Parse/ParseTemplate.cpp	(revision 47284)
++++ tools/clang/lib/Parse/ParseTemplate.cpp	(working copy)
+@@ -13,10 +13,10 @@
+ 
+ #include "clang/Parse/Parser.h"
+ #include "clang/Parse/ParseDiagnostic.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/DeclSpec.h"
+ #include "clang/Sema/ParsedTemplate.h"
+ #include "clang/Sema/Scope.h"
+-#include "RAIIObjectsForParser.h"
+ #include "clang/AST/DeclTemplate.h"
+ #include "clang/AST/ASTConsumer.h"
+ using namespace clang;
+Index: tools/clang/lib/Parse/Parser.cpp
+===================================================================
+--- tools/clang/lib/Parse/Parser.cpp	(revision 47284)
++++ tools/clang/lib/Parse/Parser.cpp	(working copy)
+@@ -13,11 +13,11 @@
+ 
+ #include "clang/Parse/Parser.h"
+ #include "clang/Parse/ParseDiagnostic.h"
++#include "clang/Parse/RAIIObjectsForParser.h"
+ #include "clang/Sema/DeclSpec.h"
+ #include "clang/Sema/Scope.h"
+ #include "clang/Sema/ParsedTemplate.h"
+ #include "llvm/Support/raw_ostream.h"
+-#include "RAIIObjectsForParser.h"
+ #include "ParsePragma.h"
+ #include "clang/AST/DeclTemplate.h"
+ #include "clang/AST/ASTConsumer.h"
+@@ -526,30 +526,10 @@
+   }
  }
  
--static llvm::Type *getLLVMTypeFromBuiltin(llvm::LLVMContext &Context,
--                                          clang::ASTContext &ASTCtx,
--                                          const clang::BuiltinType* PBT)
-+static llvm::Type *getLLVMType(cling::Interpreter *interp, clang::QualType QT)
- {
--   llvm::Type *TY = 0;
--   if (PBT->isInteger()) {
--      uint64_t BTBits = ASTCtx.getTypeInfo(PBT).first;
--      TY = llvm::IntegerType::get(Context, BTBits);
--   } else switch (PBT->getKind()) {
--      case clang::BuiltinType::Half:
--      case clang::BuiltinType::ObjCId:
--      case clang::BuiltinType::ObjCClass:
--      case clang::BuiltinType::ObjCSel:
--      case clang::BuiltinType::Dependent:
--      case clang::BuiltinType::Overload:
--      case clang::BuiltinType::BoundMember:
--      case clang::BuiltinType::PseudoObject:
--      case clang::BuiltinType::UnknownAny:
--      case clang::BuiltinType::BuiltinFn:
--      case clang::BuiltinType::ARCUnbridgedCast:
--         Error("TClingCallFunc::getLLVMTypeFromBuiltin()",
--               "Not implemented (kind %d)!", (int) PBT->getKind());
--         break;
--      case clang::BuiltinType::Void:
--         TY = llvm::Type::getVoidTy(Context);
--         break;
--      case clang::BuiltinType::Float:
--         TY = llvm::Type::getFloatTy(Context);
--         break;
--      case clang::BuiltinType::Double:
--         TY = llvm::Type::getDoubleTy(Context);
--         break;
--      case clang::BuiltinType::LongDouble:
--         TY = llvm::Type::getFP128Ty(Context);
--         break;
--      case clang::BuiltinType::NullPtr:
--         TY = llvm::IntegerType::get(Context, CHAR_BIT);
--         break;
--      default:
--         // everything else should be ints - what are we missing?
--         Error("TClingCallFunc::getLLVMTypeFromBuiltin()",
--               "Logic error (missing kind %d)!", (int)PBT->getKind());
--         break;         
--   }
--   return TY;
-+   clang::CodeGenerator* CG = interp->getCodeGenerator();
-+   clang::CodeGen::CodeGenModule* CGM = CG->GetBuilder();
-+   clang::CodeGen::CodeGenTypes& CGT = CGM->getTypes();
-+   // Note: The first thing this routine does is getCanonicalType(), so we
-+   //       do not need to do that first.
-+   llvm::Type* Ty = CGT.ConvertType(QT);
-+   //llvm::Type* Ty = CGT.ConvertTypeForMem(QT);
-+   return Ty;
- }
- 
--static llvm::Type *getLLVMType(llvm::LLVMContext &Context,
--                               clang::ASTContext &ASTCtx,
--                               clang::QualType QT)
--{
--   llvm::Type *TY = 0;
--   QT = QT.getCanonicalType();
--   const clang::BuiltinType *BT = QT->getAs<clang::BuiltinType>();
--   // Note: nullptr is a builtin type.
--   if (QT->isPointerType() || QT->isReferenceType()) {
--      clang::QualType PT = QT->getPointeeType();
--      PT = PT.getCanonicalType();
--      const clang::BuiltinType *PBT = llvm::dyn_cast<clang::BuiltinType> (PT);
--      if (PBT) {
--         // Pointer to something simple, preserve that.
--         if (PT->isVoidType()) {
--            // We have pointer to void, llvm cannot handle that,
--            // force it to pointer to char.
--            TY = llvm::PointerType::getUnqual(
--                    llvm::IntegerType::get(Context, CHAR_BIT));
--         }
--         else {
--            // We have pointer to clang builtin type, preserve that.
--            llvm::Type *llvm_pt = getLLVMTypeFromBuiltin(Context, ASTCtx, PBT);
--            TY = llvm::PointerType::getUnqual(llvm_pt);
--         }
--      }
--      else {
--         // Force it to pointer to char.
--         TY = llvm::PointerType::getUnqual(
--                 llvm::IntegerType::get(Context, CHAR_BIT));
--      }
--   }
--   else if (QT->isRealFloatingType()) {
--      TY = getLLVMTypeFromBuiltin(Context, ASTCtx, BT);
--   }
--   else if (QT->isIntegralOrEnumerationType()) {
--      if (BT) {
--         TY = getLLVMTypeFromBuiltin(Context, ASTCtx, BT);
--      }
--      else {
--         const clang::EnumType *ET = QT->getAs<clang::EnumType>();
--         clang::QualType IT = ET->getDecl()->getIntegerType();
--         IT = IT.getCanonicalType();
--         const clang::BuiltinType *IBT = llvm::dyn_cast<clang::BuiltinType>(IT);
--         TY = getLLVMTypeFromBuiltin(Context, ASTCtx, IBT);
--      }
--   }
--   else if (QT->isVoidType()) {
--      TY = llvm::Type::getVoidTy(Context);
--   } else {
--      Error("getLLVMType()", "Cannot handle type ID %d", QT->getTypeClass());
--   }
--   return TY;
+-namespace {
+-  /// \brief RAIIObject to destroy the contents of a SmallVector of
+-  /// TemplateIdAnnotation pointers and clear the vector.
+-  class DestroyTemplateIdAnnotationsRAIIObj {
+-    SmallVectorImpl<TemplateIdAnnotation *> &Container;
+-  public:
+-    DestroyTemplateIdAnnotationsRAIIObj(SmallVectorImpl<TemplateIdAnnotation *>
+-                                       &Container)
+-      : Container(Container) {}
+-
+-    ~DestroyTemplateIdAnnotationsRAIIObj() {
+-      for (SmallVectorImpl<TemplateIdAnnotation *>::iterator I =
+-           Container.begin(), E = Container.end();
+-           I != E; ++I)
+-        (*I)->Destroy();
+-      Container.clear();
+-    }
+-  };
 -}
 -
- void TClingCallFunc::Init(const clang::FunctionDecl *FD)
- {
-    fEEFunc = 0;
-@@ -717,7 +629,7 @@
-          for (unsigned I = 0U; I < NumParams; ++I) {
-             const clang::ParmVarDecl *PVD = FD->getParamDecl(I);
-             clang::QualType QT = PVD->getType();
--            llvm::Type *argtype = getLLVMType(Context, ASTCtx, QT);
-+            llvm::Type *argtype = getLLVMType(fInterp, QT);
-             if (argtype == 0) {
-                // We are not in good shape, quit while we are still alive.
-                return;
-@@ -731,7 +643,7 @@
-                                                 CHAR_BIT);
-          }
-          else {
--            ReturnType = getLLVMType(Context, ASTCtx, FD->getResultType());
-+            ReturnType = getLLVMType(fInterp, FD->getResultType());
-          }
-          if (ReturnType) {
-             
-Index: interpreter/cling/include/cling/Interpreter/Interpreter.h
+ /// ParseTopLevelDecl - Parse one top-level declaration, return whatever the
+ /// action tells us to.  This returns true if the EOF was encountered.
+ bool Parser::ParseTopLevelDecl(DeclGroupPtrTy &Result) {
+-  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(TemplateIds);
++  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(*this);
+ 
+   // Skip over the EOF token, flagging end of previous input for incremental 
+   // processing
+@@ -619,7 +599,7 @@
+ Parser::DeclGroupPtrTy
+ Parser::ParseExternalDeclaration(ParsedAttributesWithRange &attrs,
+                                  ParsingDeclSpec *DS) {
+-  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(TemplateIds);
++  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(*this);
+   ParenBraceBracketBalancer BalancerRAIIObj(*this);
+ 
+   if (PP.isCodeCompletionReached()) {
+Index: tools/clang/lib/Parse/RAIIObjectsForParser.h
 ===================================================================
---- interpreter/cling/include/cling/Interpreter/Interpreter.h	(revision 47280)
-+++ interpreter/cling/include/cling/Interpreter/Interpreter.h	(working copy)
-@@ -24,6 +24,7 @@
+--- tools/clang/lib/Parse/RAIIObjectsForParser.h	(revision 47284)
++++ tools/clang/lib/Parse/RAIIObjectsForParser.h	(working copy)
+@@ -18,6 +18,7 @@
+ #include "clang/Parse/ParseDiagnostic.h"
+ #include "clang/Parse/Parser.h"
+ #include "clang/Sema/DelayedDiagnostic.h"
++#include "clang/Sema/ParsedTemplate.h"
+ #include "clang/Sema/Sema.h"
  
  namespace clang {
-   class ASTContext;
-+  class CodeGenerator;
-   class CompilerInstance;
-   class Decl;
-   class DeclContext;
-@@ -246,6 +247,7 @@
- 
-     const LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
- 
-+    clang::CodeGenerator* getCodeGenerator() const;
- 
-     ///\brief Shows the current version of the project.
-     ///
-Index: interpreter/cling/lib/Interpreter/Interpreter.cpp
-===================================================================
---- interpreter/cling/lib/Interpreter/Interpreter.cpp	(revision 47280)
-+++ interpreter/cling/lib/Interpreter/Interpreter.cpp	(working copy)
-@@ -144,6 +144,10 @@
-     return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
-   }
- 
-+  CodeGenerator* Interpreter::getCodeGenerator() const {
-+    return m_IncrParser->getCodeGenerator();
-+  }
-+
-   void Interpreter::unload() {
-     m_IncrParser->unloadTransaction(0);
-   }
-Index: interpreter/llvm/src/tools/clang/include/clang/CodeGen/ModuleBuilder.h
-===================================================================
---- interpreter/llvm/src/tools/clang/include/clang/CodeGen/ModuleBuilder.h	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/include/clang/CodeGen/ModuleBuilder.h	(working copy)
-@@ -27,11 +27,16 @@
-   class LangOptions;
-   class CodeGenOptions;
- 
-+  namespace CodeGen {
-+    class CodeGenModule;
-+  }
-+
-   class CodeGenerator : public ASTConsumer {
-     virtual void anchor();
-   public:
-     virtual llvm::Module* GetModule() = 0;
-     virtual llvm::Module* ReleaseModule() = 0;
-+    virtual CodeGen::CodeGenModule* GetBuilder() = 0;
+@@ -429,6 +430,23 @@
+     void skipToEnd();
    };
  
-   /// CreateLLVMCodeGen - Create a CodeGenerator instance.
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGBlocks.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGBlocks.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGBlocks.cpp	(working copy)
-@@ -14,7 +14,7 @@
- #include "CGDebugInfo.h"
- #include "CodeGenFunction.h"
- #include "CGObjCRuntime.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGBlocks.h"
- #include "clang/AST/DeclObjC.h"
- #include "llvm/Module.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGBlocks.h
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGBlocks.h	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGBlocks.h	(working copy)
-@@ -14,7 +14,7 @@
- #ifndef CLANG_CODEGEN_CGBLOCKS_H
- #define CLANG_CODEGEN_CGBLOCKS_H
- 
--#include "CodeGenTypes.h"
-+#include "clang/CodeGen/CodeGenTypes.h"
- #include "clang/AST/Type.h"
- #include "llvm/Module.h"
- #include "clang/Basic/TargetInfo.h"
-@@ -25,8 +25,8 @@
- 
- #include "CodeGenFunction.h"
- #include "CGBuilder.h"
--#include "CGCall.h"
--#include "CGValue.h"
-+#include "clang/CodeGen/CGCall.h"
-+#include "clang/CodeGen/CGValue.h"
- 
- namespace llvm {
-   class Module;
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGBuiltin.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGBuiltin.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGBuiltin.cpp	(working copy)
-@@ -13,7 +13,7 @@
- 
- #include "TargetInfo.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGObjCRuntime.h"
- #include "clang/Basic/TargetInfo.h"
- #include "clang/AST/ASTContext.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGCUDANV.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGCUDANV.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGCUDANV.cpp	(working copy)
-@@ -14,7 +14,7 @@
- 
- #include "CGCUDARuntime.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "clang/AST/Decl.h"
- #include "llvm/BasicBlock.h"
- #include "llvm/Constants.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGCUDARuntime.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGCUDARuntime.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGCUDARuntime.cpp	(working copy)
-@@ -16,7 +16,7 @@
- #include "CGCUDARuntime.h"
- #include "clang/AST/Decl.h"
- #include "clang/AST/ExprCXX.h"
--#include "CGCall.h"
-+#include "clang/CodeGen/CGCall.h"
- #include "CodeGenFunction.h"
- 
- using namespace clang;
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGCXX.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGCXX.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGCXX.cpp	(working copy)
-@@ -15,7 +15,7 @@
- 
- #include "CGCXXABI.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/RecordLayout.h"
- #include "clang/AST/Decl.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGCall.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGCall.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGCall.cpp	(working copy)
-@@ -12,11 +12,11 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#include "CGCall.h"
-+#include "clang/CodeGen/CGCall.h"
- #include "CGCXXABI.h"
--#include "ABIInfo.h"
-+#include "clang/CodeGen/ABIInfo.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "TargetInfo.h"
- #include "clang/Basic/TargetInfo.h"
- #include "clang/AST/Decl.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGDebugInfo.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGDebugInfo.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGDebugInfo.cpp	(working copy)
-@@ -13,7 +13,7 @@
- 
- #include "CGDebugInfo.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGBlocks.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/DeclFriend.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGDecl.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGDecl.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGDecl.cpp	(working copy)
-@@ -13,7 +13,7 @@
- 
- #include "CGDebugInfo.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGOpenCLRuntime.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/CharUnits.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGExpr.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGExpr.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGExpr.cpp	(working copy)
-@@ -12,8 +12,8 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
--#include "CGCall.h"
-+#include "clang/CodeGen/CodeGenModule.h"
-+#include "clang/CodeGen/CGCall.h"
- #include "CGCXXABI.h"
- #include "CGDebugInfo.h"
- #include "CGRecordLayout.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprAgg.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprAgg.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprAgg.cpp	(working copy)
-@@ -12,7 +12,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGObjCRuntime.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/DeclCXX.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprComplex.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprComplex.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprComplex.cpp	(working copy)
-@@ -12,7 +12,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/StmtVisitor.h"
- #include "llvm/Constants.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprConstant.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprConstant.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprConstant.cpp	(working copy)
-@@ -12,7 +12,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGCXXABI.h"
- #include "CGObjCRuntime.h"
- #include "CGRecordLayout.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprScalar.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprScalar.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGExprScalar.cpp	(working copy)
-@@ -15,7 +15,7 @@
- #include "CodeGenFunction.h"
- #include "CGCXXABI.h"
- #include "CGObjCRuntime.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGDebugInfo.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/DeclObjC.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjC.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjC.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjC.cpp	(working copy)
-@@ -14,7 +14,7 @@
- #include "CGDebugInfo.h"
- #include "CGObjCRuntime.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "TargetInfo.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/DeclObjC.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCGNU.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCGNU.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCGNU.cpp	(working copy)
-@@ -15,7 +15,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CGObjCRuntime.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CodeGenFunction.h"
- #include "CGCleanup.h"
- #include "clang/AST/ASTContext.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCMac.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCMac.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCMac.cpp	(working copy)
-@@ -14,7 +14,7 @@
- #include "CGObjCRuntime.h"
- 
- #include "CGRecordLayout.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CodeGenFunction.h"
- #include "CGBlocks.h"
- #include "CGCleanup.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCRuntime.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCRuntime.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCRuntime.cpp	(working copy)
-@@ -16,7 +16,7 @@
- #include "CGObjCRuntime.h"
- 
- #include "CGRecordLayout.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CodeGenFunction.h"
- #include "CGCleanup.h"
- 
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCRuntime.h
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCRuntime.h	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGObjCRuntime.h	(working copy)
-@@ -19,8 +19,8 @@
- #include "clang/AST/DeclObjC.h"
- 
- #include "CGBuilder.h"
--#include "CGCall.h"
--#include "CGValue.h"
-+#include "clang/CodeGen/CGCall.h"
-+#include "clang/CodeGen/CGValue.h"
- 
- namespace llvm {
-   class Constant;
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGRTTI.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGRTTI.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGRTTI.cpp	(working copy)
-@@ -11,7 +11,7 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGCXXABI.h"
- #include "clang/AST/RecordLayout.h"
- #include "clang/AST/Type.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGRecordLayoutBuilder.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGRecordLayoutBuilder.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGRecordLayoutBuilder.cpp	(working copy)
-@@ -19,7 +19,7 @@
- #include "clang/AST/Expr.h"
- #include "clang/AST/RecordLayout.h"
- #include "clang/Frontend/CodeGenOptions.h"
--#include "CodeGenTypes.h"
-+#include "clang/CodeGen/CodeGenTypes.h"
- #include "CGCXXABI.h"
- #include "llvm/DerivedTypes.h"
- #include "llvm/Type.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGStmt.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGStmt.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGStmt.cpp	(working copy)
-@@ -12,7 +12,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CGDebugInfo.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CodeGenFunction.h"
- #include "TargetInfo.h"
- #include "clang/AST/StmtVisitor.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGVTT.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGVTT.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGVTT.cpp	(working copy)
-@@ -11,7 +11,7 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGCXXABI.h"
- #include "clang/AST/RecordLayout.h"
- #include "clang/AST/VTTBuilder.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CGVTables.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CGVTables.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CGVTables.cpp	(working copy)
-@@ -11,7 +11,7 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CodeGenFunction.h"
- #include "CGCXXABI.h"
- #include "clang/AST/CXXInheritance.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenFunction.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenFunction.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenFunction.cpp	(working copy)
-@@ -12,7 +12,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGCUDARuntime.h"
- #include "CGCXXABI.h"
- #include "CGDebugInfo.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenFunction.h
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenFunction.h	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenFunction.h	(working copy)
-@@ -26,10 +26,10 @@
- #include "llvm/ADT/SmallVector.h"
- #include "llvm/Support/ValueHandle.h"
- #include "llvm/Support/Debug.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGBuilder.h"
- #include "CGDebugInfo.h"
--#include "CGValue.h"
-+#include "clang/CodeGen/CGValue.h"
- 
- namespace llvm {
-   class BasicBlock;
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenModule.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenModule.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenModule.cpp	(working copy)
-@@ -11,11 +11,11 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "CGDebugInfo.h"
- #include "CodeGenFunction.h"
- #include "CodeGenTBAA.h"
--#include "CGCall.h"
-+#include "clang/CodeGen/CGCall.h"
- #include "CGCUDARuntime.h"
- #include "CGCXXABI.h"
- #include "CGObjCRuntime.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenTypes.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenTypes.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenTypes.cpp	(working copy)
-@@ -11,8 +11,8 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#include "CodeGenTypes.h"
--#include "CGCall.h"
-+#include "clang/CodeGen/CodeGenTypes.h"
-+#include "clang/CodeGen/CGCall.h"
- #include "CGCXXABI.h"
- #include "CGRecordLayout.h"
- #include "TargetInfo.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/ItaniumCXXABI.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/ItaniumCXXABI.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/ItaniumCXXABI.cpp	(working copy)
-@@ -20,9 +20,9 @@
- 
- #include "CGCXXABI.h"
- #include "CGRecordLayout.h"
--#include "CGVTables.h"
-+#include "clang/CodeGen/CGVTables.h"
- #include "CodeGenFunction.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "clang/AST/Mangle.h"
- #include "clang/AST/Type.h"
- #include "llvm/Intrinsics.h"
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/MicrosoftCXXABI.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/MicrosoftCXXABI.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/MicrosoftCXXABI.cpp	(working copy)
-@@ -15,7 +15,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "CGCXXABI.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "clang/AST/Decl.h"
- #include "clang/AST/DeclCXX.h"
- 
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/ModuleBuilder.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/ModuleBuilder.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/ModuleBuilder.cpp	(working copy)
-@@ -12,7 +12,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "clang/CodeGen/ModuleBuilder.h"
--#include "CodeGenModule.h"
-+#include "clang/CodeGen/CodeGenModule.h"
- #include "clang/Frontend/CodeGenOptions.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/DeclObjC.h"
-@@ -49,6 +49,10 @@
-       return M.take();
-     }
- 
-+    virtual CodeGen::CodeGenModule* GetBuilder() {
-+      return Builder.get();
-+    }
++  /// \brief RAIIObject to destroy the contents of a SmallVector of
++  /// TemplateIdAnnotation pointers and clear the vector.
++  class DestroyTemplateIdAnnotationsRAIIObj {
++    Parser &P;
++  public:
++    DestroyTemplateIdAnnotationsRAIIObj(Parser &p)
++      : P(p) {}
 +
-     virtual void Initialize(ASTContext &Context) {
-       Ctx = &Context;
++    ~DestroyTemplateIdAnnotationsRAIIObj() {
++      for (SmallVectorImpl<TemplateIdAnnotation *>::iterator I =
++           P.TemplateIds.begin(), E = P.TemplateIds.end();
++           I != E; ++I)
++        (*I)->Destroy();
++      P.TemplateIds.clear();
++    }
++  };
++
+ } // end namespace clang
  
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/TargetInfo.cpp
-===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/TargetInfo.cpp	(revision 47280)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/TargetInfo.cpp	(working copy)
-@@ -13,7 +13,7 @@
- //===----------------------------------------------------------------------===//
- 
- #include "TargetInfo.h"
--#include "ABIInfo.h"
-+#include "clang/CodeGen/ABIInfo.h"
- #include "CodeGenFunction.h"
- #include "clang/AST/RecordLayout.h"
- #include "clang/Frontend/CodeGenOptions.h"
+ #endif
