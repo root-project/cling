@@ -421,11 +421,11 @@ namespace cling {
      PrintCommandHelp();
      return true;
    }
-   else if (Command.equals("fileEx")) {
+   else if (Command.equals("filesEx")) {
      PrintFileStats();
      return true;
    }
-   else if (Command.equals("file")) {
+   else if (Command.equals("files")) {
      typedef llvm::SmallVectorImpl<Interpreter::LoadedFileInfo*> LoadedFiles_t;
      const LoadedFiles_t& LoadedFiles = m_Interp.getLoadedFiles();
      for (LoadedFiles_t::const_iterator I = LoadedFiles.begin(),
