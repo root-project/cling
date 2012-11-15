@@ -8,6 +8,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Parse/Parser.h"
+#include "clang/Parse/RAIIObjectsForParser.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Overload.h"
@@ -35,13 +36,15 @@ namespace cling {
     bool ResetIncrementalProcessing;
     bool OldSuppressAllDiagnostics;
     bool OldSpellChecking;
+    DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds;
 
   public:
     ParserStateRAII(Parser* p, bool rip, bool sad, bool sc)
        : P(p), PP(P->getPreprocessor()), 
          DClient(P->getActions().getDiagnostics().getClient()), 
          ResetIncrementalProcessing(rip),
-         OldSuppressAllDiagnostics(sad), OldSpellChecking(sc)
+         OldSuppressAllDiagnostics(sad), OldSpellChecking(sc),
+         CleanupTemplateIds(*p)
     {}
 
     ~ParserStateRAII()
