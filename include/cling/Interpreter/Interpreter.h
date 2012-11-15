@@ -11,8 +11,10 @@
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/DynamicLibrary.h"
 
 #include <string>
+#include <set>
 
 namespace llvm {
   class raw_ostream;
@@ -65,6 +67,15 @@ namespace cling {
       kSuccess,
       kFailure,
       kMoreInputExpected
+    };
+
+    ///\brief Describes the result of loading a library.
+    ///
+    enum LoadLibResult {
+      LoadLibSuccess, // library loaded successfully
+      LoadLibExists,  // library was already loaded
+      LoadLibError, // library was not found
+      LoadLibNumResults
     };
 
   private:
@@ -160,6 +171,14 @@ namespace cling {
     /// to be destructed.
     ///
     llvm::SmallVector<CXAAtExitElement, 20> m_AtExitFuncs;
+
+    ///\brief DynamicLibraries loaded by this Interpreter.
+    ///
+    std::set<llvm::sys::DynamicLibrary> m_DyLibs;
+
+    ///\brief Try to load a library file via the llvm::Linker.
+    ///
+    LoadLibResult tryLinker(const std::string& filename, bool permanent);
 
     ///\brief Processes the invocation options.
     ///
@@ -391,13 +410,6 @@ namespace cling {
     ///
     CompilationResult loadFile(const std::string& filename,
                                bool allowSharedLib = true);
-
-    enum LoadLibResult {
-      LoadLibSuccess, // library loaded successfully
-      //not yet: kLoadLibExists,  // library was alreday loaded
-      LoadLibError, // library was not found
-      LoadLibNumResults
-    };
 
     ///\brief Loads a shared library.
     ///

@@ -31,7 +31,6 @@
 
 #include "llvm/Linker.h"
 #include "llvm/LLVMContext.h"
-#include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Path.h"
 
 #include <sstream>
@@ -40,72 +39,6 @@
 using namespace clang;
 
 namespace {
-  static cling::Interpreter::LoadLibResult
-  tryLinker(const std::string& filename, const cling::InvocationOptions& Opts,
-            llvm::Module* module, bool permanent) {
-  assert(module && "Module must exist for linking!");
-  llvm::Linker L("cling", module, llvm::Linker::QuietWarnings
-                 | llvm::Linker::QuietErrors);
-  for (std::vector<llvm::sys::Path>::const_iterator I
-         = Opts.LibSearchPath.begin(), E = Opts.LibSearchPath.end(); I != E;
-       ++I) {
-    L.addPath(*I);
-  }
-  L.addSystemPaths();
-  bool Native = true;
-  if (L.LinkInLibrary(filename, Native)) {
-    // that didn't work, try bitcode:
-    llvm::sys::Path FilePath(filename);
-    std::string Magic;
-    if (!FilePath.getMagicNumber(Magic, 64)) {
-      // filename doesn't exist...
-      L.releaseModule();
-      return cling::Interpreter::LoadLibError;
-    }
-    if (llvm::sys::IdentifyFileType(Magic.c_str(), 64)
-        == llvm::sys::Bitcode_FileType) {
-      // We are promised a bitcode file, complain if it fails
-      L.setFlags(0);
-      if (L.LinkInFile(llvm::sys::Path(filename), Native)) {
-        L.releaseModule();
-        return cling::Interpreter::LoadLibError;
-      }
-    } else {
-      // Nothing the linker can handle
-      L.releaseModule();
-      return cling::Interpreter::LoadLibError;
-    }
-  } else if (Native) {
-    // native shared library, load it!
-    llvm::sys::Path SoFile = L.FindLib(filename);
-    assert(!SoFile.isEmpty() && "The shared lib exists but can't find it!");
-    std::string errMsg;
-    // TODO: !permanent case, LoadResAlreadyLoaded case.
-    cling::Interpreter::LoadLibResult res;
-#if 0
-    switch (llvm::sys::DynamicLibrary::
-            LoadLibraryPermanently(SoFile.str().c_str(), &errMsg)) {
-    case llvm::sys::DynamicLibrary::LoadResSuccess:
-      res = cling::Interpreter::LoadLibSuccess;
-    case llvm::sys::DynamicLibrary::LoadResError:
-      llvm::errs() << "Could not load shared library!\n\n" << errMsg.c_str();
-      L.releaseModule();
-      res = cling::Interpreter::LoadLibError;
-    case llvm::sys::DynamicLibrary::LoadResAlreadyLoaded:
-      res = cling::Interpreter::LoadLibExists;
-    }
-#endif
-    if (llvm::sys::DynamicLibrary::
-        LoadLibraryPermanently(SoFile.str().c_str(), &errMsg)) {
-      res = cling::Interpreter::LoadLibSuccess;
-    } else {
-      res = cling::Interpreter::LoadLibError;
-    }
-    L.releaseModule();
-    return res;
-  }
-  return cling::Interpreter::LoadLibError;
-}
 
 static bool canWrapForCall(const std::string& input_line) {
    // Whether input_line can be wrapped into a function.
@@ -606,22 +539,74 @@ namespace cling {
     return declare(code);
   }
 
+
+  Interpreter::LoadLibResult
+  Interpreter::tryLinker(const std::string& filename, bool permanent) {
+    using namespace llvm::sys;
+    llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
+    assert(module && "Module must exist for linking!");
+
+    llvm::Linker L("cling", module, llvm::Linker::QuietWarnings
+                   | llvm::Linker::QuietErrors);
+    const InvocationOptions& Opts = getOptions();
+    for (std::vector<Path>::const_iterator I
+           = Opts.LibSearchPath.begin(), E = Opts.LibSearchPath.end(); I != E;
+         ++I) {
+      L.addPath(*I);
+    }
+    L.addSystemPaths();
+    bool Native = true;
+    if (L.LinkInLibrary(filename, Native)) {
+      // that didn't work, try bitcode:
+      Path FilePath(filename);
+      std::string Magic;
+      if (!FilePath.getMagicNumber(Magic, 64)) {
+        // filename doesn't exist...
+        L.releaseModule();
+        return LoadLibError;
+      }
+      if (IdentifyFileType(Magic.c_str(), 64) == Bitcode_FileType) {
+        // We are promised a bitcode file, complain if it fails
+        L.setFlags(0);
+        if (L.LinkInFile(Path(filename), Native)) {
+          L.releaseModule();
+          return LoadLibError;
+        }
+      } else {
+        // Nothing the linker can handle
+        L.releaseModule();
+        return LoadLibError;
+      }
+    } else if (Native) {
+      // native shared library, load it!
+      Path SoFile = L.FindLib(filename);
+      assert(!SoFile.isEmpty() && "The shared lib exists but can't find it!");
+      std::string errMsg;
+      // TODO: !permanent case
+      DynamicLibrary DyLib
+        = DynamicLibrary::getPermanentLibrary(SoFile.str().c_str(), &errMsg);
+      L.releaseModule();
+      if (!DyLib.isValid())
+        return LoadLibError;
+      if (!m_DyLibs.insert(DyLib).second)
+        return LoadLibExists;
+      return LoadLibSuccess;
+    }
+    return LoadLibError;
+  }
+
   Interpreter::LoadLibResult
   Interpreter::loadLibrary(const std::string& filename, bool permanent) {
-    llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
-    if (module) {
-      LoadLibResult res = tryLinker(filename, getOptions(), module, permanent);
-      if (res != LoadLibError) {
+    LoadLibResult res = tryLinker(filename, permanent);
+    if (res != LoadLibError) {
+      return res;
+    }
+    if (filename.compare(0, 3, "lib") == 0) {
+      // starts with "lib", try without (the llvm::Linker forces
+      // a "lib" in front, which makes it liblib...
+      res = tryLinker(filename.substr(3, std::string::npos), permanent);
+      if (res != LoadLibError)
         return res;
-      }
-      if (filename.compare(0, 3, "lib") == 0) {
-        // starts with "lib", try without (the llvm::Linker forces
-        // a "lib" in front, which makes it liblib...
-        res = tryLinker(filename.substr(3, std::string::npos),
-                        getOptions(), module, permanent);
-        if (res != LoadLibError)
-          return res;
-      }
     }
     return LoadLibError;
   }
