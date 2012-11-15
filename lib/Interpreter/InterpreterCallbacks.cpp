@@ -108,6 +108,9 @@ namespace test {
   bool SymbolResolverCallback::LookupObject(LookupResult& R, Scope* S) {
     if (!IsDynamicLookup(R, S))
       return false;
+    // We should react only on empty lookup result.
+    if (!R.empty())
+      return false;
 
     // Only for demo resolve all unknown objects to cling::test::Tester
     if (!m_TesterDecl) {
