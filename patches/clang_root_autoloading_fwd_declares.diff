@@ -1,0 +1,20 @@
+Index: tools/clang/lib/Sema/SemaLookup.cpp
+===================================================================
+--- tools/clang/lib/Sema/SemaLookup.cpp	(revision 47284)
++++ tools/clang/lib/Sema/SemaLookup.cpp	(working copy)
+@@ -1207,8 +1207,14 @@
+       }
+   } else {
+     // Perform C++ unqualified name lookup.
+-    if (CppLookupName(R, S))
++    if (CppLookupName(R, S)) {
++      if (R.isSingleResult())
++        if (const TagDecl *TD = dyn_cast<TagDecl>(R.getFoundDecl())) {
++          if (!TD->isThisDeclarationADefinition() && ExternalSource)
++            ExternalSource->LookupUnqualified(R, S);
++        }
+       return true;
++    }
+   }
+ 
+   // If we didn't find a use of this identifier, and if the identifier
