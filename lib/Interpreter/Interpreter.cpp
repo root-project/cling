@@ -25,6 +25,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaInternal.h"
 
@@ -168,7 +169,11 @@ namespace cling {
     m_IncrParser.reset(new IncrementalParser(this, LeftoverArgs.size(),
                                              &LeftoverArgs[0],
                                              llvmdir));
-    m_LookupHelper.reset(new LookupHelper(m_IncrParser->getParser()));
+    Sema& SemaRef = getSema();
+    m_LookupHelper.reset(new LookupHelper(new Parser(SemaRef.getPreprocessor(), 
+                                                     SemaRef, 
+                                                     /*SkipFunctionBodies*/false,
+                                                     /*isTemp*/true)));
 
     m_ExecutionContext.reset(new ExecutionContext());
 
