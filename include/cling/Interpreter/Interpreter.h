@@ -72,10 +72,50 @@ namespace cling {
     ///\brief Describes the result of loading a library.
     ///
     enum LoadLibResult {
-      LoadLibSuccess, // library loaded successfully
-      LoadLibExists,  // library was already loaded
-      LoadLibError, // library was not found
-      LoadLibNumResults
+      kLoadLibSuccess, // library loaded successfully
+      kLoadLibExists,  // library was already loaded
+      kLoadLibError, // library was not found
+      kLoadLibNumResults
+    };
+
+    class LoadedFileInfo {
+    public:
+      enum FileType {
+        kSource,
+        kDynamicLibrary,
+        kBitcode,
+        kNumFileTypes
+      };
+
+      ///\brief Name as loaded for the first time.
+      ///
+      const std::string& getName() const { return m_Name; }
+
+      ///\brief Type of the file.
+      FileType getType() const { return m_Type; }
+
+      ///\brief Pointer to Interpreter::m_DyLibs entry if dynamic library
+      ///
+      const llvm::sys::DynamicLibrary* getDynLib() const { return m_DynLib; }
+
+    private:
+      ///\brief Constructor used by Interpreter.
+      LoadedFileInfo(const std::string& name, FileType type,
+                     const llvm::sys::DynamicLibrary* dynLib):
+        m_Name(name), m_Type(type), m_DynLib(dynLib) {}
+
+      ///\brief Name as loaded for the first time.
+      ///
+      std::string m_Name;
+
+      ///\brief Type of the file.
+      FileType m_Type;
+
+      ///\brief Pointer to Interpreter::m_DyLibs entry if dynamic library
+      ///
+      const llvm::sys::DynamicLibrary* m_DynLib;
+
+      friend class Interpreter;
     };
 
   private:
@@ -176,9 +216,16 @@ namespace cling {
     ///
     std::set<llvm::sys::DynamicLibrary> m_DyLibs;
 
+    ///\brief Information about loaded files.
+    ///
+    llvm::SmallVector<LoadedFileInfo*, 200> m_LoadedFiles;
+
     ///\brief Try to load a library file via the llvm::Linker.
     ///
     LoadLibResult tryLinker(const std::string& filename, bool permanent);
+
+    void addLoadedFile(const std::string& name, LoadedFileInfo::FileType type,
+                       const llvm::sys::DynamicLibrary* dyLib = 0);
 
     ///\brief Processes the invocation options.
     ///
@@ -428,19 +475,24 @@ namespace cling {
     ///\brief Loads a shared library.
     ///
     ///\param [in] filename - The file to loaded.
+    ///\param [in] permanent - If false, the file can be unloaded later.
     ///
-    ///\returns LoadLibSuccess on success, LoadLibExists if the library was
-    /// already loaded, LoadLibError if the library cannot be found or any
+    ///\returns kLoadLibSuccess on success, kLoadLibExists if the library was
+    /// already loaded, kLoadLibError if the library cannot be found or any
     /// other error was encountered.
     ///
-    ///
     LoadLibResult loadLibrary(const std::string& filename, bool permanent);
+
+    ///\brief Get the collection of loaded files.
+    ///
+    const llvm::SmallVectorImpl<LoadedFileInfo*>& getLoadedFiles() const {
+      return m_LoadedFiles; }
 
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() { return m_DynamicLookupEnabled; }
 
     bool isPrintingAST() { return m_PrintAST; }
-    void enablePrintAST(bool print = true) { m_PrintAST = print;}
+    void enablePrintAST(bool print = true) { m_PrintAST = print; }
 
     clang::CompilerInstance* getCI() const;
     const clang::Sema& getSema() const;

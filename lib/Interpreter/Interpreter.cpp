@@ -78,7 +78,6 @@ namespace cling {
   }
 #endif
 
-
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
   // GetMainExecutable (since some platforms don't support taking the
@@ -542,15 +541,24 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
+  void Interpreter::addLoadedFile(const std::string& name,
+                                  Interpreter::LoadedFileInfo::FileType type,
+                                  const llvm::sys::DynamicLibrary* dyLib) {
+    m_LoadedFiles.push_back(new LoadedFileInfo(name, type, dyLib));
+  }
+
   Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/) {
-    if (allowSharedLib && loadLibrary(filename, false) == LoadLibSuccess)
+    if (allowSharedLib && loadLibrary(filename, false) == kLoadLibSuccess)
       return kSuccess;
 
     std::string code;
     code += "#include \"" + filename + "\"";
-    return declare(code);
+    CompilationResult res = declare(code);
+    if (res == kSuccess)
+      addLoadedFile(filename,LoadedFileInfo::kSource);
+    return res;
   }
 
 
@@ -562,6 +570,12 @@ namespace cling {
 
     llvm::Linker L("cling", module, llvm::Linker::QuietWarnings
                    | llvm::Linker::QuietErrors);
+    struct LinkerModuleReleaseRAII {
+      LinkerModuleReleaseRAII(llvm::Linker& L): m_L(L) {}
+      ~LinkerModuleReleaseRAII() { m_L.releaseModule(); }
+      llvm::Linker& m_L;
+    } LinkerModuleReleaseRAII_(L);
+
     const InvocationOptions& Opts = getOptions();
     for (std::vector<Path>::const_iterator I
            = Opts.LibSearchPath.begin(), E = Opts.LibSearchPath.end(); I != E;
@@ -576,22 +590,21 @@ namespace cling {
       std::string Magic;
       if (!FilePath.getMagicNumber(Magic, 64)) {
         // filename doesn't exist...
-        L.releaseModule();
-        return LoadLibError;
+        return kLoadLibError;
       }
-      if (IdentifyFileType(Magic.c_str(), 64) == Bitcode_FileType) {
-        // We are promised a bitcode file, complain if it fails
-        L.setFlags(0);
-        if (L.LinkInFile(Path(filename), Native)) {
-          L.releaseModule();
-          return LoadLibError;
-        }
-      } else {
+      if (IdentifyFileType(Magic.c_str(), 64) != Bitcode_FileType) {
         // Nothing the linker can handle
-        L.releaseModule();
-        return LoadLibError;
+        return kLoadLibError;
       }
-    } else if (Native) {
+      // We are promised a bitcode file, complain if it fails
+      L.setFlags(0);
+      if (L.LinkInFile(Path(filename), Native)) {
+        return kLoadLibError;
+      }
+      addLoadedFile(filename, LoadedFileInfo::kBitcode);
+      return kLoadLibSuccess;
+    }
+    if (Native) {
       // native shared library, load it!
       Path SoFile = L.FindLib(filename);
       assert(!SoFile.isEmpty() && "The shared lib exists but can't find it!");
@@ -599,30 +612,33 @@ namespace cling {
       // TODO: !permanent case
       DynamicLibrary DyLib
         = DynamicLibrary::getPermanentLibrary(SoFile.str().c_str(), &errMsg);
-      L.releaseModule();
       if (!DyLib.isValid())
-        return LoadLibError;
-      if (!m_DyLibs.insert(DyLib).second)
-        return LoadLibExists;
-      return LoadLibSuccess;
+        return kLoadLibError;
+      std::pair<std::set<llvm::sys::DynamicLibrary>::iterator, bool> insRes
+        = m_DyLibs.insert(DyLib);
+      if (!insRes.second)
+        return kLoadLibExists;
+      addLoadedFile(filename, LoadedFileInfo::kDynamicLibrary,
+                    &(*insRes.first));
+      return kLoadLibSuccess;
     }
-    return LoadLibError;
+    return kLoadLibError;
   }
 
   Interpreter::LoadLibResult
   Interpreter::loadLibrary(const std::string& filename, bool permanent) {
     LoadLibResult res = tryLinker(filename, permanent);
-    if (res != LoadLibError) {
+    if (res != kLoadLibError) {
       return res;
     }
     if (filename.compare(0, 3, "lib") == 0) {
       // starts with "lib", try without (the llvm::Linker forces
       // a "lib" in front, which makes it liblib...
       res = tryLinker(filename.substr(3, std::string::npos), permanent);
-      if (res != LoadLibError)
+      if (res != kLoadLibError)
         return res;
     }
-    return LoadLibError;
+    return kLoadLibError;
   }
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
