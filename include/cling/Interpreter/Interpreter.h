@@ -33,6 +33,7 @@ namespace clang {
   class FunctionDecl;
   class NamedDecl;
   class MangleContext;
+  class Parser;
   class QualType;
   class Sema;
 }
@@ -338,6 +339,8 @@ namespace cling {
     llvm::LLVMContext* getLLVMContext() { return m_LLVMContext.get(); }
 
     const LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
+
+    const clang::Parser& getParser() const;
 
     clang::CodeGenerator* getCodeGenerator() const;
 

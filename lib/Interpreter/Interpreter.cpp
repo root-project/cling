@@ -90,6 +90,10 @@ namespace cling {
     return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
   }
 
+  const Parser& Interpreter::getParser() const {
+    return *m_IncrParser->getParser();
+  }
+
   CodeGenerator* Interpreter::getCodeGenerator() const {
     return m_IncrParser->getCodeGenerator();
   }
