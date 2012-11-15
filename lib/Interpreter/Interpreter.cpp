@@ -560,8 +560,13 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/) {
-    if (allowSharedLib && loadLibrary(filename, false) == kLoadLibSuccess)
+    bool tryCode;
+    if (allowSharedLib && loadLibrary(filename, false, &tryCode)
+        == kLoadLibSuccess)
       return kSuccess;
+
+    if (!tryCode)
+      return kFailure;
 
     std::string code;
     code += "#include \"" + filename + "\"";
@@ -573,8 +578,10 @@ namespace cling {
 
 
   Interpreter::LoadLibResult
-  Interpreter::tryLinker(const std::string& filename, bool permanent) {
+  Interpreter::tryLinker(const std::string& filename, bool permanent,
+                         bool& tryCode) {
     using namespace llvm::sys;
+    tryCode = true;
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     assert(module && "Module must exist for linking!");
 
@@ -600,6 +607,7 @@ namespace cling {
       std::string Magic;
       if (!FilePath.getMagicNumber(Magic, 64)) {
         // filename doesn't exist...
+        // tryCode because it might be found through -I
         return kLoadLibError;
       }
       if (IdentifyFileType(Magic.c_str(), 64) != Bitcode_FileType) {
@@ -609,12 +617,14 @@ namespace cling {
       // We are promised a bitcode file, complain if it fails
       L.setFlags(0);
       if (L.LinkInFile(Path(filename), Native)) {
+        tryCode = false;
         return kLoadLibError;
       }
       addLoadedFile(filename, LoadedFileInfo::kBitcode);
       return kLoadLibSuccess;
     }
     if (Native) {
+      tryCode = false;
       // native shared library, load it!
       Path SoFile = L.FindLib(filename);
       assert(!SoFile.isEmpty() && "The shared lib exists but can't find it!");
@@ -622,8 +632,10 @@ namespace cling {
       // TODO: !permanent case
       DynamicLibrary DyLib
         = DynamicLibrary::getPermanentLibrary(SoFile.str().c_str(), &errMsg);
-      if (!DyLib.isValid())
+      if (!DyLib.isValid()) {
+        llvm::errs() << "cling::Interpreter::tryLinker(): " << errMsg << '\n';
         return kLoadLibError;
+      }
       std::pair<std::set<llvm::sys::DynamicLibrary>::iterator, bool> insRes
         = m_DyLibs.insert(DyLib);
       if (!insRes.second)
@@ -636,15 +648,19 @@ namespace cling {
   }
 
   Interpreter::LoadLibResult
-  Interpreter::loadLibrary(const std::string& filename, bool permanent) {
-    LoadLibResult res = tryLinker(filename, permanent);
+  Interpreter::loadLibrary(const std::string& filename, bool permanent,
+                           bool* tryCode) {
+    bool tryCodeDummy;
+    LoadLibResult res = tryLinker(filename, permanent,
+                                  tryCode ? *tryCode : tryCodeDummy);
     if (res != kLoadLibError) {
       return res;
     }
     if (filename.compare(0, 3, "lib") == 0) {
       // starts with "lib", try without (the llvm::Linker forces
       // a "lib" in front, which makes it liblib...
-      res = tryLinker(filename.substr(3, std::string::npos), permanent);
+      res = tryLinker(filename.substr(3, std::string::npos), permanent,
+                      tryCodeDummy);
       if (res != kLoadLibError)
         return res;
     }

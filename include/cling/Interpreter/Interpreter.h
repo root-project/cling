@@ -246,7 +246,8 @@ namespace cling {
 
     ///\brief Try to load a library file via the llvm::Linker.
     ///
-    LoadLibResult tryLinker(const std::string& filename, bool permanent);
+    LoadLibResult tryLinker(const std::string& filename, bool permanent,
+                            bool& tryCode);
 
     void addLoadedFile(const std::string& name, LoadedFileInfo::FileType type,
                        const llvm::sys::DynamicLibrary* dyLib = 0);
@@ -501,12 +502,15 @@ namespace cling {
     ///
     ///\param [in] filename - The file to loaded.
     ///\param [in] permanent - If false, the file can be unloaded later.
+    ///\param [out] tryCode - If not NULL, it will be set to false if this file
+    ///        cannot be #included.
     ///
     ///\returns kLoadLibSuccess on success, kLoadLibExists if the library was
     /// already loaded, kLoadLibError if the library cannot be found or any
     /// other error was encountered.
     ///
-    LoadLibResult loadLibrary(const std::string& filename, bool permanent);
+     LoadLibResult loadLibrary(const std::string& filename, bool permanent,
+                               bool *tryCode = 0);
 
     ///\brief Get the collection of loaded files.
     ///
