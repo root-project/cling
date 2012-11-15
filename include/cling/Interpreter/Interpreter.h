@@ -392,6 +392,24 @@ namespace cling {
     CompilationResult loadFile(const std::string& filename,
                                bool allowSharedLib = true);
 
+    enum LoadLibResult {
+      LoadLibSuccess, // library loaded successfully
+      //not yet: kLoadLibExists,  // library was alreday loaded
+      LoadLibError, // library was not found
+      LoadLibNumResults
+    };
+
+    ///\brief Loads a shared library.
+    ///
+    ///\param [in] filename - The file to loaded.
+    ///
+    ///\returns LoadLibSuccess on success, LoadLibExists if the library was
+    /// already loaded, LoadLibError if the library cannot be found or any
+    /// other error was encountered.
+    ///
+    ///
+    LoadLibResult loadLibrary(const std::string& filename, bool permanent);
+
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() { return m_DynamicLookupEnabled; }
 
