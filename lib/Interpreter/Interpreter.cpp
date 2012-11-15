@@ -438,7 +438,7 @@ namespace cling {
     if (m_IncrParser->Compile(Wrapper, CO) == IncrementalParser::kSuccess) {
       const Transaction* lastT = m_IncrParser->getLastTransaction();
       if (lastT->getState() == Transaction::kCommitted
-          && RunFunction(lastT->getWrapperFD()))
+          && RunFunction(lastT->getWrapperFD()) < kExeFirstError)
         return Interpreter::kSuccess;
     }
 
@@ -451,25 +451,35 @@ namespace cling {
     input.append("\n;\n}");
   }
 
-  bool Interpreter::RunFunction(const FunctionDecl* FD,
-                                StoredValueRef* res /*=0*/) {
+  Interpreter::ExecutionResult
+  Interpreter::RunFunction(const FunctionDecl* FD, StoredValueRef* res /*=0*/) {
     if (getCI()->getDiagnostics().hasErrorOccurred())
-      return false;
+      return kExeCompilationError;
 
     if (!m_IncrParser->hasCodeGenerator()) {
-      return true;
+      return kExeNoCodeGen;
     }
 
     if (!FD)
-      return false;
+      return kExeUnkownFunction;
 
     std::string mangledNameIfNeeded;
     mangleName(FD, mangledNameIfNeeded);
-    m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
-                                        getCI()->getASTContext(),
-                                        FD->getResultType(), res);
-    // FIXME: Probably we need better handling of the error case.
-    return true;
+    ExecutionContext::ExecutionResult ExeRes =
+       m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
+                                           getCI()->getASTContext(),
+                                           FD->getResultType(), res);
+    switch (ExeRes) {
+    case ExecutionContext::kExeSuccess:
+      return kExeSuccess;
+    case ExecutionContext::kExeFunctionNotCompiled:
+      return kExeFunctionNotCompiled;
+    case ExecutionContext::kExeUnresolvedSymbols:
+      return kExeUnresolvedSymbols;
+    default: break;
+    }
+    // Should not end up here...
+    return kExeSuccess;
   }
 
   void Interpreter::createUniqueName(std::string& out) {
@@ -533,7 +543,7 @@ namespace cling {
     const Transaction* lastT = m_IncrParser->getLastTransaction();
 
     if (lastT->getState() == Transaction::kCommitted
-        && RunFunction(lastT->getWrapperFD(), V))
+        && RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
       return Interpreter::kSuccess;
     else if (V)
         *V = StoredValueRef::invalidValue();

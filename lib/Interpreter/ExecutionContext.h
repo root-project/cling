@@ -31,6 +31,13 @@ namespace cling {
 
   public:
 
+    enum ExecutionResult {
+      kExeSuccess,
+      kExeFunctionNotCompiled,
+      kExeUnresolvedSymbols,
+      kNumExeResults
+    };
+
     ExecutionContext();
     ~ExecutionContext();
 
@@ -42,10 +49,10 @@ namespace cling {
     void runStaticInitializersOnce(llvm::Module* m);
     void runStaticDestructorsOnce(llvm::Module* m);
 
-    void executeFunction(llvm::StringRef function,
-                         const clang::ASTContext& Ctx,
-                         clang::QualType retType,
-                         StoredValueRef* returnValue = 0);
+    ExecutionResult executeFunction(llvm::StringRef function,
+                                    const clang::ASTContext& Ctx,
+                                    clang::QualType retType,
+                                    StoredValueRef* returnValue = 0);
 
     ///\brief Adds a symbol (function) to the execution engine.
     ///

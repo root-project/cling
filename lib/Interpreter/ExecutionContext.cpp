@@ -131,7 +131,7 @@ ExecutionContext::NotifyLazyFunctionCreators(const std::string& mangled_name)
   return HandleMissingFunction(mangled_name);
 }
 
-void
+ExecutionContext::ExecutionResult
 ExecutionContext::executeFunction(llvm::StringRef funcname,
                                   const clang::ASTContext& Ctx,
                                   clang::QualType retType,
@@ -156,8 +156,9 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
 
   llvm::Function* f = m_engine->FindFunctionNamed(funcname.data());
   if (!f) {
-    llvm::errs() << "ExecutionContext::executeFunction: could not find function named " << funcname << '\n';
-    return;
+    llvm::errs() << "ExecutionContext::executeFunction: could not find function named "
+                 << funcname << '\n';
+    return kExeFunctionNotCompiled;
   }
   JITtedFunctionCollector listener;
   // register the listener
@@ -177,7 +178,7 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
     // cleanup functions
     listener.UnregisterFunctionMapping(*m_engine);
     m_engine->UnregisterJITEventListener(&listener);
-    return;
+    return kExeUnresolvedSymbols;
   }
   // cleanup list and unregister our listener
   m_engine->UnregisterJITEventListener(&listener);
@@ -209,6 +210,7 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
   }
 
   m_engine->freeMachineCodeForFunction(f);
+  return kExeSuccess;
 }
 
 

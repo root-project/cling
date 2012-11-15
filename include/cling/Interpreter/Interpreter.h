@@ -78,6 +78,30 @@ namespace cling {
       kLoadLibNumResults
     };
 
+    ///\brief Describes the result of running a function.
+    ///
+    enum ExecutionResult {
+      ///\brief The function was run successfully.
+      kExeSuccess,
+      ///\brief Code generator is unavailable; not an error.
+      kExeNoCodeGen,
+
+      ///\brief First error value.
+      kExeFirstError,
+      ///\brief The function is not known and cannot be called.
+      kExeFunctionNotCompiled = kExeFirstError,
+      ///\brief While compiling the function, unknown symbols were encountered.
+      kExeUnresolvedSymbols,
+      ///\brief Compilation error.
+      kExeCompilationError,
+      ///\brief The function is not known.
+      kExeUnkownFunction,
+
+      ///\brief Number of possible results.
+      kNumExeResults
+    };
+
+
     class LoadedFileInfo {
     public:
       enum FileType {
@@ -276,9 +300,10 @@ namespace cling {
     ///       initialized to point to the return value's location if the 
     ///       expression result is an aggregate.
     ///
-    ///\returns true if successful otherwise false.
+    ///\returns The result of the execution.
     ///
-    bool RunFunction(const clang::FunctionDecl* FD, StoredValueRef* res = 0);
+    ExecutionResult RunFunction(const clang::FunctionDecl* FD,
+                                StoredValueRef* res = 0);
 
     ///\brief Forwards to cling::ExecutionContext::addSymbol.
     ///
