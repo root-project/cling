@@ -311,6 +311,20 @@ namespace cling {
 
     ///\brief Prints the current include paths that are used.
     ///
+    ///\param[out] incpaths - Pass in a llvm::SmallVector<std::string, N> with
+    ///       sufficiently sized N, to hold the result of the call.
+    ///\param[in] withSystem - if true, incpaths will also contain system
+    ///       include paths (framework, STL etc).
+    ///\param[in] withFlags - if true, each element in incpaths will be prefixed
+    ///       with a "-I" or similar, and some entries of incpaths will signal
+    ///       a new include path region (e.g. "-cxx-isystem"). Also, flags
+    ///       defining header search behavior will be included in incpaths, e.g.
+    ///       "-nostdinc".
+    void GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
+                         bool withSystem, bool withFlags);
+
+    ///\brief Prints the current include paths that are used.
+    ///
     void DumpIncludePath();
 
     ///\brief Compiles the given input.

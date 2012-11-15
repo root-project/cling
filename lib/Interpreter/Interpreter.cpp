@@ -208,7 +208,7 @@ namespace cling {
 
     CompilerInstance* CI = getCI();
     HeaderSearchOptions& headerOpts = CI->getHeaderSearchOpts();
-    const bool IsUserSupplied = false;
+    const bool IsUserSupplied = true;
     const bool IsFramework = false;
     const bool IsSysRootRelative = true;
     headerOpts.AddPath(incpath, frontend::Angled, IsUserSupplied, IsFramework,
@@ -220,13 +220,23 @@ namespace cling {
                                     PP.getTargetInfo().getTriple());
   }
 
-  // Copied from clang/lib/Frontend/CompilerInvocation.cpp
   void Interpreter::DumpIncludePath() {
+    llvm::SmallVector<std::string, 100> IncPaths;
+    GetIncludePaths(IncPaths, true /*withSystem*/, true /*withFlags*/);
+    // print'em all
+    for (unsigned i = 0; i < IncPaths.size(); ++i) {
+      llvm::outs() << IncPaths[i] <<"\n";
+    }
+  }
+
+  // Adapted from clang/lib/Frontend/CompilerInvocation.cpp
+  void Interpreter::GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
+                                   bool withSystem, bool withFlags) {
     const HeaderSearchOptions Opts(getCI()->getHeaderSearchOpts());
-    std::vector<std::string> Res;
-    if (Opts.Sysroot != "/") {
-      Res.push_back("-isysroot");
-      Res.push_back(Opts.Sysroot);
+
+    if (withFlags && Opts.Sysroot != "/") {
+      incpaths.push_back("-isysroot");
+      incpaths.push_back(Opts.Sysroot);
     }
 
     /// User specified include entries.
@@ -237,72 +247,76 @@ namespace cling {
       if (E.IsUserSupplied) {
         switch (E.Group) {
         case frontend::After:
-          Res.push_back("-idirafter");
+          if (withFlags) incpaths.push_back("-idirafter");
           break;
 
         case frontend::Quoted:
-          Res.push_back("-iquote");
+          if (withFlags) incpaths.push_back("-iquote");
           break;
 
         case frontend::System:
-          Res.push_back("-isystem");
+          if (!withSystem) continue;
+          if (withFlags) incpaths.push_back("-isystem");
           break;
 
         case frontend::IndexHeaderMap:
-          Res.push_back("-index-header-map");
-          Res.push_back(E.IsFramework? "-F" : "-I");
+          if (!withSystem) continue;
+          if (withFlags) incpaths.push_back("-index-header-map");
+          if (withFlags) incpaths.push_back(E.IsFramework? "-F" : "-I");
           break;
 
         case frontend::CSystem:
-          Res.push_back("-c-isystem");
+          if (!withSystem) continue;
+          if (withFlags) incpaths.push_back("-c-isystem");
           break;
 
         case frontend::CXXSystem:
-          Res.push_back("-cxx-isystem");
+          if (!withSystem) continue;
+          if (withFlags) incpaths.push_back("-cxx-isystem");
           break;
 
         case frontend::ObjCSystem:
-          Res.push_back("-objc-isystem");
+          if (!withSystem) continue;
+          if (withFlags) incpaths.push_back("-objc-isystem");
           break;
 
         case frontend::ObjCXXSystem:
-          Res.push_back("-objcxx-isystem");
+          if (!withSystem) continue;
+          if (withFlags) incpaths.push_back("-objcxx-isystem");
           break;
 
         case frontend::Angled:
-          Res.push_back(E.IsFramework ? "-F" : "-I");
+          if (withFlags) incpaths.push_back(E.IsFramework ? "-F" : "-I");
           break;
         }
       } else {
+        if (!withSystem) continue;
         if (E.Group != frontend::Angled && E.Group != frontend::System)
           llvm::report_fatal_error("Invalid option set!");
-        Res.push_back(E.Group == frontend::Angled ? "-iwithprefixbefore" :
-                      "-iwithprefix");
+        if (withFlags)
+          incpaths.push_back(E.Group == frontend::Angled ?
+                             "-iwithprefixbefore" :
+                             "-iwithprefix");
       }
-      Res.push_back(E.Path);
+      incpaths.push_back(E.Path);
     }
 
-    if (!Opts.ResourceDir.empty()) {
-      Res.push_back("-resource-dir");
-      Res.push_back(Opts.ResourceDir);
+    if (withSystem && !Opts.ResourceDir.empty()) {
+      if (withFlags) incpaths.push_back("-resource-dir");
+      incpaths.push_back(Opts.ResourceDir);
     }
-    if (!Opts.ModuleCachePath.empty()) {
-      Res.push_back("-fmodule-cache-path");
-      Res.push_back(Opts.ModuleCachePath);
+    if (withSystem && withFlags && !Opts.ModuleCachePath.empty()) {
+      incpaths.push_back("-fmodule-cache-path");
+      incpaths.push_back(Opts.ModuleCachePath);
     }
-    if (!Opts.UseStandardSystemIncludes)
-      Res.push_back("-nostdinc");
-    if (!Opts.UseStandardCXXIncludes)
-      Res.push_back("-nostdinc++");
-    if (Opts.UseLibcxx)
-      Res.push_back("-stdlib=libc++");
-    if (Opts.Verbose)
-      Res.push_back("-v");
-
-    // print'em all
-    for (unsigned i = 0; i < Res.size(); ++i) {
-      llvm::outs() << Res[i] <<"\n";
-    }
+    if (withSystem && withFlags && !Opts.UseStandardSystemIncludes)
+      incpaths.push_back("-nostdinc");
+    if (withSystem && withFlags && !Opts.UseStandardCXXIncludes)
+      incpaths.push_back("-nostdinc++");
+    if (withSystem && withFlags && Opts.UseLibcxx)
+      incpaths.push_back("-stdlib=libc++");
+    if (withSystem && withFlags && Opts.Verbose)
+      incpaths.push_back("-v");
   }
 
   CompilerInstance* Interpreter::getCI() const {
