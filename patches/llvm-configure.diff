@@ -1,0 +1,13 @@
+Index: configure
+===================================================================
+--- configure	(revision 47359)
++++ configure	(working copy)
+@@ -21042,7 +21042,7 @@
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }; }; then
+-  llvm_cv_cxx_visibility_inlines_hidden=yes
++  llvm_cv_cxx_visibility_inlines_hidden=no
+ else
+   echo "$as_me: failed program was:" >&5
+ sed 's/^/| /' conftest.$ac_ext >&5
