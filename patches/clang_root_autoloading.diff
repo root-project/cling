@@ -48,7 +48,7 @@ Index: tools/clang/include/clang/Lex/Preprocessor.h
 ===================================================================
 --- tools/clang/include/clang/Lex/Preprocessor.h	(revision 47284)
 +++ tools/clang/include/clang/Lex/Preprocessor.h	(working copy)
-@@ -623,6 +623,62 @@
+@@ -623,6 +623,72 @@
    void EnterTokenStream(const Token *Toks, unsigned NumToks,
                          bool DisableMacroExpansion, bool OwnsTokens);
  
@@ -78,10 +78,20 @@ Index: tools/clang/include/clang/Lex/Preprocessor.h
 +        SavedCurLexerKind(PP.CurLexerKind)
 +    {
 +      PP.CachedLexPos = 0;
++      PP.CachedTokens.clear();
 +      PP.IncludeMacroStack.clear();
++      PP.CurLexer.reset(0); 
++      PP.CurPTHLexer.reset(0);
++      PP.CurPPLexer = 0; 
++      PP.CurTokenLexer.reset(0);
++      PP.CurDirLookup = 0;
++      PP.CurLexerKind = CLK_CachingLexer;
 +    }
 +
 +    void pop() {
++      if (SavedCurLexerKind == (enum CurLexerKind)~0U)
++        return;
++
 +      PP.CachedLexPos = SavedCachedLexPos;
 +      PP.CachedTokens = SavedCachedTokens;
 +      PP.IncludeMacroStack = SavedStack;
@@ -111,3 +121,42 @@ Index: tools/clang/include/clang/Lex/Preprocessor.h
    /// RemoveTopOfLexerStack - Pop the current lexer/macro exp off the top of the
    /// lexer stack.  This should only be used in situations where the current
    /// state of the top-of-stack lexer is known.
+Index: interpreter/llvm/src/tools/clang/include/clang/Parse/Parser.h
+===================================================================
+--- interpreter/llvm/src/tools/clang/include/clang/Parse/Parser.h       (revision 47327)
++++ interpreter/llvm/src/tools/clang/include/clang/Parse/Parser.h       (working copy)
+@@ -236,6 +236,34 @@
+   AttributeFactory &getAttrFactory() { return AttrFactory; }
+ 
+   const Token &getCurToken() const { return Tok; }
++
++  /// A RAII object to temporarily reset PP's state and restore it.
++  class ParserCurTokRestoreRAII {
++  private:
++    Parser &P;
++    Token SavedTok;
++
++  public:
++    ParserCurTokRestoreRAII(Parser &P)
++      : P(P), SavedTok(P.Tok) 
++    {
++    }
++
++    void pop() {
++      if (SavedTok.is(tok::unknown))
++        return;
++
++      P.Tok = SavedTok;
++      
++      SavedTok.startToken();
++    }
++
++    ~ParserCurTokRestoreRAII() {
++      pop();
++    }
++  };
++
++
+   Scope *getCurScope() const { return Actions.getCurScope(); }
+ 
+   Decl  *getObjCDeclContext() const { return Actions.getObjCDeclContext(); }
