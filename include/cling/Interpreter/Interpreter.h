@@ -574,6 +574,16 @@ namespace cling {
     ///
     void* getAddressOfGlobal(const clang::NamedDecl* D, bool* fromJIT = 0) const;
 
+    ///\brief Gets the address of an existing global and whether it was JITted.
+    ///
+    /// JIT symbols might not be immediately convertible to e.g. a function
+    /// pointer as their call setup is different.
+    ///
+    ///\param[in]  SymName - the name of the global to search
+    ///\param[out] fromJIT - whether the symbol was JITted.
+    ///
+    void* getAddressOfGlobal(const char* SymName, bool* fromJIT = 0) const;
+
     friend class runtime::internal::LifetimeHandler;
   };
 

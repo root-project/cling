@@ -783,10 +783,14 @@ namespace cling {
     // Return a symbol's address, and whether it was jitted.
     std::string mangledName;
     mangleName(D, mangledName);
+    return getAddressOfGlobal(mangledName.c_str(), fromJIT);
+  }
+
+  void* Interpreter::getAddressOfGlobal(const char* SymName,
+                                        bool* fromJIT /*=0*/) const {
+    // Return a symbol's address, and whether it was jitted.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
-    return m_ExecutionContext->getAddressOfGlobal(module,
-                                                  mangledName.c_str(),
-                                                  fromJIT);
+    return m_ExecutionContext->getAddressOfGlobal(module, SymName, fromJIT);
   }
 
 } // namespace cling
