@@ -564,19 +564,20 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/) {
-    bool tryCode;
-    if (allowSharedLib && loadLibrary(filename, false, &tryCode)
-        == kLoadLibSuccess)
-      return kSuccess;
-
-    if (!tryCode)
-      return kFailure;
+    if (allowSharedLib) {
+      bool tryCode;
+      if (loadLibrary(filename, false, &tryCode)
+          == kLoadLibSuccess)
+        return kSuccess;
+      if (!tryCode)
+        return kFailure;
+    }
 
     std::string code;
     code += "#include \"" + filename + "\"";
     CompilationResult res = declare(code);
     if (res == kSuccess)
-      addLoadedFile(filename,LoadedFileInfo::kSource);
+      addLoadedFile(filename, LoadedFileInfo::kSource);
     return res;
   }
 
