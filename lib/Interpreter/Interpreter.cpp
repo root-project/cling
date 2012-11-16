@@ -644,7 +644,7 @@ namespace cling {
         = m_DyLibs.insert(DyLib);
       if (!insRes.second)
         return kLoadLibExists;
-      addLoadedFile(filename, LoadedFileInfo::kDynamicLibrary,
+      addLoadedFile(SoFile.str(), LoadedFileInfo::kDynamicLibrary,
                     &(*insRes.first));
       return kLoadLibSuccess;
     }
