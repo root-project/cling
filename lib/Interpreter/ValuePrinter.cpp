@@ -47,6 +47,10 @@ static void StreamChar(llvm::raw_ostream& o, const char v,
 
 static void StreamCharPtr(llvm::raw_ostream& o, const char* const v,
                           const char* Sep = "\n") {
+  if (!v) {
+    o << "<<<NULL>>>" << Sep;
+    return;
+  }
   o << '"';
   const char* p = v;
   for (;*p && p - v < 128; ++p) {
