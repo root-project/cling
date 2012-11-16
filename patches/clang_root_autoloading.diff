@@ -121,10 +121,10 @@ Index: tools/clang/include/clang/Lex/Preprocessor.h
    /// RemoveTopOfLexerStack - Pop the current lexer/macro exp off the top of the
    /// lexer stack.  This should only be used in situations where the current
    /// state of the top-of-stack lexer is known.
-Index: interpreter/llvm/src/tools/clang/include/clang/Parse/Parser.h
+Index: tools/clang/include/clang/Parse/Parser.h
 ===================================================================
---- interpreter/llvm/src/tools/clang/include/clang/Parse/Parser.h       (revision 47327)
-+++ interpreter/llvm/src/tools/clang/include/clang/Parse/Parser.h       (working copy)
+--- tools/clang/include/clang/Parse/Parser.h       (revision 47327)
++++ tools/clang/include/clang/Parse/Parser.h       (working copy)
 @@ -236,6 +236,34 @@
    AttributeFactory &getAttrFactory() { return AttrFactory; }
  
