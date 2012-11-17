@@ -60,12 +60,14 @@ std::vector<ExecutionContext::LazyFunctionCreatorFunc_t>
 
 bool ExecutionContext::m_LazyFuncCreatorDiagsSuppressed = false;
 
+// Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
 ExecutionContext::ExecutionContext():
-  m_engine(0),
   m_RunningStaticInits(false),
   m_CxaAtExitRemapped(false)
-{
-}
+{}
+
+// Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
+ExecutionContext::~ExecutionContext() {}
 
 void
 ExecutionContext::InitializeBuilder(llvm::Module* m)
@@ -83,17 +85,22 @@ ExecutionContext::InitializeBuilder(llvm::Module* m)
   builder.setOptLevel(llvm::CodeGenOpt::Less);
   builder.setEngineKind(llvm::EngineKind::JIT);
   builder.setAllocateGVsWithCode(false);
-  m_engine = builder.create();
+
+  // EngineBuilder uses default c'ted TargetOptions, too:
+  llvm::TargetOptions TargetOpts;
+  TargetOpts.NoFramePointerElim = 1;
+  TargetOpts.JITExceptionHandling = 1;
+  TargetOpts.JITEmitDebugInfo = 1;
+
+  builder.setTargetOptions(TargetOpts);
+
+  m_engine.reset(builder.create());
   if (!m_engine)
      llvm::errs() << "cling::ExecutionContext::InitializeBuilder(): " << errMsg;
   assert(m_engine && "Cannot create module!");
 
   // install lazy function creators
   m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
-}
-
-ExecutionContext::~ExecutionContext()
-{
 }
 
 void unresolvedSymbol()

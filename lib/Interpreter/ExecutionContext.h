@@ -8,6 +8,7 @@
 #define CLING_EXECUTIONCONTEXT_H
 
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/OwningPtr.h"
 
 #include <vector>
 #include <set>
@@ -79,7 +80,7 @@ namespace cling {
                              bool* fromJIT = 0) const;
 
     llvm::ExecutionEngine* getExecutionEngine() const {
-      return m_engine;
+      return m_engine.get();
     }
 
   private:
@@ -93,15 +94,15 @@ namespace cling {
     static std::set<std::string> m_unresolvedSymbols;
     static std::vector<LazyFunctionCreatorFunc_t> m_lazyFuncCreator;
 
-    ///\ Whether or not the function creator to be queried.
+    ///\brief Whether or not the function creator to be queried.
     static bool m_LazyFuncCreatorDiagsSuppressed;
 
-    llvm::ExecutionEngine* m_engine; // Owned by JIT
+    llvm::OwningPtr<llvm::ExecutionEngine> m_engine;
 
-    /// \brief prevent the recursive run of the static inits
+    ///\brief prevent the recursive run of the static inits
     bool m_RunningStaticInits;
 
-    /// \brief Whether cxa_at_exit has been rewired to the Interpreter's version
+    ///\brief Whether cxa_at_exit has been rewired to the Interpreter's version
     bool m_CxaAtExitRemapped;
   };
 } // end cling
