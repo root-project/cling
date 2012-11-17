@@ -274,7 +274,8 @@ namespace cling {
       llvm::GlobalValue* GV 
         = m_CurTransaction->getModule()->getNamedValue(mangledName);
 
-      GV->replaceAllUsesWith(llvm::UndefValue::get(GV->getType()));
+      if (!GV->use_empty())
+        GV->replaceAllUsesWith(llvm::UndefValue::get(GV->getType()));
       GV->eraseFromParent();
     }
 
