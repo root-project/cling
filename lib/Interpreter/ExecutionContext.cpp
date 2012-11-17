@@ -73,21 +73,22 @@ ExecutionContext::InitializeBuilder(llvm::Module* m)
   //
   //  Create an execution engine to use.
   //
-  // Note: Engine takes ownership of the module.
   assert(m && "Module cannot be null");
 
+  // Note: Engine takes ownership of the module.
   llvm::EngineBuilder builder(m);
-  builder.setOptLevel(llvm::CodeGenOpt::Less);
+
   std::string errMsg;
   builder.setErrorStr(&errMsg);
+  builder.setOptLevel(llvm::CodeGenOpt::Less);
   builder.setEngineKind(llvm::EngineKind::JIT);
   builder.setAllocateGVsWithCode(false);
   m_engine = builder.create();
-  assert(m_engine && "Cannot initialize builder without module!");
+  if (!m_engine)
+     llvm::errs() << "cling::ExecutionContext::InitializeBuilder(): " << errMsg;
+  assert(m_engine && "Cannot create module!");
 
-  //m_engine->addModule(m); // Note: The engine takes ownership of the module.
-
-  // install lazy function
+  // install lazy function creators
   m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
 }
 
