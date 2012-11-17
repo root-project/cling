@@ -10,49 +10,14 @@
 
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Assembly/PrintModulePass.h"
 #include "llvm/ExecutionEngine/JIT.h"
-#include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/DynamicLibrary.h"
 
 using namespace cling;
-
-namespace {
-  class JITtedFunctionCollector : public llvm::JITEventListener {
-  private:
-    llvm::SmallVector<llvm::Function*, 24> m_functions;
-    llvm::ExecutionEngine *m_engine;
-
-  public:
-    JITtedFunctionCollector(): m_functions(), m_engine(0) { }
-    virtual ~JITtedFunctionCollector() { }
-
-    virtual void NotifyFunctionEmitted(const llvm::Function& F, void *, size_t,
-                              const JITEventListener::EmittedFunctionDetails&) {
-      m_functions.push_back(const_cast<llvm::Function *>(&F));
-    }
-    virtual void NotifyFreeingMachineCode(void* /*OldPtr*/) {}
-
-    void UnregisterFunctionMapping(llvm::ExecutionEngine&);
-  };
-}
-
-
-void JITtedFunctionCollector::UnregisterFunctionMapping(
-                                                  llvm::ExecutionEngine &engine)
-{
-  for (llvm::SmallVectorImpl<llvm::Function *>::reverse_iterator
-         it = m_functions.rbegin(), et = m_functions.rend();
-       it != et; ++it) {
-    llvm::Function *ff = *it;
-    engine.freeMachineCodeForFunction(ff);
-    engine.updateGlobalMapping(ff, 0);
-  }
-  m_functions.clear();
-}
-
 
 std::set<std::string> ExecutionContext::m_unresolvedSymbols;
 std::vector<ExecutionContext::LazyFunctionCreatorFunc_t>
@@ -106,7 +71,8 @@ ExecutionContext::InitializeBuilder(llvm::Module* m)
 void unresolvedSymbol()
 {
   // throw exception?
-  llvm::errs() << "ExecutionContext: calling unresolved symbol (should never happen)!\n";
+  llvm::errs() << "ExecutionContext: calling unresolved symbol, "
+    "see previous error message!\n";
 }
 
 void* ExecutionContext::HandleMissingFunction(const std::string& mangled_name)
@@ -139,6 +105,34 @@ ExecutionContext::NotifyLazyFunctionCreators(const std::string& mangled_name)
   return HandleMissingFunction(mangled_name);
 }
 
+static void
+freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
+                               funcsToFree, llvm::ExecutionEngine* engine) {
+  llvm::SmallPtrSet<llvm::Function*, 40> funcsToFreeUnique;
+  for (size_t i = 0; i < funcsToFree.size(); ++i) {
+    llvm::Function* func = funcsToFree[i];
+    if (funcsToFreeUnique.insert(func)) {
+      for (llvm::Value::use_iterator IU = func->use_begin(),
+             EU = func->use_end(); IU != EU; ++IU) {
+        llvm::Instruction* instUser = llvm::dyn_cast<llvm::Instruction>(*IU);
+        if (!instUser) continue;
+        if (!instUser->getParent()) continue;
+        if (llvm::Function* userFunc = instUser->getParent()->getParent())
+          funcsToFree.push_back(userFunc);
+      }
+    }
+  }
+  for (llvm::SmallPtrSet<llvm::Function*, 40>::iterator
+         I = funcsToFreeUnique.begin(), E = funcsToFreeUnique.end();
+       I != E; ++I) {
+    // This should force the JIT to recompile the function. But the stubs stay,
+    // and the JIT reuses the stubs now pointing nowhere, i.e. without updating
+    // the machine code address. Fix the JIT, or hope that MCJIT helps.
+    //engine->freeMachineCodeForFunction(*I);
+    engine->updateGlobalMapping(*I, 0);
+  }
+}
+
 ExecutionContext::ExecutionResult
 ExecutionContext::executeFunction(llvm::StringRef funcname,
                                   const clang::ASTContext& Ctx,
@@ -150,7 +144,8 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
   if (!m_CxaAtExitRemapped) {
     // Rewire atexit:
     llvm::Function* atExit = m_engine->FindFunctionNamed("__cxa_atexit");
-    llvm::Function* clingAtExit = m_engine->FindFunctionNamed("cling_cxa_atexit");
+    llvm::Function* clingAtExit
+      = m_engine->FindFunctionNamed("cling_cxa_atexit");
     if (atExit && clingAtExit) {
       void* clingAtExitAddr = m_engine->getPointerToFunction(clingAtExit);
       assert(clingAtExitAddr && "cannot find cling_cxa_atexit");
@@ -162,34 +157,29 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
-  llvm::Function* f = m_engine->FindFunctionNamed(funcname.data());
+  llvm::Function* f = m_engine->FindFunctionNamed(funcname.str().c_str());
   if (!f) {
-    llvm::errs() << "ExecutionContext::executeFunction: could not find function named "
-                 << funcname << '\n';
+    llvm::errs() << "ExecutionContext::executeFunction: "
+      "could not find function named " << funcname << '\n';
     return kExeFunctionNotCompiled;
   }
-  JITtedFunctionCollector listener;
-  // register the listener
-  m_engine->RegisterJITEventListener(&listener);
   m_engine->getPointerToFunction(f);
   // check if there is any unresolved symbol in the list
   if (!m_unresolvedSymbols.empty()) {
+    llvm::SmallVector<llvm::Function*, 100> funcsToFree;
     for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
            e = m_unresolvedSymbols.end(); i != e; ++i) {
-      llvm::errs() << "ExecutionContext::executeFunction: symbol \'" << *i << "\' unresolved!\n";
+      llvm::errs() << "ExecutionContext::executeFunction: symbol '" << *i
+                   << "' unresolved while linking function '" << funcname
+                   << "'!\n";
       llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
       assert(ff && "cannot find function to free");
-      m_engine->updateGlobalMapping(ff, 0);
-      m_engine->freeMachineCodeForFunction(ff);
+      funcsToFree.push_back(ff);
     }
+    freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
     m_unresolvedSymbols.clear();
-    // cleanup functions
-    listener.UnregisterFunctionMapping(*m_engine);
-    m_engine->UnregisterJITEventListener(&listener);
     return kExeUnresolvedSymbols;
   }
-  // cleanup list and unregister our listener
-  m_engine->UnregisterJITEventListener(&listener);
 
   std::vector<llvm::GenericValue> args;
   bool wantReturn = (returnValue);
@@ -217,7 +207,6 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
     m_engine->runFunction(f, args);
   }
 
-  m_engine->freeMachineCodeForFunction(f);
   return kExeSuccess;
 }
 
