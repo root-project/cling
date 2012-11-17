@@ -428,7 +428,7 @@ namespace utils {
       llvm::SmallVector<TemplateArgument, 4> desArgs;
       for(TemplateSpecializationType::iterator I = TST->begin(), E = TST->end();
           I != E; ++I) {
-        if (I->getKind() != clang::TemplateArgument::Type) {
+        if (I->getKind() != TemplateArgument::Type) {
           desArgs.push_back(*I);
           continue;
         }
