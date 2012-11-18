@@ -38,16 +38,14 @@ namespace cling {
     // Intentional no-op.
   }
 
-  void DeclCollector::HandleVTable(CXXRecordDecl* RD,
-                                     bool DefinitionRequired) {
-    assert("Not implemented yet!");
+  void DeclCollector::HandleVTable(CXXRecordDecl* RD, bool DefinitionRequired) {
+    assert(0 && "Not implemented yet!");
   }
 
   void DeclCollector::CompleteTentativeDefinition(VarDecl* VD) {
-    assert("Not implemented yet!");
+    assert(0 && "Not implemented yet!");
   }
 
   void DeclCollector::HandleTranslationUnit(ASTContext& Ctx) {
-    assert("Not implemented yet!");
   }
 } // namespace cling
