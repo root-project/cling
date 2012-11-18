@@ -209,8 +209,22 @@ namespace cling {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
       // codegen the transaction
-      for (Transaction::const_iterator I = T->decls_begin(), 
+      // We assume that there is no ordering of the calls to HandleXYZ, because
+      // in clang they can happen in different order too, eg. coming from 
+      // template instatiator and so on.
+      for (Transaction::iterator I = T->decls_begin(), 
              E = T->decls_end(); I != E; ++I) {
+          for (DeclGroupRef::const_iterator J = I->begin(), L = I->end();
+               J != L; ++J)
+            if (TagDecl* TD = dyn_cast<TagDecl>(*J))
+              if (TD->isThisDeclarationADefinition()) {
+                getCodeGenerator()->HandleTagDeclDefinition(TD);
+
+                if (CXXRecordDecl* CXXRD = dyn_cast<CXXRecordDecl>(TD))
+                  if (CXXRD->isDynamicClass())
+                    getCodeGenerator()->HandleVTable(CXXRD, true);
+            }
+        
         getCodeGenerator()->HandleTopLevelDecl(*I);
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
