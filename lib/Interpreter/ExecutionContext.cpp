@@ -291,19 +291,18 @@ bool ExecutionContext::addSymbol(const char* symbolName,  void* symbolAddress) {
 void* ExecutionContext::getAddressOfGlobal(llvm::Module* m,
                                            const char* symbolName,
                                            bool* fromJIT /*=0*/) const {
-    // Return a symbol's address, and whether it was jitted.
-    void* address
-      = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
-    if (address) {
-      if (fromJIT) *fromJIT = false;
-    } else {
-      if (fromJIT) *fromJIT = true;
-      llvm::GlobalVariable* gvar
-        = m->getGlobalVariable(symbolName, true);
-      if (!gvar)
-        return 0;
+  // Return a symbol's address, and whether it was jitted.
+  void* address
+    = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
+  if (address) {
+    if (fromJIT) *fromJIT = false;
+  } else {
+    if (fromJIT) *fromJIT = true;
+    llvm::GlobalVariable* gvar = m->getGlobalVariable(symbolName, true);
+    if (!gvar)
+      return 0;
 
-      address = m_engine->getPointerToGlobal(gvar);
-    }
-    return address;
+    address = m_engine->getPointerToGlobal(gvar);
   }
+  return address;
+}
