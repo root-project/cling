@@ -109,9 +109,12 @@ namespace cling {
     /// \name Iteration
 
     typedef DeclQueue::const_iterator const_iterator;
+    typedef DeclQueue::iterator iterator;
     typedef DeclQueue::const_reverse_iterator const_reverse_iterator;
     const_iterator decls_begin() const { return m_DeclQueue.begin(); }
+    iterator decls_begin() { return m_DeclQueue.begin(); }
     const_iterator decls_end() const { return m_DeclQueue.end(); }
+    iterator decls_end() { return m_DeclQueue.end(); }
     const_reverse_iterator rdecls_begin() const { return m_DeclQueue.rbegin(); }
     const_reverse_iterator rdecls_end() const { return m_DeclQueue.rend(); }
 
