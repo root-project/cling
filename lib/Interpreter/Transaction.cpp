@@ -50,9 +50,13 @@ namespace cling {
   void Transaction::dumpPretty() const {
     if (!size())
       return;
-
-    ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
-    PrintingPolicy Policy(C.getLangOpts());
+    ASTContext* C;
+    if (m_WrapperFD)
+      C = &(m_WrapperFD->getASTContext());
+    if (!getFirstDecl().isNull())
+      C = &(getFirstDecl().getSingleDecl()->getASTContext());
+      
+    PrintingPolicy Policy(C->getLangOpts());
     print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
@@ -63,13 +67,15 @@ namespace cling {
       if (I->isNull()) {
         assert(hasNestedTransactions() && "DGR is null even if no nesting?");
         // print the nested decl
+        Out<< "\n";
         Out<<"+====================================================+\n";
-        Out<<"|       Nested Transaction" << nestedT << "          |\n";
+        Out<<"        Nested Transaction" << nestedT << "           \n";
         Out<<"+====================================================+\n";
         m_NestedTransactions[nestedT++]->print(Out, Policy, Indent, 
                                                PrintInstantiation);
+        Out<< "\n";
         Out<<"+====================================================+\n";
-        Out<<"|         End Transaction" << nestedT << "           |\n";
+        Out<<"          End Transaction" << nestedT << "            \n";
         Out<<"+====================================================+\n";
       }
       for (DeclGroupRef::const_iterator J = I->begin(), L = I->end();J != L;++J)
