@@ -68,7 +68,15 @@ namespace cling {
     ///\brief MetaProcessor's options
     ///
     MetaProcessorOpts m_Options;
+     
+    ///\brief Currently executing file as passed into executeFile
+    ///
+    llvm::StringRef m_CurrentlyExecutingFile;
 
+    ///\brief Outermost currently executing file as passed into executeFile
+    ///
+    llvm::StringRef m_TopExecutingFile;
+    
   private:
 
     ///\brief Handle one of the special commands in cling.
@@ -139,6 +147,22 @@ namespace cling {
                      cling::StoredValueRef* result = 0,
                      Interpreter::CompilationResult* compRes = 0);
 
+    ///\brief Get the file name that is currently executing as passed to
+    /// the currently active executeFile(). The returned StringRef::data() is
+    /// NULL if no file is currently processed. For recursive calls to
+    /// executeFile(), getCurrentlyExecutingFile() will return the nested file
+    /// whereas getTopExecutingFile() returns the outer most file.
+    llvm::StringRef getCurrentlyExecutingFile() const {
+      return m_CurrentlyExecutingFile;
+    }
+
+    ///\brief Get the file name that is passed to the top most currently active
+    /// executeFile(). The returned StringRef::data() is NULL if no file is
+    /// currently processed.
+    llvm::StringRef getTopExecutingFile() const {
+      return m_TopExecutingFile;
+    }
+    
     ///\brief Reads prompt input from file.
     ///
     ///\param [in] filename - The file to read.

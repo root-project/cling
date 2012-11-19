@@ -496,10 +496,17 @@ namespace cling {
     Interpreter::CompilationResult interpRes = m_Interp.loadFile(file);
     if (interpRes == Interpreter::kSuccess) {
       std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
+      m_CurrentlyExecutingFile = file;
+      bool topmost = !m_TopExecutingFile.data();
+      if (topmost)
+        m_TopExecutingFile = file;
       if (result)
         interpRes = m_Interp.evaluate(expression, *result);
       else
         interpRes = m_Interp.execute(expression);
+      m_CurrentlyExecutingFile = llvm::StringRef();
+      if (topmost)
+        m_TopExecutingFile = llvm::StringRef();
     }
     if (compRes) *compRes = interpRes;
     return (interpRes != Interpreter::kFailure);
