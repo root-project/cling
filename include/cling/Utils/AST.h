@@ -116,7 +116,7 @@ namespace utils {
     ///
     static clang::NamespaceDecl* Namespace(clang::Sema* S,
                                            const char* Name,
-                                           clang::DeclContext* Within = 0);
+                                          const clang::DeclContext* Within = 0);
 
     ///\brief Quick lookup for a single named declaration in a given 
     /// declaration context.
@@ -129,7 +129,7 @@ namespace utils {
     ///
     static clang::NamedDecl* Named(clang::Sema* S,
                                    const char* Name,
-                                   clang::DeclContext* Within = 0);
+                                   const clang::DeclContext* Within = 0);
 
     ///\brief Quick lookup for a single namespace declaration in a given 
     /// declaration context.
@@ -143,7 +143,7 @@ namespace utils {
     ///
     static clang::NamedDecl* Named(clang::Sema* S,
                                    const clang::DeclarationName& Name,
-                                   clang::DeclContext* Within = 0);
+                                   const clang::DeclContext* Within = 0);
 
   };
 } // end namespace utils

@@ -466,14 +466,14 @@ namespace utils {
   }
 
   NamespaceDecl* Lookup::Namespace(Sema* S, const char* Name,
-                                   DeclContext* Within) {
+                                   const DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);
     LookupResult R(*S, DName, SourceLocation(),
                    Sema::LookupNestedNameSpecifierName);
     if (!Within)
       S->LookupName(R, S->TUScope);
     else
-      S->LookupQualifiedName(R, Within);
+      S->LookupQualifiedName(R, const_cast<DeclContext*>(Within));
 
     if (R.empty())
       return 0;
@@ -483,19 +483,20 @@ namespace utils {
     return dyn_cast<NamespaceDecl>(R.getFoundDecl());
   }
 
-  NamedDecl* Lookup::Named(Sema* S, const char* Name, DeclContext* Within) {
+  NamedDecl* Lookup::Named(Sema* S, const char* Name,
+                           const DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);
     return Lookup::Named(S, DName, Within);
   }
 
   NamedDecl* Lookup::Named(Sema* S, const DeclarationName& Name, 
-                           DeclContext* Within) {
+                           const DeclContext* Within) {
     LookupResult R(*S, Name, SourceLocation(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
     if (!Within)
       S->LookupName(R, S->TUScope);
     else
-      S->LookupQualifiedName(R, Within);
+      S->LookupQualifiedName(R, const_cast<DeclContext*>(Within));
 
     if (R.empty())
       return 0;
