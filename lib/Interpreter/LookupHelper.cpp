@@ -23,8 +23,7 @@ namespace cling {
   ///\brief Cleanup Parser state after a failed lookup.
   /// 
   /// After a failed lookup we need to discard the remaining unparsed input,
-  /// restore the original state of the incremental parsing flag, signal
-  /// the diagnostic client that the current input file is done, clear any
+  /// restore the original state of the incremental parsing flag, clear any
   /// pending diagnostics, restore the suppress diagnostics flag, and restore
   /// the spell checking language options.
   ///
@@ -32,19 +31,20 @@ namespace cling {
   private:
     Parser* P;
     Preprocessor& PP;
-    DiagnosticConsumer* DClient;
     bool ResetIncrementalProcessing;
     bool OldSuppressAllDiagnostics;
     bool OldSpellChecking;
     DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds;
 
   public:
-    ParserStateRAII(Parser* p, bool rip, bool sad, bool sc)
-       : P(p), PP(P->getPreprocessor()), 
-         DClient(P->getActions().getDiagnostics().getClient()), 
-         ResetIncrementalProcessing(rip),
-         OldSuppressAllDiagnostics(sad), OldSpellChecking(sc),
-         CleanupTemplateIds(*p)
+    ParserStateRAII(Parser& p)
+       : P(&p), PP(p.getPreprocessor()), 
+         ResetIncrementalProcessing(p.getPreprocessor()
+                                    .isIncrementalProcessingEnabled()),
+         OldSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
+                                   .getSuppressAllDiagnostics()),
+         OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
+         CleanupTemplateIds(p)
     {}
 
     ~ParserStateRAII()
@@ -57,20 +57,12 @@ namespace cling {
       P->SkipUntil(tok::eof, /*StopAtSemi*/false, /*DontConsume*/false, 
                    /*StopAtCodeCompletion*/false);
       PP.enableIncrementalProcessing(ResetIncrementalProcessing);
-      DClient->EndSourceFile();
       P->getActions().getDiagnostics().Reset();
       PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
       const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking =
          OldSpellChecking;
     }
   };
-
-  LookupHelper::LookupHelper(clang::Parser* P) : m_Parser(P) {
-    const Preprocessor& PP = P->getPreprocessor();
-    m_PPSuppressAllDiags = PP.getDiagnostics().getSuppressAllDiagnostics();
-    m_PPResetIncrProcessing = PP.isIncrementalProcessingEnabled();
-    m_PPSpellChecking = PP.getLangOpts().SpellChecking;
-  }
 
 
   QualType LookupHelper::findType(llvm::StringRef typeName) const {
@@ -81,9 +73,8 @@ namespace cling {
 
     // Use P for shortness
     Parser& P = *m_Parser;
+    ParserStateRAII ResetParserState(P);
     prepareForParsing(typeName, llvm::StringRef("lookup.type.by.name.file"));
-    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Try parsing the type name.
     //
@@ -110,10 +101,9 @@ namespace cling {
     Sema& S = P.getActions();
     Preprocessor& PP = P.getPreprocessor();
     ASTContext& Context = S.getASTContext();
+    ParserStateRAII ResetParserState(P);
     prepareForParsing(className.str() + "::", 
                       llvm::StringRef("lookup.class.by.name.file"));
-    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Our return values.
     //
@@ -228,13 +218,10 @@ namespace cling {
     //
     P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
                 /*StopAtCodeCompletion*/false);
-    DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
-    DClient->EndSourceFile();
     S.getDiagnostics().Reset();
     //
     //  Setup to reparse as a type.
     //
-    DClient->BeginSourceFile(PP.getLangOpts(), &PP);
     {
       llvm::MemoryBuffer* SB =
         llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
@@ -281,9 +268,8 @@ namespace cling {
     Sema& S = P.getActions();
     Preprocessor& PP = S.getPreprocessor();
     ASTContext& Context = S.getASTContext();
+    ParserStateRAII ResetParserState(P);
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
-    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Get the DeclContext we will search for the function.
     //
@@ -364,13 +350,10 @@ namespace cling {
     //
     P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false, 
                 /*StopAtCodeCompletion*/false);
-    DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
-    DClient->EndSourceFile();
     S.getDiagnostics().Reset();
     //
     //  Setup to reparse as a type.
     //
-    DClient->BeginSourceFile(PP.getLangOpts(), &PP);
     //
     //  Create a fake file to parse the function name.
     //
@@ -549,9 +532,8 @@ namespace cling {
     Preprocessor& PP = S.getPreprocessor();
     ASTContext& Context = S.getASTContext();
 
+    ParserStateRAII ResetParserState(P);
     prepareForParsing(funcArgs, llvm::StringRef("func.args.file"));
-    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Convert the passed decl into a nested name specifier,
     //  a scope spec, and a decl context.
@@ -658,13 +640,10 @@ namespace cling {
       //
       P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
                    /*StopAtCodeCompletion*/false);
-      DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
-      DClient->EndSourceFile();
       S.getDiagnostics().Reset();
       //
       //  Setup to reparse as a type.
       //
-      DClient->BeginSourceFile(PP.getLangOpts(), &PP);
       //
       //  Create a fake file to parse the function name.
       //
@@ -829,9 +808,8 @@ namespace cling {
     //
     // Use P for shortness
     Parser& P = *m_Parser;
+    ParserStateRAII ResetParserState(P);
     prepareForParsing(argList, llvm::StringRef("arg.list.file"));
-    ParserStateRAII ResetParserState(&P, m_PPResetIncrProcessing,
-                                     m_PPSuppressAllDiags, m_PPSpellChecking);
     //
     //  Parse the arguments now.
     //
@@ -865,18 +843,11 @@ namespace cling {
     //
     //  Tell the diagnostic engine to ignore all diagnostics.
     //
-    m_PPSuppressAllDiags = PP.getDiagnostics().getSuppressAllDiagnostics();
     PP.getDiagnostics().setSuppressAllDiagnostics(true);
     //
     //  Tell the parser to not attempt spelling correction.
     //
-    m_PPSpellChecking = PP.getLangOpts().SpellChecking;
     const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = 0;
-    //
-    //  Tell the diagnostic consumer we are switching files.
-    //
-    DiagnosticConsumer* DClient = S.getDiagnostics().getClient();
-    DClient->BeginSourceFile(PP.getLangOpts(), &PP);
     //
     //  Create a fake file to parse the type name.
     //
@@ -890,9 +861,7 @@ namespace cling {
     //  Note: We need this because token readahead in the following
     //        routine calls ends up parsing it multiple times.
     //
-    m_PPResetIncrProcessing = PP.isIncrementalProcessingEnabled();
     if (!PP.isIncrementalProcessingEnabled()) {
-      m_PPResetIncrProcessing = true;
       PP.enableIncrementalProcessing();
     }
     //

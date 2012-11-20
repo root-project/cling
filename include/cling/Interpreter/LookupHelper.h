@@ -33,12 +33,9 @@ namespace cling {
   class LookupHelper {
   private:
     clang::Parser* m_Parser; // doesn't own it.
-    mutable bool m_PPSuppressAllDiags; // helps parser recovery from lookup
-    mutable bool m_PPSpellChecking; // helps parser recovery
-    mutable bool m_PPResetIncrProcessing; // helps parser recovery
   public:
 
-    LookupHelper(clang::Parser* P);
+    LookupHelper(clang::Parser* P): m_Parser(P) {}
 
     ///\brief Lookup a type by name, starting from the global
     /// namespace.
