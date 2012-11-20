@@ -50,7 +50,7 @@ namespace cling {
   void Transaction::dumpPretty() const {
     if (!size())
       return;
-    ASTContext* C;
+    ASTContext* C = 0;
     if (m_WrapperFD)
       C = &(m_WrapperFD->getASTContext());
     if (!getFirstDecl().isNull())
