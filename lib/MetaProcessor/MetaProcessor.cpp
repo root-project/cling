@@ -260,7 +260,7 @@ namespace cling {
    }
 
    if (!CmdLexer.LexIdent(Tok)) {
-     llvm::errs() << "Command name token expected. Try .help\n";
+     llvm::errs() << "Error in cling::MetaProcessor: command name token expected. Try .help\n";
      if (compRes) *compRes = Interpreter::kFailure;
      return false;
    }
@@ -277,14 +277,14 @@ namespace cling {
    }
    else if (CmdStartChar == 'L') {
      if (!CmdLexer.LexAnyString(Tok)) {
-       llvm::errs() <<  "Filename expected.\n";
+       llvm::errs() << "Error in cling::MetaProcessor: Filename expected.\n";
        if (compRes) *compRes = Interpreter::kFailure;
        return false;
      }
      //TODO: Check if the file exists and is readable.
      if (Interpreter::kSuccess 
          != m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(), Tok.getLength()))) {
-       llvm::errs() << "Load file failed.\n";
+       llvm::errs() << "Error in cling::MetaProcessor: load file failed.\n";
        if (compRes) *compRes = Interpreter::kFailure;
      }
 
@@ -292,7 +292,7 @@ namespace cling {
    }
    else if (CmdStartChar == 'x' || CmdStartChar == 'X') {
      if (!CmdLexer.LexAnyString(Tok)) {
-       llvm::errs() << "Filename expected.\n";
+       llvm::errs() << "Error in cling::MetaProcessor: filename expected.\n";
        if (compRes) *compRes = Interpreter::kFailure;
        return false;
      }
@@ -300,41 +300,41 @@ namespace cling {
      llvm::StringRef args;
      // TODO: Check whether the file exists using the compilers header search.
      // if (!file.canRead()) {
-     //   llvm::errs() << "File doesn't exist or not readable.\n";
+     //   llvm::errs() << "cling::MetaProcessor: File doesn't exist or not readable.\n";
      //   return false;       
      // }
      CmdLexer.LexSpecialSymbol(Tok);
      if (Tok.getKind() == tok::l_paren) {
        // Good enough for now.
        if (!CmdLexer.LexAnyString(Tok)) {
-         llvm::errs() << "Argument list expected.\n";
+         llvm::errs() << "cling::MetaProcessor: Argument list expected.\n";
          if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
        args = llvm::StringRef(Tok.getBufStart(), Tok.getLength());
        if (!CmdLexer.LexSpecialSymbol(Tok) && Tok.getKind() == tok::r_paren) {
-         llvm::errs() << "Closing parenthesis expected.\n";
+         llvm::errs() << "Error in cling::MetaProcessor: closing parenthesis expected.\n";
          if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
      }
      if (!executeFile(file.str(), args, result, compRes))
-       llvm::errs() << "Execute file failed.\n";
+       llvm::errs() << "Error in cling::MetaProcessor: execute file failed.\n";
      return true;     
    }
    else if (CmdStartChar == 'U') {
      // if (!CmdLexer.LexAnyString(Tok)) {
-     //   llvm::errs() << "Filename expected.\n";
+     //   llvm::errs() << "cling::MetaProcessor: Filename expected.\n";
      //   return false;
      // }
      // llvm::sys::Path file(llvm::StringRef(Tok.bufStart, Tok.getLength()));
      // TODO: Check whether the file exists using the compilers header search.
      // if (!file.canRead()) {
-     //   llvm::errs() << "File doesn't exist or not readable.\n";
+     //   llvm::errs() << "cling::MetaProcessor: File doesn't exist or not readable.\n";
      //   return false;       
      // } else
      // if (file.isDynamicLibrary()) {
-     //   llvm::errs() << "cannot unload shared libraries yet!.\n";
+     //   llvm::errs() << "Error in cling::MetaProcessor: cannot unload shared libraries yet!.\n";
      //   return false;
      // }
      // TODO: Later comes more fine-grained unloading. For now just:
@@ -350,7 +350,7 @@ namespace cling {
        llvm::sys::Path path(llvm::StringRef(Tok.getBufStart(), Tok.getLength()));
        // TODO: Check whether the file exists using the compilers header search.
        // if (!path.canRead()) {
-       //   llvm::errs() << "Path doesn't exist or not readable.\n";
+       //   llvm::errs() << "Error in cling::MetaProcessor: path doesn't exist or not readable.\n";
        //   return false;       
        // }
        m_Interp.AddIncludePath(path.str());
@@ -372,7 +372,7 @@ namespace cling {
        else if (Tok.getKind() == tok::booltrue)
          m_Interp.enablePrintAST(true);
        else {
-         llvm::errs() << "Boolean value expected.\n";
+         llvm::errs() << "Error in cling::MetaProcessor: boolean value expected.\n";
          if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
@@ -391,7 +391,7 @@ namespace cling {
        else if (Tok.getKind() == tok::booltrue)
          m_Options.RawInput = true;
        else {
-         llvm::errs() << "Boolean value expected.\n";
+         llvm::errs() << "Error in cling::MetaProcessor: boolean value expected.\n";
          if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
@@ -410,7 +410,7 @@ namespace cling {
        else if (Tok.getKind() == tok::booltrue)
          m_Interp.enableDynamicLookup(true);
        else {
-         llvm::errs() << "Boolean value expected.\n";
+         llvm::errs() << "Error in cling::MetaProcessor: boolean value expected.\n";
          if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
@@ -540,7 +540,7 @@ namespace cling {
             if (content[posNonWS] == '}') {
               content[posNonWS] = ' '; // replace '}'
             } else {
-              llvm::errs() << "Error in Interpreter::readInputFromFile(): missing closing '}'!\n";
+              llvm::errs() << "Error in cling::MetaProcessor: missing closing '}'!\n";
               // be confident, just go on.
             }
           } // find '}'
