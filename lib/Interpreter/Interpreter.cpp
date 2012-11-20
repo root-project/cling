@@ -439,12 +439,12 @@ namespace cling {
     std::string WrapperName;
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
-    if (m_IncrParser->Compile(Wrapper, CO) == IncrementalParser::kSuccess) {
-      const Transaction* lastT = m_IncrParser->getLastTransaction();
+    
+    const Transaction* lastT = m_IncrParser->Compile(Wrapper, CO);
+    if (lastT->getIssuedDiags() == Transaction::kNone)
       if (lastT->getState() == Transaction::kCommitted
           && RunFunction(lastT->getWrapperFD()) < kExeFirstError)
         return Interpreter::kSuccess;
-    }
 
     return Interpreter::kFailure;
   }
@@ -513,9 +513,10 @@ namespace cling {
                                const CompilationOptions& CO,
                                const clang::Decl** D /* = 0 */) {
 
-    if (m_IncrParser->Compile(input, CO) != IncrementalParser::kFailed) {
+    const Transaction* lastT = m_IncrParser->Compile(input, CO);
+    if (lastT->getIssuedDiags() == Transaction::kNone) {
       if (D)
-        *D = m_IncrParser->getLastTransaction()->getFirstDecl().getSingleDecl();
+        *D = lastT->getFirstDecl().getSingleDecl();
       return Interpreter::kSuccess;
     }
 
@@ -534,17 +535,15 @@ namespace cling {
     std::string WrapperName;
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
+    Transaction* lastT = 0;
     if (V) {
-      Transaction* CurT = m_IncrParser->Parse(Wrapper, CO);
-      assert(CurT->size() && "No decls created by Parse!");
+      lastT = m_IncrParser->Parse(Wrapper, CO);
+      assert(lastT->size() && "No decls created by Parse!");
 
-      m_IncrParser->commitTransaction(CurT);
+      m_IncrParser->commitTransaction(lastT);
     }
     else
-      m_IncrParser->Compile(Wrapper, CO);
-
-    // get the result
-    const Transaction* lastT = m_IncrParser->getLastTransaction();
+      lastT = m_IncrParser->Compile(Wrapper, CO);
 
     if (lastT->getState() == Transaction::kCommitted
         && RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)

@@ -298,15 +298,21 @@ namespace cling {
     assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
   }
 
-  IncrementalParser::EParseResult
-  IncrementalParser::Compile(llvm::StringRef input,
-                             const CompilationOptions& Opts) {
+  Transaction* IncrementalParser::Compile(llvm::StringRef input,
+                                          const CompilationOptions& Opts) {
 
-    beginTransaction(Opts);
-    EParseResult Result = ParseInternal(input);
-    commitTransaction(endTransaction());
+    Transaction* CurT = beginTransaction(Opts);
+    EParseResult ParseRes = ParseInternal(input);
 
-    return Result;
+    if (ParseRes == kSuccessWithWarnings)
+      CurT->setIssuedDiags(Transaction::kWarnings);
+    else if (ParseRes == kFailed)
+      CurT->setIssuedDiags(Transaction::kErrors);
+
+    endTransaction();
+    commitTransaction(CurT);
+
+    return CurT;
   }
 
   Transaction* IncrementalParser::Parse(llvm::StringRef input,

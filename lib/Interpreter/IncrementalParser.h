@@ -157,9 +157,9 @@ namespace cling {
     ///
     ///\param[in] input - The code to compile.
     ///\param[in] Opts - The compilation options to use.
-    ///\returns whether the operation was successful.
+    ///\returns the declarations that were compiled.
     ///
-    EParseResult Compile(llvm::StringRef input, const CompilationOptions& Opts);
+    Transaction* Compile(llvm::StringRef input, const CompilationOptions& Opts);
 
     ///\brief Parses the given input without calling the custom consumers and 
     /// code generation.
