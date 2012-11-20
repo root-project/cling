@@ -85,19 +85,19 @@ namespace cling {
   }
 
   IncrementalParser::~IncrementalParser() {
-     if (hasCodeGenerator()) {
-       getCodeGenerator()->ReleaseModule();
-     }
-     const Transaction* T = getFirstTransaction();
-     const Transaction* nextT = 0;
-     while (T) {
-       nextT = T->getNext();
-       delete T;
-       T = nextT;
-     }
+    if (hasCodeGenerator()) {
+      getCodeGenerator()->ReleaseModule();
+    }
+    const Transaction* T = getFirstTransaction();
+    const Transaction* nextT = 0;
+    while (T) {
+      nextT = T->getNext();
+      delete T;
+      T = nextT;
+    }
 
-     for (size_t i = 0; i < m_TTransformers.size(); ++i)
-       delete m_TTransformers[i];
+    for (size_t i = 0; i < m_TTransformers.size(); ++i)
+      delete m_TTransformers[i];
   }
 
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
@@ -161,13 +161,9 @@ namespace cling {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
 
-    // Check for errors coming from our custom consumers.
-    DiagnosticConsumer& DClient = m_CI->getDiagnosticClient();
-
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
       rollbackTransaction(T);
-      DClient.EndSourceFile();
       return;
     }
 
@@ -180,10 +176,7 @@ namespace cling {
     // We are sure it's safe to pipe it through the transformers
     bool success = true;
     for (size_t i = 0; i < m_TTransformers.size(); ++i) {
-      DClient.BeginSourceFile(getCI()->getLangOpts(),
-                              &getCI()->getPreprocessor());
       success = m_TTransformers[i]->TransformTransaction(*T); 
-      DClient.EndSourceFile();
       if (!success) {
         break;
       }
@@ -194,13 +187,11 @@ namespace cling {
     if (!success) {
       // Roll back on error in a transformer
       rollbackTransaction(T);
-      DClient.EndSourceFile();
       return;
     }
 
     // Pull all template instantiations in that came from the consumers.
     getCI()->getSema().PerformPendingInstantiations();
-    DClient.EndSourceFile();
 
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
@@ -338,16 +329,12 @@ namespace cling {
     llvm::CrashRecoveryContextCleanupRegistrar<Sema> CleanupSema(&S);
 
     Preprocessor& PP = m_CI->getPreprocessor();
-    DiagnosticConsumer& DClient = m_CI->getDiagnosticClient();
-
     if (!PP.getCurrentLexer()) {
        PP.EnterSourceFile(m_CI->getSourceManager().getMainFileID(),
                           0, SourceLocation());
     }
     assert(PP.isIncrementalProcessingEnabled() && "Not in incremental mode!?");
     PP.enableIncrementalProcessing();
-
-    DClient.BeginSourceFile(m_CI->getLangOpts(), &PP);
 
     std::ostringstream source_name;
     source_name << "input_line_" << (m_MemoryBuffers.size() + 1);

@@ -1,14 +1,19 @@
-// RUN: cat %s | %cling -Xclang -verify -I%p
+// RUN: cat %s | %cling -Xclang -verify -I%p 2>&1 | %FileCheck %s
 // XFAIL: *
-// The main issue is that expected-error is not propagated to the source file and
+// The main issue is that expected - error is not propagated to the source file and
 // the expected diagnostics get misplaced.
-.x CannotDotX.h() // expected-error {{use of undeclared identifier 'CannotDotX'}} 
-.x CannotDotX.h() // expected-error {{use of undeclared identifier 'CannotDotX'}}
+.x CannotDotX.h() // expected-error@2 {{use of undeclared identifier 'CannotDotX'}}
+// CHECK: Error in cling::MetaProcessor: execute file failed.
+.x CannotDotX.h()
+// CHECK: Error in cling::MetaProcessor: execute file failed.
+// expected-error@3 3 {{redefinition of 'MyClass'}}
+// expected-error@4 3 {{expected member name or ';' after declaration specifiers}}
+// expected-note@3 3 {{previous definition is here}}
 
- // Here we cannot revert MyClass from CannotDotX.h
-.L CannotDotX.h // expected-error {{redefinition of 'MyClass'}} expected-error {{expected member name or ';' after declaration specifiers}} expected-node {{previous definition is here}}
-
-
+// Here we cannot revert MyClass from CannotDotX.h
 .L CannotDotX.h
+// CHECK: Error in cling::MetaProcessor: load file failed.
+.L CannotDotX.h
+// CHECK: Error in cling::MetaProcessor: load file failed.
 
 .q

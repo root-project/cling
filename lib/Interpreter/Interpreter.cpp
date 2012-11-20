@@ -181,9 +181,17 @@ namespace cling {
     }
 
     handleFrontendOptions();
+
+    // Tell the diagnostic client that we are entering file parsing mode.
+    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
+    DClient.BeginSourceFile(getCI()->getLangOpts(),
+                            &getCI()->getPreprocessor());
   }
 
   Interpreter::~Interpreter() {
+    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
+    DClient.EndSourceFile();
+
     for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
       const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
       (*AEE.m_Func)(AEE.m_Arg);
