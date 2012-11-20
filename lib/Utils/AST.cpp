@@ -410,9 +410,12 @@ namespace utils {
               prefix = CreateNestedNameSpecifier(Ctx,
                                           llvm::dyn_cast<NamespaceDecl>(outer));
             } else {
-              assert(llvm::isa<TagDecl>(outer)&& "not in namespace of TagDecl");
-              prefix = CreateNestedNameSpecifier(Ctx,
-                                          llvm::dyn_cast<TagDecl>(outer));
+              // We should only create the nested name specifier
+              // if the outer scope is really a TagDecl.
+              // It could also be a CXXMethod for example.
+              TagDecl *tdecl = llvm::dyn_cast<TagDecl>(outer);
+              if (tdecl) 
+                 prefix = CreateNestedNameSpecifier(Ctx,tdecl);
             }
           }
         }
