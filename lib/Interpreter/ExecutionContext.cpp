@@ -8,6 +8,7 @@
 
 #include "cling/Interpreter/StoredValueRef.h"
 
+#include "llvm/Constants.h"
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
@@ -211,7 +212,7 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
 }
 
 
-void
+ExecutionContext::ExecutionResult
 ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
 
@@ -220,18 +221,73 @@ ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
 
   assert(m_engine && "Code generation did not create an engine!");
 
-  if (!m_RunningStaticInits) {
-    m_RunningStaticInits = true;
+  if (m_RunningStaticInits)
+     return kExeSuccess;
 
-    llvm::GlobalVariable* gctors
-      = m->getGlobalVariable("llvm.global_ctors", true);
-    if (gctors) {
-      m_engine->runStaticConstructorsDestructors(false);
-      gctors->eraseFromParent();
+  llvm::GlobalVariable* GV
+     = m->getGlobalVariable("llvm.global_ctors", true);
+  // Nothing to do is good, too.
+  if (!GV) return kExeSuccess;
+
+  // Close similarity to
+  // m_engine->runStaticConstructorsDestructors(false) aka
+  // llvm::ExecutionEngine::runStaticConstructorsDestructors()
+  // is intentional; we do an extra pass to check whether the JIT
+  // managed to collect all the symbols needed by the niitializers.
+  // Should be an array of '{ i32, void ()* }' structs.  The first value is
+  // the init priority, which we ignore.
+  llvm::ConstantArray *InitList
+    = llvm::dyn_cast<llvm::ConstantArray>(GV->getInitializer());
+  if (InitList == 0)
+    return kExeSuccess;
+
+  m_RunningStaticInits = true;
+
+  // We don't care whether something was unresolved before.
+  m_unresolvedSymbols.clear();
+
+  for (unsigned i = 0, e = InitList->getNumOperands(); i != e; ++i) {
+    llvm::ConstantStruct *CS
+      = llvm::dyn_cast<llvm::ConstantStruct>(InitList->getOperand(i));
+    if (CS == 0) continue;
+
+    llvm::Constant *FP = CS->getOperand(1);
+    if (FP->isNullValue())
+      continue;  // Found a sentinal value, ignore.
+
+    // Strip off constant expression casts.
+    if (llvm::ConstantExpr *CE = llvm::dyn_cast<llvm::ConstantExpr>(FP))
+      if (CE->isCast())
+        FP = CE->getOperand(0);
+
+    // Execute the ctor/dtor function!
+    if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
+      m_engine->getPointerToFunction(F);
+      // check if there is any unresolved symbol in the list
+      if (!m_unresolvedSymbols.empty()) {
+        llvm::SmallVector<llvm::Function*, 100> funcsToFree;
+        for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
+               e = m_unresolvedSymbols.end(); i != e; ++i) {
+          llvm::errs() << "ExecutionContext::runStaticInitializersOnce: symbol '" << *i
+                       << "' unresolved while linking static initializer '"
+                       << F->getName() << "'!\n";
+          llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
+          assert(ff && "cannot find function to free");
+          funcsToFree.push_back(ff);
+        }
+        freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
+        m_unresolvedSymbols.clear();
+        m_RunningStaticInits = false;
+        return kExeUnresolvedSymbols;
+      }
+      m_engine->runFunction(F, std::vector<llvm::GenericValue>());
     }
-
-    m_RunningStaticInits = false;
   }
+
+  GV->eraseFromParent();
+
+  m_RunningStaticInits = false;
+  return kExeSuccess;
 }
 
 void

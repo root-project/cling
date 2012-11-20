@@ -220,7 +220,12 @@ namespace cling {
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
       // run the static initializers that came from codegenning
-      m_Interpreter->runStaticInitializersOnce();
+      if (m_Interpreter->runStaticInitializersOnce()
+          >= Interpreter::kExeFirstError) {
+         // Roll back on error in a transformer
+         rollbackTransaction(T);
+         return;
+      }
     }
 
     T->setState(Transaction::kCommitted);

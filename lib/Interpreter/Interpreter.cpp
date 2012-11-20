@@ -49,6 +49,20 @@ static bool canWrapForCall(const std::string& input_line) {
    return true;
 }
 
+  static cling::Interpreter::ExecutionResult
+  ConvertExecutionResult(cling::ExecutionContext::ExecutionResult ExeRes) {
+    switch (ExeRes) {
+    case cling::ExecutionContext::kExeSuccess:
+      return cling::Interpreter::kExeSuccess;
+    case cling::ExecutionContext::kExeFunctionNotCompiled:
+      return cling::Interpreter::kExeFunctionNotCompiled;
+    case cling::ExecutionContext::kExeUnresolvedSymbols:
+      return cling::Interpreter::kExeUnresolvedSymbols;
+    default: break;
+    }
+    return cling::Interpreter::kExeSuccess;
+  }
+
 } // unnamed namespace
 
 
@@ -481,17 +495,7 @@ namespace cling {
        m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
                                            getCI()->getASTContext(),
                                            FD->getResultType(), res);
-    switch (ExeRes) {
-    case ExecutionContext::kExeSuccess:
-      return kExeSuccess;
-    case ExecutionContext::kExeFunctionNotCompiled:
-      return kExeFunctionNotCompiled;
-    case ExecutionContext::kExeUnresolvedSymbols:
-      return kExeUnresolvedSymbols;
-    default: break;
-    }
-    // Should not end up here...
-    return kExeSuccess;
+    return ConvertExecutionResult(ExeRes);
   }
 
   void Interpreter::createUniqueName(std::string& out) {
@@ -730,11 +734,14 @@ namespace cling {
       setCallbacks(0);
   }
 
-  void Interpreter::runStaticInitializersOnce() const {
+  Interpreter::ExecutionResult
+  Interpreter::runStaticInitializersOnce() const {
     // Forward to ExecutionContext; should not be called by
     // anyone except for IncrementalParser.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
-    m_ExecutionContext->runStaticInitializersOnce(module);
+    ExecutionContext::ExecutionResult ExeRes
+       = m_ExecutionContext->runStaticInitializersOnce(module);
+    return ConvertExecutionResult(ExeRes);
   }
 
   int Interpreter::CXAAtExit(void (*func) (void*), void* arg, void* dso) {

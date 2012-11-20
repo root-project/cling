@@ -47,7 +47,7 @@ namespace cling {
       m_LazyFuncCreatorDiagsSuppressed = suppressed;
     }
 
-    void runStaticInitializersOnce(llvm::Module* m);
+    ExecutionResult runStaticInitializersOnce(llvm::Module* m);
     void runStaticDestructorsOnce(llvm::Module* m);
 
     ExecutionResult executeFunction(llvm::StringRef function,
