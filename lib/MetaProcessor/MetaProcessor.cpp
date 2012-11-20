@@ -178,6 +178,19 @@ namespace cling {
       return Result.kind != tok::unknown;
     }
 
+    bool LexComment(Token& Result) {
+      // only handles "//" for now.
+      Result.startToken();
+      LexBlankSpace();
+      Result.bufStart = curPos;
+      if (*curPos == '/' && curPos[1] == '/') {
+        Result.bufEnd = strchr(curPos + 2, '\n');
+        if (!Result.bufEnd) Result.bufEnd = bufferEnd;
+        return true;
+      }
+      return false;
+    }
+
   };
 
   MetaProcessor::MetaProcessor(Interpreter& interp) : m_Interp(interp) {
@@ -282,10 +295,15 @@ namespace cling {
        return false;
      }
      //TODO: Check if the file exists and is readable.
-     if (Interpreter::kSuccess 
-         != m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(), Tok.getLength()))) {
+     if (Interpreter::kSuccess !=
+         m_Interp.loadFile(llvm::StringRef(Tok.getBufStart(),
+                                           Tok.getLength()))) {
        llvm::errs() << "Error in cling::MetaProcessor: load file failed.\n";
        if (compRes) *compRes = Interpreter::kFailure;
+     }
+     if (CmdLexer.LexComment(Tok)) {
+       // Forward comments to the interpreter; they might be expected-diags.
+       m_Interp.declare(llvm::StringRef(Tok.getBufStart(), Tok.getLength()).str());
      }
 
      return true;
@@ -306,17 +324,18 @@ namespace cling {
      CmdLexer.LexSpecialSymbol(Tok);
      if (Tok.getKind() == tok::l_paren) {
        // Good enough for now.
-       if (!CmdLexer.LexAnyString(Tok)) {
-         llvm::errs() << "cling::MetaProcessor: Argument list expected.\n";
-         if (compRes) *compRes = Interpreter::kFailure;
-         return false;
+       if (CmdLexer.LexAnyString(Tok)) {
+          args = llvm::StringRef(Tok.getBufStart(), Tok.getLength());
        }
-       args = llvm::StringRef(Tok.getBufStart(), Tok.getLength());
        if (!CmdLexer.LexSpecialSymbol(Tok) && Tok.getKind() == tok::r_paren) {
          llvm::errs() << "Error in cling::MetaProcessor: closing parenthesis expected.\n";
          if (compRes) *compRes = Interpreter::kFailure;
          return false;
        }
+     }
+     if (CmdLexer.LexComment(Tok)) {
+       // forward comments to the interpreter; they might be expected-diags.
+       m_Interp.declare(llvm::StringRef(Tok.getBufStart(), Tok.getLength()).str());
      }
      if (!executeFile(file.str(), args, result, compRes))
        llvm::errs() << "Error in cling::MetaProcessor: execute file failed.\n";
