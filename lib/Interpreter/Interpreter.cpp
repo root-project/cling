@@ -514,7 +514,7 @@ namespace cling {
                                const clang::Decl** D /* = 0 */) {
 
     const Transaction* lastT = m_IncrParser->Compile(input, CO);
-    if (lastT->getIssuedDiags() == Transaction::kNone) {
+    if (lastT->getIssuedDiags() != Transaction::kErrors) {
       if (D)
         *D = lastT->getFirstDecl().getSingleDecl();
       return Interpreter::kSuccess;
