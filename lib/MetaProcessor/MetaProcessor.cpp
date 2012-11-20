@@ -17,6 +17,7 @@
 #include "llvm/Support/Path.h"
 
 #include <fstream>
+#include <cctype>
 
 using namespace clang;
 
@@ -518,7 +519,7 @@ namespace cling {
       m_CurrentlyExecutingFile = file;
       bool topmost = !m_TopExecutingFile.data();
       if (topmost)
-        m_TopExecutingFile = file;
+        m_TopExecutingFile = m_CurrentlyExecutingFile;
       if (result)
         interpRes = m_Interp.evaluate(expression, *result);
       else
@@ -535,6 +536,33 @@ namespace cling {
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                  StoredValueRef* result /* = 0 */,
                                  bool ignoreOutmostBlock /*=false*/) {
+
+    {
+      // check that it's not binary:
+      std::ifstream in(filename.str().c_str(), std::ios::in | std::ios::binary);
+      char magic[1024] = {0};
+      in.read(magic, sizeof(magic));
+      size_t readMagic = in.gcount();
+      if (readMagic >= 4) {
+        llvm::sys::LLVMFileType fileType
+          = llvm::sys::IdentifyFileType(magic, 4);
+        if (fileType != llvm::sys::Unknown_FileType) {
+          llvm::errs() << "Error in cling::MetaProcessor: "
+            "cannot read input from a binary file!\n";
+          return Interpreter::kFailure;
+        }
+        unsigned printable = 0;
+        for (int i = 0; i < readMagic; ++i)
+          if (isprint(magic[i]))
+            ++printable;
+        if (10 * printable <  5 * readMagic) {
+          // 50% printable for ASCII files should be a safe guess.
+          llvm::errs() << "Error in cling::MetaProcessor: "
+            "cannot read input from a (likely) binary file!\n" << printable;
+          return Interpreter::kFailure;
+        }
+      }
+    }
 
     std::ifstream in(filename.str().c_str());
     in.seekg(0, std::ios::end);
@@ -567,8 +595,16 @@ namespace cling {
       } // have non-whitespace
     } // ignore outmost block
 
+    std::string strFilename(filename.str());
+    m_CurrentlyExecutingFile = strFilename;
+    bool topmost = !m_TopExecutingFile.data();
+    if (topmost)
+      m_TopExecutingFile = m_CurrentlyExecutingFile;
     Interpreter::CompilationResult ret = Interpreter::kSuccess;
     process(content.c_str(), result, &ret);
+    m_CurrentlyExecutingFile = llvm::StringRef();
+    if (topmost)
+      m_TopExecutingFile = llvm::StringRef();
     return ret;
   }
 
