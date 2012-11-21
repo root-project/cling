@@ -471,6 +471,13 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
+  Interpreter::CompilationResult Interpreter::codegen(Transaction* T) {
+    m_IncrParser->commitTransaction(T);
+    if (T->getState() == Transaction::kCommitted)
+      return Interpreter::kSuccess;
+    return Interpreter::kFailure;
+  }
+
   void Interpreter::WrapInput(std::string& input, std::string& fname) {
     fname = createUniqueWrapper();
     input.insert(0, "void " + fname + "() {\n ");

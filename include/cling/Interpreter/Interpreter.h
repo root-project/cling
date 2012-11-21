@@ -475,7 +475,7 @@ namespace cling {
     ///       expression result is an aggregate.
     ///
     ///\returns Whether the operation was fully successful.
-    ///
+    /// 
     CompilationResult echo(const std::string& input, StoredValueRef* V = 0);
 
     ///\brief Compiles input line and runs.
@@ -489,6 +489,17 @@ namespace cling {
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult execute(const std::string& input);
+
+    ///\brief Generates code for a given transaction. NOTE: we will have to 
+    /// think of better name because it doesn't do codegen only it applies the
+    /// specified by the compilation options transformations, too.
+    ///
+    /// @param[in] T - The cling::Transaction that contains the declarations and
+    ///                the compilation/generation options.
+    ///
+    ///\returns Whether the operation was fully successfil.
+    ///
+    CompilationResult codegen(Transaction* T);
 
     ///\brief Loads header file or shared library.
     ///
