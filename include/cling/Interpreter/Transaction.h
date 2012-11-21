@@ -223,6 +223,11 @@ namespace cling {
     ///
     void appendUnique(clang::DeclGroupRef DGR);
 
+    ///\brief Wraps the declaration into declaration group and appends it to 
+    /// the transaction if doesn't exist.
+    ///
+    void appendUnique(clang::Decl* D);
+
     ///\brief Clears all declarations in the transaction.
     ///
     void clear() { 

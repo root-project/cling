@@ -37,6 +37,10 @@ namespace cling {
     m_DeclQueue.push_back(DGR);
   }
 
+  void Transaction::appendUnique(Decl* D) {
+    appendUnique(DeclGroupRef(D));
+  }
+
   void Transaction::dump() const {
     if (!size())
       return;
