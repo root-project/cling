@@ -552,7 +552,7 @@ namespace cling {
           return Interpreter::kFailure;
         }
         unsigned printable = 0;
-        for (int i = 0; i < readMagic; ++i)
+        for (size_t i = 0; i < readMagic; ++i)
           if (isprint(magic[i]))
             ++printable;
         if (10 * printable <  5 * readMagic) {
