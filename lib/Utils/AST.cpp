@@ -96,14 +96,17 @@ namespace utils {
     if (!Ty->isPointerType())
       Ty = Ctx.getPointerType(Ty);
     TypeSourceInfo* TSI = Ctx.CreateTypeSourceInfo(Ty);
-    const llvm::APInt Addr(8 * sizeof(void *), Ptr);
 
-    Expr* Result = IntegerLiteral::Create(Ctx, Addr, Ctx.UnsignedLongTy,
-                                          SourceLocation());
+    Expr* Result = Synthesize::IntegerLiteralExpr(Ctx, Ptr);
     Result = S->BuildCStyleCastExpr(SourceLocation(), TSI, SourceLocation(),
-                                         Result).take();
+                                    Result).take();
     assert(Result && "Cannot create CStyleCastPtrExpr");
     return Result;
+  }
+
+  IntegerLiteral* Synthesize::IntegerLiteralExpr(ASTContext& C, uint64_t Ptr) {
+    const llvm::APInt Addr(8 * sizeof(void *), Ptr);
+    return IntegerLiteral::Create(C, Addr, C.UnsignedLongTy, SourceLocation());
   }
 
   static
