@@ -7,6 +7,8 @@
 #ifndef CLING_INPUT_VALIDATOR_H
 #define CLING_INPUT_VALIDATOR_H
 
+#include "clang/Basic/TokenKinds.h"
+
 #include "llvm/ADT/StringRef.h"
 
 #include <stack>
@@ -22,6 +24,7 @@ namespace cling {
   ///
   class InputValidator {
   private:
+
     ///\brief The input being collected.
     ///
     std::string m_Input;
@@ -48,7 +51,8 @@ namespace cling {
     ///\param[in] LO - Langluage options to validate against.
     ///\returns Information about the outcome of the validation.
     ///
-    ValidationResult validate(llvm::StringRef line, clang::LangOptions& LO);
+    ValidationResult validate(llvm::StringRef line, 
+                              const clang::LangOptions& LO);
 
     ///\returns Reference to the collected input.
     ///

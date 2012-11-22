@@ -12,7 +12,7 @@ using namespace clang;
 
 namespace cling {
   InputValidator::ValidationResult
-  InputValidator::validate(llvm::StringRef line, LangOptions& LO) {
+  InputValidator::validate(llvm::StringRef line, const LangOptions& LO) {
     if (!m_Input.empty())
       m_Input.append("\n");
     else
@@ -20,8 +20,16 @@ namespace cling {
 
     m_Input.append(line);
 
+
+    // Imballanced ' or " drives our lexer nuts.
+    llvm::StringRef fullInput(m_Input);
+    if (fullInput.count('\'') % 2 || fullInput.count('"') % 2) {
+      return kIncomplete;
+    }
+
     llvm::OwningPtr<llvm::MemoryBuffer> MB;
     MB.reset(llvm::MemoryBuffer::getMemBuffer(line));
+
     Lexer RawLexer(SourceLocation(), LO, MB->getBufferStart(),
                    MB->getBufferStart(), MB->getBufferEnd());
     Token Tok;
@@ -33,9 +41,11 @@ namespace cling {
         kind -= (int)tok::l_square;
         if (kind % 2) {
           // closing the right one?
-          if (m_ParenStack.empty()) return kMismatch;
+          if (m_ParenStack.empty()) 
+            return kMismatch;
           int prev = m_ParenStack.top();
-          if (prev != kind - 1) return kMismatch;
+          if (prev != kind - 1)
+            return kMismatch;
           m_ParenStack.pop();
         } else {
           m_ParenStack.push(kind);
@@ -43,6 +53,7 @@ namespace cling {
       }
     }
     while (Tok.isNot(tok::eof));
+
     if (!m_ParenStack.empty())
       return kIncomplete;
 
