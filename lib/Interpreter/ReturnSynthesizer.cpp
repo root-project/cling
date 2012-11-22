@@ -36,7 +36,7 @@ namespace cling {
                                                          m_Sema);
     if (lastExpr) {
       QualType RetTy = lastExpr->getType();
-      if (!RetTy->isVoidType()) {
+      if (!RetTy->isVoidType() && RetTy.isTriviallyCopyableType(*m_Context)) {
         // Change the void function's return type
         // We can't PushDeclContext, because we don't have scope.
         Sema::ContextRAII pushedDC(*m_Sema, FD);
