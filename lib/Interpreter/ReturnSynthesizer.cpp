@@ -71,7 +71,8 @@ namespace cling {
             }
           }
 
-          if (!RetTy->isVoidType()) {
+          if (!RetTy->isVoidType()
+              && RetTy.isTriviallyCopyableType(*m_Context)) {
             Sema::ContextRAII pushedDC(*m_Sema, FD);
             FunctionProtoType::ExtProtoInfo EPI;
             QualType FnTy = m_Context->getFunctionType(RetTy,
