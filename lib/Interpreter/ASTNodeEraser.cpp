@@ -214,7 +214,7 @@ namespace cling {
     assert(D && "The Decl is null");
     PreVisitDecl(D);
 
-    DeclContext* DC = D->getDeclContext();
+    DeclContext* DC = D->getLexicalDeclContext();
 
     bool ExistsInDC = false;
 
@@ -397,19 +397,17 @@ namespace cling {
         }
       }
     }
-    else if (llvm::SmallVector<NamedDecl*, 4>* Decls
-             = Pos->second.getAsVector()) {
-      for(llvm::SmallVector<NamedDecl*, 4>::iterator I = Decls->begin();
-          I != Decls->end(); ++I) {
-        if ((*I) == FD) {
+    else {
+      llvm::SmallVector<NamedDecl*, 4>& Decls = *Pos->second.getAsVector();
+      for(llvm::SmallVector<NamedDecl*, 4>::reverse_iterator I = Decls.rbegin();
+          I != Decls.rend(); ++I)
+        if ((*I) == FD)
           if (FunctionDecl* MostRecentFD = RemoveFromRedeclChain(FD)) {
-            Successful = VisitNamedDecl(*I) && Successful;
-            Decls->insert(I, MostRecentFD);
+            // This will delete the decl from the vector, because it is 
+            // generated from the decl context.
+            Successful = VisitNamedDecl((*I)) && Successful;
+            (*I) = MostRecentFD;
           }
-          else
-            Decls->erase(I);
-        }
-      }
     }
 
     return Successful;
