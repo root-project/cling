@@ -7,8 +7,6 @@
 #ifndef CLING_INPUT_VALIDATOR_H
 #define CLING_INPUT_VALIDATOR_H
 
-#include "clang/Basic/TokenKinds.h"
-
 #include "llvm/ADT/StringRef.h"
 
 #include <stack>
