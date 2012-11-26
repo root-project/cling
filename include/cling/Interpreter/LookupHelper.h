@@ -32,10 +32,11 @@ namespace cling {
   ///
   class LookupHelper {
   private:
-    clang::Parser* m_Parser; // doesn't own it.
+    llvm::OwningPtr<clang::Parser> m_Parser;
   public:
 
-    LookupHelper(clang::Parser* P): m_Parser(P) {}
+    LookupHelper(clang::Parser* P);
+    ~LookupHelper();
 
     ///\brief Lookup a type by name, starting from the global
     /// namespace.

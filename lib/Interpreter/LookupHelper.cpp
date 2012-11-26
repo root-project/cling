@@ -64,6 +64,11 @@ namespace cling {
     }
   };
 
+  // pin *tor here so that we can have clang::Parser defined and be able to call
+  // the dtor on the OwningPtr
+  LookupHelper::LookupHelper(clang::Parser* P): m_Parser(P) {}
+
+  LookupHelper::~LookupHelper() {}
 
   QualType LookupHelper::findType(llvm::StringRef typeName) const {
     //
