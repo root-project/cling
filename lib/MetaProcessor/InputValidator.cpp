@@ -14,7 +14,7 @@ namespace cling {
   InputValidator::ValidationResult
   InputValidator::validate(llvm::StringRef line, const LangOptions& LO) {
     if (!m_Input.empty())
-      m_Input.append("\n");
+      m_Input.append("\\n");
     else
       m_Input = "";
 
