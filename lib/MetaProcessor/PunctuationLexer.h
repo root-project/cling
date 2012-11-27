@@ -42,7 +42,7 @@ namespace cling {
     tok::TokenKind getKind() const { return kind; }
     unsigned getLength() const { return bufEnd - bufStart; }
     const char* getBufStart() const { return bufStart; }
-    bool isNot(tok::TokenKind K) const { return kind != (unsigned) K; }
+    bool isNot(tok::TokenKind K) const { return kind != K; }
 
 
     friend class PunctuationLexer;
