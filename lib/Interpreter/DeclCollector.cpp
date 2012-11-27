@@ -20,12 +20,17 @@ namespace cling {
   }
 
   bool DeclCollector::HandleTopLevelDecl(DeclGroupRef DGR) {
-    m_CurTransaction->appendUnique(DGR);
+    // ImportDecl is a special decl that triggers module loading in the front 
+    // end.   The issue is that HandleImplicitImportDecl now is
+    // bound/forwarded to HandleTopLevelDecl which soon won't be the case
+    // and thus we don't need to bother adding it now.
+    if (!(DGR.isSingleDecl() && isa<ImportDecl>(DGR.getSingleDecl())))
+      m_CurTransaction->appendUnique(DGR);
     return true;
   }
 
   void DeclCollector::HandleInterestingDecl(DeclGroupRef DGR) {
-    assert(0 && "Not implemented yet!");
+     HandleTopLevelDecl(DGR);
   }
 
   // Does more than we want:
