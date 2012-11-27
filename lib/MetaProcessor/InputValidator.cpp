@@ -6,58 +6,73 @@
 
 #include "InputValidator.h"
 
-#include "clang/Lex/Preprocessor.h"
+#include "PunctuationLexer.h"
 
-using namespace clang;
+//#include "clang/Lex/Preprocessor.h"
 
 namespace cling {
   InputValidator::ValidationResult
-  InputValidator::validate(llvm::StringRef line, const LangOptions& LO) {
-    if (!m_Input.empty())
-      m_Input.append("\\n");
+  InputValidator::validate(llvm::StringRef line) {
+    ValidationResult Res = kComplete;
+
+    // FIXME: Do it properly for the comments too
+    if (!line.startswith("//") 
+        && !line.startswith("/*") && !line.startswith("*/")) {
+      PunctuationLexer PL(line);
+      Token Tok;
+      do {
+        PL.LexPunctuator(Tok);
+        int kind = (int)Tok.getKind();
+
+        // If there is " or ' we don't need to look for balancing until we 
+        // enounter matching " or '
+        if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe)
+          if (m_ParenStack.empty())
+            m_ParenStack.push(kind);
+          else if (m_ParenStack.top() == kind)
+            m_ParenStack.pop();
+          else
+            continue;
+
+        // In case when we need closing brace.
+        if (kind >= (int)tok::l_square && kind <= (int)tok::r_brace) {
+          // The closing paren kind is open paren kind + 1 (i.e odd number)
+          if (kind % 2) {
+            // closing the right one?
+            if (m_ParenStack.empty()) {
+              Res = kMismatch;
+              break;
+            }
+            int prev = m_ParenStack.top();
+            if (prev != kind - 1) {
+              Res = kMismatch;
+              break;
+            }
+            m_ParenStack.pop();
+          } 
+          else
+            m_ParenStack.push(kind);
+        }
+      }
+      while (Tok.isNot(tok::eof));
+    }
+
+    if (!m_ParenStack.empty() && Res != kMismatch)
+      Res = kIncomplete;
+
+    if (!m_Input.empty()) {
+      if (!m_ParenStack.empty() && (m_ParenStack.top() == tok::quote 
+                                    || m_ParenStack.top() == tok::apostrophe))
+        m_Input.append("\\n");
+      else 
+        m_Input.append("\n");
+    }
     else
       m_Input = "";
 
     m_Input.append(line);
 
-
-    // Imballanced ' or " drives our lexer nuts.
-    llvm::StringRef fullInput(m_Input);
-    if (fullInput.count('\'') % 2 || fullInput.count('"') % 2) {
-      return kIncomplete;
-    }
-
-    llvm::OwningPtr<llvm::MemoryBuffer> MB;
-    MB.reset(llvm::MemoryBuffer::getMemBuffer(line));
-
-    Lexer RawLexer(SourceLocation(), LO, MB->getBufferStart(),
-                   MB->getBufferStart(), MB->getBufferEnd());
-    Token Tok;
-    do {
-      RawLexer.LexFromRawLexer(Tok);
-      int kind = (int)Tok.getKind();
-      if (kind >= (int)tok::l_square
-          && kind <= (int)tok::r_brace) {
-        kind -= (int)tok::l_square;
-        if (kind % 2) {
-          // closing the right one?
-          if (m_ParenStack.empty()) 
-            return kMismatch;
-          int prev = m_ParenStack.top();
-          if (prev != kind - 1)
-            return kMismatch;
-          m_ParenStack.pop();
-        } else {
-          m_ParenStack.push(kind);
-        }
-      }
-    }
-    while (Tok.isNot(tok::eof));
-
-    if (!m_ParenStack.empty())
-      return kIncomplete;
-
-    return kComplete;
+    return Res;
   }
 
   void InputValidator::reset() {

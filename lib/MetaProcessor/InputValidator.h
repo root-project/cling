@@ -7,6 +7,8 @@
 #ifndef CLING_INPUT_VALIDATOR_H
 #define CLING_INPUT_VALIDATOR_H
 
+#include "clang/Basic/TokenKinds.h"
+
 #include "llvm/ADT/StringRef.h"
 
 #include <stack>
@@ -22,6 +24,10 @@ namespace cling {
   ///
   class InputValidator {
   private:
+    enum {
+      kTick = clang::tok::r_brace + 1,
+      kQuote
+    };
 
     ///\brief The input being collected.
     ///
@@ -49,8 +55,7 @@ namespace cling {
     ///\param[in] LO - Langluage options to validate against.
     ///\returns Information about the outcome of the validation.
     ///
-    ValidationResult validate(llvm::StringRef line, 
-                              const clang::LangOptions& LO);
+    ValidationResult validate(llvm::StringRef line);
 
     ///\returns Reference to the collected input.
     ///
