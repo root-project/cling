@@ -21,6 +21,7 @@
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/ASTContext.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Support/PathV2.h"
 #include "clang/Lex/MacroInfo.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -35,60 +36,6 @@
 namespace cling {
 
 namespace {
-
-#ifdef _WINDOWS
-
-//This code is taken from TWinNTSystem (before I was calling gSystem->BaseName(name);)
-//______________________________________________________________________________
-const char *BaseName(const char *name)
-{
-   // Base name of a file name. Base name of /user/root is root.
-   // But the base name of '/' is '/'
-   //                      'c:\' is 'c:\'
-   if (name) {
-      int idx = 0;
-      const char *symbol=name;
-
-      // Skip leading blanks
-      while ( (*symbol == ' ' || *symbol == '\t') && *symbol) symbol++;
-
-      if (*symbol) {
-         if (std::isalpha(symbol[idx]) && symbol[idx+1] == ':') idx = 2;
-         if ( (symbol[idx] == '/'  ||  symbol[idx] == '\\')  &&  symbol[idx+1] == '\0') {
-            return symbol;
-         }
-      } else {
-         return 0;
-      }
-      char *cp;
-      char *bslash = (char *)std::strrchr(&symbol[idx],'\\');
-      char *rslash = (char *)std::strrchr(&symbol[idx],'/');
-      if (cp = std::max(rslash, bslash)) {//In original, it was max (macro). Looks like a shit anyway.
-         return ++cp;
-      }
-      return &symbol[idx];
-   }
-   return 0;
-}
-
-#else
-
-//And this version is from TSystem.
-//______________________________________________________________________________
-const char *BaseName(const char *name)
-{
-   if (name) {
-      if (name[0] == '/' && name[1] == '\0')
-         return name;
-      char *cp;
-      if ((cp = (char*)strrchr(name, '/')))
-         return ++cp;
-      return name;
-   }
-   return 0;
-}
-
-#endif
 
 typedef clang::DeclContext::decl_iterator decl_iterator;
 typedef clang::CXXRecordDecl::base_class_const_iterator base_decl_iterator;
@@ -150,14 +97,11 @@ void AppendClassDeclLocation(const clang::CompilerInstance *compiler, const clan
       const clang::SourceManager &sourceManager = compiler->getSourceManager();
       clang::PresumedLoc loc(sourceManager.getPresumedLoc(classDecl->getLocation()));
       if (loc.isValid()) {
-         const char *baseName = BaseName(loc.getFilename());
-         if (!baseName)
-            baseName = "";
-
+         const std::string baseName(llvm::sys::path::filename(loc.getFilename()).str());
          if (!verbose)
-            frss<<llvm::format("%-25s%5d", baseName, int(loc.getLine()));
+            frss<<llvm::format("%-25s%5d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
          else
-            frss<<llvm::format("FILE: %s LINE: %d", baseName, int(loc.getLine()));
+            frss<<llvm::format("FILE: %s LINE: %d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
       } else
          frss<<llvm::format("%-30s", emptyName);
    } else
@@ -193,10 +137,8 @@ void AppendDeclLocation(const clang::CompilerInstance *compiler, const clang::De
       const clang::SourceManager &sourceManager = compiler->getSourceManager();
       clang::PresumedLoc loc(sourceManager.getPresumedLoc(decl->getLocation()));
       if (loc.isValid()) {  //The format is from CINT.
-         const char *baseName = BaseName(loc.getFilename());
-         if (!baseName)
-            baseName = "";
-         frss<<llvm::format("%-15s%4d", baseName, int(loc.getLine()));
+         const std::string baseName(llvm::sys::path::filename(loc.getFilename()).str());
+         frss<<llvm::format("%-15s%4d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
       } else
          frss<<llvm::format("%-15s     ", unknownLocation);
    } else {
@@ -223,10 +165,8 @@ void AppendMacroLocation(const clang::CompilerInstance *compiler, const clang::M
       const clang::SourceManager &sourceManager = compiler->getSourceManager();
       clang::PresumedLoc loc(sourceManager.getPresumedLoc(macroInfo->getDefinitionLoc()));
       if (loc.isValid()) {  //The format is from CINT.
-         const char *baseName = BaseName(loc.getFilename());
-         if (!baseName)
-            baseName = "";
-         frss<<llvm::format("%-15s%4d", baseName, int(loc.getLine()));
+         const std::string baseName(llvm::sys::path::filename(loc.getFilename()).str());
+         frss<<llvm::format("%-15s%4d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
       } else
          frss<<llvm::format("%-15s     ", unknownLocation);
    } else
