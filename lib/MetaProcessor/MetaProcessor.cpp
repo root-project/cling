@@ -17,7 +17,6 @@
 
 #include "llvm/Support/Path.h"
 
-#include <iostream>
 #include <fstream>
 #include <cstdlib>
 #include <cctype>
@@ -97,7 +96,7 @@ namespace cling {
       Result.startToken();
       Result.bufStart = curPos;
       unsigned char C = *curPos;
-      while ((C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z'))
+      while ((C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z') || C == '_')
         C = *++curPos;
       Result.bufEnd = curPos;
       if (Result.getLength() > 0) { 
@@ -422,6 +421,7 @@ namespace cling {
       if (Tok.getLength() > 1)
          varName.assign(Tok.getBufStart() + 1, Tok.getBufEnd());
       else {
+         CmdLexer.LexBlankSpace();
          if (CmdLexer.LexIdent(Tok))
             varName.assign(Tok.getBufStart(), Tok.getBufEnd());
       }
