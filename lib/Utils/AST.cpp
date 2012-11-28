@@ -308,19 +308,6 @@ namespace utils {
    where the return statement are replaced appropriately by
    break statement and/or loop termination ... good luck with that.
 */
-#ifdef G__IMPLEMENTATION2012 
-    while (isa<TypedefType>(QT.getTypePtr())) {
-      if (ShouldKeepTypedef(QT, TypesToSkip)) {
-         if (!fullyQualify) {
-           return QT;
-         }
-         // We might have stripped the namespace/scope part,
-         // so we must go on.
-         break;
-      }
-      QT = QT.getSingleStepDesugaredType(Ctx);
-    }
-#endif
 
     // If we have a reference or pointer we still need to
     // desugar what they point to.
