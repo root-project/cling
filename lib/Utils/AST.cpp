@@ -8,7 +8,6 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclarationName.h"
-#include "clang/AST/Type.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Lookup.h"
 
@@ -208,7 +207,7 @@ namespace utils {
                                                 QualType QT, 
                                const llvm::SmallSet<const Type*, 4>& TypesToSkip,
                                                 bool fullyQualify /*=true*/){
-    // If there are no constraints - use the standard desugaring.
+    // If there are no constains - use the standard desugaring.
     if (!TypesToSkip.size() && !fullyQualify)
       return QT.getDesugaredType(Ctx);
 
@@ -274,40 +273,16 @@ namespace utils {
       }
     }
 
-    if (isa<TypedefType>(QT.getTypePtr()) && ShouldKeepTypedef(QT, TypesToSkip)) {
-      if (!fullyQualify) {
+    while(isa<TypedefType>(QT.getTypePtr())) {
+      if (!ShouldKeepTypedef(QT,TypesToSkip))
+        QT = QT.getSingleStepDesugaredType(Ctx);
+      else if (fullyQualify) {
+        // We might have stripped the namespace/scope part,
+        // se we must go on if fullyQualify is true.
+        break;
+      } else
         return QT;
-      }
-    } else {
-      // Do we really need this complexity? ... well check out clang::TypeOfType ... and
-      // clang::ParenType ... ok you're back ... enough said.
-      clang::QualType dsQT = QT.getSingleStepDesugaredType(Ctx);
-      while (dsQT != QT) {
-        QT = dsQT;
-        if (isa<TypedefType>(QT.getTypePtr()) && ShouldKeepTypedef(QT, TypesToSkip)) {
-          if (!fullyQualify) {
-            return QT;
-          }
-          break;
-        }
-        dsQT = QT.getSingleStepDesugaredType(Ctx);
-      }
     }
-/* The alternative to the previous dsQT != QT in the previous loop is:
-
-      #define ABSTRACT_TYPE(Class, Parent)
-      #define TYPE(Class, Parent) \
-        case Type::Class: { \
-          const Class##Type *ty = cast<Class##Type>(this); \
-          if (!ty->isSugared()) return QualType(ty, 0); \
-          return ty->desugar(); \
-        }
-      #include "clang/AST/TypeNodes.def"
-        }
-
-   where the return statement are replaced appropriately by
-   break statement and/or loop termination ... good luck with that.
-*/
 
     // If we have a reference or pointer we still need to
     // desugar what they point to.
