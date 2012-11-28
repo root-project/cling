@@ -304,16 +304,9 @@ void AppendClassSize(const clang::CompilerInstance *compiler, const clang::Recor
    assert(compiler != 0 && "AppendClassSize, 'compiler' parameter is null");
    assert(decl != 0 && "AppendClassSize, 'decl' parameter is null");
    
-   //TODO: that's a stupid workaround for a clang's crash with some classes
-   //(something strange like "class std::vector<_Bool, type-parameter-0-0>").
-   //I do not know, what's the right way to fix.
-   if (const clang::CXXRecordDecl * const classDecl = llvm::dyn_cast<clang::CXXRecordDecl>(decl)) {
-      for (base_decl_iterator base = classDecl->bases_begin(); base != classDecl->bases_end(); ++base) {
-         if (!base->getType()->getAs<clang::RecordType>()) {
-            textLine += "SIZE: (NA, ICE)";
-            return;
-         }
-      }
+   if (llvm::dyn_cast<clang::ClassTemplatePartialSpecializationDecl>(decl)) {
+      textLine += "SIZE: (NA)";
+      return;
    }
 
    const clang::ASTRecordLayout &layout = compiler->getASTContext().getASTRecordLayout(decl);
