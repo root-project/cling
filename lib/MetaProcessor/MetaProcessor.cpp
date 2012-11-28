@@ -5,8 +5,8 @@
 //------------------------------------------------------------------------------
 
 #include "cling/MetaProcessor/MetaProcessor.h"
-#include "cling/MetaProcessor/Display.h"
 
+#include "Display.h"
 #include "InputValidator.h"
 #include "cling/Interpreter/Interpreter.h"
 
