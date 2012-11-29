@@ -42,17 +42,17 @@ typedef CXXRecordDecl::base_class_const_iterator base_decl_iterator;
 
 //______________________________________________________________________________
 template<class Decl>
-bool HasUDT(const Decl *decl)
+bool HasUDT(const Decl* decl)
 {
   //Check the type of decl, if it's a CXXRecordDecl or array with base element type of CXXRecordDecl.
   assert(decl != 0 && "HasUDT, 'decl' parameter is null");
 
-  if (const RecordType * const recordType = decl->getType()->template getAs<RecordType>())
+  if (const RecordType* const recordType = decl->getType()->template getAs<RecordType>())
     return cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition());
 
-  if (const ArrayType * const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
-    if (const Type * const elType = arrayType->getBaseElementTypeUnsafe()) {
-      if (const RecordType * const recordType = elType->getAs<RecordType>())
+  if (const ArrayType* const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
+    if (const Type* const elType = arrayType->getBaseElementTypeUnsafe()) {
+      if (const RecordType* const recordType = elType->getAs<RecordType>())
         return cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition());
     }
   }
@@ -61,19 +61,19 @@ bool HasUDT(const Decl *decl)
 }
 
 //______________________________________________________________________________
-int NumberOfElements(const ArrayType *type)
+int NumberOfElements(const ArrayType* type)
 {
   assert(type != 0 && "NumberOfElements, 'type' parameter is null");
   
-  if (const ConstantArrayType * const arrayType = dyn_cast<ConstantArrayType>(type)) {
+  if (const ConstantArrayType* const arrayType = dyn_cast<ConstantArrayType>(type)) {
     //We can calculate only the size of constant size array.
     const int nElements = int(arrayType->getSize().roundToDouble());//very convenient, many thanks for this shitty API.
     if (nElements <= 0)
       return 0;
     
-    if (const Type *elementType = arrayType->getElementType().getTypePtr()) {
-      if (const ArrayType *subArrayType = elementType->getAsArrayTypeUnsafe())
-        return nElements * NumberOfElements(subArrayType);
+    if (const Type* elementType = arrayType->getElementType().getTypePtr()) {
+      if (const ArrayType* subArrayType = elementType->getAsArrayTypeUnsafe())
+        return nElements* NumberOfElements(subArrayType);
     }
 
     return nElements;
@@ -82,14 +82,14 @@ int NumberOfElements(const ArrayType *type)
 }
 
 //______________________________________________________________________________
-void AppendClassDeclLocation(const CompilerInstance *compiler, const CXXRecordDecl *classDecl, std::string &textLine, bool verbose)
+void AppendClassDeclLocation(const CompilerInstance* compiler, const CXXRecordDecl* classDecl, std::string& textLine, bool verbose)
 {
   //Location has a fixed format - from G__display_class.
 
   assert(compiler != 0 && "AppendClassDeclLocation, 'compiler' parameter is null");
   assert(classDecl != 0 && "AppendClassDeclLocation, 'classDecl' parameter is null");
 
-  const char * const emptyName = "";
+  const char* const emptyName = "";
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
   
@@ -109,7 +109,7 @@ void AppendClassDeclLocation(const CompilerInstance *compiler, const CXXRecordDe
 }
 
 //______________________________________________________________________________
-void AppendMemberFunctionLocation(const CompilerInstance *compiler, const Decl *decl, std::string &textLine)
+void AppendMemberFunctionLocation(const CompilerInstance* compiler, const Decl* decl, std::string& textLine)
 {
   //Location has a fixed format - from G__display_class.
 
@@ -119,22 +119,22 @@ void AppendMemberFunctionLocation(const CompilerInstance *compiler, const Decl *
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
   //Location can be actually somewhere in a compiled code.
-  const char * const unknownLocation = "(compiled)";
+  const char* const unknownLocation = "(compiled)";
   frss<<llvm::format("%-15s(NA):(NA) 0", unknownLocation);
 }
 
 //______________________________________________________________________________
-void AppendDeclLocation(const CompilerInstance *compiler, const Decl *decl, std::string &textLine)
+void AppendDeclLocation(const CompilerInstance* compiler, const Decl* decl, std::string& textLine)
 {
   assert(compiler != 0 && "AppendDeclLocation, 'compiler' parameter is null");
   assert(decl != 0 && "AppendDeclLocation, 'decl' parameter is null");
 
-  const char * const unknownLocation = "compiled";
+  const char* const unknownLocation = "compiled";
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
 
   if (compiler->hasSourceManager()) {
-    const SourceManager &sourceManager = compiler->getSourceManager();
+    const SourceManager& sourceManager = compiler->getSourceManager();
     PresumedLoc loc(sourceManager.getPresumedLoc(decl->getLocation()));
     if (loc.isValid()) {  //The format is from CINT.
       const std::string baseName(llvm::sys::path::filename(loc.getFilename()).str());
@@ -142,13 +142,13 @@ void AppendDeclLocation(const CompilerInstance *compiler, const Decl *decl, std:
     } else
       frss<<llvm::format("%-15s    ", unknownLocation);
   } else {
-    const char * const location = "compiled";
+    const char* const location = "compiled";
     frss<<llvm::format("%-15s    ", unknownLocation);
   }
 }
 
 //______________________________________________________________________________
-void AppendMacroLocation(const CompilerInstance *compiler, const MacroInfo *macroInfo, std::string &textLine)
+void AppendMacroLocation(const CompilerInstance* compiler, const MacroInfo* macroInfo, std::string& textLine)
 {
   assert(compiler != 0 && "AppendMacroLocation, 'compiler' parameter is null");
   assert(macroInfo != 0 && "AppendMacroLocation, 'macroInfo' parameter is null");
@@ -157,7 +157,7 @@ void AppendMacroLocation(const CompilerInstance *compiler, const MacroInfo *macr
   //macro can be defined many times, what do we have in a TranslationUnit in this case?
   //At the moment this function is similar to AppendDeclLocation.
   
-  const char * const unknownLocation = "(unknown)";
+  const char* const unknownLocation = "(unknown)";
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
   
@@ -174,7 +174,7 @@ void AppendMacroLocation(const CompilerInstance *compiler, const MacroInfo *macr
 }
 
 //______________________________________________________________________________
-void AppendClassKeyword(const CXXRecordDecl *classDecl, std::string &name)
+void AppendClassKeyword(const CXXRecordDecl* classDecl, std::string& name)
 {
   assert(classDecl != 0 && "AppendClassKeyword, 'classDecl' parameter is null");
 
@@ -183,7 +183,7 @@ void AppendClassKeyword(const CXXRecordDecl *classDecl, std::string &name)
 }
 
 //______________________________________________________________________________
-void AppendClassName(const CXXRecordDecl *classDecl, std::string &name)
+void AppendClassName(const CXXRecordDecl* classDecl, std::string& name)
 {
   assert(classDecl != 0 && "AppendClassName, 'classDecl' parameter is null");
 
@@ -196,7 +196,7 @@ void AppendClassName(const CXXRecordDecl *classDecl, std::string &name)
 }
 
 //______________________________________________________________________________
-void AppendMemberAccessSpecifier(const Decl *memberDecl, std::string &name)
+void AppendMemberAccessSpecifier(const Decl* memberDecl, std::string& name)
 {
   assert(memberDecl != 0 && "AppendMemberAccessSpecifier, 'memberDecl' parameter is 0");
   
@@ -214,15 +214,15 @@ void AppendMemberAccessSpecifier(const Decl *memberDecl, std::string &name)
 }
 
 //______________________________________________________________________________
-void AppendConstructorSignature(const CXXConstructorDecl *ctorDecl, std::string &name)
+void AppendConstructorSignature(const CXXConstructorDecl* ctorDecl, std::string& name)
 {
   assert(ctorDecl != 0 && "AppendConstructorSignature, 'ctorDecl' parameter is null");
 
   const QualType type = ctorDecl->getType();
   assert(isa<FunctionType>(type) == true && "AppendConstructorSignature, ctorDecl->getType is not a FunctionType");
 
-  const FunctionType * const aft = type->getAs<FunctionType>();
-  const FunctionProtoType * const ft = ctorDecl->hasWrittenPrototype() ? dyn_cast<FunctionProtoType>(aft) : 0;
+  const FunctionType* const aft = type->getAs<FunctionType>();
+  const FunctionProtoType* const ft = ctorDecl->hasWrittenPrototype() ? dyn_cast<FunctionProtoType>(aft) : 0;
 
   if (ctorDecl->isExplicit())
     name += "explicit ";
@@ -256,7 +256,7 @@ void AppendConstructorSignature(const CXXConstructorDecl *ctorDecl, std::string 
 }
 
 //______________________________________________________________________________
-void AppendMemberFunctionSignature(const Decl *methodDecl, std::string &name)
+void AppendMemberFunctionSignature(const Decl* methodDecl, std::string& name)
 {
   assert(methodDecl != 0 && "AppendMemberFunctionSignature, 'methodDecl' parameter is null");
   assert(methodDecl->getKind() != Decl::CXXConstructor && "AppendMemberFunctionSignature, 'methodDecl' parameter is a ctor declaration");
@@ -271,7 +271,7 @@ void AppendMemberFunctionSignature(const Decl *methodDecl, std::string &name)
 }
 
 //______________________________________________________________________________
-void AppendObjectDeclaration(const Decl *objDecl, const PrintingPolicy &policy, bool printInstantiation, std::string &name)
+void AppendObjectDeclaration(const Decl* objDecl, const PrintingPolicy& policy, bool printInstantiation, std::string& name)
 {
   assert(objDecl != 0 && "AppendObjectDeclaration, 'objDecl' parameter is null");
 
@@ -280,7 +280,7 @@ void AppendObjectDeclaration(const Decl *objDecl, const PrintingPolicy &policy, 
 }
 
 //______________________________________________________________________________
-void AppendBaseClassSpecifiers(base_decl_iterator base, std::string &textLine)
+void AppendBaseClassSpecifiers(base_decl_iterator base, std::string& textLine)
 {
   if (base->isVirtual())
     textLine += "virtual";
@@ -299,7 +299,7 @@ void AppendBaseClassSpecifiers(base_decl_iterator base, std::string &textLine)
 }
 
 //______________________________________________________________________________
-void AppendClassSize(const CompilerInstance *compiler, const RecordDecl *decl, std::string &textLine)
+void AppendClassSize(const CompilerInstance* compiler, const RecordDecl* decl, std::string& textLine)
 {
   assert(compiler != 0 && "AppendClassSize, 'compiler' parameter is null");
   assert(decl != 0 && "AppendClassSize, 'decl' parameter is null");
@@ -309,7 +309,7 @@ void AppendClassSize(const CompilerInstance *compiler, const RecordDecl *decl, s
     return;
   }
 
-  const ASTRecordLayout &layout = compiler->getASTContext().getASTRecordLayout(decl);
+  const ASTRecordLayout& layout = compiler->getASTContext().getASTRecordLayout(decl);
 
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
@@ -318,7 +318,7 @@ void AppendClassSize(const CompilerInstance *compiler, const RecordDecl *decl, s
 
 //______________________________________________________________________________
 template<class Decl>
-void AppendUDTSize(const CompilerInstance *compiler, const Decl *decl, std::string &textLine)
+void AppendUDTSize(const CompilerInstance* compiler, const Decl* decl, std::string& textLine)
 {
   assert(compiler != 0 && "AppendUDTSize, 'compiler' parameter is null");
   assert(decl != 0 && "AppendUDTSize, 'decl' parameter is null");
@@ -329,15 +329,15 @@ void AppendUDTSize(const CompilerInstance *compiler, const Decl *decl, std::stri
   llvm::raw_string_ostream rss(formatted);
   llvm::formatted_raw_ostream frss(rss);
   
-  if (const RecordType * const recordType = decl->getType()->template getAs<RecordType>()) {
-    if (const RecordDecl * const recordDecl = cast_or_null<RecordDecl>(recordType->getDecl()->getDefinition())) {
-      const ASTRecordLayout &layout = compiler->getASTContext().getASTRecordLayout(recordDecl);
+  if (const RecordType* const recordType = decl->getType()->template getAs<RecordType>()) {
+    if (const RecordDecl* const recordDecl = cast_or_null<RecordDecl>(recordType->getDecl()->getDefinition())) {
+      const ASTRecordLayout& layout = compiler->getASTContext().getASTRecordLayout(recordDecl);
       frss<<llvm::format("%d", int(layout.getSize().getQuantity()));
     }
-  } else if (const ArrayType * const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
-    if (const Type * const elementType = arrayType->getBaseElementTypeUnsafe()) {
-      if (const CXXRecordDecl * const recordDecl = elementType->getAsCXXRecordDecl()) {
-        const ASTRecordLayout &layout = compiler->getASTContext().getASTRecordLayout(recordDecl);
+  } else if (const ArrayType* const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
+    if (const Type* const elementType = arrayType->getBaseElementTypeUnsafe()) {
+      if (const CXXRecordDecl* const recordDecl = elementType->getAsCXXRecordDecl()) {
+        const ASTRecordLayout& layout = compiler->getASTContext().getASTRecordLayout(recordDecl);
         const int baseElementSize = int(layout.getSize().getQuantity());
         const int nElements = NumberOfElements(arrayType);
         if (nElements > 0)
@@ -352,14 +352,14 @@ void AppendUDTSize(const CompilerInstance *compiler, const Decl *decl, std::stri
 }
 
 //______________________________________________________________________________
-void AppendBaseClassOffset(const CompilerInstance *compiler, const CXXRecordDecl *completeClass,
-                  const CXXRecordDecl *baseClass, bool isVirtual, std::string &textLine)
+void AppendBaseClassOffset(const CompilerInstance* compiler, const CXXRecordDecl* completeClass,
+                           const CXXRecordDecl* baseClass, bool isVirtual, std::string& textLine)
 {
   assert(compiler != 0 && "AppendBaseClassOffset, 'compiler' parameter is null");
   assert(completeClass != 0 && "AppendBaseClassOffset, 'completeClass' parameter is null");
   assert(baseClass != 0 && "AppendBaseClassOffset, 'baseClass' parameter is null");
 
-  const ASTRecordLayout &layout = compiler->getASTContext().getASTRecordLayout(completeClass);
+  const ASTRecordLayout& layout = compiler->getASTContext().getASTRecordLayout(completeClass);
 
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
@@ -371,13 +371,13 @@ void AppendBaseClassOffset(const CompilerInstance *compiler, const CXXRecordDecl
 }
 
 //______________________________________________________________________________
-void AppendDataMemberOffset(const CompilerInstance *compiler, const CXXRecordDecl *classDecl, const FieldDecl *fieldDecl, std::string &textLine)
+void AppendDataMemberOffset(const CompilerInstance* compiler, const CXXRecordDecl* classDecl, const FieldDecl* fieldDecl, std::string& textLine)
 {
   assert(compiler != 0 && "AppendDataMemberOffset, 'compiler' parameter is null");
   assert(classDecl != 0 && "AppendDataMemberOffset, 'classDecl' parameter is null");
   assert(fieldDecl != 0 && "AppendDataMemberOffset, 'fieldDecl' parameter is null");
 
-  const ASTRecordLayout &layout = compiler->getASTContext().getASTRecordLayout(classDecl);
+  const ASTRecordLayout& layout = compiler->getASTContext().getASTRecordLayout(classDecl);
   
   std::string formatted;
   //
@@ -391,22 +391,22 @@ void AppendDataMemberOffset(const CompilerInstance *compiler, const CXXRecordDec
 //but this can change later.
 class FILEPrintHelper {
 public:
-  FILEPrintHelper(llvm::raw_ostream &stream);
+  FILEPrintHelper(llvm::raw_ostream& stream);
 
-  void Print(const char *msg)const;
+  void Print(const char* msg)const;
 
 private:
-  llvm::raw_ostream &fStream;
+  llvm::raw_ostream& fStream;
 };
 
 //______________________________________________________________________________
-FILEPrintHelper::FILEPrintHelper(llvm::raw_ostream &stream)
+FILEPrintHelper::FILEPrintHelper(llvm::raw_ostream& stream)
              : fStream(stream)
 {
 }
 
 //______________________________________________________________________________
-void FILEPrintHelper::Print(const char *msg)const
+void FILEPrintHelper::Print(const char* msg)const
 {
   assert(msg != 0 && "Print, 'msg' parameter is null");
 
@@ -425,10 +425,10 @@ private:
     kMemberTypeShift = 3
   };
 public:
-  ClassPrinter(llvm::raw_ostream &stream, const class cling::Interpreter *interpreter);
+  ClassPrinter(llvm::raw_ostream& stream, const class cling::Interpreter* interpreter);
 
   void DisplayAllClasses()const;
-  void DisplayClass(const std::string &className)const;
+  void DisplayClass(const std::string& className)const;
 
   void SetVerbose(bool verbose);
 private:
@@ -445,42 +445,42 @@ private:
   void ProcessClassDecl(decl_iterator decl)const;
   
   template<class Decl>
-  void ProcessTypeOfMember(const Decl *decl, unsigned nSpaces)const
+  void ProcessTypeOfMember(const Decl* decl, unsigned nSpaces)const
   {
     //Extract the type of declaration and process it.
     assert(decl != 0 && "ProcessTypeOfMember, 'decl' parameter is null");
 
-    if (const RecordType * const recordType = decl->getType()->template getAs<RecordType>()) {
-      if (const CXXRecordDecl * const classDecl = llvm::cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition()))
+    if (const RecordType* const recordType = decl->getType()->template getAs<RecordType>()) {
+      if (const CXXRecordDecl* const classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition()))
         DisplayDataMembers(classDecl, nSpaces);
-    } else if (const ArrayType * const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
-      if (const Type * const elType = arrayType->getBaseElementTypeUnsafe()) {
-        if (const RecordType * const recordType = elType->getAs<RecordType>()) {
-          if (const CXXRecordDecl *classDecl = llvm::cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition()))
+    } else if (const ArrayType* const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
+      if (const Type* const elType = arrayType->getBaseElementTypeUnsafe()) {
+        if (const RecordType* const recordType = elType->getAs<RecordType>()) {
+          if (const CXXRecordDecl* classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition()))
             DisplayDataMembers(classDecl, nSpaces);
         }
       }
     }
   }
 
-  void DisplayClassDecl(const CXXRecordDecl *classDecl)const;
-  void DisplayBasesAsList(const CXXRecordDecl *classDecl)const;
-  void DisplayBasesAsTree(const CXXRecordDecl *classDecl, unsigned nSpaces)const;
-  void DisplayMemberFunctions(const CXXRecordDecl *classDecl)const;
-  void DisplayDataMembers(const CXXRecordDecl *classDecl, unsigned nSpaces)const;
+  void DisplayClassDecl(const CXXRecordDecl* classDecl)const;
+  void DisplayBasesAsList(const CXXRecordDecl* classDecl)const;
+  void DisplayBasesAsTree(const CXXRecordDecl* classDecl, unsigned nSpaces)const;
+  void DisplayMemberFunctions(const CXXRecordDecl* classDecl)const;
+  void DisplayDataMembers(const CXXRecordDecl* classDecl, unsigned nSpaces)const;
 
   FILEPrintHelper fOut;
-  const cling::Interpreter *fInterpreter;
+  const cling::Interpreter* fInterpreter;
   bool fVerbose;
 
-  mutable std::set<const Decl *> fSeenDecls;
+  mutable std::set<const Decl*> fSeenDecls;
 };
 
 //______________________________________________________________________________
-ClassPrinter::ClassPrinter(llvm::raw_ostream &stream, const cling::Interpreter *interpreter)
+ClassPrinter::ClassPrinter(llvm::raw_ostream& stream, const cling::Interpreter* interpreter)
            : fOut(stream),
-            fInterpreter(interpreter),
-            fVerbose(false)
+             fInterpreter(interpreter),
+             fVerbose(false)
 {
   assert(interpreter != 0 && "ClassPrinter, 'compiler' parameter is null");
 }
@@ -492,10 +492,10 @@ void ClassPrinter::DisplayAllClasses()const
   //Just in case asserts were deleted from ctor:
   assert(fInterpreter != 0 && "DisplayAllClasses, fCompiler is null");
 
-  const CompilerInstance * const compiler = fInterpreter->getCI();
+  const CompilerInstance* const compiler = fInterpreter->getCI();
   assert(compiler != 0 && "DisplayAllClasses, compiler instance is null");
 
-  const TranslationUnitDecl * const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
+  const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayAllClasses, translation unit is empty");
 
   fSeenDecls.clear();
@@ -505,7 +505,7 @@ void ClassPrinter::DisplayAllClasses()const
 }
 
 //______________________________________________________________________________
-void ClassPrinter::DisplayClass(const std::string &className)const
+void ClassPrinter::DisplayClass(const std::string& className)const
 {
   //Just in case asserts were deleted from ctor:
   assert(fInterpreter != 0 && "DisplayClass, fCompiler is null");
@@ -513,17 +513,11 @@ void ClassPrinter::DisplayClass(const std::string &className)const
   fSeenDecls.clear();
 
   const cling::LookupHelper &lookupHelper = fInterpreter->getLookupHelper();
-  if (const Decl * const decl = lookupHelper.findScope(className)) {
-    if (const CXXRecordDecl * const classDecl = dyn_cast<CXXRecordDecl>(decl)) {
+  if (const Decl* const decl = lookupHelper.findScope(className)) {
+    if (const CXXRecordDecl* const classDecl = dyn_cast<CXXRecordDecl>(decl)) {
       if (classDecl->hasDefinition())
         DisplayClassDecl(classDecl);
-    } else {
-      //if (gDebug > 0)
-      //  ::Info("ClassPrinter::DisplayClass", "entity %s is not a class/struct/union", className.c_str());
     }
-  } else {
-    //if (gDebug > 0)
-    //  ::Info("ClassPrinter::DisplayClass", "cling class not found, name: %s\n", className.c_str());
   }
 }
 
@@ -580,7 +574,7 @@ void ClassPrinter::ProcessBlockDecl(decl_iterator decl)const
 
   //Block can contain nested (arbitrary deep) class declarations.
   //Though, I'm not sure if have block in our code.
-  const BlockDecl * const blockDecl = dyn_cast<BlockDecl>(*decl);
+  const BlockDecl* const blockDecl = dyn_cast<BlockDecl>(*decl);
   assert(blockDecl != 0 && "ProcessBlockDecl, internal error - decl is not a BlockDecl");
 
   for (decl_iterator it = blockDecl->decls_begin(); it != blockDecl->decls_end(); ++it)
@@ -595,7 +589,7 @@ void ClassPrinter::ProcessFunctionDecl(decl_iterator decl)const
   assert(*decl != 0 && "ProcessFunctionDecl, 'decl' parameter is not a valid iterator");
 
   //Function can contain class declarations, we have to check this.
-  const FunctionDecl * const functionDecl = dyn_cast<FunctionDecl>(*decl);
+  const FunctionDecl* const functionDecl = dyn_cast<FunctionDecl>(*decl);
   assert(functionDecl != 0 && "ProcessFunctionDecl, internal error - decl is not a FunctionDecl");
 
   for (decl_iterator it = functionDecl->decls_begin(); it != functionDecl->decls_end(); ++it)
@@ -611,7 +605,7 @@ void ClassPrinter::ProcessNamespaceDecl(decl_iterator decl)const
   assert(decl->getKind() == Decl::Namespace && "ProcessNamespaceDecl, decl->getKind() != Namespace");
 
   //Namespace can contain nested (arbitrary deep) class declarations.
-  const NamespaceDecl * const namespaceDecl = dyn_cast<NamespaceDecl>(*decl);
+  const NamespaceDecl* const namespaceDecl = dyn_cast<NamespaceDecl>(*decl);
   assert(namespaceDecl != 0 && "ProcessNamespaceDecl, 'decl' parameter is not a NamespaceDecl");
 
   for (decl_iterator it = namespaceDecl->decls_begin(); it != namespaceDecl->decls_end(); ++it)
@@ -625,7 +619,7 @@ void ClassPrinter::ProcessLinkageSpecDecl(decl_iterator decl)const
   assert(fInterpreter != 0 && "ProcessLinkageSpecDecl, fInterpreter is null");
   assert(*decl != 0 && "ProcessLinkageSpecDecl, 'decl' parameter is not a valid iterator");
 
-  const LinkageSpecDecl * const linkageSpec = dyn_cast<LinkageSpecDecl>(*decl);
+  const LinkageSpecDecl* const linkageSpec = dyn_cast<LinkageSpecDecl>(*decl);
   assert(linkageSpec != 0 && "ProcessLinkageSpecDecl, internal error - decl is not a LinkageSpecDecl");
 
   for (decl_iterator it = linkageSpec->decls_begin(); it != linkageSpec->decls_end(); ++it)
@@ -638,7 +632,7 @@ void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
   assert(fInterpreter != 0 && "ProcessClassDecl, fInterpreter is null");
   assert(*decl != 0 && "ProcessClassDecl, 'decl' parameter is not a valid iterator");
 
-  const CXXRecordDecl * const classDecl = dyn_cast<CXXRecordDecl>(*decl);
+  const CXXRecordDecl* const classDecl = dyn_cast<CXXRecordDecl>(*decl);
   assert(classDecl != 0 && "ProcessClassDecl, internal error, declaration is not a CXXRecordDecl");
 
   if (!classDecl->hasDefinition())
@@ -652,7 +646,7 @@ void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
 }
 
 //______________________________________________________________________________
-void ClassPrinter::DisplayClassDecl(const CXXRecordDecl *classDecl)const
+void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
 {
   assert(classDecl != 0 && "DisplayClassDecl, 'classDecl' parameter is null");
   assert(fInterpreter != 0 && "DisplayClassDecl, fInterpreter is null");
@@ -714,7 +708,7 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl *classDecl)const
 }
 
 //______________________________________________________________________________
-void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl *classDecl)const
+void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl* classDecl)const
 {
   assert(fInterpreter != 0 && "DisplayBasesAsList, fInterpreter is null");
   assert(classDecl != 0 && "DisplayBasesAsList, 'classDecl' parameter is 0");
@@ -727,9 +721,9 @@ void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl *classDecl)const
     if (baseIt != classDecl->bases_begin())
       bases += ", ";
 
-    const RecordType * const type = baseIt->getType()->getAs<RecordType>();
+    const RecordType* const type = baseIt->getType()->getAs<RecordType>();
     if (type) {
-      const CXXRecordDecl * const baseDecl = cast<CXXRecordDecl>(type->getDecl()->getDefinition());
+      const CXXRecordDecl* const baseDecl = cast<CXXRecordDecl>(type->getDecl()->getDefinition());
       if (baseDecl) {
         AppendBaseClassSpecifiers(baseIt, bases);
         bases += ' ';
@@ -745,7 +739,7 @@ void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl *classDecl)const
 }
 
 //______________________________________________________________________________
-void ClassPrinter::DisplayBasesAsTree(const CXXRecordDecl *classDecl, unsigned nSpaces)const
+void ClassPrinter::DisplayBasesAsTree(const CXXRecordDecl* classDecl, unsigned nSpaces)const
 {
   assert(classDecl != 0 && "DisplayBasesAsTree, 'classDecl' parameter is null");
   assert(classDecl->hasDefinition() == true && "DisplayBasesAsTree, 'classDecl' parameter points to an invalid declaration");
@@ -756,9 +750,9 @@ void ClassPrinter::DisplayBasesAsTree(const CXXRecordDecl *classDecl, unsigned n
   std::string textLine;
   for (base_decl_iterator baseIt = classDecl->bases_begin(); baseIt != classDecl->bases_end(); ++baseIt) {
     textLine.assign(nSpaces, ' ');
-    const RecordType * const type = baseIt->getType()->getAs<RecordType>();
+    const RecordType* const type = baseIt->getType()->getAs<RecordType>();
     if (type) {
-      const CXXRecordDecl * const baseDecl = cast<CXXRecordDecl>(type->getDecl()->getDefinition());
+      const CXXRecordDecl* const baseDecl = cast<CXXRecordDecl>(type->getDecl()->getDefinition());
       if (baseDecl) {
         AppendBaseClassOffset(fInterpreter->getCI(), classDecl, baseDecl, baseIt->isVirtual(), textLine);
         textLine += ' ';
@@ -781,7 +775,7 @@ void ClassPrinter::DisplayBasesAsTree(const CXXRecordDecl *classDecl, unsigned n
 }
 
 //______________________________________________________________________________
-void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl *classDecl)const
+void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl* classDecl)const
 {
   assert(classDecl != 0 && "DisplayMemberFunctions, 'classDecl' parameter is null");
 
@@ -825,7 +819,7 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl *classDecl)const
   //I have to additionally scan class declarations.
   for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl) {
     if (decl->getKind() == Decl::FunctionTemplate) {
-      const FunctionTemplateDecl * const ftDecl = dyn_cast<FunctionTemplateDecl>(*decl);
+      const FunctionTemplateDecl* const ftDecl = dyn_cast<FunctionTemplateDecl>(*decl);
       assert(ftDecl != 0 && "DisplayMemberFunctions, decl is not a function template");
       
       textLine.clear();
@@ -839,8 +833,8 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl *classDecl)const
       //print constructor-template correctly, otherwise, class name and
       //parameters are omitted (this is also true for clang and normal, non-templated
       //constructors.
-      if (const FunctionDecl * const funcDecl = ftDecl->getTemplatedDecl()) {
-        if (const CXXConstructorDecl * const ctorDecl = dyn_cast<CXXConstructorDecl>(funcDecl)) {
+      if (const FunctionDecl* const funcDecl = ftDecl->getTemplatedDecl()) {
+        if (const CXXConstructorDecl* const ctorDecl = dyn_cast<CXXConstructorDecl>(funcDecl)) {
           textLine += ' ';
           AppendConstructorSignature(ctorDecl, textLine);
         }
@@ -853,7 +847,7 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl *classDecl)const
 }
 
 //______________________________________________________________________________
-void ClassPrinter::DisplayDataMembers(const CXXRecordDecl *classDecl, unsigned nSpaces)const
+void ClassPrinter::DisplayDataMembers(const CXXRecordDecl* classDecl, unsigned nSpaces)const
 {
   assert(classDecl != 0 && "DisplayDataMembers, 'classDecl' parameter is null");
 
@@ -894,7 +888,7 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl *classDecl, unsigned n
   //Now the problem: static data members are not fields, enumerators are not fields.
   for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl) {
     if (decl->getKind() == Decl::Enum) {
-      const EnumDecl *enumDecl = dyn_cast<EnumDecl>(*decl);
+      const EnumDecl* enumDecl = dyn_cast<EnumDecl>(*decl);
       assert(enumDecl != 0 && "DisplayDataMembers, internal compielr error, decl->getKind() == Enum, but decl is not a EnumDecl");
       if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
         //if (fSeenDecls.find(enumDecl) == fSeenDecls.end()) {
@@ -927,7 +921,7 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl *classDecl, unsigned n
         //}
       }
     } else if (decl->getKind() == Decl::Var) {
-      const VarDecl * const varDecl = dyn_cast<VarDecl>(*decl);
+      const VarDecl* const varDecl = dyn_cast<VarDecl>(*decl);
       assert(varDecl != 0 && "DisplayDataMembers, internal compiler error, decl->getKind() == Var, but decl is not a VarDecl");
       if (varDecl->getStorageClass() == SC_Static) {
         //I hope, this is a static data-member :)
@@ -957,27 +951,27 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl *classDecl, unsigned n
 
 class GlobalsPrinter {
 public:
-  GlobalsPrinter(llvm::raw_ostream &stream, const class cling::Interpreter *interpreter);
+  GlobalsPrinter(llvm::raw_ostream& stream, const class cling::Interpreter* interpreter);
 
   void DisplayGlobals()const;
-  void DisplayGlobal(const std::string &name)const;
+  void DisplayGlobal(const std::string& name)const;
 
 private:
   
-  void DisplayVarDecl(const VarDecl *varDecl)const;
-  void DisplayEnumeratorDecl(const EnumConstantDecl *enumerator)const;
-  void DisplayObjectLikeMacro(const IdentifierInfo *identifierInfo, const MacroInfo *macroInfo)const;
+  void DisplayVarDecl(const VarDecl* varDecl)const;
+  void DisplayEnumeratorDecl(const EnumConstantDecl* enumerator)const;
+  void DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo, const MacroInfo* macroInfo)const;
 
   FILEPrintHelper fOut;
-  const cling::Interpreter *fInterpreter;
+  const cling::Interpreter* fInterpreter;
 
-  mutable std::set<const Decl *> fSeenDecls;
+  mutable std::set<const Decl*> fSeenDecls;
 };
 
 //______________________________________________________________________________
-GlobalsPrinter::GlobalsPrinter(llvm::raw_ostream &stream, const cling::Interpreter *interpreter)
+GlobalsPrinter::GlobalsPrinter(llvm::raw_ostream& stream, const cling::Interpreter* interpreter)
            : fOut(stream),
-            fInterpreter(interpreter)
+             fInterpreter(interpreter)
 {
   assert(interpreter != 0 && "GlobalsPrinter, 'compiler' parameter is null");
 }
@@ -990,16 +984,16 @@ void GlobalsPrinter::DisplayGlobals()const
 
   assert(fInterpreter != 0 && "DisplayGlobals, fInterpreter is null");
   
-  const CompilerInstance * const compiler = fInterpreter->getCI();
+  const CompilerInstance* const compiler = fInterpreter->getCI();
   assert(compiler != 0 && "DisplayGlobals, compiler instance is null");
 
-  const TranslationUnitDecl * const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
+  const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayGlobals, translation unit is empty");
 
   //fSeenDecls.clear();
 
   //Try to print global macro definitions (object-like only).
-  const Preprocessor &pp = compiler->getPreprocessor();
+  const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
     if (macro->second->isObjectLike())
       DisplayObjectLikeMacro(macro->first, macro->second);
@@ -1010,9 +1004,9 @@ void GlobalsPrinter::DisplayGlobals()const
   //of declarations, should I print them?
 
   for (decl_iterator decl = tuDecl->decls_begin(); decl != tuDecl->decls_end(); ++decl) {
-    if (const VarDecl * const varDecl = dyn_cast<VarDecl>(*decl))
+    if (const VarDecl* const varDecl = dyn_cast<VarDecl>(*decl))
       DisplayVarDecl(varDecl);
-    else if (const EnumDecl *enumDecl = dyn_cast<EnumDecl>(*decl)) {
+    else if (const EnumDecl* enumDecl = dyn_cast<EnumDecl>(*decl)) {
       if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
         for (enumerator_iterator enumerator = enumDecl->enumerator_begin(); enumerator != enumDecl->enumerator_end(); ++enumerator)
           DisplayEnumeratorDecl(*enumerator);
@@ -1022,7 +1016,7 @@ void GlobalsPrinter::DisplayGlobals()const
 }
 
 //______________________________________________________________________________
-void GlobalsPrinter::DisplayGlobal(const std::string &name)const
+void GlobalsPrinter::DisplayGlobal(const std::string& name)const
 {
   typedef EnumDecl::enumerator_iterator enumerator_iterator;
   typedef Preprocessor::macro_iterator macro_iterator;
@@ -1031,16 +1025,16 @@ void GlobalsPrinter::DisplayGlobal(const std::string &name)const
 
   assert(fInterpreter != 0 && "DisplayGlobal, fInterpreter is null");
   
-  const CompilerInstance * const compiler = fInterpreter->getCI();
+  const CompilerInstance* const compiler = fInterpreter->getCI();
   assert(compiler != 0 && "DisplayGlobal, compiler instance is null");
   
-  const TranslationUnitDecl * const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
+  const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayGlobal, translation unit is empty");
   
   //fSeenDecls.clear();
   bool found = false;
   
-  const Preprocessor &pp = compiler->getPreprocessor();
+  const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
     if (macro->second->isObjectLike()) {
       if (name == macro->first->getName().data()) {
@@ -1051,12 +1045,12 @@ void GlobalsPrinter::DisplayGlobal(const std::string &name)const
   }
   
   for (decl_iterator decl = tuDecl->decls_begin(); decl != tuDecl->decls_end(); ++decl) {
-    if (const VarDecl * const varDecl = dyn_cast<VarDecl>(*decl)) {
+    if (const VarDecl* const varDecl = dyn_cast<VarDecl>(*decl)) {
       if (varDecl->getNameAsString() == name) {
         DisplayVarDecl(varDecl);
         found = true;
       }
-    } else if (const EnumDecl *enumDecl = dyn_cast<EnumDecl>(*decl)) {
+    } else if (const EnumDecl* enumDecl = dyn_cast<EnumDecl>(*decl)) {
       if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
         for (enumerator_iterator enumerator = enumDecl->enumerator_begin(); enumerator != enumDecl->enumerator_end(); ++enumerator) {
           if (enumerator->getNameAsString() == name) {
@@ -1074,7 +1068,7 @@ void GlobalsPrinter::DisplayGlobal(const std::string &name)const
 }
 
 //______________________________________________________________________________
-void GlobalsPrinter::DisplayVarDecl(const VarDecl *varDecl) const
+void GlobalsPrinter::DisplayVarDecl(const VarDecl* varDecl) const
 {
   assert(fInterpreter != 0 && "DisplayVarDecl, fInterpreter is null");
   assert(varDecl != 0 && "DisplayVarDecl, 'varDecl' parameter is null");
@@ -1105,7 +1099,7 @@ void GlobalsPrinter::DisplayVarDecl(const VarDecl *varDecl) const
 }
 
 //______________________________________________________________________________
-void GlobalsPrinter::DisplayEnumeratorDecl(const EnumConstantDecl *enumerator)const
+void GlobalsPrinter::DisplayEnumeratorDecl(const EnumConstantDecl* enumerator)const
 {
   assert(fInterpreter != 0 && "DisplayEnumeratorDecl, fInterpreter is null");
   assert(enumerator != 0 && "DisplayEnumeratorDecl, 'enumerator' parameter is null");
@@ -1131,7 +1125,7 @@ void GlobalsPrinter::DisplayEnumeratorDecl(const EnumConstantDecl *enumerator)co
 }
 
 //______________________________________________________________________________
-void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo *identifierInfo, const MacroInfo *macroInfo)const
+void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo, const MacroInfo* macroInfo)const
 {
   assert(identifierInfo != 0 && "DisplayObjectLikeMacro, 'identifierInfo' parameter is null");
   assert(macroInfo != 0 && "DisplayObjectLikeMacro, 'macroInfo' parameter is null");
@@ -1162,7 +1156,7 @@ void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo *identifierInfo
 }//unnamed namespace
 
 //______________________________________________________________________________
-void DisplayClasses(llvm::raw_ostream &stream, const cling::Interpreter *interpreter, bool verbose)
+void DisplayClasses(llvm::raw_ostream& stream, const cling::Interpreter* interpreter, bool verbose)
 {
   assert(interpreter != 0 && "DisplayClasses, 'interpreter' parameter is null");
 
@@ -1172,7 +1166,7 @@ void DisplayClasses(llvm::raw_ostream &stream, const cling::Interpreter *interpr
 }
 
 //______________________________________________________________________________
-void DisplayClass(llvm::raw_ostream &stream, const cling::Interpreter *interpreter, const char *className, bool verbose)
+void DisplayClass(llvm::raw_ostream& stream, const cling::Interpreter* interpreter, const char* className, bool verbose)
 {
   assert(interpreter != 0 && "DisplayClass, 'interpreter' parameter is null");
   assert(className != 0 && "DisplayClass, 'className' parameter is null");
@@ -1192,7 +1186,7 @@ void DisplayClass(llvm::raw_ostream &stream, const cling::Interpreter *interpret
 }
 
 //______________________________________________________________________________
-void DisplayGlobals(llvm::raw_ostream &stream, const cling::Interpreter *interpreter)
+void DisplayGlobals(llvm::raw_ostream& stream, const cling::Interpreter* interpreter)
 {
   assert(interpreter != 0 && "DisplayGlobals, 'interpreter' parameter is null");
   
@@ -1201,7 +1195,7 @@ void DisplayGlobals(llvm::raw_ostream &stream, const cling::Interpreter *interpr
 }
 
 //______________________________________________________________________________
-void DisplayGlobal(llvm::raw_ostream &stream, const cling::Interpreter *interpreter, const std::string &name)
+void DisplayGlobal(llvm::raw_ostream& stream, const cling::Interpreter* interpreter, const std::string& name)
 {
   assert(interpreter != 0 && "DisplayGlobal, 'interpreter' parameter is null");
   
