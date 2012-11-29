@@ -88,6 +88,9 @@ namespace utils {
   class Transform {
   public:
 
+    ///\brief Remove one layer of sugar, but only some kinds.
+    static bool SingleStepPartiallyDesugarType(clang::QualType& QT);
+
     ///\brief "Desugars" a type while skipping the ones in the set.
     ///
     /// Desugars a given type recursively until strips all sugar or until gets a
@@ -99,10 +102,11 @@ namespace utils {
     ///\param[in] fullyQualify - if true insert Elaborated where needed.
     ///\returns Partially desugared QualType
     ///
-    static clang::QualType GetPartiallyDesugaredType(const clang::ASTContext& Ctx, 
-                                                     clang::QualType QT,
-                        const llvm::SmallSet<const clang::Type*, 4>& TypesToSkip,
-                                                     bool fullyQualify = true);
+    static
+    clang::QualType
+    GetPartiallyDesugaredType(const clang::ASTContext& Ctx, clang::QualType QT,
+      const llvm::SmallSet<const clang::Type*, 4>& TypesToSkip,
+      bool fullyQualify = true);
 
   };
 

@@ -203,11 +203,119 @@ namespace utils {
     return false;
   }
 
+  bool Transform::SingleStepPartiallyDesugarType(QualType& QT)
+  {
+    //  WARNING:
+    //
+    //  The large blocks of commented-out code in this routine
+    //  are there to support doing more desugaring in the future,
+    //  we will probably have to.
+    //
+    //  Do not delete until we are completely sure we will
+    //  not be changing this routine again!
+    //
+    const Type* QTy = QT.getTypePtr();
+    Type::TypeClass TC = QTy->getTypeClass();
+    switch (TC) {
+      //
+      //  Unconditionally sugared types.
+      //
+      case Type::Paren: {
+        return false;
+        //const ParenType* Ty = llvm::cast<ParenType>(QTy);
+        //QT = Ty->desugar();
+        //return true;
+      }
+      case Type::Typedef: {
+        const TypedefType* Ty = llvm::cast<TypedefType>(QTy);
+        QT = Ty->desugar();
+        return true;
+      }
+      case Type::TypeOf: {
+        const TypeOfType* Ty = llvm::cast<TypeOfType>(QTy);
+        QT = Ty->desugar();
+        return true;
+      }
+      case Type::Attributed: {
+        return false;
+        //const AttributedType* Ty = llvm::cast<AttributedType>(QTy);
+        //QT = Ty->desugar();
+        //return true;
+      }
+      case Type::SubstTemplateTypeParm: {
+        return false;
+        //const SubstTemplateTypeParmType* Ty =
+        //  llvm::cast<SubstTemplateTypeParmType>(QTy);
+        //QT = Ty->desugar();
+        //return true;
+      }
+      case Type::Elaborated: {
+        return false;
+        //const ElaboratedType* Ty = llvm::cast<ElaboratedType>(QTy);
+        ///QT = Ty->desugar();
+        ///return true;
+        //return false;
+      }
+      //
+      //  Conditionally sugared types.
+      //
+      case Type::TypeOfExpr: {
+        const TypeOfExprType* Ty = llvm::cast<TypeOfExprType>(QTy);
+        if (Ty->isSugared()) {
+          QT = Ty->desugar();
+          return true;
+        }
+        return false;
+      }
+      case Type::Decltype: {
+        const DecltypeType* Ty = llvm::cast<DecltypeType>(QTy);
+        if (Ty->isSugared()) {
+          QT = Ty->desugar();
+          return true;
+        }
+        return false;
+      }
+      case Type::UnaryTransform: {
+        return false;
+        //const UnaryTransformType* Ty = llvm::cast<UnaryTransformType>(QTy);
+        //if (Ty->isSugared()) {
+        //  QT = Ty->desugar();
+        //  return true;
+        //}
+        //return false;
+      }
+      case Type::Auto: {
+        return false;
+        //const AutoType* Ty = llvm::cast<AutoType>(QTy);
+        //if (Ty->isSugared()) {
+        //  QT = Ty->desugar();
+        //  return true;
+        //}
+        //return false;
+      }
+      case Type::TemplateSpecialization: {
+        return false;
+        //const TemplateSpecializationType* Ty =
+        //  llvm::cast<TemplateSpecializationType>(QTy);
+        //if (Ty->isSugared()) {
+        //  QT = Ty->desugar();
+        //  return true;
+        //}
+        return false;
+      }
+      // Not a sugared type.
+      default: {
+        break;
+      }
+    }
+    return false;
+  }
+
   QualType Transform::GetPartiallyDesugaredType(const ASTContext& Ctx, 
-                                                QualType QT, 
-                               const llvm::SmallSet<const Type*, 4>& TypesToSkip,
-                                                bool fullyQualify /*=true*/){
-    // If there are no constains - use the standard desugaring.
+    QualType QT, const llvm::SmallSet<const Type*,4>& TypesToSkip,
+    bool fullyQualify/*=true*/)
+  {
+    // If there are no constraints, then use the standard desugaring.
     if (!TypesToSkip.size() && !fullyQualify)
       return QT.getDesugaredType(Ctx);
 
@@ -232,7 +340,7 @@ namespace utils {
       Qualifiers quals = QT.getQualifiers();
       QT = GetPartiallyDesugaredType(Ctx, QT->getPointeeType(), TypesToSkip, 
                                      fullyQualify);
-      // Add the r- or l- value reference type back to the desugared one
+      // Add the r- or l-value reference type back to the desugared one.
       if (isLValueRefTy)
         QT = Ctx.getLValueReferenceType(QT);
       else
@@ -273,15 +381,23 @@ namespace utils {
       }
     }
 
-    while(isa<TypedefType>(QT.getTypePtr())) {
-      if (!ShouldKeepTypedef(QT,TypesToSkip))
-        QT = QT.getSingleStepDesugaredType(Ctx);
-      else if (fullyQualify) {
+    // Desugar QT until we cannot desugar any more, or
+    // we hit one of the special typedefs.
+    while (1) {
+      if (llvm::isa<TypedefType>(QT.getTypePtr()) &&
+          ShouldKeepTypedef(QT, TypesToSkip)) {
+        if (!fullyQualify) {
+          return QT;
+        }
         // We might have stripped the namespace/scope part,
-        // se we must go on if fullyQualify is true.
+        // so we must go on to add it back.
         break;
-      } else
-        return QT;
+      }
+      bool wasDesugared = SingleStepPartiallyDesugarType(QT);
+      if (!wasDesugared) {
+        // No more work to do, stop now.
+        break;
+      }
     }
 
     // If we have a reference or pointer we still need to
