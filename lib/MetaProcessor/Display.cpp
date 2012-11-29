@@ -1,5 +1,3 @@
-#undef NDEBUG
-
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "Display.h"

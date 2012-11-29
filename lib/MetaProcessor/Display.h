@@ -1,5 +1,5 @@
-#ifndef ROOT_Display
-#define ROOT_Display
+#ifndef CLING_DISPLAY_H
+#define CLING_DISPLAY_H
 
 #include <string>
 
