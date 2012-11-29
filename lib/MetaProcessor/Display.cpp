@@ -65,7 +65,8 @@ int NumberOfElements(const ArrayType* type)
   
   if (const ConstantArrayType* const arrayType = dyn_cast<ConstantArrayType>(type)) {
     //We can calculate only the size of constant size array.
-    const int nElements = int(arrayType->getSize().roundToDouble());//very convenient, many thanks for this shitty API.
+    //no conv. to int :(
+    const int nElements = int(arrayType->getSize().roundToDouble());
     if (nElements <= 0)
       return 0;
     
@@ -80,7 +81,8 @@ int NumberOfElements(const ArrayType* type)
 }
 
 //______________________________________________________________________________
-void AppendClassDeclLocation(const CompilerInstance* compiler, const CXXRecordDecl* classDecl, std::string& textLine, bool verbose)
+void AppendClassDeclLocation(const CompilerInstance* compiler, const CXXRecordDecl* classDecl,
+                             std::string& textLine, bool verbose)
 {
   //Location has a fixed format - from G__display_class.
 
@@ -107,7 +109,8 @@ void AppendClassDeclLocation(const CompilerInstance* compiler, const CXXRecordDe
 }
 
 //______________________________________________________________________________
-void AppendMemberFunctionLocation(const CompilerInstance* compiler, const Decl* decl, std::string& textLine)
+void AppendMemberFunctionLocation(const CompilerInstance* compiler, const Decl* decl,
+                                  std::string& textLine)
 {
   //Location has a fixed format - from G__display_class.
 
@@ -122,7 +125,8 @@ void AppendMemberFunctionLocation(const CompilerInstance* compiler, const Decl* 
 }
 
 //______________________________________________________________________________
-void AppendDeclLocation(const CompilerInstance* compiler, const Decl* decl, std::string& textLine)
+void AppendDeclLocation(const CompilerInstance* compiler, const Decl* decl,
+                        std::string& textLine)
 {
   assert(compiler != 0 && "AppendDeclLocation, 'compiler' parameter is null");
   assert(decl != 0 && "AppendDeclLocation, 'decl' parameter is null");
@@ -146,7 +150,8 @@ void AppendDeclLocation(const CompilerInstance* compiler, const Decl* decl, std:
 }
 
 //______________________________________________________________________________
-void AppendMacroLocation(const CompilerInstance* compiler, const MacroInfo* macroInfo, std::string& textLine)
+void AppendMacroLocation(const CompilerInstance* compiler, const MacroInfo* macroInfo,
+                         std::string& textLine)
 {
   assert(compiler != 0 && "AppendMacroLocation, 'compiler' parameter is null");
   assert(macroInfo != 0 && "AppendMacroLocation, 'macroInfo' parameter is null");
@@ -220,7 +225,8 @@ void AppendConstructorSignature(const CXXConstructorDecl* ctorDecl, std::string&
   assert(isa<FunctionType>(type) == true && "AppendConstructorSignature, ctorDecl->getType is not a FunctionType");
 
   const FunctionType* const aft = type->getAs<FunctionType>();
-  const FunctionProtoType* const ft = ctorDecl->hasWrittenPrototype() ? dyn_cast<FunctionProtoType>(aft) : 0;
+  const FunctionProtoType* const ft = ctorDecl->hasWrittenPrototype() ?
+                                      dyn_cast<FunctionProtoType>(aft) : 0;
 
   if (ctorDecl->isExplicit())
     name += "explicit ";
@@ -257,7 +263,7 @@ void AppendConstructorSignature(const CXXConstructorDecl* ctorDecl, std::string&
 void AppendMemberFunctionSignature(const Decl* methodDecl, std::string& name)
 {
   assert(methodDecl != 0 && "AppendMemberFunctionSignature, 'methodDecl' parameter is null");
-  assert(methodDecl->getKind() != Decl::CXXConstructor && "AppendMemberFunctionSignature, 'methodDecl' parameter is a ctor declaration");
+  assert(methodDecl->getKind() != Decl::CXXConstructor && "AppendMemberFunctionSignature, called for a ctor declaration");
 
   llvm::raw_string_ostream out(name);
   const LangOptions langOpts;
@@ -265,11 +271,12 @@ void AppendMemberFunctionSignature(const Decl* methodDecl, std::string& name)
   printingPolicy.TerseOutput = true;//Do not print the body of an inlined function.
   printingPolicy.SuppressSpecifiers = false; //Show 'static', 'inline', etc.
 
-  methodDecl->print(out, printingPolicy, 0, false);//true);//true was wrong: for member function templates it will print template itself and specializations.
+  methodDecl->print(out, printingPolicy, 0, false);
 }
 
 //______________________________________________________________________________
-void AppendObjectDeclaration(const Decl* objDecl, const PrintingPolicy& policy, bool printInstantiation, std::string& name)
+void AppendObjectDeclaration(const Decl* objDecl, const PrintingPolicy& policy,
+                             bool printInstantiation, std::string& name)
 {
   assert(objDecl != 0 && "AppendObjectDeclaration, 'objDecl' parameter is null");
 
@@ -297,7 +304,8 @@ void AppendBaseClassSpecifiers(base_decl_iterator base, std::string& textLine)
 }
 
 //______________________________________________________________________________
-void AppendClassSize(const CompilerInstance* compiler, const RecordDecl* decl, std::string& textLine)
+void AppendClassSize(const CompilerInstance* compiler, const RecordDecl* decl,
+                     std::string& textLine)
 {
   assert(compiler != 0 && "AppendClassSize, 'compiler' parameter is null");
   assert(decl != 0 && "AppendClassSize, 'decl' parameter is null");
@@ -369,7 +377,8 @@ void AppendBaseClassOffset(const CompilerInstance* compiler, const CXXRecordDecl
 }
 
 //______________________________________________________________________________
-void AppendDataMemberOffset(const CompilerInstance* compiler, const CXXRecordDecl* classDecl, const FieldDecl* fieldDecl, std::string& textLine)
+void AppendDataMemberOffset(const CompilerInstance* compiler, const CXXRecordDecl* classDecl,
+                            const FieldDecl* fieldDecl, std::string& textLine)
 {
   assert(compiler != 0 && "AppendDataMemberOffset, 'compiler' parameter is null");
   assert(classDecl != 0 && "AppendDataMemberOffset, 'classDecl' parameter is null");
@@ -381,7 +390,8 @@ void AppendDataMemberOffset(const CompilerInstance* compiler, const CXXRecordDec
   //
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
-  frss<<llvm::format("0x%-8x", int(layout.getFieldOffset(fieldDecl->getFieldIndex()) / std::numeric_limits<unsigned char>::digits));
+  frss<<llvm::format("0x%-8x", int(layout.getFieldOffset(fieldDecl->getFieldIndex())
+                               / std::numeric_limits<unsigned char>::digits));
 }
 
 //
@@ -618,7 +628,7 @@ void ClassPrinter::ProcessLinkageSpecDecl(decl_iterator decl)const
   assert(*decl != 0 && "ProcessLinkageSpecDecl, 'decl' parameter is not a valid iterator");
 
   const LinkageSpecDecl* const linkageSpec = dyn_cast<LinkageSpecDecl>(*decl);
-  assert(linkageSpec != 0 && "ProcessLinkageSpecDecl, internal error - decl is not a LinkageSpecDecl");
+  assert(linkageSpec != 0 && "ProcessLinkageSpecDecl, decl is not a LinkageSpecDecl");
 
   for (decl_iterator it = linkageSpec->decls_begin(); it != linkageSpec->decls_end(); ++it)
     ProcessDecl(it);
@@ -674,7 +684,8 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
 
     fOut.Print("\n");
   } else {
-    fOut.Print("===========================================================================\n");//Hehe, this line was stolen from CINT.
+    //Hehe, this line was stolen from CINT.
+    fOut.Print("===========================================================================\n");
 
     std::string classInfo;
     AppendClassKeyword(classDecl, classInfo);
@@ -700,7 +711,8 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
     DisplayDataMembers(classDecl, 0);
     
     fOut.Print("List of member functions :---------------------------------------------------\n");
-    fOut.Print("filename     line:size busy function type and name\n");//CINT has a format like %-15s blah-blah.
+    //CINT has a format like %-15s blah-blah.
+    fOut.Print("filename     line:size busy function type and name\n");
     DisplayMemberFunctions(classDecl);
   }
 }
@@ -710,7 +722,7 @@ void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl* classDecl)const
 {
   assert(fInterpreter != 0 && "DisplayBasesAsList, fInterpreter is null");
   assert(classDecl != 0 && "DisplayBasesAsList, 'classDecl' parameter is 0");
-  assert(classDecl->hasDefinition() == true && "DisplayBasesAsList, 'classDecl' parameter points to an invalid declaration");
+  assert(classDecl->hasDefinition() == true && "DisplayBasesAsList, 'classDecl' is invalid");
   assert(fVerbose == false && "DisplayBasesAsList, called in a verbose output");
 
   //we print a list of base classes as one line, with access specifiers and 'virtual' if needed.
@@ -740,7 +752,7 @@ void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl* classDecl)const
 void ClassPrinter::DisplayBasesAsTree(const CXXRecordDecl* classDecl, unsigned nSpaces)const
 {
   assert(classDecl != 0 && "DisplayBasesAsTree, 'classDecl' parameter is null");
-  assert(classDecl->hasDefinition() == true && "DisplayBasesAsTree, 'classDecl' parameter points to an invalid declaration");
+  assert(classDecl->hasDefinition() == true && "DisplayBasesAsTree, 'classDecl' is invalid");
 
   assert(fInterpreter != 0 && "DisplayBasesAsTree, fInterpreter is null");
   assert(fVerbose == true && "DisplayBasesAsTree, call in a simplified output");
@@ -862,7 +874,8 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl* classDecl, unsigned n
   std::string textLine;
   const std::string gap(std::max(nSpaces, 1u), ' ');
 
-  for (field_iterator field = classDecl->field_begin(); field != classDecl->field_end(); ++field) {
+  for (field_iterator field = classDecl->field_begin();
+       field != classDecl->field_end(); ++field) {
     textLine.clear();
     AppendDeclLocation(fInterpreter->getCI(), *field, textLine);
     textLine += gap;
@@ -887,11 +900,13 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl* classDecl, unsigned n
   for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl) {
     if (decl->getKind() == Decl::Enum) {
       const EnumDecl* enumDecl = dyn_cast<EnumDecl>(*decl);
-      assert(enumDecl != 0 && "DisplayDataMembers, internal compielr error, decl->getKind() == Enum, but decl is not a EnumDecl");
-      if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
+      assert(enumDecl != 0 && "DisplayDataMembers, decl->getKind() == Enum, but decl is not a EnumDecl");
+      //it's not really clear, if I should really check this.
+      if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {
         //if (fSeenDecls.find(enumDecl) == fSeenDecls.end()) {
         //  fSeenDecls.insert(enumDecl);
-        for (enumerator_iterator enumerator = enumDecl->enumerator_begin(); enumerator != enumDecl->enumerator_end(); ++enumerator) {
+        for (enumerator_iterator enumerator = enumDecl->enumerator_begin();
+             enumerator != enumDecl->enumerator_end(); ++enumerator) {
           //
           textLine.clear();
           AppendDeclLocation(fInterpreter->getCI(), *enumerator, textLine);
@@ -920,7 +935,7 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl* classDecl, unsigned n
       }
     } else if (decl->getKind() == Decl::Var) {
       const VarDecl* const varDecl = dyn_cast<VarDecl>(*decl);
-      assert(varDecl != 0 && "DisplayDataMembers, internal compiler error, decl->getKind() == Var, but decl is not a VarDecl");
+      assert(varDecl != 0 && "DisplayDataMembers, decl->getKind() == Var, but decl is not a VarDecl");
       if (varDecl->getStorageClass() == SC_Static) {
         //I hope, this is a static data-member :)
         textLine.clear();
@@ -1005,8 +1020,10 @@ void GlobalsPrinter::DisplayGlobals()const
     if (const VarDecl* const varDecl = dyn_cast<VarDecl>(*decl))
       DisplayVarDecl(varDecl);
     else if (const EnumDecl* enumDecl = dyn_cast<EnumDecl>(*decl)) {
-      if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
-        for (enumerator_iterator enumerator = enumDecl->enumerator_begin(); enumerator != enumDecl->enumerator_end(); ++enumerator)
+      //it's not really clear, if I should really check this:
+      if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {
+        for (enumerator_iterator enumerator = enumDecl->enumerator_begin();
+             enumerator != enumDecl->enumerator_end(); ++enumerator)
           DisplayEnumeratorDecl(*enumerator);
       }
     }
@@ -1049,8 +1066,10 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
         found = true;
       }
     } else if (const EnumDecl* enumDecl = dyn_cast<EnumDecl>(*decl)) {
-      if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
-        for (enumerator_iterator enumerator = enumDecl->enumerator_begin(); enumerator != enumDecl->enumerator_end(); ++enumerator) {
+      //it's not really clear, if I should really check this:
+      if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {
+        for (enumerator_iterator enumerator = enumDecl->enumerator_begin();
+             enumerator != enumDecl->enumerator_end(); ++enumerator) {
           if (enumerator->getNameAsString() == name) {
             DisplayEnumeratorDecl(*enumerator);
             found = true;
@@ -1123,7 +1142,8 @@ void GlobalsPrinter::DisplayEnumeratorDecl(const EnumConstantDecl* enumerator)co
 }
 
 //______________________________________________________________________________
-void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo, const MacroInfo* macroInfo)const
+void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo,
+                                            const MacroInfo* macroInfo)const
 {
   assert(identifierInfo != 0 && "DisplayObjectLikeMacro, 'identifierInfo' parameter is null");
   assert(macroInfo != 0 && "DisplayObjectLikeMacro, 'macroInfo' parameter is null");
@@ -1154,7 +1174,8 @@ void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo
 }//unnamed namespace
 
 //______________________________________________________________________________
-void DisplayClasses(llvm::raw_ostream& stream, const cling::Interpreter* interpreter, bool verbose)
+void DisplayClasses(llvm::raw_ostream& stream, const cling::Interpreter* interpreter,
+                    bool verbose)
 {
   assert(interpreter != 0 && "DisplayClasses, 'interpreter' parameter is null");
 
@@ -1164,7 +1185,8 @@ void DisplayClasses(llvm::raw_ostream& stream, const cling::Interpreter* interpr
 }
 
 //______________________________________________________________________________
-void DisplayClass(llvm::raw_ostream& stream, const cling::Interpreter* interpreter, const char* className, bool verbose)
+void DisplayClass(llvm::raw_ostream& stream, const cling::Interpreter* interpreter,
+                  const char* className, bool verbose)
 {
   assert(interpreter != 0 && "DisplayClass, 'interpreter' parameter is null");
   assert(className != 0 && "DisplayClass, 'className' parameter is null");
@@ -1193,7 +1215,8 @@ void DisplayGlobals(llvm::raw_ostream& stream, const cling::Interpreter* interpr
 }
 
 //______________________________________________________________________________
-void DisplayGlobal(llvm::raw_ostream& stream, const cling::Interpreter* interpreter, const std::string& name)
+void DisplayGlobal(llvm::raw_ostream& stream, const cling::Interpreter* interpreter,
+                   const std::string& name)
 {
   assert(interpreter != 0 && "DisplayGlobal, 'interpreter' parameter is null");
   
