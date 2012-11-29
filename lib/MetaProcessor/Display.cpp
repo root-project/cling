@@ -48,12 +48,12 @@ bool HasUDT(const Decl *decl)
   assert(decl != 0 && "HasUDT, 'decl' parameter is null");
 
   if (const RecordType * const recordType = decl->getType()->template getAs<RecordType>())
-    return llvm::cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition());
+    return cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition());
 
   if (const ArrayType * const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
     if (const Type * const elType = arrayType->getBaseElementTypeUnsafe()) {
       if (const RecordType * const recordType = elType->getAs<RecordType>())
-        return llvm::cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition());
+        return cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition());
     }
   }
 
@@ -65,7 +65,7 @@ int NumberOfElements(const ArrayType *type)
 {
   assert(type != 0 && "NumberOfElements, 'type' parameter is null");
   
-  if (const ConstantArrayType * const arrayType = llvm::dyn_cast<ConstantArrayType>(type)) {
+  if (const ConstantArrayType * const arrayType = dyn_cast<ConstantArrayType>(type)) {
     //We can calculate only the size of constant size array.
     const int nElements = int(arrayType->getSize().roundToDouble());//very convenient, many thanks for this shitty API.
     if (nElements <= 0)
@@ -219,10 +219,10 @@ void AppendConstructorSignature(const CXXConstructorDecl *ctorDecl, std::string 
   assert(ctorDecl != 0 && "AppendConstructorSignature, 'ctorDecl' parameter is null");
 
   const QualType type = ctorDecl->getType();
-  assert(llvm::isa<FunctionType>(type) == true && "AppendConstructorSignature, ctorDecl->getType is not a FunctionType");
+  assert(isa<FunctionType>(type) == true && "AppendConstructorSignature, ctorDecl->getType is not a FunctionType");
 
   const FunctionType * const aft = type->getAs<FunctionType>();
-  const FunctionProtoType * const ft = ctorDecl->hasWrittenPrototype() ? llvm::dyn_cast<FunctionProtoType>(aft) : 0;
+  const FunctionProtoType * const ft = ctorDecl->hasWrittenPrototype() ? dyn_cast<FunctionProtoType>(aft) : 0;
 
   if (ctorDecl->isExplicit())
     name += "explicit ";
@@ -304,7 +304,7 @@ void AppendClassSize(const CompilerInstance *compiler, const RecordDecl *decl, s
   assert(compiler != 0 && "AppendClassSize, 'compiler' parameter is null");
   assert(decl != 0 && "AppendClassSize, 'decl' parameter is null");
   
-  if (llvm::dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) {
+  if (dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) {
     textLine += "SIZE: (NA)";
     return;
   }
@@ -330,7 +330,7 @@ void AppendUDTSize(const CompilerInstance *compiler, const Decl *decl, std::stri
   llvm::formatted_raw_ostream frss(rss);
   
   if (const RecordType * const recordType = decl->getType()->template getAs<RecordType>()) {
-    if (const RecordDecl * const recordDecl = llvm::cast_or_null<RecordDecl>(recordType->getDecl()->getDefinition())) {
+    if (const RecordDecl * const recordDecl = cast_or_null<RecordDecl>(recordType->getDecl()->getDefinition())) {
       const ASTRecordLayout &layout = compiler->getASTContext().getASTRecordLayout(recordDecl);
       frss<<llvm::format("%d", int(layout.getSize().getQuantity()));
     }
@@ -514,7 +514,7 @@ void ClassPrinter::DisplayClass(const std::string &className)const
 
   const cling::LookupHelper &lookupHelper = fInterpreter->getLookupHelper();
   if (const Decl * const decl = lookupHelper.findScope(className)) {
-    if (const CXXRecordDecl * const classDecl = llvm::dyn_cast<CXXRecordDecl>(decl)) {
+    if (const CXXRecordDecl * const classDecl = dyn_cast<CXXRecordDecl>(decl)) {
       if (classDecl->hasDefinition())
         DisplayClassDecl(classDecl);
     } else {
@@ -563,7 +563,7 @@ void ClassPrinter::ProcessDecl(decl_iterator decl)const
     ProcessClassDecl(decl);
     break;
   default:
-    if (llvm::dyn_cast<FunctionDecl>(*decl))
+    if (dyn_cast<FunctionDecl>(*decl))
       //decl->getKind() != Decl::Function, but decl has type, inherited from FunctionDecl.
       ProcessFunctionDecl(decl);
     break;
@@ -580,7 +580,7 @@ void ClassPrinter::ProcessBlockDecl(decl_iterator decl)const
 
   //Block can contain nested (arbitrary deep) class declarations.
   //Though, I'm not sure if have block in our code.
-  const BlockDecl * const blockDecl = llvm::dyn_cast<BlockDecl>(*decl);
+  const BlockDecl * const blockDecl = dyn_cast<BlockDecl>(*decl);
   assert(blockDecl != 0 && "ProcessBlockDecl, internal error - decl is not a BlockDecl");
 
   for (decl_iterator it = blockDecl->decls_begin(); it != blockDecl->decls_end(); ++it)
@@ -595,7 +595,7 @@ void ClassPrinter::ProcessFunctionDecl(decl_iterator decl)const
   assert(*decl != 0 && "ProcessFunctionDecl, 'decl' parameter is not a valid iterator");
 
   //Function can contain class declarations, we have to check this.
-  const FunctionDecl * const functionDecl = llvm::dyn_cast<FunctionDecl>(*decl);
+  const FunctionDecl * const functionDecl = dyn_cast<FunctionDecl>(*decl);
   assert(functionDecl != 0 && "ProcessFunctionDecl, internal error - decl is not a FunctionDecl");
 
   for (decl_iterator it = functionDecl->decls_begin(); it != functionDecl->decls_end(); ++it)
@@ -611,7 +611,7 @@ void ClassPrinter::ProcessNamespaceDecl(decl_iterator decl)const
   assert(decl->getKind() == Decl::Namespace && "ProcessNamespaceDecl, decl->getKind() != Namespace");
 
   //Namespace can contain nested (arbitrary deep) class declarations.
-  const NamespaceDecl * const namespaceDecl = llvm::dyn_cast<NamespaceDecl>(*decl);
+  const NamespaceDecl * const namespaceDecl = dyn_cast<NamespaceDecl>(*decl);
   assert(namespaceDecl != 0 && "ProcessNamespaceDecl, 'decl' parameter is not a NamespaceDecl");
 
   for (decl_iterator it = namespaceDecl->decls_begin(); it != namespaceDecl->decls_end(); ++it)
@@ -625,7 +625,7 @@ void ClassPrinter::ProcessLinkageSpecDecl(decl_iterator decl)const
   assert(fInterpreter != 0 && "ProcessLinkageSpecDecl, fInterpreter is null");
   assert(*decl != 0 && "ProcessLinkageSpecDecl, 'decl' parameter is not a valid iterator");
 
-  const LinkageSpecDecl * const linkageSpec = llvm::dyn_cast<LinkageSpecDecl>(*decl);
+  const LinkageSpecDecl * const linkageSpec = dyn_cast<LinkageSpecDecl>(*decl);
   assert(linkageSpec != 0 && "ProcessLinkageSpecDecl, internal error - decl is not a LinkageSpecDecl");
 
   for (decl_iterator it = linkageSpec->decls_begin(); it != linkageSpec->decls_end(); ++it)
@@ -638,7 +638,7 @@ void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
   assert(fInterpreter != 0 && "ProcessClassDecl, fInterpreter is null");
   assert(*decl != 0 && "ProcessClassDecl, 'decl' parameter is not a valid iterator");
 
-  const CXXRecordDecl * const classDecl = llvm::dyn_cast<CXXRecordDecl>(*decl);
+  const CXXRecordDecl * const classDecl = dyn_cast<CXXRecordDecl>(*decl);
   assert(classDecl != 0 && "ProcessClassDecl, internal error, declaration is not a CXXRecordDecl");
 
   if (!classDecl->hasDefinition())
@@ -729,7 +729,7 @@ void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl *classDecl)const
 
     const RecordType * const type = baseIt->getType()->getAs<RecordType>();
     if (type) {
-      const CXXRecordDecl * const baseDecl = llvm::cast<CXXRecordDecl>(type->getDecl()->getDefinition());
+      const CXXRecordDecl * const baseDecl = cast<CXXRecordDecl>(type->getDecl()->getDefinition());
       if (baseDecl) {
         AppendBaseClassSpecifiers(baseIt, bases);
         bases += ' ';
@@ -758,7 +758,7 @@ void ClassPrinter::DisplayBasesAsTree(const CXXRecordDecl *classDecl, unsigned n
     textLine.assign(nSpaces, ' ');
     const RecordType * const type = baseIt->getType()->getAs<RecordType>();
     if (type) {
-      const CXXRecordDecl * const baseDecl = llvm::cast<CXXRecordDecl>(type->getDecl()->getDefinition());
+      const CXXRecordDecl * const baseDecl = cast<CXXRecordDecl>(type->getDecl()->getDefinition());
       if (baseDecl) {
         AppendBaseClassOffset(fInterpreter->getCI(), classDecl, baseDecl, baseIt->isVirtual(), textLine);
         textLine += ' ';
@@ -799,7 +799,7 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl *classDecl)const
     textLine += ' ';
     AppendMemberAccessSpecifier(*ctor, textLine);
     textLine += ' ';
-    AppendConstructorSignature(llvm::dyn_cast<CXXConstructorDecl>(*ctor), textLine);
+    AppendConstructorSignature(dyn_cast<CXXConstructorDecl>(*ctor), textLine);
     textLine += ";\n";
     fOut.Print(textLine.c_str());
   }
@@ -825,7 +825,7 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl *classDecl)const
   //I have to additionally scan class declarations.
   for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl) {
     if (decl->getKind() == Decl::FunctionTemplate) {
-      const FunctionTemplateDecl * const ftDecl = llvm::dyn_cast<FunctionTemplateDecl>(*decl);
+      const FunctionTemplateDecl * const ftDecl = dyn_cast<FunctionTemplateDecl>(*decl);
       assert(ftDecl != 0 && "DisplayMemberFunctions, decl is not a function template");
       
       textLine.clear();
@@ -840,7 +840,7 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl *classDecl)const
       //parameters are omitted (this is also true for clang and normal, non-templated
       //constructors.
       if (const FunctionDecl * const funcDecl = ftDecl->getTemplatedDecl()) {
-        if (const CXXConstructorDecl * const ctorDecl = llvm::dyn_cast<CXXConstructorDecl>(funcDecl)) {
+        if (const CXXConstructorDecl * const ctorDecl = dyn_cast<CXXConstructorDecl>(funcDecl)) {
           textLine += ' ';
           AppendConstructorSignature(ctorDecl, textLine);
         }
@@ -1010,9 +1010,9 @@ void GlobalsPrinter::DisplayGlobals()const
   //of declarations, should I print them?
 
   for (decl_iterator decl = tuDecl->decls_begin(); decl != tuDecl->decls_end(); ++decl) {
-    if (const VarDecl * const varDecl = llvm::dyn_cast<VarDecl>(*decl))
+    if (const VarDecl * const varDecl = dyn_cast<VarDecl>(*decl))
       DisplayVarDecl(varDecl);
-    else if (const EnumDecl *enumDecl = llvm::dyn_cast<EnumDecl>(*decl)) {
+    else if (const EnumDecl *enumDecl = dyn_cast<EnumDecl>(*decl)) {
       if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
         for (enumerator_iterator enumerator = enumDecl->enumerator_begin(); enumerator != enumDecl->enumerator_end(); ++enumerator)
           DisplayEnumeratorDecl(*enumerator);
@@ -1051,12 +1051,12 @@ void GlobalsPrinter::DisplayGlobal(const std::string &name)const
   }
   
   for (decl_iterator decl = tuDecl->decls_begin(); decl != tuDecl->decls_end(); ++decl) {
-    if (const VarDecl * const varDecl = llvm::dyn_cast<VarDecl>(*decl)) {
+    if (const VarDecl * const varDecl = dyn_cast<VarDecl>(*decl)) {
       if (varDecl->getNameAsString() == name) {
         DisplayVarDecl(varDecl);
         found = true;
       }
-    } else if (const EnumDecl *enumDecl = llvm::dyn_cast<EnumDecl>(*decl)) {
+    } else if (const EnumDecl *enumDecl = dyn_cast<EnumDecl>(*decl)) {
       if (enumDecl->isComplete() && (enumDecl = enumDecl->getDefinition())) {//it's not really clear, if I should really check this.
         for (enumerator_iterator enumerator = enumDecl->enumerator_begin(); enumerator != enumDecl->enumerator_end(); ++enumerator) {
           if (enumerator->getNameAsString() == name) {
