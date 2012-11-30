@@ -6,57 +6,51 @@
 
 #include "InputValidator.h"
 
-#include "PunctuationLexer.h"
-
-//#include "clang/Lex/Preprocessor.h"
+#include "MetaLexer.h"
 
 namespace cling {
   InputValidator::ValidationResult
   InputValidator::validate(llvm::StringRef line) {
     ValidationResult Res = kComplete;
 
-    // FIXME: Do it properly for the comments too
-    if (!line.startswith("//") 
-        && !line.startswith("/*") && !line.startswith("*/")) {
-      PunctuationLexer PL(line);
-      Token Tok;
-      do {
-        PL.LexPunctuator(Tok);
-        int kind = (int)Tok.getKind();
+    Token Tok;
+    const char* curPos = line.data();
+    do {
+      MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
+      int kind = (int)Tok.getKind();
 
-        // If there is " or ' we don't need to look for balancing until we 
-        // enounter matching " or '
-        if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe) {
-          if (m_ParenStack.empty())
-            m_ParenStack.push(kind);
-          else if (m_ParenStack.top() == kind)
-            m_ParenStack.pop();
-          else
-            continue;
-        }
-
-        // In case when we need closing brace.
-        if (kind >= (int)tok::l_square && kind <= (int)tok::r_brace) {
-          // The closing paren kind is open paren kind + 1 (i.e odd number)
-          if (kind % 2) {
-            // closing the right one?
-            if (m_ParenStack.empty()) {
-              Res = kMismatch;
-              break;
-            }
-            int prev = m_ParenStack.top();
-            if (prev != kind - 1) {
-              Res = kMismatch;
-              break;
-            }
-            m_ParenStack.pop();
-          } 
-          else
-            m_ParenStack.push(kind);
-        }
+      // If there is " or ' we don't need to look for balancing until we 
+      // enounter matching " or '
+      if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe) {
+        if (m_ParenStack.empty())
+          m_ParenStack.push(kind);
+        else if (m_ParenStack.top() == kind)
+          m_ParenStack.pop();
+        else
+          continue;
       }
-      while (Tok.isNot(tok::eof));
+
+      // In case when we need closing brace.
+      if (kind >= (int)tok::l_square && kind <= (int)tok::r_brace) {
+        // The closing paren kind is open paren kind + 1 (i.e odd number)
+        if (kind % 2) {
+          // closing the right one?
+          if (m_ParenStack.empty()) {
+            Res = kMismatch;
+            break;
+          }
+          int prev = m_ParenStack.top();
+          if (prev != kind - 1) {
+            Res = kMismatch;
+            break;
+          }
+          m_ParenStack.pop();
+        } 
+        else
+          m_ParenStack.push(kind);
+      }
     }
+    while (Tok.isNot(tok::eof));
 
     if (!m_ParenStack.empty() && Res != kMismatch)
       Res = kIncomplete;
