@@ -23,7 +23,6 @@ namespace cling {
 
   class Interpreter;
   class InputValidator;
-  class MetaParser;
   class StoredValueRef;
 
   class MetaProcessorOpts {
@@ -66,10 +65,6 @@ namespace cling {
     ///
     llvm::OwningPtr<InputValidator> m_InputValidator;
 
-    ///\brief The parser used to parse our tiny "meta" language
-    ///
-    llvm::OwningPtr<MetaParser> m_MetaParser;
-
     ///\brief MetaProcessor's options
     ///
     MetaProcessorOpts m_Options;
@@ -109,6 +104,14 @@ namespace cling {
     bool ProcessMeta(const std::string& input_line,
                      cling::StoredValueRef* result,
                      Interpreter::CompilationResult* compRes = 0);
+
+    ///\brief Shows help for the use of interpreter's meta commands
+    ///
+    void PrintCommandHelp();
+
+    ///\brief Shows statistics about the loaded files
+    ///
+    void PrintFileStats();
 
   public:
     MetaProcessor(Interpreter& interp);
