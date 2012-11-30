@@ -88,8 +88,6 @@ namespace cling {
       // Accept it only if the whole name was parsed.
       if (P.NextToken().getKind() == clang::tok::eof) {
         TypeSourceInfo* TSI = 0;
-        // The QualType returned by the parser is an odd QualType
-        // (type + TypeSourceInfo) and cannot be used directly.
         TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
       }
     }
@@ -246,7 +244,8 @@ namespace cling {
       ParsedType T = P.getTypeAnnotation(const_cast<Token&>(P.getCurToken()));
       // Only accept the parse if we consumed all of the name.
       if (P.NextToken().getKind() == clang::tok::eof) {
-        QualType QT = T.get();
+        TypeSourceInfo *TSI = 0;
+        clang::QualType QT = clang::Sema::GetTypeFromParser(T, &TSI);
         if (const EnumType* ET = QT->getAs<EnumType>()) {
            EnumDecl* ED = ET->getDecl();
            TheDecl = ED->getDefinition();
@@ -254,7 +253,6 @@ namespace cling {
         }
       }
     }
-
     return TheDecl;
   }
 
@@ -324,9 +322,7 @@ namespace cling {
         return TheDecl;
       }
       TypeSourceInfo *TSI = 0;
-      // The QualType returned by the parser is an odd QualType (type + TypeSourceInfo)
-      // and can not be used directly.
-      clang::QualType QT(clang::Sema::GetTypeFromParser(Res.get(),&TSI));
+      clang::QualType QT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
       QT = QT.getCanonicalType();
       GivenArgTypes.push_back(QT);
       {
