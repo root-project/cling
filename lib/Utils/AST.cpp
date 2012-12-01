@@ -366,6 +366,9 @@ namespace utils {
     const ElaboratedType* etype_input 
       = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
     if (etype_input) {
+      // Intentionally, we do not care about the other compononent of
+      // the elaborated type (the keyword) as part of the partial
+      // desugaring (and/or name normaliztation) is to remove it.
       original_prefix = etype_input->getQualifier();
       if (original_prefix) {
         const NamespaceDecl *ns = original_prefix->getAsNamespace();
@@ -533,8 +536,9 @@ namespace utils {
               // if the outer scope is really a TagDecl.
               // It could also be a CXXMethod for example.
               TagDecl *tdecl = llvm::dyn_cast<TagDecl>(outer);
-              if (tdecl) 
-                 prefix = CreateNestedNameSpecifier(Ctx,tdecl);
+              if (tdecl) {
+                prefix = CreateNestedNameSpecifier(Ctx,tdecl);
+              }
             }
           }
         }
@@ -581,6 +585,8 @@ namespace utils {
       }
     }
     if (prefix) {
+      // We intentionally always use ETK_None, we never want
+      // the keyword (humm ... what about anonymous types?)
       QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
     }
