@@ -20,8 +20,8 @@
 
 namespace cling {
 
-  void MetaSema::actOnLCommand(llvm::sys::Path path) const {
-    m_Interpreter.loadFile(path.str());
+  void MetaSema::actOnLCommand(llvm::sys::Path file) const {
+    m_Interpreter.loadFile(file.str());
     // TODO: extra checks. Eg if the path is readable, if the file exists...
   }
 
@@ -30,10 +30,10 @@ namespace cling {
     m_Interpreter.declare(comment);
   }
 
-  void MetaSema::actOnxCommand(llvm::sys::Path path, llvm::StringRef args) const
+  void MetaSema::actOnxCommand(llvm::sys::Path file, llvm::StringRef args) const
   {
     // Fall back to the meta processor for now.
-    m_MetaProcessor.executeFile(path.str(), args.str());
+    m_MetaProcessor.executeFile(file.str(), args.str());
     //m_Interpreter.loadFile(path.str());
     // TODO: extra checks. Eg if the path is readable, if the file exists...
   }
