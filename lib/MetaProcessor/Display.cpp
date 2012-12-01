@@ -4,28 +4,29 @@
 // author: Timur Pocheptsov <Timur.Pocheptsov@cern.ch>
 //------------------------------------------------------------------------------
 
-#include "cling/Interpreter/LookupHelper.h"
-#include "cling/Interpreter/Interpreter.h"
 #include "Display.h"
 
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Basic/IdentifierTable.h"
-#include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/SourceManager.h"
-#include "clang/Basic/LangOptions.h"
-#include "clang/AST/PrettyPrinter.h"
-#include "clang/Basic/Specifiers.h"
-#include "clang/Lex/Preprocessor.h"
-#include "clang/AST/RecordLayout.h"
-#include "clang/AST/DeclTemplate.h"
+#include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/LookupHelper.h"
+
 #include "clang/AST/ASTContext.h"
-#include "clang/Lex/MacroInfo.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/AST/DeclTemplate.h"
+#include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/RecordLayout.h"
 #include "clang/AST/Type.h"
+#include "clang/Basic/IdentifierTable.h"
+#include "clang/Basic/LangOptions.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
+#include "clang/Basic/Specifiers.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Lex/MacroInfo.h"
+#include "clang/Lex/Preprocessor.h"
 
-#include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/PathV2.h"
 
 #include <algorithm>
