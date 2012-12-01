@@ -44,7 +44,7 @@ namespace cling {
       return;
 
     Token Tok = lookAhead(1);
-    while (Tok.isNot(stopAt) && Tok.isNot(tok::eof) && Tok.isNot(tok::comment)){
+    while (Tok.isNot(stopAt) && Tok.isNot(tok::eof)){
       //MergedTok.setLength(MergedTok.getLength() + Tok.getLength());
       m_TokenCache.erase(m_TokenCache.begin() + 1);
       Tok = lookAhead(1);
@@ -82,7 +82,7 @@ namespace cling {
 
   bool MetaParser::isCommand() {
     consumeToken();
-    return isLCommand() || isxCommand() || isXCommand() || isqCommand() 
+    return isLCommand() || isxCommand() /*|| isXCommand() */|| isqCommand() 
       || isUCommand() || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
       || isfileExCommand() || isfilesCommand();
@@ -115,7 +115,8 @@ namespace cling {
   // ExtraArgList := AnyString [, ExtraArgList]
   bool MetaParser::isxCommand() {
     bool result = false;
-    if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("x")) {
+    if (getCurTok().is(tok::ident) && (getCurTok().getIdent().equals("x")
+                                       || getCurTok().getIdent().equals("X"))) {
       // There might be ArgList
       consumeAnyStringToken(tok::l_paren);
       llvm::sys::Path file(getCurTok().getIdent());
