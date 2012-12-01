@@ -266,7 +266,6 @@ namespace cling {
     // Use P for shortness
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
-    Preprocessor& PP = P.getPreprocessor();
     ASTContext& Context = S.getASTContext();
     ParserStateRAII ResetParserState(P);
     prepareForParsing(Name.str(), 
