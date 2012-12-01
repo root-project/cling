@@ -82,7 +82,7 @@ namespace cling {
 
   bool MetaParser::isCommand() {
     consumeToken();
-    return isLCommand() || isxCommand() /*|| isXCommand() */|| isqCommand() 
+    return isLCommand() || isXCommand() || isqCommand() 
       || isUCommand() || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
       || isfileExCommand() || isfilesCommand() || isClassCommand();
@@ -109,14 +109,15 @@ namespace cling {
     return result;
   }
 
-  // xCommand := 'x' FilePath[ArgList]
+  // XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
   // FilePath := AnyString
   // ArgList := (ExtraArgList) ' ' [ArgList]
   // ExtraArgList := AnyString [, ExtraArgList]
-  bool MetaParser::isxCommand() {
+  bool MetaParser::isXCommand() {
     bool result = false;
-    if (getCurTok().is(tok::ident) && (getCurTok().getIdent().equals("x")
-                                       || getCurTok().getIdent().equals("X"))) {
+    const Token& Tok = getCurTok();
+    if (Tok.is(tok::ident) && (Tok.getIdent().equals("x")
+                               || Tok.getIdent().equals("X"))) {
       // There might be ArgList
       consumeAnyStringToken(tok::l_paren);
       llvm::sys::Path file(getCurTok().getIdent());
@@ -132,7 +133,6 @@ namespace cling {
         consumeAnyStringToken();
         m_Actions->actOnComment(getCurTok().getIdent());
       }
-
     }
 
     return result;
@@ -144,11 +144,6 @@ namespace cling {
     consumeAnyStringToken(tok::r_paren);
     
     return getCurTok().is(tok::raw_ident);
-  }
-
-  bool MetaParser::isXCommand() {
-    // TODO: For now we don't distinguish both cases. In future we will have to.
-    return isxCommand();
   }
 
   bool MetaParser::isqCommand() {

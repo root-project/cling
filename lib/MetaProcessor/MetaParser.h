@@ -25,15 +25,13 @@ namespace cling {
 
   // Command syntax: MetaCommand := <CommandSymbol><Command>
   //                 CommandSymbol := '.' | '//.'
-  //                 Command := LCommand | xCommand | XCommand | qCommand |
-  //                            UCommand | ICommand | RawInputCommand | 
-  //                            PrintASTCommand | DynamicExtensionsCommand |
-  //                            HelpCommand | FileExCommand | FilesCommand |
-  //                            ClassCommand
+  //                 Command := LCommand | XCommand | qCommand | UCommand
+  //                            ICommand | RawInputCommand | PrintASTCommand
+  //                            DynamicExtensionsCommand | HelpCommand |
+  //                            FileExCommand | FilesCommand | ClassCommand
   //                 LCommand := 'L' FilePath
   //                 qCommand := 'q'
-  //                 xCommand := 'x' FilePath[ArgList]
-  //                 XCommand := 'x' FilePath[ArgList]
+  //                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
   //                 UCommand := 'U'
   //                 ICommand := 'I' [FilePath]
   //                 RawInputCommand := 'rawInput' [Constant]
@@ -64,7 +62,6 @@ namespace cling {
     bool isCommandSymbol();
     bool isCommand();
     bool isLCommand();
-    bool isxCommand();
     bool isExtraArgList();
     bool isXCommand();
     bool isqCommand();
