@@ -20,17 +20,17 @@
 
 namespace cling {
 
-  void MetaSema::ActOnLCommand(llvm::sys::Path path) const {
+  void MetaSema::actOnLCommand(llvm::sys::Path path) const {
     m_Interpreter.loadFile(path.str());
     // TODO: extra checks. Eg if the path is readable, if the file exists...
   }
 
-  void MetaSema::ActOnComment(llvm::StringRef comment) const {
+  void MetaSema::actOnComment(llvm::StringRef comment) const {
     // Some of the comments are meaningful for the cling::Interpreter
     m_Interpreter.declare(comment);
   }
 
-  void MetaSema::ActOnxCommand(llvm::sys::Path path, llvm::StringRef args) const
+  void MetaSema::actOnxCommand(llvm::sys::Path path, llvm::StringRef args) const
   {
     // Fall back to the meta processor for now.
     m_MetaProcessor.executeFile(path.str(), args.str());
@@ -38,22 +38,22 @@ namespace cling {
     // TODO: extra checks. Eg if the path is readable, if the file exists...
   }
 
-  void MetaSema::ActOnqCommand() const {
+  void MetaSema::actOnqCommand() const {
     m_MetaProcessor.getMetaProcessorOpts().Quitting = true;
   }
 
-  void MetaSema::ActOnUCommand() const {
+  void MetaSema::actOnUCommand() const {
      m_Interpreter.unload();
   }
 
-  void MetaSema::ActOnICommand(llvm::sys::Path path) const {
+  void MetaSema::actOnICommand(llvm::sys::Path path) const {
     if (path.isEmpty())
       m_Interpreter.DumpIncludePath();
     else
       m_Interpreter.AddIncludePath(path.str());
   }
 
-  void MetaSema::ActOnrawInputCommand(SwitchMode mode/* = kToggle*/) const {
+  void MetaSema::actOnrawInputCommand(SwitchMode mode/* = kToggle*/) const {
     MetaProcessorOpts& MPOpts = m_MetaProcessor.getMetaProcessorOpts();
     if (mode == kToggle) {
       MPOpts.RawInput = !MPOpts.RawInput;
@@ -64,7 +64,7 @@ namespace cling {
       MPOpts.RawInput = mode;
   }
 
-  void MetaSema::ActOnprintASTCommand(SwitchMode mode/* = kToggle*/) const {
+  void MetaSema::actOnprintASTCommand(SwitchMode mode/* = kToggle*/) const {
     if (mode == kToggle) {
       bool flag = !m_Interpreter.isPrintingAST();
       m_Interpreter.enablePrintAST(flag);
@@ -75,7 +75,7 @@ namespace cling {
       m_Interpreter.enablePrintAST(mode);
   }
 
-  void MetaSema::ActOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/) 
+  void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/) 
     const {
     if (mode == kToggle) {
       bool flag = !m_Interpreter.isDynamicLookupEnabled();
@@ -87,7 +87,7 @@ namespace cling {
       m_Interpreter.enableDynamicLookup(mode);
   }
 
-  void MetaSema::ActOnhelpCommand() const {
+  void MetaSema::actOnhelpCommand() const {
     std::string& metaString = m_Interpreter.getOptions().MetaString;
     llvm::outs() << "Cling meta commands usage\n";
     llvm::outs() << "Syntax: .Command [arg0 arg1 ... argN]\n";
@@ -109,7 +109,7 @@ namespace cling {
     llvm::outs() << metaString << "help\t\t\t\t- Shows this information\n";
   }
 
-  void MetaSema::ActOnfileExCommand() const {
+  void MetaSema::actOnfileExCommand() const {
     const clang::SourceManager& SM = m_Interpreter.getCI()->getSourceManager();
     SM.getFileManager().PrintStats();
 
@@ -123,7 +123,7 @@ namespace cling {
 
   }
 
-  void MetaSema::ActOnfilesCommand() const {
+  void MetaSema::actOnfilesCommand() const {
     typedef llvm::SmallVectorImpl<Interpreter::LoadedFileInfo*> LoadedFiles_t;
     const LoadedFiles_t& LoadedFiles = m_Interpreter.getLoadedFiles();
     for (LoadedFiles_t::const_iterator I = LoadedFiles.begin(),
@@ -134,14 +134,14 @@ namespace cling {
     }
   }
 
-  void MetaSema::ActOnclassCommand(llvm::StringRef className) const {
+  void MetaSema::actOnclassCommand(llvm::StringRef className) const {
     if (!className.empty()) 
       DisplayClass(llvm::outs(), &m_Interpreter, className.str().c_str(), true);
     else
       DisplayClasses(llvm::outs(), &m_Interpreter, false);
   }
 
-  void MetaSema::ActOnClassCommand() const {
+  void MetaSema::actOnClassCommand() const {
     DisplayClasses(llvm::outs(), &m_Interpreter, true);
   }
 } // end namespace cling

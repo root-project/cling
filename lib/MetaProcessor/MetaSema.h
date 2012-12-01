@@ -31,20 +31,21 @@ namespace cling {
   public:
     MetaSema(Interpreter& interp, MetaProcessor& meta) 
       : m_Interpreter(interp), m_MetaProcessor(meta) {}
-    void ActOnLCommand(llvm::sys::Path path) const;
-    void ActOnComment(llvm::StringRef comment) const;
-    void ActOnxCommand(llvm::sys::Path path, llvm::StringRef args) const;
-    void ActOnqCommand() const;
-    void ActOnUCommand() const;
-    void ActOnICommand(llvm::sys::Path path) const;
-    void ActOnrawInputCommand(SwitchMode mode = kToggle) const;
-    void ActOnprintASTCommand(SwitchMode mode = kToggle) const;
-    void ActOndynamicExtensionsCommand(SwitchMode mode = kToggle) const;
-    void ActOnhelpCommand() const;
-    void ActOnfileExCommand() const;
-    void ActOnfilesCommand() const;
-    void ActOnclassCommand(llvm::StringRef className) const;
-    void ActOnClassCommand() const;
+
+    void actOnLCommand(llvm::sys::Path path) const;
+    void actOnComment(llvm::StringRef comment) const;
+    void actOnxCommand(llvm::sys::Path path, llvm::StringRef args) const;
+    void actOnqCommand() const;
+    void actOnUCommand() const;
+    void actOnICommand(llvm::sys::Path path) const;
+    void actOnrawInputCommand(SwitchMode mode = kToggle) const;
+    void actOnprintASTCommand(SwitchMode mode = kToggle) const;
+    void actOndynamicExtensionsCommand(SwitchMode mode = kToggle) const;
+    void actOnhelpCommand() const;
+    void actOnfileExCommand() const;
+    void actOnfilesCommand() const;
+    void actOnclassCommand(llvm::StringRef className) const;
+    void actOnClassCommand() const;
   };
 
 } // end namespace cling

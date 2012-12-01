@@ -97,11 +97,11 @@ namespace cling {
       consumeAnyStringToken();
       if (getCurTok().is(tok::raw_ident)) {
         result = true;
-        m_Actions->ActOnLCommand(llvm::sys::Path(getCurTok().getIdent()));
+        m_Actions->actOnLCommand(llvm::sys::Path(getCurTok().getIdent()));
         consumeToken();
         if (getCurTok().is(tok::comment)) {
           consumeAnyStringToken();
-          m_Actions->ActOnComment(getCurTok().getIdent());
+          m_Actions->actOnComment(getCurTok().getIdent());
         }
       }
     }
@@ -127,10 +127,10 @@ namespace cling {
         args = getCurTok().getIdent();
         consumeToken(); // consume the closing paren
       }
-      m_Actions->ActOnxCommand(file, args);
+      m_Actions->actOnxCommand(file, args);
       if (getCurTok().is(tok::comment)) {
         consumeAnyStringToken();
-        m_Actions->ActOnComment(getCurTok().getIdent());
+        m_Actions->actOnComment(getCurTok().getIdent());
       }
 
     }
@@ -155,14 +155,14 @@ namespace cling {
     bool result = false;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("q")) {
       result = true;
-      m_Actions->ActOnqCommand();
+      m_Actions->actOnqCommand();
     }
     return result;
   }
 
   bool MetaParser::isUCommand() {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("q")) {
-      m_Actions->ActOnUCommand();
+      m_Actions->actOnUCommand();
       return true;
     }
     return false;
@@ -174,7 +174,7 @@ namespace cling {
       llvm::sys::Path path;
       if (getCurTok().is(tok::raw_ident))
         path = getCurTok().getIdent();
-      m_Actions->ActOnICommand(path);
+      m_Actions->actOnICommand(path);
       return true;
     }
     return false;
@@ -188,7 +188,7 @@ namespace cling {
       SkipWhitespace();
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
-      m_Actions->ActOnrawInputCommand(mode);
+      m_Actions->actOnrawInputCommand(mode);
       return true;
     }
     return false;
@@ -202,7 +202,7 @@ namespace cling {
       SkipWhitespace();
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
-      m_Actions->ActOnprintASTCommand(mode);
+      m_Actions->actOnprintASTCommand(mode);
       return true;
     }
     return false;
@@ -216,7 +216,7 @@ namespace cling {
       SkipWhitespace();
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
-      m_Actions->ActOndynamicExtensionsCommand(mode);
+      m_Actions->actOndynamicExtensionsCommand(mode);
       return true;
     }
     return false;
@@ -224,7 +224,7 @@ namespace cling {
 
   bool MetaParser::ishelpCommand() {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("help")) {
-      m_Actions->ActOnhelpCommand();
+      m_Actions->actOnhelpCommand();
       return true;
     }
     return false;
@@ -232,7 +232,7 @@ namespace cling {
 
   bool MetaParser::isfileExCommand() {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("fileEx")) {
-      m_Actions->ActOnfileExCommand();
+      m_Actions->actOnfileExCommand();
       return true;
     }
     return false;
@@ -240,7 +240,7 @@ namespace cling {
 
   bool MetaParser::isfilesCommand() {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("files")) {
-      m_Actions->ActOnfilesCommand();
+      m_Actions->actOnfilesCommand();
       return true;
     }
     return false;
@@ -255,11 +255,11 @@ namespace cling {
         llvm::StringRef className;
         if (NextTok.is(tok::raw_ident))
           className = Tok.getIdent();
-        m_Actions->ActOnclassCommand(className);
+        m_Actions->actOnclassCommand(className);
         return true;
       }
       else if (Tok.getIdent().equals("Class")) {
-        m_Actions->ActOnClassCommand();
+        m_Actions->actOnClassCommand();
         return true;
       }
     }
