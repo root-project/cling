@@ -203,7 +203,7 @@ namespace utils {
     return false;
   }
 
-  bool Transform::SingleStepPartiallyDesugarType(QualType& QT)
+  bool SingleStepPartiallyDesugarTypeImpl(QualType& QT)
   {
     //  WARNING:
     //
@@ -311,6 +311,17 @@ namespace utils {
     return false;
   }
 
+  bool Transform::SingleStepPartiallyDesugarType(QualType &QT,
+                                                 const ASTContext &Context) {
+    Qualifiers quals = QT.getQualifiers();      
+    bool desugared = SingleStepPartiallyDesugarTypeImpl( QT );
+    if (desugared) {
+      // If the types has been desugared it also lost its qualifiers.
+      QT = Context.getQualifiedType(QT, quals);
+    }
+    return desugared;
+  }
+   
   QualType Transform::GetPartiallyDesugaredType(const ASTContext& Ctx, 
     QualType QT, const llvm::SmallSet<const Type*,4>& TypesToSkip,
     bool fullyQualify/*=true*/)
@@ -396,7 +407,7 @@ namespace utils {
         // so we must go on to add it back.
         break;
       }
-      bool wasDesugared = SingleStepPartiallyDesugarType(QT);
+      bool wasDesugared = SingleStepPartiallyDesugarType(QT,Ctx);
       if (!wasDesugared) {
         // No more work to do, stop now.
         break;
