@@ -43,6 +43,8 @@ namespace cling {
     void ActOnhelpCommand() const;
     void ActOnfileExCommand() const;
     void ActOnfilesCommand() const;
+    void ActOnclassCommand(llvm::StringRef className) const;
+    void ActOnClassCommand() const;
   };
 
 } // end namespace cling

@@ -6,6 +6,8 @@
 
 #include "MetaSema.h"
 
+#include "Display.h"
+
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 
@@ -130,5 +132,16 @@ namespace cling {
       llvm::outs() << '[' << cType[(*I)->getType()] << "] " 
                    << (*I)->getName() << '\n';
     }
+  }
+
+  void MetaSema::ActOnclassCommand(llvm::StringRef className) const {
+    if (!className.empty()) 
+      DisplayClass(llvm::outs(), &m_Interpreter, className.str().c_str(), true);
+    else
+      DisplayClasses(llvm::outs(), &m_Interpreter, false);
+  }
+
+  void MetaSema::ActOnClassCommand() const {
+    DisplayClasses(llvm::outs(), &m_Interpreter, true);
   }
 } // end namespace cling

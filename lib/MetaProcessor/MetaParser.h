@@ -28,7 +28,8 @@ namespace cling {
   //                 Command := LCommand | xCommand | XCommand | qCommand |
   //                            UCommand | ICommand | RawInputCommand | 
   //                            PrintASTCommand | DynamicExtensionsCommand |
-  //                            HelpCommand | FileExCommand | FilesCommand
+  //                            HelpCommand | FileExCommand | FilesCommand |
+  //                            ClassCommand
   //                 LCommand := 'L' FilePath
   //                 qCommand := 'q'
   //                 xCommand := 'x' FilePath[ArgList]
@@ -41,11 +42,13 @@ namespace cling {
   //                 DynamicExtensionsCommand := 'help'
   //                 DynamicExtensionsCommand := 'fileEx'
   //                 DynamicExtensionsCommand := 'files'
+  //                 ClassCommand := 'class' AnyString | 'Class'
   //                 FilePath := AnyString
   //                 ArgList := (ExtraArgList) ' ' [ArgList]
   //                 ExtraArgList := AnyString [, ExtraArgList]
   //                 AnyString := *^(' ' | '\t')
   //                 Constant := 0|1
+  //                 Ident := a-zA-Z{a-zA-Z0-9}
   class MetaParser {
   private:
     llvm::OwningPtr<MetaLexer> m_Lexer;
@@ -73,6 +76,7 @@ namespace cling {
     bool ishelpCommand();
     bool isfileExCommand();
     bool isfilesCommand();    
+    bool isClassCommand();    
   public:
     MetaParser(MetaSema* Actions);
     void enterNewInputLine(llvm::StringRef Line);
