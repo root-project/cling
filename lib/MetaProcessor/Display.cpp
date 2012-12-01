@@ -1,3 +1,9 @@
+//------------------------------------------------------------------------------
+// CLING - the C++ LLVM-based InterpreterG :)
+// version: $Id$
+// author: Timur Pocheptsov <Timur.Pocheptsov@cern.ch>
+//------------------------------------------------------------------------------
+
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "Display.h"
