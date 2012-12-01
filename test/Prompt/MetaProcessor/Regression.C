@@ -9,3 +9,6 @@
 .x ./DotXable.h(5)
 // CHECK: 5
 // End PR #93092
+
+.X ./DotXable(10)
+ // CHECK: 10
