@@ -52,6 +52,7 @@ namespace cling {
     llvm::OwningPtr<MetaLexer> m_Lexer;
     llvm::OwningPtr<MetaSema> m_Actions;
     llvm::SmallVector<Token, 2> m_TokenCache;
+    llvm::SmallVector<Token, 4> m_MetaSymbolCache;
   private:
     inline const Token& getCurTok() { return lookAhead(0); }
     void consumeToken();

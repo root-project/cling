@@ -9,6 +9,9 @@
 #include "MetaLexer.h"
 #include "MetaSema.h"
 
+#include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/InvocationOptions.h"
+
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
 
@@ -17,6 +20,15 @@ namespace cling {
   MetaParser::MetaParser(MetaSema* Actions) {
     m_Lexer.reset(0);
     m_Actions.reset(Actions);
+    const InvocationOptions& Opts = Actions->getInterpreter().getOptions();
+    MetaLexer metaSymbolLexer(Opts.MetaString);
+    Token Tok;//Tok.startToken();
+    while(true) {
+      metaSymbolLexer.Lex(Tok);
+      if (Tok.is(tok::eof))
+        break;
+      m_MetaSymbolCache.push_back(Tok);
+    }
   }
 
   void MetaParser::enterNewInputLine(llvm::StringRef Line) {
@@ -74,14 +86,15 @@ namespace cling {
   }
 
   bool MetaParser::isCommandSymbol() {
-    consumeToken();
-    if (getCurTok().is(tok::dot) /*TODO: || Tok.is(//.)*/)
-      return true;
-    return false;
+    for (size_t i = 0; i < m_MetaSymbolCache.size(); ++i) {
+      if (getCurTok().getKind() != m_MetaSymbolCache[i].getKind())
+        return false;
+      consumeToken();
+    }
+    return true;
   }
 
   bool MetaParser::isCommand() {
-    consumeToken();
     return isLCommand() || isXCommand() || isqCommand() 
       || isUCommand() || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()

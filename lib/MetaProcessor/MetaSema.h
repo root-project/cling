@@ -33,7 +33,8 @@ namespace cling {
   public:
     MetaSema(Interpreter& interp, MetaProcessor& meta) 
       : m_Interpreter(interp), m_MetaProcessor(meta) {}
-
+    const Interpreter& getInterpreter() { return m_Interpreter; }
+    
     ///\brief L command includes the given file or loads the given library.
     ///
     ///\param[in] path - The file/library to be loaded.

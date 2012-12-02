@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling --metastr=META | FileCheck %s
+// RUN: cat %s | %cling --metastr=//. | FileCheck %s
 
 // Test setting of meta escape
-METAhelp // CHECK: Cling meta commands usage
+//.help // CHECK: Cling meta commands usage
