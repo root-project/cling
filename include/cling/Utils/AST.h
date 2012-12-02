@@ -89,7 +89,8 @@ namespace utils {
   public:
 
     ///\brief Remove one layer of sugar, but only some kinds.
-    static bool SingleStepPartiallyDesugarType(clang::QualType& QT);
+    static bool SingleStepPartiallyDesugarType(clang::QualType& QT,
+                                               const clang::ASTContext& C);
 
     ///\brief "Desugars" a type while skipping the ones in the set.
     ///
