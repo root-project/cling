@@ -144,4 +144,12 @@ namespace cling {
   void MetaSema::actOnClassCommand() const {
     DisplayClasses(llvm::outs(), &m_Interpreter, true);
   }
+
+  void MetaSema::actOngCommand(llvm::StringRef varName) const {
+    if (varName.empty())
+      DisplayGlobals(llvm::outs(), &m_Interpreter);
+    else
+      DisplayGlobal(llvm::outs(), &m_Interpreter, varName.str().c_str());
+  }
+
 } // end namespace cling

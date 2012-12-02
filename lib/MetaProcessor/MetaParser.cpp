@@ -98,7 +98,8 @@ namespace cling {
     return isLCommand() || isXCommand() || isqCommand() 
       || isUCommand() || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
-      || isfileExCommand() || isfilesCommand() || isClassCommand();
+      || isfileExCommand() || isfilesCommand() || isClassCommand() 
+      || isgCommand();
   }
 
   // L := 'L' FilePath
@@ -270,6 +271,19 @@ namespace cling {
         m_Actions->actOnClassCommand();
         return true;
       }
+    }
+    return false;
+  }
+
+  bool MetaParser::isgCommand() {
+    if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("g")) {
+      consumeToken();
+      SkipWhitespace();
+      llvm::StringRef varName;
+      if (getCurTok().is(tok::ident))
+        varName = getCurTok().getIdent();
+      m_Actions->actOngCommand(varName);
+      return true;
     }
     return false;
   }

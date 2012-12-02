@@ -119,6 +119,13 @@ namespace cling {
     ///\brief Prints out class CINT-like style more verbosely.
     ///
     void actOnClassCommand() const;
+
+    ///\brief Prints out information about global variables.
+    ///
+    ///\param[in] varName - The name of the global variable 
+    //                      if empty prints them all.
+    ///
+    void actOngCommand(llvm::StringRef varName) const;
   };
 
 } // end namespace cling
