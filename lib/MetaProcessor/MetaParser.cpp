@@ -169,7 +169,7 @@ namespace cling {
   }
 
   bool MetaParser::isUCommand() {
-    if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("q")) {
+    if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("U")) {
       m_Actions->actOnUCommand();
       return true;
     }
