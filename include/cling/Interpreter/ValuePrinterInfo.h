@@ -18,6 +18,7 @@ namespace cling {
   class ValuePrinterInfo {
   private:
     void* /* clang::QualType */ m_Type; // QualType buffer to prevent #include
+    clang::Expr* m_Expr;
     clang::ASTContext* m_Context;
     unsigned m_Flags;
 
@@ -34,6 +35,7 @@ namespace cling {
     ValuePrinterInfo(clang::QualType Ty, clang::ASTContext* Ctx);
     const clang::QualType& getType() const {
       return *reinterpret_cast<const clang::QualType*>(&m_Type); }
+    clang::Expr* getExpr() const { return m_Expr; }
     clang::ASTContext* getASTContext() const { return m_Context; }
     unsigned getFlags() { return m_Flags; }
   };

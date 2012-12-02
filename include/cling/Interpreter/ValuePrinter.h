@@ -48,7 +48,7 @@ namespace cling {
     const T* PrintValue(llvm::raw_ostream* o, clang::Expr* E,
                         clang::ASTContext* C, const T* value) {
       ValuePrinterInfo VPI(E, C);
-      printValuePublic(*o, value, value, VPI);
+      printValuePublic(*o, (const void*) value, value, VPI);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushOStream(*o);
       return value;
@@ -58,7 +58,7 @@ namespace cling {
     const T* PrintValue(llvm::raw_ostream* o, clang::Expr* E,
                         clang::ASTContext* C, T* value) {
       ValuePrinterInfo VPI(E, C);
-      printValuePublic(*o, value, value, VPI);
+      printValuePublic(*o, (const void*) value, value, VPI);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushOStream(*o);
       return value;

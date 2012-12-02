@@ -14,12 +14,12 @@ using namespace clang;
 
 namespace cling {
   ValuePrinterInfo::ValuePrinterInfo(Expr* E, ASTContext* Ctx)
-    : m_Type(), m_Context(Ctx), m_Flags(0) {
+    : m_Type(), m_Expr(E), m_Context(Ctx), m_Flags(0) {
     Init(E->getType());
   }
 
   ValuePrinterInfo::ValuePrinterInfo(QualType Ty, ASTContext* Ctx)
-    : m_Type(), m_Context(Ctx), m_Flags(0) {
+    : m_Type(), m_Expr(0), m_Context(Ctx), m_Flags(0) {
     Init(Ty);
   }
 

@@ -103,6 +103,31 @@ static void StreamArr(llvm::raw_ostream& o, const void* p,
     StreamPtr(o, p, Sep);
 }
 
+static void StreamFunction(llvm::raw_ostream& o, const void* addr,
+                           ValuePrinterInfo VPI,
+                           const char* Sep = "\n") {
+  o << "Function @" << addr <<":\n";
+
+  const clang::DeclRefExpr* DeclRefExp
+    = llvm::dyn_cast_or_null<clang::DeclRefExpr>(VPI.getExpr());
+  const clang::FunctionDecl* FD
+    = llvm::dyn_cast_or_null<clang::FunctionDecl>(DeclRefExp->getDecl());
+  if (FD) {
+    const clang::FunctionDecl* FDef;
+    if (FD->hasBody(FDef))
+      FD = FDef;
+    FD->print(o);
+    //const clang::FunctionDecl* FD
+    //  = llvm::cast<const clang::FunctionType>(Ty)->getDecl();
+  } else {
+    // type-based printing:
+    VPI.getType().print(o, VPI.getASTContext()->getPrintingPolicy());
+  }
+  // type-based print() never and decl-based print() sometimes does not include
+  // a final newline:
+  o << '\n';
+}
+
 static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
                              clang::ASTContext& C, const char* Sep = "\n") {
   if (!value || !value->isValid()) {
@@ -231,6 +256,8 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
   }
   else if (Ty->isArrayType())
     StreamArr(o, p, ValuePrinterInfo(Ty, &C), Sep);
+  else if (Ty->isFunctionType())
+     StreamFunction(o, p, VPI, Sep);
   else
     StreamObj(o, p, ValuePrinterInfo(Ty, &C), Sep);
 }
