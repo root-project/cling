@@ -22,7 +22,7 @@ namespace cling {
     m_Actions.reset(Actions);
     const InvocationOptions& Opts = Actions->getInterpreter().getOptions();
     MetaLexer metaSymbolLexer(Opts.MetaString);
-    Token Tok;//Tok.startToken();
+    Token Tok;
     while(true) {
       metaSymbolLexer.Lex(Tok);
       if (Tok.is(tok::eof))
