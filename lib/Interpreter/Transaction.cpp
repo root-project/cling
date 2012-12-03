@@ -21,24 +21,28 @@ namespace cling {
       delete m_NestedTransactions[i];
   }
 
-  void Transaction::appendUnique(DeclGroupRef DGR) {
-    for (const_iterator I = decls_begin(), E = decls_end(); I != E; ++I) {
-      if (DGR.isNull() || (*I).getAsOpaquePtr() == DGR.getAsOpaquePtr())
-        return;
-    }
+  void Transaction::append(DelayCallInfo DCI) {
+    // for (const_iterator I = decls_begin(), E = decls_end(); I != E; ++I) {
+    //   if (DGR.isNull() || (*I).getAsOpaquePtr() == DGR.getAsOpaquePtr())
+    //     return;
+    // }
     // register the wrapper if any.
-    if (DGR.isSingleDecl()) {
-      if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DGR.getSingleDecl()))
+    if (DCI.m_DGR.isSingleDecl()) {
+      if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl()))
         if (utils::Analyze::IsWrapper(FD)) {
           assert(!m_WrapperFD && "Two wrappers in one transaction?");
           m_WrapperFD = FD;
         }
     }
-    m_DeclQueue.push_back(DGR);
+    m_DeclQueue.push_back(DCI);
   }
 
-  void Transaction::appendUnique(Decl* D) {
-    appendUnique(DeclGroupRef(D));
+  void Transaction::append(clang::DeclGroupRef DGR) {
+    append(DelayCallInfo(DGR, kCCIHandleTopLevelDecl));
+  }
+
+  void Transaction::append(Decl* D) {
+    append(DeclGroupRef(D));
   }
 
   void Transaction::dump() const {
@@ -68,7 +72,7 @@ namespace cling {
                           unsigned Indent, bool PrintInstantiation) const {
     int nestedT = 0;
     for (const_iterator I = decls_begin(), E = decls_end(); I != E; ++I) {
-      if (I->isNull()) {
+      if (I->m_DGR.isNull()) {
         assert(hasNestedTransactions() && "DGR is null even if no nesting?");
         // print the nested decl
         Out<< "\n";
@@ -82,7 +86,8 @@ namespace cling {
         Out<<"          End Transaction" << nestedT << "            \n";
         Out<<"+====================================================+\n";
       }
-      for (DeclGroupRef::const_iterator J = I->begin(), L = I->end();J != L;++J)
+      for (DeclGroupRef::const_iterator J = I->m_DGR.begin(), 
+             L = I->m_DGR.end(); J != L; ++J)
         if (*J)
           (*J)->print(Out, Policy, Indent, PrintInstantiation);
         else

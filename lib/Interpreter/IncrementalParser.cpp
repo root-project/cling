@@ -205,8 +205,8 @@ namespace cling {
       // template instatiator and so on.
       for (Transaction::iterator I = T->decls_begin(), 
              E = T->decls_end(); I != E; ++I) {
-          for (DeclGroupRef::const_iterator J = I->begin(), L = I->end();
-               J != L; ++J)
+          for (DeclGroupRef::const_iterator J = I->m_DGR.begin(), 
+                 L = I->m_DGR.end(); J != L; ++J)
             if (TagDecl* TD = dyn_cast<TagDecl>(*J))
               if (TD->isThisDeclarationADefinition()) {
                 getCodeGenerator()->HandleTagDeclDefinition(TD);
@@ -216,7 +216,7 @@ namespace cling {
                     getCodeGenerator()->HandleVTable(CXXRD, true);
             }
         
-        getCodeGenerator()->HandleTopLevelDecl(*I);
+        getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
       // run the static initializers that came from codegenning

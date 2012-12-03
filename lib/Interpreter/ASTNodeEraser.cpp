@@ -505,7 +505,7 @@ namespace cling {
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),
            E = T->rdecls_end(); I != E; ++I) {
-      const DeclGroupRef& DGR = (*I);
+      const DeclGroupRef& DGR = (*I).m_DGR;
 
       for (DeclGroupRef::const_iterator
              Di = DGR.end() - 1, E = DGR.begin() - 1; Di != E; --Di) {

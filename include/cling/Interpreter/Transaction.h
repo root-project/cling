@@ -35,9 +35,27 @@ namespace cling {
   /// - committed - code could be produced for the contents of the transaction.
   ///
   class Transaction {
-  private:
+  public:
+    enum ConsumerCallInfo {
+      kCCINone,
+      kCCIHandleTopLevelDecl
+    };
 
-    typedef llvm::SmallVector<clang::DeclGroupRef, 64> DeclQueue;
+    ///\brief Each declaration group came through different interface at 
+    /// different time. We are being conservative and we want to keep all the 
+    /// call sequence that originally occurred in clang.
+    ///
+    struct DelayCallInfo {
+      clang::DeclGroupRef m_DGR;
+      ConsumerCallInfo m_Call;
+      DelayCallInfo(clang::DeclGroupRef DGR, ConsumerCallInfo CCI)
+        : m_DGR(DGR), m_Call(CCI) {}
+    };
+
+  private:
+    // Intentionally use struct instead of pair because we don't need default 
+    // init.
+    typedef llvm::SmallVector<DelayCallInfo, 64> DeclQueue;
     typedef llvm::SmallVector<Transaction*, 2> NestedTransactions;
 
     ///\brief All seen declarations. If we collect the declarations by walking
@@ -149,7 +167,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getFirstDecl() const {
       if (!empty())
-        return m_DeclQueue.front();
+        return m_DeclQueue.front().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -157,7 +175,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getLastDecl() const {
       if (!empty() && isCompleted())
-        return m_DeclQueue.back();
+        return m_DeclQueue.back().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -166,7 +184,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getCurrentLastDecl() const {
       if (!empty())
-        return m_DeclQueue.back();
+        return m_DeclQueue.back().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -205,8 +223,9 @@ namespace cling {
       nested->setParent(this);
       // Leave a marker in the parent transaction, where the nested transaction
       // started. Using empty DeclGroupRef is save because append() filters
-      // out possible empty DeclGroupRefs.
-      m_DeclQueue.push_back(clang::DeclGroupRef());
+      // out possible empty DeclGroupRefs.      
+      m_DeclQueue.push_back(DelayCallInfo(clang::DeclGroupRef(), 
+                                          Transaction::kCCINone));
 
       m_NestedTransactions.push_back(nested);
     }
@@ -219,14 +238,20 @@ namespace cling {
     ///
     bool empty() const { return m_DeclQueue.empty(); }
 
-    ///\brief Appends a declaration group to the transaction if doesn't exist.
+    ///\brief Appends a declaration group and source from which consumer interface it
+    /// came from to the transaction.
     ///
-    void appendUnique(clang::DeclGroupRef DGR);
+    void append(DelayCallInfo DCI);
+
+    ///\brief Appends the declaration group to the transaction as if it was 
+    /// seen through HandleTopLevelDecl.
+    ///
+    void append(clang::DeclGroupRef DGR);
 
     ///\brief Wraps the declaration into declaration group and appends it to 
-    /// the transaction if doesn't exist.
+    /// the transaction as if it was seen through HandleTopLevelDecl.
     ///
-    void appendUnique(clang::Decl* D);
+    void append(clang::Decl* D);
 
     ///\brief Clears all declarations in the transaction.
     ///

@@ -24,8 +24,10 @@ namespace cling {
     // end.   The issue is that HandleImplicitImportDecl now is
     // bound/forwarded to HandleTopLevelDecl which soon won't be the case
     // and thus we don't need to bother adding it now.
-    if (!(DGR.isSingleDecl() && isa<ImportDecl>(DGR.getSingleDecl())))
-      m_CurTransaction->appendUnique(DGR);
+    if (!(DGR.isSingleDecl() && isa<ImportDecl>(DGR.getSingleDecl()))) {
+      Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
+      m_CurTransaction->append(DCI);
+    }
     return true;
   }
 

@@ -26,8 +26,8 @@ namespace cling {
 
     for (Transaction::const_iterator I = getTransaction()->decls_begin(), 
            E = getTransaction()->decls_end(); I != E; ++I)
-      for (DeclGroupRef::const_iterator J = (*I).begin(), 
-             JE = (*I).end(); J != JE; ++J)
+      for (DeclGroupRef::const_iterator J = (*I).m_DGR.begin(), 
+             JE = (*I).m_DGR.end(); J != JE; ++J)
         printDecl(*J);
   }
 

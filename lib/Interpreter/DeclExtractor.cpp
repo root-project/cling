@@ -108,7 +108,7 @@ namespace cling {
         }
 
         // Append the new top level decl to the current transaction.
-        getTransaction()->appendUnique(DeclGroupRef(TouchedDecls[i]));
+        getTransaction()->append(DeclGroupRef(TouchedDecls[i]));
       }
     }
 
