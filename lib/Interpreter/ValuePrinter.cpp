@@ -104,22 +104,51 @@ static void StreamArr(llvm::raw_ostream& o, const void* p,
 }
 
 static void StreamFunction(llvm::raw_ostream& o, const void* addr,
-                           ValuePrinterInfo VPI,
-                           const char* Sep = "\n") {
-  o << "Function @" << addr <<":\n";
+                           ValuePrinterInfo VPI, const char* Sep = "\n") {
+  o << "Function @" << addr << '\n';
 
   const clang::DeclRefExpr* DeclRefExp
     = llvm::dyn_cast_or_null<clang::DeclRefExpr>(VPI.getExpr());
   const clang::FunctionDecl* FD
     = llvm::dyn_cast_or_null<clang::FunctionDecl>(DeclRefExp->getDecl());
   if (FD) {
-    const clang::FunctionDecl* FDef;
-    if (FD->hasBody(FDef))
-      FD = FDef;
-    FD->print(o);
-    //const clang::FunctionDecl* FD
-    //  = llvm::cast<const clang::FunctionType>(Ty)->getDecl();
+    clang::SourceRange SRange = FD->getSourceRange();
+    const char* cBegin = 0;
+    const char* cEnd = 0;
+    bool Invalid;
+    if (SRange.isValid()) {
+      clang::SourceManager& SM = VPI.getASTContext()->getSourceManager();
+      clang::SourceLocation LocBegin = SRange.getBegin();
+      LocBegin = SM.getExpansionRange(LocBegin).first;
+      o << "  at " << SM.getFilename(LocBegin);
+      unsigned LineNo = SM.getSpellingLineNumber(LocBegin, &Invalid);
+      if (!Invalid)
+        o << ':' << LineNo;
+      o << ":\n";
+      bool Invalid = false;
+      cBegin = SM.getCharacterData(LocBegin, &Invalid);
+      if (!Invalid) {
+        clang::SourceLocation LocEnd = SRange.getEnd();
+        LocEnd = SM.getExpansionRange(LocEnd).second;
+        cEnd = SM.getCharacterData(LocEnd, &Invalid);
+        if (Invalid)
+          cBegin = 0;
+      } else {
+        cBegin = 0;
+      }
+    }
+    if (cBegin && cEnd && cEnd > cBegin && cEnd - cBegin < 16 * 1024) {
+      o << llvm::StringRef(cBegin, cEnd - cBegin + 1);
+    } else {
+      const clang::FunctionDecl* FDef;
+      if (FD->hasBody(FDef))
+        FD = FDef;
+      FD->print(o);
+      //const clang::FunctionDecl* FD
+      //  = llvm::cast<const clang::FunctionType>(Ty)->getDecl();
+    }
   } else {
+    o << ":\n";
     // type-based printing:
     VPI.getType().print(o, VPI.getASTContext()->getPrintingPolicy());
   }
