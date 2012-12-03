@@ -38,9 +38,9 @@ namespace cling {
   //                 RawInputCommand := 'rawInput' [Constant]
   //                 PrintASTCommand := 'printAST' [Constant]
   //                 DynamicExtensionsCommand := 'dynamicExtensions' [Constant]
-  //                 DynamicExtensionsCommand := 'help'
-  //                 DynamicExtensionsCommand := 'fileEx'
-  //                 DynamicExtensionsCommand := 'files'
+  //                 HelpCommand := 'help'
+  //                 FileExCommand := 'fileEx'
+  //                 FilesCommand := 'files'
   //                 ClassCommand := 'class' AnyString | 'Class'
   //                 GCommand := 'g' [Ident]
   //                 FilePath := AnyString
