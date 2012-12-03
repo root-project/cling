@@ -25,6 +25,7 @@ namespace cling {
       apostrophe, // "'"
       comma,      // ","
       dot,        // "."
+      excl_mark,  // "!"
       slash,      // "/"
       backslash,  // "\"
       ident,      // (a-zA-Z)[(0-9a-zA-Z)*]

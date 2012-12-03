@@ -29,7 +29,8 @@ namespace cling {
     char C = *curPos++;
     switch (C) {
     case '[': case ']': case '(': case ')': case '{': case '}': case '"':
-    case '\'': case '\\': case ',': case '.': // INTENTIONAL FALL THROUGHs
+    case '\'': case '\\': case ',': case '.': case '!':
+      // INTENTIONAL FALL THROUGHs
       return LexPunctuator(C, Tok);
 
     case '/': 
@@ -92,9 +93,10 @@ namespace cling {
     case '\'' : Tok.setKind(tok::apostrophe); break;
     case ','  : Tok.setKind(tok::comma); break;
     case '.'  : Tok.setKind(tok::dot); break;
+    case '!'  : Tok.setKind(tok::excl_mark); break;
     case '/'  : Tok.setKind(tok::slash); break;
     case '\\'  : Tok.setKind(tok::backslash); break;
-    case '\0' : Tok.setKind(tok::eof); Tok.setLength(0); break; // if static call
+    case '\0' : Tok.setKind(tok::eof); Tok.setLength(0); break;// if static call
     default: Tok.setLength(0); break;
     }
   }
