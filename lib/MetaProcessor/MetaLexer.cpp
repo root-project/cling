@@ -117,7 +117,8 @@ namespace cling {
   }
 
   void MetaLexer::LexIdentifier(char C, Token& Tok) {
-    while (C == '_' || (C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z'))
+    while (C == '_' || (C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z')
+           || (C >= '0' && C <= '9'))
       C = *curPos++;
 
     --curPos; // Back up over the non ident char.
