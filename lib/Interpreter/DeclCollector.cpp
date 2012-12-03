@@ -9,6 +9,7 @@
 #include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclGroup.h"
 
 using namespace clang;
@@ -20,32 +21,27 @@ namespace cling {
   }
 
   bool DeclCollector::HandleTopLevelDecl(DeclGroupRef DGR) {
-    // ImportDecl is a special decl that triggers module loading in the front 
-    // end.   The issue is that HandleImplicitImportDecl now is
-    // bound/forwarded to HandleTopLevelDecl which soon won't be the case
-    // and thus we don't need to bother adding it now.
-    if (!(DGR.isSingleDecl() && isa<ImportDecl>(DGR.getSingleDecl()))) {
-      Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
-      m_CurTransaction->append(DCI);
-    }
+    Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
+    m_CurTransaction->append(DCI);
     return true;
   }
 
   void DeclCollector::HandleInterestingDecl(DeclGroupRef DGR) {
-     HandleTopLevelDecl(DGR);
+    Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleInterestingDecl);
+    m_CurTransaction->append(DCI);
   }
 
-  // Does more than we want:
-  // if there is class A {enum E {kEnum = 1};};
-  // we get two different tag decls one for A and one for E. This is not that 
-  // bad because esentially it has no effect on codegen but it differs from what
-  // one'd expect. For now rely on the HandleTopLevelDecl to provide all the 
-  // declarations in the transaction.
   void DeclCollector::HandleTagDeclDefinition(TagDecl* TD) {
-    // Intentional no-op.
+    Transaction::DelayCallInfo DCI(DeclGroupRef(TD), 
+                                   Transaction::kCCIHandleTagDeclDefinition);
+    m_CurTransaction->append(DCI);    
   }
 
   void DeclCollector::HandleVTable(CXXRecordDecl* RD, bool DefinitionRequired) {
+    Transaction::DelayCallInfo DCI(DeclGroupRef(RD),
+                                   Transaction::kCCIHandleVTable);
+    m_CurTransaction->append(DCI);    
+
     // Intentional no-op. It comes through Sema::DefineUsedVTables, which
     // comes either Sema::ActOnEndOfTranslationUnit or while instantiating a
     // template. In our case we will do it on transaction commit, without 

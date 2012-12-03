@@ -38,7 +38,10 @@ namespace cling {
   public:
     enum ConsumerCallInfo {
       kCCINone,
-      kCCIHandleTopLevelDecl
+      kCCIHandleTopLevelDecl,
+      kCCIHandleInterestingDecl,
+      kCCIHandleTagDeclDefinition,
+      kCCIHandleVTable
     };
 
     ///\brief Each declaration group came through different interface at 

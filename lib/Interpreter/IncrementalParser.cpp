@@ -203,28 +203,34 @@ namespace cling {
       // We assume that there is no ordering of the calls to HandleXYZ, because
       // in clang they can happen in different order too, eg. coming from 
       // template instatiator and so on.
-      for (Transaction::iterator I = T->decls_begin(), 
-             E = T->decls_end(); I != E; ++I) {
-          for (DeclGroupRef::const_iterator J = I->m_DGR.begin(), 
-                 L = I->m_DGR.end(); J != L; ++J)
-            if (TagDecl* TD = dyn_cast<TagDecl>(*J))
-              if (TD->isThisDeclarationADefinition()) {
-                getCodeGenerator()->HandleTagDeclDefinition(TD);
-
-                if (CXXRecordDecl* CXXRD = dyn_cast<CXXRecordDecl>(TD))
-                  if (CXXRD->isDynamicClass())
-                    getCodeGenerator()->HandleVTable(CXXRD, true);
-            }
-        
-        getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
+      for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
+           I != E; ++I) {
+        switch (I->m_Call) {
+        case Transaction::kCCIHandleTopLevelDecl :
+          getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
+          break;
+        case Transaction::kCCIHandleInterestingDecl :
+          getCodeGenerator()->HandleInterestingDecl(I->m_DGR);
+          break;
+        case Transaction::kCCIHandleTagDeclDefinition : {
+          TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
+          getCodeGenerator()->HandleTagDeclDefinition(TD);
+          break;
+        }
+        case Transaction::kCCIHandleVTable : {
+          CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I->m_DGR.getSingleDecl());
+          getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
+          break;
+        }
+        }
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
       // run the static initializers that came from codegenning
       if (m_Interpreter->runStaticInitializersOnce()
           >= Interpreter::kExeFirstError) {
-         // Roll back on error in a transformer
-         rollbackTransaction(T);
-         return;
+        // Roll back on error in a transformer
+        rollbackTransaction(T);
+        return;
       }
     }
 
