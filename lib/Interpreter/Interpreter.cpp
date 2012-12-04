@@ -45,9 +45,12 @@ static bool canWrapForCall(const std::string& input_line) {
    // "1" can, "#include <vector>" can't.
    std::string::size_type posNonWS = input_line.find_first_not_of(" \t\n\r");
    if (posNonWS == std::string::npos) return false;
-   if (input_line.length() > posNonWS && input_line[posNonWS] == '#') return false;
-   if (input_line.compare(posNonWS, strlen("extern "), "extern ") == 0) return false;
-   if (input_line.compare(posNonWS, strlen("using "), "using ") == 0) return false;
+   if (input_line.length() > posNonWS && input_line[posNonWS] == '#') 
+     return false;
+   if (input_line.compare(posNonWS, strlen("extern "), "extern ") == 0) 
+     return false;
+   if (input_line.compare(posNonWS, strlen("using "), "using ") == 0) 
+     return false;
    return true;
 }
 
