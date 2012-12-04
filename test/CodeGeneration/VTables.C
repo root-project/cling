@@ -1,5 +1,4 @@
 // RUN: cat %s | %cling | FileCheck %s
-// XFAIL:*
 
 // Test whether the interpreter is able to generate properly the symbols 
 // and the vtables of classes.
