@@ -4,5 +4,8 @@ set(LLVM_USED_LIBS
 
 add_cling_library(clingMetaProcessor
   Display.cpp
+  InputValidator.cpp
+  MetaLexer.cpp
+  MetaParser.cpp
   MetaProcessor.cpp
-  InputValidator.cpp)
+  MetaSema.cpp)
