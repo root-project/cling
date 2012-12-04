@@ -20,7 +20,8 @@ V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 cling::StoredValueRef Result;
 gCling->evaluate("V", Result);
-Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef) boxes [(int *) 0x12]]
+// Here we check whether the type is trivially copiable and for cling::StoredValueRef it is not.
+Result // CHECK: (cling::StoredValueRef) boxes [(void) @0x{{.*}}]
 V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 // Savannah #96277
