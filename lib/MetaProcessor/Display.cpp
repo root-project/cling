@@ -138,7 +138,7 @@ void AppendDeclLocation(const CompilerInstance* compiler, const Decl* decl,
   assert(compiler != 0 && "AppendDeclLocation, 'compiler' parameter is null");
   assert(decl != 0 && "AppendDeclLocation, 'decl' parameter is null");
 
-  const char* const unknownLocation = "compiled";
+  static const char* const unknownLocation = "compiled";
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
 
@@ -151,7 +151,6 @@ void AppendDeclLocation(const CompilerInstance* compiler, const Decl* decl,
     } else
       frss<<llvm::format("%-15s    ", unknownLocation);
   } else {
-    const char* const location = "compiled";
     frss<<llvm::format("%-15s    ", unknownLocation);
   }
 }
