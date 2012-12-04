@@ -191,9 +191,11 @@ namespace cling {
     }
 
     // Pull all template instantiations in that came from the consumers.
+    getCI()->getSema().DefineUsedVTables();
     getCI()->getSema().PerformPendingInstantiations();
 
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
+    //    getCI()->getSema().ActOnEndOfTranslationUnit();
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // Reset the module builder to clean up global initializers, c'tors, d'tors

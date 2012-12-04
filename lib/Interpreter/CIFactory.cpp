@@ -242,7 +242,7 @@ namespace cling {
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;
-    CI->createSema(TU_Prefix, CCC);
+    CI->createSema(TU_Complete, CCC);
 
     // Set CodeGen options
     // CI->getCodeGenOpts().DebugInfo = 1; // want debug info
