@@ -52,7 +52,6 @@ namespace cling {
     ///\brief Checks whether the input contains balanced number of braces
     ///
     ///\param[in] line - Input line to validate.
-    ///\param[in] LO - Language options to validate against.
     ///\returns Information about the outcome of the validation.
     ///
     ValidationResult validate(llvm::StringRef line);
