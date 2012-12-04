@@ -82,6 +82,10 @@ namespace cling {
     return 0;
   }
 
+  void MetaProcessor::cancelContinuation() {
+    m_InputValidator->reset();
+  }
+
   MetaProcessorOpts& MetaProcessor::getMetaProcessorOpts() {
     // Take interpreter's state
     m_Options.PrintingAST = m_Interp.isPrintingAST();

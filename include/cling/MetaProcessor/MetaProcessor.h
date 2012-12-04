@@ -129,6 +129,10 @@ namespace cling {
     int process(const char* input_line, cling::StoredValueRef* result = 0,
                 Interpreter::CompilationResult* compRes = 0);
 
+    ///\brief When continuation is requested, this cancels and ignores previous
+    /// input, resetting the continuation to a new line.
+    void cancelContinuation();
+
     ///\brief Executes a file given the CINT specific rules. Mainly used as:
     /// .x filename[(args)], which in turn includes the filename and runs a
     /// function with signature void filename(args)
