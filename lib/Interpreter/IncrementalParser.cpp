@@ -222,6 +222,8 @@ namespace cling {
           getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
           break;
         }
+        default:
+          llvm_unreachable("We shouldn't have decl without call info.");
         }
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
