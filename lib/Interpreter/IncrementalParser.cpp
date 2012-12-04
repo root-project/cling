@@ -224,7 +224,6 @@ namespace cling {
         }
         case Transaction::kCCINone:
           break; // We use that internally as delimiter in the Transaction.
-        }
         default:
           llvm_unreachable("We shouldn't have decl without call info.");
         }
