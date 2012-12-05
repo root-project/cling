@@ -25,6 +25,8 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Parse/ParseDiagnostic.h" // FIXME: remove this back-dependency!
+// when clang is ready.
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaInternal.h"
@@ -793,6 +795,9 @@ namespace cling {
     Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
                               clang::diag::MAP_IGNORE, SourceLocation());
     Diag.setDiagnosticMapping(clang::diag::ext_return_has_expr,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+    // Very very ugly. TODO: Revisit and extract out as interpreter arg
+    Diag.setDiagnosticMapping(clang::diag::ext_auto_type_specifier,
                               clang::diag::MAP_IGNORE, SourceLocation());
   }
 
