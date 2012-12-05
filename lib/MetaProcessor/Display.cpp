@@ -1177,10 +1177,137 @@ void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo
   fOut.Print("\n");
 }
 
+//Print typedefs.
+class TypedefPrinter {
+public:
+  TypedefPrinter(llvm::raw_ostream& stream, const Interpreter* interpreter);
+
+  void DisplayTypedefs()const;
+  void DisplayTypedef(const std::string& name)const;
+
+private:
+
+  void ProcessNestedDeclarations(const DeclContext* decl)const;
+  void ProcessDecl(decl_iterator decl) const;
+
+  void DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const;
+
+  FILEPrintHelper fOut;
+  const cling::Interpreter* fInterpreter;
+
+  //mutable std::set<const Decl*> fSeenDecls;
+};
+
+//______________________________________________________________________________
+TypedefPrinter::TypedefPrinter(llvm::raw_ostream& stream, const Interpreter* interpreter)
+                  : fOut(stream),
+                    fInterpreter(interpreter)
+{
+  assert(interpreter != 0 && "TypedefPrinter, parameter 'interpreter' is null");
+}
+
+//______________________________________________________________________________
+void TypedefPrinter::DisplayTypedefs()const
+{
+  assert(fInterpreter != 0 && "DisplayTypedefs, fInterpreter is null");
+  
+  const CompilerInstance* const compiler = fInterpreter->getCI();
+  assert(compiler != 0 && "DisplayTypedefs, compiler instance is null");
+
+  const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
+  assert(tuDecl != 0 && "DisplayTypedefs, translation unit is empty");
+
+  //fSeenDecls.clear();
+
+  ProcessNestedDeclarations(tuDecl);
+}
+
+//______________________________________________________________________________
+void TypedefPrinter::DisplayTypedef(const std::string& typedefName)const
+{
+  assert(fInterpreter != 0 && "DisplayTypedef, fInterpreter is null");
+  
+  const cling::LookupHelper &lookupHelper = fInterpreter->getLookupHelper();
+  const QualType type = lookupHelper.findType(typedefName);
+
+  if(!type.isNull()) {
+    if (const TypedefType* const typedefType = type->getAs<TypedefType>()) {
+      if (typedefType->getDecl()) {
+         DisplayTypedefDecl(typedefType->getDecl());
+         return;
+      }
+    }
+  }
+
+  fOut.Print(("Type " + typedefName + " is not defined\n").c_str());
+}
+
+//______________________________________________________________________________
+void TypedefPrinter::ProcessNestedDeclarations(const DeclContext* decl)const
+{
+ assert(decl != 0 && "ProcessNestedDeclarations, parameter 'decl' is null");
+ for (decl_iterator it = decl->decls_begin(), eIt = decl->decls_end(); it != eIt; ++it)
+   ProcessDecl(it);
+}
+
+//______________________________________________________________________________
+void TypedefPrinter::ProcessDecl(decl_iterator decl)const
+{
+  assert(fInterpreter != 0 && "ProcessDecl, fInterpreter is null");
+  assert(*decl != 0 && "ProcessDecl, parameter 'decl' is not a valid iterator");
+
+  switch (decl->getKind()) {
+  case Decl::Typedef:
+    DisplayTypedefDecl(dyn_cast<TypedefDecl>(*decl));
+    break;
+  case Decl::Namespace:
+  case Decl::Block:
+  case Decl::Function:
+  case Decl::CXXMethod:
+  case Decl::CXXConstructor:
+  case Decl::CXXConversion:
+  case Decl::CXXDestructor:
+  case Decl::LinkageSpec:
+  case Decl::CXXRecord:
+  case Decl::ClassTemplateSpecialization:
+  //case Decl::ClassTemplatePartialSpecialization:
+    ProcessNestedDeclarations(dyn_cast<DeclContext>(*decl));
+    break;
+  default:
+    if (FunctionDecl * const funDecl = dyn_cast<FunctionDecl>(*decl))
+      ProcessNestedDeclarations(funDecl);
+    break;
+  }  
+}
+
+//______________________________________________________________________________
+void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
+{
+  assert(typedefDecl != 0 && "DisplayTypedefDecl, parameter 'typedefDecl' is null");
+  assert(fInterpreter != 0 && "DisplayTypedefDecl, fInterpreter is null");
+  
+  std::string textLine;
+  AppendDeclLocation(fInterpreter->getCI(), typedefDecl, textLine);
+
+  textLine += ' ';
+
+  {
+  const LangOptions langOpts;
+  PrintingPolicy printingPolicy(langOpts);
+  printingPolicy.SuppressSpecifiers = false;
+  printingPolicy.SuppressInitializers = true;
+  llvm::raw_string_ostream out(textLine);
+  typedefDecl->print(out, printingPolicy, 0, false);
+  }
+
+  fOut.Print(textLine.c_str());
+  fOut.Print("\n");
+}
+
 }//unnamed namespace
 
 //______________________________________________________________________________
-void DisplayClasses(llvm::raw_ostream& stream, const cling::Interpreter* interpreter,
+void DisplayClasses(llvm::raw_ostream& stream, const Interpreter* interpreter,
                     bool verbose)
 {
   assert(interpreter != 0 && "DisplayClasses, 'interpreter' parameter is null");
@@ -1191,7 +1318,7 @@ void DisplayClasses(llvm::raw_ostream& stream, const cling::Interpreter* interpr
 }
 
 //______________________________________________________________________________
-void DisplayClass(llvm::raw_ostream& stream, const cling::Interpreter* interpreter,
+void DisplayClass(llvm::raw_ostream& stream, const Interpreter* interpreter,
                   const char* className, bool verbose)
 {
   assert(interpreter != 0 && "DisplayClass, 'interpreter' parameter is null");
@@ -1212,7 +1339,7 @@ void DisplayClass(llvm::raw_ostream& stream, const cling::Interpreter* interpret
 }
 
 //______________________________________________________________________________
-void DisplayGlobals(llvm::raw_ostream& stream, const cling::Interpreter* interpreter)
+void DisplayGlobals(llvm::raw_ostream& stream, const Interpreter* interpreter)
 {
   assert(interpreter != 0 && "DisplayGlobals, 'interpreter' parameter is null");
   
@@ -1221,7 +1348,7 @@ void DisplayGlobals(llvm::raw_ostream& stream, const cling::Interpreter* interpr
 }
 
 //______________________________________________________________________________
-void DisplayGlobal(llvm::raw_ostream& stream, const cling::Interpreter* interpreter,
+void DisplayGlobal(llvm::raw_ostream& stream, const Interpreter* interpreter,
                    const std::string& name)
 {
   assert(interpreter != 0 && "DisplayGlobal, 'interpreter' parameter is null");
@@ -1233,17 +1360,20 @@ void DisplayGlobal(llvm::raw_ostream& stream, const cling::Interpreter* interpre
 //______________________________________________________________________________
 void DisplayTypedefs(llvm::raw_ostream &stream, const Interpreter *interpreter)
 {
-   (void) stream;
-   (void) interpreter;
+   assert(interpreter != 0 && "DisplayTypedefs, parameter 'interpreter' is null");
+   
+   TypedefPrinter printer(stream, interpreter);
+   printer.DisplayTypedefs();
 }
 
 //______________________________________________________________________________
 void DisplayTypedef(llvm::raw_ostream &stream, const Interpreter *interpreter,
                     const std::string &name)
 {
-   (void) stream;
-   (void) interpreter;
-   (void) name;
+   assert(interpreter != 0 && "DisplayTypedef, parameter 'interpreter' is null");
+   
+   TypedefPrinter printer(stream, interpreter);
+   printer.DisplayTypedef(name);
 }
 
 
