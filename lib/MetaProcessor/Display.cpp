@@ -532,7 +532,8 @@ void ClassPrinter::DisplayClass(const std::string& className)const
       if (classDecl->hasDefinition())
         DisplayClassDecl(classDecl);
     }
-  }
+  } else
+    fOut.Print(("Class " + className + "not found\n").c_str());
 }
 
 //______________________________________________________________________________
