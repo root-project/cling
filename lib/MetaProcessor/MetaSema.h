@@ -37,7 +37,7 @@ namespace cling {
     
     ///\brief L command includes the given file or loads the given library.
     ///
-    ///\param[in] path - The file/library to be loaded.
+    ///\param[in] file - The file/library to be loaded.
     ///
     void actOnLCommand(llvm::sys::Path file) const;
 
@@ -56,7 +56,7 @@ namespace cling {
     /// If the function needs arguments they are specified after the filename in
     /// parenthesis.
     ///
-    ///\param[in]file - The filename to load.
+    ///\param[in] file - The filename to load.
     ///\param[in] args - The optional list of arguments.
     ///
     void actOnxCommand(llvm::sys::Path file, llvm::StringRef args) const;
