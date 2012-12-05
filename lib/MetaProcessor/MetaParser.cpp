@@ -259,11 +259,11 @@ namespace cling {
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident)) {
       if (Tok.getIdent().equals("class")) {
-        consumeAnyStringToken();
+        consumeAnyStringToken(tok::eof);
         const Token& NextTok = getCurTok();
         llvm::StringRef className;
         if (NextTok.is(tok::raw_ident))
-          className = Tok.getIdent();
+          className = NextTok.getIdent();
         m_Actions->actOnclassCommand(className);
         return true;
       }
