@@ -504,7 +504,6 @@ ClassPrinter::ClassPrinter(llvm::raw_ostream& stream, const cling::Interpreter* 
 void ClassPrinter::DisplayAllClasses()const
 {
   //Just in case asserts were deleted from ctor:
-  assert(0);
   assert(fInterpreter != 0 && "DisplayAllClasses, fCompiler is null");
 
   const CompilerInstance* const compiler = fInterpreter->getCI();
