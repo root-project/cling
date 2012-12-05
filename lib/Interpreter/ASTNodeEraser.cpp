@@ -189,7 +189,7 @@ namespace cling {
       m_FilesToUncache.insert(OldEntry);
   }
 
-  // Gives us access to the protected members that we  need.
+  // Gives us access to the protected members that we need.
   class DeclContextExt : public DeclContext {
   public:
     static bool removeIfLast(DeclContext* DC, Decl* D) {

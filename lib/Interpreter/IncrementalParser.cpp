@@ -205,28 +205,22 @@ namespace cling {
       // template instatiator and so on.
       for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
            I != E; ++I) {
-        switch (I->m_Call) {
-        case Transaction::kCCIHandleTopLevelDecl :
+        if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
           getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
-          break;
-        case Transaction::kCCIHandleInterestingDecl :
+        else if (I->m_Call == Transaction::kCCIHandleInterestingDecl)
           getCodeGenerator()->HandleInterestingDecl(I->m_DGR);
-          break;
-        case Transaction::kCCIHandleTagDeclDefinition : {
+        else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
           TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
           getCodeGenerator()->HandleTagDeclDefinition(TD);
-          break;
         }
-        case Transaction::kCCIHandleVTable : {
+        else if (I->m_Call == Transaction::kCCIHandleVTable) {
           CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I->m_DGR.getSingleDecl());
           getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
-          break;
         }
-        case Transaction::kCCINone:
-          break; // We use that internally as delimiter in the Transaction.
-        default:
+        else if (I->m_Call == Transaction::kCCINone)
+          ; // We use that internally as delimiter in the Transaction.
+        else
           llvm_unreachable("We shouldn't have decl without call info.");
-        }
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
       // run the static initializers that came from codegenning
