@@ -152,4 +152,11 @@ namespace cling {
       DisplayGlobal(llvm::outs(), &m_Interpreter, varName.str().c_str());
   }
 
+  void MetaSema::actOnTypedefCommand(llvm::StringRef typedefName) const {
+    if (typedefName.empty())
+      DisplayTypedefs(llvm::outs(), &m_Interpreter);
+    else
+      DisplayTypedef(llvm::outs(), &m_Interpreter, typedefName.str().c_str());
+  }
+
 } // end namespace cling

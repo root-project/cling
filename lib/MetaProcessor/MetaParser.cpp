@@ -99,7 +99,7 @@ namespace cling {
       || isUCommand() || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
       || isfileExCommand() || isfilesCommand() || isClassCommand() 
-      || isgCommand();
+      || isgCommand() || isTypedefCommand();
   }
 
   // L := 'L' FilePath
@@ -284,6 +284,22 @@ namespace cling {
         varName = getCurTok().getIdent();
       m_Actions->actOngCommand(varName);
       return true;
+    }
+    return false;
+  }
+  
+  bool MetaParser::isTypedefCommand() {
+    const Token& Tok = getCurTok();
+    if (Tok.is(tok::ident)) {
+      if (Tok.getIdent().equals("typedef")) {
+        consumeAnyStringToken();
+        const Token& NextTok = getCurTok();
+        llvm::StringRef typedefName;
+        if (NextTok.is(tok::raw_ident))
+          typedefName = NextTok.getIdent();
+        m_Actions->actOnTypedefCommand(typedefName);
+        return true;
+      }
     }
     return false;
   }

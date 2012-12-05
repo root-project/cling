@@ -126,6 +126,13 @@ namespace cling {
     //                      if empty prints them all.
     ///
     void actOngCommand(llvm::StringRef varName) const;
+    
+    ///\brief Prints out information about typedefs.
+    ///
+    ///\param[in] typedefName - The name of typedef
+    //                          if empty prints them all.
+    ///
+    void actOnTypedefCommand(llvm::StringRef typedefName) const;
   };
 
 } // end namespace cling

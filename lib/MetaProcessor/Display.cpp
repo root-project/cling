@@ -504,6 +504,7 @@ ClassPrinter::ClassPrinter(llvm::raw_ostream& stream, const cling::Interpreter* 
 void ClassPrinter::DisplayAllClasses()const
 {
   //Just in case asserts were deleted from ctor:
+  assert(0);
   assert(fInterpreter != 0 && "DisplayAllClasses, fCompiler is null");
 
   const CompilerInstance* const compiler = fInterpreter->getCI();
@@ -1229,5 +1230,22 @@ void DisplayGlobal(llvm::raw_ostream& stream, const cling::Interpreter* interpre
   GlobalsPrinter printer(stream, interpreter);
   printer.DisplayGlobal(name);
 }
+
+//______________________________________________________________________________
+void DisplayTypedefs(llvm::raw_ostream &stream, const Interpreter *interpreter)
+{
+   (void) stream;
+   (void) interpreter;
+}
+
+//______________________________________________________________________________
+void DisplayTypedef(llvm::raw_ostream &stream, const Interpreter *interpreter,
+                    const std::string &name)
+{
+   (void) stream;
+   (void) interpreter;
+   (void) name;
+}
+
 
 }//namespace cling
