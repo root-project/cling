@@ -36,14 +36,9 @@ namespace cling {
     ///
     bool RawInput : 1;
 
-    ///\brief is using dynamic scopes enabled
-    ///
-    bool DynamicLookup : 1;
-
     MetaProcessorOpts() {
       Quitting = 0;
       RawInput = 0;
-      DynamicLookup = 0;
     }
   };
 
