@@ -641,7 +641,7 @@ func_A_m_proto->print(llvm::outs());
 //
 //  Test finding a member function taking an obj reference arg.
 //
-const clang::FunctionDecl* func_A_n_args = lookup.findFunctionArgs(class_A, "A_n", "*(new B()");
+const clang::FunctionDecl* func_A_n_args = lookup.findFunctionArgs(class_A, "A_n", "*(new B())");
 const clang::FunctionDecl* func_A_n_proto = lookup.findFunctionProto(class_A, "A_n", "B&");
 
 printf("func_A_n_args: 0x%lx\n", (unsigned long) func_A_n_args);
