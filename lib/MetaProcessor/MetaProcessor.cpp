@@ -99,11 +99,6 @@ namespace cling {
     // Look for start of parameters:
     typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
-    // StringRefPair pairFileArgs = llvm::StringRef(fileWithArgs).split('(');
-    // if (pairFileArgs.second.empty()) {
-    //   pairFileArgs.second = ")";
-    // }
-
     StringRefPair pairPathFile = file.rsplit('/');
     if (pairPathFile.second.empty()) {
        pairPathFile.second = pairPathFile.first;
