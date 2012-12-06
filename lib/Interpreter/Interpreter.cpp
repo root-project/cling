@@ -120,7 +120,8 @@ namespace cling {
 
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
-    m_UniqueCounter(0), m_PrintAST(false), m_DynamicLookupEnabled(false) {
+    m_UniqueCounter(0), m_PrintAST(false), m_DynamicLookupEnabled(false), 
+    m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
