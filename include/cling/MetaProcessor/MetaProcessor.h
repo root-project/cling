@@ -32,10 +32,6 @@ namespace cling {
     ///
     bool Quitting : 1;
 
-    ///\brief is printAST requested
-    ///
-    bool PrintingAST : 1;
-
     ///\brief is using wrappers requested
     ///
     bool RawInput : 1;
@@ -46,7 +42,6 @@ namespace cling {
 
     MetaProcessorOpts() {
       Quitting = 0;
-      PrintingAST = 0;
       RawInput = 0;
       DynamicLookup = 0;
     }

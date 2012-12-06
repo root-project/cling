@@ -87,8 +87,6 @@ namespace cling {
   }
 
   MetaProcessorOpts& MetaProcessor::getMetaProcessorOpts() {
-    // Take interpreter's state
-    m_Options.PrintingAST = m_Interp.isPrintingAST();
     return m_Options;
   }
 
