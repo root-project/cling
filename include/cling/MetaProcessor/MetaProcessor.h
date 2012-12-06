@@ -60,6 +60,7 @@ namespace cling {
     ///
     ///\returns 0 on success or the indentation of the next input line should
     /// have in case of multi input mode.
+    ///\returns -1 if quit was requiested.
     ///
     int process(const char* input_line, cling::StoredValueRef* result = 0,
                 Interpreter::CompilationResult* compRes = 0);
