@@ -45,14 +45,9 @@ namespace {
 static bool canWrapForCall(const std::string& input_line) {
    // Whether input_line can be wrapped into a function.
    // "1" can, "#include <vector>" can't.
-   std::string::size_type posNonWS = input_line.find_first_not_of(" \t\n\r");
-   if (posNonWS == std::string::npos) return false;
-   if (input_line.length() > posNonWS && input_line[posNonWS] == '#') 
-     return false;
-   if (input_line.compare(posNonWS, strlen("extern "), "extern ") == 0) 
-     return false;
-   if (input_line.compare(posNonWS, strlen("using "), "using ") == 0) 
-     return false;
+   if (input_line.length() > 1 && input_line[0] == '#') return false;
+   if (input_line.compare(0, strlen("extern "), "extern ") == 0) return false;
+   if (input_line.compare(0, strlen("using "), "using ") == 0) return false;
    return true;
 }
 
