@@ -9,15 +9,8 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
-#include "clang/Lex/Token.h"
-
 #include "llvm/ADT/OwningPtr.h"
-
-#include <string>
-
-namespace clang {
-  class Lexer;
-}
+#include "llvm/ADT/StringRef.h"
 
 namespace cling {
 
