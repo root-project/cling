@@ -531,7 +531,12 @@ void ClassPrinter::DisplayClass(const std::string& className)const
     if (const CXXRecordDecl* const classDecl = dyn_cast<CXXRecordDecl>(decl)) {
       if (classDecl->hasDefinition())
         DisplayClassDecl(classDecl);
-    }
+      else 
+        fOut.Print(("The class " + className + 
+                    " does not have any definition available\n").c_str());
+    } else 
+       fOut.Print(("A " + std::string(decl->getDeclKindName()) + " declaration"
+                   " was found for " + className + "\n").c_str());
   } else
     fOut.Print(("Class " + className + " not found\n").c_str());
 }
