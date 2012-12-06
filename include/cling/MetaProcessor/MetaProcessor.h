@@ -77,6 +77,7 @@ namespace cling {
     ~MetaProcessor();
 
     MetaProcessorOpts& getMetaProcessorOpts();
+    const Interpreter& getInterpreter() { return m_Interp; }
 
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement
