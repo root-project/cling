@@ -62,10 +62,8 @@ namespace cling {
     /// \brief Construct an empty, invalid value.
     StoredValueRef() {}
 
-    /// \brief Determine whether the Value has been set.
+    /// \brief Determine whether a Value is available.
     //
-    /// Determine whether the Value has been set by checking
-    /// whether the type is valid.
     bool isValid() const { return m_Value; }
 
     /// \brief Determine whether the Value needs to manage an allocation.
