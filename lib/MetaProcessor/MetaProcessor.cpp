@@ -73,10 +73,10 @@ namespace cling {
     std::string input = m_InputValidator->getInput();
     m_InputValidator->reset();
     Interpreter::CompilationResult compResLocal;
-    if (m_Options.RawInput)
-      compResLocal = m_Interp.declare(input);
-    else
-      compResLocal = m_Interp.process(input, result);
+    // if (m_Options.RawInput)
+    //   compResLocal = m_Interp.declare(input);
+    // else
+    compResLocal = m_Interp.process(input, result);
     if (compRes) *compRes = compResLocal;
 
     return 0;
