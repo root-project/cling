@@ -81,34 +81,6 @@ namespace cling {
     ///\brief Outermost currently executing file as passed into executeFile
     ///
     llvm::StringRef m_TopExecutingFile;
-    
-  private:
-
-    ///\brief Handle one of the special commands in cling.
-    /// Syntax .Command [arg0 arg1 ... argN]
-    ///
-    /// Known commands:
-    /// @code .q @endcode - Quits
-    /// @code .L <filename> @endcode - Loads the filename (It might be lib too)
-    /// @code .(x|X) <filename>[(args)] @endcode - Loads the filename and
-    /// executes the function with signature void filename(args)
-    /// @code .printAST [0|1] @endcode - Toggles the printing of input's
-    /// corresponding AST nodes.
-    /// @code .rawInput [0|1] @endcode - Toggles wrapping and value printing of
-    /// the input
-    /// @code .I [path] @endcode - Dumps the include path. If argument is given
-    /// adds the path to the list of include paths.
-    /// @code .@ @endcode - Cancels multiline input
-    /// @code .dynamicExtensions [0|1] @endcode - Toggles the use of the dynamic
-    /// scopes and the late bining.
-    /// @code .help @endcode - Show information about the usage of the commands
-    /// @code .file @endcode - Show information about the loaded files
-    ///
-    ///\returns true if the command was known and thus handled.
-    ///
-    bool ProcessMeta(const std::string& input_line,
-                     cling::StoredValueRef* result,
-                     Interpreter::CompilationResult* compRes = 0);
 
   public:
     MetaProcessor(Interpreter& interp);

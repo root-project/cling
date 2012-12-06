@@ -92,20 +92,6 @@ namespace cling {
     return m_Options;
   }
 
-  // Command syntax: MetaCommand := <CommandSymbol><Command>[ArgList]
-  //                 CommandSymbol := '.' | '//.'
-  //                 Command := L | x | X
-  //                 ArgList := AnyString[(ExtraArgList)] [ArgList]
-  //                 ExtraArgList := AnyString [, ExtraArgList]
-  //                 AnyString := .*^(' ' | '\t')
-  ////                 Ident = (a-zA-Z)[(0-9a-zA-Z).*]
-  bool MetaProcessor::ProcessMeta(const std::string& input_line,
-                                  StoredValueRef* result,
-                                Interpreter::CompilationResult* compRes /*=0*/){
-
-   return false;
-  }
-
   // Run a file: .x file[(args)]
   bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
                                   StoredValueRef* result,
