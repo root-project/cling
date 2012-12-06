@@ -372,6 +372,9 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::process(const std::string& input, StoredValueRef* V /* = 0 */,
                        const Decl** D /* = 0 */) {
+    if (isRawInputEnabled())
+      return declare(input, D);
+
     CompilationOptions CO;
     CO.DeclarationExtraction = 1;
     CO.ValuePrinting = CompilationOptions::VPAuto;

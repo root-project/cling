@@ -181,6 +181,10 @@ namespace cling {
     ///
     bool m_DynamicLookupEnabled;
 
+    ///\brief Flag toggling the raw input on or off.
+    ///
+    bool m_RawInputEnabled;
+
     ///\brief Interpreter callbacks.
     ///
     llvm::OwningPtr<InterpreterCallbacks> m_Callbacks;
@@ -531,11 +535,14 @@ namespace cling {
     const llvm::SmallVectorImpl<LoadedFileInfo*>& getLoadedFiles() const {
       return m_LoadedFiles; }
 
+    bool isPrintingAST() { return m_PrintAST; }
+    void enablePrintAST(bool print = true) { m_PrintAST = print; }
+
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() { return m_DynamicLookupEnabled; }
 
-    bool isPrintingAST() { return m_PrintAST; }
-    void enablePrintAST(bool print = true) { m_PrintAST = print; }
+    bool isRawInputEnabled() { return m_RawInputEnabled; }
+    void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
 
     clang::CompilerInstance* getCI() const;
     const clang::Sema& getSema() const;
