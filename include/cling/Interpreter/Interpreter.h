@@ -535,13 +535,13 @@ namespace cling {
     const llvm::SmallVectorImpl<LoadedFileInfo*>& getLoadedFiles() const {
       return m_LoadedFiles; }
 
-    bool isPrintingAST() { return m_PrintAST; }
+    bool isPrintingAST() const { return m_PrintAST; }
     void enablePrintAST(bool print = true) { m_PrintAST = print; }
 
     void enableDynamicLookup(bool value = true);
-    bool isDynamicLookupEnabled() { return m_DynamicLookupEnabled; }
+    bool isDynamicLookupEnabled() const { return m_DynamicLookupEnabled; }
 
-    bool isRawInputEnabled() { return m_RawInputEnabled; }
+    bool isRawInputEnabled() const { return m_RawInputEnabled; }
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
 
     clang::CompilerInstance* getCI() const;
