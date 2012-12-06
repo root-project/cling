@@ -7,8 +7,6 @@
 #ifndef CLING_USERINTERFACE_H
 #define CLING_USERINTERFACE_H
 
-#include <cstdlib>
-
 namespace cling {
   class Interpreter;
   class MetaProcessor;
