@@ -32,13 +32,8 @@ namespace cling {
     ///
     bool Quitting : 1;
 
-    ///\brief is using wrappers requested
-    ///
-    bool RawInput : 1;
-
     MetaProcessorOpts() {
       Quitting = 0;
-      RawInput = 0;
     }
   };
 

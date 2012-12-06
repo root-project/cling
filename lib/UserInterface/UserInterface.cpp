@@ -51,7 +51,7 @@ namespace cling {
 
       int indent = m_MetaProcessor->process(line.c_str());
       std::string Prompt = "[cling]";
-      if (MPOpts.RawInput)
+      if (m_MetaProcessor->getInterpreter().isRawInputEnabled())
         Prompt.append("! ");
       else
         Prompt.append("$ ");

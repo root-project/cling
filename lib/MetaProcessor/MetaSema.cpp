@@ -56,12 +56,13 @@ namespace cling {
   void MetaSema::actOnrawInputCommand(SwitchMode mode/* = kToggle*/) const {
     MetaProcessorOpts& MPOpts = m_MetaProcessor.getMetaProcessorOpts();
     if (mode == kToggle) {
-      MPOpts.RawInput = !MPOpts.RawInput;
+      bool flag = !m_Interpreter.isRawInputEnabled();
+      m_Interpreter.enableRawInput(flag);
       // FIXME:
-      llvm::outs() << (MPOpts.RawInput ? "U" :"Not u") << "sing raw input\n";
+      llvm::outs() << (flag ? "U" :"Not u") << "sing raw input\n";
     }
     else
-      MPOpts.RawInput = mode;
+      m_Interpreter.enableRawInput(mode);
   }
 
   void MetaSema::actOnprintASTCommand(SwitchMode mode/* = kToggle*/) const {
