@@ -1310,11 +1310,12 @@ void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
     printingPolicy.SuppressScope = false;
     printingPolicy.SuppressTagKeyword = true;
     llvm::raw_string_ostream out(textLine);
-    typedefDecl->getUnderlyingType ().print(out, printingPolicy);
+    typedefDecl->getUnderlyingType().
+       getDesugaredType(typedefDecl->getASTContext()).print(out,printingPolicy);
      
     std::string tmp;
     //Name for diagnostic will include template arguments if any.
-     typedefDecl->getNameForDiagnostic(tmp, printingPolicy,/*qualified=*/true);
+    typedefDecl->getNameForDiagnostic(tmp, printingPolicy,/*qualified=*/true);
     
     out << " " << tmp;
   }
