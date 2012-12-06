@@ -54,7 +54,6 @@ namespace cling {
   }
 
   void MetaSema::actOnrawInputCommand(SwitchMode mode/* = kToggle*/) const {
-    MetaProcessorOpts& MPOpts = m_MetaProcessor.getMetaProcessorOpts();
     if (mode == kToggle) {
       bool flag = !m_Interpreter.isRawInputEnabled();
       m_Interpreter.enableRawInput(flag);
