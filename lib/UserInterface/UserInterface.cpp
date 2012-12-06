@@ -38,18 +38,19 @@ namespace cling {
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
-    MetaProcessorOpts& MPOpts = m_MetaProcessor->getMetaProcessorOpts();
 
-    while (!MPOpts.Quitting) {
+    while (true) {
       llvm::outs().flush();
       TextInput::EReadResult RR = TI.ReadInput();
       TI.TakeInput(line);
       if (RR == TextInput::kRREOF) {
-        MPOpts.Quitting = true;
-        continue;
+        break;
       }
-
+     
       int indent = m_MetaProcessor->process(line.c_str());
+      // Quit requested
+      if (indent < 0)
+        break;
       std::string Prompt = "[cling]";
       if (m_MetaProcessor->getInterpreter().isRawInputEnabled())
         Prompt.append("! ");

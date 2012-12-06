@@ -82,7 +82,16 @@ namespace cling {
   public:
     MetaParser(MetaSema* Actions);
     void enterNewInputLine(llvm::StringRef Line);
+
+    ///\brief Drives the recursive decendent parsing.
+    ///
+    ///\returns true if it was meta command.
+    ///
     bool isMetaCommand();
+
+    ///\brief Returns whether quit was requested via .q command
+    ///
+    bool isQuitRequested() const;
   };
 } // end namespace cling
 

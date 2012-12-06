@@ -57,6 +57,10 @@ namespace cling {
     //  Check for and handle meta commands.
     m_MetaParser->enterNewInputLine(input_line);
     if (m_MetaParser->isMetaCommand()) {
+
+      if (m_MetaParser->isQuitRequested())
+        return -1;
+
       //TODO: set the compilation result if there was error in the meta commands
       return expectedIndent;
     }
@@ -82,12 +86,12 @@ namespace cling {
     return 0;
   }
 
-  void MetaProcessor::cancelContinuation() {
+  void MetaProcessor::cancelContinuation() const {
     m_InputValidator->reset();
   }
 
-  MetaProcessorOpts& MetaProcessor::getMetaProcessorOpts() {
-    return m_Options;
+  int MetaProcessor::getExpectedIndent() const {
+    return m_InputValidator->getExpectedIndent();
   }
 
   // Run a file: .x file[(args)]

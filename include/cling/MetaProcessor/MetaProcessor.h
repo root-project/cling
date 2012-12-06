@@ -26,17 +26,6 @@ namespace cling {
   class MetaParser;
   class StoredValueRef;
 
-  class MetaProcessorOpts {
-  public:
-    ///\brief is quit requested
-    ///
-    bool Quitting : 1;
-
-    MetaProcessorOpts() {
-      Quitting = 0;
-    }
-  };
-
   ///\brief Class that helps processing meta commands, which add extra
   /// interactivity. Syntax .Command [arg0 arg1 ... argN]
   ///
@@ -55,10 +44,6 @@ namespace cling {
     ///
     llvm::OwningPtr<MetaParser> m_MetaParser;
 
-    ///\brief MetaProcessor's options
-    ///
-    MetaProcessorOpts m_Options;
-     
     ///\brief Currently executing file as passed into executeFile
     ///
     llvm::StringRef m_CurrentlyExecutingFile;
@@ -71,8 +56,7 @@ namespace cling {
     MetaProcessor(Interpreter& interp);
     ~MetaProcessor();
 
-    MetaProcessorOpts& getMetaProcessorOpts();
-    const Interpreter& getInterpreter() { return m_Interp; }
+    const Interpreter& getInterpreter() const { return m_Interp; }
 
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement
@@ -89,7 +73,11 @@ namespace cling {
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.
-    void cancelContinuation();
+    void cancelContinuation() const;
+
+    ///\brief Returns the number of imbalanced tokens seen in the current input.
+    ///
+    int getExpectedIndent() const;
 
     ///\brief Executes a file given the CINT specific rules. Mainly used as:
     /// .x filename[(args)], which in turn includes the filename and runs a

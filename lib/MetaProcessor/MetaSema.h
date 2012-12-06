@@ -24,6 +24,7 @@ namespace cling {
   private:
     Interpreter& m_Interpreter;
     MetaProcessor& m_MetaProcessor;
+    bool m_IsQuitRequested;
   public:
     enum SwitchMode {
       kOff = 0,
@@ -32,8 +33,10 @@ namespace cling {
     };
   public:
     MetaSema(Interpreter& interp, MetaProcessor& meta) 
-      : m_Interpreter(interp), m_MetaProcessor(meta) {}
-    const Interpreter& getInterpreter() { return m_Interpreter; }
+      : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false)
+    {}
+    const Interpreter& getInterpreter() const { return m_Interpreter; }
+    bool isQuitRequested() const { return m_IsQuitRequested; }
     
     ///\brief L command includes the given file or loads the given library.
     ///
@@ -63,7 +66,7 @@ namespace cling {
 
     ///\brief Actions to be performed on quit.
     ///
-    void actOnqCommand() const;
+    void actOnqCommand();
 
     ///\brief Actions to be performed on unload command. For now it tries to 
     /// unload the last transaction.

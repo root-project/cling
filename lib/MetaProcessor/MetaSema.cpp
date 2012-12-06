@@ -38,8 +38,8 @@ namespace cling {
     // TODO: extra checks. Eg if the path is readable, if the file exists...
   }
 
-  void MetaSema::actOnqCommand() const {
-    m_MetaProcessor.getMetaProcessorOpts().Quitting = true;
+  void MetaSema::actOnqCommand() {
+    m_IsQuitRequested = true;
   }
 
   void MetaSema::actOnUCommand() const {

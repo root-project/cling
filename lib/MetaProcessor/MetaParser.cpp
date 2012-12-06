@@ -85,6 +85,10 @@ namespace cling {
     return isCommandSymbol() && isCommand();
   }
 
+  bool MetaParser::isQuitRequested() const { 
+    return m_Actions->isQuitRequested(); 
+  }
+
   bool MetaParser::isCommandSymbol() {
     for (size_t i = 0; i < m_MetaSymbolCache.size(); ++i) {
       if (getCurTok().getKind() != m_MetaSymbolCache[i].getKind())
