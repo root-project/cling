@@ -69,7 +69,7 @@ namespace cling {
           if (ND->getDeclContext() == ND->getLexicalDeclContext())
             ND->setLexicalDeclContext(DC);
           else 
-            assert("Not implemented: Decl with different lexical context");
+            assert(0 && "Not implemented: Decl with different lexical context");
           ND->setDeclContext(DC);
 
           if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
