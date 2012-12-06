@@ -514,6 +514,7 @@ void ClassPrinter::DisplayAllClasses()const
 
   fSeenDecls.clear();
 
+  fOut.Print("List of classes");
   for (decl_iterator decl = tuDecl->decls_begin(); decl != tuDecl->decls_end(); ++decl)
     ProcessDecl(decl);
 }
@@ -1225,6 +1226,7 @@ void TypedefPrinter::DisplayTypedefs()const
 
   //fSeenDecls.clear();
 
+  fOut.Print("List of typedefs");
   ProcessNestedDeclarations(tuDecl);
 }
 
@@ -1239,9 +1241,12 @@ void TypedefPrinter::DisplayTypedef(const std::string& typedefName)const
   if(!type.isNull()) {
     if (const TypedefType* const typedefType = type->getAs<TypedefType>()) {
       if (typedefType->getDecl()) {
-         DisplayTypedefDecl(typedefType->getDecl());
-         return;
-      }
+        DisplayTypedefDecl(typedefType->getDecl());
+        return;
+      } else 
+        fOut.Print(("A " + std::string(type->getTypeClassName()) + " declaration"
+                    " was found for " + typedefName + "\n").c_str());
+     
     }
   }
 
@@ -1289,21 +1294,29 @@ void TypedefPrinter::ProcessDecl(decl_iterator decl)const
 //______________________________________________________________________________
 void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
 {
-  assert(typedefDecl != 0 && "DisplayTypedefDecl, parameter 'typedefDecl' is null");
+  assert(typedefDecl != 0 
+         && "DisplayTypedefDecl, parameter 'typedefDecl' is null");
   assert(fInterpreter != 0 && "DisplayTypedefDecl, fInterpreter is null");
   
   std::string textLine;
   AppendDeclLocation(fInterpreter->getCI(), typedefDecl, textLine);
 
-  textLine += ' ';
-
+  textLine += " typedef ";
   {
-  const LangOptions langOpts;
-  PrintingPolicy printingPolicy(langOpts);
-  printingPolicy.SuppressSpecifiers = false;
-  printingPolicy.SuppressInitializers = true;
-  llvm::raw_string_ostream out(textLine);
-  typedefDecl->print(out, printingPolicy, 0, false);
+    const LangOptions langOpts;
+    PrintingPolicy printingPolicy(langOpts);
+    printingPolicy.SuppressSpecifiers = false;
+    printingPolicy.SuppressInitializers = true;
+    printingPolicy.SuppressScope = false;
+    printingPolicy.SuppressTagKeyword = true;
+    llvm::raw_string_ostream out(textLine);
+    typedefDecl->getUnderlyingType ().print(out, printingPolicy);
+     
+    std::string tmp;
+    //Name for diagnostic will include template arguments if any.
+     typedefDecl->getNameForDiagnostic(tmp, printingPolicy,/*qualified=*/true);
+    
+    out << " " << tmp;
   }
 
   fOut.Print(textLine.c_str());
