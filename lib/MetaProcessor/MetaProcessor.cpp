@@ -62,6 +62,8 @@ namespace cling {
         return -1;
 
       //TODO: set the compilation result if there was error in the meta commands
+      if (result)
+        *result = m_MetaParser->getLastResultedValue();
       return expectedIndent;
     }
 
@@ -114,10 +116,9 @@ namespace cling {
       bool topmost = !m_TopExecutingFile.data();
       if (topmost)
         m_TopExecutingFile = m_CurrentlyExecutingFile;
-      if (result)
-        interpRes = m_Interp.evaluate(expression, *result);
-      else
-        interpRes = m_Interp.execute(expression);
+      
+      interpRes = m_Interp.process(expression, result);
+
       m_CurrentlyExecutingFile = llvm::StringRef();
       if (topmost)
         m_TopExecutingFile = llvm::StringRef();
