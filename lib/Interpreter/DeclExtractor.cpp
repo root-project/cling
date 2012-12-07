@@ -56,6 +56,8 @@ namespace cling {
       for (DeclStmt::decl_iterator J = DS->decl_begin();
            J != DS->decl_end(); ++J) {
         NamedDecl* ND = dyn_cast<NamedDecl>(*J);
+        if (isa<UsingDirectiveDecl>(*J))
+          continue; // FIXME: Here we should be more elegant.
         if (ND) {
           DeclContext* OldDC = ND->getDeclContext();
 
