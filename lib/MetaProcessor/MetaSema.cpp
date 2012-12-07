@@ -30,10 +30,11 @@ namespace cling {
     m_Interpreter.declare(comment);
   }
 
-  void MetaSema::actOnxCommand(llvm::sys::Path file, llvm::StringRef args) const
+  void MetaSema::actOnxCommand(llvm::sys::Path file, llvm::StringRef args)
   {
     // Fall back to the meta processor for now.
-    m_MetaProcessor.executeFile(file.str(), args.str());
+    m_LastResultedValue = StoredValueRef::invalidValue();
+    m_MetaProcessor.executeFile(file.str(), args.str(), &m_LastResultedValue);
     //m_Interpreter.loadFile(path.str());
     // TODO: extra checks. Eg if the path is readable, if the file exists...
   }

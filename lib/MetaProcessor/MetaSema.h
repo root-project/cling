@@ -7,6 +7,8 @@
 #ifndef CLING_META_SEMA_H
 #define CLING_META_SEMA_H
 
+#include "cling/Interpreter/StoredValueRef.h"
+
 namespace llvm {
   class StringRef;
   namespace sys {
@@ -25,6 +27,7 @@ namespace cling {
     Interpreter& m_Interpreter;
     MetaProcessor& m_MetaProcessor;
     bool m_IsQuitRequested;
+    StoredValueRef m_LastResultedValue;
   public:
     enum SwitchMode {
       kOff = 0,
@@ -33,10 +36,13 @@ namespace cling {
     };
   public:
     MetaSema(Interpreter& interp, MetaProcessor& meta) 
-      : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false)
-    {}
+      : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false) {
+      m_LastResultedValue = StoredValueRef::invalidValue();
+    }
+
     const Interpreter& getInterpreter() const { return m_Interpreter; }
     bool isQuitRequested() const { return m_IsQuitRequested; }
+    StoredValueRef getLastResultedValue() const { return m_LastResultedValue; };
     
     ///\brief L command includes the given file or loads the given library.
     ///
@@ -62,7 +68,7 @@ namespace cling {
     ///\param[in] file - The filename to load.
     ///\param[in] args - The optional list of arguments.
     ///
-    void actOnxCommand(llvm::sys::Path file, llvm::StringRef args) const;
+    void actOnxCommand(llvm::sys::Path file, llvm::StringRef args);
 
     ///\brief Actions to be performed on quit.
     ///

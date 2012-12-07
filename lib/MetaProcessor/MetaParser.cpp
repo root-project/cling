@@ -89,6 +89,10 @@ namespace cling {
     return m_Actions->isQuitRequested(); 
   }
 
+  StoredValueRef MetaParser::getLastResultedValue() const {
+    return m_Actions->getLastResultedValue();
+  }
+
   bool MetaParser::isCommandSymbol() {
     for (size_t i = 0; i < m_MetaSymbolCache.size(); ++i) {
       if (getCurTok().getKind() != m_MetaSymbolCache[i].getKind())

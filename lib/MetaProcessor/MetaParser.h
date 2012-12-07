@@ -8,6 +8,7 @@
 #define CLING_META_PARSER_H
 
 #include "MetaLexer.h" // for cling::Token
+#include "cling/Interpreter/StoredValueRef.h"
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
@@ -92,6 +93,8 @@ namespace cling {
     ///\brief Returns whether quit was requested via .q command
     ///
     bool isQuitRequested() const;
+
+    StoredValueRef getLastResultedValue() const;
   };
 } // end namespace cling
 
