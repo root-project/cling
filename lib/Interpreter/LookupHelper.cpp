@@ -95,7 +95,8 @@ namespace cling {
   }
 
   const Decl* LookupHelper::findScope(llvm::StringRef className,
-                                      const Type** resultType /* = 0 */) const {
+                                      const Type** resultType /* = 0 */,
+                                      bool instantiateTemplate/*=true*/) const {
     //
     //  Some utilities.
     //
@@ -192,15 +193,22 @@ namespace cling {
                   // It is a class, struct, or union.
                   TagDecl* TD = TagTy->getDecl();
                   if (TD) {
-                    // Make sure it is not just forward declared, and
-                    // instantiate any templates.
-                    if (!S.RequireCompleteDeclContext(SS, TD)) {
-                      // Success, type is complete, instantiations have
-                      // been done.
-                      TagDecl* Def = TD->getDefinition();
-                      if (Def) {
-                        TheDecl = Def;
+                    if (instantiateTemplate) {
+                      // Make sure it is not just forward declared, and
+                      // instantiate any templates.
+                      if (!S.RequireCompleteDeclContext(SS, TD)) {
+                        // Success, type is complete, instantiations have
+                        // been done.
+                        TagDecl* Def = TD->getDefinition();
+                        if (Def) {
+                          TheDecl = Def;
+                        }
                       }
+                    } else {
+                      // The user just want to see if the template had 
+                      // already been instantiate and did not mean to force
+                      // one.
+                      TheDecl = TD->getDefinition();
                     }
                   }
                 }

@@ -58,7 +58,8 @@ namespace cling {
     ///\returns The found declaration or null.
     ///
     const clang::Decl* findScope(llvm::StringRef className,
-                                 const clang::Type** resultType = 0) const;
+                                 const clang::Type** resultType = 0,
+                                 bool instantiateTemplate = true) const;
 
      
     ///\brief Lookup a class template declaration by name, starting from 
