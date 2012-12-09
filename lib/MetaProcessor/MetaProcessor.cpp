@@ -169,6 +169,7 @@ namespace cling {
     if (ignoreOutmostBlock && !content.empty()) {
       static const char whitespace[] = " \t\r\n";
       std::string::size_type posNonWS = content.find_first_not_of(whitespace);
+      std::string::size_type replaced = posNonWS;
       if (posNonWS != std::string::npos) {
         if (content[posNonWS] == '{') {
           // hide the curly brace:
@@ -182,11 +183,19 @@ namespace cling {
             if (content[posNonWS] == '}') {
               content[posNonWS] = ' '; // replace '}'
             } else {
-              // Don't issue an error, output after the last '}' is okay
-              // and so we must improve the checking before re-enabling 
-              // this message (assuming we still need it).
-              //    llvm::errs() << "Error in cling::MetaProcessor: missing closing '}'!\n";
-              // be confident, just go on.
+              // More text (comments) are okay after the last '}', but
+              // we can not easily find it to remove it (so we need to upgrade
+              // this code to better handle the case with comments or
+              // preprocessor code before and after the leading { and
+              // trailing })
+              content[replaced] = '{';
+              // By putting the '{' back, we keep the code as consistent as
+              // the user wrote it ... but we should still warn that we not 
+              // goint to treat this file an unamed macro.
+              llvm::errs() 
+               << "Warning in cling::MetaProcessor: can not find the closing '}', "
+               << llvm::sys::path::filename(filename)
+               << " is not handled as an unamed script!\n";
             }
           } // find '}'
         } // have '{'
