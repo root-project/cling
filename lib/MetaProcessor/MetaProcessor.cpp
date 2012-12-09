@@ -182,7 +182,10 @@ namespace cling {
             if (content[posNonWS] == '}') {
               content[posNonWS] = ' '; // replace '}'
             } else {
-              llvm::errs() << "Error in cling::MetaProcessor: missing closing '}'!\n";
+              // Don't issue an error, output after the last '}' is okay
+              // and so we must improve the checking before re-enabling 
+              // this message (assuming we still need it).
+              //    llvm::errs() << "Error in cling::MetaProcessor: missing closing '}'!\n";
               // be confident, just go on.
             }
           } // find '}'
