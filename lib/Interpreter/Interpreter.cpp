@@ -42,15 +42,6 @@ using namespace clang;
 
 namespace {
 
-static bool canWrapForCall(const std::string& input_line) {
-   // Whether input_line can be wrapped into a function.
-   // "1" can, "#include <vector>" can't.
-   if (input_line.length() > 1 && input_line[0] == '#') return false;
-   if (input_line.compare(0, strlen("extern "), "extern ") == 0) return false;
-   if (input_line.compare(0, strlen("using "), "using ") == 0) return false;
-   return true;
-}
-
   static cling::Interpreter::ExecutionResult
   ConvertExecutionResult(cling::ExecutionContext::ExecutionResult ExeRes) {
     switch (ExeRes) {
@@ -383,7 +374,7 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
 
-    if (!canWrapForCall(input))
+    if (!ShouldWrapInput(input))
       return declare(input, D);
 
     if (EvaluateInternal(input, CO, V) == Interpreter::kFailure) {
@@ -483,6 +474,34 @@ namespace cling {
       return Interpreter::kSuccess;
     return Interpreter::kFailure;
   }
+
+  bool Interpreter::ShouldWrapInput(llvm::StringRef input) {
+    llvm::OwningPtr<llvm::MemoryBuffer> buf;
+    buf.reset(llvm::MemoryBuffer::getMemBuffer(input, "Cling Preparse Buf"));
+    Lexer WrapLexer(SourceLocation(), getSema().getLangOpts(), input.data(), 
+                    input.data(), input.data() + input.size());
+    Token Tok;
+    WrapLexer.Lex(Tok);
+
+    tok::TokenKind kind = Tok.getKind();
+
+    if (kind == tok::raw_identifier && !Tok.needsCleaning()) {
+      StringRef keyword(Tok.getRawIdentifierData(), Tok.getLength());
+      if (keyword.equals("using"))
+        return false;
+      if (keyword.equals("extern"))
+        return false;
+      if (keyword.equals("namespace"))
+        return false;
+    }
+
+    switch (kind) {
+    case tok::hash : return false;
+    default:
+      return true;
+    }
+  }
+
 
   void Interpreter::WrapInput(std::string& input, std::string& fname) {
     fname = createUniqueWrapper();

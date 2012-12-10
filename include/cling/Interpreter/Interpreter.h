@@ -289,6 +289,16 @@ namespace cling {
                                        const CompilationOptions& CO,
                                        StoredValueRef* V = 0);
 
+    ///\brief Decides whether the input line should be wrapped or not by using
+    /// simple lexing to determine whether it is known that it should be on the
+    /// global scope or not.
+    ///
+    ///\param[in] input - The input being scanned.
+    ///
+    ///\returns true if the input should be wrapped.
+    ///
+    bool ShouldWrapInput(llvm::StringRef input);
+
     ///\brief Wraps a given input.
     ///
     /// The interpreter must be able to run statements on the fly, which is not
