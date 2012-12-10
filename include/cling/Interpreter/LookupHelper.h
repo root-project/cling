@@ -55,6 +55,8 @@ namespace cling {
     ///                          namespace, or enum to lookup.
     ///\param [out] resultType - The type of the class, struct, union,
     ///                          or enum to lookup; NULL otherwise.
+    ///\param [in] instantiateTemplate - When true, will attempt to instantiate
+    ///                          a class template satisfying the rquest.
     ///\returns The found declaration or null.
     ///
     const clang::Decl* findScope(llvm::StringRef className,
