@@ -470,6 +470,10 @@ namespace cling {
     // Template instantiations should also not be pushed into scope.
     if (isa<FunctionDecl>(ND) &&
         cast<FunctionDecl>(ND)->isFunctionTemplateSpecialization())
+      return false; 
+
+    // Using directives are not registered onto the scope chain
+    if (isa<UsingDirectiveDecl>(ND))
       return false;
 
     IdentifierResolver::iterator
