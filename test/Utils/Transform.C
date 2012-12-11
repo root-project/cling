@@ -13,6 +13,9 @@
 
 .rawInput 1
 
+#include <vector>
+#include <iostream>
+
 typedef double Double32_t;
 typedef int Int_t;
 typedef long Long_t;
@@ -28,31 +31,58 @@ typedef C<A<B<const Double32_t, const Int_t> >, Double32_t > CTDConst;
 #include <string>
 
 namespace Details {
-   class Impl {};
+  class Impl {};
 }
 
 namespace NS {
-   template <typename T, int size = 0> class ArrayType {};
-   template <typename T> class Array {};
-   
-   template <typename T> class Container {
-   public:
-      class Content {};
-      typedef T Value_t;
-      typedef Content Content_t;
-      typedef ::Details::Impl Impl_t;
-   };
-   
-   template <typename T> class TDataPoint {};
-   typedef TDataPoint<float> TDataPointF;
-   typedef TDataPoint<Double32_t> TDataPointD32;
+  template <typename T, int size = 0> class ArrayType {};
+  template <typename T> class Array {};
+  
+  template <typename T> class Container {
+  public:
+    class Content {};
+    typedef T Value_t;
+    typedef Content Content_t;
+    typedef ::Details::Impl Impl_t;
+  };
+  
+  template <typename T> class TDataPoint {};
+  typedef TDataPoint<float> TDataPointF;
+  typedef TDataPoint<Double32_t> TDataPointD32;
 }
 
 // Anonymous namespace
 namespace {
-   class InsideAnonymous {
-   };
+  class InsideAnonymous {
+  };
 }
+
+class Embedded_objects {
+public:
+  class EmbeddedClasses;
+  typedef EmbeddedClasses EmbeddedTypedef; 
+  
+  class EmbeddedClasses {
+  public:
+    class Embedded1 {};
+    class Embedded2 {};
+    class Embedded3 {};
+    class Embedded4 {};
+    class Embedded5 {};
+    class Embedded6 {};
+
+  };
+  EmbeddedClasses m_embedded;
+  EmbeddedClasses::Embedded1 m_emb1;
+  EmbeddedClasses::Embedded2 m_emb2;
+  EmbeddedClasses::Embedded3 m_emb3;
+  
+  EmbeddedTypedef::Embedded4 m_emb4;
+  Embedded_objects::EmbeddedClasses::Embedded5 m_emb5;
+  Embedded_objects::EmbeddedTypedef::Embedded6 m_emb6;
+  typedef std::vector<int> vecint;
+  vecint::iterator m_iter;
+};
 
 .rawInput 0
 
@@ -64,6 +94,7 @@ skip.insert(lookup.findType("Double32_t").getTypePtr());
 const clang::Type* t = 0;
 clang::QualType QT;
 using namespace cling::utils;
+using namespace std;
 
 // Test the behavior on a simple class
 lookup.findScope("Details::Impl", &t);
@@ -202,3 +233,31 @@ lookup.findScope("NS::TDataPointD32", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 // CHECK: (const char *) "NS::TDataPoint<Double32_t>"
+
+const clang::Decl*decl=lookup.findScope("Embedded_objects",&t);
+if (decl) {
+  const clang::CXXRecordDecl *cxxdecl
+    = llvm::dyn_cast<clang::CXXRecordDecl>(decl);
+  if (cxxdecl) {
+    clang::DeclContext::decl_iterator iter = cxxdecl->decls_begin();
+    while ( *iter ) {
+      const clang::Decl *mdecl = *iter;
+      if (const clang::ValueDecl *vd = llvm::dyn_cast<clang::ValueDecl>(mdecl)) {
+        clang::QualType vdType = vd->getType();
+        std::cout << cling::utils::Transform::GetPartiallyDesugaredType(Ctx,vdType,skip).
+                       getAsString().c_str() << std::endl;
+      }
+      ++iter;
+    }
+  }
+}
+// CHECK: class Embedded_objects::EmbeddedClasses
+// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded1
+// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded2
+// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded3
+// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded4
+// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded5
+// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded6
+// CHECK: std::vector<int>::iterator
+        
+
