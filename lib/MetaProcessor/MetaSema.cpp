@@ -18,6 +18,8 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h" // for llvm::outs() FIXME
 
+#include <cstdlib>
+
 namespace cling {
 
   void MetaSema::actOnLCommand(llvm::sys::Path file) const {
@@ -158,6 +160,12 @@ namespace cling {
       DisplayTypedefs(llvm::outs(), &m_Interpreter);
     else
       DisplayTypedef(llvm::outs(), &m_Interpreter, typedefName.str().c_str());
+  }
+  
+  void MetaSema::actOnShellCommand(llvm::StringRef commandLine) const {
+    llvm::StringRef trimmed(commandLine.trim(" \t\n\v\f\r "));
+    if (!trimmed.empty())
+      std::system(trimmed.str().c_str());
   }
 
 } // end namespace cling

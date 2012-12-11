@@ -80,6 +80,7 @@ namespace cling {
     bool isClassCommand();
     bool isgCommand();
     bool isTypedefCommand();
+    bool isShellCommand();
   public:
     MetaParser(MetaSema* Actions);
     void enterNewInputLine(llvm::StringRef Line);

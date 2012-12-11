@@ -142,6 +142,13 @@ namespace cling {
     //                          if empty prints them all.
     ///
     void actOnTypedefCommand(llvm::StringRef typedefName) const;
+
+    ///\brief '.! cmd [args]' syntax.
+    ///
+    ///\param[in] commandLine - shell command + optional
+    //                          list of parameters.
+    ///
+    void actOnShellCommand(llvm::StringRef commandLine) const;
   };
 
 } // end namespace cling

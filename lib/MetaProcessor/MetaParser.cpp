@@ -107,7 +107,7 @@ namespace cling {
       || isUCommand() || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
       || isfileExCommand() || isfilesCommand() || isClassCommand() 
-      || isgCommand() || isTypedefCommand();
+      || isgCommand() || isTypedefCommand() || isShellCommand();
   }
 
   // L := 'L' FilePath
@@ -300,7 +300,7 @@ namespace cling {
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident)) {
       if (Tok.getIdent().equals("typedef")) {
-        consumeAnyStringToken();
+        consumeAnyStringToken(tok::eof);
         const Token& NextTok = getCurTok();
         llvm::StringRef typedefName;
         if (NextTok.is(tok::raw_ident))
@@ -308,6 +308,21 @@ namespace cling {
         m_Actions->actOnTypedefCommand(typedefName);
         return true;
       }
+    }
+    return false;
+  }
+  
+  bool MetaParser::isShellCommand() {
+    const Token& Tok = getCurTok();
+    if (Tok.is(tok::excl_mark)) {
+      consumeAnyStringToken(tok::eof);
+      const Token& NextTok = getCurTok();
+      if (NextTok.is(tok::raw_ident)) {
+         llvm::StringRef commandLine(NextTok.getIdent());
+         if (!commandLine.empty())
+            m_Actions->actOnShellCommand(commandLine);
+      }
+      return true;
     }
     return false;
   }
