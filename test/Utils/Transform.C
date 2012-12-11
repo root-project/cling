@@ -59,6 +59,10 @@ namespace {
 
 class Embedded_objects {
 public:
+  enum Eenum {
+    kEnumConst=16
+  };
+  
   class EmbeddedClasses;
   typedef EmbeddedClasses EmbeddedTypedef; 
   
@@ -82,6 +86,7 @@ public:
   Embedded_objects::EmbeddedTypedef::Embedded6 m_emb6;
   typedef std::vector<int> vecint;
   vecint::iterator m_iter;
+  const Eenum m_enum;
 };
 
 .rawInput 0
@@ -244,20 +249,21 @@ if (decl) {
       const clang::Decl *mdecl = *iter;
       if (const clang::ValueDecl *vd = llvm::dyn_cast<clang::ValueDecl>(mdecl)) {
         clang::QualType vdType = vd->getType();
-        std::cout << cling::utils::Transform::GetPartiallyDesugaredType(Ctx,vdType,skip).
-                       getAsString().c_str() << std::endl;
+        name.clear();
+        Transform::GetPartiallyDesugaredType(Ctx,vdType,skip).getAsStringInternal(name,Policy);
+        std::cout << name.c_str() << std::endl;
       }
       ++iter;
     }
   }
 }
-// CHECK: class Embedded_objects::EmbeddedClasses
-// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded1
-// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded2
-// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded3
-// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded4
-// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded5
-// CHECK: class Embedded_objects::class EmbeddedClasses::Embedded6
+// CHECK: Embedded_objects::EmbeddedClasses
+// CHECK: Embedded_objects::EmbeddedClasses::Embedded1
+// CHECK: Embedded_objects::EmbeddedClasses::Embedded2
+// CHECK: Embedded_objects::EmbeddedClasses::Embedded3
+// CHECK: Embedded_objects::EmbeddedClasses::Embedded4
+// CHECK: Embedded_objects::EmbeddedClasses::Embedded5
+// CHECK: Embedded_objects::EmbeddedClasses::Embedded6
 // CHECK: std::vector<int>::iterator
-        
+// CHECK: const Embedded_objects::Eenum        
 
