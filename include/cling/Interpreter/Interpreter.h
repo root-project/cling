@@ -297,7 +297,7 @@ namespace cling {
     ///
     ///\returns true if the input should be wrapped.
     ///
-    bool ShouldWrapInput(llvm::StringRef input);
+    bool ShouldWrapInput(const std::string& input);
 
     ///\brief Wraps a given input.
     ///
