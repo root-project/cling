@@ -56,4 +56,16 @@ namespace cling {
 
   void DeclCollector::HandleTranslationUnit(ASTContext& Ctx) {
   }
+
+  void DeclCollector::HandleCXXImplicitFunctionInstantiation(FunctionDecl *D) {
+    Transaction::DelayCallInfo DCI(DeclGroupRef(D),
+                                   Transaction::kCCIHandleCXXImplicitFunctionInstantiation);
+    m_CurTransaction->append(DCI);
+  }
+  void DeclCollector::HandleCXXStaticMemberVarInstantiation(VarDecl *D) {
+    Transaction::DelayCallInfo DCI(DeclGroupRef(D),
+                                   Transaction::kCCIHandleCXXStaticMemberVarInstantiation);
+    m_CurTransaction->append(DCI);
+  }
+  
 } // namespace cling

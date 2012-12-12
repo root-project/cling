@@ -41,7 +41,9 @@ namespace cling {
       kCCIHandleTopLevelDecl,
       kCCIHandleInterestingDecl,
       kCCIHandleTagDeclDefinition,
-      kCCIHandleVTable
+      kCCIHandleVTable,
+      kCCIHandleCXXImplicitFunctionInstantiation,
+      kCCIHandleCXXStaticMemberVarInstantiation
     };
 
     ///\brief Each declaration group came through different interface at 

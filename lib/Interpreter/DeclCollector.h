@@ -42,7 +42,8 @@ namespace cling {
                               bool DefinitionRequired);
     virtual void CompleteTentativeDefinition(clang::VarDecl* VD);
     virtual void HandleTranslationUnit(clang::ASTContext& Ctx);
-
+    virtual void HandleCXXImplicitFunctionInstantiation(clang::FunctionDecl *D);
+    virtual void HandleCXXStaticMemberVarInstantiation(clang::VarDecl *D);
     /// \}
 
     /// \{

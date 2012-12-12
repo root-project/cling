@@ -217,6 +217,18 @@ namespace cling {
           CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I->m_DGR.getSingleDecl());
           getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
         }
+        else if (I->m_Call
+                 == Transaction::kCCIHandleCXXImplicitFunctionInstantiation) {
+          FunctionDecl* FD = cast<FunctionDecl>(I->m_DGR.getSingleDecl());
+          getCodeGenerator()->HandleCXXImplicitFunctionInstantiation(FD);
+        }
+        else if (I->m_Call
+                 == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
+          VarDecl* VD = cast<VarDecl>(I->m_DGR.getSingleDecl());
+          getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
+
+
+        }
         else if (I->m_Call == Transaction::kCCINone)
           ; // We use that internally as delimiter in the Transaction.
         else
