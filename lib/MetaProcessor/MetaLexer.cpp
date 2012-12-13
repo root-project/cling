@@ -106,12 +106,14 @@ namespace cling {
     while (true) {
       // On comment skip until the eof token.
       if (curPos[0] == '/' && curPos[1] == '/') {
-        while (*curPos != '\0')
+        while (*curPos != '\0' && *curPos != '\r' && *curPos != '\n')
           ++curPos;
-        Tok.setBufStart(curPos);
-        Tok.setKind(tok::eof);
-        Tok.setLength(0);
-        return;
+        if (*curPos == '\0') {
+          Tok.setBufStart(curPos);
+          Tok.setKind(tok::eof);
+          Tok.setLength(0);
+          return;
+        }
       }
       MetaLexer::LexPunctuator(*curPos++, Tok);
       if (Tok.isNot(tok::unknown))
