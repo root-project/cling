@@ -22,6 +22,7 @@ target_link_libraries(cling
   clangAST
   clangLex
   clangBasic
+  clangEdit
   )
 
 install(TARGETS cling

@@ -3,6 +3,7 @@
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
   project(Cling)
   cmake_minimum_required(VERSION 2.8)
+  find_package(Subversion)
 
   set(CLING_PATH_TO_LLVM_SOURCE "" CACHE PATH
     "Path to LLVM source code. Not necessary if using an installed LLVM.")
@@ -19,7 +20,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
     endif()
   endif()
 
-  if( NOT EXISTS "${CLING_PATH_TO_LLVM_BUILD}/bin/tblgen${CMAKE_EXECUTABLE_SUFFIX}" )
+  if( NOT EXISTS "${CLING_PATH_TO_LLVM_BUILD}/bin/llvm-tblgen${CMAKE_EXECUTABLE_SUFFIX}" )
     message(FATAL_ERROR "Please set CLING_PATH_TO_LLVM_BUILD to a directory containing a LLVM build.")
   endif()
 
@@ -41,7 +42,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
   include_directories("${PATH_TO_LLVM_BUILD}/include" "${LLVM_MAIN_INCLUDE_DIR}")
   link_directories("${PATH_TO_LLVM_BUILD}/lib")
 
-  set(LLVM_TABLEGEN_EXE "${PATH_TO_LLVM_BUILD}/bin/tblgen")
+  set(LLVM_TABLEGEN_EXE "${PATH_TO_LLVM_BUILD}/bin/llvm-tblgen")
 
   set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
   set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
