@@ -165,7 +165,7 @@ namespace cling {
   void MetaSema::actOnShellCommand(llvm::StringRef commandLine) const {
     llvm::StringRef trimmed(commandLine.trim(" \t\n\v\f\r "));
     if (!trimmed.empty())
-      std::system(trimmed.str().c_str());
+       (void)std::system(trimmed.str().c_str());
   }
 
 } // end namespace cling
