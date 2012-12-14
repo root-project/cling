@@ -506,7 +506,6 @@ namespace cling {
     return true;
   }
 
-
   void Interpreter::WrapInput(std::string& input, std::string& fname) {
     fname = createUniqueWrapper();
     input.insert(0, "void " + fname + "() {\n ");
