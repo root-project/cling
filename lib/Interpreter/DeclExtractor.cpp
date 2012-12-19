@@ -21,7 +21,8 @@ using namespace clang;
 namespace cling {
 
   DeclExtractor::DeclExtractor(Sema* S) 
-    : TransactionTransformer(S), m_Context(&S->getASTContext()) 
+    : TransactionTransformer(S), m_Context(&S->getASTContext()), 
+      m_UniqueNameCounter(0)
   { }
 
   // pin the vtable here
@@ -33,7 +34,7 @@ namespace cling {
       return;
 
     if(!ExtractDecl(getTransaction()->getWrapperFD()))
-       setTransaction(0); // On error set to NULL.
+      setTransaction(0); // On error set to NULL.
   }
 
   bool DeclExtractor::ExtractDecl(FunctionDecl* FD) {
@@ -52,13 +53,22 @@ namespace cling {
         Stmts.push_back(*I);
         continue;
       }
-
+      
       for (DeclStmt::decl_iterator J = DS->decl_begin();
            J != DS->decl_end(); ++J) {
         NamedDecl* ND = dyn_cast<NamedDecl>(*J);
         if (isa<UsingDirectiveDecl>(*J))
           continue; // FIXME: Here we should be more elegant.
         if (ND) {
+          if (Stmts.size()) {
+            // We need to emit a new custom wrapper wrapping the stmts
+            // Append the new top level decl to the current transaction.
+            EnforceInitOrder(Stmts);
+            Stmts.clear();
+          }
+
+          getTransaction()->append(ND);
+
           DeclContext* OldDC = ND->getDeclContext();
 
           // Make sure the decl is not found at its old possition
@@ -95,7 +105,7 @@ namespace cling {
         // The transparent DeclContexts (eg. scopeless enum) doesn't have 
         // scopes. While extracting their contents we need to update the
         // lookup tables and telling them to pick up the new possitions
-        //  in the AST.
+        // in the AST.
         if (DeclContext* InnerDC = dyn_cast<DeclContext>(TouchedDecls[i])) {
           if (InnerDC->isTransparentContext()) {
             // We can't PushDeclContext, because we don't have scope.
@@ -108,9 +118,6 @@ namespace cling {
             }
           }
         }
-
-        // Append the new top level decl to the current transaction.
-        getTransaction()->append(DeclGroupRef(TouchedDecls[i]));
       }
     }
 
@@ -121,6 +128,62 @@ namespace cling {
     DC->addDecl(FD);
 
     return hasNoErrors;
+  }
+
+  void DeclExtractor::createUniqueName(std::string& out) {
+    if (out.empty())
+      out += '_';
+
+    out += "_init_order";
+    out += utils::Synthesize::UniquePrefix;
+    llvm::raw_string_ostream(out) << m_UniqueNameCounter++;
+  }
+
+  void DeclExtractor::EnforceInitOrder(llvm::SmallVectorImpl<Stmt*>& Stmts){
+    Scope* TUScope = m_Sema->TUScope;
+    DeclContext* TUDC = static_cast<DeclContext*>(TUScope->getEntity());
+    // We can't PushDeclContext, because we don't have scope.
+    Sema::ContextRAII pushedDC(*m_Sema, TUDC);
+
+    std::string FunctionName = "__fd";
+    createUniqueName(FunctionName);
+    IdentifierInfo& IIFD = m_Context->Idents.get(FunctionName);
+    SourceLocation Loc;
+    NamedDecl* ND = m_Sema->ImplicitlyDefineFunction(Loc, IIFD, TUScope);
+    if (FunctionDecl* FD = dyn_cast_or_null<FunctionDecl>(ND)) {
+      FD->setImplicit(false); // Better for debugging
+      // NOTE:
+      // We know that our function returns an int, however we are not going
+      // to add a return statement, because we use that function in an 
+      // assignment which we don't use. The assignment is just there to force
+      // the execution of our function. Valgrind will be happy because LLVM
+      // generates a return result, which is (false?) initialized.
+      CompoundStmt* CS = new (*m_Context)CompoundStmt(*m_Context, Stmts.data(), 
+                                                      Stmts.size(), Loc, Loc);
+      FD->setBody(CS);
+      getTransaction()->append(FD); // Add it to the transaction for codegenning
+
+      // Create the VarDecl with the init      
+      std::string VarName = "__vd";
+      createUniqueName(VarName);
+      IdentifierInfo& IIVD = m_Context->Idents.get(VarName);
+      VarDecl* VD = VarDecl::Create(*m_Context, TUDC, Loc, Loc, &IIVD,
+                                    FD->getResultType(), (TypeSourceInfo*)0,
+                                    SC_None, SC_None);
+      LookupResult R(*m_Sema, FD->getDeclName(), Loc, Sema::LookupMemberName);
+      R.addDecl(FD);
+      CXXScopeSpec CSS;
+      Expr* UnresolvedLookup
+        = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+      Expr* TheCall = m_Sema->ActOnCallExpr(TUScope, UnresolvedLookup, Loc, 
+                                            MultiExprArg(), Loc).take();
+      assert(VD && TheCall && "Missing VD or it's init!");
+      VD->setInit(TheCall);
+      getTransaction()->append(VD); // Add it to the transaction for codegenning
+      TUDC->addHiddenDecl(VD);
+      return;
+    }
+    llvm_unreachable("Must be able to enforce init order.");
   }
 
   ///\brief Checks for clashing names when trying to extract a declaration.

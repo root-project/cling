@@ -10,6 +10,8 @@
 #include "TransactionTransformer.h"
 #include "llvm/ADT/SmallVector.h"
 
+#include <string>
+
 namespace clang {
   class ASTContext;
   class DeclContext;
@@ -18,6 +20,7 @@ namespace clang {
   class NamedDecl;
   class Scope;
   class Sema;
+  class Stmt;
   class TagDecl;
 }
 
@@ -25,6 +28,10 @@ namespace cling {
   class DeclExtractor : public TransactionTransformer {
   private:
     clang::ASTContext* m_Context;
+
+    /// \brief Counter used when we need unique names.
+    unsigned long long m_UniqueNameCounter;
+
   public:
     DeclExtractor(clang::Sema* S);
 
@@ -45,6 +52,32 @@ namespace cling {
     ///\returns true on success.
     ///
     bool ExtractDecl(clang::FunctionDecl* FD);
+
+    /// \brief Creates unique name (eg. of a variable). Used internally for 
+    /// AST node synthesis.
+    ///
+    void createUniqueName(std::string& out);
+
+    ///\brief Enforces semantically correct initialization order.
+    ///
+    /// If we consider \code int i = 1; i++; int j = i; \endcode the code 
+    /// snippet will be transformed into
+    /// \code int i; int j = i; void __cling_wrapper() { int++ } \endcode and 
+    /// the result of will be 1 and not 2. This function scans whether there is
+    /// more than one declaration and generates:
+    /// \code 
+    /// int i = 1;
+    /// int __fd_init_order__cling_Un1Qu30() {
+    ///   i++;
+    /// }
+    /// int __vd_init_order__cling_Un1Qu31 = __fd_init_order__cling_Un1Qu30();
+    /// int j = i; 
+    /// \endcode
+    ///
+    ///\param[in] Stmts - Collection for which have to run as part of the 
+    ///                   static initialization.
+    ///
+    void EnforceInitOrder(llvm::SmallVectorImpl<clang::Stmt*>& Stmts);
 
     ///\brief Checks for clashing names when trying to extract a declaration.
     ///
