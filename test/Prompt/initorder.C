@@ -5,6 +5,11 @@
 // Savannah #99210 https://savannah.cern.ch/bugs/index.php?99210
 // Savannah #99234 https://savannah.cern.ch/bugs/?99234
 
+// Let's start with simpler example pointing out the issue:
+int i = 1; i++; int j = i;
+j
+// CHECK: (int) 2
+
 extern "C" int printf(const char*,...);
 .rawInput
 class RAII {
