@@ -62,7 +62,6 @@ namespace cling {
         if (ND) {
           if (Stmts.size()) {
             // We need to emit a new custom wrapper wrapping the stmts
-            // Append the new top level decl to the current transaction.
             EnforceInitOrder(Stmts);
             Stmts.clear();
           }
