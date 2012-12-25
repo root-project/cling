@@ -403,6 +403,20 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
+  Interpreter::parseForModule(const std::string& input) {
+    CompilationOptions CO;
+    CO.CodeGeneration = 1;
+    CO.CodeGenerationForModule = 1;
+    CO.DeclarationExtraction = 0;
+    CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
+    CO.DynamicScoping = isDynamicLookupEnabled();
+    CO.Debug = isPrintingAST();
+    
+    return DeclareInternal(input, CO);
+  }
+  
+  Interpreter::CompilationResult
   Interpreter::declare(const std::string& input, const Decl** D /* = 0 */) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;

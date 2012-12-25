@@ -44,6 +44,11 @@ namespace cling {
     ///
     unsigned CodeGeneration : 1;
 
+    ///\brief When generating executable, select whether to generate all
+    /// the code (when false) or just the code needed when the input is
+    /// describing code coming from an existing library.
+    unsigned CodeGenerationForModule : 1;
+     
     CompilationOptions() {
       DeclarationExtraction = 1;
       ValuePrinting = VPAuto;
@@ -51,6 +56,7 @@ namespace cling {
       DynamicScoping = 0;
       Debug = 0;
       CodeGeneration = 1;
+      CodeGenerationForModule = 0;
     }
   };
 } // end namespace cling

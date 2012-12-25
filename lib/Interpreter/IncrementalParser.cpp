@@ -203,7 +203,28 @@ namespace cling {
       // We assume that there is no ordering of the calls to HandleXYZ, because
       // in clang they can happen in different order too, eg. coming from 
       // template instatiator and so on.
-      for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
+      if (T->getCompilationOpts().CodeGenerationForModule) {
+        // In the case most the code has already been generated and has been
+        // loaded via a shared library.   In particular we do not want to 
+        // generate code for global variables and non-inline function.
+        // However we do want to generate code for inline function ...
+        // [The alternative would to find a way to get the JIT to generate them]
+        for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
+             I != E; ++I) {
+          if (I->m_Call == Transaction::kCCIHandleTopLevelDecl
+              && I->m_DGR.isSingleDecl() ) {
+            FunctionDecl *FD = dyn_cast<FunctionDecl>(I->m_DGR.getSingleDecl());
+            if (FD && FD->isInlineSpecified ()) {
+              getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
+            }
+          } else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
+            TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
+            
+            // We need to traverse the decl to find the inline functions ....
+            
+          }
+        }
+      } else for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
            I != E; ++I) {
         if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
           getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
