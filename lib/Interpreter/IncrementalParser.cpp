@@ -218,8 +218,7 @@ namespace cling {
               getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
             }
           } else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
-            TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
-            
+            //TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
             // We need to traverse the decl to find the inline functions ....
             
           }
