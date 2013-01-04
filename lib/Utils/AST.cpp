@@ -299,17 +299,23 @@ namespace utils {
       return true;
      
     const TypedefType* typedeftype = 
-       llvm::dyn_cast_or_null<clang::TypedefType>(QT.getTypePtr());
+      llvm::dyn_cast_or_null<clang::TypedefType>(QT.getTypePtr());
     const TypedefNameDecl* decl = typedeftype ? typedeftype->getDecl() : 0;
     if (decl) {
-       const NamedDecl* outer 
-          = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
-       while ( outer && outer->getName().size() ) {
-        // NOTE: Net is being cast too widely, replace by a lookup. 
-        if (outer->getName().compare("std") == 0) {
-          return true;
-        }
+      const NamedDecl* outer 
+        = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
+      if (outer && outer->getName().size() ) {
+        // Only keep the typedef that are within a class or namespace inside
+        // the std namespace (that way we do desugar std::size_t).
         outer = llvm::dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
+        while ( outer && outer->getName().size() ) {
+          // NOTE: Net is being cast too widely, replace by a lookup. 
+          // or by using Sema::getStdNamespace
+          if (outer->getName().compare("std") == 0) {
+            return true;
+          }
+          outer = llvm::dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
+        }
       }
     }
     return false;
