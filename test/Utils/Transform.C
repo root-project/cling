@@ -92,14 +92,17 @@ public:
 .rawInput 0
 
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
-
 const clang::ASTContext& Ctx = gCling->getSema().getASTContext();
 llvm::SmallSet<const clang::Type*, 4> skip;
+
 skip.insert(lookup.findType("Double32_t").getTypePtr());
+using namespace std;
+skip.insert(lookup.findType("string").getTypePtr());
+skip.insert(lookup.findType("std::string").getTypePtr());
+
 const clang::Type* t = 0;
 clang::QualType QT;
 using namespace cling::utils;
-using namespace std;
 
 // Test the behavior on a simple class
 lookup.findScope("Details::Impl", &t);
