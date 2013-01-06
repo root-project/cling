@@ -724,7 +724,9 @@ namespace cling {
         }
       }
     }
-    if (P.getCurToken().isNot(tok::eof)) {
+    // For backward compatibility with CINT accept (for now?) a trailing close 
+    // parenthesis.
+    if (P.getCurToken().isNot(tok::eof) && P.getCurToken().isNot(tok::r_paren) ) {
       // We did not consume all of the arg list, bad parse.
       return TheDecl;
     }
