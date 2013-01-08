@@ -199,19 +199,6 @@ namespace cling {
       SetClingCustomLangOpts(CI->getLangOpts());
 
       CI->getInvocation().getPreprocessorOpts().addMacroDef("__CLING__");
-      if (CI->getTarget().getTriple().getOS() == llvm::Triple::Cygwin) {
-        // clang "forgets" the basic arch part needed by winnt.h:
-        if (CI->getTarget().getTriple().getArch() == llvm::Triple::x86) {
-          CI->getInvocation().getPreprocessorOpts().addMacroDef("_X86_=1");
-        } else if (CI->getTarget().getTriple().getArch()
-                   == llvm::Triple::x86_64) {
-          CI->getInvocation().getPreprocessorOpts().addMacroDef("__x86_64=1");
-        } else {
-           llvm::errs() << "Warning: unhandled target architecture "
-                        << CI->getTarget().getTriple().getArchName() << '\n';
-        }
-      }
-
       if (CI->getDiagnostics().hasErrorOccurred()) {
         delete CI;
         CI = 0;
@@ -227,6 +214,18 @@ namespace cling {
     }
     CI->getTarget().setForcedLangOptions(CI->getLangOpts());
     SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
+    if (CI->getTarget().getTriple().getOS() == llvm::Triple::Cygwin) {
+      // clang "forgets" the basic arch part needed by winnt.h:
+      if (CI->getTarget().getTriple().getArch() == llvm::Triple::x86) {
+        CI->getInvocation().getPreprocessorOpts().addMacroDef("_X86_=1");
+      } else if (CI->getTarget().getTriple().getArch()
+                 == llvm::Triple::x86_64) {
+        CI->getInvocation().getPreprocessorOpts().addMacroDef("__x86_64=1");
+      } else {
+        llvm::errs() << "Warning: unhandled target architecture "
+                     << CI->getTarget().getTriple().getArchName() << '\n';
+      }
+    }
 
     // Set up source and file managers
     CI->createFileManager();
