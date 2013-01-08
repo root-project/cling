@@ -19,34 +19,43 @@ add_cling_library(clingUserInterface
   textinput/TextInput.cpp
   textinput/TextInputContext.cpp
 )
+#Look for textinput in current ROOT source tree
+IF (EXISTS ${CMAKE_SOURCE_DIR}/../../core/textinput/src/textinput)
 
-#Find svn information
-EXECUTE_PROCESS(COMMAND ${Subversion_SVN_EXECUTABLE} info "${CMAKE_CURRENT_LIST_DIR}" RESULT_VARIABLE svn_result OUTPUT_VARIABLE svn_ver)
-IF (NOT ${svn_result} EQUAL 0) 
-	MESSAGE(SEND_ERROR "Svn command returned error, is it installed?")
-ELSE(NOT ${svn_result} EQUAL 0) 
+  EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy_directory
+                          ${CMAKE_SOURCE_DIR}/../../core/textinput/src/textinput
+                          ${CMAKE_CURRENT_SOURCE_DIR}/textinput)
+ELSE()
 
-	#Find and clean the url of the actual repository
-	STRING(REGEX MATCH  "URL: ([^\n]+)"  url "${svn_ver}")
-	STRING(REPLACE      "URL: " "" url "${url}")
+  #Find svn information
+  EXECUTE_PROCESS(COMMAND ${Subversion_SVN_EXECUTABLE} info "${CMAKE_CURRENT_LIST_DIR}" RESULT_VARIABLE svn_result OUTPUT_VARIABLE svn_ver)
+  IF (NOT ${svn_result} EQUAL 0)
+	  MESSAGE(SEND_ERROR "Svn command returned error, is it installed?")
+  ELSE(NOT ${svn_result} EQUAL 0)
 
-	#Point the url to the rigt location
-	STRING(REPLACE  "interpreter/cling/lib/UserInterface" "core/textinput/src/textinput" url "${url}")
+  	#Find and clean the url of the actual repository
+	  STRING(REGEX MATCH  "URL: ([^\n]+)"  url "${svn_ver}")
+	  STRING(REPLACE      "URL: " "" url "${url}")
 
-	#Checkout the source
-	EXECUTE_PROCESS(COMMAND ${Subversion_SVN_EXECUTABLE} co "${url}" "${CMAKE_CURRENT_LIST_DIR}/textinput" RESULT_VARIABLE scn_co_result)
-	IF (NOT ${scn_co_result} EQUAL 0) 
-		MESSAGE(SEND_ERROR "Svn checkout for ${url} error")
-	ENDIF (NOT ${scn_co_result} EQUAL 0) 
-ENDIF(NOT ${svn_result} EQUAL 0) 
+  	#Point the url to the rigt location
+  	STRING(REPLACE  "interpreter/cling/lib/UserInterface" "core/textinput/src/textinput" url "${url}")
+
+  	#Checkout the source
+	  EXECUTE_PROCESS(COMMAND ${Subversion_SVN_EXECUTABLE} co "${url}" "${CMAKE_CURRENT_LIST_DIR}/textinput" RESULT_VARIABLE scn_co_result)
+	  IF (NOT ${scn_co_result} EQUAL 0)
+  		MESSAGE(SEND_ERROR "Svn checkout for ${url} error")
+  	ENDIF (NOT ${scn_co_result} EQUAL 0)
+  ENDIF(NOT ${svn_result} EQUAL 0)
+
+ENDIF()
 	
-  if(MSVC)
-    # windows.h doesn't compile with /Za
-    get_target_property(NON_ANSI_COMPILE_FLAGS clingUserInterface COMPILE_FLAGS)
-    string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
-    set_target_properties(clingUserInterface PROPERTIES
-      COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
-  endif()
+IF(MSVC)
+  # windows.h doesn't compile with /Za
+  get_target_property(NON_ANSI_COMPILE_FLAGS clingUserInterface COMPILE_FLAGS)
+  string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
+  set_target_properties(clingUserInterface PROPERTIES
+  COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
+ENDIF()
 
 #add_subdirectory(textinput)
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
