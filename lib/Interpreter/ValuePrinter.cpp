@@ -109,8 +109,9 @@ static void StreamFunction(llvm::raw_ostream& o, const void* addr,
 
   const clang::DeclRefExpr* DeclRefExp
     = llvm::dyn_cast_or_null<clang::DeclRefExpr>(VPI.getExpr());
-  const clang::FunctionDecl* FD
-    = llvm::dyn_cast_or_null<clang::FunctionDecl>(DeclRefExp->getDecl());
+  const clang::FunctionDecl* FD = 0;
+  if (DeclRefExp)
+    FD = llvm::dyn_cast_or_null<clang::FunctionDecl>(DeclRefExp->getDecl());
   if (FD) {
     clang::SourceRange SRange = FD->getSourceRange();
     const char* cBegin = 0;
