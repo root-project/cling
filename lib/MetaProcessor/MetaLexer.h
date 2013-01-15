@@ -26,6 +26,7 @@ namespace cling {
       comma,      // ","
       dot,        // "."
       excl_mark,  // "!"
+      quest_mark, // "?"
       slash,      // "/"
       backslash,  // "\"
       ident,      // (a-zA-Z)[(0-9a-zA-Z)*]

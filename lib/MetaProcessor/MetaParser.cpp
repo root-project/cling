@@ -240,7 +240,9 @@ namespace cling {
   }
 
   bool MetaParser::ishelpCommand() {
-    if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("help")) {
+    const Token& Tok = getCurTok();
+    if (Tok.is(tok::quest_mark) || 
+        (Tok.is(tok::ident) && Tok.getIdent().equals("help"))) {
       m_Actions->actOnhelpCommand();
       return true;
     }
