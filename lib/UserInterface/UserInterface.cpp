@@ -16,7 +16,11 @@
 
 namespace cling {
   UserInterface::UserInterface(Interpreter& interp) {
-    m_MetaProcessor.reset(new MetaProcessor(interp));
+    // We need stream that doesn't close its file descriptor, thus we are not
+    // using llvm::outs. Keeping file descriptor open we will be able to use
+    // the results in pipes (Savannah #99234).
+    static llvm::raw_fd_ostream m_MPOuts (STDOUT_FILENO, /*ShouldClose*/false);
+    m_MetaProcessor.reset(new MetaProcessor(interp, m_MPOuts));
   }
 
   UserInterface::~UserInterface() {}
@@ -40,7 +44,7 @@ namespace cling {
     std::string line;
 
     while (true) {
-      llvm::outs().flush();
+      m_MetaProcessor->getOuts().flush();
       TextInput::EReadResult RR = TI.ReadInput();
       TI.TakeInput(line);
       if (RR == TextInput::kRREOF) {
@@ -67,10 +71,11 @@ namespace cling {
   }
 
   void UserInterface::PrintLogo() {
-    llvm::outs() << "\n";
-    llvm::outs() << "****************** CLING ******************" << "\n";
-    llvm::outs() << "* Type C++ code and press enter to run it *" << "\n";
-    llvm::outs() << "*             Type .q to exit             *" << "\n";
-    llvm::outs() << "*******************************************" << "\n";
+    llvm::raw_ostream& outs = m_MetaProcessor->getOuts();
+    outs << "\n";
+    outs << "****************** CLING ******************" << "\n";
+    outs << "* Type C++ code and press enter to run it *" << "\n";
+    outs << "*             Type .q to exit             *" << "\n";
+    outs << "*******************************************" << "\n";
   }
 } // end namespace cling

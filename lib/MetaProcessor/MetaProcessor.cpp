@@ -28,7 +28,8 @@ using namespace clang;
 
 namespace cling {
 
-  MetaProcessor::MetaProcessor(Interpreter& interp) : m_Interp(interp) {
+  MetaProcessor::MetaProcessor(Interpreter& interp, raw_ostream& outs) 
+    : m_Interp(interp), m_Outs(outs) {
     m_InputValidator.reset(new InputValidator());
     m_MetaParser.reset(new MetaParser(new MetaSema(interp, *this)));
   }

@@ -417,14 +417,16 @@ private:
 FILEPrintHelper::FILEPrintHelper(llvm::raw_ostream& stream)
              : fStream(stream)
 {
+  fStream.flush();
 }
 
 //______________________________________________________________________________
 void FILEPrintHelper::Print(const char* msg)const
 {
   assert(msg != 0 && "Print, 'msg' parameter is null");
-
-  fStream<<msg;
+  // We want to keep stdout and fStream in sync if fStream is different.
+  fflush(stdout);
+  fStream << msg;
   fStream.flush();
 }
 

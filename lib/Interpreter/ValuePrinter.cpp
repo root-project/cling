@@ -20,6 +20,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <string>
+#include <cstdio>
 
 using namespace cling;
 
@@ -30,9 +31,14 @@ extern "C" void cling_PrintValue(void* /*clang::Expr**/ E,
   clang::Expr* Exp = (clang::Expr*)E;
   clang::ASTContext* Context = (clang::ASTContext*)C;
   ValuePrinterInfo VPI(Exp->getType(), Context);
-  printValuePublic(llvm::outs(), value, value, VPI);
 
-  flushOStream(llvm::outs());
+  // We need stream that doesn't close its file descriptor, thus we are not
+  // using llvm::outs. Keeping file descriptor open we will be able to use
+  // the results in pipes (Savannah #99234).
+  llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
+
+  printValuePublic(outs, value, value, VPI);
+  flushOStream(outs);
 }
 
 
@@ -302,6 +308,8 @@ namespace cling {
   }
 
   void flushOStream(llvm::raw_ostream& o) {
+    // We want to keep stdout and o in sync if o is different from stdout.
+    fflush(stdout);
     o.flush();
   }
 

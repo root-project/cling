@@ -212,7 +212,7 @@ namespace cling {
 
   void Interpreter::handleFrontendOptions() {
     if (m_Opts.ShowVersion) {
-      llvm::outs() << getVersion() << '\n';
+      llvm::errs() << getVersion() << '\n';
     }
     if (m_Opts.Help) {
       m_Opts.PrintHelp();
@@ -244,7 +244,7 @@ namespace cling {
     GetIncludePaths(IncPaths, true /*withSystem*/, true /*withFlags*/);
     // print'em all
     for (unsigned i = 0; i < IncPaths.size(); ++i) {
-      llvm::outs() << IncPaths[i] <<"\n";
+      llvm::errs() << IncPaths[i] <<"\n";
     }
   }
 

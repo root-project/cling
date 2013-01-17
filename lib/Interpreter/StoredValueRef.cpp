@@ -38,7 +38,7 @@ int64_t StoredValueRef::StoredValue::getAllocSizeInBytes(
 
 
 void StoredValueRef::dump(ASTContext& ctx) const {
-  StreamStoredValueRef(llvm::outs(), this, ctx);
+  StreamStoredValueRef(llvm::errs(), this, ctx);
 }
 
 StoredValueRef StoredValueRef::allocate(const ASTContext& ctx, QualType t) {

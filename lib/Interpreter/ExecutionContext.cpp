@@ -323,7 +323,7 @@ ExecutionContext::printModule(llvm::Module* m)
   //  Print module LLVM code in human-readable form.
   //
   llvm::PassManager PM;
-  PM.add(llvm::createPrintModulePass(&llvm::outs()));
+  PM.add(llvm::createPrintModulePass(&llvm::errs()));
   PM.run(*m);
 }
 

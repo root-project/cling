@@ -45,11 +45,17 @@ namespace cling {
     ///
     llvm::StringRef m_TopExecutingFile;
 
+    ///\brief The output stream being used for various purposes.
+    ///
+    llvm::raw_ostream& m_Outs;
+
   public:
-    MetaProcessor(Interpreter& interp);
+    MetaProcessor(Interpreter& interp, llvm::raw_ostream& outs);
     ~MetaProcessor();
 
     const Interpreter& getInterpreter() const { return m_Interp; }
+
+    llvm::raw_ostream& getOuts() const { return m_Outs; }
 
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement

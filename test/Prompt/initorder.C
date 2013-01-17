@@ -1,5 +1,4 @@
 // RUN: cat %s | %cling | FileCheck %s
-// XFAIL: *
 
 // Checks:
 // Savannah #99210 https://savannah.cern.ch/bugs/index.php?99210
@@ -40,10 +39,6 @@ RAII R2(42);R2.incr();int res2 = R2.get()
 // CHECK: 43
 .q
 
-// This fails due to printf not printing into stdout at destruction time
-// but into some other file stream that happens to end up in the terminal
-// but cannot be piped.
-// Likely bug https://savannah.cern.ch/bugs/?99234
 // CHECK: ~RAII2
 // CHECK: ~RAII1
 // Enforce that only two objects got ever constructed:

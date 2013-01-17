@@ -11,6 +11,7 @@
 
 namespace llvm {
   class StringRef;
+  class raw_ostream;
   namespace sys {
     class Path;
   }
@@ -28,6 +29,7 @@ namespace cling {
     MetaProcessor& m_MetaProcessor;
     bool m_IsQuitRequested;
     StoredValueRef m_LastResultedValue;
+    llvm::raw_ostream& m_Outs; // Shortens m_MetaProcessor->getOuts()
   public:
     enum SwitchMode {
       kOff = 0,
@@ -35,10 +37,7 @@ namespace cling {
       kToggle = 2
     };
   public:
-    MetaSema(Interpreter& interp, MetaProcessor& meta) 
-      : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false) {
-      m_LastResultedValue = StoredValueRef::invalidValue();
-    }
+    MetaSema(Interpreter& interp, MetaProcessor& meta);
 
     const Interpreter& getInterpreter() const { return m_Interpreter; }
     bool isQuitRequested() const { return m_IsQuitRequested; }

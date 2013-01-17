@@ -52,7 +52,7 @@ namespace cling {
     ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
     PrintingPolicy Policy = C.getPrintingPolicy();
     Policy.DumpSourceManager = &C.getSourceManager();
-    print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+    print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::dumpPretty() const {
@@ -65,7 +65,7 @@ namespace cling {
       C = &(getFirstDecl().getSingleDecl()->getASTContext());
       
     PrintingPolicy Policy(C->getLangOpts());
-    print(llvm::outs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+    print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::print(llvm::raw_ostream& Out, const PrintingPolicy& Policy,

@@ -39,14 +39,14 @@ namespace cling {
       Policy.DumpSourceManager = 0;
 
     if (D) {
-      llvm::outs() << "\n-------------------Declaration---------------------\n";
+      llvm::errs() << "\n-------------------Declaration---------------------\n";
       D->dump();
 
       if (Stmt* Body = D->getBody()) {
-        llvm::outs() << "\n------------------Declaration Body---------------\n";
+        llvm::errs() << "\n------------------Declaration Body---------------\n";
         Body->dump();
       }
-      llvm::outs() << "\n---------------------------------------------------\n";
+      llvm::errs() << "\n---------------------------------------------------\n";
     }
   }
 } // namespace cling

@@ -161,14 +161,14 @@ const clang::FunctionDecl* G_f_proto = lookup.findFunctionProto(G, "G_f", "");
 
 printf("G_f_args: 0x%lx\n", (unsigned long) G_f_args);
 //CHECK-NEXT: G_f_args: 0x{{[1-9a-f][0-9a-f]*$}}
-G_f_args->print(llvm::outs());
+G_f_args->print(llvm::errs());
 //CHECK-NEXT: void G_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
 
 printf("G_f_proto: 0x%lx\n", (unsigned long) G_f_proto);
 //CHECK: G_f_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-G_f_proto->print(llvm::outs());
+G_f_proto->print(llvm::errs());
 //CHECK-NEXT: void G_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
@@ -184,14 +184,14 @@ const clang::FunctionDecl* G_a_proto = lookup.findFunctionProto(G, "G_a", "int")
 
 printf("G_a_args: 0x%lx\n", (unsigned long) G_a_args);
 //CHECK: G_a_args: 0x{{[1-9a-f][0-9a-f]*$}}
-G_a_args->print(llvm::outs());
+G_a_args->print(llvm::errs());
 //CHECK-NEXT: void G_a(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("G_a_proto: 0x%lx\n", (unsigned long) G_a_proto);
 //CHECK: G_a_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-G_a_proto->print(llvm::outs());
+G_a_proto->print(llvm::errs());
 //CHECK-NEXT: void G_a(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -207,7 +207,7 @@ const clang::FunctionDecl* G_b_proto = lookup.findFunctionProto(G, "G_b", "int,d
 
 printf("G_b_args: 0x%lx\n", (unsigned long) G_b_args);
 //CHECK: G_b_args: 0x{{[1-9a-f][0-9a-f]*$}}
-G_b_args->print(llvm::outs());
+G_b_args->print(llvm::errs());
 //CHECK-NEXT: void G_b(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -215,7 +215,7 @@ G_b_args->print(llvm::outs());
 
 printf("G_b_proto: 0x%lx\n", (unsigned long) G_b_proto);
 //CHECK: G_b_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-G_b_proto->print(llvm::outs());
+G_b_proto->print(llvm::errs());
 //CHECK-NEXT: void G_b(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -232,7 +232,7 @@ const clang::FunctionDecl* G_c1_proto = lookup.findFunctionProto(G, "G_c", "int,
 
 printf("G_c1_args: 0x%lx\n", (unsigned long) G_c1_args);
 //CHECK: G_c1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-G_c1_args->print(llvm::outs());
+G_c1_args->print(llvm::errs());
 //CHECK-NEXT: void G_c(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -240,7 +240,7 @@ G_c1_args->print(llvm::outs());
 
 printf("G_c1_proto: 0x%lx\n", (unsigned long) G_c1_proto);
 //CHECK: G_c1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-G_c1_proto->print(llvm::outs());
+G_c1_proto->print(llvm::errs());
 //CHECK-NEXT: void G_c(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -251,7 +251,7 @@ const clang::FunctionDecl* G_c2_proto = lookup.findFunctionProto(G, "G_c", "int,
 
 printf("G_c2_args: 0x%lx\n", (unsigned long) G_c2_args);
 //CHECK: G_c2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-G_c2_args->print(llvm::outs());
+G_c2_args->print(llvm::errs());
 //CHECK-NEXT: void G_c(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -259,7 +259,7 @@ G_c2_args->print(llvm::outs());
 
 printf("G_c2_proto: 0x%lx\n", (unsigned long) G_c2_proto);
 //CHECK: G_c2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-G_c2_proto->print(llvm::outs());
+G_c2_proto->print(llvm::errs());
 //CHECK-NEXT: void G_c(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -276,14 +276,14 @@ const clang::FunctionDecl* G_d1_proto = lookup.findFunctionProto(G, "G_d<int>", 
 
 printf("G_d1_args: 0x%lx\n", (unsigned long) G_d1_args);
 //CHECK: G_d1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-G_d1_args->print(llvm::outs());
+G_d1_args->print(llvm::errs());
 //CHECK-NEXT: void G_d(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("G_d1_proto: 0x%lx\n", (unsigned long) G_d1_proto);
 //CHECK: G_d1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-G_d1_proto->print(llvm::outs());
+G_d1_proto->print(llvm::errs());
 //CHECK-NEXT: void G_d(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -293,14 +293,14 @@ const clang::FunctionDecl* G_d2_proto = lookup.findFunctionProto(G, "G_d<double>
 
 printf("G_d2_args: 0x%lx\n", (unsigned long) G_d2_args);
 //CHECK: G_d2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-G_d2_args->print(llvm::outs());
+G_d2_args->print(llvm::errs());
 //CHECK-NEXT: void G_d(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("G_d2_proto: 0x%lx\n", (unsigned long) G_d2_proto);
 //CHECK: G_d2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-G_d2_proto->print(llvm::outs());
+G_d2_proto->print(llvm::errs());
 //CHECK-NEXT: void G_d(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
@@ -316,14 +316,14 @@ const clang::FunctionDecl* H_f_proto = lookup.findFunctionProto(namespace_N, "H_
 
 printf("H_f_args: 0x%lx\n", (unsigned long) H_f_args);
 //CHECK: H_f_args: 0x{{[1-9a-f][0-9a-f]*$}}
-H_f_args->print(llvm::outs());
+H_f_args->print(llvm::errs());
 //CHECK-NEXT: void H_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
 
 printf("H_f_proto: 0x%lx\n", (unsigned long) H_f_proto);
 //CHECK: H_f_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-H_f_proto->print(llvm::outs());
+H_f_proto->print(llvm::errs());
 //CHECK-NEXT: void H_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
@@ -339,14 +339,14 @@ const clang::FunctionDecl* H_a_proto = lookup.findFunctionProto(namespace_N, "H_
 
 printf("H_a_args: 0x%lx\n", (unsigned long) H_a_args);
 //CHECK: H_a_args: 0x{{[1-9a-f][0-9a-f]*$}}
-H_a_args->print(llvm::outs());
+H_a_args->print(llvm::errs());
 //CHECK-NEXT: void H_a(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("H_a_proto: 0x%lx\n", (unsigned long) H_a_proto);
 //CHECK: H_a_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-H_a_proto->print(llvm::outs());
+H_a_proto->print(llvm::errs());
 //CHECK-NEXT: void H_a(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -362,7 +362,7 @@ const clang::FunctionDecl* H_b_proto = lookup.findFunctionProto(namespace_N, "H_
 
 printf("H_b_args: 0x%lx\n", (unsigned long) H_b_args);
 //CHECK: H_b_args: 0x{{[1-9a-f][0-9a-f]*$}}
-H_b_args->print(llvm::outs());
+H_b_args->print(llvm::errs());
 //CHECK-NEXT: void H_b(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -370,7 +370,7 @@ H_b_args->print(llvm::outs());
 
 printf("H_b_proto: 0x%lx\n", (unsigned long) H_b_proto);
 //CHECK: H_b_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-H_b_proto->print(llvm::outs());
+H_b_proto->print(llvm::errs());
 //CHECK-NEXT: void H_b(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -387,7 +387,7 @@ const clang::FunctionDecl* H_c1_proto = lookup.findFunctionProto(namespace_N, "H
 
 printf("H_c1_args: 0x%lx\n", (unsigned long) H_c1_args);
 //CHECK: H_c1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-H_c1_args->print(llvm::outs());
+H_c1_args->print(llvm::errs());
 //CHECK-NEXT: void H_c(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -395,7 +395,7 @@ H_c1_args->print(llvm::outs());
 
 printf("H_c1_proto: 0x%lx\n", (unsigned long) H_c1_proto);
 //CHECK: H_c1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-H_c1_proto->print(llvm::outs());
+H_c1_proto->print(llvm::errs());
 //CHECK-NEXT: void H_c(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -406,7 +406,7 @@ const clang::FunctionDecl* H_c2_proto = lookup.findFunctionProto(namespace_N, "H
 
 printf("H_c2_args: 0x%lx\n", (unsigned long) H_c2_args);
 //CHECK: H_c2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-H_c2_args->print(llvm::outs());
+H_c2_args->print(llvm::errs());
 //CHECK-NEXT: void H_c(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -414,7 +414,7 @@ H_c2_args->print(llvm::outs());
 
 printf("H_c2_proto: 0x%lx\n", (unsigned long) H_c2_proto);
 //CHECK: H_c2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-H_c2_proto->print(llvm::outs());
+H_c2_proto->print(llvm::errs());
 //CHECK-NEXT: void H_c(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -431,14 +431,14 @@ const clang::FunctionDecl* H_d1_proto = lookup.findFunctionProto(namespace_N, "H
 
 printf("H_d1_args: 0x%lx\n", (unsigned long) H_d1_args);
 //CHECK: H_d1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-H_d1_args->print(llvm::outs());
+H_d1_args->print(llvm::errs());
 //CHECK-NEXT: void H_d(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("H_d1_proto: 0x%lx\n", (unsigned long) H_d1_proto);
 //CHECK: H_d1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-H_d1_proto->print(llvm::outs());
+H_d1_proto->print(llvm::errs());
 //CHECK-NEXT: void H_d(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -448,14 +448,14 @@ const clang::FunctionDecl* H_d2_proto = lookup.findFunctionProto(namespace_N, "H
 
 printf("H_d2_args: 0x%lx\n", (unsigned long) H_d2_args);
 //CHECK: H_d2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-H_d2_args->print(llvm::outs());
+H_d2_args->print(llvm::errs());
 //CHECK-NEXT: void H_d(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("H_d2_proto: 0x%lx\n", (unsigned long) H_d2_proto);
 //CHECK: H_d2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-H_d2_proto->print(llvm::outs());
+H_d2_proto->print(llvm::errs());
 //CHECK-NEXT: void H_d(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
@@ -471,14 +471,14 @@ const clang::FunctionDecl* func_A_f_proto = lookup.findFunctionProto(class_A, "A
 
 printf("func_A_f_args: 0x%lx\n", (unsigned long) func_A_f_args);
 //CHECK: func_A_f_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_f_args->print(llvm::outs());
+func_A_f_args->print(llvm::errs());
 //CHECK-NEXT: void A_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
 
 printf("func_A_f_proto: 0x%lx\n", (unsigned long) func_A_f_proto);
 //CHECK: func_A_f_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_f_proto->print(llvm::outs());
+func_A_f_proto->print(llvm::errs());
 //CHECK-NEXT: void A_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
@@ -494,14 +494,14 @@ const clang::FunctionDecl* func_A_g_proto = lookup.findFunctionProto(class_A, "A
 
 printf("func_A_g_args: 0x%lx\n", (unsigned long) func_A_g_args);
 //CHECK: func_A_g_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_g_args->print(llvm::outs());
+func_A_g_args->print(llvm::errs());
 //CHECK-NEXT: void A_g(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("func_A_g_proto: 0x%lx\n", (unsigned long) func_A_g_proto);
 //CHECK: func_A_g_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_g_proto->print(llvm::outs());
+func_A_g_proto->print(llvm::errs());
 //CHECK-NEXT: void A_g(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -517,7 +517,7 @@ const clang::FunctionDecl* func_A_h_proto = lookup.findFunctionProto(class_A, "A
 
 printf("func_A_h_args: 0x%lx\n", (unsigned long) func_A_h_args);
 //CHECK: func_A_h_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_h_args->print(llvm::outs());
+func_A_h_args->print(llvm::errs());
 //CHECK-NEXT: void A_h(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -525,7 +525,7 @@ func_A_h_args->print(llvm::outs());
 
 printf("func_A_h_proto: 0x%lx\n", (unsigned long) func_A_h_proto);
 //CHECK: func_A_h_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_h_proto->print(llvm::outs());
+func_A_h_proto->print(llvm::errs());
 //CHECK-NEXT: void A_h(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -542,7 +542,7 @@ const clang::FunctionDecl* func_A_j1_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_A_j1_args: 0x%lx\n", (unsigned long) func_A_j1_args);
 //CHECK: func_A_j1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_j1_args->print(llvm::outs());
+func_A_j1_args->print(llvm::errs());
 //CHECK-NEXT: void A_j(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -550,7 +550,7 @@ func_A_j1_args->print(llvm::outs());
 
 printf("func_A_j1_proto: 0x%lx\n", (unsigned long) func_A_j1_proto);
 //CHECK: func_A_j1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_j1_proto->print(llvm::outs());
+func_A_j1_proto->print(llvm::errs());
 //CHECK-NEXT: void A_j(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -561,7 +561,7 @@ const clang::FunctionDecl* func_A_j2_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_A_j2_args: 0x%lx\n", (unsigned long) func_A_j2_args);
 //CHECK: func_A_j2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_j2_args->print(llvm::outs());
+func_A_j2_args->print(llvm::errs());
 //CHECK-NEXT: void A_j(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -569,7 +569,7 @@ func_A_j2_args->print(llvm::outs());
 
 printf("func_A_j2_proto: 0x%lx\n", (unsigned long) func_A_j2_proto);
 //CHECK: func_A_j2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_j2_proto->print(llvm::outs());
+func_A_j2_proto->print(llvm::errs());
 //CHECK-NEXT: void A_j(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -586,14 +586,14 @@ const clang::FunctionDecl* func_A_k1_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_A_k1_args: 0x%lx\n", (unsigned long) func_A_k1_args);
 //CHECK: func_A_k1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_k1_args->print(llvm::outs());
+func_A_k1_args->print(llvm::errs());
 //CHECK-NEXT: void A_k(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("func_A_k1_proto: 0x%lx\n", (unsigned long) func_A_k1_proto);
 //CHECK: func_A_k1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_k1_proto->print(llvm::outs());
+func_A_k1_proto->print(llvm::errs());
 //CHECK-NEXT: void A_k(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -603,14 +603,14 @@ const clang::FunctionDecl* func_A_k2_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_A_k2_args: 0x%lx\n", (unsigned long) func_A_k2_args);
 //CHECK: func_A_k2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_k2_args->print(llvm::outs());
+func_A_k2_args->print(llvm::errs());
 //CHECK-NEXT: void A_k(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("func_A_k2_proto: 0x%lx\n", (unsigned long) func_A_k2_proto);
 //CHECK: func_A_k2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_k2_proto->print(llvm::outs());
+func_A_k2_proto->print(llvm::errs());
 //CHECK-NEXT: void A_k(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
@@ -626,14 +626,14 @@ const clang::FunctionDecl* func_A_m_proto = lookup.findFunctionProto(class_A, "A
 
 printf("func_A_m_args: 0x%lx\n", (unsigned long) func_A_m_args);
 //CHECK: func_A_m_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_m_args->print(llvm::outs());
+func_A_m_args->print(llvm::errs());
 //CHECK-NEXT: void A_m(const int &v) {
 //CHECK-NEXT:     int y = v;
 //CHECK-NEXT: }
 
 printf("func_A_m_proto: 0x%lx\n", (unsigned long) func_A_m_proto);
 //CHECK: func_A_m_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_m_proto->print(llvm::outs());
+func_A_m_proto->print(llvm::errs());
 //CHECK-NEXT: void A_m(const int &v) {
 //CHECK-NEXT:     int y = v;
 //CHECK-NEXT: }
@@ -646,14 +646,14 @@ const clang::FunctionDecl* func_A_n_proto = lookup.findFunctionProto(class_A, "A
 
 printf("func_A_n_args: 0x%lx\n", (unsigned long) func_A_n_args);
 //CHECK: func_A_n_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_n_args->print(llvm::outs());
+func_A_n_args->print(llvm::errs());
 //CHECK-NEXT: void A_n(B &b) {
 //CHECK-NEXT:   b.B_f();
 //CHECK-NEXT: }
 
 printf("func_A_n_proto: 0x%lx\n", (unsigned long) func_A_n_proto);
 //CHECK: func_A_n_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_n_proto->print(llvm::outs());
+func_A_n_proto->print(llvm::errs());
 //CHECK-NEXT: void A_n(B &b) {
 //CHECK-NEXT:   b.B_f();
 //CHECK-NEXT: }
@@ -666,7 +666,7 @@ const clang::FunctionDecl* func_A_n2_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_A_n2_args: 0x%lx\n", (unsigned long) func_A_n2_args);
 //CHECK: func_A_n2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_n2_args->print(llvm::outs());
+func_A_n2_args->print(llvm::errs());
 //CHECK-NEXT: void A_n(const char *msg, int ndim = 0) {
 //CHECK-NEXT:    if (ndim) 
 //CHECK-NEXT:       ++msg;
@@ -674,7 +674,7 @@ func_A_n2_args->print(llvm::outs());
 
 printf("func_A_n2_proto: 0x%lx\n", (unsigned long) func_A_n2_proto);
 //CHECK: func_A_n2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_A_n2_proto->print(llvm::outs());
+func_A_n2_proto->print(llvm::errs());
 //CHECK-NEXT: void A_n(const char *msg, int ndim = 0) {
 //CHECK-NEXT:    if (ndim) 
 //CHECK-NEXT:       ++msg;
@@ -690,14 +690,14 @@ const clang::FunctionDecl* func_B_F_proto = lookup.findFunctionProto(class_A, "B
 
 printf("func_B_F_args: 0x%lx\n", (unsigned long) func_B_F_args);
 //CHECK: func_B_F_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_F_args->print(llvm::outs());
+func_B_F_args->print(llvm::errs());
 //CHECK-NEXT: void B_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
 
 printf("func_B_F_proto: 0x%lx\n", (unsigned long) func_B_F_proto);
 //CHECK: func_B_F_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_F_proto->print(llvm::outs());
+func_B_F_proto->print(llvm::errs());
 //CHECK-NEXT: void B_f() {
 //CHECK-NEXT:     int x = 1;
 //CHECK-NEXT: }
@@ -713,14 +713,14 @@ const clang::FunctionDecl* func_B_G_proto = lookup.findFunctionProto(class_A, "B
 
 printf("func_B_G_args: 0x%lx\n", (unsigned long) func_B_G_args);
 //CHECK: func_B_G_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_G_args->print(llvm::outs());
+func_B_G_args->print(llvm::errs());
 //CHECK-NEXT: void B_g(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("func_B_G_proto: 0x%lx\n", (unsigned long) func_B_G_proto);
 //CHECK: func_B_G_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_G_proto->print(llvm::outs());
+func_B_G_proto->print(llvm::errs());
 //CHECK-NEXT: void B_g(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -737,7 +737,7 @@ const clang::FunctionDecl* func_B_h_proto = lookup.findFunctionProto(class_A, "B
 
 printf("func_B_h_args: 0x%lx\n", (unsigned long) func_B_h_args);
 //CHECK: func_B_h_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_h_args->print(llvm::outs());
+func_B_h_args->print(llvm::errs());
 //CHECK-NEXT: void B_h(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -745,7 +745,7 @@ func_B_h_args->print(llvm::outs());
 
 printf("func_B_h_proto: 0x%lx\n", (unsigned long) func_B_h_proto);
 //CHECK: func_B_h_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_h_proto->print(llvm::outs());
+func_B_h_proto->print(llvm::errs());
 //CHECK-NEXT: void B_h(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -762,7 +762,7 @@ const clang::FunctionDecl* func_B_j1_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_B_j1_args: 0x%lx\n", (unsigned long) func_B_j1_args);
 //CHECK: func_B_j1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_j1_args->print(llvm::outs());
+func_B_j1_args->print(llvm::errs());
 //CHECK-NEXT: void B_j(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -770,7 +770,7 @@ func_B_j1_args->print(llvm::outs());
 
 printf("func_B_j1_proto: 0x%lx\n", (unsigned long) func_B_j1_proto);
 //CHECK: func_B_j1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_j1_proto->print(llvm::outs());
+func_B_j1_proto->print(llvm::errs());
 //CHECK-NEXT: void B_j(int vi, int vj) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     int y = vj;
@@ -781,7 +781,7 @@ const clang::FunctionDecl* func_B_j2_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_B_j2_args: 0x%lx\n", (unsigned long) func_B_j2_args);
 //CHECK: func_B_j2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_j2_args->print(llvm::outs());
+func_B_j2_args->print(llvm::errs());
 //CHECK-NEXT: void B_j(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -789,7 +789,7 @@ func_B_j2_args->print(llvm::outs());
 
 printf("func_B_j2_proto: 0x%lx\n", (unsigned long) func_B_j2_proto);
 //CHECK: func_B_j2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_j2_proto->print(llvm::outs());
+func_B_j2_proto->print(llvm::errs());
 //CHECK-NEXT: void B_j(int vi, double vd) {
 //CHECK-NEXT:     int x = vi;
 //CHECK-NEXT:     double y = vd;
@@ -806,14 +806,14 @@ const clang::FunctionDecl* func_B_k1_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_B_k1_args: 0x%lx\n", (unsigned long) func_B_k1_args);
 //CHECK: func_B_k1_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_k1_args->print(llvm::outs());
+func_B_k1_args->print(llvm::errs());
 //CHECK-NEXT: void B_k(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("func_B_k1_proto: 0x%lx\n", (unsigned long) func_B_k1_proto);
 //CHECK: func_B_k1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_k1_proto->print(llvm::outs());
+func_B_k1_proto->print(llvm::errs());
 //CHECK-NEXT: void B_k(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
@@ -823,14 +823,14 @@ const clang::FunctionDecl* func_B_k2_proto = lookup.findFunctionProto(class_A, "
 
 printf("func_B_k2_args: 0x%lx\n", (unsigned long) func_B_k2_args);
 //CHECK: func_B_k2_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_k2_args->print(llvm::outs());
+func_B_k2_args->print(llvm::errs());
 //CHECK-NEXT: void B_k(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("func_B_k2_proto: 0x%lx\n", (unsigned long) func_B_k2_proto);
 //CHECK: func_B_k2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_k2_proto->print(llvm::outs());
+func_B_k2_proto->print(llvm::errs());
 //CHECK-NEXT: void B_k(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
@@ -846,14 +846,14 @@ const clang::FunctionDecl* func_B_m_proto = lookup.findFunctionProto(class_A, "B
 
 printf("func_B_m_args: 0x%lx\n", (unsigned long) func_B_m_args);
 //CHECK: func_B_m_args: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_m_args->print(llvm::outs());
+func_B_m_args->print(llvm::errs());
 //CHECK-NEXT: void B_m(const int &v) {
 //CHECK-NEXT:     int y = v;
 //CHECK-NEXT: }
 
 printf("func_B_m_proto: 0x%lx\n", (unsigned long) func_B_m_proto);
 //CHECK: func_B_m_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-func_B_m_proto->print(llvm::outs());
+func_B_m_proto->print(llvm::errs());
 //CHECK-NEXT: void B_m(const int &v) {
 //CHECK-NEXT:     int y = v;
 //CHECK-NEXT: }
@@ -870,14 +870,14 @@ const clang::FunctionDecl* func_B_ctr1_proto = lookup.findFunctionProto(class_B,
 printf("func_B_ctr1_args: 0x%lx\n", (unsigned long) func_B_ctr1_args);
 //CHECK: func_B_ctr1_args: 0x{{[1-9a-f][0-9a-f]*$}}
 
-func_B_ctr1_args->print(llvm::outs());
+func_B_ctr1_args->print(llvm::errs());
 //CHECK-NEXT: B() : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT: }
 
 printf("func_B_ctr1_proto: 0x%lx\n", (unsigned long) func_B_ctr1_proto);
 //CHECK: func_B_ctr1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 
-func_B_ctr1_proto->print(llvm::outs());
+func_B_ctr1_proto->print(llvm::errs());
 //CHECK-NEXT: B() : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT: }
 
@@ -887,14 +887,14 @@ const clang::FunctionDecl* func_B_ctr2_proto = lookup.findFunctionProto(class_B,
 printf("func_B_ctr2_args: 0x%lx\n", (unsigned long) func_B_ctr2_args);
 //CHECK: func_B_ctr2_args: 0x{{[1-9a-f][0-9a-f]*$}}
 
-func_B_ctr2_args->print(llvm::outs());
+func_B_ctr2_args->print(llvm::errs());
 //CHECK-NEXT: B(int vi, double vd) : m_B_i(vi), m_B_d(vd), m_B_ip(0) {
 //CHECK-NEXT: }
 
 printf("func_B_ctr2_proto: 0x%lx\n", (unsigned long) func_B_ctr2_proto);
 //CHECK: func_B_ctr2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 
-func_B_ctr2_proto->print(llvm::outs());
+func_B_ctr2_proto->print(llvm::errs());
 //CHECK-NEXT: B(int vi, double vd) : m_B_i(vi), m_B_d(vd), m_B_ip(0) {
 //CHECK-NEXT: }
 
@@ -910,7 +910,7 @@ cast<clang::NamedDecl>(func_B_ctr3_args)->getNameForDiagnostic(buf, Policy, /*Qu
 printf("func_B_ctr3_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr3_args name: B::B<char>
 
-func_B_ctr3_args->print(llvm::outs());
+func_B_ctr3_args->print(llvm::errs());
 //CHECK-NEXT:  {
 //CHECK-NEXT:     this->m_B_i = (char)v; 
 //CHECK-NEXT: }
@@ -923,7 +923,7 @@ cast<clang::NamedDecl>(func_B_ctr3_proto)->getNameForDiagnostic(buf, Policy, /*Q
 printf("func_B_ctr3_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr3_proto name: B::B<char>
 
-func_B_ctr3_proto->print(llvm::outs());
+func_B_ctr3_proto->print(llvm::errs());
 //CHECK-NEXT:  {
 //CHECK-NEXT:     this->m_B_i = (char)v; 
 //CHECK-NEXT: }
@@ -940,7 +940,7 @@ cast<clang::NamedDecl>(func_B_ctr4_args)->getNameForDiagnostic(buf, Policy, /*Qu
 printf("func_B_ctr4_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr4_args name: B::B<char>
 
-func_B_ctr4_args->print(llvm::outs());
+func_B_ctr4_args->print(llvm::errs());
 //CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT:     this->m_B_i = (long)(char *)v;
 //CHECK-NEXT:     this->m_B_d = 1.;
@@ -956,7 +956,7 @@ printf("func_B_ctr4_proto name: %s\n", buf.c_str());
 
 printf("func_B_ctr4_proto has body: %d\n", func_B_ctr4_proto->hasBody());
 //CHECK-NEXT: func_B_ctr4_proto has body: 1
-func_B_ctr4_proto->print(llvm::outs());
+func_B_ctr4_proto->print(llvm::errs());
 //CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT:     this->m_B_i = (long)(char *)v;
 //CHECK-NEXT:     this->m_B_d = 1.;
@@ -977,7 +977,7 @@ cast<clang::NamedDecl>(func_B_dtr_args)->getNameForDiagnostic(buf, Policy, /*Qua
 printf("func_B_dtr_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_dtr_args name: B::~B
 
-func_B_dtr_args->print(llvm::outs());
+func_B_dtr_args->print(llvm::errs());
 //CHECK-NEXT: virtual void ~B() {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
@@ -991,7 +991,7 @@ cast<clang::NamedDecl>(func_B_dtr_proto)->getNameForDiagnostic(buf, Policy, /*Qu
 printf("func_B_dtr_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_dtr_proto name: B::~B
 
-func_B_dtr_proto->print(llvm::outs());
+func_B_dtr_proto->print(llvm::errs());
 //CHECK-NEXT: virtual void ~B() {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
@@ -1014,7 +1014,7 @@ cast<clang::NamedDecl>(func_B_new_args)->getNameForDiagnostic(buf, Policy, /*Qua
 printf("func_B_new_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_args name: B::operator new
 
-func_B_new_args->print(llvm::outs());
+func_B_new_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz) {
 //CHECK-NEXT:     return ::operator new(sz);
 //CHECK-NEXT: }
@@ -1027,7 +1027,7 @@ cast<clang::NamedDecl>(func_B_new_proto)->getNameForDiagnostic(buf, Policy, /*Qu
 printf("func_B_new_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_proto name: B::operator new
 
-func_B_new_proto->print(llvm::outs());
+func_B_new_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz) {
 //CHECK-NEXT:     return ::operator new(sz);
 //CHECK-NEXT: }
@@ -1043,7 +1043,7 @@ cast<clang::NamedDecl>(func_B_new_plcmt_args)->getNameForDiagnostic(buf, Policy,
 printf("func_B_new_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_plcmt_args name: B::operator new
 
-func_B_new_plcmt_args->print(llvm::outs());
+func_B_new_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
@@ -1056,7 +1056,7 @@ cast<clang::NamedDecl>(func_B_new_plcmt_proto)->getNameForDiagnostic(buf, Policy
 printf("func_B_new_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_plcmt_proto name: B::operator new
 
-func_B_new_plcmt_proto->print(llvm::outs());
+func_B_new_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
@@ -1072,7 +1072,7 @@ cast<clang::NamedDecl>(func_B_new_ary_args)->getNameForDiagnostic(buf, Policy, /
 printf("func_B_new_ary_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_args name: B::operator new[]
 
-func_B_new_ary_args->print(llvm::outs());
+func_B_new_ary_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz) {
 //CHECK-NEXT:     return ::operator new[](sz);
 //CHECK-NEXT: }
@@ -1085,7 +1085,7 @@ cast<clang::NamedDecl>(func_B_new_ary_proto)->getNameForDiagnostic(buf, Policy, 
 printf("func_B_new_ary_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_proto name: B::operator new[]
 
-func_B_new_ary_proto->print(llvm::outs());
+func_B_new_ary_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz) {
 //CHECK-NEXT:     return ::operator new[](sz);
 //CHECK-NEXT: }
@@ -1101,7 +1101,7 @@ cast<clang::NamedDecl>(func_B_new_ary_plcmt_args)->getNameForDiagnostic(buf, Pol
 printf("func_B_new_ary_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_plcmt_args name: B::operator new[]
 
-func_B_new_ary_plcmt_args->print(llvm::outs());
+func_B_new_ary_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
@@ -1114,7 +1114,7 @@ cast<clang::NamedDecl>(func_B_new_ary_plcmt_proto)->getNameForDiagnostic(buf, Po
 printf("func_B_new_ary_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_plcmt_proto name: B::operator new[]
 
-func_B_new_ary_plcmt_proto->print(llvm::outs());
+func_B_new_ary_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
@@ -1134,7 +1134,7 @@ cast<clang::NamedDecl>(func_B_del_args)->getNameForDiagnostic(buf, Policy, /*Qua
 printf("func_B_del_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_args name: B::operator delete
 
-func_B_del_args->print(llvm::outs());
+func_B_del_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp) {
 //CHECK-NEXT:     ::operator delete(vp);
 //CHECK-NEXT: }
@@ -1147,7 +1147,7 @@ cast<clang::NamedDecl>(func_B_del_proto)->getNameForDiagnostic(buf, Policy, /*Qu
 printf("func_B_del_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_proto name: B::operator delete
 
-func_B_del_proto->print(llvm::outs());
+func_B_del_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp) {
 //CHECK-NEXT:     ::operator delete(vp);
 //CHECK-NEXT: }
@@ -1163,7 +1163,7 @@ cast<clang::NamedDecl>(func_B_del_plcmt_args)->getNameForDiagnostic(buf, Policy,
 printf("func_B_del_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_plcmt_args name: B::operator delete
 
-func_B_del_plcmt_args->print(llvm::outs());
+func_B_del_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp, void *arena) {
 //CHECK-NEXT: }
 
@@ -1175,7 +1175,7 @@ cast<clang::NamedDecl>(func_B_del_plcmt_proto)->getNameForDiagnostic(buf, Policy
 printf("func_B_del_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_plcmt_proto name: B::operator delete
 
-func_B_del_plcmt_proto->print(llvm::outs());
+func_B_del_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp, void *arena) {
 //CHECK-NEXT: }
 
@@ -1190,7 +1190,7 @@ cast<clang::NamedDecl>(func_B_del_ary_args)->getNameForDiagnostic(buf, Policy, /
 printf("func_B_del_ary_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_args name: B::operator delete[]
 
-func_B_del_ary_args->print(llvm::outs());
+func_B_del_ary_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp) {
 //CHECK-NEXT:     ::operator delete[](vp);
 //CHECK-NEXT: }
@@ -1203,7 +1203,7 @@ cast<clang::NamedDecl>(func_B_del_ary_proto)->getNameForDiagnostic(buf, Policy, 
 printf("func_B_del_ary_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_proto name: B::operator delete[]
 
-func_B_del_ary_proto->print(llvm::outs());
+func_B_del_ary_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp) {
 //CHECK-NEXT:     ::operator delete[](vp);
 //CHECK-NEXT: }
@@ -1219,7 +1219,7 @@ cast<clang::NamedDecl>(func_B_del_ary_plcmt_args)->getNameForDiagnostic(buf, Pol
 printf("func_B_del_ary_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_plcmt_args name: B::operator delete[]
 
-func_B_del_ary_plcmt_args->print(llvm::outs());
+func_B_del_ary_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp, void *arena) {
 //CHECK-NEXT: }
 
@@ -1231,7 +1231,7 @@ cast<clang::NamedDecl>(func_B_del_ary_plcmt_proto)->getNameForDiagnostic(buf, Po
 printf("func_B_del_ary_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_plcmt_proto name: B::operator delete[]
 
-func_B_del_ary_plcmt_proto->print(llvm::outs());
+func_B_del_ary_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp, void *arena) {
 //CHECK-NEXT: }
 
@@ -1252,7 +1252,7 @@ cast<clang::NamedDecl>(func_B_star_args)->getNameForDiagnostic(buf, Policy, /*Qu
 printf("func_B_star_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_star_args name: B::operator*
 
-func_B_star_args->print(llvm::outs());
+func_B_star_args->print(llvm::errs());
 //CHECK-NEXT: B &operator*() {
 //CHECK-NEXT:     return *this;
 //CHECK-NEXT: }
@@ -1265,7 +1265,7 @@ cast<clang::NamedDecl>(func_B_star_proto)->getNameForDiagnostic(buf, Policy, /*Q
 printf("func_B_star_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_star_proto name: B::operator*
 
-func_B_star_proto->print(llvm::outs());
+func_B_star_proto->print(llvm::errs());
 //CHECK-NEXT: B &operator*() {
 //CHECK-NEXT:     return *this;
 //CHECK-NEXT: }
@@ -1287,7 +1287,7 @@ cast<clang::NamedDecl>(func_B_plus_args)->getNameForDiagnostic(buf, Policy, /*Qu
 printf("func_B_plus_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_plus_args name: B::operator+
 
-func_B_plus_args->print(llvm::outs());
+func_B_plus_args->print(llvm::errs());
 //CHECK-NEXT: B operator+(B b) {
 //CHECK-NEXT:     return b;
 //CHECK-NEXT: }
@@ -1300,7 +1300,7 @@ cast<clang::NamedDecl>(func_B_plus_proto)->getNameForDiagnostic(buf, Policy, /*Q
 printf("func_B_plus_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_plus_proto name: B::operator+
 
-func_B_plus_proto->print(llvm::outs());
+func_B_plus_proto->print(llvm::errs());
 //CHECK-NEXT: B operator+(B b) {
 //CHECK-NEXT:     return b;
 //CHECK-NEXT: }
