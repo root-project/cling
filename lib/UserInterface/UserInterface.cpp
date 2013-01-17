@@ -14,6 +14,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/PathV1.h"
 
+#include <unistd.h>
+
 namespace cling {
   UserInterface::UserInterface(Interpreter& interp) {
     // We need stream that doesn't close its file descriptor, thus we are not
