@@ -13,6 +13,7 @@
 
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/PathV1.h"
+#include "llvm/Config/config.h"
 
 // Fragment copied from LLVM's raw_ostream.cpp
 #if defined(HAVE_UNISTD_H)
