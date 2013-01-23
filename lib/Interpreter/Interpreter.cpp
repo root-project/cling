@@ -414,10 +414,8 @@ namespace cling {
     const DirectoryLookup* CurDir = 0;
 
     Module* module = 0;
-    const FileEntry *file = PP.LookupFile(headerFile, isAngled, LookupFrom,
-                                          CurDir, /*SearchPath*/0,
-                                          /*RelativePath*/ 0, &module, 
-                                          /*SkipCache*/false);
+    PP.LookupFile(headerFile, isAngled, LookupFrom, CurDir, /*SearchPath*/0,
+                  /*RelativePath*/ 0, &module, /*SkipCache*/false);
     if (!module)
       return Interpreter::kFailure;
 
