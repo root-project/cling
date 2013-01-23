@@ -403,6 +403,38 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
+  Interpreter::loadModuleForHeader(const std::string& headerFile) {
+    Preprocessor& PP = getCI()->getPreprocessor();
+    //Copied from clang's PPDirectives.cpp
+    bool isAngled = false;
+    // Clang doc says:
+    // "LookupFrom is set when this is a \#include_next directive, it specifies 
+    // the file to start searching from."
+    const DirectoryLookup* LookupFrom = 0;
+    const DirectoryLookup* CurDir = 0;
+
+    Module* module = 0;
+    const FileEntry *file = PP.LookupFile(headerFile, isAngled, LookupFrom,
+                                          CurDir, /*SearchPath*/0,
+                                          /*RelativePath*/ 0, &module, 
+                                          /*SkipCache*/false);
+    if (!module)
+      return Interpreter::kFailure;
+
+    SourceLocation fileNameLoc;
+    ModuleIdPath path = std::make_pair(PP.getIdentifierInfo(module->Name),
+                                       fileNameLoc);
+
+    SourceLocation includeLoc;
+    Module* imported = getCI()->loadModule(includeLoc, path, Module::AllVisible,
+                                           /*isIncludeDirective*/true);
+    if (imported)
+      return Interpreter::kSuccess;
+
+    return Interpreter::kFailure;
+  }
+
+  Interpreter::CompilationResult
   Interpreter::parseForModule(const std::string& input) {
     CompilationOptions CO;
     CO.CodeGeneration = 1;

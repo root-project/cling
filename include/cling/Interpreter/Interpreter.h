@@ -449,6 +449,16 @@ namespace cling {
     ///
     CompilationResult parse(const std::string& input);
 
+    ///\brief Looks for a already generated PCM for the given header file and 
+    /// loads it.
+    ///
+    ///\param[in] headerFile - The header file for which a module should be 
+    ///                        loaded.
+    ///
+    ///\returns Whether the operation was fully successful.
+    ///
+    CompilationResult loadModuleForHeader(const std::string& headerFile);
+
     ///\brief Parses input line, which doesn't contain statements. Code 
     /// generation needed to make the module functional.
     ///
