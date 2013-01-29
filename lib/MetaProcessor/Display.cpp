@@ -459,6 +459,7 @@ private:
   void ProcessNamespaceDecl(decl_iterator decl)const;
   void ProcessLinkageSpecDecl(decl_iterator decl)const;
   void ProcessClassDecl(decl_iterator decl)const;
+  void ProcessClassTemplateDecl(decl_iterator decl)const;
   
   template<class Decl>
   void ProcessTypeOfMember(const Decl* decl, unsigned nSpaces)const
@@ -574,6 +575,9 @@ void ClassPrinter::ProcessDecl(decl_iterator decl)const
   case Decl::LinkageSpec:
     ProcessLinkageSpecDecl(decl);
     break;
+  case Decl::ClassTemplate:
+    ProcessClassTemplateDecl(decl);
+    break;
   case Decl::CXXRecord:
   case Decl::ClassTemplateSpecialization:
   case Decl::ClassTemplatePartialSpecialization:
@@ -666,6 +670,26 @@ void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
   //Now we have to check nested scopes for class declarations.
   for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl)
     ProcessDecl(decl);
+}
+
+//______________________________________________________________________________
+void ClassPrinter::ProcessClassTemplateDecl(decl_iterator decl)const
+{
+  assert(fInterpreter != 0 && "ProcessClassDecl, fInterpreter is null");
+  assert(*decl != 0 && "ProcessClassDecl, 'decl' parameter is not a valid iterator");
+
+  ClassTemplateDecl *templateDecl = dyn_cast<ClassTemplateDecl>(*decl);
+  assert(templateDecl != 0 && "ProcessClassTemplateDecl, internal error, declaration is not a ClassTemplateDecl");
+
+  templateDecl = templateDecl->getCanonicalDecl();
+
+  if (!templateDecl->isThisDeclarationADefinition())
+    return;
+
+  //Now we have to display all the specialization (/instantiations)
+  for (ClassTemplateDecl::spec_iterator spec = templateDecl->spec_begin(); 
+       spec != templateDecl->spec_end(); ++spec)
+     ProcessDecl(decl_iterator( *spec ));
 }
 
 //______________________________________________________________________________
