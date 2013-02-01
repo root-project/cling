@@ -481,6 +481,7 @@ private:
   }
 
   void DisplayClassDecl(const CXXRecordDecl* classDecl)const;
+  void DisplayClassFwdDecl(const CXXRecordDecl* classDecl)const;
   void DisplayBasesAsList(const CXXRecordDecl* classDecl)const;
   void DisplayBasesAsTree(const CXXRecordDecl* classDecl, unsigned nSpaces)const;
   void DisplayMemberFunctions(const CXXRecordDecl* classDecl)const;
@@ -662,8 +663,10 @@ void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
   const CXXRecordDecl* const classDecl = dyn_cast<CXXRecordDecl>(*decl);
   assert(classDecl != 0 && "ProcessClassDecl, internal error, declaration is not a CXXRecordDecl");
 
-  if (!classDecl->hasDefinition())
+  if (!classDecl->hasDefinition()) {
+    DisplayClassFwdDecl(classDecl);
     return;
+  }
 
   DisplayClassDecl(classDecl);
 
@@ -711,7 +714,7 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
     std::string classInfo;
 
     AppendClassDeclLocation(fInterpreter->getCI(), classDecl, classInfo, false);
-    classInfo += ' ';
+    classInfo += "     ";
     AppendClassKeyword(classDecl, classInfo);
     classInfo += ' ';
     AppendClassName(classDecl, classInfo);
@@ -744,7 +747,7 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
       fOut.Print("Base classes: --------------------------------------------------------\n");
 
     DisplayBasesAsTree(classDecl, 0);
-    //now list all members.
+    //now list all members.40963410
     
     fOut.Print("List of member variables --------------------------------------------------\n");
     DisplayDataMembers(classDecl, 0);
@@ -753,6 +756,49 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
     //CINT has a format like %-15s blah-blah.
     fOut.Print("filename     line:size busy function type and name\n");
     DisplayMemberFunctions(classDecl);
+  }
+}
+
+//______________________________________________________________________________
+void ClassPrinter::DisplayClassFwdDecl(const CXXRecordDecl* classDecl)const
+{
+  assert(classDecl != 0 && "DisplayClassDecl, 'classDecl' parameter is null");
+  assert(fInterpreter != 0 && "DisplayClassDecl, fInterpreter is null");
+
+  if (classDecl->isImplicit() || fSeenDecls.find(classDecl) != fSeenDecls.end())
+    return;
+  else
+    fSeenDecls.insert(classDecl);
+
+  if (!fVerbose) {
+    //Print: source file, line number, class-keyword, qualifies class name, base classes.
+    std::string classInfo;
+
+    AppendClassDeclLocation(fInterpreter->getCI(), classDecl, classInfo, false);
+    classInfo += " fwd ";
+    AppendClassKeyword(classDecl, classInfo);
+    classInfo += ' ';
+    AppendClassName(classDecl, classInfo);
+    classInfo += ' ';
+    //
+    fOut.Print(classInfo.c_str());
+
+    fOut.Print("\n");
+  } else {
+    fOut.Print("===========================================================================\n");
+
+    std::string classInfo("Forwarded ");
+    AppendClassKeyword(classDecl, classInfo);
+    AppendClassName(classDecl, classInfo);
+
+    fOut.Print(classInfo.c_str());
+    fOut.Print("\n");
+
+    classInfo.clear();
+    classInfo = "SIZE: n/a ";
+    AppendClassDeclLocation(fInterpreter->getCI(), classDecl, classInfo, true);
+    fOut.Print(classInfo.c_str());
+    fOut.Print("\n");
   }
 }
 
