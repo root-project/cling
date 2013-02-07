@@ -705,12 +705,12 @@ namespace cling {
       // that didn't work, try bitcode:
       Path FilePath(filename);
       std::string Magic;
-      if (!FilePath.getMagicNumber(Magic, 64)) {
+      if (!FilePath.getMagicNumber(Magic, 512)) {
         // filename doesn't exist...
         // tryCode because it might be found through -I
         return kLoadLibError;
       }
-      if (IdentifyFileType(Magic.c_str(), 64) != Bitcode_FileType) {
+      if (IdentifyFileType(Magic.c_str(), 512) != Bitcode_FileType) {
         // Nothing the linker can handle
         return kLoadLibError;
       }

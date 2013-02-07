@@ -42,6 +42,12 @@ CLINGCXXFLAGS = $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags) -I$(CLINGDIR)/
 ifeq ($(CTORSINITARRAY),yes)
 CLINGLDFLAGSEXTRA := -Wl,--no-ctors-in-init-array
 endif
+
+ifeq ($(ARCH),win32gcc)
+# Hide llvm / clang symbols:
+CLINGLDFLAGSEXTRA += -Wl,--exclude-libs,ALL 
+endif
+
 CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 	$(addprefix -lclang,\
 		Frontend Serialization Driver CodeGen Parse Sema Analysis RewriteCore AST Lex Basic Edit) \
