@@ -10,6 +10,7 @@
 #include "clang/AST/DeclarationName.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Lookup.h"
+#include "clang/AST/DeclTemplate.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -361,11 +362,10 @@ namespace utils {
         //return true;
       }
       case Type::SubstTemplateTypeParm: {
-        return false;
-        //const SubstTemplateTypeParmType* Ty =
-        //  llvm::cast<SubstTemplateTypeParmType>(QTy);
-        //QT = Ty->desugar();
-        //return true;
+        const SubstTemplateTypeParmType* Ty =
+          llvm::cast<SubstTemplateTypeParmType>(QTy);
+        QT = Ty->desugar();
+        return true;
       }
       case Type::Elaborated: {
         return false;
@@ -459,6 +459,12 @@ namespace utils {
       // Add back the qualifiers.
       QT = Ctx.getQualifiedType(QT, quals);
       return QT;
+    }
+     
+    if (isa<SubstTemplateTypeParmType>(QT.getTypePtr())) {
+      // This is pure sugar (to mark that the type was created for replacing
+      // a template parameter and never holds any qualifier.
+      QT = dyn_cast<SubstTemplateTypeParmType>(QT.getTypePtr())->desugar();
     }
 
     // In case of Int_t& we need to strip the pointer first, desugar and attach
@@ -665,6 +671,55 @@ namespace utils {
                                                desArgs.size(),
                                                TST->getCanonicalTypeInternal());
         QT = Ctx.getQualifiedType(QT, qualifiers);
+      }
+    } else if (fullyQualify) {
+       
+      if (const RecordType *TSTRecord
+          = dyn_cast<const RecordType>(QT.getTypePtr())) {
+        // We are asked to fully qualify and we have a Record Type,
+        // which can point to a template instantiation with no sugar in any of
+        // its template argument, however we still need to fully qualify them.
+       
+        if (const ClassTemplateSpecializationDecl* TSTdecl =
+            dyn_cast<ClassTemplateSpecializationDecl>(TSTRecord->getDecl()))
+        {
+          const TemplateArgumentList& templateArgs
+            = TSTdecl->getTemplateArgs();
+
+          bool mightHaveChanged = false;
+          llvm::SmallVector<TemplateArgument, 4> desArgs;
+          for(unsigned int I = 0, E = templateArgs.size();
+              I != E; ++I) {
+            if (templateArgs[I].getKind() != TemplateArgument::Type) {
+              desArgs.push_back(templateArgs[I]);
+              continue;
+            }
+          
+            QualType SubTy = templateArgs[I].getAsType();
+            // Check if the type needs more desugaring and recurse.
+            if (isa<TypedefType>(SubTy)
+                || isa<TemplateSpecializationType>(SubTy)
+                || isa<ElaboratedType>(SubTy)
+                || fullyQualify) {
+              mightHaveChanged = true;
+              desArgs.push_back(TemplateArgument(GetPartiallyDesugaredType(Ctx,
+                                                                           SubTy,
+                                                                           TypesToSkip,
+                                                                           fullyQualify)));
+            } else
+              desArgs.push_back(templateArgs[I]);
+          }
+       
+          // If desugaring happened allocate new type in the AST.
+          if (mightHaveChanged) {
+            Qualifiers qualifiers = QT.getLocalQualifiers();
+            QT = Ctx.getTemplateSpecializationType(TemplateName(TSTdecl->getSpecializedTemplate()),
+                                                   desArgs.data(),
+                                                   desArgs.size(),
+                                                   TSTRecord->getCanonicalTypeInternal());
+            QT = Ctx.getQualifiedType(QT, qualifiers);
+          }
+        }
       }
     }
     if (prefix) {

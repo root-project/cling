@@ -34,6 +34,9 @@ namespace Details {
   class Impl {};
 }
 
+// To insure instantiation.
+// typedef std::pair<Details::Impl,std::vector<Details::Impl> > details_pairs;
+
 namespace NS {
   template <typename T, int size = 0> class ArrayType {};
   template <typename T> class Array {};
@@ -268,5 +271,31 @@ if (decl) {
 // CHECK: Embedded_objects::EmbeddedClasses::Embedded5
 // CHECK: Embedded_objects::EmbeddedClasses::Embedded6
 // CHECK: std::vector<int>::iterator
-// CHECK: const Embedded_objects::Eenum        
+// CHECK: const Embedded_objects::Eenum
+
+// In the partial desugaring add support for the case where we have a type
+// that point to an already completely desugared template instantiation in
+// which case the type is a RecordDecl rather than a TemplateInstantationType
+decl = lookup.findScope("std::pair<Details::Impl,std::vector<Details::Impl> >",&t);
+QT = clang::QualType(t, 0);
+std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str() << std::endl;
+// CHECK: std::pair<Details::Impl, std::vector<Details::Impl> >
+
+if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(decl)) {
+  clang::RecordDecl::field_iterator field_iter = rdecl->field_begin();
+  // For some reason we can not call field_end:
+  // cling: root/interpreter/llvm/src/tools/clang/lib/CodeGen/CGCall.cpp:1839: void checkArgMatches(llvm::Value*, unsigned int&, llvm::FunctionType*): Assertion `Elt->getType() == FTy->getParamType(ArgNo)' failed.
+  // so just 'guess' the size
+  int i = 0;
+  while( i < 2 )  {
+    name.clear();
+    clang::QualType fdType = field_iter->getType();
+    Transform::GetPartiallyDesugaredType(Ctx,fdType,skip).getAsStringInternal(name,Policy);
+    std::cout << name.c_str() << std::endl;
+    ++field_iter;
+    ++i;
+  }
+}
+// CHECK: Details::Impl
+// CHECK: std::vector<Details::Impl, std::allocator<Details::Impl> >
 
