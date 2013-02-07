@@ -705,6 +705,7 @@ namespace cling {
       // that didn't work, try bitcode:
       Path FilePath(filename);
       std::string Magic;
+      // 512 bytes should suffice to extrace PE magic
       if (!FilePath.getMagicNumber(Magic, 512)) {
         // filename doesn't exist...
         // tryCode because it might be found through -I
