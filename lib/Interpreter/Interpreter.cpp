@@ -836,6 +836,7 @@ namespace cling {
       (*AEE.m_Func)(AEE.m_Arg);
     }
     m_AtExitFuncs.clear();
+    return kExeSuccess; 
   }
 
   int Interpreter::CXAAtExit(void (*func) (void*), void* arg, void* dso) {
