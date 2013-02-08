@@ -829,6 +829,15 @@ namespace cling {
     return ConvertExecutionResult(ExeRes);
   }
 
+  Interpreter::ExecutionResult
+  Interpreter::runStaticDestructorsOnce() {
+    for (size_t I = 0, E = m_AtExitFuncs.size(); I < E; ++I) {
+      const CXAAtExitElement& AEE = m_AtExitFuncs[E-I-1];
+      (*AEE.m_Func)(AEE.m_Arg);
+    }
+    m_AtExitFuncs.clear();
+  }
+
   int Interpreter::CXAAtExit(void (*func) (void*), void* arg, void* dso) {
     // Register a CXAAtExit function
     Decl* LastTLD 

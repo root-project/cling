@@ -592,6 +592,8 @@ namespace cling {
     // transaction completed.
     ExecutionResult runStaticInitializersOnce() const;
 
+    ExecutionResult runStaticDestructorsOnce();
+
     int CXAAtExit(void (*func) (void*), void* arg, void* dso);
 
     ///\brief Evaluates given expression within given declaration context.
