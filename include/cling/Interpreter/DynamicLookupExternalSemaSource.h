@@ -34,9 +34,21 @@ namespace cling {
     /// responsibility to fix all these fake declarations and lookups.
     /// It is done by the DynamicExprTransformer.
     ///
-    /// @param[out] R The recovered symbol.
-    /// @param[in] S The scope in which the lookup failed.
+    /// \param[out] R The recovered symbol.
+    /// \param[in] S The scope in which the lookup failed.
+    ///
+    /// \returns true if the name was found and the compilation should continue.
+    ///
     virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S);
 
+    /// \brief Checks whether this name should be marked as dynamic, i.e. for
+    /// runtime resolution.
+    ///
+    /// \param[out] R The recovered symbol.
+    /// \param[in] S The scope in which the lookup failed.
+    ///
+    /// \returns true if the name should be marked as dynamic.
+    ///
+    static bool IsDynamicLookup(clang::LookupResult& R, clang::Scope* S);
   };
 } // end namespace cling
