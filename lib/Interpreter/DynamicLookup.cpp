@@ -6,6 +6,7 @@
 
 #include "DynamicLookup.h"
 
+#include "cling/Interpreter/DynamicLookupExternalSemaSource.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
