@@ -19,7 +19,8 @@ namespace cling {
     class StoredValue: public Value, public llvm::RefCountedBase<StoredValue> {
     public:
       /// \brief Construct a valid StoredValue, allocating as needed.
-      StoredValue(const clang::ASTContext&, clang::QualType t);
+      StoredValue(const clang::ASTContext&, clang::QualType clangTy, 
+                  const llvm::Type* llvmTy);
       /// \brief Destruct and deallocate if necessary.
       ~StoredValue();
 
@@ -47,7 +48,7 @@ namespace cling {
   public:
     /// \brief Allocate an object of type t and return a StoredValueRef to it.
     static StoredValueRef allocate(const clang::ASTContext& ctx,
-                                   clang::QualType t);
+                                   clang::QualType t, const llvm::Type* llvmTy);
     /// \brief Create a bitwise copy of value wrapped in a StoredValueRef.
     static StoredValueRef bitwiseCopy(const clang::ASTContext& ctx,
                                       const Value& value);
@@ -70,6 +71,7 @@ namespace cling {
     bool needsManagedAllocation() const { return m_Value->m_Mem; }
 
     const Value& get() const { return *m_Value; }
+    Value& get() { return *m_Value; }
 
     /// \brief Dump the referenced value.
     void dump(clang::ASTContext& ctx) const;

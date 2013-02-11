@@ -22,6 +22,7 @@ namespace llvm {
   class ExecutionEngine;
   class LLVMContext;
   class Module;
+  class Type;
 }
 
 namespace clang {
@@ -636,6 +637,15 @@ namespace cling {
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
     void* getAddressOfGlobal(const char* SymName, bool* fromJIT = 0) const;
+
+    ///\brief Asks clang::CodeGen::CodeGenTypes for the low level (llvm) type of
+    /// a given QualType.
+    ///
+    ///\param [in] QT - The QualType.
+    ///
+    ///\returns The llvm::Type corresponing to the given QualType.
+    ///
+    const llvm::Type* getLLVMType(clang::QualType QT);
 
     friend class runtime::internal::LifetimeHandler;
   };

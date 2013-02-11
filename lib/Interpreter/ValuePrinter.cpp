@@ -188,17 +188,17 @@ static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
   } else {
     o << "boxes [";
     o << "("
-      << value->type.getAsString(C.getPrintingPolicy())
+      << value->getClangType().getAsString(C.getPrintingPolicy())
       << ") ";
-    clang::QualType valType = value->type.getDesugaredType(C);
+    clang::QualType valType = value->getClangType().getDesugaredType(C);
     if (valType->isFloatingType())
-      o << value->value.DoubleVal;
+      o << value->getGV().DoubleVal;
     else if (valType->isIntegerType())
-      o << value->value.IntVal.getSExtValue();
+      o << value->getGV().IntVal.getSExtValue();
     else if (valType->isBooleanType())
-      o << value->value.IntVal.getBoolValue();
+      o << value->getGV().IntVal.getBoolValue();
     else
-      StreamValue(o, value->value.PointerVal,
+      StreamValue(o, value->getGV().PointerVal,
                   ValuePrinterInfo(valType, &C), "");
     o << "]" << Sep;
   }

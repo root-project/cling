@@ -189,13 +189,13 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
   if (f->hasStructRetAttr()) {
     // Function expects to receive the storage for the returned aggregate as
     // first argument. Allocate returnValue:
-    aggregateRet = StoredValueRef::allocate(Ctx, retType);
+    aggregateRet = StoredValueRef::allocate(Ctx, retType, f->getReturnType());
     if (returnValue) {
       *returnValue = aggregateRet;
     } else {
       returnValue = &aggregateRet;
     }
-    args.push_back(returnValue->get().value);
+    args.push_back(returnValue->get().getGV());
     // will get set as arg0, must not assign.
     wantReturn = false;
   }

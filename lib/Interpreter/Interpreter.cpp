@@ -21,6 +21,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Mangle.h"
 #include "clang/Basic/TargetInfo.h"
+#include "clang/CodeGen/CodeGenModule.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
@@ -579,11 +580,13 @@ namespace cling {
        m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
                                            getCI()->getASTContext(),
                                            FD->getResultType(), res);
+    if (res && res->isValid())
+      res->get().setLLVMType(getLLVMType(res->get().getClangType()));
     return ConvertExecutionResult(ExeRes);
   }
 
   void Interpreter::createUniqueName(std::string& out) {
-    out = utils::Synthesize::UniquePrefix;
+    out += utils::Synthesize::UniquePrefix;
     llvm::raw_string_ostream(out) << m_UniqueCounter++;
   }
 
@@ -903,6 +906,18 @@ namespace cling {
     // Return a symbol's address, and whether it was jitted.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     return m_ExecutionContext->getAddressOfGlobal(module, SymName, fromJIT);
+  }
+
+  const llvm::Type* Interpreter::getLLVMType(QualType QT) {
+    if (!m_IncrParser->hasCodeGenerator())
+      return 0;
+
+    // Note: The first thing this routine does is getCanonicalType(), so we
+    //       do not need to do that first.
+    CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
+    CodeGen::CodeGenTypes& CGT = CGM->getTypes();
+    //llvm::Type* Ty = CGT.ConvertTypeForMem(QT);
+    return CGT.ConvertType(QT);
   }
 
 } // namespace cling

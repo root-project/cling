@@ -112,7 +112,7 @@ namespace runtime {
         StoredValueRef res = gCling->Evaluate(ctor.c_str(), DC,
                                      ExprInfo->isValuePrinterRequested()
                                      );
-        m_Memory = (void*)res.get().value.PointerVal;
+        m_Memory = (void*)res.get().getGV().PointerVal;
       }
 
       ///\brief Returns the created object.

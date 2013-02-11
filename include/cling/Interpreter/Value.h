@@ -7,9 +7,11 @@
 #ifndef CLING_VALUE_H
 #define CLING_VALUE_H
 
-#include "llvm/ExecutionEngine/GenericValue.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/CanonicalType.h"
+
+#include "llvm/ExecutionEngine/GenericValue.h"
+#include "llvm/Type.h"
 
 namespace clang {
   class ASTContext;
@@ -34,27 +36,45 @@ namespace cling {
     /// \brief Forward decl for typed access specializations
     template <typename T> struct TypedAccess;
 
-  public:
+  protected:
     /// \brief value
-    llvm::GenericValue value;
-    /// \brief the value's type
-    clang::QualType type;
+    llvm::GenericValue m_GV;
+
+    /// \brief the value's type according to clang
+    clang::QualType m_ClangType;
+
+    /// \brief the value's type according to clang
+    const llvm::Type* m_LLVMType;
+
+  public:
 
     /// \brief Default constructor, creates a value that IsInvalid().
     Value() {}
     /// \brief Construct a valid Value.
-    Value(const llvm::GenericValue& v, clang::QualType t) :
-      value(v), type(t){}
+    Value(const llvm::GenericValue& v, clang::QualType t) 
+      : m_GV(v), m_ClangType(t), m_LLVMType(0) { }
+
+    Value(const llvm::GenericValue& v, clang::QualType clangTy, 
+          const llvm::Type* llvmTy) 
+      : m_GV(v), m_ClangType(clangTy), m_LLVMType(llvmTy) { }
+
+    llvm::GenericValue getGV() const { return m_GV; }
+    void setGV(llvm::GenericValue GV) { m_GV = GV; }
+    clang::QualType getClangType() const { return m_ClangType; }
+    const llvm::Type* getLLVMType() const { return m_LLVMType; }
+    void setLLVMType(const llvm::Type* Ty) { m_LLVMType = Ty; }
 
     /// \brief Determine whether the Value has been set.
     //
     /// Determine whether the Value has been set by checking
     /// whether the type is valid.
-    bool isValid() const { return !type.isNull(); }
+    bool isValid() const { return !m_ClangType.isNull(); }
 
     /// \brief Determine whether the Value is set but void.
     bool isVoid(const clang::ASTContext& ASTContext) const {
-      return isValid() && type.getDesugaredType(ASTContext)->isVoidType(); }
+      return isValid() 
+        && m_ClangType.getDesugaredType(ASTContext)->isVoidType();
+    }
 
     /// \brief Determine whether the Value is set and not void.
     //
@@ -128,11 +148,11 @@ namespace cling {
   T Value::getAs() const {
     // T *must* correspond to type. Else use simplisticCastAs()!
     TypedAccess<T> VI;
-    return VI.extract(value);
+    return VI.extract(m_GV);
   }
   template <typename T>
   T Value::simplisticCastAs() const {
-    const clang::Type* desugCanon = type->getUnqualifiedDesugaredType();
+    const clang::Type* desugCanon = m_ClangType->getUnqualifiedDesugaredType();
     desugCanon = desugCanon->getCanonicalTypeUnqualified()->getTypePtr()
        ->getUnqualifiedDesugaredType();
     if (desugCanon->isSignedIntegerOrEnumerationType()) {
@@ -155,7 +175,6 @@ namespace cling {
     assert("unsupported type in Value, cannot cast simplistically!" && 0);
     return T();
   }
-
 } // end namespace cling
 
 #endif // CLING_VALUE_H
