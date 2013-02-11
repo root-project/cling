@@ -77,6 +77,7 @@ namespace utils {
 
     ///\brief Synthesizes integer literal given an unsigned.
     ///
+    //  TODO: Use Sema::ActOnIntegerConstant.
     static clang::IntegerLiteral* IntegerLiteralExpr(clang::ASTContext& C, 
                                                      uint64_t Ptr);
 
