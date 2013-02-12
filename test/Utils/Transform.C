@@ -28,6 +28,11 @@ template <typename T, typename U> class C {};
 typedef C<A<B<Double32_t, Int_t> >, Double32_t > CTD;
 typedef C<A<B<const Double32_t, const Int_t> >, Double32_t > CTDConst;
 
+template <typename key, typename value, typename compare_operation = std::less<key>, typename alloc = std::allocator<std::pair<const key, value> > > class cmap { key fKey; const value fValue; alloc fAlloc; };
+   // : public std::map<key, value, compare_operation, alloc> {
+
+template <typename key, typename value = const key> class mypair { public: key fKey; value fValue; };
+
 #include <string>
 
 namespace Details {
@@ -299,3 +304,27 @@ if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(d
 // CHECK: Details::Impl
 // CHECK: std::vector<Details::Impl, std::allocator<Details::Impl> >
 
+decl = lookup.findScope("cmap<volatile int,volatile int>",&t);
+QT = clang::QualType(t, 0);
+std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str() << std::endl;
+if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(decl)) {
+  QT = clang::QualType(rdecl->getTypeForDecl(), 0);
+  std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str() << std::endl;
+  clang::RecordDecl::field_iterator field_iter = rdecl->field_begin();
+  // For some reason we can not call field_end:
+  // cling: root/interpreter/llvm/src/tools/clang/lib/CodeGen/CGCall.cpp:1839: void checkArgMatches(llvm::Value*, unsigned int&, llvm::FunctionType*): Assertion `Elt->getType() == FTy->getParamType(ArgNo)' failed.
+  // so just 'guess' the size
+  int i = 0;
+  while( i < 2 )  {
+    name.clear();
+    clang::QualType fdType = field_iter->getType();
+    Transform::GetPartiallyDesugaredType(Ctx,fdType,skip).getAsStringInternal(name,Policy);
+    std::cout << name.c_str() << std::endl;
+    ++field_iter;
+    ++i;
+  }
+}
+// CHECK: cmap<volatile int, volatile int>
+// CHECK: cmap<volatile int, volatile int, std::less<volatile int>, std::allocator<std::pair<const volatile int, volatile int> > >
+// CHECK: volatile int
+// CHECK: const volatile int

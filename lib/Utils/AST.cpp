@@ -461,10 +461,14 @@ namespace utils {
       return QT;
     }
      
-    if (isa<SubstTemplateTypeParmType>(QT.getTypePtr())) {
-      // This is pure sugar (to mark that the type was created for replacing
-      // a template parameter and never holds any qualifier.
+    while (isa<SubstTemplateTypeParmType>(QT.getTypePtr())) {
+      // Get the qualifiers.
+      Qualifiers quals = QT.getQualifiers();      
+
       QT = dyn_cast<SubstTemplateTypeParmType>(QT.getTypePtr())->desugar();
+
+      // Add back the qualifiers.
+      QT = Ctx.getQualifiedType(QT, quals);
     }
 
     // In case of Int_t& we need to strip the pointer first, desugar and attach
