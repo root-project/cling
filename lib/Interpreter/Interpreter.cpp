@@ -575,7 +575,7 @@ namespace cling {
       return kExeUnkownFunction;
 
     std::string mangledNameIfNeeded;
-    mangleName(FD, mangledNameIfNeeded);
+    maybeMangleDeclName(FD, mangledNameIfNeeded);
     ExecutionContext::ExecutionResult ExeRes =
        m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
                                            getCI()->getASTContext(),
@@ -850,8 +850,8 @@ namespace cling {
     return 0; // happiness
   }
 
-  void Interpreter::mangleName(const clang::NamedDecl* D,
-                               std::string& mangledName) const {
+  void Interpreter::maybeMangleDeclName(const clang::NamedDecl* D,
+                                        std::string& mangledName) const {
     ///Get the mangled name of a NamedDecl.
     ///
     ///D - mangle this decl's name
@@ -861,7 +861,27 @@ namespace cling {
     }
     if (m_MangleCtx->shouldMangleDeclName(D)) {
       llvm::raw_string_ostream RawStr(mangledName);
-      m_MangleCtx->mangleName(D, RawStr);
+      switch(D->getKind()) {
+      case Decl::CXXConstructor:
+        //Ctor_Complete,          // Complete object ctor
+        //Ctor_Base,              // Base object ctor
+        //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
+        m_MangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D), 
+                                   Ctor_Complete, RawStr);
+        break;
+
+      case Decl::CXXDestructor:
+        //Dtor_Deleting, // Deleting dtor
+        //Dtor_Complete, // Complete object dtor
+        //Dtor_Base      // Base object dtor
+        m_MangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
+                                   Dtor_Deleting, RawStr);
+        break;
+
+      default :
+        m_MangleCtx->mangleName(D, RawStr);
+        break;
+      }
       RawStr.flush();
     } else {
       mangledName = D->getNameAsString();
@@ -897,7 +917,7 @@ namespace cling {
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
     std::string mangledName;
-    mangleName(D, mangledName);
+    maybeMangleDeclName(D, mangledName);
     return getAddressOfGlobal(mangledName.c_str(), fromJIT);
   }
 
