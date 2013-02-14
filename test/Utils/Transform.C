@@ -174,6 +174,11 @@ QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 // CHECK:(const char *) "A<B<Double32_t, int *> >"
 
+lookup.findScope("A<B<Double32_t, std::size_t*> >", &t);
+QT = clang::QualType(t, 0);
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+// CHECK:(const char *) "A<B<Double32_t, unsigned long *> >"
+
 lookup.findScope("CTD", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
@@ -249,6 +254,16 @@ lookup.findScope("NS::TDataPointD32", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 // CHECK: (const char *) "NS::TDataPoint<Double32_t>"
+
+lookup.findScope("vector<Details::Impl>::value_type", &t);
+QT = clang::QualType(t, 0);
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+// CHECK: (const char *) "Details::Impl"
+
+lookup.findScope("vector<Details::Impl>::iterator", &t);
+QT = clang::QualType(t, 0);
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+// CHECK: (const char *) "std::vector<Details::Impl>::iterator"
 
 const clang::Decl*decl=lookup.findScope("Embedded_objects",&t);
 if (decl) {
