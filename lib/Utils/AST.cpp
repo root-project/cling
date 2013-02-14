@@ -14,7 +14,7 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
-
+#include <stdio.h>
 using namespace clang;
 
 namespace cling {
@@ -291,7 +291,25 @@ namespace utils {
     return scope;
   }
 
-  static bool ShouldKeepTypedef(QualType QT, 
+  static bool IsStdDetails(const TagType *tagTy)
+  {
+    // Return true if the TagType is a 'details' of the std implementation.
+    // (For now it means declared in std and __gnu_cxx
+    
+    const TagDecl *decl = tagTy->getDecl();
+    assert(decl);
+    const NamedDecl *outer =dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
+    while (outer && outer->getName().size() ) {
+      if (outer->getName().compare("std") == 0 ||
+          outer->getName().compare("__gnu_cxx") == 0) {
+        return true;
+      }
+      outer = dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
+    }
+    return false;
+  }
+  
+  static bool ShouldKeepTypedef(QualType QT,
                            const llvm::SmallSet<const Type*, 4>& TypesToSkip)
   {
     // Return true, if we should keep this typedef rather than desugaring it.
@@ -305,18 +323,27 @@ namespace utils {
     if (decl) {
       const NamedDecl* outer 
         = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
-      if (outer && outer->getName().size() ) {
-        // Only keep the typedef that are within a class or namespace inside
-        // the std namespace (that way we do desugar std::size_t).
-        outer = llvm::dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
-        while ( outer && outer->getName().size() ) {
-          // NOTE: Net is being cast too widely, replace by a lookup. 
-          // or by using Sema::getStdNamespace
-          if (outer->getName().compare("std") == 0) {
-            return true;
+      // We want to keep the typedef that are defined within std and
+      // are pointing to something also declared in std (usually an
+      // implementation details like std::basic_string or __gnu_cxx::iterator.
+      
+      while ( outer && outer->getName().size() ) {
+        // NOTE: Net is being cast too widely, replace by a lookup.
+        // or by using Sema::getStdNamespace
+        if (outer->getName().compare("std") == 0) {
+          // And now let's check that the target is also within std.
+          const Type *underlyingType = decl->getUnderlyingType().getTypePtr();
+          const ElaboratedType *elTy = dyn_cast<ElaboratedType>(underlyingType);
+          if (elTy) {
+            underlyingType = elTy->getNamedType().getTypePtr();
           }
-          outer = llvm::dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
+          const TagType *tagTy = underlyingType->getAs<TagType>();
+          if (tagTy) {
+            bool details = IsStdDetails(tagTy);
+            if (details) return true;
+          }
         }
+        outer = dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
       }
     }
     return false;
