@@ -791,21 +791,16 @@ namespace cling {
     Sema& TheSema = getCI()->getSema();
     if (!DC)
       DC = TheSema.getASTContext().getTranslationUnitDecl();
-
-    // Set up the declaration context
-    DeclContext* CurContext;
-
-    CurContext = TheSema.CurContext;
-    TheSema.CurContext = DC;
+    // We can't PushDeclContext, because we don't have scope.
+    Sema::ContextRAII pushedDC(TheSema, DC);
 
     StoredValueRef Result;
-    if (TheSema.getExternalSource()) {
-      (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, Result);
-    }
-    else
-      (ValuePrinterReq) ? echo(expr, &Result) : evaluate(expr, Result);
-
-    TheSema.CurContext = CurContext;
+    getCallbacks()->SetIsRuntime(true);
+    if (ValuePrinterReq)
+      echo(expr, &Result);
+    else 
+      evaluate(expr, Result);
+    getCallbacks()->SetIsRuntime(false);
 
     return Result;
   }

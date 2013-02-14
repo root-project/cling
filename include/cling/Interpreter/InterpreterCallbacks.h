@@ -73,6 +73,10 @@ namespace cling {
     /// callbacks.
     ///
     llvm::OwningPtr<InterpreterExternalSemaSource> m_SemaExternalSource;
+
+    ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
+    ///
+    bool m_IsRuntime;
   public:
     InterpreterCallbacks(Interpreter* interp,
                          InterpreterExternalSemaSource* IESS = 0);
@@ -104,6 +108,11 @@ namespace cling {
     ///\param[out] - The transaction that was reverted.
     ///
     virtual void TransactionUnloaded(const Transaction&) {}
+
+    ///\brief DynamicScopes only! Set to true if it is currently evaluating a
+    /// dynamic expr.
+    ///
+    void SetIsRuntime(bool val) { m_IsRuntime = val; }
   };
 } // end namespace cling
 
@@ -137,6 +146,7 @@ namespace cling {
       ~SymbolResolverCallback();
 
       bool LookupObject(clang::LookupResult& R, clang::Scope* S);
+      bool ShouldResolveAtRuntime(clang::LookupResult& R, clang::Scope* S);
     };
   } // end test
 } // end cling

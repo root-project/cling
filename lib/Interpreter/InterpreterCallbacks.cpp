@@ -6,7 +6,6 @@
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
-#include "cling/Interpreter/DynamicLookupExternalSemaSource.h"
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/Sema/Sema.h"
@@ -28,7 +27,7 @@ namespace cling {
 
   InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
                                              InterpreterExternalSemaSource* IESS)
-    : m_Interpreter(interp),  m_SemaExternalSource(IESS) {
+    : m_Interpreter(interp),  m_SemaExternalSource(IESS), m_IsRuntime(false) {
     if (!IESS)
       m_SemaExternalSource.reset(new InterpreterExternalSemaSource(this));
     m_Interpreter->getSema().addExternalSource(m_SemaExternalSource.get());
@@ -53,8 +52,9 @@ namespace cling {
 #include "DynamicLookup.h"
 #include "cling/Utils/AST.h"
 
-#include "clang/Sema/Lookup.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Sema/Lookup.h"
 #include "clang/Sema/Scope.h"
 namespace cling {
 namespace test {
@@ -100,29 +100,93 @@ namespace test {
   }
 
   SymbolResolverCallback::SymbolResolverCallback(Interpreter* interp)
-    : InterpreterCallbacks(interp, new DynamicIDHandler(this)), m_TesterDecl(0) {
+    : InterpreterCallbacks(interp), m_TesterDecl(0) {
     m_Interpreter->process("cling::test::Tester = new cling::test::TestProxy();");
   }
 
   SymbolResolverCallback::~SymbolResolverCallback() { }
 
   bool SymbolResolverCallback::LookupObject(LookupResult& R, Scope* S) {
-    if (!DynamicIDHandler::IsDynamicLookup(R, S))
+    if (m_IsRuntime) {
+      // Only for demo resolve all unknown objects to cling::test::Tester
+      if (!m_TesterDecl) {
+        clang::Sema& SemaR = m_Interpreter->getSema();
+        clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&SemaR, "cling");
+        NSD = utils::Lookup::Namespace(&SemaR, "test", NSD);
+        m_TesterDecl = utils::Lookup::Named(&SemaR, "Tester", NSD);
+      }
+      assert (m_TesterDecl && "Tester not found!");
+      R.addDecl(m_TesterDecl);
+      return true; // Tell clang to continue.
+    }
+
+    if (ShouldResolveAtRuntime(R, S)) {
+      ASTContext& C = R.getSema().getASTContext();
+      DeclContext* DC = 0;
+      // For DeclContext-less scopes like if (dyn_expr) {}
+      while (!DC) {
+        DC = static_cast<DeclContext*>(S->getEntity());
+        S = S->getParent();
+      }
+      DeclarationName Name = R.getLookupName();
+      IdentifierInfo* II = Name.getAsIdentifierInfo();
+      SourceLocation Loc = R.getNameLoc();
+      VarDecl* Res = VarDecl::Create(C, DC, Loc, Loc, II, C.DependentTy,
+                                     /*TypeSourceInfo*/0, SC_None, SC_None);
+
+      // Annotate the decl to give a hint in cling. FIXME: Current implementation
+      // is a gross hack, because TClingCallbacks shouldn't know about 
+      // EvaluateTSynthesizer at all!
+      SourceRange invalidRange;
+      Res->addAttr(new (C) AnnotateAttr(invalidRange, C, "__ResolveAtRuntime"));
+      R.addDecl(Res);
+      DC->addDecl(Res);
+      // Say that we can handle the situation. Clang should try to recover
+      return true;
+    }
+
+    return false;
+  }
+
+  bool SymbolResolverCallback::ShouldResolveAtRuntime(LookupResult& R, 
+                                                      Scope* S) {
+
+    if (R.getLookupKind() != Sema::LookupOrdinaryName) 
       return false;
-    // We should react only on empty lookup result.
+
+    if (R.isForRedeclaration()) 
+      return false;
+
     if (!R.empty())
       return false;
 
-    // Only for demo resolve all unknown objects to cling::test::Tester
-    if (!m_TesterDecl) {
-      clang::Sema& SemaRef = m_Interpreter->getSema();
-      clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&SemaRef, "cling");
-      NSD = utils::Lookup::Namespace(&SemaRef, "test", NSD);
-      m_TesterDecl = utils::Lookup::Named(&SemaRef, "Tester", NSD);
+    // FIXME: Figure out better way to handle:
+    // C++ [basic.lookup.classref]p1:
+    //   In a class member access expression (5.2.5), if the . or -> token is
+    //   immediately followed by an identifier followed by a <, the
+    //   identifier must be looked up to determine whether the < is the
+    //   beginning of a template argument list (14.2) or a less-than operator.
+    //   The identifier is first looked up in the class of the object
+    //   expression. If the identifier is not found, it is then looked up in
+    //   the context of the entire postfix-expression and shall name a class
+    //   or function template.
+    //
+    // We want to ignore object(.|->)member<template>
+    if (R.getSema().PP.LookAhead(0).getKind() == tok::less)
+      // TODO: check for . or -> in the cached token stream
+      return false;
+
+    for (Scope* DepScope = S; DepScope; DepScope = DepScope->getParent()) {
+      if (DeclContext* Ctx = static_cast<DeclContext*>(DepScope->getEntity())) {
+        if (!Ctx->isDependentContext())
+          // For now we support only the prompt.
+          if (isa<FunctionDecl>(Ctx))
+            return true;
+      }
     }
-    assert (m_TesterDecl && "Tester not found!");
-    R.addDecl(m_TesterDecl);
-    return true;
+
+    return false;
   }
+
 } // end test
 } // end cling

@@ -6,85 +6,19 @@
 
 #include "DynamicLookup.h"
 
-#include "cling/Interpreter/DynamicLookupExternalSemaSource.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Template.h"
 
 using namespace clang;
-
-namespace cling {
-
-  // pin the vtable to this file
-  DynamicIDHandler::~DynamicIDHandler() { }
-
-  bool DynamicIDHandler::LookupUnqualified(LookupResult& R, Scope* S) {
-
-    // FIXME: Extract out somewhere else.
-    if (!IsDynamicLookup(R, S))
-      return false;
-
-    if (getCallbacks()) {
-      return getCallbacks()->LookupObject(R, S);
-    }
-
-    DeclarationName Name = R.getLookupName();
-    IdentifierInfo* II = Name.getAsIdentifierInfo();
-    SourceLocation Loc = R.getNameLoc();
-    ASTContext& C = R.getSema().getASTContext();
-    VarDecl* Result = VarDecl::Create(C,
-                                      R.getSema().getFunctionLevelDeclContext(),
-                                      Loc,
-                                      Loc,
-                                      II,
-                                      C.DependentTy,
-                                      /*TypeSourceInfo*/0,
-                                      SC_None,
-                                      SC_None);
-    if (Result) {
-      R.addDecl(Result);
-      // Say that we can handle the situation. Clang should try to recover
-      return true;
-    }
-    // We cannot handle the situation. Give up
-    return false;
-  }
-
-  bool DynamicIDHandler::IsDynamicLookup(LookupResult& R, Scope* S) {
-    if (R.getLookupKind() != Sema::LookupOrdinaryName) return false;
-    if (R.isForRedeclaration()) return false;
-    // FIXME: Figure out better way to handle:
-    // C++ [basic.lookup.classref]p1:
-    //   In a class member access expression (5.2.5), if the . or -> token is
-    //   immediately followed by an identifier followed by a <, the
-    //   identifier must be looked up to determine whether the < is the
-    //   beginning of a template argument list (14.2) or a less-than operator.
-    //   The identifier is first looked up in the class of the object
-    //   expression. If the identifier is not found, it is then looked up in
-    //   the context of the entire postfix-expression and shall name a class
-    //   or function template.
-    //
-    // We want to ignore object(.|->)member<template>
-    if (R.getSema().PP.LookAhead(0).getKind() == tok::less)
-      // TODO: check for . or -> in the cached token stream
-      return false;
-
-    for (Scope* DepScope = S; DepScope; DepScope = DepScope->getParent()) {
-      if (DeclContext* Ctx = static_cast<DeclContext*>(DepScope->getEntity())) {
-        return !Ctx->isDependentContext();
-      }
-    }
-
-    return true;
-  }
-} // end namespace cling
 
 namespace {
 
@@ -254,7 +188,7 @@ namespace cling {
     NamedDecl* ND = R.getFoundDecl();
     m_NoRange = ND->getSourceRange();
     m_NoSLoc = m_NoRange.getBegin();
-    m_NoELoc =  m_NoRange.getEnd();
+    m_NoELoc = m_NoRange.getEnd();
   }
 
   void EvaluateTSynthesizer::Transform() {
@@ -820,34 +754,45 @@ namespace cling {
 
   // Helpers
 
-  bool EvaluateTSynthesizer::ShouldVisit(Decl* D) {
-    while (true) {
-      if (isa<TemplateTemplateParmDecl>(D))
-        return false;
-      if (isa<ClassTemplateDecl>(D))
-        return false;
-      if (isa<FriendTemplateDecl>(D))
-        return false;
-      if (isa<ClassTemplatePartialSpecializationDecl>(D))
-        return false;
-      if (CXXRecordDecl* CXX = dyn_cast<CXXRecordDecl>(D)) {
-        if (CXX->getDescribedClassTemplate())
-          return false;
-      }
-      if (CXXMethodDecl* CXX = dyn_cast<CXXMethodDecl>(D)) {
-        if (CXX->getDescribedFunctionTemplate())
-          return false;
-      }
-      if (isa<TranslationUnitDecl>(D)) {
-        break;
-      }
 
-      if (DeclContext* DC = D->getDeclContext())
-        if (!(D = dyn_cast<Decl>(DC)))
-          break;
+  // Class extracting recursively every decl defined somewhere.
+  class DeclVisitor : public RecursiveASTVisitor<DeclVisitor> {
+  private:
+    bool m_ShouldVisitSubTree;
+  public:
+    DeclVisitor() : m_ShouldVisitSubTree(false) {}
+
+    bool getShouldVisitSubTree() const { return m_ShouldVisitSubTree; }
+
+    bool VisitDecl(Decl* D) {
+      // FIXME: Here we should have our custom attribute.
+      if (AnnotateAttr* A = D->getAttr<AnnotateAttr>())
+        if (A->getAnnotation().equals("__ResolveAtRuntime")) {
+          m_ShouldVisitSubTree = true;
+          return false; // returning false will abort the in-depth traversal.
+        }
+
+      return true;  // returning false will abort the in-depth traversal.
     }
 
-    return true;
+    bool VisitDeclStmt(DeclStmt* DS) {
+      DeclGroupRef DGR = DS->getDeclGroup();
+      for (DeclGroupRef::const_iterator I = DGR.begin(), 
+             E = DGR.end(); I != E; ++I)
+        TraverseDecl(*I);
+      return true;
+    }
+
+    bool VisitDeclRefExpr(DeclRefExpr* DRE) {
+      TraverseDecl(DRE->getDecl());
+      return false;
+    }
+  };
+
+  bool EvaluateTSynthesizer::ShouldVisit(Decl* D) {    
+    DeclVisitor Visitor;
+    Visitor.TraverseDecl(D);
+    return Visitor.getShouldVisitSubTree();
   }
 
   bool EvaluateTSynthesizer::IsArtificiallyDependent(Expr* Node) {

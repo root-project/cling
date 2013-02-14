@@ -57,7 +57,6 @@ namespace cling {
 } //end namespace cling
 
 namespace cling {
-  class DynamicIDHandler;
 
   typedef llvm::DenseMap<clang::Stmt*, clang::Stmt*> MapTy;
 
