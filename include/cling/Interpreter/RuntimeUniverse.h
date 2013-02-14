@@ -45,7 +45,6 @@ namespace cling {
       /// when clang emits diagnostics on artificially inserted AST node.
       int InterpreterGeneratedCodeDiagnosticsMaybeIncorrect;
 
-	
 //__cxa_atexit is declared later for WIN32
 #if (!_WIN32)
       // Force the module to define __cxa_atexit, we need it.
