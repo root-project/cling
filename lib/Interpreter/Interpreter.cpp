@@ -449,6 +449,13 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
     
+    // When doing parseForModule avoid warning about the user code
+    // being loaded ... we probably might as well extend this to
+    // ALL warnings ... but this will suffice for now (working
+    // around a real bug in QT :().
+    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    Diag.setDiagnosticMapping(clang::diag::warn_field_is_uninit,
+                              clang::diag::MAP_IGNORE, SourceLocation());
     return DeclareInternal(input, CO);
   }
   
