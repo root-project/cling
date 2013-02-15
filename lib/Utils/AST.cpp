@@ -165,7 +165,7 @@ namespace utils {
     // We have to also desugar the prefix.
     
     NestedNameSpecifier* prefix = etype->getQualifier();
-    if (original_prefix) {
+    if (original_prefix && prefix) {
       // We had a scope prefix as input, let see if it is still
       // the same as the scope of the result and if it is, then
       // we use it.
@@ -190,7 +190,7 @@ namespace utils {
         if (new_ns) {
           new_ns = new_ns->getCanonicalDecl();
         } 
-        else if (NamespaceAliasDecl *alias = prefix->getAsNamespaceAlias())
+        else if (NamespaceAliasDecl *alias = prefix->getAsNamespaceAlias() )
         {
           new_ns = alias->getNamespace()->getCanonicalDecl();
         }
