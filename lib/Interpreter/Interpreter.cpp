@@ -550,6 +550,8 @@ namespace cling {
         return false;
       if (keyword.equals("namespace"))
         return false;
+      if (keyword.equals("template"))
+        return false;
     }
     else if (kind == tok::hash) {
       WrapLexer.Lex(Tok);
