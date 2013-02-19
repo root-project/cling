@@ -236,7 +236,7 @@ namespace cling {
     //
 
     llvm::MemoryBuffer* SB =
-      llvm::MemoryBuffer::getMemBufferCopy(className.str() + ";\n",
+      llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
                                            "lookup.type.file");
     clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
     PP.EnterSourceFile(FID, 0, clang::SourceLocation());
