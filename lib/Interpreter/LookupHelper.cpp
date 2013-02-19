@@ -252,15 +252,15 @@ namespace cling {
     if (P.getCurToken().getKind() == tok::annot_typename) {
       ParsedType T = P.getTypeAnnotation(const_cast<Token&>(P.getCurToken()));
       // Only accept the parse if we consumed all of the name.
-      if (P.NextToken().getKind() == clang::tok::eof) {
-        TypeSourceInfo *TSI = 0;
-        clang::QualType QT = clang::Sema::GetTypeFromParser(T, &TSI);
-        if (const EnumType* ET = QT->getAs<EnumType>()) {
-           EnumDecl* ED = ET->getDecl();
-           TheDecl = ED->getDefinition();
-           *setResultType = QT.getTypePtr();
+      if (P.NextToken().getKind() == clang::tok::eof)
+        if (!T.get().isNull()) {
+          TypeSourceInfo *TSI = 0;
+          clang::QualType QT = clang::Sema::GetTypeFromParser(T, &TSI);
+          if (const TagType* TT = QT->getAs<TagType>()) {
+            TheDecl = TT->getDecl()->getDefinition();
+            *setResultType = QT.getTypePtr();
+          }
         }
-      }
     }
     return TheDecl;
   }
