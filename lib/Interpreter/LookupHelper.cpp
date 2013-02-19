@@ -38,14 +38,15 @@ namespace cling {
 
   public:
     ParserStateRAII(Parser& p)
-       : P(&p), PP(p.getPreprocessor()), 
-         ResetIncrementalProcessing(p.getPreprocessor()
-                                    .isIncrementalProcessingEnabled()),
-         OldSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
-                                   .getSuppressAllDiagnostics()),
-         OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
-         CleanupTemplateIds(p)
-    {}
+      : P(&p), PP(p.getPreprocessor()), 
+        ResetIncrementalProcessing(p.getPreprocessor()
+                                   .isIncrementalProcessingEnabled()),
+        OldSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
+                                  .getSuppressAllDiagnostics()),
+        OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
+        CleanupTemplateIds(p)
+    {
+    }
 
     ~ParserStateRAII()
     {
@@ -233,14 +234,16 @@ namespace cling {
     //
     //  Setup to reparse as a type.
     //
-    {
-      llvm::MemoryBuffer* SB =
-        llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
-          "lookup.type.file");
-      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
-      PP.EnterSourceFile(FID, 0, clang::SourceLocation());
-      PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
-    }
+
+    PP.EnableBacktrackAtThisPos();
+
+    llvm::MemoryBuffer* SB =
+      llvm::MemoryBuffer::getMemBufferCopy(className.str() + ";\n",
+                                           "lookup.type.file");
+    clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+    PP.EnterSourceFile(FID, 0, clang::SourceLocation());
+    PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
+
     //
     //  Now try to parse the name as a type.
     //
