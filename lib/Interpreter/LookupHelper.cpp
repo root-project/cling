@@ -235,8 +235,6 @@ namespace cling {
     //  Setup to reparse as a type.
     //
 
-    PP.EnableBacktrackAtThisPos();
-
     llvm::MemoryBuffer* SB =
       llvm::MemoryBuffer::getMemBufferCopy(className.str() + ";\n",
                                            "lookup.type.file");
