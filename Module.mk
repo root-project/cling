@@ -16,8 +16,70 @@ CLINGO       := $(call stripsrc,$(CLINGS:.cpp=.o))
 
 CLINGDEP     := $(CLINGO:.o=.d)
 
-CLINGETC     := $(addprefix etc/cling/Interpreter/,RuntimeUniverse.h ValuePrinter.h ValuePrinterInfo.h) \
-                $(addprefix etc/cling/cint/,multimap multiset)
+CLINGETC     := $(addprefix etc/cling/Interpreter/,\
+	DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
+	Interpreter.h InvocationOptions.h \
+	RuntimeUniverse.h StoredValueRef.h \
+	Value.h ValuePrinter.h ValuePrinterInfo.h ) \
+        $(addprefix etc/cling/cint/,multimap multiset) \
+	$(addprefix etc/cling/,\
+clang/AST/BuiltinTypes.def \
+clang/AST/CanonicalType.h \
+clang/AST/NestedNameSpecifier.h \
+clang/AST/TemplateName.h \
+clang/AST/Type.h \
+clang/AST/TypeNodes.def \
+clang/Basic/Diagnostic.h \
+clang/Basic/DiagnosticCommonKinds.inc \
+clang/Basic/DiagnosticIDs.h \
+clang/Basic/ExceptionSpecificationType.h \
+clang/Basic/IdentifierTable.h \
+clang/Basic/LLVM.h \
+clang/Basic/Linkage.h \
+clang/Basic/OperatorKinds.def \
+clang/Basic/OperatorKinds.h \
+clang/Basic/PartialDiagnostic.h \
+clang/Basic/SourceLocation.h \
+clang/Basic/Specifiers.h \
+clang/Basic/TokenKinds.def \
+clang/Basic/TokenKinds.h \
+clang/Basic/Visibility.h \
+llvm/ADT/APInt.h \
+llvm/ADT/APSInt.h \
+llvm/ADT/ArrayRef.h \
+llvm/ADT/DenseMap.h \
+llvm/ADT/DenseMapInfo.h \
+llvm/ADT/FoldingSet.h \
+llvm/ADT/IntrusiveRefCntPtr.h \
+llvm/ADT/Optional.h \
+llvm/ADT/OwningPtr.h \
+llvm/ADT/PointerIntPair.h \
+llvm/ADT/PointerUnion.h \
+llvm/ADT/STLExtras.h \
+llvm/ADT/SmallString.h \
+llvm/ADT/SmallVector.h \
+llvm/ADT/StringMap.h \
+llvm/ADT/StringRef.h \
+llvm/ADT/Twine.h \
+llvm/ExecutionEngine/GenericValue.h \
+llvm/Support/AlignOf.h \
+llvm/Support/Allocator.h \
+llvm/Support/Casting.h \
+llvm/Support/Compiler.h \
+llvm/Support/DataTypes.h \
+llvm/Support/DynamicLibrary.h \
+llvm/Support/ErrorHandling.h \
+llvm/Support/MathExtras.h \
+llvm/Support/Path.h \
+llvm/Support/PathV1.h \
+llvm/Support/PathV2.h \
+llvm/Support/PointerLikeTypeTraits.h \
+llvm/Support/SwapByteOrder.h \
+llvm/Support/TimeValue.h \
+llvm/Support/raw_ostream.h \
+llvm/Support/type_traits.h \
+llvm/Type.h )
+
 
 # used in the main Makefile
 ALLHDRS      += $(CLINGETC)
@@ -75,19 +137,19 @@ distclean::     distclean-$(MODNAME)
 
 $(CLINGDIRS)/Module.mk: $(LLVMCONFIG)
 
-etc/cling/%.h: $(CLINGDIR)/include/cling/%.h
+etc/cling/%.h: $(call stripsrc,$(CLINGDIR))/include/cling/%.h
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
 
-etc/cling/%.h: $(call stripsrc,$(CLINGDIR)/%.o)/include/cling/%.h
+etc/cling/llvm/%: $(call stripsrc,$(LLVMDIRI))/include/llvm/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
 
-etc/cling/cint/multimap: $(CLINGDIR)/include/cling/cint/multimap
+etc/cling/clang/%: $(call stripsrc,$(LLVMDIRI))/include/clang/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
 
-etc/cling/cint/multiset: $(CLINGDIR)/include/cling/cint/multiset
+etc/cling/cint/%: $(CLINGDIR)/include/cling/cint/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
 
