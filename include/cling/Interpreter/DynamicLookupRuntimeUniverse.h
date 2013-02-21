@@ -13,6 +13,9 @@
 #define CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H
 
 #include "cling/Interpreter/Interpreter.h"
+#ifndef CLING_RUNTIME_UNIVERSE_H
+#include "cling/Interpreter/RuntimeUniverse.h"
+#endif
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/ValuePrinter.h"
 #include "cling/Interpreter/StoredValueRef.h"
@@ -48,8 +51,9 @@ namespace runtime {
     /// evaluated at runtime.
     template<typename T>
     T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      StoredValueRef result(gCling->Evaluate(ExprInfo->getExpr(), DC,
-                                            ExprInfo->isValuePrinterRequested())
+      StoredValueRef result(
+        cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
+                                         ExprInfo->isValuePrinterRequested())
                             );
       // Check whether the expected return type and the actual return type are
       // compatible with Sema::CheckAssingmentConstraints or
@@ -61,7 +65,7 @@ namespace runtime {
     /// void.
     template<>
     void EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      gCling->Evaluate(ExprInfo->getExpr(), DC,
+      cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
                        ExprInfo->isValuePrinterRequested());
     }
 
@@ -109,7 +113,7 @@ namespace runtime {
         std::string ctor("new ");
         ctor += type;
         ctor += ExprInfo->getExpr();
-        StoredValueRef res = gCling->Evaluate(ctor.c_str(), DC,
+        StoredValueRef res = cling::runtime::gCling->Evaluate(ctor.c_str(), DC,
                                      ExprInfo->isValuePrinterRequested()
                                      );
         m_Memory = (void*)res.get().getGV().PointerVal;
@@ -126,7 +130,7 @@ namespace runtime {
         llvm::raw_string_ostream stream(str);
         stream<<"delete ("<< m_Type << "*) "<< m_Memory << ";";
         stream.flush();
-        gCling->execute(str);
+        cling::runtime::gCling->execute(str);
       }
     };
   }
