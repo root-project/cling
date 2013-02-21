@@ -137,10 +137,6 @@ distclean::     distclean-$(MODNAME)
 
 $(CLINGDIRS)/Module.mk: $(LLVMCONFIG)
 
-etc/cling/%.h: $(call stripsrc,$(CLINGDIR))/include/cling/%.h
-	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@cp $< $@
-
 etc/cling/llvm/%: $(call stripsrc,$(LLVMDIRI))/include/llvm/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
@@ -150,6 +146,10 @@ etc/cling/clang/%: $(call stripsrc,$(LLVMDIRI))/include/clang/%
 	@cp $< $@
 
 etc/cling/cint/%: $(CLINGDIR)/include/cling/cint/%
+	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
+	@cp $< $@
+
+etc/cling/%.h: $(CLINGDIR)/include/cling/%.h
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
 
