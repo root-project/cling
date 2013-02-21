@@ -75,7 +75,7 @@ namespace cling {
     namespace internal {
       struct __trigger__cxa_atexit {
         ~__trigger__cxa_atexit();
-      } S;
+      } /*S*/;
       __trigger__cxa_atexit::~__trigger__cxa_atexit() {
         if (std::getenv("bar") == (char*)-1) {
           llvm::errs() <<
@@ -820,7 +820,9 @@ namespace cling {
     m_DynamicLookupEnabled = value;
 
     if (isDynamicLookupEnabled()) {
-      declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
+      // Need to know whether this is in a module or not:
+      //declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
+      loadModuleForHeader("cling/Interpreter/DynamicLookupRuntimeUniverse.h");
     }
     else
       setCallbacks(0);
