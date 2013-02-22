@@ -820,9 +820,9 @@ namespace cling {
     m_DynamicLookupEnabled = value;
 
     if (isDynamicLookupEnabled()) {
-      // Need to know whether this is in a module or not:
-      //declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
-      loadModuleForHeader("cling/Interpreter/DynamicLookupRuntimeUniverse.h");
+     if (loadModuleForHeader("cling/Interpreter/DynamicLookupRuntimeUniverse.h")
+         != kSuccess)
+      declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
     }
     else
       setCallbacks(0);
