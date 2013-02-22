@@ -7,14 +7,16 @@
 #ifndef CLING_VALUE_H
 #define CLING_VALUE_H
 
-#include "clang/AST/Type.h"
-#include "clang/AST/CanonicalType.h"
+#include <stddef.h>
+#include <assert.h>
 
-#include "llvm/ExecutionEngine/GenericValue.h"
-#include "llvm/Type.h"
-
+namespace llvm {
+  class Type;
+  struct GenericValue;
+}
 namespace clang {
   class ASTContext;
+  class QualType;
 }
 
 namespace cling {
@@ -32,35 +34,43 @@ namespace cling {
   /// void types
   /// 3. Parameters for calls given an llvm::Function and a clang::FunctionDecl.
   class Value {
-  private:
-    /// \brief Forward decl for typed access specializations
-    template <typename T> struct TypedAccess;
-
   protected:
     /// \brief value
-    llvm::GenericValue m_GV;
+    char /*llvm::GenericValue*/ m_GV[32]; // 24 bytes on 64bit
 
-    /// \brief the value's type according to clang
-    clang::QualType m_ClangType;
+    /// \brief the value's type according to clang, stored as void* to reduce
+    /// dependencies.
+    void* /*clang::QualType*/ m_ClangType;
 
     /// \brief the value's type according to clang
     const llvm::Type* m_LLVMType;
+
+    enum EStorageType {
+      kSignedIntegerOrEnumerationType,
+      kUnsignedIntegerOrEnumerationType,
+      kDoubleType,
+      kFloatType,
+      kLongDoubleType,
+      kPointerType,
+      kUnsupportedType
+    };
+
+    /// \brief Retrieve the underlying, canonical, desugared, unqualified type.
+    EStorageType getStorageType() const;
 
   public:
 
     /// \brief Default constructor, creates a value that IsInvalid().
     Value() {}
     /// \brief Construct a valid Value.
-    Value(const llvm::GenericValue& v, clang::QualType t) 
-      : m_GV(v), m_ClangType(t), m_LLVMType(0) { }
+    Value(const llvm::GenericValue& v, clang::QualType t);
 
     Value(const llvm::GenericValue& v, clang::QualType clangTy, 
-          const llvm::Type* llvmTy) 
-      : m_GV(v), m_ClangType(clangTy), m_LLVMType(llvmTy) { }
+          const llvm::Type* llvmTy);
 
-    llvm::GenericValue getGV() const { return m_GV; }
-    void setGV(llvm::GenericValue GV) { m_GV = GV; }
-    clang::QualType getClangType() const { return m_ClangType; }
+    llvm::GenericValue getGV() const;
+    void setGV(llvm::GenericValue GV);
+    clang::QualType getClangType() const;
     const llvm::Type* getLLVMType() const { return m_LLVMType; }
     void setLLVMType(const llvm::Type* Ty) { m_LLVMType = Ty; }
 
@@ -68,13 +78,10 @@ namespace cling {
     //
     /// Determine whether the Value has been set by checking
     /// whether the type is valid.
-    bool isValid() const { return !m_ClangType.isNull(); }
+    bool isValid() const;
 
     /// \brief Determine whether the Value is set but void.
-    bool isVoid(const clang::ASTContext& ASTContext) const {
-      return isValid() 
-        && m_ClangType.getDesugaredType(ASTContext)->isVoidType();
-    }
+    bool isVoid(const clang::ASTContext& ASTContext) const;
 
     /// \brief Determine whether the Value is set and not void.
     //
@@ -87,6 +94,24 @@ namespace cling {
     template <typename T>
     T getAs() const;
 
+    template <typename T>
+    T* getAs(T**) const { return (T*)getAs((void**)0); }
+    void* getAs(void**) const;
+    double getAs(double*) const;
+    long double getAs(long double*) const;
+    float getAs(float*) const;
+    bool getAs(bool*) const;
+    signed char getAs(signed char*) const;
+    unsigned char getAs(unsigned char*) const;
+    signed short getAs(signed short*) const;
+    unsigned short getAs(unsigned short*) const;
+    signed int getAs(signed int*) const;
+    unsigned int getAs(unsigned int*) const;
+    signed long getAs(signed long*) const;
+    unsigned long getAs(unsigned long*) const;
+    signed long long getAs(signed long long*) const;
+    unsigned long long getAs(unsigned long long*) const;
+
     /// \brief Get the value.
     //
     /// Get the value cast to T. This is similar to reinterpret_cast<T>(value),
@@ -96,83 +121,31 @@ namespace cling {
     T simplisticCastAs() const;
   };
 
-  template<typename T>
-  struct Value::TypedAccess{
-    T extract(const llvm::GenericValue& value) {
-      return *reinterpret_cast<T*>(value.PointerVal);
-    }
-  };
-  template<typename T>
-  struct Value::TypedAccess<T*>{
-    T* extract(const llvm::GenericValue& value) {
-      return reinterpret_cast<T*>(value.PointerVal);
-    }
-  };
-
-#define CLING_VALUE_TYPEDACCESS(TYPE, GETTER)       \
-  template<>                                        \
-  struct Value::TypedAccess<TYPE> {                 \
-    TYPE extract(const llvm::GenericValue& value) { \
-      return value.GETTER;                          \
-    }                                               \
-  }
-
-#define CLING_VALUE_TYPEDACCESS_SIGNED(TYPE)       \
-  CLING_VALUE_TYPEDACCESS(signed TYPE, IntVal.getSExtValue())
-
-#define CLING_VALUE_TYPEDACCESS_UNSIGNED(TYPE)     \
-  CLING_VALUE_TYPEDACCESS(unsigned TYPE, IntVal.getZExtValue())
-
-#define CLING_VALUE_TYPEDACCESS_BOTHSIGNS(TYPE)     \
-  CLING_VALUE_TYPEDACCESS_SIGNED(TYPE);             \
-  CLING_VALUE_TYPEDACCESS_UNSIGNED(TYPE);
-
-  CLING_VALUE_TYPEDACCESS(double, DoubleVal);
-  //CLING_VALUE_TYPEDACCESS(long double, ???);
-  CLING_VALUE_TYPEDACCESS(float, FloatVal);
-
-  CLING_VALUE_TYPEDACCESS(bool, IntVal.getBoolValue());
-
-  CLING_VALUE_TYPEDACCESS_BOTHSIGNS(char)
-  CLING_VALUE_TYPEDACCESS_BOTHSIGNS(short)
-  CLING_VALUE_TYPEDACCESS_BOTHSIGNS(int)
-  CLING_VALUE_TYPEDACCESS_BOTHSIGNS(long)
-  CLING_VALUE_TYPEDACCESS_BOTHSIGNS(long long)
-
-#undef CLING_VALUE_TYPEDACCESS_BOTHSIGNS
-#undef CLING_VALUE_TYPEDACCESS_UNSIGNED
-#undef CLING_VALUE_TYPEDACCESS_SIGNED
-#undef CLING_VALUE_TYPEDACCESS
 
   template <typename T>
   T Value::getAs() const {
     // T *must* correspond to type. Else use simplisticCastAs()!
-    TypedAccess<T> VI;
-    return VI.extract(m_GV);
+    return getAs((T*)0);
   }
   template <typename T>
   T Value::simplisticCastAs() const {
-    const clang::Type* desugCanon = m_ClangType->getUnqualifiedDesugaredType();
-    desugCanon = desugCanon->getCanonicalTypeUnqualified()->getTypePtr()
-       ->getUnqualifiedDesugaredType();
-    if (desugCanon->isSignedIntegerOrEnumerationType()) {
+    EStorageType storageType = getStorageType();
+    switch (storageType) {
+    case kSignedIntegerOrEnumerationType:
       return (T) getAs<signed long long>();
-    } else if (desugCanon->isUnsignedIntegerOrEnumerationType()) {
+    case kUnsignedIntegerOrEnumerationType:
       return (T) getAs<unsigned long long>();
-    } else if (desugCanon->isRealFloatingType()) {
-      const clang::BuiltinType* BT = desugCanon->getAs<clang::BuiltinType>();
-      if (BT->getKind() == clang::BuiltinType::Double)
-        return (T) getAs<double>();
-      else if (BT->getKind() == clang::BuiltinType::Float)
-        return (T) getAs<float>();
-      /* not yet supported in JIT:
-      else if (BT->getKind() == clang::BuiltinType::LongDouble)
-        return (T) getAs<long double>();
-      */
-    } else if (desugCanon->isPointerType() || desugCanon->isObjectType()) {
+    case kDoubleType:
+      return (T) getAs<double>();
+    case kFloatType:
+      return (T) getAs<float>();
+    case kLongDoubleType:
+      return (T) getAs<long double>();
+    case kPointerType:
       return (T) (size_t) getAs<void*>();
+    case kUnsupportedType:
+      assert("unsupported type in Value, cannot cast simplistically!" && 0);
     }
-    assert("unsupported type in Value, cannot cast simplistically!" && 0);
     return T();
   }
 } // end namespace cling

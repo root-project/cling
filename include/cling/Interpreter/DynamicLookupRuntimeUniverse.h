@@ -17,17 +17,12 @@
 #include "cling/Interpreter/RuntimeUniverse.h"
 #endif
 #include "cling/Interpreter/DynamicExprInfo.h"
-#include "cling/Interpreter/ValuePrinter.h"
+#include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 #include "cling/Interpreter/StoredValueRef.h"
-
-#include "llvm/Support/raw_ostream.h"
-
-#include <stdio.h>
 
 namespace cling {
 
-  /// \brief Used to stores the declarations, which are going to be
-  /// available only at runtime. These are cling runtime builtins.
+/// \brief Contains declarations for cling's runtime.
 namespace runtime {
 
   /// \brief Provides builtins, which are neccessary for the dynamic scopes
@@ -68,71 +63,6 @@ namespace runtime {
       cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
                        ExprInfo->isValuePrinterRequested());
     }
-
-    /// \brief LifetimeHandler is used in case of initialization using address
-    /// on the automatic store (stack) instead of EvaluateT.
-    ///
-    /// The reason is to avoid the copy constructors that might be private.
-    /// This is part of complex transformation, which aims to preserve the
-    /// code behavior. For example:
-    /// @code
-    /// int i = 5;
-    /// MyClass my(dep->Symbol(i))
-    /// @endcode
-    /// where dep->Symbol() is a symbol not known at compile-time
-    /// transformed into:
-    /// @code
-    /// cling::runtime::internal::LifetimeHandler
-    /// __unique("dep->Sybmol(*(int*)@)",(void*[]){&i}, DC, "MyClass");
-    /// MyClass &my(*(MyClass*)__unique.getMemory());
-    /// @endcode
-    class LifetimeHandler {
-    private:
-      /// \brief The memory on the free store, where the object will be
-      /// created.
-      void* m_Memory;
-
-      /// \brief The type of the object that will be created.
-      std::string m_Type;
-    public:
-      /// \brief Constructs an expression, which creates the object on the
-      /// free store and tells the interpreter to evaluate it.
-      ///
-      /// @param[in] ExprInfo Helper structure that keeps information about
-      /// the expression that is being replaced and the addresses of the
-      /// variables that the replaced expression contains.
-      /// @param[in] DC The declaration context, in which the expression will
-      /// be evaluated at runtime
-      /// @param[in] type The type of the object, which will help to delete
-      /// it, when the LifetimeHandler goes out of scope.
-      ///
-      LifetimeHandler(DynamicExprInfo* ExprInfo,
-                      clang::DeclContext* DC,
-                      const char* type) {
-        m_Type = type;
-        std::string ctor("new ");
-        ctor += type;
-        ctor += ExprInfo->getExpr();
-        StoredValueRef res = cling::runtime::gCling->Evaluate(ctor.c_str(), DC,
-                                     ExprInfo->isValuePrinterRequested()
-                                     );
-        m_Memory = (void*)res.get().getGV().PointerVal;
-      }
-
-      ///\brief Returns the created object.
-      void* getMemory() const { return m_Memory; }
-
-      /// \brief Clears up the free store, when LifetimeHandler goes out of
-      /// scope.
-      ///
-      ~LifetimeHandler() {
-        std::string str;
-        llvm::raw_string_ostream stream(str);
-        stream<<"delete ("<< m_Type << "*) "<< m_Memory << ";";
-        stream.flush();
-        cling::runtime::gCling->execute(str);
-      }
-    };
-  }
+  } // end nmespace internal
 } // end namespace runtime
 } // end namespace cling

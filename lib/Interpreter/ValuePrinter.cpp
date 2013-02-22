@@ -18,6 +18,7 @@
 #include "clang/AST/Type.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 
 #include <string>
 #include <cstdio>

@@ -8,8 +8,12 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
+#include "cling/Interpreter/DynamicExprInfo.h"
+#include "cling/Interpreter/StoredValueRef.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
+
+#include "llvm/ExecutionEngine/GenericValue.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -17,6 +21,8 @@
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Template.h"
+
+#include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 
 using namespace clang;
 
@@ -362,7 +368,8 @@ namespace cling {
         llvm::SmallVector<Expr*, 4> Inits;
         // Add MyClass in LifetimeHandler unique(DynamicExprInfo* ExprInfo
         //                                       DC,
-        //                                       "MyClass")
+        //                                       "MyClass"
+        //                                       /*, Interp = gCling*/)
         // Build Arg0 DynamicExprInfo
         Inits.push_back(BuildDynamicExprInfo(E));
         // Build Arg1 DeclContext* DC
@@ -651,7 +658,7 @@ namespace cling {
   }
 
   Expr* EvaluateTSynthesizer::ConstructCStyleCasePtrExpr(QualType Ty,
-                                                           uint64_t Ptr) {
+                                                         uint64_t Ptr) {
     if (!Ty->isPointerType())
       Ty = m_Context->getPointerType(Ty);
     TypeSourceInfo* TSI = m_Context->CreateTypeSourceInfo(Ty);
@@ -825,4 +832,30 @@ namespace cling {
 
   // end Helpers
 
+  namespace runtime {
+  namespace internal {
+    // Implementations from DynamicLookupLifetimeHandler.h
+    LifetimeHandler::LifetimeHandler(DynamicExprInfo* ExprInfo,
+                                     clang::DeclContext* DC,
+                                     const char* type,
+                                     Interpreter* Interp /* = gCling */):
+      m_Interpreter(Interp), m_Type(type) {
+      std::string ctor("new ");
+      ctor += type;
+      ctor += ExprInfo->getExpr();
+      StoredValueRef res = Interp->Evaluate(ctor.c_str(), DC,
+                                            ExprInfo->isValuePrinterRequested()
+                                     );
+        m_Memory = (void*)res.get().getGV().PointerVal;
+      }
+
+    LifetimeHandler::~LifetimeHandler() {
+      std::string str;
+      llvm::raw_string_ostream stream(str);
+      stream << "delete (" << m_Type << "*) " << m_Memory << ";";
+      stream.flush();
+      m_Interpreter->execute(str);
+    }
+  } // end namespace internal
+  } // end namespace runtime
 } // end namespace cling

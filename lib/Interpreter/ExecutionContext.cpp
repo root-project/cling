@@ -8,12 +8,15 @@
 
 #include "cling/Interpreter/StoredValueRef.h"
 
+#include "clang/AST/Type.h"
+
 #include "llvm/Constants.h"
 #include "llvm/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Assembly/PrintModulePass.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/DynamicLibrary.h"

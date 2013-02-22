@@ -3,15 +3,12 @@
 // version: $Id$
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
 //------------------------------------------------------------------------------
-#ifndef __CLING__
-#error "This file must not be included by compiled programs."
-#else
-
-#ifdef CLING_RUNTIME_UNIVERSE_H
-#error "CLING_RUNTIME_UNIVERSE_H Must only include once."
-#else
-
+#ifndef CLING_RUNTIME_UNIVERSE_H
 #define CLING_RUNTIME_UNIVERSE_H
+
+#if !defined(__CLING__) && !defined(__COMPILING_CLING__)
+#error "This file must not be included by compiled programs."
+#endif
 
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS // needed by System/DataTypes.h
@@ -90,6 +87,4 @@ extern "C" {
 }
 #endif // __cplusplus
 
-#endif // CLING_RUNTIME_UNIVERSE_H (error)
-
-#endif // __CLING__
+#endif // CLING_RUNTIME_UNIVERSE_H

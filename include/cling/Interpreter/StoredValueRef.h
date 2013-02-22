@@ -26,7 +26,7 @@ namespace cling {
 
       /// \brief Number of bytes that need to be allocated to hold a value
       /// of our type
-      int64_t getAllocSizeInBytes(const clang::ASTContext& ctx) const;
+      long long getAllocSizeInBytes(const clang::ASTContext& ctx) const;
 
       /// \brief Memory allocated for value, owned by this value
       ///

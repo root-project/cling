@@ -7,6 +7,7 @@
 #include "cling/Interpreter/StoredValueRef.h"
 #include "cling/Interpreter/ValuePrinter.h"
 #include "clang/AST/ASTContext.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 
 using namespace cling;
 using namespace clang;
@@ -15,9 +16,7 @@ using namespace llvm;
 StoredValueRef::StoredValue::StoredValue(const ASTContext& ctx, 
                                          QualType clangTy, 
                                          const llvm::Type* llvm_Ty)
-  :m_Mem(0) {
-  m_ClangType = clangTy;
-  m_LLVMType = llvm_Ty;
+   :Value(GenericValue(), clangTy, llvm_Ty), m_Mem(0) {
   if (!(clangTy->isIntegralOrEnumerationType()
         || clangTy->isRealFloatingType()
         || clangTy->hasPointerRepresentation())) {
@@ -25,7 +24,7 @@ StoredValueRef::StoredValue::StoredValue(const ASTContext& ctx,
     if (size > sizeof(m_Buf))
       m_Mem = new char[size];
     else m_Mem = m_Buf;
-    m_GV = llvm::PTOGV(m_Mem);
+    setGV(llvm::PTOGV(m_Mem));
   };
 }
 
@@ -34,9 +33,9 @@ StoredValueRef::StoredValue::~StoredValue() {
     delete [] m_Mem;
 }
 
-int64_t StoredValueRef::StoredValue::getAllocSizeInBytes(
+long long StoredValueRef::StoredValue::getAllocSizeInBytes(
                                                   const ASTContext& ctx) const {
-  return ctx.getTypeSizeInChars(m_ClangType).getQuantity();
+   return (long long) ctx.getTypeSizeInChars(getClangType()).getQuantity();
 }
 
 
