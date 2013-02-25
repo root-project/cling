@@ -63,7 +63,7 @@ namespace {
     Opts.LibsToLoad = Args.getAllArgValues(OPT_l);
     std::vector<std::string> LibPaths = Args.getAllArgValues(OPT_L);
     for (size_t i = 0; i < LibPaths.size(); ++i)
-      Opts.LibSearchPath.push_back(llvm::sys::Path(LibPaths[i]));
+      Opts.LibSearchPath.push_back(LibPaths[i]);
   }
 
 }

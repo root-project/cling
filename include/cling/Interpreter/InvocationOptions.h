@@ -7,8 +7,7 @@
 #ifndef CLING_INVOCATIONOPTIONS_H
 #define CLING_INVOCATIONOPTIONS_H
 
-#include "llvm/Support/Path.h"
-
+#include <string>
 #include <vector>
 
 namespace cling {
@@ -27,7 +26,7 @@ namespace cling {
     std::string MetaString;
 
     std::vector<std::string> LibsToLoad;
-    std::vector<llvm::sys::Path> LibSearchPath;
+    std::vector<std::string> LibSearchPath;
 
     static InvocationOptions CreateFromArgs(int argc, const char* const argv[],
                                             std::vector<unsigned>& leftoverArgs
