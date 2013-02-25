@@ -34,8 +34,10 @@
 
 #include "llvm/Linker.h"
 #include "llvm/LLVMContext.h"
+#include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Path.h"
 
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -57,6 +59,9 @@ namespace {
     return cling::Interpreter::kExeSuccess;
   }
 
+  class DynLibSetImpl: public std::set<llvm::sys::DynamicLibrary>,
+                       public cling::Interpreter::DynLibSetBase {
+  };
 } // unnamed namespace
 
 
@@ -114,6 +119,8 @@ namespace cling {
                            const char* llvmdir /*= 0*/) :
     m_UniqueCounter(0), m_PrintAST(false), m_DynamicLookupEnabled(false), 
     m_RawInputEnabled(false) {
+
+    m_DyLibs.reset(new DynLibSetImpl());
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -750,7 +757,7 @@ namespace cling {
         return kLoadLibError;
       }
       std::pair<std::set<llvm::sys::DynamicLibrary>::iterator, bool> insRes
-        = m_DyLibs.insert(DyLib);
+        = static_cast<DynLibSetImpl*>(m_DyLibs.get())->insert(DyLib);
       if (!insRes.second)
         return kLoadLibExists;
       addLoadedFile(SoFile.str(), LoadedFileInfo::kDynamicLibrary,

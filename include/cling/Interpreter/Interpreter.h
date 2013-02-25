@@ -12,10 +12,8 @@
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/DynamicLibrary.h"
 
 #include <string>
-#include <set>
 
 namespace llvm {
   class raw_ostream;
@@ -24,6 +22,10 @@ namespace llvm {
   class LLVMContext;
   class Module;
   class Type;
+
+  namespace sys {
+    class DynamicLibrary;
+  }
 }
 
 namespace clang {
@@ -145,6 +147,14 @@ namespace cling {
       friend class Interpreter;
     };
 
+    ///\brief Collection of DynamicLibraries loaded by this Interpreter;
+    /// or rather type-opaque wrapper thereof.
+    ///
+    class DynLibSetBase {
+    public:
+      virtual ~DynLibSetBase() {}
+    };
+
   private:
 
     ///\brief Interpreter invocation options.
@@ -245,7 +255,7 @@ namespace cling {
 
     ///\brief DynamicLibraries loaded by this Interpreter.
     ///
-    std::set<llvm::sys::DynamicLibrary> m_DyLibs;
+    llvm::OwningPtr<DynLibSetBase> m_DyLibs;
 
     ///\brief Information about loaded files.
     ///
