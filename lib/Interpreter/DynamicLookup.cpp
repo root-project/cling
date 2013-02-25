@@ -613,8 +613,10 @@ namespace cling {
     InitListExpr* ILE = m_Sema->ActOnInitList(m_NoSLoc,
                                               Inits,
                                               m_NoELoc).takeAs<InitListExpr>();
+    TypeSourceInfo* TSI 
+      = m_Context->getTrivialTypeSourceInfo(VarAddrTy, m_NoSLoc);
     Expr* ExprAddresses = m_Sema->BuildCompoundLiteralExpr(m_NoSLoc,
-                                     m_Context->CreateTypeSourceInfo(VarAddrTy),
+                                                           TSI,
                                                            m_NoELoc,
                                                            ILE).take();
     assert (ExprAddresses && "Could not build the void* array");
