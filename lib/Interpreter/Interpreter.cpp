@@ -709,7 +709,7 @@ namespace cling {
     for (std::vector<std::string>::const_iterator I
            = Opts.LibSearchPath.begin(), E = Opts.LibSearchPath.end(); I != E;
          ++I) {
-       L.addPath(llvm::sys::Path(*I));
+      L.addPath(Path(*I));
     }
     L.addSystemPaths();
     bool Native = true;
