@@ -62,11 +62,14 @@ namespace cling {
 
     /// \brief Default constructor, creates a value that IsInvalid().
     Value() {}
+    Value(const Value& other);
     /// \brief Construct a valid Value.
     Value(const llvm::GenericValue& v, clang::QualType t);
 
     Value(const llvm::GenericValue& v, clang::QualType clangTy, 
           const llvm::Type* llvmTy);
+
+    Value& operator =(const Value& other);
 
     llvm::GenericValue getGV() const;
     void setGV(llvm::GenericValue GV);
