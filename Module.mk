@@ -22,17 +22,13 @@ CLINGETC     := $(addprefix etc/cling/Interpreter/,\
 	RuntimeUniverse.h StoredValueRef.h Value.h ) \
         $(addprefix etc/cling/cint/,multimap multiset) \
 	$(addprefix etc/cling/,\
-llvm/ADT/IntrusiveRefCntPtr.h \
-llvm/ADT/OwningPtr.h \
-llvm/ADT/StringRef.h \
-llvm/Support/Casting.h \
-llvm/Support/Compiler.h \
-llvm/Support/DataTypes.h \
-llvm/Support/type_traits.h )
-
-
-# used in the main Makefile
-ALLHDRS      += $(CLINGETC)
+	llvm/ADT/IntrusiveRefCntPtr.h \
+	llvm/ADT/OwningPtr.h \
+	llvm/ADT/StringRef.h \
+	llvm/Support/Casting.h \
+	llvm/Support/Compiler.h \
+	llvm/Support/DataTypes.h \
+	llvm/Support/type_traits.h )
 
 ifneq ($(LLVMDEV),)
 CLINGEXES    := $(wildcard $(MODDIR)/tools/driver/*.cpp) \
@@ -91,10 +87,6 @@ etc/cling/llvm/%: $(call stripsrc,$(LLVMDIRI))/include/llvm/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
 
-etc/cling/clang/%: $(call stripsrc,$(LLVMDIRI))/include/clang/%
-	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@cp $< $@
-
 etc/cling/cint/%: $(CLINGDIR)/include/cling/cint/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
 	@cp $< $@
@@ -131,3 +123,6 @@ $(CLINGO)   : CLINGCXXFLAGS += '-DCLING_SRCDIR_INCL="$(CLINGDIR)/include"' \
 	'-DCLING_INSTDIR_INCL="$(shell cd $(LLVMDIRI); pwd)/include"'
 $(CLINGEXEO): CLINGCXXFLAGS += -I$(TEXTINPUTDIRS)
 endif
+
+$(CLINGETC): $(LLVMLIB)
+$(CLINGO) : $(CLINGETC)
