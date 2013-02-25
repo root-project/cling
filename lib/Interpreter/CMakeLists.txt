@@ -39,6 +39,7 @@ add_cling_library(clingInterpreter
   StoredValueRef.cpp
   Transaction.cpp
   TransactionTransformer.cpp
+  Value.cpp
   ValuePrinter.cpp
   ValuePrinterInfo.cpp
   ValuePrinterSynthesizer.cpp
