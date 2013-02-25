@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+//--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
 // version: $Id$
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
@@ -11,9 +11,6 @@
 
 namespace clang {
   class ASTContext;
-  class CompoundStmt;
-  class DeclGroupRef;
-  class Expr;
   class Sema;
 }
 
