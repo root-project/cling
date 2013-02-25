@@ -121,6 +121,8 @@ namespace cling {
     m_RawInputEnabled(false) {
 
     m_DyLibs.reset(new DynLibSetImpl());
+    m_AtExitFuncs.reserve(200);
+    m_LoadedFiles.reserve(20);
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;

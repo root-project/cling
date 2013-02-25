@@ -15,6 +15,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Serialization/ASTReader.h"
 
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
 
@@ -150,7 +151,7 @@ namespace cling {
   }
 
   void MetaSema::actOnfilesCommand() const {
-    typedef llvm::SmallVectorImpl<Interpreter::LoadedFileInfo*> LoadedFiles_t;
+    typedef std::vector<Interpreter::LoadedFileInfo*> LoadedFiles_t;
     const LoadedFiles_t& LoadedFiles = m_Interpreter.getLoadedFiles();
     for (LoadedFiles_t::const_iterator I = LoadedFiles.begin(),
            E = LoadedFiles.end(); I != E; ++I) {

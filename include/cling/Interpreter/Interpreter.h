@@ -10,10 +10,10 @@
 #include "cling/Interpreter/InvocationOptions.h"
 
 #include "llvm/ADT/OwningPtr.h"
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
+#include <vector>
 
 namespace llvm {
   class raw_ostream;
@@ -22,6 +22,7 @@ namespace llvm {
   class LLVMContext;
   class Module;
   class Type;
+  template <typename T> class SmallVectorImpl;
 
   namespace sys {
     class DynamicLibrary;
@@ -251,7 +252,7 @@ namespace cling {
     ///\brief Static object, which are bound to unloading of certain declaration
     /// to be destructed.
     ///
-    llvm::SmallVector<CXAAtExitElement, 20> m_AtExitFuncs;
+    std::vector<CXAAtExitElement> m_AtExitFuncs;
 
     ///\brief DynamicLibraries loaded by this Interpreter.
     ///
@@ -259,7 +260,7 @@ namespace cling {
 
     ///\brief Information about loaded files.
     ///
-    llvm::SmallVector<LoadedFileInfo*, 200> m_LoadedFiles;
+    std::vector<LoadedFileInfo*> m_LoadedFiles;
 
     ///\brief Try to load a library file via the llvm::Linker.
     ///
@@ -579,7 +580,7 @@ namespace cling {
 
     ///\brief Get the collection of loaded files.
     ///
-    const llvm::SmallVectorImpl<LoadedFileInfo*>& getLoadedFiles() const {
+    const std::vector<LoadedFileInfo*>& getLoadedFiles() const {
       return m_LoadedFiles; }
 
     bool isPrintingAST() const { return m_PrintAST; }
