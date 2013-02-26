@@ -61,7 +61,7 @@ namespace cling {
   public:
 
     /// \brief Default constructor, creates a value that IsInvalid().
-    Value() {}
+    Value();
     Value(const Value& other);
     /// \brief Construct a valid Value.
     Value(const llvm::GenericValue& v, clang::QualType t);

@@ -13,24 +13,31 @@
 
 namespace cling {
 
+Value::Value():
+  m_ClangType(),
+  m_LLVMType()
+{
+  new (m_GV) llvm::GenericValue();
+}
+
 Value::Value(const Value& other):
   m_ClangType(other.m_ClangType),
   m_LLVMType(other.m_LLVMType)
 {
-  setGV(other.getGV());
+  new (m_GV) llvm::GenericValue(other.getGV());
 }
 
 Value::Value(const llvm::GenericValue& v, clang::QualType t) 
   : m_ClangType(t.getAsOpaquePtr()), m_LLVMType(0)
 {
-  setGV(v);
+  new (m_GV) llvm::GenericValue(v);
 }
 
 Value::Value(const llvm::GenericValue& v, clang::QualType clangTy, 
           const llvm::Type* llvmTy) 
   : m_ClangType(clangTy.getAsOpaquePtr()), m_LLVMType(llvmTy)
 {
-  setGV(v);
+  new (m_GV) llvm::GenericValue(v);
 }
 
 Value& Value::operator =(const Value& other) {
