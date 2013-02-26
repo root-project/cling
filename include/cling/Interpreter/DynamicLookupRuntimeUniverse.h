@@ -3,19 +3,15 @@
 // version: $Id$
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
 //------------------------------------------------------------------------------
+#ifndef CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H
+#define CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H
+
 #ifndef __CLING__
 #error "This file must not be included by compiled programs."
 #endif
-#ifdef CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H
-#error "CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H Must only include once."
-#endif
-
-#define CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H
 
 #include "cling/Interpreter/Interpreter.h"
-#ifndef CLING_RUNTIME_UNIVERSE_H
 #include "cling/Interpreter/RuntimeUniverse.h"
-#endif
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 #include "cling/Interpreter/StoredValueRef.h"
@@ -66,3 +62,5 @@ namespace runtime {
   } // end nmespace internal
 } // end namespace runtime
 } // end namespace cling
+
+#endif // CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H
