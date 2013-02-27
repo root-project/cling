@@ -176,6 +176,13 @@ namespace cling {
     // the lexer on EOF token.
     getSema().getPreprocessor().enableIncrementalProcessing();
 
+    handleFrontendOptions();
+
+    // Tell the diagnostic client that we are entering file parsing mode.
+    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
+    DClient.BeginSourceFile(getCI()->getLangOpts(),
+                            &getCI()->getPreprocessor());
+
     if (getCI()->getLangOpts().CPlusPlus) {
       // Set up common declarations which are going to be available
       // only at runtime
@@ -198,12 +205,6 @@ namespace cling {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");
     }
 
-    handleFrontendOptions();
-
-    // Tell the diagnostic client that we are entering file parsing mode.
-    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(),
-                            &getCI()->getPreprocessor());
   }
 
   Interpreter::~Interpreter() {
