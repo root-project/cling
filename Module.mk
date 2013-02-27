@@ -19,7 +19,8 @@ CLINGDEP     := $(CLINGO:.o=.d)
 CLINGETC     := $(addprefix etc/cling/Interpreter/,\
 	DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
 	DynamicLookupLifetimeHandler.h Interpreter.h InvocationOptions.h \
-	RuntimeUniverse.h StoredValueRef.h Value.h ) \
+	RuntimeUniverse.h StoredValueRef.h Value.h \
+	ValuePrinter.h ValuePrinterInfo.h ) \
         $(addprefix etc/cling/cint/,multimap multiset) \
 	$(addprefix etc/cling/,\
 	llvm/ADT/IntrusiveRefCntPtr.h \
