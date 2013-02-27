@@ -800,7 +800,7 @@ namespace cling {
 
   bool EvaluateTSynthesizer::ShouldVisit(Decl* D) {    
     DeclVisitor Visitor;
-    Visitor.TraverseDecl(D);
+    Visitor.TraverseStmt(D->getBody());
     return Visitor.getShouldVisitSubTree();
   }
 

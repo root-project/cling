@@ -7,6 +7,7 @@
 #include "IncrementalParser.h"
 #include "ASTDumper.h"
 #include "ASTNodeEraser.h"
+#include "AutoSynthesizer.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
@@ -67,14 +68,17 @@ namespace cling {
     CreateSLocOffsetGenerator();
 
     // Add transformers to the IncrementalParser, which owns them
-    m_TTransformers.push_back(new EvaluateTSynthesizer(&CI->getSema()));
+    Sema* TheSema = &CI->getSema();
+    m_TTransformers.push_back(new EvaluateTSynthesizer(TheSema));
 
-    m_TTransformers.push_back(new ValuePrinterSynthesizer(&CI->getSema(), 0));
-    m_TTransformers.push_back(new ReturnSynthesizer(&CI->getSema()));
+    m_TTransformers.push_back(new AutoSynthesizer(TheSema));
+    m_TTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
+    m_TTransformers.push_back(new ReturnSynthesizer(TheSema));
     m_TTransformers.push_back(new ASTDumper());
-    m_TTransformers.push_back(new DeclExtractor(&getCI()->getSema()));
+    m_TTransformers.push_back(new DeclExtractor(TheSema));
 
-    m_Parser.reset(new Parser(CI->getPreprocessor(), CI->getSema(),
+
+    m_Parser.reset(new Parser(CI->getPreprocessor(), *TheSema,
                               false /*skipFuncBodies*/));
     CI->getPreprocessor().EnterMainSourceFile();
     // Initialize the parser after we have entered the main source file.
