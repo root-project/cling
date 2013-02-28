@@ -59,7 +59,7 @@ namespace runtime {
       cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
                        ExprInfo->isValuePrinterRequested());
     }
-  } // end nmespace internal
+  } // end namespace internal
 } // end namespace runtime
 } // end namespace cling
 
