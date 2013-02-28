@@ -61,7 +61,7 @@ namespace cling {
     void consumeToken();
     void consumeAnyStringToken(tok::TokenKind stopAt = tok::space);
     const Token& lookAhead(unsigned Num);
-    void SkipWhitespace();
+    void skipWhitespace();
 
     bool isCommandSymbol();
     bool isCommand();

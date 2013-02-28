@@ -47,7 +47,7 @@ namespace cling {
     consumeToken();
     // we have to merge the tokens from the queue until we reach eof token or
     // space token
-    SkipWhitespace();
+    skipWhitespace();
     // Add the new token in which we will merge the others.
     Token& MergedTok = m_TokenCache.front();
 
@@ -76,7 +76,7 @@ namespace cling {
     return m_TokenCache.back();
   }
 
-  void MetaParser::SkipWhitespace() {
+  void MetaParser::skipWhitespace() {
     while(getCurTok().is(tok::space))
       consumeToken();
   }
@@ -202,7 +202,7 @@ namespace cling {
         getCurTok().getIdent().equals("rawInput")) {
       MetaSema::SwitchMode mode = MetaSema::kToggle;
       consumeToken();
-      SkipWhitespace();
+      skipWhitespace();
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
       m_Actions->actOnrawInputCommand(mode);
@@ -216,7 +216,7 @@ namespace cling {
         getCurTok().getIdent().equals("printAST")) {
       MetaSema::SwitchMode mode = MetaSema::kToggle;
       consumeToken();
-      SkipWhitespace();
+      skipWhitespace();
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
       m_Actions->actOnprintASTCommand(mode);
@@ -230,7 +230,7 @@ namespace cling {
         getCurTok().getIdent().equals("dynamicExtensions")) {
       MetaSema::SwitchMode mode = MetaSema::kToggle;
       consumeToken();
-      SkipWhitespace();
+      skipWhitespace();
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
       m_Actions->actOndynamicExtensionsCommand(mode);
@@ -288,7 +288,7 @@ namespace cling {
   bool MetaParser::isgCommand() {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("g")) {
       consumeToken();
-      SkipWhitespace();
+      skipWhitespace();
       llvm::StringRef varName;
       if (getCurTok().is(tok::ident))
         varName = getCurTok().getIdent();
