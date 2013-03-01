@@ -332,7 +332,7 @@ namespace utils {
         // or by using Sema::getStdNamespace
         if (outer->getName().compare("std") == 0) {
           // And now let's check that the target is also within std.
-          const Type *underlyingType = decl->getUnderlyingType().getTypePtr();
+          const Type *underlyingType = decl->getUnderlyingType().getSplitDesugaredType().Ty;
           const ElaboratedType *elTy = dyn_cast<ElaboratedType>(underlyingType);
           if (elTy) {
             underlyingType = elTy->getNamedType().getTypePtr();
@@ -395,11 +395,9 @@ namespace utils {
         return true;
       }
       case Type::Elaborated: {
-        return false;
-        //const ElaboratedType* Ty = llvm::cast<ElaboratedType>(QTy);
-        ///QT = Ty->desugar();
-        ///return true;
-        //return false;
+        const ElaboratedType* Ty = llvm::cast<ElaboratedType>(QTy);
+        QT = Ty->desugar();
+        return true;
       }
       //
       //  Conditionally sugared types.
