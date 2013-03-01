@@ -86,15 +86,15 @@ $(CLINGDIRS)/Module.mk: $(LLVMCONFIG)
 
 etc/cling/llvm/%: $(call stripsrc,$(LLVMDIRI))/include/llvm/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@cp $< $@
+	cp $< $@
 
 etc/cling/cint/%: $(CLINGDIR)/include/cling/cint/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@cp $< $@
+	cp $< $@
 
 etc/cling/%.h: $(CLINGDIR)/include/cling/%.h
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
-	@cp $< $@
+	cp $< $@
 
 $(CLINGDIR)/%.o: $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(CLINGCXXFLAGS) -D__cplusplus -- $<
@@ -125,5 +125,5 @@ $(CLINGO)   : CLINGCXXFLAGS += '-DCLING_SRCDIR_INCL="$(CLINGDIR)/include"' \
 $(CLINGEXEO): CLINGCXXFLAGS += -I$(TEXTINPUTDIRS)
 endif
 
-$(CLINGETC): $(LLVMLIB)
-$(CLINGO) : $(CLINGETC)
+$(CLINGETC) : $(LLVMLIB)
+$(CLINGO)   : $(CLINGETC)
