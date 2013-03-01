@@ -171,9 +171,7 @@ namespace cling {
     bool VisitFunctionDecl(FunctionDecl* FD) {
       if (FD->isInlined())
         m_InlineList.push_back(FD);
-      // Abort the in-depth visitation, because we know that we cannot have 
-      // functions defined in functions.
-      return false; 
+      return true; // returning false will *abort* the entire traversal.
     }
   };
 
@@ -244,14 +242,10 @@ namespace cling {
               // Traverse the TagDecl to find the inlined members.
               inlines.clear();
               IC.TraverseDecl(*J);
-              std::string mangledName;
               DeclGroupRef DGR;
               for (size_t i = 0, e = inlines.size(); i < e; ++i) {
-                m_Interpreter->maybeMangleDeclName(inlines[i], mangledName);
-                if (!T->getModule()->getFunction(mangledName)) {
-                  DGR = DeclGroupRef(inlines[i]);
-                  getCodeGenerator()->HandleTopLevelDecl(DGR);
-                }
+                DGR = DeclGroupRef(inlines[i]);
+                getCodeGenerator()->HandleTopLevelDecl(DGR);
               }
             }
         }
