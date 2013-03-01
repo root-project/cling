@@ -65,6 +65,8 @@ namespace {
   };
 }
 
+using namespace std;
+
 class Embedded_objects {
 public:
   enum Eenum {
@@ -95,7 +97,23 @@ public:
   typedef std::vector<int> vecint;
   vecint::iterator m_iter;
   const Eenum m_enum;
+  typedef vector<int> vecint2;
+  vecint2::iterator m_iter2;
 };
+
+namespace NS1 {
+  namespace NS2 {
+    namespace NS3 {
+      class Point {};
+      class Inner3 {
+      public:
+        Point p1;
+        NS3::Point p2;
+        ::NS1::NS2::NS3::Point p3;
+      };
+    }
+  }
+}
 
 .rawInput 0
 
@@ -290,6 +308,7 @@ if (decl) {
 // CHECK: Embedded_objects::EmbeddedClasses::Embedded6
 // CHECK: std::vector<int>::iterator
 // CHECK: const Embedded_objects::Eenum
+// CHECK: std::vector<int>::iterator
 
 // In the partial desugaring add support for the case where we have a type
 // that point to an already completely desugared template instantiation in
@@ -316,6 +335,29 @@ if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(d
 }
 // CHECK: Details::Impl
 // CHECK: std::vector<Details::Impl, std::allocator<Details::Impl> >
+
+
+decl=lookup.findScope("NS1::NS2::NS3::Inner3",&t);
+if (decl) {
+  const clang::CXXRecordDecl *cxxdecl
+  = llvm::dyn_cast<clang::CXXRecordDecl>(decl);
+  if (cxxdecl) {
+    clang::DeclContext::decl_iterator iter = cxxdecl->decls_begin();
+    while ( *iter ) {
+      const clang::Decl *mdecl = *iter;
+      if (const clang::ValueDecl *vd = llvm::dyn_cast<clang::ValueDecl>(mdecl)) {
+        clang::QualType vdType = vd->getType();
+        name.clear();
+        Transform::GetPartiallyDesugaredType(Ctx,vdType,skip).getAsStringInternal(name,Policy);
+        std::cout << name.c_str() << std::endl;
+      }
+      ++iter;
+    }
+  }
+}
+// CHECK: NS1::NS2::NS3::Point
+// CHECK: NS1::NS2::NS3::Point
+// CHECK: NS1::NS2::NS3::Point
 
 decl = lookup.findScope("cmap<volatile int,volatile int>",&t);
 QT = clang::QualType(t, 0);
