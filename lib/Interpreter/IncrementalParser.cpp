@@ -21,6 +21,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclGroup.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Parse/Parser.h"
@@ -161,6 +162,21 @@ namespace cling {
     return CurT;
   }
 
+  class InlineCollector : public RecursiveASTVisitor<InlineCollector> {
+  private:
+    llvm::SmallVector<FunctionDecl*, 32> &m_InlineList;
+  public:
+    InlineCollector(llvm::SmallVector<FunctionDecl*, 32> &inlines) 
+      : m_InlineList(inlines) {}
+    bool VisitFunctionDecl(FunctionDecl* FD) {
+      if (FD->isInlined())
+        m_InlineList.push_back(FD);
+      // Abort the in-depth visitation, because we know that we cannot have 
+      // functions defined in functions.
+      return false; 
+    }
+  };
+
   void IncrementalParser::commitTransaction(Transaction* T) {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
@@ -204,28 +220,40 @@ namespace cling {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
       // codegen the transaction
-      // We assume that there is no ordering of the calls to HandleXYZ, because
-      // in clang they can happen in different order too, eg. coming from 
-      // template instatiator and so on.
       if (T->getCompilationOpts().CodeGenerationForModule) {
+        //
+        // That is a hackish way of forcing the codegen on inlines. It assumes
+        // that there is no specific decl order in which codegen sees the decls.
+        // The second doubtful part is that we lie to codegen that an inlined
+        // member is a top-level-decl.
+
         // In the case most the code has already been generated and has been
-        // loaded via a shared library.   In particular we do not want to 
+        // loaded via a shared library. In particular we do not want to 
         // generate code for global variables and non-inline function.
         // However we do want to generate code for inline function ...
         // [The alternative would to find a way to get the JIT to generate them]
+        
+        llvm::SmallVector<FunctionDecl*, 32> inlines;
+        InlineCollector IC(inlines);
         for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
              I != E; ++I) {
-          if (I->m_Call == Transaction::kCCIHandleTopLevelDecl
-              && I->m_DGR.isSingleDecl() ) {
-            FunctionDecl *FD = dyn_cast<FunctionDecl>(I->m_DGR.getSingleDecl());
-            if (FD && FD->isInlineSpecified ()) {
-              getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
+          if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
+            for (DeclGroupRef::const_iterator J = (*I).m_DGR.begin(), 
+                   JE = (*I).m_DGR.end(); J != JE; ++J) {
+
+              // Traverse the TagDecl to find the inlined members.
+              inlines.clear();
+              IC.TraverseDecl(*J);
+              std::string mangledName;
+              DeclGroupRef DGR;
+              for (size_t i = 0, e = inlines.size(); i < e; ++i) {
+                m_Interpreter->maybeMangleDeclName(inlines[i], mangledName);
+                if (!T->getModule()->getFunction(mangledName)) {
+                  DGR = DeclGroupRef(inlines[i]);
+                  getCodeGenerator()->HandleTopLevelDecl(DGR);
+                }
+              }
             }
-          } else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
-            //TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
-            // We need to traverse the decl to find the inline functions ....
-            
-          }
         }
       } else for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
            I != E; ++I) {
