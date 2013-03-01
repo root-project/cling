@@ -221,8 +221,7 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 lookup.findScope("NS::Container<Long_t>::Impl_t", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
-// CHECK: (const char *) "::Details::Impl"
-// Note it should probably return "Details::Impl"
+// CHECK: (const char *) "Details::Impl"
 
 lookup.findScope("NS::Container<Double32_t>::Content", &t);
 QT = clang::QualType(t, 0);
