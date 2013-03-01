@@ -19,12 +19,14 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
+extern "C" int printf(const char*,...);
 
 .dynamicExtensions
 gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling));
 
 int a[5] = {1,2,3,4,5};
 if (h->PrintArray(a, 5)) { // runtime result type bool
+  whatever->PrintString("Replaced in then.\n");
   printf("\n%s\n", "Array Printed Successfully!");
 }
 // CHECK: 12345

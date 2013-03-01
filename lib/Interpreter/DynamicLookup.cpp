@@ -266,8 +266,8 @@ namespace cling {
     ASTNodeInfo IfCondInfo = Visit(Node->getCond());
     if (IfCondInfo.isForReplacement())
       if (Expr* IfCondExpr = IfCondInfo.getAs<Expr>()) {
-          Node->setCond(SubstituteUnknownSymbol(m_Context->BoolTy, IfCondExpr));
-          return ASTNodeInfo(Node, /*needs eval*/false);
+        Node->setCond(SubstituteUnknownSymbol(m_Context->BoolTy, IfCondExpr));
+        //return ASTNodeInfo(Node, /*needs eval*/false);
       }
 
     // Visit the other parts - they will fall naturally into Stmt or
@@ -781,6 +781,7 @@ namespace cling {
           return false; // returning false will abort the in-depth traversal.
         }
 
+      TraverseStmt(D->getBody());
       return true;  // returning false will abort the in-depth traversal.
     }
 
