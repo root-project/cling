@@ -171,7 +171,7 @@ namespace utils {
     Decl* decl = 0;
     if (outer_nns->getKind() == NestedNameSpecifier::Global) {
       // leave decl to 0.
-    } else if (const clang::Type *type = outer_nns->getAsType()) {
+    } else if (const Type *type = outer_nns->getAsType()) {
       // Find decl context.
       const TypedefType* typedeftype = dyn_cast_or_null<TypedefType>(type);
       if (typedeftype) {
@@ -217,7 +217,7 @@ namespace utils {
         // We should only create the nested name specifier
         // if the outer scope is really a TagDecl.
         // It could also be a CXXMethod for example.
-        const clang::Type *type = scope->getAsType();
+        const Type *type = scope->getAsType();
         const TypedefType* typedeftype = dyn_cast_or_null<TypedefType>(type);
         Decl *idecl;
         if (typedeftype) {
@@ -243,7 +243,7 @@ namespace utils {
   
   static
   NestedNameSpecifier* SelectPrefix(const ASTContext& Ctx,
-                                    const clang::DeclContext *declContext,
+                                    const DeclContext *declContext,
                                     NestedNameSpecifier *original_prefix,
                              const llvm::SmallSet<const Type*,4>& TypesToSkip) {
     // We have to also desugar the prefix.
@@ -284,7 +284,7 @@ namespace utils {
         const CXXRecordDecl* newtype=llvm::dyn_cast<CXXRecordDecl>(declContext);
         if (newtype && original_prefix) {
           // Deal with a class
-          const clang::Type *oldtype = original_prefix->getAsType();
+          const Type *oldtype = original_prefix->getAsType();
           if (oldtype &&
               // NOTE: Should we compare the RecordDecl instead?
               oldtype->getAsCXXRecordDecl() == newtype)
@@ -326,10 +326,10 @@ namespace utils {
       // We had a scope prefix as input, let see if it is still
       // the same as the scope of the result and if it is, then
       // we use it.
-      const clang::Type *newtype = prefix->getAsType();
+      const Type *newtype = prefix->getAsType();
       if (newtype) {
         // Deal with a class
-        const clang::Type *oldtype = original_prefix->getAsType();
+        const Type *oldtype = original_prefix->getAsType();
         if (oldtype && 
             // NOTE: Should we compare the RecordDecl instead?
             oldtype->getAsCXXRecordDecl() == newtype->getAsCXXRecordDecl())
@@ -411,7 +411,7 @@ namespace utils {
         
         Decl* decl = 0;
         const TypedefType* typedeftype =
-          llvm::dyn_cast_or_null<clang::TypedefType>(&(*desugared));
+          llvm::dyn_cast_or_null<TypedefType>(&(*desugared));
         if (typedeftype) {
           decl = typedeftype->getDecl();
         } else {
@@ -475,7 +475,7 @@ namespace utils {
       return true;
      
     const TypedefType* typedeftype = 
-      llvm::dyn_cast_or_null<clang::TypedefType>(QT.getTypePtr());
+      llvm::dyn_cast_or_null<TypedefType>(QT.getTypePtr());
     const TypedefNameDecl* decl = typedeftype ? typedeftype->getDecl() : 0;
     if (decl) {
       const NamedDecl* outer 
@@ -683,7 +683,7 @@ namespace utils {
     // to the list of things to skip!
 
     NestedNameSpecifier* original_prefix = 0;
-    clang::Qualifiers prefix_qualifiers;
+    Qualifiers prefix_qualifiers;
     const ElaboratedType* etype_input 
       = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
     if (etype_input) {
@@ -749,13 +749,13 @@ namespace utils {
 
       Decl *decl = 0;
       const TypedefType* typedeftype = 
-        llvm::dyn_cast_or_null<clang::TypedefType>(QT.getTypePtr());
+        llvm::dyn_cast_or_null<TypedefType>(QT.getTypePtr());
       if (typedeftype) {
         decl = typedeftype->getDecl();
       } else {
         // There are probably other cases ...
         const TagType* tagdecltype = 
-           llvm::dyn_cast_or_null<clang::TagType>(QT.getTypePtr());
+           llvm::dyn_cast_or_null<TagType>(QT.getTypePtr());
         if (tagdecltype) {
           decl = tagdecltype->getDecl();
         } else {
@@ -771,7 +771,7 @@ namespace utils {
             && !(outer_ns && outer_ns->isAnonymousNamespace())
             && outer->getName().size() ) {
           if (original_prefix) {
-            const clang::Type *oldtype = original_prefix->getAsType();
+            const Type *oldtype = original_prefix->getAsType();
             if (oldtype) {
               if (oldtype->getAsCXXRecordDecl() == outer) {
                 // Same type, use the original spelling
