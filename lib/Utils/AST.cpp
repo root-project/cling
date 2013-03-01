@@ -24,7 +24,7 @@ namespace utils {
     if (!ND)
       return false;
 
-    return llvm::StringRef(ND->getNameAsString())
+    return StringRef(ND->getNameAsString())
       .startswith(Synthesize::UniquePrefix);
   }
 
@@ -40,7 +40,7 @@ namespace utils {
 
     Expr* result = 0;
     if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
-      llvm::ArrayRef<Stmt*> Stmts 
+      ArrayRef<Stmt*> Stmts
         = llvm::makeArrayRef(CS->body_begin(), CS->size());
       int indexOfLastExpr = Stmts.size();
       while(indexOfLastExpr--) {
@@ -157,7 +157,7 @@ namespace utils {
   static
   NestedNameSpecifier* GetPartiallyDesugaredNNS(const ASTContext& Ctx,
                                                 NestedNameSpecifier* scope, 
-                            const llvm::SmallSet<const Type*, 4>& TypesToSkip);
+                             const llvm::SmallSet<const Type*, 4>& TypesToSkip);
     
   static
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
@@ -231,7 +231,7 @@ namespace utils {
             idecl = type->getAsCXXRecordDecl();
           }
         }
-        TagDecl *tdecl = llvm::dyn_cast<TagDecl>(idecl);
+        TagDecl *tdecl = dyn_cast<TagDecl>(idecl);
         if (tdecl) {
           return CreateNestedNameSpecifier(Ctx,tdecl);
         }
@@ -256,7 +256,7 @@ namespace utils {
       if (declContext->isNamespace()) {
         // Deal with namespace.  This is mostly about dealing with
         // namespace aliases (i.e. keeping the one the user used).
-        const NamespaceDecl *new_ns =llvm::dyn_cast<NamespaceDecl>(declContext);
+        const NamespaceDecl *new_ns =dyn_cast<NamespaceDecl>(declContext);
         if (new_ns) {
           new_ns = new_ns->getCanonicalDecl();
           NamespaceDecl *old_ns = 0;
@@ -281,7 +281,7 @@ namespace utils {
           }
         }
       } else {
-        const CXXRecordDecl* newtype=llvm::dyn_cast<CXXRecordDecl>(declContext);
+        const CXXRecordDecl* newtype=dyn_cast<CXXRecordDecl>(declContext);
         if (newtype && original_prefix) {
           // Deal with a class
           const Type *oldtype = original_prefix->getAsType();
@@ -293,7 +293,7 @@ namespace utils {
             // point.
             prefix = GetPartiallyDesugaredNNS(Ctx,original_prefix,TypesToSkip);
           } else {
-            const TagDecl *tdecl = llvm::dyn_cast<TagDecl>(declContext);
+            const TagDecl *tdecl = dyn_cast<TagDecl>(declContext);
             if (tdecl) {
               prefix = CreateNestedNameSpecifier(Ctx,tdecl);
             }
@@ -302,7 +302,7 @@ namespace utils {
           // We should only create the nested name specifier
           // if the outer scope is really a TagDecl.
           // It could also be a CXXMethod for example.
-          const TagDecl *tdecl = llvm::dyn_cast<TagDecl>(declContext);
+          const TagDecl *tdecl = dyn_cast<TagDecl>(declContext);
           if (tdecl) {
             prefix = CreateNestedNameSpecifier(Ctx,tdecl);
           }
@@ -394,7 +394,7 @@ namespace utils {
 
       NestedNameSpecifier* outer_scope = scope->getPrefix();
       const ElaboratedType* etype
-         = llvm::dyn_cast<ElaboratedType>(desugared.getTypePtr());
+         = dyn_cast<ElaboratedType>(desugared.getTypePtr());
       if (etype) {
         // The desugarding returned an elaborated type even-though we
         // did not request it (/*fullyQualify=*/false), so we must have been
@@ -411,7 +411,7 @@ namespace utils {
         
         Decl* decl = 0;
         const TypedefType* typedeftype =
-          llvm::dyn_cast_or_null<TypedefType>(&(*desugared));
+          dyn_cast_or_null<TypedefType>(&(*desugared));
         if (typedeftype) {
           decl = typedeftype->getDecl();
         } else {
@@ -475,11 +475,11 @@ namespace utils {
       return true;
      
     const TypedefType* typedeftype = 
-      llvm::dyn_cast_or_null<TypedefType>(QT.getTypePtr());
+      dyn_cast_or_null<TypedefType>(QT.getTypePtr());
     const TypedefNameDecl* decl = typedeftype ? typedeftype->getDecl() : 0;
     if (decl) {
       const NamedDecl* outer 
-        = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
+        = dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
       // We want to keep the typedef that are defined within std and
       // are pointing to something also declared in std (usually an
       // implementation details like std::basic_string or __gnu_cxx::iterator.
@@ -685,7 +685,7 @@ namespace utils {
     NestedNameSpecifier* original_prefix = 0;
     Qualifiers prefix_qualifiers;
     const ElaboratedType* etype_input 
-      = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
+      = dyn_cast<ElaboratedType>(QT.getTypePtr());
     if (etype_input) {
       // Intentionally, we do not care about the other compononent of
       // the elaborated type (the keyword) as part of the partial
@@ -734,7 +734,7 @@ namespace utils {
 
     NestedNameSpecifier* prefix = 0;
     const ElaboratedType* etype 
-      = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr());
+      = dyn_cast<ElaboratedType>(QT.getTypePtr());
     if (etype) {
 
       prefix = SelectPrefix(Ctx,etype,original_prefix,TypesToSkip);
@@ -749,13 +749,13 @@ namespace utils {
 
       Decl *decl = 0;
       const TypedefType* typedeftype = 
-        llvm::dyn_cast_or_null<TypedefType>(QT.getTypePtr());
+        dyn_cast_or_null<TypedefType>(QT.getTypePtr());
       if (typedeftype) {
         decl = typedeftype->getDecl();
       } else {
         // There are probably other cases ...
         const TagType* tagdecltype = 
-           llvm::dyn_cast_or_null<TagType>(QT.getTypePtr());
+           dyn_cast_or_null<TagType>(QT.getTypePtr());
         if (tagdecltype) {
           decl = tagdecltype->getDecl();
         } else {
@@ -764,9 +764,9 @@ namespace utils {
       }
       if (decl) {
         NamedDecl* outer 
-           = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
+           = dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
         NamespaceDecl* outer_ns
-           = llvm::dyn_cast_or_null<NamespaceDecl>(decl->getDeclContext());
+           = dyn_cast_or_null<NamespaceDecl>(decl->getDeclContext());
         if (outer
             && !(outer_ns && outer_ns->isAnonymousNamespace())
             && outer->getName().size() ) {
@@ -788,7 +788,7 @@ namespace utils {
               {
                 old_ns = alias->getNamespace()->getCanonicalDecl();
               }
-              const NamespaceDecl *new_ns = llvm::dyn_cast<NamespaceDecl>(outer);
+              const NamespaceDecl *new_ns = dyn_cast<NamespaceDecl>(outer);
               if (new_ns) new_ns = new_ns->getCanonicalDecl();
               if (old_ns == new_ns) {
                 // This is the same namespace, use the original prefix
@@ -810,7 +810,7 @@ namespace utils {
               // We should only create the nested name specifier
               // if the outer scope is really a TagDecl.
               // It could also be a CXXMethod for example.
-              TagDecl *tdecl = llvm::dyn_cast<TagDecl>(outer);
+              TagDecl *tdecl = dyn_cast<TagDecl>(outer);
               if (tdecl) {
                 prefix = CreateNestedNameSpecifier(Ctx,tdecl);
               }
