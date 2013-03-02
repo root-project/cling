@@ -195,7 +195,7 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 lookup.findScope("A<B<Double32_t, std::size_t*> >", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
-// CHECK:(const char *) "A<B<Double32_t, unsigned long *> >"
+// CHECK:(const char *) "A<B<Double32_t, unsigned {{long|int}} *> >"
 
 lookup.findScope("CTD", &t);
 QT = clang::QualType(t, 0);
