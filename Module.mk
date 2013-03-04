@@ -16,20 +16,25 @@ CLINGO       := $(call stripsrc,$(CLINGS:.cpp=.o))
 
 CLINGDEP     := $(CLINGO:.o=.d)
 
-CLINGETC     := $(addprefix etc/cling/Interpreter/,\
-	DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
-	DynamicLookupLifetimeHandler.h Interpreter.h InvocationOptions.h \
-	RuntimeUniverse.h StoredValueRef.h Value.h \
-	ValuePrinter.h ValuePrinterInfo.h ) \
+CLINGETC_CLING := DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
+        DynamicLookupLifetimeHandler.h Interpreter.h InvocationOptions.h \
+        RuntimeUniverse.h StoredValueRef.h Value.h \
+        ValuePrinter.h ValuePrinterInfo.h
+
+CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
+        llvm/ADT/OwningPtr.h \
+        llvm/ADT/StringRef.h \
+        llvm/Support/Casting.h \
+        llvm/Support/Compiler.h \
+        llvm/Support/DataTypes.h \
+        llvm/Support/type_traits.h
+
+CLINGETC     := $(addprefix etc/cling/Interpreter/,$(CLINGETC_CLING)) \
         $(addprefix etc/cling/cint/,multimap multiset) \
-	$(addprefix etc/cling/,\
-	llvm/ADT/IntrusiveRefCntPtr.h \
-	llvm/ADT/OwningPtr.h \
-	llvm/ADT/StringRef.h \
-	llvm/Support/Casting.h \
-	llvm/Support/Compiler.h \
-	llvm/Support/DataTypes.h \
-	llvm/Support/type_traits.h )
+	$(addprefix etc/cling/,$(CLINGETC_LLVM))
+
+CLINGETC_ORIGINALS := $(addprefix $(call stripsrc,$(LLVMDIRI))/include/,$(CLINGETC_LLVM)) \
+	$(addprefix $(CLINGDIR)/include/cling/,$(CLINGETC_CLING))
 
 ifneq ($(LLVMDEV),)
 CLINGEXES    := $(wildcard $(MODDIR)/tools/driver/*.cpp) \
@@ -83,6 +88,8 @@ distclean-$(MODNAME): clean-$(MODNAME)
 distclean::     distclean-$(MODNAME)
 
 $(CLINGDIRS)/Module.mk: $(LLVMCONFIG)
+
+$(CLINGETC_ORIGINALS): %: $(LLVMLIB)
 
 etc/cling/llvm/%: $(call stripsrc,$(LLVMDIRI))/include/llvm/%
 	+@[ -d $(dir $@) ] || mkdir -p $(dir $@)
