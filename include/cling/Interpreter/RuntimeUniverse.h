@@ -6,7 +6,7 @@
 #ifndef CLING_RUNTIME_UNIVERSE_H
 #define CLING_RUNTIME_UNIVERSE_H
 
-#if !defined(__CLING__) && !defined(__COMPILING_CLING__)
+#if !defined(__CLING__)
 #error "This file must not be included by compiled programs."
 #endif
 
@@ -31,7 +31,7 @@ namespace cling {
     /// \brief The interpreter provides itself as a builtin, i.e. it
     /// interprets itself. This is particularly important for implementing
     /// the dynamic scopes and the runtime bindings
-    Interpreter* gCling = 0;
+    extern Interpreter* gCling;
 
     namespace internal {
       /// \brief Some of clang's routines rely on valid source locations and

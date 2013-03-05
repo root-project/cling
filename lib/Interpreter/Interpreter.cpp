@@ -198,8 +198,8 @@ namespace cling {
 
       // Set up the gCling variable
       std::stringstream initializer;
-      initializer << "gCling=(cling::Interpreter*)" << (uintptr_t)this << ";";
-      execute(initializer.str());
+      initializer << "namespace cling {namespace runtime { cling::Interpreter *gCling=(cling::Interpreter*)" << (uintptr_t)this << ";} }";
+      declare(initializer.str());
     }
     else {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");

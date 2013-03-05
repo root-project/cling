@@ -11,7 +11,6 @@
 #endif
 
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/RuntimeUniverse.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 #include "cling/Interpreter/StoredValueRef.h"
@@ -20,6 +19,7 @@ namespace cling {
 
 /// \brief Contains declarations for cling's runtime.
 namespace runtime {
+  extern Interpreter* gCling;
 
   /// \brief Provides builtins, which are neccessary for the dynamic scopes
   /// and runtime bindings. These builtins should be used for other purposes.

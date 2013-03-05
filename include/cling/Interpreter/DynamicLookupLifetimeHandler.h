@@ -22,7 +22,6 @@ namespace runtime {
   /// \brief Provides private definitions for the dynamic scopes and runtime
   /// bindings. These builtins should not be used for other purposes.
   namespace internal {
-    extern Interpreter* gCling;
     
     /// \brief LifetimeHandler is used in case of initialization using address
     /// on the automatic store (stack) instead of EvaluateT.
@@ -64,13 +63,13 @@ namespace runtime {
       /// be evaluated at runtime
       /// @param[in] type The type of the object, which will help to delete
       /// it, when the LifetimeHandler goes out of scope.
-      /// @param[in] gCling The current interpreter object, which evaluate will
+      /// @param[in] Interp The current interpreter object, which evaluate will
       /// be called upon.
       ///
       LifetimeHandler(DynamicExprInfo* ExprInfo,
                       clang::DeclContext* DC,
                       const char* type,
-                      Interpreter* Interp = gCling);
+                      Interpreter* Interp);
 
       ///\brief Returns the created object.
       void* getMemory() const { return m_Memory; }
