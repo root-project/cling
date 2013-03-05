@@ -64,6 +64,8 @@ namespace runtime {
       /// be evaluated at runtime
       /// @param[in] type The type of the object, which will help to delete
       /// it, when the LifetimeHandler goes out of scope.
+      /// @param[in] gCling The current interpreter object, which evaluate will
+      /// be called upon.
       ///
       LifetimeHandler(DynamicExprInfo* ExprInfo,
                       clang::DeclContext* DC,
