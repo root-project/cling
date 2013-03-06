@@ -397,7 +397,7 @@ namespace cling {
         }
       }
     }
-    else {
+    else if (Pos->second.getAsVector()) {
       llvm::SmallVector<NamedDecl*, 4>& Decls = *Pos->second.getAsVector();
       for(llvm::SmallVector<NamedDecl*, 4>::reverse_iterator I = Decls.rbegin();
           I != Decls.rend(); ++I)
@@ -408,6 +408,9 @@ namespace cling {
             Successful = VisitNamedDecl((*I)) && Successful;
             (*I) = MostRecentFD;
           }
+    } else {
+      // There are no decls. But does this really mean "unsuccessful"?
+      return false;
     }
 
     return Successful;
