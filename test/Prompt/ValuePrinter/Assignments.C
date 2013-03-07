@@ -27,10 +27,8 @@ public:
   }; 
 };
 Outer::Inner::C
-// CHECK: (enum Outer::Inner::E) @0x{{[0-9A-Fa-f]{6,12}.}}
 // CHECK: (Outer::Inner::E::B) ? (Outer::Inner::E::C) : (int) 2 
 Outer::Inner::D
-// CHECK: (enum Outer::Inner::E) @0x{{[0-9A-Fa-f]{6,12}.}}
 // CHECK: (Outer::Inner::E::D) : (int) -{{[0-9].*}}
 
 // Put an enum on the global scope

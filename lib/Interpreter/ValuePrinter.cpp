@@ -282,7 +282,6 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
     StreamCharPtr(o, ((const char*) (*(const std::string*)p).c_str()), Sep);
   }
   else if (Ty->isEnumeralType()) {
-    StreamObj(o, p, ValuePrinterInfo(Ty, &C), Sep);
     clang::EnumDecl* ED = Ty->getAs<clang::EnumType>()->getDecl();
     uint64_t value = *(const uint64_t*)p;
     bool IsFirst = true;
