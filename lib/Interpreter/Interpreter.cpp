@@ -836,8 +836,6 @@ namespace cling {
          != kSuccess)
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
     }
-    else
-      setCallbacks(0);
   }
 
   Interpreter::ExecutionResult
