@@ -133,8 +133,9 @@ namespace cling {
   void EvaluateTSynthesizer::Initialize() {
     // Most of the declaration we are looking up are in cling::runtime::internal
     NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
-    NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
-    NSD = utils::Lookup::Namespace(m_Sema, "internal", NSD);
+    NamespaceDecl* clingRuntimeNSD 
+      = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
+    NSD = utils::Lookup::Namespace(m_Sema, "internal", clingRuntimeNSD);
 
     // Find and set up EvaluateT
     DeclarationName Name = &m_Context->Idents.get("EvaluateT");
@@ -186,9 +187,9 @@ namespace cling {
     R.clear();
     Name = &m_Context->Idents.get("gCling");
     R.setLookupName(Name);
-    m_Sema->LookupQualifiedName(R, NSD);
+    m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
     m_gCling = R.getAsSingle<VarDecl>();
-    assert(m_gCling && "clang::DeclContext decl could not be found.");
+    assert(m_gCling && "gCling decl could not be found.");
 
     // Find and set the source locations to valid ones.
     R.clear();
