@@ -122,6 +122,7 @@ namespace cling {
   EvaluateTSynthesizer::EvaluateTSynthesizer(Sema* S)
     : TransactionTransformer(S), m_EvalDecl(0), m_LifetimeHandlerDecl(0),
       m_LHgetMemoryDecl(0), m_DynamicExprInfoDecl(0), m_DeclContextDecl(0), 
+      m_gCling(0),
       m_CurDeclContext(0), m_Context(&S->getASTContext()), m_UniqueNameCounter(0)
   { }
 
@@ -180,6 +181,14 @@ namespace cling {
     m_Sema->LookupQualifiedName(R, clangNSD);
     m_DeclContextDecl = R.getAsSingle<CXXRecordDecl>();
     assert(m_DeclContextDecl && "clang::DeclContext decl could not be found.");
+
+    // Find the gCling declaration
+    R.clear();
+    Name = &m_Context->Idents.get("gCling");
+    R.setLookupName(Name);
+    m_Sema->LookupQualifiedName(R, NSD);
+    m_gCling = R.getAsSingle<VarDecl>();
+    assert(m_gCling && "clang::DeclContext decl could not be found.");
 
     // Find and set the source locations to valid ones.
     R.clear();
@@ -365,11 +374,12 @@ namespace cling {
         // We want to call LifetimeHandler(DynamicExprInfo* ExprInfo,
         //                                 DeclContext DC,
         //                                 const char* type)
+        //                                 Interpreter* interp)
         llvm::SmallVector<Expr*, 4> Inits;
         // Add MyClass in LifetimeHandler unique(DynamicExprInfo* ExprInfo
         //                                       DC,
         //                                       "MyClass"
-        //                                       /*, Interp = gCling*/)
+        //                                       Interpreter* Interp)
         // Build Arg0 DynamicExprInfo
         Inits.push_back(BuildDynamicExprInfo(E));
         // Build Arg1 DeclContext* DC
@@ -384,6 +394,14 @@ namespace cling {
         std::string Res;
         CuredDeclTy.getAsStringInternal(Res, Policy);
         Inits.push_back(ConstructConstCharPtrExpr(Res.c_str()));
+
+        // Build Arg3 cling::Interpreter
+        CXXScopeSpec CXXSS;
+        DeclarationNameInfo NameInfo(m_gCling->getDeclName(), 
+                                     m_gCling->getLocStart());
+        Expr* gClingDRE 
+          = m_Sema->BuildDeclarationNameExpr(CXXSS, NameInfo ,m_gCling).take();
+        Inits.push_back(gClingDRE);
         
         // 2.3 Create a variable from LifetimeHandler.
         QualType HandlerTy = m_Context->getTypeDeclType(m_LifetimeHandlerDecl);
@@ -841,7 +859,7 @@ namespace cling {
     LifetimeHandler::LifetimeHandler(DynamicExprInfo* ExprInfo,
                                      clang::DeclContext* DC,
                                      const char* type,
-                                     Interpreter* Interp /* = gCling */):
+                                     Interpreter* Interp):
       m_Interpreter(Interp), m_Type(type) {
       std::string ctor("new ");
       ctor += type;

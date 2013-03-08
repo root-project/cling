@@ -130,6 +130,10 @@ namespace cling {
     /// in EvaluateT call.
     clang::CXXRecordDecl* m_DeclContextDecl;
 
+    /// \brief Stores the cling::Interpreter (cling::runtime::gCling),
+    /// used in as an parameter LifetimeHandler's ctor.
+    clang::VarDecl* m_gCling;
+
     /// \brief Keeps track of the replacements being made. If an AST node is
     /// changed with another it should be added to the map (newNode->oldNode).
     MapTy m_SubstSymbolMap;
