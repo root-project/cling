@@ -97,6 +97,7 @@ namespace cling {
                       const char* llvmdir);
     ~IncrementalParser();
 
+    void Initialize();
     clang::CompilerInstance* getCI() const { return m_CI.get(); }
     clang::Parser* getParser() const { return m_Parser.get(); }
     clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen.get(); }

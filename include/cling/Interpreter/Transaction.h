@@ -81,7 +81,7 @@ namespace cling {
     ///
     NestedTransactions m_NestedTransactions;
 
-    unsigned m_State : 2;
+    unsigned m_State : 3;
 
     unsigned m_IssuedDiags : 2;
 
@@ -119,6 +119,7 @@ namespace cling {
       kUnknown,
       kRolledBack,
       kRolledBackWithErrors,
+      kCommitting,
       kCommitted
     };
 
@@ -143,6 +144,7 @@ namespace cling {
 
     typedef NestedTransactions::const_iterator const_nested_iterator;
     typedef NestedTransactions::const_reverse_iterator const_reverse_nested_iterator;
+    // FIXME: misnomer, doesn't iterate over decls!
     const_nested_iterator nested_decls_begin() const {
       return m_NestedTransactions.begin();
     }
@@ -234,6 +236,14 @@ namespace cling {
 
       m_NestedTransactions.push_back(nested);
     }
+
+    ///\brief Direct access.
+    ///
+    const DelayCallInfo& operator[](size_t I) const { return m_DeclQueue[I]; }
+
+    ///\brief Direct access, non-const.
+    ///
+    DelayCallInfo& operator[](size_t I) { return m_DeclQueue[I]; }
 
     ///\brief Returns the declaration count.
     ///

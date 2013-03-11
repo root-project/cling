@@ -205,6 +205,7 @@ namespace cling {
         return 0;
       }
     }
+
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
                                                Invocation->getTargetOpts()));
     if (!CI->hasTarget()) {
@@ -212,6 +213,7 @@ namespace cling {
       CI = 0;
       return 0;
     }
+
     CI->getTarget().setForcedLangOptions(CI->getLangOpts());
     SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
     if (CI->getTarget().getTriple().getOS() == llvm::Triple::Cygwin) {
@@ -234,6 +236,28 @@ namespace cling {
     // Set up the memory buffer
     if (buffer)
       CI->getSourceManager().createMainFileIDForMemBuffer(buffer);
+    else {
+      // As main file we want
+      // * a virtual file that is claiming to be huge 
+      // * with an empty memory buffer attached (to bring the content)
+      SourceManager& SM = CI->getSourceManager();
+      FileManager& FM = SM.getFileManager();
+      // Build the virtual file
+      const char* Filename = "InteractiveInputLineIncluder.h";
+      const std::string& CGOptsMainFileName
+        = CI->getInvocation().getCodeGenOpts().MainFileName;
+      if (!CGOptsMainFileName.empty())
+        Filename = CGOptsMainFileName.c_str();
+      const FileEntry* FE
+        = FM.getVirtualFile(Filename, 1U << 15U, time(0));
+      FileID MainFileID = SM.createMainFileID(FE, SrcMgr::C_User);
+      const SrcMgr::SLocEntry& MainFileSLocE = SM.getSLocEntry(MainFileID);
+      const SrcMgr::ContentCache* MainFileCC
+        = MainFileSLocE.getFile().getContentCache();
+      llvm::MemoryBuffer* MainFileMB
+        = llvm::MemoryBuffer::getMemBuffer("/*CLING MAIN FILE*/\n");
+      const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(MainFileMB);
+    }
 
     // Set up the preprocessor
     CI->createPreprocessor();
@@ -265,11 +289,12 @@ namespace cling {
                                                  // the JIT to crash
     // When asserts are on, TURN ON not compare the VerifyModule
     assert(CI->getCodeGenOpts().VerifyModule = 1);
+
     return CI;
   }
 
   void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {
-    Opts.EmitAllDecls = 1;
+    Opts.EmitAllDecls = 0;
     Opts.Exceptions = 1;
     Opts.CXXExceptions = 1;
     Opts.Deprecated = 1;

@@ -144,6 +144,8 @@ namespace cling {
 
     m_ExecutionContext.reset(new ExecutionContext());
 
+    m_IncrParser->Initialize();
+
     // Add path to interpreter's include files
     // Try to find the headers in the src folder first
 #ifdef CLING_SRCDIR_INCL
@@ -196,12 +198,19 @@ namespace cling {
       declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
       declare("#include \"cling/Interpreter/ValuePrinter.h\"");
 
-      // Set up the gCling variable
-      std::stringstream initializer;
-      initializer << "namespace cling {namespace runtime { "
-         "cling::Interpreter *gCling=(cling::Interpreter*)"
-                  << (uintptr_t)this << ";} }";
-      declare(initializer.str());
+      if (getCodeGenerator()) {
+        // Set up the gCling variable if it can be used
+        std::stringstream initializer;
+        initializer << "namespace cling {namespace runtime { "
+          "cling::Interpreter *gCling=(cling::Interpreter*)"
+                    << (uintptr_t)this << ";} }";
+        declare(initializer.str());
+#if 0
+        initializer << "cling::runtime::gCling=(cling::Interpreter*)"
+                    << (uintptr_t)this << ";";
+        execute(initializer.str());
+#endif
+      }
     }
     else {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");

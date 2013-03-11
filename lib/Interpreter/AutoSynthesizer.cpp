@@ -84,11 +84,13 @@ namespace cling {
     // if (!getTransaction()->getCompilationOpts().ResultEvaluation)
     //   return;
     AutoFixer autoFixer(m_Sema);
-    for (Transaction::const_iterator I = getTransaction()->decls_begin(), 
-           E = getTransaction()->decls_end(); I != E; ++I)
-      for (DeclGroupRef::const_iterator J = (*I).m_DGR.begin(), 
-             JE = (*I).m_DGR.end(); J != JE; ++J)
+    // size can change in the loop!
+    for (size_t Idx = 0; Idx < getTransaction()->size(); ++Idx) {
+      Transaction::DelayCallInfo I = (*getTransaction())[Idx];
+      for (DeclGroupRef::const_iterator J = I.m_DGR.begin(), 
+             JE = I.m_DGR.end(); J != JE; ++J)
         if ((*J)->hasBody())
           autoFixer.Fix(cast<CompoundStmt>((*J)->getBody()));
+    }
   }
 } // end namespace cling

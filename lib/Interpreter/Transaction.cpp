@@ -27,6 +27,30 @@ namespace cling {
     //     return;
     // }
     // register the wrapper if any.
+
+    if (getState() == kCommitting) {
+      // We are committing and getting enw decls in.
+      // Move them into a sub transaction that will be processed
+      // recursively at the end of of commitTransaction.
+      Transaction* subTransactionWhileCommitting = 0;
+      if (hasNestedTransactions()
+          && m_NestedTransactions.back()->getState() == kUnknown)
+        subTransactionWhileCommitting = m_NestedTransactions.back();
+      else {
+        // FIXME: is this correct (Axel says "yes")
+        CompilationOptions Opts(getCompilationOpts());
+        Opts.DeclarationExtraction = 0;
+        Opts.ValuePrinting = CompilationOptions::VPDisabled;
+        Opts.ResultEvaluation = 0;
+        Opts.DynamicScoping = 0;
+        subTransactionWhileCommitting
+          = new Transaction(Opts, getModule());
+        addNestedTransaction(subTransactionWhileCommitting);
+      }
+      subTransactionWhileCommitting->append(DCI);
+      return;
+    }
+
     if (DCI.m_DGR.isSingleDecl()) {
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl()))
         if (utils::Analyze::IsWrapper(FD)) {

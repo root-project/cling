@@ -24,11 +24,14 @@ namespace cling {
     if (!getTransaction()->getCompilationOpts().Debug)
       return;
 
-    for (Transaction::const_iterator I = getTransaction()->decls_begin(), 
-           E = getTransaction()->decls_end(); I != E; ++I)
-      for (DeclGroupRef::const_iterator J = (*I).m_DGR.begin(), 
-             JE = (*I).m_DGR.end(); J != JE; ++J)
+    // FIXME: Size might change in the loop!
+    for (size_t Idx = 0; Idx < getTransaction()->size(); ++Idx) {
+       // Copy DCI; it might get relocated below.
+      Transaction::DelayCallInfo I = (*getTransaction())[Idx];
+      for (DeclGroupRef::const_iterator J = I.m_DGR.begin(), 
+             JE = I.m_DGR.end(); J != JE; ++J)
         printDecl(*J);
+    }
   }
 
   void ASTDumper::printDecl(Decl* D) {

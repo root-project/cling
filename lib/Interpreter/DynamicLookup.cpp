@@ -216,10 +216,12 @@ namespace cling {
       Initialize();
     }
 
-    for (Transaction::const_iterator I = getTransaction()->decls_begin(), 
-           E = getTransaction()->decls_end(); I != E; ++I)
-      for (DeclGroupRef::const_iterator J = (*I).m_DGR.begin(), 
-             JE = (*I).m_DGR.end(); J != JE; ++J)
+    // size can change in the loop!
+    for (size_t Idx = 0; Idx < getTransaction()->size(); ++Idx) {
+      // Copy DCI, might get reallocated below.
+      Transaction::DelayCallInfo I = (*getTransaction())[Idx];
+      for (DeclGroupRef::const_iterator J = I.m_DGR.begin(), 
+             JE = I.m_DGR.end(); J != JE; ++J)
         if (ShouldVisit(*J) && (*J)->hasBody()) {
           if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*J)) {
             // Set the decl context, which is needed by Evaluate.
@@ -230,6 +232,7 @@ namespace cling {
           assert ((!isa<BlockDecl>(*J) || !isa<ObjCMethodDecl>(*J))
                   && "Not implemented yet!");
         }
+    }
 
     //TODO: Check for error before returning.
   }

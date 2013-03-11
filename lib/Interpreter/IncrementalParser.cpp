@@ -23,6 +23,7 @@
 #include "clang/AST/DeclGroup.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/FileManager.h"
+#include "clang/CodeGen/CodeGenModule.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Lex/Preprocessor.h"
@@ -50,7 +51,7 @@ namespace cling {
     m_LastTransaction(0) {
 
     CompilerInstance* CI
-      = CIFactory::createCI(llvm::MemoryBuffer::getMemBuffer("", "CLING"),
+       = CIFactory::createCI(0 /*llvm::MemoryBuffer::getMemBuffer("", "CLING")*/,
                             argc, argv, llvmdir);
     assert(CI && "CompilerInstance is (null)!");
 
@@ -77,16 +78,40 @@ namespace cling {
     m_TTransformers.push_back(new ReturnSynthesizer(TheSema));
     m_TTransformers.push_back(new ASTDumper());
     m_TTransformers.push_back(new DeclExtractor(TheSema));
+  }
+  void IncrementalParser::Initialize() {
+    // pull in PCHs
+    if (getCodeGenerator())
+      getCodeGenerator()->Initialize(getCI()->getASTContext());
+    const std::string& PCHFileName
+      = m_CI->getInvocation ().getPreprocessorOpts().ImplicitPCHInclude;
+    if (!PCHFileName.empty()) {
+      CompilationOptions CO;
+      CO.DeclarationExtraction = 0;
+      CO.ValuePrinting = CompilationOptions::VPDisabled;
+      CO.CodeGeneration = hasCodeGenerator();
+      beginTransaction(CO);
+      m_CI->createPCHExternalASTSource(PCHFileName,
+                                       true /*DisablePCHValidation*/,
+                                       true /*DisableStatCache*/,
+                                       true /*AllowPCHWithCompilerErrors*/,
+                                       0 /*DeserializationListener*/);
+      commitTransaction(endTransaction());
+    }
 
-
-    m_Parser.reset(new Parser(CI->getPreprocessor(), *TheSema,
+    Sema* TheSema = &m_CI->getSema();
+    m_Parser.reset(new Parser(m_CI->getPreprocessor(), *TheSema,
                               false /*skipFuncBodies*/));
-    CI->getPreprocessor().EnterMainSourceFile();
+    m_CI->getPreprocessor().EnterMainSourceFile();
     // Initialize the parser after we have entered the main source file.
     m_Parser->Initialize();
     // Perform initialization that occurs after the parser has been initialized
     // but before it parses anything. Initializes the consumers too.
-    CI->getSema().Initialize();
+    TheSema->Initialize();
+
+    ExternalASTSource *External = TheSema->getASTContext().getExternalSource();
+    if (External)
+      External->StartTranslationUnit(m_Consumer);
   }
 
   IncrementalParser::~IncrementalParser() {
@@ -179,6 +204,8 @@ namespace cling {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
 
+    T->setState(Transaction::kCommitting);
+
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
       rollbackTransaction(T);
@@ -215,7 +242,8 @@ namespace cling {
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // Reset the module builder to clean up global initializers, c'tors, d'tors
-      getCodeGenerator()->Initialize(getCI()->getASTContext());
+       CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
+       CGM->Release();
 
       // codegen the transaction
       if (T->getCompilationOpts().CodeGenerationForModule) {
@@ -233,11 +261,13 @@ namespace cling {
         
         llvm::SmallVector<FunctionDecl*, 32> inlines;
         InlineCollector IC(inlines);
-        for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
-             I != E; ++I) {
-          if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
-            for (DeclGroupRef::const_iterator J = (*I).m_DGR.begin(), 
-                   JE = (*I).m_DGR.end(); J != JE; ++J) {
+        // FIXME: Size might change in the loop!
+        for (size_t Idx = 0; Idx < T->size(); ++Idx) {
+          // Copy DCI; it might get relocated below.
+          Transaction::DelayCallInfo I = (*T)[Idx];
+          if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
+            for (DeclGroupRef::const_iterator J = I.m_DGR.begin(), 
+                   JE = I.m_DGR.end(); J != JE; ++J) {
 
               // Traverse the TagDecl to find the inlined members.
               inlines.clear();
@@ -249,33 +279,38 @@ namespace cling {
               }
             }
         }
-      } else for (Transaction::iterator I = T->decls_begin(), E = T->decls_end(); 
-           I != E; ++I) {
-        if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
-          getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
-        else if (I->m_Call == Transaction::kCCIHandleInterestingDecl)
-          getCodeGenerator()->HandleInterestingDecl(I->m_DGR);
-        else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
-          TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
+      } else for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/;
+                  ++Idx) {
+        // Copy DCI; it might get relocated below.
+        Transaction::DelayCallInfo I = (*T)[Idx];
+        if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
+          getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
+        else if (I.m_Call == Transaction::kCCIHandleInterestingDecl) {
+          // Usually through BackendConsumer which doesn't implement
+          // HandleInterestingDecl() and thus calls
+          // ASTConsumer::HandleInterestingDecl()
+          getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
+        } else if(I.m_Call == Transaction::kCCIHandleTagDeclDefinition) {
+          TagDecl* TD = cast<TagDecl>(I.m_DGR.getSingleDecl());
           getCodeGenerator()->HandleTagDeclDefinition(TD);
         }
-        else if (I->m_Call == Transaction::kCCIHandleVTable) {
-          CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I->m_DGR.getSingleDecl());
+        else if (I.m_Call == Transaction::kCCIHandleVTable) {
+          CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I.m_DGR.getSingleDecl());
           getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
         }
-        else if (I->m_Call
+        else if (I.m_Call
                  == Transaction::kCCIHandleCXXImplicitFunctionInstantiation) {
-          FunctionDecl* FD = cast<FunctionDecl>(I->m_DGR.getSingleDecl());
+          FunctionDecl* FD = cast<FunctionDecl>(I.m_DGR.getSingleDecl());
           getCodeGenerator()->HandleCXXImplicitFunctionInstantiation(FD);
         }
-        else if (I->m_Call
+        else if (I.m_Call
                  == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
-          VarDecl* VD = cast<VarDecl>(I->m_DGR.getSingleDecl());
+          VarDecl* VD = cast<VarDecl>(I.m_DGR.getSingleDecl());
           getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
 
 
         }
-        else if (I->m_Call == Transaction::kCCINone)
+        else if (I.m_Call == Transaction::kCCINone)
           ; // We use that internally as delimiter in the Transaction.
         else
           llvm_unreachable("We shouldn't have decl without call info.");
@@ -290,11 +325,23 @@ namespace cling {
       }
     }
 
-    T->setState(Transaction::kCommitted);
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
 
-    if (callbacks)
+    if (callbacks) {
       callbacks->TransactionCommitted(*T);
+      if (T->hasNestedTransactions()) {
+        Transaction* SubTransactionWhileCommitting = *T->rnested_decls_begin();
+        if (SubTransactionWhileCommitting->getState()
+            == Transaction::kUnknown) {
+          // A nested transaction was created while committing this
+          // transaction; commit it now.
+          SubTransactionWhileCommitting->setCompleted();
+          commitTransaction(SubTransactionWhileCommitting);
+        }
+      }
+    }
+
+    T->setState(Transaction::kCommitted);    
   }
 
   void IncrementalParser::rollbackTransaction(Transaction* T) const {
@@ -348,11 +395,13 @@ namespace cling {
   //
   void IncrementalParser::CreateSLocOffsetGenerator() {
     SourceManager& SM = getCI()->getSourceManager();
+#if 0
     FileManager& FM = SM.getFileManager();
     const FileEntry* FE
       = FM.getVirtualFile("InteractiveInputLineIncluder.h", 1U << 15U, time(0));
     m_VirtualFileID = SM.createFileID(FE, SourceLocation(), SrcMgr::C_User);
-
+#endif
+    m_VirtualFileID = SM.getMainFileID();
     assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
   }
 
