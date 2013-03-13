@@ -31,6 +31,8 @@
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaInternal.h"
+#include "clang/Serialization/ASTReader.h"
+#include "clang/Serialization/ASTDeserializationListener.h"
 
 #include "llvm/Linker.h"
 #include "llvm/LLVMContext.h"
@@ -91,6 +93,20 @@ namespace cling {
   }
 #endif
 
+  class ClingCallbackAdaptor: public ASTDeserializationListener {
+  public:
+    ClingCallbackAdaptor(cling::InterpreterCallbacks* CB): m_CB(CB) {}
+    virtual void DeclRead(serialization::DeclID, const Decl *D) {
+      m_CB->DeclDeserialized(D);
+    }
+    virtual void TypeRead(serialization::TypeIdx, QualType T) {
+      m_CB->TypeDeserialized(T.getTypePtr());
+    }
+  private:
+    cling::InterpreterCallbacks* m_CB;
+  };
+
+
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
   // GetMainExecutable (since some platforms don't support taking the
@@ -118,7 +134,7 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
     m_UniqueCounter(0), m_PrintAST(false), m_DynamicLookupEnabled(false), 
-    m_RawInputEnabled(false) {
+    m_RawInputEnabled(false), m_CallbackAdaptor(0) {
 
     m_DyLibs.reset(new DynLibSetImpl());
     m_AtExitFuncs.reserve(200);
@@ -226,6 +242,7 @@ namespace cling {
       const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
       (*AEE.m_Func)(AEE.m_Arg);
     }
+    delete m_CallbackAdaptor;
   }
 
   const char* Interpreter::getVersion() const {
@@ -831,6 +848,14 @@ namespace cling {
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
     // We need it to enable LookupObject callback.
     m_Callbacks.reset(C);
+    // FIXME: what if the ASTReader is set only later?
+    // FIXME: need to create a multiplexer if a DeserializationListener is
+    // alreday present.
+    if (getCI()->getModuleManager()) {
+      m_CallbackAdaptor = new ClingCallbackAdaptor(C);
+      getCI()->getModuleManager()
+        ->setDeserializationListener(m_CallbackAdaptor);
+    }
   }
 
   const Transaction* Interpreter::getFirstTransaction() const {

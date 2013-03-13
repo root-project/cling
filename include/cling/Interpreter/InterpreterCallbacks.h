@@ -12,6 +12,7 @@
 #include "llvm/ADT/OwningPtr.h"
 
 namespace clang {
+  class Decl;
   class LookupResult;
   class Scope;
 }
@@ -77,6 +78,7 @@ namespace cling {
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///
     bool m_IsRuntime;
+
   public:
     InterpreterCallbacks(Interpreter* interp,
                          InterpreterExternalSemaSource* IESS = 0);
@@ -98,16 +100,26 @@ namespace cling {
     ///\brief This callback is invoked whenever interpreter has committed new
     /// portion of declarations.
     ///
-    ///\param[out] - The transaction that was committed.
+    ///\param[in] - The transaction that was committed.
     ///
     virtual void TransactionCommitted(const Transaction&) {}
 
     ///\brief This callback is invoked whenever interpreter has reverted a
     /// portion of declarations.
     ///
-    ///\param[out] - The transaction that was reverted.
+    ///\param[in] - The transaction that was reverted.
     ///
     virtual void TransactionUnloaded(const Transaction&) {}
+
+    /// \brief Used to inform client about a new decl read by the ASTReader.
+    ///
+    ///\param[in] - The Decl read by the ASTReader.
+    virtual void DeclDeserialized(const clang::Decl*) {}
+
+    /// \brief Used to inform client about a new type read by the ASTReader.
+    ///
+    ///\param[in] - The Type read by the ASTReader.
+    virtual void TypeDeserialized(const clang::Type*) {}
 
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
