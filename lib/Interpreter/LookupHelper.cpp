@@ -430,6 +430,7 @@ namespace cling {
         GivenArgs.push_back(val);
       }
       // Type names should be comma separated.
+      // FIXME: Here if we have type followed by name won't work. Eg int f, ...
       if (!P.getCurToken().is(clang::tok::comma)) {
         break;
       }
