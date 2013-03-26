@@ -85,11 +85,12 @@ namespace cling {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
     const std::string& PCHFileName
       = m_CI->getInvocation ().getPreprocessorOpts().ImplicitPCHInclude;
+
+    CompilationOptions CO;
+    CO.DeclarationExtraction = 0;
+    CO.ValuePrinting = CompilationOptions::VPDisabled;
+    CO.CodeGeneration = hasCodeGenerator();
     if (!PCHFileName.empty()) {
-      CompilationOptions CO;
-      CO.DeclarationExtraction = 0;
-      CO.ValuePrinting = CompilationOptions::VPDisabled;
-      CO.CodeGeneration = hasCodeGenerator();
       beginTransaction(CO);
       m_CI->createPCHExternalASTSource(PCHFileName,
                                        true /*DisablePCHValidation*/,
@@ -99,6 +100,7 @@ namespace cling {
       commitTransaction(endTransaction());
     }
 
+    beginTransaction(CO);
     Sema* TheSema = &m_CI->getSema();
     m_Parser.reset(new Parser(m_CI->getPreprocessor(), *TheSema,
                               false /*skipFuncBodies*/));
@@ -112,6 +114,7 @@ namespace cling {
     ExternalASTSource *External = TheSema->getASTContext().getExternalSource();
     if (External)
       External->StartTranslationUnit(m_Consumer);
+    commitTransaction(endTransaction());
   }
 
   IncrementalParser::~IncrementalParser() {
