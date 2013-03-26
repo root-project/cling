@@ -67,4 +67,3 @@ StoredValueRef StoredValueRef::bitwiseCopy(const ASTContext& ctx,
   }
   return SValue;
 }
-

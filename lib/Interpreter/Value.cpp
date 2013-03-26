@@ -55,7 +55,8 @@ void Value::setGV(llvm::GenericValue GV) {
 }
 
 clang::QualType Value::getClangType() const {
-  assert(sizeof(clang::QualType) <= sizeof(m_ClangType) && "m_ClangType too small!");
+  assert(sizeof(clang::QualType) <= sizeof(m_ClangType) 
+         && "m_ClangType too small!");
   return clang::QualType::getFromOpaquePtr(m_ClangType);
 }
 

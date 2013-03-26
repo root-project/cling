@@ -58,13 +58,13 @@ namespace cling {
       return bitwiseCopy(ctx, *svalue.m_Value);
     }
 
+    /// \brief Creates an invalid value.
     static StoredValueRef invalidValue() { return StoredValueRef(); }
 
     /// \brief Construct an empty, invalid value.
     StoredValueRef() {}
 
     /// \brief Determine whether a Value is available.
-    //
     bool isValid() const { return m_Value; }
 
     /// \brief Determine whether the Value needs to manage an allocation.
