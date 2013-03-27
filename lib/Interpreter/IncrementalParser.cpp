@@ -51,8 +51,7 @@ namespace cling {
     m_LastTransaction(0) {
 
     CompilerInstance* CI
-       = CIFactory::createCI(0 /*llvm::MemoryBuffer::getMemBuffer("", "CLING")*/,
-                            argc, argv, llvmdir);
+      = CIFactory::createCI(0, argc, argv, llvmdir);
     assert(CI && "CompilerInstance is (null)!");
 
     m_Consumer = dyn_cast<DeclCollector>(&CI->getASTConsumer());
@@ -245,8 +244,8 @@ namespace cling {
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // Reset the module builder to clean up global initializers, c'tors, d'tors
-       CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
-       CGM->Release();
+      CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
+      CGM->Release();
 
       // codegen the transaction
       if (T->getCompilationOpts().CodeGenerationForModule) {
@@ -398,12 +397,6 @@ namespace cling {
   //
   void IncrementalParser::CreateSLocOffsetGenerator() {
     SourceManager& SM = getCI()->getSourceManager();
-#if 0
-    FileManager& FM = SM.getFileManager();
-    const FileEntry* FE
-      = FM.getVirtualFile("InteractiveInputLineIncluder.h", 1U << 15U, time(0));
-    m_VirtualFileID = SM.createFileID(FE, SourceLocation(), SrcMgr::C_User);
-#endif
     m_VirtualFileID = SM.getMainFileID();
     assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
   }

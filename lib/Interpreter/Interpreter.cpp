@@ -221,11 +221,6 @@ namespace cling {
           "cling::Interpreter *gCling=(cling::Interpreter*)"
                     << (uintptr_t)this << ";} }";
         declare(initializer.str());
-#if 0
-        initializer << "cling::runtime::gCling=(cling::Interpreter*)"
-                    << (uintptr_t)this << ";";
-        execute(initializer.str());
-#endif
       }
     }
     else {

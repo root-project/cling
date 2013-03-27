@@ -205,7 +205,6 @@ namespace cling {
         return 0;
       }
     }
-
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
                                                Invocation->getTargetOpts()));
     if (!CI->hasTarget()) {
@@ -213,7 +212,6 @@ namespace cling {
       CI = 0;
       return 0;
     }
-
     CI->getTarget().setForcedLangOptions(CI->getLangOpts());
     SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
     if (CI->getTarget().getTriple().getOS() == llvm::Triple::Cygwin) {
@@ -289,7 +287,6 @@ namespace cling {
                                                  // the JIT to crash
     // When asserts are on, TURN ON not compare the VerifyModule
     assert(CI->getCodeGenOpts().VerifyModule = 1);
-
     return CI;
   }
 

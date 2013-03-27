@@ -78,7 +78,6 @@ namespace cling {
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///
     bool m_IsRuntime;
-
   public:
     InterpreterCallbacks(Interpreter* interp,
                          InterpreterExternalSemaSource* IESS = 0);
