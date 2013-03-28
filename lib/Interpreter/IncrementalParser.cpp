@@ -244,6 +244,7 @@ namespace cling {
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // codegen the transaction
+#if 0
       if (T->getCompilationOpts().CodeGenerationForModule) {
         //
         // That is a hackish way of forcing the codegen on inlines. It assumes
@@ -277,7 +278,9 @@ namespace cling {
               }
             }
         }
-      } else for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/;
+      } else
+#endif
+        for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/;
                   ++Idx) {
         // Copy DCI; it might get relocated below.
         Transaction::DelayCallInfo I = (*T)[Idx];
