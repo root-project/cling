@@ -874,6 +874,11 @@ namespace cling {
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     ExecutionContext::ExecutionResult ExeRes
        = m_ExecutionContext->runStaticInitializersOnce(module);
+
+    // Reset the module builder to clean up global initializers, c'tors, d'tors
+    CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
+    CGM->Release();
+
     return ConvertExecutionResult(ExeRes);
   }
 

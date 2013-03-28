@@ -243,10 +243,6 @@ namespace cling {
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
-      // Reset the module builder to clean up global initializers, c'tors, d'tors
-      CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
-      CGM->Release();
-
       // codegen the transaction
       if (T->getCompilationOpts().CodeGenerationForModule) {
         //
@@ -331,15 +327,15 @@ namespace cling {
 
     if (callbacks) {
       callbacks->TransactionCommitted(*T);
-      if (T->hasNestedTransactions()) {
-        Transaction* SubTransactionWhileCommitting = *T->rnested_decls_begin();
-        if (SubTransactionWhileCommitting->getState()
-            == Transaction::kUnknown) {
-          // A nested transaction was created while committing this
-          // transaction; commit it now.
-          SubTransactionWhileCommitting->setCompleted();
-          commitTransaction(SubTransactionWhileCommitting);
-        }
+    }
+    if (T->hasNestedTransactions()) {
+      Transaction* SubTransactionWhileCommitting = *T->rnested_decls_begin();
+      if (SubTransactionWhileCommitting->getState()
+          == Transaction::kUnknown) {
+        // A nested transaction was created while committing this
+        // transaction; commit it now.
+        SubTransactionWhileCommitting->setCompleted();
+        commitTransaction(SubTransactionWhileCommitting);
       }
     }
 
