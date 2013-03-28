@@ -398,7 +398,7 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::process(const std::string& input, StoredValueRef* V /* = 0 */,
                        const Decl** D /* = 0 */) {
-    if (isRawInputEnabled())
+    if (isRawInputEnabled() || !ShouldWrapInput(input))
       return declare(input, D);
 
     CompilationOptions CO;
@@ -407,9 +407,6 @@ namespace cling {
     CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
-
-    if (!ShouldWrapInput(input))
-      return declare(input, D);
 
     if (EvaluateInternal(input, CO, V) == Interpreter::kFailure) {
       if (D)
