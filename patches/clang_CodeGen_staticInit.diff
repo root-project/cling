@@ -1,7 +1,7 @@
-Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenModule.cpp
+Index: tools/clang/lib/CodeGen/CodeGenModule.cpp
 ===================================================================
---- interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenModule.cpp	(revision 48857)
-+++ interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenModule.cpp	(revision 48975)
+--- tools/clang/lib/CodeGen/CodeGenModule.cpp	(revision 48857)
++++ tools/clang/lib/CodeGen/CodeGenModule.cpp	(revision 48975)
 @@ -443,7 +443,7 @@
    GlobalDtors.push_back(std::make_pair(Dtor, Priority));
  }
@@ -20,10 +20,10 @@ Index: interpreter/llvm/src/tools/clang/lib/CodeGen/CodeGenModule.cpp
  }
  
  llvm::GlobalValue::LinkageTypes
-Index: interpreter/llvm/src/tools/clang/include/clang/CodeGen/CodeGenModule.h
+Index: tools/clang/include/clang/CodeGen/CodeGenModule.h
 ===================================================================
---- interpreter/llvm/src/tools/clang/include/clang/CodeGen/CodeGenModule.h	(revision 48857)
-+++ interpreter/llvm/src/tools/clang/include/clang/CodeGen/CodeGenModule.h	(revision 48975)
+--- tools/clang/include/clang/CodeGen/CodeGenModule.h	(revision 48857)
++++ tools/clang/include/clang/CodeGen/CodeGenModule.h	(revision 48975)
 @@ -960,8 +960,8 @@
  
    /// EmitCtorList - Generates a global array of functions and priorities using
