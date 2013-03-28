@@ -51,7 +51,10 @@ namespace cling {
       return;
     }
 
-    if (DCI.m_DGR.isSingleDecl()) {
+    assert(getState() == kUnknown);
+    bool checkForWrapper = !m_WrapperFD;
+    assert(checkForWrapper = true && "Check for wrappers with asserts");
+    if (checkForWrapper && DCI.m_DGR.isSingleDecl()) {
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl()))
         if (utils::Analyze::IsWrapper(FD)) {
           assert(!m_WrapperFD && "Two wrappers in one transaction?");
