@@ -25,7 +25,7 @@ void symbol_requester() {
    printValuePublicDefault(llvm::outs(), 0, VPI);
    cling_PrintValue(0, 0, 0);
    flushOStream(llvm::outs());
-   LookupHelper h(0);
+   LookupHelper h(0,0);
    h.findType("");
    h.findScope("");
    h.findFunctionProto(0, "", "");

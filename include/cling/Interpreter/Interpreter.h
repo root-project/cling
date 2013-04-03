@@ -68,6 +68,18 @@ namespace cling {
   class Interpreter {
   public:
 
+    ///\brief Pushes a new transaction, which will collect the decls that came
+    /// within the scope of the RAII object. Calls commit transaction at 
+    /// destruction.
+    class PushTransactionRAII {
+    private:
+      Interpreter* m_Interpreter;
+    public:
+      PushTransactionRAII(Interpreter* i);
+      ~PushTransactionRAII();
+      void pop();
+    };
+
     ///\brief Describes the return result of the different routines that do the
     /// incremental compilation.
     ///

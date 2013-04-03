@@ -106,6 +106,28 @@ namespace cling {
     cling::InterpreterCallbacks* m_CB;
   };
 
+  Interpreter::PushTransactionRAII::PushTransactionRAII(Interpreter* i)
+    :m_Interpreter(i) {
+    CompilationOptions CO;
+    CO.DeclarationExtraction = 0;
+    CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
+    CO.DynamicScoping = 0;
+    CO.Debug = 0;
+    CO.CodeGeneration = 1;
+    CO.CodeGenerationForModule = 0;
+
+    m_Interpreter->m_IncrParser->beginTransaction(CO);
+  }
+
+  Interpreter::PushTransactionRAII::~PushTransactionRAII() {
+    pop();
+  }
+
+  void Interpreter::PushTransactionRAII::pop() {
+    Transaction* T = m_Interpreter->m_IncrParser->endTransaction();
+    m_Interpreter->m_IncrParser->commitTransaction(T);
+  }  
 
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
@@ -156,7 +178,7 @@ namespace cling {
     m_LookupHelper.reset(new LookupHelper(new Parser(SemaRef.getPreprocessor(), 
                                                      SemaRef, 
                                                      /*SkipFunctionBodies*/false,
-                                                     /*isTemp*/true)));
+                                                     /*isTemp*/true), this));
 
     m_ExecutionContext.reset(new ExecutionContext());
 

@@ -6,6 +6,8 @@
 
 #include "cling/Interpreter/LookupHelper.h"
 
+#include "cling/Interpreter/Interpreter.h"
+
 #include "clang/AST/ASTContext.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Parse/RAIIObjectsForParser.h"
@@ -67,7 +69,8 @@ namespace cling {
 
   // pin *tor here so that we can have clang::Parser defined and be able to call
   // the dtor on the OwningPtr
-  LookupHelper::LookupHelper(clang::Parser* P): m_Parser(P) {}
+  LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp) 
+    : m_Parser(P), m_Interpreter(interp) {}
 
   LookupHelper::~LookupHelper() {}
 
@@ -195,6 +198,9 @@ namespace cling {
                   TagDecl* TD = TagTy->getDecl();
                   if (TD) {
                     if (instantiateTemplate) {
+                      // Here we might not have an active transaction to handle
+                      // the caused instantiation decl.
+                      Interpreter::PushTransactionRAII pushedT(m_Interpreter);
                       // Make sure it is not just forward declared, and
                       // instantiate any templates.
                       if (!S.RequireCompleteDeclContext(SS, TD)) {

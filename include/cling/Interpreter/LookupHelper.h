@@ -26,7 +26,7 @@ namespace llvm {
 }
 
 namespace cling {
-
+  class Interpreter;
   ///\brief Reflection information query interface. The class performs lookups
   /// in the currently loaded information in the AST, using the same Parser, 
   /// Sema and Preprocessor objects.
@@ -34,9 +34,10 @@ namespace cling {
   class LookupHelper {
   private:
     llvm::OwningPtr<clang::Parser> m_Parser;
+    Interpreter* m_Interpreter; // we do not own.
   public:
 
-    LookupHelper(clang::Parser* P);
+    LookupHelper(clang::Parser* P, Interpreter* interp);
     ~LookupHelper();
 
     ///\brief Lookup a type by name, starting from the global
