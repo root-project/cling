@@ -11,6 +11,7 @@
 
 namespace clang {
   class ASTContext;
+  class CodeGenerator;
   class DeclGroupRef;
 }
 
@@ -21,16 +22,24 @@ namespace cling {
   ///\brief Collects declarations and fills them in cling::Transaction.
   ///
   /// cling::Transaction becomes is a main building block in the interpreter. 
-  /// cling::DeclCollector is responsible for appending all the declarations seen 
-  /// by clang.
+  /// cling::DeclCollector is responsible for appending all the declarations 
+  /// seen by clang.
   ///
   class DeclCollector: public clang::ASTConsumer {
   private:
     Transaction* m_CurTransaction;
 
+    ///\brief This is the fast path for the declarations which do not need 
+    /// special handling. Eg. deserialized declarations.
+    clang::CodeGenerator* m_CodeGen; // we do not own.
+
   public:
-    DeclCollector() : m_CurTransaction(0) {}
+    DeclCollector() : m_CurTransaction(0), m_CodeGen(0) {}
     virtual ~DeclCollector();
+
+    // FIXME: Gross hack, which should disappear when we move some of the 
+    // initialization happening in the IncrementalParser to the CIFactory.
+    void setCodeGen(clang::CodeGenerator* codeGen) { m_CodeGen = codeGen; }
 
     /// \{
     /// \name ASTConsumer overrides

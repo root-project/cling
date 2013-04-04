@@ -64,6 +64,7 @@ namespace cling {
                                         CI->getCodeGenOpts(),
                                         *m_Interpreter->getLLVMContext()
                                         ));
+      m_Consumer->setCodeGen(m_CodeGen.get());
     }
 
     CreateSLocOffsetGenerator();
