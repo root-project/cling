@@ -12,6 +12,7 @@
 #include "clang/AST/DeclGroup.h"
 
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/OwningPtr.h"
 
 namespace clang {
   class Decl;
@@ -67,11 +68,7 @@ namespace cling {
     /// the clang::DeclContext we will miss the injected onces (eg. template 
     /// instantiations).
     ///
-    DeclQueue m_DeclQueue;
-
-    ///\brief Shows whether the transaction was commited or not.
-    ///
-    bool m_Completed;
+    llvm::OwningPtr<DeclQueue> m_DeclQueue;
 
     ///\brief The enclosing transaction if nested. 
     ///
@@ -106,10 +103,16 @@ namespace cling {
     ///
     void setNext(Transaction* T) { m_Next = T; }
 
+    const DeclQueue& getQueue() const {
+      static const DeclQueue m_EmptyQueue;
+      if (!m_DeclQueue) return m_EmptyQueue;
+      return *m_DeclQueue;
+    }
+
   public:
 
     Transaction(const CompilationOptions& Opts, llvm::Module* M)
-      : m_Completed(false), m_Parent(0), m_State(kCollecting),
+      : m_Parent(0), m_State(kCollecting),
         m_IssuedDiags(kNone), m_Opts(Opts), m_Module(M), m_WrapperFD(0),
         m_Next(0)
     { }
@@ -118,6 +121,7 @@ namespace cling {
 
     enum State {
       kCollecting,
+      kCompleted,
       kRolledBack,
       kRolledBackWithErrors,
       kCommitting,
@@ -134,14 +138,11 @@ namespace cling {
     /// \name Iteration
 
     typedef DeclQueue::const_iterator const_iterator;
-    typedef DeclQueue::iterator iterator;
     typedef DeclQueue::const_reverse_iterator const_reverse_iterator;
-    const_iterator decls_begin() const { return m_DeclQueue.begin(); }
-    iterator decls_begin() { return m_DeclQueue.begin(); }
-    const_iterator decls_end() const { return m_DeclQueue.end(); }
-    iterator decls_end() { return m_DeclQueue.end(); }
-    const_reverse_iterator rdecls_begin() const { return m_DeclQueue.rbegin(); }
-    const_reverse_iterator rdecls_end() const { return m_DeclQueue.rend(); }
+    const_iterator decls_begin() const { return getQueue().begin(); }
+    const_iterator decls_end() const { return getQueue().end(); }
+    const_reverse_iterator rdecls_begin() const { return getQueue().rbegin(); }
+    const_reverse_iterator rdecls_end() const { return getQueue().rend(); }
 
     typedef NestedTransactions::const_iterator const_nested_iterator;
     typedef NestedTransactions::const_reverse_iterator const_reverse_nested_iterator;
@@ -175,7 +176,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getFirstDecl() const {
       if (!empty())
-        return m_DeclQueue.front().m_DGR;
+        return m_DeclQueue->front().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -183,7 +184,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getLastDecl() const {
       if (!empty() && isCompleted())
-        return m_DeclQueue.back().m_DGR;
+        return m_DeclQueue->back().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -192,7 +193,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getCurrentLastDecl() const {
       if (!empty())
-        return m_DeclQueue.back().m_DGR;
+        return m_DeclQueue->back().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -201,8 +202,7 @@ namespace cling {
     /// We assume that when the last declaration of the transaction is set,
     /// the transaction is completed.
     ///
-    bool isCompleted() const { return m_Completed; }
-    void setCompleted(bool val = true) { m_Completed = val; }
+    bool isCompleted() const { return m_State >= kCompleted; }
 
     ///\brief If the transaction was nested into another transaction returns
     /// the parent.
@@ -230,29 +230,26 @@ namespace cling {
     void addNestedTransaction(Transaction* nested) {
       nested->setParent(this);
       // Leave a marker in the parent transaction, where the nested transaction
-      // started. Using empty DeclGroupRef is save because append() filters
-      // out possible empty DeclGroupRefs.      
-      m_DeclQueue.push_back(DelayCallInfo(clang::DeclGroupRef(), 
-                                          Transaction::kCCINone));
-
+      // started.    
+      append(DelayCallInfo(clang::DeclGroupRef(), Transaction::kCCINone));
       m_NestedTransactions.push_back(nested);
     }
 
     ///\brief Direct access.
     ///
-    const DelayCallInfo& operator[](size_t I) const { return m_DeclQueue[I]; }
+    const DelayCallInfo& operator[](size_t I) const { return (*m_DeclQueue)[I]; }
 
     ///\brief Direct access, non-const.
     ///
-    DelayCallInfo& operator[](size_t I) { return m_DeclQueue[I]; }
+    DelayCallInfo& operator[](size_t I) { return (*m_DeclQueue)[I]; }
 
     ///\brief Returns the declaration count.
     ///
-    size_t size() const { return m_DeclQueue.size(); }
+    size_t size() const { return m_DeclQueue ? m_DeclQueue->size() : 0; }
 
     ///\brief Returns whether there are declarations in the transaction.
     ///
-    bool empty() const { return m_DeclQueue.empty(); }
+    bool empty() const { return !m_DeclQueue || m_DeclQueue->empty(); }
 
     ///\brief Appends a declaration group and source from which consumer interface it
     /// came from to the transaction.
@@ -272,7 +269,7 @@ namespace cling {
     ///\brief Clears all declarations in the transaction.
     ///
     void clear() { 
-      m_DeclQueue.clear(); 
+      if (m_DeclQueue) m_DeclQueue->clear(); 
       m_NestedTransactions.clear();
     }
 

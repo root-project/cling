@@ -51,7 +51,7 @@ namespace cling {
       return;
     }
 
-    assert(getState() == kCollecting);
+    assert(getState() == kCollecting || getState() == kCompleted);
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
     if (checkForWrapper && DCI.m_DGR.isSingleDecl()) {
@@ -61,7 +61,10 @@ namespace cling {
           m_WrapperFD = FD;
         }
     }
-    m_DeclQueue.push_back(DCI);
+
+    if (!m_DeclQueue)
+      m_DeclQueue.reset(new DeclQueue);
+    m_DeclQueue->push_back(DCI);
   }
 
   void Transaction::append(clang::DeclGroupRef DGR) {
@@ -137,7 +140,7 @@ namespace cling {
       (*I)->printStructure(nindent + 1);
     }
     llvm::errs() << indent << " state: " << stateNames[getState()] << ", "
-                 << m_DeclQueue.size() << " decl groups, "
+                 << size() << " decl groups, "
                  << m_NestedTransactions.size() << " nested transactions\n"
                  << indent << " wrapper: " << m_WrapperFD
                  << ", parent: " << m_Parent

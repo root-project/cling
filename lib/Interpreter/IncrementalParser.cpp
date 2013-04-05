@@ -163,7 +163,8 @@ namespace cling {
 
   Transaction* IncrementalParser::endTransaction() const {
     Transaction* CurT = m_Consumer->getTransaction();
-    CurT->setCompleted();
+    assert(CurT->getState() == Transaction::kCollecting);
+    CurT->setState(Transaction::kCompleted);
     const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
 
     //TODO: Make the enum orable.
@@ -338,7 +339,7 @@ namespace cling {
           == Transaction::kCollecting) {
         // A nested transaction was created while committing this
         // transaction; commit it now.
-        SubTransactionWhileCommitting->setCompleted();
+        SubTransactionWhileCommitting->setState(Transaction::kCompleted);
         commitTransaction(SubTransactionWhileCommitting);
       }
     }
