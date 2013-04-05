@@ -207,8 +207,6 @@ namespace cling {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
 
-    T->setState(Transaction::kCommitting);
-
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
       rollbackTransaction(T);
@@ -242,6 +240,8 @@ namespace cling {
     getCI()->getSema().PerformPendingInstantiations();
 
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
+
+    T->setState(Transaction::kCommitting);
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // codegen the transaction
