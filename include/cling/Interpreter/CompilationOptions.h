@@ -50,13 +50,34 @@ namespace cling {
     unsigned CodeGenerationForModule : 1;
      
     CompilationOptions() {
-      DeclarationExtraction = 1;
-      ValuePrinting = VPAuto;
+      DeclarationExtraction = 0;
+      ValuePrinting = VPDisabled;
       ResultEvaluation = 0;
       DynamicScoping = 0;
       Debug = 0;
       CodeGeneration = 1;
       CodeGenerationForModule = 0;
+    }
+
+    bool operator==(CompilationOptions Other) const {
+      return
+        DeclarationExtraction == Other.DeclarationExtraction &&
+        ValuePrinting         == Other.ValuePrinting &&
+        ResultEvaluation      == Other.ResultEvaluation &&
+        DynamicScoping        == Other.DynamicScoping &&
+        Debug                 == Other.Debug &&
+        CodeGeneration        == Other.CodeGeneration &&
+        CodeGenerationForModule == Other.CodeGenerationForModule;
+    }
+    bool operator!=(CompilationOptions Other) const {
+      return
+        DeclarationExtraction != Other.DeclarationExtraction ||
+        ValuePrinting         != Other.ValuePrinting ||
+        ResultEvaluation      != Other.ResultEvaluation ||
+        DynamicScoping        != Other.DynamicScoping ||
+        Debug                 != Other.Debug ||
+        CodeGeneration        != Other.CodeGeneration ||
+        CodeGenerationForModule != Other.CodeGenerationForModule;
     }
   };
 } // end namespace cling
