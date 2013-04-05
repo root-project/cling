@@ -91,6 +91,11 @@ namespace cling {
     void findArgList(llvm::StringRef argList,
                      llvm::SmallVector<clang::Expr*, 4>& argExprs) const;
 
+
+    ///\brief Test whether a function with the given name exists.
+    bool hasFunction(const clang::Decl* scopeDecl,
+                     llvm::StringRef funcName) const;
+
   private:
     void prepareForParsing(llvm::StringRef code, 
                            llvm::StringRef bufferName) const;

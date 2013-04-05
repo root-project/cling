@@ -529,8 +529,8 @@ namespace cling {
       //
       //  Check for lookup failure.
       //
-      if (!(Result.getResultKind() == LookupResult::Found) &&
-          !(Result.getResultKind() == LookupResult::FoundOverloaded)) {
+      if (Result.getResultKind() != LookupResult::Found &&
+          Result.getResultKind() != LookupResult::FoundOverloaded) {
         // Lookup failed.
         return TheDecl;
       }
@@ -814,8 +814,8 @@ namespace cling {
       //
       //  Check for lookup failure.
       //
-      if (!(Result.getResultKind() == LookupResult::Found) &&
-          !(Result.getResultKind() == LookupResult::FoundOverloaded)) {
+      if (Result.getResultKind() != LookupResult::Found &&
+          Result.getResultKind() != LookupResult::FoundOverloaded) {
         // Lookup failed.
         return TheDecl;
       }
@@ -977,5 +977,148 @@ namespace cling {
     PP.Lex(const_cast<Token&>(P.getCurToken()));
 
   }
+
+
+  bool LookupHelper::hasFunction(const clang::Decl* scopeDecl,
+                                 llvm::StringRef funcName) const {
+
+    //FIXME: remore code duplication with findFunctionArgs() and friends.
+
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Our return value.
+    //
+    FunctionDecl* TheDecl = 0;
+    //
+    //  Some utilities.
+    //
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    Preprocessor& PP = S.getPreprocessor();
+    ASTContext& Context = S.getASTContext();
+    ParserStateRAII ResetParserState(P);
+    //
+    //  Get the DeclContext we will search for the function.
+    //
+    NestedNameSpecifier* classNNS = 0;
+    if (const NamespaceDecl* NSD = dyn_cast<NamespaceDecl>(scopeDecl)) {
+      classNNS = NestedNameSpecifier::Create(Context, 0,
+                                             const_cast<NamespaceDecl*>(NSD));
+    }
+    else if (const RecordDecl* RD = dyn_cast<RecordDecl>(scopeDecl)) {
+      const Type* T = Context.getRecordType(RD).getTypePtr();
+      classNNS = NestedNameSpecifier::Create(Context, 0, false, T);
+    }
+    else if (llvm::isa<TranslationUnitDecl>(scopeDecl)) {
+      classNNS = NestedNameSpecifier::GlobalSpecifier(Context);
+    }
+    else {
+      // Not a namespace or class, we cannot use it.
+      return 0;
+    }
+    DeclContext* foundDC = dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
+    //
+    //  If we are looking up a member function, construct
+    //  the implicit object argument.
+    //
+    //  Note: For now this is always a non-CV qualified lvalue.
+    //
+    QualType ClassType;
+    Expr* ObjExpr = 0;
+    Expr::Classification ObjExprClassification;
+    if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
+      ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
+      ObjExpr = new (Context) OpaqueValueExpr(SourceLocation(),
+        ClassType, VK_LValue);
+      ObjExprClassification = ObjExpr->Classify(Context);
+      //GivenArgTypes.insert(GivenArgTypes.begin(), ClassType);
+      //GivenArgs.insert(GivenArgs.begin(), ObjExpr);
+    }
+    //
+    //  Setup to reparse as a type.
+    //
+    //
+    //  Create a fake file to parse the function name.
+    //
+    {
+      llvm::MemoryBuffer* SB 
+        = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
+                                               + "\n", "lookup.funcname.file");
+      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+      PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
+      PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
+    }
+    {
+      //
+      //  Parse the function name.
+      //
+      SourceLocation TemplateKWLoc;
+      UnqualifiedId FuncId;
+      CXXScopeSpec SS;
+      SS.MakeTrivial(Context, classNNS, SourceRange());
+      //
+      //  Make the class we are looking up the function
+      //  in the current scope to please the constructor
+      //  name lookup.  We do not need to do this otherwise,
+      //  and may be able to remove it in the future if
+      //  the way constructors are looked up changes.
+      //
+      P.EnterScope(Scope::DeclScope);
+      S.EnterDeclaratorContext(P.getCurScope(), foundDC);
+      if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
+                               /*AllowDestructorName*/true,
+                               /*AllowConstructorName*/true,
+                               clang::ParsedType(), TemplateKWLoc,
+                               FuncId)) {
+        // Bad parse.
+        // Destroy the scope we created first, and
+        // restore the original.
+        S.ExitDeclaratorContext(P.getCurScope());
+        P.ExitScope();
+
+        // Then cleanup and exit.
+        return TheDecl;
+      }
+      //
+      //  Get any template args in the function name.
+      //
+      TemplateArgumentListInfo FuncTemplateArgsBuffer;
+      DeclarationNameInfo FuncNameInfo;
+      const TemplateArgumentListInfo* FuncTemplateArgs;
+      S.DecomposeUnqualifiedId(FuncId, FuncTemplateArgsBuffer, FuncNameInfo, 
+                               FuncTemplateArgs);
+      //
+      //  Lookup the function name in the given class now.
+      //
+      DeclarationName FuncName = FuncNameInfo.getName();
+      SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
+      LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName, 
+                          Sema::NotForRedeclaration);
+      if (!S.LookupQualifiedName(Result, foundDC)) {
+        // Lookup failed.
+        // Destroy the scope we created first, and
+        // restore the original.
+        S.ExitDeclaratorContext(P.getCurScope());
+        P.ExitScope();
+        // Then cleanup and exit.
+        return TheDecl;
+      }
+      // Destroy the scope we created, and
+      // restore the original.
+      S.ExitDeclaratorContext(P.getCurScope());
+      P.ExitScope();
+      //
+      //  Check for lookup failure.
+      //
+      if (Result.empty())
+        return false;
+      if (Result.isSingleResult())
+        return isa<FunctionDecl>(Result.getFoundDecl());
+      // We have many - those must be functions.
+      return true;
+    }
+    return false;
+  }
+
 
 } // end namespace cling
