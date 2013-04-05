@@ -34,7 +34,7 @@ namespace cling {
       // recursively at the end of of commitTransaction.
       Transaction* subTransactionWhileCommitting = 0;
       if (hasNestedTransactions()
-          && m_NestedTransactions.back()->getState() == kUnknown)
+          && m_NestedTransactions.back()->getState() == kCollecting)
         subTransactionWhileCommitting = m_NestedTransactions.back();
       else {
         // FIXME: is this correct (Axel says "yes")
@@ -51,7 +51,7 @@ namespace cling {
       return;
     }
 
-    assert(getState() == kUnknown);
+    assert(getState() == kCollecting);
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
     if (checkForWrapper && DCI.m_DGR.isSingleDecl()) {
@@ -120,6 +120,28 @@ namespace cling {
         else
           Out << "<<NULL DECL>>";
     }
+  }
+
+  void Transaction::printStructure(size_t nindent) const {
+    static const char* const stateNames[] = {
+      "Collecting",
+      "RolledBack",
+      "RolledBackWithErrors",
+      "Committing",
+      "Committed"
+    };
+    std::string indent(nindent, ' ');
+    llvm::errs() << indent << "Transaction @" << this << ": \n";
+    for (const_nested_iterator I = nested_decls_begin(),
+           E = nested_decls_end(); I != E; ++I) {
+      (*I)->printStructure(nindent + 1);
+    }
+    llvm::errs() << indent << " state: " << stateNames[getState()] << ", "
+                 << m_DeclQueue.size() << " decl groups, "
+                 << m_NestedTransactions.size() << " nested transactions\n"
+                 << indent << " wrapper: " << m_WrapperFD
+                 << ", parent: " << m_Parent
+                 << ", next: " << m_Next << "\n";
   }
 
 } // end namespace cling

@@ -335,7 +335,7 @@ namespace cling {
     if (T->hasNestedTransactions()) {
       Transaction* SubTransactionWhileCommitting = *T->rnested_decls_begin();
       if (SubTransactionWhileCommitting->getState()
-          == Transaction::kUnknown) {
+          == Transaction::kCollecting) {
         // A nested transaction was created while committing this
         // transaction; commit it now.
         SubTransactionWhileCommitting->setCompleted();

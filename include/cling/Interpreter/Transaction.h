@@ -109,14 +109,15 @@ namespace cling {
   public:
 
     Transaction(const CompilationOptions& Opts, llvm::Module* M)
-      : m_Completed(false), m_Parent(0), m_State(kUnknown), m_IssuedDiags(kNone),
-        m_Opts(Opts), m_Module(M), m_WrapperFD(0), m_Next(0)
+      : m_Completed(false), m_Parent(0), m_State(kCollecting),
+        m_IssuedDiags(kNone), m_Opts(Opts), m_Module(M), m_WrapperFD(0),
+        m_Next(0)
     { }
 
     ~Transaction();
 
     enum State {
-      kUnknown,
+      kCollecting,
       kRolledBack,
       kRolledBackWithErrors,
       kCommitting,
@@ -277,8 +278,7 @@ namespace cling {
 
     llvm::Module* getModule() const { return m_Module; }
 
-    const clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
-    clang::FunctionDecl* getWrapperFD() { return m_WrapperFD; }
+    clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 
     const Transaction* getNext() const { return m_Next; }
 
@@ -294,6 +294,11 @@ namespace cling {
     ///
     void print(llvm::raw_ostream& Out, const clang::PrintingPolicy& Policy,
                unsigned Indent = 0, bool PrintInstantiation = false) const;
+
+    ///\brief Prints the transaction and all subtransactions recursivly
+    /// without printing any decls.
+    ///
+    void printStructure(size_t indent = 0) const;
 
     friend class IncrementalParser;
   };
