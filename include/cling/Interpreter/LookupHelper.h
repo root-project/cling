@@ -72,7 +72,16 @@ namespace cling {
     ///\returns The found declaration or null.
     ///
     const clang::ClassTemplateDecl* findClassTemplate(llvm::StringRef Name) const;
-     
+
+
+    ///\brief Lookup a function based on its Decl(Context), name and parameters.
+    ///
+    ///\param[in] scopeDecl - the scope (namespace or tag) that is searched for
+    ///   the function.
+    ///\param[in] funcName  - the name of the function to find.
+    ///\param[in] funcProto - the function parameter list (without enclosing
+    ///   parantheses). Example: "size_t,int".
+    ///\returns The function found or null.
     const clang::FunctionDecl* findFunctionProto(const clang::Decl* scopeDecl,
                                                  llvm::StringRef funcName,
                                                 llvm::StringRef funcProto) const;
