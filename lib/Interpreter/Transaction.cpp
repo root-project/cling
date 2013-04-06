@@ -52,7 +52,7 @@ namespace cling {
     }
 
     // FIXME: temporary workaround until r49108 gets fixed.
-    if (getState() != kCollecting && getState() != kCompleted) {
+    if (getState() != kCollecting && getState() != kCompleted)
       return;
 
     assert(getState() == kCollecting || getState() == kCompleted);
