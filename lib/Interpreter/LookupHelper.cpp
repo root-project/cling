@@ -204,7 +204,11 @@ namespace cling {
 
                       // Here we might not have an active transaction to handle
                       // the caused instantiation decl.
-                      Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+
+                      //FIXME:
+                      // We need it, but it massively breaks roottest. Why?!
+                      // Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+
                       // Make sure it is not just forward declared, and
                       // instantiate any templates.
                       if (!S.RequireCompleteDeclContext(SS, TD)) {
