@@ -51,6 +51,10 @@ namespace cling {
       return;
     }
 
+    // FIXME: temporary workaround until r49108 gets fixed.
+    if (getState() != kCollecting && getState() != kCompleted) {
+      return;
+
     assert(getState() == kCollecting || getState() == kCompleted);
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
