@@ -197,7 +197,11 @@ namespace cling {
                   // It is a class, struct, or union.
                   TagDecl* TD = TagTy->getDecl();
                   if (TD) {
-                    if (instantiateTemplate) {
+                    TheDecl = TD->getDefinition();
+                    if (!TheDecl && instantiateTemplate) {
+                      // The user wants to see the template instantiation,
+                      // existing or not.
+
                       // Here we might not have an active transaction to handle
                       // the caused instantiation decl.
                       Interpreter::PushTransactionRAII pushedT(m_Interpreter);
@@ -206,16 +210,8 @@ namespace cling {
                       if (!S.RequireCompleteDeclContext(SS, TD)) {
                         // Success, type is complete, instantiations have
                         // been done.
-                        TagDecl* Def = TD->getDefinition();
-                        if (Def) {
-                          TheDecl = Def;
-                        }
+                        TheDecl = TD->getDefinition();
                       }
-                    } else {
-                      // The user just want to see if the template had 
-                      // already been instantiate and did not mean to force
-                      // one.
-                      TheDecl = TD->getDefinition();
                     }
                   }
                 }
