@@ -17,8 +17,9 @@ using namespace clang;
 namespace cling {
 
   Transaction::~Transaction() {
-    for (size_t i = 0; i < m_NestedTransactions.size(); ++i)
-      delete m_NestedTransactions[i];
+    if (hasNestedTransactions())
+      for (size_t i = 0; i < m_NestedTransactions->size(); ++i)
+        delete (*m_NestedTransactions)[i];
   }
 
   void Transaction::append(DelayCallInfo DCI) {
@@ -34,8 +35,8 @@ namespace cling {
       // recursively at the end of of commitTransaction.
       Transaction* subTransactionWhileCommitting = 0;
       if (hasNestedTransactions()
-          && m_NestedTransactions.back()->getState() == kCollecting)
-        subTransactionWhileCommitting = m_NestedTransactions.back();
+          && m_NestedTransactions->back()->getState() == kCollecting)
+        subTransactionWhileCommitting = m_NestedTransactions->back();
       else {
         // FIXME: is this correct (Axel says "yes")
         CompilationOptions Opts(getCompilationOpts());
@@ -63,7 +64,7 @@ namespace cling {
     }
 
     if (!m_DeclQueue)
-      m_DeclQueue.reset(new DeclQueue);
+      m_DeclQueue.reset(new DeclQueue());
     m_DeclQueue->push_back(DCI);
   }
 
@@ -109,8 +110,8 @@ namespace cling {
         Out<<"+====================================================+\n";
         Out<<"        Nested Transaction" << nestedT << "           \n";
         Out<<"+====================================================+\n";
-        m_NestedTransactions[nestedT++]->print(Out, Policy, Indent, 
-                                               PrintInstantiation);
+        (*m_NestedTransactions)[nestedT++]->print(Out, Policy, Indent, 
+                                                  PrintInstantiation);
         Out<< "\n";
         Out<<"+====================================================+\n";
         Out<<"          End Transaction" << nestedT << "            \n";
@@ -141,7 +142,7 @@ namespace cling {
     }
     llvm::errs() << indent << " state: " << stateNames[getState()] << ", "
                  << size() << " decl groups, "
-                 << m_NestedTransactions.size() << " nested transactions\n"
+                 << m_NestedTransactions->size() << " nested transactions\n"
                  << indent << " wrapper: " << m_WrapperFD
                  << ", parent: " << m_Parent
                  << ", next: " << m_Next << "\n";

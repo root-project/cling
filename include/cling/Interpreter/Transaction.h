@@ -76,7 +76,7 @@ namespace cling {
 
     ///\brief List of nested transactions if any.
     ///
-    NestedTransactions m_NestedTransactions;
+    llvm::OwningPtr<NestedTransactions> m_NestedTransactions;
 
     unsigned m_State : 3;
 
@@ -114,8 +114,9 @@ namespace cling {
     Transaction(const CompilationOptions& Opts, llvm::Module* M)
       : m_Parent(0), m_State(kCollecting),
         m_IssuedDiags(kNone), m_Opts(Opts), m_Module(M), m_WrapperFD(0),
-        m_Next(0)
-    { }
+        m_Next(0) {
+      assert(sizeof(*this)<65 && "Transaction class grows! Is that expected?");
+    }
 
     ~Transaction();
 
@@ -148,16 +149,24 @@ namespace cling {
     typedef NestedTransactions::const_reverse_iterator const_reverse_nested_iterator;
     // FIXME: misnomer, doesn't iterate over decls!
     const_nested_iterator nested_decls_begin() const {
-      return m_NestedTransactions.begin();
+      if (hasNestedTransactions())
+        return m_NestedTransactions->begin();
+      return 0;
     }
     const_nested_iterator nested_decls_end() const {
-      return m_NestedTransactions.end();
+      if (hasNestedTransactions())
+        return m_NestedTransactions->end();
+      return 0;
     }
     const_reverse_nested_iterator rnested_decls_begin() const {
-      return m_NestedTransactions.rbegin();
+      if (hasNestedTransactions())
+        return m_NestedTransactions->rbegin();
+      return const_reverse_nested_iterator(0);
     }
     const_reverse_nested_iterator rnested_decls_end() const {
-      return m_NestedTransactions.rend();
+      if (hasNestedTransactions())
+        return m_NestedTransactions->rend();
+      return const_reverse_nested_iterator(0);
     }
 
     /// \}
@@ -221,18 +230,22 @@ namespace cling {
     void setParent(Transaction* parent) { m_Parent = parent; }
 
     bool isNestedTransaction() { return m_Parent; }
-    bool hasNestedTransactions() const { return !m_NestedTransactions.empty(); }
+    bool hasNestedTransactions() const { return m_NestedTransactions.get(); }
 
     ///\brief Adds nested transaction to the transaction.
     ///
     ///\param[in] nested - The transaction to be nested.
     ///
     void addNestedTransaction(Transaction* nested) {
+      // Create lazily the list
+      if (!m_NestedTransactions.get())
+        m_NestedTransactions.reset(new NestedTransactions());
+
       nested->setParent(this);
       // Leave a marker in the parent transaction, where the nested transaction
       // started.    
       append(DelayCallInfo(clang::DeclGroupRef(), Transaction::kCCINone));
-      m_NestedTransactions.push_back(nested);
+      m_NestedTransactions->push_back(nested);
     }
 
     ///\brief Direct access.
@@ -269,8 +282,10 @@ namespace cling {
     ///\brief Clears all declarations in the transaction.
     ///
     void clear() { 
-      if (m_DeclQueue) m_DeclQueue->clear(); 
-      m_NestedTransactions.clear();
+      if (m_DeclQueue) 
+        m_DeclQueue->clear(); 
+      if (m_NestedTransactions)
+        m_NestedTransactions->clear();
     }
 
     llvm::Module* getModule() const { return m_Module; }
