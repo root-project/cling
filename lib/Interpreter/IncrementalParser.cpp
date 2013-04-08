@@ -176,8 +176,8 @@ namespace cling {
 
       
     if (CurT->hasNestedTransactions()) {
-      for(Transaction::const_nested_iterator I = CurT->nested_decls_begin(),
-            E = CurT->nested_decls_end(); I != E; ++I)
+      for(Transaction::const_nested_iterator I = CurT->nested_begin(),
+            E = CurT->nested_end(); I != E; ++I)
         assert((*I)->isCompleted() && "Nested transaction not completed!?");
     }
 
@@ -215,8 +215,8 @@ namespace cling {
     }
 
     if (T->hasNestedTransactions()) {
-      for(Transaction::const_nested_iterator I = T->nested_decls_begin(),
-            E = T->nested_decls_end(); I != E; ++I)
+      for(Transaction::const_nested_iterator I = T->nested_begin(),
+            E = T->nested_end(); I != E; ++I)
         commitTransaction(*I);
     }
 
@@ -334,7 +334,7 @@ namespace cling {
       callbacks->TransactionCommitted(*T);
     }
     if (T->hasNestedTransactions()) {
-      Transaction* SubTransactionWhileCommitting = *T->rnested_decls_begin();
+      Transaction* SubTransactionWhileCommitting = *T->rnested_begin();
       if (SubTransactionWhileCommitting->getState()
           == Transaction::kCollecting) {
         // A nested transaction was created while committing this

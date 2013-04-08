@@ -136,8 +136,8 @@ namespace cling {
     };
     std::string indent(nindent, ' ');
     llvm::errs() << indent << "Transaction @" << this << ": \n";
-    for (const_nested_iterator I = nested_decls_begin(),
-           E = nested_decls_end(); I != E; ++I) {
+    for (const_nested_iterator I = nested_begin(), E = nested_end(); 
+         I != E; ++I) {
       (*I)->printStructure(nindent + 1);
     }
     llvm::errs() << indent << " state: " << stateNames[getState()] << ", "

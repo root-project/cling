@@ -147,23 +147,22 @@ namespace cling {
 
     typedef NestedTransactions::const_iterator const_nested_iterator;
     typedef NestedTransactions::const_reverse_iterator const_reverse_nested_iterator;
-    // FIXME: misnomer, doesn't iterate over decls!
-    const_nested_iterator nested_decls_begin() const {
+    const_nested_iterator nested_begin() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->begin();
       return 0;
     }
-    const_nested_iterator nested_decls_end() const {
+    const_nested_iterator nested_end() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->end();
       return 0;
     }
-    const_reverse_nested_iterator rnested_decls_begin() const {
+    const_reverse_nested_iterator rnested_begin() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->rbegin();
       return const_reverse_nested_iterator(0);
     }
-    const_reverse_nested_iterator rnested_decls_end() const {
+    const_reverse_nested_iterator rnested_end() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->rend();
       return const_reverse_nested_iterator(0);
