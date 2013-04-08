@@ -109,6 +109,12 @@ namespace cling {
     Sema& S = P.getActions();
     Preprocessor& PP = P.getPreprocessor();
     ASTContext& Context = S.getASTContext();
+
+    // The user wants to see the template instantiation, existing or not.    
+    // Here we might not have an active transaction to handle 
+    // the caused instantiation decl.    
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+
     ParserStateRAII ResetParserState(P);
     prepareForParsing(className.str() + "::", 
                       llvm::StringRef("lookup.class.by.name.file"));
@@ -199,15 +205,6 @@ namespace cling {
                   if (TD) {
                     TheDecl = TD->getDefinition();
                     if (!TheDecl && instantiateTemplate) {
-                      // The user wants to see the template instantiation,
-                      // existing or not.
-
-                      // Here we might not have an active transaction to handle
-                      // the caused instantiation decl.
-
-                      //FIXME:
-                      // We need it, but it massively breaks roottest. Why?!
-                      // Interpreter::PushTransactionRAII pushedT(m_Interpreter);
 
                       // Make sure it is not just forward declared, and
                       // instantiate any templates.
