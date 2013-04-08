@@ -36,7 +36,6 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_os_ostream.h"
 
-#include <ctime>
 #include <iostream>
 #include <stdio.h>
 #include <sstream>

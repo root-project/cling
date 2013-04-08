@@ -26,6 +26,8 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 
+#include <ctime>
+
 using namespace clang;
 
 namespace cling {
