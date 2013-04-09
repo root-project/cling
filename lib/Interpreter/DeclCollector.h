@@ -12,6 +12,7 @@
 namespace clang {
   class ASTContext;
   class CodeGenerator;
+  class Decl;
   class DeclGroupRef;
 }
 
@@ -32,6 +33,9 @@ namespace cling {
     ///\brief This is the fast path for the declarations which do not need 
     /// special handling. Eg. deserialized declarations.
     clang::CodeGenerator* m_CodeGen; // we do not own.
+
+    bool comesFromASTReader(clang::DeclGroupRef DGR) const;
+    bool shouldIgnoreDeclFromASTReader(const clang::Decl* D) const;
 
   public:
     DeclCollector() : m_CurTransaction(0), m_CodeGen(0) {}
