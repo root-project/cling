@@ -70,13 +70,13 @@ namespace cling {
     ///
     llvm::OwningPtr<DeclQueue> m_DeclQueue;
 
-    ///\brief The enclosing transaction if nested. 
-    ///
-    Transaction* m_Parent;
-
     ///\brief List of nested transactions if any.
     ///
     llvm::OwningPtr<NestedTransactions> m_NestedTransactions;
+
+    ///\brief The enclosing transaction if nested. 
+    ///
+    Transaction* m_Parent;
 
     unsigned m_State : 3;
 
