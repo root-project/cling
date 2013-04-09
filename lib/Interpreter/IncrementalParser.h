@@ -46,6 +46,7 @@ namespace cling {
   class IncrementalParser {
   private:
     // our interpreter context
+    // FIXME: Get rid of that back reference to the interpreter.
     Interpreter* m_Interpreter;
 
     // compiler instance.
