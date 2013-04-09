@@ -23,12 +23,6 @@ namespace cling {
   }
 
   void Transaction::append(DelayCallInfo DCI) {
-    // for (const_iterator I = decls_begin(), E = decls_end(); I != E; ++I) {
-    //   if (DGR.isNull() || (*I).getAsOpaquePtr() == DGR.getAsOpaquePtr())
-    //     return;
-    // }
-    // register the wrapper if any.
-
     if (getState() == kCommitting) {
       // We are committing and getting enw decls in.
       // Move them into a sub transaction that will be processed
@@ -55,6 +49,7 @@ namespace cling {
     assert(getState() == kCollecting || getState() == kCompleted);
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
+    // register the wrapper if any.
     if (checkForWrapper && DCI.m_DGR.isSingleDecl()) {
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl()))
         if (utils::Analyze::IsWrapper(FD)) {
@@ -63,6 +58,7 @@ namespace cling {
         }
     }
 
+    // Lazy create the container on first append.
     if (!m_DeclQueue)
       m_DeclQueue.reset(new DeclQueue());
     m_DeclQueue->push_back(DCI);
