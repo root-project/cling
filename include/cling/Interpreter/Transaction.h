@@ -103,18 +103,12 @@ namespace cling {
     ///
     void setNext(Transaction* T) { m_Next = T; }
 
-    const DeclQueue& getQueue() const {
-      static const DeclQueue m_EmptyQueue;
-      if (!m_DeclQueue) return m_EmptyQueue;
-      return *m_DeclQueue;
-    }
-
   public:
 
     Transaction(const CompilationOptions& Opts, llvm::Module* M)
-      : m_Parent(0), m_State(kCollecting),
-        m_IssuedDiags(kNone), m_Opts(Opts), m_Module(M), m_WrapperFD(0),
-        m_Next(0) {
+      : m_DeclQueue(0), m_NestedTransactions(0), m_Parent(0), 
+        m_State(kCollecting), m_IssuedDiags(kNone), m_Opts(Opts), m_Module(M), 
+        m_WrapperFD(0), m_Next(0) {
       assert(sizeof(*this)<65 && "Transaction class grows! Is that expected?");
     }
 
@@ -140,10 +134,26 @@ namespace cling {
 
     typedef DeclQueue::const_iterator const_iterator;
     typedef DeclQueue::const_reverse_iterator const_reverse_iterator;
-    const_iterator decls_begin() const { return getQueue().begin(); }
-    const_iterator decls_end() const { return getQueue().end(); }
-    const_reverse_iterator rdecls_begin() const { return getQueue().rbegin(); }
-    const_reverse_iterator rdecls_end() const { return getQueue().rend(); }
+    const_iterator decls_begin() const {
+      if (m_DeclQueue)
+        return m_DeclQueue->begin(); 
+      return 0;
+    }
+    const_iterator decls_end() const {
+      if (m_DeclQueue)
+        return m_DeclQueue->end();
+      return 0;
+    }
+    const_reverse_iterator rdecls_begin() const {
+      if (m_DeclQueue)
+        return m_DeclQueue->rbegin();
+      return const_reverse_iterator(0);
+    }
+    const_reverse_iterator rdecls_end() const {
+      if (m_DeclQueue)
+        return m_DeclQueue->rend();
+      return const_reverse_iterator(0);
+    }
 
     typedef NestedTransactions::const_iterator const_nested_iterator;
     typedef NestedTransactions::const_reverse_iterator const_reverse_nested_iterator;
@@ -237,7 +247,7 @@ namespace cling {
     ///
     void addNestedTransaction(Transaction* nested) {
       // Create lazily the list
-      if (!m_NestedTransactions.get())
+      if (!m_NestedTransactions)
         m_NestedTransactions.reset(new NestedTransactions());
 
       nested->setParent(this);
