@@ -7,13 +7,10 @@
 #ifndef CLING_INCREMENTAL_PARSER_H
 #define CLING_INCREMENTAL_PARSER_H
 
-#include "DeclCollector.h"
-
-#include "clang/AST/DeclBase.h"
-#include "clang/AST/DeclGroup.h"
 #include "clang/Basic/SourceLocation.h"
 
 #include "llvm/ADT/OwningPtr.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <vector>
@@ -24,15 +21,10 @@ namespace llvm {
 }
 
 namespace clang {
-  class ASTConsumer;
   class CodeGenerator;
   class CompilerInstance;
-  class Decl;
   class FileID;
-  class FunctionDecl;
   class Parser;
-  class Sema;
-  class SourceLocation;
 }
 
 
