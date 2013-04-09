@@ -23,7 +23,7 @@ namespace cling {
   }
 
   void Transaction::append(DelayCallInfo DCI) {
-    if (getState() == kCommitting) {
+    if (!DCI.m_DGR.isNull() && getState() == kCommitting) {
       // We are committing and getting enw decls in.
       // Move them into a sub transaction that will be processed
       // recursively at the end of of commitTransaction.
@@ -46,11 +46,11 @@ namespace cling {
       return;
     }
 
-    assert(getState() == kCollecting || getState() == kCompleted);
+    assert(DCI.m_DGR.isNull() || (getState() == kCollecting || getState() == kCompleted) || "Cannot append declarations in current state.");
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
     // register the wrapper if any.
-    if (checkForWrapper && DCI.m_DGR.isSingleDecl()) {
+    if (checkForWrapper && !DCI.m_DGR.isNull() && DCI.m_DGR.isSingleDecl()) {
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl()))
         if (utils::Analyze::IsWrapper(FD)) {
           assert(!m_WrapperFD && "Two wrappers in one transaction?");
