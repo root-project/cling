@@ -206,6 +206,8 @@ namespace cling {
   void IncrementalParser::commitTransaction(Transaction* T) {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
+    assert(T->getState() != Transaction::kCommitted
+           && "Committing an already committed transaction.");
 
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
@@ -216,7 +218,8 @@ namespace cling {
     if (T->hasNestedTransactions()) {
       for(Transaction::const_nested_iterator I = T->nested_begin(),
             E = T->nested_end(); I != E; ++I)
-        commitTransaction(*I);
+        if ((*I)->getState() != Transaction::kCommitted)
+          commitTransaction(*I);
     }
 
     // We are sure it's safe to pipe it through the transformers
@@ -240,8 +243,6 @@ namespace cling {
     getCI()->getSema().PerformPendingInstantiations();
 
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
-
-    T->setState(Transaction::kCommitting);
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // codegen the transaction
@@ -318,6 +319,7 @@ namespace cling {
           llvm_unreachable("We shouldn't have decl without call info.");
       }
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+
       // run the static initializers that came from codegenning
       if (m_Interpreter->runStaticInitializersOnce()
           >= Interpreter::kExeFirstError) {
@@ -326,6 +328,8 @@ namespace cling {
         return;
       }
     }
+
+    T->setState(Transaction::kCommitting);
 
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
 
