@@ -46,7 +46,9 @@ namespace cling {
       return;
     }
 
-    assert(DCI.m_DGR.isNull() || (getState() == kCollecting || getState() == kCompleted) || "Cannot append declarations in current state.");
+    assert(DCI.m_DGR.isNull()
+           || (getState() == kCollecting || getState() == kCompleted)
+           || "Cannot append declarations in current state.");
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
     // register the wrapper if any.
