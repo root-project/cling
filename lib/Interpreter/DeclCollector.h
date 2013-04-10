@@ -34,7 +34,13 @@ namespace cling {
     /// special handling. Eg. deserialized declarations.
     clang::CodeGenerator* m_CodeGen; // we do not own.
 
+    ///\brief Test whether the first decl of the DeclGroupRef comes from an AST
+    /// file.
     bool comesFromASTReader(clang::DeclGroupRef DGR) const;
+    /// \brief Return true if this decl (which comes from an AST file) should
+    // not be sent to CodeGen. The module is assumed to describe the contents of
+    // a library; symbols inside the library must thus not be reemitted /
+    // duplicated by CodeGen.
     bool shouldIgnoreDeclFromASTReader(const clang::Decl* D) const;
 
   public:

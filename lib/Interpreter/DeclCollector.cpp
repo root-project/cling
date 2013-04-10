@@ -55,8 +55,9 @@ namespace cling {
           if (NamespaceDecl* ND = dyn_cast<NamespaceDecl>(*I)) {
             for (NamespaceDecl::decl_iterator IN = ND->decls_begin(),
                    EN = ND->decls_end(); IN != EN; ++IN)
-              if (!shouldIgnoreDeclFromASTReader(*IN))
-                m_CodeGen->HandleTopLevelDecl(DeclGroupRef(*IN));
+              // Recurse over decls inside the namespace, like
+              // CodeGenModule::EmitNamespace() does.
+              HandleTopLevelDecl(DeclGroupRef(*IN));
           } else if (!shouldIgnoreDeclFromASTReader(*I))
             m_CodeGen->HandleTopLevelDecl(DeclGroupRef(*I));
       }
