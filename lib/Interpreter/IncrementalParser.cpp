@@ -441,6 +441,12 @@ namespace cling {
       CleanupParser(m_Parser.get());
 
     Sema& S = getCI()->getSema();
+
+    assert(S.getLangOpts().Modules
+           && !m_Consumer->getTransaction()->getCompilationOpts()
+           .CodeGenerationForModule
+           && "CodeGenerationForModule should be removed once modules are available!");
+
     // Recover resources if we crash before exiting this method.
     llvm::CrashRecoveryContextCleanupRegistrar<Sema> CleanupSema(&S);
 
