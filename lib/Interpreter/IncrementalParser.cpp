@@ -23,7 +23,6 @@
 #include "clang/AST/DeclGroup.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/FileManager.h"
-#include "clang/CodeGen/CodeGenModule.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Lex/Preprocessor.h"

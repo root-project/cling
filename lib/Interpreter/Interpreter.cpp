@@ -895,8 +895,7 @@ namespace cling {
        = m_ExecutionContext->runStaticInitializersOnce(module);
 
     // Reset the module builder to clean up global initializers, c'tors, d'tors
-    CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
-    CGM->Release();
+    getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
 
     return ConvertExecutionResult(ExeRes);
   }
@@ -1003,10 +1002,7 @@ namespace cling {
 
     // Note: The first thing this routine does is getCanonicalType(), so we
     //       do not need to do that first.
-    CodeGen::CodeGenModule* CGM = getCodeGenerator()->GetBuilder();
-    CodeGen::CodeGenTypes& CGT = CGM->getTypes();
-    //llvm::Type* Ty = CGT.ConvertTypeForMem(QT);
-    return CGT.ConvertType(QT);
+    return getCodeGenerator()->ConvertType(QT);
   }
 
 } // namespace cling

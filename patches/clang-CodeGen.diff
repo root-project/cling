@@ -1,0 +1,67 @@
+diff -u tools/clang/lib/CodeGen/CGExprScalar.cpp tools/clang/lib/CodeGen/CGExprScalar.cpp
+--- tools/clang/lib/CodeGen/CGExprScalar.cpp	2013-04-10 12:29:53.811425530 +0200
++++ tools/clang/lib/CodeGen/CGExprScalar.cpp	2013-04-10 11:37:18.923238322 +0200
+@@ -1446,6 +1446,7 @@
+     BinOp.LHS = llvm::Constant::getNullValue(BinOp.RHS->getType());
+   BinOp.Ty = E->getType();
+   BinOp.Opcode = BO_Sub;
++  BinOp.FPContractable = false;
+   BinOp.E = E;
+   return EmitSub(BinOp);
+ }
+diff -u tools/clang/lib/CodeGen/CodeGenModule.cpp tools/clang/lib/CodeGen/CodeGenModule.cpp
+--- tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-10 12:29:53.811425530 +0200
++++ tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-10 12:37:15.510983363 +0200
+@@ -443,7 +443,7 @@
+   GlobalDtors.push_back(std::make_pair(Dtor, Priority));
+ }
+ 
+-void CodeGenModule::EmitCtorList(const CtorList &Fns, const char *GlobalName) {
++void CodeGenModule::EmitCtorList(CtorList &Fns, const char *GlobalName) {
+   // Ctor function type is void()*.
+   llvm::FunctionType* CtorFTy = llvm::FunctionType::get(VoidTy, false);
+   llvm::Type *CtorPFTy = llvm::PointerType::getUnqual(CtorFTy);
+@@ -469,6 +469,7 @@
+                              llvm::ConstantArray::get(AT, Ctors),
+                              GlobalName);
+   }
++  Fns.clear();
+ }
+ 
+ llvm::GlobalValue::LinkageTypes
+diff -u tools/clang/lib/CodeGen/CodeGenModule.h tools/clang/lib/CodeGen/CodeGenModule.h
+--- tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-10 12:29:53.819425451 +0200
++++ tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-10 12:33:10.845445231 +0200
+@@ -960,8 +960,8 @@
+ 
+   /// EmitCtorList - Generates a global array of functions and priorities using
+   /// the given list and name. This array will have appending linkage and is
+-  /// suitable for use as a LLVM constructor or destructor array.
+-  void EmitCtorList(const CtorList &Fns, const char *GlobalName);
++  /// suitable for use as a LLVM constructor or destructor array. Clears Fns.
++  void EmitCtorList(CtorList &Fns, const char *GlobalName);
+ 
+   /// EmitFundamentalRTTIDescriptor - Emit the RTTI descriptors for the
+   /// given type.
+diff -u tools/clang/lib/CodeGen/ModuleBuilder.cpp tools/clang/lib/CodeGen/ModuleBuilder.cpp
+--- tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-10 12:29:53.815425490 +0200
++++ tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-10 11:45:35.970177539 +0200
+@@ -13,6 +13,7 @@
+ 
+ #include "clang/CodeGen/ModuleBuilder.h"
+ #include "CodeGenModule.h"
++#include "CodeGenTypes.h"
+ #include "clang/Frontend/CodeGenOptions.h"
+ #include "clang/AST/ASTContext.h"
+ #include "clang/AST/DeclObjC.h"
+@@ -49,6 +50,10 @@
+       return M.take();
+     }
+ 
++    virtual llvm::Type* ConvertType(QualType T) {
++      return Builder->getTypes().ConvertType(T);
++    }
++
+     virtual void Initialize(ASTContext &Context) {
+       Ctx = &Context;
+ 
