@@ -442,9 +442,9 @@ namespace cling {
 
     Sema& S = getCI()->getSema();
 
-    assert(S.getLangOpts().Modules
-           && !m_Consumer->getTransaction()->getCompilationOpts()
-           .CodeGenerationForModule
+    assert(!(S.getLangOpts().Modules
+             && m_Consumer->getTransaction()->getCompilationOpts()
+              .CodeGenerationForModule)
            && "CodeGenerationForModule should be removed once modules are available!");
 
     // Recover resources if we crash before exiting this method.
