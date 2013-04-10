@@ -6,11 +6,13 @@
 
 #include "DeclCollector.h"
 
+#include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclGroup.h"
+#include "clang/Serialization/ASTDeserializationListener.h"
 
 #include "clang/CodeGen/ModuleBuilder.h"
 
@@ -58,8 +60,16 @@ namespace cling {
               // Recurse over decls inside the namespace, like
               // CodeGenModule::EmitNamespace() does.
               HandleTopLevelDecl(DeclGroupRef(*IN));
-          } else if (!shouldIgnoreDeclFromASTReader(*I))
+          } else if (!shouldIgnoreDeclFromASTReader(*I)) {
             m_CodeGen->HandleTopLevelDecl(DeclGroupRef(*I));
+            // FIXME: once modules are there this is not needed anymore.
+            // it is used to simulate modules and the ASTDeserializationListener
+            // for sources that are included to describe the library that was
+            // built from the sources (ACLiC).
+            if (!(*I)->isFromASTFile() && m_Interp->getASTDeserializationListener())
+              m_Interp->getASTDeserializationListener()->DeclRead(0, *I);
+              
+          }
       }
       return true;
     }
@@ -73,12 +83,7 @@ namespace cling {
     // if that decl comes from an AST File, i.e. PCH/PCM, no transaction needed
     // pipe it directly to codegen.
     if (comesFromASTReader(DGR)) {
-      if (m_CodeGen) {
-        for (DeclGroupRef::iterator I = DGR.begin(), E = DGR.end();
-             I != E; ++I)
-          if (!shouldIgnoreDeclFromASTReader(*I))
-            m_CodeGen->HandleTopLevelDecl(DeclGroupRef(*I));
-      }
+      HandleTopLevelDecl(DGR);
       return;
     }
 

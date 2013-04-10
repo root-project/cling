@@ -32,6 +32,7 @@ namespace llvm {
 
 namespace clang {
   class ASTContext;
+  class ASTDeserializationListener;
   class CodeGenerator;
   class CompilerInstance;
   class Decl;
@@ -647,6 +648,10 @@ namespace cling {
     void setCallbacks(InterpreterCallbacks* C);
     const InterpreterCallbacks* getCallbacks() const {return m_Callbacks.get();}
     InterpreterCallbacks* getCallbacks() { return m_Callbacks.get(); }
+
+    // FIXME: remove once modules are there; see
+    // DeclCollector::HandleTopLevelDecl().
+    clang::ASTDeserializationListener* getASTDeserializationListener() const;
 
     const Transaction* getFirstTransaction() const;
 

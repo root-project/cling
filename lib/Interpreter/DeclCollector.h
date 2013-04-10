@@ -18,6 +18,7 @@ namespace clang {
 
 namespace cling {
 
+  class Interpreter;
   class Transaction;
 
   ///\brief Collects declarations and fills them in cling::Transaction.
@@ -34,6 +35,11 @@ namespace cling {
     /// special handling. Eg. deserialized declarations.
     clang::CodeGenerator* m_CodeGen; // we do not own.
 
+    ///\brief Interpreter feeding into the DeclCollector. Only used for
+    /// a temporary workaround until modules work.
+    /// FIXME: remove once modules work.
+    cling::Interpreter* m_Interp; // we do not own.
+
     ///\brief Test whether the first decl of the DeclGroupRef comes from an AST
     /// file.
     bool comesFromASTReader(clang::DeclGroupRef DGR) const;
@@ -44,12 +50,16 @@ namespace cling {
     bool shouldIgnoreDeclFromASTReader(const clang::Decl* D) const;
 
   public:
-    DeclCollector() : m_CurTransaction(0), m_CodeGen(0) {}
+    DeclCollector() :
+      m_CurTransaction(0), m_CodeGen(0), m_Interp(0) {}
     virtual ~DeclCollector();
 
     // FIXME: Gross hack, which should disappear when we move some of the 
     // initialization happening in the IncrementalParser to the CIFactory.
     void setCodeGen(clang::CodeGenerator* codeGen) { m_CodeGen = codeGen; }
+
+    // FIXME: Gross hack, which should disappear when m_Interp can go.
+    void setInterpreter(cling::Interpreter* Interp) { m_Interp = Interp; }
 
     /// \{
     /// \name ASTConsumer overrides

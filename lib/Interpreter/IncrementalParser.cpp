@@ -54,6 +54,7 @@ namespace cling {
 
     m_Consumer = dyn_cast<DeclCollector>(&CI->getASTConsumer());
     assert(m_Consumer && "Expected ChainedConsumer!");
+    m_Consumer->setInterpreter(interp);
 
     m_CI.reset(CI);
 
@@ -317,7 +318,13 @@ namespace cling {
         else
           llvm_unreachable("We shouldn't have decl without call info.");
       }
+
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+
+      // The static initializers might run anything and can thus cause more
+      // decls that need to end up in a transaction. But this one is done
+      // with CodeGen...
+      T->setState(Transaction::kCommitting);
 
       // run the static initializers that came from codegenning
       if (m_Interpreter->runStaticInitializersOnce()
@@ -326,9 +333,8 @@ namespace cling {
         rollbackTransaction(T);
         return;
       }
-    }
-
-    T->setState(Transaction::kCommitting);
+    } else
+      T->setState(Transaction::kCommitting);
 
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
 

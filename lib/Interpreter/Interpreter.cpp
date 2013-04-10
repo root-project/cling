@@ -871,6 +871,12 @@ namespace cling {
     }
   }
 
+  clang::ASTDeserializationListener*
+  Interpreter::getASTDeserializationListener() const {
+    return m_CallbackAdaptor;
+  }
+
+
   const Transaction* Interpreter::getFirstTransaction() const {
     return m_IncrParser->getFirstTransaction();
   }
