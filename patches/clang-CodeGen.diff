@@ -65,3 +65,29 @@ diff -u tools/clang/lib/CodeGen/ModuleBuilder.cpp tools/clang/lib/CodeGen/Module
      virtual void Initialize(ASTContext &Context) {
        Ctx = &Context;
  
+Index: tools/clang/include/clang/CodeGen/ModuleBuilder.h
+===================================================================
+--- tools/clang/include/clang/CodeGen/ModuleBuilder.h	(revision 165095)
++++ tools/clang/include/clang/CodeGen/ModuleBuilder.h	(working copy)
+@@ -20,18 +20,21 @@
+ namespace llvm {
+   class LLVMContext;
+   class Module;
++  class Type;
+ }
+ 
+ namespace clang {
+   class DiagnosticsEngine;
+   class LangOptions;
+   class CodeGenOptions;
++  class QualType;
+ 
+   class CodeGenerator : public ASTConsumer {
+     virtual void anchor();
+   public:
+     virtual llvm::Module* GetModule() = 0;
+     virtual llvm::Module* ReleaseModule() = 0;
++    virtual llvm::Type* ConvertType(QualType T) = 0;
+   };
+ 
+   /// CreateLLVMCodeGen - Create a CodeGenerator instance.
