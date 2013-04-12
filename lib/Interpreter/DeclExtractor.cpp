@@ -176,7 +176,7 @@ namespace cling {
         = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
       Expr* TheCall = m_Sema->ActOnCallExpr(TUScope, UnresolvedLookup, Loc, 
                                             MultiExprArg(), Loc).take();
-      assert(VD && TheCall && "Missing VD or it's init!");
+      assert(VD && TheCall && "Missing VD or its init!");
       VD->setInit(TheCall);
       getTransaction()->append(VD); // Add it to the transaction for codegenning
       TUDC->addHiddenDecl(VD);
