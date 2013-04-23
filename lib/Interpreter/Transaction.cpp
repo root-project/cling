@@ -38,8 +38,7 @@ namespace cling {
         Opts.ValuePrinting = CompilationOptions::VPDisabled;
         Opts.ResultEvaluation = 0;
         Opts.DynamicScoping = 0;
-        subTransactionWhileCommitting
-          = new Transaction(Opts, getModule());
+        subTransactionWhileCommitting = new Transaction(Opts);
         addNestedTransaction(subTransactionWhileCommitting);
       }
       subTransactionWhileCommitting->append(DCI);

@@ -134,11 +134,7 @@ namespace cling {
 
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
                                                    Opts) {
-    llvm::Module* M = 0;
-    if (hasCodeGenerator())
-      M = getCodeGenerator()->GetModule();
-
-    Transaction* NewCurT = new Transaction(Opts, M);
+    Transaction* NewCurT = new Transaction(Opts);
     Transaction* OldCurT = m_Consumer->getTransaction();
     m_Consumer->setTransaction(NewCurT);
     // If we are in the middle of transaction and we see another begin 
@@ -320,6 +316,7 @@ namespace cling {
       }
 
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+      T->setModule(getCodeGenerator()->GetModule());
 
       // The static initializers might run anything and can thus cause more
       // decls that need to end up in a transaction. But this one is done

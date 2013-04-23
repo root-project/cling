@@ -105,9 +105,9 @@ namespace cling {
 
   public:
 
-    Transaction(const CompilationOptions& Opts, llvm::Module* M)
+    Transaction(const CompilationOptions& Opts)
       : m_DeclQueue(0), m_NestedTransactions(0), m_Parent(0), 
-        m_State(kCollecting), m_IssuedDiags(kNone), m_Opts(Opts), m_Module(M), 
+        m_State(kCollecting), m_IssuedDiags(kNone), m_Opts(Opts), m_Module(0), 
         m_WrapperFD(0), m_Next(0) {
       assert(sizeof(*this)<65 && "Transaction class grows! Is that expected?");
     }
@@ -298,6 +298,7 @@ namespace cling {
     }
 
     llvm::Module* getModule() const { return m_Module; }
+    void setModule(llvm::Module* M) { m_Module = M ; }
 
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 
