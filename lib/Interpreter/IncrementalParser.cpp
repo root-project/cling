@@ -186,19 +186,6 @@ namespace cling {
     return CurT;
   }
 
-  class InlineCollector : public RecursiveASTVisitor<InlineCollector> {
-  private:
-    llvm::SmallVector<FunctionDecl*, 32> &m_InlineList;
-  public:
-    InlineCollector(llvm::SmallVector<FunctionDecl*, 32> &inlines) 
-      : m_InlineList(inlines) {}
-    bool VisitFunctionDecl(FunctionDecl* FD) {
-      if (FD->isInlined())
-        m_InlineList.push_back(FD);
-      return true; // returning false will *abort* the entire traversal.
-    }
-  };
-
   void IncrementalParser::commitTransaction(Transaction* T) {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
@@ -242,44 +229,7 @@ namespace cling {
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // codegen the transaction
-#if 0
-      if (T->getCompilationOpts().CodeGenerationForModule) {
-        //
-        // That is a hackish way of forcing the codegen on inlines. It assumes
-        // that there is no specific decl order in which codegen sees the decls.
-        // The second doubtful part is that we lie to codegen that an inlined
-        // member is a top-level-decl.
-
-        // In the case most the code has already been generated and has been
-        // loaded via a shared library. In particular we do not want to 
-        // generate code for global variables and non-inline function.
-        // However we do want to generate code for inline function ...
-        // [The alternative would to find a way to get the JIT to generate them]
-        
-        llvm::SmallVector<FunctionDecl*, 32> inlines;
-        InlineCollector IC(inlines);
-        // FIXME: Size might change in the loop!
-        for (size_t Idx = 0; Idx < T->size(); ++Idx) {
-          // Copy DCI; it might get relocated below.
-          Transaction::DelayCallInfo I = (*T)[Idx];
-          if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
-            for (DeclGroupRef::const_iterator J = I.m_DGR.begin(), 
-                   JE = I.m_DGR.end(); J != JE; ++J) {
-
-              // Traverse the TagDecl to find the inlined members.
-              inlines.clear();
-              IC.TraverseDecl(*J);
-              DeclGroupRef DGR;
-              for (size_t i = 0, e = inlines.size(); i < e; ++i) {
-                DGR = DeclGroupRef(inlines[i]);
-                getCodeGenerator()->HandleTopLevelDecl(DGR);
-              }
-            }
-        }
-      } else
-#endif
-        for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/;
-                  ++Idx) {
+      for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
         // Copy DCI; it might get relocated below.
         Transaction::DelayCallInfo I = (*T)[Idx];
         if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
@@ -306,8 +256,6 @@ namespace cling {
                  == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
           VarDecl* VD = cast<VarDecl>(I.m_DGR.getSingleDecl());
           getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
-
-
         }
         else if (I.m_Call == Transaction::kCCINone)
           ; // We use that internally as delimiter in the Transaction.
