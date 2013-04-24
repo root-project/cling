@@ -217,7 +217,7 @@ namespace cling {
       if (T->isNestedTransaction()) {
         // We need to remove the marker from its parent.
         Transaction* ParentT = T->getParent();
-        for (int i = 0; i < ParentT->size(); ++i)
+        for (size_t i = 0; i < ParentT->size(); ++i)
           if ((*ParentT)[i].m_DGR.isNull())
             ParentT->erase(i);
       }
