@@ -72,6 +72,11 @@ namespace cling {
   void Transaction::append(Decl* D) {
     append(DeclGroupRef(D));
   }
+  
+  void Transaction::erase(size_t pos) {
+    assert(empty() && "Erasing from an empty transaction.");
+    m_DeclQueue->erase(decls_begin() + pos);
+  }
 
   void Transaction::dump() const {
     if (!size())

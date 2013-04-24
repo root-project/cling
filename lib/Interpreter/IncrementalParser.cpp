@@ -135,16 +135,24 @@ namespace cling {
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
                                                    Opts) {
     Transaction* OldCurT = m_Consumer->getTransaction();
+    Transaction* NewCurT = 0;
     // If we are in the middle of transaction and we see another begin 
     // transaction - it must be nested transaction.
     if (OldCurT && !OldCurT->isCompleted()) {
-      Transaction* NewCurT = new Transaction(Opts);
+      // If the last nested was empty just reuse it.
+      Transaction* LastNestedT = OldCurT->getLastNestedTransaction();
+      if (LastNestedT && LastNestedT->empty()) {
+        NewCurT = LastNestedT;
+        NewCurT->reset();
+        NewCurT->setCompilationOpts(Opts);
+      }
+      else
+        Transaction* NewCurT = new Transaction(Opts);
       m_Consumer->setTransaction(NewCurT);
       OldCurT->addNestedTransaction(NewCurT); // takes the ownership
       return NewCurT;
     }
 
-    Transaction* NewCurT = 0;
     if (getLastTransaction() && getLastTransaction()->empty()) {
       NewCurT = getLastTransaction();
       NewCurT->reset();
@@ -203,6 +211,19 @@ namespace cling {
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
 
+    // If the transaction is empty do nothing.
+    if (T->empty()) {
+      // except it was nested transaction and we want to reuse it later on.
+      if (T->isNestedTransaction()) {
+        // We need to remove the marker from its parent.
+        Transaction* ParentT = T->getParent();
+        for (int i = 0; i < ParentT->size(); ++i)
+          if ((*ParentT)[i].m_DGR.isNull())
+            ParentT->erase(i);
+      }
+      return;
+    }
+
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
       rollbackTransaction(T);
@@ -219,7 +240,7 @@ namespace cling {
     // We are sure it's safe to pipe it through the transformers
     bool success = true;
     for (size_t i = 0; i < m_TTransformers.size(); ++i) {
-      success = m_TTransformers[i]->TransformTransaction(*T); 
+      success = m_TTransformers[i]->TransformTransaction(*T);
       if (!success) {
         break;
       }

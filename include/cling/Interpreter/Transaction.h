@@ -132,8 +132,19 @@ namespace cling {
     /// \{
     /// \name Iteration
 
+    typedef DeclQueue::iterator iterator;
     typedef DeclQueue::const_iterator const_iterator;
     typedef DeclQueue::const_reverse_iterator const_reverse_iterator;
+    iterator decls_begin() {
+      if (m_DeclQueue)
+        return m_DeclQueue->begin(); 
+      return 0;
+    }
+    iterator decls_end() {
+      if (m_DeclQueue)
+        return m_DeclQueue->end();
+      return 0;
+    }
     const_iterator decls_begin() const {
       if (m_DeclQueue)
         return m_DeclQueue->begin(); 
@@ -258,6 +269,11 @@ namespace cling {
       m_NestedTransactions->push_back(nested);
     }
 
+    Transaction* getLastNestedTransaction() const {
+      assert(empty() && "Doesn't make sense on an empty transaction.");
+      return m_NestedTransactions->back();
+    }
+
     ///\brief Direct access.
     ///
     const DelayCallInfo& operator[](size_t I) const { return (*m_DeclQueue)[I]; }
@@ -307,6 +323,10 @@ namespace cling {
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 
     const Transaction* getNext() const { return m_Next; }
+    
+    ///\brief Erases an element at given position.
+    ///
+    void erase(size_t pos);
 
     ///\brief Resets empty transaction so that it could be reused.
     /// 
