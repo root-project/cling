@@ -7,6 +7,9 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
+
+#include "clang/AST/Decl.h"
+
 #include <stdio.h>
 
 
@@ -31,9 +34,15 @@ const cling::Transaction* T = gCling->getFirstTransaction();
 while(T) {
   if (!T->size())
     printf("Empty transaction detected!\n");
+  if (T->getWrapperFD()->getKind() != Decl::Function)
+    printf("Unexpected wrapper kind!\n");
+  if (T->getState != Transaction::kCommitted)
+    printf("Unexpected transaction state!\n");
   //T->printStructure();
   T = T->getNext();
 }
 printf("Just make FileCheck(CHECK-NOT) happy.\n")
 //CHECK-NOT:Empty transaction detected!
+//CHECK-NOT:Unexpected wrapper kind!
+//CHECK-NOT:Unexpected transaction state!
 .q
