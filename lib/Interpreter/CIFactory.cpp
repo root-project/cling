@@ -19,7 +19,7 @@
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Lex/Preprocessor.h"
 
-#include "llvm/LLVMContext.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
@@ -113,14 +113,14 @@ namespace cling {
     }
 
     //______________________________________
-    DiagnosticOptions DefaultDiagnosticOptions;
-    DefaultDiagnosticOptions.ShowColors = 1;
+    DiagnosticOptions* DefaultDiagnosticOptions = new DiagnosticOptions();
+    DefaultDiagnosticOptions->ShowColors = 1;
     TextDiagnosticPrinter* DiagnosticPrinter
       = new TextDiagnosticPrinter(llvm::errs(), DefaultDiagnosticOptions);
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
     DiagnosticsEngine* Diagnostics
-      = new DiagnosticsEngine(DiagIDs, DiagnosticPrinter,
-                              /*Owns it*/ true); // LEAKS!
+      = new DiagnosticsEngine(DiagIDs, DefaultDiagnosticOptions,
+                              DiagnosticPrinter, /*Owns it*/ true); // LEAKS!
 
     std::vector<const char*> argvCompile(argv, argv + argc);
     // We do C++ by default; append right after argv[0] name
@@ -137,11 +137,8 @@ namespace cling {
     argvCompile.push_back("-c");
     argvCompile.push_back("-");
 
-    bool IsProduction = false;
-    assert(IsProduction = true && "set IsProduction if asserts are on.");
     clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
                                  "cling.out",
-                                 IsProduction,
                                  *Diagnostics);
     //Driver.setWarnMissingInput(false);
     Driver.setCheckInputsExist(false); // think foo.C(12)
@@ -174,10 +171,8 @@ namespace cling {
       for (unsigned i = 0, e = Opts.UserEntries.size();
            !foundOldResInc && i != e; ++i) {
         HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
-        if (!E.IsUserSupplied && !E.IsFramework
-            && E.Group == clang::frontend::System && E.IgnoreSysRoot
-            && E.IsInternal && !E.ImplicitExternC
-            && oldResInc.str() == E.Path) {
+        if (!E.IsFramework && E.Group == clang::frontend::System
+            && E.IgnoreSysRoot && oldResInc.str() == E.Path) {
           E.Path = newResInc.str();
           foundOldResInc = true;
         }
@@ -190,7 +185,8 @@ namespace cling {
     CompilerInstance* CI = new CompilerInstance();
     CI->setInvocation(Invocation);
 
-    CI->createDiagnostics(CC1Args->size(), CC1Args->data() + 1);
+    CI->createDiagnostics(DiagnosticPrinter, /*ShouldOwnClient=*/ false,
+                          /*ShouldCloneClient=*/ false);
     {
       //
       //  Buffer the error messages while we process
@@ -208,7 +204,7 @@ namespace cling {
       }
     }
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
-                                               Invocation->getTargetOpts()));
+                                               &Invocation->getTargetOpts()));
     if (!CI->hasTarget()) {
       delete CI;
       CI = 0;

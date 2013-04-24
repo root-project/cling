@@ -45,13 +45,15 @@ int main( int argc, char **argv ) {
 
    // Interactive means no input (or one input that's "-")
    bool Interactive = Inputs.empty() || (Inputs.size() == 1
-                                         && Inputs[0].File == "-");
+                                         && Inputs[0].getFile() == "-");
 
    cling::UserInterface ui(interp);
    // If we are not interactive we're supposed to parse files
    if (!Interactive) {
      for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
-       ui.getMetaProcessor()->process((".x " + Inputs[I].File).c_str());
+       std::string line(".x ");
+       line += Inputs[I].getFile();
+       ui.getMetaProcessor()->process(line.c_str());
        ret = !CI->getDiagnostics().getClient()->getNumErrors();
      }
    }

@@ -36,7 +36,7 @@ namespace cling {
   class Value {
   protected:
     /// \brief value
-    char /*llvm::GenericValue*/ m_GV[32]; // 24 bytes on 64bit
+    char /*llvm::GenericValue*/ m_GV[48]; // 48 bytes on 64bit
 
     /// \brief the value's type according to clang, stored as void* to reduce
     /// dependencies.

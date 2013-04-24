@@ -35,12 +35,6 @@ namespace cling {
   }
 
   void ASTDumper::printDecl(Decl* D) {
-    PrintingPolicy Policy = D->getASTContext().getPrintingPolicy();
-    if (m_Dump)
-      Policy.DumpSourceManager = &m_Sema->getSourceManager();
-    else
-      Policy.DumpSourceManager = 0;
-
     if (D) {
       llvm::errs() << "\n-------------------Declaration---------------------\n";
       D->dump();

@@ -85,7 +85,6 @@ namespace cling {
 
           if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
             VD->setStorageClass(SC_None);
-            VD->setStorageClassAsWritten(SC_None);
           }
           // force recalc of the linkage (to external)
           ND->ClearLinkageCache();
@@ -151,14 +150,26 @@ namespace cling {
     NamedDecl* ND = m_Sema->ImplicitlyDefineFunction(Loc, IIFD, TUScope);
     if (FunctionDecl* FD = dyn_cast_or_null<FunctionDecl>(ND)) {
       FD->setImplicit(false); // Better for debugging
-      // NOTE:
-      // We know that our function returns an int, however we are not going
-      // to add a return statement, because we use that function in an 
-      // assignment which we don't use. The assignment is just there to force
-      // the execution of our function. Valgrind will be happy because LLVM
-      // generates a return result, which is (false?) initialized.
-      CompoundStmt* CS = new (*m_Context)CompoundStmt(*m_Context, Stmts.data(), 
-                                                      Stmts.size(), Loc, Loc);
+
+      // Add a return statement if it doesn't exist
+      if (!isa<ReturnStmt>(Stmts.back())) {
+        Sema::ContextRAII pushedDC(*m_Sema, FD);
+        // Generate the return statement:
+        // First a literal 0, then the return taking that literal.
+        // One bit is enough:
+        llvm::APInt ZeroInt(m_Context->getIntWidth(m_Context->IntTy), 0,
+                            /*isSigned=*/true);
+        IntegerLiteral* ZeroLit
+          = IntegerLiteral::Create(*m_Context, ZeroInt, m_Context->IntTy,
+                                   SourceLocation());
+        Stmts.push_back(m_Sema->ActOnReturnStmt(ZeroLit->getExprLoc(), 
+                                                ZeroLit).take());
+      }
+
+      // Wrap Stmts into a function body.
+      llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
+      CompoundStmt* CS = new (*m_Context)CompoundStmt(*m_Context, StmtsRef,
+                                                      Loc, Loc);
       FD->setBody(CS);
       getTransaction()->append(FD); // Add it to the transaction for codegenning
 
@@ -168,7 +179,7 @@ namespace cling {
       IdentifierInfo& IIVD = m_Context->Idents.get(VarName);
       VarDecl* VD = VarDecl::Create(*m_Context, TUDC, Loc, Loc, &IIVD,
                                     FD->getResultType(), (TypeSourceInfo*)0,
-                                    SC_None, SC_None);
+                                    SC_None);
       LookupResult R(*m_Sema, FD->getDeclName(), Loc, Sema::LookupMemberName);
       R.addDecl(FD);
       CXXScopeSpec CSS;

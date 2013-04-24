@@ -41,9 +41,8 @@ namespace cling {
         // We can't PushDeclContext, because we don't have scope.
         Sema::ContextRAII pushedDC(*m_Sema, FD);
         FunctionProtoType::ExtProtoInfo EPI;
-        QualType FnTy = m_Context->getFunctionType(RetTy,
-                                                   /* ArgArray = */0,
-                                                   /* NumArgs = */0, EPI);
+        QualType FnTy
+          = m_Context->getFunctionType(RetTy, llvm::ArrayRef<QualType>(), EPI);
         FD->setType(FnTy);
         CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
         assert(CS && "Missing body?");
@@ -75,10 +74,9 @@ namespace cling {
               && RetTy.isTriviallyCopyableType(*m_Context)) {
             Sema::ContextRAII pushedDC(*m_Sema, FD);
             FunctionProtoType::ExtProtoInfo EPI;
-            QualType FnTy = m_Context->getFunctionType(RetTy,
-                                                       /* ArgArray = */0,
-                                                       /* NumArgs = */0,
-                                                       EPI);
+            QualType FnTy
+              = m_Context->getFunctionType(RetTy, llvm::ArrayRef<QualType>(),
+                                           EPI);
             FD->setType(FnTy);
           } // not returning void
         } // have return value

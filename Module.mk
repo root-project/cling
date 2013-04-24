@@ -64,12 +64,9 @@ endif
 
 CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 	$(addprefix -lclang,\
-		Frontend Serialization Driver CodeGen Parse Sema Analysis RewriteCore AST Lex Basic Edit) \
+		Frontend Serialization Driver CodeGen Parse Sema Analysis RewriteCore AST Edit Lex Basic) \
 	$(patsubst -lLLVM%Disassembler,,\
-	$(filter-out -lLLVMipa,\
-	$(shell $(LLVMCONFIG) --libs linker jit executionengine debuginfo \
-	  archive bitreader all-targets codegen selectiondag asmprinter \
-	  mcparser scalaropts instcombine transformutils analysis target))) \
+	$(filter-out -lLLVMipa,$(shell $(LLVMCONFIG) --libs)))\
 	$(shell $(LLVMCONFIG) --ldflags)
 
 ##### local rules #####

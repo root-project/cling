@@ -32,8 +32,12 @@ namespace cling {
   bool DeclCollector::shouldIgnoreDeclFromASTReader(const Decl* D) const {
     // Functions that are inlined must be sent to CodeGen - they will not have a
     // symbol in the library.
-    if (const FunctionDecl* FD = dyn_cast<FunctionDecl>(D))
-      return !FD->isInlined();
+    if (const FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {
+      if (D->isFromASTFile())
+        return !FD->hasBody();
+      else
+        return !FD->isInlined();
+    }
 
     // Don't codegen statics coming in from a module; they are already part of
     // the library.

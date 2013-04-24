@@ -29,8 +29,8 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Serialization/ASTWriter.h"
 
-#include "llvm/LLVMContext.h"
-#include "llvm/Module.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Support/CrashRecoveryContext.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_os_ostream.h"
@@ -61,6 +61,7 @@ namespace cling {
     if (CI->getFrontendOpts().ProgramAction != clang::frontend::ParseSyntaxOnly){
       m_CodeGen.reset(CreateLLVMCodeGen(CI->getDiagnostics(), "cling input",
                                         CI->getCodeGenOpts(),
+                                        CI->getTargetOpts(),
                                         *m_Interpreter->getLLVMContext()
                                         ));
       m_Consumer->setCodeGen(m_CodeGen.get());
@@ -93,7 +94,6 @@ namespace cling {
       beginTransaction(CO);
       m_CI->createPCHExternalASTSource(PCHFileName,
                                        true /*DisablePCHValidation*/,
-                                       true /*DisableStatCache*/,
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/);
       commitTransaction(endTransaction());
@@ -414,12 +414,6 @@ namespace cling {
   IncrementalParser::ParseInternal(llvm::StringRef input) {
     if (input.empty()) return IncrementalParser::kSuccess;
 
-    PrettyStackTraceParserEntry CrashInfo(*m_Parser.get());
-
-    // Recover resources if we crash before exiting this method.
-    llvm::CrashRecoveryContextCleanupRegistrar<Parser> 
-      CleanupParser(m_Parser.get());
-
     Sema& S = getCI()->getSema();
 
     assert(!(S.getLangOpts().Modules
@@ -461,6 +455,7 @@ namespace cling {
 
     // Create FileID for the current buffer
     FileID FID = SM.createFileIDForMemBuffer(m_MemoryBuffers.back(),
+                                             SrcMgr::C_User,
                                              /*LoadedID*/0,
                                              /*LoadedOffset*/0, NewLoc);
 

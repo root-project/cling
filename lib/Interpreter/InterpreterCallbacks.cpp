@@ -132,7 +132,7 @@ namespace test {
       IdentifierInfo* II = Name.getAsIdentifierInfo();
       SourceLocation Loc = R.getNameLoc();
       VarDecl* Res = VarDecl::Create(C, DC, Loc, Loc, II, C.DependentTy,
-                                     /*TypeSourceInfo*/0, SC_None, SC_None);
+                                     /*TypeSourceInfo*/0, SC_None);
 
       // Annotate the decl to give a hint in cling. FIXME: Current implementation
       // is a gross hack, because TClingCallbacks shouldn't know about 

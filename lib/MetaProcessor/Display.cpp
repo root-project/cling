@@ -200,7 +200,10 @@ void AppendClassName(const CXXRecordDecl* classDecl, std::string& name)
   const PrintingPolicy printingPolicy(langOpts);
   std::string tmp;
   //Name for diagnostic will include template arguments if any.
-  classDecl->getNameForDiagnostic(tmp, printingPolicy, true);//true == qualified name.
+  llvm::raw_string_ostream stream(tmp);
+  classDecl->getNameForDiagnostic(stream,
+                                  printingPolicy, /*qualified name=*/true);
+  stream.flush();
   name += tmp;
 }
 
@@ -1093,8 +1096,9 @@ void GlobalsPrinter::DisplayGlobals()const
   //Try to print global macro definitions (object-like only).
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
-    if (macro->second->isObjectLike())
-      DisplayObjectLikeMacro(macro->first, macro->second);
+    if (macro->second->getMacroInfo()
+        && macro->second->getMacroInfo()->isObjectLike())
+      DisplayObjectLikeMacro(macro->first, macro->second->getMacroInfo());
   }
 
   //TODO: fSeenDecls - should I check that some declaration is already visited?
@@ -1136,9 +1140,10 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
   
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
-    if (macro->second->isObjectLike()) {
+    if (macro->second->getMacroInfo()
+        && macro->second->getMacroInfo()->isObjectLike()) {
       if (name == macro->first->getName().data()) {
-        DisplayObjectLikeMacro(macro->first, macro->second);
+        DisplayObjectLikeMacro(macro->first, macro->second->getMacroInfo());
         found = true;
       }
     }
@@ -1384,12 +1389,9 @@ void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
     llvm::raw_string_ostream out(textLine);
     typedefDecl->getUnderlyingType().
        getDesugaredType(typedefDecl->getASTContext()).print(out,printingPolicy);
-     
-    std::string tmp;
     //Name for diagnostic will include template arguments if any.
-    typedefDecl->getNameForDiagnostic(tmp, printingPolicy,/*qualified=*/true);
-    
-    out << " " << tmp;
+    typedefDecl->getNameForDiagnostic(out,
+                                      printingPolicy,/*qualified=*/true);    
   }
 
   fOut.Print(textLine.c_str());

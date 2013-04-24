@@ -342,10 +342,11 @@ namespace cling {
     }
     if (where) {
       // Great we now have a scope and something to search for,let's go ahead.
-      for (DeclContext::lookup_result R 
-              = where->lookup(P.getCurToken().getIdentifierInfo());
-           R.first != R.second; ++R.first) {
-        ClassTemplateDecl *theDecl = dyn_cast<ClassTemplateDecl>((*R.first));
+      DeclContext::lookup_result R 
+        = where->lookup(P.getCurToken().getIdentifierInfo());
+      for (DeclContext::lookup_iterator I = R.begin(), E = R.end();
+           I != E; ++I) {
+        ClassTemplateDecl *theDecl = dyn_cast<ClassTemplateDecl>(*I);
         if (theDecl)
           return theDecl;
       }
@@ -479,7 +480,13 @@ namespace cling {
       //  and may be able to remove it in the future if
       //  the way constructors are looked up changes.
       //
+      void* OldEntity = P.getCurScope()->getEntity();
+      DeclContext* TUCtx = Context.getTranslationUnitDecl();
+      P.getCurScope()->setEntity(TUCtx);
       P.EnterScope(Scope::DeclScope);
+      P.getCurScope()->setEntity(foundDC);
+      P.EnterScope(Scope::DeclScope);
+      Sema::ContextRAII SemaContext(S, foundDC);
       S.EnterDeclaratorContext(P.getCurScope(), foundDC);
       if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
                                /*AllowDestructorName*/true,
@@ -491,6 +498,8 @@ namespace cling {
         // restore the original.
         S.ExitDeclaratorContext(P.getCurScope());
         P.ExitScope();
+        P.ExitScope();
+        P.getCurScope()->setEntity(OldEntity);
 
         // Then cleanup and exit.
         return TheDecl;
@@ -516,6 +525,8 @@ namespace cling {
         // restore the original.
         S.ExitDeclaratorContext(P.getCurScope());
         P.ExitScope();
+        P.ExitScope();
+        P.getCurScope()->setEntity(OldEntity);
         // Then cleanup and exit.
         return TheDecl;
       }
@@ -523,6 +534,8 @@ namespace cling {
       // restore the original.
       S.ExitDeclaratorContext(P.getCurScope());
       P.ExitScope();
+      P.ExitScope();
+      P.getCurScope()->setEntity(OldEntity);
       //
       //  Check for lookup failure.
       //
@@ -763,7 +776,13 @@ namespace cling {
       //  and may be able to remove it in the future if
       //  the way constructors are looked up changes.
       //
+      void* OldEntity = P.getCurScope()->getEntity();
+      DeclContext* TUCtx = Context.getTranslationUnitDecl();
+      P.getCurScope()->setEntity(TUCtx);
       P.EnterScope(Scope::DeclScope);
+      P.getCurScope()->setEntity(foundDC);
+      P.EnterScope(Scope::DeclScope);
+      Sema::ContextRAII SemaContext(S, foundDC);
       S.EnterDeclaratorContext(P.getCurScope(), foundDC);
       //
       //  Parse the function name.
@@ -777,6 +796,8 @@ namespace cling {
         // Failed parse, cleanup.
         S.ExitDeclaratorContext(P.getCurScope());
         P.ExitScope();
+        P.ExitScope();
+        P.getCurScope()->setEntity(OldEntity);
         return TheDecl;
       }
       //
@@ -800,6 +821,8 @@ namespace cling {
         // restore the original.
         S.ExitDeclaratorContext(P.getCurScope());
         P.ExitScope();
+        P.ExitScope();
+        P.getCurScope()->setEntity(OldEntity);
         // Then cleanup and exit.
         return TheDecl;
       }
@@ -808,6 +831,8 @@ namespace cling {
       //
       S.ExitDeclaratorContext(P.getCurScope());
       P.ExitScope();
+      P.ExitScope();
+      P.getCurScope()->setEntity(OldEntity);
       //
       //  Check for lookup failure.
       //
@@ -1060,7 +1085,13 @@ namespace cling {
       //  and may be able to remove it in the future if
       //  the way constructors are looked up changes.
       //
+      void* OldEntity = P.getCurScope()->getEntity();
+      DeclContext* TUCtx = Context.getTranslationUnitDecl();
+      P.getCurScope()->setEntity(TUCtx);
       P.EnterScope(Scope::DeclScope);
+      P.getCurScope()->setEntity(foundDC);
+      P.EnterScope(Scope::DeclScope);
+      Sema::ContextRAII SemaContext(S, foundDC);
       S.EnterDeclaratorContext(P.getCurScope(), foundDC);
       if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
                                /*AllowDestructorName*/true,
@@ -1072,6 +1103,8 @@ namespace cling {
         // restore the original.
         S.ExitDeclaratorContext(P.getCurScope());
         P.ExitScope();
+        P.ExitScope();
+        P.getCurScope()->setEntity(OldEntity);
 
         // Then cleanup and exit.
         return TheDecl;
@@ -1097,6 +1130,8 @@ namespace cling {
         // restore the original.
         S.ExitDeclaratorContext(P.getCurScope());
         P.ExitScope();
+        P.ExitScope();
+        P.getCurScope()->setEntity(OldEntity);
         // Then cleanup and exit.
         return TheDecl;
       }
@@ -1104,6 +1139,8 @@ namespace cling {
       // restore the original.
       S.ExitDeclaratorContext(P.getCurScope());
       P.ExitScope();
+      P.ExitScope();
+      P.getCurScope()->setEntity(OldEntity);
       //
       //  Check for lookup failure.
       //

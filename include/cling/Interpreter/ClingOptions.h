@@ -12,11 +12,13 @@ namespace driver {
 namespace clingoptions {
    enum ID {
     OPT_INVALID = 0, // This is not an option ID.
-#define OPTION(NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM, \
+#define PREFIX(NAME, VALUE)
+#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM, \
                HELPTEXT, METAVAR) OPT_##ID,
 #include "cling/Interpreter/ClingOptions.inc"
     LastOption
 #undef OPTION
+#undef PREFIX
    };
 }
 }

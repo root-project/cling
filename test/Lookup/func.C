@@ -1,11 +1,11 @@
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
 // Test lookupFunctionArgs()
-
+.rawInput
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
-#include "clang/AST/PrettyPrinter.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <cstdio>
 #include <string>
@@ -13,6 +13,18 @@
 using namespace std;
 using namespace llvm;
 
+void dumpDecl(const char* title, const clang::Decl* D) {
+  printf("%s: 0x%lx\n", title, (unsigned long) D);
+  std::string S;
+  llvm::raw_string_ostream OS(S);
+  dyn_cast<clang::NamedDecl>(D)
+    ->getNameForDiagnostic(OS, D->getASTContext().getPrintingPolicy(),
+                           /*Qualified=*/true);
+  printf("%s name: %s\n", title, OS.str().c_str());
+  fflush(stdout);
+  D->print(llvm::errs());
+}
+.rawInput
 
 //
 //  We need to fetch the global scope declaration,
@@ -26,9 +38,6 @@ printf("G: 0x%lx\n", (unsigned long) G);
 //
 //  Some tools for printing.
 //
-
-std::string buf;
-clang::PrintingPolicy Policy(G->getASTContext().getPrintingPolicy());
 
 .rawInput 1
 void G_f() { int x = 1; }
@@ -902,28 +911,16 @@ B* force_B_char_ctr = new B('a');
 const clang::FunctionDecl* func_B_ctr3_args = lookup.findFunctionArgs(class_B, "B", "'a'");
 const clang::FunctionDecl* func_B_ctr3_proto = lookup.findFunctionProto(class_B, "B", "char");
 
-printf("func_B_ctr3_args: 0x%lx\n", (unsigned long) func_B_ctr3_args);
+dumpDecl("func_B_ctr3_args", func_B_ctr3_args);
 //CHECK: func_B_ctr3_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_ctr3_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_ctr3_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr3_args name: B::B<char>
-
-func_B_ctr3_args->print(llvm::errs());
 //CHECK-NEXT:  {
 //CHECK-NEXT:     this->m_B_i = (char)v; 
 //CHECK-NEXT: }
 
-printf("func_B_ctr3_proto: 0x%lx\n", (unsigned long) func_B_ctr3_proto);
+dumpDecl("func_B_ctr3_proto", func_B_ctr3_proto);
 //CHECK: func_B_ctr3_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_ctr3_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_ctr3_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr3_proto name: B::B<char>
-
-func_B_ctr3_proto->print(llvm::errs());
 //CHECK-NEXT:  {
 //CHECK-NEXT:     this->m_B_i = (char)v; 
 //CHECK-NEXT: }
@@ -932,35 +929,24 @@ B* force_B_char_ptr_ctr = new B((char*)0);
 const clang::FunctionDecl* func_B_ctr4_args = lookup.findFunctionArgs(class_B, "B", "(char*)0");
 const clang::FunctionDecl* func_B_ctr4_proto = lookup.findFunctionProto(class_B, "B", "char*");
 
-printf("func_B_ctr4_args: 0x%lx\n", (unsigned long) func_B_ctr4_args);
+dumpDecl("func_B_ctr4_args", func_B_ctr4_args);
 //CHECK: func_B_ctr4_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_ctr4_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_ctr4_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr4_args name: B::B<char>
-
-func_B_ctr4_args->print(llvm::errs());
 //CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT:     this->m_B_i = (long)(char *)v;
 //CHECK-NEXT:     this->m_B_d = 1.;
 //CHECK-NEXT: }
 
-printf("func_B_ctr4_proto: 0x%lx\n", (unsigned long) func_B_ctr4_proto);
+dumpDecl("func_B_ctr4_proto", func_B_ctr4_proto);
 //CHECK: func_B_ctr4_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_ctr4_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_ctr4_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_ctr4_proto name: B::B<char>
+//CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
+//CHECK-NEXT:     this->m_B_i = (long)(char *)v;
+//CHECK-NEXT:     this->m_B_d = 1.;
+//CHECK-NEXT: }
 
 printf("func_B_ctr4_proto has body: %d\n", func_B_ctr4_proto->hasBody());
-//CHECK-NEXT: func_B_ctr4_proto has body: 1
-func_B_ctr4_proto->print(llvm::errs());
-//CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
-//CHECK-NEXT:     this->m_B_i = (long)(char *)v;
-//CHECK-NEXT:     this->m_B_d = 1.;
-//CHECK-NEXT: }
+//CHECK: func_B_ctr4_proto has body: 1
 
 //
 //  Test finding destructors.
@@ -969,29 +955,17 @@ func_B_ctr4_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_dtr_args = lookup.findFunctionArgs(class_B, "~B", "");
 const clang::FunctionDecl* func_B_dtr_proto = lookup.findFunctionProto(class_B, "~B", "");
 
-printf("func_B_dtr_args: 0x%lx\n", (unsigned long) func_B_dtr_args);
+dumpDecl("func_B_dtr_args", func_B_dtr_args);
 //CHECK: func_B_dtr_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_dtr_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_dtr_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_dtr_args name: B::~B
-
-func_B_dtr_args->print(llvm::errs());
 //CHECK-NEXT: virtual void ~B() {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
 //CHECK-NEXT: }
 
-printf("func_B_dtr_proto: 0x%lx\n", (unsigned long) func_B_dtr_proto);
+dumpDecl("func_B_dtr_proto", func_B_dtr_proto);
 //CHECK: func_B_dtr_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_dtr_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_dtr_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_dtr_proto name: B::~B
-
-func_B_dtr_proto->print(llvm::errs());
 //CHECK-NEXT: virtual void ~B() {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
@@ -1006,28 +980,16 @@ func_B_dtr_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_new_args = lookup.findFunctionArgs(class_B, "operator new", "sizeof(B)");
 const clang::FunctionDecl* func_B_new_proto = lookup.findFunctionProto(class_B, "operator new", "std::size_t");
 
-printf("func_B_new_args: 0x%lx\n", (unsigned long) func_B_new_args);
+dumpDecl("func_B_new_args", func_B_new_args);
 //CHECK: func_B_new_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_args name: B::operator new
-
-func_B_new_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz) {
 //CHECK-NEXT:     return ::operator new(sz);
 //CHECK-NEXT: }
 
-printf("func_B_new_proto: 0x%lx\n", (unsigned long) func_B_new_proto);
+dumpDecl("func_B_new_proto", func_B_new_proto);
 //CHECK: func_B_new_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_proto name: B::operator new
-
-func_B_new_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz) {
 //CHECK-NEXT:     return ::operator new(sz);
 //CHECK-NEXT: }
@@ -1035,28 +997,16 @@ func_B_new_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_new_plcmt_args = lookup.findFunctionArgs(class_B, "operator new", "sizeof(B),((B*)&b_arena[0])+2");
 const clang::FunctionDecl* func_B_new_plcmt_proto = lookup.findFunctionProto(class_B, "operator new", "std::size_t,void*");
 
-printf("func_B_new_plcmt_args: 0x%lx\n", (unsigned long) func_B_new_plcmt_args);
+dumpDecl("func_B_new_plcmt_args", func_B_new_plcmt_args);
 //CHECK: func_B_new_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_plcmt_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_plcmt_args name: B::operator new
-
-func_B_new_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
 
-printf("func_B_new_plcmt_proto: 0x%lx\n", (unsigned long) func_B_new_plcmt_proto);
+dumpDecl("func_B_new_plcmt_proto", func_B_new_plcmt_proto);
 //CHECK: func_B_new_plcmt_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_plcmt_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_plcmt_proto name: B::operator new
-
-func_B_new_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new(std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
@@ -1064,28 +1014,16 @@ func_B_new_plcmt_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_new_ary_args = lookup.findFunctionArgs(class_B, "operator new[]", "sizeof(B)*3");
 const clang::FunctionDecl* func_B_new_ary_proto = lookup.findFunctionProto(class_B, "operator new[]", "std::size_t");
 
-printf("func_B_new_ary_args: 0x%lx\n", (unsigned long) func_B_new_ary_args);
+dumpDecl("func_B_new_ary_args", func_B_new_ary_args);
 //CHECK: func_B_new_ary_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_ary_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_ary_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_args name: B::operator new[]
-
-func_B_new_ary_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz) {
 //CHECK-NEXT:     return ::operator new[](sz);
 //CHECK-NEXT: }
 
-printf("func_B_new_ary_proto: 0x%lx\n", (unsigned long) func_B_new_ary_proto);
+dumpDecl("func_B_new_ary_proto", func_B_new_ary_proto);
 //CHECK: func_B_new_ary_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_ary_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_ary_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_proto name: B::operator new[]
-
-func_B_new_ary_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz) {
 //CHECK-NEXT:     return ::operator new[](sz);
 //CHECK-NEXT: }
@@ -1093,28 +1031,16 @@ func_B_new_ary_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_new_ary_plcmt_args = lookup.findFunctionArgs(class_B, "operator new[]", "sizeof(B)*3,&b_ary_arena[0]");
 const clang::FunctionDecl* func_B_new_ary_plcmt_proto = lookup.findFunctionProto(class_B, "operator new[]", "std::size_t,void*");
 
-printf("func_B_new_ary_plcmt_args: 0x%lx\n", (unsigned long) func_B_new_ary_plcmt_args);
+dumpDecl("func_B_new_ary_plcmt_args", func_B_new_ary_plcmt_args);
 //CHECK: func_B_new_ary_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_ary_plcmt_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_ary_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_plcmt_args name: B::operator new[]
-
-func_B_new_ary_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
 
-printf("func_B_new_ary_plcmt_proto: 0x%lx\n", (unsigned long) func_B_new_ary_plcmt_proto);
+dumpDecl("func_B_new_ary_plcmt_proto", func_B_new_ary_plcmt_proto);
 //CHECK: func_B_new_ary_plcmt_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_new_ary_plcmt_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_new_ary_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_new_ary_plcmt_proto name: B::operator new[]
-
-func_B_new_ary_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void *operator new[](std::size_t sz, void *arena) {
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
@@ -1126,28 +1052,16 @@ func_B_new_ary_plcmt_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_del_args = lookup.findFunctionArgs(class_B, "operator delete", "b_ptr");
 const clang::FunctionDecl* func_B_del_proto = lookup.findFunctionProto(class_B, "operator delete", "void*");
 
-printf("func_B_del_args: 0x%lx\n", (unsigned long) func_B_del_args);
+dumpDecl("func_B_del_args", func_B_del_args);
 //CHECK: func_B_del_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_args name: B::operator delete
-
-func_B_del_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp) {
 //CHECK-NEXT:     ::operator delete(vp);
 //CHECK-NEXT: }
 
-printf("func_B_del_proto: 0x%lx\n", (unsigned long) func_B_del_proto);
+dumpDecl("func_B_del_proto", func_B_del_proto);
 //CHECK: func_B_del_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_proto name: B::operator delete
-
-func_B_del_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp) {
 //CHECK-NEXT:     ::operator delete(vp);
 //CHECK-NEXT: }
@@ -1155,55 +1069,31 @@ func_B_del_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_del_plcmt_args = lookup.findFunctionArgs(class_B, "operator delete", "((B*)&b_arena[0])+2,&b_arena[0]");
 const clang::FunctionDecl* func_B_del_plcmt_proto = lookup.findFunctionProto(class_B, "operator delete", "void*,void*");
 
-printf("func_B_del_plcmt_args: 0x%lx\n", (unsigned long) func_B_del_plcmt_args);
+dumpDecl("func_B_del_plcmt_args", func_B_del_plcmt_args);
 //CHECK: func_B_del_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_plcmt_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_plcmt_args name: B::operator delete
-
-func_B_del_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp, void *arena) {
 //CHECK-NEXT: }
 
-printf("func_B_del_plcmt_proto: 0x%lx\n", (unsigned long) func_B_del_plcmt_proto);
+dumpDecl("func_B_del_plcmt_proto", func_B_del_plcmt_proto);
 //CHECK: func_B_del_plcmt_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_plcmt_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_plcmt_proto name: B::operator delete
-
-func_B_del_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete(void *vp, void *arena) {
 //CHECK-NEXT: }
 
 const clang::FunctionDecl* func_B_del_ary_args = lookup.findFunctionArgs(class_B, "operator delete[]", "b_ary");
 const clang::FunctionDecl* func_B_del_ary_proto = lookup.findFunctionProto(class_B, "operator delete[]", "void*");
 
-printf("func_B_del_ary_args: 0x%lx\n", (unsigned long) func_B_del_ary_args);
+dumpDecl("func_B_del_ary_args", func_B_del_ary_args);
 //CHECK: func_B_del_ary_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_ary_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_ary_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_args name: B::operator delete[]
-
-func_B_del_ary_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp) {
 //CHECK-NEXT:     ::operator delete[](vp);
 //CHECK-NEXT: }
 
-printf("func_B_del_ary_proto: 0x%lx\n", (unsigned long) func_B_del_ary_proto);
+dumpDecl("func_B_del_ary_proto", func_B_del_ary_proto);
 //CHECK: func_B_del_ary_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_ary_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_ary_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_proto name: B::operator delete[]
-
-func_B_del_ary_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp) {
 //CHECK-NEXT:     ::operator delete[](vp);
 //CHECK-NEXT: }
@@ -1211,27 +1101,15 @@ func_B_del_ary_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_del_ary_plcmt_args = lookup.findFunctionArgs(class_B, "operator delete[]", "(B*)b_arena[3],&b_arena[0]");
 const clang::FunctionDecl* func_B_del_ary_plcmt_proto = lookup.findFunctionProto(class_B, "operator delete[]", "void*,void*");
 
-printf("func_B_del_ary_plcmt_args: 0x%lx\n", (unsigned long) func_B_del_ary_plcmt_args);
+dumpDecl("func_B_del_ary_plcmt_args", func_B_del_ary_plcmt_args);
 //CHECK: func_B_del_ary_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_ary_plcmt_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_ary_plcmt_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_plcmt_args name: B::operator delete[]
-
-func_B_del_ary_plcmt_args->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp, void *arena) {
 //CHECK-NEXT: }
 
-printf("func_B_del_ary_plcmt_proto: 0x%lx\n", (unsigned long) func_B_del_ary_plcmt_proto);
+dumpDecl("func_B_del_ary_plcmt_proto", func_B_del_ary_plcmt_proto);
 //CHECK: func_B_del_ary_plcmt_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_del_ary_plcmt_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_del_ary_plcmt_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_del_ary_plcmt_proto name: B::operator delete[]
-
-func_B_del_ary_plcmt_proto->print(llvm::errs());
 //CHECK-NEXT: void operator delete[](void *vp, void *arena) {
 //CHECK-NEXT: }
 
@@ -1244,28 +1122,16 @@ func_B_del_ary_plcmt_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_star_args = lookup.findFunctionArgs(class_B, "operator*", "");
 const clang::FunctionDecl* func_B_star_proto = lookup.findFunctionProto(class_B, "operator*", "");
 
-printf("func_B_star_args: 0x%lx\n", (unsigned long) func_B_star_args);
+dumpDecl("func_B_star_args", func_B_star_args);
 //CHECK: func_B_star_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_star_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_star_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_star_args name: B::operator*
-
-func_B_star_args->print(llvm::errs());
 //CHECK-NEXT: B &operator*() {
 //CHECK-NEXT:     return *this;
 //CHECK-NEXT: }
 
-printf("func_B_star_proto: 0x%lx\n", (unsigned long) func_B_star_proto);
+dumpDecl("func_B_star_proto", func_B_star_proto);
 //CHECK: func_B_star_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_star_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_star_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_star_proto name: B::operator*
-
-func_B_star_proto->print(llvm::errs());
 //CHECK-NEXT: B &operator*() {
 //CHECK-NEXT:     return *this;
 //CHECK-NEXT: }
@@ -1279,28 +1145,16 @@ func_B_star_proto->print(llvm::errs());
 const clang::FunctionDecl* func_B_plus_args = lookup.findFunctionArgs(class_B, "operator+", "b_obj");
 const clang::FunctionDecl* func_B_plus_proto = lookup.findFunctionProto(class_B, "operator+", "B");
 
-printf("func_B_plus_args: 0x%lx\n", (unsigned long) func_B_plus_args);
+dumpDecl("func_B_plus_args", func_B_plus_args);
 //CHECK: func_B_plus_args: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_plus_args)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_plus_args name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_plus_args name: B::operator+
-
-func_B_plus_args->print(llvm::errs());
 //CHECK-NEXT: B operator+(B b) {
 //CHECK-NEXT:     return b;
 //CHECK-NEXT: }
 
-printf("func_B_plus_proto: 0x%lx\n", (unsigned long) func_B_plus_proto);
+dumpDecl("func_B_plus_proto", func_B_plus_proto);
 //CHECK: func_B_plus_proto: 0x{{[1-9a-f][0-9a-f]*$}}
-
-buf.clear();
-cast<clang::NamedDecl>(func_B_plus_proto)->getNameForDiagnostic(buf, Policy, /*Qualified=*/true);
-printf("func_B_plus_proto name: %s\n", buf.c_str());
 //CHECK-NEXT: func_B_plus_proto name: B::operator+
-
-func_B_plus_proto->print(llvm::errs());
 //CHECK-NEXT: B operator+(B b) {
 //CHECK-NEXT:     return b;
 //CHECK-NEXT: }

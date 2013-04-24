@@ -10,8 +10,8 @@
 
 #include "clang/AST/Type.h"
 
-#include "llvm/Constants.h"
-#include "llvm/Module.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/Verifier.h"

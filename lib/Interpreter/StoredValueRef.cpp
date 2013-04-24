@@ -8,6 +8,7 @@
 #include "cling/Interpreter/ValuePrinter.h"
 #include "clang/AST/ASTContext.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace cling;
 using namespace clang;

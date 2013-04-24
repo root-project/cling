@@ -22,13 +22,22 @@ using namespace cling::driver::clingoptions;
 
 namespace {
 
-  static const OptTable::Info ClingInfoTable[] = {
-#define OPTION(NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM,              \
-               HELPTEXT, METAVAR)                                       \
-    { NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, FLAGS, PARAM, \
-      OPT_##GROUP, OPT_##ALIAS },
+#define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM, \
+               HELPTEXT, METAVAR)
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
+#undef PREFIX
+
+  static const OptTable::Info ClingInfoTable[] = {
+#define PREFIX(NAME, VALUE)
+#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM, \
+               HELPTEXT, METAVAR)   \
+  { PREFIX, NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, PARAM, \
+    FLAGS, OPT_##GROUP, OPT_##ALIAS },
+#include "cling/Interpreter/ClingOptions.inc"
+#undef OPTION
+#undef PREFIX
   };
 
   class ClingOptTable : public OptTable {
@@ -50,7 +59,7 @@ namespace {
     Opts.Help = Args.hasArg(OPT_help);
     if (Args.hasArg(OPT__metastr, OPT__metastr_EQ)) {
       Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ);
-      Opts.MetaString = MetaStringArg->getValue(Args);
+      Opts.MetaString = MetaStringArg->getValue();
       if (Opts.MetaString.length() == 0) {
         llvm::errs() << "ERROR: meta string must be non-empty! Defaulting to '.'.\n";
         Opts.MetaString = ".";

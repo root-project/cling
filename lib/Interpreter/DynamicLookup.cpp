@@ -100,7 +100,7 @@ namespace {
           OS <<")@";
 
           if (Node->hasExplicitTemplateArgs())
-            OS << TemplateSpecializationType::PrintTemplateArgumentList(
+            TemplateSpecializationType::PrintTemplateArgumentList(OS,
                                                         Node->getTemplateArgs(),
                                                      Node->getNumTemplateArgs(),
                                                                       m_Policy);
@@ -409,14 +409,15 @@ namespace cling {
         
         // 2.3 Create a variable from LifetimeHandler.
         QualType HandlerTy = m_Context->getTypeDeclType(m_LifetimeHandlerDecl);
+        TypeSourceInfo* TSI = m_Context->getTrivialTypeSourceInfo(HandlerTy,
+                                                                  m_NoSLoc);
         VarDecl* HandlerInstance = VarDecl::Create(*m_Context,
                                                    CuredDecl->getDeclContext(),
                                                    m_NoSLoc,
                                                    m_NoSLoc,
                                                    &II,
                                                    HandlerTy,
-                                                   /*TypeSourceInfo**/0,
-                                                   SC_None,
+                                                   TSI,
                                                    SC_None);
         
         // 2.4 Call the best-match constructor. The method does overload
@@ -755,9 +756,10 @@ namespace cling {
 
     const FunctionProtoType* FPT = Fn->getType()->getAs<FunctionProtoType>();
     FunctionProtoType::ExtProtoInfo EPI = FPT->getExtProtoInfo();
+    llvm::ArrayRef<QualType> ArgTypes(FPT->arg_type_begin(),
+                                      FPT->getNumArgs());
     QualType FnTy = m_Context->getFunctionType(Fn->getResultType(),
-                                               FPT->arg_type_begin(),
-                                               FPT->getNumArgs(),
+                                               ArgTypes,
                                                EPI);
     DeclRefExpr* DRE = m_Sema->BuildDeclRefExpr(Fn,
                                                 FnTy,

@@ -34,9 +34,10 @@
 #include "clang/Serialization/ASTDeserializationListener.h"
 
 #include "llvm/Linker.h"
-#include "llvm/LLVMContext.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/FileSystem.h"
 
 #include <set>
 #include <sstream>
@@ -259,6 +260,7 @@ namespace cling {
       const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
       (*AEE.m_Func)(AEE.m_Arg);
     }
+
     delete m_CallbackAdaptor;
   }
 
@@ -286,7 +288,7 @@ namespace cling {
     const bool IsUserSupplied = true;
     const bool IsFramework = false;
     const bool IsSysRootRelative = true;
-    headerOpts.AddPath(incpath, frontend::Angled, IsUserSupplied, IsFramework,
+    headerOpts.AddPath(incpath, frontend::Angled, IsFramework,
                        IsSysRootRelative);
 
     Preprocessor& PP = CI->getPreprocessor();
@@ -317,61 +319,56 @@ namespace cling {
     /// User specified include entries.
     for (unsigned i = 0, e = Opts.UserEntries.size(); i != e; ++i) {
       const HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
-      if (E.IsFramework && (E.Group != frontend::Angled || !E.IsUserSupplied))
+      if (E.IsFramework && E.Group != frontend::Angled)
         llvm::report_fatal_error("Invalid option set!");
-      if (E.IsUserSupplied) {
-        switch (E.Group) {
-        case frontend::After:
-          if (withFlags) incpaths.push_back("-idirafter");
-          break;
+      switch (E.Group) {
+      case frontend::After:
+        if (withFlags) incpaths.push_back("-idirafter");
+        break;
 
-        case frontend::Quoted:
-          if (withFlags) incpaths.push_back("-iquote");
-          break;
+      case frontend::Quoted:
+        if (withFlags) incpaths.push_back("-iquote");
+        break;
 
-        case frontend::System:
-          if (!withSystem) continue;
-          if (withFlags) incpaths.push_back("-isystem");
-          break;
-
-        case frontend::IndexHeaderMap:
-          if (!withSystem) continue;
-          if (withFlags) incpaths.push_back("-index-header-map");
-          if (withFlags) incpaths.push_back(E.IsFramework? "-F" : "-I");
-          break;
-
-        case frontend::CSystem:
-          if (!withSystem) continue;
-          if (withFlags) incpaths.push_back("-c-isystem");
-          break;
-
-        case frontend::CXXSystem:
-          if (!withSystem) continue;
-          if (withFlags) incpaths.push_back("-cxx-isystem");
-          break;
-
-        case frontend::ObjCSystem:
-          if (!withSystem) continue;
-          if (withFlags) incpaths.push_back("-objc-isystem");
-          break;
-
-        case frontend::ObjCXXSystem:
-          if (!withSystem) continue;
-          if (withFlags) incpaths.push_back("-objcxx-isystem");
-          break;
-
-        case frontend::Angled:
-          if (withFlags) incpaths.push_back(E.IsFramework ? "-F" : "-I");
-          break;
-        }
-      } else {
+      case frontend::System:
         if (!withSystem) continue;
-        if (E.Group != frontend::Angled && E.Group != frontend::System)
-          llvm::report_fatal_error("Invalid option set!");
-        if (withFlags)
-          incpaths.push_back(E.Group == frontend::Angled ?
-                             "-iwithprefixbefore" :
-                             "-iwithprefix");
+        if (withFlags) incpaths.push_back("-isystem");
+        break;
+
+      case frontend::IndexHeaderMap:
+        if (!withSystem) continue;
+        if (withFlags) incpaths.push_back("-index-header-map");
+        if (withFlags) incpaths.push_back(E.IsFramework? "-F" : "-I");
+        break;
+
+      case frontend::CSystem:
+        if (!withSystem) continue;
+        if (withFlags) incpaths.push_back("-c-isystem");
+        break;
+
+      case frontend::ExternCSystem:
+        if (!withSystem) continue;
+        if (withFlags) incpaths.push_back("-extern-c-isystem");
+        break;
+
+      case frontend::CXXSystem:
+        if (!withSystem) continue;
+        if (withFlags) incpaths.push_back("-cxx-isystem");
+        break;
+
+      case frontend::ObjCSystem:
+        if (!withSystem) continue;
+        if (withFlags) incpaths.push_back("-objc-isystem");
+        break;
+
+      case frontend::ObjCXXSystem:
+        if (!withSystem) continue;
+        if (withFlags) incpaths.push_back("-objcxx-isystem");
+        break;
+
+      case frontend::Angled:
+        if (withFlags) incpaths.push_back(E.IsFramework ? "-F" : "-I");
+        break;
       }
       incpaths.push_back(E.Path);
     }
@@ -725,8 +722,7 @@ namespace cling {
                         bool allowSharedLib /*=true*/) {
     if (allowSharedLib) {
       bool tryCode;
-      if (loadLibrary(filename, false, &tryCode)
-          == kLoadLibSuccess)
+      if (loadLibrary(filename, false, &tryCode) == kLoadLibSuccess)
         return kSuccess;
       if (!tryCode)
         return kFailure;
@@ -740,92 +736,110 @@ namespace cling {
     return res;
   }
 
+  static llvm::sys::Path
+  findSharedLibrary(llvm::StringRef fileStem,
+                    const llvm::SmallVectorImpl<llvm::sys::Path>& Paths,
+                    bool& exists, bool& isDyLib) {
+    for (llvm::SmallVectorImpl<llvm::sys::Path>::const_iterator
+        IPath = Paths.begin(), EPath = Paths.end(); IPath != EPath; ++IPath) {
+      llvm::sys::Path ThisPath(*IPath);
+      ThisPath.appendComponent(fileStem);
+      exists = llvm::sys::fs::exists(ThisPath.str());
+      if (exists && ThisPath.isDynamicLibrary()) {
+        isDyLib = true;
+        return ThisPath;
+      }
+    }
+    return llvm::sys::Path();
+  }
 
   Interpreter::LoadLibResult
   Interpreter::tryLinker(const std::string& filename, bool permanent,
-                         bool& tryCode) {
+                         bool isAbsolute, bool& exists, bool& isDyLib) {
     using namespace llvm::sys;
-    tryCode = true;
+    exists = false;
+    isDyLib = false;
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     assert(module && "Module must exist for linking!");
 
-    llvm::Linker L("cling", module, llvm::Linker::QuietWarnings
-                   | llvm::Linker::QuietErrors);
-    struct LinkerModuleReleaseRAII {
-      LinkerModuleReleaseRAII(llvm::Linker& L): m_L(L) {}
-      ~LinkerModuleReleaseRAII() { m_L.releaseModule(); }
-      llvm::Linker& m_L;
-    } LinkerModuleReleaseRAII_(L);
+    llvm::sys::Path FoundDyLib;
 
-    const InvocationOptions& Opts = getOptions();
-    for (std::vector<std::string>::const_iterator I
-           = Opts.LibSearchPath.begin(), E = Opts.LibSearchPath.end(); I != E;
-         ++I) {
-      L.addPath(Path(*I));
+    if (isAbsolute) {
+      exists = llvm::sys::fs::exists(filename.c_str());
+      if (exists && Path(filename).isDynamicLibrary()) {
+        isDyLib = true;
+        FoundDyLib = filename;
+      }
+    } else {
+      const InvocationOptions& Opts = getOptions();
+      llvm::SmallVector<Path, 16>
+      SearchPaths(Opts.LibSearchPath.begin(), Opts.LibSearchPath.end());
+
+      std::vector<Path> SysSearchPaths;
+      Path::GetSystemLibraryPaths(SysSearchPaths);
+      SearchPaths.append(SysSearchPaths.begin(), SysSearchPaths.end());
+
+      FoundDyLib = findSharedLibrary(filename, SearchPaths, exists, isDyLib);
+
+      std::string filenameWithExt(filename);
+      filenameWithExt += ("." + Path::GetDLLSuffix()).str();
+      if (!exists) {
+        // Add DyLib extension:
+        FoundDyLib = findSharedLibrary(filenameWithExt, SearchPaths, exists,
+                                       isDyLib);
+      }
     }
-    L.addSystemPaths();
-    bool Native = true;
-    if (L.LinkInLibrary(filename, Native)) {
-      // that didn't work, try bitcode:
-      Path FilePath(filename);
-      std::string Magic;
-      // 512 bytes should suffice to extrace PE magic
-      if (!FilePath.getMagicNumber(Magic, 512)) {
-        // filename doesn't exist...
-        // tryCode because it might be found through -I
-        return kLoadLibError;
-      }
-      if (IdentifyFileType(Magic.c_str(), 512) != Bitcode_FileType) {
-        // Nothing the linker can handle
-        return kLoadLibError;
-      }
-      // We are promised a bitcode file, complain if it fails
-      L.setFlags(0);
-      if (L.LinkInFile(Path(filename), Native)) {
-        tryCode = false;
-        return kLoadLibError;
-      }
-      addLoadedFile(filename, LoadedFileInfo::kBitcode);
-      return kLoadLibSuccess;
+
+    if (!isDyLib)
+      return kLoadLibError;
+    
+    assert(!FoundDyLib.isEmpty() && "The shared lib exists but can't find it!");
+    std::string errMsg;
+    // TODO: !permanent case
+    DynamicLibrary DyLib
+    = DynamicLibrary::getPermanentLibrary(FoundDyLib.str().c_str(), &errMsg);
+    if (!DyLib.isValid()) {
+      llvm::errs() << "cling::Interpreter::tryLinker(): " << errMsg << '\n';
+      return kLoadLibError;
     }
-    if (Native) {
-      tryCode = false;
-      // native shared library, load it!
-      Path SoFile = L.FindLib(filename);
-      assert(!SoFile.isEmpty() && "The shared lib exists but can't find it!");
-      std::string errMsg;
-      // TODO: !permanent case
-      DynamicLibrary DyLib
-        = DynamicLibrary::getPermanentLibrary(SoFile.str().c_str(), &errMsg);
-      if (!DyLib.isValid()) {
-        llvm::errs() << "cling::Interpreter::tryLinker(): " << errMsg << '\n';
-        return kLoadLibError;
-      }
-      std::pair<std::set<llvm::sys::DynamicLibrary>::iterator, bool> insRes
-        = static_cast<DynLibSetImpl*>(m_DyLibs.get())->insert(DyLib);
-      if (!insRes.second)
-        return kLoadLibExists;
-      addLoadedFile(SoFile.str(), LoadedFileInfo::kDynamicLibrary,
-                    &(*insRes.first));
-      return kLoadLibSuccess;
-    }
-    return kLoadLibError;
+    std::pair<std::set<llvm::sys::DynamicLibrary>::iterator, bool> insRes
+    = static_cast<DynLibSetImpl*>(m_DyLibs.get())->insert(DyLib);
+    if (!insRes.second)
+      return kLoadLibExists;
+    addLoadedFile(FoundDyLib.str(), LoadedFileInfo::kDynamicLibrary,
+                  &(*insRes.first));
+    return kLoadLibSuccess;
   }
 
   Interpreter::LoadLibResult
   Interpreter::loadLibrary(const std::string& filename, bool permanent,
                            bool* tryCode) {
-    bool tryCodeDummy;
-    LoadLibResult res = tryLinker(filename, permanent,
-                                  tryCode ? *tryCode : tryCodeDummy);
-    if (res != kLoadLibError) {
-      return res;
+    // If it's not an absolute path, prepend "lib"
+    SmallVector<char, 128> Absolute(filename.c_str(),
+                                    filename.c_str() + filename.length());
+    Absolute.push_back(0);
+    llvm::sys::fs::make_absolute(Absolute);
+    bool isAbsolute = filename == Absolute.data();
+    bool exists = false;
+    bool isDyLib = false;
+    LoadLibResult res = tryLinker(filename, permanent, isAbsolute, exists,
+                                  isDyLib);
+    if (tryCode) {
+      *tryCode = !isDyLib;
+      if (isAbsolute)
+        *tryCode &= exists;
     }
-    if (filename.compare(0, 3, "lib") == 0) {
-      // starts with "lib", try without (the llvm::Linker forces
-      // a "lib" in front, which makes it liblib...
-      res = tryLinker(filename.substr(3, std::string::npos), permanent,
-                      tryCodeDummy);
+    if (exists)
+      return res;
+
+    if (!isAbsolute && filename.compare(0, 3, "lib")) {
+      // try with "lib" prefix:
+      res = tryLinker("lib" + filename, permanent, false, exists, isDyLib);
+      if (tryCode) {
+        *tryCode = !isDyLib;
+        if (isAbsolute)
+          *tryCode &= exists;
+      }
       if (res != kLoadLibError)
         return res;
     }

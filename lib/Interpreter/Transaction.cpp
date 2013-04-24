@@ -11,6 +11,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/PrettyPrinter.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 
@@ -84,7 +85,6 @@ namespace cling {
 
     ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
     PrintingPolicy Policy = C.getPrintingPolicy();
-    Policy.DumpSourceManager = &C.getSourceManager();
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 

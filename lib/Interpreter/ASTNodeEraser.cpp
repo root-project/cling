@@ -17,9 +17,9 @@
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
 
-#include "llvm/Constants.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Module.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h"
 
 using namespace clang;
 
