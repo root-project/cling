@@ -147,7 +147,7 @@ namespace cling {
         NewCurT->setCompilationOpts(Opts);
       }
       else
-        Transaction* NewCurT = new Transaction(Opts);
+        NewCurT = new Transaction(Opts);
       m_Consumer->setTransaction(NewCurT);
       OldCurT->addNestedTransaction(NewCurT); // takes the ownership
       return NewCurT;
