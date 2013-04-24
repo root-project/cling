@@ -131,6 +131,7 @@ namespace cling {
   void Transaction::printStructure(size_t nindent) const {
     static const char* const stateNames[] = {
       "Collecting",
+      "kCompleted",
       "RolledBack",
       "RolledBackWithErrors",
       "Committing",
@@ -140,11 +141,16 @@ namespace cling {
     llvm::errs() << indent << "Transaction @" << this << ": \n";
     for (const_nested_iterator I = nested_begin(), E = nested_end(); 
          I != E; ++I) {
-      (*I)->printStructure(nindent + 1);
+      (*I)->printStructure(nindent + 3);
     }
     llvm::errs() << indent << " state: " << stateNames[getState()] << ", "
-                 << size() << " decl groups, "
-                 << m_NestedTransactions->size() << " nested transactions\n"
+                 << size() << " decl groups, ";
+    if (hasNestedTransactions())
+      llvm::errs() << m_NestedTransactions->size();
+    else
+      llvm::errs() << "0";
+
+    llvm::errs() << " nested transactions\n"
                  << indent << " wrapper: " << m_WrapperFD
                  << ", parent: " << m_Parent
                  << ", next: " << m_Next << "\n";
