@@ -138,10 +138,11 @@ namespace cling {
     Transaction* NewCurT = 0;
     // If we are in the middle of transaction and we see another begin 
     // transaction - it must be nested transaction.
-    if (OldCurT && !OldCurT->isCompleted()) {
+    if (OldCurT && OldCurT->getState() <= Transaction::kCommitting) {
       // If the last nested was empty just reuse it.
       Transaction* LastNestedT = OldCurT->getLastNestedTransaction();
       if (LastNestedT && LastNestedT->empty()) {
+        assert(LastNestedT->getState() == Transaction::kCommitted && "Broken");
         NewCurT = LastNestedT;
         NewCurT->reset();
         NewCurT->setCompilationOpts(Opts);
@@ -195,13 +196,6 @@ namespace cling {
         assert((*I)->isCompleted() && "Nested transaction not completed!?");
     }
 
-    if (CurT->isNestedTransaction()) {
-      // TODO: Add proper logic in the case where there are multiple nested
-      // transaction. This now won't handle the case where there are more than
-      // one level 1 nested transactions.
-      m_Consumer->setTransaction(CurT->getParent());
-    }
-
     return CurT;
   }
 
@@ -210,19 +204,6 @@ namespace cling {
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
-
-    // If the transaction is empty do nothing.
-    if (T->empty()) {
-      // except it was nested transaction and we want to reuse it later on.
-      if (T->isNestedTransaction()) {
-        // We need to remove the marker from its parent.
-        Transaction* ParentT = T->getParent();
-        for (size_t i = 0; i < ParentT->size(); ++i)
-          if ((*ParentT)[i].m_DGR.isNull())
-            ParentT->erase(i);
-      }
-      return;
-    }
 
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
@@ -329,7 +310,24 @@ namespace cling {
       }
     }
 
-    T->setState(Transaction::kCommitted);    
+    T->setState(Transaction::kCommitted);
+
+    // If the transaction is empty do nothing.
+    // Except it was nested transaction and we want to reuse it later on.
+    if (T->empty() && T->isNestedTransaction()) {
+      // We need to remove the marker from its parent.
+      Transaction* ParentT = T->getParent();
+      for (size_t i = 0; i < ParentT->size(); ++i)
+        if ((*ParentT)[i].m_DGR.isNull())
+          ParentT->erase(i);
+    }
+
+    if (T->isNestedTransaction()) {
+      // TODO: Add proper logic in the case where there are multiple nested
+      // transaction. This now won't handle the case where there are more than
+      // one level 1 nested transactions.
+      m_Consumer->setTransaction(T->getParent());
+    }
   }
 
   void IncrementalParser::rollbackTransaction(Transaction* T) const {
