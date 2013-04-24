@@ -134,25 +134,38 @@ namespace cling {
 
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
                                                    Opts) {
-    Transaction* NewCurT = new Transaction(Opts);
     Transaction* OldCurT = m_Consumer->getTransaction();
-    m_Consumer->setTransaction(NewCurT);
     // If we are in the middle of transaction and we see another begin 
     // transaction - it must be nested transaction.
     if (OldCurT && !OldCurT->isCompleted()) {
+      Transaction* NewCurT = new Transaction(Opts);
+      m_Consumer->setTransaction(NewCurT);
       OldCurT->addNestedTransaction(NewCurT); // takes the ownership
       return NewCurT;
     }
+
+    Transaction* NewCurT = 0;
+    if (getLastTransaction() && getLastTransaction()->empty()) {
+      NewCurT = getLastTransaction();
+      NewCurT->setState(Transaction::kCollecting);
+      NewCurT->setParent(0);
+      NewCurT->setIssuedDiags(Transaction::kNone);
+      NewCurT->setCompilationOpts(Opts);
+    }
+    else
+      NewCurT = new Transaction(Opts);
+    
+    m_Consumer->setTransaction(NewCurT);
 
     if (!m_FirstTransaction) {
       m_FirstTransaction = NewCurT;
       m_LastTransaction = NewCurT;
     }
-    else {
+    else if (NewCurT != m_LastTransaction){
       m_LastTransaction->setNext(NewCurT);
       m_LastTransaction = NewCurT;
     }
-
+    
     return NewCurT;
   }
 
