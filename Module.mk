@@ -24,6 +24,7 @@ CLINGETC_CLING := DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
 CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
         llvm/ADT/OwningPtr.h \
         llvm/ADT/StringRef.h \
+        llvm/Config/llvm-config.h \
         llvm/Support/Casting.h \
         llvm/Support/Compiler.h \
         llvm/Support/DataTypes.h \
