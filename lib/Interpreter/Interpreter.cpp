@@ -106,7 +106,7 @@ namespace cling {
   };
 
   Interpreter::PushTransactionRAII::PushTransactionRAII(Interpreter* i)
-    :m_Interpreter(i) {
+    : m_Interpreter(i) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
@@ -116,7 +116,7 @@ namespace cling {
     CO.CodeGeneration = 1;
     CO.CodeGenerationForModule = 0;
 
-    m_Interpreter->m_IncrParser->beginTransaction(CO);
+    m_Transaction = m_Interpreter->m_IncrParser->beginTransaction(CO);
   }
 
   Interpreter::PushTransactionRAII::~PushTransactionRAII() {
@@ -125,6 +125,7 @@ namespace cling {
 
   void Interpreter::PushTransactionRAII::pop() {
     Transaction* T = m_Interpreter->m_IncrParser->endTransaction();
+    assert(T == m_Transaction && "Ended different transaction?");
     m_Interpreter->m_IncrParser->commitTransaction(T);
   }  
 

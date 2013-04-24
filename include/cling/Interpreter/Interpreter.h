@@ -74,6 +74,7 @@ namespace cling {
     /// destruction.
     class PushTransactionRAII {
     private:
+      Transaction* m_Transaction;
       Interpreter* m_Interpreter;
     public:
       PushTransactionRAII(Interpreter* i);
