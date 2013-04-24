@@ -147,9 +147,7 @@ namespace cling {
     Transaction* NewCurT = 0;
     if (getLastTransaction() && getLastTransaction()->empty()) {
       NewCurT = getLastTransaction();
-      NewCurT->setState(Transaction::kCollecting);
-      NewCurT->setParent(0);
-      NewCurT->setIssuedDiags(Transaction::kNone);
+      NewCurT->reset();
       NewCurT->setCompilationOpts(Opts);
     }
     else
@@ -163,7 +161,7 @@ namespace cling {
     }
     else if (NewCurT != m_LastTransaction){
       m_LastTransaction->setNext(NewCurT);
-      m_LastTransaction = NewCurT;
+      m_LastTransaction = NewCurT; // takes the ownership
     }
 
     return NewCurT;

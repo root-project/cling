@@ -308,6 +308,19 @@ namespace cling {
 
     const Transaction* getNext() const { return m_Next; }
 
+    ///\brief Resets empty transaction so that it could be reused.
+    /// 
+    void reset() {
+      assert(empty() && "The transaction must be empty.");
+      m_Parent = 0;
+      m_State = kCollecting;
+      m_IssuedDiags = kNone;
+      m_Opts = CompilationOptions();
+      m_Module = 0;
+      m_WrapperFD = 0;
+      m_Next = 0;
+    }
+
     ///\brief Prints out all the declarations in the transaction.
     ///
     void dump() const;
