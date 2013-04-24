@@ -74,7 +74,7 @@ namespace cling {
   }
   
   void Transaction::erase(size_t pos) {
-    assert(empty() && "Erasing from an empty transaction.");
+    assert(!empty() && "Erasing from an empty transaction.");
     m_DeclQueue->erase(decls_begin() + pos);
   }
 
@@ -129,12 +129,12 @@ namespace cling {
   }
 
   void Transaction::printStructure(size_t nindent) const {
-    static const char* const stateNames[] = {
+    static const char* const stateNames[kNumStates] = {
       "Collecting",
       "kCompleted",
+      "Committing",
       "RolledBack",
       "RolledBackWithErrors",
-      "Committing",
       "Committed"
     };
     std::string indent(nindent, ' ');
