@@ -272,7 +272,10 @@ namespace cling {
 
     ///\brief Returns whether there are declarations in the transaction.
     ///
-    bool empty() const { return !m_DeclQueue || m_DeclQueue->empty(); }
+    bool empty() const {
+      return (!m_DeclQueue || m_DeclQueue->empty())
+        && (!m_NestedTransactions || m_NestedTransactions->empty());
+    }
 
     ///\brief Appends a declaration group and source from which consumer interface it
     /// came from to the transaction.

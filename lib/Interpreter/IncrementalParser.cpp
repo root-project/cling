@@ -154,7 +154,7 @@ namespace cling {
     }
     else
       NewCurT = new Transaction(Opts);
-    
+
     m_Consumer->setTransaction(NewCurT);
 
     if (!m_FirstTransaction) {
@@ -165,7 +165,7 @@ namespace cling {
       m_LastTransaction->setNext(NewCurT);
       m_LastTransaction = NewCurT;
     }
-    
+
     return NewCurT;
   }
 
