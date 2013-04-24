@@ -25,6 +25,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/Process.h"
 
 #include <ctime>
 
@@ -114,7 +115,7 @@ namespace cling {
 
     //______________________________________
     DiagnosticOptions* DefaultDiagnosticOptions = new DiagnosticOptions();
-    DefaultDiagnosticOptions->ShowColors = 1;
+    DefaultDiagnosticOptions->ShowColors = llvm::sys::Process::StandardErrHasColors() ? 1 : 0;
     TextDiagnosticPrinter* DiagnosticPrinter
       = new TextDiagnosticPrinter(llvm::errs(), DefaultDiagnosticOptions);
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
