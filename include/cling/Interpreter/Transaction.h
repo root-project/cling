@@ -270,7 +270,8 @@ namespace cling {
     }
 
     Transaction* getLastNestedTransaction() const {
-      assert(empty() && "Doesn't make sense on an empty transaction.");
+      if (!hasNestedTransactions())
+        return 0;
       return m_NestedTransactions->back();
     }
 
