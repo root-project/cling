@@ -17,7 +17,7 @@ Value::Value():
   m_ClangType(),
   m_LLVMType()
 {
-  assert(sizeof(llvm::GenericValue()) <= sizeof(m_GV)
+  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue();
 }
@@ -26,7 +26,7 @@ Value::Value(const Value& other):
   m_ClangType(other.m_ClangType),
   m_LLVMType(other.m_LLVMType)
 {
-  assert(sizeof(llvm::GenericValue()) <= sizeof(m_GV)
+  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue(other.getGV());
 }
@@ -34,7 +34,7 @@ Value::Value(const Value& other):
 Value::Value(const llvm::GenericValue& v, clang::QualType t) 
   : m_ClangType(t.getAsOpaquePtr()), m_LLVMType(0)
 {
-  assert(sizeof(llvm::GenericValue()) <= sizeof(m_GV)
+  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue(v);
 }
@@ -43,7 +43,7 @@ Value::Value(const llvm::GenericValue& v, clang::QualType clangTy,
           const llvm::Type* llvmTy) 
   : m_ClangType(clangTy.getAsOpaquePtr()), m_LLVMType(llvmTy)
 {
-  assert(sizeof(llvm::GenericValue()) <= sizeof(m_GV)
+  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue(v);
 }
@@ -59,7 +59,7 @@ llvm::GenericValue Value::getGV() const {
   return reinterpret_cast<const llvm::GenericValue&>(m_GV);
 }
 void Value::setGV(llvm::GenericValue GV) {
-  assert(sizeof(llvm::GenericValue()) <= sizeof(m_GV)
+  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   reinterpret_cast<llvm::GenericValue&>(m_GV) = GV;
 }
