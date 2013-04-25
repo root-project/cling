@@ -388,8 +388,8 @@ namespace cling {
         Inits.push_back(BuildDynamicExprInfo(E));
         // Build Arg1 DeclContext* DC
         QualType DCTy = m_Context->getTypeDeclType(m_DeclContextDecl);
-        Inits.push_back(ConstructCStyleCasePtrExpr(DCTy,
-                                                   (uint64_t)m_CurDeclContext)
+        Inits.push_back(utils::Synthesize::CStyleCastPtrExpr(m_Sema, DCTy,
+                                                     (uint64_t)m_CurDeclContext)
                         );
         // Build Arg2 llvm::StringRef
         // Get the type of the type without specifiers
@@ -570,7 +570,8 @@ namespace cling {
 
     // Build Arg1
     QualType DCTy = m_Context->getTypeDeclType(m_DeclContextDecl);
-    Expr* Arg1 = ConstructCStyleCasePtrExpr(DCTy, (uint64_t)m_CurDeclContext);
+    Expr* Arg1 = utils::Synthesize::CStyleCastPtrExpr(m_Sema, DCTy, 
+                                                    (uint64_t)m_CurDeclContext);
     CallArgs.push_back(Arg1);
 
     // Build the call
@@ -677,11 +678,6 @@ namespace cling {
                                        /*TypeMayContainAuto*/false
                                        ).take();
     return Result;
-  }
-
-  Expr* EvaluateTSynthesizer::ConstructCStyleCasePtrExpr(QualType Ty,
-                                                         uint64_t Ptr) {
-    return utils::Synthesize::CStyleCastPtrExpr(m_Sema, Ty, Ptr);
   }
 
   Expr* EvaluateTSynthesizer::ConstructConstCharPtrExpr(const char* Val) {

@@ -244,11 +244,6 @@ namespace cling {
     clang::Expr* BuildDynamicExprInfo(clang::Expr* SubTree,
                                       bool ValuePrinterReq = false);
 
-    ///\brief Creates cstyle casts a pointer expression to a given qualified
-    /// type.
-    ///
-    clang::Expr* ConstructCStyleCasePtrExpr(clang::QualType Ty, uint64_t Ptr);
-
     ///\brief Creates const char* expression from given value.
     clang::Expr* ConstructConstCharPtrExpr(const char* Val);
 
