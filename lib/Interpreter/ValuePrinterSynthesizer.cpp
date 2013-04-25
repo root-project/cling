@@ -190,10 +190,7 @@ namespace cling {
 
     if (QT->isFunctionPointerType()) {
        // convert func ptr to void*:
-       E = m_Sema->BuildCStyleCastExpr(SourceLocation(),
-                                     m_Context->CreateTypeSourceInfo(m_Context->VoidPtrTy),
-                                       SourceLocation(),
-                                       E).take();
+      E = utils::Synthesize::CStyleCastPtrExpr(m_Sema, m_Context->VoidPtrTy, E);
     }
 
     llvm::SmallVector<Expr*, 4> CallArgs;

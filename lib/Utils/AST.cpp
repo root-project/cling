@@ -94,13 +94,17 @@ namespace utils {
 
   Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, uint64_t Ptr) {
     ASTContext& Ctx = S->getASTContext();
+    return CStyleCastPtrExpr(S, Ty, Synthesize::IntegerLiteralExpr(Ctx, Ptr));
+  }
+
+  Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, Expr* E) {
+    ASTContext& Ctx = S->getASTContext();
     if (!Ty->isPointerType())
       Ty = Ctx.getPointerType(Ty);
-    TypeSourceInfo* TSI = Ctx.getTrivialTypeSourceInfo(Ty, SourceLocation());
 
-    Expr* Result = Synthesize::IntegerLiteralExpr(Ctx, Ptr);
-    Result = S->BuildCStyleCastExpr(SourceLocation(), TSI, SourceLocation(),
-                                    Result).take();
+    TypeSourceInfo* TSI = Ctx.getTrivialTypeSourceInfo(Ty, SourceLocation());
+    Expr* Result 
+      = S->BuildCStyleCastExpr(SourceLocation(), TSI,SourceLocation(),E).take();
     assert(Result && "Cannot create CStyleCastPtrExpr");
     return Result;
   }

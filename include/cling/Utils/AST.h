@@ -75,6 +75,12 @@ namespace utils {
     static clang::Expr* CStyleCastPtrExpr(clang::Sema* S, clang::QualType Ty, 
                                           uint64_t Ptr);
 
+    ///\brief Synthesizes c-style cast in the AST from given pointer and type to
+    /// cast to.
+    ///
+    static clang::Expr* CStyleCastPtrExpr(clang::Sema* S, clang::QualType Ty, 
+                                          clang::Expr* E);
+
     ///\brief Synthesizes integer literal given an unsigned.
     ///
     //  TODO: Use Sema::ActOnIntegerConstant.

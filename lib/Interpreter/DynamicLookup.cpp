@@ -473,13 +473,8 @@ namespace cling {
                                               MultiExprArg(),
                                               m_NoELoc).take();
         // Cast to the type LHS type
-        TypeSourceInfo* CuredDeclTSI
-          = m_Context->CreateTypeSourceInfo(m_Context->getPointerType(
-                                                                   CuredDeclTy));
-        Expr* Result = m_Sema->BuildCStyleCastExpr(m_NoSLoc,
-                                                     CuredDeclTSI,
-                                                   m_NoELoc,
-                                                   theCall).take();
+        Expr* Result 
+          = utils::Synthesize::CStyleCastPtrExpr(m_Sema, CuredDeclTy, theCall);
         // Cast once more (dereference the cstyle cast)
         Result = m_Sema->BuildUnaryOp(S, m_NoSLoc, UO_Deref, Result).take();
         // 4.
@@ -663,6 +658,8 @@ namespace cling {
     QualType ExprInfoTy = m_Context->getTypeDeclType(m_DynamicExprInfoDecl);
     ExprResult Initializer = m_Sema->ActOnParenListExpr(m_NoSLoc, m_NoELoc,
                                                         CtorArgs);
+    TypeSourceInfo* TrivialTSI 
+      = m_Context->getTrivialTypeSourceInfo(ExprInfoTy, SourceLocation());
     Expr* Result = m_Sema->BuildCXXNew(m_NoSLoc,
                                        /*UseGlobal=*/false,
                                        m_NoSLoc,
@@ -670,7 +667,7 @@ namespace cling {
                                        m_NoELoc,
                                        m_NoRange,
                                        ExprInfoTy,
-                                    m_Context->CreateTypeSourceInfo(ExprInfoTy),
+                                       TrivialTSI,
                                        /*ArraySize=*/0,
                                        //BuildCXXNew depends on the SLoc to be
                                        //valid!
@@ -684,20 +681,7 @@ namespace cling {
 
   Expr* EvaluateTSynthesizer::ConstructCStyleCasePtrExpr(QualType Ty,
                                                          uint64_t Ptr) {
-    if (!Ty->isPointerType())
-      Ty = m_Context->getPointerType(Ty);
-    TypeSourceInfo* TSI = m_Context->CreateTypeSourceInfo(Ty);
-    const llvm::APInt Addr(8 * sizeof(void *), Ptr);
-
-    Expr* Result = IntegerLiteral::Create(*m_Context,
-                                          Addr,
-                                          m_Context->UnsignedLongTy,
-                                          m_NoSLoc);
-    Result = m_Sema->BuildCStyleCastExpr(m_NoSLoc,
-                                         TSI,
-                                         m_NoELoc,
-                                         Result).take();
-    return Result;
+    return utils::Synthesize::CStyleCastPtrExpr(m_Sema, Ty, Ptr);
   }
 
   Expr* EvaluateTSynthesizer::ConstructConstCharPtrExpr(const char* Val) {
