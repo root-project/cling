@@ -96,7 +96,7 @@ namespace utils {
     ASTContext& Ctx = S->getASTContext();
     if (!Ty->isPointerType())
       Ty = Ctx.getPointerType(Ty);
-    TypeSourceInfo* TSI = Ctx.CreateTypeSourceInfo(Ty);
+    TypeSourceInfo* TSI = Ctx.getTrivialTypeSourceInfo(Ty, SourceLocation());
 
     Expr* Result = Synthesize::IntegerLiteralExpr(Ctx, Ptr);
     Result = S->BuildCStyleCastExpr(SourceLocation(), TSI, SourceLocation(),
