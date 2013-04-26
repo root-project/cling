@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-11 09:34:53.217172752 +0200
+--- ./tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-11 09:34:53.217172752 +0200
 +++ ./tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-24 19:40:15.333490079 +0200
 @@ -477,7 +477,7 @@
    GlobalDtors.push_back(std::make_pair(Dtor, Priority));
@@ -17,7 +17,7 @@
  }
  
  llvm::GlobalValue::LinkageTypes
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-11 09:34:53.233172585 +0200
+--- ./tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-11 09:34:53.233172585 +0200
 +++ ./tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-24 19:40:15.325490142 +0200
 @@ -1035,8 +1035,8 @@
  

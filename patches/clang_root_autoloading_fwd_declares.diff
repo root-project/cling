@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/Sema/SemaLookup.cpp	2013-04-11 09:34:54.101163564 +0200
+--- ./tools/clang/lib/Sema/SemaLookup.cpp	2013-04-11 09:34:54.101163564 +0200
 +++ ./tools/clang/lib/Sema/SemaLookup.cpp	2013-04-24 19:40:14.317498106 +0200
 @@ -1250,8 +1250,14 @@
        }

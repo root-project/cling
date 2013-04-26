@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/include/clang/Basic/SourceManager.h	2013-04-11 09:35:12.700970247 +0200
+--- ./tools/clang/include/clang/Basic/SourceManager.h	2013-04-11 09:35:12.700970247 +0200
 +++ ./tools/clang/include/clang/Basic/SourceManager.h	2013-04-24 19:40:12.173515046 +0200
 @@ -1456,7 +1456,7 @@
        if (Invalid) *Invalid = true;
@@ -24,7 +24,7 @@
    }
  
    const SrcMgr::SLocEntry &getLoadedSLocEntryByID(int ID,
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/Serialization/ASTReader.cpp	2013-04-11 09:34:53.569169094 +0200
+--- ./tools/clang/lib/Serialization/ASTReader.cpp	2013-04-11 09:34:53.569169094 +0200
 +++ ./tools/clang/lib/Serialization/ASTReader.cpp	2013-04-24 19:40:15.673487393 +0200
 @@ -932,7 +932,7 @@
      // We will detect whether a file changed and return 'Failure' for it, but

@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/Lex/Pragma.cpp	2013-04-11 09:34:54.365160820 +0200
+--- ./tools/clang/lib/Lex/Pragma.cpp	2013-04-11 09:34:54.365160820 +0200
 +++ ./tools/clang/lib/Lex/Pragma.cpp	2013-04-24 19:40:14.677495262 +0200
 @@ -858,9 +858,11 @@
    }

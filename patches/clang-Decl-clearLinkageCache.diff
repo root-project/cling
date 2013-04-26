@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/include/clang/AST/Decl.h	2013-04-11 09:35:12.328974114 +0200
+--- ./tools/clang/include/clang/AST/Decl.h	2013-04-11 09:35:12.328974114 +0200
 +++ ./tools/clang/include/clang/AST/Decl.h	2013-04-24 19:40:12.605511633 +0200
 @@ -214,6 +214,9 @@
    /// \brief Determine what kind of linkage this entity has.
@@ -10,7 +10,7 @@
    /// \brief True if this decl has external linkage.
    bool hasExternalLinkage() const {
      return getLinkage() == ExternalLinkage;
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/AST/Decl.cpp	2013-04-11 09:34:54.269161818 +0200
+--- ./tools/clang/lib/AST/Decl.cpp	2013-04-11 09:34:54.269161818 +0200
 +++ ./tools/clang/lib/AST/Decl.cpp	2013-04-24 19:40:14.517496526 +0200
 @@ -856,6 +856,15 @@
    return LV;

@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/Serialization/ASTReaderDecl.cpp	2013-04-11 09:34:53.573169052 +0200
+--- ./tools/clang/lib/Serialization/ASTReaderDecl.cpp	2013-04-11 09:34:53.573169052 +0200
 +++ ./tools/clang/lib/Serialization/ASTReaderDecl.cpp	2013-04-24 19:40:15.673487393 +0200
 @@ -1264,7 +1264,7 @@
      D->Friend = GetTypeSourceInfo(Record, Idx);

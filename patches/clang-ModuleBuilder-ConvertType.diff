@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-11 09:35:12.484972492 +0200
+--- ./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-11 09:35:12.484972492 +0200
 +++ ./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-24 19:40:12.817509958 +0200
 @@ -20,12 +20,14 @@
  namespace llvm {
@@ -23,7 +23,7 @@
    };
  
    /// CreateLLVMCodeGen - Create a CodeGenerator instance.
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-11 09:34:53.225172669 +0200
+--- ./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-11 09:34:53.225172669 +0200
 +++ ./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-24 19:40:15.341490016 +0200
 @@ -13,6 +13,7 @@
  

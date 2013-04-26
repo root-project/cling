@@ -1,4 +1,4 @@
---- /home/axel/build/llvm-orig/src/./tools/clang/lib/Driver/ToolChains.cpp	2013-04-11 09:34:54.425160197 +0200
+--- ./tools/clang/lib/Driver/ToolChains.cpp	2013-04-11 09:34:54.425160197 +0200
 +++ ./tools/clang/lib/Driver/ToolChains.cpp	2013-04-24 19:40:14.813494188 +0200
 @@ -1098,6 +1098,7 @@
      "x86_64-suse-linux",
