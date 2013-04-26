@@ -1,14 +1,3 @@
---- ./tools/clang/lib/Parse/Makefile	2012-03-16 10:46:07.000000000 +0100
-+++ ./tools/clang/lib/Parse/Makefile	2013-04-25 14:31:22.431552232 +0200
-@@ -13,6 +13,7 @@
- 
- CLANG_LEVEL := ../..
- LIBRARYNAME := clangParse
--
-+# To find moved RAIIObjectsForParser.h
-+CPP.Flags += -I$(PROJ_SRC_DIR)/$(CLANG_LEVEL)/include/clang/Sema
- include $(CLANG_LEVEL)/Makefile
- 
 Index: tools/clang/include/clang/Parse/RAIIObjectsForParser.h
 ===================================================================
 --- tools/clang/include/clang/Parse/RAIIObjectsForParser.h	(revision 0)
@@ -470,7 +459,7 @@ Index: tools/clang/lib/Parse/RAIIObjectsForParser.h
 ===================================================================
 --- tools/clang/lib/Parse/RAIIObjectsForParser.h	(revision 179269)
 +++ tools/clang/lib/Parse/RAIIObjectsForParser.h	(working copy)
-@@ -1,434 +0,0 @@
+@@ -1,434 +1,2 @@
 -//===--- RAIIObjectsForParser.h - RAII helpers for the parser ---*- C++ -*-===//
 -//
 -//                     The LLVM Compiler Infrastructure
@@ -905,3 +894,5 @@ Index: tools/clang/lib/Parse/RAIIObjectsForParser.h
 -} // end namespace clang
 -
 -#endif
++// forward to new location
++#include "clang/Parse/RAIIObjectsForParser.h"
