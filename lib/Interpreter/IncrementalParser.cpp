@@ -91,15 +91,17 @@ namespace cling {
     CO.ValuePrinting = CompilationOptions::VPDisabled;
     CO.CodeGeneration = hasCodeGenerator();
     if (!PCHFileName.empty()) {
-      beginTransaction(CO);
+      
+      Transaction* CurT = beginTransaction(CO);
       m_CI->createPCHExternalASTSource(PCHFileName,
                                        true /*DisablePCHValidation*/,
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/);
-      commitTransaction(endTransaction());
+      Transaction* EndedT = endTransaction(CurT);
+      commitTransaction(EndedT);
     }
 
-    beginTransaction(CO);
+    Transaction* CurT = beginTransaction(CO);
     Sema* TheSema = &m_CI->getSema();
     m_Parser.reset(new Parser(m_CI->getPreprocessor(), *TheSema,
                               false /*skipFuncBodies*/));
@@ -113,7 +115,9 @@ namespace cling {
     ExternalASTSource *External = TheSema->getASTContext().getExternalSource();
     if (External)
       External->StartTranslationUnit(m_Consumer);
-    commitTransaction(endTransaction());
+
+    Transaction* EndedT = endTransaction(CurT);
+    commitTransaction(EndedT);
   }
 
   IncrementalParser::~IncrementalParser() {
@@ -177,27 +181,27 @@ namespace cling {
     return NewCurT;
   }
 
-  Transaction* IncrementalParser::endTransaction() const {
-    Transaction* CurT = m_Consumer->getTransaction();
-    assert(CurT->getState() == Transaction::kCollecting);
-    CurT->setState(Transaction::kCompleted);
+  Transaction* IncrementalParser::endTransaction(Transaction* T) const {
+    assert(T && "Null transaction!?");
+    assert(T->getState() == Transaction::kCollecting);
+    T->setState(Transaction::kCompleted);
     const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
 
     //TODO: Make the enum orable.
     if (Diags.getNumWarnings() > 0)
-      CurT->setIssuedDiags(Transaction::kWarnings);
+      T->setIssuedDiags(Transaction::kWarnings);
 
     if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
-      CurT->setIssuedDiags(Transaction::kErrors);
+      T->setIssuedDiags(Transaction::kErrors);
 
       
-    if (CurT->hasNestedTransactions()) {
-      for(Transaction::const_nested_iterator I = CurT->nested_begin(),
-            E = CurT->nested_end(); I != E; ++I)
+    if (T->hasNestedTransactions()) {
+      for(Transaction::const_nested_iterator I = T->nested_begin(),
+            E = T->nested_end(); I != E; ++I)
         assert((*I)->isCompleted() && "Nested transaction not completed!?");
     }
 
-    return CurT;
+    return T;
   }
 
   void IncrementalParser::commitTransaction(Transaction* T) {
@@ -397,7 +401,8 @@ namespace cling {
     else if (ParseRes == kFailed)
       CurT->setIssuedDiags(Transaction::kErrors);
 
-    endTransaction();
+    const Transaction* EndedT = endTransaction(CurT);
+    assert(EndedT == CurT && "Not ending the expected transaction.");
     commitTransaction(CurT);
 
     return CurT;
@@ -405,9 +410,11 @@ namespace cling {
 
   Transaction* IncrementalParser::Parse(llvm::StringRef input,
                                         const CompilationOptions& Opts) {
-    beginTransaction(Opts);
+    Transaction* CurT = beginTransaction(Opts);
     ParseInternal(input);
-    return endTransaction();
+    Transaction* EndedT = endTransaction(CurT);
+    assert(EndedT == CurT && "Not ending the expected transaction.");
+    return EndedT;
   }
 
   // Add the input to the memory buffer, parse it, and add it to the AST.

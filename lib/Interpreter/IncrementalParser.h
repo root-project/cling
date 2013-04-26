@@ -105,7 +105,7 @@ namespace cling {
 
     ///\brief Finishes a transaction.
     ///
-    Transaction* endTransaction() const;
+    Transaction* endTransaction(Transaction* T) const;
 
     ///\brief Commits a transaction if it was compete. I.e pipes it 
     /// through the consumer chain, including codegen.

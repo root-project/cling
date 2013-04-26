@@ -136,7 +136,7 @@ namespace cling {
   }
 
   void Interpreter::PushTransactionRAII::pop() {
-    Transaction* T = m_Interpreter->m_IncrParser->endTransaction();
+    Transaction* T = m_Interpreter->m_IncrParser->endTransaction(m_Transaction);
     assert(T == m_Transaction && "Ended different transaction?");
     m_Interpreter->m_IncrParser->commitTransaction(T);
   }  
