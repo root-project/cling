@@ -1,7 +1,7 @@
-Index: interpreter/llvm/src/lib/ExecutionEngine/JIT/JIT.cpp
+Index: lib/ExecutionEngine/JIT/JIT.cpp
 ===================================================================
---- interpreter/llvm/src/lib/ExecutionEngine/JIT/JIT.cpp	(revision 49336)
-+++ interpreter/llvm/src/lib/ExecutionEngine/JIT/JIT.cpp	(working copy)
+--- lib/ExecutionEngine/JIT/JIT.cpp	(revision 49336)
++++ lib/ExecutionEngine/JIT/JIT.cpp	(working copy)
 @@ -757,9 +757,14 @@
        return (void*)&__dso_handle;
  #endif
