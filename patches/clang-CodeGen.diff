@@ -1,18 +1,6 @@
-diff -u tools/clang/lib/CodeGen/CGExprScalar.cpp tools/clang/lib/CodeGen/CGExprScalar.cpp
---- tools/clang/lib/CodeGen/CGExprScalar.cpp	2013-04-10 12:29:53.811425530 +0200
-+++ tools/clang/lib/CodeGen/CGExprScalar.cpp	2013-04-10 11:37:18.923238322 +0200
-@@ -1446,6 +1446,7 @@
-     BinOp.LHS = llvm::Constant::getNullValue(BinOp.RHS->getType());
-   BinOp.Ty = E->getType();
-   BinOp.Opcode = BO_Sub;
-+  BinOp.FPContractable = false;
-   BinOp.E = E;
-   return EmitSub(BinOp);
- }
-diff -u tools/clang/lib/CodeGen/CodeGenModule.cpp tools/clang/lib/CodeGen/CodeGenModule.cpp
---- tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-10 12:29:53.811425530 +0200
-+++ tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-10 12:37:15.510983363 +0200
-@@ -443,7 +443,7 @@
+--- /home/axel/build/llvm-orig/src/./tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-11 09:34:53.217172752 +0200
++++ ./tools/clang/lib/CodeGen/CodeGenModule.cpp	2013-04-24 19:40:15.333490079 +0200
+@@ -477,7 +477,7 @@
    GlobalDtors.push_back(std::make_pair(Dtor, Priority));
  }
  
@@ -21,7 +9,7 @@ diff -u tools/clang/lib/CodeGen/CodeGenModule.cpp tools/clang/lib/CodeGen/CodeGe
    // Ctor function type is void()*.
    llvm::FunctionType* CtorFTy = llvm::FunctionType::get(VoidTy, false);
    llvm::Type *CtorPFTy = llvm::PointerType::getUnqual(CtorFTy);
-@@ -469,6 +469,7 @@
+@@ -503,6 +503,7 @@
                               llvm::ConstantArray::get(AT, Ctors),
                               GlobalName);
    }
@@ -29,10 +17,9 @@ diff -u tools/clang/lib/CodeGen/CodeGenModule.cpp tools/clang/lib/CodeGen/CodeGe
  }
  
  llvm::GlobalValue::LinkageTypes
-diff -u tools/clang/lib/CodeGen/CodeGenModule.h tools/clang/lib/CodeGen/CodeGenModule.h
---- tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-10 12:29:53.819425451 +0200
-+++ tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-10 12:33:10.845445231 +0200
-@@ -960,8 +960,8 @@
+--- /home/axel/build/llvm-orig/src/./tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-11 09:34:53.233172585 +0200
++++ ./tools/clang/lib/CodeGen/CodeGenModule.h	2013-04-24 19:40:15.325490142 +0200
+@@ -1035,8 +1035,8 @@
  
    /// EmitCtorList - Generates a global array of functions and priorities using
    /// the given list and name. This array will have appending linkage and is
@@ -43,51 +30,3 @@ diff -u tools/clang/lib/CodeGen/CodeGenModule.h tools/clang/lib/CodeGen/CodeGenM
  
    /// EmitFundamentalRTTIDescriptor - Emit the RTTI descriptors for the
    /// given type.
-diff -u tools/clang/lib/CodeGen/ModuleBuilder.cpp tools/clang/lib/CodeGen/ModuleBuilder.cpp
---- tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-10 12:29:53.815425490 +0200
-+++ tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-10 11:45:35.970177539 +0200
-@@ -13,6 +13,7 @@
- 
- #include "clang/CodeGen/ModuleBuilder.h"
- #include "CodeGenModule.h"
-+#include "CodeGenTypes.h"
- #include "clang/Frontend/CodeGenOptions.h"
- #include "clang/AST/ASTContext.h"
- #include "clang/AST/DeclObjC.h"
-@@ -49,6 +50,10 @@
-       return M.take();
-     }
- 
-+    virtual llvm::Type* ConvertType(QualType T) {
-+      return Builder->getTypes().ConvertType(T);
-+    }
-+
-     virtual void Initialize(ASTContext &Context) {
-       Ctx = &Context;
- 
-Index: tools/clang/include/clang/CodeGen/ModuleBuilder.h
-===================================================================
---- tools/clang/include/clang/CodeGen/ModuleBuilder.h	(revision 165095)
-+++ tools/clang/include/clang/CodeGen/ModuleBuilder.h	(working copy)
-@@ -20,18 +20,21 @@
- namespace llvm {
-   class LLVMContext;
-   class Module;
-+  class Type;
- }
- 
- namespace clang {
-   class DiagnosticsEngine;
-   class LangOptions;
-   class CodeGenOptions;
-+  class QualType;
- 
-   class CodeGenerator : public ASTConsumer {
-     virtual void anchor();
-   public:
-     virtual llvm::Module* GetModule() = 0;
-     virtual llvm::Module* ReleaseModule() = 0;
-+    virtual llvm::Type* ConvertType(QualType T) = 0;
-   };
- 
-   /// CreateLLVMCodeGen - Create a CodeGenerator instance.

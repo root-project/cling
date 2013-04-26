@@ -1,0 +1,18 @@
+--- /home/axel/build/llvm-orig/src/./tools/clang/lib/Driver/ToolChains.cpp	2013-04-11 09:34:54.425160197 +0200
++++ ./tools/clang/lib/Driver/ToolChains.cpp	2013-04-24 19:40:14.813494188 +0200
+@@ -1098,6 +1098,7 @@
+     "x86_64-suse-linux",
+     "x86_64-manbo-linux-gnu",
+     "x86_64-linux-gnu",
++    "x86_64-mageia-linux-gnu",
+     "x86_64-slackware-linux"
+   };
+   static const char *const X86LibDirs[] = { "/lib32", "/lib" };
+@@ -1112,6 +1113,7 @@
+     "i386-redhat-linux",
+     "i586-suse-linux",
+     "i486-slackware-linux",
++    "i586-mageia-linux-gnu",
+     "i686-montavista-linux"
+   };
+ 

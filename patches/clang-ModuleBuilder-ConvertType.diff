@@ -1,0 +1,46 @@
+--- /home/axel/build/llvm-orig/src/./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-11 09:35:12.484972492 +0200
++++ ./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-24 19:40:12.817509958 +0200
+@@ -20,12 +20,14 @@
+ namespace llvm {
+   class LLVMContext;
+   class Module;
++  class Type;
+ }
+ 
+ namespace clang {
+   class DiagnosticsEngine;
+   class LangOptions;
+   class CodeGenOptions;
++  class QualType;
+   class TargetOptions;
+ 
+   class CodeGenerator : public ASTConsumer {
+@@ -33,6 +35,7 @@
+   public:
+     virtual llvm::Module* GetModule() = 0;
+     virtual llvm::Module* ReleaseModule() = 0;
++    virtual llvm::Type* ConvertType(QualType T) = 0;
+   };
+ 
+   /// CreateLLVMCodeGen - Create a CodeGenerator instance.
+--- /home/axel/build/llvm-orig/src/./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-11 09:34:53.225172669 +0200
++++ ./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-24 19:40:15.341490016 +0200
+@@ -13,6 +13,7 @@
+ 
+ #include "clang/CodeGen/ModuleBuilder.h"
+ #include "CodeGenModule.h"
++#include "CodeGenTypes.h"
+ #include "clang/AST/ASTContext.h"
+ #include "clang/AST/DeclObjC.h"
+ #include "clang/AST/Expr.h"
+@@ -52,6 +53,10 @@
+       return M.take();
+     }
+ 
++    virtual llvm::Type* ConvertType(QualType T) {
++      return Builder->getTypes().ConvertType(T);
++    }
++
+     virtual void Initialize(ASTContext &Context) {
+       Ctx = &Context;
+ 

@@ -1,0 +1,12 @@
+--- /home/axel/build/llvm-orig/src/./tools/clang/lib/Frontend/InitHeaderSearch.cpp	2013-04-11 09:34:53.657168179 +0200
++++ ./tools/clang/lib/Frontend/InitHeaderSearch.cpp	2013-04-24 19:40:13.977500793 +0200
+@@ -307,7 +307,8 @@
+   case llvm::Triple::RTEMS:
+     break;
+   case llvm::Triple::Cygwin:
+-    AddPath("/usr/include/w32api", System, false);
++    // The headers in w32api/ are not cygwin-compatible (but native)
++    //AddPath("/usr/include/w32api", System, false);
+     break;
+   case llvm::Triple::MinGW32: { 
+       // mingw-w64 crt include paths

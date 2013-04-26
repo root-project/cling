@@ -1,0 +1,307 @@
+--- /home/axel/build/cling/src/./tools/clang/lib/Parse/Parser.cpp	2013-04-24 22:04:39.536536803 +0200
++++ ./tools/clang/lib/Parse/Parser.cpp	2013-04-25 14:34:00.138269622 +0200
+@@ -48,15 +48,17 @@
+   return Ident__except;
+ }
+ 
+-Parser::Parser(Preprocessor &pp, Sema &actions, bool skipFunctionBodies)
++Parser::Parser(Preprocessor &pp, Sema &actions, bool skipFunctionBodies,
++               bool isTemporary /*=false*/)
+   : PP(pp), Actions(actions), Diags(PP.getDiagnostics()),
+     GreaterThanIsOperator(true), ColonIsSacred(false), 
+     InMessageExpression(false), TemplateParameterDepth(0),
+-    ParsingInObjCContainer(false) {
++    ParsingInObjCContainer(false), IsTemporary(isTemporary) {
+   SkipFunctionBodies = pp.isCodeCompletionEnabled() || skipFunctionBodies;
+   Tok.startToken();
+   Tok.setKind(tok::eof);
+-  Actions.CurScope = 0;
++  if (!IsTemporary)
++    Actions.CurScope = 0;
+   NumCachedScopes = 0;
+   ParenCount = BracketCount = BraceCount = 0;
+   CurParsedObjCImpl = 0;
+@@ -64,37 +66,48 @@
+   // Add #pragma handlers. These are removed and destroyed in the
+   // destructor.
+   AlignHandler.reset(new PragmaAlignHandler());
+-  PP.AddPragmaHandler(AlignHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler(AlignHandler.get());
+ 
+   GCCVisibilityHandler.reset(new PragmaGCCVisibilityHandler());
+-  PP.AddPragmaHandler("GCC", GCCVisibilityHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler("GCC", GCCVisibilityHandler.get());
+ 
+   OptionsHandler.reset(new PragmaOptionsHandler());
+-  PP.AddPragmaHandler(OptionsHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler(OptionsHandler.get());
+ 
+   PackHandler.reset(new PragmaPackHandler());
+-  PP.AddPragmaHandler(PackHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler(PackHandler.get());
+     
+   MSStructHandler.reset(new PragmaMSStructHandler());
+-  PP.AddPragmaHandler(MSStructHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler(MSStructHandler.get());
+ 
+   UnusedHandler.reset(new PragmaUnusedHandler());
+-  PP.AddPragmaHandler(UnusedHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler(UnusedHandler.get());
+ 
+   WeakHandler.reset(new PragmaWeakHandler());
+-  PP.AddPragmaHandler(WeakHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler(WeakHandler.get());
+ 
+   RedefineExtnameHandler.reset(new PragmaRedefineExtnameHandler());
+-  PP.AddPragmaHandler(RedefineExtnameHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler(RedefineExtnameHandler.get());
+ 
+   FPContractHandler.reset(new PragmaFPContractHandler());
+-  PP.AddPragmaHandler("STDC", FPContractHandler.get());
++  if (!IsTemporary)
++    PP.AddPragmaHandler("STDC", FPContractHandler.get());
+ 
+   if (getLangOpts().OpenCL) {
+     OpenCLExtensionHandler.reset(new PragmaOpenCLExtensionHandler());
+-    PP.AddPragmaHandler("OPENCL", OpenCLExtensionHandler.get());
+-
+-    PP.AddPragmaHandler("OPENCL", FPContractHandler.get());
++    if (!IsTemporary)
++      PP.AddPragmaHandler("OPENCL", OpenCLExtensionHandler.get());
++  
++    if (!IsTemporary)
++      PP.AddPragmaHandler("OPENCL", FPContractHandler.get());
+   }
+   if (getLangOpts().OpenMP)
+     OpenMPHandler.reset(new PragmaOpenMPHandler());
+@@ -103,9 +116,11 @@
+   PP.AddPragmaHandler(OpenMPHandler.get());
+ 
+   CommentSemaHandler.reset(new ActionCommentHandler(actions));
+-  PP.addCommentHandler(CommentSemaHandler.get());
++  if (!IsTemporary)
++    PP.addCommentHandler(CommentSemaHandler.get());
+ 
+-  PP.setCodeCompletionHandler(*this);
++  if (!IsTemporary)
++    PP.setCodeCompletionHandler(*this);
+ }
+ 
+ DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {
+@@ -398,9 +413,11 @@
+ 
+ Parser::~Parser() {
+   // If we still have scopes active, delete the scope tree.
+-  delete getCurScope();
+-  Actions.CurScope = 0;
+-  
++  if (!IsTemporary) {
++    delete getCurScope();
++    Actions.CurScope = 0;
++  }
++
+   // Free the scope cache.
+   for (unsigned i = 0, e = NumCachedScopes; i != e; ++i)
+     delete ScopeCache[i];
+@@ -410,38 +427,40 @@
+       it != LateParsedTemplateMap.end(); ++it)
+     delete it->second;
+ 
+-  // Remove the pragma handlers we installed.
+-  PP.RemovePragmaHandler(AlignHandler.get());
+-  AlignHandler.reset();
+-  PP.RemovePragmaHandler("GCC", GCCVisibilityHandler.get());
+-  GCCVisibilityHandler.reset();
+-  PP.RemovePragmaHandler(OptionsHandler.get());
+-  OptionsHandler.reset();
+-  PP.RemovePragmaHandler(PackHandler.get());
+-  PackHandler.reset();
+-  PP.RemovePragmaHandler(MSStructHandler.get());
+-  MSStructHandler.reset();
+-  PP.RemovePragmaHandler(UnusedHandler.get());
+-  UnusedHandler.reset();
+-  PP.RemovePragmaHandler(WeakHandler.get());
+-  WeakHandler.reset();
+-  PP.RemovePragmaHandler(RedefineExtnameHandler.get());
+-  RedefineExtnameHandler.reset();
+-
+-  if (getLangOpts().OpenCL) {
+-    PP.RemovePragmaHandler("OPENCL", OpenCLExtensionHandler.get());
+-    OpenCLExtensionHandler.reset();
+-    PP.RemovePragmaHandler("OPENCL", FPContractHandler.get());
+-  }
++  if (!IsTemporary) {
++    // Remove the pragma handlers we installed.
++    PP.RemovePragmaHandler(AlignHandler.get());
++    AlignHandler.reset();
++    PP.RemovePragmaHandler("GCC", GCCVisibilityHandler.get());
++    GCCVisibilityHandler.reset();
++    PP.RemovePragmaHandler(OptionsHandler.get());
++    OptionsHandler.reset();
++    PP.RemovePragmaHandler(PackHandler.get());
++    PackHandler.reset();
++    PP.RemovePragmaHandler(MSStructHandler.get());
++    MSStructHandler.reset();
++    PP.RemovePragmaHandler(UnusedHandler.get());
++    UnusedHandler.reset();
++    PP.RemovePragmaHandler(WeakHandler.get());
++    WeakHandler.reset();
++    PP.RemovePragmaHandler(RedefineExtnameHandler.get());
++    RedefineExtnameHandler.reset();
++
++    if (getLangOpts().OpenCL) {
++      PP.RemovePragmaHandler("OPENCL", OpenCLExtensionHandler.get());
++      OpenCLExtensionHandler.reset();
++      PP.RemovePragmaHandler("OPENCL", FPContractHandler.get());
++    }
+   PP.RemovePragmaHandler(OpenMPHandler.get());
+   OpenMPHandler.reset();
+ 
+-  PP.RemovePragmaHandler("STDC", FPContractHandler.get());
+-  FPContractHandler.reset();
++    PP.RemovePragmaHandler("STDC", FPContractHandler.get());
++    FPContractHandler.reset();
+ 
+-  PP.removeCommentHandler(CommentSemaHandler.get());
++    PP.removeCommentHandler(CommentSemaHandler.get());
+ 
+-  PP.clearCodeCompletionHandler();
++    PP.clearCodeCompletionHandler();
++  }
+ 
+   assert(TemplateIds.empty() && "Still alive TemplateIdAnnotations around?");
+ }
+@@ -515,30 +534,10 @@
+   ConsumeToken();
+ }
+ 
+-namespace {
+-  /// \brief RAIIObject to destroy the contents of a SmallVector of
+-  /// TemplateIdAnnotation pointers and clear the vector.
+-  class DestroyTemplateIdAnnotationsRAIIObj {
+-    SmallVectorImpl<TemplateIdAnnotation *> &Container;
+-  public:
+-    DestroyTemplateIdAnnotationsRAIIObj(SmallVectorImpl<TemplateIdAnnotation *>
+-                                       &Container)
+-      : Container(Container) {}
+-
+-    ~DestroyTemplateIdAnnotationsRAIIObj() {
+-      for (SmallVectorImpl<TemplateIdAnnotation *>::iterator I =
+-           Container.begin(), E = Container.end();
+-           I != E; ++I)
+-        (*I)->Destroy();
+-      Container.clear();
+-    }
+-  };
+-}
+-
+ /// ParseTopLevelDecl - Parse one top-level declaration, return whatever the
+ /// action tells us to.  This returns true if the EOF was encountered.
+ bool Parser::ParseTopLevelDecl(DeclGroupPtrTy &Result) {
+-  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(TemplateIds);
++  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(*this);
+ 
+   // Skip over the EOF token, flagging end of previous input for incremental 
+   // processing
+@@ -553,9 +552,7 @@
+     // Late template parsing can begin.
+     if (getLangOpts().DelayedTemplateParsing)
+       Actions.SetLateTemplateParser(LateTemplateParserCallback, this);
+-    if (!PP.isIncrementalProcessingEnabled())
+-      Actions.ActOnEndOfTranslationUnit();
+-    //else don't tell Sema that we ended parsing: more input might come.
++    Actions.ActOnEndOfTranslationUnit();
+ 
+     return true;
+   }
+@@ -594,7 +591,7 @@
+ Parser::DeclGroupPtrTy
+ Parser::ParseExternalDeclaration(ParsedAttributesWithRange &attrs,
+                                  ParsingDeclSpec *DS) {
+-  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(TemplateIds);
++  DestroyTemplateIdAnnotationsRAIIObj CleanupRAII(*this);
+   ParenBraceBracketBalancer BalancerRAIIObj(*this);
+ 
+   if (PP.isCodeCompletionReached()) {
+--- /home/axel/build/cling/src/./tools/clang/include/clang/Parse/Parser.h	2013-04-24 22:05:47.695986522 +0200
++++ ./tools/clang/include/clang/Parse/Parser.h	2013-04-24 19:40:12.825509895 +0200
+@@ -45,6 +45,7 @@
+   class InMessageExpressionRAIIObject;
+   class PoisonSEHIdentifiersRAIIObject;
+   class VersionTuple;
++  class DestroyTemplateIdAnnotationsRAIIObj;
+ 
+ /// Parser - This implements a parser for the C family of languages.  After
+ /// parsing units of the grammar, productions are invoked to handle whatever has
+@@ -58,6 +59,7 @@
+   friend class ObjCDeclContextSwitch;
+   friend class ParenBraceBracketBalancer;
+   friend class BalancedDelimiterTracker;
++  friend class DestroyTemplateIdAnnotationsRAIIObj;
+ 
+   Preprocessor &PP;
+ 
+@@ -193,8 +195,10 @@
+ 
+   bool SkipFunctionBodies;
+ 
++  bool IsTemporary;
+ public:
+-  Parser(Preprocessor &PP, Sema &Actions, bool SkipFunctionBodies);
++  Parser(Preprocessor &PP, Sema &Actions, bool SkipFunctionBodies, 
++         bool isTemp = false);
+   ~Parser();
+ 
+   const LangOptions &getLangOpts() const { return PP.getLangOpts(); }
+@@ -204,6 +208,34 @@
+   AttributeFactory &getAttrFactory() { return AttrFactory; }
+ 
+   const Token &getCurToken() const { return Tok; }
++
++  /// A RAII object to temporarily reset PP's state and restore it.
++  class ParserCurTokRestoreRAII {
++  private:
++    Parser &P;
++    Token SavedTok;
++
++  public:
++    ParserCurTokRestoreRAII(Parser &P)
++      : P(P), SavedTok(P.Tok) 
++    {
++    }
++
++    void pop() {
++      if (SavedTok.is(tok::unknown))
++        return;
++
++      P.Tok = SavedTok;
++      
++      SavedTok.startToken();
++    }
++
++    ~ParserCurTokRestoreRAII() {
++      pop();
++    }
++  };
++
++
+   Scope *getCurScope() const { return Actions.getCurScope(); }
+ 
+   Decl  *getObjCDeclContext() const { return Actions.getObjCDeclContext(); }
+@@ -701,7 +733,7 @@
+     return Diag(Tok, DiagID);
+   }
+ 
+-private:
++protected:
+   void SuggestParentheses(SourceLocation Loc, unsigned DK,
+                           SourceRange ParenRange);
+   void CheckNestedObjCContexts(SourceLocation AtLoc);

@@ -45,6 +45,17 @@
 
 using namespace clang;
 
+namespace std {
+template<>
+struct less<llvm::sys::DynamicLibrary> {
+  bool operator()(const llvm::sys::DynamicLibrary& lhs,
+                  const llvm::sys::DynamicLibrary& rhs ) const {
+    return *reinterpret_cast<void* const*>(&lhs)
+      < *reinterpret_cast<void* const*>(&rhs);
+  }
+};
+}
+
 namespace {
 
   static cling::Interpreter::ExecutionResult
@@ -285,7 +296,6 @@ namespace cling {
 
     CompilerInstance* CI = getCI();
     HeaderSearchOptions& headerOpts = CI->getHeaderSearchOpts();
-    const bool IsUserSupplied = true;
     const bool IsFramework = false;
     const bool IsSysRootRelative = true;
     headerOpts.AddPath(incpath, frontend::Angled, IsFramework,
