@@ -304,7 +304,6 @@ namespace cling {
 #if /*GCC*/ (defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__))   \
   || /*clang*/ (defined(__has_feature) && __has_feature(cxx_decltype))   \
   || /*ICC*/ ((!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && defined(__INTEL_COMPILER) && (__STDC_HOSTED__ && (__INTEL_COMPILER <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__))
-crap;
     Opts.CPlusPlus11 = 1;
 #endif
 
