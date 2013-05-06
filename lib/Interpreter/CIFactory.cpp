@@ -295,6 +295,18 @@ namespace cling {
     Opts.CXXExceptions = 1;
     Opts.Deprecated = 1;
     //Opts.Modules = 1;
+
+    // C++11 is turned on if cling is built with C++11: it's an interperter;
+    // cross-language compilation doesn't make sense.
+    // Extracted from Boost/config/compiler.
+    // SunProCC has no C++11.
+    // VisualC's support is not obvious to extract from Boost...
+#if /*GCC*/ (defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__))   \
+  || /*clang*/ (defined(__has_feature) && __has_feature(cxx_decltype))   \
+  || /*ICC*/ ((!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && (__STDC_HOSTED__ && (__INTEL_COMPILER <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__))
+    Opts.CPlusPlus11 = 1;
+#endif
+
   }
 
   void CIFactory::SetClingTargetLangOpts(LangOptions& Opts,
