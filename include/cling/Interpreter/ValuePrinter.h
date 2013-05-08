@@ -17,9 +17,9 @@ namespace cling {
   class StoredValueRef;
 
   // Can be re-implemented to print type-specific details, e.g. as
-  //   template <typename ACTUAL>
-  //   void dumpPtr(llvm::raw_ostream& o, const clang::Decl* a, ACTUAL* ac,
-  //                int flags, const char* tname);
+  //   template <typename POSSIBLYDERIVED>
+  //   void printValue(llvm::raw_ostream& o, const MyClass* const p,
+  //                   POSSIBLYDERIVED* ac, const ValuePrinterInfo& VPI);
   template <typename TY>
   void printValue(llvm::raw_ostream& o, const void* const p,
                   TY* const u, const ValuePrinterInfo& VPI);
@@ -66,11 +66,6 @@ namespace cling {
 
   } // namespace valuePrinterInternal
 
-
-  // Can be re-implemented to print type-specific details, e.g. as
-  //   template <typename ACTUAL>
-  //   void dumpPtr(llvm::raw_ostream& o, const clang::Decl* a,
-  //                ACTUAL* ap, int flags, const char* tname);
   template <typename TY>
   void printValue(llvm::raw_ostream& o, const void* const p,
                   TY* const u, const ValuePrinterInfo& PVI) {
