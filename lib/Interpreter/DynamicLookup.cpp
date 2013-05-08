@@ -199,7 +199,7 @@ namespace cling {
     R.setLookupName(Name);
 
     m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty() && "Cannot find PrintValue(...)");
+    assert(!R.empty() && "Cannot find InterpreterGeneratedCodeDiagnosticsMaybeIncorrect");
 
     NamedDecl* ND = R.getFoundDecl();
     m_NoRange = ND->getSourceRange();
