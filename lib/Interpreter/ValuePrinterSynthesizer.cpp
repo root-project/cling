@@ -232,7 +232,7 @@ namespace cling {
 
     Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
     m_Sema->LookupName(R, S);
-    assert(!R.empty() && "Cannot find PrintValue(...)");
+    assert(!R.empty() && "Cannot find cling_PrintValue(...)");
 
     CXXScopeSpec CSS;
     Expr* UnresolvedLookup
