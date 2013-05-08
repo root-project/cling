@@ -41,7 +41,7 @@ long long StoredValueRef::StoredValue::getAllocSizeInBytes(
 
 
 void StoredValueRef::dump(ASTContext& ctx) const {
-  StreamStoredValueRef(llvm::errs(), this, ctx);
+  valuePrinterInternal::StreamStoredValueRef(llvm::errs(), this, ctx);
 }
 
 StoredValueRef StoredValueRef::allocate(const ASTContext& ctx, QualType t, 

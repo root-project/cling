@@ -114,8 +114,8 @@ namespace cling {
   }
 
   // We need to artificially create:
-  // cling::valuePrinterInternal::PrintValue((void*) raw_ostream,
-  //                                         (ASTContext)Ctx, (Expr*)E, &i);
+  // cling::valuePrinterInternal::Select((void*) raw_ostream,
+  //                                    (ASTContext)Ctx, (Expr*)E, &i);
   Expr* ValuePrinterSynthesizer::SynthesizeCppVP(Expr* E) {
     QualType QT = E->getType();
     // For now we skip void and function pointer types.
@@ -130,12 +130,12 @@ namespace cling {
     NSD = utils::Lookup::Namespace(m_Sema, "valuePrinterInternal", NSD);
 
 
-    DeclarationName PVName = &m_Context->Idents.get("PrintValue");
+    DeclarationName PVName = &m_Context->Idents.get("Select");
     LookupResult R(*m_Sema, PVName, NoSLoc, Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
     assert(NSD && "There must be a valid namespace.");
     m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty() && "Cannot find PrintValue(...)");
+    assert(!R.empty() && "Cannot find valuePrinterInternal::Select(...)");
 
     CXXScopeSpec CSS;
     Expr* UnresolvedLookup

@@ -21,44 +21,44 @@ namespace cling {
   //   void dumpPtr(llvm::raw_ostream& o, const clang::Decl* a, ACTUAL* ac,
   //                int flags, const char* tname);
   template <typename TY>
-  void printValuePublic(llvm::raw_ostream& o, const void* const p,
-                        TY* const u, const ValuePrinterInfo& VPI);
-
-  void printValuePublicDefault(llvm::raw_ostream& o, const void* const p,
-                               const ValuePrinterInfo& PVI);
-
-  void StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
-                            clang::ASTContext& C, const char* Sep = "\n");
-
-  void flushOStream(llvm::raw_ostream& o);
+  void printValue(llvm::raw_ostream& o, const void* const p,
+                  TY* const u, const ValuePrinterInfo& VPI);
 
   namespace valuePrinterInternal {
 
+    void printValue_Default(llvm::raw_ostream& o, const void* const p,
+                            const ValuePrinterInfo& PVI);
+
+    void StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
+                              clang::ASTContext& C, const char* Sep = "\n");
+
+    void flushOStream(llvm::raw_ostream& o);
+
     template <typename T>
-    const T& PrintValue(llvm::raw_ostream* o, clang::Expr* E,
-                        clang::ASTContext* C, const T& value) {
+    const T& Select(llvm::raw_ostream* o, clang::Expr* E,
+                    clang::ASTContext* C, const T& value) {
       ValuePrinterInfo VPI(E, C);
-      printValuePublic(*o, &value, &value, VPI);
+      printValue(*o, &value, &value, VPI);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushOStream(*o);
       return value;
     }
 
     template <typename T>
-    const T* PrintValue(llvm::raw_ostream* o, clang::Expr* E,
-                        clang::ASTContext* C, const T* value) {
+    const T* Select(llvm::raw_ostream* o, clang::Expr* E,
+                    clang::ASTContext* C, const T* value) {
       ValuePrinterInfo VPI(E, C);
-      printValuePublic(*o, (const void*) value, value, VPI);
+      printValue(*o, (const void*) value, value, VPI);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushOStream(*o);
       return value;
     }
 
     template <typename T>
-    const T* PrintValue(llvm::raw_ostream* o, clang::Expr* E,
-                        clang::ASTContext* C, T* value) {
+    const T* Select(llvm::raw_ostream* o, clang::Expr* E,
+                    clang::ASTContext* C, T* value) {
       ValuePrinterInfo VPI(E, C);
-      printValuePublic(*o, (const void*) value, value, VPI);
+      printValue(*o, (const void*) value, value, VPI);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushOStream(*o);
       return value;
@@ -72,9 +72,9 @@ namespace cling {
   //   void dumpPtr(llvm::raw_ostream& o, const clang::Decl* a,
   //                ACTUAL* ap, int flags, const char* tname);
   template <typename TY>
-  void printValuePublic(llvm::raw_ostream& o, const void* const p,
+  void printValue(llvm::raw_ostream& o, const void* const p,
                   TY* const u, const ValuePrinterInfo& PVI) {
-    printValuePublicDefault(o, p, PVI);
+    valuePrinterInternal::printValue_Default(o, p, PVI);
   }
 
 }

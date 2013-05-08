@@ -20,19 +20,19 @@ namespace cling {
 namespace internal {
 void symbol_requester() {
    const char* const argv[] = {"libcling__symbol_requester", 0};
-   cling::Interpreter I(1, argv);
-   cling::ValuePrinterInfo VPI(0, 0); // asserts, but we don't call.
-   printValuePublicDefault(llvm::outs(), 0, VPI);
+   Interpreter I(1, argv);
+   ValuePrinterInfo VPI(0, 0); // asserts, but we don't call.
+   valuePrinterInternal::printValue_Default(llvm::outs(), 0, VPI);
    cling_PrintValue(0, 0, 0);
-   flushOStream(llvm::outs());
+   valuePrinterInternal::flushOStream(llvm::outs());
    LookupHelper h(0,0);
    h.findType("");
    h.findScope("");
    h.findFunctionProto(0, "", "");
    h.findFunctionArgs(0, "", "");
-   cling::runtime::internal::DynamicExprInfo DEI(0,0,false);
+   runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
-   cling::InterpreterCallbacks cb(0);
+   InterpreterCallbacks cb(0);
 }
 }
 }

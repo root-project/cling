@@ -55,8 +55,8 @@ extern "C" void cling_PrintValue(void* /*clang::Expr**/ E,
   // the results in pipes (Savannah #99234).
   llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
 
-  printValuePublic(outs, value, value, VPI);
-  flushOStream(outs);
+  printValue(outs, value, value, VPI);
+  valuePrinterInternal::flushOStream(outs);
 }
 
 
@@ -205,17 +205,6 @@ static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
   }
 }
 
-void cling::StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
-                                 clang::ASTContext& C,
-                                 const char* Sep /*= "\n"*/) {
-
-  if (VR->isValid()) {
-    StreamClingValue(o, &VR->get(), C, Sep);
-  } else {
-    o << "<<<invalid>>> @" << VR << Sep;
-  }
-}
-
 static void StreamObj(llvm::raw_ostream& o, const void* v,
                       const ValuePrinterInfo& VPI,
                       const char* Sep = "\n") {
@@ -223,8 +212,8 @@ static void StreamObj(llvm::raw_ostream& o, const void* v,
   if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl()) {
     std::string QualName = CXXRD->getQualifiedNameAsString();
     if (QualName == "cling::StoredValueRef"){
-      StreamStoredValueRef(o, (const StoredValueRef*)v,
-                           *VPI.getASTContext(), Sep);
+      valuePrinterInternal::StreamStoredValueRef(o, (const StoredValueRef*)v,
+                                                 *VPI.getASTContext(), Sep);
       return;
     } else if (QualName == "cling::Value") {
       StreamClingValue(o, (const Value*)v, *VPI.getASTContext(), Sep);
@@ -316,12 +305,24 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
 }
 
 namespace cling {
-  void printValuePublicDefault(llvm::raw_ostream& o, const void* const p,
-                               const ValuePrinterInfo& VPI) {
+namespace valuePrinterInternal {
+  void printValue_Default(llvm::raw_ostream& o, const void* const p,
+                          const ValuePrinterInfo& VPI) {
     o << "(";
     o << VPI.getType().getAsString();
     o << ") ";
     StreamValue(o, p, VPI);
+  }
+
+  void StreamStoredValueRef(llvm::raw_ostream& o,
+                            const StoredValueRef* VR,
+                            clang::ASTContext& C,
+                            const char* Sep /*= "\n"*/) {
+    if (VR->isValid()) {
+      StreamClingValue(o, &VR->get(), C, Sep);
+    } else {
+      o << "<<<invalid>>> @" << VR << Sep;
+    }
   }
 
   void flushOStream(llvm::raw_ostream& o) {
@@ -329,5 +330,5 @@ namespace cling {
     fflush(stdout);
     o.flush();
   }
-
+} // end namespace valuePrinterInternal
 } // end namespace cling
