@@ -7,6 +7,6 @@
 
 class MyClass { public:  MyClass(){ gCling->process("gCling->getVersion()");} };
 
-MyClass *My = new MyClass(); // CHECK: {{.*Interpreter.*}}
+MyClass *My = new MyClass(); // CHECK: {{.*Id.*}}
 
 .q
