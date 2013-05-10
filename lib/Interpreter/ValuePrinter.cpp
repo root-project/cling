@@ -55,8 +55,7 @@ extern "C" void cling_PrintValue(void* /*clang::Expr**/ E,
   // the results in pipes (Savannah #99234).
   llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
 
-  printValue(outs, value, value, VPI);
-  valuePrinterInternal::flushOStream(outs);
+  valuePrinterInternal::flushToStream(outs, printValue(value, value, VPI));
 }
 
 
@@ -306,12 +305,18 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
 
 namespace cling {
 namespace valuePrinterInternal {
-  void printValue_Default(llvm::raw_ostream& o, const void* const p,
-                          const ValuePrinterInfo& VPI) {
-    o << "(";
-    o << VPI.getType().getAsString();
-    o << ") ";
-    StreamValue(o, p, VPI);
+  std::string printValue_Default(const void* const p,
+                                 const ValuePrinterInfo& VPI) {
+    std::string buf;
+    {
+      llvm::raw_string_ostream o(buf);
+      o << "(";
+      o << VPI.getType().getAsString();
+      o << ") ";
+      StreamValue(o, p, VPI);
+      o.flush();
+    }
+    return buf;
   }
 
   void StreamStoredValueRef(llvm::raw_ostream& o,
@@ -325,9 +330,10 @@ namespace valuePrinterInternal {
     }
   }
 
-  void flushOStream(llvm::raw_ostream& o) {
+  void flushToStream(llvm::raw_ostream& o, const std::string& s) {
     // We want to keep stdout and o in sync if o is different from stdout.
     fflush(stdout);
+    o << s;
     o.flush();
   }
 } // end namespace valuePrinterInternal

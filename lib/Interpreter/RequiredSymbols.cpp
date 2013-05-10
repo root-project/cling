@@ -22,9 +22,9 @@ void symbol_requester() {
    const char* const argv[] = {"libcling__symbol_requester", 0};
    Interpreter I(1, argv);
    ValuePrinterInfo VPI(0, 0); // asserts, but we don't call.
-   valuePrinterInternal::printValue_Default(llvm::outs(), 0, VPI);
+   valuePrinterInternal::printValue_Default(0, VPI);
    cling_PrintValue(0, 0, 0);
-   valuePrinterInternal::flushOStream(llvm::outs());
+   valuePrinterInternal::flushToStream(llvm::outs(), "");
    LookupHelper h(0,0);
    h.findType("");
    h.findScope("");
