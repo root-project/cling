@@ -55,7 +55,8 @@ extern "C" void cling_PrintValue(void* /*clang::Expr**/ E,
   // the results in pipes (Savannah #99234).
   llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
 
-  valuePrinterInternal::flushToStream(outs, printValue(value, value, VPI));
+  valuePrinterInternal::flushToStream(outs, printType(value, value, VPI)
+                                      + printValue(value, value, VPI));
 }
 
 
@@ -310,11 +311,19 @@ namespace valuePrinterInternal {
     std::string buf;
     {
       llvm::raw_string_ostream o(buf);
+      StreamValue(o, p, VPI);
+      o << '\n';
+    }
+    return buf;
+  }
+
+  std::string printType_Default(const ValuePrinterInfo& VPI) {
+    std::string buf;
+    {
+      llvm::raw_string_ostream o(buf);
       o << "(";
       o << VPI.getType().getAsString();
       o << ") ";
-      StreamValue(o, p, VPI);
-      o.flush();
     }
     return buf;
   }

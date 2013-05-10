@@ -25,10 +25,19 @@ namespace cling {
   std::string printValue(const void* const p, TY* const u,
                          const ValuePrinterInfo& VPI);
 
+  // Can be re-implemented to print a user type differently, e.g. as
+  //   template <typename POSSIBLYDERIVED>
+  //   std::string printType(const MyClass* const p, POSSIBLYDERIVED* ac,
+  //                         const ValuePrinterInfo& VPI);
+  template <typename TY>
+  std::string printType(const void* const p, TY* const u,
+                        const ValuePrinterInfo& VPI);
+
   namespace valuePrinterInternal {
 
     std::string printValue_Default(const void* const p,
                                    const ValuePrinterInfo& PVI);
+    std::string printType_Default(const ValuePrinterInfo& PVI);
 
     void StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
                               clang::ASTContext& C, const char* Sep = "\n");
@@ -40,7 +49,8 @@ namespace cling {
                     clang::ASTContext* C, const T& value) {
       ValuePrinterInfo VPI(E, C);
       // Only because we don't want to include llvm::raw_ostream in the header
-      flushToStream(*o, printValue(&value, &value, VPI));
+      flushToStream(*o, printType(&value, &value, VPI)
+                    + printValue(&value, &value, VPI));
       return value;
     }
 
@@ -49,7 +59,8 @@ namespace cling {
                     clang::ASTContext* C, const T* value) {
       ValuePrinterInfo VPI(E, C);
       // Only because we don't want to include llvm::raw_ostream in the header
-      flushToStream(*o, printValue((const void*) value, value, VPI));
+      flushToStream(*o, printType((const void*) value, value, VPI)
+                    + printValue((const void*) value, value, VPI));
       return value;
     }
 
@@ -58,7 +69,8 @@ namespace cling {
                     clang::ASTContext* C, T* value) {
       ValuePrinterInfo VPI(E, C);
       // Only because we don't want to include llvm::raw_ostream in the header
-      flushToStream(*o, printValue((const void*) value, value, VPI));
+      flushToStream(*o, printType((const void*) value, value, VPI)
+                    + printValue((const void*) value, value, VPI));
       return value;
     }
 
@@ -68,6 +80,11 @@ namespace cling {
   std::string  printValue(const void* const p, TY* const /*u*/,
                           const ValuePrinterInfo& PVI) {
     return valuePrinterInternal::printValue_Default(p, PVI);
+  }
+  template <typename TY>
+  std::string  printType(const void* const p, TY* const /*u*/,
+                         const ValuePrinterInfo& PVI) {
+    return valuePrinterInternal::printType_Default(PVI);
   }
 
 }
