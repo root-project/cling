@@ -40,7 +40,7 @@ namespace cling {
     std::string printType_Default(const ValuePrinterInfo& PVI);
 
     void StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
-                              clang::ASTContext& C, const char* Sep = "\n");
+                              clang::ASTContext& C);
 
     void flushToStream(llvm::raw_ostream& o, const std::string& s);
 
@@ -50,7 +50,7 @@ namespace cling {
       ValuePrinterInfo VPI(E, C);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushToStream(*o, printType(&value, &value, VPI)
-                    + printValue(&value, &value, VPI));
+                    + printValue(&value, &value, VPI) + '\n');
       return value;
     }
 
@@ -60,7 +60,7 @@ namespace cling {
       ValuePrinterInfo VPI(E, C);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushToStream(*o, printType((const void*) value, value, VPI)
-                    + printValue((const void*) value, value, VPI));
+                    + printValue((const void*) value, value, VPI) + '\n');
       return value;
     }
 
@@ -70,7 +70,7 @@ namespace cling {
       ValuePrinterInfo VPI(E, C);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushToStream(*o, printType((const void*) value, value, VPI)
-                    + printValue((const void*) value, value, VPI));
+                    + printValue((const void*) value, value, VPI) + '\n');
       return value;
     }
 
