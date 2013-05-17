@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id$
+// version: $Id: b699d14f47fba93f2a13236bf24c6fd61f938363 $
 // author:  Axel Naumann <axel@cern.ch>
 //------------------------------------------------------------------------------
 
@@ -209,7 +209,14 @@ namespace cling {
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
     Interpreter::CompilationResult ret = Interpreter::kSuccess;
-    process(content.c_str(), result, &ret);
+    if (process(content.c_str(), result, &ret)) {
+      // Input file has to be complete.
+       llvm::errs() 
+          << "Error in cling::MetaProcessor: file "
+          << llvm::sys::path::filename(filename)
+          << " is incomplete (missing parenthesis or similar)!\n";
+      ret = Interpreter::kFailure;
+    }
     m_CurrentlyExecutingFile = llvm::StringRef();
     if (topmost)
       m_TopExecutingFile = llvm::StringRef();
