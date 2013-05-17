@@ -1,0 +1,42 @@
+Index: Makefile
+===================================================================
+--- Makefile	(revision 179269)
++++ Makefile	(working copy)
+@@ -77,12 +77,25 @@
+   NO_INSTALL = 1
+ endif
+ 
++ifeq ($(MAKECMDGOALS),install-cling)
++  DIRS := tools/cling/tools/driver tools/cling/docs \
++          tools/clang/lib/Headers 
++  OPTIONAL_DIRS :=
++  NO_INSTALL = 1
++endif
++
+ ifeq ($(MAKECMDGOALS),clang-only)
+   DIRS := $(filter-out tools docs unittests, $(DIRS)) \
+           tools/clang tools/lto
+   OPTIONAL_DIRS :=
+ endif
+ 
++ifeq ($(MAKECMDGOALS),cling-only)
++  DIRS := $(filter-out tools docs unittests, $(DIRS)) \
++          tools/clang tools/cling
++  OPTIONAL_DIRS :=
++endif
++
+ ifeq ($(MAKECMDGOALS),unittests)
+   DIRS := $(filter-out tools runtime docs, $(DIRS)) utils unittests
+   OPTIONAL_DIRS :=
+@@ -164,9 +177,11 @@
+ 	  $(TopDistDir)/include/llvm/Support/DataTypes.h
+ 
+ clang-only: all
++cling-only: all
+ tools-only: all
+ libs-only: all
+ install-clang: install
++install-cling: install
+ install-libs: install
+ 
+ # If SHOW_DIAGNOSTICS is enabled, clear the diagnostics file first.
