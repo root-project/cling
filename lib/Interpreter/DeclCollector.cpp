@@ -57,23 +57,25 @@ namespace cling {
     if (comesFromASTReader(DGR)) {
       if (m_CodeGen) {
         for (DeclGroupRef::iterator I = DGR.begin(), E = DGR.end();
-             I != E; ++I)
+             I != E; ++I) {
           if (NamespaceDecl* ND = dyn_cast<NamespaceDecl>(*I)) {
             for (NamespaceDecl::decl_iterator IN = ND->decls_begin(),
                    EN = ND->decls_end(); IN != EN; ++IN)
               // Recurse over decls inside the namespace, like
               // CodeGenModule::EmitNamespace() does.
               HandleTopLevelDecl(DeclGroupRef(*IN));
-          } else if (!shouldIgnoreDeclFromASTReader(*I)) {
-            m_CodeGen->HandleTopLevelDecl(DeclGroupRef(*I));
+          } else {
+            if (!shouldIgnoreDeclFromASTReader(*I)) {
+              m_CodeGen->HandleTopLevelDecl(DeclGroupRef(*I));
+            }
             // FIXME: once modules are there this is not needed anymore.
             // it is used to simulate modules and the ASTDeserializationListener
             // for sources that are included to describe the library that was
             // built from the sources (ACLiC).
             if (!(*I)->isFromASTFile() && m_Interp->getASTDeserializationListener())
               m_Interp->getASTDeserializationListener()->DeclRead(0, *I);
-              
           }
+        }
       }
       return true;
     }
