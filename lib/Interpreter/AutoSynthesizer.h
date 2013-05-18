@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id$
+// version: $Id: cb7241880ebcbba87b2ae16476c2812afd7ff571 $
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
 //------------------------------------------------------------------------------
 
@@ -10,7 +10,6 @@
 #include "TransactionTransformer.h"
 
 namespace clang {
-  class ASTContext;
   class Sema;
 }
 
