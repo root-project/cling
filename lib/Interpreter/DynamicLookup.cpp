@@ -88,13 +88,6 @@ namespace {
           else
             OS << '*';
 
-          if (!Node->getType().isNull()) {
-            // If the type is sugared, also dump a (shallow) desugared type.
-            SplitQualType D_split = Node->getType().getSplitDesugaredType();
-            assert(T_split == D_split && "Trying to print shallow type!");
-            if (T_split != D_split)
-              OS << ":" << QualType::getAsString(D_split);
-          }
           // end
 
           OS <<")@";
@@ -226,7 +219,7 @@ namespace cling {
         if (ShouldVisit(*J) && (*J)->hasBody()) {
           if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*J)) {
             // Set the decl context, which is needed by Evaluate.
-            m_CurDeclContext = FD->getDeclContext();
+            m_CurDeclContext = FD;
             ASTNodeInfo NewBody = Visit((*J)->getBody());
             FD->setBody(NewBody.getAsSingleNode());
           }
@@ -587,6 +580,11 @@ namespace cling {
 
   Expr* EvaluateTSynthesizer::BuildDynamicExprInfo(Expr* SubTree,
                                                    bool ValuePrinterReq) {
+    // We need to evaluate it in its own context. Evaluation on the global
+    // scope per se can break for example the compound literals, which have
+    // to be constants (see [C99 6.5.2.5])
+    Sema::ContextRAII pushedDC(*m_Sema, m_CurDeclContext);
+
     // 1. Get the expression containing @-s and get the variable addresses
     std::string Template;
     llvm::SmallVector<DeclRefExpr*, 4> Addresses;
@@ -720,7 +718,8 @@ namespace cling {
 
     // Create template arguments
     Sema::InstantiatingTemplate Inst(*m_Sema, m_NoSLoc, m_EvalDecl);
-    TemplateArgument Arg(InstTy);
+    // Before instantiation we need the canonical type
+    TemplateArgument Arg(InstTy.getCanonicalType());
     TemplateArgumentList TemplateArgs(TemplateArgumentList::OnStack, &Arg, 1U);
 
     // Substitute the declaration of the templated function, with the
@@ -778,29 +777,36 @@ namespace cling {
 
     bool getShouldVisitSubTree() const { return m_ShouldVisitSubTree; }
 
-    bool VisitDecl(Decl* D) {
+    bool isCandidate(Decl* D) {
       // FIXME: Here we should have our custom attribute.
       if (AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-        if (A->getAnnotation().equals("__ResolveAtRuntime")) {
-          m_ShouldVisitSubTree = true;
-          return false; // returning false will abort the in-depth traversal.
-        }
+        if (A->getAnnotation().equals("__ResolveAtRuntime"))
+            //|| A->getAnnotation().equals("__Auto")) {
+          return true;
+            //}
 
-      TraverseStmt(D->getBody());
-      return true;  // returning false will abort the in-depth traversal.
+      return false;
     }
 
     bool VisitDeclStmt(DeclStmt* DS) {
       DeclGroupRef DGR = DS->getDeclGroup();
       for (DeclGroupRef::const_iterator I = DGR.begin(), 
-             E = DGR.end(); I != E; ++I)
-        TraverseDecl(*I);
+             E = DGR.end(); I != E; ++I) {
+        if (isCandidate(*I)) {
+          m_ShouldVisitSubTree = true;
+          return false; // returning false will abort the in-depth traversal.
+        }
+      }
       return true;
     }
 
+    // In cases when there is no decl stmt, like dep->Call();
     bool VisitDeclRefExpr(DeclRefExpr* DRE) {
-      TraverseDecl(DRE->getDecl());
-      return false;
+      if (isCandidate(DRE->getDecl())) {
+        m_ShouldVisitSubTree = true;
+        return false; // returning false will abort the in-depth traversal.
+      }
+      return true;
     }
   };
 
