@@ -512,6 +512,9 @@ namespace cling {
   }
 
   ASTNodeInfo EvaluateTSynthesizer::VisitBinaryOperator(BinaryOperator* Node) {    
+    ASTNodeInfo rhs = Visit(Node->getRHS());
+    ASTNodeInfo lhs;
+
     if (const DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(Node->getLHS())) {
       const Decl* D = DRE->getDecl();
       if (const AnnotateAttr* A = D->getAttr<AnnotateAttr>())
@@ -519,16 +522,15 @@ namespace cling {
           return ASTNodeInfo(Node, /*needs eval*/false);
     }
 
-    ASTNodeInfo rhs = Visit(Node->getRHS());
-    ASTNodeInfo lhs = Visit(Node->getLHS());
+    lhs = Visit(Node->getLHS());
+
     assert((lhs.hasSingleNode() || rhs.hasSingleNode()) &&
            "1:N replacements are not implemented yet!");
 
     // Try find out the type of the left-hand-side of the operator
     // and give the hint to the right-hand-side in order to replace the
     // dependent symbol
-    if (Node->isAssignmentOp() &&
-        rhs.isForReplacement() &&
+    if (Node->isAssignmentOp() && rhs.isForReplacement() &&
         !lhs.isForReplacement()) {
       if (Expr* LHSExpr = lhs.getAs<Expr>())
         if (!IsArtificiallyDependent(LHSExpr)) {
