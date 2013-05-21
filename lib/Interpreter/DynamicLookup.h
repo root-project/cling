@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id$
+// version: $Id: 8a2c4a806b2df22b9d375b228b1ccb502010a74f $
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
 //------------------------------------------------------------------------------
 
@@ -175,6 +175,7 @@ namespace cling {
     ASTNodeInfo VisitStmt(clang::Stmt* Node);
     ASTNodeInfo VisitCompoundStmt(clang::CompoundStmt* Node);
     ASTNodeInfo VisitIfStmt(clang::IfStmt* Node);
+
     /// \brief Transforms a declaration with initializer of dependent type.
     /// If an object on the free store is being initialized we use the
     /// EvaluateT
@@ -199,6 +200,11 @@ namespace cling {
     /// to clean the heap memory afterwords.
     ///
     ASTNodeInfo VisitDeclStmt(clang::DeclStmt* Node);
+
+    ///\brief \c delete t; \c if t is dependent, the whole stmt must be escaped.
+    ///
+    ASTNodeInfo VisitCXXDeleteExpr(clang::CXXDeleteExpr* Node);
+
     ASTNodeInfo VisitExpr(clang::Expr* Node);
     ASTNodeInfo VisitBinaryOperator(clang::BinaryOperator* Node);
     ASTNodeInfo VisitCallExpr(clang::CallExpr* E);

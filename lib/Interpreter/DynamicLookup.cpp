@@ -486,6 +486,11 @@ namespace cling {
     return ASTNodeInfo(Node, 0);
   }
 
+  ASTNodeInfo EvaluateTSynthesizer::VisitCXXDeleteExpr(CXXDeleteExpr* Node) {
+    ASTNodeInfo deleteArg = Visit(Node->getArgument());
+    return ASTNodeInfo(Node, /*needs eval*/deleteArg.isForReplacement());
+  }
+
   ASTNodeInfo EvaluateTSynthesizer::VisitExpr(Expr* Node) {
     for (Stmt::child_iterator
            I = Node->child_begin(), E = Node->child_end(); I != E; ++I) {
@@ -506,7 +511,14 @@ namespace cling {
     return ASTNodeInfo(Node, 0);
   }
 
-  ASTNodeInfo EvaluateTSynthesizer::VisitBinaryOperator(BinaryOperator* Node) {
+  ASTNodeInfo EvaluateTSynthesizer::VisitBinaryOperator(BinaryOperator* Node) {    
+    if (const DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(Node->getLHS())) {
+      const Decl* D = DRE->getDecl();
+      if (const AnnotateAttr* A = D->getAttr<AnnotateAttr>())
+        if (A->getAnnotation().equals("__Auto"))
+          return ASTNodeInfo(Node, /*needs eval*/false);
+    }
+
     ASTNodeInfo rhs = Visit(Node->getRHS());
     ASTNodeInfo lhs = Visit(Node->getLHS());
     assert((lhs.hasSingleNode() || rhs.hasSingleNode()) &&
@@ -780,10 +792,10 @@ namespace cling {
     bool isCandidate(Decl* D) {
       // FIXME: Here we should have our custom attribute.
       if (AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-        if (A->getAnnotation().equals("__ResolveAtRuntime"))
-            //|| A->getAnnotation().equals("__Auto")) {
+        if (A->getAnnotation().equals("__ResolveAtRuntime")
+            || A->getAnnotation().equals("__Auto")) {
           return true;
-            //}
+        }
 
       return false;
     }
