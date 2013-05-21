@@ -679,6 +679,9 @@ namespace cling {
   Interpreter::DeclareInternal(const std::string& input, 
                                const CompilationOptions& CO,
                                const clang::Decl** D /* = 0 */) {
+    // Disable warnings which doesn't make sense when using the prompt
+    // This gets reset with the clang::Diagnostics().Reset()
+    ignoreFakeDiagnostics();
 
     const Transaction* lastT = m_IncrParser->Compile(input, CO);
     if (lastT->getIssuedDiags() != Transaction::kErrors) {
