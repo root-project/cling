@@ -85,14 +85,14 @@ namespace cling {
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
-    // pull in PCHs
-    const std::string& PCHFileName
-      = m_CI->getInvocation ().getPreprocessorOpts().ImplicitPCHInclude;
-
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = CompilationOptions::VPDisabled;
     CO.CodeGeneration = hasCodeGenerator();
+
+    // pull in PCHs
+    const std::string& PCHFileName
+      = m_CI->getInvocation ().getPreprocessorOpts().ImplicitPCHInclude;
     if (!PCHFileName.empty()) {
       
       Transaction* CurT = beginTransaction(CO);
