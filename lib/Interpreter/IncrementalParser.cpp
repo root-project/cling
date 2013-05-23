@@ -82,9 +82,10 @@ namespace cling {
     m_TTransformers.push_back(new ReturnSynthesizer(TheSema));
   }
   void IncrementalParser::Initialize() {
-    // pull in PCHs
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
+
+    // pull in PCHs
     const std::string& PCHFileName
       = m_CI->getInvocation ().getPreprocessorOpts().ImplicitPCHInclude;
 
