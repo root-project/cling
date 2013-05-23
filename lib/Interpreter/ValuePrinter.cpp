@@ -64,7 +64,12 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
                         const ValuePrinterInfo& VPI);
 
 static void StreamChar(llvm::raw_ostream& o, const char v) {
-  o << '"' << v << "\"";
+  if (isprint(v))
+    o << '"' << v << "\"";
+  else {
+    o << "\\0x";
+    o.write_hex(v);
+  }
 }
 
 static void StreamCharPtr(llvm::raw_ostream& o, const char* const v) {
