@@ -28,7 +28,6 @@ namespace cling {
     Interpreter& m_Interpreter;
     MetaProcessor& m_MetaProcessor;
     bool m_IsQuitRequested;
-    StoredValueRef m_LastResultedValue;
     llvm::raw_ostream& m_Outs; // Shortens m_MetaProcessor->getOuts()
   public:
     enum SwitchMode {
@@ -36,18 +35,22 @@ namespace cling {
       kOn = 1,
       kToggle = 2
     };
+
+    enum ActionResult {
+      AR_Failure = 0,
+      AR_Success = 1
+    };
   public:
     MetaSema(Interpreter& interp, MetaProcessor& meta);
 
     const Interpreter& getInterpreter() const { return m_Interpreter; }
     bool isQuitRequested() const { return m_IsQuitRequested; }
-    StoredValueRef getLastResultedValue() const { return m_LastResultedValue; };
     
     ///\brief L command includes the given file or loads the given library.
     ///
     ///\param[in] file - The file/library to be loaded.
     ///
-    void actOnLCommand(llvm::sys::Path file) const;
+    ActionResult actOnLCommand(llvm::sys::Path file) const;
 
     ///\brief Actions that need to be performed on occurance of a comment.
     ///
@@ -67,7 +70,8 @@ namespace cling {
     ///\param[in] file - The filename to load.
     ///\param[in] args - The optional list of arguments.
     ///
-    void actOnxCommand(llvm::sys::Path file, llvm::StringRef args);
+    ActionResult actOnxCommand(llvm::sys::Path file, llvm::StringRef args, 
+                               StoredValueRef& result);
 
     ///\brief Actions to be performed on quit.
     ///
@@ -76,7 +80,7 @@ namespace cling {
     ///\brief Actions to be performed on unload command. For now it tries to 
     /// unload the last transaction.
     ///
-    void actOnUCommand() const;
+    ActionResult actOnUCommand() const;
 
     ///\brief Actions to be performed on add include path. It registers new 
     /// folder where header files can be searched.
@@ -147,7 +151,8 @@ namespace cling {
     ///\param[in] commandLine - shell command + optional
     //                          list of parameters.
     ///
-    void actOnShellCommand(llvm::StringRef commandLine) const;
+    ActionResult actOnShellCommand(llvm::StringRef commandLine,
+                                   StoredValueRef& result) const;
   };
 
 } // end namespace cling

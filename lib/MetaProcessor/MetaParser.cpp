@@ -81,16 +81,13 @@ namespace cling {
       consumeToken();
   }
 
-  bool MetaParser::isMetaCommand() {
-    return isCommandSymbol() && isCommand();
+  bool MetaParser::isMetaCommand(StoredValueRef& resultValue,
+                                 MetaSema::ActionResult& actionResult) {
+    return isCommandSymbol() && isCommand(resultValue, actionResult);
   }
 
   bool MetaParser::isQuitRequested() const { 
     return m_Actions->isQuitRequested(); 
-  }
-
-  StoredValueRef MetaParser::getLastResultedValue() const {
-    return m_Actions->getLastResultedValue();
   }
 
   bool MetaParser::isCommandSymbol() {
@@ -102,18 +99,23 @@ namespace cling {
     return true;
   }
 
-  bool MetaParser::isCommand() {
-    return isLCommand() || isXCommand() || isqCommand() 
-      || isUCommand() || isICommand() || israwInputCommand() 
+  bool MetaParser::isCommand(StoredValueRef& resultValue,
+                             MetaSema::ActionResult& actionResult) {
+    resultValue = StoredValueRef();
+    return isLCommand(actionResult)
+      || isXCommand(resultValue, actionResult)
+      || isqCommand() 
+      || isUCommand(actionResult) || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
       || isfileExCommand() || isfilesCommand() || isClassCommand() 
-      || isgCommand() || isTypedefCommand() || isShellCommand();
+      || isgCommand() || isTypedefCommand()
+      || isShellCommand(resultValue, actionResult);
   }
 
   // L := 'L' FilePath
   // FilePath := AnyString
   // AnyString := .*^(' ' | '\t')
-  bool MetaParser::isLCommand() {
+  bool MetaParser::isLCommand(MetaSema::ActionResult& actionResult) {
     bool result = false;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("L")) {
       consumeAnyStringToken();
@@ -135,7 +137,9 @@ namespace cling {
   // FilePath := AnyString
   // ArgList := (ExtraArgList) ' ' [ArgList]
   // ExtraArgList := AnyString [, ExtraArgList]
-  bool MetaParser::isXCommand() {
+   bool MetaParser::isXCommand(StoredValueRef& resultValue,
+                               MetaSema::ActionResult& actionResult) {
+    resultValue = StoredValueRef();
     bool result = false;
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident) && (Tok.getIdent().equals("x")
@@ -144,20 +148,20 @@ namespace cling {
       consumeAnyStringToken(tok::l_paren);
       llvm::sys::Path file(getCurTok().getIdent());
       llvm::StringRef args;
-      result = true;
       consumeToken();
       if (getCurTok().is(tok::l_paren) && isExtraArgList()) {
         args = getCurTok().getIdent();
         consumeToken(); // consume the closing paren
       }
-      m_Actions->actOnxCommand(file, args);
+      actionResult = m_Actions->actOnxCommand(file, args, resultValue);
+
       if (getCurTok().is(tok::comment)) {
         consumeAnyStringToken();
         m_Actions->actOnComment(getCurTok().getIdent());
       }
     }
 
-    return result;
+    return actionResult == MetaSema::AR_Success;
   }
 
   // ExtraArgList := AnyString [, ExtraArgList]
@@ -177,9 +181,10 @@ namespace cling {
     return result;
   }
 
-  bool MetaParser::isUCommand() {
+  bool MetaParser::isUCommand(MetaSema::ActionResult& actionResult) {
+    actionResult = MetaSema::AR_Failure;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("U")) {
-      m_Actions->actOnUCommand();
+      actionResult = m_Actions->actOnUCommand();
       return true;
     }
     return false;
@@ -314,7 +319,10 @@ namespace cling {
     return false;
   }
   
-  bool MetaParser::isShellCommand() {
+  bool MetaParser::isShellCommand(StoredValueRef& resultValue,
+                                  MetaSema::ActionResult& actionResult) {
+    resultValue = StoredValueRef();
+    actionResult = MetaSema::AR_Failure;
     const Token& Tok = getCurTok();
     if (Tok.is(tok::excl_mark)) {
       consumeAnyStringToken(tok::eof);
@@ -322,7 +330,8 @@ namespace cling {
       if (NextTok.is(tok::raw_ident)) {
          llvm::StringRef commandLine(NextTok.getIdent());
          if (!commandLine.empty())
-            m_Actions->actOnShellCommand(commandLine);
+            actionResult = m_Actions->actOnShellCommand(commandLine,
+                                                        resultValue);
       }
       return true;
     }

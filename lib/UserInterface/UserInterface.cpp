@@ -6,6 +6,7 @@
 
 #include "cling/UserInterface/UserInterface.h"
 
+#include "cling/Interpreter/StoredValueRef.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "textinput/TextInput.h"
 #include "textinput/StreamReader.h"
@@ -68,8 +69,10 @@ namespace cling {
       if (RR == TextInput::kRREOF) {
         break;
       }
-     
-      int indent = m_MetaProcessor->process(line.c_str());
+
+      cling::StoredValueRef result;
+      cling::Interpreter::CompilationResult compRes;
+      int indent = m_MetaProcessor->process(line.c_str(), result, compRes);
       // Quit requested
       if (indent < 0)
         break;

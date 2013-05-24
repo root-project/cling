@@ -37,16 +37,14 @@ namespace cling {
   MetaProcessor::~MetaProcessor() {}
 
   int MetaProcessor::process(const char* input_text,
-                             StoredValueRef* result /*=0*/,
-                             Interpreter::CompilationResult* compRes /*=0*/ ) {
+                             StoredValueRef& result,
+                             Interpreter::CompilationResult& compRes) {
+    result = StoredValueRef();
+    compRes = Interpreter::kSuccess;
     int expectedIndent = m_InputValidator->getExpectedIndent();
-    if (compRes) {
-      if (expectedIndent) {
-        *compRes = Interpreter::kMoreInputExpected;
-      } else {
-        *compRes = Interpreter::kSuccess;
-      }
-    }
+    
+    if (expectedIndent)
+      compRes = Interpreter::kMoreInputExpected;
     if (!input_text || !input_text[0]) {
       // nullptr / empty string, nothing to do.
       return expectedIndent;
@@ -57,34 +55,31 @@ namespace cling {
     }
     //  Check for and handle meta commands.
     m_MetaParser->enterNewInputLine(input_line);
-    if (m_MetaParser->isMetaCommand()) {
+    MetaSema::ActionResult actionResult = MetaSema::AR_Success;
+    if (m_MetaParser->isMetaCommand(result, actionResult)) {
 
       if (m_MetaParser->isQuitRequested())
         return -1;
 
-      //TODO: set the compilation result if there was error in the meta commands
-      if (result)
-        *result = m_MetaParser->getLastResultedValue();
+      if (actionResult != MetaSema::AR_Success)
+        compRes = Interpreter::kFailure;
       return expectedIndent;
     }
 
     // Check if the current statement is now complete. If not, return to
     // prompt for more.
     if (m_InputValidator->validate(input_line) == InputValidator::kIncomplete) {
-      if (compRes)
-        *compRes = Interpreter::kMoreInputExpected;
+      compRes = Interpreter::kMoreInputExpected;
       return m_InputValidator->getExpectedIndent();
     }
 
     //  We have a complete statement, compile and execute it.
     std::string input = m_InputValidator->getInput();
     m_InputValidator->reset();
-    Interpreter::CompilationResult compResLocal;
     // if (m_Options.RawInput)
     //   compResLocal = m_Interp.declare(input);
     // else
-    compResLocal = m_Interp.process(input, result);
-    if (compRes) *compRes = compResLocal;
+    compRes = m_Interp.process(input, &result);
 
     return 0;
   }
@@ -99,8 +94,8 @@ namespace cling {
 
   // Run a file: .x file[(args)]
   bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
-                                  StoredValueRef* result,
-                               Interpreter::CompilationResult* compRes /*=0*/) {
+                                  StoredValueRef& result,
+                                  Interpreter::CompilationResult& compRes) {
     // Look for start of parameters:
     typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
@@ -118,19 +113,19 @@ namespace cling {
       if (topmost)
         m_TopExecutingFile = m_CurrentlyExecutingFile;
       
-      interpRes = m_Interp.process(expression, result);
+      interpRes = m_Interp.process(expression, &result);
 
       m_CurrentlyExecutingFile = llvm::StringRef();
       if (topmost)
         m_TopExecutingFile = llvm::StringRef();
     }
-    if (compRes) *compRes = interpRes;
+    compRes = interpRes;
     return (interpRes != Interpreter::kFailure);
   }
 
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
-                                 StoredValueRef* result /* = 0 */,
+                                 StoredValueRef& result,
                                  bool ignoreOutmostBlock /*=false*/) {
 
     {
@@ -209,7 +204,7 @@ namespace cling {
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
     Interpreter::CompilationResult ret = Interpreter::kSuccess;
-    if (process(content.c_str(), result, &ret)) {
+    if (process(content.c_str(), result, ret)) {
       // Input file has to be complete.
        llvm::errs() 
           << "Error in cling::MetaProcessor: file "

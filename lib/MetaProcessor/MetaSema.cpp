@@ -11,12 +11,14 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 
+#include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Serialization/ASTReader.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/Support/Path.h"
 
 #include <cstdlib>
@@ -25,14 +27,13 @@ namespace cling {
 
   MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta) 
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
-      m_Outs(m_MetaProcessor.getOuts()){
-    m_LastResultedValue = StoredValueRef::invalidValue();
-  }
+      m_Outs(m_MetaProcessor.getOuts()){ }
 
-
-  void MetaSema::actOnLCommand(llvm::sys::Path file) const {
-    m_Interpreter.loadFile(file.str());
+  MetaSema::ActionResult MetaSema::actOnLCommand(llvm::sys::Path file) const {
     // TODO: extra checks. Eg if the path is readable, if the file exists...
+    if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess)
+      return AR_Success;
+    return AR_Failure;
   }
 
   void MetaSema::actOnComment(llvm::StringRef comment) const {
@@ -40,11 +41,17 @@ namespace cling {
     m_Interpreter.declare(comment);
   }
 
-  void MetaSema::actOnxCommand(llvm::sys::Path file, llvm::StringRef args)
-  {
+  MetaSema::ActionResult MetaSema::actOnxCommand(llvm::sys::Path file, 
+                                                 llvm::StringRef args, 
+                                                 StoredValueRef& result) {
     // Fall back to the meta processor for now.
-    m_LastResultedValue = StoredValueRef::invalidValue();
-    m_MetaProcessor.executeFile(file.str(), args.str(), &m_LastResultedValue);
+    Interpreter::CompilationResult compRes = Interpreter::kFailure;
+    m_MetaProcessor.executeFile(file.str(), args.str(), result, compRes);
+    ActionResult actionResult = AR_Failure;
+    if (compRes == Interpreter::kSuccess)
+       actionResult = AR_Success;
+    return actionResult;
+
     //m_Interpreter.loadFile(path.str());
     // TODO: extra checks. Eg if the path is readable, if the file exists...
   }
@@ -53,8 +60,10 @@ namespace cling {
     m_IsQuitRequested = true;
   }
 
-  void MetaSema::actOnUCommand() const {
+  MetaSema::ActionResult MetaSema::actOnUCommand() const {
+     // FIXME: unload, once implemented, must return success / failure
      m_Interpreter.unload();
+     return AR_Success;
   }
 
   void MetaSema::actOnICommand(llvm::sys::Path path) const {
@@ -185,12 +194,25 @@ namespace cling {
       DisplayTypedef(m_Outs, &m_Interpreter, typedefName.str().c_str());
   }
   
-  void MetaSema::actOnShellCommand(llvm::StringRef commandLine) const {
+  MetaSema::ActionResult
+  MetaSema::actOnShellCommand(llvm::StringRef commandLine,
+                              StoredValueRef& result) const {
     llvm::StringRef trimmed(commandLine.trim(" \t\n\v\f\r "));
     if (!trimmed.empty()) {
-       int ret = std::system(trimmed.str().c_str());
-       (void) ret; // Silence warning unused return result of system.
+      int ret = std::system(trimmed.str().c_str());
+
+      // Build the result
+      clang::ASTContext& Ctx = m_Interpreter.getCI()->getASTContext();
+      llvm::GenericValue retGV;
+      retGV.IntVal = llvm::APInt(sizeof(int) * 8, ret, true /*isSigned*/);
+      Value V(retGV, Ctx.IntTy);
+      result = StoredValueRef::bitwiseCopy(Ctx, V);
+
+      return (ret == 0) ? AR_Success : AR_Failure;
     }
+    result = StoredValueRef();
+    // nothing to run - should this be success or failure?
+    return AR_Failure;
   }
 
 } // end namespace cling

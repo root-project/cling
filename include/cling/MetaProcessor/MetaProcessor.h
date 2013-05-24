@@ -68,8 +68,8 @@ namespace cling {
     /// have in case of multi input mode.
     ///\returns -1 if quit was requiested.
     ///
-    int process(const char* input_line, cling::StoredValueRef* result = 0,
-                Interpreter::CompilationResult* compRes = 0);
+    int process(const char* input_line, cling::StoredValueRef& result,
+                Interpreter::CompilationResult& compRes);
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.
@@ -91,8 +91,8 @@ namespace cling {
     ///\returns true on success
     ///
     bool executeFile(llvm::StringRef file, llvm::StringRef args, 
-                     cling::StoredValueRef* result = 0,
-                     Interpreter::CompilationResult* compRes = 0);
+                     cling::StoredValueRef& result,
+                     Interpreter::CompilationResult& compRes);
 
     ///\brief Get the file name that is currently executing as passed to
     /// the currently active executeFile(). The returned StringRef::data() is
@@ -121,7 +121,7 @@ namespace cling {
     ///
     Interpreter::CompilationResult
     readInputFromFile(llvm::StringRef filename,
-                      StoredValueRef* result /* = 0 */,
+                      StoredValueRef& result,
                       bool ignoreOutmostBlock = false);
 
   };
