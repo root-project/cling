@@ -14,6 +14,7 @@
 #include "llvm/ADT/StringRef.h"
 
 #include <vector>
+#include <deque>
 
 namespace llvm {
   struct GenericValue;
@@ -64,13 +65,14 @@ namespace cling {
     // CI owns it
     DeclCollector* m_Consumer;
 
-    ///\brief The head of the single list of transactions. 
+    ///\brief The storage for our transactions.
     ///
-    const Transaction* m_FirstTransaction;
-
-    ///\brief The last transaction
+    /// We don't need the elements to be contiguous in memory, that is why we
+    /// don't use std::vector. We don't need to copy the elements every time the
+    /// capacity is exceeded.
+    /// FIXME: Maybe we need better allocator, a bump allocator would be good.
     ///
-    Transaction* m_LastTransaction;
+    std::deque<Transaction*> m_Transactions;
 
     ///\brief Code generator
     ///
@@ -128,20 +130,26 @@ namespace cling {
 
     ///\brief Returns the first transaction the incremental parser saw.
     ///
-    const Transaction* getFirstTransaction() const { 
-      return m_FirstTransaction; 
+    const Transaction* getFirstTransaction() const {
+      if (!m_Transactions.size())
+        return 0;
+      return m_Transactions.front();
     }
 
     ///\brief Returns the last transaction the incremental parser saw.
     ///
-    Transaction* getLastTransaction() { 
-      return m_LastTransaction; 
+    Transaction* getLastTransaction() {
+      if (!m_Transactions.size())
+        return 0;
+      return m_Transactions.back();
     }
 
     ///\brief Returns the last transaction the incremental parser saw.
     ///
-    const Transaction* getLastTransaction() const { 
-      return m_LastTransaction; 
+    const Transaction* getLastTransaction() const {
+      if (!m_Transactions.size())
+        return 0;
+      return m_Transactions.back();
     }
 
     ///\brief Returns the list of transactions seen by the interpreter.
