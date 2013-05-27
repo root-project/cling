@@ -319,8 +319,15 @@ namespace cling {
         m_NestedTransactions->clear();
     }
 
-    llvm::Module* getModule() const { return m_Module; }
-    void setModule(llvm::Module* M) { m_Module = M ; }
+    llvm::Module* getModule() const {
+      if (isNestedTransaction())
+        return getParent()->getModule();
+      return m_Module;
+    }
+    void setModule(llvm::Module* M) {
+      assert(!isNestedTransaction() && "Must share the parent module.")
+      m_Module = M;
+    }
 
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 
