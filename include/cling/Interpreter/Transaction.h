@@ -251,7 +251,7 @@ namespace cling {
     ///
     void setParent(Transaction* parent) { m_Parent = parent; }
 
-    bool isNestedTransaction() { return m_Parent; }
+    bool isNestedTransaction() const { return m_Parent; }
     bool hasNestedTransactions() const { return m_NestedTransactions.get(); }
 
     ///\brief Adds nested transaction to the transaction.
