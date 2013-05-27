@@ -1,4 +1,6 @@
 add_subdirectory(Interpreter)
 add_subdirectory(MetaProcessor)
-add_subdirectory(UserInterface)
+if(EXISTS UserInterface/textinput)
+   add_subdirectory(UserInterface)
+endif()
 add_subdirectory(Utils)

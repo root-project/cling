@@ -1,1 +1,4 @@
-add_subdirectory(driver)
+
+if(EXISTS ../lib/UserInterface/textinput)
+  add_subdirectory(driver)
+endif()
