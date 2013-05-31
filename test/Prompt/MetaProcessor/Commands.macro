@@ -1,0 +1,10 @@
+{
+// File containing cling commands, executed one-by-one.
+extern "C" int printf(const char* fmt, ...);
+.rawInput
+int f() {
+  print("I am a function called f.\n");
+  return 0;
+}
+f();
+}
