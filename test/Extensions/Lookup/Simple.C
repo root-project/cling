@@ -12,7 +12,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
-.dynamicExtensions
+.dynamicExtensions 1
 
 gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling));
 jksghdgsjdf->getVersion() // CHECK: {{.*Interpreter.*}}
