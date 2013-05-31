@@ -308,7 +308,10 @@ namespace cling {
             if (Expr* E = NewNode.getAs<Expr>()) {
               // Check whether value printer has been requested
               bool valuePrinterReq = false;
-              if ((it+2) == Children.end() && !isa<NullStmt>(*(it+1)))
+              // If this was the last or the last is not null stmt, means that 
+              // we need to value print.
+              if ((it+1) == Children.end() ||
+                  ((it+2) == Children.end() && !isa<NullStmt>(*(it+1))))
                 valuePrinterReq = true;
 
               // Assume void if still not escaped
