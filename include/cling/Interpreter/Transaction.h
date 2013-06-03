@@ -320,12 +320,9 @@ namespace cling {
     }
 
     llvm::Module* getModule() const {
-      if (isNestedTransaction())
-        return getParent()->getModule();
       return m_Module;
     }
     void setModule(llvm::Module* M) {
-      assert(!isNestedTransaction() && "Must share the parent module.");
       m_Module = M;
     }
 
@@ -345,7 +342,7 @@ namespace cling {
       m_State = kCollecting;
       m_IssuedDiags = kNone;
       m_Opts = CompilationOptions();
-      m_Module = 0;
+      //m_Module = 0; <- NOTE: we want to reuse the empty module
       m_WrapperFD = 0;
       m_Next = 0;
     }

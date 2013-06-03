@@ -27,10 +27,13 @@
 #include "clang/Parse/Parser.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendDiagnostic.h"
 #include "clang/Serialization/ASTWriter.h"
 
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Linker.h"
 #include "llvm/Support/CrashRecoveryContext.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_os_ostream.h"
@@ -45,8 +48,7 @@ namespace cling {
   IncrementalParser::IncrementalParser(Interpreter* interp,
                                        int argc, const char* const *argv,
                                        const char* llvmdir):
-    m_Interpreter(interp), m_Consumer(0), m_FirstTransaction(0), 
-    m_LastTransaction(0) {
+    m_Interpreter(interp), m_Consumer(0) {
 
     CompilerInstance* CI
       = CIFactory::createCI(0, argc, argv, llvmdir);
@@ -155,8 +157,24 @@ namespace cling {
       else {
         NewCurT = new Transaction(Opts);
         OldCurT->addNestedTransaction(NewCurT); // takes the ownership
+        // Nested transactions share the same module with the parent transaction
+        llvm::Module* nestedM = getCodeGenerator()->ReleaseModule();
+        assert(nestedM && "Cannot be null");
+        assert(NewCurT->getParent()->getModule() == nestedM
+               && "That must belong to the parent");
+        NewCurT->getParent()->setModule(nestedM);
+        
+        //NewCurT->setModule(nestedM);
+        std::stringstream modDesc;
+        modDesc << "Cling Module (cling::Transaction*)" << NewCurT;
+        NewCurT->setModule(new llvm::Module(modDesc.str(),
+                                            *m_Interpreter->getLLVMContext()));
       }
+      // Set codegen module where llvm IR should be emitted.
+      if (hasCodeGenerator())
+        getCodeGenerator()->SetModule(NewCurT->getModule());
       m_Consumer->setTransaction(NewCurT);
+      assert(NewCurT->getModule() && "Cannot be null!");
       return NewCurT;
     }
 
@@ -165,20 +183,37 @@ namespace cling {
       NewCurT->reset();
       NewCurT->setCompilationOpts(Opts);
     }
-    else
+    else {
       NewCurT = new Transaction(Opts);
+      if (hasCodeGenerator()) {
+        llvm::Module* mod = 0;
+        // If this was the very first transaction and we know that we have 
+        // constructed a code generator. The code generator creates a
+        // llvm::Module, which we have to reuse.
+        if (!OldCurT)
+          mod = getCodeGenerator()->ReleaseModule();
+        else {
+          std::stringstream modDesc;
+          modDesc << "Cling Module (cling::Transaction*)" << NewCurT;
+          mod = new llvm::Module(modDesc.str(), 
+                                 OldCurT->getModule()->getContext());
+        }
+        NewCurT->setModule(mod);
+      }
+    }
+    // Set codegen module where llvm IR should be emitted.
+    if (hasCodeGenerator())
+      getCodeGenerator()->SetModule(NewCurT->getModule());
 
     m_Consumer->setTransaction(NewCurT);
 
-    if (!m_FirstTransaction) {
-      m_FirstTransaction = NewCurT;
-      m_LastTransaction = NewCurT;
-    }
-    else if (NewCurT != m_LastTransaction){
-      m_LastTransaction->setNext(NewCurT);
-      m_LastTransaction = NewCurT; // takes the ownership
+    if (NewCurT != getLastTransaction()) {
+      if (getLastTransaction())
+        m_Transactions.back()->setNext(NewCurT);
+      m_Transactions.push_back(NewCurT);
     }
 
+    assert((!hasCodeGenerator() || NewCurT->getModule()) && "Cannot be null!");
     return NewCurT;
   }
 
@@ -210,6 +245,19 @@ namespace cling {
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
+    assert((!hasCodeGenerator() || T->getModule()) && "Must have module!");
+
+    // We have to release the module early. If there was an error codegen
+    // will be in a state ready for another transaction.
+    if (!T->isNestedTransaction()) {
+      llvm::Module* ownedModule = getCodeGenerator()->ReleaseModule();
+      assert (T->getModule() == ownedModule && "Must be the same!");
+    }
+    //If nothing to commit abort early.
+    // if (T->empty()) {
+    //   T->setState(Transaction::kCommitted);
+    //   return;
+    // }
 
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
@@ -283,7 +331,36 @@ namespace cling {
       }
 
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
-      T->setModule(getCodeGenerator()->GetModule());
+
+      // Link to the previous module if not the first llvm::Module
+      if (m_Transactions.size() >= 2) {
+        const Transaction* prevT = m_Transactions[m_Transactions.size()-2];
+        llvm::Module* linkedInModule = prevT->getModule();
+        // Copied from CodeGenAction.cpp
+        std::string ErrorMsg;
+        // We don't want to relink again and again nested transactions, except
+        // the first.
+        llvm::ExecutionEngine* llvmEE = m_Interpreter->getExecutionEngine();
+        //if (!T->isNestedTransaction()) {
+          if (llvm::Linker::LinkModules(/*Dest=*/ T->getModule(), 
+                                        /*Src=*/ linkedInModule, 
+                                        llvm::Linker::PreserveSource,
+                                        &ErrorMsg)) {
+            getCI()->getDiagnostics().Report(diag::err_fe_cannot_link_module)
+              << linkedInModule->getModuleIdentifier() << ErrorMsg;
+          }
+          else {// linking was successfull now fix the execution engine.
+            assert(m_Interpreter->getExecutionEngine() && "Cannot be null");
+            llvmEE->removeModule(prevT->getModule());
+            llvmEE->removeModule(T->getModule());
+            llvmEE->addModule(T->getModule());
+          }
+        }
+        // else { // Nested
+        //   llvmEE->removeModule(T->getModule());
+        //   llvmEE->addModule(T->getModule());
+        // }
+      //     }
 
       // The static initializers might run anything and can thus cause more
       // decls that need to end up in a transaction. But this one is done
@@ -291,7 +368,7 @@ namespace cling {
       T->setState(Transaction::kCommitting);
 
       // run the static initializers that came from codegenning
-      if (m_Interpreter->runStaticInitializersOnce()
+      if (m_Interpreter->runStaticInitializersOnce(*T)
           >= Interpreter::kExeFirstError) {
         // Roll back on error in a transformer
         rollbackTransaction(T);
