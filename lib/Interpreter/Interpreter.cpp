@@ -417,11 +417,8 @@ namespace cling {
     return m_ExecutionContext->getExecutionEngine();
   }
 
-  //FIXME: Kill that interface
   llvm::Module* Interpreter::getModule() const {
-    const Transaction* T = m_IncrParser->getLastTransaction();
-    assert(!T->empty() && "Must not be empty!");
-    return T->getModule();
+    return m_IncrParser->getCodeGenerator()->GetModule();
   }
 
   ///\brief Maybe transform the input line to implement cint command line
@@ -775,7 +772,7 @@ namespace cling {
     using namespace llvm::sys;
     exists = false;
     isDyLib = false;
-    llvm::Module* module = getModule();
+    llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     assert(module && "Module must exist for linking!");
 
     llvm::sys::Path FoundDyLib;
@@ -925,13 +922,12 @@ namespace cling {
   }
 
   Interpreter::ExecutionResult
-  Interpreter::runStaticInitializersOnce(const Transaction& T) const {
-    assert((bool)T.getModule() == m_IncrParser->hasCodeGenerator()
-           && "Must have a valid module.");
+  Interpreter::runStaticInitializersOnce() const {
     // Forward to ExecutionContext; should not be called by
     // anyone except for IncrementalParser.
+    llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     ExecutionContext::ExecutionResult ExeRes
-       = m_ExecutionContext->runStaticInitializersOnce(T.getModule());
+       = m_ExecutionContext->runStaticInitializersOnce(module);
 
     // Reset the module builder to clean up global initializers, c'tors, d'tors
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
@@ -1031,7 +1027,7 @@ namespace cling {
   void* Interpreter::getAddressOfGlobal(const char* SymName,
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
-    llvm::Module* module = getModule();
+    llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     return m_ExecutionContext->getAddressOfGlobal(module, SymName, fromJIT);
   }
 
