@@ -251,7 +251,7 @@ namespace cling {
     ///
     void setParent(Transaction* parent) { m_Parent = parent; }
 
-    bool isNestedTransaction() const { return m_Parent; }
+    bool isNestedTransaction() { return m_Parent; }
     bool hasNestedTransactions() const { return m_NestedTransactions.get(); }
 
     ///\brief Adds nested transaction to the transaction.
@@ -325,7 +325,7 @@ namespace cling {
       return m_Module;
     }
     void setModule(llvm::Module* M) {
-      assert(!isNestedTransaction() && "Must share the parent module.");
+      assert(!isNestedTransaction() && "Must share the parent module.")
       m_Module = M;
     }
 
