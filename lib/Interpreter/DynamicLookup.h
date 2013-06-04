@@ -157,6 +157,10 @@ namespace cling {
     /// \brief Counter used when we need unique names.
     unsigned long long m_UniqueNameCounter;
 
+    /// \brief Counter used when entering/exitting compound stmt. Needed for
+    /// value printing of dynamic expressions.
+    unsigned m_NestedCompoundStmts;
+
   public:
 
     typedef clang::StmtVisitor<EvaluateTSynthesizer, ASTNodeInfo>

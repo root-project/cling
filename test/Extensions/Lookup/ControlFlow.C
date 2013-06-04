@@ -40,3 +40,8 @@ if (h->Add(b, c)) { // runtime result type int
 }
 // CHECK: Sum more than 0!
 
+for (int i = 0; i < 2; ++i) {
+  dependentInLoop->Add(b, c);
+ }
+//CHECK-NOT:(int) 1
+.q
