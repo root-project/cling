@@ -81,7 +81,7 @@ namespace cling {
   }
   void IncrementalParser::Initialize() {
     // pull in PCHs
-    if (hasCodeGenerator())
+    if (getCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
     const std::string& PCHFileName
       = m_CI->getInvocation ().getPreprocessorOpts().ImplicitPCHInclude;
