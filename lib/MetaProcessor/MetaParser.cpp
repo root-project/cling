@@ -159,9 +159,10 @@ namespace cling {
         consumeAnyStringToken();
         m_Actions->actOnComment(getCurTok().getIdent());
       }
+      return true;
     }
 
-    return actionResult == MetaSema::AR_Success;
+    return false;
   }
 
   // ExtraArgList := AnyString [, ExtraArgList]
