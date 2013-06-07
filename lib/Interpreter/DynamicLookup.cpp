@@ -60,7 +60,7 @@ namespace {
           m_Addresses.push_back(Node);
 
           QualType T = Node->getType();
-          SplitQualType T_split = T.split();
+          // SplitQualType T_split = T.split();
           if (!T->isArrayType())
             OS << '*';
 
