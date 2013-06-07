@@ -140,7 +140,6 @@ namespace cling {
    bool MetaParser::isXCommand(StoredValueRef& resultValue,
                                MetaSema::ActionResult& actionResult) {
     resultValue = StoredValueRef();
-    bool result = false;
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident) && (Tok.getIdent().equals("x")
                                || Tok.getIdent().equals("X"))) {
