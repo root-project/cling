@@ -75,9 +75,9 @@ namespace cling {
 
     m_TTransformers.push_back(new AutoSynthesizer(TheSema));
     m_TTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
-    m_TTransformers.push_back(new ReturnSynthesizer(TheSema));
     m_TTransformers.push_back(new ASTDumper());
     m_TTransformers.push_back(new DeclExtractor(TheSema));
+    m_TTransformers.push_back(new ReturnSynthesizer(TheSema));
   }
   void IncrementalParser::Initialize() {
     // pull in PCHs
