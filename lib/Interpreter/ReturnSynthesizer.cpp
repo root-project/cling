@@ -40,6 +40,15 @@ namespace cling {
         // Change the void function's return type
         // We can't PushDeclContext, because we don't have scope.
         Sema::ContextRAII pushedDC(*m_Sema, FD);
+        if (RetTy->isArrayType()) {
+          // Functions cannot return arrays; decay to pointer instead.
+          // Array lifetime should be fine; if it's a definition it will be
+          // extracted.
+          RetTy = FD->getASTContext().getArrayDecayedType(RetTy);
+          lastExpr = m_Sema->ImpCastExprToType(lastExpr, RetTy,
+                                               CK_ArrayToPointerDecay,
+                                               VK_RValue).take();
+        }
         FunctionProtoType::ExtProtoInfo EPI;
         QualType FnTy
           = m_Context->getFunctionType(RetTy, llvm::ArrayRef<QualType>(), EPI);
