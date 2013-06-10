@@ -192,7 +192,10 @@ namespace cling {
                                                      /*SkipFunctionBodies*/false,
                                                      /*isTemp*/true), this));
 
-    m_ExecutionContext.reset(new ExecutionContext());
+    if (m_IncrParser->hasCodeGenerator()) {
+      llvm::Module* theModule = m_IncrParser->getCodeGenerator()->GetModule();
+      m_ExecutionContext.reset(new ExecutionContext(theModule));
+    }
 
     m_IncrParser->Initialize();
 
