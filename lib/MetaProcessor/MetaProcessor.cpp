@@ -11,6 +11,7 @@
 #include "MetaParser.h"
 #include "MetaSema.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/StoredValueRef.h"
 
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/TargetInfo.h"
@@ -37,9 +38,10 @@ namespace cling {
   MetaProcessor::~MetaProcessor() {}
 
   int MetaProcessor::process(const char* input_text,
-                             StoredValueRef& result,
-                             Interpreter::CompilationResult& compRes) {
-    result = StoredValueRef();
+                             Interpreter::CompilationResult& compRes,
+                             StoredValueRef* result) {
+    if (result)
+      *result = StoredValueRef::invalidValue();
     compRes = Interpreter::kSuccess;
     int expectedIndent = m_InputValidator->getExpectedIndent();
     
@@ -56,7 +58,7 @@ namespace cling {
     //  Check for and handle meta commands.
     m_MetaParser->enterNewInputLine(input_line);
     MetaSema::ActionResult actionResult = MetaSema::AR_Success;
-    if (m_MetaParser->isMetaCommand(result, actionResult)) {
+    if (m_MetaParser->isMetaCommand(actionResult, result)) {
 
       if (m_MetaParser->isQuitRequested())
         return -1;
@@ -79,7 +81,7 @@ namespace cling {
     // if (m_Options.RawInput)
     //   compResLocal = m_Interp.declare(input);
     // else
-    compRes = m_Interp.process(input, &result);
+    compRes = m_Interp.process(input, result);
 
     return 0;
   }
@@ -94,8 +96,8 @@ namespace cling {
 
   // Run a file: .x file[(args)]
   bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
-                                  StoredValueRef& result,
-                                  Interpreter::CompilationResult& compRes) {
+                                  Interpreter::CompilationResult& compRes,
+                                  StoredValueRef* result) {
     // Look for start of parameters:
     typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
@@ -113,7 +115,7 @@ namespace cling {
       if (topmost)
         m_TopExecutingFile = m_CurrentlyExecutingFile;
       
-      interpRes = m_Interp.process(expression, &result);
+      interpRes = m_Interp.process(expression, result);
 
       m_CurrentlyExecutingFile = llvm::StringRef();
       if (topmost)
@@ -125,7 +127,7 @@ namespace cling {
 
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
-                                 StoredValueRef& result,
+                                 StoredValueRef* result,
                                  bool ignoreOutmostBlock /*=false*/) {
 
     {
@@ -203,8 +205,8 @@ namespace cling {
     bool topmost = !m_TopExecutingFile.data();
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
-    Interpreter::CompilationResult ret = Interpreter::kSuccess;
-    if (process(content.c_str(), result, ret)) {
+    Interpreter::CompilationResult ret;
+    if (process(content.c_str(), ret, result)) {
       // Input file has to be complete.
        llvm::errs() 
           << "Error in cling::MetaProcessor: file "

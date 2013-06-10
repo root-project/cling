@@ -7,8 +7,6 @@
 #ifndef CLING_META_SEMA_H
 #define CLING_META_SEMA_H
 
-#include "cling/Interpreter/StoredValueRef.h"
-
 namespace llvm {
   class StringRef;
   class raw_ostream;
@@ -20,6 +18,7 @@ namespace llvm {
 namespace cling {
   class Interpreter;
   class MetaProcessor;
+  class StoredValueRef;
 
   ///\brief Semantic analysis for our home-grown language. All implementation 
   /// details of the commands should go here.
@@ -71,7 +70,7 @@ namespace cling {
     ///\param[in] args - The optional list of arguments.
     ///
     ActionResult actOnxCommand(llvm::sys::Path file, llvm::StringRef args, 
-                               StoredValueRef& result);
+                               StoredValueRef* result);
 
     ///\brief Actions to be performed on quit.
     ///
@@ -152,7 +151,7 @@ namespace cling {
     //                          list of parameters.
     ///
     ActionResult actOnShellCommand(llvm::StringRef commandLine,
-                                   StoredValueRef& result) const;
+                                   StoredValueRef* result) const;
   };
 
 } // end namespace cling

@@ -54,9 +54,8 @@ int main( int argc, char **argv ) {
      for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
        std::string line(".x ");
        line += Inputs[I].getFile();
-       cling::StoredValueRef result;
        cling::Interpreter::CompilationResult compRes;
-       ui.getMetaProcessor()->process(line.c_str(), result, compRes);
+       ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
        ret = !CI->getDiagnostics().getClient()->getNumErrors();
      }
    }

@@ -9,8 +9,6 @@
 
 #include "MetaLexer.h" // for cling::Token
 #include "MetaSema.h" // for ActionResult
-#include "cling/Interpreter/StoredValueRef.h"
-
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
 
@@ -24,6 +22,7 @@ namespace llvm {
 namespace cling {
   class MetaLexer;
   class MetaSema;
+  class StoredValueRef;
 
   // Command syntax: MetaCommand := <CommandSymbol><Command>
   //                 CommandSymbol := '.' | '//.'
@@ -65,12 +64,12 @@ namespace cling {
     void skipWhitespace();
 
     bool isCommandSymbol();
-    bool isCommand(StoredValueRef& resultValue,
-                   MetaSema::ActionResult& actionResult);
+    bool isCommand(MetaSema::ActionResult& actionResult,
+                   StoredValueRef* resultValue);
     bool isLCommand(MetaSema::ActionResult& actionResult);
     bool isExtraArgList();
-    bool isXCommand(StoredValueRef& resultValue,
-                    MetaSema::ActionResult& actionResult);
+    bool isXCommand(MetaSema::ActionResult& actionResult,
+                    StoredValueRef* resultValue);
     bool isqCommand();
     bool isUCommand(MetaSema::ActionResult& actionResult);
     bool isICommand();
@@ -83,8 +82,8 @@ namespace cling {
     bool isClassCommand();
     bool isgCommand();
     bool isTypedefCommand();
-    bool isShellCommand(StoredValueRef& resultValue,
-                        MetaSema::ActionResult& actionResult);
+    bool isShellCommand(MetaSema::ActionResult& actionResult,
+                        StoredValueRef* resultValue);
   public:
     MetaParser(MetaSema* Actions);
     void enterNewInputLine(llvm::StringRef Line);
@@ -93,8 +92,8 @@ namespace cling {
     ///
     ///\returns true if it was meta command.
     ///
-    bool isMetaCommand(StoredValueRef& resultValue,
-                       MetaSema::ActionResult& actionResult);
+    bool isMetaCommand(MetaSema::ActionResult& actionResult,
+                       StoredValueRef* resultValue);
 
     ///\brief Returns whether quit was requested via .q command
     ///

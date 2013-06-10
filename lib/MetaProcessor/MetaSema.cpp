@@ -9,6 +9,7 @@
 #include "Display.h"
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/StoredValueRef.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 
 #include "clang/AST/ASTContext.h"
@@ -43,10 +44,10 @@ namespace cling {
 
   MetaSema::ActionResult MetaSema::actOnxCommand(llvm::sys::Path file, 
                                                  llvm::StringRef args, 
-                                                 StoredValueRef& result) {
+                                                 StoredValueRef* result) {
     // Fall back to the meta processor for now.
     Interpreter::CompilationResult compRes = Interpreter::kFailure;
-    m_MetaProcessor.executeFile(file.str(), args.str(), result, compRes);
+    m_MetaProcessor.executeFile(file.str(), args.str(), compRes, result);
     ActionResult actionResult = AR_Failure;
     if (compRes == Interpreter::kSuccess)
        actionResult = AR_Success;
@@ -196,7 +197,7 @@ namespace cling {
   
   MetaSema::ActionResult
   MetaSema::actOnShellCommand(llvm::StringRef commandLine,
-                              StoredValueRef& result) const {
+                              StoredValueRef* result) const {
     llvm::StringRef trimmed(commandLine.trim(" \t\n\v\f\r "));
     if (!trimmed.empty()) {
       int ret = std::system(trimmed.str().c_str());
@@ -206,11 +207,13 @@ namespace cling {
       llvm::GenericValue retGV;
       retGV.IntVal = llvm::APInt(sizeof(int) * 8, ret, true /*isSigned*/);
       Value V(retGV, Ctx.IntTy);
-      result = StoredValueRef::bitwiseCopy(Ctx, V);
+      if (result)
+        *result = StoredValueRef::bitwiseCopy(Ctx, V);
 
       return (ret == 0) ? AR_Success : AR_Failure;
     }
-    result = StoredValueRef();
+    if (result)
+      *result = StoredValueRef();
     // nothing to run - should this be success or failure?
     return AR_Failure;
   }

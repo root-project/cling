@@ -70,9 +70,8 @@ namespace cling {
         break;
       }
 
-      cling::StoredValueRef result;
       cling::Interpreter::CompilationResult compRes;
-      int indent = m_MetaProcessor->process(line.c_str(), result, compRes);
+      int indent = m_MetaProcessor->process(line.c_str(), compRes, 0/*result*/);
       // Quit requested
       if (indent < 0)
         break;

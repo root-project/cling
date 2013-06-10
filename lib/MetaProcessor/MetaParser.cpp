@@ -11,6 +11,7 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
+#include "cling/Interpreter/StoredValueRef.h"
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
@@ -81,9 +82,9 @@ namespace cling {
       consumeToken();
   }
 
-  bool MetaParser::isMetaCommand(StoredValueRef& resultValue,
-                                 MetaSema::ActionResult& actionResult) {
-    return isCommandSymbol() && isCommand(resultValue, actionResult);
+  bool MetaParser::isMetaCommand(MetaSema::ActionResult& actionResult,
+                                 StoredValueRef* resultValue) {
+    return isCommandSymbol() && isCommand(actionResult, resultValue);
   }
 
   bool MetaParser::isQuitRequested() const { 
@@ -99,17 +100,18 @@ namespace cling {
     return true;
   }
 
-  bool MetaParser::isCommand(StoredValueRef& resultValue,
-                             MetaSema::ActionResult& actionResult) {
-    resultValue = StoredValueRef();
+  bool MetaParser::isCommand(MetaSema::ActionResult& actionResult,
+                             StoredValueRef* resultValue) {
+    if (resultValue)
+      *resultValue = StoredValueRef::invalidValue();
     return isLCommand(actionResult)
-      || isXCommand(resultValue, actionResult)
+      || isXCommand(actionResult, resultValue)
       || isqCommand() 
       || isUCommand(actionResult) || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
       || isfileExCommand() || isfilesCommand() || isClassCommand() 
       || isgCommand() || isTypedefCommand()
-      || isShellCommand(resultValue, actionResult);
+      || isShellCommand(actionResult, resultValue);
   }
 
   // L := 'L' FilePath
@@ -137,9 +139,10 @@ namespace cling {
   // FilePath := AnyString
   // ArgList := (ExtraArgList) ' ' [ArgList]
   // ExtraArgList := AnyString [, ExtraArgList]
-   bool MetaParser::isXCommand(StoredValueRef& resultValue,
-                               MetaSema::ActionResult& actionResult) {
-    resultValue = StoredValueRef();
+  bool MetaParser::isXCommand(MetaSema::ActionResult& actionResult,
+                              StoredValueRef* resultValue) {
+    if (resultValue)
+      *resultValue = StoredValueRef::invalidValue();
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident) && (Tok.getIdent().equals("x")
                                || Tok.getIdent().equals("X"))) {
@@ -319,9 +322,10 @@ namespace cling {
     return false;
   }
   
-  bool MetaParser::isShellCommand(StoredValueRef& resultValue,
-                                  MetaSema::ActionResult& actionResult) {
-    resultValue = StoredValueRef();
+  bool MetaParser::isShellCommand(MetaSema::ActionResult& actionResult,
+                                  StoredValueRef* resultValue) {
+    if (resultValue)
+      *resultValue = StoredValueRef::invalidValue();
     actionResult = MetaSema::AR_Failure;
     const Token& Tok = getCurTok();
     if (Tok.is(tok::excl_mark)) {
