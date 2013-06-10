@@ -12,8 +12,9 @@
 
 #include <stdio.h>
 
-
 .rawInput 1
+
+using namespace cling;
 
 void generateNestedTransaction(int depth) {
   if (!depth)
@@ -34,9 +35,9 @@ const cling::Transaction* T = gCling->getFirstTransaction();
 while(T) {
   if (!T->size())
     printf("Empty transaction detected!\n");
-  if (T->getWrapperFD()->getKind() != Decl::Function)
+  if (T->getWrapperFD()->getKind() != clang::Decl::Function)
     printf("Unexpected wrapper kind!\n");
-  if (T->getState != Transaction::kCommitted)
+  if (T->getState() != Transaction::kCommitted)
     printf("Unexpected transaction state!\n");
   //T->printStructure();
   T = T->getNext();
