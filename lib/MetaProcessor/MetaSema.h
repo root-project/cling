@@ -68,6 +68,8 @@ namespace cling {
     ///
     ///\param[in] file - The filename to load.
     ///\param[in] args - The optional list of arguments.
+    ///\param[out] result - If not NULL, will hold the value of the last
+    ///                     expression.
     ///
     ActionResult actOnxCommand(llvm::sys::Path file, llvm::StringRef args, 
                                StoredValueRef* result);
@@ -140,15 +142,14 @@ namespace cling {
     
     ///\brief Prints out information about typedefs.
     ///
-    ///\param[in] typedefName - The name of typedef
-    //                          if empty prints them all.
+    ///\param[in] typedefName - The name of typedef if empty prints them all.
     ///
     void actOnTypedefCommand(llvm::StringRef typedefName) const;
 
     ///\brief '.! cmd [args]' syntax.
     ///
-    ///\param[in] commandLine - shell command + optional
-    //                          list of parameters.
+    ///\param[in] commandLine - shell command + optional list of parameters.
+    ///\param[out] result - if not NULL will hold shell exit code at return.
     ///
     ActionResult actOnShellCommand(llvm::StringRef commandLine,
                                    StoredValueRef* result) const;
