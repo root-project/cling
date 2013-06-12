@@ -24,8 +24,11 @@ namespace cling {
   }
 
   void Transaction::append(DelayCallInfo DCI) {
+    assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
+    assert(getState() == kCollecting && 
+           "Cannot append declarations in current state.");
     if (!DCI.m_DGR.isNull() && getState() == kCommitting) {
-      // We are committing and getting enw decls in.
+      // We are committing and getting new decls in.
       // Move them into a sub transaction that will be processed
       // recursively at the end of of commitTransaction.
       Transaction* subTransactionWhileCommitting = 0;
@@ -45,10 +48,6 @@ namespace cling {
       subTransactionWhileCommitting->append(DCI);
       return;
     }
-
-    assert(DCI.m_DGR.isNull()
-           || (getState() == kCollecting || getState() == kCompleted)
-           || "Cannot append declarations in current state.");
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
     // register the wrapper if any.
