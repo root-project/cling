@@ -19,8 +19,11 @@ namespace cling {
 
   Transaction::~Transaction() {
     if (hasNestedTransactions())
-      for (size_t i = 0; i < m_NestedTransactions->size(); ++i)
+      for (size_t i = 0; i < m_NestedTransactions->size(); ++i) {
+        assert((*m_NestedTransactions)[i]->getState() == kCommitted 
+               && "All nested transactions must be committed!");
         delete (*m_NestedTransactions)[i];
+      }
   }
 
   void Transaction::append(DelayCallInfo DCI) {
