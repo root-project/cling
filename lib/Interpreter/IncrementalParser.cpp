@@ -260,6 +260,16 @@ namespace cling {
     if (forceCodeGen)
       Opts.EmitAllDecls = 1;
 
+    // Here we expect a template instantiation. We need to open the transaction
+    // that we are currently work with.
+    Transaction::State oldState = T->getState();
+    T->setState(Transaction::kCollecting);
+    // Pull all template instantiations in that came from the consumers.
+    getCI()->getSema().PerformPendingInstantiations();
+    T->setState(oldState);
+
+    m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
+
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // codegen the transaction
       for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {

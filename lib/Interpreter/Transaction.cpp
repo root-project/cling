@@ -30,6 +30,11 @@ namespace cling {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
     assert(getState() == kCollecting
            && "Cannot append declarations in current state.");
+    forceAppend(DCI);
+  }
+
+  void Transaction::forceAppend(DelayCallInfo DCI) {
+    assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
     if (!DCI.m_DGR.isNull() && getState() == kCommitting) {
       // We are committing and getting new decls in.
       // Move them into a sub transaction that will be processed
@@ -74,6 +79,10 @@ namespace cling {
 
   void Transaction::append(Decl* D) {
     append(DeclGroupRef(D));
+  }
+
+  void Transaction::forceAppend(Decl* D) {
+    forceAppend(DelayCallInfo(DeclGroupRef(D), kCCIHandleTopLevelDecl));
   }
   
   void Transaction::erase(size_t pos) {

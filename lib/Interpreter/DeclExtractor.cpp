@@ -66,7 +66,8 @@ namespace cling {
             Stmts.clear();
           }
 
-          getTransaction()->append(ND);
+          // We know the transaction is closed, but it is safe.
+          getTransaction()->forceAppend(ND);
 
           DeclContext* OldDC = ND->getDeclContext();
 
@@ -86,7 +87,8 @@ namespace cling {
           if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
             VD->setStorageClass(SC_None);
           }
-          // force recalc of the linkage (to external)
+          // Remove the linkage cache. On next access it will calculate it
+          // considering the new possition of the declaration.
           ND->ClearLinkageCache();
 
           TouchedDecls.push_back(ND);
@@ -171,7 +173,8 @@ namespace cling {
       CompoundStmt* CS = new (*m_Context)CompoundStmt(*m_Context, StmtsRef,
                                                       Loc, Loc);
       FD->setBody(CS);
-      getTransaction()->append(FD); // Add it to the transaction for codegenning
+      // We know the transaction is closed, but it is safe.
+      getTransaction()->forceAppend(FD);
 
       // Create the VarDecl with the init      
       std::string VarName = "__vd";
@@ -189,7 +192,9 @@ namespace cling {
                                             MultiExprArg(), Loc).take();
       assert(VD && TheCall && "Missing VD or its init!");
       VD->setInit(TheCall);
-      getTransaction()->append(VD); // Add it to the transaction for codegenning
+
+      // We know the transaction is closed, but it is safe.
+      getTransaction()->forceAppend(VD); // Add it to the transaction for codegenning
       TUDC->addHiddenDecl(VD);
       return;
     }

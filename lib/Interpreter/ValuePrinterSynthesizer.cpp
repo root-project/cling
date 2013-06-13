@@ -200,8 +200,14 @@ namespace cling {
     CallArgs.push_back(E);
 
     Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
+
+    // Here we expect a template instantiation. We need to open the transaction
+    // that we are currently work with.
+    Transaction::State oldState = getTransaction()->getState();
+    getTransaction()->setState(Transaction::kCollecting);
     Expr* Result = m_Sema->ActOnCallExpr(S, UnresolvedLookup, NoSLoc,
                                          CallArgs, NoSLoc).take();
+    getTransaction()->setState(oldState);
 
     Result = m_Sema->ActOnFinishFullExpr(Result).take();
     if (NeedsCleanup && !isa<ExprWithCleanups>(Result)) {

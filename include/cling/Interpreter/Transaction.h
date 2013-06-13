@@ -295,10 +295,16 @@ namespace cling {
         && (!m_NestedTransactions || m_NestedTransactions->empty());
     }
 
-    ///\brief Appends a declaration group and source from which consumer interface it
-    /// came from to the transaction.
+    ///\brief Appends a declaration group and source from which consumer 
+    /// interface it came from to the transaction.
     ///
     void append(DelayCallInfo DCI);
+
+    ///\brief Appends a declaration group to a transaction even if it was 
+    /// completed and ready for codegenning.
+    /// NOTE: Please use with caution!
+    ///
+    void forceAppend(DelayCallInfo DCI);
 
     ///\brief Appends the declaration group to the transaction as if it was 
     /// seen through HandleTopLevelDecl.
@@ -309,6 +315,13 @@ namespace cling {
     /// the transaction as if it was seen through HandleTopLevelDecl.
     ///
     void append(clang::Decl* D);
+
+    ///\brief Wraps the declaration into declaration group and appends it to 
+    /// the transaction as if it was seen through HandleTopLevelDecl,  even if 
+    /// it was completed and ready for codegenning.
+    /// NOTE: Please use with caution!
+    ///
+    void forceAppend(clang::Decl *D);
 
     ///\brief Clears all declarations in the transaction.
     ///
