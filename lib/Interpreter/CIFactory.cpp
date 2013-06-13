@@ -198,6 +198,12 @@ namespace cling {
       SetClingCustomLangOpts(CI->getLangOpts());
 
       CI->getInvocation().getPreprocessorOpts().addMacroDef("__CLING__");
+      if (CI->getLangOpts().CPlusPlus11 == 1) {
+        // http://llvm.org/bugs/show_bug.cgi?id=13530
+        CI->getInvocation().getPreprocessorOpts()
+          .addMacroDef("__CLING__CXX11");
+      }
+
       if (CI->getDiagnostics().hasErrorOccurred()) {
         delete CI;
         CI = 0;
@@ -286,6 +292,7 @@ namespace cling {
                                                  // the JIT to crash
     // When asserts are on, TURN ON not compare the VerifyModule
     assert(CI->getCodeGenOpts().VerifyModule = 1);
+
     return CI;
   }
 
