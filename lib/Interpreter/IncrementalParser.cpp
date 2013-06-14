@@ -6,6 +6,7 @@
 
 #include "IncrementalParser.h"
 #include "ASTDumper.h"
+#include "IRDumper.h"
 #include "ASTNodeEraser.h"
 #include "AutoSynthesizer.h"
 #include "DeclCollector.h"
@@ -76,6 +77,7 @@ namespace cling {
     m_TTransformers.push_back(new AutoSynthesizer(TheSema));
     m_TTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
     m_TTransformers.push_back(new ASTDumper());
+    m_TTransformers.push_back(new IRDumper());
     m_TTransformers.push_back(new DeclExtractor(TheSema));
     m_TTransformers.push_back(new ReturnSynthesizer(TheSema));
   }
