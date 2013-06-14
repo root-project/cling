@@ -20,13 +20,8 @@ namespace cling {
 
   // TODO : This is not really a transformer. Factor out.
   class IRDumper : public TransactionTransformer {
-
-  private:
-    bool m_Dump;
-
   public:
-    IRDumper(bool Dump = false)
-      : TransactionTransformer(0), m_Dump(Dump) { }
+    IRDumper() : TransactionTransformer(0) { }
     virtual ~IRDumper();
 
     virtual void Transform();

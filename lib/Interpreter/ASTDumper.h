@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id$
+// version: $Id: 27217adceba602502bdfdd8a756fbbc017f275fa $
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
 //------------------------------------------------------------------------------
 
@@ -19,13 +19,8 @@ namespace cling {
 
   // TODO : This is not really a transformer. Factor out.
   class ASTDumper : public TransactionTransformer {
-
-  private:
-    bool m_Dump;
-
   public:
-    ASTDumper(bool Dump = false)
-      : TransactionTransformer(0), m_Dump(Dump) { }
+    ASTDumper() : TransactionTransformer(0) { }
     virtual ~ASTDumper();
 
     virtual void Transform();
