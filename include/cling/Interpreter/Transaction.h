@@ -263,10 +263,15 @@ namespace cling {
       if (!m_NestedTransactions)
         m_NestedTransactions.reset(new NestedTransactions());
 
+      // Lazy create the container on first append.
+      if (!m_DeclQueue)
+        m_DeclQueue.reset(new DeclQueue());
+
       nested->setParent(this);
       // Leave a marker in the parent transaction, where the nested transaction
-      // started.    
-      append(DelayCallInfo(clang::DeclGroupRef(), Transaction::kCCINone));
+      // started.
+      DelayCallInfo marker(clang::DeclGroupRef(), Transaction::kCCINone);
+      m_DeclQueue->push_back(marker);
       m_NestedTransactions->push_back(nested);
     }
 
