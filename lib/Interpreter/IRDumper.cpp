@@ -18,7 +18,7 @@ namespace cling {
 
 
   void IRDumper::Transform() {
-    if (!getTransaction()->getCompilationOpts().Debug)
+    if (!getTransaction()->getCompilationOpts().IRDebug)
       return;
 
     // FIXME: Size might change in the loop!

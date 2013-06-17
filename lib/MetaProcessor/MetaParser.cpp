@@ -110,7 +110,7 @@ namespace cling {
       || isUCommand(actionResult) || isICommand() || israwInputCommand() 
       || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
       || isfileExCommand() || isfilesCommand() || isClassCommand() 
-      || isgCommand() || isTypedefCommand()
+      || isgCommand() || isTypedefCommand() || isprintIRCommand()
       || isShellCommand(actionResult, resultValue);
   }
 
@@ -228,6 +228,20 @@ namespace cling {
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
       m_Actions->actOnprintASTCommand(mode);
+      return true;
+    }
+    return false;
+  }
+
+  bool MetaParser::isprintIRCommand() {
+    if (getCurTok().is(tok::ident) &&
+        getCurTok().getIdent().equals("printIR")) {
+      MetaSema::SwitchMode mode = MetaSema::kToggle;
+      consumeToken();
+      skipWhitespace();
+      if (getCurTok().is(tok::constant))
+        mode = (MetaSema::SwitchMode)getCurTok().getConstant();
+      m_Actions->actOnprintIRCommand(mode);
       return true;
     }
     return false;

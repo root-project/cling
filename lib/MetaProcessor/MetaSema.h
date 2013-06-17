@@ -103,6 +103,12 @@ namespace cling {
     ///
     void actOnprintASTCommand(SwitchMode mode = kToggle) const;
 
+    ///\brief Prints out the IR representation of the input.
+    ///
+    ///\param[in] mode - either on/off or toggle.
+    ///
+    void actOnprintIRCommand(SwitchMode mode = kToggle) const;
+
     ///\brief Switches on/off the experimental dynamic extensions (dynamic 
     /// scopes) and late binding.
     ///

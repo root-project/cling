@@ -39,6 +39,10 @@ namespace cling {
     ///
     unsigned Debug : 1;
 
+    ///\brief Whether or not to print IR information on the fly
+    ///
+    unsigned IRDebug : 1;
+
     ///\brief Whether or not to generate executable (LLVM IR) code for the input
     /// or to cache the incoming declarations in a queue
     ///
@@ -55,6 +59,7 @@ namespace cling {
       ResultEvaluation = 0;
       DynamicScoping = 0;
       Debug = 0;
+      IRDebug = 0;
       CodeGeneration = 1;
       CodeGenerationForModule = 0;
     }
@@ -66,6 +71,7 @@ namespace cling {
         ResultEvaluation      == Other.ResultEvaluation &&
         DynamicScoping        == Other.DynamicScoping &&
         Debug                 == Other.Debug &&
+        IRDebug               == Other.IRDebug &&
         CodeGeneration        == Other.CodeGeneration &&
         CodeGenerationForModule == Other.CodeGenerationForModule;
     }
@@ -76,6 +82,7 @@ namespace cling {
         ResultEvaluation      != Other.ResultEvaluation ||
         DynamicScoping        != Other.DynamicScoping ||
         Debug                 != Other.Debug ||
+        IRDebug               != Other.IRDebug ||
         CodeGeneration        != Other.CodeGeneration ||
         CodeGenerationForModule != Other.CodeGenerationForModule;
     }

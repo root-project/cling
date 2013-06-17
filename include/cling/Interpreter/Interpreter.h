@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id$
+// version: $Id: cd58ec48f1f279a480adfbf866320fc658a41b2d $
 // author:  Lukasz Janyst <ljanyst@cern.ch>
 //------------------------------------------------------------------------------
 
@@ -205,6 +205,10 @@ namespace cling {
     ///\brief Flag toggling the AST printing on or off.
     ///
     bool m_PrintAST;
+
+    ///\brief Flag toggling the AST printing on or off.
+    ///
+    bool m_PrintIR;
 
     ///\brief Flag toggling the dynamic scopes on or off.
     ///
@@ -605,6 +609,9 @@ namespace cling {
 
     bool isPrintingAST() const { return m_PrintAST; }
     void enablePrintAST(bool print = true) { m_PrintAST = print; }
+
+    bool isPrintingIR() const { return m_PrintIR; }
+    void enablePrintIR(bool print = true) { m_PrintIR = print; }
 
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() const { return m_DynamicLookupEnabled; }

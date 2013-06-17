@@ -30,7 +30,7 @@ namespace cling {
   //                            ICommand | RawInputCommand | PrintASTCommand
   //                            DynamicExtensionsCommand | HelpCommand |
   //                            FileExCommand | FilesCommand | ClassCommand |
-  //                            GCommand
+  //                            GCommand | PrintIRCommand
   //                 LCommand := 'L' FilePath
   //                 qCommand := 'q'
   //                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
@@ -38,6 +38,7 @@ namespace cling {
   //                 ICommand := 'I' [FilePath]
   //                 RawInputCommand := 'rawInput' [Constant]
   //                 PrintASTCommand := 'printAST' [Constant]
+  //                 PrintIRCommand := 'printIR' [Constant]
   //                 DynamicExtensionsCommand := 'dynamicExtensions' [Constant]
   //                 HelpCommand := 'help'
   //                 FileExCommand := 'fileEx'
@@ -75,6 +76,7 @@ namespace cling {
     bool isICommand();
     bool israwInputCommand();
     bool isprintASTCommand();
+    bool isprintIRCommand();
     bool isdynamicExtensionsCommand();
     bool ishelpCommand();
     bool isfileExCommand();

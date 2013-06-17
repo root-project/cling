@@ -167,7 +167,7 @@ namespace cling {
 
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
-    m_UniqueCounter(0), m_PrintAST(false), m_DynamicLookupEnabled(false), 
+    m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), m_DynamicLookupEnabled(false), 
     m_RawInputEnabled(false), m_CallbackAdaptor(0) {
 
     m_DyLibs.reset(new DynLibSetImpl());
@@ -436,6 +436,7 @@ namespace cling {
     CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
+    CO.IRDebug = isPrintingIR();
 
     if (EvaluateInternal(input, CO, V) == Interpreter::kFailure) {
       if (D)
@@ -458,6 +459,7 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
+    CO.IRDebug = isPrintingIR();
 
     return DeclareInternal(input, CO);
   }
@@ -507,6 +509,7 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
+    CO.IRDebug = isPrintingIR();
     
     // When doing parseForModule avoid warning about the user code
     // being loaded ... we probably might as well extend this to
@@ -526,6 +529,7 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
+    CO.IRDebug = isPrintingIR();
 
     return DeclareInternal(input, CO, D);
   }
@@ -562,6 +566,7 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = 0;
     CO.Debug = isPrintingAST();
+    CO.IRDebug = isPrintingIR();
 
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
