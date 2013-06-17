@@ -749,6 +749,12 @@ namespace cling {
                                 MultiLevelTemplateArgumentList(TemplateArgs));
 
     FunctionDecl* Fn = dyn_cast<FunctionDecl>(D);
+
+    // We expect incoming declarations (instantiations) and we
+    // need to open the transaction to collect them.
+    Transaction::State oldState = getTransaction()->getState();
+    getTransaction()->setState(Transaction::kCollecting);
+
     // Creates new body of the substituted declaration
     m_Sema->InstantiateFunctionDefinition(Fn->getLocation(), Fn, true, true);
 
@@ -766,6 +772,8 @@ namespace cling {
                                                 VK_RValue,
                                                 m_NoSLoc
                                                 ).takeAs<DeclRefExpr>();
+
+    getTransaction()->setState(oldState);
 
     // TODO: Figure out a way to avoid passing in wrong source locations
     // of the symbol being replaced. This is important when we calculate the
