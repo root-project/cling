@@ -130,7 +130,9 @@ namespace cling {
     const Transaction* T = getFirstTransaction();
     const Transaction* nextT = 0;
     while (T) {
-      assert(T->getState() == Transaction::kCommitted && "Not committed?");
+      assert((T->getState() == Transaction::kCommitted 
+              || T->getState() == Transaction::kRolledBack)
+             && "Not committed?");
       nextT = T->getNext();
       delete T;
       T = nextT;
