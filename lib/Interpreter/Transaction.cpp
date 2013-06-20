@@ -26,6 +26,41 @@ namespace cling {
       }
   }
 
+  void Transaction::removeNestedTransaction(Transaction* nested) {
+    assert(hasNestedTransactions() && "Does not contain nested transactions");
+    int nestedPos = -1;
+    for (size_t i = 0; i < m_NestedTransactions->size(); ++i)
+      if ((*m_NestedTransactions)[i] == nested) {
+        nestedPos = i;
+        break;
+      }
+    assert(nestedPos > -1 && "Not found!?");
+    m_NestedTransactions->erase(m_NestedTransactions->begin() + nestedPos);
+    // We need to remove the marker too.
+    for (size_t i = 0; i < size(); ++i) {
+      if ((*this)[i].m_DGR.isNull())
+        --nestedPos;
+      if (!nestedPos) {
+        erase(i);
+        break;
+      }
+    }
+  }
+
+  void Transaction::reset() {
+    assert(empty() && "The transaction must be empty.");
+    if (Transaction* parent = getParent())
+      parent->removeNestedTransaction(this);
+    m_Parent = 0;
+    m_State = kCollecting;
+    m_IssuedDiags = kNone;
+    m_Opts = CompilationOptions();
+    //m_Module = 0; <- NOTE: we want to reuse the empty module
+    m_WrapperFD = 0;
+    m_Next = 0;
+  }
+
+ 
   void Transaction::append(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
     assert(getState() == kCollecting

@@ -275,6 +275,12 @@ namespace cling {
       m_NestedTransactions->push_back(nested);
     }
 
+    ///\brief Removes a nested transaction.
+    ///
+    ///\param[in] nested - The transaction to be removed.
+    ///
+    void removeNestedTransaction(Transaction* nested);
+
     Transaction* getLastNestedTransaction() const {
       if (!hasNestedTransactions())
         return 0;
@@ -350,16 +356,7 @@ namespace cling {
 
     ///\brief Resets empty transaction so that it could be reused.
     /// 
-    void reset() {
-      assert(empty() && "The transaction must be empty.");
-      m_Parent = 0;
-      m_State = kCollecting;
-      m_IssuedDiags = kNone;
-      m_Opts = CompilationOptions();
-      m_Module = 0;
-      m_WrapperFD = 0;
-      m_Next = 0;
-    }
+    void reset();
 
     ///\brief Prints out all the declarations in the transaction.
     ///
