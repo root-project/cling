@@ -590,7 +590,8 @@ namespace cling {
   }
 
   Interpreter::CompilationResult Interpreter::codegen(Transaction* T) {
-    m_IncrParser->commitTransaction(T);
+    // FIXME: move this into the transaction's CompOpts.
+    m_IncrParser->commitTransaction(T, /*forceCodeGen*/ true);
     if (T->getState() == Transaction::kCommitted)
       return Interpreter::kSuccess;
     return Interpreter::kFailure;

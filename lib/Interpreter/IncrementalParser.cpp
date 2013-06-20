@@ -206,7 +206,8 @@ namespace cling {
     return T;
   }
 
-  void IncrementalParser::commitTransaction(Transaction* T) {
+  void IncrementalParser::commitTransaction(Transaction* T,
+                                            bool forceCodeGen /*=false*/) {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
@@ -227,27 +228,35 @@ namespace cling {
 
     if (hasCodeGenerator())
       T->setModule(getCodeGenerator()->GetModule());
-    // We are sure it's safe to pipe it through the transformers
+
     bool success = true;
-    for (size_t i = 0; i < m_TTransformers.size(); ++i) {
-      success = m_TTransformers[i]->TransformTransaction(*T);
-      if (!success) {
-        break;
+    if (!forceCodeGen) {
+      // We are sure it's safe to pipe it through the transformers
+      for (size_t i = 0; !forceCodeGen && i < m_TTransformers.size(); ++i) {
+        success = m_TTransformers[i]->TransformTransaction(*T);
+        if (!success) {
+          break;
+        }
       }
+
+      m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
+
+      if (!success) {
+        // Roll back on error in a transformer
+        rollbackTransaction(T);
+        return;
+      }
+
+      // Pull all template instantiations in that came from the consumers.
+      getCI()->getSema().PerformPendingInstantiations();
+
+      m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
     }
 
-    m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
-
-    if (!success) {
-      // Roll back on error in a transformer
-      rollbackTransaction(T);
-      return;
-    }
-
-    // Pull all template instantiations in that came from the consumers.
-    getCI()->getSema().PerformPendingInstantiations();
-
-    m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
+    LangOptions& Opts = m_CI->getLangOpts();
+    int EmitAllDeclsPrev = Opts.EmitAllDecls;
+    if (forceCodeGen)
+      Opts.EmitAllDecls = 1;
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
       // codegen the transaction
@@ -302,19 +311,24 @@ namespace cling {
     } else
       T->setState(Transaction::kCommitting);
 
-    InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
+    if (forceCodeGen)
+      Opts.EmitAllDecls = EmitAllDeclsPrev;
 
-    if (callbacks) {
-      callbacks->TransactionCommitted(*T);
-    }
-    if (T->hasNestedTransactions()) {
-      Transaction* SubTransactionWhileCommitting = *T->rnested_begin();
-      if (SubTransactionWhileCommitting->getState()
-          == Transaction::kCollecting) {
-        // A nested transaction was created while committing this
-        // transaction; commit it now.
-        SubTransactionWhileCommitting->setState(Transaction::kCompleted);
-        commitTransaction(SubTransactionWhileCommitting);
+    if (!forceCodeGen) {
+      InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
+
+      if (callbacks) {
+        callbacks->TransactionCommitted(*T);
+      }
+      if (T->hasNestedTransactions()) {
+        Transaction* SubTransactionWhileCommitting = *T->rnested_begin();
+        if (SubTransactionWhileCommitting->getState()
+            == Transaction::kCollecting) {
+          // A nested transaction was created while committing this
+          // transaction; commit it now.
+          SubTransactionWhileCommitting->setState(Transaction::kCompleted);
+          commitTransaction(SubTransactionWhileCommitting);
+        }
       }
     }
 

@@ -110,7 +110,12 @@ namespace cling {
     ///\brief Commits a transaction if it was compete. I.e pipes it 
     /// through the consumer chain, including codegen.
     ///
-    void commitTransaction(Transaction* T);
+    ///\param[in] T - the tranmsaction to be committed
+    ///\param[in] forceCodegen - whether to only invoke codegen (but no
+    ///           transformers or callbacks) and set the EmitAllDecls
+    ///           language option.
+    ///
+    void commitTransaction(Transaction* T, bool forceCodeGen = false);
 
     ///\brief Reverts the AST into its previous state.
     ///
