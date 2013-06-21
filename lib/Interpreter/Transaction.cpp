@@ -70,6 +70,17 @@ namespace cling {
 
   void Transaction::forceAppend(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
+
+    // Lazy create the container on first append.
+    if (!m_DeclQueue)
+      m_DeclQueue.reset(new DeclQueue());
+
+#ifdef NDEBUG
+    // Check for duplicates
+    for (size_t i = 0, e = m_DeclQueue->size(); i < e; ++i)
+      assert((*m_DeclsQueue)[i] != DCI && "Duplicates?!");
+#endif
+
     if (!DCI.m_DGR.isNull() && getState() == kCommitting) {
       // We are committing and getting new decls in.
       // Move them into a sub transaction that will be processed
@@ -101,10 +112,6 @@ namespace cling {
           m_WrapperFD = FD;
         }
     }
-
-    // Lazy create the container on first append.
-    if (!m_DeclQueue)
-      m_DeclQueue.reset(new DeclQueue());
     m_DeclQueue->push_back(DCI);
   }
 
