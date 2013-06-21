@@ -58,6 +58,11 @@ ifeq ($(CTORSINITARRAY),yes)
 CLINGLDFLAGSEXTRA := -Wl,--no-ctors-in-init-array
 endif
 
+# Define NDEBUG for consistency with llvm and clang.
+ifeq ($(ROOTBUILD),debug)
+CLINGCXXFLAGS += -DNDEBUG
+endif
+
 ifeq ($(ARCH),win32gcc)
 # Hide llvm / clang symbols:
 CLINGLDFLAGSEXTRA += -Wl,--exclude-libs,ALL 
