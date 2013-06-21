@@ -56,6 +56,13 @@ namespace cling {
       ConsumerCallInfo m_Call;
       DelayCallInfo(clang::DeclGroupRef DGR, ConsumerCallInfo CCI)
         : m_DGR(DGR), m_Call(CCI) {}
+      inline bool operator==(const DelayCallInfo& rhs) {
+        return m_DGR.getAsOpaquePtr() == rhs.m_DGR.getAsOpaquePtr()
+          && m_Call == rhs.m_Call;
+      }
+      inline bool operator!=(const DelayCallInfo& rhs) {
+        return !operator==(rhs);
+      }
     };
 
   private:
