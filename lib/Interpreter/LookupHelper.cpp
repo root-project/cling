@@ -429,8 +429,9 @@ namespace cling {
           VK = VK_LValue;
         }
         clang::QualType NonRefQT(QT.getNonReferenceType());
-        Expr* val = new (Context) OpaqueValueExpr(SourceLocation(), NonRefQT,
-          VK);
+        Expr* val
+          = new (Context) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
+                                          NonRefQT, VK);
         GivenArgs.push_back(val);
       }
       // Type names should be comma separated.
