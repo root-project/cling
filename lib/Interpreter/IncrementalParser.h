@@ -111,7 +111,7 @@ namespace cling {
     /// through the consumer chain, including codegen.
     ///
     ///\param[in] T - the tranmsaction to be committed
-    ///\param[in] forceCodegen - whether to only invoke codegen (but no
+    ///\param[in] forceCodeGen - whether to only invoke codegen (but no
     ///           transformers or callbacks) and set the EmitAllDecls
     ///           language option.
     ///
