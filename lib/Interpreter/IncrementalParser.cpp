@@ -269,8 +269,8 @@ namespace cling {
 
     LangOptions& Opts = m_CI->getLangOpts();
     int EmitAllDeclsPrev = Opts.EmitAllDecls;
-    if (forceCodeGen)
-      Opts.EmitAllDecls = 1;
+    //if (forceCodeGen)
+    //  Opts.EmitAllDecls = 1;
 
     // Here we expect a template instantiation. We need to open the transaction
     // that we are currently work with.
@@ -287,6 +287,15 @@ namespace cling {
       for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
         // Copy DCI; it might get relocated below.
         Transaction::DelayCallInfo I = (*T)[Idx];
+
+        if (forceCodeGen) {
+          assert(I.m_DGR.isSingleDecl());
+          Decl* D = I.m_DGR.getSingleDecl();
+          D->addAttr(::new (D->getASTContext())
+                     clang::UsedAttr(D->getSourceRange(), D->getASTContext(),
+                                     0/*AttributeSpellingListIndex*/));
+        }
+
         if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
           getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
         else if (I.m_Call == Transaction::kCCIHandleInterestingDecl) {
