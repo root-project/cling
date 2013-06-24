@@ -46,8 +46,7 @@ namespace cling {
   IncrementalParser::IncrementalParser(Interpreter* interp,
                                        int argc, const char* const *argv,
                                        const char* llvmdir):
-    m_Interpreter(interp), m_Consumer(0), m_FirstTransaction(0), 
-    m_LastTransaction(0) {
+    m_Interpreter(interp), m_Consumer(0) {
 
     CompilerInstance* CI
       = CIFactory::createCI(0, argc, argv, llvmdir);
@@ -175,15 +174,11 @@ namespace cling {
 
     m_Consumer->setTransaction(NewCurT);
 
-    if (!m_FirstTransaction) {
-      m_FirstTransaction = NewCurT;
-      m_LastTransaction = NewCurT;
+    if (NewCurT != getLastTransaction()) {
+      if (getLastTransaction())
+        m_Transactions.back()->setNext(NewCurT);
+      m_Transactions.push_back(NewCurT);
     }
-    else if (NewCurT != m_LastTransaction){
-      m_LastTransaction->setNext(NewCurT);
-      m_LastTransaction = NewCurT; // takes the ownership
-    }
-
     return NewCurT;
   }
 
