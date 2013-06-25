@@ -113,15 +113,18 @@ namespace cling {
     ///
     Transaction* endTransaction(Transaction* T) const;
 
-    ///\brief Commits a transaction if it was compete. I.e pipes it 
+    ///\brief Commits a transaction if it was complete. I.e pipes it 
     /// through the consumer chain, including codegen.
     ///
-    ///\param[in] T - the tranmsaction to be committed
-    ///\param[in] forceCodeGen - whether to only invoke codegen (but no
-    ///           transformers or callbacks) and set the EmitAllDecls
-    ///           language option.
+    ///\param[in] T - the transaction to be committed
     ///
-    void commitTransaction(Transaction* T, bool forceCodeGen = false);
+    void commitTransaction(Transaction* T);
+
+    ///\brief Runs the consumers (e.g. CodeGen) on a transaction.
+    ///
+    ///\param[in] T - the transaction to be consumed
+    ///
+    void codeGenTransaction(Transaction* T);
 
     ///\brief Reverts the AST into its previous state.
     ///
@@ -185,6 +188,12 @@ namespace cling {
     Transaction* Parse(llvm::StringRef input, const CompilationOptions& Opts);
 
     void unloadTransaction(Transaction* T);
+
+    ///\brief Adds a UsedAttr to all decls in the transaction.
+    ///
+    ///\param[in] T - the transaction for which all decls will get a UsedAttr.
+    ///
+    void markWholeTransactionAsUsed(Transaction* T);
 
   private:
     void CreateSLocOffsetGenerator();

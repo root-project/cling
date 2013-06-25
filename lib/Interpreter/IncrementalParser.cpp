@@ -211,8 +211,7 @@ namespace cling {
     return T;
   }
 
-  void IncrementalParser::commitTransaction(Transaction* T,
-                                            bool forceCodeGen /*=false*/) {
+  void IncrementalParser::commitTransaction(Transaction* T) {
     //Transaction* CurT = m_Consumer->getTransaction();
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
@@ -220,9 +219,8 @@ namespace cling {
 
     // If committing a nested transaction the active one should be its parent
     // from now on.
-    if (T->isNestedTransaction()) {
+    if (T->isNestedTransaction())
       m_Consumer->setTransaction(T->getParent());
-    }
 
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
@@ -237,40 +235,30 @@ namespace cling {
           commitTransaction(*I);
     }
 
-    if (hasCodeGenerator())
-      T->setModule(getCodeGenerator()->GetModule());
-
     bool success = true;
-    if (!forceCodeGen) {
-      // We are sure it's safe to pipe it through the transformers
-      for (size_t i = 0; !forceCodeGen && i < m_ASTTransformers.size(); ++i) {
-        success = m_ASTTransformers[i]->TransformTransaction(*T);
-        if (!success) {
-          break;
-        }
-      }
-
-      m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
-
+    // We are sure it's safe to pipe it through the transformers
+    for (size_t i = 0; i < m_ASTTransformers.size(); ++i) {
+      success = m_ASTTransformers[i]->TransformTransaction(*T);
       if (!success) {
-        // Roll back on error in a transformer
-        rollbackTransaction(T);
-        return;
+        break;
       }
-
-      // Pull all template instantiations in that came from the consumers.
-      Transaction::State oldState = T->getState();
-      T->setState(Transaction::kCollecting);
-      getCI()->getSema().PerformPendingInstantiations();
-      T->setState(oldState);
-
-      m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
     }
 
-    LangOptions& Opts = m_CI->getLangOpts();
-    int EmitAllDeclsPrev = Opts.EmitAllDecls;
-    //if (forceCodeGen)
-    //  Opts.EmitAllDecls = 1;
+    m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
+
+    if (!success) {
+      // Roll back on error in a transformer
+      rollbackTransaction(T);
+      return;
+    }
+
+    // Pull all template instantiations in that came from the consumers.
+    Transaction::State oldState = T->getState();
+    T->setState(Transaction::kCollecting);
+    getCI()->getSema().PerformPendingInstantiations();
+    T->setState(oldState);
+
+    m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
     // Here we expect a template instantiation. We need to open the transaction
     // that we are currently work with.
@@ -283,84 +271,23 @@ namespace cling {
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
-      // codegen the transaction
-      for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
-        // Copy DCI; it might get relocated below.
-        Transaction::DelayCallInfo I = (*T)[Idx];
-
-        if (forceCodeGen) {
-          assert(I.m_DGR.isSingleDecl());
-          Decl* D = I.m_DGR.getSingleDecl();
-          D->addAttr(::new (D->getASTContext())
-                     clang::UsedAttr(D->getSourceRange(), D->getASTContext(),
-                                     0/*AttributeSpellingListIndex*/));
-        }
-
-        if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
-          getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
-        else if (I.m_Call == Transaction::kCCIHandleInterestingDecl) {
-          // Usually through BackendConsumer which doesn't implement
-          // HandleInterestingDecl() and thus calls
-          // ASTConsumer::HandleInterestingDecl()
-          getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
-        } else if(I.m_Call == Transaction::kCCIHandleTagDeclDefinition) {
-          TagDecl* TD = cast<TagDecl>(I.m_DGR.getSingleDecl());
-          getCodeGenerator()->HandleTagDeclDefinition(TD);
-        }
-        else if (I.m_Call == Transaction::kCCIHandleVTable) {
-          CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I.m_DGR.getSingleDecl());
-          getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
-        }
-        else if (I.m_Call
-                 == Transaction::kCCIHandleCXXImplicitFunctionInstantiation) {
-          FunctionDecl* FD = cast<FunctionDecl>(I.m_DGR.getSingleDecl());
-          getCodeGenerator()->HandleCXXImplicitFunctionInstantiation(FD);
-        }
-        else if (I.m_Call
-                 == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
-          VarDecl* VD = cast<VarDecl>(I.m_DGR.getSingleDecl());
-          getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
-        }
-        else if (I.m_Call == Transaction::kCCINone)
-          ; // We use that internally as delimiter in the Transaction.
-        else
-          llvm_unreachable("We shouldn't have decl without call info.");
-      }
-
-      getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
-
-      // Transform IR
-      for (size_t i = 0; i < m_IRTransformers.size(); ++i) {
-        success = m_IRTransformers[i]->TransformTransaction(*T);
-        if (!success) {
-          break;
-        }
-      }
-      // The static initializers might run anything and can thus cause more
-      // decls that need to end up in a transaction. But this one is done
-      // with CodeGen...
-      T->setState(Transaction::kCommitted);
-
-      // run the static initializers that came from codegenning
-      if (m_Interpreter->runStaticInitializersOnce()
-          >= Interpreter::kExeFirstError) {
-        // Roll back on error in a transformer
-        rollbackTransaction(T);
-        return;
-      }
-    } else
-      T->setState(Transaction::kCommitted);
-
-    if (forceCodeGen)
-      Opts.EmitAllDecls = EmitAllDeclsPrev;
-
-    if (!forceCodeGen) {
-      InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
-
-      if (callbacks) {
-        callbacks->TransactionCommitted(*T);
-      }
+      codeGenTransaction(T);
+      transformTransactionIR(T);
     }
+
+    // The static initializers might run anything and can thus cause more
+    // decls that need to end up in a transaction. But this one is done
+    // with CodeGen...
+    T->setState(Transaction::kCommitted);
+
+    if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
+      runStaticInitOnTransaction(T);
+    }
+
+    InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
+
+    if (callbacks)
+      callbacks->TransactionCommitted(*T);
 
     // If the transaction is empty do nothing.
     // Except it was nested transaction and we want to reuse it later on.
@@ -370,6 +297,95 @@ namespace cling {
       for (size_t i = 0; i < ParentT->size(); ++i)
         if ((*ParentT)[i].m_DGR.isNull())
           ParentT->erase(i);
+    }
+  }
+
+
+  void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) {
+    for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
+      Transaction::DelayCallInfo I = (*T)[Idx];
+      // FIXME: implement for multiple decls in a DGR.
+      assert(I.m_DGR.isSingleDecl());
+      Decl* D = I.m_DGR.getSingleDecl();
+      if (!D->hasAttr<clang::UsedAttr>())
+        D->addAttr(::new (D->getASTContext())
+                   clang::UsedAttr(D->getSourceRange(), D->getASTContext(),
+                                   0/*AttributeSpellingListIndex*/));
+    }
+  }
+
+
+  void IncrementalParser::codeGenTransaction(Transaction* T) {
+    // codegen the transaction
+    assert(T->getCompilationOpts().CodeGeneration && "CodeGen turned off");
+    assert(hasCodeGenerator() && "No CodeGen");
+
+    T->setModule(getCodeGenerator()->GetModule());
+
+    for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
+      // Copy DCI; it might get relocated below.
+      Transaction::DelayCallInfo I = (*T)[Idx];
+
+      if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
+        getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
+      else if (I.m_Call == Transaction::kCCIHandleInterestingDecl) {
+        // Usually through BackendConsumer which doesn't implement
+        // HandleInterestingDecl() and thus calls
+        // ASTConsumer::HandleInterestingDecl()
+        getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
+      } else if(I.m_Call == Transaction::kCCIHandleTagDeclDefinition) {
+        TagDecl* TD = cast<TagDecl>(I.m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleTagDeclDefinition(TD);
+      }
+      else if (I.m_Call == Transaction::kCCIHandleVTable) {
+        CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I.m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
+      }
+      else if (I.m_Call
+               == Transaction::kCCIHandleCXXImplicitFunctionInstantiation) {
+        FunctionDecl* FD = cast<FunctionDecl>(I.m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleCXXImplicitFunctionInstantiation(FD);
+      }
+      else if (I.m_Call
+               == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
+        VarDecl* VD = cast<VarDecl>(I.m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
+      }
+      else if (I.m_Call == Transaction::kCCINone)
+        ; // We use that internally as delimiter in the Transaction.
+      else
+        llvm_unreachable("We shouldn't have decl without call info.");
+    }
+
+    getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+
+    // The static initializers might run anything and can thus cause more
+    // decls that need to end up in a transaction. But this one is done
+    // with CodeGen...
+    T->setState(Transaction::kCommitted);
+    runStaticInitOnTransaction(T);
+  }
+
+  void IncrementalParser::transformTransactionAST(Transaction* T) const {
+  }
+
+  bool IncrementalParser::transformTransactionIR(Transaction* T) const {
+    // Transform IR
+    for (size_t i = 0; i < m_IRTransformers.size(); ++i) {
+      success = m_IRTransformers[i]->TransformTransaction(*T);
+      if (!success)
+        return false;
+    }
+    return true;
+  }
+
+  bool IncrementalParser::runStaticInitOnTransaction(Transaction* T) const {
+    // run the static initializers that came from codegenning
+    if (m_Interpreter->runStaticInitializersOnce()
+        >= Interpreter::kExeFirstError) {
+      // Roll back on error in a transformer
+      rollbackTransaction(T);
+      return;
     }
   }
 
