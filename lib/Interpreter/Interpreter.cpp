@@ -592,10 +592,10 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
-  Interpreter::CompilationResult Interpreter::codegen(Transaction* T) {
+  Interpreter::CompilationResult Interpreter::emitAllDecls(Transaction* T) {
     assert(getCodeGenerator() && "No CodeGenerator?");
-    // FIXME: move this into the transaction's CompOpts.
-    m_IncrParser->commitTransaction(T, /*forceCodeGen*/ true);
+    m_IncrParser->markWholeTransactionAsUsed(T);
+    m_IncrParser->commitTransaction(T);
     if (T->getState() == Transaction::kCommitted)
       return Interpreter::kSuccess;
     return Interpreter::kFailure;

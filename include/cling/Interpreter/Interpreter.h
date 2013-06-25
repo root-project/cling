@@ -566,16 +566,14 @@ namespace cling {
     ///
     CompilationResult execute(const std::string& input);
 
-    ///\brief Generates code for a given transaction. NOTE: we will have to 
-    /// think of better name because it doesn't do codegen only it applies the
-    /// specified by the compilation options transformations, too.
+    ///\brief Generates code for all Decls of a transaction.
     ///
     /// @param[in] T - The cling::Transaction that contains the declarations and
     ///                the compilation/generation options.
     ///
     ///\returns Whether the operation was fully successfil.
     ///
-    CompilationResult codegen(Transaction* T);
+    CompilationResult emitAllDecls(Transaction* T);
 
     ///\brief Loads header file or shared library.
     ///
