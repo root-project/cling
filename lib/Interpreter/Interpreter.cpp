@@ -595,7 +595,7 @@ namespace cling {
   Interpreter::CompilationResult Interpreter::emitAllDecls(Transaction* T) {
     assert(getCodeGenerator() && "No CodeGenerator?");
     m_IncrParser->markWholeTransactionAsUsed(T);
-    m_IncrParser->commitTransaction(T);
+    m_IncrParser->codeGenTransaction(T);
     if (T->getState() == Transaction::kCommitted)
       return Interpreter::kSuccess;
     return Interpreter::kFailure;
