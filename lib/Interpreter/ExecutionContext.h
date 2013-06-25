@@ -39,7 +39,7 @@ namespace cling {
       kNumExeResults
     };
 
-    ExecutionContext();
+    ExecutionContext(llvm::Module* m);
     ~ExecutionContext();
 
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);

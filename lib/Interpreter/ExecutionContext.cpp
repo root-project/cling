@@ -30,17 +30,17 @@ std::vector<ExecutionContext::LazyFunctionCreatorFunc_t>
 bool ExecutionContext::m_LazyFuncCreatorDiagsSuppressed = false;
 
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-ExecutionContext::ExecutionContext():
-  m_RunningStaticInits(false),
-  m_CxaAtExitRemapped(false)
-{}
+ExecutionContext::ExecutionContext(llvm::Module* m) 
+  : m_RunningStaticInits(false), m_CxaAtExitRemapped(false)
+{
+  assert(m && "llvm::Module must not be null!");
+  InitializeBuilder(m);
+}
 
 // Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
 ExecutionContext::~ExecutionContext() {}
 
-void
-ExecutionContext::InitializeBuilder(llvm::Module* m)
-{
+void ExecutionContext::InitializeBuilder(llvm::Module* m) {
   //
   //  Create an execution engine to use.
   //
@@ -218,10 +218,6 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
 ExecutionContext::ExecutionResult
 ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
-
-  if (!m_engine)
-    InitializeBuilder(m);
-
   assert(m_engine && "Code generation did not create an engine!");
 
   if (m_RunningStaticInits)
