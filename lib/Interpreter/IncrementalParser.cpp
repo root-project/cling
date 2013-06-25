@@ -212,6 +212,12 @@ namespace cling {
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
 
+    // If committing a nested transaction the active one should be its parent
+    // from now on.
+    if (T->isNestedTransaction()) {
+      m_Consumer->setTransaction(T->getParent());
+    }
+
     // Check for errors...
     if (T->getIssuedDiags() == Transaction::kErrors) {
       rollbackTransaction(T);
@@ -308,7 +314,7 @@ namespace cling {
       // The static initializers might run anything and can thus cause more
       // decls that need to end up in a transaction. But this one is done
       // with CodeGen...
-      T->setState(Transaction::kCommitting);
+      T->setState(Transaction::kCommitted);
 
       // run the static initializers that came from codegenning
       if (m_Interpreter->runStaticInitializersOnce()
@@ -318,7 +324,7 @@ namespace cling {
         return;
       }
     } else
-      T->setState(Transaction::kCommitting);
+      T->setState(Transaction::kCommitted);
 
     if (forceCodeGen)
       Opts.EmitAllDecls = EmitAllDeclsPrev;
@@ -329,19 +335,7 @@ namespace cling {
       if (callbacks) {
         callbacks->TransactionCommitted(*T);
       }
-      if (T->hasNestedTransactions()) {
-        Transaction* SubTransactionWhileCommitting = *T->rnested_begin();
-        if (SubTransactionWhileCommitting->getState()
-            == Transaction::kCollecting) {
-          // A nested transaction was created while committing this
-          // transaction; commit it now.
-          SubTransactionWhileCommitting->setState(Transaction::kCompleted);
-          commitTransaction(SubTransactionWhileCommitting);
-        }
-      }
     }
-
-    T->setState(Transaction::kCommitted);
 
     // If the transaction is empty do nothing.
     // Except it was nested transaction and we want to reuse it later on.
@@ -351,13 +345,6 @@ namespace cling {
       for (size_t i = 0; i < ParentT->size(); ++i)
         if ((*ParentT)[i].m_DGR.isNull())
           ParentT->erase(i);
-    }
-
-    if (T->isNestedTransaction()) {
-      // TODO: Add proper logic in the case where there are multiple nested
-      // transaction. This now won't handle the case where there are more than
-      // one level 1 nested transactions.
-      m_Consumer->setTransaction(T->getParent());
     }
   }
 
