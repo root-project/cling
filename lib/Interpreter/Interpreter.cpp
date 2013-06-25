@@ -594,7 +594,6 @@ namespace cling {
 
   Interpreter::CompilationResult Interpreter::codegen(Transaction* T) {
     assert(getCodeGenerator() && "No CodeGenerator?");
-    getCodeGenerator()->SetModule(T->getModule());
     // FIXME: move this into the transaction's CompOpts.
     m_IncrParser->commitTransaction(T, /*forceCodeGen*/ true);
     if (T->getState() == Transaction::kCommitted)
