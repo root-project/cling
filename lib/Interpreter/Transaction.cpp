@@ -75,7 +75,7 @@ namespace cling {
     if (!m_DeclQueue)
       m_DeclQueue.reset(new DeclQueue());
 
-#ifdef NDEBUG
+#ifndef NDEBUG
     // Check for duplicates
     for (size_t i = 0, e = m_DeclQueue->size(); i < e; ++i)
       assert((*m_DeclsQueue)[i] != DCI && "Duplicates?!");
