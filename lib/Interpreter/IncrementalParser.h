@@ -78,9 +78,13 @@ namespace cling {
     ///
     llvm::OwningPtr<clang::CodeGenerator> m_CodeGen;
 
-    ///\brief Contains the transaction transformers.
+    ///\brief Contains the transaction AST transformers.
     ///
-    llvm::SmallVector<TransactionTransformer*, 6> m_TTransformers;
+    llvm::SmallVector<TransactionTransformer*, 6> m_ASTTransformers;
+
+    ///\brief Contains the transaction IR transformers.
+    ///
+    llvm::SmallVector<TransactionTransformer*, 2> m_IRTransformers;
 
   public:
     enum EParseResult {

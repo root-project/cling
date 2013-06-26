@@ -71,15 +71,18 @@ namespace cling {
 
     // Add transformers to the IncrementalParser, which owns them
     Sema* TheSema = &CI->getSema();
-    m_TTransformers.push_back(new EvaluateTSynthesizer(TheSema));
-
-    m_TTransformers.push_back(new AutoSynthesizer(TheSema));
-    m_TTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
-    m_TTransformers.push_back(new ASTDumper());
-    m_TTransformers.push_back(new IRDumper());
-    m_TTransformers.push_back(new DeclExtractor(TheSema));
-    m_TTransformers.push_back(new ReturnSynthesizer(TheSema));
+    // Register the AST Transformers
+    m_ASTTransformers.push_back(new EvaluateTSynthesizer(TheSema));
+    m_ASTTransformers.push_back(new AutoSynthesizer(TheSema));
+    m_ASTTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
+    m_ASTTransformers.push_back(new ASTDumper());
+    m_ASTTransformers.push_back(new DeclExtractor(TheSema));
+    m_ASTTransformers.push_back(new ReturnSynthesizer(TheSema));
+    
+    // Register the IR Transformers
+    m_IRTransformers.push_back(new IRDumper());
   }
+
   void IncrementalParser::Initialize() {
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
@@ -137,8 +140,11 @@ namespace cling {
       T = nextT;
     }
 
-    for (size_t i = 0; i < m_TTransformers.size(); ++i)
-      delete m_TTransformers[i];
+    for (size_t i = 0; i < m_ASTTransformers.size(); ++i)
+      delete m_ASTTransformers[i];
+
+    for (size_t i = 0; i < m_IRTransformers.size(); ++i)
+      delete m_IRTransformers[i];
   }
 
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
@@ -237,8 +243,8 @@ namespace cling {
     bool success = true;
     if (!forceCodeGen) {
       // We are sure it's safe to pipe it through the transformers
-      for (size_t i = 0; !forceCodeGen && i < m_TTransformers.size(); ++i) {
-        success = m_TTransformers[i]->TransformTransaction(*T);
+      for (size_t i = 0; !forceCodeGen && i < m_ASTTransformers.size(); ++i) {
+        success = m_ASTTransformers[i]->TransformTransaction(*T);
         if (!success) {
           break;
         }
@@ -314,6 +320,13 @@ namespace cling {
 
       getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
 
+      // Transform IR
+      for (size_t i = 0; i < m_IRTransformers.size(); ++i) {
+        success = m_IRTransformers[i]->TransformTransaction(*T);
+        if (!success) {
+          break;
+        }
+      }
       // The static initializers might run anything and can thus cause more
       // decls that need to end up in a transaction. But this one is done
       // with CodeGen...
