@@ -61,9 +61,9 @@ endif
 # Define NDEBUG for consistency with llvm and clang.
 CLINGCXXNDEBUG := -DNDEBUG
 ifeq ($(ROOTBUILD),debug)
-ifneq($(LLVMDEV),)
-CLINGCXXNDEBUG := 
-endif
+  ifneq ($(LLVMDEV),)
+    CLINGCXXNDEBUG := 
+  endif
 endif
 CLINGCXXFLAGS += $(CLINGCXXNDEBUG)
 
