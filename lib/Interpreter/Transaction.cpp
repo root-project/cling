@@ -78,7 +78,7 @@ namespace cling {
 #ifndef NDEBUG
     // Check for duplicates
     for (size_t i = 0, e = m_DeclQueue->size(); i < e; ++i)
-      assert((*m_DeclsQueue)[i] != DCI && "Duplicates?!");
+      assert((*m_DeclQueue)[i] != DCI && "Duplicates?!");
 #endif
 
     if (!DCI.m_DGR.isNull() && getState() == kCommitting) {
