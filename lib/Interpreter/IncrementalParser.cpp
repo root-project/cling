@@ -195,6 +195,15 @@ namespace cling {
   Transaction* IncrementalParser::endTransaction(Transaction* T) const {
     assert(T && "Null transaction!?");
     assert(T->getState() == Transaction::kCollecting);
+
+#ifndef NDEBUG
+    if (T->hasNestedTransactions()) {
+      for(Transaction::const_nested_iterator I = T->nested_begin(),
+            E = T->nested_end(); I != E; ++I)
+        assert((*I)->isCompleted() && "Nested transaction not completed!?");
+    }
+#endif
+
     T->setState(Transaction::kCompleted);
     const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
 
@@ -204,13 +213,6 @@ namespace cling {
 
     if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
       T->setIssuedDiags(Transaction::kErrors);
-
-      
-    if (T->hasNestedTransactions()) {
-      for(Transaction::const_nested_iterator I = T->nested_begin(),
-            E = T->nested_end(); I != E; ++I)
-        assert((*I)->isCompleted() && "Nested transaction not completed!?");
-    }
 
     return T;
   }
