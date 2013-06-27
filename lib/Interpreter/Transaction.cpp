@@ -80,8 +80,16 @@ namespace cling {
 #ifdef TEMPORARILY_DISABLED
 #ifndef NDEBUG
     // Check for duplicates
-    for (size_t i = 0, e = m_DeclQueue->size(); i < e; ++i)
-      assert((*m_DeclQueue)[i] != DCI && "Duplicates?!");
+    
+    for (size_t i = 0, e = m_DeclQueue->size(); i < e; ++i) {
+      DelayCallInfo &oldDCI ((*m_DeclQueue)[i]);
+      // It is possible to have duplicate calls to HandleVTable with the same
+      // declaration, because each time Sema believes a vtable is used it emits
+      // that callback. 
+      // For reference (clang::CodeGen::CodeGenModule::EmitVTable).
+      if (oldDCI.m_Call != kCCIHandleVTable)
+        assert(oldDCI != DCI && "Duplicates?!");
+    }
 #endif
 #endif
 
