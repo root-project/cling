@@ -931,7 +931,9 @@ namespace cling {
   }
 
   Interpreter::ExecutionResult
-  Interpreter::runStaticInitializersOnce() const {
+  Interpreter::runStaticInitializersOnce(const Transaction& T) const {
+    assert(m_IncrParser->hasCodeGenerator() && "Running on what?");
+    assert(T.getState() == Transaction::kCommitted && "Must be committed");
     // Forward to ExecutionContext; should not be called by
     // anyone except for IncrementalParser.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();

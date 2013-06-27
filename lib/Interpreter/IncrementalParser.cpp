@@ -264,10 +264,6 @@ namespace cling {
     // with CodeGen...
     T->setState(Transaction::kCommitted);
 
-    if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
-      runStaticInitOnTransaction(T);
-    }
-
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
 
     if (callbacks)
@@ -368,15 +364,6 @@ namespace cling {
     return success;
   }
 
-  bool IncrementalParser::runStaticInitOnTransaction(Transaction* T) const {
-    // run the static initializers that came from codegenning
-    bool success =
-      m_Interpreter->runStaticInitializersOnce() < Interpreter::kExeFirstError;
-    if (!success)
-      rollbackTransaction(T);
-    return success;
-  }
-
   void IncrementalParser::rollbackTransaction(Transaction* T) const {
     ASTNodeEraser NodeEraser(&getCI()->getSema());
 
@@ -446,6 +433,25 @@ namespace cling {
     const Transaction* EndedT = endTransaction(CurT);
     assert(EndedT == CurT && "Not ending the expected transaction.");
     commitTransaction(CurT);
+
+    // There might be declarations coming from the static initialization.
+    if (hasCodeGenerator() && CurT->getState() == Transaction::kCommitted) {
+      // FIXME: This shouldn't provoke nested transaction. The caller should
+      // expect decls coming from the inits and handle them.
+      Transaction* nestedT = new Transaction(CompilationOptions());
+      CurT->addNestedTransaction(nestedT);
+      // run the static initializers that came from codegenning
+      if (m_Interpreter->runStaticInitializersOnce(*CurT) 
+          >= Interpreter::kExeFirstError) {
+        // Roll back on error in a transformer
+        assert(0 && "Error on inits.");
+        //rollbackTransaction(nestedT);
+        return CurT;
+      }
+      const Transaction* endedNestedT = endTransaction(nestedT);
+      assert(endedNestedT == nestedT && "Not ending the expected transaction.");
+      commitTransaction(nestedT);
+    }
 
     return CurT;
   }

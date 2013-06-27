@@ -633,7 +633,7 @@ namespace cling {
 
     //FIXME: Terrible hack to let the IncrementalParser run static inits on
     // transaction completed.
-    ExecutionResult runStaticInitializersOnce() const;
+    ExecutionResult runStaticInitializersOnce(const Transaction& T) const;
 
     ExecutionResult runStaticDestructorsOnce();
 
