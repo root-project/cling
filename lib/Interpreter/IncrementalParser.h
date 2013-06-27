@@ -193,9 +193,27 @@ namespace cling {
     ///
     ///\param[in] T - the transaction for which all decls will get a UsedAttr.
     ///
-    void markWholeTransactionAsUsed(Transaction* T);
+    void markWholeTransactionAsUsed(Transaction* T) const;
+
+    ///\brief Runs the static initializers created by codegening a transaction.
+    ///
+    ///\param[in] T - the transaction for which to run the initializers.
+    ///
+    bool runStaticInitOnTransaction(Transaction* T) const;
 
   private:
+    ///\brief Runs AST transformers on a transaction.
+    ///
+    ///\param[in] T - the transaction to be transformed.
+    ///
+    bool transformTransactionAST(Transaction* T) const;
+
+    ///\brief Runs IR transformers on a transaction.
+    ///
+    ///\param[in] T - the transaction to be transformed.
+    ///
+    bool transformTransactionIR(Transaction* T) const;
+
     void CreateSLocOffsetGenerator();
     EParseResult ParseInternal(llvm::StringRef input);
   };

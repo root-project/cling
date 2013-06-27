@@ -235,30 +235,8 @@ namespace cling {
           commitTransaction(*I);
     }
 
-    bool success = true;
-    // We are sure it's safe to pipe it through the transformers
-    for (size_t i = 0; i < m_ASTTransformers.size(); ++i) {
-      success = m_ASTTransformers[i]->TransformTransaction(*T);
-      if (!success) {
-        break;
-      }
-    }
-
-    m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
-
-    if (!success) {
-      // Roll back on error in a transformer
-      rollbackTransaction(T);
+    if (!transformTransactionAST(T))
       return;
-    }
-
-    // Pull all template instantiations in that came from the consumers.
-    Transaction::State oldState = T->getState();
-    T->setState(Transaction::kCollecting);
-    getCI()->getSema().PerformPendingInstantiations();
-    T->setState(oldState);
-
-    m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
     // Here we expect a template instantiation. We need to open the transaction
     // that we are currently work with.
@@ -301,7 +279,7 @@ namespace cling {
   }
 
 
-  void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) {
+  void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) const {
     for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
       Transaction::DelayCallInfo I = (*T)[Idx];
       // FIXME: implement for multiple decls in a DGR.
@@ -358,35 +336,39 @@ namespace cling {
     }
 
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
-
-    // The static initializers might run anything and can thus cause more
-    // decls that need to end up in a transaction. But this one is done
-    // with CodeGen...
-    T->setState(Transaction::kCommitted);
-    runStaticInitOnTransaction(T);
   }
 
-  void IncrementalParser::transformTransactionAST(Transaction* T) const {
+  bool IncrementalParser::transformTransactionAST(Transaction* T) const {
+    bool success = true;
+    // We are sure it's safe to pipe it through the transformers
+    for (size_t i = 0; success && i < m_ASTTransformers.size(); ++i)
+      success = m_ASTTransformers[i]->TransformTransaction(*T);
+
+    m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
+
+    if (!success)
+      rollbackTransaction(T);
+
+    return success;
   }
 
   bool IncrementalParser::transformTransactionIR(Transaction* T) const {
     // Transform IR
-    for (size_t i = 0; i < m_IRTransformers.size(); ++i) {
+    bool success = true;
+    for (size_t i = 0; success && i < m_IRTransformers.size(); ++i)
       success = m_IRTransformers[i]->TransformTransaction(*T);
-      if (!success)
-        return false;
-    }
-    return true;
+    if (!success)
+      rollbackTransaction(T);
+    return success;
   }
 
   bool IncrementalParser::runStaticInitOnTransaction(Transaction* T) const {
     // run the static initializers that came from codegenning
-    if (m_Interpreter->runStaticInitializersOnce()
-        >= Interpreter::kExeFirstError) {
-      // Roll back on error in a transformer
+    bool success =
+      m_Interpreter->runStaticInitializersOnce() < Interpreter::kExeFirstError;
+    if (!success)
       rollbackTransaction(T);
-      return;
-    }
+    return success;
   }
 
   void IncrementalParser::rollbackTransaction(Transaction* T) const {

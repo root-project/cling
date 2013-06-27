@@ -596,8 +596,14 @@ namespace cling {
     assert(getCodeGenerator() && "No CodeGenerator?");
     m_IncrParser->markWholeTransactionAsUsed(T);
     m_IncrParser->codeGenTransaction(T);
-    if (T->getState() == Transaction::kCommitted)
+
+    // The static initializers might run anything and can thus cause more
+    // decls that need to end up in a transaction. But this one is done
+    // with CodeGen...
+    T->setState(Transaction::kCommitted);
+    if (m_IncrParser->runStaticInitOnTransaction(T))
       return Interpreter::kSuccess;
+
     return Interpreter::kFailure;
   }
 
