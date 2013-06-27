@@ -579,9 +579,9 @@ namespace cling {
     WrapInput(Wrapper, WrapperName);
     
     const Transaction* lastT = m_IncrParser->Compile(Wrapper, CO);
+    assert(lastT->getState() == Transaction::kCommitted && "Must be committed");
     if (lastT->getIssuedDiags() == Transaction::kNone)
-      if (lastT->getState() == Transaction::kCommitted
-          && RunFunction(lastT->getWrapperFD()) < kExeFirstError)
+      if (RunFunction(lastT->getWrapperFD()) < kExeFirstError)
         return Interpreter::kSuccess;
 
     return Interpreter::kFailure;
