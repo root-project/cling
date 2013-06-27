@@ -718,19 +718,14 @@ namespace cling {
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
     Transaction* lastT = 0;
-    if (V) {
-      lastT = m_IncrParser->Parse(Wrapper, CO);
-      assert(lastT->size() && "No decls created by Parse!");
 
-      m_IncrParser->commitTransaction(lastT);
-    }
-    else
-      lastT = m_IncrParser->Compile(Wrapper, CO);
-    if (T)
-      *T = lastT;
-
-    if (lastT->getState() == Transaction::kCommitted
-        && RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
+    lastT = m_IncrParser->Compile(Wrapper, CO);
+    assert((!V || lastT->size()) && "No decls created!?");
+    assert((lastT->getState() == Transaction::kCommitted
+           || lastT->getState() == Transaction::kRolledBack) 
+           && "Not committed?");
+    assert(lastT->getWrapperFD() && "Must have wrapper!");
+    if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
       return Interpreter::kSuccess;
     if (V)
       *V = StoredValueRef::invalidValue();
