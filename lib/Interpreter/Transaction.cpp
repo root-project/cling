@@ -72,7 +72,7 @@ namespace cling {
 
   void Transaction::forceAppend(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
-
+    assert(getState() != kCommitting && "Must not be");
     // Lazy create the container on first append.
     if (!m_DeclQueue)
       m_DeclQueue.reset(new DeclQueue());
@@ -93,27 +93,6 @@ namespace cling {
 #endif
 #endif
 
-    if (!DCI.m_DGR.isNull() && getState() == kCommitting) {
-      // We are committing and getting new decls in.
-      // Move them into a sub transaction that will be processed
-      // recursively at the end of of commitTransaction.
-      Transaction* subTransactionWhileCommitting = 0;
-      if (hasNestedTransactions()
-          && m_NestedTransactions->back()->getState() == kCollecting)
-        subTransactionWhileCommitting = m_NestedTransactions->back();
-      else {
-        // FIXME: is this correct (Axel says "yes")
-        CompilationOptions Opts(getCompilationOpts());
-        Opts.DeclarationExtraction = 0;
-        Opts.ValuePrinting = CompilationOptions::VPDisabled;
-        Opts.ResultEvaluation = 0;
-        Opts.DynamicScoping = 0;
-        subTransactionWhileCommitting = new Transaction(Opts);
-        addNestedTransaction(subTransactionWhileCommitting);
-      }
-      subTransactionWhileCommitting->append(DCI);
-      return;
-    }
     bool checkForWrapper = !m_WrapperFD;
     assert(checkForWrapper = true && "Check for wrappers with asserts");
     // register the wrapper if any.

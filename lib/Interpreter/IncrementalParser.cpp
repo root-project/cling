@@ -440,6 +440,7 @@ namespace cling {
       // expect decls coming from the inits and handle them.
       Transaction* nestedT = new Transaction(CompilationOptions());
       CurT->addNestedTransaction(nestedT);
+      m_Consumer->setTransaction(nestedT); // it will be reset by commit
       // run the static initializers that came from codegenning
       if (m_Interpreter->runStaticInitializersOnce(*CurT) 
           >= Interpreter::kExeFirstError) {
