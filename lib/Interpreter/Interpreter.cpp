@@ -129,6 +129,7 @@ namespace cling {
     CO.CodeGenerationForModule = 0;
 
     m_Transaction = m_Interpreter->m_IncrParser->beginTransaction(CO);
+    
   }
 
   Interpreter::PushTransactionRAII::~PushTransactionRAII() {
@@ -136,9 +137,11 @@ namespace cling {
   }
 
   void Interpreter::PushTransactionRAII::pop() {
-    Transaction* T = m_Interpreter->m_IncrParser->endTransaction(m_Transaction);
-    assert(T == m_Transaction && "Ended different transaction?");
-    m_Interpreter->m_IncrParser->commitTransaction(T);
+    if (Transaction* T 
+        = m_Interpreter->m_IncrParser->endTransaction(m_Transaction)) {
+      assert(T == m_Transaction && "Ended different transaction?");
+      m_Interpreter->m_IncrParser->commitTransaction(T);
+    }
   }  
 
   // This function isn't referenced outside its translation unit, but it

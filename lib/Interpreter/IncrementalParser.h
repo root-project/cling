@@ -36,6 +36,7 @@ namespace cling {
   class ExecutionContext;
   class Interpreter;
   class Transaction;
+  class TransactionPool;
   class TransactionTransformer;
 
   ///\brief Responsible for the incremental parsing and compilation of input.
@@ -86,6 +87,10 @@ namespace cling {
     ///
     llvm::SmallVector<TransactionTransformer*, 2> m_IRTransformers;
 
+    ///\brief Pool of reusable block-allocated transactions.
+    ///
+    llvm::OwningPtr<TransactionPool> m_TransactionPool;
+
   public:
     enum EParseResult {
       kSuccess,
@@ -111,7 +116,7 @@ namespace cling {
 
     ///\brief Finishes a transaction.
     ///
-    Transaction* endTransaction(Transaction* T) const;
+    Transaction* endTransaction(Transaction* T);
 
     ///\brief Commits a transaction if it was complete. I.e pipes it 
     /// through the consumer chain, including codegen.

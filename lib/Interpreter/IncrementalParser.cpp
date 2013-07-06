@@ -86,6 +86,7 @@ namespace cling {
   }
 
   void IncrementalParser::Initialize() {
+    m_TransactionPool.reset(new TransactionPool());
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
@@ -104,8 +105,8 @@ namespace cling {
                                        true /*DisablePCHValidation*/,
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/);
-      Transaction* EndedT = endTransaction(CurT);
-      commitTransaction(EndedT);
+      if (Transaction* EndedT = endTransaction(CurT))
+        commitTransaction(EndedT);
     }
 
     Transaction* CurT = beginTransaction(CO);
@@ -123,8 +124,8 @@ namespace cling {
     if (External)
       External->StartTranslationUnit(m_Consumer);
 
-    Transaction* EndedT = endTransaction(CurT);
-    commitTransaction(EndedT);
+    if (Transaction* EndedT = endTransaction(CurT))
+      commitTransaction(EndedT);
   }
 
   IncrementalParser::~IncrementalParser() {
@@ -152,47 +153,20 @@ namespace cling {
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
                                                    Opts) {
     Transaction* OldCurT = m_Consumer->getTransaction();
-    Transaction* NewCurT = 0;
+    Transaction* NewCurT = m_TransactionPool->takeTransaction();
+    NewCurT->setCompilationOpts(Opts);
     // If we are in the middle of transaction and we see another begin 
     // transaction - it must be nested transaction.
-    if (OldCurT && OldCurT->getState() <= Transaction::kCommitting) {
-      // If the last nested was empty just reuse it.
-      Transaction* LastNestedT = OldCurT->getLastNestedTransaction();
-      if (LastNestedT && LastNestedT->empty()) {
-        assert(LastNestedT->getState() == Transaction::kCommitted && "Broken");
-        NewCurT = LastNestedT;
-        NewCurT->reset();
-        NewCurT->setCompilationOpts(Opts);
-        // Reset has remove the connection (removeNestedTransaction)
-        OldCurT->addNestedTransaction(NewCurT); // takes the ownership
-     }
-      else {
-        NewCurT = new Transaction(Opts);
-        OldCurT->addNestedTransaction(NewCurT); // takes the ownership
-      }
-      m_Consumer->setTransaction(NewCurT);
-      return NewCurT;
+    if (OldCurT && OldCurT != NewCurT 
+        && OldCurT->getState() <= Transaction::kCommitting) {
+      OldCurT->addNestedTransaction(NewCurT); // takes the ownership
     }
-
-    if (getLastTransaction() && getLastTransaction()->empty()) {
-      NewCurT = getLastTransaction();
-      NewCurT->reset();
-      NewCurT->setCompilationOpts(Opts);
-    }
-    else
-      NewCurT = new Transaction(Opts);
 
     m_Consumer->setTransaction(NewCurT);
-
-    if (NewCurT != getLastTransaction()) {
-      if (getLastTransaction())
-        m_Transactions.back()->setNext(NewCurT);
-      m_Transactions.push_back(NewCurT);
-    }
     return NewCurT;
   }
 
-  Transaction* IncrementalParser::endTransaction(Transaction* T) const {
+  Transaction* IncrementalParser::endTransaction(Transaction* T) {
     assert(T && "Null transaction!?");
     assert(T->getState() == Transaction::kCollecting);
 
@@ -205,6 +179,12 @@ namespace cling {
 #endif
 
     T->setState(Transaction::kCompleted);
+    // Empty transaction send it back to the pool.
+    if (T->empty()) {
+      m_TransactionPool->releaseTransaction(T);
+      return 0;
+    }
+
     const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
 
     //TODO: Make the enum orable.
@@ -214,6 +194,11 @@ namespace cling {
     if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
       T->setIssuedDiags(Transaction::kErrors);
 
+    if (!T->isNestedTransaction() && T != getLastTransaction()) {
+      if (getLastTransaction())
+        m_Transactions.back()->setNext(T);
+      m_Transactions.push_back(T);
+    }
     return T;
   }
 
@@ -222,6 +207,7 @@ namespace cling {
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
+    assert(!T->empty() && "Transactions must not be empty;");
 
     // If committing a nested transaction the active one should be its parent
     // from now on.
@@ -250,40 +236,41 @@ namespace cling {
 
     // Here we expect a template instantiation. We need to open the transaction
     // that we are currently work with.
-    Transaction::State oldState = T->getState();
-    T->setState(Transaction::kCollecting);
-    // Pull all template instantiations in that came from the consumers.
-    getCI()->getSema().PerformPendingInstantiations();
-    T->setState(oldState);
-
+    {
+      Transaction* nestedT = beginTransaction(CompilationOptions());
+      // Pull all template instantiations in that came from the consumers.
+      getCI()->getSema().PerformPendingInstantiations();
+      if (Transaction* T = endTransaction(nestedT))
+        commitTransaction(T);
+    }
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
-    if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
-      codeGenTransaction(T);
-      transformTransactionIR(T);
-    }
 
     // The static initializers might run anything and can thus cause more
     // decls that need to end up in a transaction. But this one is done
     // with CodeGen...
+    if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
+      codeGenTransaction(T);
+      transformTransactionIR(T);
+      Transaction* nestedT = beginTransaction(CompilationOptions());
+      T->setState(Transaction::kCommitted);
+      if (m_Interpreter->runStaticInitializersOnce(*T) 
+          >= Interpreter::kExeFirstError) {
+        // Roll back on error in a transformer
+        assert(0 && "Error on inits.");
+        //rollbackTransaction(nestedT);
+        return;
+      }
+      if (Transaction* T = endTransaction(nestedT))
+        commitTransaction(T);
+    }
     T->setState(Transaction::kCommitted);
 
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
 
     if (callbacks)
       callbacks->TransactionCommitted(*T);
-
-    // If the transaction is empty do nothing.
-    // Except it was nested transaction and we want to reuse it later on.
-    if (T->empty() && T->isNestedTransaction()) {
-      // We need to remove the marker from its parent.
-      Transaction* ParentT = T->getParent();
-      for (size_t i = 0; i < ParentT->size(); ++i)
-        if ((*ParentT)[i].m_DGR.isNull())
-          ParentT->erase(i);
-    }
   }
-
 
   void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) const {
     for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
@@ -434,28 +421,9 @@ namespace cling {
     else if (ParseRes == kFailed)
       CurT->setIssuedDiags(Transaction::kErrors);
 
-    const Transaction* EndedT = endTransaction(CurT);
-    assert(EndedT == CurT && "Not ending the expected transaction.");
-    commitTransaction(CurT);
-
-    // There might be declarations coming from the static initialization.
-    if (hasCodeGenerator() && CurT->getState() == Transaction::kCommitted) {
-      // FIXME: This shouldn't provoke nested transaction. The caller should
-      // expect decls coming from the inits and handle them.
-      Transaction* nestedT = new Transaction(CompilationOptions());
-      CurT->addNestedTransaction(nestedT);
-      m_Consumer->setTransaction(nestedT); // it will be reset by commit
-      // run the static initializers that came from codegenning
-      if (m_Interpreter->runStaticInitializersOnce(*CurT) 
-          >= Interpreter::kExeFirstError) {
-        // Roll back on error in a transformer
-        assert(0 && "Error on inits.");
-        //rollbackTransaction(nestedT);
-        return CurT;
-      }
-      const Transaction* endedNestedT = endTransaction(nestedT);
-      assert(endedNestedT == nestedT && "Not ending the expected transaction.");
-      commitTransaction(nestedT);
+    if (const Transaction* EndedT = endTransaction(CurT)) {
+      assert(EndedT == CurT && "Not ending the expected transaction.");
+      commitTransaction(CurT);
     }
 
     return CurT;
