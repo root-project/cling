@@ -27,7 +27,6 @@ namespace cling {
   }
 
   void Transaction::Initialize() {
-    m_DeclQueue.reset(0);
     m_NestedTransactions.reset(0);
     m_Parent = 0; 
     m_State = kCollecting;
@@ -52,15 +51,11 @@ namespace cling {
     if (!m_NestedTransactions)
       m_NestedTransactions.reset(new NestedTransactions());
 
-    // Lazy create the container on first append.
-    if (!m_DeclQueue)
-      m_DeclQueue.reset(new DeclQueue());
-
     nested->setParent(this);
     // Leave a marker in the parent transaction, where the nested transaction
     // started.
     DelayCallInfo marker(clang::DeclGroupRef(), Transaction::kCCINone);
-    m_DeclQueue->push_back(marker);
+    m_DeclQueue.push_back(marker);
     m_NestedTransactions->push_back(nested);
   }
 
@@ -85,6 +80,8 @@ namespace cling {
         }
       }
     }
+    if (!m_NestedTransactions->size())
+      m_NestedTransactions.reset(0);
   }
 
   void Transaction::reset() {
@@ -95,7 +92,8 @@ namespace cling {
     m_State = kCollecting;
     m_IssuedDiags = kNone;
     m_Opts = CompilationOptions();
-    //m_Module = 0; <- NOTE: we want to reuse the empty module
+    m_NestedTransactions.reset(0); // FIXME: leaks the nested transactions.
+    m_Module = 0;
     m_WrapperFD = 0;
     m_Next = 0;
   }
@@ -113,15 +111,12 @@ namespace cling {
   void Transaction::forceAppend(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
     assert(getState() != kCommitting && "Must not be");
-    // Lazy create the container on first append.
-    if (!m_DeclQueue)
-      m_DeclQueue.reset(new DeclQueue());
 
 #ifdef TEMPORARILY_DISABLED
 #ifndef NDEBUG
     // Check for duplicates
-    for (size_t i = 0, e = m_DeclQueue->size(); i < e; ++i) {
-      DelayCallInfo &oldDCI ((*m_DeclQueue)[i]);
+    for (size_t i = 0, e = m_DeclQueue.size(); i < e; ++i) {
+      DelayCallInfo &oldDCI (m_DeclQueue[i]);
       // It is possible to have duplicate calls to HandleVTable with the same
       // declaration, because each time Sema believes a vtable is used it emits
       // that callback. 
@@ -142,7 +137,7 @@ namespace cling {
           m_WrapperFD = FD;
         }
     }
-    m_DeclQueue->push_back(DCI);
+    m_DeclQueue.push_back(DCI);
   }
 
   void Transaction::append(clang::DeclGroupRef DGR) {
@@ -159,7 +154,7 @@ namespace cling {
   
   void Transaction::erase(size_t pos) {
     assert(!empty() && "Erasing from an empty transaction.");
-    m_DeclQueue->erase(decls_begin() + pos);
+    m_DeclQueue.erase(decls_begin() + pos);
   }
 
   void Transaction::dump() const {

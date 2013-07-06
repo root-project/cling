@@ -75,7 +75,7 @@ namespace cling {
     /// the clang::DeclContext we will miss the injected onces (eg. template 
     /// instantiations).
     ///
-    llvm::OwningPtr<DeclQueue> m_DeclQueue;
+    DeclQueue m_DeclQueue;
 
     ///\brief List of nested transactions if any.
     ///
@@ -142,34 +142,22 @@ namespace cling {
     typedef DeclQueue::const_iterator const_iterator;
     typedef DeclQueue::const_reverse_iterator const_reverse_iterator;
     iterator decls_begin() {
-      if (m_DeclQueue)
-        return m_DeclQueue->begin(); 
-      return 0;
+      return m_DeclQueue.begin(); 
     }
     iterator decls_end() {
-      if (m_DeclQueue)
-        return m_DeclQueue->end();
-      return 0;
+      return m_DeclQueue.end();
     }
     const_iterator decls_begin() const {
-      if (m_DeclQueue)
-        return m_DeclQueue->begin(); 
-      return 0;
+      return m_DeclQueue.begin(); 
     }
     const_iterator decls_end() const {
-      if (m_DeclQueue)
-        return m_DeclQueue->end();
-      return 0;
+      return m_DeclQueue.end();
     }
     const_reverse_iterator rdecls_begin() const {
-      if (m_DeclQueue)
-        return m_DeclQueue->rbegin();
-      return const_reverse_iterator(0);
+      return m_DeclQueue.rbegin();
     }
     const_reverse_iterator rdecls_end() const {
-      if (m_DeclQueue)
-        return m_DeclQueue->rend();
-      return const_reverse_iterator(0);
+      return m_DeclQueue.rend();
     }
 
     typedef NestedTransactions::const_iterator const_nested_iterator;
@@ -215,7 +203,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getFirstDecl() const {
       if (!empty())
-        return m_DeclQueue->front().m_DGR;
+        return m_DeclQueue.front().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -223,7 +211,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getLastDecl() const {
       if (!empty() && isCompleted())
-        return m_DeclQueue->back().m_DGR;
+        return m_DeclQueue.back().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -232,7 +220,7 @@ namespace cling {
     ///
     clang::DeclGroupRef getCurrentLastDecl() const {
       if (!empty())
-        return m_DeclQueue->back().m_DGR;
+        return m_DeclQueue.back().m_DGR;
       return clang::DeclGroupRef();
     }
 
@@ -282,20 +270,20 @@ namespace cling {
 
     ///\brief Direct access.
     ///
-    const DelayCallInfo& operator[](size_t I) const { return (*m_DeclQueue)[I]; }
+    const DelayCallInfo& operator[](size_t I) const { return m_DeclQueue[I]; }
 
     ///\brief Direct access, non-const.
     ///
-    DelayCallInfo& operator[](size_t I) { return (*m_DeclQueue)[I]; }
+    DelayCallInfo& operator[](size_t I) { return m_DeclQueue[I]; }
 
     ///\brief Returns the declaration count.
     ///
-    size_t size() const { return m_DeclQueue ? m_DeclQueue->size() : 0; }
+    size_t size() const { return m_DeclQueue.size(); }
 
     ///\brief Returns whether there are declarations in the transaction.
     ///
     bool empty() const {
-      return (!m_DeclQueue || m_DeclQueue->empty())
+      return m_DeclQueue.empty()
         && (!m_NestedTransactions || m_NestedTransactions->empty());
     }
 
@@ -330,8 +318,7 @@ namespace cling {
     ///\brief Clears all declarations in the transaction.
     ///
     void clear() { 
-      if (m_DeclQueue) 
-        m_DeclQueue->clear(); 
+      m_DeclQueue.clear(); 
       if (m_NestedTransactions)
         m_NestedTransactions->clear();
     }
