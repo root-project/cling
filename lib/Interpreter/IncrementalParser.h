@@ -188,6 +188,7 @@ namespace cling {
     Transaction* Parse(llvm::StringRef input, const CompilationOptions& Opts);
 
     void unloadTransaction(Transaction* T);
+    void printTransactionStructure() const;
 
     ///\brief Adds a UsedAttr to all decls in the transaction.
     ///

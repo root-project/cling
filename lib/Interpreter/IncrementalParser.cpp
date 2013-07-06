@@ -564,4 +564,10 @@ namespace cling {
       callbacks->TransactionUnloaded(*T);
   }
 
+  void IncrementalParser::printTransactionStructure() const {
+    for(size_t i = 0, e = m_Transactions.size(); i < e; ++i) {
+      m_Transactions[i]->printStructureBrief();
+    }
+  }
+
 } // namespace cling
