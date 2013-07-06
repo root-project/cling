@@ -17,6 +17,27 @@ using namespace clang;
 
 namespace cling {
 
+  Transaction::Transaction() {
+    Initialize();
+  }
+
+  Transaction::Transaction(const CompilationOptions& Opts) {
+    Initialize();
+    m_Opts = Opts; // intentional copy.
+  }
+
+  void Transaction::Initialize() {
+    m_DeclQueue.reset(0);
+    m_NestedTransactions.reset(0);
+    m_Parent = 0; 
+    m_State = kCollecting;
+    m_IssuedDiags = kNone;
+    m_Opts = CompilationOptions();
+    m_Module = 0; 
+    m_WrapperFD = 0;
+    m_Next = 0;
+  }
+
   Transaction::~Transaction() {
     if (hasNestedTransactions())
       for (size_t i = 0; i < m_NestedTransactions->size(); ++i) {
@@ -42,7 +63,6 @@ namespace cling {
     m_DeclQueue->push_back(marker);
     m_NestedTransactions->push_back(nested);
   }
-
 
   void Transaction::removeNestedTransaction(Transaction* nested) {
     assert(hasNestedTransactions() && "Does not contain nested transactions");
