@@ -235,7 +235,7 @@ namespace cling {
     }
 
     if (T->hasNestedTransactions()) {
-      for(Transaction::const_nested_iterator I = T->nested_begin(),
+      for (Transaction::const_nested_iterator I = T->nested_begin(),
             E = T->nested_end(); I != E; ++I)
         if ((*I)->getState() != Transaction::kCommitted)
           commitTransaction(*I);
