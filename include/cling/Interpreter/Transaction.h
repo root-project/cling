@@ -367,7 +367,7 @@ namespace cling {
     ///\brief Prints the transaction and all subtransactions recursivly
     /// without printing any decls.
     ///
-    void printStructure(size_t indent = 0) const;
+    void printStructure(size_t nindent = 0) const;
 
     friend class IncrementalParser;
   };
