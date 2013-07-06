@@ -241,8 +241,12 @@ namespace cling {
           commitTransaction(*I);
     }
 
-    if (!transformTransactionAST(T))
+    transformTransactionAST(T);
+    // If there was an error coming from the transformers.
+    if (T->getIssuedDiags() == Transaction::kErrors) {
+      rollbackTransaction(T);
       return;
+    }
 
     // Here we expect a template instantiation. We need to open the transaction
     // that we are currently work with.
@@ -340,18 +344,14 @@ namespace cling {
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
   }
 
-  bool IncrementalParser::transformTransactionAST(Transaction* T) const {
+  void IncrementalParser::transformTransactionAST(Transaction* T) const {
     bool success = true;
     // We are sure it's safe to pipe it through the transformers
     for (size_t i = 0; success && i < m_ASTTransformers.size(); ++i)
       success = m_ASTTransformers[i]->TransformTransaction(*T);
 
-    m_CI->getDiagnostics().Reset(); // FIXME: Should be in rollback transaction.
-
     if (!success)
-      rollbackTransaction(T);
-
-    return success;
+      T->setIssuedDiags(Transaction::kErrors);
   }
 
   bool IncrementalParser::transformTransactionIR(Transaction* T) const {
@@ -365,12 +365,16 @@ namespace cling {
   }
 
   void IncrementalParser::rollbackTransaction(Transaction* T) const {
+    assert(T->getIssuedDiags() == Transaction::kErrors 
+           && "Rolling back with no errors");
     ASTNodeEraser NodeEraser(&getCI()->getSema());
 
     if (NodeEraser.RevertTransaction(T))
       T->setState(Transaction::kRolledBack);
     else
       T->setState(Transaction::kRolledBackWithErrors);
+
+    m_CI->getDiagnostics().Reset();
   }
 
   std::vector<const Transaction*> IncrementalParser::getAllTransactions() {
