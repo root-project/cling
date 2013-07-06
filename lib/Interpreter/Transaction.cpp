@@ -75,12 +75,14 @@ namespace cling {
     assert(nestedPos > -1 && "Not found!?");
     m_NestedTransactions->erase(m_NestedTransactions->begin() + nestedPos);
     // We need to remove the marker too.
+    int markerPos = -1;
     for (size_t i = 0; i < size(); ++i) {
-      if ((*this)[i].m_DGR.isNull())
-        --nestedPos;
-      if (!nestedPos) {
-        erase(i);
-        break;
+      if ((*this)[i].m_DGR.isNull() && (*this)[i].m_Call == kCCINone) {
+        ++markerPos;
+        if (nestedPos == markerPos) {
+          erase(i);
+          break;
+        }
       }
     }
   }
@@ -118,7 +120,6 @@ namespace cling {
 #ifdef TEMPORARILY_DISABLED
 #ifndef NDEBUG
     // Check for duplicates
-    
     for (size_t i = 0, e = m_DeclQueue->size(); i < e; ++i) {
       DelayCallInfo &oldDCI ((*m_DeclQueue)[i]);
       // It is possible to have duplicate calls to HandleVTable with the same

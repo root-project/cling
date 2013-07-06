@@ -342,7 +342,7 @@ namespace cling {
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 
     const Transaction* getNext() const { return m_Next; }
-    
+
     ///\brief Erases an element at given position.
     ///
     void erase(size_t pos);
