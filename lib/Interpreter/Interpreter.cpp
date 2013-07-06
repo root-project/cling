@@ -596,7 +596,7 @@ namespace cling {
     // decls that need to end up in a transaction. But this one is done
     // with CodeGen...
     T->setState(Transaction::kCommitted);
-    if (m_IncrParser->runStaticInitOnTransaction(T))
+    if (runStaticInitializersOnce(*T))
       return Interpreter::kSuccess;
 
     return Interpreter::kFailure;
