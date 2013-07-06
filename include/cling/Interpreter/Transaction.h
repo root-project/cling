@@ -369,6 +369,8 @@ namespace cling {
     ///
     void printStructure(size_t nindent = 0) const;
 
+    void printStructureBrief(size_t nindent = 0) const;
+
     friend class IncrementalParser;
   };
 } // end namespace cling
