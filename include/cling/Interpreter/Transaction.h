@@ -208,7 +208,10 @@ namespace cling {
     void setIssuedDiags(IssuedDiags val) { m_IssuedDiags = val; }
 
     const CompilationOptions& getCompilationOpts() const { return m_Opts; }
-    void setCompilationOpts(const CompilationOptions& CO) { m_Opts = CO; }
+    void setCompilationOpts(const CompilationOptions& CO) { 
+      assert(getState() == kCollecting && "Something wrong with you?");
+      m_Opts = CO;
+    }
 
     ///\brief Returns the first declaration of the transaction.
     ///
