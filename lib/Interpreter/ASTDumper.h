@@ -20,7 +20,7 @@ namespace cling {
   // TODO : This is not really a transformer. Factor out.
   class ASTDumper : public TransactionTransformer {
   public:
-    ASTDumper() : TransactionTransformer(0) { }
+    ASTDumper() : TransactionTransformer(/*Sema=*/0) { }
     virtual ~ASTDumper();
 
     virtual void Transform();
