@@ -6,12 +6,12 @@
 
 #include "IncrementalParser.h"
 #include "ASTDumper.h"
-#include "IRDumper.h"
 #include "ASTNodeEraser.h"
 #include "AutoSynthesizer.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
+#include "IRDumper.h"
 #include "ReturnSynthesizer.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
