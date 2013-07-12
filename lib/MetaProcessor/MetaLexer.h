@@ -80,6 +80,7 @@ namespace cling {
     static void LexPunctuator(char C, Token& Tok);
     // TODO: Revise. We might not need that.
     static void LexPunctuatorAndAdvance(const char*& curPos, Token& Tok);
+    static void LexQuotedStringAndAdvance(const char*& curPos, Token& Tok);
     static void LexNumericConstant(const char* curPos, Token& Tok);
     void LexIdentifier(char C, Token& Tok);
     void LexEndOfFile(char C, Token& Tok);

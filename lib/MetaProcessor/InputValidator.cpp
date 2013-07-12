@@ -22,12 +22,13 @@ namespace cling {
       // If there is " or ' we don't need to look for balancing until we 
       // enounter matching " or '
       if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe) {
-        if (m_ParenStack.empty())
-          m_ParenStack.push(kind);
-        else if (m_ParenStack.top() == kind)
-          m_ParenStack.pop();
-        else
-          continue;
+        MetaLexer::LexQuotedStringAndAdvance(curPos, Tok);
+        if (kind != (int)Tok.getKind()) {
+           Res = kIncomplete;
+           m_ParenStack.push(kind);
+           break;
+        }
+        continue;
       }
 
       // In case when we need closing brace.

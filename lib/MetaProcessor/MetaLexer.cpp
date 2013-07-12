@@ -122,6 +122,35 @@ namespace cling {
     }
   }
 
+ void MetaLexer::LexQuotedStringAndAdvance(const char*& curPos, Token& Tok) {
+    // Tok must be the starting quote (single or double), and we will
+    // lex until the next one or the end of the line.
+
+    assert( (startKind >= tok::quote && startKind <= tok::apostrophe) );
+
+    char start = '\0';
+    if (Tok.is(tok::quote)) start = '"';
+    else if (Tok.is(tok::apostrophe)) start = '\'';
+
+    Tok.startToken(curPos);
+    while (true) {
+      bool escape = false;
+      while ( (escape || *curPos != start) && *curPos != '\0' && *curPos != '\r' && *curPos != '\n') {
+        escape = ( (*curPos) == '\\' );
+        ++curPos;
+      }
+      if (*curPos == '\0') {
+        Tok.setBufStart(curPos);
+        Tok.setKind(tok::eof);
+        Tok.setLength(0);
+        return;
+      }
+      MetaLexer::LexPunctuator(*curPos++, Tok);
+      if (Tok.isNot(tok::unknown))
+        return;
+    }
+  }
+
   void MetaLexer::LexIdentifier(char C, Token& Tok) {
     while (C == '_' || (C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z')
            || (C >= '0' && C <= '9'))
