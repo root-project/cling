@@ -12,6 +12,7 @@
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
 #include "IRDumper.h"
+#include "NullDereferenceProtectionTransformer.h"
 #include "ReturnSynthesizer.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
@@ -81,6 +82,7 @@ namespace cling {
     
     // Register the IR Transformers
     m_IRTransformers.push_back(new IRDumper());
+    m_IRTransformers.push_back(new NullDereferenceProtectionTransformer());
   }
 
   void IncrementalParser::Initialize() {
