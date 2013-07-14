@@ -12,7 +12,7 @@
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
 #include "IRDumper.h"
-#include "NullDereferenceProtectionTransformer.h"
+#include "NullDerefProtectionTransformer.h"
 #include "ReturnSynthesizer.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
