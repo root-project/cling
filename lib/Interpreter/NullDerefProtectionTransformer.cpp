@@ -75,7 +75,6 @@ namespace cling {
 
   llvm::BasicBlock* NullDerefProtectionTransformer::getTrapBB() {
 
-    if (FailBB) return FailBB;
     llvm::Function *Fn = Inst->getParent()->getParent();
 
     llvm::LLVMContext& ctx = Fn->getContext();
@@ -86,10 +85,7 @@ namespace cling {
   }
 
   void NullDerefProtectionTransformer::instrumentLoadInst(llvm::LoadInst *LI) {
-    LI->dump();
     llvm::Value * Addr = LI->getOperand(0);
-    Addr->dump();
-    LI->getParent()->getParent()->dump();
     llvm::PointerType* PTy = llvm::cast<llvm::PointerType>(Addr->getType());
     llvm::Type * ElTy = PTy -> getElementType();
     if (!ElTy->isPointerTy()) {
@@ -142,10 +138,8 @@ namespace cling {
       Builder->SetInsertPoint(Inst);
       if (llvm::LoadInst *LI = llvm::dyn_cast<llvm::LoadInst>(Inst)) {
         instrumentLoadInst(LI);
-        LI->dump();
       } else if (llvm::StoreInst *SI = llvm::dyn_cast<llvm::StoreInst>(Inst)) {
         instrumentStoreInst(SI);
-        SI->dump();
       } else {
         llvm_unreachable("unknown Instruction type");
       }
