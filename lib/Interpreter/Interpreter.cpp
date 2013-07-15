@@ -429,9 +429,9 @@ namespace cling {
   ///
   Interpreter::CompilationResult
   Interpreter::process(const std::string& input, StoredValueRef* V /* = 0 */,
-                       const Decl** D /* = 0 */) {
+                       Transaction** T /* = 0 */) {
     if (isRawInputEnabled() || !ShouldWrapInput(input))
-      return declare(input, D);
+      return declare(input, T);
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 1;
@@ -441,20 +441,15 @@ namespace cling {
     CO.Debug = isPrintingAST();
     CO.IRDebug = isPrintingIR();
 
-    if (EvaluateInternal(input, CO, V) == Interpreter::kFailure) {
-      if (D)
-        *D = 0;
+    if (EvaluateInternal(input, CO, V, T) == Interpreter::kFailure) {
       return Interpreter::kFailure;
     }
-
-    if (D)
-      *D = m_IncrParser->getLastTransaction()->getFirstDecl().getSingleDecl();
 
     return Interpreter::kSuccess;
   }
 
-  Interpreter::CompilationResult
-  Interpreter::parse(const std::string& input) {
+  Interpreter::CompilationResult 
+  Interpreter::parse(const std::string& input, Transaction** T /*=0*/) const {
     CompilationOptions CO;
     CO.CodeGeneration = 0;
     CO.DeclarationExtraction = 0;
@@ -464,7 +459,7 @@ namespace cling {
     CO.Debug = isPrintingAST();
     CO.IRDebug = isPrintingIR();
 
-    return DeclareInternal(input, CO);
+    return DeclareInternal(input, CO, T);
   }
 
   Interpreter::CompilationResult
@@ -525,7 +520,7 @@ namespace cling {
   }
   
   Interpreter::CompilationResult
-  Interpreter::declare(const std::string& input, const Decl** D /* = 0 */) {
+  Interpreter::declare(const std::string& input, Transaction** T/*=0 */) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
@@ -534,7 +529,7 @@ namespace cling {
     CO.Debug = isPrintingAST();
     CO.IRDebug = isPrintingIR();
 
-    return DeclareInternal(input, CO, D);
+    return DeclareInternal(input, CO, T);
   }
 
   Interpreter::CompilationResult
@@ -694,15 +689,15 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::DeclareInternal(const std::string& input, 
                                const CompilationOptions& CO,
-                               const clang::Decl** D /* = 0 */) {
+                               Transaction** T /* = 0 */) const {
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
     ignoreFakeDiagnostics();
 
-    const Transaction* lastT = m_IncrParser->Compile(input, CO);
+    Transaction* lastT = m_IncrParser->Compile(input, CO);
     if (lastT->getIssuedDiags() != Transaction::kErrors) {
-      if (D)
-        *D = lastT->getFirstDecl().getSingleDecl();
+      if (T)
+        *T = lastT;
       return Interpreter::kSuccess;
     }
 
@@ -712,7 +707,8 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::EvaluateInternal(const std::string& input, 
                                 const CompilationOptions& CO,
-                                StoredValueRef* V /* = 0 */) {
+                                StoredValueRef* V, /* = 0 */
+                                Transaction** T /* = 0 */) {
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
     ignoreFakeDiagnostics();
@@ -730,12 +726,14 @@ namespace cling {
     }
     else
       lastT = m_IncrParser->Compile(Wrapper, CO);
+    if (T)
+      *T = lastT;
 
     if (lastT->getState() == Transaction::kCommitted
         && RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
       return Interpreter::kSuccess;
-    else if (V)
-        *V = StoredValueRef::invalidValue();
+    if (V)
+      *V = StoredValueRef::invalidValue();
 
     return Interpreter::kFailure;
   }

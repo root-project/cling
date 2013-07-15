@@ -303,13 +303,13 @@ namespace cling {
     ///
     ///\param [in] input - The input being compiled.
     ///\param [in] CompilationOptions - The option set driving the compilation.
-    ///\param [out] D - The first declaration of the compiled input.
+    ///\param [out] T - The cling::Transaction of the compiled input.
     ///
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult DeclareInternal(const std::string& input,
                                       const CompilationOptions& CO,
-                                      const clang::Decl** D = 0);
+                                      Transaction** T = 0) const;
 
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.
@@ -319,12 +319,14 @@ namespace cling {
     ///\param [in,out] V - The result of the evaluation of the input. Must be
     ///       initialized to point to the return value's location if the 
     ///       expression result is an aggregate.
+    ///\param [out] T - The cling::Transaction of the compiled input.
     ///
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult EvaluateInternal(const std::string& input,
                                        const CompilationOptions& CO,
-                                       StoredValueRef* V = 0);
+                                       StoredValueRef* V = 0,
+                                       Transaction** T = 0);
 
     ///\brief Decides whether the input line should be wrapped or not by using
     /// simple lexing to determine whether it is known that it should be on the
@@ -469,12 +471,12 @@ namespace cling {
     ///\param[in,out] V - The result of the evaluation of the input. Must be
     ///       initialized to point to the return value's location if the 
     ///       expression result is an aggregate.
-    ///\param[out] D - The first declaration of the compiled input.
+    ///\param[out] T - The cling::Transaction of the compiled input.
     ///
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult process(const std::string& input, StoredValueRef* V = 0,
-                              const clang::Decl** D = 0);
+                              Transaction** T = 0);
 
     ///\brief Parses input line, which doesn't contain statements. No code 
     /// generation is done.
@@ -483,10 +485,12 @@ namespace cling {
     /// the header files need to be imported.
     ///
     ///\param[in] input - The input containing the declarations.
+    ///\param[out] T - The cling::Transaction of the parsed input.
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult parse(const std::string& input);
+    CompilationResult parse(const std::string& input, 
+                            Transaction** T = 0) const;
 
     ///\brief Looks for a already generated PCM for the given header file and 
     /// loads it.
@@ -518,12 +522,11 @@ namespace cling {
     ///
     /// @param[in] input - The input containing only declarations (aka
     ///                    Top Level Declarations)
-    /// @param[out] D - The first compiled declaration from the input
+    /// @param[out] T - The cling::Transaction of the input
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult declare(const std::string& input,
-                              const clang::Decl** D = 0);
+    CompilationResult declare(const std::string& input, Transaction** T = 0);
 
     ///\brief Compiles input line, which contains only expressions.
     ///
