@@ -22,7 +22,7 @@
 namespace cling {
 
   NullDerefProtectionTransformer::NullDerefProtectionTransformer()
-    : FailBB(0), TransactionTransformer(/*Sema=*/0) {}
+    : TransactionTransformer(/*Sema=*/0), FailBB(0), Builder(0), Inst(0) {}
 
   NullDerefProtectionTransformer::~NullDerefProtectionTransformer() 
   {}
