@@ -126,7 +126,7 @@ namespace cling {
     // Tok must be the starting quote (single or double), and we will
     // lex until the next one or the end of the line.
 
-    assert( (startKind >= tok::quote && startKind <= tok::apostrophe) );
+    assert( (Tok.getKind() >= tok::quote && Tok.getKind() <= tok::apostrophe) );
 
     char start = '\0';
     if (Tok.is(tok::quote)) start = '"';
