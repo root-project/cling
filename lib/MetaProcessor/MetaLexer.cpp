@@ -135,7 +135,8 @@ namespace cling {
     Tok.startToken(curPos);
     while (true) {
       bool escape = false;
-      while ( (escape || *curPos != start) && *curPos != '\0' && *curPos != '\r' && *curPos != '\n') {
+      while ( (escape || *curPos != start) 
+              && *curPos != '\0' && *curPos != '\r' && *curPos != '\n') {
         escape = ( (*curPos) == '\\' );
         ++curPos;
       }
