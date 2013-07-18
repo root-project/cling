@@ -19,6 +19,19 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/InstIterator.h"
 
+extern "C" {
+  int printf(const char *...);
+  int getchar(void);
+  bool shouldProceed() {
+    int input;
+    printf("Warning: you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]\n");
+    input = getchar();
+    getchar();
+    if (input == 'y' || input == 'Y') return false;
+    else return true;
+  }
+}
+
 namespace cling {
 
   NullDerefProtectionTransformer::NullDerefProtectionTransformer()
@@ -74,18 +87,40 @@ namespace cling {
   }
 
   llvm::BasicBlock* NullDerefProtectionTransformer::getTrapBB() {
-
     llvm::Function *Fn = Inst->getParent()->getParent();
-
+    llvm::Module *Md = Fn->getParent();
     llvm::LLVMContext& ctx = Fn->getContext();
 
+    llvm::BasicBlock::iterator PreInsertInst = Builder->GetInsertPoint();
     FailBB = llvm::BasicBlock::Create(ctx, "FailBlock", Fn);
-    llvm::ReturnInst::Create(Fn->getContext(), FailBB);
+    Builder->SetInsertPoint(FailBB);
+
+    llvm::FunctionType* FTy = llvm::FunctionType::get(llvm::Type::getInt1Ty(ctx), false);
+
+    llvm::Function *CallBackFn
+        = llvm::cast<llvm::Function>(Md->getOrInsertFunction("shouldProceed", FTy));
+
+    llvm::CallInst *CI = Builder->CreateCall(CallBackFn);
+    llvm::Value *TrueVl = llvm::ConstantInt::get(ctx, llvm::APInt(1, 1));
+    llvm::Value *RetVl = CI;
+
+    llvm::ICmpInst *Cmp 
+        = new llvm::ICmpInst(*FailBB, llvm::CmpInst::ICMP_EQ, RetVl,
+                             TrueVl, "");
+
+    llvm::BasicBlock *HandleBB = llvm::BasicBlock::Create(ctx,"HandleBlock", Fn);
+    llvm::BranchInst::Create(HandleBB, Inst->getParent(), Cmp, FailBB);
+
+    llvm::ReturnInst::Create(Fn->getContext(), HandleBB);
+    Builder->SetInsertPoint(PreInsertInst);
     return FailBB;
   }
 
   void NullDerefProtectionTransformer::instrumentLoadInst(llvm::LoadInst *LI) {
     llvm::Value * Addr = LI->getOperand(0);
+    if(llvm::isa<llvm::GlobalVariable>(Addr))
+      return;
+
     llvm::PointerType* PTy = llvm::cast<llvm::PointerType>(Addr->getType());
     llvm::Type * ElTy = PTy -> getElementType();
     if (!ElTy->isPointerTy()) {
@@ -104,6 +139,9 @@ namespace cling {
 
   void NullDerefProtectionTransformer::instrumentStoreInst(llvm::StoreInst *SI){
     llvm::Value * Addr = SI->getOperand(1);
+   if(llvm::isa<llvm::GlobalVariable>(Addr))
+      return;
+
     llvm::PointerType* PTy = llvm::cast<llvm::PointerType>(Addr->getType());
     llvm::Type * ElTy = PTy -> getElementType();
     if (!ElTy->isPointerTy()) {
