@@ -2,6 +2,7 @@ set(CLING_TEST_DIRECTORIES
   "ErrorRecovery"
   "Extensions"
   "LibraryCall"
+  "NullDeref"
   "Prompt"
   "Recursion"
   "SourceCall")
