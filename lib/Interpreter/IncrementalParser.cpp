@@ -163,7 +163,9 @@ namespace cling {
         NewCurT = LastNestedT;
         NewCurT->reset();
         NewCurT->setCompilationOpts(Opts);
-      }
+        // Reset has remove the connection (removeNestedTransaction)
+        OldCurT->addNestedTransaction(NewCurT); // takes the ownership
+     }
       else {
         NewCurT = new Transaction(Opts);
         OldCurT->addNestedTransaction(NewCurT); // takes the ownership
