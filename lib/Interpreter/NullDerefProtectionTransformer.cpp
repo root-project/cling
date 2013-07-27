@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
 // version: $Id$
-// author:  Vassil Vassilev <vvasielv@cern.ch>
+// author:  Vassil Vassilev <vvasilev@cern.ch>
 // author:  Baozeng Ding <sploving1@gmail.com>
 //------------------------------------------------------------------------------
 
@@ -12,6 +12,8 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Mangle.h"
+#include "clang/Sema/Sema.h"
+#include "clang/Sema/SemaDiagnostic.h"
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Constants.h"
@@ -22,9 +24,11 @@
 extern "C" {
   int printf(const char *...);
   int getchar(void);
-  bool shouldProceed() {
+  bool shouldProceed(void *S) {
     int input;
-    printf("Warning: you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]\n");
+    clang::Sema *Sem = (clang::Sema *)S;
+    clang::DiagnosticsEngine &Diag = Sem->getDiagnostics();
+    Diag.Report(Diag.getCurrentDiagLoc(), clang::diag::warn_null_ptr_deref);
     input = getchar();
     getchar();
     if (input == 'y' || input == 'Y') return false;
@@ -32,10 +36,12 @@ extern "C" {
   }
 }
 
+using namespace clang;
+
 namespace cling {
 
-  NullDerefProtectionTransformer::NullDerefProtectionTransformer()
-    : TransactionTransformer(/*Sema=*/0), FailBB(0), Builder(0), Inst(0) {}
+  NullDerefProtectionTransformer::NullDerefProtectionTransformer(Sema *S)
+    : TransactionTransformer(S), FailBB(0), Builder(0), Inst(0) {}
 
   NullDerefProtectionTransformer::~NullDerefProtectionTransformer() 
   {}
@@ -80,30 +86,44 @@ namespace cling {
     }
     
     // Find the function in the module.
-    llvm::Function* F
-      = getTransaction()->getModule()->getFunction(mangledName);
+    llvm::Function* F = getTransaction()->getModule()->getFunction(mangledName);
     if (F)
       runOnFunction(*F);
   }
 
   llvm::BasicBlock* NullDerefProtectionTransformer::getTrapBB() {
-    llvm::Function *Fn = Inst->getParent()->getParent();
-    llvm::Module *Md = Fn->getParent();
+    llvm::Function* Fn = Inst->getParent()->getParent();
+    llvm::Module* Md = Fn->getParent();
     llvm::LLVMContext& ctx = Fn->getContext();
 
     llvm::BasicBlock::iterator PreInsertInst = Builder->GetInsertPoint();
     FailBB = llvm::BasicBlock::Create(ctx, "FailBlock", Fn);
     Builder->SetInsertPoint(FailBB);
 
-    llvm::FunctionType* FTy = llvm::FunctionType::get(llvm::Type::getInt1Ty(ctx), false);
+    std::vector<llvm::Type*> ArgTys;
+    ArgTys.push_back(llvm::Type::getInt8PtrTy(ctx));
+    llvm::FunctionType* FTy 
+      = llvm::FunctionType::get(llvm::Type::getInt1Ty(ctx), ArgTys, false);
 
-    llvm::Function *CallBackFn
-        = llvm::cast<llvm::Function>(Md->getOrInsertFunction("shouldProceed", FTy));
+    llvm::Function* CallBackFn
+      = cast<llvm::Function>(Md->getOrInsertFunction("shouldProceed", FTy));
 
-    llvm::CallInst *CI = Builder->CreateCall(CallBackFn);
+    void* SemaRef = (void*)m_Sema;
+    // copied from JIT.cpp
+    llvm::Constant* SemaRefCnt = 0;
+    llvm::Type* constantIntTy = 0;
+    if (sizeof(void *) == 4)
+      constantIntTy = llvm::Type::getInt32Ty(ctx);
+    else
+      constantIntTy = llvm::Type::getInt64Ty(ctx);
+      
+    SemaRefCnt = llvm::ConstantInt::get(constantIntTy, (uintptr_t)SemaRef);
+    llvm::Value *Arg = llvm::ConstantExpr::getIntToPtr(SemaRefCnt, 
+                                                 llvm::Type::getInt8PtrTy(ctx));
+    llvm::CallInst *CI = Builder->CreateCall(CallBackFn, Arg);
+
     llvm::Value *TrueVl = llvm::ConstantInt::get(ctx, llvm::APInt(1, 1));
     llvm::Value *RetVl = CI;
-
     llvm::ICmpInst *Cmp 
         = new llvm::ICmpInst(*FailBB, llvm::CmpInst::ICMP_EQ, RetVl,
                              TrueVl, "");
@@ -122,7 +142,7 @@ namespace cling {
       return;
 
     llvm::PointerType* PTy = llvm::cast<llvm::PointerType>(Addr->getType());
-    llvm::Type * ElTy = PTy -> getElementType();
+    llvm::Type * ElTy = PTy->getElementType();
     if (!ElTy->isPointerTy()) {
       llvm::BasicBlock *OldBB = LI->getParent();
       llvm::ICmpInst *Cmp 
@@ -161,7 +181,7 @@ namespace cling {
   bool NullDerefProtectionTransformer::runOnFunction(llvm::Function &F) {
     llvm::IRBuilder<> TheBuilder(F.getContext());
     Builder = &TheBuilder;
-      
+
     std::vector<llvm::Instruction*> WorkList;
     for (llvm::inst_iterator i = inst_begin(F), e = inst_end(F); i != e; ++i) {
       llvm::Instruction *I = &*i;

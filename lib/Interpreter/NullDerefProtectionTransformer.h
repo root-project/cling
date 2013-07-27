@@ -21,6 +21,7 @@ namespace llvm {
   class BasicBlock;
   class Function;
   class LoadInst;
+  class Sema;
   class StoreInst;
 }
 
@@ -33,19 +34,17 @@ namespace cling {
     llvm::IRBuilder<>* Builder;
     llvm::Instruction* Inst;
     llvm::OwningPtr<clang::MangleContext> m_MangleCtx;
-    
+
     llvm::BasicBlock* getTrapBB();
     void instrumentLoadInst(llvm::LoadInst* LI);
     void instrumentStoreInst(llvm::StoreInst* SI);
     bool runOnFunction(llvm::Function& F);
 
   public:
-    NullDerefProtectionTransformer();
+    NullDerefProtectionTransformer(clang::Sema* S);
     virtual ~NullDerefProtectionTransformer();
 
     virtual void Transform();
-
- 
   };
 } // end namespace cling
 

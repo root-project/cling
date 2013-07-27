@@ -1,6 +1,6 @@
-// RUN: cat %s | %cling | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify
 
-//This file checks a pointer store operation for null prt dereference.
+//This file checks a pointer store operation for null ptr dereference.
 int *p;
-*p = 6; // CHECK: Warning: you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]
+*p = 6; 
 n

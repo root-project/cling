@@ -82,7 +82,7 @@ namespace cling {
     
     // Register the IR Transformers
     m_IRTransformers.push_back(new IRDumper());
-    m_IRTransformers.push_back(new NullDerefProtectionTransformer());
+    m_IRTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
   }
 
   void IncrementalParser::Initialize() {
