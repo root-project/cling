@@ -28,7 +28,7 @@ extern "C" {
     int input;
     clang::Sema *Sem = (clang::Sema *)S;
     clang::DiagnosticsEngine &Diag = Sem->getDiagnostics();
-    Diag.Report(Diag.getCurrentDiagLoc(), clang::diag::warn_null_ptr_deref);
+    Diag.Report(clang::diag::warn_null_ptr_deref);
     input = getchar();
     getchar();
     if (input == 'y' || input == 'Y') return false;
