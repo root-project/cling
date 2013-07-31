@@ -122,7 +122,6 @@ namespace cling {
     enum State {
       kCollecting,
       kCompleted,
-      kCommitting,
       kRolledBack,
       kRolledBackWithErrors,
       kCommitted,

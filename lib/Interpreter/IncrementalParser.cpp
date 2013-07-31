@@ -158,7 +158,8 @@ namespace cling {
     // If we are in the middle of transaction and we see another begin 
     // transaction - it must be nested transaction.
     if (OldCurT && OldCurT != NewCurT 
-        && OldCurT->getState() <= Transaction::kCommitting) {
+        && OldCurT->getState() == Transaction::kCollecting
+        && OldCurT->getState() == Transaction::kCompleted) {
       OldCurT->addNestedTransaction(NewCurT); // takes the ownership
     }
 
@@ -285,10 +286,10 @@ namespace cling {
     }
   }
 
-
   void IncrementalParser::codeGenTransaction(Transaction* T) {
     // codegen the transaction
     assert(T->getCompilationOpts().CodeGeneration && "CodeGen turned off");
+    assert(T->getState() == Transaction::kCompleted && "Must be completed");
     assert(hasCodeGenerator() && "No CodeGen");
 
     T->setModule(getCodeGenerator()->GetModule());
@@ -412,7 +413,6 @@ namespace cling {
 
   Transaction* IncrementalParser::Compile(llvm::StringRef input,
                                           const CompilationOptions& Opts) {
-
     Transaction* CurT = beginTransaction(Opts);
     EParseResult ParseRes = ParseInternal(input);
 

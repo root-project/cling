@@ -110,7 +110,8 @@ namespace cling {
 
   void Transaction::forceAppend(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
-    assert(getState() != kCommitting && "Must not be");
+    assert((getState() == kCollecting || getState() == kCompleted)
+           && "Must not be");
 
 #ifdef TEMPORARILY_DISABLED
 #ifndef NDEBUG
@@ -210,7 +211,6 @@ namespace cling {
     static const char* const stateNames[kNumStates] = {
       "Collecting",
       "kCompleted",
-      "Committing",
       "RolledBack",
       "RolledBackWithErrors",
       "Committed"
