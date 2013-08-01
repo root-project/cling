@@ -26,11 +26,22 @@
 
 extern "C" {
   bool shouldProceed(void *S, void *T) {
-    clang::Sema *Sem = (clang::Sema *)S;
-    clang::DiagnosticsEngine& Diag = Sem->getDiagnostics();
+    using namespace clang;
+    Sema *Sem = (Sema *)S;
+    DiagnosticsEngine& Diag = Sem->getDiagnostics();
     cling::Transaction* Trans = (cling::Transaction*)T;
-    clang::SourceLocation Loc = Trans->getWrapperFD()->getLocation();
-    Diag.Report(Loc, clang::diag::warn_null_ptr_deref);
+    // Here we will cheat a bit and assume that the warning came from the last
+    // stmt, which will be in the 90% of the cases.
+    CompoundStmt* CS = cast<CompoundStmt>(Trans->getWrapperFD()->getBody());
+    // Skip the NullStmts.
+    SourceLocation Loc = CS->getLocStart();
+    for(CompoundStmt::const_reverse_body_iterator I = CS->body_rbegin(),
+          E = CS->body_rend(); I != E; ++I)
+      if (!isa<NullStmt>(*I)) {
+        Loc = (*I)->getLocStart();
+        break;
+      }
+    Diag.Report(Loc, diag::warn_null_ptr_deref);
     if (isatty(fileno(stdin))) {
       int input = getchar();
       getchar();
