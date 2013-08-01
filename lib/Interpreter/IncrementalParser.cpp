@@ -14,6 +14,7 @@
 #include "IRDumper.h"
 #include "NullDerefProtectionTransformer.h"
 #include "ReturnSynthesizer.h"
+#include "TransactionPool.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/Interpreter.h"
