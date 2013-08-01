@@ -22,20 +22,22 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/InstIterator.h"
 
+#include "stdio.h"
+
 extern "C" {
-  int printf(const char *...);
-  int getchar(void);
   bool shouldProceed(void *S, void *T) {
-    int input;
     clang::Sema *Sem = (clang::Sema *)S;
     clang::DiagnosticsEngine& Diag = Sem->getDiagnostics();
     cling::Transaction* Trans = (cling::Transaction*)T;
     clang::SourceLocation Loc = Trans->getWrapperFD()->getLocation();
     Diag.Report(Loc, clang::diag::warn_null_ptr_deref);
-    input = getchar();
-    getchar();
-    if (input == 'y' || input == 'Y') return false;
-    else return true;
+    if (isatty(fileno(stdin))) {
+      int input = getchar();
+      getchar();
+      if (input == 'y' || input == 'Y') 
+        return false;
+    }
+    return true;
   }
 }
 
