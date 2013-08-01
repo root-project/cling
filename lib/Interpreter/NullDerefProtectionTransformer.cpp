@@ -22,7 +22,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/InstIterator.h"
 
-#include "stdio.h"
+#include <cstdio>
 
 extern "C" {
   bool shouldProceed(void *S, void *T) {
