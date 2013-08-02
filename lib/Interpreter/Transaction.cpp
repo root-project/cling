@@ -236,7 +236,9 @@ namespace cling {
 
   void cling::Transaction::printStructureBrief(size_t nindent /*=0*/) const {
     std::string indent(nindent, ' ');
-    llvm::errs() << indent << "<T @" << this << " empty=" << empty() <<"> \n";
+    llvm::errs() << indent << "<T @" << this << " isEmpty=" << empty();
+    llvm::errs() << " isCommitted=" << (getState() == kCommitted);
+    llvm::errs() <<"> \n";
 
     for (const_nested_iterator I = nested_begin(), E = nested_end(); 
          I != E; ++I) {
