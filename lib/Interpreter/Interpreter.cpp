@@ -822,13 +822,13 @@ namespace cling {
     std::string errMsg;
     // TODO: !permanent case
     DynamicLibrary DyLib
-    = DynamicLibrary::getPermanentLibrary(FoundDyLib.str().c_str(), &errMsg);
+      = DynamicLibrary::getPermanentLibrary(FoundDyLib.str().c_str(), &errMsg);
     if (!DyLib.isValid()) {
       llvm::errs() << "cling::Interpreter::tryLinker(): " << errMsg << '\n';
       return kLoadLibError;
     }
     std::pair<std::set<llvm::sys::DynamicLibrary>::iterator, bool> insRes
-    = static_cast<DynLibSetImpl*>(m_DyLibs.get())->insert(DyLib);
+      = static_cast<DynLibSetImpl*>(m_DyLibs.get())->insert(DyLib);
     if (!insRes.second)
       return kLoadLibExists;
     addLoadedFile(FoundDyLib.str(), LoadedFileInfo::kDynamicLibrary,
