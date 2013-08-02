@@ -77,7 +77,7 @@ namespace cling {
           }
         }
       }
-      return true;
+      //return true;
     }
 
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
@@ -90,7 +90,7 @@ namespace cling {
     // pipe it directly to codegen.
     if (comesFromASTReader(DGR)) {
       HandleTopLevelDecl(DGR);
-      return;
+      //return;
     }
 
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleInterestingDecl);
@@ -103,7 +103,7 @@ namespace cling {
     if (comesFromASTReader(DeclGroupRef(TD))) {
       if (m_CodeGen)
         m_CodeGen->HandleTagDeclDefinition(TD);
-      return;
+      //return;
     }
 
     Transaction::DelayCallInfo DCI(DeclGroupRef(TD), 
@@ -118,7 +118,7 @@ namespace cling {
       // FIXME: when is the vtable part of the library?
       if (m_CodeGen)
         m_CodeGen->HandleVTable(RD, DefinitionRequired);
-      return;
+      //return;
     }
 
     Transaction::DelayCallInfo DCI(DeclGroupRef(RD),
@@ -146,7 +146,7 @@ namespace cling {
     if (comesFromASTReader(DeclGroupRef(D))) {
       if (m_CodeGen)
         m_CodeGen->HandleCXXImplicitFunctionInstantiation(D);
-      return;
+      //return;
     }
 
     Transaction::DelayCallInfo DCI(DeclGroupRef(D),
@@ -159,7 +159,7 @@ namespace cling {
     if (comesFromASTReader(DeclGroupRef(D))) {
       if (m_CodeGen && !shouldIgnoreDeclFromASTReader(D))
           m_CodeGen->HandleCXXStaticMemberVarInstantiation(D);
-      return;
+      //return;
     }
 
     Transaction::DelayCallInfo DCI(DeclGroupRef(D),

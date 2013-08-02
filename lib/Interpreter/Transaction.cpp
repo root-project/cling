@@ -138,7 +138,11 @@ namespace cling {
           m_WrapperFD = FD;
         }
     }
-    m_DeclQueue.push_back(DCI);
+    
+    if (comesFromASTReader(DCI.m_DGR))
+      m_DeserializedDeclQueue.push_back(DCI);
+    else
+      m_DeclQueue.push_back(DCI);
   }
 
   void Transaction::append(clang::DeclGroupRef DGR) {
@@ -245,6 +249,16 @@ namespace cling {
       llvm::errs() << indent << "`";
       (*I)->printStructureBrief(nindent + 3);
     }
+  }
+
+  bool Transaction::comesFromASTReader(DeclGroupRef DGR) const {
+    assert(!DGR.isNull() && "DeclGroupRef is Null!");
+    if (getCompilationOpts().CodeGenerationForModule)
+      return true;
+
+    // Take the first/only decl in the group.
+    Decl* D = *DGR.begin();
+    return D->isFromASTFile();
   }
 
 } // end namespace cling

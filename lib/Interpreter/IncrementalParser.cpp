@@ -268,10 +268,9 @@ namespace cling {
     }
     T->setState(Transaction::kCommitted);
 
-    InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
-
-    if (callbacks)
+    if (InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks())
       callbacks->TransactionCommitted(*T);
+
   }
 
   void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) const {

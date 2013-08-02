@@ -71,11 +71,16 @@ namespace cling {
     typedef llvm::SmallVector<DelayCallInfo, 64> DeclQueue;
     typedef llvm::SmallVector<Transaction*, 2> NestedTransactions;
 
-    ///\brief All seen declarations. If we collect the declarations by walking
-    /// the clang::DeclContext we will miss the injected onces (eg. template 
-    /// instantiations).
+    ///\brief All seen declarations, except the deserialized ones.
+    /// If we collect the declarations by walking the clang::DeclContext we 
+    /// will miss the injected onces (eg. template instantiations).
     ///
     DeclQueue m_DeclQueue;
+
+    ///\brief All declarations that the transaction caused to be deserialized,
+    /// either from the PCH or the PCM.
+    ///
+    DeclQueue m_DeserializedDeclQueue;
 
     ///\brief List of nested transactions if any.
     ///
@@ -201,7 +206,7 @@ namespace cling {
     ///\brief Returns the first declaration of the transaction.
     ///
     clang::DeclGroupRef getFirstDecl() const {
-      if (!empty())
+      if (!m_DeclQueue.empty())
         return m_DeclQueue.front().m_DGR;
       return clang::DeclGroupRef();
     }
@@ -209,7 +214,7 @@ namespace cling {
     ///\brief Returns the last declaration of a completed transaction.
     ///
     clang::DeclGroupRef getLastDecl() const {
-      if (!empty() && isCompleted())
+      if (!m_DeclQueue.empty() && isCompleted())
         return m_DeclQueue.back().m_DGR;
       return clang::DeclGroupRef();
     }
@@ -218,7 +223,7 @@ namespace cling {
     /// in still incomplete.
     ///
     clang::DeclGroupRef getCurrentLastDecl() const {
-      if (!empty())
+      if (!m_DeclQueue.empty())
         return m_DeclQueue.back().m_DGR;
       return clang::DeclGroupRef();
     }
@@ -282,7 +287,7 @@ namespace cling {
     ///\brief Returns whether there are declarations in the transaction.
     ///
     bool empty() const {
-      return m_DeclQueue.empty()
+      return m_DeclQueue.empty() && m_DeserializedDeclQueue.empty()
         && (!m_NestedTransactions || m_NestedTransactions->empty());
     }
 
@@ -358,6 +363,8 @@ namespace cling {
     void printStructureBrief(size_t nindent = 0) const;
 
     friend class IncrementalParser;
+  private:
+    bool comesFromASTReader(clang::DeclGroupRef DGR) const;
   };
 
 } // end namespace cling
