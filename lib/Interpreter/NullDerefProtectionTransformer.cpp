@@ -23,6 +23,7 @@
 #include "llvm/Support/InstIterator.h"
 
 #include <cstdio>
+#include "unistd.h"
 
 extern "C" {
   bool shouldProceed(void *S, void *T) {
