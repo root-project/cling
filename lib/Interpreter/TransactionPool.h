@@ -45,7 +45,6 @@ namespace cling {
         delete m_Transactions[i];
     }
 
-    //FIXME: Maybe in the end we should go for ref-counted transactions...
     Transaction* takeTransaction() {
       if (m_Transactions.size() == 0)
         RefillPool();
