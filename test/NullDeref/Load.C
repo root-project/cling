@@ -3,12 +3,12 @@
 int *p;
 int x;
 x = *p; // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
-n
+
+extern "C" int printf(const char* fmt, ...);
 class MyClass {
 public:
   int a;
 };
 MyClass *m = 0;
 if (m->a) {  printf("MyClass's a=%d", m->a);} // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
-n
 .q
