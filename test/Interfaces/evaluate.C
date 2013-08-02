@@ -36,4 +36,5 @@ int one; // expected-error {{redefinition of 'one' with a different type: 'int' 
 // Make sure that PR#98434 doesn't get reintroduced.
 void f(int);
 gCling->evaluate("f", V);
+V.isValid() //CHECK: (_Bool) true
 // end PR#98434
