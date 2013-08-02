@@ -79,6 +79,11 @@ CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 	$(filter-out -lLLVMipa,$(shell $(LLVMCONFIG) --libs)))\
 	$(shell $(LLVMCONFIG) --ldflags)
 
+ifeq ($(ARCH),win32gcc)
+# for EnumProcessModules() in TCling.cxx
+CLINGLIBEXTRA += -lpsapi
+endif
+
 ##### local rules #####
 .PHONY:         all-$(MODNAME) clean-$(MODNAME) distclean-$(MODNAME)
 
