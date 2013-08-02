@@ -270,8 +270,7 @@ namespace cling {
   }
 
   Interpreter::~Interpreter() {
-    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
-    DClient.EndSourceFile();
+    getCI()->getDiagnostics().getClient()->EndSourceFile();
 
     for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
       const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
