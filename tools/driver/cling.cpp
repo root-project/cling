@@ -60,9 +60,9 @@ int main( int argc, char **argv ) {
      }
    }
    else {
-      cling::UserInterface ui(interp);
       ui.runInteractively(interp.getOptions().NoLogo);
    }
+   
 
    // if we are running with -verify a reported has to be returned as unsuccess.
    // This is relevan especially for the test suite.
