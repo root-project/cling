@@ -35,5 +35,5 @@ int one; // expected-error {{redefinition of 'one' with a different type: 'int' 
 
 // Make sure that PR#98434 doesn't get reintroduced.
 void f(int);
-gCling->evaluate("f // expected-error {{cannot initialize return object of type 'void (int)' with an lvalue of type 'void (int)'}}", V);
+gCling->evaluate("f", V);
 // end PR#98434
