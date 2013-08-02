@@ -65,9 +65,17 @@ int main( int argc, char **argv ) {
    
 
    // if we are running with -verify a reported has to be returned as unsuccess.
-   // This is relevan especially for the test suite.
-   if (CI->getDiagnosticOpts().VerifyDiagnostics)
-     ret = !CI->getDiagnostics().getClient()->getNumErrors();
+   // This is relevant especially for the test suite.
+   if (CI->getDiagnosticOpts().VerifyDiagnostics) {
+     // If there was an error that came from the verifier we must return 1 as
+     // an exit code for the process. This will make the test fail as expected.
+     clang::DiagnosticConsumer* client = CI->getDiagnostics().getClient();
+     client->EndSourceFile();
+     ret = client->getNumErrors();
 
-   return ret ? 0 : 1;
+     // The interpreter expects BeginSourceFile/EndSourceFiles to be balanced.
+     client->BeginSourceFile(CI->getLangOpts(), &CI->getPreprocessor());
+   }
+
+   return ret;
 }
