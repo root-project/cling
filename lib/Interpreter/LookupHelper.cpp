@@ -23,7 +23,7 @@ using namespace clang;
 namespace cling {
 
   ///\brief Cleanup Parser state after a failed lookup.
-  /// 
+  ///
   /// After a failed lookup we need to discard the remaining unparsed input,
   /// restore the original state of the incremental parsing flag, clear any
   /// pending diagnostics, restore the suppress diagnostics flag, and restore
@@ -40,7 +40,7 @@ namespace cling {
 
   public:
     ParserStateRAII(Parser& p)
-      : P(&p), PP(p.getPreprocessor()), 
+      : P(&p), PP(p.getPreprocessor()),
         ResetIncrementalProcessing(p.getPreprocessor()
                                    .isIncrementalProcessingEnabled()),
         OldSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
@@ -57,7 +57,7 @@ namespace cling {
       //
       // Note: Consuming the EOF token will pop the include stack.
       //
-      P->SkipUntil(tok::eof, /*StopAtSemi*/false, /*DontConsume*/false, 
+      P->SkipUntil(tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
                    /*StopAtCodeCompletion*/false);
       PP.enableIncrementalProcessing(ResetIncrementalProcessing);
       P->getActions().getDiagnostics().Reset();
@@ -69,7 +69,7 @@ namespace cling {
 
   // pin *tor here so that we can have clang::Parser defined and be able to call
   // the dtor on the OwningPtr
-  LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp) 
+  LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp)
     : m_Parser(P), m_Interpreter(interp) {}
 
   LookupHelper::~LookupHelper() {}
@@ -113,13 +113,13 @@ namespace cling {
     Preprocessor& PP = P.getPreprocessor();
     ASTContext& Context = S.getASTContext();
 
-    // The user wants to see the template instantiation, existing or not.    
-    // Here we might not have an active transaction to handle 
-    // the caused instantiation decl.    
+    // The user wants to see the template instantiation, existing or not.
+    // Here we might not have an active transaction to handle
+    // the caused instantiation decl.
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
 
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(className.str() + "::", 
+    prepareForParsing(className.str() + "::",
                       llvm::StringRef("lookup.class.by.name.file"));
     //
     //  Our return values.
@@ -135,10 +135,10 @@ namespace cling {
     //
     //  Prevent failing on an assert in TryAnnotateCXXScopeToken.
     //
-    if (!P.getCurToken().is(clang::tok::identifier) 
-        && !P.getCurToken().is(clang::tok::coloncolon) 
-        && !(P.getCurToken().is(clang::tok::annot_template_id) 
-             && P.NextToken().is(clang::tok::coloncolon)) 
+    if (!P.getCurToken().is(clang::tok::identifier)
+        && !P.getCurToken().is(clang::tok::coloncolon)
+        && !(P.getCurToken().is(clang::tok::annot_template_id)
+             && P.NextToken().is(clang::tok::coloncolon))
         && !P.getCurToken().is(clang::tok::kw_decltype)) {
       // error path
       return TheDecl;
@@ -194,7 +194,7 @@ namespace cling {
                 // Note: Do we need to check for a dependent type here?
                 NestedNameSpecifier *prefix = NNS->getPrefix();
                 if (prefix) {
-                   QualType temp 
+                   QualType temp
                      = Context.getElaboratedType(ETK_None,prefix,
                                                  QualType(NNS->getAsType(),0));
                    *setResultType = temp.getTypePtr();
@@ -283,16 +283,16 @@ namespace cling {
     Sema& S = P.getActions();
     ASTContext& Context = S.getASTContext();
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(Name.str(), 
+    prepareForParsing(Name.str(),
                       llvm::StringRef("lookup.class.by.name.file"));
 
     //
     //  Prevent failing on an assert in TryAnnotateCXXScopeToken.
     //
-    if (!P.getCurToken().is(clang::tok::identifier) 
-        && !P.getCurToken().is(clang::tok::coloncolon) 
-        && !(P.getCurToken().is(clang::tok::annot_template_id) 
-             && P.NextToken().is(clang::tok::coloncolon)) 
+    if (!P.getCurToken().is(clang::tok::identifier)
+        && !P.getCurToken().is(clang::tok::coloncolon)
+        && !(P.getCurToken().is(clang::tok::annot_template_id)
+             && P.NextToken().is(clang::tok::coloncolon))
         && !P.getCurToken().is(clang::tok::kw_decltype)) {
       // error path
       return 0;
@@ -329,7 +329,7 @@ namespace cling {
         case NestedNameSpecifier::Identifier:
            return 0;
         case NestedNameSpecifier::TypeSpec:
-        case NestedNameSpecifier::TypeSpecWithTemplate: 
+        case NestedNameSpecifier::TypeSpecWithTemplate:
           {
             const Type *ntype = nested->getAsType();
             where = ntype->getAsCXXRecordDecl();
@@ -345,7 +345,7 @@ namespace cling {
     }
     if (where) {
       // Great we now have a scope and something to search for,let's go ahead.
-      DeclContext::lookup_result R 
+      DeclContext::lookup_result R
         = where->lookup(P.getCurToken().getIdentifierInfo());
       for (DeclContext::lookup_iterator I = R.begin(), E = R.end();
            I != E; ++I) {
@@ -357,25 +357,13 @@ namespace cling {
     return 0;
   }
 
-  const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
-                                                      llvm::StringRef funcName, 
-                                               llvm::StringRef funcProto) const {
-    assert(scopeDecl && "Decl cannot be null");
+  static
+  DeclContext* getContextAndSpec(CXXScopeSpec &SS,
+                                 const Decl* scopeDecl,
+                                 ASTContext& Context, Sema &S) {
     //
-    //  Our return value.
-    //
-    FunctionDecl* TheDecl = 0;
-    //
-    //  Some utilities.
-    //
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    Preprocessor& PP = S.getPreprocessor();
-    ASTContext& Context = S.getASTContext();
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
-    //
-    //  Get the DeclContext we will search for the function.
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
     //
     NestedNameSpecifier* classNNS = 0;
     if (const NamespaceDecl* NSD = dyn_cast<NamespaceDecl>(scopeDecl)) {
@@ -395,6 +383,34 @@ namespace cling {
     }
     DeclContext* foundDC = dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
     //
+    //  Some validity checks on the passed decl.
+    //
+    if (foundDC->isDependentContext()) {
+      // Passed decl is a template, we cannot use it.
+      return 0;
+    }
+    SS.MakeTrivial(Context, classNNS, SourceRange());
+    if (S.RequireCompleteDeclContext(SS, foundDC)) {
+      // Forward decl or instantiation failure, we cannot use it.
+      return 0;
+    }
+
+    return foundDC;
+  }
+
+  static
+  const FunctionDecl* overloadFunctionSelector(DeclContext* foundDC,
+                                  const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                                     LookupResult &Result,
+                                     DeclarationNameInfo &FuncNameInfo,
+                              const TemplateArgumentListInfo* FuncTemplateArgs,
+                                     ASTContext& Context, Parser &P, Sema &S) {
+    //
+    //  Our return value.
+    //
+    FunctionDecl* TheDecl = 0;
+
+    //
     //  If we are looking up a member function, construct
     //  the implicit object argument.
     //
@@ -405,22 +421,231 @@ namespace cling {
     Expr::Classification ObjExprClassification;
     if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
       ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
-      ObjExpr = new (Context) OpaqueValueExpr(SourceLocation(),
-        ClassType, VK_LValue);
-      ObjExprClassification = ObjExpr->Classify(Context);
-      //GivenArgTypes.insert(GivenArgTypes.begin(), ClassType);
-      //GivenArgs.insert(GivenArgs.begin(), ObjExpr);
+      OpaqueValueExpr ObjExpr(SourceLocation(),
+                              ClassType, VK_LValue);
+      ObjExprClassification = ObjExpr.Classify(Context);
     }
+
+    //
+    //  Construct the overload candidate set.
+    //
+    OverloadCandidateSet Candidates(FuncNameInfo.getLoc());
+    for (LookupResult::iterator I = Result.begin(), E = Result.end();
+         I != E; ++I) {
+      NamedDecl* ND = *I;
+      if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
+        if (isa<CXXMethodDecl>(FD) &&
+            !cast<CXXMethodDecl>(FD)->isStatic() &&
+            !isa<CXXConstructorDecl>(FD)) {
+          // Class method, not static, not a constructor, so has
+          // an implicit object argument.
+          CXXMethodDecl* MD = cast<CXXMethodDecl>(FD);
+          if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
+            // Explicit template args were given, cannot use a plain func.
+            continue;
+          }
+          S.AddMethodCandidate(MD, I.getPair(), MD->getParent(),
+                               /*ObjectType=*/ClassType,
+                               /*ObjectClassification=*/ObjExprClassification,
+                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                                   Candidates);
+        }
+        else {
+          const FunctionProtoType* Proto = dyn_cast<FunctionProtoType>(
+            FD->getType()->getAs<clang::FunctionType>());
+          if (!Proto) {
+            // Function has no prototype, cannot do overloading.
+            continue;
+          }
+          if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
+            // Explicit template args were given, cannot use a plain func.
+             continue;
+          }
+          S.AddOverloadCandidate(FD, I.getPair(),
+                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                                 Candidates);
+        }
+      }
+      else if (FunctionTemplateDecl* FTD =
+               dyn_cast<FunctionTemplateDecl>(ND)) {
+        if (isa<CXXMethodDecl>(FTD->getTemplatedDecl()) &&
+            !cast<CXXMethodDecl>(FTD->getTemplatedDecl())->isStatic() &&
+            !isa<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
+          // Class method template, not static, not a constructor, so has
+          // an implicit object argument.
+          S.AddMethodTemplateCandidate(FTD, I.getPair(),
+                                      cast<CXXRecordDecl>(FTD->getDeclContext()),
+                         const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
+                                       /*ObjectType=*/ClassType,
+                                  /*ObjectClassification=*/ObjExprClassification,
+                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                                       Candidates);
+        }
+        else {
+          S.AddTemplateOverloadCandidate(FTD, I.getPair(),
+                const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
+                llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                Candidates, /*SuppressUserConversions=*/false);
+        }
+      }
+      else {
+        // Is there any other cases?
+      }
+    }
+    //
+    //  Find the best viable function from the set.
+    //
+    {
+       OverloadCandidateSet::iterator Best;
+       OverloadingResult OR = Candidates.BestViableFunction(S,
+                                                            Result.getNameLoc(),
+                                                            Best);
+       if (OR == OR_Success) {
+          TheDecl = Best->Function;
+          // We prefer to get the canonical decl for consistency and ease
+          // of comparison.
+          TheDecl = TheDecl->getCanonicalDecl();
+       }
+    }
+    return TheDecl;
+  }
+
+  template <typename T>
+  T findFunction(DeclContext* foundDC, CXXScopeSpec &SS,
+                 llvm::StringRef funcName,
+                 const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                 ASTContext& Context, Parser &P, Sema &S,
+                 T (*functionSelector)(DeclContext* foundDC,
+                                  const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                                       LookupResult &Result,
+                                       DeclarationNameInfo &FuncNameInfo,
+                              const TemplateArgumentListInfo* FuncTemplateArgs,
+                                       ASTContext& Context, Parser &P, Sema &S)
+                  ) {
+    // Given the correctly types arguments, etc. find the function itself.
+
+    //
+    //  Some utilities.
+    //
+    Preprocessor& PP = S.getPreprocessor();
+    //
+    //  Our return value.
+    //
+    FunctionDecl* TheDecl = 0;
+
+    //
+    //  Setup to reparse as a type.
+    //
+    //
+    //  Create a fake file to parse the function name.
+    //
+    {
+      llvm::MemoryBuffer* SB
+        = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
+                                               + "\n", "lookup.funcname.file");
+      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+      PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
+      PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
+    }
+
+    //
+    //  Make the class we are looking up the function
+    //  in the current scope to please the constructor
+    //  name lookup.  We do not need to do this otherwise,
+    //  and may be able to remove it in the future if
+    //  the way constructors are looked up changes.
+    //
+    void* OldEntity = P.getCurScope()->getEntity();
+    DeclContext* TUCtx = Context.getTranslationUnitDecl();
+    P.getCurScope()->setEntity(TUCtx);
+    P.EnterScope(Scope::DeclScope);
+    P.getCurScope()->setEntity(foundDC);
+    P.EnterScope(Scope::DeclScope);
+    Sema::ContextRAII SemaContext(S, foundDC);
+    S.EnterDeclaratorContext(P.getCurScope(), foundDC);
+    //
+    //  Parse the function name.
+    //
+    SourceLocation TemplateKWLoc;
+    UnqualifiedId FuncId;
+    if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
+                             /*AllowDestructorName*/true,
+                             /*AllowConstructorName*/true,
+                             ParsedType(), TemplateKWLoc,
+                             FuncId)) {
+      // Failed parse, cleanup.
+      // Destroy the scope we created first, and
+      // restore the original.
+      S.ExitDeclaratorContext(P.getCurScope());
+      P.ExitScope();
+      P.ExitScope();
+      P.getCurScope()->setEntity(OldEntity);
+      // Then exit.
+      return TheDecl;
+    }
+    //
+    //  Get any template args in the function name.
+    //
+    TemplateArgumentListInfo FuncTemplateArgsBuffer;
+    DeclarationNameInfo FuncNameInfo;
+    const TemplateArgumentListInfo* FuncTemplateArgs;
+    S.DecomposeUnqualifiedId(FuncId, FuncTemplateArgsBuffer, FuncNameInfo,
+                             FuncTemplateArgs);
+    //
+    //  Lookup the function name in the given class now.
+    //
+    DeclarationName FuncName = FuncNameInfo.getName();
+    SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
+    LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName,
+                        Sema::NotForRedeclaration);
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+    if (!S.LookupQualifiedName(Result, foundDC)) {
+      // Lookup failed.
+      // Destroy the scope we created first, and
+      // restore the original.
+      S.ExitDeclaratorContext(P.getCurScope());
+      P.ExitScope();
+      P.ExitScope();
+      P.getCurScope()->setEntity(OldEntity);
+      // Then cleanup and exit.
+      return TheDecl;
+    }
+    //
+    //  Destroy the scope we created, and restore the original.
+    //
+    S.ExitDeclaratorContext(P.getCurScope());
+    P.ExitScope();
+    P.ExitScope();
+    P.getCurScope()->setEntity(OldEntity);
+    //
+    //  Check for lookup failure.
+    //
+    if (Result.getResultKind() != LookupResult::Found &&
+        Result.getResultKind() != LookupResult::FoundOverloaded) {
+       // Lookup failed.
+       return TheDecl;
+    }
+    return functionSelector(foundDC,GivenArgs,
+                            Result,
+                            FuncNameInfo,
+                            FuncTemplateArgs,
+                            Context, P, S);
+  }
+
+  static
+  bool findFunctionParseProto(llvm::SmallVector<Expr*, 4> &GivenArgs,
+                              ASTContext& Context, Parser &P,Sema &S) {
     //
     //  Parse the prototype now.
     //
+
     llvm::SmallVector<QualType, 4> GivenArgTypes;
-    llvm::SmallVector<Expr*, 4> GivenArgs;
+
     while (P.getCurToken().isNot(tok::eof)) {
       TypeResult Res(P.ParseTypeName());
       if (!Res.isUsable()) {
         // Bad parse, done.
-        return TheDecl;
+        return false;
       }
       TypeSourceInfo *TSI = 0;
       clang::QualType QT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
@@ -447,493 +672,154 @@ namespace cling {
     }
     if (P.getCurToken().isNot(tok::eof)) {
       // We did not consume all of the prototype, bad parse.
-      return TheDecl;
+      return false;
     }
     //
     //  Cleanup after prototype parse.
     //
-    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false, 
+    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
                 /*StopAtCodeCompletion*/false);
     S.getDiagnostics().Reset();
-    //
-    //  Setup to reparse as a type.
-    //
-    //
-    //  Create a fake file to parse the function name.
-    //
-    {
-      llvm::MemoryBuffer* SB 
-        = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
-                                               + "\n", "lookup.funcname.file");
-      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
-      PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
-      PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
-    }
-    {
-      //
-      //  Parse the function name.
-      //
-      SourceLocation TemplateKWLoc;
-      UnqualifiedId FuncId;
-      CXXScopeSpec SS;
-      SS.MakeTrivial(Context, classNNS, SourceRange());
-      //
-      //  Make the class we are looking up the function
-      //  in the current scope to please the constructor
-      //  name lookup.  We do not need to do this otherwise,
-      //  and may be able to remove it in the future if
-      //  the way constructors are looked up changes.
-      //
-      void* OldEntity = P.getCurScope()->getEntity();
-      DeclContext* TUCtx = Context.getTranslationUnitDecl();
-      P.getCurScope()->setEntity(TUCtx);
-      P.EnterScope(Scope::DeclScope);
-      P.getCurScope()->setEntity(foundDC);
-      P.EnterScope(Scope::DeclScope);
-      Sema::ContextRAII SemaContext(S, foundDC);
-      S.EnterDeclaratorContext(P.getCurScope(), foundDC);
-      if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
-                               /*AllowDestructorName*/true,
-                               /*AllowConstructorName*/true,
-                               clang::ParsedType(), TemplateKWLoc,
-                               FuncId)) {
-        // Bad parse.
-        // Destroy the scope we created first, and
-        // restore the original.
-        S.ExitDeclaratorContext(P.getCurScope());
-        P.ExitScope();
-        P.ExitScope();
-        P.getCurScope()->setEntity(OldEntity);
 
-        // Then cleanup and exit.
-        return TheDecl;
-      }
-      //
-      //  Get any template args in the function name.
-      //
-      TemplateArgumentListInfo FuncTemplateArgsBuffer;
-      DeclarationNameInfo FuncNameInfo;
-      const TemplateArgumentListInfo* FuncTemplateArgs;
-      S.DecomposeUnqualifiedId(FuncId, FuncTemplateArgsBuffer, FuncNameInfo, 
-                               FuncTemplateArgs);
-      //
-      //  Lookup the function name in the given class now.
-      //
-      DeclarationName FuncName = FuncNameInfo.getName();
-      SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
-      LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName, 
-                          Sema::NotForRedeclaration);
-
-      // This might trigger deserialization.    
-      Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-      if (!S.LookupQualifiedName(Result, foundDC)) {
-        // Lookup failed.
-        // Destroy the scope we created first, and
-        // restore the original.
-        S.ExitDeclaratorContext(P.getCurScope());
-        P.ExitScope();
-        P.ExitScope();
-        P.getCurScope()->setEntity(OldEntity);
-        // Then cleanup and exit.
-        return TheDecl;
-      }
-      // Destroy the scope we created, and
-      // restore the original.
-      S.ExitDeclaratorContext(P.getCurScope());
-      P.ExitScope();
-      P.ExitScope();
-      P.getCurScope()->setEntity(OldEntity);
-      //
-      //  Check for lookup failure.
-      //
-      if (Result.getResultKind() != LookupResult::Found &&
-          Result.getResultKind() != LookupResult::FoundOverloaded) {
-        // Lookup failed.
-        return TheDecl;
-      }
-      {
-        //
-        //  Construct the overload candidate set.
-        //
-        OverloadCandidateSet Candidates(FuncNameInfo.getLoc());
-        for (LookupResult::iterator I = Result.begin(), E = Result.end();
-            I != E; ++I) {
-          NamedDecl* ND = *I;
-          if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
-            if (isa<CXXMethodDecl>(FD) &&
-                !cast<CXXMethodDecl>(FD)->isStatic() &&
-                !isa<CXXConstructorDecl>(FD)) {
-              // Class method, not static, not a constructor, so has
-              // an implicit object argument.
-              CXXMethodDecl* MD = cast<CXXMethodDecl>(FD);
-              if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
-                // Explicit template args were given, cannot use a plain func.
-                continue;
-              }
-              S.AddMethodCandidate(MD, I.getPair(), MD->getParent(),
-                                   /*ObjectType=*/ClassType,
-                                  /*ObjectClassification=*/ObjExprClassification,
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                   Candidates);
-            }
-            else {
-              const FunctionProtoType* Proto = dyn_cast<FunctionProtoType>(
-                FD->getType()->getAs<clang::FunctionType>());
-              if (!Proto) {
-                // Function has no prototype, cannot do overloading.
-                continue;
-              }
-              if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
-                // Explicit template args were given, cannot use a plain func.
-                continue;
-              }
-              S.AddOverloadCandidate(FD, I.getPair(),
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                     Candidates);
-            }
-          }
-          else if (FunctionTemplateDecl* FTD =
-              dyn_cast<FunctionTemplateDecl>(ND)) {
-            if (isa<CXXMethodDecl>(FTD->getTemplatedDecl()) &&
-                !cast<CXXMethodDecl>(FTD->getTemplatedDecl())->isStatic() &&
-                !isa<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
-              // Class method template, not static, not a constructor, so has
-              // an implicit object argument.
-              S.AddMethodTemplateCandidate(FTD, I.getPair(),
-                                      cast<CXXRecordDecl>(FTD->getDeclContext()),
-                         const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-                                           /*ObjectType=*/ClassType,
-                                  /*ObjectClassification=*/ObjExprClassification,
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                           Candidates);
-            }
-            else {
-              S.AddTemplateOverloadCandidate(FTD, I.getPair(),
-                const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-                llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                Candidates, /*SuppressUserConversions=*/false);
-            }
-          }
-        }
-        //
-        //  Find the best viable function from the set.
-        //
-        {
-          OverloadCandidateSet::iterator Best;
-          OverloadingResult OR = Candidates.BestViableFunction(S, 
-                                                             Result.getNameLoc(),
-                                                               Best);
-          if (OR == OR_Success) {
-            TheDecl = Best->Function;
-            // We prefer to get the canonical decl for consistency and ease
-            // of comparison.
-            TheDecl = TheDecl->getCanonicalDecl();
-          }
-        }
-      }
-    }
-    return TheDecl;
+    return true;
   }
 
-  const FunctionDecl* LookupHelper::findFunctionArgs(const Decl* scopeDecl,
-                                                       llvm::StringRef funcName,
-                                                llvm::StringRef funcArgs) const {
-    //
-    //  Our return value.
-    //
-    FunctionDecl* TheDecl = 0;
+  const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
+                                                      llvm::StringRef funcName,
+                                               llvm::StringRef funcProto) const {
+    assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
     //
     // Use P for shortness
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
-    Preprocessor& PP = S.getPreprocessor();
     ASTContext& Context = S.getASTContext();
 
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcArgs, llvm::StringRef("func.args.file"));
     //
     //  Convert the passed decl into a nested name specifier,
     //  a scope spec, and a decl context.
     //
-    NestedNameSpecifier* classNNS = 0;
-    if (const NamespaceDecl* NSD = dyn_cast<const NamespaceDecl>(scopeDecl)) {
-      classNNS = NestedNameSpecifier::Create(Context, 0,
-                                             const_cast<NamespaceDecl*>(NSD));
-    }
-    else if (const RecordDecl* RD = dyn_cast<const RecordDecl>(scopeDecl)) {
-      const Type* T = Context.getRecordType(RD).getTypePtr();
-      classNNS = NestedNameSpecifier::Create(Context, 0, false, T);
-    }
-    else if (llvm::isa<TranslationUnitDecl>(scopeDecl)) {
-      classNNS = NestedNameSpecifier::GlobalSpecifier(Context);
-    }
-    else {
-      // Not a namespace or class, we cannot use it.
-      return 0;
-    }
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
     CXXScopeSpec SS;
-    SS.MakeTrivial(Context, classNNS, SourceRange());
-    DeclContext* foundDC = dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
     //
-    //  Some validity checks on the passed decl.
+    //  Parse the prototype now.
     //
-    if (foundDC->isDependentContext()) {
-      // Passed decl is a template, we cannot use it.
-      return 0;
-    }
-    if (S.RequireCompleteDeclContext(SS, foundDC)) {
-      // Forward decl or instantiation failure, we cannot use it.
-      return 0;
-    }
-    //
-    //  Get ready for arg list parsing.
-    //
-    llvm::SmallVector<QualType, 4> GivenArgTypes;
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
+
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    //
-    //  If we are looking up a member function, construct
-    //  the implicit object argument.
-    //
-    //  Note: For now this is always a non-CV qualified lvalue.
-    //
-    QualType ClassType;
-    Expr* ObjExpr = 0;
-    Expr::Classification ObjExprClassification = Expr::Classification();
-    if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
-      ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
-      ObjExpr = new (Context) OpaqueValueExpr(SourceLocation(),
-        ClassType, VK_LValue);
-      ObjExprClassification = ObjExpr->Classify(Context);
-      //GivenArgTypes.insert(GivenArgTypes.begin(), ClassType);
-      //GivenArgs.insert(GivenArgs.begin(), ObjExpr);
+    if (!findFunctionParseProto(GivenArgs,Context,P,S) ) {
+       return 0;
     }
+
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs,
+                        Context, P, S,
+                        overloadFunctionSelector);
+  }
+
+  static
+  bool findFunctionParseArgs(llvm::SmallVector<Expr*, 4> &GivenArgs,
+                             ASTContext& Context, Parser &P, Sema &S) {
 
     //
     //  Parse the arguments now.
     //
+
+    llvm::SmallVector<QualType, 4> GivenArgTypes;
+
+    PrintingPolicy Policy(Context.getPrintingPolicy());
+    Policy.SuppressTagKeyword = true;
+    Policy.SuppressUnwrittenScope = true;
+    Policy.SuppressInitializers = true;
+    Policy.AnonymousTagLocations = false;
+    std::string proto;
     {
-      PrintingPolicy Policy(Context.getPrintingPolicy());
-      Policy.SuppressTagKeyword = true;
-      Policy.SuppressUnwrittenScope = true;
-      Policy.SuppressInitializers = true;
-      Policy.AnonymousTagLocations = false;
-      std::string proto;
-      {
-        bool first_time = true;
-        while (P.getCurToken().isNot(tok::eof)) {
-          ExprResult Res = P.ParseAssignmentExpression();
-          if (Res.isUsable()) {
-            Expr* expr = Res.release();
-            GivenArgs.push_back(expr);
-            QualType QT = expr->getType().getCanonicalType();
-            QualType NonRefQT(QT.getNonReferenceType());
-            GivenArgTypes.push_back(NonRefQT);
-            if (first_time) {
-              first_time = false;
-            }
-            else {
-              proto += ',';
-            }
-            std::string empty;
-            llvm::raw_string_ostream tmp(empty);
-            expr->printPretty(tmp, /*PrinterHelper=*/0, Policy, 
-                              /*Indentation=*/0);
-            proto += tmp.str();
+      bool first_time = true;
+      while (P.getCurToken().isNot(tok::eof)) {
+        ExprResult Res = P.ParseAssignmentExpression();
+        if (Res.isUsable()) {
+          Expr* expr = Res.release();
+          GivenArgs.push_back(expr);
+          QualType QT = expr->getType().getCanonicalType();
+          QualType NonRefQT(QT.getNonReferenceType());
+          GivenArgTypes.push_back(NonRefQT);
+          if (first_time) {
+            first_time = false;
           }
-          if (!P.getCurToken().is(tok::comma)) {
-            break;
+          else {
+            proto += ',';
           }
-          P.ConsumeToken();
+          std::string empty;
+          llvm::raw_string_ostream tmp(empty);
+          expr->printPretty(tmp, /*PrinterHelper=*/0, Policy,
+                            /*Indentation=*/0);
+          proto += tmp.str();
         }
+        if (!P.getCurToken().is(tok::comma)) {
+          break;
+        }
+        P.ConsumeToken();
       }
     }
-    // For backward compatibility with CINT accept (for now?) a trailing close 
+    // For backward compatibility with CINT accept (for now?) a trailing close
     // parenthesis.
     if (P.getCurToken().isNot(tok::eof) && P.getCurToken().isNot(tok::r_paren) ) {
       // We did not consume all of the arg list, bad parse.
-      return TheDecl;
+      return false;
     }
-    {
-      //
-      //  Cleanup after the arg list parse.
-      //
-      P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
-                   /*StopAtCodeCompletion*/false);
-      S.getDiagnostics().Reset();
-      //
-      //  Setup to reparse as a type.
-      //
-      //
-      //  Create a fake file to parse the function name.
-      //
-      {
-        llvm::MemoryBuffer* SB 
-          = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
-                                                 + "\n", "lookup.funcname.file");
-        clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
-        PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
-        PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
-      }
-      //
-      //  Make the class we are looking up the function
-      //  in the current scope to please the constructor
-      //  name lookup.  We do not need to do this otherwise,
-      //  and may be able to remove it in the future if
-      //  the way constructors are looked up changes.
-      //
-      void* OldEntity = P.getCurScope()->getEntity();
-      DeclContext* TUCtx = Context.getTranslationUnitDecl();
-      P.getCurScope()->setEntity(TUCtx);
-      P.EnterScope(Scope::DeclScope);
-      P.getCurScope()->setEntity(foundDC);
-      P.EnterScope(Scope::DeclScope);
-      Sema::ContextRAII SemaContext(S, foundDC);
-      S.EnterDeclaratorContext(P.getCurScope(), foundDC);
-      //
-      //  Parse the function name.
-      //
-      SourceLocation TemplateKWLoc;
-      UnqualifiedId FuncId;
-      if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
-                               /*AllowDestructorName*/true,
-                               /*AllowConstructorName*/true,
-                               ParsedType(), TemplateKWLoc, FuncId)){
-        // Failed parse, cleanup.
-        S.ExitDeclaratorContext(P.getCurScope());
-        P.ExitScope();
-        P.ExitScope();
-        P.getCurScope()->setEntity(OldEntity);
-        return TheDecl;
-      }
-      //
-      //  Get any template args in the function name.
-      //
-      TemplateArgumentListInfo FuncTemplateArgsBuffer;
-      DeclarationNameInfo FuncNameInfo;
-      const TemplateArgumentListInfo* FuncTemplateArgs;
-      S.DecomposeUnqualifiedId(FuncId, FuncTemplateArgsBuffer, FuncNameInfo, 
-                               FuncTemplateArgs);
-      //
-      //  Lookup the function name in the given class now.
-      //
-      DeclarationName FuncName = FuncNameInfo.getName();
-      SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
-      LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName, 
-                          Sema::NotForRedeclaration);
-      // This might trigger deserialization.    
-      Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-      if (!S.LookupQualifiedName(Result, foundDC)) {
-        // Lookup failed.
-        // Destroy the scope we created first, and
-        // restore the original.
-        S.ExitDeclaratorContext(P.getCurScope());
-        P.ExitScope();
-        P.ExitScope();
-        P.getCurScope()->setEntity(OldEntity);
-        // Then cleanup and exit.
-        return TheDecl;
-      }
-      //
-      //  Destroy the scope we created, and restore the original.
-      //
-      S.ExitDeclaratorContext(P.getCurScope());
-      P.ExitScope();
-      P.ExitScope();
-      P.getCurScope()->setEntity(OldEntity);
-      //
-      //  Check for lookup failure.
-      //
-      if (Result.getResultKind() != LookupResult::Found &&
-          Result.getResultKind() != LookupResult::FoundOverloaded) {
-        // Lookup failed.
-        return TheDecl;
-      }
-      {
-        //
-        //  Construct the overload candidate set.
-        //
-        OverloadCandidateSet Candidates(FuncNameInfo.getLoc());
-        for (LookupResult::iterator I = Result.begin(), E = Result.end();
-            I != E; ++I) {
-          NamedDecl* ND = *I;
-          if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
-            if (isa<CXXMethodDecl>(FD) &&
-                !cast<CXXMethodDecl>(FD)->isStatic() &&
-                !isa<CXXConstructorDecl>(FD)) {
-              // Class method, not static, not a constructor, so has
-              // an implicit object argument.
-              CXXMethodDecl* MD = cast<CXXMethodDecl>(FD);
-              if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
-                // Explicit template args were given, cannot use a plain func.
-                continue;
-              }
-              S.AddMethodCandidate(MD, I.getPair(), MD->getParent(),
-                                   /*ObjectType=*/ClassType,
-                                  /*ObjectClassification=*/ObjExprClassification,
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                   Candidates);
-            }
-            else {
-              const FunctionProtoType* Proto = dyn_cast<FunctionProtoType>(
-                FD->getType()->getAs<clang::FunctionType>());
-              if (!Proto) {
-                // Function has no prototype, cannot do overloading.
-                continue;
-              }
-              if (FuncTemplateArgs && (FuncTemplateArgs->size() != 0)) {
-                // Explicit template args were given, cannot use a plain func.
-                continue;
-              }
-              S.AddOverloadCandidate(FD, I.getPair(),
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                     Candidates);
-            }
-          }
-          else if (FunctionTemplateDecl* FTD =
-              dyn_cast<FunctionTemplateDecl>(ND)) {
-            if (isa<CXXMethodDecl>(FTD->getTemplatedDecl()) &&
-                !cast<CXXMethodDecl>(FTD->getTemplatedDecl())->isStatic() &&
-                !isa<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
-              // Class method template, not static, not a constructor, so has
-              // an implicit object argument.
-              S.AddMethodTemplateCandidate(FTD, I.getPair(),
-                                      cast<CXXRecordDecl>(FTD->getDeclContext()),
-                         const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-                                           /*ObjectType=*/ClassType,
-                                  /*ObjectClassification=*/ObjExprClassification,
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                           Candidates);
-            }
-            else {
-              S.AddTemplateOverloadCandidate(FTD, I.getPair(),
-                const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-                llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                Candidates, /*SuppressUserConversions=*/false);
-            }
-          }
-          else {
-          }
-        }
-        //
-        //  Find the best viable function from the set.
-        //
-        {
-          OverloadCandidateSet::iterator Best;
-          OverloadingResult OR = Candidates.BestViableFunction(S, 
-                                                             Result.getNameLoc(),
-                                                               Best);
-          if (OR == OR_Success) {
-            TheDecl = Best->Function;
-            // We prefer to get the canonical decl for consistency and ease
-            // of comparison.
-            TheDecl = TheDecl->getCanonicalDecl();
-          }
-        }
-      }
+    //
+    //  Cleanup after the arg list parse.
+    //
+    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
+                /*StopAtCodeCompletion*/false);
+    S.getDiagnostics().Reset();
+    return true;
+  }
+
+  const FunctionDecl* LookupHelper::findFunctionArgs(const Decl* scopeDecl,
+                                                       llvm::StringRef funcName,
+                                                llvm::StringRef funcArgs) const {
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Some utilities.
+    //
+    // Use P for shortness
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
+
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
+    //
+    //  Parse the arguments now.
+    //
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing(funcArgs, llvm::StringRef("func.args.file"));
+
+    llvm::SmallVector<Expr*, 4> GivenArgs;
+    if (!findFunctionParseArgs(GivenArgs,Context,P,S) ) {
+       return 0;
     }
-    return TheDecl;
+
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs,
+                        Context, P, S, overloadFunctionSelector);
   }
 
   void LookupHelper::findArgList(llvm::StringRef argList,
@@ -970,7 +856,7 @@ namespace cling {
     }
   }
 
-  void LookupHelper::prepareForParsing(llvm::StringRef code, 
+  void LookupHelper::prepareForParsing(llvm::StringRef code,
                                        llvm::StringRef bufferName) const {
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
@@ -986,7 +872,7 @@ namespace cling {
     //
     //  Create a fake file to parse the type name.
     //
-    llvm::MemoryBuffer* SB 
+    llvm::MemoryBuffer* SB
       = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
                                              bufferName.str());
     FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
@@ -1009,6 +895,23 @@ namespace cling {
 
   }
 
+  static
+  bool hasFunctionSelector(DeclContext* ,
+                           const llvm::SmallVector<Expr*, 4> &,
+                           LookupResult &Result,
+                           DeclarationNameInfo &,
+                           const TemplateArgumentListInfo* ,
+                           ASTContext&, Parser &, Sema &) {
+    //
+    //  Check for lookup failure.
+    //
+    if (Result.empty())
+      return false;
+    if (Result.isSingleResult())
+      return isa<FunctionDecl>(Result.getFoundDecl());
+    // We have many - those must be functions.
+    return true;
+  }
 
   bool LookupHelper::hasFunction(const clang::Decl* scopeDecl,
                                  llvm::StringRef funcName) const {
@@ -1025,145 +928,25 @@ namespace cling {
     //
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
-    Preprocessor& PP = S.getPreprocessor();
     ASTContext& Context = S.getASTContext();
+
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
     ParserStateRAII ResetParserState(P);
-    //
-    //  Get the DeclContext we will search for the function.
-    //
-    NestedNameSpecifier* classNNS = 0;
-    if (const NamespaceDecl* NSD = dyn_cast<NamespaceDecl>(scopeDecl)) {
-      classNNS = NestedNameSpecifier::Create(Context, 0,
-                                             const_cast<NamespaceDecl*>(NSD));
-    }
-    else if (const RecordDecl* RD = dyn_cast<RecordDecl>(scopeDecl)) {
-      const Type* T = Context.getRecordType(RD).getTypePtr();
-      classNNS = NestedNameSpecifier::Create(Context, 0, false, T);
-    }
-    else if (llvm::isa<TranslationUnitDecl>(scopeDecl)) {
-      classNNS = NestedNameSpecifier::GlobalSpecifier(Context);
-    }
-    else {
-      // Not a namespace or class, we cannot use it.
-      return 0;
-    }
-    DeclContext* foundDC = dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
-    //
-    //  If we are looking up a member function, construct
-    //  the implicit object argument.
-    //
-    //  Note: For now this is always a non-CV qualified lvalue.
-    //
-    QualType ClassType;
-    Expr* ObjExpr = 0;
-    Expr::Classification ObjExprClassification;
-    if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
-      ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
-      ObjExpr = new (Context) OpaqueValueExpr(SourceLocation(),
-        ClassType, VK_LValue);
-      ObjExprClassification = ObjExpr->Classify(Context);
-      //GivenArgTypes.insert(GivenArgTypes.begin(), ClassType);
-      //GivenArgs.insert(GivenArgs.begin(), ObjExpr);
-    }
-    //
-    //  Setup to reparse as a type.
-    //
-    //
-    //  Create a fake file to parse the function name.
-    //
-    {
-      llvm::MemoryBuffer* SB 
-        = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
-                                               + "\n", "lookup.funcname.file");
-      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
-      PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
-      PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
-    }
-    {
-      //
-      //  Parse the function name.
-      //
-      SourceLocation TemplateKWLoc;
-      UnqualifiedId FuncId;
-      CXXScopeSpec SS;
-      SS.MakeTrivial(Context, classNNS, SourceRange());
-      //
-      //  Make the class we are looking up the function
-      //  in the current scope to please the constructor
-      //  name lookup.  We do not need to do this otherwise,
-      //  and may be able to remove it in the future if
-      //  the way constructors are looked up changes.
-      //
-      void* OldEntity = P.getCurScope()->getEntity();
-      DeclContext* TUCtx = Context.getTranslationUnitDecl();
-      P.getCurScope()->setEntity(TUCtx);
-      P.EnterScope(Scope::DeclScope);
-      P.getCurScope()->setEntity(foundDC);
-      P.EnterScope(Scope::DeclScope);
-      Sema::ContextRAII SemaContext(S, foundDC);
-      S.EnterDeclaratorContext(P.getCurScope(), foundDC);
-      if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
-                               /*AllowDestructorName*/true,
-                               /*AllowConstructorName*/true,
-                               clang::ParsedType(), TemplateKWLoc,
-                               FuncId)) {
-        // Bad parse.
-        // Destroy the scope we created first, and
-        // restore the original.
-        S.ExitDeclaratorContext(P.getCurScope());
-        P.ExitScope();
-        P.ExitScope();
-        P.getCurScope()->setEntity(OldEntity);
+    llvm::SmallVector<Expr*, 4> GivenArgs;
 
-        // Then cleanup and exit.
-        return TheDecl;
-      }
-      //
-      //  Get any template args in the function name.
-      //
-      TemplateArgumentListInfo FuncTemplateArgsBuffer;
-      DeclarationNameInfo FuncNameInfo;
-      const TemplateArgumentListInfo* FuncTemplateArgs;
-      S.DecomposeUnqualifiedId(FuncId, FuncTemplateArgsBuffer, FuncNameInfo, 
-                               FuncTemplateArgs);
-      //
-      //  Lookup the function name in the given class now.
-      //
-      DeclarationName FuncName = FuncNameInfo.getName();
-      SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
-      LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName, 
-                          Sema::NotForRedeclaration);
-
-      // Could trigger deserialization of decls.
-      cling::Interpreter::PushTransactionRAII RAII(m_Interpreter);
-      if (!S.LookupQualifiedName(Result, foundDC)) {
-        // Lookup failed.
-        // Destroy the scope we created first, and
-        // restore the original.
-        S.ExitDeclaratorContext(P.getCurScope());
-        P.ExitScope();
-        P.ExitScope();
-        P.getCurScope()->setEntity(OldEntity);
-        // Then cleanup and exit.
-        return TheDecl;
-      }
-      // Destroy the scope we created, and
-      // restore the original.
-      S.ExitDeclaratorContext(P.getCurScope());
-      P.ExitScope();
-      P.ExitScope();
-      P.getCurScope()->setEntity(OldEntity);
-      //
-      //  Check for lookup failure.
-      //
-      if (Result.empty())
-        return false;
-      if (Result.isSingleResult())
-        return isa<FunctionDecl>(Result.getFoundDecl());
-      // We have many - those must be functions.
-      return true;
-    }
-    return false;
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs,
+                        Context, P, S, hasFunctionSelector);
   }
 
 
