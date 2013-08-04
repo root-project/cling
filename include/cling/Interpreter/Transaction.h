@@ -333,6 +333,7 @@ namespace cling {
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 
     const Transaction* getNext() const { return m_Next; }
+    void setNext(Transaction* T) { m_Next = T; }
 
     clang::ASTContext& getASTContext() { 
       return const_cast<clang::ASTContext&>(m_ASTContext);
@@ -367,7 +368,6 @@ namespace cling {
 
     void printStructureBrief(size_t nindent = 0) const;
 
-    friend class IncrementalParser;
   private:
     bool comesFromASTReader(clang::DeclGroupRef DGR) const;
   };
