@@ -17,16 +17,17 @@ using namespace clang;
 
 namespace cling {
 
-  Transaction::Transaction() {
-    Initialize();
+  Transaction::Transaction(const ASTContext& C) : m_ASTContext(C) {
+    Initialize(C);
   }
 
-  Transaction::Transaction(const CompilationOptions& Opts) {
-    Initialize();
+  Transaction::Transaction(const CompilationOptions& Opts, const ASTContext& C)
+    : m_ASTContext(C) {
+    Initialize(C);
     m_Opts = Opts; // intentional copy.
   }
 
-  void Transaction::Initialize() {
+  void Transaction::Initialize(const ASTContext& C) {
     m_NestedTransactions.reset(0);
     m_Parent = 0; 
     m_State = kCollecting;
@@ -35,6 +36,7 @@ namespace cling {
     m_Module = 0; 
     m_WrapperFD = 0;
     m_Next = 0;
+    //m_ASTContext = C;
   }
 
   Transaction::~Transaction() {

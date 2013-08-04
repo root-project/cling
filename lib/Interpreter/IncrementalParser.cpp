@@ -87,7 +87,7 @@ namespace cling {
   }
 
   void IncrementalParser::Initialize() {
-    m_TransactionPool.reset(new TransactionPool());
+    m_TransactionPool.reset(new TransactionPool(getCI()->getASTContext()));
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 

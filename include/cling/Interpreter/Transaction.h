@@ -15,6 +15,7 @@
 #include "llvm/ADT/OwningPtr.h"
 
 namespace clang {
+  class ASTContext;
   class Decl;
   class FunctionDecl;
   struct PrintingPolicy;
@@ -110,18 +111,16 @@ namespace cling {
     ///
     const Transaction* m_Next;
 
-  protected:
-
-    ///\brief Sets the next transaction in the list.
+    ///\brief The ASTContext
     ///
-    void setNext(Transaction* T) { m_Next = T; }
+    const clang::ASTContext& m_ASTContext;
 
   public:
 
-    Transaction();
-    Transaction(const CompilationOptions& Opts);
+    Transaction(const clang::ASTContext& C);
+    Transaction(const CompilationOptions& Opts, const clang::ASTContext& C);
 
-    void Initialize();
+    void Initialize(const clang::ASTContext& C);
 
     ~Transaction();
 
@@ -334,6 +333,11 @@ namespace cling {
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 
     const Transaction* getNext() const { return m_Next; }
+
+    clang::ASTContext& getASTContext() { 
+      return const_cast<clang::ASTContext&>(m_ASTContext);
+    }
+    const clang::ASTContext& getASTContext() const { return m_ASTContext; }
 
     ///\brief Erases an element at given position.
     ///

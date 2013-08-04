@@ -9,7 +9,13 @@
 
 #include "cling/Interpreter/Transaction.h"
 
+#include "clang/AST/ASTContext.h"
+
 #include "llvm/ADT/SmallVector.h"
+
+namespace clang {
+  class ASTContext;
+}
 
 namespace cling {
   class TransactionPool {
@@ -22,6 +28,10 @@ namespace cling {
     //
     llvm::SmallVector<Transaction*, 2 * TRANSACTIONS_IN_BLOCK>  m_Transactions;
 
+    ///\brief The ASTContext required by cling::Transactions' ctor.
+    ///
+    clang::ASTContext& m_ASTContext;
+
     // We need to free them in blocks.
     //
     //llvm::SmallVector<Transaction*, 64> m_TransactionBlocks;
@@ -31,12 +41,12 @@ namespace cling {
       // Allocate them in one block, containing 8 transactions.
       //Transaction* arrayStart = new Transaction[TRANSACTIONS_IN_BLOCK]();
       for (size_t i = 0; i < TRANSACTIONS_IN_BLOCK; ++i)
-        m_Transactions.push_back(new Transaction());
+        m_Transactions.push_back(new Transaction(m_ASTContext));
       //m_TransactionBlocks.push_back(arrayStart);
     }
 
   public:
-    TransactionPool() {
+    TransactionPool(clang::ASTContext& C) : m_ASTContext(C) {
       RefillPool();
     }
 
