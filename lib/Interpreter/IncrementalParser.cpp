@@ -304,6 +304,8 @@ namespace cling {
 
     T->setModule(getCodeGenerator()->GetModule());
 
+    // Could trigger derserialization of decls.
+    Transaction* deserT = beginTransaction(CompilationOptions());
     for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
       // Copy DCI; it might get relocated below.
       Transaction::DelayCallInfo I = (*T)[Idx];
@@ -340,6 +342,8 @@ namespace cling {
     }
 
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+    if (endTransaction(deserT))
+      commitTransaction(deserT);
   }
 
   void IncrementalParser::transformTransactionAST(Transaction* T) const {

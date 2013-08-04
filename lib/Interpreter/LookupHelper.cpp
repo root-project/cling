@@ -87,6 +87,8 @@ namespace cling {
     //
     //  Try parsing the type name.
     //
+    // Could trigger deserialization of decls.
+    Interpreter::PushTransactionRAII RAII(m_Interpreter);
     TypeResult Res(P.ParseTypeName());
     if (Res.isUsable()) {
       // Accept it only if the whole name was parsed.
@@ -520,6 +522,9 @@ namespace cling {
       SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
       LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName, 
                           Sema::NotForRedeclaration);
+
+      // This might trigger deserialization.    
+      Interpreter::PushTransactionRAII pushedT(m_Interpreter);
       if (!S.LookupQualifiedName(Result, foundDC)) {
         // Lookup failed.
         // Destroy the scope we created first, and
@@ -816,6 +821,8 @@ namespace cling {
       SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
       LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName, 
                           Sema::NotForRedeclaration);
+      // This might trigger deserialization.    
+      Interpreter::PushTransactionRAII pushedT(m_Interpreter);
       if (!S.LookupQualifiedName(Result, foundDC)) {
         // Lookup failed.
         // Destroy the scope we created first, and
@@ -1125,6 +1132,9 @@ namespace cling {
       SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
       LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName, 
                           Sema::NotForRedeclaration);
+
+      // Could trigger deserialization of decls.
+      cling::Interpreter::PushTransactionRAII RAII(m_Interpreter);
       if (!S.LookupQualifiedName(Result, foundDC)) {
         // Lookup failed.
         // Destroy the scope we created first, and

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id$
+// version: $Id: 1b0fb422149b1f3c27b917010553d13030150d58 $
 // author: Timur Pocheptsov <Timur.Pocheptsov@cern.ch>
 //------------------------------------------------------------------------------
 
@@ -1438,6 +1438,8 @@ void DisplayGlobals(llvm::raw_ostream& stream, const Interpreter* interpreter)
   assert(interpreter != 0 && "DisplayGlobals, 'interpreter' parameter is null");
   
   GlobalsPrinter printer(stream, interpreter);
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
   printer.DisplayGlobals();
 }
 
@@ -1448,6 +1450,8 @@ void DisplayGlobal(llvm::raw_ostream& stream, const Interpreter* interpreter,
   assert(interpreter != 0 && "DisplayGlobal, 'interpreter' parameter is null");
   
   GlobalsPrinter printer(stream, interpreter);
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
   printer.DisplayGlobal(name);
 }
 
@@ -1457,6 +1461,8 @@ void DisplayTypedefs(llvm::raw_ostream &stream, const Interpreter *interpreter)
    assert(interpreter != 0 && "DisplayTypedefs, parameter 'interpreter' is null");
    
    TypedefPrinter printer(stream, interpreter);
+   // Could trigger deserialization of decls.
+   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
    printer.DisplayTypedefs();
 }
 

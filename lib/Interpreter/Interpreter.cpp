@@ -821,6 +821,8 @@ namespace cling {
     assert(!FoundDyLib.isEmpty() && "The shared lib exists but can't find it!");
     std::string errMsg;
     // TODO: !permanent case
+    //FIXME: This is meant to be an workaround for very hard to trace bug.
+    PushTransactionRAII RAII(this);
     DynamicLibrary DyLib
       = DynamicLibrary::getPermanentLibrary(FoundDyLib.str().c_str(), &errMsg);
     if (!DyLib.isValid()) {
@@ -839,6 +841,8 @@ namespace cling {
   Interpreter::LoadLibResult
   Interpreter::loadLibrary(const std::string& filename, bool permanent,
                            bool* tryCode) {
+    //FIXME: This is meant to be an workaround for very hard to trace bug.
+    PushTransactionRAII RAII(this);
     // If it's not an absolute path, prepend "lib"
     SmallVector<char, 128> Absolute(filename.c_str(),
                                     filename.c_str() + filename.length());
