@@ -183,6 +183,16 @@ namespace cling {
     T->setState(Transaction::kCompleted);
     // Empty transaction send it back to the pool.
     if (T->empty()) {
+      assert(!m_Consumer->getTransaction() 
+             || (m_Consumer->getTransaction() == T)
+             && "Cannot release different T");
+      // If a nested transaction the active one should be its parent 
+      // from now on. FIXME: Merge conditional with commitTransaction
+      if (T->isNestedTransaction())
+        m_Consumer->setTransaction(T->getParent());
+      else
+        m_Consumer->setTransaction((Transaction*)0);
+
       m_TransactionPool->releaseTransaction(T);
       return 0;
     }
