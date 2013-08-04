@@ -159,8 +159,8 @@ namespace cling {
     // If we are in the middle of transaction and we see another begin 
     // transaction - it must be nested transaction.
     if (OldCurT && OldCurT != NewCurT 
-        && OldCurT->getState() == Transaction::kCollecting
-        && OldCurT->getState() == Transaction::kCompleted) {
+        && (OldCurT->getState() == Transaction::kCollecting
+            || OldCurT->getState() == Transaction::kCompleted)) {
       OldCurT->addNestedTransaction(NewCurT); // takes the ownership
     }
 
