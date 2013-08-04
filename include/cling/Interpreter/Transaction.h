@@ -190,7 +190,11 @@ namespace cling {
     /// \}
 
     State getState() const { return static_cast<State>(m_State); }
-    void setState(State val) { m_State = val; }
+    void setState(State val) {
+      assert(m_State != kNumStates 
+             && "Transaction already returned in the pool");
+      m_State = val;
+    }
 
     IssuedDiags getIssuedDiags() const { 
       return static_cast<IssuedDiags>(m_IssuedDiags); 
@@ -368,6 +372,7 @@ namespace cling {
 
     void printStructureBrief(size_t nindent = 0) const;
 
+    friend class TransactionPool;
   private:
     bool comesFromASTReader(clang::DeclGroupRef DGR) const;
   };

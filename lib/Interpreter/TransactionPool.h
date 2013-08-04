@@ -58,7 +58,9 @@ namespace cling {
     Transaction* takeTransaction() {
       if (m_Transactions.size() == 0)
         RefillPool();
-      return m_Transactions.pop_back_val();
+      Transaction* T = m_Transactions.pop_back_val();
+      T->m_State = Transaction::kCollecting;
+      return T;
     }
 
     void releaseTransaction(Transaction* T) {
@@ -66,6 +68,7 @@ namespace cling {
       assert(T->getState() == Transaction::kCompleted
              && "Transaction must completed!");
       T->reset();
+      T->m_State = Transaction::kNumStates;
       m_Transactions.push_back(T);
     }
 #undef TRANSACTIONS_IN_BLOCK
