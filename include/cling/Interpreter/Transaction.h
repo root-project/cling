@@ -107,6 +107,7 @@ namespace cling {
     clang::FunctionDecl* m_WrapperFD;
 
     ///\brief Next transaction in if any.
+    ///
     const Transaction* m_Next;
 
   protected:
