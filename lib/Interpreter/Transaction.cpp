@@ -238,9 +238,10 @@ namespace cling {
                  << ", next: " << m_Next << "\n";
   }
 
-  void cling::Transaction::printStructureBrief(size_t nindent /*=0*/) const {
+  void Transaction::printStructureBrief(size_t nindent /*=0*/) const {
     std::string indent(nindent, ' ');
-    llvm::errs() << indent << "<T @" << this << " isEmpty=" << empty();
+    llvm::errs() << indent << "<cling::Transaction* " << this 
+                 << " isEmpty=" << empty();
     llvm::errs() << " isCommitted=" << (getState() == kCommitted);
     llvm::errs() <<"> \n";
 
