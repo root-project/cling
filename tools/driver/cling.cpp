@@ -40,41 +40,41 @@ int main( int argc, char **argv ) {
     interp.loadFile(interp.getOptions().LibsToLoad[I]);
   }
 
-   const std::vector<clang::FrontendInputFile>& Inputs
-     = CI->getInvocation().getFrontendOpts().Inputs;
+  const std::vector<clang::FrontendInputFile>& Inputs
+    = CI->getInvocation().getFrontendOpts().Inputs;
 
-   // Interactive means no input (or one input that's "-")
-   bool Interactive = Inputs.empty() || (Inputs.size() == 1
-                                         && Inputs[0].getFile() == "-");
+  // Interactive means no input (or one input that's "-")
+  bool Interactive = Inputs.empty() || (Inputs.size() == 1
+                                        && Inputs[0].getFile() == "-");
 
-   cling::UserInterface ui(interp);
-   // If we are not interactive we're supposed to parse files
-   if (!Interactive) {
-     for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
-       std::string line(".x ");
-       line += Inputs[I].getFile();
-       cling::Interpreter::CompilationResult compRes;
-       ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
-     }
-   }
-   else {
-      ui.runInteractively(interp.getOptions().NoLogo);
-   }
+  cling::UserInterface ui(interp);
+  // If we are not interactive we're supposed to parse files
+  if (!Interactive) {
+    for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
+      std::string line(".x ");
+      line += Inputs[I].getFile();
+      cling::Interpreter::CompilationResult compRes;
+      ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
+    }
+  }
+  else {
+    ui.runInteractively(interp.getOptions().NoLogo);
+  }
 
-   bool ret = CI->getDiagnostics().getClient()->getNumErrors();   
+  bool ret = CI->getDiagnostics().getClient()->getNumErrors();   
 
-   // if we are running with -verify a reported has to be returned as unsuccess.
-   // This is relevant especially for the test suite.
-   if (CI->getDiagnosticOpts().VerifyDiagnostics) {
-     // If there was an error that came from the verifier we must return 1 as
-     // an exit code for the process. This will make the test fail as expected.
-     clang::DiagnosticConsumer* client = CI->getDiagnostics().getClient();
-     client->EndSourceFile();
-     ret = client->getNumErrors();
+  // if we are running with -verify a reported has to be returned as unsuccess.
+  // This is relevant especially for the test suite.
+  if (CI->getDiagnosticOpts().VerifyDiagnostics) {
+    // If there was an error that came from the verifier we must return 1 as
+    // an exit code for the process. This will make the test fail as expected.
+    clang::DiagnosticConsumer* client = CI->getDiagnostics().getClient();
+    client->EndSourceFile();
+    ret = client->getNumErrors();
 
-     // The interpreter expects BeginSourceFile/EndSourceFiles to be balanced.
-     client->BeginSourceFile(CI->getLangOpts(), &CI->getPreprocessor());
-   }
+    // The interpreter expects BeginSourceFile/EndSourceFiles to be balanced.
+    client->BeginSourceFile(CI->getLangOpts(), &CI->getPreprocessor());
+  }
 
-   return ret;
+  return ret;
 }
