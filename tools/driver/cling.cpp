@@ -40,7 +40,6 @@ int main( int argc, char **argv ) {
     interp.loadFile(interp.getOptions().LibsToLoad[I]);
   }
 
-   bool ret = true;
    const std::vector<clang::FrontendInputFile>& Inputs
      = CI->getInvocation().getFrontendOpts().Inputs;
 
@@ -56,13 +55,13 @@ int main( int argc, char **argv ) {
        line += Inputs[I].getFile();
        cling::Interpreter::CompilationResult compRes;
        ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
-       ret = !CI->getDiagnostics().getClient()->getNumErrors();
      }
    }
    else {
       ui.runInteractively(interp.getOptions().NoLogo);
    }
-   
+
+   bool ret = CI->getDiagnostics().getClient()->getNumErrors();   
 
    // if we are running with -verify a reported has to be returned as unsuccess.
    // This is relevant especially for the test suite.
