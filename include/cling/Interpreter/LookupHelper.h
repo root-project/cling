@@ -81,14 +81,20 @@ namespace cling {
     ///\param[in] funcName  - the name of the function to find.
     ///\param[in] funcProto - the function parameter list (without enclosing
     ///   parantheses). Example: "size_t,int".
+    ///\param[in,optional] objectIsConst - if true search fo function that can
+    ///   be called on a const object ; default to false.
     ///\returns The function found or null.
     const clang::FunctionDecl* findFunctionProto(const clang::Decl* scopeDecl,
                                                  llvm::StringRef funcName,
-                                                llvm::StringRef funcProto) const;
+                                                 llvm::StringRef funcProto,
+                                                 bool objectIsConst = false
+                                                 ) const;
 
     const clang::FunctionDecl* findFunctionArgs(const clang::Decl* scopeDecl,
                                                 llvm::StringRef funcName,
-                                                llvm::StringRef funcArgs) const;
+                                                llvm::StringRef funcArgs,
+                                                bool objectIsConst = false) const;
+
 
     ///\brief Lookup given argument list and return each argument as an
     /// expression.

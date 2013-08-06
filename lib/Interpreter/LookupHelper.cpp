@@ -400,6 +400,7 @@ namespace cling {
 
   static
   const FunctionDecl* overloadFunctionSelector(DeclContext* foundDC,
+                                               bool objectIsConst,
                                   const llvm::SmallVector<Expr*, 4> &GivenArgs,
                                      LookupResult &Result,
                                      DeclarationNameInfo &FuncNameInfo,
@@ -420,7 +421,9 @@ namespace cling {
     Expr* ObjExpr = 0;
     Expr::Classification ObjExprClassification;
     if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
-      ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
+      if (objectIsConst) 
+        ClassType = Context.getTypeDeclType(CRD).getCanonicalType().withConst();
+      else ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
       OpaqueValueExpr ObjExpr(SourceLocation(),
                               ClassType, VK_LValue);
       ObjExprClassification = ObjExpr.Classify(Context);
@@ -514,8 +517,10 @@ namespace cling {
   T findFunction(DeclContext* foundDC, CXXScopeSpec &SS,
                  llvm::StringRef funcName,
                  const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                 bool objectIsConst,
                  ASTContext& Context, Parser &P, Sema &S,
                  T (*functionSelector)(DeclContext* foundDC,
+                                       bool objectIsConst,
                                   const llvm::SmallVector<Expr*, 4> &GivenArgs,
                                        LookupResult &Result,
                                        DeclarationNameInfo &FuncNameInfo,
@@ -625,7 +630,7 @@ namespace cling {
        // Lookup failed.
        return TheDecl;
     }
-    return functionSelector(foundDC,GivenArgs,
+    return functionSelector(foundDC,objectIsConst,GivenArgs,
                             Result,
                             FuncNameInfo,
                             FuncTemplateArgs,
@@ -633,8 +638,8 @@ namespace cling {
   }
 
   static
-  bool findFunctionParseProto(llvm::SmallVector<Expr*, 4> &GivenArgs,
-                              ASTContext& Context, Parser &P,Sema &S) {
+  bool ParseProto(llvm::SmallVector<Expr*, 4> &GivenArgs,
+                  ASTContext& Context, Parser &P,Sema &S) {
     //
     //  Parse the prototype now.
     //
@@ -686,7 +691,9 @@ namespace cling {
 
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
                                                       llvm::StringRef funcName,
-                                               llvm::StringRef funcProto) const {
+                                                      llvm::StringRef funcProto,
+                                                      bool objectIsConst
+                                                      ) const {
     assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
@@ -714,19 +721,19 @@ namespace cling {
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!findFunctionParseProto(GivenArgs,Context,P,S) ) {
+    if (!ParseProto(GivenArgs,Context,P,S) ) {
        return 0;
     }
 
     return findFunction(foundDC, SS,
-                        funcName, GivenArgs,
+                        funcName, GivenArgs, objectIsConst,
                         Context, P, S,
                         overloadFunctionSelector);
   }
 
   static
-  bool findFunctionParseArgs(llvm::SmallVector<Expr*, 4> &GivenArgs,
-                             ASTContext& Context, Parser &P, Sema &S) {
+  bool ParseArgs(llvm::SmallVector<Expr*, 4> &GivenArgs,
+                 ASTContext& Context, Parser &P, Sema &S) {
 
     //
     //  Parse the arguments now.
@@ -784,8 +791,10 @@ namespace cling {
   }
 
   const FunctionDecl* LookupHelper::findFunctionArgs(const Decl* scopeDecl,
-                                                       llvm::StringRef funcName,
-                                                llvm::StringRef funcArgs) const {
+                                                     llvm::StringRef funcName,
+                                                     llvm::StringRef funcArgs,
+                                                     bool objectIsConst
+                                                     ) const {
     assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
@@ -813,12 +822,12 @@ namespace cling {
     prepareForParsing(funcArgs, llvm::StringRef("func.args.file"));
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!findFunctionParseArgs(GivenArgs,Context,P,S) ) {
+    if (!ParseArgs(GivenArgs,Context,P,S) ) {
        return 0;
     }
 
     return findFunction(foundDC, SS,
-                        funcName, GivenArgs,
+                        funcName, GivenArgs, objectIsConst,
                         Context, P, S, overloadFunctionSelector);
   }
 
@@ -897,6 +906,7 @@ namespace cling {
 
   static
   bool hasFunctionSelector(DeclContext* ,
+                           bool /* objectIsConst */,
                            const llvm::SmallVector<Expr*, 4> &,
                            LookupResult &Result,
                            DeclarationNameInfo &,
@@ -945,7 +955,7 @@ namespace cling {
     llvm::SmallVector<Expr*, 4> GivenArgs;
 
     return findFunction(foundDC, SS,
-                        funcName, GivenArgs,
+                        funcName, GivenArgs, false /* objectIsConst */,
                         Context, P, S, hasFunctionSelector);
   }
 
