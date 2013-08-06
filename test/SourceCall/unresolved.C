@@ -32,3 +32,4 @@ bar();
 // CHECK: ExecutionContext: calling unresolved symbol, see previous error message!
 
 i = 13 //CHECK: (int) 13
+.q
