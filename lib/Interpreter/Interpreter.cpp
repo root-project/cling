@@ -995,7 +995,7 @@ namespace cling {
         //Dtor_Complete, // Complete object dtor
         //Dtor_Base      // Base object dtor
         m_MangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
-                                   Dtor_Deleting, RawStr);
+                                   Dtor_Complete, RawStr);
         break;
 
       default :
