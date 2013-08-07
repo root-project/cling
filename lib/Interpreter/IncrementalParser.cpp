@@ -353,8 +353,14 @@ namespace cling {
 
     for (Transaction::iterator I = T->deserialized_decls_begin(), 
            E = T->deserialized_decls_end(); I != E; ++I) {
-      // FIXME: implement for multiple decls in a DGR.
-      if (!I->m_DGR.getSingleDecl()->hasAttr<UsedAttr>())
+      // Skip unless we find at least one used decl.
+      bool skip = true;
+      for (DeclGroupRef::const_iterator J = I->m_DGR.begin(), 
+              JE = I->m_DGR.end(); J != JE; ++J) {
+         if ((*J)->hasAttr<UsedAttr>())
+            skip = false;
+      }
+      if (skip)
         continue;
       if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
         getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
