@@ -164,6 +164,25 @@ namespace cling {
       return m_DeclQueue.rend();
     }
 
+    iterator deserialized_decls_begin() {
+      return m_DeserializedDeclQueue.begin(); 
+    }
+    iterator deserialized_decls_end() {
+      return m_DeserializedDeclQueue.end();
+    }
+    const_iterator deserialized_decls_begin() const {
+      return m_DeserializedDeclQueue.begin(); 
+    }
+    const_iterator deserialized_decls_end() const {
+      return m_DeserializedDeclQueue.end();
+    }
+    const_reverse_iterator deserialized_rdecls_begin() const {
+      return m_DeserializedDeclQueue.rbegin();
+    }
+    const_reverse_iterator deserialized_rdecls_end() const {
+      return m_DeserializedDeclQueue.rend();
+    }
+
     typedef NestedTransactions::const_iterator const_nested_iterator;
     typedef NestedTransactions::const_reverse_iterator const_reverse_nested_iterator;
     const_nested_iterator nested_begin() const {
