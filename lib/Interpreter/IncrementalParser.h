@@ -71,7 +71,6 @@ namespace cling {
     /// We don't need the elements to be contiguous in memory, that is why we
     /// don't use std::vector. We don't need to copy the elements every time the
     /// capacity is exceeded.
-    /// FIXME: Maybe we need better allocator, a bump allocator would be good.
     ///
     std::deque<Transaction*> m_Transactions;
 
