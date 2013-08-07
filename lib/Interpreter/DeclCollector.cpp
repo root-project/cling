@@ -21,6 +21,7 @@ using namespace clang;
 namespace cling {
   bool DeclCollector::comesFromASTReader(DeclGroupRef DGR) const {
     assert(!DGR.isNull() && "DeclGroupRef is Null!");
+    assert(m_CurTransaction && "No current transaction when deserializing");
     if (m_CurTransaction->getCompilationOpts().CodeGenerationForModule)
       return true;
 
