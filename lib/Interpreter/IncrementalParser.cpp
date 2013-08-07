@@ -284,6 +284,7 @@ namespace cling {
   }
 
   void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) const {
+    ASTContext& C = T->getASTContext();
     for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
       Transaction::DelayCallInfo I = (*T)[Idx];
       // FIXME: implement for multiple decls in a DGR.
@@ -292,6 +293,15 @@ namespace cling {
       if (!D->hasAttr<clang::UsedAttr>())
         D->addAttr(::new (D->getASTContext())
                    clang::UsedAttr(D->getSourceRange(), D->getASTContext(),
+                                   0/*AttributeSpellingListIndex*/));
+    }
+    for (Transaction::iterator I = T->deserialized_decls_begin(), 
+           E = T->deserialized_decls_end(); I != E; ++I) {
+      // FIXME: implement for multiple decls in a DGR.
+      assert(I->m_DGR.isSingleDecl());
+      Decl* D = I->m_DGR.getSingleDecl();
+      if (!D->hasAttr<clang::UsedAttr>())
+        D->addAttr(::new (C) clang::UsedAttr(D->getSourceRange(), C,
                                    0/*AttributeSpellingListIndex*/));
     }
   }
@@ -336,6 +346,42 @@ namespace cling {
         getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
       }
       else if (I.m_Call == Transaction::kCCINone)
+        ; // We use that internally as delimiter in the Transaction.
+      else
+        llvm_unreachable("We shouldn't have decl without call info.");
+    }
+
+    for (Transaction::iterator I = T->deserialized_decls_begin(), 
+           E = T->deserialized_decls_end(); I != E; ++I) {
+      // FIXME: implement for multiple decls in a DGR.
+      if (!I->m_DGR.getSingleDecl()->hasAttr<UsedAttr>())
+        continue;
+      if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
+        getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
+      else if (I->m_Call == Transaction::kCCIHandleInterestingDecl) {
+        // Usually through BackendConsumer which doesn't implement
+        // HandleInterestingDecl() and thus calls
+        // ASTConsumer::HandleInterestingDecl()
+        getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
+      } else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
+        TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleTagDeclDefinition(TD);
+      }
+      else if (I->m_Call == Transaction::kCCIHandleVTable) {
+        CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I->m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
+      }
+      else if (I->m_Call
+               == Transaction::kCCIHandleCXXImplicitFunctionInstantiation) {
+        FunctionDecl* FD = cast<FunctionDecl>(I->m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleCXXImplicitFunctionInstantiation(FD);
+      }
+      else if (I->m_Call
+               == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
+        VarDecl* VD = cast<VarDecl>(I->m_DGR.getSingleDecl());
+        getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
+      }
+      else if (I->m_Call == Transaction::kCCINone)
         ; // We use that internally as delimiter in the Transaction.
       else
         llvm_unreachable("We shouldn't have decl without call info.");
