@@ -117,6 +117,19 @@ namespace cling {
     // Check for duplicates
     for (size_t i = 0, e = m_DeclQueue.size(); i < e; ++i) {
       DelayCallInfo &oldDCI (m_DeclQueue[i]);
+      // FIXME: This is possible bug in clang, which will instantiate one and 
+      // the same CXXStaticMemberVar several times. This happens when there are
+      // two dependent expressions and the first uses another declaration from 
+      // the redeclaration chain. This will force Sema in to instantiate the
+      // definition (usually the most recent decl in the chain) and then the
+      // second expression might referece the definition (which was already)
+      // instantiated, but Sema seems not to keep track of these kinds of
+      // instantiations, even though the points of instantiation are the same!
+      //
+      // This should be investigated further when we merge with newest clang.
+      // This is triggered by running the roottest: ./root/io/newstl
+      if (oldDCI.m_Call == kCCIHandleCXXStaticMemberVarInstantiation)
+        continue;
       // It is possible to have duplicate calls to HandleVTable with the same
       // declaration, because each time Sema believes a vtable is used it emits
       // that callback. 
