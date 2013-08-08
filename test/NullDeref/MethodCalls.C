@@ -12,4 +12,13 @@ public:
 };
 MyClass* my = 0;
 my->getA() // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+
+struct AggregatedNull {
+  AggregatedNull() : m(0) {}
+  MyClass m;
+}
+
+AggregatedNull agrNull;
+agrNull.m->getA(); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+
 .q
