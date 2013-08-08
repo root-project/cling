@@ -14,8 +14,8 @@ MyClass* my = 0;
 my->getA() // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
 
 struct AggregatedNull {
+  MyClass* m;
   AggregatedNull() : m(0) {}
-  MyClass m;
 }
 
 AggregatedNull agrNull;
