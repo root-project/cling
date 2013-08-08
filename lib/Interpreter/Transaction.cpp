@@ -103,10 +103,8 @@ namespace cling {
  
   void Transaction::append(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
-#ifdef TEMPORARILY_DISABLED
     assert(getState() == kCollecting
            && "Cannot append declarations in current state.");
-#endif
     forceAppend(DCI);
   }
 
@@ -115,7 +113,6 @@ namespace cling {
     assert((getState() == kCollecting || getState() == kCompleted)
            && "Must not be");
 
-#ifdef TEMPORARILY_DISABLED
 #ifndef NDEBUG
     // Check for duplicates
     for (size_t i = 0, e = m_DeclQueue.size(); i < e; ++i) {
@@ -127,7 +124,6 @@ namespace cling {
       if (oldDCI.m_Call != kCCIHandleVTable)
         assert(oldDCI != DCI && "Duplicates?!");
     }
-#endif
 #endif
 
     bool checkForWrapper = !m_WrapperFD;

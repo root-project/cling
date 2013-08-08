@@ -211,7 +211,7 @@ namespace cling {
     ///
     ///\param[in] T - the transaction to be transformed.
     ///
-    void transformTransactionAST(Transaction* T) const;
+    void transformTransactionAST(Transaction* T);
 
     ///\brief Runs IR transformers on a transaction.
     ///

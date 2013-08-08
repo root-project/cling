@@ -398,11 +398,17 @@ namespace cling {
       commitTransaction(deserT);
   }
 
-  void IncrementalParser::transformTransactionAST(Transaction* T) const {
+  void IncrementalParser::transformTransactionAST(Transaction* T) {
     bool success = true;
     // We are sure it's safe to pipe it through the transformers
+    // Consume late transformers init
+    Transaction* initT = beginTransaction(CompilationOptions());
+
     for (size_t i = 0; success && i < m_ASTTransformers.size(); ++i)
       success = m_ASTTransformers[i]->TransformTransaction(*T);
+
+    if (endTransaction(initT))
+      commitTransaction(initT);
 
     if (!success)
       T->setIssuedDiags(Transaction::kErrors);
