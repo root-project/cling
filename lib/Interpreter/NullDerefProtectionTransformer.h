@@ -35,9 +35,8 @@ namespace cling {
     llvm::Instruction* Inst;
     llvm::OwningPtr<clang::MangleContext> m_MangleCtx;
 
-    llvm::BasicBlock* getTrapBB();
-    void instrumentLoadInst(llvm::LoadInst* LI);
-    void instrumentStoreInst(llvm::StoreInst* SI);
+    llvm::BasicBlock* getTrapBB(llvm::BasicBlock* BB);
+    void instrumentInst(llvm::Instruction* Inst, llvm::Value* Arg);
     bool runOnFunction(llvm::Function& F);
 
   public:

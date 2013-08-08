@@ -19,6 +19,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/Support/CallSite.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/InstIterator.h"
 
@@ -108,12 +109,12 @@ namespace cling {
       runOnFunction(*F);
   }
 
-  llvm::BasicBlock* NullDerefProtectionTransformer::getTrapBB() {
+  llvm::BasicBlock*
+  NullDerefProtectionTransformer::getTrapBB(llvm::BasicBlock* BB) {
     llvm::Function* Fn = Inst->getParent()->getParent();
     llvm::Module* Md = Fn->getParent();
     llvm::LLVMContext& ctx = Fn->getContext();
 
-    llvm::BasicBlock::iterator PreInsertInst = Builder->GetInsertPoint();
     FailBB = llvm::BasicBlock::Create(ctx, "FailBlock", Fn);
     Builder->SetInsertPoint(FailBB);
 
@@ -149,57 +150,35 @@ namespace cling {
 
     llvm::Value* TrueVl = llvm::ConstantInt::get(ctx, llvm::APInt(1, 1));
     llvm::Value* RetVl = CI;
-    llvm::ICmpInst*Cmp 
+    llvm::ICmpInst* Cmp 
       = new llvm::ICmpInst(*FailBB, llvm::CmpInst::ICMP_EQ, RetVl, TrueVl, "");
 
     llvm::BasicBlock *HandleBB = llvm::BasicBlock::Create(ctx,"HandleBlock", Fn);
-    llvm::BranchInst::Create(HandleBB, Inst->getParent(), Cmp, FailBB);
+    llvm::BranchInst::Create(HandleBB, BB, Cmp, FailBB);
 
     llvm::ReturnInst::Create(Fn->getContext(), HandleBB);
-    Builder->SetInsertPoint(PreInsertInst);
     return FailBB;
   }
 
-  void NullDerefProtectionTransformer::instrumentLoadInst(llvm::LoadInst *LI) {
-    llvm::Value* Addr = LI->getOperand(0);
-    if(llvm::isa<llvm::GlobalVariable>(Addr))
-      return;
+  // Insert a cmp instruction before the "Inst" instruction to check whether the
+  // argument "Arg" for the instruction "Inst" is null or not. 
+  void NullDerefProtectionTransformer::instrumentInst(
+    llvm::Instruction* Inst, llvm::Value* Arg) {
+    llvm::BasicBlock* OldBB = Inst->getParent();
+    
+    // Insert a cmp instruction to check whether "Arg" is null or not.
+    llvm::ICmpInst* Cmp 
+      = new llvm::ICmpInst(Inst, llvm::CmpInst::ICMP_EQ, Arg,
+                             llvm::Constant::getNullValue(Arg->getType()), "");
 
-    llvm::PointerType* PTy = llvm::cast<llvm::PointerType>(Addr->getType());
-    llvm::Type* ElTy = PTy->getElementType();
-    if (!ElTy->isPointerTy()) {
-      llvm::BasicBlock* OldBB = LI->getParent();
-      llvm::ICmpInst* Cmp 
-        = new llvm::ICmpInst(LI, llvm::CmpInst::ICMP_EQ, Addr,
-                             llvm::Constant::getNullValue(Addr->getType()), "");
-
-      llvm::Instruction *Inst = Builder->GetInsertPoint();
-      llvm::BasicBlock *NewBB = OldBB->splitBasicBlock(Inst);
-       
-      OldBB->getTerminator()->eraseFromParent();
-      llvm::BranchInst::Create(getTrapBB(), NewBB, Cmp, OldBB);
-    }
-  }
-
-  void NullDerefProtectionTransformer::instrumentStoreInst(llvm::StoreInst *SI){
-    llvm::Value* Addr = SI->getOperand(1);
-   if(llvm::isa<llvm::GlobalVariable>(Addr))
-      return;
-
-    llvm::PointerType* PTy = llvm::cast<llvm::PointerType>(Addr->getType());
-    llvm::Type* ElTy = PTy -> getElementType();
-    if (!ElTy->isPointerTy()) {
-      llvm::BasicBlock* OldBB = SI->getParent();
-      llvm::ICmpInst* Cmp 
-        = new llvm::ICmpInst(SI, llvm::CmpInst::ICMP_EQ, Addr,
-                             llvm::Constant::getNullValue(Addr->getType()), "");
-
-      llvm::Instruction* Inst = Builder->GetInsertPoint();
-      llvm::BasicBlock* NewBB = OldBB->splitBasicBlock(Inst);
-       
-      OldBB->getTerminator()->eraseFromParent();
-      llvm::BranchInst::Create(getTrapBB(), NewBB, Cmp, OldBB);
-    }
+    // The block is splited into two blocks, "OldBB" and "NewBB", by the "Inst"
+    // instruction. After that split, "Inst" is at the start of "NewBB". Then
+    // insert a branch instruction at the end of "OldBB". If "Arg" is null,
+    // it will jump to "FailBB" created by "getTrapBB" function. Else, it means
+    // jump to the "NewBB".
+    llvm::BasicBlock* NewBB = OldBB->splitBasicBlock(Inst);
+    OldBB->getTerminator()->eraseFromParent();
+    llvm::BranchInst::Create(getTrapBB(NewBB), NewBB, Cmp, OldBB);
   }
 
   bool NullDerefProtectionTransformer::runOnFunction(llvm::Function &F) {
@@ -209,21 +188,57 @@ namespace cling {
     std::vector<llvm::Instruction*> WorkList;
     for (llvm::inst_iterator i = inst_begin(F), e = inst_end(F); i != e; ++i) {
       llvm::Instruction* I = &*i;
-      if (llvm::isa<llvm::LoadInst>(I) || llvm::isa<llvm::StoreInst>(I))
+      if (llvm::isa<llvm::LoadInst>(I))
         WorkList.push_back(I);
-      }
+    }
 
     for (std::vector<llvm::Instruction*>::iterator i = WorkList.begin(), 
            e = WorkList.end(); i != e; ++i) {
       Inst = *i;
+      llvm::LoadInst* I = llvm::cast<llvm::LoadInst>(*i);
 
-      Builder->SetInsertPoint(Inst);
-      if (llvm::LoadInst* LI = llvm::dyn_cast<llvm::LoadInst>(Inst)) {
-        instrumentLoadInst(LI);
-      } else if (llvm::StoreInst* SI = llvm::dyn_cast<llvm::StoreInst>(Inst)) {
-        instrumentStoreInst(SI);
-      } else {
-        llvm_unreachable("unknown Instruction type");
+      // Find all the instructions that uses the instruction I.
+      for (llvm::Value::use_iterator UI = I->use_begin(), UE = I->use_end();
+           UI != UE; ++UI) {
+
+        // Check whether I is used as the first argument for a load instruction.
+        // If it is, then instrument the load instruction.
+        if (llvm::LoadInst* LI = llvm::dyn_cast<llvm::LoadInst>(*UI)) {
+          llvm::Value* Arg = LI->getOperand(0);
+          if (Arg == I)
+            instrumentInst(LI, Arg);
+        }
+
+        // Check whether I is used as the second argument for a store
+        // instruction. If it is, then instrument the store instruction.
+        else if (llvm::StoreInst* SI = llvm::dyn_cast<llvm::StoreInst>(*UI)) {
+          llvm::Value* Arg = SI->getOperand(1);
+          if (Arg == I)
+            instrumentInst(SI, Arg);
+        }
+
+        // Check whether I is used as the first argument for a GEP instruction.
+        // If it is, then instrument the GEP instruction.
+        else if (llvm::GetElementPtrInst* GEP = llvm::dyn_cast<
+               llvm::GetElementPtrInst>(*UI)) {
+          llvm::Value* Arg = GEP->getOperand(0);
+          if (Arg == I)
+            instrumentInst(GEP, Arg);
+        }
+
+        else {
+          // Check whether I is used as the first argument for a call instruction.
+          // If it is, then instrument the call instruction.
+          llvm::CallSite CS(*UI);
+          if (CS) {
+            llvm::CallSite::arg_iterator i = CS.arg_begin(), e = CS.arg_end();
+            if (i != e) {
+              llvm::Value *Arg = *i;
+              if (Arg == I)
+               instrumentInst(CS.getInstruction(), Arg);
+            }
+          }
+        }
       }
     }
     return true;
