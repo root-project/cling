@@ -131,7 +131,7 @@ namespace cling {
 
 
     DeclarationName PVName = &m_Context->Idents.get("Select");
-    LookupResult R(*m_Sema, PVName, NoSLoc, Sema::LookupOrdinaryName,
+    LookupResult R(*m_Sema, PVName, E->getLocStart(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
     assert(NSD && "There must be a valid namespace.");
     m_Sema->LookupQualifiedName(R, NSD);
@@ -205,8 +205,8 @@ namespace cling {
     // that we are currently work with.
     Transaction::State oldState = getTransaction()->getState();
     getTransaction()->setState(Transaction::kCollecting);
-    Expr* Result = m_Sema->ActOnCallExpr(S, UnresolvedLookup, NoSLoc,
-                                         CallArgs, NoSLoc).take();
+    Expr* Result = m_Sema->ActOnCallExpr(S, UnresolvedLookup, E->getLocStart(),
+                                         CallArgs, E->getLocEnd()).take();
     getTransaction()->setState(oldState);
 
     Result = m_Sema->ActOnFinishFullExpr(Result).take();
@@ -233,7 +233,7 @@ namespace cling {
     // Find cling_PrintValue
     SourceLocation NoSLoc = SourceLocation();
     DeclarationName PVName = &m_Context->Idents.get("cling_PrintValue");
-    LookupResult R(*m_Sema, PVName, NoSLoc, Sema::LookupOrdinaryName,
+    LookupResult R(*m_Sema, PVName, E->getLocStart(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
 
     Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
@@ -263,8 +263,8 @@ namespace cling {
     CallArgs.push_back(VoidCArg);
     CallArgs.push_back(E);
 
-    Expr* Result = m_Sema->ActOnCallExpr(S, UnresolvedLookup, NoSLoc,
-                                         CallArgs, NoSLoc).take();
+    Expr* Result = m_Sema->ActOnCallExpr(S, UnresolvedLookup, E->getLocStart(),
+                                         CallArgs, E->getLocEnd()).take();
     assert(Result && "Cannot create value printer!");
 
     return Result;
