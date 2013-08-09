@@ -124,8 +124,6 @@ namespace cling {
 
     // 1. Call gCling->getValuePrinterStream()
     // 1.1. Find gCling
-    SourceLocation NoSLoc = SourceLocation();
-
     NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
     NSD = utils::Lookup::Namespace(m_Sema, "valuePrinterInternal", NSD);
 
