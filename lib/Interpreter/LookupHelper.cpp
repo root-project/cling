@@ -603,7 +603,6 @@ namespace cling {
     SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
     LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName,
                         Sema::NotForRedeclaration);
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     if (!S.LookupQualifiedName(Result, foundDC)) {
       // Lookup failed.
       // Destroy the scope we created first, and
@@ -725,6 +724,7 @@ namespace cling {
        return 0;
     }
 
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
                         Context, P, S,
@@ -826,6 +826,7 @@ namespace cling {
        return 0;
     }
 
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
                         Context, P, S, overloadFunctionSelector);
@@ -954,6 +955,7 @@ namespace cling {
     ParserStateRAII ResetParserState(P);
     llvm::SmallVector<Expr*, 4> GivenArgs;
 
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, false /* objectIsConst */,
                         Context, P, S, hasFunctionSelector);
