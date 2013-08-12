@@ -416,7 +416,8 @@ namespace cling {
   static bool IsOverload(const ASTContext& C,
                          const TemplateArgumentListInfo* FuncTemplateArgs,
                          const llvm::SmallVector<QualType, 4>& GivenArgTypes, 
-                         FunctionDecl* FD, bool UseUsingDeclRules) {
+                         const FunctionDecl* FD) {
+
     //FunctionTemplateDecl* FTD = FD->getDescribedFunctionTemplate();
     QualType FQT = C.getCanonicalType(FD->getType());
     if (llvm::isa<FunctionNoProtoType>(FQT.getTypePtr())) {
@@ -543,6 +544,49 @@ namespace cling {
           // of comparison.
           TheDecl = TheDecl->getCanonicalDecl();
        }
+    }
+    return TheDecl;
+  }
+
+  static
+  const FunctionDecl* matchFunctionSelector(DeclContext* foundDC,
+                                            bool objectIsConst,
+                                  const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                                     LookupResult &Result,
+                                     DeclarationNameInfo &FuncNameInfo,
+                              const TemplateArgumentListInfo* FuncTemplateArgs,
+                                     ASTContext& Context, Parser &P, Sema &S) {
+    //
+    //  Our return value.
+    //
+    const FunctionDecl* TheDecl = overloadFunctionSelector(foundDC, objectIsConst,
+                                                           GivenArgs, Result,
+                                                           FuncNameInfo,
+                                                           FuncTemplateArgs,
+                                                           Context,P,S);
+    
+    if (TheDecl) {
+      llvm::SmallVector<QualType, 4> GivenArgTypes;
+      for( size_t s = 0 ; s < GivenArgs.size(); ++s) {
+        GivenArgTypes.push_back( GivenArgs[s]->getType().getCanonicalType() );
+      }
+      if ( IsOverload( Context, FuncTemplateArgs, GivenArgTypes, TheDecl) ) {
+        return 0;
+      } else {
+        // Double check const-ness.
+        if (const clang::CXXMethodDecl *md =
+            llvm::dyn_cast<clang::CXXMethodDecl>(TheDecl)) {
+          if (md->getTypeQualifiers() & clang::Qualifiers::Const) {
+            if (!objectIsConst) {
+              TheDecl = 0;
+            }
+          } else {
+            if (objectIsConst) {
+              TheDecl = 0;
+            }
+          }
+        }
+      }
     }
     return TheDecl;
   }
@@ -763,6 +807,49 @@ namespace cling {
                         funcName, GivenArgs, objectIsConst,
                         Context, P, S,
                         overloadFunctionSelector);
+  }
+
+  const FunctionDecl* LookupHelper::matchFunctionProto(const Decl* scopeDecl,
+                                                       llvm::StringRef funcName,
+                                                       llvm::StringRef funcProto,
+                                                       bool objectIsConst
+                                                       ) const {
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Some utilities.
+    //
+    // Use P for shortness
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
+
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
+    //
+    //  Parse the prototype now.
+    //
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
+
+    llvm::SmallVector<Expr*, 4> GivenArgs;
+    if (!ParseProto(GivenArgs,Context,P,S) ) {
+       return 0;
+    }
+
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs, objectIsConst,
+                        Context, P, S,
+                        matchFunctionSelector);
   }
 
   static
