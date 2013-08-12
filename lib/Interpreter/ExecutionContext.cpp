@@ -51,7 +51,8 @@ void ExecutionContext::InitializeBuilder(llvm::Module* m) {
 
   std::string errMsg;
   builder.setErrorStr(&errMsg);
-  builder.setOptLevel(llvm::CodeGenOpt::Less);
+  // FIXME: should be at least Less!
+  builder.setOptLevel(llvm::CodeGenOpt::None);
   builder.setEngineKind(llvm::EngineKind::JIT);
   builder.setAllocateGVsWithCode(false);
 
