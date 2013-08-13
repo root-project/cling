@@ -106,10 +106,10 @@ namespace cling {
       *resultValue = StoredValueRef::invalidValue();
     return isLCommand(actionResult)
       || isXCommand(actionResult, resultValue)
-      || isqCommand() 
-      || isUCommand(actionResult) || isICommand() || israwInputCommand() 
-      || isprintASTCommand() || isdynamicExtensionsCommand() || ishelpCommand()
-      || isfileExCommand() || isfilesCommand() || isClassCommand() 
+      || isqCommand() || isUCommand(actionResult) || isICommand()
+      || isOCommand() || israwInputCommand() || isprintASTCommand()
+      || isdynamicExtensionsCommand()
+      || ishelpCommand() || isfileExCommand() || isfilesCommand() || isClassCommand()
       || isgCommand() || isTypedefCommand() || isprintIRCommand()
       || isShellCommand(actionResult, resultValue);
   }
@@ -202,6 +202,40 @@ namespace cling {
       m_Actions->actOnICommand(path);
       return true;
     }
+    return false;
+  }
+  
+  bool MetaParser::isOCommand() {
+    const Token& currTok = getCurTok();
+    if (currTok.is(tok::ident)) {
+      llvm::StringRef ident = currTok.getIdent();
+      if (ident.startswith("O")) {
+        if (ident.size() > 1) {
+          int level = 0;
+          if (!ident.substr(1).getAsInteger(10, level) && level >= 0) {
+            consumeAnyStringToken(tok::eof);
+            if (getCurTok().is(tok::raw_ident))
+              return false;
+            //TODO: Process .OXXX here as .O with level XXX.
+            return true;
+          }
+        } else {
+          consumeAnyStringToken(tok::eof);
+          const Token& lastStringToken = getCurTok();
+          if (lastStringToken.is(tok::raw_ident) && lastStringToken.getLength()) {
+            int level = 0;
+            if (!lastStringToken.getIdent().getAsInteger(10, level) && level >= 0) {
+              //TODO: process .O XXX
+              return true;
+            }
+          } else {
+            //TODO: process .O
+            return true;
+          }
+        }
+      }
+    }
+
     return false;
   }
 

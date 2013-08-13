@@ -26,9 +26,9 @@ namespace cling {
 
   // Command syntax: MetaCommand := <CommandSymbol><Command>
   //                 CommandSymbol := '.' | '//.'
-  //                 Command := LCommand | XCommand | qCommand | UCommand
-  //                            ICommand | RawInputCommand | PrintASTCommand
-  //                            DynamicExtensionsCommand | HelpCommand |
+  //                 Command := LCommand | XCommand | qCommand | UCommand |
+  //                            ICommand | OCommand | RawInputCommand |
+  //                            PrintASTCommand | DynamicExtensionsCommand | HelpCommand |
   //                            FileExCommand | FilesCommand | ClassCommand |
   //                            GCommand | PrintIRCommand
   //                 LCommand := 'L' FilePath
@@ -36,6 +36,7 @@ namespace cling {
   //                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
   //                 UCommand := 'U'
   //                 ICommand := 'I' [FilePath]
+  //                 OCommand := 'O'[' ']OptimizationLevel
   //                 RawInputCommand := 'rawInput' [Constant]
   //                 PrintASTCommand := 'printAST' [Constant]
   //                 PrintIRCommand := 'printIR' [Constant]
@@ -51,6 +52,8 @@ namespace cling {
   //                 AnyString := *^(' ' | '\t')
   //                 Constant := 0|1
   //                 Ident := a-zA-Z{a-zA-Z0-9}
+  //                 OptimizationLevel := OptimizationLevel{0-9}
+  //
   class MetaParser {
   private:
     llvm::OwningPtr<MetaLexer> m_Lexer;
@@ -74,6 +77,7 @@ namespace cling {
     bool isqCommand();
     bool isUCommand(MetaSema::ActionResult& actionResult);
     bool isICommand();
+    bool isOCommand();
     bool israwInputCommand();
     bool isprintASTCommand();
     bool isprintIRCommand();
