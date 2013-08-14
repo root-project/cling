@@ -64,17 +64,17 @@ namespace cling {
     : public RecursiveASTVisitor<NonNullDeclFinder> {
   private:
     Sema* m_Sema;
-    llvm::SmallVector<llvm::StringRef, 8> NonNullDeclNames;
-    nonnull_map_t NonNullArgIndexs;
+    llvm::SmallVector<llvm::StringRef, 8> m_NonNullDeclNames;
+    nonnull_map_t m_NonNullArgIndexs;
 
   public:
     NonNullDeclFinder(Sema* S) : m_Sema(S) {}
-    const llvm::SmallVector<llvm::StringRef, 8>& getDeclNames() {
-      return NonNullDeclNames;
+    const llvm::SmallVector<llvm::StringRef, 8>& getDeclNames() const {
+      return m_NonNullDeclNames;
     }
 
-    const nonnull_map_t& getArgIndexs() {
-      return NonNullArgIndexs;
+    const nonnull_map_t& getArgIndexs() const {
+      return m_NonNullArgIndexs;
     }
 
     // Deal with all the call expr in the transaction.
@@ -98,11 +98,11 @@ namespace cling {
           llvm::StringRef FName = FDecl->getName();
 
           // Store the function decl's name into the vector.
-          NonNullDeclNames.push_back(FName);
+          m_NonNullDeclNames.push_back(FName);
 
-          // Store the function decl's name with its null attr args' indexs
+          // Store the function decl's name with its null attr args' indexes
           // into the map.
-          NonNullArgIndexs.insert(std::make_pair(FName, ArgIndexs));
+          m_NonNullArgIndexs.insert(std::make_pair(FName, ArgIndexs));
         }
       }
       return true; // returning false will abort the in-depth traversal.
@@ -164,7 +164,7 @@ namespace cling {
     NonNullDeclFinder Finder(m_Sema);
 
     // Find all the function decls with null attribute arguments.
-    for (size_t Idx = 0; Idx < getTransaction()->size(); ++Idx) {
+    for (size_t Idx = 0, E = getTransaction()->size(); Idx < E; ++Idx) {
       Transaction::DelayCallInfo I = (*getTransaction())[Idx];
       for (DeclGroupRef::const_iterator J = I.m_DGR.begin(),
              JE = I.m_DGR.end(); J != JE; ++J)
@@ -172,7 +172,7 @@ namespace cling {
           Finder.TraverseStmt((*J)->getBody());
     }
 
-    const llvm::SmallVector<llvm::StringRef, 8>& 
+    const llvm::SmallVector<llvm::StringRef, 8>&
       FDeclNames = Finder.getDeclNames();
     if (FDeclNames.empty()) return;
 
