@@ -80,6 +80,9 @@ namespace cling {
     //
     QualType TheQT;
 
+    // Could trigger deserialization of decls.
+    Interpreter::PushTransactionRAII RAII(m_Interpreter);
+
     // Use P for shortness
     Parser& P = *m_Parser;
     ParserStateRAII ResetParserState(P);
@@ -87,8 +90,6 @@ namespace cling {
     //
     //  Try parsing the type name.
     //
-    // Could trigger deserialization of decls.
-    Interpreter::PushTransactionRAII RAII(m_Interpreter);
     TypeResult Res(P.ParseTypeName());
     if (Res.isUsable()) {
       // Accept it only if the whole name was parsed.
