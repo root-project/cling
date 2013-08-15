@@ -1,5 +1,4 @@
 // RUN: cat %s | %cling -Xclang -verify
-//XFAIL:*
 //This file checks a call instruction. The called function has arguments with nonnull attribute.
 #include <string.h>
 char *p;
