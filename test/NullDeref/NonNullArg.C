@@ -3,9 +3,9 @@
 // XFAIL: *
 #include <string.h>
 char *p = 0;
-//strcmp("a", p); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+strcmp("a", p); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
 
-//strcmp(p, "a"); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+strcmp(p, "a"); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
 
 extern "C" int printf(const char* fmt, ...);
 .rawInput 1
