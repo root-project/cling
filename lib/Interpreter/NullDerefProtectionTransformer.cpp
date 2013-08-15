@@ -245,8 +245,8 @@ namespace cling {
 
   // Insert a cmp instruction before the "Inst" instruction to check whether the
   // argument "Arg" for the instruction "Inst" is null or not. 
-  void NullDerefProtectionTransformer::instrumentInst(
-    llvm::Instruction* Inst, llvm::Value* Arg) {
+  void NullDerefProtectionTransformer::instrumentInst(llvm::Instruction* Inst, 
+                                                      llvm::Value* Arg) {
     llvm::BasicBlock* OldBB = Inst->getParent();
     
     // Insert a cmp instruction to check whether "Arg" is null or not.
