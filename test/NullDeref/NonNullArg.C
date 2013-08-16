@@ -22,9 +22,10 @@ extern "C" int cannotCallWithNull(int* p) {
   return 1;
 }
 
-cannotCallWithNull() // warning-expected {{null passed to a callee which requires a non-null argument}}
+cannotCallWithNull() // expected-warning {{null passed to a callee which requires a non-null argument}}
 // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
 //CHECK-NOT: Must not be called with p=0.
+cannotCallWithNull(new int(4))
 //CHECK: (int) 1
 
 
