@@ -88,8 +88,21 @@ namespace cling {
 
           // Store all the null attr argument's index into "ArgIndexs".
           for (NonNullAttr::args_iterator i = NonNull->args_begin(),
-                                          e = NonNull->args_end(); i != e; ++i)
+                 e = NonNull->args_end(); i != e; ++i) {
+
+            // Get the argument with the nonnull attribute.
+            const Expr* Arg = TheCall->getArg(*i);
+
+            // Check whether we can get the argument'value. If the argument is
+            // not null, then ignore this argument and continue to deal with the
+            // next argument with the nonnull attribute.ArgIndexs.set(*i);
+            bool Result;
+            ASTContext& Context = m_Sema->getASTContext();
+            if (Arg->EvaluateAsBooleanCondition(Result, Context) && Result) {
+              continue;
+            }
             ArgIndexs.set(*i);
+          }
         }
 
         if (ArgIndexs.any()) {
