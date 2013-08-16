@@ -328,7 +328,6 @@ namespace cling {
 
   void NullDerefProtectionTransformer::instrumentCallInst(llvm::Instruction*
     TheCall, const std::bitset<32>& ArgIndexs) {
-    llvm::Type* Int8PtrTy = llvm::Type::getInt8PtrTy(TheCall->getContext());
     llvm::CallSite CS = TheCall;
 
     for (int index = 0; index < 32; ++index) {
@@ -336,8 +335,6 @@ namespace cling {
       llvm::Value* Arg = CS.getArgument(index);
       if (!Arg) continue;
       llvm::Type* ArgTy = Arg->getType();
-      if (ArgTy != Int8PtrTy)
-        continue;
 
       llvm::BasicBlock* OldBB = TheCall->getParent();
       llvm::ICmpInst* Cmp
