@@ -76,12 +76,12 @@ namespace cling {
 
     ///\brief Lookup a function based on its Decl(Context), name and parameters.
     ///
-    ///\param[in] scopeDecl - the scope (namespace or tag) that is searched for
+    ///\param [in] scopeDecl - the scope (namespace or tag) that is searched for
     ///   the function.
-    ///\param[in] funcName  - the name of the function to find.
-    ///\param[in] funcProto - the function parameter list (without enclosing
+    ///\param [in] funcName  - the name of the function to find.
+    ///\param [in] funcProto - the function parameter list (without enclosing
     ///   parantheses). Example: "size_t,int".
-    ///\param[in,optional] objectIsConst - if true search fo function that can
+    ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
     ///\returns The function found or null.
     const clang::FunctionDecl* findFunctionProto(const clang::Decl* scopeDecl,
