@@ -453,7 +453,6 @@ namespace cling {
     //  Note: For now this is always a non-CV qualified lvalue.
     //
     QualType ClassType;
-    Expr* ObjExpr = 0;
     Expr::Classification ObjExprClassification;
     if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
       if (objectIsConst) 
@@ -1051,10 +1050,6 @@ namespace cling {
     //FIXME: remore code duplication with findFunctionArgs() and friends.
 
     assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Our return value.
-    //
-    FunctionDecl* TheDecl = 0;
     //
     //  Some utilities.
     //
