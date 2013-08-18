@@ -438,7 +438,7 @@ namespace cling {
   }
 
   std::vector<const Transaction*> IncrementalParser::getAllTransactions() {
-    std::vector<const Transaction*> result;
+    std::vector<const Transaction*> result(m_Transactions.size());
     const cling::Transaction* T = getFirstTransaction();
     while (T) {
       result.push_back(T);
