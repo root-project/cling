@@ -35,6 +35,7 @@
 
 #include "llvm/Linker.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/FileSystem.h"
 
@@ -871,6 +872,12 @@ namespace cling {
     }
     return kLoadLibError;
   }
+
+  void
+  Interpreter::ExposeHiddenSharedLibrarySymbols(const void* DyLibHandle) const {
+    llvm::sys::DynamicLibrary::addPermanentLibrary(const_cast<void*>(DyLibHandle));
+  }
+
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
     m_ExecutionContext->installLazyFunctionCreator(fp);
