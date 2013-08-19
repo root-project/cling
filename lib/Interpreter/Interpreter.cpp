@@ -874,7 +874,7 @@ namespace cling {
   }
 
   void
-  Interpreter::ExposeHiddenSharedLibrarySymbols(const void* DyLibHandle) const {
+  Interpreter::ExposeHiddenSharedLibrarySymbols(const void* DyLibHandle) {
     llvm::sys::DynamicLibrary::addPermanentLibrary(const_cast<void*>(DyLibHandle));
   }
 
