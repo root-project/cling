@@ -35,7 +35,6 @@
 
 #include "llvm/Linker.h"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/FileSystem.h"
 
@@ -43,18 +42,13 @@
 #include <sstream>
 #include <vector>
 
-using namespace clang;
+#ifdef WIN32
+#include <Windows.h>
+#else
+#include <dlfcn.h>
+#endif
 
-namespace std {
-template<>
-struct less<llvm::sys::DynamicLibrary> {
-  bool operator()(const llvm::sys::DynamicLibrary& lhs,
-                  const llvm::sys::DynamicLibrary& rhs ) const {
-    return *reinterpret_cast<void* const*>(&lhs)
-      < *reinterpret_cast<void* const*>(&rhs);
-  }
-};
-}
+using namespace clang;
 
 namespace {
 
@@ -71,10 +65,6 @@ namespace {
     }
     return cling::Interpreter::kExeSuccess;
   }
-
-  class DynLibSetImpl: public std::set<llvm::sys::DynamicLibrary>,
-                       public cling::Interpreter::DynLibSetBase {
-  };
 } // unnamed namespace
 
 
@@ -173,7 +163,6 @@ namespace cling {
     m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), m_DynamicLookupEnabled(false), 
     m_RawInputEnabled(false), m_CallbackAdaptor(0) {
 
-    m_DyLibs.reset(new DynLibSetImpl());
     m_AtExitFuncs.reserve(200);
     m_LoadedFiles.reserve(20);
 
@@ -737,8 +726,8 @@ namespace cling {
 
   void Interpreter::addLoadedFile(const std::string& name,
                                   Interpreter::LoadedFileInfo::FileType type,
-                                  const llvm::sys::DynamicLibrary* dyLib) {
-    m_LoadedFiles.push_back(new LoadedFileInfo(name, type, dyLib));
+                                  const void* dyLibHandle) {
+    m_LoadedFiles.push_back(new LoadedFileInfo(name, type, dyLibHandle));
   }
 
   Interpreter::CompilationResult
@@ -818,22 +807,31 @@ namespace cling {
       return kLoadLibError;
     
     assert(!FoundDyLib.isEmpty() && "The shared lib exists but can't find it!");
-    std::string errMsg;
-    // TODO: !permanent case
+
     //FIXME: This is meant to be an workaround for very hard to trace bug.
     PushTransactionRAII RAII(this);
-    DynamicLibrary DyLib
-      = DynamicLibrary::getPermanentLibrary(FoundDyLib.str().c_str(), &errMsg);
-    if (!DyLib.isValid()) {
+
+    // TODO: !permanent case
+#ifdef WIN32
+    void* DyLibHandle = needs to be implemented!;
+    std::string errMsg;
+#else
+    const void* DyLibHandle = dlopen(FoundDyLib.str().c_str(), RTLD_LAZY|RTLD_GLOBAL);
+    std::string errMsg;
+    if (const char* DyLibError = dlerror()) {
+      errMsg = DyLibError;
+    }
+#endif
+    if (!DyLibHandle) {
       llvm::errs() << "cling::Interpreter::tryLinker(): " << errMsg << '\n';
       return kLoadLibError;
     }
-    std::pair<std::set<llvm::sys::DynamicLibrary>::iterator, bool> insRes
-      = static_cast<DynLibSetImpl*>(m_DyLibs.get())->insert(DyLib);
+    std::pair<std::set<const void*>::iterator, bool> insRes
+      = m_DyLibs.insert(DyLibHandle);
     if (!insRes.second)
       return kLoadLibExists;
     addLoadedFile(FoundDyLib.str(), LoadedFileInfo::kDynamicLibrary,
-                  &(*insRes.first));
+                  DyLibHandle);
     return kLoadLibSuccess;
   }
 

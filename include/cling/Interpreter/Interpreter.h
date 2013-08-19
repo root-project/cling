@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <set>
 
 namespace llvm {
   class raw_ostream;
@@ -24,10 +25,6 @@ namespace llvm {
   class Module;
   class Type;
   template <typename T> class SmallVectorImpl;
-
-  namespace sys {
-    class DynamicLibrary;
-  }
 }
 
 namespace clang {
@@ -140,15 +137,11 @@ namespace cling {
       ///\brief Type of the file.
       FileType getType() const { return m_Type; }
 
-      ///\brief Pointer to Interpreter::m_DyLibs entry if dynamic library
-      ///
-      const llvm::sys::DynamicLibrary* getDynLib() const { return m_DynLib; }
-
     private:
       ///\brief Constructor used by Interpreter.
       LoadedFileInfo(const std::string& name, FileType type,
-                     const llvm::sys::DynamicLibrary* dynLib):
-        m_Name(name), m_Type(type), m_DynLib(dynLib) {}
+                     const void* dynLibHandle):
+        m_Name(name), m_Type(type), m_DynLibHandle(dynLibHandle) {}
 
       ///\brief Name as loaded for the first time.
       ///
@@ -157,19 +150,11 @@ namespace cling {
       ///\brief Type of the file.
       FileType m_Type;
 
-      ///\brief Pointer to Interpreter::m_DyLibs entry if dynamic library
+      ///\brief A shared library handle if dynamic library
       ///
-      const llvm::sys::DynamicLibrary* m_DynLib;
+      const void* m_DynLibHandle;
 
       friend class Interpreter;
-    };
-
-    ///\brief Collection of DynamicLibraries loaded by this Interpreter;
-    /// or rather type-opaque wrapper thereof.
-    ///
-    class DynLibSetBase {
-    public:
-      virtual ~DynLibSetBase() {}
     };
 
   private:
@@ -280,7 +265,7 @@ namespace cling {
 
     ///\brief DynamicLibraries loaded by this Interpreter.
     ///
-    llvm::OwningPtr<DynLibSetBase> m_DyLibs;
+    std::set<const void*> m_DyLibs;
 
     ///\brief Information about loaded files.
     ///
@@ -292,7 +277,7 @@ namespace cling {
                             bool isAbsolute, bool& exists, bool& isDyLib);
 
     void addLoadedFile(const std::string& name, LoadedFileInfo::FileType type,
-                       const llvm::sys::DynamicLibrary* dyLib = 0);
+                       const void* dyLibHandle = 0);
 
     ///\brief Processes the invocation options.
     ///
