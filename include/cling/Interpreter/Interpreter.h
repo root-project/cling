@@ -592,7 +592,7 @@ namespace cling {
     ///       a shared library that would otherwise not be used for symbol
     ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
     ///\param [in] DyLibHandle - the system specific shared library handle.
-    static void ExposeHiddenSharedLibrarySymbols(const void* DyLibHandle);
+    static void ExposeHiddenSharedLibrarySymbols(void* DyLibHandle);
 
     ///\brief Get the collection of loaded files.
     ///
