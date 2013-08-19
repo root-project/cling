@@ -119,7 +119,8 @@ namespace cling {
     m_Parser->Initialize();
     // Perform initialization that occurs after the parser has been initialized
     // but before it parses anything. Initializes the consumers too.
-    TheSema->Initialize();
+    // No - already done by m_Parser->Initialize().
+    // TheSema->Initialize();
 
     ExternalASTSource *External = TheSema->getASTContext().getExternalSource();
     if (External)
