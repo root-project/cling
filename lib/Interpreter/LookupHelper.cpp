@@ -80,6 +80,8 @@ namespace cling {
     //
     QualType TheQT;
 
+    if (typeName.empty()) return TheQT;
+
     // Could trigger deserialization of decls.
     Interpreter::PushTransactionRAII RAII(m_Interpreter);
 
@@ -275,6 +277,8 @@ namespace cling {
     //
     //  Find a class template decl given its name.
     //
+
+    if (Name.empty()) return 0;
 
     // Humm ... this seems to do the trick ... or does it? or is there a better way?
 
@@ -797,8 +801,10 @@ namespace cling {
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!ParseProto(GivenArgs,Context,P,S) ) {
-       return 0;
+    if (!funcProto.empty()) {
+      if (!ParseProto(GivenArgs,Context,P,S) ) {
+        return 0;
+      }
     }
 
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
@@ -840,8 +846,10 @@ namespace cling {
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!ParseProto(GivenArgs,Context,P,S) ) {
-       return 0;
+    if (!funcProto.empty()) {
+      if (!ParseProto(GivenArgs,Context,P,S) ) {
+        return 0;
+      }
     }
 
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
@@ -942,8 +950,10 @@ namespace cling {
     prepareForParsing(funcArgs, llvm::StringRef("func.args.file"));
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!ParseArgs(GivenArgs,Context,P,S) ) {
-       return 0;
+    if (!funcArgs.empty()) {
+      if (!ParseArgs(GivenArgs,Context,P,S) ) {
+        return 0;
+      }
     }
 
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
@@ -954,11 +964,13 @@ namespace cling {
 
   void LookupHelper::findArgList(llvm::StringRef argList,
                                  llvm::SmallVector<Expr*, 4>& argExprs) const {
+    if (argList.empty()) return;
+
     //
     //  Some utilities.
     //
     // Use P for shortness
-    Parser& P = *m_Parser;
+    Parser& P = *m_Parser;    
     ParserStateRAII ResetParserState(P);
     prepareForParsing(argList, llvm::StringRef("arg.list.file"));
     //
@@ -1000,13 +1012,6 @@ namespace cling {
     //
     const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = 0;
     //
-    //  Create a fake file to parse the type name.
-    //
-    llvm::MemoryBuffer* SB
-      = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
-                                             bufferName.str());
-    FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
-    //
     //  Turn on ignoring of the main file eof token.
     //
     //  Note: We need this because token readahead in the following
@@ -1015,14 +1020,22 @@ namespace cling {
     if (!PP.isIncrementalProcessingEnabled()) {
       PP.enableIncrementalProcessing();
     }
-    //
-    //  Switch to the new file the way #include does.
-    //
-    //  Note: To switch back to the main file we must consume an eof token.
-    //
-    PP.EnterSourceFile(FID, /*DirLookup=*/0, SourceLocation());
-    PP.Lex(const_cast<Token&>(P.getCurToken()));
-
+    if (!code.empty()) {
+      //
+      //  Create a fake file to parse the type name.
+      //
+      llvm::MemoryBuffer* SB
+         = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
+                                                bufferName.str());
+      FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+      //
+      //  Switch to the new file the way #include does.
+      //
+      //  Note: To switch back to the main file we must consume an eof token.
+      //
+      PP.EnterSourceFile(FID, /*DirLookup=*/0, SourceLocation());
+      PP.Lex(const_cast<Token&>(P.getCurToken()));
+    }
   }
 
   static
