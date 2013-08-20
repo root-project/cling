@@ -13,6 +13,7 @@
 
 namespace clang {
   class Decl;
+  class DeclContext;
   class LookupResult;
   class Scope;
 }
@@ -54,6 +55,15 @@ namespace cling {
     ///\returns true if a suitable declaration is found.
     ///
     virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S);
+
+    virtual bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
+                                                clang::DeclarationName Name);
+
+    void UpdateWithNewDecls(const clang::DeclContext *DC, 
+                            clang::DeclarationName Name, 
+                            llvm::ArrayRef<clang::NamedDecl*> Decls) {
+      SetExternalVisibleDeclsForName(DC, Name, Decls);
+    }
   };
 
   /// \brief  This interface provides a way to observe the actions of the
@@ -78,6 +88,13 @@ namespace cling {
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///
     bool m_IsRuntime;
+  protected:
+    void UpdateWithNewDecls(const clang::DeclContext *DC, 
+                            clang::DeclarationName Name, 
+                            llvm::ArrayRef<clang::NamedDecl*> Decls) {
+      if (getInterpreterExternalSemaSource())
+        getInterpreterExternalSemaSource()->UpdateWithNewDecls(DC, Name, Decls);
+    }
   public:
     InterpreterCallbacks(Interpreter* interp,
                          InterpreterExternalSemaSource* IESS = 0);
@@ -95,6 +112,7 @@ namespace cling {
     /// \returns true if lookup result is found and should be used.
     ///
     virtual bool LookupObject(clang::LookupResult&, clang::Scope*);
+    virtual bool LookupObject(const clang::DeclContext*, clang::DeclarationName);
 
     ///\brief This callback is invoked whenever interpreter has committed new
     /// portion of declarations.
@@ -157,6 +175,9 @@ namespace cling {
       ~SymbolResolverCallback();
 
       bool LookupObject(clang::LookupResult& R, clang::Scope* S);
+      bool LookupObject(const clang::DeclContext*, clang::DeclarationName) {
+        return false;
+      }
       bool ShouldResolveAtRuntime(clang::LookupResult& R, clang::Scope* S);
     };
   } // end test

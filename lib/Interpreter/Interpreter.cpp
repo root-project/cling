@@ -914,6 +914,15 @@ namespace cling {
       getCI()->getModuleManager()
         ->setDeserializationListener(m_CallbackAdaptor);
     }
+
+    // FIXME: We should add a multiplexer in the ASTContext, too.
+    llvm::OwningPtr<ExternalASTSource> astContextExternalSource;
+    astContextExternalSource.reset(getSema().getExternalSource());
+    clang::ASTContext& Ctx = getSema().getASTContext();
+    // FIXME: This is a gross hack. We must make multiplexer in the astcontext,
+    // or a derived class that extends what we need.
+    Ctx.ExternalSource.take(); // FIXME: make sure we delete it.
+    Ctx.setExternalSource(astContextExternalSource);
   }
 
   clang::ASTDeserializationListener*

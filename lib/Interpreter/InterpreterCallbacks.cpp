@@ -25,6 +25,16 @@ namespace cling {
     return false;
   }
 
+  bool 
+  InterpreterExternalSemaSource::FindExternalVisibleDeclsByName(
+                                                          const DeclContext* DC,
+                                                         DeclarationName Name) {
+    if (m_Callbacks)
+      return m_Callbacks->LookupObject(DC, Name);
+    
+    return false;
+  }
+
   InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
                                              InterpreterExternalSemaSource* IESS)
     : m_Interpreter(interp),  m_SemaExternalSource(IESS), m_IsRuntime(false) {
@@ -42,6 +52,10 @@ namespace cling {
   }
 
   bool InterpreterCallbacks::LookupObject(LookupResult&, Scope*) {
+    return false;
+  }
+
+  bool InterpreterCallbacks::LookupObject(const DeclContext*, DeclarationName) {
     return false;
   }
 
