@@ -825,8 +825,6 @@ namespace cling {
     //  Parse the prototype now.
     //
 
-    llvm::SmallVector<QualType, 4> GivenArgTypes;
-
     while (P.getCurToken().isNot(tok::eof)) {
       TypeResult Res(P.ParseTypeName());
       if (!Res.isUsable()) {
@@ -836,7 +834,6 @@ namespace cling {
       TypeSourceInfo *TSI = 0;
       clang::QualType QT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
       QT = QT.getCanonicalType();
-      GivenArgTypes.push_back(QT);
       {
         ExprValueKind VK = VK_RValue;
         if (QT->getAs<LValueReferenceType>()) {
@@ -968,8 +965,6 @@ namespace cling {
     //  Parse the arguments now.
     //
 
-    llvm::SmallVector<QualType, 4> GivenArgTypes;
-
     PrintingPolicy Policy(Context.getPrintingPolicy());
     Policy.SuppressTagKeyword = true;
     Policy.SuppressUnwrittenScope = true;
@@ -985,7 +980,6 @@ namespace cling {
           GivenArgs.push_back(expr);
           QualType QT = expr->getType().getCanonicalType();
           QualType NonRefQT(QT.getNonReferenceType());
-          GivenArgTypes.push_back(NonRefQT);
           if (first_time) {
             first_time = false;
           }
