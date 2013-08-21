@@ -1,99 +1,7 @@
-diff --git a/interpreter/cling/include/cling/Interpreter/Interpreter.h b/interpreter/cling/include/cling/Interpreter/Interpreter.h
-index 31f5c41..0722968 100644
---- a/interpreter/cling/include/cling/Interpreter/Interpreter.h
-+++ b/interpreter/cling/include/cling/Interpreter/Interpreter.h
-@@ -588,6 +588,12 @@ namespace cling {
-     LoadLibResult loadLibrary(const std::string& filename, bool permanent,
-                               bool *tryCode = 0);
- 
-+    ///\brief Explicitly tell the execution engine to use symbols from
-+    ///       a shared library that would otherwise not be used for symbol
-+    ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
-+    ///\param [in] DyLibHandle - the system specific shared library handle.
-+    void ExposeHiddenSharedLibrarySymbols(const void* DyLibHandle) const;
-+
-     ///\brief Get the collection of loaded files.
-     ///
-     const std::vector<LoadedFileInfo*>& getLoadedFiles() const {
-diff --git a/interpreter/cling/lib/Interpreter/Interpreter.cpp b/interpreter/cling/lib/Interpreter/Interpreter.cpp
-index 3817177..603c9b6 100644
---- a/interpreter/cling/lib/Interpreter/Interpreter.cpp
-+++ b/interpreter/cling/lib/Interpreter/Interpreter.cpp
-@@ -35,6 +35,7 @@
- 
- #include "llvm/Linker.h"
- #include "llvm/IR/LLVMContext.h"
-+#include "llvm/Support/DynamicLibrary.h"
- #include "llvm/Support/Path.h"
- #include "llvm/Support/FileSystem.h"
- 
-@@ -872,6 +873,12 @@ namespace cling {
-     return kLoadLibError;
-   }
- 
-+  void
-+  Interpreter::ExposeHiddenSharedLibrarySymbols(const void* DyLibHandle) const {
-+    llvm::sys::DynamicLibrary::addPermanentLibrary(const_cast<void*>(DyLibHandle));
-+  }
-+
-+
-   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
-     m_ExecutionContext->installLazyFunctionCreator(fp);
-   }
-diff --git a/interpreter/cling/patches/llvm-DyLib-from-handle.diff b/interpreter/cling/patches/llvm-DyLib-from-handle.diff
-index 55f1a17..e69de29 100644
---- a/interpreter/cling/patches/llvm-DyLib-from-handle.diff
-+++ b/interpreter/cling/patches/llvm-DyLib-from-handle.diff
-@@ -1,45 +0,0 @@
--diff --git a/interpreter/cling/include/cling/Interpreter/Interpreter.h b/interpreter/cling/include/cling/Interpreter/Interpreter.h
--index 31f5c41..0722968 100644
----- a/interpreter/cling/include/cling/Interpreter/Interpreter.h
--+++ b/interpreter/cling/include/cling/Interpreter/Interpreter.h
--@@ -588,6 +588,12 @@ namespace cling {
--     LoadLibResult loadLibrary(const std::string& filename, bool permanent,
--                               bool *tryCode = 0);
-- 
--+    ///\brief Explicitly tell the execution engine to use symbols from
--+    ///       a shared library that would otherwise not be used for symbol
--+    ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
--+    ///\param [in] DyLibHandle - the system specific shared library handle.
--+    void ExposeHiddenSharedLibrarySymbols(const void* DyLibHandle) const;
--+
--     ///\brief Get the collection of loaded files.
--     ///
--     const std::vector<LoadedFileInfo*>& getLoadedFiles() const {
--diff --git a/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h b/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
--index 1e2d16c..98a3f41 100644
----- a/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
--+++ b/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
--@@ -67,6 +67,8 @@ namespace sys {
--     static DynamicLibrary getPermanentLibrary(const char *filename,
--                                               std::string *errMsg = 0);
-- 
--+    static DynamicLibrary addPermanentLibrary(const void *handle);
--+
--     /// This function permanently loads the dynamic library at the given path.
--     /// Use this instead of getPermanentLibrary() when you won't need to get
--     /// symbols from the library itself.
--diff --git a/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp b/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
--index f14cb45..fb42eb6 100644
----- a/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
--+++ b/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
--@@ -86,7 +86,10 @@ DynamicLibrary DynamicLibrary::getPermanentLibrary(const char *filename,
--   if (filename == NULL)
--     handle = RTLD_DEFAULT;
-- #endif
--+  return addPermanentLibrary(handle);
--+}
-- 
--+DynamicLibrary DynamicLibrary::addPermanentLibrary(const void *handle) {
--   if (OpenedHandles == 0)
--     OpenedHandles = new DenseSet<void *>();
-- 
 diff --git a/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h b/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
 index 1e2d16c..c73f046 100644
---- a/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
-+++ b/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
+--- interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
++++ interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
 @@ -67,6 +67,8 @@ namespace sys {
      static DynamicLibrary getPermanentLibrary(const char *filename,
                                                std::string *errMsg = 0);
@@ -105,8 +13,8 @@ index 1e2d16c..c73f046 100644
      /// symbols from the library itself.
 diff --git a/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp b/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
 index f14cb45..46ad224 100644
---- a/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
-+++ b/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
+--- interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
++++ interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
 @@ -86,7 +86,10 @@ DynamicLibrary DynamicLibrary::getPermanentLibrary(const char *filename,
    if (filename == NULL)
      handle = RTLD_DEFAULT;
