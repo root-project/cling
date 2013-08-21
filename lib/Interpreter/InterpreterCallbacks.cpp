@@ -14,34 +14,64 @@ using namespace clang;
 
 namespace cling {
 
-  // pin the vtable here
-  InterpreterExternalSemaSource::~InterpreterExternalSemaSource() {}
+  ///\brief Translates 'interesting' for the interpreter ExternalSemaSource 
+  /// events into interpreter callbacks.
+  ///
+  class InterpreterExternalSemaSource : public clang::ExternalSemaSource {
+  protected:
 
-  bool InterpreterExternalSemaSource::LookupUnqualified(LookupResult& R, 
-                                                        Scope* S) {
-    if (m_Callbacks)
-      return m_Callbacks->LookupObject(R, S);
-    
-    return false;
-  }
+    ///\brief The interpreter callback which are subscribed for the events.
+    ///
+    /// Usually the callbacks is the owner of the class and the interpreter owns
+    /// the callbacks so they can't be out of sync. Eg we notifying the wrong
+    /// callback class.
+    ///
+    InterpreterCallbacks* m_Callbacks; // we don't own it.
 
-  bool 
-  InterpreterExternalSemaSource::FindExternalVisibleDeclsByName(
-                                                          const DeclContext* DC,
-                                                         DeclarationName Name) {
-    if (m_Callbacks)
-      return m_Callbacks->LookupObject(DC, Name);
+  public:
+    InterpreterExternalSemaSource(InterpreterCallbacks* C) : m_Callbacks(C){}
+
+    ~InterpreterExternalSemaSource() {}
+
+    InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
+
+    /// \brief Provides last resort lookup for failed unqualified lookups.
+    ///
+    /// This gets translated into InterpreterCallback's call.
+    ///
+    ///\param[out] R The recovered symbol.
+    ///\param[in] S The scope in which the lookup failed.
+    ///
+    ///\returns true if a suitable declaration is found.
+    ///
+    virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S) {
+      if (m_Callbacks)
+        return m_Callbacks->LookupObject(R, S);
     
-    return false;
-  }
+      return false;
+    }
+
+    virtual bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
+                                                clang::DeclarationName Name) {
+      if (m_Callbacks)
+        return m_Callbacks->LookupObject(DC, Name);
+
+      return false;
+    }
+
+    void UpdateWithNewDeclsFwd(const DeclContext *DC, DeclarationName Name, 
+                               llvm::ArrayRef<NamedDecl*> Decls) {
+      SetExternalVisibleDeclsForName(DC, Name, Decls);
+    }
+  };
+
 
   InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
-                                             InterpreterExternalSemaSource* IESS)
+                                            InterpreterExternalSemaSource* IESS)
     : m_Interpreter(interp),  m_SemaExternalSource(IESS), m_IsRuntime(false) {
     if (!IESS)
       m_SemaExternalSource.reset(new InterpreterExternalSemaSource(this));
     m_Interpreter->getSema().addExternalSource(m_SemaExternalSource.get());
-
   }
 
   // pin the vtable here
@@ -58,6 +88,15 @@ namespace cling {
   bool InterpreterCallbacks::LookupObject(const DeclContext*, DeclarationName) {
     return false;
   }
+
+  void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC, 
+                                                DeclarationName Name, 
+                                             llvm::ArrayRef<NamedDecl*> Decls) {
+      if (getInterpreterExternalSemaSource())
+        getInterpreterExternalSemaSource()->UpdateWithNewDeclsFwd(DC, Name, 
+                                                                  Decls);
+    }
+
 
 } // end namespace cling
 

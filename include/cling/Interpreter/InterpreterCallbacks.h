@@ -24,47 +24,6 @@ namespace cling {
   class InterpreterExternalSemaSource;
   class Transaction;
 
-  ///\brief Translates 'interesting' for the interpreter ExternalSemaSource 
-  /// events into interpreter callbacks.
-  ///
-  class InterpreterExternalSemaSource : public clang::ExternalSemaSource {
-  protected:
-
-    ///\brief The interpreter callback which are subscribed for the events.
-    ///
-    /// Usually the callbacks is the owner of the class and the interpreter owns
-    /// the callbacks so they can't be out of sync. Eg we notifying the wrong
-    /// callback class.
-    ///
-    InterpreterCallbacks* m_Callbacks; // we don't own it.
-
-  public:
-    InterpreterExternalSemaSource(InterpreterCallbacks* C) : m_Callbacks(C){}
-
-    ~InterpreterExternalSemaSource();
-
-    InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
-
-    /// \brief Provides last resort lookup for failed unqualified lookups.
-    ///
-    /// This gets translated into InterpreterCallback's call.
-    ///
-    ///\param[out] R The recovered symbol.
-    ///\param[in] S The scope in which the lookup failed.
-    ///
-    ///\returns true if a suitable declaration is found.
-    ///
-    virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S);
-
-    virtual bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
-                                                clang::DeclarationName Name);
-
-    void UpdateWithNewDecls(const clang::DeclContext *DC, 
-                            clang::DeclarationName Name, 
-                            llvm::ArrayRef<clang::NamedDecl*> Decls) {
-      SetExternalVisibleDeclsForName(DC, Name, Decls);
-    }
-  };
 
   /// \brief  This interface provides a way to observe the actions of the
   /// interpreter as it does its thing.  Clients can define their hooks here to
@@ -91,10 +50,7 @@ namespace cling {
   protected:
     void UpdateWithNewDecls(const clang::DeclContext *DC, 
                             clang::DeclarationName Name, 
-                            llvm::ArrayRef<clang::NamedDecl*> Decls) {
-      if (getInterpreterExternalSemaSource())
-        getInterpreterExternalSemaSource()->UpdateWithNewDecls(DC, Name, Decls);
-    }
+                            llvm::ArrayRef<clang::NamedDecl*> Decls);
   public:
     InterpreterCallbacks(Interpreter* interp,
                          InterpreterExternalSemaSource* IESS = 0);
