@@ -1,7 +1,7 @@
 diff --git a/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h b/interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
 index 1e2d16c..c73f046 100644
---- interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
-+++ interpreter/llvm/src/include/llvm/Support/DynamicLibrary.h
+--- include/llvm/Support/DynamicLibrary.h
++++ include/llvm/Support/DynamicLibrary.h
 @@ -67,6 +67,8 @@ namespace sys {
      static DynamicLibrary getPermanentLibrary(const char *filename,
                                                std::string *errMsg = 0);
@@ -13,8 +13,8 @@ index 1e2d16c..c73f046 100644
      /// symbols from the library itself.
 diff --git a/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp b/interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
 index f14cb45..46ad224 100644
---- interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
-+++ interpreter/llvm/src/lib/Support/DynamicLibrary.cpp
+--- lib/Support/DynamicLibrary.cpp
++++ lib/Support/DynamicLibrary.cpp
 @@ -86,7 +86,10 @@ DynamicLibrary DynamicLibrary::getPermanentLibrary(const char *filename,
    if (filename == NULL)
      handle = RTLD_DEFAULT;
