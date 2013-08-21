@@ -153,6 +153,16 @@ namespace cling {
           // into the map.
           m_NonNullArgIndexs.insert(std::make_pair(FName, ArgIndexs));
         }
+
+        Stmt* S = FDecl->getBody();
+        if (S) {
+          for (Stmt::child_iterator II = S->child_begin(), EE = S->child_end();
+               II != EE; ++II) {
+            CallExpr* child = dyn_cast<CallExpr>(*II);
+            if (child && child->getDirectCallee() != FDecl)
+              VisitCallExpr(child);
+          }
+        }
       }
       return true; // returning false will abort the in-depth traversal.
     }

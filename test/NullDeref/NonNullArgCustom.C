@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling -Xclang -verify
+// RUN: cat %s | %cling -Xclang -verify | FileCheck %s
 
 
 // We must be able to handle cases where, there is a custom function that has 
@@ -6,7 +6,7 @@
 // attribute to a say library function.
 
 // Qualified functions.
-#include <stdio.h>
+extern "C" int printf(const char* fmt, ...);
 namespace custom_namespace {
   void standaloneFunc(void* p, int q, float* s) __attribute__((nonnull(1,3))) { // expected-warning {{GCC does not allow nonnull attribute in this position on a function definition}}
     if (!p || !s) 
@@ -19,7 +19,7 @@ namespace custom_namespace {
   }
 
 }
-// This can be a function defined in a library or somewhere else.
+// This can be a function defined in a library or somewhere else. Use printf for example
 extern "C" int printf(const char* fmt, ...) __attribute__((nonnull(1)));
 
 int* pNull = 0;
@@ -42,7 +42,7 @@ int trampoline() {
 }
 .rawInput 0
 //CHECK-NOT: Must not be called with 0 args.
-//trampoline()
+trampoline() // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
 //CHECK: (int) 1
 
 .q
