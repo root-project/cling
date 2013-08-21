@@ -38,9 +38,18 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_os_ostream.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 
+#include <iostream>
+#include <fstream>
 #include <set>
 #include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
 #include <vector>
 
 #ifdef WIN32
@@ -311,6 +320,158 @@ namespace cling {
     }
   }
 
+ void Interpreter::storeInterpreterState(const std::string& name) const {
+    ASTContext& C = getSema().getASTContext();
+    TranslationUnitDecl* TU = C.getTranslationUnitDecl();
+    unsigned Indentation = 0;
+    bool PrintInstantiation = false;
+    std::string ErrMsg;
+    llvm::sys::Path Filename = llvm::sys::Path::GetCurrentDirectory();
+    if (Filename.isEmpty()) {
+      llvm::errs() << "Error: " << ErrMsg << "\n";
+      return;
+    }
+    //Test that the filename isn't already used
+    std::string testFilename = name + "AST.diff";
+    Filename.appendComponent(testFilename);
+    if (llvm::sys::fs::exists(Filename.str())) {
+      llvm::errs() << Filename.str() << "\n";
+      llvm::errs() << "Filename already exists. Please choose a new one \n";
+      exit (1);
+    }
+    else {
+    std::string rename = name + "AST.tmp";
+    Filename.eraseComponent();
+    Filename.appendComponent(rename);
+    std::ofstream ofs (Filename.c_str(), std::ofstream::out);  
+    llvm::raw_os_ostream Out(ofs);
+    clang::PrintingPolicy policy = C.getPrintingPolicy();
+    TU->print(Out, policy, Indentation, PrintInstantiation);
+    Out.flush();
+    }
+   }
+
+  void Interpreter::compareInterpreterState(const std::string& name) const {
+    // Store new state
+    std::string compareTo = name + "cmp";
+    storeInterpreterState(compareTo);
+    // Diff between the two existing file
+    llvm::sys::Path tmpDir1 = llvm::sys::Path::GetCurrentDirectory();
+     std::string ErrMsg;
+    if (tmpDir1.isEmpty()) {
+      llvm::errs() << "Error: " << ErrMsg << "\n";
+      return;
+    }
+    llvm::sys::Path stateFile1 = tmpDir1;
+    std::string state1 = name + "AST.tmp";
+    stateFile1.appendComponent(state1);
+    llvm::sys::Path tmpDir2 = llvm::sys::Path::GetCurrentDirectory();
+    if (tmpDir2.isEmpty()) {
+      llvm::errs() << "Error: " << ErrMsg << "\n";
+      return;
+    }
+    llvm::sys::Path stateFile2 = tmpDir2;
+    std::string state2 = name + "cmpAST.tmp";
+    stateFile2.appendComponent(state2);
+    std::string command = "diff -u " + stateFile1.str() + " " 
+      + stateFile2.str();
+// printing the results
+#ifndef LLVM_ON_WIN32
+      FILE* pipe = popen(command.c_str(), "r");
+      if (!pipe) {
+	perror( "Error" );
+      }
+      char buffer[128];
+      std::string result = "";
+      while(!feof(pipe)) {
+	if(fgets(buffer, 128, pipe) != NULL) 
+    		result += buffer;
+	  }
+      pclose(pipe);     
+      if(!result.empty()){
+	std::string ErrMsg;
+	llvm::sys::Path DiffFile = llvm::sys::Path::GetCurrentDirectory();
+	if (DiffFile.isEmpty()) {
+	  llvm::errs() << "Error: " << ErrMsg << "\n";
+	  return;
+	}
+	// Test if nameAST.diff already exists
+        std::string file;
+	llvm::sys::Path testFile = llvm::sys::Path::GetCurrentDirectory();
+	if (testFile.isEmpty()) {
+	  llvm::errs() << "Error: " << ErrMsg << "\n";
+	  return;
+        }
+	std::string testName = name + "AST.diff";
+	testFile.appendComponent(testName);
+	if (llvm::sys::fs::exists(testFile.str())){
+	  file = name + "1AST.diff";
+	}
+	else {
+	  file = name + "AST.diff";
+	}
+	DiffFile.appendComponent(file);
+	std::ofstream ofs (DiffFile.c_str(), std::ofstream::out);  
+	llvm::raw_os_ostream Out(ofs);
+	Out << result;
+	Out.flush();
+	llvm::errs() << "File with AST differencies stored in: ";
+	llvm::errs() << file << "\n";
+	llvm::errs() << DiffFile.c_str();
+	llvm::errs() << "\n";
+      }
+#else
+      FILE* pipe = _popen(command.c_str(), "r");
+      if (!pipe) {
+	perror( "Error" );
+      }
+      char buffer[128];
+      std::string result = "";
+      while(!feof(pipe)) {
+	  if(fgets(buffer, 128, pipe) != NULL)
+    		result += buffer;
+	  }
+      _pclose(pipe);  
+      if(!result.empty()){
+	std::string ErrMsg;
+	llvm::sys::Path DiffFile = llvm::sys::Path::GetCurrentDirectory();
+	if (DiffFile.isEmpty()) {
+	  llvm::errs() << "Error: " << ErrMsg << "\n";
+	  return;
+	}
+	// Test if nameAST.diff already exists
+        std::string file;
+	llvm::sys::Path testFile = llvm::sys::Path::GetCurrentDirectory();
+	if (testFile.isEmpty()) {
+	  llvm::errs() << "Error: " << ErrMsg << "\n";
+	  return;
+        }
+	std::string testName = name + "AST.diff";
+	testFile.appendComponent(testName);
+	if (llvm::sys::fs::exists(testFile.str())){
+	  file = name + "1AST.diff";
+	}
+	else {
+	  file = name + "AST.diff";
+	}
+	DiffFile.appendComponent(file);
+	std::ofstream ofs (DiffFile.c_str(), std::ofstream::out);  
+	llvm::raw_os_ostream Out(ofs);
+	Out.flush();
+	llvm::errs() << "File with AST differencies stored in: ";
+	llvm::errs() << file << "\n";
+	llvm::errs() << DiffFile.c_str();
+	llvm::errs() << "\n";
+      }
+#endif   
+      std::string command2 = stateFile1.str();
+      std::string command3 = stateFile2.str();
+      int result1 = std::remove(command2.c_str());
+      int result2 = std::remove(command3.c_str());
+      if((result1 != 0) && (result2 != 0))
+	perror( "Error deleting files were AST were stored" );
+  }
+  
   // Adapted from clang/lib/Frontend/CompilerInvocation.cpp
   void Interpreter::GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
                                    bool withSystem, bool withFlags) {

@@ -195,6 +195,14 @@ namespace cling {
     ///
     bool m_PrintIR;
 
+    ///\brief Flag toggling the state storing on or off.
+    ///
+    bool m_StoreState;
+
+    ///\brief Flag toggling the state comparing on or off.
+    ///
+    bool m_CompareState;
+
     ///\brief Flag toggling the dynamic scopes on or off.
     ///
     bool m_DynamicLookupEnabled;
@@ -443,6 +451,19 @@ namespace cling {
     ///
     void DumpIncludePath();
 
+    ///\brief Prints the interpreter state in new file
+    ///
+    ///\param[in] name - The name of the temporary file where the state will
+    /// be printed
+    ///
+    void storeInterpreterState(const std::string& name) const;
+
+    ///\brief Compare the actual interpreter state with the one stored 
+    /// previously.
+    ///\param[in] name - The name of the previously stored file
+    ///
+    void compareInterpreterState(const std::string& name) const;
+
     ///\brief Compiles the given input.
     ///
     /// This interface helps to run everything that cling can run. From
@@ -604,6 +625,12 @@ namespace cling {
 
     bool isPrintingIR() const { return m_PrintIR; }
     void enablePrintIR(bool print = true) { m_PrintIR = print; }
+
+    bool isStoringState() const { return m_StoreState; }
+    void enableStoreState(bool store = true) { m_StoreState = store; }
+
+    bool isComparingState() const { return m_CompareState; }
+    void enableCompareState(bool compare = true) { m_CompareState = compare; }
 
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() const { return m_DynamicLookupEnabled; }

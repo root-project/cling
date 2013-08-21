@@ -111,7 +111,8 @@ namespace cling {
       || isdynamicExtensionsCommand()
       || ishelpCommand() || isfileExCommand() || isfilesCommand() || isClassCommand()
       || isgCommand() || isTypedefCommand() || isprintIRCommand()
-      || isShellCommand(actionResult, resultValue);
+      || isShellCommand(actionResult, resultValue)
+      || isstoreStateCommand() || iscompareStateCommand();
   }
 
   // L := 'L' FilePath
@@ -276,6 +277,54 @@ namespace cling {
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstant();
       m_Actions->actOnprintIRCommand(mode);
+      return true;
+    }
+    return false;
+  }
+
+  bool MetaParser::isstoreStateCommand() {
+     if (getCurTok().is(tok::ident) &&
+        getCurTok().getIdent().equals("storeState")) {
+       //MetaSema::SwitchMode mode = MetaSema::kToggle;
+      consumeToken();
+      skipWhitespace();
+      if (!getCurTok().is(tok::quote))
+	return false; // FIXME: Issue proper diagnostics
+
+      consumeToken();
+      if (!getCurTok().is(tok::ident))
+	return false; // FIXME: Issue proper diagnostics
+
+      std::string ident = getCurTok().getIdent();
+      consumeToken();
+      if (!getCurTok().is(tok::quote))
+	return false; // FIXME: Issue proper diagnostics
+
+      m_Actions->actOnstoreStateCommand(ident);
+      return true;
+    }
+    return false;
+  }
+
+  bool MetaParser::iscompareStateCommand() {
+    if (getCurTok().is(tok::ident) &&
+        getCurTok().getIdent().equals("compareState")) {
+      //MetaSema::SwitchMode mode = MetaSema::kToggle;
+      consumeToken();
+      skipWhitespace();
+      if (!getCurTok().is(tok::quote))
+	return false; // FIXME: Issue proper diagnostics
+
+      consumeToken();
+      if (!getCurTok().is(tok::ident))
+	return false; // FIXME: Issue proper diagnostics
+
+      std::string ident = getCurTok().getIdent();
+      consumeToken();
+      if (!getCurTok().is(tok::quote))
+	return false; // FIXME: Issue proper diagnostics
+
+      m_Actions->actOncompareStateCommand(ident);
       return true;
     }
     return false;

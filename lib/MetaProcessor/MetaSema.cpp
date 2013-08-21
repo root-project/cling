@@ -107,6 +107,14 @@ namespace cling {
       m_Interpreter.enablePrintIR(mode);
   }
 
+  void MetaSema::actOnstoreStateCommand(llvm::StringRef name) const {
+    m_Interpreter.storeInterpreterState(name);
+  }
+
+  void MetaSema::actOncompareStateCommand(llvm::StringRef name) const {
+    m_Interpreter.compareInterpreterState(name);
+  }
+
   void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/) 
     const {
     if (mode == kToggle) {

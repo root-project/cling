@@ -109,6 +109,18 @@ namespace cling {
     ///
     void actOnprintIRCommand(SwitchMode mode = kToggle) const;
 
+    ///\brief Store the interpreter's state.
+    ///
+    ///\param[in] name - Name of the file where the state will be stored
+    ///
+    void actOnstoreStateCommand(llvm::StringRef name) const;
+
+    ///\brief Compare the interpreter's state with the one previously stored
+    ///
+    ///\param[in] name - Name of the file where the previous state was stored
+    ///
+    void actOncompareStateCommand(llvm::StringRef name) const;
+
     ///\brief Switches on/off the experimental dynamic extensions (dynamic 
     /// scopes) and late binding.
     ///
