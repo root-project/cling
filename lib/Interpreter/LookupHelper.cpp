@@ -594,6 +594,130 @@ namespace cling {
     return TheDecl;
   }
 
+  static bool ParseWithShortcuts(DeclContext* foundDC, CXXScopeSpec &SS,
+                          llvm::StringRef funcName,
+                          Parser &P, Sema &S,
+                          UnqualifiedId &FuncId) {
+     
+    // Use a very simple parse step that dectect whether the name search (which
+    // is already supposed to be an unqualified name) is a simple identifier,
+    // a constructor name or a destructor name.  In those 3 cases, we can easily
+    // create the UnqualifiedId object that would have resulted from the 'real'
+    // parse.  By using this direct creation of the UnqualifiedId, we avoid the
+    // 'permanent' cost associated with creating a memory buffer and the
+    // associated FileID.
+     
+    // If the name is a template or an operator, we revert to the regular parse
+    // (and its associated permanent cost).
+     
+    // In the operator case, the additional work is in the case of a conversion
+    // operator where we would need to 'quickly' parse the type itself (if want
+    // to avoid the permanent cost).
+     
+    // In the case with the template the problem gets a bit worse as we need to
+    // handle potentially arbitrary spaces and ordering
+    // ('const int' vs 'int  const', etc.)
+     
+    if (funcName.size() == 0) return false;
+    Preprocessor& PP = S.getPreprocessor();
+
+    // See if we can avoid creating the buffer, for now we just look for
+    // simple indentifier, constructor and destructor.
+     
+     
+    if (funcName.size() > 8 && strncmp(funcName.data(),"operator",8) == 0
+               &&(   funcName[8] == ' ' || funcName[8] == '*'
+                  || funcName[8] == '%' || funcName[8] == '&'
+                  || funcName[8] == '+' || funcName[8] == '-'
+                  || funcName[8] == '(' || funcName[8] == '['
+                  || funcName[8] == '=' || funcName[8] == '!'
+                  || funcName[8] == '<' || funcName[8] == '>'
+                  || funcName[8] == '-' || funcName[8] == '^')
+               ) {
+      // We have called:
+      //   setOperatorFunctionId (SourceLocation OperatorLoc,
+      //                          OverloadedOperatorKind Op,
+      //                          SourceLocation SymbolLocations[3])
+      // or
+      //   setConversionFunctionId (SourceLocation OperatorLoc,
+      //                            ParsedType Ty, SourceLocation EndLoc)
+    } else if (funcName.find('<') != StringRef::npos) {
+      // We might have a template name,
+      //   setTemplateId (TemplateIdAnnotation *TemplateId)
+      // or
+      //   setConstructorTemplateId (TemplateIdAnnotation *TemplateId)
+    } else if (funcName[0] == '~') {
+       // Destructor.
+       // Let's see if this is our contructor.
+       TagDecl *decl = llvm::dyn_cast<TagDecl>(foundDC);
+       if (decl) {
+          // We have a class or struct or something.
+          if (funcName.substr(1).equals(decl->getName())) {
+             ParsedType PT;
+             QualType QT( decl->getTypeForDecl(), 0 );
+             PT.set(QT);
+             FuncId.setDestructorName(SourceLocation(),PT,SourceLocation());
+             return true;
+          }
+       }
+       // So it starts with ~ but is not followed by the name of
+       // a class or at least not the one that is the declaration context,
+       // let's try a real parsing, to see if we can do better.
+    } else {
+       // We either have a simple type or a constructor name
+       TagDecl *decl = llvm::dyn_cast<TagDecl>(foundDC);
+       if (decl) {
+          // We have a class or struct or something.
+          if (funcName.equals(decl->getName())) {
+             ParsedType PT;
+             QualType QT( decl->getTypeForDecl(), 0 );
+             PT.set(QT);
+             FuncId.setConstructorName(PT,SourceLocation(),SourceLocation());
+          } else {
+             IdentifierInfo *TypeInfoII = &PP.getIdentifierTable().get(funcName);
+             FuncId.setIdentifier (TypeInfoII, SourceLocation() );
+          }
+          return true;
+       } else {
+          // We have a namespace like context, it can't be a constructor
+          IdentifierInfo *TypeInfoII = &PP.getIdentifierTable().get(funcName);
+          FuncId.setIdentifier (TypeInfoII, SourceLocation() );
+          return true;
+       }
+    }
+
+    //
+    //  Setup to reparse as a type.
+    //
+    //
+    //  Create a fake file to parse the function name.
+    //
+    {
+      llvm::MemoryBuffer* SB
+           = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
+                                                + "\n", "lookup.funcname.file");
+      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+      PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
+      PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
+    }
+      
+
+    //
+    //  Parse the function name.
+    //
+    SourceLocation TemplateKWLoc;
+    if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
+                             /*AllowDestructorName*/true,
+                             /*AllowConstructorName*/true,
+                             ParsedType(), TemplateKWLoc,
+                             FuncId)) {
+      // Failed parse, cleanup.
+      return false;
+    }
+    return true;
+  }
+
+   
   template <typename T>
   T findFunction(DeclContext* foundDC, CXXScopeSpec &SS,
                  llvm::StringRef funcName,
@@ -611,28 +735,9 @@ namespace cling {
     // Given the correctly types arguments, etc. find the function itself.
 
     //
-    //  Some utilities.
-    //
-    Preprocessor& PP = S.getPreprocessor();
-    //
     //  Our return value.
     //
     FunctionDecl* TheDecl = 0;
-
-    //
-    //  Setup to reparse as a type.
-    //
-    //
-    //  Create a fake file to parse the function name.
-    //
-    {
-      llvm::MemoryBuffer* SB
-        = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
-                                               + "\n", "lookup.funcname.file");
-      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
-      PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
-      PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
-    }
 
     //
     //  Make the class we are looking up the function
@@ -649,16 +754,9 @@ namespace cling {
     P.EnterScope(Scope::DeclScope);
     Sema::ContextRAII SemaContext(S, foundDC);
     S.EnterDeclaratorContext(P.getCurScope(), foundDC);
-    //
-    //  Parse the function name.
-    //
-    SourceLocation TemplateKWLoc;
+
     UnqualifiedId FuncId;
-    if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
-                             /*AllowDestructorName*/true,
-                             /*AllowConstructorName*/true,
-                             ParsedType(), TemplateKWLoc,
-                             FuncId)) {
+    if (!ParseWithShortcuts(foundDC,SS,funcName,P,S,FuncId)) {
       // Failed parse, cleanup.
       // Destroy the scope we created first, and
       // restore the original.
@@ -669,6 +767,7 @@ namespace cling {
       // Then exit.
       return TheDecl;
     }
+
     //
     //  Get any template args in the function name.
     //
@@ -677,6 +776,7 @@ namespace cling {
     const TemplateArgumentListInfo* FuncTemplateArgs;
     S.DecomposeUnqualifiedId(FuncId, FuncTemplateArgsBuffer, FuncNameInfo,
                              FuncTemplateArgs);
+
     //
     //  Lookup the function name in the given class now.
     //
@@ -695,6 +795,7 @@ namespace cling {
       // Then cleanup and exit.
       return TheDecl;
     }
+
     //
     //  Destroy the scope we created, and restore the original.
     //
