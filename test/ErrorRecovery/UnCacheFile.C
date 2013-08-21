@@ -1,9 +1,12 @@
-// RUN: cat %s | %cling -Xclang -verify -I%p | FileCheck %s
+// RUN: rm -f %testexecdir/ErrorRecovery/*.tmp
+// RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 // XFAIL: *
 
 // Test the ability of including a wrong file see diagnostics and remove the
 // cached files so that all the changes are going to be seen next time it gets
 // included.
+
+.storeState "testUncacheFile"
 
 #include <iostream>
 #include <fstream>
@@ -37,3 +40,6 @@ MyClass my;
 my.gimme12()
 // CHECK: (int const) 12
 
+.compareState "testUncacheFile"
+// CHECK-NOT: File with AST differencies stored in: testUncacheFileAST.diff
+.q
