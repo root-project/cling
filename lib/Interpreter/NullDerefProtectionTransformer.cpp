@@ -57,19 +57,20 @@ extern "C" {
 using namespace clang;
 
 namespace cling {
-  typedef std::map<llvm::StringRef, std::bitset<32> > nonnull_map_t;
+  typedef std::map<std::string, std::bitset<32> > nonnull_map_t;
 
   // NonNullDeclFinder finds the function decls with nonnull attribute args.
   class NonNullDeclFinder
     : public RecursiveASTVisitor<NonNullDeclFinder> {
   private:
     Sema* m_Sema;
-    llvm::SmallVector<llvm::StringRef, 8> m_NonNullDeclNames;
+    llvm::OwningPtr<clang::MangleContext> m_MangleCtx;
+    llvm::SmallVector<std::string, 8> m_NonNullDeclNames;
     nonnull_map_t m_NonNullArgIndexs;
 
   public:
     NonNullDeclFinder(Sema* S) : m_Sema(S) {}
-    const llvm::SmallVector<llvm::StringRef, 8>& getDeclNames() const {
+    const llvm::SmallVector<std::string, 8>& getDeclNames() const {
       return m_NonNullDeclNames;
     }
 
@@ -77,6 +78,41 @@ namespace cling {
       return m_NonNullArgIndexs;
     }
 
+    std::string getMangledName(FunctionDecl* FD) {
+      // Copied from Interpreter.cpp;
+      if (!m_MangleCtx)
+        m_MangleCtx.reset(FD->getASTContext().createMangleContext());
+
+      std::string mangledName;
+      if (m_MangleCtx->shouldMangleDeclName(FD)) {
+        llvm::raw_string_ostream RawStr(mangledName);
+        switch(FD->getKind()) {
+        case Decl::CXXConstructor:
+          //Ctor_Complete,          // Complete object ctor
+          //Ctor_Base,              // Base object ctor
+          //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
+          m_MangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(FD),
+                                     Ctor_Complete, RawStr);
+          break;
+
+        case Decl::CXXDestructor:
+          //Dtor_Deleting, // Deleting dtor
+          //Dtor_Complete, // Complete object dtor
+          //Dtor_Base      // Base object dtor
+          m_MangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(FD),
+                                     Dtor_Complete, RawStr);
+          break;
+
+        default :
+          m_MangleCtx->mangleName(FD, RawStr);
+          break;
+        }
+        RawStr.flush();
+      } else {
+        mangledName = FD->getNameAsString();
+      }
+      return mangledName;
+    }
     // Deal with all the call expr in the transaction.
     bool VisitCallExpr(CallExpr* TheCall) {
       if (FunctionDecl* FDecl = TheCall->getDirectCallee()) {
@@ -108,7 +144,7 @@ namespace cling {
         if (ArgIndexs.any()) {
 
           // Get the function decl's name.
-          llvm::StringRef FName = FDecl->getName();
+          std::string FName = getMangledName(FDecl);
 
           // Store the function decl's name into the vector.
           m_NonNullDeclNames.push_back(FName);
@@ -133,39 +169,8 @@ namespace cling {
     if (!FD)
       return;
 
-    // Copied from Interpreter.cpp;
-    if (!m_MangleCtx)
-      m_MangleCtx.reset(FD->getASTContext().createMangleContext());
-
-    std::string mangledName;
-    if (m_MangleCtx->shouldMangleDeclName(FD)) {
-      llvm::raw_string_ostream RawStr(mangledName);
-      switch(FD->getKind()) {
-      case Decl::CXXConstructor:
-        //Ctor_Complete,          // Complete object ctor
-        //Ctor_Base,              // Base object ctor
-        //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
-        m_MangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(FD), 
-                                   Ctor_Complete, RawStr);
-        break;
-
-      case Decl::CXXDestructor:
-        //Dtor_Deleting, // Deleting dtor
-        //Dtor_Complete, // Complete object dtor
-        //Dtor_Base      // Base object dtor
-        m_MangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(FD),
-                                   Dtor_Complete, RawStr);
-        break;
-
-      default :
-        m_MangleCtx->mangleName(FD, RawStr);
-        break;
-      }
-      RawStr.flush();
-    } else {
-      mangledName = FD->getNameAsString();
-    }
-    
+    NonNullDeclFinder Finder(m_Sema);
+    std::string mangledName = Finder.getMangledName(FD);
     // Find the function in the module.
     llvm::Function* F = getTransaction()->getModule()->getFunction(mangledName);
     if (!F) return;
@@ -173,8 +178,6 @@ namespace cling {
     llvm::IRBuilder<> TheBuilder(F->getContext());
     Builder = &TheBuilder;
     runOnFunction(*F);
-
-    NonNullDeclFinder Finder(m_Sema);
 
     // Find all the function decls with null attribute arguments.
     for (size_t Idx = 0, E = getTransaction()->size(); Idx < E; ++Idx) {
@@ -185,13 +188,13 @@ namespace cling {
           Finder.TraverseStmt((*J)->getBody());
     }
 
-    const llvm::SmallVector<llvm::StringRef, 8>&
+    const llvm::SmallVector<std::string, 8>&
       FDeclNames = Finder.getDeclNames();
     if (FDeclNames.empty()) return;
 
     llvm::Module* M = F->getParent();
 
-    for (llvm::SmallVector<llvm::StringRef, 8>::const_iterator
+    for (llvm::SmallVector<std::string, 8>::const_iterator
          i = FDeclNames.begin(), e = FDeclNames.end(); i != e; ++i) {
       const nonnull_map_t& ArgIndexs = Finder.getArgIndexs();
       nonnull_map_t::const_iterator it = ArgIndexs.find(*i);
@@ -363,7 +366,7 @@ namespace cling {
   }
 
   void NullDerefProtectionTransformer::handleNonNullArgCall(llvm::Module& M,
-    const llvm::StringRef& name, const std::bitset<32>& ArgIndexs) {
+    const std::string& name, const std::bitset<32>& ArgIndexs) {
 
     // Get the function by the name.
     llvm::Function* func = M.getFunction(name);
