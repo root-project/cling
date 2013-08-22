@@ -7,20 +7,27 @@
 #ifndef CLING_INTERPRETER_CALLBACKS_H
 #define CLING_INTERPRETER_CALLBACKS_H
 
-#include "clang/Sema/ExternalSemaSource.h"
+#include "clang/AST/DeclarationName.h"
 
 #include "llvm/ADT/OwningPtr.h"
+#include "llvm/ADT/ArrayRef.h"
 
 namespace clang {
+  class ASTDeserializationListener;
   class Decl;
   class DeclContext;
+  class DeclarationName;
+  class ExternalSemaSource;
   class LookupResult;
+  class NamedDecl;
   class Scope;
+  class Type;
 }
 
 namespace cling {
   class Interpreter;
   class InterpreterCallbacks;
+  class InterpreterDeserializationListener;
   class InterpreterExternalSemaSource;
   class Transaction;
 
@@ -37,7 +44,13 @@ namespace cling {
     ///\brief Our custom SemaExternalSource, translating interesting events into
     /// callbacks.
     ///
-    llvm::OwningPtr<InterpreterExternalSemaSource> m_SemaExternalSource;
+    llvm::OwningPtr<InterpreterExternalSemaSource> m_ExternalSemaSource;
+
+    ///\brief Our custom SemaExternalSource, translating interesting events into
+    /// callbacks.
+    ///
+    llvm::
+    OwningPtr<InterpreterDeserializationListener> m_DeserializationListener;
 
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///
@@ -47,14 +60,36 @@ namespace cling {
                             clang::DeclarationName Name, 
                             llvm::ArrayRef<clang::NamedDecl*> Decls);
   public:
+    ///\brief Constructs the callbacks.
+    ///
+    ///\param[in] interp - an interpreter.
+    ///\param[in] IESS - an InterpreterExternalSemaSource (takes the ownership)
+    ///\param[in] IDL - an InterpreterDeserializationListener (owned)
+    ///
     InterpreterCallbacks(Interpreter* interp,
-                         InterpreterExternalSemaSource* IESS = 0);
+                         InterpreterExternalSemaSource* IESS,
+                         InterpreterDeserializationListener* IDL);
+
+    ///\brief Constructs the callbacks with default callback adaptors.
+    ///
+    ///\param[in] interp - an interpreter.
+    ///\param[in] enableExternalSemaSourceCallbacks  - creates a default 
+    ///           InterpreterExternalSemaSource and attaches it to Sema.
+    ///
+    ///\param[in] enableInterpreterDeserializationListener - creates a default
+    ///           InterpreterDeserializationListener and attaches it to the 
+    ///           ModuleManager if it is set.
+    ///
+    InterpreterCallbacks(Interpreter* interp,
+                         bool enableExternalSemaSourceCallbacks = false,
+                         bool enableDeserializationListenerCallbacks = false);
 
     virtual ~InterpreterCallbacks();
 
-    InterpreterExternalSemaSource* getInterpreterExternalSemaSource() const {
-      return m_SemaExternalSource.get();
-    }
+    clang::ExternalSemaSource* getInterpreterExternalSemaSource() const;
+
+    clang::ASTDeserializationListener* 
+    getInterpreterDeserializationListener() const;
 
     /// \brief This callback is invoked whenever the interpreter needs to
     /// resolve the type and the adress of an object, which has been marked for

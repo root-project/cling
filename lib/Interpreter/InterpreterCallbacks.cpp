@@ -8,18 +8,41 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
+#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Sema.h"
+#include "clang/Serialization/ASTReader.h"
+#include "clang/Serialization/ASTDeserializationListener.h"
+
 
 using namespace clang;
 
 namespace cling {
+
+  ///\brief Translates 'interesting' for the interpreter 
+  /// ASTDeserializationListener events into interpreter callback.
+  ///
+  class InterpreterDeserializationListener : public ASTDeserializationListener {
+  private:
+    cling::InterpreterCallbacks* m_Callbacks;
+  public:
+    InterpreterDeserializationListener(InterpreterCallbacks* C)
+      : m_Callbacks(C) {}
+
+    virtual void DeclRead(serialization::DeclID, const Decl *D) {
+      if (m_Callbacks)
+        m_Callbacks->DeclDeserialized(D);
+    }
+    virtual void TypeRead(serialization::TypeIdx, QualType T) {
+      if (m_Callbacks)
+        m_Callbacks->TypeDeserialized(T.getTypePtr());
+    }
+  };
 
   ///\brief Translates 'interesting' for the interpreter ExternalSemaSource 
   /// events into interpreter callbacks.
   ///
   class InterpreterExternalSemaSource : public clang::ExternalSemaSource {
   protected:
-
     ///\brief The interpreter callback which are subscribed for the events.
     ///
     /// Usually the callbacks is the owner of the class and the interpreter owns
@@ -67,11 +90,35 @@ namespace cling {
 
 
   InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
-                                            InterpreterExternalSemaSource* IESS)
-    : m_Interpreter(interp),  m_SemaExternalSource(IESS), m_IsRuntime(false) {
-    if (!IESS)
-      m_SemaExternalSource.reset(new InterpreterExternalSemaSource(this));
-    m_Interpreter->getSema().addExternalSource(m_SemaExternalSource.get());
+                                            InterpreterExternalSemaSource* IESS,
+                                        InterpreterDeserializationListener* IDL)
+    : m_Interpreter(interp),  m_ExternalSemaSource(IESS), m_IsRuntime(false),
+      m_DeserializationListener(IDL) {
+    if (IESS)
+      m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
+    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager();
+    if (IDL && Reader)
+      Reader->setDeserializationListener(IDL);
+  }
+
+  InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
+                             bool enableExternalSemaSourceCallbacks/* = false*/,
+                       bool enableDeserializationListenerCallbacks/* = false*/)
+    : m_Interpreter(interp), m_IsRuntime(false) {
+    
+    if (enableExternalSemaSourceCallbacks) {
+      m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
+      m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
+    }
+
+    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager();
+    if (enableDeserializationListenerCallbacks && Reader) {
+      // FIXME: need to create a multiplexer if a DeserializationListener is
+      // alreday present.
+      m_DeserializationListener.
+        reset(new InterpreterDeserializationListener(this));
+      Reader->setDeserializationListener(m_DeserializationListener.get());
+    }
   }
 
   // pin the vtable here
@@ -79,6 +126,16 @@ namespace cling {
     // FIXME: we have to remove the external source at destruction time. Needs
     // further tweaks of the patch in clang. This will be done later once the 
     // patch is in clang's mainline.
+  }
+
+  ExternalSemaSource* 
+  InterpreterCallbacks::getInterpreterExternalSemaSource() const {
+    return m_ExternalSemaSource.get();
+  }
+
+  ASTDeserializationListener* 
+  InterpreterCallbacks::getInterpreterDeserializationListener() const {
+    return m_DeserializationListener.get();
   }
 
   bool InterpreterCallbacks::LookupObject(LookupResult&, Scope*) {
@@ -92,12 +149,9 @@ namespace cling {
   void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC, 
                                                 DeclarationName Name, 
                                              llvm::ArrayRef<NamedDecl*> Decls) {
-      if (getInterpreterExternalSemaSource())
-        getInterpreterExternalSemaSource()->UpdateWithNewDeclsFwd(DC, Name, 
-                                                                  Decls);
-    }
-
-
+    if (m_ExternalSemaSource)
+      m_ExternalSemaSource->UpdateWithNewDeclsFwd(DC, Name, Decls);
+  }
 } // end namespace cling
 
 // TODO: Make the build system in the testsuite aware how to build that class

@@ -51,7 +51,6 @@ namespace cling {
       class LifetimeHandler;
     }
   }
-  class ClingCallbackAdaptor;
   class CompilationOptions;
   class ExecutionContext;
   class IncrementalParser;
@@ -206,10 +205,6 @@ namespace cling {
     ///\brief Interpreter callbacks.
     ///
     llvm::OwningPtr<InterpreterCallbacks> m_Callbacks;
-
-    ///\brief Interpreter adaptor to clang interfaces.
-    ///
-    ClingCallbackAdaptor* m_CallbackAdaptor; // owned, but d'tor hidden
 
     ///\breif Helper that manages when the destructor of an object to be called.
     ///

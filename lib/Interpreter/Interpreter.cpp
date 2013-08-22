@@ -30,8 +30,6 @@
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaInternal.h"
-#include "clang/Serialization/ASTReader.h"
-#include "clang/Serialization/ASTDeserializationListener.h"
 
 #include "llvm/Linker.h"
 #include "llvm/IR/LLVMContext.h"
@@ -104,19 +102,6 @@ namespace cling {
   }
 #endif
 
-  class ClingCallbackAdaptor: public ASTDeserializationListener {
-  public:
-    ClingCallbackAdaptor(cling::InterpreterCallbacks* CB): m_CB(CB) {}
-    virtual void DeclRead(serialization::DeclID, const Decl *D) {
-      m_CB->DeclDeserialized(D);
-    }
-    virtual void TypeRead(serialization::TypeIdx, QualType T) {
-      m_CB->TypeDeserialized(T.getTypePtr());
-    }
-  private:
-    cling::InterpreterCallbacks* m_CB;
-  };
-
   Interpreter::PushTransactionRAII::PushTransactionRAII(Interpreter* i)
     : m_Interpreter(i) {
     CompilationOptions CO;
@@ -129,7 +114,6 @@ namespace cling {
     CO.CodeGenerationForModule = 0;
 
     m_Transaction = m_Interpreter->m_IncrParser->beginTransaction(CO);
-    
   }
 
   Interpreter::PushTransactionRAII::~PushTransactionRAII() {
@@ -170,8 +154,8 @@ namespace cling {
 
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
-    m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), m_DynamicLookupEnabled(false), 
-    m_RawInputEnabled(false), m_CallbackAdaptor(0) {
+    m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), 
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_AtExitFuncs.reserve(200);
     m_LoadedFiles.reserve(20);
@@ -275,8 +259,6 @@ namespace cling {
       const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
       (*AEE.m_Func)(AEE.m_Arg);
     }
-
-    delete m_CallbackAdaptor;
   }
 
   const char* Interpreter::getVersion() const {
@@ -1072,14 +1054,6 @@ namespace cling {
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
     // We need it to enable LookupObject callback.
     m_Callbacks.reset(C);
-    // FIXME: what if the ASTReader is set only later?
-    // FIXME: need to create a multiplexer if a DeserializationListener is
-    // alreday present.
-    if (getCI()->getModuleManager()) {
-      m_CallbackAdaptor = new ClingCallbackAdaptor(C);
-      getCI()->getModuleManager()
-        ->setDeserializationListener(m_CallbackAdaptor);
-    }
 
     // FIXME: We should add a multiplexer in the ASTContext, too.
     llvm::OwningPtr<ExternalASTSource> astContextExternalSource;
@@ -1091,9 +1065,12 @@ namespace cling {
     Ctx.setExternalSource(astContextExternalSource);
   }
 
+  //FIXME: Get rid of that.
   clang::ASTDeserializationListener*
   Interpreter::getASTDeserializationListener() const {
-    return m_CallbackAdaptor;
+    if (!m_Callbacks)
+      return 0;
+    return m_Callbacks->getInterpreterDeserializationListener();
   }
 
 
