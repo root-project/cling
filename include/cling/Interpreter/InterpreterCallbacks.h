@@ -29,6 +29,7 @@ namespace cling {
   class InterpreterCallbacks;
   class InterpreterDeserializationListener;
   class InterpreterExternalSemaSource;
+  class InterpreterPPCallbacks;
   class Transaction;
 
   /// \brief  This interface provides a way to observe the actions of the
@@ -52,6 +53,11 @@ namespace cling {
     llvm::
     OwningPtr<InterpreterDeserializationListener> m_DeserializationListener;
 
+    ///\brief Our custom PPCallbacks, translating interesting 
+    /// events into interpreter callbacks.
+    ///
+    llvm::OwningPtr<InterpreterPPCallbacks> m_PPCallbacks;
+
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///
     bool m_IsRuntime;
@@ -65,24 +71,28 @@ namespace cling {
     ///\param[in] interp - an interpreter.
     ///\param[in] IESS - an InterpreterExternalSemaSource (takes the ownership)
     ///\param[in] IDL - an InterpreterDeserializationListener (owned)
+    ///\param[in] IPPC - an InterpreterPPCallbacks (owned)
     ///
     InterpreterCallbacks(Interpreter* interp,
                          InterpreterExternalSemaSource* IESS,
-                         InterpreterDeserializationListener* IDL);
+                         InterpreterDeserializationListener* IDL,
+                         InterpreterPPCallbacks* IPPC);
 
     ///\brief Constructs the callbacks with default callback adaptors.
     ///
     ///\param[in] interp - an interpreter.
     ///\param[in] enableExternalSemaSourceCallbacks  - creates a default 
     ///           InterpreterExternalSemaSource and attaches it to Sema.
-    ///
     ///\param[in] enableInterpreterDeserializationListener - creates a default
     ///           InterpreterDeserializationListener and attaches it to the 
     ///           ModuleManager if it is set.
+    ///\param[in] enablePPCallbacks  - creates a default InterpreterPPCallbacks
+    ///           and attaches it to the Preprocessor.
     ///
     InterpreterCallbacks(Interpreter* interp,
                          bool enableExternalSemaSourceCallbacks = false,
-                         bool enableDeserializationListenerCallbacks = false);
+                         bool enableDeserializationListenerCallbacks = false,
+                         bool enablePPCallbacks = false);
 
     virtual ~InterpreterCallbacks();
 
@@ -90,6 +100,9 @@ namespace cling {
 
     clang::ASTDeserializationListener* 
     getInterpreterDeserializationListener() const;
+
+    virtual bool FileNotFound(llvm::StringRef FileName, 
+                              llvm::SmallVectorImpl<char>& RecoveryPath);
 
     /// \brief This callback is invoked whenever the interpreter needs to
     /// resolve the type and the adress of an object, which has been marked for

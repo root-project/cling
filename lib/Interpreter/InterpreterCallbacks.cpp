@@ -9,6 +9,7 @@
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Serialization/ASTReader.h"
 #include "clang/Serialization/ASTDeserializationListener.h"
@@ -17,6 +18,25 @@
 using namespace clang;
 
 namespace cling {
+
+  ///\brief Translates 'interesting' for the interpreter 
+  /// ASTDeserializationListener events into interpreter callback.
+  ///
+  class InterpreterPPCallbacks : public PPCallbacks {
+  private:
+    cling::InterpreterCallbacks* m_Callbacks;
+  public:
+    InterpreterPPCallbacks(InterpreterCallbacks* C) : m_Callbacks(C) { }
+    ~InterpreterPPCallbacks() { }
+
+    virtual bool FileNotFound(llvm::StringRef FileName,
+                              llvm::SmallVectorImpl<char>& RecoveryPath) {
+      if (m_Callbacks)
+        return m_Callbacks->FileNotFound(FileName, RecoveryPath);
+      // Returning true would mean that the preprocessor should try to recover.
+      return false;
+    }
+  };
 
   ///\brief Translates 'interesting' for the interpreter 
   /// ASTDeserializationListener events into interpreter callback.
@@ -91,7 +111,8 @@ namespace cling {
 
   InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
                                             InterpreterExternalSemaSource* IESS,
-                                        InterpreterDeserializationListener* IDL)
+                                        InterpreterDeserializationListener* IDL,
+                                             InterpreterPPCallbacks* IPPC)
     : m_Interpreter(interp),  m_ExternalSemaSource(IESS), m_IsRuntime(false),
       m_DeserializationListener(IDL) {
     if (IESS)
@@ -99,11 +120,14 @@ namespace cling {
     ASTReader* Reader = m_Interpreter->getCI()->getModuleManager();
     if (IDL && Reader)
       Reader->setDeserializationListener(IDL);
+    if (IPPC)
+      m_Interpreter->getCI()->getPreprocessor().addPPCallbacks(IPPC);
   }
 
   InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
                              bool enableExternalSemaSourceCallbacks/* = false*/,
-                       bool enableDeserializationListenerCallbacks/* = false*/)
+                        bool enableDeserializationListenerCallbacks/* = false*/,
+                                             bool enablePPCallbacks/* = false*/)
     : m_Interpreter(interp), m_IsRuntime(false) {
     
     if (enableExternalSemaSourceCallbacks) {
@@ -118,6 +142,12 @@ namespace cling {
       m_DeserializationListener.
         reset(new InterpreterDeserializationListener(this));
       Reader->setDeserializationListener(m_DeserializationListener.get());
+    }
+
+    if (enablePPCallbacks) {
+      m_PPCallbacks.reset(new InterpreterPPCallbacks(this));
+      Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
+      PP.addPPCallbacks(m_PPCallbacks.get());
     }
   }
 
@@ -138,11 +168,19 @@ namespace cling {
     return m_DeserializationListener.get();
   }
 
+  bool InterpreterCallbacks::FileNotFound(llvm::StringRef FileName, 
+                                    llvm::SmallVectorImpl<char>& RecoveryPath) {
+    // Default implementation is no op.
+    return false;
+  }
+
   bool InterpreterCallbacks::LookupObject(LookupResult&, Scope*) {
+    // Default implementation is no op.
     return false;
   }
 
   bool InterpreterCallbacks::LookupObject(const DeclContext*, DeclarationName) {
+    // Default implementation is no op.
     return false;
   }
 
