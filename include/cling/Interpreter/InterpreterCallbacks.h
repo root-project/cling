@@ -46,8 +46,8 @@ namespace cling {
     ///
     llvm::OwningPtr<InterpreterExternalSemaSource> m_ExternalSemaSource;
 
-    ///\brief Our custom SemaExternalSource, translating interesting events into
-    /// callbacks.
+    ///\brief Our custom ASTDeserializationListener, translating interesting 
+    /// events into callbacks.
     ///
     llvm::
     OwningPtr<InterpreterDeserializationListener> m_DeserializationListener;
