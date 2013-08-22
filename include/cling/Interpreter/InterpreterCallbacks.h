@@ -24,15 +24,10 @@ namespace cling {
   class InterpreterExternalSemaSource;
   class Transaction;
 
-
   /// \brief  This interface provides a way to observe the actions of the
   /// interpreter as it does its thing.  Clients can define their hooks here to
   /// implement interpreter level tools.
   class InterpreterCallbacks {
-  private:
-    // The callbacks should contain the interpreter in case of more than one
-    InterpreterCallbacks(){}
-
   protected:
 
     ///\brief Our interpreter instance.
