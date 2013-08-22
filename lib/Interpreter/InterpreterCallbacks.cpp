@@ -14,7 +14,6 @@
 #include "clang/Serialization/ASTReader.h"
 #include "clang/Serialization/ASTDeserializationListener.h"
 
-
 using namespace clang;
 
 namespace cling {
@@ -113,8 +112,8 @@ namespace cling {
                                             InterpreterExternalSemaSource* IESS,
                                         InterpreterDeserializationListener* IDL,
                                              InterpreterPPCallbacks* IPPC)
-    : m_Interpreter(interp),  m_ExternalSemaSource(IESS), m_IsRuntime(false),
-      m_DeserializationListener(IDL) {
+    : m_Interpreter(interp),  m_ExternalSemaSource(IESS),
+      m_DeserializationListener(IDL), m_IsRuntime(false) {
     if (IESS)
       m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
     ASTReader* Reader = m_Interpreter->getCI()->getModuleManager();
