@@ -154,7 +154,12 @@ namespace cling {
           m_NonNullArgIndexs.insert(std::make_pair(FName, ArgIndexs));
         }
 
-        Stmt* S = FDecl->getBody();
+        // FIXME: For now we will only work/check on declarations that are not
+        // deserialized. We want to avoid our null deref transaformer to 
+        // deserialize all the contents of a PCH/PCM.
+        // We have to think of a better way to find the annotated 
+        // declarations, without that to cause too much deserialization.
+        Stmt* S = (FDecl->isFromASTFile()) ? 0 : FDecl->getBody();
         if (S) {
           for (Stmt::child_iterator II = S->child_begin(), EE = S->child_end();
                II != EE; ++II) {
