@@ -69,7 +69,7 @@ namespace cling {
       m_Consumer->setCodeGen(m_CodeGen.get());
     }
 
-    CreateSLocOffsetGenerator();
+    initializeVirtualFile();
 
     // Add transformers to the IncrementalParser, which owns them
     Sema* TheSema = &CI->getSema();
@@ -478,7 +478,7 @@ namespace cling {
   // |     input_line_N    | ..--+
   // +---------------------+
   //
-  void IncrementalParser::CreateSLocOffsetGenerator() {
+  void IncrementalParser::initializeVirtualFile() {
     SourceManager& SM = getCI()->getSourceManager();
     m_VirtualFileID = SM.getMainFileID();
     assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
