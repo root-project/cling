@@ -219,7 +219,15 @@ namespace cling {
     ///
     bool transformTransactionIR(Transaction* T) const;
 
-    void CreateSLocOffsetGenerator();
+    ///\brief Initializes a virtual file, which will be able to produce valid
+    /// source locations, with the proper offsets.
+    ///
+    void initializeVirtualFile();
+
+    ///\brief The work horse for parsing. It queries directly clang.
+    ///
+    ///\param[in] input - The incremental input that needs to be parsed.
+    ///
     EParseResult ParseInternal(llvm::StringRef input);
   };
 } // end namespace cling
