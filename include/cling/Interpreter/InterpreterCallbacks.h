@@ -83,7 +83,7 @@ namespace cling {
     ///\param[in] interp - an interpreter.
     ///\param[in] enableExternalSemaSourceCallbacks  - creates a default 
     ///           InterpreterExternalSemaSource and attaches it to Sema.
-    ///\param[in] enableInterpreterDeserializationListener - creates a default
+    ///\param[in] enableDeserializationListenerCallbacks - creates a default
     ///           InterpreterDeserializationListener and attaches it to the 
     ///           ModuleManager if it is set.
     ///\param[in] enablePPCallbacks  - creates a default InterpreterPPCallbacks
