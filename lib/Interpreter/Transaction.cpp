@@ -187,7 +187,7 @@ namespace cling {
     if (!size())
       return;
 
-    ASTContext& C = getFirstDecl().getSingleDecl()->getASTContext();
+    const ASTContext& C = getASTContext();
     PrintingPolicy Policy = C.getPrintingPolicy();
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
@@ -195,12 +195,8 @@ namespace cling {
   void Transaction::dumpPretty() const {
     if (!size())
       return;
-    ASTContext* C = 0;
-    if (m_WrapperFD)
-      C = &(m_WrapperFD->getASTContext());
-    if (!getFirstDecl().isNull())
-      C = &(getFirstDecl().getSingleDecl()->getASTContext());
-      
+
+    const ASTContext& C = getASTContext();      
     PrintingPolicy Policy(C->getLangOpts());
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
