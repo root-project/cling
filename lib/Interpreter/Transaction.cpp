@@ -197,7 +197,7 @@ namespace cling {
       return;
 
     const ASTContext& C = getASTContext();      
-    PrintingPolicy Policy(C->getLangOpts());
+    PrintingPolicy Policy(C.getLangOpts());
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
