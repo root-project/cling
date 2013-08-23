@@ -365,7 +365,7 @@ namespace cling {
     void setNext(Transaction* T) { m_Next = T; }
 
     clang::ASTContext& getASTContext() { 
-      return const_cast<clang::ASTContext&>(m_ASTContext);
+      return const_cast<clang::ASTContext&>(getASTContext());
     }
     const clang::ASTContext& getASTContext() const { return m_ASTContext; }
 
