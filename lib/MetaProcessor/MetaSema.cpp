@@ -22,6 +22,9 @@
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/Support/Path.h"
 
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Basic/SourceManager.h"
+
 #include <cstdlib>
 
 namespace cling {
@@ -180,12 +183,30 @@ namespace cling {
   }
 
   void MetaSema::actOnfilesCommand() const {
+    std::vector<std::string> loadedFiles;
     typedef std::vector<Interpreter::LoadedFileInfo*> LoadedFiles_t;
     const LoadedFiles_t& LoadedFiles = m_Interpreter.getLoadedFiles();
     for (LoadedFiles_t::const_iterator I = LoadedFiles.begin(),
            E = LoadedFiles.end(); I != E; ++I) {
       char cType[] = { 'S', 'D', 'B' };
       m_Outs << '[' << cType[(*I)->getType()] << "] "<< (*I)->getName() << '\n';
+      loadedFiles.push_back((*I)->getName());
+    }
+    clang::SourceManager &SM = m_Interpreter.getCI()->getSourceManager();
+    for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
+           E = SM.fileinfo_end(); I != E; ++I) {
+      const clang::SrcMgr::ContentCache &C = *I->second;
+      const clang::FileEntry *FE = C.OrigEntry;
+      std::string fileName(FE->getName());
+      // avoid duplicates (i.e. already printed in the previous for loop)
+      if (std::find(loadedFiles.begin(),
+                    loadedFiles.end(), fileName) == loadedFiles.end()) {
+        // filter out any /usr/...../bits/* file names
+        if (!(fileName.find("/usr/") != std::string::npos &&
+            fileName.find("/bits/") != std::string::npos)) {
+          m_Outs << fileName << '\n';
+        }
+      }
     }
   }
 
