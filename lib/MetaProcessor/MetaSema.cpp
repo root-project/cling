@@ -202,7 +202,7 @@ namespace cling {
       if (std::find(loadedFiles.begin(),
                     loadedFiles.end(), fileName) == loadedFiles.end()) {
         // filter out any /usr/...../bits/* file names
-        if (!(fileName.find("/usr/") != std::string::npos &&
+        if (!(fileName.compare(0, 5, "/usr/") == 0 &&
             fileName.find("/bits/") != std::string::npos)) {
           m_Outs << fileName << '\n';
         }
