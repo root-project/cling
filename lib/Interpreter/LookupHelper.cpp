@@ -1109,8 +1109,6 @@ namespace cling {
         if (Res.isUsable()) {
           Expr* expr = Res.release();
           GivenArgs.push_back(expr);
-          QualType QT = expr->getType().getCanonicalType();
-          QualType NonRefQT(QT.getNonReferenceType());
           if (first_time) {
             first_time = false;
           }
