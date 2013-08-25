@@ -766,6 +766,34 @@ func_B_h_proto->print(llvm::errs());
 //CHECK-NEXT: }
 
 
+//
+//  Test finding a member function taking an int and a double argument
+//  in a base class using the preparse types.
+//
+llvm::SmallVector<clang::QualType, 4> types;
+types.push_back(lookup.findType("int"));
+types.push_back(lookup.findType("float"));
+const clang::FunctionDecl* func_B_h_proto_type = lookup.findFunctionProto(class_A, "B_h", types);
+types.pop_back();
+types.push_back(lookup.findType("double"));
+const clang::FunctionDecl* func_B_h_match_proto_type = lookup.matchFunctionProto(class_A, "B_h", types, false);
+
+printf("func_B_h_proto_type: 0x%lx\n", (unsigned long) func_B_h_proto_type);
+//CHECK: func_B_h_proto_type: 0x{{[1-9a-f][0-9a-f]*$}}
+func_B_h_proto_type->print(llvm::errs());
+//CHECK-NEXT: void B_h(int vi, double vd) {
+//CHECK-NEXT:     int x = vi;
+//CHECK-NEXT:     double y = vd;
+//CHECK-NEXT: }
+
+printf("func_B_h_match_proto_type: 0x%lx\n", (unsigned long) func_B_h_match_proto_type);
+//CHECK: func_B_h_match_proto_type: 0x{{[1-9a-f][0-9a-f]*$}}
+func_B_h_match_proto_type->print(llvm::errs());
+//CHECK-NEXT: void B_h(int vi, double vd) {
+//CHECK-NEXT:     int x = vi;
+//CHECK-NEXT:     double y = vd;
+//CHECK-NEXT: }
+
 
 //
 //  Test finding an overloaded member function in a base class.

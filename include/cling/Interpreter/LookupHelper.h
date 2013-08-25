@@ -95,6 +95,21 @@ namespace cling {
                                                 llvm::StringRef funcArgs,
                                                 bool objectIsConst = false) const;
 
+    ///\brief Lookup a function based on its Decl(Context), name and parameters.
+    ///
+    ///\param [in] scopeDecl - the scope (namespace or tag) that is searched for
+    ///   the function.
+    ///\param [in] funcName  - the name of the function to find.
+    ///\param [in] funcProto - the list of types of the function parameters
+    ///\param [in] objectIsConst - if true search fo function that can
+    ///   be called on a const object ; default to false.
+    ///\returns The function found or null.
+     const clang::FunctionDecl* findFunctionProto(const clang::Decl* scopeDecl,
+                                                  llvm::StringRef funcName,
+                    const llvm::SmallVector<clang::QualType, 4>& funcProto,
+                                                  bool objectIsConst = false
+                                                  ) const;
+
 
     ///\brief Lookup a function based on its Decl(Context), name and parameters.
     ///   where the result if any must have exactly the arguments requested.
@@ -113,6 +128,21 @@ namespace cling {
                                                   bool objectIsConst
                                                   ) const;
 
+    ///\brief Lookup a function based on its Decl(Context), name and parameters.
+    ///   where the result if any must have exactly the arguments requested.
+    ///
+    ///\param[in] scopeDecl - the scope (namespace or tag) that is searched for
+    ///   the function.
+    ///\param[in] funcName  - the name of the function to find.
+    ///\param[in] funcProto - the list of types of the function parameters
+    ///\param[in] objectIsConst - if true search fo function that can
+    ///   be called on a const object ; default to false.
+    ///\returns The function found or null.
+    const clang::FunctionDecl* matchFunctionProto(const clang::Decl* scopeDecl,
+                                                   llvm::StringRef funcName,
+                     const llvm::SmallVector<clang::QualType, 4>& funcProto,
+                                                   bool objectIsConst
+                                                   ) const;
 
     ///\brief Lookup given argument list and return each argument as an
     /// expression.

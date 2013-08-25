@@ -825,7 +825,37 @@ namespace cling {
   }
 
   static
-  bool ParseProto(llvm::SmallVector<Expr*, 4> &GivenArgs,
+  bool getExprProto(llvm::SmallVector<ExprAlloc, 4> &ExprMemory,
+                    llvm::SmallVector<Expr*, 4> &GivenArgs,
+                    const llvm::SmallVector<QualType, 4> &GivenTypes) {
+    //
+    //  Create the array of Expr from the array of Types.
+    //
+     
+    typedef llvm::SmallVector<QualType, 4>::const_iterator iterator;
+    for(iterator iter = GivenTypes.begin(), end = GivenTypes.end();
+        iter != end;
+        ++iter) {
+      const clang::QualType QT = iter->getCanonicalType();
+      {
+        ExprValueKind VK = VK_RValue;
+        if (QT->getAs<LValueReferenceType>()) {
+          VK = VK_LValue;
+        }
+        clang::QualType NonRefQT(QT.getNonReferenceType());
+        unsigned int slot = ExprMemory.size();
+        ExprMemory.resize(slot+1);
+        Expr* val = new (&ExprMemory[slot]) OpaqueValueExpr(SourceLocation(),
+                                                            NonRefQT, VK);
+        GivenArgs.push_back(val);
+      }
+    }
+    return true;
+  }
+
+  static
+  bool ParseProto(llvm::SmallVector<ExprAlloc, 4> &ExprMemory,
+                  llvm::SmallVector<Expr*, 4> &GivenArgs,
                   ASTContext& Context, Parser &P,Sema &S) {
     //
     //  Parse the prototype now.
@@ -877,6 +907,51 @@ namespace cling {
 
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
                                                       llvm::StringRef funcName,
+                               const llvm::SmallVector<QualType, 4>& funcProto,
+                                                      bool objectIsConst
+                                                      ) const {
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Some utilities.
+    //
+    // Use P for shortness
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
+
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
+    llvm::SmallVector<Expr*, 4> GivenArgs;
+    if (!funcProto.empty()) {
+      if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
+        return 0;
+      }
+    }
+      
+    //
+    //  Parse the prototype now.
+    //
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing("", llvm::StringRef("func.prototype.file"));     
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs, objectIsConst,
+                        Context, P, S,
+                        overloadFunctionSelector);
+  }
+   
+  const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
+                                                      llvm::StringRef funcName,
                                                       llvm::StringRef funcProto,
                                                       bool objectIsConst
                                                       ) const {
@@ -909,7 +984,7 @@ namespace cling {
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
-      if (!ParseProto(ExprMemory,GivenArgs,Context,P,S) ) {
+      if (!ParseProto(ExprMemory, GivenArgs,Context,P,S) ) {
         return 0;
       }
     }
@@ -955,7 +1030,7 @@ namespace cling {
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
-      if (!ParseProto(ExprMemory, GivenArgs,Context,P,S) ) {
+      if (!ParseProto(ExprMemory,GivenArgs,Context,P,S) ) {
         return 0;
       }
     }
@@ -967,6 +1042,52 @@ namespace cling {
                         matchFunctionSelector);
   }
 
+  const FunctionDecl* LookupHelper::matchFunctionProto(const Decl* scopeDecl,
+                                                       llvm::StringRef funcName,
+                                const llvm::SmallVector<QualType, 4>& funcProto,
+                                                       bool objectIsConst
+                                                       ) const {
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Some utilities.
+    //
+    // Use P for shortness
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
+      
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+      
+     
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
+    llvm::SmallVector<Expr*, 4> GivenArgs;
+    if (!funcProto.empty()) {
+      if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
+        return 0;
+      }
+    }
+      
+    //
+    //  Parse the prototype now.
+    //
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing("", llvm::StringRef("func.prototype.file"));
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs, objectIsConst,
+                        Context, P, S,
+                        matchFunctionSelector);
+  }
+   
   static
   bool ParseArgs(llvm::SmallVector<Expr*, 4> &GivenArgs,
                  ASTContext& Context, Parser &P, Sema &S) {
