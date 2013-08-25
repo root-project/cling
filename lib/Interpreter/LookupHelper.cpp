@@ -67,6 +67,12 @@ namespace cling {
     }
   };
 
+  ///\brief Class to help with the custom allocation of clang::Expr
+  ///
+  struct ExprAlloc {
+     char fBuffer[sizeof(clang::OpaqueValueExpr)];
+  };
+
   // pin *tor here so that we can have clang::Parser defined and be able to call
   // the dtor on the OwningPtr
   LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp)
@@ -840,9 +846,11 @@ namespace cling {
           VK = VK_LValue;
         }
         clang::QualType NonRefQT(QT.getNonReferenceType());
+        unsigned int slot = ExprMemory.size();
+        ExprMemory.resize(slot+1);
         Expr* val
-          = new (Context) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
-                                          NonRefQT, VK);
+          = new (&ExprMemory[slot]) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
+                                                    NonRefQT, VK);
         GivenArgs.push_back(val);
       }
       // Type names should be comma separated.
@@ -898,9 +906,10 @@ namespace cling {
     ParserStateRAII ResetParserState(P);
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
 
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
-      if (!ParseProto(GivenArgs,Context,P,S) ) {
+      if (!ParseProto(ExprMemory,GivenArgs,Context,P,S) ) {
         return 0;
       }
     }
@@ -943,9 +952,10 @@ namespace cling {
     ParserStateRAII ResetParserState(P);
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
 
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
-      if (!ParseProto(GivenArgs,Context,P,S) ) {
+      if (!ParseProto(ExprMemory, GivenArgs,Context,P,S) ) {
         return 0;
       }
     }
