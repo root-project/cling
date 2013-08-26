@@ -124,14 +124,14 @@ namespace cling {
 
     ///\brief The ASTContext
     ///
-    const clang::ASTContext& m_ASTContext;
+    clang::ASTContext& m_ASTContext;
 
   public:
 
-    Transaction(const clang::ASTContext& C);
-    Transaction(const CompilationOptions& Opts, const clang::ASTContext& C);
+    Transaction(clang::ASTContext& C);
+    Transaction(const CompilationOptions& Opts, clang::ASTContext& C);
 
-    void Initialize(const clang::ASTContext& C);
+    void Initialize(clang::ASTContext& C);
 
     ~Transaction();
 
@@ -371,9 +371,9 @@ namespace cling {
     void setNext(Transaction* T) { m_Next = T; }
 
     clang::ASTContext& getASTContext() { 
-      return const_cast<clang::ASTContext&>(getASTContext());
+      return m_ASTContext;
     }
-    const clang::ASTContext& getASTContext() const { return m_ASTContext; }
+    const clang::ASTContext& getASTContext() const { return getASTContext(); }
 
     ///\brief Erases an element at given position.
     ///
