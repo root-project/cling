@@ -1,7 +1,7 @@
 Index: tools/clang/include/clang/Basic/DiagnosticSemaKinds.td
 ===================================================================
---- tools/clang/include/clang/Basic/DiagnosticSemaKinds.td	(版本 179269)
-+++ tools/clang/include/clang/Basic/DiagnosticSemaKinds.td	(工作副本)
+--- ./tools/clang/include/clang/Basic/DiagnosticSemaKinds.td	(版本 179269)
++++ ./tools/clang/include/clang/Basic/DiagnosticSemaKinds.td	(工作副本)
 @@ -5736,6 +5736,8 @@
  def warn_null_arg : Warning<
    "null passed to a callee which requires a non-null argument">,

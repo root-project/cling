@@ -1,7 +1,7 @@
 Index: tools/clang/include/clang/Parse/RAIIObjectsForParser.h
 ===================================================================
---- tools/clang/include/clang/Parse/RAIIObjectsForParser.h	(revision 0)
-+++ tools/clang/include/clang/Parse/RAIIObjectsForParser.h	(revision 0)
+--- ./tools/clang/include/clang/Parse/RAIIObjectsForParser.h	(revision 0)
++++ ./tools/clang/include/clang/Parse/RAIIObjectsForParser.h	(revision 0)
 @@ -0,0 +1,452 @@
 +//===--- RAIIObjectsForParser.h - RAII helpers for the parser ---*- C++ -*-===//
 +//
@@ -457,8 +457,8 @@ Index: tools/clang/include/clang/Parse/RAIIObjectsForParser.h
 +#endif
 Index: tools/clang/lib/Parse/RAIIObjectsForParser.h
 ===================================================================
---- tools/clang/lib/Parse/RAIIObjectsForParser.h	(revision 179269)
-+++ tools/clang/lib/Parse/RAIIObjectsForParser.h	(working copy)
+--- ./tools/clang/lib/Parse/RAIIObjectsForParser.h	(revision 179269)
++++ ./tools/clang/lib/Parse/RAIIObjectsForParser.h	(working copy)
 @@ -1,434 +1,2 @@
 -//===--- RAIIObjectsForParser.h - RAII helpers for the parser ---*- C++ -*-===//
 -//
