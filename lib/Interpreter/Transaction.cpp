@@ -183,9 +183,6 @@ namespace cling {
     m_DeclQueue.erase(decls_begin() + pos);
   }
 
-  void Transaction::dump() const {
-    if (!size())
-      return;
   void Transaction::DelayCallInfo::dump() const {
     PrintingPolicy Policy((LangOptions()));
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
@@ -233,9 +230,6 @@ namespace cling {
   }
 
   void Transaction::dumpPretty() const {
-    if (!size())
-      return;
-
     const ASTContext& C = getASTContext();      
     PrintingPolicy Policy(C.getLangOpts());
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
