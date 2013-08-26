@@ -23,4 +23,4 @@ CPPFLAGS += -I$(PROJ_SRC_DIR)/../../include -I$(PROJ_SRC_DIR)/../../../clang/inc
 
 include $(CLING_LEVEL)/Makefile
 
-CXX.Flags := $(subst -fno-exceptions,,$(CXX.Flags)) $(shell echo BOO: $(CXX.Flags) >& 2)
+CXX.Flags := $(subst -fno-exceptions,,$(CXX.Flags))
