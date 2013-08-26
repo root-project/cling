@@ -328,10 +328,12 @@ namespace cling {
     std::ofstream ofs (Filename.c_str(), std::ofstream::out);  
     llvm::raw_os_ostream Out(ofs);
     clang::PrintingPolicy policy = C.getPrintingPolicy();
+    // Iteration over the decls might cause deserialization.
+    cling::Interpreter::PushTransactionRAII deserRAII(this);
     TU->print(Out, policy, Indentation, PrintInstantiation);
     Out.flush();
     }
-   }
+  }
 
   void Interpreter::compareInterpreterState(const std::string& name) const {
     // Store new state
