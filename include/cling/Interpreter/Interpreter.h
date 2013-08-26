@@ -71,11 +71,11 @@ namespace cling {
     class PushTransactionRAII {
     private:
       Transaction* m_Transaction;
-      Interpreter* m_Interpreter;
+      const Interpreter* m_Interpreter;
     public:
-      PushTransactionRAII(Interpreter* i);
+      PushTransactionRAII(const Interpreter* i);
       ~PushTransactionRAII();
-      void pop();
+      void pop() const;
     };
 
     ///\brief Describes the return result of the different routines that do the
