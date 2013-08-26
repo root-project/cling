@@ -236,6 +236,8 @@ namespace cling {
       "RolledBackWithErrors",
       "Committed"
     };
+    assert((sizeof(stateNames) / sizeof(void*)) == kNumStates 
+           && "Missing a state to print.");
     std::string indent(nindent, ' ');
     llvm::errs() << indent << "Transaction @" << this << ": \n";
     for (const_nested_iterator I = nested_begin(), E = nested_end(); 
