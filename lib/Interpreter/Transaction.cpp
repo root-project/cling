@@ -253,12 +253,15 @@ namespace cling {
         Out<<"          End Transaction" << nestedT << "            \n";
         Out<<"+====================================================+\n";
       }
-      for (DeclGroupRef::const_iterator J = I->m_DGR.begin(), 
-             L = I->m_DGR.end(); J != L; ++J)
-        if (*J)
-          (*J)->print(Out, Policy, Indent, PrintInstantiation);
-        else
-          Out << "<<NULL DECL>>";
+      I->print(Out, Policy, Indent, PrintInstantiation);
+    }
+
+    // Print the deserialized decls if any.
+    for (const_iterator I = deserialized_decls_begin(), 
+           E = deserialized_decls_end(); I != E; ++I) {
+      
+      assert(!I->m_DGR.isNull() && "Must not contain null DGR.");
+      I->print(Out, Policy, Indent, PrintInstantiation, "Deserialized");
     }
   }
 
