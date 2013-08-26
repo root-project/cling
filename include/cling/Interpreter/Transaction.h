@@ -11,8 +11,9 @@
 
 #include "clang/AST/DeclGroup.h"
 
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/OwningPtr.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace clang {
   class ASTContext;
@@ -45,7 +46,8 @@ namespace cling {
       kCCIHandleTagDeclDefinition,
       kCCIHandleVTable,
       kCCIHandleCXXImplicitFunctionInstantiation,
-      kCCIHandleCXXStaticMemberVarInstantiation
+      kCCIHandleCXXStaticMemberVarInstantiation,
+      kCCINumStates
     };
 
     ///\brief Each declaration group came through different interface at 
