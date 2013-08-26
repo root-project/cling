@@ -56,7 +56,6 @@ namespace cling {
 
     m_Consumer = dyn_cast<DeclCollector>(&CI->getASTConsumer());
     assert(m_Consumer && "Expected ChainedConsumer!");
-    m_Consumer->setInterpreter(interp);
 
     m_CI.reset(CI);
 
@@ -66,7 +65,6 @@ namespace cling {
                                         CI->getTargetOpts(),
                                         *m_Interpreter->getLLVMContext()
                                         ));
-      m_Consumer->setCodeGen(m_CodeGen.get());
     }
 
     initializeVirtualFile();
@@ -352,19 +350,43 @@ namespace cling {
         llvm_unreachable("We shouldn't have decl without call info.");
     }
 
+    // Treat the deserialized decls differently.
+    const CompilationOptions& CO(T->getCompilationOpts());
     for (Transaction::iterator I = T->deserialized_decls_begin(), 
            E = T->deserialized_decls_end(); I != E; ++I) {
-      // Skip unless we find at least one used decl.
-      bool skip = true;
-      for (DeclGroupRef::const_iterator J = I->m_DGR.begin(), 
-              JE = I->m_DGR.end(); J != JE; ++J) {
-         if ((*J)->hasAttr<UsedAttr>())
-            skip = false;
+
+      if (I->m_Call == Transaction::kCCIHandleTopLevelDecl) {
+        // FIXME: This flag means that we should skip the namespace codegen,
+        // because we did it already. This works around issue with the static
+        // initialization when having a PCH and loading a library. We don't want
+        // to generate code for the static that will come through the library.
+        //
+        // This will be fixed with the clang::Modules. Make sure we remember.
+        assert(!getCI()->getLangOpts().Modules && "Please revisit!");
+        bool shouldContinue = false;
+        for (DeclGroupRef::iterator DI = I->m_DGR.begin(), DE = I->m_DGR.end();
+             DI != DE; ++DI)
+          if (NamespaceDecl* ND = dyn_cast<NamespaceDecl>(*DI)) {
+            shouldContinue = true;
+            for (NamespaceDecl::decl_iterator IN = ND->decls_begin(),
+                   EN = ND->decls_end(); IN != EN; ++IN) {
+              // Recurse over decls inside the namespace, like
+              // CodeGenModule::EmitNamespace() does.
+              DeclGroupRef INDGR = DeclGroupRef(*IN);
+              if (!shouldIgnore(INDGR))
+                getCodeGenerator()->HandleTopLevelDecl(INDGR);
+            }
+          }
+        if (shouldContinue)
+          continue;
       }
-      if (skip)
+      
+      if (shouldIgnore(I->m_DGR))
         continue;
-      if (I->m_Call == Transaction::kCCIHandleTopLevelDecl)
+
+      if (I->m_Call == Transaction::kCCIHandleTopLevelDecl) {
         getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
+      }
       else if (I->m_Call == Transaction::kCCIHandleInterestingDecl) {
         // Usually through BackendConsumer which doesn't implement
         // HandleInterestingDecl() and thus calls
@@ -609,6 +631,27 @@ namespace cling {
     for(size_t i = 0, e = m_Transactions.size(); i < e; ++i) {
       m_Transactions[i]->printStructureBrief();
     }
+  }
+
+  bool IncrementalParser::shouldIgnore(DeclGroupRef DGR) const {
+    // Take the first/only decl in the group. The second must have the same 
+    // properties as the first Decl in the group.
+    const Decl* D = *DGR.begin();
+    // Functions that are inlined must be sent to CodeGen - they will not have a
+    // symbol in the library.
+    if (const FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {
+      if (D->isFromASTFile())
+        return !FD->hasBody();
+      else
+        return !FD->isInlined();
+    }
+
+    // Don't codegen statics coming in from a module; they are already part of
+    // the library.
+    if (const VarDecl* VD = dyn_cast<VarDecl>(D))
+      if (VD->hasGlobalStorage())
+        return true;
+    return false;
   }
 
 } // namespace cling

@@ -24,10 +24,10 @@ namespace llvm {
 namespace clang {
   class CodeGenerator;
   class CompilerInstance;
+  class DeclGroupRef;
   class FileID;
   class Parser;
 }
-
 
 namespace cling {
   class CompilationOptions;
@@ -229,6 +229,13 @@ namespace cling {
     ///\param[in] input - The incremental input that needs to be parsed.
     ///
     EParseResult ParseInternal(llvm::StringRef input);
+
+    ///\brief Return true if this decl (which comes from an AST file) should
+    /// not be sent to CodeGen. The module is assumed to describe the contents 
+    /// of a library; symbols inside the library must thus not be reemitted /
+    /// duplicated by CodeGen.
+    ///
+    bool shouldIgnore(clang::DeclGroupRef DGR) const;
   };
 } // end namespace cling
 #endif // CLING_INCREMENTAL_PARSER_H
