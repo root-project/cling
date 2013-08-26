@@ -66,6 +66,10 @@ namespace cling {
       inline bool operator!=(const DelayCallInfo& rhs) {
         return !operator==(rhs);
       }
+      void dump() const;
+      void print(llvm::raw_ostream& Out, const clang::PrintingPolicy& Policy,
+                 unsigned Indent, bool PrintInstantiation, 
+                 llvm::StringRef prependInfo = 0) const;
     };
 
   private:

@@ -186,7 +186,47 @@ namespace cling {
   void Transaction::dump() const {
     if (!size())
       return;
+  void Transaction::DelayCallInfo::dump() const {
+    PrintingPolicy Policy((LangOptions()));
+    print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+  }
 
+  void Transaction::DelayCallInfo::print(llvm::raw_ostream& Out, 
+                                         const PrintingPolicy& Policy,
+                                         unsigned Indent, 
+                                         bool PrintInstantiation, 
+                                     llvm::StringRef prependInfo /*=0*/) const {
+    static const char* const stateNames[Transaction::kCCINumStates] = {
+      "kCCINone",
+      "kCCIHandleTopLevelDecl",
+      "kCCIHandleInterestingDecl",
+      "kCCIHandleTagDeclDefinition",
+      "kCCIHandleVTable",
+      "kCCIHandleCXXImplicitFunctionInstantiation",
+      "kCCIHandleCXXStaticMemberVarInstantiation",
+    };
+    assert((sizeof(stateNames) /sizeof(void*)) == Transaction::kCCINumStates 
+           && "Missing states?");
+    if (prependInfo != 0) {
+      Out.changeColor(llvm::raw_ostream::RED);
+      Out << prependInfo;
+      Out.resetColor();
+      Out << ", ";
+    }
+    Out.changeColor(llvm::raw_ostream::BLUE);
+    Out << stateNames[m_Call]; 
+    Out.changeColor(llvm::raw_ostream::GREEN);
+    Out << " <- ";
+    Out.resetColor();
+    for (DeclGroupRef::const_iterator I = m_DGR.begin(), E = m_DGR.end(); 
+         I != E; ++I)
+        if (*I)
+          (*I)->print(Out, Policy, Indent, PrintInstantiation);
+        else
+          Out << "<<NULL DECL>>";
+  }
+
+  void Transaction::dump() const {
     const ASTContext& C = getASTContext();
     PrintingPolicy Policy = C.getPrintingPolicy();
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
