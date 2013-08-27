@@ -61,32 +61,37 @@ namespace cling {
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
+    try {
+      while (true) {
+        m_MetaProcessor->getOuts().flush();
+        TextInput::EReadResult RR = TI.ReadInput();
+        TI.TakeInput(line);
+        if (RR == TextInput::kRREOF) {
+          break;
+        }
 
-    while (true) {
-      m_MetaProcessor->getOuts().flush();
-      TextInput::EReadResult RR = TI.ReadInput();
-      TI.TakeInput(line);
-      if (RR == TextInput::kRREOF) {
-        break;
+        cling::Interpreter::CompilationResult compRes;
+        int indent 
+          = m_MetaProcessor->process(line.c_str(), compRes, 0/*result*/);
+        // Quit requested
+        if (indent < 0)
+          break;
+        std::string Prompt = "[cling]";
+        if (m_MetaProcessor->getInterpreter().isRawInputEnabled())
+          Prompt.append("! ");
+        else
+          Prompt.append("$ ");
+
+        if (indent > 0)
+          // Continuation requested.
+          Prompt.append('?' + std::string(indent * 3, ' '));
+
+        TI.SetPrompt(Prompt.c_str());
+
       }
-
-      cling::Interpreter::CompilationResult compRes;
-      int indent = m_MetaProcessor->process(line.c_str(), compRes, 0/*result*/);
-      // Quit requested
-      if (indent < 0)
-        break;
-      std::string Prompt = "[cling]";
-      if (m_MetaProcessor->getInterpreter().isRawInputEnabled())
-        Prompt.append("! ");
-      else
-        Prompt.append("$ ");
-
-      if (indent > 0)
-        // Continuation requested.
-        Prompt.append('?' + std::string(indent * 3, ' '));
-
-      TI.SetPrompt(Prompt.c_str());
-
+    }
+    catch() {
+      llvm::errs() << "Exception occurred. Recovering...\n";
     }
   }
 
