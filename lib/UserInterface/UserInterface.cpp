@@ -90,7 +90,7 @@ namespace cling {
 
       }
     }
-    catch() {
+    catch(...) {
       llvm::errs() << "Exception occurred. Recovering...\n";
     }
   }
