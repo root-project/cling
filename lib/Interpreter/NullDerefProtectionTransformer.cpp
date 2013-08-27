@@ -8,11 +8,13 @@
 #include "NullDerefProtectionTransformer.h"
 
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Mangle.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Sema/Lookup.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 
@@ -26,31 +28,33 @@
 #include <cstdio>
 #include "unistd.h"
 
-extern "C" {
-  bool shouldProceed(void *S, void *T) {
-    using namespace clang;
-    Sema *Sem = (Sema *)S;
-    DiagnosticsEngine& Diag = Sem->getDiagnostics();
-    cling::Transaction* Trans = (cling::Transaction*)T;
-    // Here we will cheat a bit and assume that the warning came from the last
-    // stmt, which will be in the 90% of the cases.
-    CompoundStmt* CS = cast<CompoundStmt>(Trans->getWrapperFD()->getBody());
-    // Skip the NullStmts.
-    SourceLocation Loc = CS->getLocStart();
-    for(CompoundStmt::const_reverse_body_iterator I = CS->body_rbegin(),
-          E = CS->body_rend(); I != E; ++I)
-      if (!isa<NullStmt>(*I)) {
-        Loc = (*I)->getLocStart();
-        break;
+namespace cling {
+  namespace runtime {
+    bool shouldProceed(void* S, void* T) {
+      using namespace clang;
+      Sema *Sem = (Sema *)S;
+      DiagnosticsEngine& Diag = Sem->getDiagnostics();
+      cling::Transaction* Trans = (cling::Transaction*)T;
+      // Here we will cheat a bit and assume that the warning came from the last
+      // stmt, which will be in the 90% of the cases.
+      CompoundStmt* CS = cast<CompoundStmt>(Trans->getWrapperFD()->getBody());
+      // Skip the NullStmts.
+      SourceLocation Loc = CS->getLocStart();
+      for(CompoundStmt::const_reverse_body_iterator I = CS->body_rbegin(),
+            E = CS->body_rend(); I != E; ++I)
+        if (!isa<NullStmt>(*I)) {
+          Loc = (*I)->getLocStart();
+          break;
+        }
+      Diag.Report(Loc, diag::warn_null_ptr_deref);
+      if (isatty(fileno(stdin))) {
+        int input = getchar();
+        getchar();
+        if (input == 'y' || input == 'Y') 
+          return false;
       }
-    Diag.Report(Loc, diag::warn_null_ptr_deref);
-    if (isatty(fileno(stdin))) {
-      int input = getchar();
-      getchar();
-      if (input == 'y' || input == 'Y') 
-        return false;
+      return true;
     }
-    return true;
   }
 }
 
@@ -242,8 +246,25 @@ namespace cling {
     llvm::FunctionType* FTy 
       = llvm::FunctionType::get(llvm::Type::getInt1Ty(ctx), ArgTys, false);
 
+    //copied from DynamicLookup.cpp
+    NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
+    NamespaceDecl* clingRuntimeNSD 
+      = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
+
+    // Find and set up "shouldProceed"
+    ASTContext& Context = m_Sema->getASTContext();
+    DeclarationName Name = &Context.Idents.get("shouldProceed");
+
+    LookupResult R(*m_Sema, Name, SourceLocation(), Sema::LookupOrdinaryName,
+                     Sema::ForRedeclaration);
+    m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
+    FunctionDecl* FD = R.getAsSingle<FunctionDecl>();
+
+    // Get the mangled name for the function "shouldProceed"
+    NonNullDeclFinder Finder(m_Sema);
+    std::string mangledName = Finder.getMangledName(FD);
     llvm::Function* CallBackFn
-      = cast<llvm::Function>(Md->getOrInsertFunction("shouldProceed", FTy));
+      = cast<llvm::Function>(Md->getOrInsertFunction(mangledName, FTy));
 
     void* SemaRef = (void*)m_Sema;
     // copied from JIT.cpp

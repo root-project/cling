@@ -38,6 +38,11 @@ namespace cling {
     /// the dynamic scopes and the runtime bindings
     extern Interpreter* gCling;
 
+    /// \brief The function is used to deal with null pointer dereference.
+    /// It receives input from a user and decides to proceed or not by the
+    /// input.
+    bool shouldProceed(void* S, void* T);
+
     namespace internal {
       /// \brief Some of clang's routines rely on valid source locations and
       /// source ranges. This member can be looked up and source locations and
