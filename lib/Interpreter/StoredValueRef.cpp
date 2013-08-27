@@ -17,16 +17,23 @@ using namespace llvm;
 StoredValueRef::StoredValue::StoredValue(const ASTContext& ctx, 
                                          QualType clangTy, 
                                          const llvm::Type* llvm_Ty)
-   :Value(GenericValue(), clangTy, llvm_Ty), m_Mem(0) {
-  if (!(clangTy->isIntegralOrEnumerationType()
-        || clangTy->isRealFloatingType()
-        || clangTy->hasPointerRepresentation())) {
-    const uint64_t size = (uint64_t)getAllocSizeInBytes(ctx);
-    if (size > sizeof(m_Buf))
-      m_Mem = new char[size];
-    else m_Mem = m_Buf;
-    setGV(llvm::PTOGV(m_Mem));
+    : Value(GenericValue(), clangTy, llvm_Ty), m_Mem(0) {
+  if (clangTy->isIntegralOrEnumerationType() ||
+      clangTy->isRealFloatingType() ||
+      clangTy->hasPointerRepresentation()) {
+    return;
   };
+  if (const MemberPointerType* MPT = clangTy->getAs<MemberPointerType>()) {
+    if (MPT->isMemberDataPointer()) {
+      return;
+    }
+  }
+  m_Mem = m_Buf;
+  const uint64_t size = (uint64_t) getAllocSizeInBytes(ctx);
+  if (size > sizeof(m_Buf)) {
+    m_Mem = new char[size];
+  }
+  setGV(llvm::PTOGV(m_Mem));
 }
 
 StoredValueRef::StoredValue::~StoredValue() {
