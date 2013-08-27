@@ -35,6 +35,7 @@ namespace cling {
     m_Opts = CompilationOptions();
     m_Module = 0; 
     m_WrapperFD = 0;
+    m_CFWrapperFD = 0;
     m_Next = 0;
     //m_ASTContext = C;
   }
@@ -97,6 +98,7 @@ namespace cling {
     m_NestedTransactions.reset(0); // FIXME: leaks the nested transactions.
     m_Module = 0;
     m_WrapperFD = 0;
+    m_CFWrapperFD = 0;
     m_Next = 0;
   }
 
@@ -140,14 +142,22 @@ namespace cling {
 #endif
 
     bool checkForWrapper = !m_WrapperFD;
+    bool checkForCFWrapper = !m_CFWrapperFD;
+    // FIXME: Assignment in assert!!!!
     assert(checkForWrapper = true && "Check for wrappers with asserts");
     // register the wrapper if any.
-    if (checkForWrapper && !DCI.m_DGR.isNull() && DCI.m_DGR.isSingleDecl()) {
-      if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl()))
-        if (utils::Analyze::IsWrapper(FD)) {
+    if ((checkForWrapper || checkForCFWrapper) && !DCI.m_DGR.isNull() &&
+        DCI.m_DGR.isSingleDecl()) {
+      if (FunctionDecl* FD =
+          dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl())) {
+        if (checkForWrapper && utils::Analyze::IsWrapper(FD)) {
           assert(!m_WrapperFD && "Two wrappers in one transaction?");
           m_WrapperFD = FD;
         }
+        if (checkForCFWrapper && utils::Analyze::IsCFWrapper(FD)) {
+          m_CFWrapperFD = FD;
+        }
+      }
     }
     
     if (comesFromASTReader(DCI.m_DGR))

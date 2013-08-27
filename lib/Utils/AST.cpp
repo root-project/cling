@@ -28,6 +28,15 @@ namespace utils {
       .startswith(Synthesize::UniquePrefix);
   }
 
+  bool Analyze::IsCFWrapper(const NamedDecl* ND) {
+    if (!ND) {
+      return false;
+    }
+    bool ret = StringRef(ND->getNameAsString()).startswith(
+      Synthesize::CFUniquePrefix);
+    return ret;
+  }
+
   Expr* Analyze::GetOrCreateLastExpr(FunctionDecl* FD, 
                                      int* FoundAt /*=0*/,
                                      bool omitDeclStmts /*=true*/,
@@ -91,6 +100,7 @@ namespace utils {
   }
 
   const char* const Synthesize::UniquePrefix = "__cling_Un1Qu3";
+  const char* const Synthesize::CFUniquePrefix = "__cf_Un1Qu3";
 
   Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, uint64_t Ptr) {
     ASTContext& Ctx = S->getASTContext();
