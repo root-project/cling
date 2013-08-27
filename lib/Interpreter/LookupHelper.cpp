@@ -634,6 +634,7 @@ namespace cling {
     if (funcName.size() > 8 && strncmp(funcName.data(),"operator",8) == 0
                &&(   funcName[8] == ' ' || funcName[8] == '*'
                   || funcName[8] == '%' || funcName[8] == '&'
+                  || funcName[8] == '|' || funcName[8] == '/'
                   || funcName[8] == '+' || funcName[8] == '-'
                   || funcName[8] == '(' || funcName[8] == '['
                   || funcName[8] == '=' || funcName[8] == '!'
