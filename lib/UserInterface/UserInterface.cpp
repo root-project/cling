@@ -61,8 +61,8 @@ namespace cling {
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
-    try {
-      while (true) {
+    while (true) {
+      try {
         m_MetaProcessor->getOuts().flush();
         TextInput::EReadResult RR = TI.ReadInput();
         TI.TakeInput(line);
@@ -89,9 +89,9 @@ namespace cling {
         TI.SetPrompt(Prompt.c_str());
 
       }
-    }
-    catch(...) {
-      llvm::errs() << "Exception occurred. Recovering...\n";
+      catch(...) {
+        llvm::errs() << "Exception occurred. Recovering...\n";
+      }
     }
   }
 
