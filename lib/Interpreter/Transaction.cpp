@@ -192,7 +192,7 @@ namespace cling {
                                          const PrintingPolicy& Policy,
                                          unsigned Indent, 
                                          bool PrintInstantiation, 
-                                     llvm::StringRef prependInfo /*=0*/) const {
+                                    llvm::StringRef prependInfo /*=""*/) const {
     static const char* const stateNames[Transaction::kCCINumStates] = {
       "kCCINone",
       "kCCIHandleTopLevelDecl",
@@ -204,7 +204,7 @@ namespace cling {
     };
     assert((sizeof(stateNames) /sizeof(void*)) == Transaction::kCCINumStates 
            && "Missing states?");
-    if (prependInfo != 0) {
+    if (!prependInfo.empty()) {
       Out.changeColor(llvm::raw_ostream::RED);
       Out << prependInfo;
       Out.resetColor();
