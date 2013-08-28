@@ -72,6 +72,8 @@ ifeq ($(ARCH),win32gcc)
 CLINGLDFLAGSEXTRA += -Wl,--exclude-libs,ALL 
 endif
 
+# used in $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) for not CLINGEXEO
+CLINGEXCCXXFLAGS := -fno-exceptions
 CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 	$(addprefix -lclang,\
 		Frontend Serialization Driver CodeGen Parse Sema Analysis RewriteCore AST Edit Lex Basic) \
@@ -116,13 +118,13 @@ etc/cling/%.h: $(CLINGDIR)/include/cling/%.h
 	cp $< $@
 
 $(CLINGDIR)/%.o: $(CLINGDIR)/%.cpp $(LLVMDEP)
-	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(CLINGCXXFLAGS) -D__cplusplus -- $<
-	$(CXX) $(OPT) $(CLINGCXXFLAGS) $(CXXOUT)$@ -c $<
+	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) -D__cplusplus -- $<
+	$(CXX) $(OPT) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
 
 $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDIR)
-	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(CLINGCXXFLAGS)  -D__cplusplus -- $<
-	$(CXX) $(OPT) $(CLINGCXXFLAGS) $(CXXOUT)$@ -c $<
+	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS))  -D__cplusplus -- $<
+	$(CXX) $(OPT) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
 
 ifneq ($(LLVMDEV),)
 ifneq ($(PLATFORM),macosx)
@@ -141,7 +143,9 @@ endif
 ifneq ($(LLVMDEV),)
 $(CLINGO)   : CLINGCXXFLAGS += '-DCLING_SRCDIR_INCL="$(CLINGDIR)/include"' \
 	'-DCLING_INSTDIR_INCL="$(shell cd $(LLVMDIRI); pwd)/include"'
+$(CLINGEXEO): CLINGEXCCXXFLAGS := -fexceptions
 $(CLINGEXEO): CLINGCXXFLAGS += -I$(TEXTINPUTDIRS)
+else
 endif
 
 $(CLINGETC) : $(LLVMLIB)
