@@ -373,7 +373,9 @@ namespace cling {
     clang::ASTContext& getASTContext() { 
       return m_ASTContext;
     }
-    const clang::ASTContext& getASTContext() const { return getASTContext(); }
+    const clang::ASTContext& getASTContext() const {
+      return m_ASTContext;
+    }
 
     ///\brief Erases an element at given position.
     ///
