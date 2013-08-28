@@ -20,6 +20,18 @@ using namespace clang;
 namespace cling {
 namespace utils {
 
+  static
+  QualType GetPartiallyDesugaredTypeImpl(const ASTContext& Ctx, 
+                                         QualType QT, 
+                               const llvm::SmallSet<const Type*,4>& TypesToSkip,
+                                         bool fullyQualifyType,
+                                         bool fullyQualifyTmpltArg);
+
+  static
+  NestedNameSpecifier* GetPartiallyDesugaredNNS(const ASTContext& Ctx,
+                                                NestedNameSpecifier* scope, 
+                             const llvm::SmallSet<const Type*, 4>& TypesToSkip);
+
   bool Analyze::IsWrapper(const NamedDecl* ND) {
     if (!ND)
       return false;
@@ -168,11 +180,6 @@ namespace utils {
     }
   }
   
-  static
-  NestedNameSpecifier* GetPartiallyDesugaredNNS(const ASTContext& Ctx,
-                                                NestedNameSpecifier* scope, 
-                             const llvm::SmallSet<const Type*, 4>& TypesToSkip);
-    
   static
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
                                                   NestedNameSpecifier* scope) {
@@ -400,11 +407,11 @@ namespace utils {
     if (const Type* scope_type = scope->getAsType()) {
       
       // this is not a namespace, so we might need to desugar
-      QualType desugared =
-        Transform::GetPartiallyDesugaredType(Ctx,
-                                             QualType(scope_type,0),
-                                             TypesToSkip,
-                                             /*fullyQualify=*/false);
+      QualType desugared = GetPartiallyDesugaredTypeImpl(Ctx,
+                                                         QualType(scope_type,0),
+                                                         TypesToSkip,
+                                                         /*qualifyType=*/false,
+                                                      /*qualifyTmpltArg=*/true);
 
       NestedNameSpecifier* outer_scope = scope->getPrefix();
       const ElaboratedType* etype
@@ -636,12 +643,13 @@ namespace utils {
     return desugared;
   }
    
-  QualType Transform::GetPartiallyDesugaredType(const ASTContext& Ctx, 
+  static QualType GetPartiallyDesugaredTypeImpl(const ASTContext& Ctx, 
     QualType QT, const llvm::SmallSet<const Type*,4>& TypesToSkip,
-    bool fullyQualify/*=true*/)
+    bool fullyQualifyType,
+    bool fullyQualifyTmpltArg)                                                
   {
     // If there are no constraints, then use the standard desugaring.
-    if (!TypesToSkip.size() && !fullyQualify)
+    if (!TypesToSkip.size() && !fullyQualifyType && !fullyQualifyTmpltArg)
       return QT.getDesugaredType(Ctx);
 
     // In case of Int_t* we need to strip the pointer first, desugar and attach
@@ -649,8 +657,8 @@ namespace utils {
     if (isa<PointerType>(QT.getTypePtr())) {
       // Get the qualifiers.
       Qualifiers quals = QT.getQualifiers();      
-      QT = GetPartiallyDesugaredType(Ctx, QT->getPointeeType(), TypesToSkip, 
-                                     fullyQualify);
+      QT = GetPartiallyDesugaredTypeImpl(Ctx, QT->getPointeeType(), TypesToSkip, 
+                                         fullyQualifyType,fullyQualifyTmpltArg);
       QT = Ctx.getPointerType(QT);
       // Add back the qualifiers.
       QT = Ctx.getQualifiedType(QT, quals);
@@ -673,8 +681,8 @@ namespace utils {
       // Get the qualifiers.
       bool isLValueRefTy = isa<LValueReferenceType>(QT.getTypePtr());
       Qualifiers quals = QT.getQualifiers();
-      QT = GetPartiallyDesugaredType(Ctx, QT->getPointeeType(), TypesToSkip, 
-                                     fullyQualify);
+      QT = GetPartiallyDesugaredTypeImpl(Ctx, QT->getPointeeType(), TypesToSkip, 
+                                         fullyQualifyType,fullyQualifyTmpltArg);
       // Add the r- or l-value reference type back to the desugared one.
       if (isLValueRefTy)
         QT = Ctx.getLValueReferenceType(QT);
@@ -710,7 +718,7 @@ namespace utils {
         if (!(ns && ns->isAnonymousNamespace())) {
           // We have to also desugar the prefix unless
           // it does not have a name (anonymous namespaces).
-          fullyQualify = true;
+          fullyQualifyType = true;
           prefix_qualifiers = QT.getLocalQualifiers();
           QT = QualType(etype_input->getNamedType().getTypePtr(),0);
         } else {
@@ -724,14 +732,14 @@ namespace utils {
     while (1) {
       if (llvm::isa<TypedefType>(QT.getTypePtr()) &&
           ShouldKeepTypedef(QT, TypesToSkip)) {
-        if (!fullyQualify) {
+        if (!fullyQualifyType && !fullyQualifyTmpltArg) {
           return QT;
         }
         // We might have stripped the namespace/scope part,
         // so we must go on to add it back.
         break;
       }
-      bool wasDesugared = SingleStepPartiallyDesugarType(QT,Ctx);
+      bool wasDesugared = Transform::SingleStepPartiallyDesugarType(QT,Ctx);
       if (!wasDesugared) {
         // No more work to do, stop now.
         break;
@@ -742,8 +750,9 @@ namespace utils {
     // desugar what they point to.
     if (isa<PointerType>(QT.getTypePtr()) ||
         isa<ReferenceType>(QT.getTypePtr()) ) {
-      return GetPartiallyDesugaredType(Ctx, QT, TypesToSkip, 
-                                        fullyQualify);
+      return GetPartiallyDesugaredTypeImpl(Ctx, QT, TypesToSkip, 
+                                           fullyQualifyType,
+                                           fullyQualifyTmpltArg);
     }
 
     NestedNameSpecifier* prefix = 0;
@@ -756,7 +765,7 @@ namespace utils {
       prefix_qualifiers.addQualifiers(QT.getLocalQualifiers());
       QT = QualType(etype->getNamedType().getTypePtr(),0);
     
-    } else if (fullyQualify) {
+    } else if (fullyQualifyType) {
       // Let's check whether this type should have been an elaborated type.
       // in which case we want to add it ... but we can't really preserve
       // the typedef in this case ...
@@ -827,6 +836,7 @@ namespace utils {
               TagDecl *tdecl = dyn_cast<TagDecl>(outer);
               if (tdecl) {
                 prefix = CreateNestedNameSpecifier(Ctx,tdecl);
+                prefix = GetPartiallyDesugaredNNS(Ctx,prefix,TypesToSkip);
               }
             }
           }
@@ -853,13 +863,14 @@ namespace utils {
         if (isa<TypedefType>(SubTy) 
             || isa<TemplateSpecializationType>(SubTy)
             || isa<ElaboratedType>(SubTy)
-            || fullyQualify) {
+            || fullyQualifyTmpltArg) {
           mightHaveChanged = true;
-          desArgs.push_back(TemplateArgument(GetPartiallyDesugaredType(Ctx,
+          desArgs.push_back(TemplateArgument(GetPartiallyDesugaredTypeImpl(Ctx,
                                                                        SubTy,
-                                                                     TypesToSkip,
-                                                                 fullyQualify)));
-        } else 
+                                                                     TypesToSkip, 
+                                                                fullyQualifyType,
+                                                         fullyQualifyTmpltArg)));
+       } else 
           desArgs.push_back(*I);
       }
       
@@ -872,7 +883,7 @@ namespace utils {
                                                TST->getCanonicalTypeInternal());
         QT = Ctx.getQualifiedType(QT, qualifiers);
       }
-    } else if (fullyQualify) {
+    } else if (fullyQualifyTmpltArg) {
        
       if (const RecordType *TSTRecord
           = dyn_cast<const RecordType>(QT.getTypePtr())) {
@@ -900,12 +911,14 @@ namespace utils {
             if (isa<TypedefType>(SubTy)
                 || isa<TemplateSpecializationType>(SubTy)
                 || isa<ElaboratedType>(SubTy)
-                || fullyQualify) {
+                || fullyQualifyTmpltArg) {
               mightHaveChanged = true;
-              desArgs.push_back(TemplateArgument(GetPartiallyDesugaredType(Ctx,
-                                                                           SubTy,
-                                                                           TypesToSkip,
-                                                                           fullyQualify)));
+              desArgs.push_back(TemplateArgument(
+                                             GetPartiallyDesugaredTypeImpl(Ctx,
+                                                                         SubTy,
+                                                                   TypesToSkip,
+                                                     /*fullyQualifyType=*/true,
+                                              /*fullyQualifyTmpltArg=*/true)));
             } else
               desArgs.push_back(templateArgs[I]);
           }
@@ -931,6 +944,15 @@ namespace utils {
     return QT;   
   }
 
+  QualType Transform::GetPartiallyDesugaredType(const ASTContext& Ctx, 
+    QualType QT, const llvm::SmallSet<const Type*,4>& TypesToSkip,
+    bool fullyQualify/*=true*/)
+  {
+    return GetPartiallyDesugaredTypeImpl(Ctx,QT,TypesToSkip,
+                                         /*qualifyType*/fullyQualify,
+                                         /*qualifyTmpltArg*/fullyQualify);
+  }
+        
   NamespaceDecl* Lookup::Namespace(Sema* S, const char* Name,
                                    const DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);

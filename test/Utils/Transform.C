@@ -127,6 +127,7 @@ skip.insert(lookup.findType("string").getTypePtr());
 skip.insert(lookup.findType("std::string").getTypePtr());
 
 const clang::Type* t = 0;
+const clang::TypedefType *td = 0;
 clang::QualType QT;
 using namespace cling::utils;
 
@@ -280,6 +281,14 @@ lookup.findScope("vector<Details::Impl>::iterator", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 // CHECK: (const char *) "std::vector<Details::Impl>::iterator"
+
+lookup.findScope("vector<Details::Impl>::const_iterator", &t);
+QT = clang::QualType(t, 0);
+td = QT->getAs<clang::TypedefType>();
+clang::TypedefNameDecl *tdDecl = td->getDecl();
+QT = Ctx.getTypedefType(tdDecl);
+Transform::GetPartiallyDesugaredType(Ctx, QT, skip, true).getAsString().c_str()
+// CHECK: (const char *) "std::vector<Details::Impl, std::allocator<Details::Impl> >::const_iterator"
 
 const clang::Decl*decl=lookup.findScope("Embedded_objects",&t);
 if (decl) {
