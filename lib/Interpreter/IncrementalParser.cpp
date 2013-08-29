@@ -351,7 +351,6 @@ namespace cling {
     }
 
     // Treat the deserialized decls differently.
-    const CompilationOptions& CO(T->getCompilationOpts());
     for (Transaction::iterator I = T->deserialized_decls_begin(), 
            E = T->deserialized_decls_end(); I != E; ++I) {
 
