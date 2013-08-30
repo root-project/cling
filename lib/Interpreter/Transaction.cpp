@@ -216,11 +216,13 @@ namespace cling {
     Out << " <- ";
     Out.resetColor();
     for (DeclGroupRef::const_iterator I = m_DGR.begin(), E = m_DGR.end(); 
-         I != E; ++I)
+         I != E; ++I) {
         if (*I)
           (*I)->print(Out, Policy, Indent, PrintInstantiation);
         else
           Out << "<<NULL DECL>>";
+        Out << '\n';
+    }
   }
 
   void Transaction::dump() const {
