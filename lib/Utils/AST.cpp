@@ -478,7 +478,7 @@ namespace utils {
     assert(decl);
     const NamedDecl *outer =dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
     while (outer && outer->getName().size() ) {
-      if (outer->getName().compare("std") == 0 ||
+      if (//outer->getName().compare("std") == 0 ||
           outer->getName().compare("__gnu_cxx") == 0) {
         return true;
       }
