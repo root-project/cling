@@ -50,6 +50,14 @@ namespace cling {
                                                CK_ArrayToPointerDecay,
                                                VK_RValue).take();
         }
+        else if (RetTy->isFunctionType()) {
+          // A return type of function needs to be converted to
+          // pointer to function.
+          RetTy = FD->getASTContext().getPointerType(RetTy);
+          lastExpr = m_Sema->ImpCastExprToType(lastExpr, RetTy,
+                                               CK_FunctionToPointerDecay,
+                                               VK_RValue).take();
+        }
         FunctionProtoType::ExtProtoInfo EPI;
         QualType FnTy
           = m_Context->getFunctionType(RetTy, llvm::ArrayRef<QualType>(), EPI);
