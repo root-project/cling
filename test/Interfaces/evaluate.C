@@ -34,7 +34,10 @@ one // CHECK: (double) 1.000
 int one; // expected-error {{redefinition of 'one' with a different type: 'int' vs 'double'}} expected-note {{previous definition is here}}
 
 // Make sure that PR#98434 doesn't get reintroduced.
-void f(int);
+.rawInput
+void f(int) { return; }
+.rawInput
+
 gCling->evaluate("f", V);
 V.isValid() //CHECK: (_Bool) true
 // end PR#98434
