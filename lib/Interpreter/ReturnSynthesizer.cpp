@@ -49,6 +49,12 @@ namespace cling {
           lastExpr = m_Sema->ImpCastExprToType(lastExpr, RetTy,
                                                CK_ArrayToPointerDecay,
                                                VK_RValue).take();
+        } else if(RetTy->isRecordType()) {
+           // Return by reference in this case unless we have a 
+           // temporary involved.
+           if (lastExpr->getStmtClass() != clang::Stmt::ExprWithCleanupsClass) {
+              RetTy = m_Context->getLValueReferenceType(RetTy);
+           }
         }
         else if (RetTy->isFunctionType()) {
           // A return type of function needs to be converted to

@@ -91,7 +91,7 @@ Value::EStorageType Value::getStorageType() const {
         return kFloatType;
       else if (BT->getKind() == clang::BuiltinType::LongDouble)
         return kLongDoubleType;
-  } else if (desugCanon->isPointerType() || desugCanon->isObjectType())
+  } else if (desugCanon->isPointerType() || desugCanon->isObjectType() || desugCanon->isReferenceType())
     return kPointerType;
   return kUnsupportedType;
 }
