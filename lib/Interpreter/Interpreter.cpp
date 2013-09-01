@@ -854,16 +854,16 @@ namespace cling {
     std::string WrapperName;
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
-    Transaction* lastT = 0;
 
-    lastT = m_IncrParser->Compile(Wrapper, CO);
+    Transaction* lastT = m_IncrParser->Compile(Wrapper, CO);
     assert((!V || lastT->size()) && "No decls created!?");
     assert((lastT->getState() == Transaction::kCommitted
            || lastT->getState() == Transaction::kRolledBack) 
            && "Not committed?");
     assert(lastT->getWrapperFD() && "Must have wrapper!");
-    if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
-      return Interpreter::kSuccess;
+    if (lastT->getIssuedDiags() != Transaction::kErrors)
+      if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
+        return Interpreter::kSuccess;
     if (V)
       *V = StoredValueRef::invalidValue();
 
