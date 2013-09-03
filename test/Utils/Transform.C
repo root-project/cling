@@ -119,12 +119,12 @@ namespace NS1 {
 
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
 const clang::ASTContext& Ctx = gCling->getSema().getASTContext();
-llvm::SmallSet<const clang::Type*, 4> skip;
+cling::utils::Transform::Config transConfig;
 
-skip.insert(lookup.findType("Double32_t").getTypePtr());
+transConfig.m_toSkip.insert(lookup.findType("Double32_t").getTypePtr());
 using namespace std;
-skip.insert(lookup.findType("string").getTypePtr());
-skip.insert(lookup.findType("std::string").getTypePtr());
+transConfig.m_toSkip.insert(lookup.findType("string").getTypePtr());
+transConfig.m_toSkip.insert(lookup.findType("std::string").getTypePtr());
 
 const clang::Type* t = 0;
 const clang::TypedefType *td = 0;
@@ -135,14 +135,14 @@ using namespace cling::utils;
 lookup.findScope("Details::Impl", &t);
 QT = clang::QualType(t, 0);
 //QT.getAsString().c_str()
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "Details::Impl"
 
 // Test the behavior for a class inside an anonymous namespace
 lookup.findScope("InsideAnonymous", &t);
 QT = clang::QualType(t, 0);
 //QT.getAsString().c_str()c
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "class <anonymous>::InsideAnonymous"
 
 // The above result is not quite want we want, so the client must using 
@@ -154,23 +154,23 @@ clang::PrintingPolicy Policy(Ctx.getPrintingPolicy());
 Policy.SuppressTagKeyword = true; // Never get the class or struct keyword
 Policy.SuppressScope = true;      // Force the scope to be coming from a clang::ElaboratedType.
 std::string name;
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsStringInternal(name,Policy);
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsStringInternal(name,Policy);
 name.c_str()
 // CHECK: (const char *) "InsideAnonymous"
 
 // Test desugaring pointers types:
 QT = lookup.findType("Int_t*");
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK:(const char *) "int *"
 
 QT = lookup.findType("const IntPtr_t*");
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK:(const char *) "int *const *"
 
 
 // Test desugaring reference (both r- or l- value) types:
 QT = lookup.findType("const IntPtr_t&");
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK:(const char *) "int *const &"
 
 //TODO: QT = lookup.findType("IntPtr_t[32]");
@@ -178,108 +178,108 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
 // To do: findType does not return the const below:
 // Test desugaring reference (both r- or l- value) types:
 //QT = lookup.findType("const IntRef_t");
-//Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+//Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // should print:(const char *) "int &const"
 
 // Test desugaring reference (both r- or l- value) types:
 QT = lookup.findType("IntRef_t");
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK:(const char *) "int &"
 
 
 //Desugar template parameters:
 lookup.findScope("A<B<Double32_t, Int_t*> >", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK:(const char *) "A<B<Double32_t, int *> >"
 
 lookup.findScope("A<B<Double32_t, std::size_t*> >", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK:(const char *) "A<B<Double32_t, unsigned {{long|int}} *> >"
 
 lookup.findScope("CTD", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "C<A<B<Double32_t, int> >, Double32_t>"
 
 lookup.findScope("CTDConst", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "C<A<B<const Double32_t, const int> >, Double32_t>"
 
 lookup.findScope("std::pair<const std::string,int>", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "std::pair<const std::string, int>"
 
 lookup.findScope("NS::Array<NS::ArrayType<double> >", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::Array<NS::ArrayType<double> >"
 
 lookup.findScope("NS::Array<NS::ArrayType<Double32_t> >", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::Array<NS::ArrayType<Double32_t> >"
 
 lookup.findScope("NS::Container<Long_t>::Content", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::Container<long>::Content"
 
 QT = lookup.findType("NS::Container<Long_t>::Value_t");
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "long"
 
 lookup.findScope("NS::Container<Long_t>::Content_t", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::Container<long>::Content"
 
 lookup.findScope("NS::Container<Long_t>::Impl_t", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "Details::Impl"
 
 lookup.findScope("NS::Container<Double32_t>::Content", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::Container<Double32_t>::Content"
 
 QT = lookup.findType("NS::Container<Double32_t>::Value_t");
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "double"
 // Really we would want it to say Double32_t but oh well.
 
 lookup.findScope("NS::Container<Double32_t>::Content_t", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::Container<Double32_t>::Content"
 
 lookup.findScope("NS::Container<Double32_t>::Impl_t", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "Details::Impl"
 
 lookup.findScope("NS::TDataPointF", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::TDataPoint<float>"
 
 lookup.findScope("NS::TDataPointD32", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::TDataPoint<Double32_t>"
 
 lookup.findScope("vector<Details::Impl>::value_type", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "Details::Impl"
 
 lookup.findScope("vector<Details::Impl>::iterator", &t);
 QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "std::vector<Details::Impl>::iterator"
 
 lookup.findScope("vector<Details::Impl>::const_iterator", &t);
@@ -287,7 +287,7 @@ QT = clang::QualType(t, 0);
 td = QT->getAs<clang::TypedefType>();
 clang::TypedefNameDecl *tdDecl = td->getDecl();
 QT = Ctx.getTypedefType(tdDecl);
-Transform::GetPartiallyDesugaredType(Ctx, QT, skip, true).getAsString().c_str()
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig, true).getAsString().c_str()
 // CHECK: (const char *) "std::vector<Details::Impl, std::allocator<Details::Impl> >::const_iterator"
 
 const clang::Decl*decl=lookup.findScope("Embedded_objects",&t);
@@ -301,7 +301,7 @@ if (decl) {
       if (const clang::ValueDecl *vd = llvm::dyn_cast<clang::ValueDecl>(mdecl)) {
         clang::QualType vdType = vd->getType();
         name.clear();
-        Transform::GetPartiallyDesugaredType(Ctx,vdType,skip).getAsStringInternal(name,Policy);
+        Transform::GetPartiallyDesugaredType(Ctx,vdType,transConfig).getAsStringInternal(name,Policy);
         std::cout << name.c_str() << std::endl;
       }
       ++iter;
@@ -324,7 +324,7 @@ if (decl) {
 // which case the type is a RecordDecl rather than a TemplateInstantationType
 decl = lookup.findScope("std::pair<Details::Impl,std::vector<Details::Impl> >",&t);
 QT = clang::QualType(t, 0);
-std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str() << std::endl;
+std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str() << std::endl;
 // CHECK: std::pair<Details::Impl, std::vector<Details::Impl> >
 
 if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(decl)) {
@@ -336,7 +336,7 @@ if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(d
   while( i < 2 )  {
     name.clear();
     clang::QualType fdType = field_iter->getType();
-    Transform::GetPartiallyDesugaredType(Ctx,fdType,skip).getAsStringInternal(name,Policy);
+    Transform::GetPartiallyDesugaredType(Ctx,fdType,transConfig).getAsStringInternal(name,Policy);
     std::cout << name.c_str() << std::endl;
     ++field_iter;
     ++i;
@@ -357,7 +357,7 @@ if (decl) {
       if (const clang::ValueDecl *vd = llvm::dyn_cast<clang::ValueDecl>(mdecl)) {
         clang::QualType vdType = vd->getType();
         name.clear();
-        Transform::GetPartiallyDesugaredType(Ctx,vdType,skip).getAsStringInternal(name,Policy);
+        Transform::GetPartiallyDesugaredType(Ctx,vdType,transConfig).getAsStringInternal(name,Policy);
         std::cout << name.c_str() << std::endl;
       }
       ++iter;
@@ -370,10 +370,10 @@ if (decl) {
 
 decl = lookup.findScope("cmap<volatile int,volatile int>",&t);
 QT = clang::QualType(t, 0);
-std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str() << std::endl;
+std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str() << std::endl;
 if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(decl)) {
   QT = clang::QualType(rdecl->getTypeForDecl(), 0);
-  std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, skip).getAsString().c_str() << std::endl;
+  std::cout << Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str() << std::endl;
   clang::RecordDecl::field_iterator field_iter = rdecl->field_begin();
   // For some reason we can not call field_end:
   // cling: root/interpreter/llvm/src/tools/clang/lib/CodeGen/CGCall.cpp:1839: void checkArgMatches(llvm::Value*, unsigned int&, llvm::FunctionType*): Assertion `Elt->getType() == FTy->getParamType(ArgNo)' failed.
@@ -382,7 +382,7 @@ if (const clang::RecordDecl *rdecl = llvm::dyn_cast_or_null<clang::RecordDecl>(d
   while( i < 2 )  {
     name.clear();
     clang::QualType fdType = field_iter->getType();
-    Transform::GetPartiallyDesugaredType(Ctx,fdType,skip).getAsStringInternal(name,Policy);
+    Transform::GetPartiallyDesugaredType(Ctx,fdType,transConfig).getAsStringInternal(name,Policy);
     std::cout << name.c_str() << std::endl;
     ++field_iter;
     ++i;
