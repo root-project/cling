@@ -8,6 +8,7 @@
 #define CLING_UTILS_AST_H
 
 #include "llvm/ADT/SmallSet.h"
+#include "llvm/ADT/DenseMap.h"
 
 namespace clang {
   class ASTContext;
@@ -106,6 +107,20 @@ namespace utils {
   class Transform {
   public:
 
+    ///\brief Class containing the information on how to configure the
+    /// transformation
+    ///
+    struct Config {
+      typedef const clang::Type cType;
+      typedef llvm::SmallSet<cType*, 4> SkipCollection;
+      typedef llvm::DenseMap<cType*, cType*> ReplaceCollection;
+      
+      SkipCollection    m_toSkip;
+      ReplaceCollection m_toReplace;
+
+      bool empty() const { return m_toSkip.size()==0 && m_toReplace.empty(); }
+    };
+     
     ///\brief Remove one layer of sugar, but only some kinds.
     static bool SingleStepPartiallyDesugarType(clang::QualType& QT,
                                                const clang::ASTContext& C);
@@ -124,7 +139,7 @@ namespace utils {
     static
     clang::QualType
     GetPartiallyDesugaredType(const clang::ASTContext& Ctx, clang::QualType QT,
-      const llvm::SmallSet<const clang::Type*, 4>& TypesToSkip,
+      const Config& TypeConfig,
       bool fullyQualify = true);
 
   };
