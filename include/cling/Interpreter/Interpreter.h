@@ -135,7 +135,7 @@ namespace cling {
       ///\brief Type of the file.
       FileType getType() const { return m_Type; }
 
-      void* getDyLibHandle() const { return m_DynLibHandle; }
+      const void* getDyLibHandle() const { return m_DynLibHandle; }
 
     private:
       ///\brief Constructor used by Interpreter.
