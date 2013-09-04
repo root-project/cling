@@ -862,6 +862,7 @@ namespace cling {
     //  Parse the prototype now.
     //
 
+    unsigned int nargs = 0;
     while (P.getCurToken().isNot(tok::eof)) {
       TypeResult Res(P.ParseTypeName());
       if (!Res.isUsable()) {
@@ -877,12 +878,9 @@ namespace cling {
           VK = VK_LValue;
         }
         clang::QualType NonRefQT(QT.getNonReferenceType());
-        unsigned int slot = ExprMemory.size();
-        ExprMemory.resize(slot+1);
-        Expr* val
-          = new (&ExprMemory[slot]) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
-                                                    NonRefQT, VK);
-        GivenArgs.push_back(val);
+        ExprMemory.resize(++nargs);
+        new (&ExprMemory[nargs-1]) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
+                                                   NonRefQT, VK);
       }
       // Type names should be comma separated.
       // FIXME: Here if we have type followed by name won't work. Eg int f, ...
@@ -891,6 +889,10 @@ namespace cling {
       }
       // Eat the comma.
       P.ConsumeToken();
+    }
+    for(unsigned int slot = 0; slot < nargs; ++slot) {
+       Expr* val = (OpaqueValueExpr*)( &ExprMemory[slot] );
+       GivenArgs.push_back(val);  
     }
     if (P.getCurToken().isNot(tok::eof)) {
       // We did not consume all of the prototype, bad parse.
