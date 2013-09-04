@@ -704,6 +704,9 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
   assert(classDecl != 0 && "DisplayClassDecl, 'classDecl' parameter is null");
   assert(fInterpreter != 0 && "DisplayClassDecl, fInterpreter is null");
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
+
   classDecl = classDecl->getDefinition();
   assert(classDecl != 0 && "DisplayClassDecl, invalid decl - no definition");
 
