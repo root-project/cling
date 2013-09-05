@@ -19,7 +19,7 @@ CLINGDEP     := $(CLINGO:.o=.d)
 CLINGETC_CLING := DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
         DynamicLookupLifetimeHandler.h Interpreter.h InvocationOptions.h \
         RuntimeUniverse.h StoredValueRef.h Value.h \
-        ValuePrinter.h ValuePrinterInfo.h
+        ValuePrinter.h ValuePrinterInfo.h RuntimeExceptions.h
 
 CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
         llvm/ADT/OwningPtr.h \
