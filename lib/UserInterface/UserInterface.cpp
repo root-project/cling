@@ -6,6 +6,7 @@
 
 #include "cling/UserInterface/UserInterface.h"
 
+#include "cling/Interpreter/RuntimeExceptions.h"
 #include "cling/Interpreter/StoredValueRef.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "textinput/TextInput.h"
@@ -88,6 +89,9 @@ namespace cling {
 
         TI.SetPrompt(Prompt.c_str());
 
+      }
+      catch(runtime::cling_null_deref_exception e) {
+        // The diagnostic goes here:
       }
       catch(...) {
         llvm::errs() << "Exception occurred. Recovering...\n";
