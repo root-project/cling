@@ -39,5 +39,5 @@ void f(int) { return; }
 .rawInput
 
 gCling->evaluate("f", V);
-V.isValid() //CHECK: (_Bool) true
+V.isValid() //CHECK: {{\([_]B|b}}ool) true
 // end PR#98434
