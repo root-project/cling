@@ -75,16 +75,34 @@ namespace cling {
           Sema::ContextRAII pushedDC(*m_Sema, FDecl);
           for (int index = 0; index < 32; ++index) {
             if (!ArgIndexs.test(index)) continue;
+
+            // Get the argument with the nonnull attribute.
+            Expr* Arg = CE->getArg(index);
+
+            IntegerLiteral* One = IntegerLiteral::Create(*Context,
+              llvm::APInt(32, 1), Context->IntTy, SL);
+
+            ExprResult Throw = m_Sema->ActOnCXXThrow(S, SL, One);
+
+            // Check whether we can get the argument'value. If the argument is
+            // null, throw an exception direclty. If the argument is not null 
+            // then ignore this argument and continue to deal with the next
+            // argument with the nonnull attribute.
+            bool Result = false;
+            if (Arg->EvaluateAsBooleanCondition(Result, *Context)) {
+              if(!Result) {
+                Stmts.push_back(Throw.get());
+              }
+              continue;
+            }
+            // The argument's value cannot be decided, so we add a UnaryOp
+            // operation to check its value at runtime.
             DeclRefExpr* DRE
               = dyn_cast<DeclRefExpr>(CE->getArg(index)->IgnoreImpCasts());
             if (!DRE) continue;
             ExprResult ER
               = m_Sema->Sema::ActOnUnaryOp(S, SL, tok::exclaim, DRE);
 
-            IntegerLiteral* One = IntegerLiteral::Create(*Context,
-              llvm::APInt(32, 1), Context->IntTy, SL);
-
-            ExprResult Throw = m_Sema->ActOnCXXThrow(S, SL, One);
             Decl* varDecl = 0;
             Stmt* varStmt = 0;
 
