@@ -131,8 +131,8 @@ namespace utils {
     /// sugared type, which is to be skipped.
     ///\param[in] Ctx - The ASTContext.
     ///\param[in] QT - The type to be partially desugared.
-    ///\param[in] TypesToSkip - The set of sugared types which shouldn't be 
-    ///                         desugared.
+    ///\param[in] TypeConfig - The set of sugared types which shouldn't be 
+    ///                        desugared and those that should be replaced.
     ///\param[in] fullyQualify - if true insert Elaborated where needed.
     ///\returns Partially desugared QualType
     ///
