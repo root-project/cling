@@ -8,10 +8,13 @@
 #include "ASTNullDerefProtection.h"
 
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/Sema/Sema.h"
+#include "clang/AST/Decl.h"
+#include "clang/AST/Mangle.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Sema/Lookup.h"
 
 using namespace clang;
 
@@ -58,7 +61,8 @@ namespace cling {
     ASTContext* Context = &m_Sema->getASTContext();
     DeclContext* DC = FD->getTranslationUnitDecl();
     llvm::SmallVector<Stmt*, 4> Stmts;
-    SourceLocation SL = FD->getBody()->getLocStart();
+    SourceLocation Loc = FD->getBody()->getLocStart();
+    SourceLocation SL;
 
     for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
          I != EI; ++I) {
@@ -69,7 +73,7 @@ namespace cling {
       }
       if (FunctionDecl* FDecl = CE->getDirectCallee()) {
         if(FDecl && isDeclCandidate(FDecl)) {
-          SourceLocation SL = CE->getLocStart();
+          SL = CE->getLocStart();
           decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
           const std::bitset<32>& ArgIndexs = it->second;
           Sema::ContextRAII pushedDC(*m_Sema, FDecl);
@@ -79,10 +83,51 @@ namespace cling {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
 
-            IntegerLiteral* One = IntegerLiteral::Create(*Context,
-              llvm::APInt(32, 1), Context->IntTy, SL);
+            //copied from DynamicLookup.cpp
+            NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
+            NamespaceDecl* clingRuntimeNSD
+              = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
 
-            ExprResult Throw = m_Sema->ActOnCXXThrow(S, SL, One);
+            // Find and set up "cling_null_deref_exception"
+            DeclarationName Name
+              = &Context->Idents.get("cling_null_deref_exception");
+
+            LookupResult R(*m_Sema, Name, SourceLocation(),
+              Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+            m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
+            CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
+
+            CXXConstructorDecl* CD
+              = dyn_cast<CXXConstructorDecl>(*NullDerefDecl->ctor_begin());
+
+            // Lookup SourceLocation type
+            CXXRecordDecl* SourceLocationRD
+              = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema,
+                "SourceLocation", utils::Lookup::Namespace(m_Sema, "clang")));
+
+            QualType SourceLocationRDTy
+              = Context->getTypeDeclType(SourceLocationRD);
+
+            // Lookup Sema type
+            CXXRecordDecl* SemaRD
+              = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Sema",
+                utils::Lookup::Namespace(m_Sema, "clang")));
+
+            QualType SemaRDTy = Context->getTypeDeclType(SemaRD);
+
+            unsigned LocID = SL.getRawEncoding();
+            Expr* VoidLocArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
+              Context->VoidPtrTy, (uint64_t)&LocID);
+            Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
+              SemaRDTy, (uint64_t)m_Sema);
+
+            Expr *args[] = {VoidLocArg, VoidSemaArg};
+            QualType QTy = Context->getTypeDeclType(NullDerefDecl);
+            ExprResult Constructor = m_Sema->BuildCXXConstructExpr(SL,
+               QTy, CD, MultiExprArg(args, 2), false, false, false,
+               CXXConstructExpr::CK_Complete, SourceRange());
+
+            ExprResult Throw = m_Sema->ActOnCXXThrow(S, SL, Constructor.get());
 
             // Check whether we can get the argument'value. If the argument is
             // null, throw an exception direclty. If the argument is not null 
@@ -118,7 +163,7 @@ namespace cling {
     }
     llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
     CompoundStmt* CSBody = new (*Context)CompoundStmt(*Context, StmtsRef,
-                                                           SL, SL);
+                                                           Loc, Loc);
     FD->setBody(CSBody);
     DC->removeDecl(FD);
     DC->addDecl(FD);

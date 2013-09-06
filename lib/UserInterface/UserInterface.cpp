@@ -92,6 +92,7 @@ namespace cling {
       }
       catch(runtime::cling_null_deref_exception e) {
         // The diagnostic goes here:
+        e.what();
       }
       catch(...) {
         llvm::errs() << "Exception occurred. Recovering...\n";
