@@ -111,13 +111,13 @@ namespace cling {
 
     ///\brief Store the interpreter's state.
     ///
-    ///\param[in] name - Name of the file where the state will be stored
+    ///\param[in] name - Name of the files where the state will be stored
     ///
     void actOnstoreStateCommand(llvm::StringRef name) const;
 
     ///\brief Compare the interpreter's state with the one previously stored
     ///
-    ///\param[in] name - Name of the file where the previous state was stored
+    ///\param[in] name - Name of the files where the previous state was stored
     ///
     void actOncompareStateCommand(llvm::StringRef name) const;
 

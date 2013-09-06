@@ -439,25 +439,62 @@ namespace cling {
     ///
     void DumpIncludePath();
 
-    ///\brief Prints the interpreter state in new file
+    ///\brief Store the interpreter state in files
+    /// Store the AST, the included files and the lookup tables
     ///
-    ///\param[in] name - The name of the temporary file where the state will
+    ///\param[in] name - The name of the files where the state will
     /// be printed
     ///
     void storeInterpreterState(const std::string& name) const;
 
     ///\brief Compare the actual interpreter state with the one stored 
     /// previously.
+    ///
     ///\param[in] name - The name of the previously stored file
     ///
     void compareInterpreterState(const std::string& name) const;
 
-    ///\brief Dump the Lookups tables in a file 
+    ///\brief Dump the AST in a temporary file 
+    ///
+    ///\param[in] name - The name of the temporary file where the AST
+    /// will be printed
+    ///
+    void dumpAST (const std::string& name) const;
+
+    ///\brief Dump the Lookups tables in a temporary file 
     ///
     ///\param[in] name - The name of the temporary file where the lookups table
     /// will be printed
     ///
     void dumpLookupTable (const std::string& name) const;
+
+    ///\brief Print the included files in a temporary file 
+    ///
+    ///\param[in] name - The name of the temporary file where the included files
+    /// will be printed
+    ///
+    void printIncludedFiles (llvm::raw_ostream& out) const;
+
+    ///\brief Compare the AST with the one stored 
+    /// previously.
+    ///
+    ///\param[in] name - The name of the previously stored state
+    ///
+    void compareAST(const std::string& name) const;
+
+    ///\brief Compare the included files with the ones stored 
+    /// previously.
+    ///
+    ///\param[in] name - The name of the previously stored state
+    ///
+    void compareIncludedFiles(const std::string& name) const;
+
+    ///\brief Compare the lookup tables with the ones stored 
+    /// previously.
+    ///
+    ///\param[in] name - The name of the previously stored state
+    ///
+    void compareLookup(const std::string& name) const;
 
     ///\brief Compiles the given input.
     ///
