@@ -13,15 +13,15 @@
 
 namespace cling {
   namespace runtime {
-    cling_null_deref_exception::cling_null_deref_exception(
-      void* Loc, clang::Sema* S) : m_Location(*(unsigned *)Loc), m_Sema(S){}
+    NullDerefException::NullDerefException(void* Loc, clang::Sema* S) 
+      : m_Location(*(unsigned *)Loc), m_Sema(S) {}
 
-    cling_null_deref_exception::~cling_null_deref_exception() {}
+    NullDerefException::~NullDerefException() {}
 
-    void cling_null_deref_exception::what() throw() {
-        clang::DiagnosticsEngine& Diag = m_Sema->getDiagnostics();
-        Diag.Report(clang::SourceLocation::getFromRawEncoding(m_Location),
-                                              clang::diag::warn_null_arg);
+    void NullDerefException::what() throw() {
+      clang::DiagnosticsEngine& Diag = m_Sema->getDiagnostics();
+      Diag.Report(clang::SourceLocation::getFromRawEncoding(m_Location),
+                  clang::diag::warn_null_arg);
     }
   } // end namespace runtime
 } // end namespace cling

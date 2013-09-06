@@ -90,7 +90,7 @@ namespace cling {
         TI.SetPrompt(Prompt.c_str());
 
       }
-      catch(runtime::cling_null_deref_exception e) {
+      catch(runtime::NullDerefException& e) {
         // The diagnostic goes here:
         e.what();
       }

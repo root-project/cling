@@ -14,13 +14,13 @@ namespace cling {
     ///\brief Exception that is thrown when a null pointer dereference is found
     /// or a method taking non-null arguments is called with NULL argument.
     /// 
-    class cling_null_deref_exception {
+    class NullDerefException {
     private:
       unsigned m_Location;
       clang::Sema* m_Sema;
     public:
-      cling_null_deref_exception(void* Loc, clang::Sema* S);
-      ~cling_null_deref_exception();
+      NullDerefException(void* Loc, clang::Sema* S);
+      ~NullDerefException();
 
       void what() throw();
 

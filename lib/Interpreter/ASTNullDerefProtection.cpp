@@ -88,9 +88,9 @@ namespace cling {
             NamespaceDecl* clingRuntimeNSD
               = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
 
-            // Find and set up "cling_null_deref_exception"
+            // Find and set up "NullDerefException"
             DeclarationName Name
-              = &Context->Idents.get("cling_null_deref_exception");
+              = &Context->Idents.get("NullDerefException");
 
             LookupResult R(*m_Sema, Name, SourceLocation(),
               Sema::LookupOrdinaryName, Sema::ForRedeclaration);
