@@ -14,6 +14,7 @@
 #include "textinput/TerminalDisplay.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/PathV1.h"
 #include "llvm/Config/config.h"
 
@@ -35,12 +36,35 @@
 #endif
 
 namespace cling {
+  class compilerException: public std::exception {
+  public:
+    compilerException(const std::string& reason): Reason(reason) {}
+    ~compilerException() throw() {}
+    virtual const char* what() const throw() { return Reason.c_str(); }
+  private:
+    std::string Reason;
+  };
+}
+
+namespace {
+  // Handle fatal llvm errors by throwing an exception..
+  // Yes, throwing exceptions in error handlers is bad.
+  // Doing nothing is pretty terrible, too.
+  void exceptionErrorHandler(void * /*user_data*/,
+                             const std::string& reason,
+                             bool /*gen_crash_diag*/) {
+    throw cling::compilerException(reason);
+  }
+}
+
+namespace cling {
   UserInterface::UserInterface(Interpreter& interp) {
     // We need stream that doesn't close its file descriptor, thus we are not
     // using llvm::outs. Keeping file descriptor open we will be able to use
     // the results in pipes (Savannah #99234).
     static llvm::raw_fd_ostream m_MPOuts (STDOUT_FILENO, /*ShouldClose*/false);
     m_MetaProcessor.reset(new MetaProcessor(interp, m_MPOuts));
+    llvm::install_fatal_error_handler(&exceptionErrorHandler);
   }
 
   UserInterface::~UserInterface() {}
