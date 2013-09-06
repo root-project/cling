@@ -13,6 +13,10 @@
 
 namespace cling {
   namespace runtime {
+    void InterpreterException::what() throw() {
+      // For now the default is nop.
+    }
+
     NullDerefException::NullDerefException(void* Loc, clang::Sema* S) 
       : m_Location(*(unsigned *)Loc), m_Sema(S) {}
 
