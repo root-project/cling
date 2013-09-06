@@ -283,10 +283,7 @@ namespace utils {
           NamespaceDecl *old_ns = 0;
           if (original_prefix) {
             original_prefix->getAsNamespace();
-            if (old_ns) {
-              old_ns = old_ns->getCanonicalDecl();
-            }
-            else if (NamespaceAliasDecl *alias =
+            if (NamespaceAliasDecl *alias =
                      original_prefix->getAsNamespaceAlias())
             {
               old_ns = alias->getNamespace()->getCanonicalDecl();
