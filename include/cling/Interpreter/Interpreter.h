@@ -452,6 +452,13 @@ namespace cling {
     ///
     void compareInterpreterState(const std::string& name) const;
 
+    ///\brief Dump the Lookups tables in a file 
+    ///
+    ///\param[in] name - The name of the temporary file where the lookups table
+    /// will be printed
+    ///
+    void dumpLookupTable (const std::string& name) const;
+
     ///\brief Compiles the given input.
     ///
     /// This interface helps to run everything that cling can run. From

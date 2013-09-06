@@ -333,6 +333,7 @@ namespace cling {
     TU->print(Out, policy, Indentation, PrintInstantiation);
     Out.flush();
     }
+    Interpreter::dumpLookupTable(name);
   }
 
   void Interpreter::compareInterpreterState(const std::string& name) const {
@@ -454,6 +455,34 @@ namespace cling {
       int result2 = std::remove(command3.c_str());
       if((result1 != 0) && (result2 != 0))
 	perror( "Error deleting files were AST were stored" );
+  }
+
+  void Interpreter::dumpLookupTable(const std::string& name) const {
+
+    std::string ErrMsg;
+    llvm::sys::Path LookupFile = llvm::sys::Path::GetCurrentDirectory();
+    if (LookupFile.isEmpty()) {
+      llvm::errs() << "Error: " << ErrMsg << "\n";
+      return;
+    }
+    std::string fileName = name + ".lookup";
+    LookupFile.appendComponent(fileName);
+    std::ofstream ofs (LookupFile.c_str(), std::ofstream::out);  
+    llvm::raw_os_ostream Out(ofs);
+
+    class DumpDeclContexts : public RecursiveASTVisitor<DumpDeclContexts> {
+    private:
+      llvm::raw_ostream& m_OS;
+    public:
+      DumpDeclContexts(llvm::raw_ostream& OS) : m_OS(OS) { }
+      bool VisitDeclContext(DeclContext* DC) {
+	//DC->dumpLookups(m_OS);
+	return true;
+      }
+    };
+    ASTContext& C = getSema().getASTContext();
+    DumpDeclContexts dumper(Out);
+    dumper.TraverseDecl(C.getTranslationUnitDecl());
   }
   
   // Adapted from clang/lib/Frontend/CompilerInvocation.cpp
