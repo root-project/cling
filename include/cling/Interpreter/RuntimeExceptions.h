@@ -16,6 +16,7 @@ namespace cling {
     ///\brief Base class for all interpreter exceptions.
     ///
     class InterpreterException {
+    public:
       virtual void what() throw();
     };
 
