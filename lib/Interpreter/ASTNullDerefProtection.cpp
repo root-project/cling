@@ -97,16 +97,14 @@ namespace cling {
             m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
             CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
 
-            CXXConstructorDecl* CD
-              = dyn_cast<CXXConstructorDecl>(*NullDerefDecl->ctor_begin());
-
-            // Lookup SourceLocation type
-            CXXRecordDecl* SourceLocationRD
-              = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema,
-                "SourceLocation", utils::Lookup::Namespace(m_Sema, "clang")));
-
-            QualType SourceLocationRDTy
-              = Context->getTypeDeclType(SourceLocationRD);
+            CXXConstructorDecl* CD;
+            for (CXXRecordDecl::ctor_iterator I = NullDerefDecl->ctor_begin(),
+               E = NullDerefDecl->ctor_end(); I != E; ++I) {
+               if (!I->isImplicit()) {
+                 CD = dyn_cast<CXXConstructorDecl>(*I);
+                 break;
+               }
+            }
 
             // Lookup Sema type
             CXXRecordDecl* SemaRD
