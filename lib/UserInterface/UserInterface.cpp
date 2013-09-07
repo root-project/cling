@@ -91,12 +91,10 @@ namespace cling {
 
       }
       catch(runtime::NullDerefException& e) {
-        llvm::errs() << "Exception was thrown at runtime. Recovering...\n";
-        e.what();
+        e.diagnose();
       }
       catch(runtime::InterpreterException& e) {
-        // The diagnostic goes here:
-        e.what();
+        llvm::errs() << e.what();
       }
       catch(...) {
         llvm::errs() << "Exception occurred. Recovering...\n";
