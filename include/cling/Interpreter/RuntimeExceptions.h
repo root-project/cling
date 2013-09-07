@@ -17,7 +17,7 @@ namespace cling {
     ///
     class InterpreterException {
     public:
-      virtual void what() throw();
+      virtual const char* what() const throw();
     };
 
     ///\brief Exception that is thrown when a null pointer dereference is found
@@ -31,7 +31,8 @@ namespace cling {
       NullDerefException(void* Loc, clang::Sema* S);
       ~NullDerefException();
 
-      virtual void what() throw();
+      virtual const char* what() const throw();
+      void diagnose() const throw();
 
     };    
   } // end namespace runtime

@@ -13,8 +13,8 @@
 
 namespace cling {
   namespace runtime {
-    void InterpreterException::what() throw() {
-      // For now the default is nop.
+    const char* InterpreterException::what() const throw() {
+      return "runtime_exception\n";
     }
 
     NullDerefException::NullDerefException(void* Loc, clang::Sema* S) 
@@ -22,7 +22,11 @@ namespace cling {
 
     NullDerefException::~NullDerefException() {}
 
-    void NullDerefException::what() throw() {
+    const char* NullDerefException::what() const throw() {
+      return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
+    }
+    
+    void NullDerefException::diagnose() const throw() {
       clang::DiagnosticsEngine& Diag = m_Sema->getDiagnostics();
       Diag.Report(clang::SourceLocation::getFromRawEncoding(m_Location),
                   clang::diag::warn_null_arg);
