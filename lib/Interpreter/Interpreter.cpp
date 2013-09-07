@@ -361,6 +361,17 @@ namespace cling {
     }
   }
 
+  class DumpDeclContexts : public RecursiveASTVisitor<DumpDeclContexts> {
+  private:
+    llvm::raw_ostream& m_OS;
+  public:
+    DumpDeclContexts(llvm::raw_ostream& OS) : m_OS(OS) { }
+    bool VisitDeclContext(DeclContext* DC) {
+      //DC->dumpLookups(m_OS);
+      return true;
+    }
+  };
+
   void Interpreter::dumpLookupTable(const std::string& name) const {
     std::string ErrMsg;
     llvm::sys::Path LookupFile = llvm::sys::Path::GetCurrentDirectory();
@@ -382,16 +393,6 @@ namespace cling {
     LookupFile.appendComponent(fileName);
     std::ofstream ofs (LookupFile.c_str(), std::ofstream::out);  
     llvm::raw_os_ostream Out(ofs);
-    class DumpDeclContexts : public RecursiveASTVisitor<DumpDeclContexts> {
-    private:
-      llvm::raw_ostream& m_OS;
-    public:
-      DumpDeclContexts(llvm::raw_ostream& OS) : m_OS(OS) { }
-      bool VisitDeclContext(DeclContext* DC) {
-	//DC->dumpLookups(m_OS);
-	return true;
-      }
-    };
     ASTContext& C = getSema().getASTContext();
     DumpDeclContexts dumper(Out);
     dumper.TraverseDecl(C.getTranslationUnitDecl());
