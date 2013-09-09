@@ -5,7 +5,7 @@
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
 //------------------------------------------------------------------------------
 
-#include "cling/Interpreter/RuntimeExceptions.h"
+#include "cling/Interpreter/RuntimeException.h"
 
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Sema.h"
