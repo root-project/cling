@@ -101,7 +101,7 @@ namespace cling {
       return false;
     }
     // Silence warning virtual function was hidden.
-    using ExternalASTSource::CompleteType(clang::ObjCInterfaceDecl*);
+    using ExternalASTSource::CompleteType;
     virtual void CompleteType(TagDecl* Tag) {
       if (m_Callbacks)
         m_Callbacks->LookupObject(Tag);
