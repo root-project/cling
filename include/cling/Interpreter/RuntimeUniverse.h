@@ -25,7 +25,7 @@
 struct __float128;
 #endif
 
-#include "cling/Interpreter/RuntimeExceptions.h"
+#include "cling/Interpreter/RuntimeException.h"
 
 namespace cling {
 
