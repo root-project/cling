@@ -21,6 +21,7 @@ namespace clang {
   class LookupResult;
   class NamedDecl;
   class Scope;
+  class TagDecl;
   class Type;
 }
 
@@ -110,8 +111,10 @@ namespace cling {
     ///
     /// \returns true if lookup result is found and should be used.
     ///
+    // FIXME: Find a way to merge the three of them.
     virtual bool LookupObject(clang::LookupResult&, clang::Scope*);
     virtual bool LookupObject(const clang::DeclContext*, clang::DeclarationName);
+    virtual bool LookupObject(clang::TagDecl*);
 
     ///\brief This callback is invoked whenever interpreter has committed new
     /// portion of declarations.
@@ -175,6 +178,9 @@ namespace cling {
 
       bool LookupObject(clang::LookupResult& R, clang::Scope* S);
       bool LookupObject(const clang::DeclContext*, clang::DeclarationName) {
+        return false;
+      }
+      bool LookupObject(clang::TagDecl* Tag) {
         return false;
       }
       bool ShouldResolveAtRuntime(clang::LookupResult& R, clang::Scope* S);

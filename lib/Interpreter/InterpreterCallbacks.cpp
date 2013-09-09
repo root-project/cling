@@ -101,6 +101,11 @@ namespace cling {
       return false;
     }
 
+    virtual void CompleteType(TagDecl* Tag) {
+      if (m_Callbacks)
+        m_Callbacks->LookupObject(Tag);
+    }
+
     void UpdateWithNewDeclsFwd(const DeclContext *DC, DeclarationName Name, 
                                llvm::ArrayRef<NamedDecl*> Decls) {
       SetExternalVisibleDeclsForName(DC, Name, Decls);
@@ -179,6 +184,11 @@ namespace cling {
   }
 
   bool InterpreterCallbacks::LookupObject(const DeclContext*, DeclarationName) {
+    // Default implementation is no op.
+    return false;
+  }
+
+  bool InterpreterCallbacks::LookupObject(TagDecl*) {
     // Default implementation is no op.
     return false;
   }
