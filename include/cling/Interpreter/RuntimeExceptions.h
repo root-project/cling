@@ -9,6 +9,7 @@
 
 namespace clang {
   class Sema;
+  class Expr;
 }
 
 namespace cling {
@@ -25,16 +26,16 @@ namespace cling {
     /// 
     class NullDerefException : public InterpreterException {
     private:
-      unsigned m_Location; // We don't want to #include SourceLocation.h
       clang::Sema* m_Sema;
+      clang::Expr* m_Arg;
     public:
-      NullDerefException(void* Loc, clang::Sema* S);
+      NullDerefException(clang::Sema* S, clang::Expr* E);
       ~NullDerefException();
 
       virtual const char* what() const throw();
       void diagnose() const throw();
 
-    };    
+    };
   } // end namespace runtime
 } // end namespace cling
 #endif // CLING_RUNTIME_EXCEPTIONS_H 

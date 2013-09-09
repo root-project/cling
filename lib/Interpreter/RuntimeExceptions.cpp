@@ -17,8 +17,8 @@ namespace cling {
       return "runtime_exception\n";
     }
 
-    NullDerefException::NullDerefException(void* Loc, clang::Sema* S) 
-      : m_Location(*(unsigned *)Loc), m_Sema(S) {}
+    NullDerefException::NullDerefException(clang::Sema* S, clang::Expr* E)
+      : m_Sema(S), m_Arg(E) {}
 
     NullDerefException::~NullDerefException() {}
 
@@ -27,9 +27,8 @@ namespace cling {
     }
     
     void NullDerefException::diagnose() const throw() {
-      clang::DiagnosticsEngine& Diag = m_Sema->getDiagnostics();
-      Diag.Report(clang::SourceLocation::getFromRawEncoding(m_Location),
-                  clang::diag::warn_null_arg);
+      m_Sema->Diag(m_Arg->getLocStart(), clang::diag::warn_null_arg)
+        << m_Arg->getSourceRange();
     }
   } // end namespace runtime
 } // end namespace cling

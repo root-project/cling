@@ -62,7 +62,6 @@ namespace cling {
     DeclContext* DC = FD->getTranslationUnitDecl();
     llvm::SmallVector<Stmt*, 4> Stmts;
     SourceLocation Loc = FD->getBody()->getLocStart();
-    SourceLocation SL;
 
     for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
          I != EI; ++I) {
@@ -73,7 +72,7 @@ namespace cling {
       }
       if (FunctionDecl* FDecl = CE->getDirectCallee()) {
         if(FDecl && isDeclCandidate(FDecl)) {
-          SL = CE->getLocStart();
+          SourceLocation CallLoc = CE->getLocStart();
           decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
           const std::bitset<32>& ArgIndexs = it->second;
           Sema::ContextRAII pushedDC(*m_Sema, FDecl);
@@ -112,20 +111,26 @@ namespace cling {
                 utils::Lookup::Namespace(m_Sema, "clang")));
 
             QualType SemaRDTy = Context->getTypeDeclType(SemaRD);
-
-            unsigned LocID = SL.getRawEncoding();
-            Expr* VoidLocArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
-              Context->VoidPtrTy, (uint64_t)&LocID);
             Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
               SemaRDTy, (uint64_t)m_Sema);
 
-            Expr *args[] = {VoidLocArg, VoidSemaArg};
-            QualType QTy = Context->getTypeDeclType(NullDerefDecl);
-            ExprResult Constructor = m_Sema->BuildCXXConstructExpr(SL,
-               QTy, CD, MultiExprArg(args, 2), false, false, false,
-               CXXConstructExpr::CK_Complete, SourceRange());
+            // Lookup Expr type
+            CXXRecordDecl* ExprRD
+              = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Expr",
+                utils::Lookup::Namespace(m_Sema, "clang")));
 
-            ExprResult Throw = m_Sema->ActOnCXXThrow(S, SL, Constructor.get());
+            QualType ExprRDTy = Context->getTypeDeclType(ExprRD);
+            Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
+              ExprRDTy, (uint64_t)Arg);
+
+            Expr *args[] = {VoidSemaArg, VoidExprArg};
+            QualType QTy = Context->getTypeDeclType(NullDerefDecl);
+            ExprResult Constructor = m_Sema->BuildCXXConstructExpr(CallLoc,
+               QTy, CD, MultiExprArg(args, 2), false, false, false,
+               CXXConstructExpr::CK_Complete, Arg->getSourceRange());
+
+            ExprResult Throw
+              = m_Sema->ActOnCXXThrow(S, CallLoc, Constructor.get());
 
             // Check whether we can get the argument'value. If the argument is
             // null, throw an exception direclty. If the argument is not null 
@@ -141,18 +146,18 @@ namespace cling {
             // The argument's value cannot be decided, so we add a UnaryOp
             // operation to check its value at runtime.
             DeclRefExpr* DRE
-              = dyn_cast<DeclRefExpr>(CE->getArg(index)->IgnoreImpCasts());
+              = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
             if (!DRE) continue;
             ExprResult ER
-              = m_Sema->Sema::ActOnUnaryOp(S, SL, tok::exclaim, DRE);
+              = m_Sema->Sema::ActOnUnaryOp(S, CallLoc, tok::exclaim, DRE);
 
             Decl* varDecl = 0;
             Stmt* varStmt = 0;
 
             Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
 
-            StmtResult IfStmt = m_Sema->ActOnIfStmt(SL, FullCond, varDecl,
-                                                      Throw.get(), SL, varStmt);
+            StmtResult IfStmt = m_Sema->ActOnIfStmt(CallLoc, FullCond, varDecl,
+                                                 Throw.get(), CallLoc, varStmt);
             Stmts.push_back(IfStmt.get());
           }
         }
