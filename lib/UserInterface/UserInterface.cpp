@@ -6,6 +6,7 @@
 
 #include "cling/UserInterface/UserInterface.h"
 
+#include "cling/UserInterface/CompilationException.h"
 #include "cling/Interpreter/RuntimeException.h"
 #include "cling/Interpreter/StoredValueRef.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
@@ -35,17 +36,6 @@
 #endif
 #endif
 
-namespace cling {
-  class compilerException: public std::exception {
-  public:
-    compilerException(const std::string& reason): Reason(reason) {}
-    ~compilerException() throw() {}
-    virtual const char* what() const throw() { return Reason.c_str(); }
-  private:
-    std::string Reason;
-  };
-}
-
 namespace {
   // Handle fatal llvm errors by throwing an exception..
   // Yes, throwing exceptions in error handlers is bad.
@@ -53,11 +43,14 @@ namespace {
   void exceptionErrorHandler(void * /*user_data*/,
                              const std::string& reason,
                              bool /*gen_crash_diag*/) {
-    throw cling::compilerException(reason);
+    throw cling::CompilationException(reason);
   }
 }
 
 namespace cling {
+  // Declared in CompilationException.h; vtable pinned here.
+  CompilationException::~CompilationException() throw() {}
+
   UserInterface::UserInterface(Interpreter& interp) {
     // We need stream that doesn't close its file descriptor, thus we are not
     // using llvm::outs. Keeping file descriptor open we will be able to use
