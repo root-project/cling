@@ -4,9 +4,9 @@
 //XFAIL: darwin
 
 char *p = 0;
-strcmp("a", p); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+strcmp("a", p); // expected-warning {{warning: null passed to a callee which requires a non-null argument}}
 
-strcmp(p, "a"); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+strcmp(p, "a"); // expected-warning {{warning: null passed to a callee which requires a non-null argument}}
 
 extern "C" int printf(const char* fmt, ...);
 .rawInput 1
@@ -21,9 +21,8 @@ extern "C" int cannotCallWithNull(int* p) {
     printf("Must not be called with p=0.\n");
   return 1;
 }
-
-cannotCallWithNull() // expected-warning {{null passed to a callee which requires a non-null argument}}
-// expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+int *q = 0;
+cannotCallWithNull(q); // expected-warning {{warning: null passed to a callee which requires a non-null argument}}
 //CHECK-NOT: Must not be called with p=0.
 cannotCallWithNull(new int(4))
 //CHECK: (int) 1
