@@ -8,7 +8,7 @@
 
 #include <stdexcept>
 #include <string>
-#include "cling/Interpreter/RuntimeExceptions.h"
+#include "cling/Interpreter/RuntimeException.h"
 
 namespace cling {
   class Interpreter;
