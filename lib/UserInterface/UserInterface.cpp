@@ -6,7 +6,7 @@
 
 #include "cling/UserInterface/UserInterface.h"
 
-#include "cling/Interpreter/RuntimeExceptions.h"
+#include "cling/Interpreter/RuntimeException.h"
 #include "cling/Interpreter/StoredValueRef.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "textinput/TextInput.h"
