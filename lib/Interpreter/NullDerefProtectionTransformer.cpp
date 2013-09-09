@@ -61,26 +61,16 @@ namespace cling {
 using namespace clang;
 
 namespace cling {
-  typedef std::map<std::string, std::bitset<32> > nonnull_map_t;
 
-  // NonNullDeclFinder finds the function decls with nonnull attribute args.
-  class NonNullDeclFinder
-    : public RecursiveASTVisitor<NonNullDeclFinder> {
+  // NameFinder finds the function decls's mangled name.
+  class NameFinder
+    : public RecursiveASTVisitor<NameFinder> {
   private:
     Sema* m_Sema;
     llvm::OwningPtr<clang::MangleContext> m_MangleCtx;
-    llvm::SmallVector<std::string, 8> m_NonNullDeclNames;
-    nonnull_map_t m_NonNullArgIndexs;
 
   public:
-    NonNullDeclFinder(Sema* S) : m_Sema(S) {}
-    const llvm::SmallVector<std::string, 8>& getDeclNames() const {
-      return m_NonNullDeclNames;
-    }
-
-    const nonnull_map_t& getArgIndexs() const {
-      return m_NonNullArgIndexs;
-    }
+    NameFinder(Sema* S) : m_Sema(S) {}
 
     std::string getMangledName(FunctionDecl* FD) {
       // Copied from Interpreter.cpp;
@@ -117,68 +107,6 @@ namespace cling {
       }
       return mangledName;
     }
-    // Deal with all the call expr in the transaction.
-    bool VisitCallExpr(CallExpr* TheCall) {
-      if (FunctionDecl* FDecl = TheCall->getDirectCallee()) {
-        std::bitset<32> ArgIndexs;
-        for (FunctionDecl::redecl_iterator RI = FDecl->redecls_begin(),
-             RE = FDecl->redecls_end(); RI != RE; ++RI) {
-          for (specific_attr_iterator<NonNullAttr>
-               I = RI->specific_attr_begin<NonNullAttr>(),
-               E = RI->specific_attr_end<NonNullAttr>(); I != E; ++I) {
-            NonNullAttr *NonNull = *I;
-
-            // Store all the null attr argument's index into "ArgIndexs".
-            for (NonNullAttr::args_iterator i = NonNull->args_begin(),
-                 e = NonNull->args_end(); i != e; ++i) {
-
-              // Get the argument with the nonnull attribute.
-              const Expr* Arg = TheCall->getArg(*i);
-
-              // Check whether we can get the argument'value. If the argument is
-              // not null, then ignore this argument and continue to deal with the
-              // next argument with the nonnull attribute.ArgIndexs.set(*i);
-              bool Result;
-              ASTContext& Context = m_Sema->getASTContext();
-              if (Arg->EvaluateAsBooleanCondition(Result, Context) && Result) {
-                continue;
-              }
-              ArgIndexs.set(*i);
-            }
-            break;
-          }
-        }
-
-        if (ArgIndexs.any()) {
-
-          // Get the function decl's name.
-          std::string FName = getMangledName(FDecl);
-
-          // Store the function decl's name into the vector.
-          m_NonNullDeclNames.push_back(FName);
-
-          // Store the function decl's name with its null attr args' indexes
-          // into the map.
-          m_NonNullArgIndexs.insert(std::make_pair(FName, ArgIndexs));
-        }
-
-        // FIXME: For now we will only work/check on declarations that are not
-        // deserialized. We want to avoid our null deref transaformer to 
-        // deserialize all the contents of a PCH/PCM.
-        // We have to think of a better way to find the annotated 
-        // declarations, without that to cause too much deserialization.
-        Stmt* S = (FDecl->isFromASTFile()) ? 0 : FDecl->getBody();
-        if (S) {
-          for (Stmt::child_iterator II = S->child_begin(), EE = S->child_end();
-               II != EE; ++II) {
-            CallExpr* child = dyn_cast<CallExpr>(*II);
-            if (child && child->getDirectCallee() != FDecl)
-              VisitCallExpr(child);
-          }
-        }
-      }
-      return true; // returning false will abort the in-depth traversal.
-    }
   };
 
   NullDerefProtectionTransformer::NullDerefProtectionTransformer(Sema *S)
@@ -192,7 +120,7 @@ namespace cling {
     if (!FD)
       return;
 
-    NonNullDeclFinder Finder(m_Sema);
+    NameFinder Finder(m_Sema);
     std::string mangledName = Finder.getMangledName(FD);
     // Find the function in the module.
     llvm::Function* F = getTransaction()->getModule()->getFunction(mangledName);
@@ -201,32 +129,6 @@ namespace cling {
     llvm::IRBuilder<> TheBuilder(F->getContext());
     Builder = &TheBuilder;
     runOnFunction(*F);
-
-    // Find all the function decls with null attribute arguments.
-    for (size_t Idx = 0, E = getTransaction()->size(); Idx < E; ++Idx) {
-      Transaction::DelayCallInfo I = (*getTransaction())[Idx];
-      for (DeclGroupRef::const_iterator J = I.m_DGR.begin(),
-             JE = I.m_DGR.end(); J != JE; ++J)
-        if ((*J)->hasBody())
-          Finder.TraverseStmt((*J)->getBody());
-    }
-
-    const llvm::SmallVector<std::string, 8>&
-      FDeclNames = Finder.getDeclNames();
-    if (FDeclNames.empty()) return;
-
-    llvm::Module* M = F->getParent();
-
-    for (llvm::SmallVector<std::string, 8>::const_iterator
-         i = FDeclNames.begin(), e = FDeclNames.end(); i != e; ++i) {
-      const nonnull_map_t& ArgIndexs = Finder.getArgIndexs();
-      nonnull_map_t::const_iterator it = ArgIndexs.find(*i);
-
-      if (it != ArgIndexs.end()) {
-        const std::bitset<32>& ArgNums = it->second;
-        handleNonNullArgCall(*M, *i, ArgNums);
-      }
-    }
   }
 
   llvm::BasicBlock*
@@ -261,7 +163,7 @@ namespace cling {
     FunctionDecl* FD = R.getAsSingle<FunctionDecl>();
 
     // Get the mangled name for the function "shouldProceed"
-    NonNullDeclFinder Finder(m_Sema);
+    NameFinder Finder(m_Sema);
     std::string mangledName = Finder.getMangledName(FD);
     llvm::Function* CallBackFn
       = cast<llvm::Function>(Md->getOrInsertFunction(mangledName, FTy));
@@ -380,60 +282,5 @@ namespace cling {
       }
     }
     return true;
-  }
-
-  void NullDerefProtectionTransformer::instrumentCallInst(llvm::Instruction*
-    TheCall, const std::bitset<32>& ArgIndexs) {
-    llvm::CallSite CS = TheCall;
-
-    for (int index = 0; index < 32; ++index) {
-      if (!ArgIndexs.test(index)) continue;
-      llvm::Value* Arg = CS.getArgument(index);
-      if (!Arg) continue;
-      llvm::Type* ArgTy = Arg->getType();
-
-      llvm::BasicBlock* OldBB = TheCall->getParent();
-      llvm::ICmpInst* Cmp
-        = new llvm::ICmpInst(TheCall, llvm::CmpInst::ICMP_EQ, Arg,
-                             llvm::Constant::getNullValue(ArgTy), "");
-
-      llvm::Instruction* Inst = Builder->GetInsertPoint();
-      llvm::BasicBlock* NewBB = OldBB->splitBasicBlock(Inst);
-
-      OldBB->getTerminator()->eraseFromParent();
-      llvm::BranchInst::Create(getTrapBB(NewBB), NewBB, Cmp, OldBB);
-    }
-  }
-
-  void NullDerefProtectionTransformer::handleNonNullArgCall(llvm::Module& M,
-    const std::string& name, const std::bitset<32>& ArgIndexs) {
-
-    // Get the function by the name.
-    llvm::Function* func = M.getFunction(name);
-    if (!func)
-      return;
-
-    // Find all the instructions that calls the function.
-    std::vector<llvm::Instruction*> WorkList;
-    for (llvm::Value::use_iterator I = func->use_begin(), E = func->use_end();
-          I != E; ++I) {
-      llvm::CallSite CS(*I);
-      if (!CS || CS.getCalledValue() != func)
-        continue;
-      WorkList.push_back(CS.getInstruction());
-    }
-
-    // There is no call instructions that call the function and return.
-    if (WorkList.empty())
-      return;
-
-    // Instrument all the call instructions that call the function.
-    for (std::vector<llvm::Instruction*>::iterator I = WorkList.begin(),
-           E = WorkList.end(); I != E; ++I) {
-      Inst = *I;
-      Builder->SetInsertPoint(Inst);
-      instrumentCallInst(Inst, ArgIndexs);
-    }
-    return;
   }
 } // end namespace cling

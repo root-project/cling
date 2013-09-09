@@ -38,11 +38,6 @@ namespace cling {
     llvm::BasicBlock* getTrapBB(llvm::BasicBlock* BB);
     void instrumentInst(llvm::Instruction* Inst, llvm::Value* Arg);
     bool runOnFunction(llvm::Function& F);
-    void instrumentCallInst(llvm::Instruction* TheCall,
-                            const std::bitset<32>& ArgIndexs);
-    void handleNonNullArgCall(llvm::Module& M,
-                              const std::string& FName,
-                              const std::bitset<32>& ArgIndexs);
 
   public:
     NullDerefProtectionTransformer(clang::Sema* S);
