@@ -470,8 +470,7 @@ namespace cling {
 
     ///\brief Print the included files in a temporary file 
     ///
-    ///\param[in] name - The name of the temporary file where the included files
-    /// will be printed
+    ///\param[in] out - The output stream to be printed into.
     ///
     void printIncludedFiles (llvm::raw_ostream& out) const;
 
