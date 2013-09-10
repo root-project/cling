@@ -43,8 +43,6 @@ namespace cling {
       ASTNullDerefProtection(clang::Sema* S);
 
       virtual ~ASTNullDerefProtection();
-      clang::Expr* InsertThrow(clang::SourceLocation* Loc,
-                               clang::Expr* Arg);
       clang::Stmt* SynthesizeCheck(clang::SourceLocation Loc,
                                    clang::Expr* Arg);
       virtual void Transform();
