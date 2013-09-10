@@ -14,7 +14,14 @@ namespace cling {
   class Interpreter;
   class MetaProcessor;
 
-  //\brief Exception pull us out of JIT (llvm + clang) errors.
+  ///\brief Exception that pulls cling out of runtime-compilation (llvm + clang)
+  ///       errors.
+  ///
+  /// If user code provokes an llvm::unreachable it will cause this exception
+  /// to be thrown. Given that this is at the process's runtime and an
+  /// interpreter error it inherits from InterpreterException and runtime_error.
+  /// Note that this exception is *not* thrown during the execution of the
+  /// user's code but during its compilation (at runtime).
   class CompilationException:
     public virtual runtime::InterpreterException,
     public virtual std::runtime_error {
