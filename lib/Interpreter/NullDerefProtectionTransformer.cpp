@@ -66,11 +66,10 @@ namespace cling {
   class NameFinder
     : public RecursiveASTVisitor<NameFinder> {
   private:
-    Sema* m_Sema;
     llvm::OwningPtr<clang::MangleContext> m_MangleCtx;
 
   public:
-    NameFinder(Sema* S) : m_Sema(S) {}
+    NameFinder(){}
 
     std::string getMangledName(FunctionDecl* FD) {
       // Copied from Interpreter.cpp;
@@ -120,7 +119,7 @@ namespace cling {
     if (!FD)
       return;
 
-    NameFinder Finder(m_Sema);
+    NameFinder Finder;
     std::string mangledName = Finder.getMangledName(FD);
     // Find the function in the module.
     llvm::Function* F = getTransaction()->getModule()->getFunction(mangledName);
@@ -163,7 +162,7 @@ namespace cling {
     FunctionDecl* FD = R.getAsSingle<FunctionDecl>();
 
     // Get the mangled name for the function "shouldProceed"
-    NameFinder Finder(m_Sema);
+    NameFinder Finder;
     std::string mangledName = Finder.getMangledName(FD);
     llvm::Function* CallBackFn
       = cast<llvm::Function>(Md->getOrInsertFunction(mangledName, FTy));

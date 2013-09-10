@@ -365,7 +365,8 @@ namespace cling {
   private:
     //llvm::raw_ostream& m_OS;
   public:
-    DumpDeclContexts(llvm::raw_ostream& OS) : m_OS(OS) { }
+    //DumpDeclContexts(llvm::raw_ostream& OS) : m_OS(OS) { }
+    DumpDeclContexts(llvm::raw_ostream&) { }
     bool VisitDeclContext(DeclContext* DC) {
       //DC->dumpLookups(m_OS);
       return true;
