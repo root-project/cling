@@ -170,8 +170,7 @@ namespace cling {
               bool Result = false;
               if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
                 if(!Result) {
-                  Expr* Throw = InsertThrow(&SL, Op);
-                  Stmts.push_back(Throw);
+                  Stmts.push_back(SynthesizeCheck(SL, Op));
                 }
               }
               else {
@@ -185,8 +184,7 @@ namespace cling {
               bool Result = false;
               if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
                 if(!Result) {
-                  Expr* Throw = InsertThrow(&SL, Op);
-                  Stmts.push_back(Throw);
+                  Stmts.push_back(SynthesizeCheck(SL, Op));
                 }
               }
               else {
