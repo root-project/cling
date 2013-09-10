@@ -310,7 +310,7 @@ namespace cling {
       llvm::errs() << "Error: " << ErrMsg << "\n";
       return;
     }
-    LookupFile.appendComponent(name + ".includedFiles");
+    LookupFile.appendComponent(name + ".includedFiles.tmp");
     std::ofstream ofs (LookupFile.c_str(), std::ofstream::out);  
     llvm::raw_os_ostream Out(ofs);
     printIncludedFiles(Out);
@@ -555,7 +555,7 @@ namespace cling {
       return;
     }
     llvm::sys::Path stateFile1 = tmpDir1;
-    std::string state1 = name + ".includedFiles";
+    std::string state1 = name + ".includedFiles.tmp";
     stateFile1.appendComponent(state1);
     llvm::sys::Path tmpDir2 = llvm::sys::Path::GetCurrentDirectory();
     if (tmpDir2.isEmpty()) {
@@ -563,7 +563,7 @@ namespace cling {
       return;
     }
     llvm::sys::Path stateFile2 = tmpDir2;
-    std::string state2 = name + "cmp.includedFiles";
+    std::string state2 = name + "cmp.includedFiles.tmp";
     stateFile2.appendComponent(state2);
     std::string command = "diff -u " + stateFile1.str() + " " 
       + stateFile2.str();
