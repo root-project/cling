@@ -41,16 +41,6 @@ namespace utils {
     ///
     static bool IsWrapper(const clang::NamedDecl* ND);
 
-    ///\brief Checks whether the declaration is a interpreter-generated
-    /// CallFunc wrapper function.
-    ///
-    ///\param[in] ND - The decl being checked. If null returns false. 
-    ///
-    ///\returns true if the decl is a interpreter-generated CallFunc wrapper
-    /// function.
-    ///
-    static bool IsCFWrapper(const clang::NamedDecl* ND);
-
     ///\brief Retrieves the last expression of a function body. If it was a
     /// DeclStmt with a variable declaration, creates DeclRefExpr and adds it to
     /// the function body.
@@ -79,7 +69,6 @@ namespace utils {
   class Synthesize {
   public:
     static const char* const UniquePrefix;
-    static const char* const CFUniquePrefix;
 
     ///\brief Synthesizes c-style cast in the AST from given pointer and type to
     /// cast to.

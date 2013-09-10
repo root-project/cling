@@ -113,11 +113,6 @@ namespace cling {
     ///
     clang::FunctionDecl* m_WrapperFD;
 
-    ///\brief The wrapper function produced by the intepreter if any
-    ///       for CallFunc.
-    ///
-    clang::FunctionDecl* m_CFWrapperFD;
-
     ///\brief Next transaction in if any.
     ///
     const Transaction* m_Next;
@@ -365,7 +360,6 @@ namespace cling {
     void setModule(llvm::Module* M) { m_Module = M ; }
 
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
-    clang::FunctionDecl* getCFWrapperFD() const { return m_CFWrapperFD; }
 
     const Transaction* getNext() const { return m_Next; }
     void setNext(Transaction* T) { m_Next = T; }
