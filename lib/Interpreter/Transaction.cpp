@@ -113,6 +113,8 @@ namespace cling {
     assert((getState() == kCollecting || getState() == kCompleted)
            && "Must not be");
 
+    bool checkForWrapper = !m_WrapperFD;
+
 #ifndef NDEBUG
     // Check for duplicates
     for (size_t i = 0, e = m_DeclQueue.size(); i < e; ++i) {
@@ -137,13 +139,12 @@ namespace cling {
       if (oldDCI.m_Call != kCCIHandleVTable)
         assert(oldDCI != DCI && "Duplicates?!");
     }
+    // We want to assert there is only one wrapper per transaction.
+    checkForWrapper = true;
 #endif
-
-    bool checkForWrapper = !m_WrapperFD;
-    // FIXME: Assignment in assert!!!!
-    assert(checkForWrapper = true && "Check for wrappers with asserts");
+    
     // register the wrapper if any.
-    if ((checkForWrapper) && !DCI.m_DGR.isNull() && DCI.m_DGR.isSingleDecl()) {
+    if (checkForWrapper && !DCI.m_DGR.isNull() && DCI.m_DGR.isSingleDecl()) {
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl())){
         if (checkForWrapper && utils::Analyze::IsWrapper(FD)) {
           assert(!m_WrapperFD && "Two wrappers in one transaction?");
