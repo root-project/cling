@@ -15,10 +15,11 @@
 #include <map>
 
 namespace clang {
-  class Sema;
-  class FunctionDecl;
   class CallExpr;
   class Expr;
+  class FunctionDecl;
+  class Sema;
+  class Stmt;
 }
 
 namespace llvm {
@@ -44,6 +45,8 @@ namespace cling {
       virtual ~ASTNullDerefProtection();
       clang::Expr* InsertThrow(clang::SourceLocation* Loc,
                                clang::Expr* Arg);
+      clang::Stmt* SynthesizeCheck(clang::SourceLocation Loc,
+                                   clang::Expr* Arg);
       virtual void Transform();
   };
 

@@ -95,6 +95,37 @@ namespace cling {
     return Throw.get();
   }
 
+
+  Stmt* ASTNullDerefProtection::SynthesizeCheck(SourceLocation Loc, Expr* Arg ){
+    Expr* Throw = InsertThrow(&Loc, Arg);
+    ASTContext& Context = m_Sema->getASTContext();
+    // Check whether we can get the argument'value. If the argument is
+    // null, throw an exception direclty. If the argument is not null
+    // then ignore this argument and continue to deal with the next
+    // argument with the nonnull attribute.
+    bool Result = false;
+    if (Arg->EvaluateAsBooleanCondition(Result, Context)) {
+      if(!Result) {
+        return Throw;
+      }
+      return Arg;
+    }
+    // The argument's value cannot be decided, so we add a UnaryOp
+    // operation to check its value at runtime.
+    DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
+    assert(DRE && "No declref expr?");
+    Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
+    ExprResult ER = m_Sema->ActOnUnaryOp(S, Loc, tok::exclaim, DRE);
+
+    Decl* varDecl = 0;
+    Stmt* varStmt = 0;
+    Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
+    StmtResult IfStmt = m_Sema->ActOnIfStmt(Loc, FullCond, varDecl,
+                                            Throw, Loc, varStmt);
+    return IfStmt.take();
+  }
+
+
   void ASTNullDerefProtection::Transform() {
 
     FunctionDecl* FD = getTransaction()->getWrapperFD();
@@ -125,34 +156,8 @@ namespace cling {
 
               // Get the argument with the nonnull attribute.
               Expr* Arg = CE->getArg(index);
-              Expr* Throw = InsertThrow(&CallLoc, Arg);
-              // Check whether we can get the argument'value. If the argument is
-              // null, throw an exception direclty. If the argument is not null
-              // then ignore this argument and continue to deal with the next
-              // argument with the nonnull attribute.
-              bool Result = false;
-              if (Arg->EvaluateAsBooleanCondition(Result, *Context)) {
-                if(!Result) {
-                  Stmts.push_back(Throw);
-                }
-                continue;
-              }
-              // The argument's value cannot be decided, so we add a UnaryOp
-              // operation to check its value at runtime.
-              DeclRefExpr* DRE
-                = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
-              if (!DRE) continue;
-              ExprResult ER
-                = m_Sema->Sema::ActOnUnaryOp(S, CallLoc, tok::exclaim, DRE);
-
-              Decl* varDecl = 0;
-              Stmt* varStmt = 0;
-
-              Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
-
-              StmtResult IfStmt = m_Sema->ActOnIfStmt(CallLoc, FullCond, varDecl,
-                                                 Throw, CallLoc, varStmt);
-              Stmts.push_back(IfStmt.get());
+              
+              Stmts.push_back(SynthesizeCheck(CallLoc, Arg));
             }
           }
         }
@@ -201,17 +206,7 @@ namespace cling {
                 }
               }
               else {
-                Expr* Throw = InsertThrow(&SL, Op);
-                ExprResult ER
-                 = m_Sema->Sema::ActOnUnaryOp(S, SL, tok::exclaim, Op);
-
-                Decl* varDecl = 0;
-                Stmt* varStmt = 0;
-
-                Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
-                StmtResult IfStmt = m_Sema->ActOnIfStmt(SL, FullCond, varDecl,
-                                                 Throw, SL, varStmt);
-                Stmts.push_back(IfStmt.get());
+                Stmts.push_back(SynthesizeCheck(SL, Op));
               }
             }
           }
