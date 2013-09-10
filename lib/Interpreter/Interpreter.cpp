@@ -363,7 +363,7 @@ namespace cling {
 
   class DumpDeclContexts : public RecursiveASTVisitor<DumpDeclContexts> {
   private:
-    llvm::raw_ostream& m_OS;
+    //llvm::raw_ostream& m_OS;
   public:
     DumpDeclContexts(llvm::raw_ostream& OS) : m_OS(OS) { }
     bool VisitDeclContext(DeclContext* DC) {
