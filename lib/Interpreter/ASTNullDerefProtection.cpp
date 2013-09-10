@@ -66,15 +66,6 @@ namespace cling {
     m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
     CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
 
-    CXXConstructorDecl* CD;
-    for (CXXRecordDecl::ctor_iterator I = NullDerefDecl->ctor_begin(),
-      E = NullDerefDecl->ctor_end(); I != E; ++I) {
-      if (!I->isImplicit()) {
-        CD = dyn_cast<CXXConstructorDecl>(*I);
-        break;
-      }
-    }
-
     // Lookup Sema type
     CXXRecordDecl* SemaRD
       = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Sema",
@@ -94,13 +85,13 @@ namespace cling {
       (uint64_t)Arg);
 
     Expr *args[] = {VoidSemaArg, VoidExprArg};
-    QualType QTy = Context->getTypeDeclType(NullDerefDecl);
-    ExprResult Constructor = m_Sema->BuildCXXConstructExpr(*Loc, QTy, CD,
-      MultiExprArg(args, 2), false, false, false,
-      CXXConstructExpr::CK_Complete, Arg->getSourceRange());
+    QualType NullDerefDeclTy = Context->getTypeDeclType(NullDerefDecl);
+    TypeSourceInfo* TSI = Context->getTrivialTypeSourceInfo(NullDerefDeclTy, 
+                                                            SourceLocation());
+    ExprResult ConstructorCall
+      = m_Sema->BuildCXXTypeConstructExpr(TSI,*Loc, MultiExprArg(args, 2),*Loc);
 
-    ExprResult Throw
-      = m_Sema->ActOnCXXThrow(S, *Loc, Constructor.get());
+    ExprResult Throw = m_Sema->ActOnCXXThrow(S, *Loc, ConstructorCall.take());
     return Throw.get();
   }
 
