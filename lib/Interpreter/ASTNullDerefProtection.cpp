@@ -48,6 +48,62 @@ namespace cling {
     return false;
   }
 
+  Expr* ASTNullDerefProtection::InsertThrow(SourceLocation* Loc, Expr* Arg) {
+    ASTContext* Context = &m_Sema->getASTContext();
+    Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
+    //copied from DynamicLookup.cpp
+    NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
+    NamespaceDecl* clingRuntimeNSD
+      = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
+
+    // Find and set up "NullDerefException"
+    DeclarationName Name
+      = &Context->Idents.get("NullDerefException");
+
+    LookupResult R(*m_Sema, Name, SourceLocation(),
+      Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+
+    m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
+    CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
+
+    CXXConstructorDecl* CD;
+    for (CXXRecordDecl::ctor_iterator I = NullDerefDecl->ctor_begin(),
+      E = NullDerefDecl->ctor_end(); I != E; ++I) {
+      if (!I->isImplicit()) {
+        CD = dyn_cast<CXXConstructorDecl>(*I);
+        break;
+      }
+    }
+
+    // Lookup Sema type
+    CXXRecordDecl* SemaRD
+      = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Sema",
+      utils::Lookup::Namespace(m_Sema, "clang")));
+
+    QualType SemaRDTy = Context->getTypeDeclType(SemaRD);
+    Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema, SemaRDTy,
+      (uint64_t)m_Sema);
+
+    // Lookup Expr type
+    CXXRecordDecl* ExprRD
+      = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Expr",
+      utils::Lookup::Namespace(m_Sema, "clang")));
+
+    QualType ExprRDTy = Context->getTypeDeclType(ExprRD);
+    Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ExprRDTy,
+      (uint64_t)Arg);
+
+    Expr *args[] = {VoidSemaArg, VoidExprArg};
+    QualType QTy = Context->getTypeDeclType(NullDerefDecl);
+    ExprResult Constructor = m_Sema->BuildCXXConstructExpr(*Loc, QTy, CD,
+      MultiExprArg(args, 2), false, false, false,
+      CXXConstructExpr::CK_Complete, Arg->getSourceRange());
+
+    ExprResult Throw
+      = m_Sema->ActOnCXXThrow(S, *Loc, Constructor.get());
+    return Throw.get();
+  }
+
   void ASTNullDerefProtection::Transform() {
 
     FunctionDecl* FD = getTransaction()->getWrapperFD();
@@ -66,103 +122,111 @@ namespace cling {
     for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
          I != EI; ++I) {
       CallExpr* CE = dyn_cast<CallExpr>(*I);
-      if (!CE) {
-        Stmts.push_back(*I);
-        continue;
-      }
-      if (FunctionDecl* FDecl = CE->getDirectCallee()) {
-        if(FDecl && isDeclCandidate(FDecl)) {
-          SourceLocation CallLoc = CE->getLocStart();
-          decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
-          const std::bitset<32>& ArgIndexs = it->second;
-          Sema::ContextRAII pushedDC(*m_Sema, FDecl);
-          for (int index = 0; index < 32; ++index) {
-            if (!ArgIndexs.test(index)) continue;
+      if (CE) {
+        if (FunctionDecl* FDecl = CE->getDirectCallee()) {
+          if(FDecl && isDeclCandidate(FDecl)) {
+            SourceLocation CallLoc = CE->getLocStart();
+            decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
+            const std::bitset<32>& ArgIndexs = it->second;
+            Sema::ContextRAII pushedDC(*m_Sema, FDecl);
+            for (int index = 0; index < 32; ++index) {
+              if (!ArgIndexs.test(index)) continue;
 
-            // Get the argument with the nonnull attribute.
-            Expr* Arg = CE->getArg(index);
-
-            //copied from DynamicLookup.cpp
-            NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
-            NamespaceDecl* clingRuntimeNSD
-              = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
-
-            // Find and set up "NullDerefException"
-            DeclarationName Name
-              = &Context->Idents.get("NullDerefException");
-
-            LookupResult R(*m_Sema, Name, SourceLocation(),
-              Sema::LookupOrdinaryName, Sema::ForRedeclaration);
-            m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
-            CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
-
-            CXXConstructorDecl* CD;
-            for (CXXRecordDecl::ctor_iterator I = NullDerefDecl->ctor_begin(),
-               E = NullDerefDecl->ctor_end(); I != E; ++I) {
-               if (!I->isImplicit()) {
-                 CD = dyn_cast<CXXConstructorDecl>(*I);
-                 break;
-               }
-            }
-
-            // Lookup Sema type
-            CXXRecordDecl* SemaRD
-              = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Sema",
-                utils::Lookup::Namespace(m_Sema, "clang")));
-
-            QualType SemaRDTy = Context->getTypeDeclType(SemaRD);
-            Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
-              SemaRDTy, (uint64_t)m_Sema);
-
-            // Lookup Expr type
-            CXXRecordDecl* ExprRD
-              = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Expr",
-                utils::Lookup::Namespace(m_Sema, "clang")));
-
-            QualType ExprRDTy = Context->getTypeDeclType(ExprRD);
-            Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
-              ExprRDTy, (uint64_t)Arg);
-
-            Expr *args[] = {VoidSemaArg, VoidExprArg};
-            QualType QTy = Context->getTypeDeclType(NullDerefDecl);
-            ExprResult Constructor = m_Sema->BuildCXXConstructExpr(CallLoc,
-               QTy, CD, MultiExprArg(args, 2), false, false, false,
-               CXXConstructExpr::CK_Complete, Arg->getSourceRange());
-
-            ExprResult Throw
-              = m_Sema->ActOnCXXThrow(S, CallLoc, Constructor.get());
-
-            // Check whether we can get the argument'value. If the argument is
-            // null, throw an exception direclty. If the argument is not null 
-            // then ignore this argument and continue to deal with the next
-            // argument with the nonnull attribute.
-            bool Result = false;
-            if (Arg->EvaluateAsBooleanCondition(Result, *Context)) {
-              if(!Result) {
-                Stmts.push_back(Throw.get());
+              // Get the argument with the nonnull attribute.
+              Expr* Arg = CE->getArg(index);
+              Expr* Throw = InsertThrow(&CallLoc, Arg);
+              // Check whether we can get the argument'value. If the argument is
+              // null, throw an exception direclty. If the argument is not null
+              // then ignore this argument and continue to deal with the next
+              // argument with the nonnull attribute.
+              bool Result = false;
+              if (Arg->EvaluateAsBooleanCondition(Result, *Context)) {
+                if(!Result) {
+                  Stmts.push_back(Throw);
+                }
+                continue;
               }
-              continue;
+              // The argument's value cannot be decided, so we add a UnaryOp
+              // operation to check its value at runtime.
+              DeclRefExpr* DRE
+                = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
+              if (!DRE) continue;
+              ExprResult ER
+                = m_Sema->Sema::ActOnUnaryOp(S, CallLoc, tok::exclaim, DRE);
+
+              Decl* varDecl = 0;
+              Stmt* varStmt = 0;
+
+              Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
+
+              StmtResult IfStmt = m_Sema->ActOnIfStmt(CallLoc, FullCond, varDecl,
+                                                 Throw, CallLoc, varStmt);
+              Stmts.push_back(IfStmt.get());
             }
-            // The argument's value cannot be decided, so we add a UnaryOp
-            // operation to check its value at runtime.
-            DeclRefExpr* DRE
-              = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
-            if (!DRE) continue;
-            ExprResult ER
-              = m_Sema->Sema::ActOnUnaryOp(S, CallLoc, tok::exclaim, DRE);
+          }
+        }
+        //Stmts.push_back(CE);
+      }
+      else {
+        if (BinaryOperator* BinOp = dyn_cast<BinaryOperator>(*I)) {
+          SourceLocation SL = BinOp->getLocStart();
+          Expr* LHS = BinOp->getLHS()->IgnoreImpCasts();
+          Expr* RHS = BinOp->getRHS()->IgnoreImpCasts();
+          UnaryOperator* LUO = dyn_cast<UnaryOperator>(LHS);
+          UnaryOperator* RUO = dyn_cast<UnaryOperator>(RHS);
+          if (LUO  && LUO->getOpcode() == UO_Deref) {
+            Expr* Op = dyn_cast<DeclRefExpr>(LUO->getSubExpr()->IgnoreImpCasts());
+            if (Op) {
+              bool Result = false;
+              if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
+                if(!Result) {
+                  Expr* Throw = InsertThrow(&SL, Op);
+                  Stmts.push_back(Throw);
+                }
+              }
+              else {
+                Expr* Throw = InsertThrow(&SL, Op);
+                ExprResult ER
+                 = m_Sema->Sema::ActOnUnaryOp(S, SL, tok::exclaim, Op);
 
-            Decl* varDecl = 0;
-            Stmt* varStmt = 0;
+                Decl* varDecl = 0;
+                Stmt* varStmt = 0;
 
-            Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
+                Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
+                StmtResult IfStmt = m_Sema->ActOnIfStmt(SL, FullCond, varDecl,
+                                                 Throw, SL, varStmt);
+                Stmts.push_back(IfStmt.get());
+              }
+            }
+          }
+          if (RUO  && RUO->getOpcode() == UO_Deref) {
+            Expr* Op = dyn_cast<DeclRefExpr>(RUO->getSubExpr()->IgnoreImpCasts());
+            if (Op) {
+              bool Result = false;
+              if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
+                if(!Result) {
+                  Expr* Throw = InsertThrow(&SL, Op);
+                  Stmts.push_back(Throw);
+                }
+              }
+              else {
+                Expr* Throw = InsertThrow(&SL, Op);
+                ExprResult ER
+                 = m_Sema->Sema::ActOnUnaryOp(S, SL, tok::exclaim, Op);
 
-            StmtResult IfStmt = m_Sema->ActOnIfStmt(CallLoc, FullCond, varDecl,
-                                                 Throw.get(), CallLoc, varStmt);
-            Stmts.push_back(IfStmt.get());
+                Decl* varDecl = 0;
+                Stmt* varStmt = 0;
+
+                Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
+                StmtResult IfStmt = m_Sema->ActOnIfStmt(SL, FullCond, varDecl,
+                                                 Throw, SL, varStmt);
+                Stmts.push_back(IfStmt.get());
+              }
+            }
           }
         }
       }
-      Stmts.push_back(CE);
+      Stmts.push_back(*I);
     }
     llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
     CompoundStmt* CSBody = new (*Context)CompoundStmt(*Context, StmtsRef,

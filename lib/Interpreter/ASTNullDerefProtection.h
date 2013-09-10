@@ -18,6 +18,7 @@ namespace clang {
   class Sema;
   class FunctionDecl;
   class CallExpr;
+  class Expr;
 }
 
 namespace llvm {
@@ -41,7 +42,8 @@ namespace cling {
       ASTNullDerefProtection(clang::Sema* S);
 
       virtual ~ASTNullDerefProtection();
-
+      clang::Expr* InsertThrow(clang::SourceLocation* Loc,
+                               clang::Expr* Arg);
       virtual void Transform();
   };
 

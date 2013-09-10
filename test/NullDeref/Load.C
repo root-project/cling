@@ -2,7 +2,7 @@
 //This file checks a pointer load operation for null prt dereference.
 int *p;
 int x;
-x = *p; // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+x = *p; // expected-warning {{null passed to a callee which requires a non-null argument}}
 
 extern "C" int printf(const char* fmt, ...);
 class MyClass {
