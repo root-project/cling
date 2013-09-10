@@ -34,7 +34,6 @@ namespace cling {
 
       virtual const char* what() const throw();
       void diagnose() const throw();
-
     };
   } // end namespace runtime
 } // end namespace cling
