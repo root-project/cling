@@ -16,7 +16,7 @@ namespace clang {
 
 namespace cling {
 
-  class ASTNullDerefProtection : public TransactionTransformer {
+  class NullDerefProtectionTransformer : public TransactionTransformer {
 
    
     public:
@@ -24,9 +24,9 @@ namespace cling {
       ///
       ///\param[in] S - The semantic analysis object.
       ///
-      ASTNullDerefProtection(clang::Sema* S);
+      NullDerefProtectionTransformer(clang::Sema* S);
 
-      virtual ~ASTNullDerefProtection();
+      virtual ~NullDerefProtectionTransformer();
       virtual void Transform();
   };
 

@@ -7,7 +7,6 @@
 #include "IncrementalParser.h"
 #include "ASTDumper.h"
 #include "ASTNodeEraser.h"
-#include "ASTNullDerefProtection.h"
 #include "AutoSynthesizer.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
@@ -79,11 +78,10 @@ namespace cling {
     m_ASTTransformers.push_back(new ASTDumper());
     m_ASTTransformers.push_back(new DeclExtractor(TheSema));
     m_ASTTransformers.push_back(new ReturnSynthesizer(TheSema));
-    m_ASTTransformers.push_back(new ASTNullDerefProtection(TheSema));
+    m_ASTTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
     
     // Register the IR Transformers
     m_IRTransformers.push_back(new IRDumper());
-    //m_IRTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
   }
 
   void IncrementalParser::Initialize() {

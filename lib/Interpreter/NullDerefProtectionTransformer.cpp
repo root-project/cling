@@ -5,7 +5,7 @@
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
 //------------------------------------------------------------------------------
 
-#include "ASTNullDerefProtection.h"
+#include "NullDerefProtectionTransformer.h"
 
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
@@ -23,11 +23,11 @@
 using namespace clang;
 
 namespace cling {
-  ASTNullDerefProtection::ASTNullDerefProtection(clang::Sema* S)
+  NullDerefProtectionTransformer::NullDerefProtectionTransformer(clang::Sema* S)
     : TransactionTransformer(S) {
   }
 
-  ASTNullDerefProtection::~ASTNullDerefProtection()
+  NullDerefProtectionTransformer::~NullDerefProtectionTransformer()
   { }
 
   // Copied from clad - the clang/opencl autodiff project
@@ -283,7 +283,7 @@ namespace cling {
     }
   };
 
-  void ASTNullDerefProtection::Transform() {
+  void NullDerefProtectionTransformer::Transform() {
     FunctionDecl* FD = getTransaction()->getWrapperFD();
     if (!FD)
       return;
