@@ -111,7 +111,12 @@ namespace cling {
         e.diagnose();
       }
       catch(runtime::InterpreterException& e) {
-        llvm::errs() << e.what();
+        llvm::errs() << ">>> Caught an interpreter exception!\n"
+                     << ">>> " << e.what() << '\n';
+      }
+      catch(std::exception& e) {
+        llvm::errs() << ">>> Caught a std::exception!\n"
+                     << ">>> " << e.what() << '\n';
       }
       catch(...) {
         llvm::errs() << "Exception occurred. Recovering...\n";
