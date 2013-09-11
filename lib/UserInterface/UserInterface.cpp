@@ -37,7 +37,7 @@
 #endif
 
 namespace {
-  // Handle fatal llvm errors by throwing an exception..
+  // Handle fatal llvm errors by throwing an exception.
   // Yes, throwing exceptions in error handlers is bad.
   // Doing nothing is pretty terrible, too.
   void exceptionErrorHandler(void * /*user_data*/,
