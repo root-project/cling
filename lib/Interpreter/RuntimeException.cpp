@@ -25,7 +25,7 @@ namespace cling {
     const char* NullDerefException::what() const throw() {
       return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
     }
-    
+
     void NullDerefException::diagnose() const throw() {
       m_Sema->Diag(m_Arg->getLocStart(), clang::diag::warn_null_arg)
         << m_Arg->getSourceRange();
