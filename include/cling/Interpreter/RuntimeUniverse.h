@@ -96,6 +96,13 @@ extern "C" {
     return cling__runtime__internal__local_cxa_atexit(func, arg, dso,
                                                  (void*)cling::runtime::gCling);
   }
+
+  ///\Brief a function that throws NullDerefException. This allows to 'hide' the
+  /// definition of the exceptions from the RuntimeUniverse and allows us to 
+  /// run cling in -no-rtti mode. 
+  /// 
+  void cling__runtime__internal__throwNullDerefException();
+
 }
 #endif // __cplusplus
 

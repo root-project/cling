@@ -78,12 +78,21 @@ namespace {
 
 
 // "Declared" to the JIT in RuntimeUniverse.h
-extern "C" 
-int cling__runtime__internal__local_cxa_atexit(void (*func) (void*), void* arg,
-                                               void* dso,
-                                               void* interp) {
-   return ((cling::Interpreter*)interp)->CXAAtExit(func, arg, dso);
+extern "C" {
+  int cling__runtime__internal__local_cxa_atexit(void (*func) (void*), void* arg,
+                                                 void* dso,
+                                                 void* interp) {
+    return ((cling::Interpreter*)interp)->CXAAtExit(func, arg, dso);
+  }
+  void cling__runtime__internal__throwNullDerefException(void* Sema, 
+                                                         void* Expr) {
+    clang::Sema* S = (clang::Sema*)Sema;
+    clang::Expr* E = (clang::Expr*)Expr;
+    throw cling::runtime::NullDerefException(S, E);
+  }
 }
+
+
 
 namespace cling {
 #if (!_WIN32)
