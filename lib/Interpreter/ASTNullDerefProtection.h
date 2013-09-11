@@ -9,32 +9,16 @@
 #define CLING_AST_NULL_DEREF_PROTECTION_H
 
 #include "TransactionTransformer.h"
-#include "clang/AST/Decl.h"
-
-#include <bitset>
-#include <map>
 
 namespace clang {
-  class CallExpr;
-  class Expr;
-  class FunctionDecl;
   class Sema;
-  class Stmt;
-}
-
-namespace llvm {
-  class raw_ostream;
 }
 
 namespace cling {
-  typedef std::map<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
 
   class ASTNullDerefProtection : public TransactionTransformer {
 
-    private:
-      std::map<clang::FunctionDecl*, std::bitset<32> > m_NonNullArgIndexs;
-      bool isDeclCandidate(clang::FunctionDecl* FDecl);
-
+   
     public:
       ///\ brief Constructs the NullDeref AST Transformer.
       ///
@@ -43,8 +27,6 @@ namespace cling {
       ASTNullDerefProtection(clang::Sema* S);
 
       virtual ~ASTNullDerefProtection();
-      clang::Stmt* SynthesizeCheck(clang::SourceLocation Loc,
-                                   clang::Expr* Arg);
       virtual void Transform();
   };
 

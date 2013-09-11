@@ -13,8 +13,12 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/Mangle.h"
+#include "clang/AST/StmtVisitor.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Lookup.h"
+
+#include <bitset>
+#include <map>
 
 using namespace clang;
 
@@ -26,99 +30,216 @@ namespace cling {
   ASTNullDerefProtection::~ASTNullDerefProtection()
   { }
 
-  bool ASTNullDerefProtection::isDeclCandidate(FunctionDecl * FDecl) {
-    if(m_NonNullArgIndexs.count(FDecl)) return true;
+  // Copied from clad - the clang/opencl autodiff project
+  class NodeContext {
+  public:
+  private:
+    typedef llvm::SmallVector<clang::Stmt*, 2> Statements;
+    Statements m_Stmts;
+  private:
+    NodeContext() {};
+  public:
+    NodeContext(clang::Stmt* s) { m_Stmts.push_back(s); }
+    NodeContext(clang::Stmt* s0, clang::Stmt* s1) {
+      m_Stmts.push_back(s0);
+      m_Stmts.push_back(s1);
+    }
+    
+    //NodeContext(llvm::ArrayRef) : m_Stmt(s) {}
 
-    std::bitset<32> ArgIndexs;
-    for (specific_attr_iterator<NonNullAttr>
-           I = FDecl->specific_attr_begin<NonNullAttr>(),
-           E = FDecl->specific_attr_end<NonNullAttr>(); I != E; ++I) {
-
-       NonNullAttr *NonNull = *I;
-       for (NonNullAttr::args_iterator i = NonNull->args_begin(),
-              e = NonNull->args_end(); i != e; ++i) {
-          ArgIndexs.set(*i);
-       }
+    bool isSingleStmt() const { return m_Stmts.size() == 1; }
+    
+    clang::Stmt* getStmt() {
+      assert(isSingleStmt() && "Cannot get multiple stmts.");
+      return m_Stmts.front();
+    }
+    const clang::Stmt* getStmt() const { return getStmt(); }
+    const Statements& getStmts() const {
+      return m_Stmts;
     }
 
-    if (ArgIndexs.any()) {
-      m_NonNullArgIndexs.insert(std::make_pair(FDecl, ArgIndexs));
-      return true;
+    CompoundStmt* wrapInCompoundStmt(clang::ASTContext& C) const {
+      assert(!isSingleStmt() && "Must be more than 1");
+      llvm::ArrayRef<Stmt*> stmts
+        = llvm::makeArrayRef(m_Stmts.data(), m_Stmts.size());
+      clang::SourceLocation noLoc;
+      return new (C) clang::CompoundStmt(C, stmts, noLoc, noLoc);
     }
-    return false;
-  }
+    
+    clang::Expr* getExpr() {
+      assert(llvm::isa<clang::Expr>(getStmt()) && "Must be an expression.");
+      return llvm::cast<clang::Expr>(getStmt());
+    }
+    const clang::Expr* getExpr() const {
+      return getExpr();
+    }
 
+    void prepend(clang::Stmt* S) {
+      m_Stmts.insert(m_Stmts.begin(), S);
+    }
 
-  Stmt* ASTNullDerefProtection::SynthesizeCheck(SourceLocation Loc, Expr* Arg ){
-    ASTContext& Context = m_Sema->getASTContext();
-    Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
-    //copied from DynamicLookup.cpp
-    NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
-    NamespaceDecl* clingRuntimeNSD
-      = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
+    void append(clang::Stmt* S) {
+      m_Stmts.push_back(S);
+    }
+  };
 
-    // Find and set up "NullDerefException"
-    DeclarationName Name
-      = &Context.Idents.get("NullDerefException");
+  class IfStmtInjector : public StmtVisitor<IfStmtInjector, NodeContext> {
+  private:
+    Sema& m_Sema;
+    typedef std::map<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
+    std::map<clang::FunctionDecl*, std::bitset<32> > m_NonNullArgIndexs;
 
-    LookupResult R(*m_Sema, Name, SourceLocation(),
-      Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+  public:
+    IfStmtInjector(Sema& S) : m_Sema(S) {} 
+    CompoundStmt* Inject(CompoundStmt* CS) {
+      return cast<CompoundStmt>(VisitStmt(CS).getStmt());
+    }
+    NodeContext VisitStmt(Stmt* S) {
+      return NodeContext(S);
+    }
 
-    m_Sema->LookupQualifiedName(R, clingRuntimeNSD);
-    CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
-
-    // Lookup Sema type
-    CXXRecordDecl* SemaRD
-      = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Sema",
-      utils::Lookup::Namespace(m_Sema, "clang")));
-
-    QualType SemaRDTy = Context.getTypeDeclType(SemaRD);
-    Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema, SemaRDTy,
-      (uint64_t)m_Sema);
-
-    // Lookup Expr type
-    CXXRecordDecl* ExprRD
-      = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Expr",
-      utils::Lookup::Namespace(m_Sema, "clang")));
-
-    QualType ExprRDTy = Context.getTypeDeclType(ExprRD);
-    Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ExprRDTy,
-      (uint64_t)Arg);
-
-    Expr *args[] = {VoidSemaArg, VoidExprArg};
-    QualType NullDerefDeclTy = Context.getTypeDeclType(NullDerefDecl);
-    TypeSourceInfo* TSI = Context.getTrivialTypeSourceInfo(NullDerefDeclTy, 
-                                                           SourceLocation());
-    ExprResult ConstructorCall
-      = m_Sema->BuildCXXTypeConstructExpr(TSI,Loc, MultiExprArg(args, 2),Loc);
-
-    Expr* Throw = m_Sema->ActOnCXXThrow(S, Loc, ConstructorCall.take()).take();
-
-    // Check whether we can get the argument'value. If the argument is
-    // null, throw an exception direclty. If the argument is not null
-    // then ignore this argument and continue to deal with the next
-    // argument with the nonnull attribute.
-    bool Result = false;
-    if (Arg->EvaluateAsBooleanCondition(Result, Context)) {
-      if(!Result) {
-        return Throw;
+    NodeContext VisitCompoundStmt(CompoundStmt* CS) {
+      ASTContext& C = m_Sema.getASTContext();
+      llvm::SmallVector<Stmt*, 16> stmts;
+      for (CompoundStmt::body_iterator I = CS->body_begin(), E = CS->body_end();
+           I != E; ++I) {
+        NodeContext nc = Visit(*I);
+        if (nc.isSingleStmt())
+          stmts.push_back(nc.getStmt());
+        else
+          stmts.append(nc.getStmts().begin(), nc.getStmts().end());
       }
-      return Arg;
+
+      llvm::ArrayRef<Stmt*> stmtsRef(stmts.data(), stmts.size());
+      return new (C) CompoundStmt(C, stmtsRef, CS->getLBracLoc(), 
+                                  CS->getRBracLoc());
     }
-    // The argument's value cannot be decided, so we add a UnaryOp
-    // operation to check its value at runtime.
-    DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
-    assert(DRE && "No declref expr?");
-    ExprResult ER = m_Sema->ActOnUnaryOp(S, Loc, tok::exclaim, DRE);
 
-    Decl* varDecl = 0;
-    Stmt* varStmt = 0;
-    Sema::FullExprArg FullCond(m_Sema->MakeFullExpr(ER.take()));
-    StmtResult IfStmt = m_Sema->ActOnIfStmt(Loc, FullCond, varDecl,
-                                            Throw, Loc, varStmt);
-    return IfStmt.take();
-  }
+    NodeContext VisitUnaryOperator(UnaryOperator* UnOp) {
+      NodeContext result(UnOp);
+      if (UnOp->getOpcode() == UO_Deref) {
+        result.prepend(SynthesizeCheck(UnOp->getLocStart(), 
+                                       UnOp->getSubExpr()));
+      }
+      return result;
+    }
 
+    NodeContext VisitMemberExpr(MemberExpr* ME) {
+      
+    }
+
+    NodeContext VisitCallExpr(CallExpr* CE) {
+      FunctionDecl* FDecl = CE->getDirectCallee();
+      NodeContext result(CE);
+      if (FDecl && isDeclCandidate(FDecl)) {
+        SourceLocation CallLoc = CE->getLocStart();
+        decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
+        const std::bitset<32>& ArgIndexs = it->second;
+        Sema::ContextRAII pushedDC(m_Sema, FDecl);
+        for (int index = 0; index < 32; ++index) {
+          if (ArgIndexs.test(index)) {
+            // Get the argument with the nonnull attribute.
+            Expr* Arg = CE->getArg(index);
+            result.prepend(SynthesizeCheck(Arg->getLocStart(), Arg));
+          }
+        }
+      }
+    }
+
+  private:
+    Stmt* SynthesizeCheck(SourceLocation Loc, Expr* Arg ) {
+      ASTContext& Context = m_Sema.getASTContext();
+      Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
+      //copied from DynamicLookup.cpp
+      NamespaceDecl* NSD = utils::Lookup::Namespace(&m_Sema, "cling");
+      NamespaceDecl* clingRuntimeNSD
+        = utils::Lookup::Namespace(&m_Sema, "runtime", NSD);
+
+      // Find and set up "NullDerefException"
+      DeclarationName Name
+        = &Context.Idents.get("NullDerefException");
+
+      LookupResult R(m_Sema, Name, SourceLocation(),
+                     Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+
+      m_Sema.LookupQualifiedName(R, clingRuntimeNSD);
+      CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
+
+      // Lookup Sema type
+      CXXRecordDecl* SemaRD
+        = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(&m_Sema, "Sema",
+                                   utils::Lookup::Namespace(&m_Sema, "clang")));
+
+      QualType SemaRDTy = Context.getTypeDeclType(SemaRD);
+      Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,SemaRDTy,
+                                                             (uint64_t)&m_Sema);
+
+      // Lookup Expr type
+      CXXRecordDecl* ExprRD
+        = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(&m_Sema, "Expr",
+                                   utils::Lookup::Namespace(&m_Sema, "clang")));
+
+      QualType ExprRDTy = Context.getTypeDeclType(ExprRD);
+      Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,ExprRDTy,
+                                                               (uint64_t)Arg);
+
+      Expr *args[] = {VoidSemaArg, VoidExprArg};
+      QualType NullDerefDeclTy = Context.getTypeDeclType(NullDerefDecl);
+      TypeSourceInfo* TSI = Context.getTrivialTypeSourceInfo(NullDerefDeclTy, 
+                                                             SourceLocation());
+      ExprResult ConstructorCall
+        = m_Sema.BuildCXXTypeConstructExpr(TSI,Loc, MultiExprArg(args, 2),Loc);
+
+      Expr* Throw = m_Sema.ActOnCXXThrow(S, Loc, ConstructorCall.take()).take();
+
+      // Check whether we can get the argument'value. If the argument is
+      // null, throw an exception direclty. If the argument is not null
+      // then ignore this argument and continue to deal with the next
+      // argument with the nonnull attribute.
+      bool Result = false;
+      if (Arg->EvaluateAsBooleanCondition(Result, Context)) {
+        if(!Result) {
+          return Throw;
+        }
+        return Arg;
+      }
+      // The argument's value cannot be decided, so we add a UnaryOp
+      // operation to check its value at runtime.
+      DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
+      assert(DRE && "No declref expr?");
+      ExprResult ER = m_Sema.ActOnUnaryOp(S, Loc, tok::exclaim, DRE);
+
+      Decl* varDecl = 0;
+      Stmt* varStmt = 0;
+      Sema::FullExprArg FullCond(m_Sema.MakeFullExpr(ER.take()));
+      StmtResult IfStmt = m_Sema.ActOnIfStmt(Loc, FullCond, varDecl,
+                                             Throw, Loc, varStmt);
+      return IfStmt.take();
+    }
+
+    bool isDeclCandidate(FunctionDecl * FDecl) {
+      if (m_NonNullArgIndexs.count(FDecl))
+        return true;
+
+      std::bitset<32> ArgIndexs;
+      for (specific_attr_iterator<NonNullAttr>
+             I = FDecl->specific_attr_begin<NonNullAttr>(),
+             E = FDecl->specific_attr_end<NonNullAttr>(); I != E; ++I) {
+
+        NonNullAttr *NonNull = *I;
+        for (NonNullAttr::args_iterator i = NonNull->args_begin(),
+               e = NonNull->args_end(); i != e; ++i) {
+          ArgIndexs.set(*i);
+        }
+      }
+
+      if (ArgIndexs.any()) {
+        m_NonNullArgIndexs.insert(std::make_pair(FDecl, ArgIndexs));
+        return true;
+      }
+      return false;
+    }
+  };
 
   void ASTNullDerefProtection::Transform() {
 
@@ -128,79 +249,82 @@ namespace cling {
 
     CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
     assert(CS && "Function body not a CompundStmt?");
+    IfStmtInjector injector((*m_Sema));
+    FD->setBody(injector.Inject(CS));
 
-    Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
-    ASTContext* Context = &m_Sema->getASTContext();
-    DeclContext* DC = FD->getTranslationUnitDecl();
-    llvm::SmallVector<Stmt*, 4> Stmts;
-    SourceLocation Loc = FD->getBody()->getLocStart();
+    // Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
+    // ASTContext* Context = &m_Sema->getASTContext();
+    // DeclContext* DC = FD->getTranslationUnitDecl();
+    // llvm::SmallVector<Stmt*, 4> Stmts;
+    // SourceLocation Loc = FD->getBody()->getLocStart();
 
-    for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
-         I != EI; ++I) {
-      CallExpr* CE = dyn_cast<CallExpr>(*I);
-      if (CE) {
-        if (FunctionDecl* FDecl = CE->getDirectCallee()) {
-          if(FDecl && isDeclCandidate(FDecl)) {
-            SourceLocation CallLoc = CE->getLocStart();
-            decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
-            const std::bitset<32>& ArgIndexs = it->second;
-            Sema::ContextRAII pushedDC(*m_Sema, FDecl);
-            for (int index = 0; index < 32; ++index) {
-              if (!ArgIndexs.test(index)) continue;
+    // for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
+    //      I != EI; ++I) {
+    //   CallExpr* CE = dyn_cast<CallExpr>(*I);
+    //   if (CE) {
+    //     if (FunctionDecl* FDecl = CE->getDirectCallee()) {
+    //       if(FDecl && isDeclCandidate(FDecl)) {
+    //         SourceLocation CallLoc = CE->getLocStart();
+    //         decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
+    //         const std::bitset<32>& ArgIndexs = it->second;
+    //         Sema::ContextRAII pushedDC(*m_Sema, FDecl);
+    //         for (int index = 0; index < 32; ++index) {
+    //           if (!ArgIndexs.test(index)) continue;
 
-              // Get the argument with the nonnull attribute.
-              Expr* Arg = CE->getArg(index);
-              
-              Stmts.push_back(SynthesizeCheck(CallLoc, Arg));
-            }
-          }
-        }
-        //Stmts.push_back(CE);
-      }
-      else {
-        if (BinaryOperator* BinOp = dyn_cast<BinaryOperator>(*I)) {
-          SourceLocation SL = BinOp->getLocStart();
-          Expr* LHS = BinOp->getLHS()->IgnoreImpCasts();
-          Expr* RHS = BinOp->getRHS()->IgnoreImpCasts();
-          UnaryOperator* LUO = dyn_cast<UnaryOperator>(LHS);
-          UnaryOperator* RUO = dyn_cast<UnaryOperator>(RHS);
-          if (LUO  && LUO->getOpcode() == UO_Deref) {
-            Expr* Op = dyn_cast<DeclRefExpr>(LUO->getSubExpr()->IgnoreImpCasts());
-            if (Op) {
-              bool Result = false;
-              if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
-                if(!Result) {
-                  Stmts.push_back(SynthesizeCheck(SL, Op));
-                }
-              }
-              else {
-                Stmts.push_back(SynthesizeCheck(SL, Op));
-              }
-            }
-          }
-          if (RUO  && RUO->getOpcode() == UO_Deref) {
-            Expr* Op = dyn_cast<DeclRefExpr>(RUO->getSubExpr()->IgnoreImpCasts());
-            if (Op) {
-              bool Result = false;
-              if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
-                if(!Result) {
-                  Stmts.push_back(SynthesizeCheck(SL, Op));
-                }
-              }
-              else {
-                Stmts.push_back(SynthesizeCheck(SL, Op));
-              }
-            }
-          }
-        }
-      }
-      Stmts.push_back(*I);
-    }
-    llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
-    CompoundStmt* CSBody = new (*Context)CompoundStmt(*Context, StmtsRef,
-                                                           Loc, Loc);
-    FD->setBody(CSBody);
-    DC->removeDecl(FD);
-    DC->addDecl(FD);
+    //           // Get the argument with the nonnull attribute.
+    //           Expr* Arg = CE->getArg(index);              
+    //           Stmts.push_back(SynthesizeCheck(CallLoc, Arg));
+    //         }
+    //       }
+    //     }
+    //     //Stmts.push_back(CE);
+    //   }
+    //   else {
+    //     if (BinaryOperator* BinOp = dyn_cast<BinaryOperator>(*I)) {
+    //       SourceLocation SL = BinOp->getLocStart();
+    //       Expr* LHS = BinOp->getLHS()->IgnoreImpCasts();
+    //       Expr* RHS = BinOp->getRHS()->IgnoreImpCasts();
+    //       UnaryOperator* LUO = dyn_cast<UnaryOperator>(LHS);
+    //       UnaryOperator* RUO = dyn_cast<UnaryOperator>(RHS);
+    //       if (LUO  && LUO->getOpcode() == UO_Deref) {
+    //         Expr* Op = dyn_cast<DeclRefExpr>(LUO->getSubExpr()->IgnoreImpCasts());
+    //         if (Op) {
+    //           bool Result = false;
+    //           if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
+    //             if(!Result) {
+    //               Expr* Throw = InsertThrow(&SL, Op);
+    //               Stmts.push_back(Throw);
+    //             }
+    //           }
+    //           else {
+    //             Stmts.push_back(SynthesizeCheck(SL, Op));
+    //           }
+    //         }
+    //       }
+    //       if (RUO  && RUO->getOpcode() == UO_Deref) {
+    //         Expr* Op = dyn_cast<DeclRefExpr>(RUO->getSubExpr()->IgnoreImpCasts());
+    //         if (Op) {
+    //           bool Result = false;
+    //           if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
+    //             if(!Result) {
+    //               Expr* Throw = InsertThrow(&SL, Op);
+    //               Stmts.push_back(Throw);
+    //             }
+    //           }
+    //           else {
+    //             Stmts.push_back(SynthesizeCheck(SL, Op));
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    //   Stmts.push_back(*I);
+    // }
+    // llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
+    // CompoundStmt* CSBody = new (*Context)CompoundStmt(*Context, StmtsRef,
+    //                                                        Loc, Loc);
+    // FD->setBody(CSBody);
+    // DC->removeDecl(FD);
+    // DC->addDecl(FD);
   }
 } // end namespace cling
