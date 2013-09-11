@@ -174,7 +174,6 @@ namespace cling {
       FunctionDecl* FDecl = CE->getDirectCallee();
       NodeContext result(CE);
       if (FDecl && isDeclCandidate(FDecl)) {
-        SourceLocation CallLoc = CE->getLocStart();
         decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
         const std::bitset<32>& ArgIndexs = it->second;
         Sema::ContextRAII pushedDC(m_Sema, FDecl);
