@@ -124,7 +124,8 @@ namespace cling {
       consumeAnyStringToken();
       if (getCurTok().is(tok::raw_ident)) {
         result = true;
-        m_Actions->actOnLCommand(llvm::sys::Path(getCurTok().getIdent()));
+        actionResult =
+          m_Actions->actOnLCommand(llvm::sys::Path(getCurTok().getIdent()));
         consumeToken();
         if (getCurTok().is(tok::comment)) {
           consumeAnyStringToken();
