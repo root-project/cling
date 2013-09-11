@@ -10,5 +10,5 @@ public:
   int a;
 };
 MyClass *m = 0;
-if (m->a) {  printf("MyClass's a=%d", m->a);} // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+if (m->a) {  printf("MyClass's a=%d", m->a);} // expected-warning {{null passed to a callee which requires a non-null argument}}
 .q

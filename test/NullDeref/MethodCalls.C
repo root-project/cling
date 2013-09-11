@@ -1,6 +1,7 @@
 // RUN: cat %s | %cling -Xclang -verify
 // This test verifies that we get nice warning if a method on null ptr object is
 // called.
+// XFAIL:*
 extern "C" int printf(const char* fmt, ...);
 class MyClass {
 private:

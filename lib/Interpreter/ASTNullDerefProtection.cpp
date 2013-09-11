@@ -44,8 +44,6 @@ namespace cling {
       m_Stmts.push_back(s0);
       m_Stmts.push_back(s1);
     }
-    
-    //NodeContext(llvm::ArrayRef) : m_Stmt(s) {}
 
     bool isSingleStmt() const { return m_Stmts.size() == 1; }
     
@@ -92,8 +90,10 @@ namespace cling {
   public:
     IfStmtInjector(Sema& S) : m_Sema(S) {} 
     CompoundStmt* Inject(CompoundStmt* CS) {
-      return cast<CompoundStmt>(VisitStmt(CS).getStmt());
+      NodeContext result = VisitCompoundStmt(CS);
+      return cast<CompoundStmt>(result.getStmt());
     }
+
     NodeContext VisitStmt(Stmt* S) {
       return NodeContext(S);
     }
@@ -111,8 +111,45 @@ namespace cling {
       }
 
       llvm::ArrayRef<Stmt*> stmtsRef(stmts.data(), stmts.size());
-      return new (C) CompoundStmt(C, stmtsRef, CS->getLBracLoc(), 
-                                  CS->getRBracLoc());
+      CompoundStmt* newCS = new (C) CompoundStmt(C, stmtsRef, 
+                                                 CS->getLBracLoc(), 
+                                                 CS->getRBracLoc());
+      return NodeContext(newCS);
+    }
+
+    NodeContext VisitIfStmt(IfStmt* If) {
+      NodeContext result(If);
+      // check the condition
+      NodeContext cond = Visit(If->getCond());
+      if (!cond.isSingleStmt())
+        result.prepend(cond.getStmts()[0]);
+      return result;
+    }
+
+    NodeContext VisitCastExpr(CastExpr* CE) {
+      NodeContext result = Visit(CE->getSubExpr());
+      return result;
+    }
+
+    NodeContext VisitBinaryOperator(BinaryOperator* BinOp) {
+      NodeContext result(BinOp);
+      
+      // Here we might get if(check) throw; binop rhs.
+      NodeContext rhs = Visit(BinOp->getRHS());
+      // Here we might get if(check) throw; binop lhs.
+      NodeContext lhs = Visit(BinOp->getLHS());
+
+      // Prepend those checks. It will become: 
+      // if(check_rhs) throw; if (check_lhs) throw; BinOp;
+      if (!rhs.isSingleStmt()) {
+        // FIXME:we need to loop from 0 to n-1
+        result.prepend(rhs.getStmts()[0]);
+      }
+      if (!lhs.isSingleStmt()) {
+        // FIXME:we need to loop from 0 to n-1
+        result.prepend(lhs.getStmts()[0]);
+      }
+      return result;
     }
 
     NodeContext VisitUnaryOperator(UnaryOperator* UnOp) {
@@ -125,7 +162,12 @@ namespace cling {
     }
 
     NodeContext VisitMemberExpr(MemberExpr* ME) {
-      
+      NodeContext result(ME);
+      if (ME->isArrow()) {        
+        result.prepend(SynthesizeCheck(ME->getLocStart(), 
+                                       ME->getBase()->IgnoreImplicit()));
+      }
+      return result;
     }
 
     NodeContext VisitCallExpr(CallExpr* CE) {
@@ -144,12 +186,13 @@ namespace cling {
           }
         }
       }
+      return result;
     }
 
   private:
     Stmt* SynthesizeCheck(SourceLocation Loc, Expr* Arg ) {
+      assert(Arg && "Cannot call with Arg=0");
       ASTContext& Context = m_Sema.getASTContext();
-      Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
       //copied from DynamicLookup.cpp
       NamespaceDecl* NSD = utils::Lookup::Namespace(&m_Sema, "cling");
       NamespaceDecl* clingRuntimeNSD
@@ -190,6 +233,7 @@ namespace cling {
       ExprResult ConstructorCall
         = m_Sema.BuildCXXTypeConstructExpr(TSI,Loc, MultiExprArg(args, 2),Loc);
 
+      Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
       Expr* Throw = m_Sema.ActOnCXXThrow(S, Loc, ConstructorCall.take()).take();
 
       // Check whether we can get the argument'value. If the argument is
@@ -205,9 +249,7 @@ namespace cling {
       }
       // The argument's value cannot be decided, so we add a UnaryOp
       // operation to check its value at runtime.
-      DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(Arg->IgnoreImpCasts());
-      assert(DRE && "No declref expr?");
-      ExprResult ER = m_Sema.ActOnUnaryOp(S, Loc, tok::exclaim, DRE);
+      ExprResult ER = m_Sema.ActOnUnaryOp(S, Loc, tok::exclaim, Arg);
 
       Decl* varDecl = 0;
       Stmt* varStmt = 0;
@@ -242,7 +284,6 @@ namespace cling {
   };
 
   void ASTNullDerefProtection::Transform() {
-
     FunctionDecl* FD = getTransaction()->getWrapperFD();
     if (!FD)
       return;
@@ -250,81 +291,7 @@ namespace cling {
     CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
     assert(CS && "Function body not a CompundStmt?");
     IfStmtInjector injector((*m_Sema));
-    FD->setBody(injector.Inject(CS));
-
-    // Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
-    // ASTContext* Context = &m_Sema->getASTContext();
-    // DeclContext* DC = FD->getTranslationUnitDecl();
-    // llvm::SmallVector<Stmt*, 4> Stmts;
-    // SourceLocation Loc = FD->getBody()->getLocStart();
-
-    // for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
-    //      I != EI; ++I) {
-    //   CallExpr* CE = dyn_cast<CallExpr>(*I);
-    //   if (CE) {
-    //     if (FunctionDecl* FDecl = CE->getDirectCallee()) {
-    //       if(FDecl && isDeclCandidate(FDecl)) {
-    //         SourceLocation CallLoc = CE->getLocStart();
-    //         decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
-    //         const std::bitset<32>& ArgIndexs = it->second;
-    //         Sema::ContextRAII pushedDC(*m_Sema, FDecl);
-    //         for (int index = 0; index < 32; ++index) {
-    //           if (!ArgIndexs.test(index)) continue;
-
-    //           // Get the argument with the nonnull attribute.
-    //           Expr* Arg = CE->getArg(index);              
-    //           Stmts.push_back(SynthesizeCheck(CallLoc, Arg));
-    //         }
-    //       }
-    //     }
-    //     //Stmts.push_back(CE);
-    //   }
-    //   else {
-    //     if (BinaryOperator* BinOp = dyn_cast<BinaryOperator>(*I)) {
-    //       SourceLocation SL = BinOp->getLocStart();
-    //       Expr* LHS = BinOp->getLHS()->IgnoreImpCasts();
-    //       Expr* RHS = BinOp->getRHS()->IgnoreImpCasts();
-    //       UnaryOperator* LUO = dyn_cast<UnaryOperator>(LHS);
-    //       UnaryOperator* RUO = dyn_cast<UnaryOperator>(RHS);
-    //       if (LUO  && LUO->getOpcode() == UO_Deref) {
-    //         Expr* Op = dyn_cast<DeclRefExpr>(LUO->getSubExpr()->IgnoreImpCasts());
-    //         if (Op) {
-    //           bool Result = false;
-    //           if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
-    //             if(!Result) {
-    //               Expr* Throw = InsertThrow(&SL, Op);
-    //               Stmts.push_back(Throw);
-    //             }
-    //           }
-    //           else {
-    //             Stmts.push_back(SynthesizeCheck(SL, Op));
-    //           }
-    //         }
-    //       }
-    //       if (RUO  && RUO->getOpcode() == UO_Deref) {
-    //         Expr* Op = dyn_cast<DeclRefExpr>(RUO->getSubExpr()->IgnoreImpCasts());
-    //         if (Op) {
-    //           bool Result = false;
-    //           if (Op->EvaluateAsBooleanCondition(Result, *Context)) {
-    //             if(!Result) {
-    //               Expr* Throw = InsertThrow(&SL, Op);
-    //               Stmts.push_back(Throw);
-    //             }
-    //           }
-    //           else {
-    //             Stmts.push_back(SynthesizeCheck(SL, Op));
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    //   Stmts.push_back(*I);
-    // }
-    // llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
-    // CompoundStmt* CSBody = new (*Context)CompoundStmt(*Context, StmtsRef,
-    //                                                        Loc, Loc);
-    // FD->setBody(CSBody);
-    // DC->removeDecl(FD);
-    // DC->addDecl(FD);
+    CompoundStmt* newCS = injector.Inject(CS);
+    FD->setBody(newCS);
   }
 } // end namespace cling
