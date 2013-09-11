@@ -84,12 +84,6 @@ extern "C" {
                                                  void* interp) {
     return ((cling::Interpreter*)interp)->CXAAtExit(func, arg, dso);
   }
-  void cling__runtime__internal__throwNullDerefException(void* Sema, 
-                                                         void* Expr) {
-    clang::Sema* S = (clang::Sema*)Sema;
-    clang::Expr* E = (clang::Expr*)Expr;
-    throw cling::runtime::NullDerefException(S, E);
-  }
 }
 
 

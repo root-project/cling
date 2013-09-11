@@ -189,24 +189,10 @@ namespace cling {
     }
 
   private:
-    Stmt* SynthesizeCheck(SourceLocation Loc, Expr* Arg ) {
+    Stmt* SynthesizeCheck(SourceLocation Loc, Expr* Arg) {
       assert(Arg && "Cannot call with Arg=0");
       ASTContext& Context = m_Sema.getASTContext();
       //copied from DynamicLookup.cpp
-      NamespaceDecl* NSD = utils::Lookup::Namespace(&m_Sema, "cling");
-      NamespaceDecl* clingRuntimeNSD
-        = utils::Lookup::Namespace(&m_Sema, "runtime", NSD);
-
-      // Find and set up "NullDerefException"
-      DeclarationName Name
-        = &Context.Idents.get("NullDerefException");
-
-      LookupResult R(m_Sema, Name, SourceLocation(),
-                     Sema::LookupOrdinaryName, Sema::ForRedeclaration);
-
-      m_Sema.LookupQualifiedName(R, clingRuntimeNSD);
-      CXXRecordDecl* NullDerefDecl = R.getAsSingle<CXXRecordDecl>();
-
       // Lookup Sema type
       CXXRecordDecl* SemaRD
         = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(&m_Sema, "Sema",
@@ -226,15 +212,23 @@ namespace cling {
                                                                (uint64_t)Arg);
 
       Expr *args[] = {VoidSemaArg, VoidExprArg};
-      QualType NullDerefDeclTy = Context.getTypeDeclType(NullDerefDecl);
-      TypeSourceInfo* TSI = Context.getTrivialTypeSourceInfo(NullDerefDeclTy, 
-                                                             SourceLocation());
-      ExprResult ConstructorCall
-        = m_Sema.BuildCXXTypeConstructExpr(TSI,Loc, MultiExprArg(args, 2),Loc);
 
       Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
-      Expr* Throw = m_Sema.ActOnCXXThrow(S, Loc, ConstructorCall.take()).take();
+      DeclarationName Name 
+        = &Context.Idents.get("cling__runtime__internal__throwNullDerefException");
 
+      SourceLocation noLoc;
+      LookupResult R(m_Sema, Name, noLoc, Sema::LookupOrdinaryName,
+                   Sema::ForRedeclaration);
+      m_Sema.LookupQualifiedName(R, Context.getTranslationUnitDecl());
+      assert(!R.empty() && "Cannot find valuePrinterInternal::Select(...)");
+
+      CXXScopeSpec CSS;
+      Expr* UnresolvedLookup
+        = m_Sema.BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+
+      Expr* call = m_Sema.ActOnCallExpr(S, UnresolvedLookup, noLoc,
+                                        args, noLoc).take();
       // Check whether we can get the argument'value. If the argument is
       // null, throw an exception direclty. If the argument is not null
       // then ignore this argument and continue to deal with the next
@@ -242,7 +236,7 @@ namespace cling {
       bool Result = false;
       if (Arg->EvaluateAsBooleanCondition(Result, Context)) {
         if(!Result) {
-          return Throw;
+          return call;
         }
         return Arg;
       }
@@ -254,7 +248,7 @@ namespace cling {
       Stmt* varStmt = 0;
       Sema::FullExprArg FullCond(m_Sema.MakeFullExpr(ER.take()));
       StmtResult IfStmt = m_Sema.ActOnIfStmt(Loc, FullCond, varDecl,
-                                             Throw, Loc, varStmt);
+                                             call, Loc, varStmt);
       return IfStmt.take();
     }
 

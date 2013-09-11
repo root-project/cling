@@ -11,6 +11,14 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 
+extern "C" {
+void cling__runtime__internal__throwNullDerefException(void* Sema, void* Expr) {
+  clang::Sema* S = (clang::Sema*)Sema;
+  clang::Expr* E = (clang::Expr*)Expr;
+  throw cling::runtime::NullDerefException(S, E);
+}
+}
+
 namespace cling {
   namespace runtime {
     const char* InterpreterException::what() const throw() {

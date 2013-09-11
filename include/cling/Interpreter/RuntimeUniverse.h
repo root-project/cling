@@ -101,7 +101,8 @@ extern "C" {
   /// definition of the exceptions from the RuntimeUniverse and allows us to 
   /// run cling in -no-rtti mode. 
   /// 
-  void cling__runtime__internal__throwNullDerefException();
+  void cling__runtime__internal__throwNullDerefException(void* Sema, 
+                                                         void* Expr);
 
 }
 #endif // __cplusplus
