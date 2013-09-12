@@ -26,3 +26,4 @@ CPPFLAGS += -I$(PROJ_SRC_DIR)/../../include -I$(PROJ_SRC_DIR)/../../../clang/inc
 
 include $(CLING_LEVEL)/Makefile
 
+$(ObjRootDir)/RuntimeException.o: CXX.Flags := $(subst -fno-exceptions,,$(CXX.Flags))
