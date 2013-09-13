@@ -1,7 +1,8 @@
 // RUN: cat %s | %cling -Xclang -verify | FileCheck %s
 //This file checks a call instruction. The called function has arguments with nonnull attribute.
 #include <string.h>
-//XFAIL: darwin
+// XFAIL: darwin
+// XFAIL: i686-pc-linux-gnu
 
 char *p = 0;
 strcmp("a", p); // expected-warning {{warning: null passed to a callee which requires a non-null argument}}
