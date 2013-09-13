@@ -1292,7 +1292,8 @@ namespace cling {
     void* DyLibHandle = needs to be implemented!;
     std::string errMsg;
 #else
-    const void* DyLibHandle = dlopen(FoundDyLib.str().c_str(), RTLD_LAZY|RTLD_GLOBAL);
+    const void* DyLibHandle
+      = dlopen(FoundDyLib.str().c_str(), RTLD_LAZY|RTLD_GLOBAL);
     std::string errMsg;
     if (const char* DyLibError = dlerror()) {
       errMsg = DyLibError;
