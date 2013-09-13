@@ -52,6 +52,7 @@ namespace runtime {
       ///
       const char* getExpr();
       bool isValuePrinterRequested() { return m_ValuePrinterReq; }
+      const char* getTemplate() const { return m_Template; }
     };    
   } // end namespace internal
 } // end namespace runtime
