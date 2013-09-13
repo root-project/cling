@@ -354,66 +354,64 @@ namespace cling {
     for (Transaction::iterator I = T->deserialized_decls_begin(), 
            E = T->deserialized_decls_end(); I != E; ++I) {
 
-      if (I->m_Call == Transaction::kCCIHandleTopLevelDecl) {
-        // FIXME: This flag means that we should skip the namespace codegen,
-        // because we did it already. This works around issue with the static
-        // initialization when having a PCH and loading a library. We don't want
-        // to generate code for the static that will come through the library.
-        //
-        // This will be fixed with the clang::Modules. Make sure we remember.
-        assert(!getCI()->getLangOpts().Modules && "Please revisit!");
-        bool shouldContinue = false;
-        for (DeclGroupRef::iterator DI = I->m_DGR.begin(), DE = I->m_DGR.end();
-             DI != DE; ++DI)
+      for (DeclGroupRef::iterator DI = I->m_DGR.begin(), DE = I->m_DGR.end();
+           DI != DE; ++DI) {
+        DeclGroupRef SplitDGR(*DI);
+        if (I->m_Call == Transaction::kCCIHandleTopLevelDecl) {
+          // FIXME: The special namespace treatment (not sending itself to
+          // CodeGen, but only its content - if the contained decl should be
+          // emitted) works around issue with the static initialization when
+          // having a PCH and loading a library. We don't want to generate
+          // code for the static that will come through the library.
+          //
+          // This will be fixed with the clang::Modules. Make sure we remember.
+          assert(!getCI()->getLangOpts().Modules && "Please revisit!");
           if (NamespaceDecl* ND = dyn_cast<NamespaceDecl>(*DI)) {
-            shouldContinue = true;
             for (NamespaceDecl::decl_iterator IN = ND->decls_begin(),
                    EN = ND->decls_end(); IN != EN; ++IN) {
               // Recurse over decls inside the namespace, like
               // CodeGenModule::EmitNamespace() does.
-              DeclGroupRef INDGR = DeclGroupRef(*IN);
-              if (!shouldIgnore(INDGR))
-                getCodeGenerator()->HandleTopLevelDecl(INDGR);
+              if (!shouldIgnore(*IN))
+                getCodeGenerator()->HandleTopLevelDecl(DeclGroupRef(*IN));
             }
+          } else if (!shouldIgnore(*DI)) {
+            getCodeGenerator()->HandleTopLevelDecl(SplitDGR);
           }
-        if (shouldContinue)
           continue;
-      }
-      
-      if (shouldIgnore(I->m_DGR))
-        continue;
+        } // HandleTopLevel
 
-      if (I->m_Call == Transaction::kCCIHandleTopLevelDecl) {
-        getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
-      }
-      else if (I->m_Call == Transaction::kCCIHandleInterestingDecl) {
-        // Usually through BackendConsumer which doesn't implement
-        // HandleInterestingDecl() and thus calls
-        // ASTConsumer::HandleInterestingDecl()
-        getCodeGenerator()->HandleTopLevelDecl(I->m_DGR);
-      } else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
-        TagDecl* TD = cast<TagDecl>(I->m_DGR.getSingleDecl());
-        getCodeGenerator()->HandleTagDeclDefinition(TD);
-      }
-      else if (I->m_Call == Transaction::kCCIHandleVTable) {
-        CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(I->m_DGR.getSingleDecl());
-        getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
-      }
-      else if (I->m_Call
-               == Transaction::kCCIHandleCXXImplicitFunctionInstantiation) {
-        FunctionDecl* FD = cast<FunctionDecl>(I->m_DGR.getSingleDecl());
-        getCodeGenerator()->HandleCXXImplicitFunctionInstantiation(FD);
-      }
-      else if (I->m_Call
-               == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
-        VarDecl* VD = cast<VarDecl>(I->m_DGR.getSingleDecl());
-        getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
-      }
-      else if (I->m_Call == Transaction::kCCINone)
-        ; // We use that internally as delimiter in the Transaction.
-      else
-        llvm_unreachable("We shouldn't have decl without call info.");
-    }
+        if (shouldIgnore(*DI))
+          continue;
+
+        if (I->m_Call == Transaction::kCCIHandleInterestingDecl) {
+          // Usually through BackendConsumer which doesn't implement
+          // HandleInterestingDecl() and thus calls
+          // ASTConsumer::HandleInterestingDecl()
+          getCodeGenerator()->HandleTopLevelDecl(SplitDGR);
+        } else if(I->m_Call == Transaction::kCCIHandleTagDeclDefinition) {
+          TagDecl* TD = cast<TagDecl>(*DI);
+          getCodeGenerator()->HandleTagDeclDefinition(TD);
+        }
+        else if (I->m_Call == Transaction::kCCIHandleVTable) {
+          CXXRecordDecl* CXXRD = cast<CXXRecordDecl>(*DI);
+          getCodeGenerator()->HandleVTable(CXXRD, /*isRequired*/true);
+        }
+        else if (I->m_Call
+                 == Transaction::kCCIHandleCXXImplicitFunctionInstantiation) {
+          FunctionDecl* FD = cast<FunctionDecl>(*DI);
+          getCodeGenerator()->HandleCXXImplicitFunctionInstantiation(FD);
+        }
+        else if (I->m_Call
+                 == Transaction::kCCIHandleCXXStaticMemberVarInstantiation) {
+          VarDecl* VD = cast<VarDecl>(*DI);
+          getCodeGenerator()->HandleCXXStaticMemberVarInstantiation(VD);
+        }
+        else if (I->m_Call == Transaction::kCCINone)
+          ; // We use that internally as delimiter in the Transaction.
+        else
+          llvm_unreachable("We shouldn't have decl without call info.");
+      } // for decls in DGR
+    } // for deserialized DGRs
 
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
     if (endTransaction(deserT))
@@ -632,10 +630,7 @@ namespace cling {
     }
   }
 
-  bool IncrementalParser::shouldIgnore(DeclGroupRef DGR) const {
-    // Take the first/only decl in the group. The second must have the same 
-    // properties as the first Decl in the group.
-    const Decl* D = *DGR.begin();
+  bool IncrementalParser::shouldIgnore(const Decl* D) const {
     // Functions that are inlined must be sent to CodeGen - they will not have a
     // symbol in the library.
     if (const FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {

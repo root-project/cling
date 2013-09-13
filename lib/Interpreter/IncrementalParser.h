@@ -24,7 +24,7 @@ namespace llvm {
 namespace clang {
   class CodeGenerator;
   class CompilerInstance;
-  class DeclGroupRef;
+  class Decl;
   class FileID;
   class Parser;
 }
@@ -235,7 +235,7 @@ namespace cling {
     /// of a library; symbols inside the library must thus not be reemitted /
     /// duplicated by CodeGen.
     ///
-    bool shouldIgnore(clang::DeclGroupRef DGR) const;
+    bool shouldIgnore(const clang::Decl* D) const;
   };
 } // end namespace cling
 #endif // CLING_INCREMENTAL_PARSER_H
