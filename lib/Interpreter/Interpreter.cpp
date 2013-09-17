@@ -6,12 +6,12 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
-#include "ClangInternalState.h"
 #include "DynamicLookup.h"
 #include "ExecutionContext.h"
 #include "IncrementalParser.h"
 
 #include "cling/Interpreter/CIFactory.h"
+#include "cling/Interpreter/ClangInternalState.h"
 #include "cling/Interpreter/CompilationOptions.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
