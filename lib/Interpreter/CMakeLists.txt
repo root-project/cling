@@ -33,9 +33,12 @@ add_cling_library(clingInterpreter
   Interpreter.cpp
   InterpreterCallbacks.cpp
   InvocationOptions.cpp
+  IRDumper.cpp
   LookupHelper.cpp
+  NullDerefProtectionTransformer.cpp
   RequiredSymbols.cpp
   ReturnSynthesizer.cpp
+  RuntimeException.cpp
   StoredValueRef.cpp
   Transaction.cpp
   TransactionTransformer.cpp
@@ -44,6 +47,8 @@ add_cling_library(clingInterpreter
   ValuePrinterInfo.cpp
   ValuePrinterSynthesizer.cpp
   )
+  
+set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS -fexceptions)
 
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
 #                 ClangDriverOptions ClangCC1Options ClangCC1AsOptions)
