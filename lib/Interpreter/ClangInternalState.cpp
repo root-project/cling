@@ -78,7 +78,6 @@ namespace cling {
     return OS.take();
   }
 
-
   void ClangInternalState::compare(ClangInternalState& other) {
     std::string differences = "";
     if (differentContent(m_LookupTablesFile, other.m_LookupTablesFile, 
@@ -139,31 +138,16 @@ namespace cling {
 
   void ClangInternalState::printIncludedFiles(llvm::raw_ostream& Out, 
                                               SourceManager& SM) {
-    // std::vector<std::string> loadedFiles;
-    // typedef std::vector<Interpreter::LoadedFileInfo*> LoadedFiles_t;
-    // const LoadedFiles_t& LoadedFiles = getLoadedFiles();
-    // for (LoadedFiles_t::const_iterator I = LoadedFiles.begin(),
-    //        E = LoadedFiles.end(); I != E; ++I) {
-    //   char cType[] = { 'S', 'D', 'B' };
-    //   Out << '[' << cType[(*I)->getType()] << "] "<< (*I)->getName() << '\n';
-    //   loadedFiles.push_back((*I)->getName());
-    // }
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
       const clang::SrcMgr::ContentCache &C = *I->second;
       const clang::FileEntry *FE = C.OrigEntry;
       std::string fileName(FE->getName());
-      // avoid duplicates (i.e. already printed in the previous for loop)
-      // if (std::find(loadedFiles.begin(),
-      //               loadedFiles.end(), fileName) == loadedFiles.end()) {
-        // filter out any /usr/...../bits/* file names
-        if (!(fileName.compare(0, 5, "/usr/") == 0 &&
-              fileName.find("/bits/") != std::string::npos)) {
-          Out << fileName << '\n';
-        }
-        //}
+      if (!(fileName.compare(0, 5, "/usr/") == 0 &&
+            fileName.find("/bits/") != std::string::npos)) {
+        Out << fileName << '\n';
+      }
     }
-
   }
 
   void ClangInternalState::printAST(llvm::raw_ostream& Out, ASTContext& C) {
@@ -175,5 +159,4 @@ namespace cling {
     TU->print(Out, policy, Indentation, PrintInstantiation);
     Out.flush();
   }
-
 } // end namespace cling
