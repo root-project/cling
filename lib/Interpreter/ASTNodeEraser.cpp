@@ -30,7 +30,7 @@ namespace cling {
   ///
   class DeclReverter : public DeclVisitor<DeclReverter, bool> {
   private:
-    typedef llvm::DenseSet<const FileEntry*> FileEntries;
+    typedef llvm::DenseSet<FileID> FileIDs;
 
     ///\brief The Sema object being reverted (contains the AST as well).
     ///
@@ -52,7 +52,7 @@ namespace cling {
     /// This ADT keeps track of the files from which the reverted declarations
     /// came from so that in the end they could be removed from clang's cache.
     ///
-    FileEntries m_FilesToUncache;
+    FileIDs m_FilesToUncache;
 
   public:
     DeclReverter(Sema* S, const Transaction* T): m_Sema(S), m_CurTransaction(T) {
@@ -171,9 +171,19 @@ namespace cling {
 
   DeclReverter::~DeclReverter() {
     FileManager& FM = m_Sema->getSourceManager().getFileManager();
-    for (FileEntries::iterator I = m_FilesToUncache.begin(), 
+    SourceManager& SM = m_Sema->getSourceManager();
+    for (FileIDs::iterator I = m_FilesToUncache.begin(), 
            E = m_FilesToUncache.end(); I != E; ++I) {
-      FM.invalidateCache(*I);
+      const SrcMgr::FileInfo& fInfo = SM.getSLocEntry(*I).getFile();
+      // We need to reset the cache
+      SrcMgr::ContentCache* cache 
+        = const_cast<SrcMgr::ContentCache*>(fInfo.getContentCache());
+      cache->replaceBuffer(0,/*free*/true);
+      FileEntry* entry = const_cast<FileEntry*>(cache->ContentsEntry);
+      // We have to reset the file entry size to keep the cache and the file
+      // entry in sync.
+      if (entry)
+        FileManager::modifyFileEntry(entry, /*size*/0, 0);
     }
 
     // Clean up the pending instantiations
@@ -184,9 +194,9 @@ namespace cling {
   void DeclReverter::PreVisitDecl(Decl *D) {
     const SourceLocation Loc = D->getLocStart();
     const SourceManager& SM = m_Sema->getSourceManager();
-    const FileEntry* OldEntry = SM.getFileEntryForID(SM.getFileID(Loc));
-    if (OldEntry && !m_FilesToUncache.count(OldEntry)) 
-      m_FilesToUncache.insert(OldEntry);
+    FileID FID = SM.getFileID(Loc);
+    if (!FID.isInvalid() && !m_FilesToUncache.count(FID)) 
+      m_FilesToUncache.insert(FID);
   }
 
   // Gives us access to the protected members that we need.

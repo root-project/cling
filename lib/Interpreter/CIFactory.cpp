@@ -234,7 +234,10 @@ namespace cling {
 
     // Set up source and file managers
     CI->createFileManager();
-    CI->createSourceManager(CI->getFileManager());
+    SourceManager* SM = new SourceManager(CI->getDiagnostics(),
+                                          CI->getFileManager(),
+                                          /*UserFilesAreVolatile*/ true); 
+    CI->setSourceManager(SM); // FIXME: SM leaks.
 
     // Set up the memory buffer
     if (buffer)

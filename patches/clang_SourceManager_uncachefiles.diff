@@ -1,0 +1,19 @@
+diff --git a/interpreter/llvm/src/tools/clang/lib/Basic/SourceManager.cpp b/interpreter/llvm/src/tools/clang/lib/Basic/SourceManager.cpp
+index 44649c3..8caa8f0 100644
+--- tools/clang/lib/Basic/SourceManager.cpp
++++ tools/clang/lib/Basic/SourceManager.cpp
+@@ -132,6 +132,14 @@ const llvm::MemoryBuffer *ContentCache::getBuffer(DiagnosticsEngine &Diag,
+     if (Invalid) *Invalid = true;
+     return Buffer.getPointer();
+   }
++
++  // If there is no information about the size and the modification time,
++  // this means that we are in cling-like context and we should sync the 
++  // FileEntry and the invalidated cache.
++  if (!ContentsEntry->getSize() && !ContentsEntry->getModificationTime()) {
++     FileManager::modifyFileEntry(const_cast<FileEntry*>(ContentsEntry), 
++                                  getRawBuffer()->getBufferSize(), time(0));
++  }
+   
+   // Check that the file's size is the same as in the file entry (which may
+   // have come from a stat cache).
