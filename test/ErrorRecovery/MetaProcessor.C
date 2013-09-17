@@ -1,4 +1,3 @@
-// RUN: rm %testexecdir/ErrorRecovery/*.tmp
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 // XFAIL: *
 // The main issue is that expected - error is not propagated to the source file and

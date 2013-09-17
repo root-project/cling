@@ -1,4 +1,3 @@
-// RUN: rm -f %testexecdir/ErrorRecovery/*.tmp
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 // XFAIL: *
 
