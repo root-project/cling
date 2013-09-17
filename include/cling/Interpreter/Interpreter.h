@@ -51,6 +51,7 @@ namespace cling {
       class LifetimeHandler;
     }
   }
+  class ClangInternalState;
   class CompilationOptions;
   class ExecutionContext;
   class IncrementalParser;
@@ -267,6 +268,10 @@ namespace cling {
     ///
     std::vector<LoadedFileInfo*> m_LoadedFiles;
 
+    ///\brief Information about the last stored states through .storeState
+    ///
+    mutable std::vector<ClangInternalState*> m_StoredStates;
+
     ///\brief Try to load a library file via the llvm::Linker.
     ///
     LoadLibResult tryLinker(const std::string& filename, bool permanent,
@@ -454,46 +459,11 @@ namespace cling {
     ///
     void compareInterpreterState(const std::string& name) const;
 
-    ///\brief Dump the AST in a temporary file 
-    ///
-    ///\param[in] name - The name of the temporary file where the AST
-    /// will be printed
-    ///
-    void dumpAST (const std::string& name) const;
-
-    ///\brief Dump the Lookups tables in a temporary file 
-    ///
-    ///\param[in] name - The name of the temporary file where the lookups table
-    /// will be printed
-    ///
-    void dumpLookupTable (const std::string& name) const;
-
     ///\brief Print the included files in a temporary file 
     ///
     ///\param[in] out - The output stream to be printed into.
     ///
     void printIncludedFiles (llvm::raw_ostream& out) const;
-
-    ///\brief Compare the AST with the one stored 
-    /// previously.
-    ///
-    ///\param[in] name - The name of the previously stored state
-    ///
-    void compareAST(const std::string& name) const;
-
-    ///\brief Compare the included files with the ones stored 
-    /// previously.
-    ///
-    ///\param[in] name - The name of the previously stored state
-    ///
-    void compareIncludedFiles(const std::string& name) const;
-
-    ///\brief Compare the lookup tables with the ones stored 
-    /// previously.
-    ///
-    ///\param[in] name - The name of the previously stored state
-    ///
-    void compareLookup(const std::string& name) const;
 
     ///\brief Compiles the given input.
     ///
@@ -649,7 +619,8 @@ namespace cling {
     ///\brief Get the collection of loaded files.
     ///
     const std::vector<LoadedFileInfo*>& getLoadedFiles() const {
-      return m_LoadedFiles; }
+      return m_LoadedFiles; 
+    }
 
     bool isPrintingAST() const { return m_PrintAST; }
     void enablePrintAST(bool print = true) { m_PrintAST = print; }
