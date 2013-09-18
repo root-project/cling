@@ -566,7 +566,6 @@ namespace cling {
     LoadLibResult loadLibrary(const std::string& filename, bool permanent,
                               bool *tryCode = 0);
 
-
     ///\brief Returns true if the file was a dynamic library and it was already
     /// loaded.
     ///

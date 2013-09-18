@@ -178,12 +178,13 @@ namespace cling {
       // We need to reset the cache
       SrcMgr::ContentCache* cache 
         = const_cast<SrcMgr::ContentCache*>(fInfo.getContentCache());
-      cache->replaceBuffer(0,/*free*/true);
       FileEntry* entry = const_cast<FileEntry*>(cache->ContentsEntry);
       // We have to reset the file entry size to keep the cache and the file
       // entry in sync.
-      if (entry)
+      if (entry) {
+        cache->replaceBuffer(0,/*free*/true);
         FileManager::modifyFileEntry(entry, /*size*/0, 0);
+      }
     }
 
     // Clean up the pending instantiations
