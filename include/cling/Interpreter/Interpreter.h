@@ -9,13 +9,12 @@
 
 #include "cling/Interpreter/InvocationOptions.h"
 
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 
-#include <cstdlib>
 #include <string>
 #include <vector>
-#include <set>
 
 namespace llvm {
   class raw_ostream;
@@ -120,44 +119,6 @@ namespace cling {
       kNumExeResults
     };
 
-
-    class LoadedFileInfo {
-    public:
-      enum FileType {
-        kSource,
-        kDynamicLibrary,
-        kNumFileTypes
-      };
-
-      ///\brief Name as loaded for the first time.
-      ///
-      const std::string& getName() const { return m_Name; }
-
-      ///\brief Type of the file.
-      FileType getType() const { return m_Type; }
-
-      const void* getDyLibHandle() const { return m_DynLibHandle; }
-
-    private:
-      ///\brief Constructor used by Interpreter.
-      LoadedFileInfo(const std::string& name, FileType type,
-                     const void* dynLibHandle):
-        m_Name(name), m_Type(type), m_DynLibHandle(dynLibHandle) {}
-
-      ///\brief Name as loaded for the first time.
-      ///
-      std::string m_Name;
-
-      ///\brief Type of the file.
-      FileType m_Type;
-
-      ///\brief A shared library handle if dynamic library
-      ///
-      const void* m_DynLibHandle;
-
-      friend class Interpreter;
-    };
-
   private:
 
     ///\brief Interpreter invocation options.
@@ -260,13 +221,11 @@ namespace cling {
     ///
     std::vector<CXAAtExitElement> m_AtExitFuncs;
 
+    typedef const void* DyLibHandle;
+    typedef llvm::DenseMap<DyLibHandle, std::string> DyLibs;
     ///\brief DynamicLibraries loaded by this Interpreter.
     ///
-    std::set<const void*> m_DyLibs;
-
-    ///\brief Information about loaded files.
-    ///
-    std::vector<LoadedFileInfo*> m_LoadedFiles;
+    DyLibs m_DyLibs;
 
     ///\brief Information about the last stored states through .storeState
     ///
@@ -276,9 +235,6 @@ namespace cling {
     ///
     LoadLibResult tryLinker(const std::string& filename, bool permanent,
                             bool isAbsolute, bool& exists, bool& isDyLib);
-
-    void addLoadedFile(const std::string& name, LoadedFileInfo::FileType type,
-                       const void* dyLibHandle = 0);
 
     ///\brief Processes the invocation options.
     ///
@@ -610,17 +566,18 @@ namespace cling {
     LoadLibResult loadLibrary(const std::string& filename, bool permanent,
                               bool *tryCode = 0);
 
+
+    ///\brief Returns true if the file was a dynamic library and it was already
+    /// loaded.
+    ///
+    bool isDynamicLibraryLoaded(llvm::StringRef fullPath) const;
+
     ///\brief Explicitly tell the execution engine to use symbols from
     ///       a shared library that would otherwise not be used for symbol
     ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
     ///\param [in] DyLibHandle - the system specific shared library handle.
-    static void ExposeHiddenSharedLibrarySymbols(void* DyLibHandle);
-
-    ///\brief Get the collection of loaded files.
     ///
-    const std::vector<LoadedFileInfo*>& getLoadedFiles() const {
-      return m_LoadedFiles; 
-    }
+    static void ExposeHiddenSharedLibrarySymbols(void* DyLibHandle);
 
     bool isPrintingAST() const { return m_PrintAST; }
     void enablePrintAST(bool print = true) { m_PrintAST = print; }

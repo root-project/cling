@@ -163,7 +163,6 @@ namespace cling {
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_AtExitFuncs.reserve(200);
-    m_LoadedFiles.reserve(20);
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -744,12 +743,6 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
-  void Interpreter::addLoadedFile(const std::string& name,
-                                  Interpreter::LoadedFileInfo::FileType type,
-                                  const void* dyLibHandle) {
-    m_LoadedFiles.push_back(new LoadedFileInfo(name, type, dyLibHandle));
-  }
-
   Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/) {
@@ -764,8 +757,6 @@ namespace cling {
     std::string code;
     code += "#include \"" + filename + "\"";
     CompilationResult res = declare(code);
-    if (res == kSuccess)
-      addLoadedFile(filename, LoadedFileInfo::kSource);
     return res;
   }
 
@@ -833,26 +824,25 @@ namespace cling {
 
     // TODO: !permanent case
 #ifdef WIN32
-    void* DyLibHandle = needs to be implemented!;
+    void* dyLibHandle = needs to be implemented!;
     std::string errMsg;
 #else
-    const void* DyLibHandle
+    const void* dyLibHandle
       = dlopen(FoundDyLib.str().c_str(), RTLD_LAZY|RTLD_GLOBAL);
     std::string errMsg;
     if (const char* DyLibError = dlerror()) {
       errMsg = DyLibError;
     }
 #endif
-    if (!DyLibHandle) {
+    if (!dyLibHandle) {
       llvm::errs() << "cling::Interpreter::tryLinker(): " << errMsg << '\n';
       return kLoadLibError;
     }
-    std::pair<std::set<const void*>::iterator, bool> insRes
-      = m_DyLibs.insert(DyLibHandle);
+    std::pair<DyLibs::iterator, bool> insRes
+      = m_DyLibs.insert(std::pair<DyLibHandle, std::string>(dyLibHandle, 
+                                                            FoundDyLib.str()));
     if (!insRes.second)
       return kLoadLibExists;
-    addLoadedFile(FoundDyLib.str(), LoadedFileInfo::kDynamicLibrary,
-                  DyLibHandle);
     return kLoadLibSuccess;
   }
 
@@ -891,6 +881,15 @@ namespace cling {
         return res;
     }
     return kLoadLibError;
+  }
+
+  bool Interpreter::isDynamicLibraryLoaded(llvm::StringRef fullPath) const {
+    for(DyLibs::const_iterator I = m_DyLibs.begin(), E = m_DyLibs.end(); 
+        I != E; ++I) {
+      if (fullPath.equals((I->second)))
+        return true;
+    }
+    return false;
   }
 
   void
