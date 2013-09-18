@@ -9,7 +9,8 @@
 
 #include "cling/Interpreter/InvocationOptions.h"
 
-#include "llvm/ADT/DenseMap.h"
+//#include "llvm/ADT/DenseMap.h"
+#include <map>
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -222,7 +223,8 @@ namespace cling {
     std::vector<CXAAtExitElement> m_AtExitFuncs;
 
     typedef const void* DyLibHandle;
-    typedef llvm::DenseMap<DyLibHandle, std::string> DyLibs;
+    //typedef llvm::DenseMap<DyLibHandle, std::string> DyLibs;
+    typedef std::map<DyLibHandle, std::string> DyLibs;
     ///\brief DynamicLibraries loaded by this Interpreter.
     ///
     DyLibs m_DyLibs;
