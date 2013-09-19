@@ -7,18 +7,21 @@
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/ClingOptions.h"
 
-#include "clang/Driver/Arg.h"
-#include "clang/Driver/ArgList.h"
-#include "clang/Driver/Option.h"
 #include "clang/Driver/Options.h"
-#include "clang/Driver/OptTable.h"
 
 #include "llvm/ADT/OwningPtr.h"
+#include "llvm/Option/Arg.h"
+#include "llvm/Option/ArgList.h"
+#include "llvm/Option/Option.h"
+#include "llvm/Option/OptTable.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 using namespace clang::driver;
 using namespace cling::driver::clingoptions;
+
+using namespace llvm;
+using namespace llvm::opt;
 
 namespace {
 
