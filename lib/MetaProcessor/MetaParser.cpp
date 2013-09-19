@@ -125,7 +125,7 @@ namespace cling {
       if (getCurTok().is(tok::raw_ident)) {
         result = true;
         actionResult =
-          m_Actions->actOnLCommand(llvm::sys::Path(getCurTok().getIdent()));
+          m_Actions->actOnLCommand(getCurTok().getIdent());
         consumeToken();
         if (getCurTok().is(tok::comment)) {
           consumeAnyStringToken();
@@ -150,7 +150,7 @@ namespace cling {
                                || Tok.getIdent().equals("X"))) {
       // There might be ArgList
       consumeAnyStringToken(tok::l_paren);
-      llvm::sys::Path file(getCurTok().getIdent());
+      llvm::StringRef file(getCurTok().getIdent());
       llvm::StringRef args;
       consumeToken();
       if (getCurTok().is(tok::l_paren) && isExtraArgList()) {
@@ -198,7 +198,7 @@ namespace cling {
   bool MetaParser::isICommand() {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("I")) {
       consumeAnyStringToken();
-      llvm::sys::Path path;
+      llvm::StringRef path;
       if (getCurTok().is(tok::raw_ident))
         path = getCurTok().getIdent();
       m_Actions->actOnICommand(path);

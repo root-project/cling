@@ -10,9 +10,6 @@
 namespace llvm {
   class StringRef;
   class raw_ostream;
-  namespace sys {
-    class Path;
-  }
 }
 
 namespace cling {
@@ -49,7 +46,7 @@ namespace cling {
     ///
     ///\param[in] file - The file/library to be loaded.
     ///
-    ActionResult actOnLCommand(llvm::sys::Path file) const;
+    ActionResult actOnLCommand(llvm::StringRef file) const;
 
     ///\brief Actions that need to be performed on occurance of a comment.
     ///
@@ -71,7 +68,7 @@ namespace cling {
     ///\param[out] result - If not NULL, will hold the value of the last
     ///                     expression.
     ///
-    ActionResult actOnxCommand(llvm::sys::Path file, llvm::StringRef args, 
+    ActionResult actOnxCommand(llvm::StringRef file, llvm::StringRef args,
                                StoredValueRef* result);
 
     ///\brief Actions to be performed on quit.
@@ -88,7 +85,7 @@ namespace cling {
     ///
     ///\param[in] path - The path to add to header search.
     ///
-    void actOnICommand(llvm::sys::Path path) const;
+    void actOnICommand(llvm::StringRef path) const;
 
     ///\brief Changes the input mode to raw input. In that mode we act more like
     /// a compiler by bypassing many of cling's features.
