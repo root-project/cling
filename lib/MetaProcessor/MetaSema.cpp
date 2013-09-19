@@ -20,7 +20,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
-#include "llvm/Support/Path.h"
 
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Basic/SourceManager.h"
@@ -33,7 +32,7 @@ namespace cling {
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
       m_Outs(m_MetaProcessor.getOuts()){ }
 
-  MetaSema::ActionResult MetaSema::actOnLCommand(llvm::sys::Path file) const {
+  MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) const {
     // TODO: extra checks. Eg if the path is readable, if the file exists...
     if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess)
       return AR_Success;
@@ -45,7 +44,7 @@ namespace cling {
     m_Interpreter.declare(comment);
   }
 
-  MetaSema::ActionResult MetaSema::actOnxCommand(llvm::sys::Path file, 
+  MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file, 
                                                  llvm::StringRef args, 
                                                  StoredValueRef* result) {
     // Fall back to the meta processor for now.
@@ -70,7 +69,7 @@ namespace cling {
      return AR_Success;
   }
 
-  void MetaSema::actOnICommand(llvm::sys::Path path) const {
+  void MetaSema::actOnICommand(llvm::StringRef path) const {
     if (path.isEmpty())
       m_Interpreter.DumpIncludePath();
     else
