@@ -253,6 +253,9 @@ namespace cling {
       }
 
       // Find cling::runtime::internal::local_cxa_atexit
+      // We do not have an active transaction and that lookup might trigger
+      // deserialization
+      PushTransactionRAII pushedT(this);
       NamespaceDecl* NSD = utils::Lookup::Namespace(&getSema(), "cling");
       NSD = utils::Lookup::Namespace(&getSema(), "runtime");
       NSD = utils::Lookup::Namespace(&getSema(), "internal");
