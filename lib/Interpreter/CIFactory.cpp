@@ -11,7 +11,6 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/Version.h"
-#include "clang/Driver/ArgList.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
@@ -20,6 +19,7 @@
 #include "clang/Lex/Preprocessor.h"
 
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Option/ArgList.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
@@ -41,7 +41,7 @@ namespace cling {
 
   /// \brief Retrieves the clang CC1 specific flags out of the compilation's
   /// jobs. Returns NULL on error.
-  static const clang::driver::ArgStringList
+  static const llvm::opt::ArgStringList
   *GetCC1Arguments(clang::DiagnosticsEngine *Diagnostics,
                    clang::driver::Compilation *Compilation) {
     // We expect to get back exactly one Command job, if we didn't something
@@ -80,12 +80,10 @@ namespace cling {
     //  Initialize the llvm library.
     llvm::InitializeNativeTarget();
     llvm::InitializeAllAsmPrinters();
-    llvm::sys::Path resource_path;
+    llvm::SmallString<512> resource_path;
     if (llvmdir) {
       resource_path = llvmdir;
-      resource_path.appendComponent("lib");
-      resource_path.appendComponent("clang");
-      resource_path.appendComponent(CLANG_VERSION_STRING);
+      llvm::sys::path::append(resource_path,"lib", "clang", CLANG_VERSION_STRING);
     } else {
       // FIXME: The first arg really does need to be argv[0] on FreeBSD.
       //
@@ -106,7 +104,7 @@ namespace cling {
                                        (void*)(intptr_t) locate_cling_executable
                                                );
     }
-    if (!resource_path.canRead()) {
+    if (!llvm::sys::fs::is_directory(resource_path.str())) {
       llvm::errs()
         << "ERROR in cling::CIFactory::createCI():\n  resource directory "
         << resource_path.str() << " not found!\n";
@@ -164,17 +162,17 @@ namespace cling {
       // header search opts' entry for resource_path/include isn't
       // updated by providing a new resource path; update it manually.
       clang::HeaderSearchOptions& Opts = Invocation->getHeaderSearchOpts();
-      llvm::sys::Path oldResInc(Opts.ResourceDir);
-      oldResInc.appendComponent("include");
-      llvm::sys::Path newResInc(resource_path);
-      newResInc.appendComponent("include");
+      llvm::SmallString<512> oldResInc(Opts.ResourceDir);
+      llvm::sys::path::append(oldResInc, "include");
+      llvm::SmallString<512> newResInc(resource_path);
+      llvm::sys::path::append(newResInc, "include");
       bool foundOldResInc = false;
       for (unsigned i = 0, e = Opts.UserEntries.size();
            !foundOldResInc && i != e; ++i) {
         HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
         if (!E.IsFramework && E.Group == clang::frontend::System
             && E.IgnoreSysRoot && oldResInc.str() == E.Path) {
-          E.Path = newResInc.str();
+          E.Path = newResInc.data();
           foundOldResInc = true;
         }
       }
@@ -186,8 +184,7 @@ namespace cling {
     CompilerInstance* CI = new CompilerInstance();
     CI->setInvocation(Invocation);
 
-    CI->createDiagnostics(DiagnosticPrinter, /*ShouldOwnClient=*/ false,
-                          /*ShouldCloneClient=*/ false);
+    CI->createDiagnostics(DiagnosticPrinter, /*ShouldOwnClient=*/ false);
     {
       //
       //  Buffer the error messages while we process
