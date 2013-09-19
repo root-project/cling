@@ -88,8 +88,13 @@ namespace cling {
             VD->setStorageClass(SC_None);
           }
           // Remove the linkage cache. On next access it will calculate it
-          // considering the new possition of the declaration.
-          ND->ClearLinkageCache();
+          // considering the new position of the declaration.
+          class BreakProtection: public clang::NamedDecl {
+          public:
+            static void resetCachedLinkage(clang::NamedDecl* ND) {
+              ND->CacheValidAndLinkage = 0; }
+          };
+          BreakProtection::resetCachedLinkage(ND);
 
           TouchedDecls.push_back(ND);
         }
