@@ -49,13 +49,13 @@ namespace cling {
           ASTContext& C = m_Sema->getASTContext();
           VarDecl* VD 
             = cast<VarDecl>(cast<DeclRefExpr>(BinOp->getLHS())->getDecl());
-          TypeSourceInfo* ResTSI = 0;
-          TypeSourceInfo* TrivialTSI 
+          QualType ResTy;
+          TypeSourceInfo* TrivialTSI
             = C.getTrivialTypeSourceInfo(VD->getType());
           Expr* RHS = BinOp->getRHS();
-          m_Sema->DeduceAutoType(TrivialTSI, RHS, ResTSI);
-          VD->setTypeSourceInfo(ResTSI);
-          VD->setType(ResTSI->getType());
+          m_Sema->DeduceAutoType(TrivialTSI, RHS, ResTy);
+          VD->setTypeSourceInfo(C.getTrivialTypeSourceInfo(ResTy));
+          VD->setType(ResTy);
           VD->setInit(RHS);
           Sema::DeclGroupPtrTy VDPtrTy = m_Sema->ConvertDeclToDeclGroup(VD);
           // Transform the AST into a "sane" state. Replace the binary operator
