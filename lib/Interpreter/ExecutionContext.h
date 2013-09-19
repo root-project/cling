@@ -27,6 +27,26 @@ namespace cling {
   class StoredValueRef;
 
   class ExecutionContext {
+  private:
+    static std::set<std::string> m_unresolvedSymbols;
+    static std::vector<LazyFunctionCreatorFunc_t> m_lazyFuncCreator;
+
+    ///\brief Whether or not the function creator to be queried.
+    ///
+    static bool m_LazyFuncCreatorDiagsSuppressed;
+
+    ///\brief The llvm ExecutionEngine.
+    ///
+    llvm::OwningPtr<llvm::ExecutionEngine> m_engine;
+
+    ///\brief prevent the recursive run of the static inits
+    ///
+    bool m_RunningStaticInits;
+
+    ///\brief Whether cxa_at_exit has been rewired to the Interpreter's version
+    ///
+    bool m_CxaAtExitRemapped;
+
   public:
     typedef void* (*LazyFunctionCreatorFunc_t)(const std::string&);
 
@@ -88,25 +108,6 @@ namespace cling {
     int verifyModule(llvm::Module* m);
     void printModule(llvm::Module* m);
     void InitializeBuilder(llvm::Module* m);
-
-    static std::set<std::string> m_unresolvedSymbols;
-    static std::vector<LazyFunctionCreatorFunc_t> m_lazyFuncCreator;
-
-    ///\brief Whether or not the function creator to be queried.
-    ///
-    static bool m_LazyFuncCreatorDiagsSuppressed;
-
-    ///\brief The llvm ExecutionEngine.
-    ///
-    llvm::OwningPtr<llvm::ExecutionEngine> m_engine;
-
-    ///\brief prevent the recursive run of the static inits
-    ///
-    bool m_RunningStaticInits;
-
-    ///\brief Whether cxa_at_exit has been rewired to the Interpreter's version
-    ///
-    bool m_CxaAtExitRemapped;
   };
 } // end cling
 #endif // CLING_EXECUTIONCONTEXT_H
