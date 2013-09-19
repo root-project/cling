@@ -64,7 +64,6 @@ void ExecutionContext::InitializeBuilder(llvm::Module* m) {
   // EngineBuilder uses default c'ted TargetOptions, too:
   llvm::TargetOptions TargetOpts;
   TargetOpts.NoFramePointerElim = 1;
-  TargetOpts.JITExceptionHandling = 1;
   TargetOpts.JITEmitDebugInfo = 1;
 
   builder.setTargetOptions(TargetOpts);
