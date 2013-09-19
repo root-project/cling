@@ -28,7 +28,13 @@ namespace cling {
 
   class ExecutionContext {
   private:
+    ///\brief Set of the symbols that the ExecutionEngine couldn't resolve.
+    /// 
     static std::set<std::string> m_unresolvedSymbols;
+
+    ///\brief Lazy function creator, which is a final callback which the 
+    /// ExecutionEngine fires if there is unresolved symbol.
+    ///
     static std::vector<LazyFunctionCreatorFunc_t> m_lazyFuncCreator;
 
     ///\brief Whether or not the function creator to be queried.
