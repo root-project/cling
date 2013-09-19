@@ -14,10 +14,10 @@
 #include "textinput/StreamReader.h"
 #include "textinput/TerminalDisplay.h"
 
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/SmallString.h"
 #include "llvm/Config/config.h"
 
 // Fragment copied from LLVM's raw_ostream.cpp
@@ -52,11 +52,12 @@ namespace {
   }
 #if defined(LLVM_ON_UNIX)
   static void GetUserHomeDirectory(llvm::SmallVectorImpl<char>& str) {
-    if (const char* home = getenv("HOME"))
-      str = home;
-    } else {
-      str = "/";
-    }
+    str.clear();
+    const char* home = getenv("HOME");
+    if (!home)
+      home = "/";
+    llvm::StringRef SRhome(home);
+    str.insert(str.begin(), SRhome.begin(), SRhome.end());
   }
 #elif defined(LLVM_ON_WIN32)
   static void GetUserHomeDirectory(llvm::SmallVectorImpl<char>& str) {
@@ -68,7 +69,8 @@ namespace {
                                    str.data());
     if (res != S_OK) {
       assert(0 && "Failed to get user home directory");
-      str = "/";
+      llvm::StringRef SRhome("\\");
+      str.insert(str.begin(), SRhome.begin(), SRhome.end());
     }
   }
 #else
@@ -98,9 +100,9 @@ namespace cling {
 
     // History file is $HOME/.cling_history
     static const char* histfile = ".cling_history";
-    llvm:SmallString<512> histfilePath;
+    llvm::SmallString<512> histfilePath;
     GetUserHomeDirectory(histfilePath);
-    llvm::sys::fs::append(histfilePath, histfile);
+    llvm::sys::path::append(histfilePath, histfile);
 
     using namespace textinput;
     StreamReader* R = StreamReader::Create();
