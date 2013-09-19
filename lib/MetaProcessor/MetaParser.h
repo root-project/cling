@@ -14,9 +14,6 @@
 
 namespace llvm {
   class StringRef;
-  namespace sys {
-    class Path;
-  }
 }
 
 namespace cling {
