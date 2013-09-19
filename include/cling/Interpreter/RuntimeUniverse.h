@@ -46,6 +46,14 @@ namespace cling {
     bool shouldProceed(void* S, void* T);
 
     namespace internal {
+      ///\brief Manually provided by cling missing function resolution using
+      /// addSymbol()
+      ///
+      /// Implemented in Interpreter.cpp
+      ///
+      int local_cxa_atexit(void (*func) (void*), void* arg, void* dso, 
+                           void* interp);
+
       /// \brief Some of clang's routines rely on valid source locations and
       /// source ranges. This member can be looked up and source locations and
       /// ranges can be passed in as parameters to these routines.
@@ -84,16 +92,8 @@ extern "C" {
 #endif
 
 extern "C" {
-  ///\brief Manually provided by cling missing function resolution using
-  /// sys::DynamicLibrary::AddSymbol()
-  /// Included in extern C so its name is not mangled and easier to register
-  // Implemented in Interpreter.cpp
-  int cling__runtime__internal__local_cxa_atexit(void (*func) (void*),
-                                                 void* arg,
-                                                 void* dso,
-                                                 void* interp);
   int cling_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
-    return cling__runtime__internal__local_cxa_atexit(func, arg, dso,
+    return cling::runtime::internal::local_cxa_atexit(func, arg, dso,
                                                  (void*)cling::runtime::gCling);
   }
 

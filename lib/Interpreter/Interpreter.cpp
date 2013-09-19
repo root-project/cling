@@ -77,16 +77,23 @@ namespace {
   }
 } // unnamed namespace
 
-
-// "Declared" to the JIT in RuntimeUniverse.h
-extern "C" {
-  int cling__runtime__internal__local_cxa_atexit(void (*func) (void*), void* arg,
-                                                 void* dso,
-                                                 void* interp) {
-    return ((cling::Interpreter*)interp)->CXAAtExit(func, arg, dso);
-  }
+namespace cling {
+  namespace runtime {
+    namespace internal {
+      // "Declared" to the JIT in RuntimeUniverse.h
+      int local_cxa_atexit(void (*func) (void*), void* arg, void* dso,
+                           void* interp) {
+        Interpreter* cling = (cling::Interpreter*)interp;
+        IncrementalParser* incrP = cling->m_IncrParser.get();
+        // FIXME: Bind to the module symbols.
+        Decl* lastTLD = incrP->getLastTransaction()->getLastDecl().getSingleDecl();
+ 
+        int result = cling->m_ExecutionContext->CXAAtExit(func, arg, dso, lastTLD);
+        return result;
+      }
+    } // end namespace internal
+  } // end namespace runtime
 }
-
 
 
 namespace cling {
@@ -162,8 +169,6 @@ namespace cling {
     m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), 
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
-    m_AtExitFuncs.reserve(200);
-
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
     m_Opts = InvocationOptions::CreateFromArgs(argc, argv, LeftoverArgsIdx);
@@ -214,9 +219,6 @@ namespace cling {
       }
     }
 
-    m_ExecutionContext->addSymbol("cling__runtime__internal__local_cxa_atexit",
-                  (void*)(intptr_t)&cling__runtime__internal__local_cxa_atexit);
-
     // Enable incremental processing, which prevents the preprocessor destroying
     // the lexer on EOF token.
     getSema().getPreprocessor().enableIncrementalProcessing();
@@ -234,7 +236,7 @@ namespace cling {
       // Make sure that the universe won't be included to compile time by using
       // -D __CLING__ as CompilerInstance's arguments
 #ifdef _WIN32
-	  // We have to use the #defined __CLING__ on windows first. 
+      // We have to use the #defined __CLING__ on windows first. 
       //FIXME: Find proper fix.
       declare("#ifdef __CLING__ \n#endif");  
 #endif
@@ -249,6 +251,17 @@ namespace cling {
                     << (uintptr_t)this << ";} }";
         declare(initializer.str());
       }
+
+      // Find cling::runtime::internal::local_cxa_atexit
+      NamespaceDecl* NSD = utils::Lookup::Namespace(&getSema(), "cling");
+      NSD = utils::Lookup::Namespace(&getSema(), "runtime");
+      NSD = utils::Lookup::Namespace(&getSema(), "internal");
+      NamedDecl* ND = utils::Lookup::Named(&getSema(), "local_cxa_atexit", NSD);
+      std::string mangledName;
+      maybeMangleDeclName(ND, mangledName);
+      m_ExecutionContext->addSymbol(mangledName.c_str(),
+                         (void*)(intptr_t)&runtime::internal::local_cxa_atexit);
+
     }
     else {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");
@@ -258,11 +271,6 @@ namespace cling {
 
   Interpreter::~Interpreter() {
     getCI()->getDiagnostics().getClient()->EndSourceFile();
-
-    for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
-      const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
-      (*AEE.m_Func)(AEE.m_Arg);
-    }
   }
 
   const char* Interpreter::getVersion() const {
@@ -980,22 +988,8 @@ namespace cling {
     return ConvertExecutionResult(ExeRes);
   }
 
-  Interpreter::ExecutionResult
-  Interpreter::runStaticDestructorsOnce() {
-    for (size_t I = 0, E = m_AtExitFuncs.size(); I < E; ++I) {
-      const CXAAtExitElement& AEE = m_AtExitFuncs[E-I-1];
-      (*AEE.m_Func)(AEE.m_Arg);
-    }
-    m_AtExitFuncs.clear();
-    return kExeSuccess; 
-  }
-
-  int Interpreter::CXAAtExit(void (*func) (void*), void* arg, void* dso) {
-    // Register a CXAAtExit function
-    Decl* LastTLD 
-      = m_IncrParser->getLastTransaction()->getLastDecl().getSingleDecl();
-    m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, dso, LastTLD));
-    return 0; // happiness
+  void Interpreter::runStaticDestructorsOnce() {
+    m_ExecutionContext->runStaticDestructorsOnce(getModule());
   }
 
   void Interpreter::maybeMangleDeclName(const clang::NamedDecl* D,
@@ -1058,7 +1052,7 @@ namespace cling {
     if (!symbolName || !symbolAddress )
       return false;
 
-    return m_ExecutionContext->addSymbol(symbolName,  symbolAddress);
+    return m_ExecutionContext->addSymbol(symbolName, symbolAddress);
   }
 
   void* Interpreter::getAddressOfGlobal(const clang::NamedDecl* D,

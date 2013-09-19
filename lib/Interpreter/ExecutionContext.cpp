@@ -34,11 +34,17 @@ ExecutionContext::ExecutionContext(llvm::Module* m)
   : m_RunningStaticInits(false), m_CxaAtExitRemapped(false)
 {
   assert(m && "llvm::Module must not be null!");
+  m_AtExitFuncs.reserve(256);
   InitializeBuilder(m);
 }
 
 // Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-ExecutionContext::~ExecutionContext() {}
+ExecutionContext::~ExecutionContext() {
+  for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
+    const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
+    (*AEE.m_Func)(AEE.m_Arg);
+  }
+}
 
 void ExecutionContext::InitializeBuilder(llvm::Module* m) {
   //
@@ -70,6 +76,14 @@ void ExecutionContext::InitializeBuilder(llvm::Module* m) {
 
   // install lazy function creators
   m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
+}
+
+int ExecutionContext::CXAAtExit(void (*func) (void*), void* arg, void* dso, 
+                                void* clangDecl) {
+  // Register a CXAAtExit function
+  clang::Decl* LastTLD = (clang::Decl*)clangDecl;
+  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, dso, LastTLD));
+  return 0; // happiness
 }
 
 void unresolvedSymbol()
@@ -300,6 +314,12 @@ ExecutionContext::runStaticDestructorsOnce(llvm::Module* m) {
     m_engine->runStaticConstructorsDestructors(true);
   }
 
+  // 'Unload' the cxa_atexit entities.
+  for (size_t I = 0, E = m_AtExitFuncs.size(); I < E; ++I) {
+    const CXAAtExitElement& AEE = m_AtExitFuncs[E-I-1];
+    (*AEE.m_Func)(AEE.m_Arg);
+  }
+  m_AtExitFuncs.clear();
 }
 
 int
