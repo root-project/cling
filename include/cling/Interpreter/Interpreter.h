@@ -16,6 +16,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 namespace llvm {
   class raw_ostream;
