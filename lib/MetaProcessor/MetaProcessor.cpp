@@ -18,7 +18,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
 
-#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 
 #include <fstream>
 #include <cstdlib>
