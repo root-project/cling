@@ -18,7 +18,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
 
-#include "llvm/Support/Path.h"
+#include "llvm/Support/FileSystem.h"
 
 #include <fstream>
 #include <cstdlib>
@@ -137,9 +137,9 @@ namespace cling {
       in.read(magic, sizeof(magic));
       size_t readMagic = in.gcount();
       if (readMagic >= 4) {
-        llvm::sys::LLVMFileType fileType
-          = llvm::sys::IdentifyFileType(magic, 4);
-        if (fileType != llvm::sys::Unknown_FileType) {
+        llvm::sys::fs::file_magic fileType
+          = llvm::sys::fs::identify_magic(magic);
+        if (fileType != llvm::sys::fs::file_magic::unknown) {
           llvm::errs() << "Error in cling::MetaProcessor: "
             "cannot read input from a binary file!\n";
           return Interpreter::kFailure;
