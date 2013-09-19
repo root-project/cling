@@ -30,8 +30,6 @@ namespace cling {
   public:
     typedef void* (*LazyFunctionCreatorFunc_t)(const std::string&);
 
-  public:
-
     enum ExecutionResult {
       kExeSuccess,
       kExeFunctionNotCompiled,
