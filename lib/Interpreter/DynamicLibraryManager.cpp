@@ -24,7 +24,7 @@ namespace cling {
 
   DynamicLibraryManager::~DynamicLibraryManager() {}
 
-  static llvm::sys::Path
+  static std::string
   findSharedLibrary(llvm::StringRef fileStem,
                     const llvm::SmallVectorImpl<llvm::sys::Path>& Paths,
                     bool& exists, bool& isDyLib) {
@@ -41,9 +41,70 @@ namespace cling {
     return llvm::sys::Path();
   }
 
+#if defined(LLVM_ON_UNIX)
+  static void GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
+#ifdef LTDL_SHLIBPATH_VAR
+    char* env_var = getenv(LTDL_SHLIBPATH_VAR);
+    if (env_var != 0) {
+      static const char PathSeparator = ':';
+      const char* at = env_var;
+      const char* delim = strchr(at, PathSeparator);
+      while (delim != 0) {
+        std::string tmp(at, size_t(delim-at));
+        if (llvm::sys::fs::is_directory(tmp.c_str()))
+            Paths.push_back(tmp);
+        at = delim + 1;
+        delim = strchr(at, PathSeparator);
+      }
+
+      if (*at != 0)
+        if (llvm::sys::fs::is_directory(llvm::StringRef(at)))
+          Paths.push_back(at);
+    }
+
+#endif
+    // FIXME: Should this look at LD_LIBRARY_PATH too?
+    Paths.push_back("/usr/local/lib/");
+    Paths.push_back("/usr/X11R6/lib/");
+    Paths.push_back("/usr/lib/");
+    Paths.push_back("/lib/");
+  }
+#elif defined(LLVM_ON_WIN32)
+  static void GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
+    char buff[MAX_PATH];
+    // Generic form of C:\Windows\System32
+    HRESULT res =  SHGetFolderPathA(NULL,
+                                    CSIDL_FLAG_CREATE | CSIDL_SYSTEM,
+                                    NULL,
+                                    SHGFP_TYPE_CURRENT,
+                                    buff);
+    if (res != S_OK) {
+      assert(0 && "Failed to get system directory");
+      return;
+    }
+    Paths.push_back(buff);
+
+    // Reset buff.
+    buff[0] = 0;
+    // Generic form of C:\Windows
+    res =  SHGetFolderPathA(NULL,
+                            CSIDL_FLAG_CREATE | CSIDL_WINDOWS,
+                            NULL,
+                            SHGFP_TYPE_CURRENT,
+                            buff);
+    if (res != S_OK) {
+      assert(0 && "Failed to get windows directory");
+      return;
+    }
+    Paths.push_back(buff);
+  }
+#else
+# error "Unsupported platform."
+#endif
+
   DynamicLibraryManager::LoadLibResult
   DynamicLibraryManager::tryLinker(const std::string& filename, bool permanent,
-                                   bool isAbsolute, bool& exists, 
+                                   bool isAbsolute, bool& exists,
                                    bool& isDyLib) {
     using namespace llvm::sys;
     exists = false;
@@ -58,12 +119,9 @@ namespace cling {
         FoundDyLib = filename;
       }
     } else {
-      llvm::SmallVector<Path, 16>
-      SearchPaths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
-
-      std::vector<Path> SysSearchPaths;
-      Path::GetSystemLibraryPaths(SysSearchPaths);
-      SearchPaths.append(SysSearchPaths.begin(), SysSearchPaths.end());
+      llvm::SmallVector<std::string, 16>
+        SearchPaths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
+      GetSystemLibraryPaths(SearchPaths);
 
       FoundDyLib = findSharedLibrary(filename, SearchPaths, exists, isDyLib);
 
@@ -106,7 +164,7 @@ namespace cling {
   }
 
   DynamicLibraryManager::LoadLibResult
-  DynamicLibraryManager::loadLibrary(const std::string& filename, 
+  DynamicLibraryManager::loadLibrary(const std::string& filename,
                                      bool permanent, bool* tryCode) {
     // If it's not an absolute path, prepend "lib"
     llvm::SmallVector<char, 128> Absolute(filename.c_str(),
@@ -140,7 +198,7 @@ namespace cling {
     return kLoadLibError;
   }
 
-  bool 
+  bool
   DynamicLibraryManager::isDynamicLibraryLoaded(llvm::StringRef fullPath) const{
     for(DyLibs::const_iterator I = m_DyLibs.begin(), E = m_DyLibs.end(); 
         I != E; ++I) {

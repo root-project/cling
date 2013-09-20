@@ -183,8 +183,9 @@ namespace cling {
     // Add path to interpreter's include files
     // Try to find the headers in the src folder first
 #ifdef CLING_SRCDIR_INCL
-    if (llvm::sys::fs::is_directory(CLING_SRCDIR_INCL))
-      AddIncludePath(CLING_SRCDIR_INCL);
+    llvm::StringRef SrcIncl(CLING_SRCDIR_INCL);
+    if (llvm::sys::fs::is_directory(SrcIncl))
+      AddIncludePath(SrcIncl);
 #endif
 
     llvm::SmallString<512> P(GetExecutablePath(argv[0]));
@@ -197,12 +198,13 @@ namespace cling {
       P[ExeIncl.size()] = 0;
       // Get foo/include
       llvm::sys::path::append(P, "include");
-      if (llvm::sys::fs::is_directory(P))
+      if (llvm::sys::fs::is_directory(P.str()))
         AddIncludePath(P.str());
       else {
 #ifdef CLING_INSTDIR_INCL
-        if (llvm::sys::fs::is_directory(CLING_INSTDIR_INCL)
-          AddIncludePath(CLING_INSTDIR_INCL);
+        llvm::StringRef InstIncl(CLING_INSTDIR_INCL);
+        if (llvm::sys::fs::is_directory(InstIncl))
+          AddIncludePath(InstIncl);
 #endif
       }
     }
