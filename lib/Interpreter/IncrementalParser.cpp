@@ -612,6 +612,9 @@ namespace cling {
     if (!T)
       T = getLastTransaction();
 
+    if (T->getState() == Transaction::kRolledBackWithErrors)
+      return; // The transaction was already 'unloaded'/'reverted'.
+
     assert(T->getState() == Transaction::kCommitted && 
            "Unloading not commited transaction?");
     assert(T->getModule() && 
