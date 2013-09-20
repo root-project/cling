@@ -54,7 +54,6 @@ namespace cling {
     llvm::SmallString<256> AbsPath(OutputPath);
     llvm::sys::fs::make_absolute(AbsPath);
     llvm::sys::Path OutPath(AbsPath);
-    bool Exists;
     assert(!OutPath.isRegularFile() && "Must be a folder.");
     // Create a temporary file.
     llvm::SmallString<128> TempPath;

@@ -170,7 +170,6 @@ namespace cling {
   };
 
   DeclReverter::~DeclReverter() {
-    FileManager& FM = m_Sema->getSourceManager().getFileManager();
     SourceManager& SM = m_Sema->getSourceManager();
     for (FileIDs::iterator I = m_FilesToUncache.begin(), 
            E = m_FilesToUncache.end(); I != E; ++I) {
