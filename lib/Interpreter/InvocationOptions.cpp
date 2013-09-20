@@ -17,7 +17,6 @@
 #include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
-using namespace clang::driver;
 using namespace cling::driver::clingoptions;
 
 using namespace llvm;
@@ -116,7 +115,7 @@ void cling::InvocationOptions::PrintHelp() {
   Opts->PrintHelp(llvm::errs(), "cling",
                   "cling: LLVM/clang C++ Interpreter: http://cern.ch/cling");
 
-  llvm::OwningPtr<OptTable> OptsC1(createDriverOptTable());
+  llvm::OwningPtr<OptTable> OptsC1(clang::driver::createDriverOptTable());
   OptsC1->PrintHelp(llvm::errs(), "clang -cc1",
                     "LLVM 'Clang' Compiler: http://clang.llvm.org");
 
