@@ -16,7 +16,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Signals.h"
 
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 
 using namespace clang;
@@ -25,6 +25,13 @@ namespace cling {
   ClangInternalState::ClangInternalState(ASTContext& C, const std::string& name)
     : m_ASTContext(C), m_DiffCommand("diff -u "), m_Name(name) {
     store();
+  }
+
+  ClangInternalState::~ClangInternalState() {
+    // cleanup the temporary files:
+    remove(m_LookupTablesFile.c_str());
+    remove(m_IncludedFilesFile.c_str());
+    remove(m_ASTFile.c_str());
   }
 
   void ClangInternalState::store() {

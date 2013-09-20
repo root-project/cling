@@ -40,7 +40,11 @@ namespace cling {
     std::string m_Name;
   public:
     ClangInternalState(clang::ASTContext& C, const std::string& Name);
+    ~ClangInternalState();
 
+    ///\Brief It is convenient the state object to be named so that can be
+    /// easily referenced in case of multiple.
+    ///
     const std::string& getName() const { return m_Name; }
 
     ///\brief Stores all internal structures of the compiler into a stream.
