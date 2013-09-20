@@ -129,11 +129,11 @@ namespace cling {
   // GetMainExecutable (since some platforms don't support taking the
   // address of main, and some platforms can't implement GetMainExecutable
   // without being given the address of a function in the main executable).
-  llvm::sys::Path GetExecutablePath(const char *Argv0) {
+  std::string GetExecutablePath(const char *Argv0) {
     // This just needs to be some symbol in the binary; C++ doesn't
     // allow taking the address of ::main however.
     void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-    return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
+    return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
   }
 
   const Parser& Interpreter::getParser() const {
@@ -183,24 +183,26 @@ namespace cling {
     // Add path to interpreter's include files
     // Try to find the headers in the src folder first
 #ifdef CLING_SRCDIR_INCL
-    llvm::sys::Path SrcP(CLING_SRCDIR_INCL);
-    if (SrcP.canRead())
-      AddIncludePath(SrcP.str());
+    if (llvm::sys::fs::is_directory(CLING_SRCDIR_INCL))
+      AddIncludePath(CLING_SRCDIR_INCL);
 #endif
 
-    llvm::sys::Path P = GetExecutablePath(argv[0]);
-    if (!P.isEmpty()) {
-      P.eraseComponent();  // Remove /cling from foo/bin/clang
-      P.eraseComponent();  // Remove /bin   from foo/bin
+    llvm::SmallString<512> P(GetExecutablePath(argv[0]));
+    if (!P.empty()) {
+      // Remove /cling from foo/bin/clang
+      llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
+      // Remove /bin   from foo/bin
+      ExeIncl = llvm::sys::path::parent_path(ExeIncl);
+      P.resize(ExeIncl.size() + 1);
+      P[ExeIncl.size()] = 0;
       // Get foo/include
-      P.appendComponent("include");
-      if (P.canRead())
+      llvm::sys::path::append(P, "include");
+      if (llvm::sys::fs::is_directory(P))
         AddIncludePath(P.str());
       else {
 #ifdef CLING_INSTDIR_INCL
-        llvm::sys::Path InstP(CLING_INSTDIR_INCL);
-        if (InstP.canRead())
-          AddIncludePath(InstP.str());
+        if (llvm::sys::fs::is_directory(CLING_INSTDIR_INCL)
+          AddIncludePath(CLING_INSTDIR_INCL);
 #endif
       }
     }
