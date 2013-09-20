@@ -92,7 +92,7 @@ namespace cling {
           class BreakProtection: public clang::NamedDecl {
           public:
             static void resetCachedLinkage(clang::NamedDecl* ND) {
-              ND->CacheValidAndLinkage = 0; }
+              static_cast<BreakProtection*>(ND)->CacheValidAndLinkage = 0; }
           };
           BreakProtection::resetCachedLinkage(ND);
 
