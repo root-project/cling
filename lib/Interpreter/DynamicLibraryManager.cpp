@@ -24,21 +24,42 @@ namespace cling {
 
   DynamicLibraryManager::~DynamicLibraryManager() {}
 
-  static std::string
+  static bool isSharedLib(llvm::StringRef LibName, bool& exists) {
+    using namespace llvm::sys::fs;
+    file_magic Magic;
+    llvm::error_code Error = identify_magic(LibName, Magic);
+    exists = (Error == llvm::errc::success);
+    return exists &&
+#ifdef __APPLE__
+        (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
+         || Magic == file_magic::macho_dynamically_linked_shared_lib
+         || Magic == file_magic::macho_dynamically_linked_shared_lib_stub)
+#elif defined(LLVM_ON_UNIX)
+        Magic == file_magic::elf_shared_object
+#elif defined(LLVM_ON_WIN32)
+# error "Windows DLLs  not yet implemented!"
+        //Magic == file_magic::pecoff_executable?
+#else
+# error "Unsupported platform."
+#endif
+      ;
+  }
+
+  static void
   findSharedLibrary(llvm::StringRef fileStem,
-                    const llvm::SmallVectorImpl<llvm::sys::Path>& Paths,
+                    const llvm::SmallVectorImpl<std::string>& Paths,
+                    llvm::SmallString<512>& FoundDyLib,
                     bool& exists, bool& isDyLib) {
-    for (llvm::SmallVectorImpl<llvm::sys::Path>::const_iterator
-           IPath = Paths.begin(), EPath = Paths.end(); IPath != EPath; ++IPath){
-      llvm::sys::Path ThisPath(*IPath);
-      ThisPath.appendComponent(fileStem);
-      exists = llvm::sys::fs::exists(ThisPath.str());
-      if (exists && ThisPath.isDynamicLibrary()) {
-        isDyLib = true;
-        return ThisPath;
-      }
+    for (llvm::SmallVectorImpl<std::string>::const_iterator
+        IPath = Paths.begin(), EPath = Paths.end(); IPath != EPath; ++IPath) {
+      llvm::SmallString<512> ThisPath(*IPath);
+      llvm::sys::path::append(ThisPath, fileStem);
+      isDyLib = isSharedLib(ThisPath.str(), exists);
+      if (isDyLib)
+        ThisPath.swap(FoundDyLib);
+      if (exists)
+        return;
     }
-    return llvm::sys::Path();
   }
 
 #if defined(LLVM_ON_UNIX)
@@ -110,27 +131,32 @@ namespace cling {
     exists = false;
     isDyLib = false;
 
-    llvm::sys::Path FoundDyLib;
+    llvm::SmallString<512> FoundDyLib;
 
     if (isAbsolute) {
-      exists = llvm::sys::fs::exists(filename.c_str());
-      if (exists && Path(filename).isDynamicLibrary()) {
-        isDyLib = true;
+      isDyLib = isSharedLib(filename, exists);
+      if (isDyLib)
         FoundDyLib = filename;
-      }
     } else {
       llvm::SmallVector<std::string, 16>
         SearchPaths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
       GetSystemLibraryPaths(SearchPaths);
 
-      FoundDyLib = findSharedLibrary(filename, SearchPaths, exists, isDyLib);
+      findSharedLibrary(filename, SearchPaths, FoundDyLib, exists, isDyLib);
 
-      std::string filenameWithExt(filename);
-      filenameWithExt += ("." + Path::GetDLLSuffix()).str();
       if (!exists) {
         // Add DyLib extension:
-        FoundDyLib = findSharedLibrary(filenameWithExt, SearchPaths, exists,
-                                       isDyLib);
+        llvm::SmallString<512> filenameWithExt(filename);
+#if defined(LLVM_ON_UNIX)
+        static const char* DyLibExt = ".so";
+#elif defined(LLVM_ON_WIN32)
+        static const char* DyLibExt = ".dll";
+#else
+# error "Unsupported platform."
+#endif
+        filenameWithExt += DyLibExt;
+        findSharedLibrary(filenameWithExt, SearchPaths, FoundDyLib, exists,
+                          isDyLib);
       }
     }
 
@@ -141,11 +167,12 @@ namespace cling {
 
     // TODO: !permanent case
 #ifdef WIN32
+# error "Windows DLL opening still needs to be implemented!"
     void* dyLibHandle = needs to be implemented!;
     std::string errMsg;
 #else
     const void* dyLibHandle
-      = dlopen(FoundDyLib.str().c_str(), RTLD_LAZY|RTLD_GLOBAL);
+      = dlopen(FoundDyLib.data(), RTLD_LAZY|RTLD_GLOBAL);
     std::string errMsg;
     if (const char* DyLibError = dlerror()) {
       errMsg = DyLibError;
