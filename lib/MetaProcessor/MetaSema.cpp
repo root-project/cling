@@ -70,7 +70,7 @@ namespace cling {
   }
 
   void MetaSema::actOnICommand(llvm::StringRef path) const {
-    if (path.isEmpty())
+    if (path.empty())
       m_Interpreter.DumpIncludePath();
     else
       m_Interpreter.AddIncludePath(path.str());
