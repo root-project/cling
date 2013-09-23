@@ -18,11 +18,11 @@ PREFIX(prefix_2, {"--" COMMA 0})
 
 OPTION(prefix_0, "<input>", INPUT, Input, INVALID, INVALID, 0, 0, 0, 0)
 OPTION(prefix_0, "<unknown>", UNKNOWN, Unknown, INVALID, INVALID, 0, 0, 0, 0)
+OPTION(prefix_3, "help", help, Flag, INVALID, INVALID, 0, 0,
+       "Print this help text", 0)
 OPTION(prefix_1, "L", L, JoinedOrSeparate, INVALID, INVALID, 0, 0,
        "Add directory to library search path", "<directory>")
 // Re-implement to forward to our help
-OPTION(prefix_3, "help", help, Flag, INVALID, INVALID, 0, 0,
-       "Print this help text", 0)
 OPTION(prefix_1, "l", l, JoinedOrSeparate, INVALID, INVALID, 0, 0,
        "Load a library before prompt", "<library>")
 OPTION(prefix_2, "metastr=", _metastr_EQ, Joined, INVALID, INVALID, 0, 0,
