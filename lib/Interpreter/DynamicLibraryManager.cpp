@@ -163,7 +163,7 @@ namespace cling {
     if (!isDyLib)
       return kLoadLibError;
     
-    assert(!FoundDyLib.isEmpty() && "The shared lib exists but can't find it!");
+    assert(!FoundDyLib.empty() && "The shared lib exists but can't find it!");
 
     // TODO: !permanent case
 #ifdef WIN32

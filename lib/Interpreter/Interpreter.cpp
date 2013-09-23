@@ -484,15 +484,24 @@ namespace cling {
     const DirectoryLookup* LookupFrom = 0;
     const DirectoryLookup* CurDir = 0;
 
-    Module* module = 0;
-    PP.LookupFile(headerFile, isAngled, LookupFrom, CurDir, /*SearchPath*/0,
-                  /*RelativePath*/ 0, &module, /*SkipCache*/false);
-    if (!module)
+    ModuleMap::KnownHeader suggestedModule;
+    // PP::LookupFile uses it to issue 'nice' diagnostic
+    SourceLocation fileNameLoc;
+    PP.LookupFile(fileNameLoc, headerFile, isAngled, LookupFrom, CurDir, 
+                  /*SearchPath*/0, /*RelativePath*/ 0, &suggestedModule, 
+                  /*SkipCache*/false);
+    if (!suggestedModule)
       return Interpreter::kFailure;
 
-    SourceLocation fileNameLoc;
-    ModuleIdPath path = std::make_pair(PP.getIdentifierInfo(module->Name),
-                                       fileNameLoc);
+    // Copied from PPDirectives.cpp
+    SmallVector<std::pair<IdentifierInfo *, SourceLocation>, 2> path;
+    for (Module *mod = suggestedModule.getModule(); mod; mod = mod->Parent) {
+      IdentifierInfo* II 
+        = &getSema().getPreprocessor().getIdentifierTable().get(mod->Name);
+      path.push_back(std::make_pair(II, fileNameLoc));
+    }
+
+    std::reverse(path.begin(), path.end());
 
     // Pretend that the module came from an inclusion directive, so that clang
     // will create an implicit import declaration to capture it in the AST.
@@ -619,7 +628,7 @@ namespace cling {
     Lexer WrapLexer(SourceLocation(), getSema().getLangOpts(), input.c_str(), 
                     input.c_str(), input.c_str() + input.size());
     Token Tok;
-    WrapLexer.Lex(Tok);
+    WrapLexer.LexFromRawLexer(Tok);
 
     const tok::TokenKind kind = Tok.getKind();
 
@@ -635,7 +644,7 @@ namespace cling {
         return false;
     }
     else if (kind == tok::hash) {
-      WrapLexer.Lex(Tok);
+      WrapLexer.LexFromRawLexer(Tok);
       if (Tok.is(tok::raw_identifier) && !Tok.needsCleaning()) {
         StringRef keyword(Tok.getRawIdentifierData(), Tok.getLength());
         if (keyword.equals("include"))
