@@ -58,17 +58,13 @@ namespace cling {
     // Only create the temporary if the parent directory exists (or create
     // missing directories is true) and we can actually write to OutPath,
     // otherwise we want to fail early.
-    llvm::SmallString<256> AbsPath(OutputPath);
-    llvm::sys::fs::make_absolute(AbsPath);
-    llvm::sys::Path OutPath(AbsPath);
-    assert(!OutPath.isRegularFile() && "Must be a folder.");
+    llvm::SmallString<256> TempPath(OutputPath);
+    llvm::sys::fs::make_absolute(TempPath);
+    assert(llvm::sys::path::is_directory(TempPath) && "Must be a folder.");
     // Create a temporary file.
-    llvm::SmallString<128> TempPath;
-    TempPath = OutFile;
     TempPath += "-%%%%%%%%";
     int fd;
-    if (llvm::sys::fs::unique_file(TempPath.str(), fd, TempPath,
-                                   /*makeAbsolute=*/false, 0664)
+    if (llvm::sys::fs::createUniqueFile(TempPath.str(), fd, TempPath)
         == llvm::errc::success) {
       OS.reset(new llvm::raw_fd_ostream(fd, /*shouldClose=*/true));
       OSFile = TempPath.str();
@@ -76,11 +72,11 @@ namespace cling {
 
     // Make sure the out stream file gets removed if we crash.
     if (RemoveFileOnSignal)
-      llvm::sys::RemoveFileOnSignal(llvm::sys::Path(OSFile));
-    
+      llvm::sys::RemoveFileOnSignal(OSFile);
+
     if (TempPathName)
       *TempPathName = OSFile;
-    
+
     return OS.take();
   }
 
