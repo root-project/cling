@@ -13,6 +13,7 @@
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
+#include <cstdlib>
 
 namespace llvm {
   class raw_ostream;
