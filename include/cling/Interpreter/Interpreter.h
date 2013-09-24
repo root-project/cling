@@ -57,6 +57,7 @@ namespace cling {
   }
   class ClangInternalState;
   class CompilationOptions;
+  class DynamicLibraryManager;
   class ExecutionContext;
   class IncrementalParser;
   class InterpreterCallbacks;
@@ -90,15 +91,6 @@ namespace cling {
       kSuccess,
       kFailure,
       kMoreInputExpected
-    };
-
-    ///\brief Describes the result of loading a library.
-    ///
-    enum LoadLibResult {
-      kLoadLibSuccess, // library loaded successfully
-      kLoadLibExists,  // library was already loaded
-      kLoadLibError, // library was not found
-      kLoadLibNumResults
     };
 
     ///\brief Describes the result of running a function.
@@ -174,21 +166,13 @@ namespace cling {
     ///
     llvm::OwningPtr<InterpreterCallbacks> m_Callbacks;
 
-    typedef const void* DyLibHandle;
-    //typedef llvm::DenseMap<DyLibHandle, std::string> DyLibs;
-    typedef std::map<DyLibHandle, std::string> DyLibs;
-    ///\brief DynamicLibraries loaded by this Interpreter.
+    ///\brief Dynamic library manager object.
     ///
-    DyLibs m_DyLibs;
+    llvm::OwningPtr<DynamicLibraryManager> m_DyLibManager;
 
     ///\brief Information about the last stored states through .storeState
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
-
-    ///\brief Try to load a library file via the llvm::Linker.
-    ///
-    LoadLibResult tryLinker(const std::string& filename, bool permanent,
-                            bool isAbsolute, bool& exists, bool& isDyLib);
 
     ///\brief Processes the invocation options.
     ///
@@ -491,7 +475,7 @@ namespace cling {
     /// @param[in] T - The cling::Transaction that contains the declarations and
     ///                the compilation/generation options.
     ///
-    ///\returns Whether the operation was fully successfil.
+    ///\returns Whether the operation was fully successful.
     ///
     CompilationResult emitAllDecls(Transaction* T);
 
@@ -505,32 +489,6 @@ namespace cling {
     ///
     CompilationResult loadFile(const std::string& filename,
                                bool allowSharedLib = true);
-
-    ///\brief Loads a shared library.
-    ///
-    ///\param [in] filename - The file to loaded.
-    ///\param [in] permanent - If false, the file can be unloaded later.
-    ///\param [out] tryCode - If not NULL, it will be set to false if this file
-    ///        cannot be included.
-    ///
-    ///\returns kLoadLibSuccess on success, kLoadLibExists if the library was
-    /// already loaded, kLoadLibError if the library cannot be found or any
-    /// other error was encountered.
-    ///
-    LoadLibResult loadLibrary(const std::string& filename, bool permanent,
-                              bool *tryCode = 0);
-
-    ///\brief Returns true if the file was a dynamic library and it was already
-    /// loaded.
-    ///
-    bool isDynamicLibraryLoaded(llvm::StringRef fullPath) const;
-
-    ///\brief Explicitly tell the execution engine to use symbols from
-    ///       a shared library that would otherwise not be used for symbol
-    ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
-    ///\param [in] DyLibHandle - the system specific shared library handle.
-    ///
-    static void ExposeHiddenSharedLibrarySymbols(void* DyLibHandle);
 
     bool isPrintingAST() const { return m_PrintAST; }
     void enablePrintAST(bool print = true) { m_PrintAST = print; }
@@ -579,6 +537,13 @@ namespace cling {
     void setCallbacks(InterpreterCallbacks* C);
     const InterpreterCallbacks* getCallbacks() const {return m_Callbacks.get();}
     InterpreterCallbacks* getCallbacks() { return m_Callbacks.get(); }
+
+    const DynamicLibraryManager* getDynamicLibraryManager() const {
+      return m_DyLibManager.get();
+    }
+    DynamicLibraryManager* getDynamicLibraryManager() {
+      return m_DyLibManager.get();
+    }
 
     // FIXME: remove once modules are there; see
     // DeclCollector::HandleTopLevelDecl().
