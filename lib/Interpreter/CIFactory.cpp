@@ -172,7 +172,7 @@ namespace cling {
         HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
         if (!E.IsFramework && E.Group == clang::frontend::System
             && E.IgnoreSysRoot && oldResInc.str() == E.Path) {
-          E.Path = newResInc.data();
+          E.Path = newResInc.c_str();
           foundOldResInc = true;
         }
       }

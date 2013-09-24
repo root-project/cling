@@ -172,7 +172,7 @@ namespace cling {
     std::string errMsg;
 #else
     const void* dyLibHandle
-      = dlopen(FoundDyLib.data(), RTLD_LAZY|RTLD_GLOBAL);
+      = dlopen(FoundDyLib.c_str(), RTLD_LAZY|RTLD_GLOBAL);
     std::string errMsg;
     if (const char* DyLibError = dlerror()) {
       errMsg = DyLibError;
