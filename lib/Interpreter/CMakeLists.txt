@@ -27,6 +27,7 @@ add_cling_library(clingInterpreter
   ClangInternalState.cpp
   DeclCollector.cpp
   DeclExtractor.cpp
+  DynamicLibraryManager.cpp
   DynamicLookup.cpp
   DynamicExprInfo.cpp
   ExecutionContext.cpp
