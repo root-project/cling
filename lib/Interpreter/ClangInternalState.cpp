@@ -60,7 +60,7 @@ namespace cling {
     // otherwise we want to fail early.
     llvm::SmallString<256> TempPath(OutputPath);
     llvm::sys::fs::make_absolute(TempPath);
-    assert(llvm::sys::path::is_directory(TempPath) && "Must be a folder.");
+    assert(llvm::sys::fs::is_directory(TempPath.str()) && "Must be a folder.");
     // Create a temporary file.
     TempPath += "-%%%%%%%%";
     int fd;
