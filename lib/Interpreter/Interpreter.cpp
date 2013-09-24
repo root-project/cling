@@ -34,21 +34,11 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaInternal.h"
 
-#include "llvm/Linker.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Path.h"
 
-#include <iostream>
-#include <fstream>
-#include <set>
 #include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 #include <vector>
 

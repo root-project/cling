@@ -9,14 +9,10 @@
 
 #include "cling/Interpreter/InvocationOptions.h"
 
-//#include "llvm/ADT/DenseMap.h"
-#include <map>
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
-#include <vector>
-#include <cstdlib>
 
 namespace llvm {
   class raw_ostream;
