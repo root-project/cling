@@ -64,8 +64,13 @@ namespace cling {
 
 #if defined(LLVM_ON_UNIX)
   static void GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
-#ifdef LTDL_SHLIBPATH_VAR
-    char* env_var = getenv(LTDL_SHLIBPATH_VAR);
+    char* env_var = getenv("LD_LIBRARY_PATH");
+#if __APPLE__
+    if (!env_var)
+      env_var = getenv("DYLD_LIBRARY_PATH");
+    if (!env_var)
+      env_var = getenv("DYLD_FALLBACK_LIBRARY_PATH");
+#endif
     if (env_var != 0) {
       static const char PathSeparator = ':';
       const char* at = env_var;
@@ -83,8 +88,6 @@ namespace cling {
           Paths.push_back(at);
     }
 
-#endif
-    // FIXME: Should this look at LD_LIBRARY_PATH too?
     Paths.push_back("/usr/local/lib/");
     Paths.push_back("/usr/X11R6/lib/");
     Paths.push_back("/usr/lib/");
