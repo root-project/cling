@@ -409,14 +409,25 @@ namespace cling {
   }
 
   static bool FuncArgTypesMatch(const ASTContext& C, 
-                             const llvm::SmallVector<QualType, 4>& GivenArgTypes,
+                                const llvm::SmallVector<Expr*, 4> &GivenArgs,
                                 const FunctionProtoType* FPT) {
     // FIXME: What if FTP->arg_size() != GivenArgTypes.size()?
     FunctionProtoType::arg_type_iterator ATI = FPT->arg_type_begin();
     FunctionProtoType::arg_type_iterator E = FPT->arg_type_end();
-    llvm::SmallVector<QualType, 4>::const_iterator GAI = GivenArgTypes.begin();
+    llvm::SmallVector<Expr*, 4>::const_iterator GAI = GivenArgs.begin();
     for (; ATI && (ATI != E); ++ATI, ++GAI) {
-      if (!C.hasSameType(*ATI, *GAI)) {
+      if ((*GAI)->isLValue()) {
+        // If the user specified a reference we may have transform it into
+        // an LValue non reference (See getExprProto) to have it in a form
+        // useful for the lookup.  So we are a bit sloppy per se here (maybe)
+        const ReferenceType *RefType = (*ATI)->getAs<ReferenceType>();
+        if (RefType) {
+          if (!C.hasSameType(RefType->getPointeeType(),(*GAI)->getType()))
+            return false;
+        } else if (!C.hasSameType(*ATI,(*GAI)->getType())) {
+          return false;
+        }
+      } else if (!C.hasSameType(*ATI, (*GAI)->getType() )) {
         return false;
       }
     }
@@ -425,7 +436,7 @@ namespace cling {
 
   static bool IsOverload(const ASTContext& C,
                          const TemplateArgumentListInfo* FuncTemplateArgs,
-                         const llvm::SmallVector<QualType, 4>& GivenArgTypes, 
+                         const llvm::SmallVector<Expr*, 4> &GivenArgs,
                          const FunctionDecl* FD) {
 
     //FunctionTemplateDecl* FTD = FD->getDescribedFunctionTemplate();
@@ -435,9 +446,9 @@ namespace cling {
       return false;
     }
     const FunctionProtoType* FPT = llvm::cast<FunctionProtoType>(FQT);
-    if ((GivenArgTypes.size() != FPT->getNumArgs()) ||
+    if ((GivenArgs.size() != FPT->getNumArgs()) ||
         //(GivenArgsAreEllipsis != FPT->isVariadic()) ||
-        !FuncArgTypesMatch(C, GivenArgTypes, FPT)) {
+        !FuncArgTypesMatch(C, GivenArgs, FPT)) {
       return true;
     }
     return false;
@@ -575,11 +586,7 @@ namespace cling {
                                                            Context,P,S);
     
     if (TheDecl) {
-      llvm::SmallVector<QualType, 4> GivenArgTypes;
-      for( size_t s = 0 ; s < GivenArgs.size(); ++s) {
-        GivenArgTypes.push_back( GivenArgs[s]->getType().getCanonicalType() );
-      }
-      if ( IsOverload( Context, FuncTemplateArgs, GivenArgTypes, TheDecl) ) {
+      if ( IsOverload( Context, FuncTemplateArgs, GivenArgs, TheDecl) ) {
         return 0;
       } else {
         // Double check const-ness.
