@@ -197,7 +197,7 @@ namespace cling {
   DynamicLibraryManager::loadLibrary(const std::string& filename,
                                      bool permanent, bool* tryCode) {
     // If it's not an absolute path, prepend "lib"
-    SmallString<128> Absolute((llvm::StringRef(filename)));
+    llvm::SmallString<128> Absolute((llvm::StringRef(filename)));
     llvm::sys::fs::make_absolute(Absolute);
     bool isAbsolute = filename == Absolute.c_str();
     bool exists = false;
