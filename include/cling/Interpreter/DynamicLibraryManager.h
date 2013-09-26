@@ -68,9 +68,9 @@ namespace cling {
     ///\brief Explicitly tell the execution engine to use symbols from
     ///       a shared library that would otherwise not be used for symbol
     ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
-    ///\param [in] DyLibHandle - the system specific shared library handle.
+    ///\param [in] handle - the system specific shared library handle.
     ///
-    static void ExposeHiddenSharedLibrarySymbols(void* handle);
+    static void ExposeHiddenSharedLibrarySymbols(DyLibHandle handle);
   };
 } // end namespace cling
 #endif // CLING_DYNAMIC_LIBRARY_MANAGER_H
