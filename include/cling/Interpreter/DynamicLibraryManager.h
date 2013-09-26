@@ -70,7 +70,7 @@ namespace cling {
     ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
     ///\param [in] handle - the system specific shared library handle.
     ///
-    static void ExposeHiddenSharedLibrarySymbols(DyLibHandle handle);
+    static void ExposeHiddenSharedLibrarySymbols(void* handle);
   };
 } // end namespace cling
 #endif // CLING_DYNAMIC_LIBRARY_MANAGER_H
