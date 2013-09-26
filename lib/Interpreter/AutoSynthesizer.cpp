@@ -50,6 +50,13 @@ namespace cling {
           VarDecl* VD 
             = cast<VarDecl>(cast<DeclRefExpr>(BinOp->getLHS())->getDecl());
           QualType ResTy;
+          struct NonDependentSetter: public clang::Type {
+            static void set(clang::QualType QT) {
+              clang::Type* Ty = const_cast<clang::Type*>(QT.getTypePtr());
+              static_cast<NonDependentSetter*>(Ty)->setDependent(false);
+            }
+          };
+          NonDependentSetter::set(VD->getType());
           TypeSourceInfo* TrivialTSI
             = C.getTrivialTypeSourceInfo(VD->getType());
           Expr* RHS = BinOp->getRHS();
