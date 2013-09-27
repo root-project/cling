@@ -631,7 +631,7 @@ namespace cling {
     QualType VarAddrTy = m_Sema->BuildArrayType(m_Context->VoidPtrTy,
                                                 ArrayType::Normal,
                                                 /*ArraySize*/0,
-                                                Qualifiers(),
+                                                /*IndexTypeQuals*/0,
                                                 m_NoRange,
                                                 DeclarationName() );
 
