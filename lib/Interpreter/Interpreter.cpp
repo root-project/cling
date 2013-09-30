@@ -180,14 +180,18 @@ namespace cling {
 
     m_IncrParser->Initialize();
 
-    // Add path to interpreter's include files
-    // Try to find the headers in the src folder first
-#ifdef CLING_SRCDIR_INCL
-    llvm::StringRef SrcIncl(CLING_SRCDIR_INCL);
-    if (llvm::sys::fs::is_directory(SrcIncl))
-      AddIncludePath(SrcIncl);
-#endif
-
+    // Add configuration paths to interpreter's include files.
+#ifdef CLING_INCLUDE_PATHS
+    llvm::StringRef InclPaths(CLING_INCLUDE_PATHS);
+    for (std::pair<llvm::StringRef, llvm::StringRef> Split = InclPaths.split(':');
+         !Split.second.empty(); Split = InclPaths.split(':')) {
+      if (llvm::sys::fs::is_directory(Split.first))
+        AddIncludePath(Split.first);
+      InclPaths = Split.second;
+    }
+    // Add remaining part
+    AddIncludePath(InclPaths);
+#else
     llvm::SmallString<512> P(GetExecutablePath(argv[0]));
     if (!P.empty()) {
       // Remove /cling from foo/bin/clang
@@ -200,14 +204,8 @@ namespace cling {
       llvm::sys::path::append(P, "include");
       if (llvm::sys::fs::is_directory(P.str()))
         AddIncludePath(P.str());
-      else {
-#ifdef CLING_INSTDIR_INCL
-        llvm::StringRef InstIncl(CLING_INSTDIR_INCL);
-        if (llvm::sys::fs::is_directory(InstIncl))
-          AddIncludePath(InstIncl);
-#endif
-      }
     }
+#endif
 
     // Enable incremental processing, which prevents the preprocessor destroying
     // the lexer on EOF token.
