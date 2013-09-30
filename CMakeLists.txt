@@ -149,8 +149,7 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
   )
 
 add_definitions( -D_GNU_SOURCE
-  -DCLING_SRCDIR_INCL="${CLING_SOURCE_DIR}/include"
-  -DCLING_INSTDIR_INCL="${CLING_BINARY_DIR}/include" )
+  -DCLING_INCLUDE_PATHS="${CLING_SOURCE_DIR}/include:${CLING_BINARY_DIR}/include" )
 
 add_subdirectory(lib)
 add_subdirectory(tools)
