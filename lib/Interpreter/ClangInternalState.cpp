@@ -62,6 +62,7 @@ namespace cling {
     llvm::sys::fs::make_absolute(TempPath);
     assert(llvm::sys::fs::is_directory(TempPath.str()) && "Must be a folder.");
     // Create a temporary file.
+    llvm::sys::path::append(TempPath, OutFile);
     TempPath += "-%%%%%%%%";
     int fd;
     if (llvm::sys::fs::createUniqueFile(TempPath.str(), fd, TempPath)
