@@ -128,6 +128,7 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
   llvm::SmallPtrSet<llvm::Function*, 40> funcsToFreeUnique;
   for (size_t i = 0; i < funcsToFree.size(); ++i) {
     llvm::Function* func = funcsToFree[i];
+    if (!func) continue;
     if (funcsToFreeUnique.insert(func)) {
       for (llvm::Value::use_iterator IU = func->use_begin(),
              EU = func->use_end(); IU != EU; ++IU) {
