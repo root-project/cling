@@ -194,7 +194,7 @@ namespace cling {
   void DeclReverter::PreVisitDecl(Decl *D) {
     const SourceLocation Loc = D->getLocStart();
     const SourceManager& SM = m_Sema->getSourceManager();
-    FileID FID = SM.getFileID(Loc);
+    FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
     if (!FID.isInvalid() && !m_FilesToUncache.count(FID)) 
       m_FilesToUncache.insert(FID);
   }

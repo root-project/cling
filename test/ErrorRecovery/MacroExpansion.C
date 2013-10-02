@@ -3,15 +3,15 @@
 #define BEGIN_NAMESPACE namespace test_namespace {
 #define END_NAMESPACE }
 
-.storeState "testMacroExpansion"
- .rawInput 1
+.rawInput 1
 
 BEGIN_NAMESPACE int j; END_NAMESPACE
-BEGIN_NAMESPACE int j; END_NAMESPACE // expected-error {{redefinition of 'j'}} expected-note {{previous definition is here}} 
 
-.rawInput 0
+.storeState "testMacroExpansion"
+BEGIN_NAMESPACE int j; END_NAMESPACE // expected-error {{redefinition of 'j'}} expected-note {{previous definition is here}} 
 .compareState "testMacroExpansion"
-// CHECK-NOT: File with AST differencies stored in: testMacroExpansionAST.diff
+.rawInput 0
+// CHECK-NOT: Differences
 // Make FileCheck happy with having at least one positive rule: 
 int a = 5
 // CHECK: (int) 5
