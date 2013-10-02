@@ -272,8 +272,13 @@ namespace cling {
                               );
 
         m_Sema->LookupName(Previous, S);
-
+        bool VDWasUsed = VD->isUsed();
         m_Sema->CheckVariableDeclaration(VD, Previous);
+        // CheckVariableDeclaration calls mergeVarDecl, which updates isUsed. 
+        // And if the previous wasn't used the VD's used flag gets updated to 
+        // not used too.
+        if(VDWasUsed)
+          VD->setIsUsed(true);
       }
 
       if (ND->isInvalidDecl())
