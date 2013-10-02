@@ -128,7 +128,7 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
   llvm::SmallPtrSet<llvm::Function*, 40> funcsToFreeUnique;
   for (size_t i = 0; i < funcsToFree.size(); ++i) {
     llvm::Function* func = funcsToFree[i];
-    if (!func) continue;
+    assert(func && "Cannot free NULL function");
     if (funcsToFreeUnique.insert(func)) {
       for (llvm::Value::use_iterator IU = func->use_begin(),
              EU = func->use_end(); IU != EU; ++IU) {
@@ -191,8 +191,9 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
                    << "' unresolved while linking function '" << funcname
                    << "'!\n";
       llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
-      assert(ff && "cannot find function to free");
-      funcsToFree.push_back(ff);
+      // i could also reference a global variable, in which case ff == 0.
+      if (ff)
+        funcsToFree.push_back(ff);
     }
     freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
     m_unresolvedSymbols.clear();
