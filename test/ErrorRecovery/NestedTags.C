@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling -Xclang -verify 2>&1
+// RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
 // Tests the removal of nested decls 
 
