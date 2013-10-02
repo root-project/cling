@@ -11,7 +11,7 @@ int my_funct();
 .storeState "testRedeclarables"
 #include "Redeclarables.h"
 .compareState "testRedeclarables"
-// CHECK-NOT: File with AST differencies stored in: testRedeclarablesAST.diff
+// CHECK-NOT: Differences
 
 .rawInput 1
 int my_funct() { 
