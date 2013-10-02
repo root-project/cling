@@ -11,12 +11,55 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclTemplate.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 
 using namespace clang;
+
+namespace {
+  // Remove the linkage cache. On next access it will calculate it
+  // considering the new position of the declaration.
+  class BreakProtection: public clang::NamedDecl {
+  public:
+    static void resetCachedLinkage(clang::NamedDecl* ND) {
+      static_cast<BreakProtection*>(ND)->CacheValidAndLinkage = 0; }
+  };
+
+  static void clearLinkageForClass(const CXXRecordDecl *RD) {
+    for (DeclContext::decl_iterator I = RD->decls_begin(),
+           E = RD->decls_end(); I != E; ++I) {
+      if (NamedDecl* IND = dyn_cast<NamedDecl>(*I))
+        BreakProtection::resetCachedLinkage(IND);
+    }
+  }
+
+  static void clearLinkage(NamedDecl *ND) {
+    BreakProtection::resetCachedLinkage(ND);
+    if (const CXXRecordDecl* CXXRD = dyn_cast<CXXRecordDecl>(ND))
+      clearLinkageForClass(CXXRD);
+    else
+    if (ClassTemplateDecl *temp = dyn_cast<ClassTemplateDecl>(ND)) {
+      // Clear linkage for the template pattern.
+      CXXRecordDecl *record = temp->getTemplatedDecl();
+      clearLinkageForClass(record);
+
+      // We need to clear linkage for specializations, too.
+      for (ClassTemplateDecl::spec_iterator
+             i = temp->spec_begin(), e = temp->spec_end(); i != e; ++i)
+        clearLinkage(*i);
+    } else
+      // Clear cached linkage for function template decls, too.
+    if (FunctionTemplateDecl *temp = dyn_cast<FunctionTemplateDecl>(ND)) {
+      clearLinkage(temp->getTemplatedDecl());
+      for (FunctionTemplateDecl::spec_iterator
+             i = temp->spec_begin(), e = temp->spec_end(); i != e; ++i)
+        clearLinkage(*i);
+    }
+  }
+}
 
 namespace cling {
 
@@ -87,14 +130,8 @@ namespace cling {
           if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
             VD->setStorageClass(SC_None);
           }
-          // Remove the linkage cache. On next access it will calculate it
-          // considering the new position of the declaration.
-          class BreakProtection: public clang::NamedDecl {
-          public:
-            static void resetCachedLinkage(clang::NamedDecl* ND) {
-              static_cast<BreakProtection*>(ND)->CacheValidAndLinkage = 0; }
-          };
-          BreakProtection::resetCachedLinkage(ND);
+
+          clearLinkage(ND);
 
           TouchedDecls.push_back(ND);
         }
