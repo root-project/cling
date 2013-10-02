@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling -Xclang -verify | FileCheck %s
+// RUN: cat %s | %cling | FileCheck %s
 
 // Test the ability of unloading the last transaction. Here as a matter of fact
 // we unload the wrapper as well and TODO: decrement the unique wrapper counter.
