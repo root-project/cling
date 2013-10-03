@@ -5,9 +5,9 @@
 // XFAIL: i686-pc-linux-gnu
 
 char *p = 0;
-strcmp("a", p); // expected-warning {{warning: null passed to a callee which requires a non-null argument}}
+strcmp("a", p); // expected-warning {{null passed to a callee which requires a non-null argument}}
 
-strcmp(p, "a"); // expected-warning {{warning: null passed to a callee which requires a non-null argument}}
+strcmp(p, "a"); // expected-warning {{null passed to a callee which requires a non-null argument}}
 
 extern "C" int printf(const char* fmt, ...);
 .rawInput 1
@@ -23,7 +23,7 @@ extern "C" int cannotCallWithNull(int* p) {
   return 1;
 }
 int *q = 0;
-cannotCallWithNull(q); // expected-warning {{warning: null passed to a callee which requires a non-null argument}}
+cannotCallWithNull(q); // expected-warning {{null passed to a callee which requires a non-null argument}}
 //CHECK-NOT: Must not be called with p=0.
 cannotCallWithNull(new int(4))
 //CHECK: (int) 1
