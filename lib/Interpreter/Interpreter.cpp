@@ -264,7 +264,8 @@ namespace cling {
 
   }
 
-  Interpreter::~Interpreter() {
+  Interpreter::~Interpreter() {    
+    m_ExecutionContext->shuttingDown();
     getCI()->getDiagnostics().getClient()->EndSourceFile();
   }
 

@@ -154,6 +154,14 @@ namespace cling {
     ///
     bool addSymbol(const char* symbolName,  void* symbolAddress);
 
+    ///\brief Tells the execution context that we are shutting down the system.
+    ///
+    /// This that notification is needed because the execution context needs to
+    /// perform extra actions like delete all managed by it symbols, which might
+    /// still require alive system.
+    ///
+    void shuttingDown();
+
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///
     /// JIT symbols might not be immediately convertible to e.g. a function

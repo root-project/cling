@@ -39,7 +39,9 @@ ExecutionContext::ExecutionContext(llvm::Module* m)
 }
 
 // Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-ExecutionContext::~ExecutionContext() {
+ExecutionContext::~ExecutionContext() {}
+
+void ExecutionContext::shuttingDown() {
   for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
     const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
     (*AEE.m_Func)(AEE.m_Arg);
