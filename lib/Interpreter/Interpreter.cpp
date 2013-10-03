@@ -81,6 +81,10 @@ namespace cling {
 
 
 namespace cling {
+
+  // FIXME: workaround until JIT supports exceptions
+  jmp_buf* Interpreter::m_JumpBuf;
+
 #if (!_WIN32)
   // "Declared" to the JIT in RuntimeUniverse.h
   namespace runtime {

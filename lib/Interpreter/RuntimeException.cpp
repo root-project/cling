@@ -7,6 +7,7 @@
 
 #include "cling/Interpreter/RuntimeException.h"
 
+#include "cling/Interpreter/Interpreter.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
@@ -15,7 +16,12 @@ extern "C" {
 void cling__runtime__internal__throwNullDerefException(void* Sema, void* Expr) {
   clang::Sema* S = (clang::Sema*)Sema;
   clang::Expr* E = (clang::Expr*)Expr;
-  throw cling::runtime::NullDerefException(S, E);
+
+  // FIXME: workaround until JIT supports exceptions
+  //throw cling::runtime::NullDerefException(S, E);
+  S->Diag(E->getLocStart(), clang::diag::warn_null_arg) << E->getSourceRange();
+  if (cling::Interpreter::getNullDerefJump())
+    longjmp(*cling::Interpreter::getNullDerefJump(), 1);
 }
 }
 

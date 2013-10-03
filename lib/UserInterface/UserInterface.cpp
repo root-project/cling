@@ -111,6 +111,14 @@ namespace cling {
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
+
+    jmp_buf env;
+    int val = setjmp(env);
+    if (!val) {
+      Interpreter::getNullDerefJump() = &env;
+    } else {
+      llvm::errs() << "LongJmp occurred. Recovering...\n";
+    }
     while (true) {
       try {
         m_MetaProcessor->getOuts().flush();
