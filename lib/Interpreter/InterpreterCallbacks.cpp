@@ -8,6 +8,7 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
+#include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
@@ -70,10 +71,30 @@ namespace cling {
     ///
     InterpreterCallbacks* m_Callbacks; // we don't own it.
 
-  public:
-    InterpreterExternalSemaSource(InterpreterCallbacks* C) : m_Callbacks(C){}
+    Sema* m_Sema; // we don't own // FIXME: once we remove ForgetSema delete.
 
-    ~InterpreterExternalSemaSource() {}
+  public:
+    InterpreterExternalSemaSource(InterpreterCallbacks* C) 
+      : m_Callbacks(C), m_Sema(0) {}
+
+    ~InterpreterExternalSemaSource() {
+      // FIXME: Another gross hack due to the missing multiplexing AST external
+      // source see Interpreter::setCallbacks.
+      if (m_Sema) {
+        ASTContext& C = m_Sema->getASTContext();
+        // tell the owning ptr to not delete it, the callbacks will delete it.
+        if (C.ExternalSource.take() == this)
+          C.ExternalSource.reset(0);
+      }
+    }
+
+    virtual void InitializeSema(Sema& S) {
+      m_Sema = &S;
+    }
+
+    virtual void ForgetSema() {
+      m_Sema = 0;
+    }
 
     InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
 
