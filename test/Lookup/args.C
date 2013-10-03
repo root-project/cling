@@ -4,7 +4,9 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/LookupHelper.h"
 
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
+#include "clang/Sema/Sema.h"
 
 #include "llvm/ADT/SmallVector.h"
 
@@ -19,7 +21,7 @@ template<typename T> class aClass {
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
 llvm::SmallVector<clang::Expr*, 4> exprs;
 std::string buf;
-clang::PrintingPolicy Policy(G->getASTContext().getPrintingPolicy());
+clang::PrintingPolicy Policy(gCling->getSema().getASTContext().getPrintingPolicy());
 
 lookup.findArgList("a, a", exprs);
 
