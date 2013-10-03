@@ -137,6 +137,7 @@ namespace cling {
     
     if (enableExternalSemaSourceCallbacks) {
       m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
+      m_ExternalSemaSource->InitializeSema(interp->getSema());
       m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
     }
 
