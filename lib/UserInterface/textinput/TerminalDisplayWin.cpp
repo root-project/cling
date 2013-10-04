@@ -84,13 +84,12 @@ namespace textinput {
         || CSI.dwCursorPosition.Y != fWritePos.fLine + fStartLine) {
         fStartLine = CSI.dwCursorPosition.Y;
         if (CSI.dwCursorPosition.X) {
-          // Whooa - where are we?! Newline and cross fingers:
-          WriteRawString("\n", 1);
-          ++fStartLine;
+          // fStartLine may be a couple of lines higher (or more precisely
+          // the number of written lines higher)
+          fStartLine -= fWritePos.fLine;
         }
         fWritePos.fCol = 0;
         fWritePos.fLine = 0;
-        Redraw();
       }
     }
   }
