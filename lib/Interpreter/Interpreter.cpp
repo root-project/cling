@@ -320,10 +320,9 @@ namespace cling {
   }
 
   void Interpreter::compareInterpreterState(const std::string& name) const {
-    ClangInternalState* state 
-      = new ClangInternalState(getCI()->getASTContext(), name);    
     // This may induce deserialization
     PushTransactionRAII RAII(this);
+    ClangInternalState state(getCI()->getASTContext(), *getModule(), name);    
     for (unsigned i = 0, e = m_StoredStates.size(); i != e; ++i) {
       if (m_StoredStates[i]->getName() == name) {
         state->compare(*m_StoredStates[i]);
