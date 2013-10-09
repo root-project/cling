@@ -11,6 +11,7 @@
 #include "clang/Basic/SourceManager.h"
 
 #include "llvm/ADT/SmallString.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
@@ -23,8 +24,9 @@
 using namespace clang;
 
 namespace cling {
-  ClangInternalState::ClangInternalState(ASTContext& C, const std::string& name)
-    : m_ASTContext(C), m_DiffCommand("diff -u "), m_Name(name) {
+  ClangInternalState::ClangInternalState(ASTContext& C, llvm::Module& M, 
+                                         const std::string& name)
+    : m_ASTContext(C), m_Module(M), m_DiffCommand("diff -u "), m_Name(name) {
     store();
   }
 
@@ -33,17 +35,20 @@ namespace cling {
     remove(m_LookupTablesFile.c_str());
     remove(m_IncludedFilesFile.c_str());
     remove(m_ASTFile.c_str());
+    remove(m_LLVMModuleFile.c_str());
   }
 
   void ClangInternalState::store() {
     m_LookupTablesOS.reset(createOutputFile("lookup", &m_LookupTablesFile));
     m_IncludedFilesOS.reset(createOutputFile("included", &m_IncludedFilesFile));
     m_ASTOS.reset(createOutputFile("ast", &m_ASTFile));
+    m_LLVMModuleOS.reset(createOutputFile("module", &m_LLVMModuleFile));
     
     printLookupTables(*m_LookupTablesOS.get(), m_ASTContext);
     printIncludedFiles(*m_IncludedFilesOS.get(), 
                        m_ASTContext.getSourceManager());
     printAST(*m_ASTOS.get(), m_ASTContext);
+    printLLVMModule(*m_LLVMModuleOS.get(), m_Module);
   }
   namespace {
     std::string getCurrentTimeAsString() {
@@ -117,6 +122,12 @@ namespace cling {
       llvm::errs() << differences << "\n";
       differences = "";
     }
+
+    if (differentContent(m_LLVMModuleFile, other.m_LLVMModuleFile, differences)){
+      llvm::errs() << "Differences in the llvm Module \n";
+      llvm::errs() << differences << "\n";
+      differences = "";
+    }
   }
 
   bool ClangInternalState::differentContent(const std::string& file1, 
@@ -176,5 +187,10 @@ namespace cling {
     clang::PrintingPolicy policy = C.getPrintingPolicy();
     TU->print(Out, policy, Indentation, PrintInstantiation);
     Out.flush();
+  }
+
+  void ClangInternalState::printLLVMModule(llvm::raw_ostream& Out, 
+                                           llvm::Module& M) {
+    M.print(Out, /*AssemblyAnnotationWriter*/ 0);
   }
 } // end namespace cling

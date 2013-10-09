@@ -18,6 +18,7 @@ namespace clang {
 }
 
 namespace llvm {
+  class Module;
   class raw_fd_ostream;
   class raw_ostream;
 }
@@ -32,14 +33,18 @@ namespace cling {
     llvm::OwningPtr<llvm::raw_fd_ostream> m_LookupTablesOS;
     llvm::OwningPtr<llvm::raw_fd_ostream> m_IncludedFilesOS;
     llvm::OwningPtr<llvm::raw_fd_ostream> m_ASTOS;
+    llvm::OwningPtr<llvm::raw_fd_ostream> m_LLVMModuleOS;
     std::string m_LookupTablesFile;
     std::string m_IncludedFilesFile;
     std::string m_ASTFile;
+    std::string m_LLVMModuleFile;
     clang::ASTContext& m_ASTContext;
+    llvm::Module& m_Module;
     std::string m_DiffCommand;
     std::string m_Name;
   public:
-    ClangInternalState(clang::ASTContext& C, const std::string& Name);
+    ClangInternalState(clang::ASTContext& C, llvm::Module& M,
+                       const std::string& Name);
     ~ClangInternalState();
 
     ///\Brief It is convenient the state object to be named so that can be
@@ -68,6 +73,7 @@ namespace cling {
     static void printIncludedFiles(llvm::raw_ostream& Out, 
                                    clang::SourceManager& SM);
     static void printAST(llvm::raw_ostream& Out, clang::ASTContext& C);
+    static void printLLVMModule(llvm::raw_ostream& Out, llvm::Module& M);
   private:
     llvm::raw_fd_ostream* createOutputFile(llvm::StringRef OutFile,
                                            std::string* TempPathName = 0,

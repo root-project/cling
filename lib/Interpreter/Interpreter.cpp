@@ -315,7 +315,7 @@ namespace cling {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
     ClangInternalState* state 
-      = new ClangInternalState(getCI()->getASTContext(), name);
+      = new ClangInternalState(getCI()->getASTContext(), *getModule(), name);
     m_StoredStates.push_back(state);
   }
 
@@ -325,7 +325,7 @@ namespace cling {
     ClangInternalState state(getCI()->getASTContext(), *getModule(), name);    
     for (unsigned i = 0, e = m_StoredStates.size(); i != e; ++i) {
       if (m_StoredStates[i]->getName() == name) {
-        state->compare(*m_StoredStates[i]);
+        m_StoredStates[i]->compare(state);
         m_StoredStates.erase(m_StoredStates.begin() + i);
         break;
       }
