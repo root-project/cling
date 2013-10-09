@@ -18,6 +18,7 @@
 
 #include <cstdio>
 #include <string>
+#include <time.h>
 
 using namespace clang;
 
@@ -44,6 +45,19 @@ namespace cling {
                        m_ASTContext.getSourceManager());
     printAST(*m_ASTOS.get(), m_ASTContext);
   }
+  namespace {
+    std::string getCurrentTimeAsString() {
+      time_t rawtime;
+      struct tm * timeinfo;
+      char buffer [80];
+
+      time (&rawtime);
+      timeinfo = localtime (&rawtime);
+
+      strftime (buffer, 80, "%I_%M_%S", timeinfo);
+      return buffer;
+    }
+  }
 
   // Copied with modifications from CompilerInstance.cpp
   llvm::raw_fd_ostream* 
@@ -63,6 +77,7 @@ namespace cling {
     assert(llvm::sys::fs::is_directory(TempPath.str()) && "Must be a folder.");
     // Create a temporary file.
     llvm::sys::path::append(TempPath, OutFile);
+    TempPath += "-" + getCurrentTimeAsString();
     TempPath += "-%%%%%%%%";
     int fd;
     if (llvm::sys::fs::createUniqueFile(TempPath.str(), fd, TempPath)
