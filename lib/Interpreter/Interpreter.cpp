@@ -312,6 +312,8 @@ namespace cling {
   }
 
   void Interpreter::storeInterpreterState(const std::string& name) const {
+    // This may induce deserialization
+    PushTransactionRAII RAII(this);
     ClangInternalState* state 
       = new ClangInternalState(getCI()->getASTContext(), name);
     m_StoredStates.push_back(state);
@@ -320,6 +322,8 @@ namespace cling {
   void Interpreter::compareInterpreterState(const std::string& name) const {
     ClangInternalState* state 
       = new ClangInternalState(getCI()->getASTContext(), name);    
+    // This may induce deserialization
+    PushTransactionRAII RAII(this);
     for (unsigned i = 0, e = m_StoredStates.size(); i != e; ++i) {
       if (m_StoredStates[i]->getName() == name) {
         state->compare(*m_StoredStates[i]);
