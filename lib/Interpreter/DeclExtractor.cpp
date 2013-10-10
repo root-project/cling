@@ -106,7 +106,7 @@ namespace cling {
           if (Stmts.size()) {
             // We need to emit a new custom wrapper wrapping the stmts
             EnforceInitOrder(Stmts);
-            Stmts.clear();
+            assert(!Stmts.size() && "Stmt list must be flushed.");
           }
 
           // We know the transaction is closed, but it is safe.
@@ -238,6 +238,7 @@ namespace cling {
       // We know the transaction is closed, but it is safe.
       getTransaction()->forceAppend(VD); // Add it to the transaction for codegenning
       TUDC->addHiddenDecl(VD);
+      Stmts.clear();
       return;
     }
     llvm_unreachable("Must be able to enforce init order.");
