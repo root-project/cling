@@ -303,7 +303,9 @@ namespace cling {
     if (!Map)
       return false;
     StoredDeclsMap::iterator Pos = Map->find(VD->getDeclName());
-    assert(Pos != Map->end() && "no lookup entry for decl");
+    // FIXME: All of that should be moved in VisitNamedDecl
+    assert((VD->isHidden() || Pos != Map->end())
+           && "no lookup entry for decl");
 
     if (Pos->second.isNull())
       // We need to rewire the list of the redeclarations in order to exclude
