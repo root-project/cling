@@ -18,61 +18,42 @@ namespace cling {
   class AutoFixer : public RecursiveASTVisitor<AutoFixer> {
   private:
     Sema* m_Sema;
-
+    DeclRefExpr* m_FoundDRE;
+    llvm::DenseSet<NamedDecl*> m_HandledDecls;
   private:
-    inline bool isAutoCandidate(const BinaryOperator* BinOp) const {
-      assert(BinOp && "Cannot be null.");
-      Expr* LHS = BinOp->getLHS();
-      if (const DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(LHS)) {
-        const Decl* D = DRE->getDecl();
-        if (const AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-          if (A->getAnnotation().equals("__Auto"))
-            return true;
-      }
-      return false;
-    }
   public:
-    AutoFixer(Sema* S) : m_Sema(S) {}
+    AutoFixer(Sema* S) : m_Sema(S), m_FoundDRE(0) {}
 
     void Fix(CompoundStmt* CS) {
-      TraverseStmt(CS);
-    }
-
-    bool VisitCompoundStmt(CompoundStmt* CS) {
-      for(CompoundStmt::body_iterator I = CS->body_begin(), E = CS->body_end();
-          I != E; ++I) {
-        if (!isa<BinaryOperator>(*I))
-          continue;
-
-        const BinaryOperator* BinOp = cast<BinaryOperator>(*I);
-        if (isAutoCandidate(BinOp)) {
-          ASTContext& C = m_Sema->getASTContext();
-          VarDecl* VD 
-            = cast<VarDecl>(cast<DeclRefExpr>(BinOp->getLHS())->getDecl());
-          QualType ResTy;
-          struct NonDependentSetter: public clang::Type {
-            static void set(clang::QualType QT) {
-              clang::Type* Ty = const_cast<clang::Type*>(QT.getTypePtr());
-              static_cast<NonDependentSetter*>(Ty)->setDependent(false);
-            }
-          };
-          NonDependentSetter::set(VD->getType());
-          TypeSourceInfo* TrivialTSI
-            = C.getTrivialTypeSourceInfo(VD->getType());
-          Expr* RHS = BinOp->getRHS();
-          m_Sema->DeduceAutoType(TrivialTSI, RHS, ResTy);
-          VD->setTypeSourceInfo(C.getTrivialTypeSourceInfo(ResTy));
-          VD->setType(ResTy);
-          VD->setInit(RHS);
-          Sema::DeclGroupPtrTy VDPtrTy = m_Sema->ConvertDeclToDeclGroup(VD);
-          // Transform the AST into a "sane" state. Replace the binary operator
-          // with decl stmt, because the binop semantically is a decl with init.
-          StmtResult DS = m_Sema->ActOnDeclStmt(VDPtrTy, BinOp->getLocStart(), 
-                                                BinOp->getLocEnd());
+      if (!CS->size())
+        return;
+      typedef llvm::SmallVector<Stmt*, 32> Statements;
+      Statements Stmts;
+      Stmts.append(CS->body_begin(), CS->body_end());
+      for (Statements::iterator I = Stmts.begin(), E = Stmts.end(); 
+           I != E; ++I) {
+        if (!TraverseStmt(*I) && !m_HandledDecls.count(m_FoundDRE->getDecl())) {
+          Sema::DeclGroupPtrTy VDPtrTy 
+            = m_Sema->ConvertDeclToDeclGroup(m_FoundDRE->getDecl());
+          StmtResult DS = m_Sema->ActOnDeclStmt(VDPtrTy, 
+                                                m_FoundDRE->getLocStart(), 
+                                                m_FoundDRE->getLocEnd());
           assert(!DS.isInvalid() && "Invalid DeclStmt.");
-          *I = DS.take();
+          Stmts.insert(I, DS.take());
+          m_HandledDecls.insert(m_FoundDRE->getDecl());
+          ++I;
         }
       }
+      CS->setStmts(m_Sema->getASTContext(), Stmts.data(), Stmts.size());
+    }
+
+    bool VisitDeclRefExpr(DeclRefExpr* DRE) {
+      const Decl* D = DRE->getDecl();
+      if (const AnnotateAttr* A = D->getAttr<AnnotateAttr>())
+        if (A->getAnnotation().equals("__Auto")) {
+          m_FoundDRE = DRE;
+          return false; // we abort on the first found candidate.
+        }
       return true; // returning false will abort the in-depth traversal.
     }
   };
@@ -81,6 +62,12 @@ namespace cling {
 namespace cling { 
   AutoSynthesizer::AutoSynthesizer(clang::Sema* S)
     : TransactionTransformer(S) {
+    // TODO: We would like to keep that local without keeping track of all
+    // decls that were handled in the AutoFixer. This can be done by removing
+    // the __Auto attribute, but for now I am still hesitant to do it. Having
+    // the __Auto attribute is very useful for debugging because it localize the
+    // the problem if exists.
+    m_AutoFixer.reset(new AutoFixer(S));
   }
 
   // pin the vtable here.
@@ -88,16 +75,13 @@ namespace cling {
   { }
 
   void AutoSynthesizer::Transform() {
-    // if (!getTransaction()->getCompilationOpts().ResultEvaluation)
-    //   return;
-    AutoFixer autoFixer(m_Sema);
     // size can change in the loop!
     for (size_t Idx = 0; Idx < getTransaction()->size(); ++Idx) {
       Transaction::DelayCallInfo I = (*getTransaction())[Idx];
       for (DeclGroupRef::const_iterator J = I.m_DGR.begin(), 
              JE = I.m_DGR.end(); J != JE; ++J)
         if ((*J)->hasBody())
-          autoFixer.Fix(cast<CompoundStmt>((*J)->getBody()));
+          m_AutoFixer->Fix(cast<CompoundStmt>((*J)->getBody()));
     }
   }
 } // end namespace cling

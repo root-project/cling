@@ -72,8 +72,8 @@ namespace cling {
     // Add transformers to the IncrementalParser, which owns them
     Sema* TheSema = &CI->getSema();
     // Register the AST Transformers
+    m_ASTTransformers.push_back(new AutoSynthesizer(TheSema));
     m_ASTTransformers.push_back(new EvaluateTSynthesizer(TheSema));
-    //m_ASTTransformers.push_back(new AutoSynthesizer(TheSema));
     m_ASTTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
     m_ASTTransformers.push_back(new ASTDumper());
     m_ASTTransformers.push_back(new DeclExtractor(TheSema));

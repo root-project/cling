@@ -9,6 +9,8 @@
 
 #include "TransactionTransformer.h"
 
+#include "llvm/ADT/OwningPtr.h"
+
 namespace clang {
   class Sema;
 }
@@ -18,10 +20,13 @@ namespace llvm {
 }
 
 namespace cling {
+  class AutoFixer;
 
   class AutoSynthesizer : public TransactionTransformer {
+  private:
+    llvm::OwningPtr<AutoFixer> m_AutoFixer;
 
-public:
+  public:
     ///\ brief Constructs the auto synthesizer.
     ///
     ///\param[in] S - The semantic analysis object.
