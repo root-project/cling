@@ -521,13 +521,6 @@ namespace cling {
     ASTNodeInfo rhs = Visit(Node->getRHS());
     ASTNodeInfo lhs;
 
-    if (const DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(Node->getLHS())) {
-      const Decl* D = DRE->getDecl();
-      if (const AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-        if (A->getAnnotation().equals("__Auto"))
-          return ASTNodeInfo(Node, /*needs eval*/false);
-    }
-
     lhs = Visit(Node->getLHS());
 
     assert((lhs.hasSingleNode() || rhs.hasSingleNode()) &&
@@ -808,10 +801,8 @@ namespace cling {
     bool isCandidate(Decl* D) {
       // FIXME: Here we should have our custom attribute.
       if (AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-        if (A->getAnnotation().equals("__ResolveAtRuntime")
-            || A->getAnnotation().equals("__Auto")) {
+        if (A->getAnnotation().equals("__ResolveAtRuntime"))
           return true;
-        }
 
       return false;
     }
@@ -827,7 +818,7 @@ namespace cling {
       }
       return true;
     }
-
+    
     // In cases when there is no decl stmt, like dep->Call();
     bool VisitDeclRefExpr(DeclRefExpr* DRE) {
       if (isCandidate(DRE->getDecl())) {
