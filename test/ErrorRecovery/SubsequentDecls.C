@@ -13,7 +13,7 @@ namespace test { int y = 0; }
 .storeState "testSubsequentDecls"
 #include "SubsequentDecls.h"
 .compareState "testSubsequentDecls"
-// CHECK-NOT: File with AST differencies stored in: testSubsequentDeclsAST.diff
+// CHECK-NOT: Differences
 
 .rawInput 1
 template<> int TemplatedF(int i) { return i + 100; }
