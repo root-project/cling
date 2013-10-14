@@ -105,7 +105,7 @@ namespace cling {
     std::string differences = "";
     if (differentContent(m_LookupTablesFile, other.m_LookupTablesFile, 
                          differences)) {
-      llvm::errs() << "Differences in the lookup tablse\n";
+      llvm::errs() << "Differences in the lookup tables\n";
       llvm::errs() << differences << "\n";
       differences = "";
     }
