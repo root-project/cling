@@ -39,10 +39,12 @@ namespace cling {
   }
 
   void ClangInternalState::store() {
-    m_LookupTablesOS.reset(createOutputFile("lookup", &m_LookupTablesFile));
-    m_IncludedFilesOS.reset(createOutputFile("included", &m_IncludedFilesFile));
-    m_ASTOS.reset(createOutputFile("ast", &m_ASTFile));
-    m_LLVMModuleOS.reset(createOutputFile("module", &m_LLVMModuleFile));
+    m_LookupTablesOS.reset(createOutputFile("cling-lookup",
+                                            &m_LookupTablesFile));
+    m_IncludedFilesOS.reset(createOutputFile("cling-included", 
+                                             &m_IncludedFilesFile));
+    m_ASTOS.reset(createOutputFile("cling-ast", &m_ASTFile));
+    m_LLVMModuleOS.reset(createOutputFile("cling-module", &m_LLVMModuleFile));
     
     printLookupTables(*m_LookupTablesOS.get(), m_ASTContext);
     printIncludedFiles(*m_IncludedFilesOS.get(), 
