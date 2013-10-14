@@ -250,6 +250,7 @@ namespace cling {
   Interpreter::~Interpreter() {
     if (m_ExecutionContext)
       m_ExecutionContext->shuttingDown();
+    assert(!m_StoredStates.size() && "Unbalanced store/compare state.");
     getCI()->getDiagnostics().getClient()->EndSourceFile();
   }
 
@@ -309,7 +310,8 @@ namespace cling {
     for (unsigned i = 0, e = m_StoredStates.size(); i != e; ++i) {
       if (m_StoredStates[i]->getName() == name) {
         m_StoredStates[i]->compare(state);
-        m_StoredStates.erase(m_StoredStates.begin() + i);
+        // Remove from the stack and free the storage.
+        delete *m_StoredStates.erase(m_StoredStates.begin() + i);
         break;
       }
     }
