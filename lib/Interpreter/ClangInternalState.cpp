@@ -8,6 +8,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Basic/SourceManager.h"
 
 #include "llvm/ADT/SmallString.h"
@@ -105,8 +106,22 @@ namespace cling {
 
   void ClangInternalState::compare(ClangInternalState& other) {
     std::string differences = "";
+    // Ignore the builtins
+    typedef llvm::SmallVector<const char*, 1024> Builtins;
+    Builtins builtinNames;
+    m_ASTContext.BuiltinInfo.GetBuiltinNames(builtinNames);
+    for (Builtins::iterator I = builtinNames.begin(); 
+         I != builtinNames.end();) {
+      if (llvm::StringRef(*I).startswith("__builtin"))
+        I = builtinNames.erase(I);
+      else
+        ++I;
+    }
+
+    builtinNames.push_back(".*__builtin.*");      
+    
     if (differentContent(m_LookupTablesFile, other.m_LookupTablesFile, 
-                         differences)) {
+                         differences, &builtinNames)) {
       llvm::errs() << "Differences in the lookup tables\n";
       llvm::errs() << differences << "\n";
       differences = "";
@@ -118,7 +133,6 @@ namespace cling {
       llvm::errs() << differences << "\n";
       differences = "";
     }
-
     if (differentContent(m_ASTFile, other.m_ASTFile, differences)) {
       llvm::errs() << "Differences in the AST \n";
       llvm::errs() << differences << "\n";
@@ -134,8 +148,18 @@ namespace cling {
 
   bool ClangInternalState::differentContent(const std::string& file1, 
                                             const std::string& file2, 
-                                            std::string& differences) const {
-    FILE* pipe = popen((m_DiffCommand + file1 + " " + file2).c_str() , "r");
+                                            std::string& differences,
+                const llvm::SmallVectorImpl<const char*>* ignores/*=0*/) const {
+    std::string diffCall = m_DiffCommand;
+    if (ignores) {
+      for (size_t i = 0, e = ignores->size(); i < e; ++i) {
+        diffCall += " --ignore-matching-lines=\".*";
+        diffCall += (*ignores)[i];
+        diffCall += ".*\"";
+      }
+    }
+
+    FILE* pipe = popen((diffCall + " " + file1 + " " + file2).c_str() , "r");
     assert(pipe && "Error creating the pipe");
     assert(differences.empty() && "Must be empty");
 

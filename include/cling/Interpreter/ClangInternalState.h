@@ -8,6 +8,7 @@
 #define CLING_CLANG_INTERNAL_STATE_H
 
 #include "llvm/ADT/OwningPtr.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <string>
@@ -67,7 +68,8 @@ namespace cling {
     ///\returns true if there is difference in the contents.
     ///
     bool differentContent(const std::string& file1, const std::string& file2, 
-                          std::string& differences) const;
+                          std::string& differences, 
+                   const llvm::SmallVectorImpl<const char*>* ignores = 0) const;
     
     static void printLookupTables(llvm::raw_ostream& Out, clang::ASTContext& C);
     static void printIncludedFiles(llvm::raw_ostream& Out, 
