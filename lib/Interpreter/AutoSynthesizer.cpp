@@ -30,8 +30,7 @@ namespace cling {
       typedef llvm::SmallVector<Stmt*, 32> Statements;
       Statements Stmts;
       Stmts.append(CS->body_begin(), CS->body_end());
-      for (Statements::iterator I = Stmts.begin(), E = Stmts.end(); 
-           I != E; ++I) {
+      for (Statements::iterator I = Stmts.begin(); I != Stmts.end(); ++I) {
         if (!TraverseStmt(*I) && !m_HandledDecls.count(m_FoundDRE->getDecl())) {
           Sema::DeclGroupPtrTy VDPtrTy 
             = m_Sema->ConvertDeclToDeclGroup(m_FoundDRE->getDecl());
