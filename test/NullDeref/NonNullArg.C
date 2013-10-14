@@ -2,7 +2,6 @@
 //This file checks a call instruction. The called function has arguments with nonnull attribute.
 #include <string.h>
 // XFAIL: darwin
-// XFAIL: i686-pc-linux-gnu
 
 char *p = 0;
 strcmp("a", p); // expected-warning {{null passed to a callee which requires a non-null argument}}

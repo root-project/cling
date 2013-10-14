@@ -5,7 +5,6 @@
 // attribute to a say library function.
 
 // Qualified functions.
-// XFAIL: i686-pc-linux-gnu
 extern "C" int printf(const char* fmt, ...);
 namespace custom_namespace {
   void standaloneFunc(void* p, int q, float* s) __attribute__((nonnull(1,3))) { // expected-warning {{GCC does not allow nonnull attribute in this position on a function definition}}
