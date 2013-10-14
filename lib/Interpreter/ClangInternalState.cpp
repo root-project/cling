@@ -149,12 +149,17 @@ namespace cling {
 
   class DumpLookupTables : public RecursiveASTVisitor<DumpLookupTables> {
   private:
-    //llvm::raw_ostream& m_OS;
+    llvm::raw_ostream& m_OS;
   public:
-    //DumpLookupTables(llvm::raw_ostream& OS) : m_OS(OS) { }
-    DumpLookupTables(llvm::raw_ostream&) { }
+    DumpLookupTables(llvm::raw_ostream& OS) : m_OS(OS) { }
+    bool VisitDecl(Decl* D) {
+      if (DeclContext* DC = dyn_cast<DeclContext>(D))
+        VisitDeclContext(DC);
+      return true;
+    }
+
     bool VisitDeclContext(DeclContext* DC) {
-      //DC->dumpLookups(m_OS);
+      DC->dumpLookups(m_OS);
       return true;
     }
   };
