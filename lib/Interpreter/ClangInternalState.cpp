@@ -171,6 +171,12 @@ namespace cling {
            E = SM.fileinfo_end(); I != E; ++I) {
       const clang::SrcMgr::ContentCache &C = *I->second;
       const clang::FileEntry *FE = C.OrigEntry;
+      // Our error recovery purges the cache of the FileEntry, but keeps
+      // the FileEntry's pointer so that if it was used by smb (like the
+      // SourceManager) it wouldn't be dangling. In that case we shouldn't
+      // print the FileName, because semantically it is not there.
+      if (!FE->getSize() && !FE->getModificationTime())
+        continue;
       std::string fileName(FE->getName());
       if (!(fileName.compare(0, 5, "/usr/") == 0 &&
             fileName.find("/bits/") != std::string::npos)) {
