@@ -126,7 +126,7 @@ namespace cling {
       assert(T == m_Transaction && "Ended different transaction?");
       m_Interpreter->m_IncrParser->commitTransaction(T);
     }
-  }  
+  }
 
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
