@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -I%p -Xclang -verify 2>&1 | FileCheck %s
 
 // Test the removal of decls which are stored in vector of redeclarables 
 .rawInput 1
