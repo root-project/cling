@@ -151,6 +151,7 @@ namespace cling {
         // Add DyLib extension:
         llvm::SmallString<512> filenameWithExt(filename);
 #if defined(LLVM_ON_UNIX)
+        llvm::SmallString<512>::iterator IStemEnd = filenameWithExt.end() - 1;
         static const char* DyLibExt = ".so";
 #elif defined(LLVM_ON_WIN32)
         static const char* DyLibExt = ".dll";
@@ -160,6 +161,14 @@ namespace cling {
         filenameWithExt += DyLibExt;
         findSharedLibrary(filenameWithExt, SearchPaths, FoundDyLib, exists,
                           isDyLib);
+#ifdef __APPLE__
+        if (!exists) {
+           filenameWithExt.erase(IStemEnd + 1, filenameWithExt.end());
+           filenameWithExt += ".dylib";
+           findSharedLibrary(filenameWithExt, SearchPaths, FoundDyLib, exists,
+                             isDyLib);
+        }
+#endif
       }
     }
 
