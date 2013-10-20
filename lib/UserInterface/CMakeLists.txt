@@ -27,6 +27,8 @@ IF(MSVC)
   string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
   set_target_properties(clingUserInterface PROPERTIES
   COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
+ELSE()
+  set_target_properties(clingUserInterface PROPERTIES COMPILE_FLAGS "-fexceptions")
 ENDIF()
 
 #add_subdirectory(textinput)
