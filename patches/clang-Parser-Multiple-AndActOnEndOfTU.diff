@@ -1,4 +1,4 @@
---- /home/axel/build/cling/src/./tools/clang/lib/Parse/Parser.cpp	2013-04-24 22:04:39.536536803 +0200
+--- ./tools/clang/lib/Parse/Parser.cpp	2013-04-24 22:04:39.536536803 +0200
 +++ ./tools/clang/lib/Parse/Parser.cpp	2013-04-25 14:34:00.138269622 +0200
 @@ -48,15 +48,17 @@
    return Ident__except;
@@ -82,8 +82,8 @@
    }
    if (getLangOpts().OpenMP)
      OpenMPHandler.reset(new PragmaOpenMPHandler());
-@@ -103,9 +116,11 @@
-   PP.AddPragmaHandler(OpenMPHandler.get());
+@@ -110,9 +123,11 @@
+   }
  
    CommentSemaHandler.reset(new ActionCommentHandler(actions));
 -  PP.addCommentHandler(CommentSemaHandler.get());
@@ -96,90 +96,33 @@
  }
  
  DiagnosticBuilder Parser::Diag(SourceLocation Loc, unsigned DiagID) {
-@@ -398,9 +413,11 @@
+@@ -415,13 +430,16 @@
  
  Parser::~Parser() {
    // If we still have scopes active, delete the scope tree.
--  delete getCurScope();
--  Actions.CurScope = 0;
--  
 +  if (!IsTemporary) {
-+    delete getCurScope();
-+    Actions.CurScope = 0;
+   delete getCurScope();
+   Actions.CurScope = 0;
+-  
 +  }
 +
    // Free the scope cache.
    for (unsigned i = 0, e = NumCachedScopes; i != e; ++i)
      delete ScopeCache[i];
-@@ -410,38 +427,40 @@
-       it != LateParsedTemplateMap.end(); ++it)
-     delete it->second;
  
--  // Remove the pragma handlers we installed.
--  PP.RemovePragmaHandler(AlignHandler.get());
--  AlignHandler.reset();
--  PP.RemovePragmaHandler("GCC", GCCVisibilityHandler.get());
--  GCCVisibilityHandler.reset();
--  PP.RemovePragmaHandler(OptionsHandler.get());
--  OptionsHandler.reset();
--  PP.RemovePragmaHandler(PackHandler.get());
--  PackHandler.reset();
--  PP.RemovePragmaHandler(MSStructHandler.get());
--  MSStructHandler.reset();
--  PP.RemovePragmaHandler(UnusedHandler.get());
--  UnusedHandler.reset();
--  PP.RemovePragmaHandler(WeakHandler.get());
--  WeakHandler.reset();
--  PP.RemovePragmaHandler(RedefineExtnameHandler.get());
--  RedefineExtnameHandler.reset();
--
--  if (getLangOpts().OpenCL) {
--    PP.RemovePragmaHandler("OPENCL", OpenCLExtensionHandler.get());
--    OpenCLExtensionHandler.reset();
--    PP.RemovePragmaHandler("OPENCL", FPContractHandler.get());
--  }
 +  if (!IsTemporary) {
-+    // Remove the pragma handlers we installed.
-+    PP.RemovePragmaHandler(AlignHandler.get());
-+    AlignHandler.reset();
-+    PP.RemovePragmaHandler("GCC", GCCVisibilityHandler.get());
-+    GCCVisibilityHandler.reset();
-+    PP.RemovePragmaHandler(OptionsHandler.get());
-+    OptionsHandler.reset();
-+    PP.RemovePragmaHandler(PackHandler.get());
-+    PackHandler.reset();
-+    PP.RemovePragmaHandler(MSStructHandler.get());
-+    MSStructHandler.reset();
-+    PP.RemovePragmaHandler(UnusedHandler.get());
-+    UnusedHandler.reset();
-+    PP.RemovePragmaHandler(WeakHandler.get());
-+    WeakHandler.reset();
-+    PP.RemovePragmaHandler(RedefineExtnameHandler.get());
-+    RedefineExtnameHandler.reset();
-+
-+    if (getLangOpts().OpenCL) {
-+      PP.RemovePragmaHandler("OPENCL", OpenCLExtensionHandler.get());
-+      OpenCLExtensionHandler.reset();
-+      PP.RemovePragmaHandler("OPENCL", FPContractHandler.get());
-+    }
-   PP.RemovePragmaHandler(OpenMPHandler.get());
-   OpenMPHandler.reset();
+   // Remove the pragma handlers we installed.
+   PP.RemovePragmaHandler(AlignHandler.get());
+   AlignHandler.reset();
+@@ -461,6 +479,7 @@
+   PP.removeCommentHandler(CommentSemaHandler.get());
  
--  PP.RemovePragmaHandler("STDC", FPContractHandler.get());
--  FPContractHandler.reset();
-+    PP.RemovePragmaHandler("STDC", FPContractHandler.get());
-+    FPContractHandler.reset();
- 
--  PP.removeCommentHandler(CommentSemaHandler.get());
-+    PP.removeCommentHandler(CommentSemaHandler.get());
- 
--  PP.clearCodeCompletionHandler();
-+    PP.clearCodeCompletionHandler();
-+  }
+   PP.clearCodeCompletionHandler();
++  } // if !IsTemporary
  
    assert(TemplateIds.empty() && "Still alive TemplateIdAnnotations around?");
  }
-@@ -515,30 +534,10 @@
+@@ -535,30 +554,10 @@
    ConsumeToken();
  }
  
@@ -211,7 +154,7 @@
  
    // Skip over the EOF token, flagging end of previous input for incremental 
    // processing
-@@ -553,9 +552,7 @@
+@@ -573,9 +572,7 @@
      // Late template parsing can begin.
      if (getLangOpts().DelayedTemplateParsing)
        Actions.SetLateTemplateParser(LateTemplateParserCallback, this);
@@ -222,7 +165,7 @@
  
      return true;
    }
-@@ -594,7 +591,7 @@
+@@ -614,7 +611,7 @@
  Parser::DeclGroupPtrTy
  Parser::ParseExternalDeclaration(ParsedAttributesWithRange &attrs,
                                   ParsingDeclSpec *DS) {
@@ -231,12 +174,13 @@
    ParenBraceBracketBalancer BalancerRAIIObj(*this);
  
    if (PP.isCodeCompletionReached()) {
---- /home/axel/build/cling/src/./tools/clang/include/clang/Parse/Parser.h	2013-04-24 22:05:47.695986522 +0200
+--- ./tools/clang/include/clang/Parse/Parser.h	2013-04-24 22:05:47.695986522 +0200
 +++ ./tools/clang/include/clang/Parse/Parser.h	2013-04-24 19:40:12.825509895 +0200
-@@ -45,6 +45,7 @@
+@@ -45,7 +45,8 @@
    class InMessageExpressionRAIIObject;
    class PoisonSEHIdentifiersRAIIObject;
    class VersionTuple;
+   class OMPClause;
 +  class DestroyTemplateIdAnnotationsRAIIObj;
  
  /// Parser - This implements a parser for the C family of languages.  After

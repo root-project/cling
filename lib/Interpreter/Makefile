@@ -20,6 +20,7 @@ CXXFLAGS = -fno-rtti
 CPPFLAGS += -I$(PROJ_SRC_DIR)/../../include -I$(PROJ_SRC_DIR)/../../../clang/include \
 -I$(PROJ_SRC_DIR)/../../../clang/lib -I$(PROJ_OBJ_DIR)/../../include \
 -I$(PROJ_OBJ_DIR)/../../../clang/include \
+-I$(DESTDIR)$(PROJ_includedir) \
 '-DCLING_INCLUDE_PATHS="$(DESTDIR)$(PROJ_includedir):$(LLVM_SRC_ROOT)/tools/cling/include:$(LLVM_SRC_ROOT)/tools/clang/include:$(LLVM_SRC_ROOT)/include"'
 
 include $(CLING_LEVEL)/Makefile

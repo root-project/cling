@@ -1,17 +1,16 @@
 --- ./cmake/config-ix.cmake	2013-04-11 09:34:27.245442672 +0200
 +++ ./cmake/config-ix.cmake	2013-04-24 19:40:08.149546838 +0200
-@@ -221,6 +221,8 @@
+@@ -216,6 +216,7 @@
    add_llvm_definitions( -D_GNU_SOURCE )
  endif()
  
 +check_function_exists(__dso_handle HAVE___DSO_HANDLE)
-+
- set(headers "")
- if (HAVE_SYS_TYPES_H)
-   set(headers ${headers} "sys/types.h")
+ set(headers "sys/types.h")
+ 
+ if (HAVE_INTTYPES_H)
 --- ./include/llvm/Config/config.h.cmake	2013-04-11 09:34:30.121412783 +0200
 +++ ./include/llvm/Config/config.h.cmake	2013-04-24 19:40:08.477544247 +0200
-@@ -519,8 +519,8 @@
+@@ -459,8 +459,8 @@
  /* Have host's __divdi3 */
  #cmakedefine HAVE___DIVDI3 ${HAVE___DIVDI3}
  

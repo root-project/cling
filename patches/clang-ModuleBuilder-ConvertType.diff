@@ -1,5 +1,5 @@
---- ./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-11 09:35:12.484972492 +0200
-+++ ./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-24 19:40:12.817509958 +0200
+--- ./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-10-19 14:43:43.000000000 -0700
++++ ./tools/clang/include/clang/CodeGen/ModuleBuilder.h	2013-04-26 16:49:46.000000000 -0700
 @@ -20,12 +20,14 @@
  namespace llvm {
    class LLVMContext;
@@ -23,17 +23,22 @@
    };
  
    /// CreateLLVMCodeGen - Create a CodeGenerator instance.
---- ./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-11 09:34:53.225172669 +0200
-+++ ./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-04-24 19:40:15.341490016 +0200
-@@ -13,6 +13,7 @@
- 
+--- ./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-10-19 14:43:44.000000000 -0700
++++ ./tools/clang/lib/CodeGen/ModuleBuilder.cpp	2013-09-30 00:55:31.000000000 -0700
+@@ -14,6 +14,7 @@
  #include "clang/CodeGen/ModuleBuilder.h"
  #include "CodeGenModule.h"
+ #include "CGDebugInfo.h"
 +#include "CodeGenTypes.h"
  #include "clang/AST/ASTContext.h"
  #include "clang/AST/DeclObjC.h"
  #include "clang/AST/Expr.h"
-@@ -52,6 +53,10 @@
+@@ -49,9 +50,15 @@
+     }
+ 
+     virtual llvm::Module* ReleaseModule() {
++      assert(M && "Releasing 0?");
++      Builder->Release();
        return M.take();
      }
  
