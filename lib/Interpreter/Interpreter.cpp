@@ -592,26 +592,7 @@ namespace cling {
     CO.DynamicScoping = 0;
     CO.Debug = isPrintingAST();
     CO.IRDebug = isPrintingIR();
-
-    // Disable warnings which doesn't make sense when using the prompt
-    // This gets reset with the clang::Diagnostics().Reset()
-    // TODO: Here might be useful to issue unused variable diagnostic,
-    // because we don't do declaration extraction and the decl won't be visible
-    // anymore.
-    ignoreFakeDiagnostics();
-
-    // Wrap the expression
-    std::string WrapperName;
-    std::string Wrapper = input;
-    WrapInput(Wrapper, WrapperName);
-    
-    const Transaction* lastT = m_IncrParser->Compile(Wrapper, CO);
-    assert(lastT->getState() == Transaction::kCommitted && "Must be committed");
-    if (lastT->getIssuedDiags() == Transaction::kNone)
-      if (RunFunction(lastT->getWrapperFD()) < kExeFirstError)
-        return Interpreter::kSuccess;
-
-    return Interpreter::kFailure;
+    return EvaluateInternal(input, CO);
   }
 
   Interpreter::CompilationResult Interpreter::emitAllDecls(Transaction* T) {
