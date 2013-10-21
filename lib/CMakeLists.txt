@@ -1,6 +1,6 @@
 add_subdirectory(Interpreter)
 add_subdirectory(MetaProcessor)
-if(EXISTS UserInterface/textinput)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/UserInterface/textinput)
    add_subdirectory(UserInterface)
 endif()
 add_subdirectory(Utils)
