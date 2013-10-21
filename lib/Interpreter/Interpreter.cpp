@@ -299,14 +299,16 @@ namespace cling {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
     ClangInternalState* state 
-      = new ClangInternalState(getCI()->getASTContext(), *getModule(), name);
+      = new ClangInternalState(getCI()->getASTContext(),
+                               getCI()->getPreprocessor(), *getModule(), name);
     m_StoredStates.push_back(state);
   }
 
   void Interpreter::compareInterpreterState(const std::string& name) const {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
-    ClangInternalState state(getCI()->getASTContext(), *getModule(), name);    
+    ClangInternalState state(getCI()->getASTContext(), getCI()->getPreprocessor()
+                             , *getModule(), name);    
     for (unsigned i = 0, e = m_StoredStates.size(); i != e; ++i) {
       if (m_StoredStates[i]->getName() == name) {
         m_StoredStates[i]->compare(state);

@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling -I%p -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -I%p -Xclang -verify 2>&1 | 
 
 // Test the removal of decls from the redeclaration chain, which are marked as
 // redeclarables.

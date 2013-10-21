@@ -19,6 +19,8 @@ namespace clang {
   class ASTContext;
   class Decl;
   class FunctionDecl;
+  class IdentifierInfo;
+  class MacroDirective;
   struct PrintingPolicy;
 }
 
@@ -72,6 +74,20 @@ namespace cling {
                  llvm::StringRef prependInfo = "") const;
     };
 
+    struct MacroDecl {
+      clang::IdentifierInfo* m_II;
+      const clang::MacroDirective* m_MD;
+      MacroDecl(clang::IdentifierInfo* II, const clang::MacroDirective* MD)
+                : m_II(II), m_MD(MD) {}
+      inline bool operator==(const MacroDecl& rhs) {
+        return m_II == rhs.m_II
+          && m_MD == rhs.m_MD;
+      }
+      inline bool operator!=(const MacroDecl& rhs) {
+        return !operator==(rhs);
+      }
+    };  
+
   private:
     // Intentionally use struct instead of pair because we don't need default 
     // init.
@@ -120,6 +136,10 @@ namespace cling {
     ///\brief The ASTContext
     ///
     clang::ASTContext& m_ASTContext;
+
+    // Add macro decls to be able to revert them for error recovery.
+    typedef llvm::SmallVector<MacroDecl, 2> MacroDeclQueue;
+    MacroDeclQueue m_MacroDeclQueue;
 
   public:
 
@@ -210,6 +230,21 @@ namespace cling {
       if (hasNestedTransactions())
         return m_NestedTransactions->rend();
       return const_reverse_nested_iterator(0);
+    }
+
+    typedef MacroDeclQueue::iterator macros_iterator;
+    typedef MacroDeclQueue::const_iterator macros_const_iterator;
+    iterator macros_begin() {
+      return m_DeclQueue.begin(); 
+    }
+    iterator macros_end() {
+      return m_DeclQueue.end();
+    }
+    const_iterator macros_begin() const {
+      return m_DeclQueue.begin(); 
+    }
+    const_iterator macros_end() const {
+      return m_DeclQueue.end();
     }
 
     /// \}
@@ -347,6 +382,11 @@ namespace cling {
     /// NOTE: Please use with caution!
     ///
     void forceAppend(clang::Decl *D);
+
+    ///\brief Appends teh declaration of a macro.
+    void append(MacroDecl MDE);
+    ///\brief Appends teh declaration of a macro.
+    void forceAppend(MacroDecl MDE);
 
     ///\brief Clears all declarations in the transaction.
     ///

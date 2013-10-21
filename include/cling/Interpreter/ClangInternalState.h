@@ -16,6 +16,7 @@
 namespace clang {
   class ASTContext;
   class SourceManager;
+  class Preprocessor;
 }
 
 namespace llvm {
@@ -35,17 +36,22 @@ namespace cling {
     llvm::OwningPtr<llvm::raw_fd_ostream> m_IncludedFilesOS;
     llvm::OwningPtr<llvm::raw_fd_ostream> m_ASTOS;
     llvm::OwningPtr<llvm::raw_fd_ostream> m_LLVMModuleOS;
+    llvm::OwningPtr<llvm::raw_fd_ostream> m_MacrosOS;
     std::string m_LookupTablesFile;
     std::string m_IncludedFilesFile;
     std::string m_ASTFile;
     std::string m_LLVMModuleFile;
+    std::string m_MacrosFile;
+    clang::Preprocessor& m_Preprocessor;
     clang::ASTContext& m_ASTContext;
     llvm::Module& m_Module;
     std::string m_DiffCommand;
     std::string m_Name;
   public:
-    ClangInternalState(clang::ASTContext& C, llvm::Module& M,
-                       const std::string& Name);
+    /*ClangInternalState(clang::ASTContext& C, llvm::Module& M,
+                       const std::string& Name);*/
+    ClangInternalState(clang::ASTContext& C, clang::Preprocessor& PP, llvm::Module& M, 
+                                         const std::string& name);
     ~ClangInternalState();
 
     ///\brief It is convenient the state object to be named so that can be
@@ -77,6 +83,8 @@ namespace cling {
                                    clang::SourceManager& SM);
     static void printAST(llvm::raw_ostream& Out, clang::ASTContext& C);
     static void printLLVMModule(llvm::raw_ostream& Out, llvm::Module& M);
+    static void printMacroDefinitions(llvm::raw_ostream& Out,
+                                      clang::Preprocessor& PP);
   private:
     llvm::raw_fd_ostream* createOutputFile(llvm::StringRef OutFile,
                                            std::string* TempPathName = 0,

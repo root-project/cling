@@ -8,12 +8,14 @@
 #define CLING_DECL_COLLECTOR_H
 
 #include "clang/AST/ASTConsumer.h"
+#include "clang/Lex/PPCallbacks.h"
 
 namespace clang {
   class ASTContext;
   class CodeGenerator;
   class Decl;
   class DeclGroupRef;
+  class Token;
 }
 
 namespace cling {
@@ -27,7 +29,7 @@ namespace cling {
   /// cling::DeclCollector is responsible for appending all the declarations 
   /// seen by clang.
   ///
-  class DeclCollector: public clang::ASTConsumer {
+  class DeclCollector: public clang::ASTConsumer, public clang::PPCallbacks {
   private:
     Transaction* m_CurTransaction;
 
@@ -65,6 +67,9 @@ namespace cling {
     }
 
     /// \}
+
+    /// Macro support
+    void MacroDefined (const clang::Token &MacroNameTok, const clang::MacroDirective *MD);
 
     // dyn_cast/isa support
     static bool classof(const clang::ASTConsumer*) { return true; }

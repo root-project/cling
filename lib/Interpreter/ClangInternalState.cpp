@@ -7,6 +7,7 @@
 #include "cling/Interpreter/ClangInternalState.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/SourceManager.h"
@@ -25,9 +26,15 @@
 using namespace clang;
 
 namespace cling {
-  ClangInternalState::ClangInternalState(ASTContext& C, llvm::Module& M, 
+  /*ClangInternalState::ClangInternalState(ASTContext& C, llvm::Module& M, 
                                          const std::string& name)
-    : m_ASTContext(C), m_Module(M), m_DiffCommand("diff -u "), m_Name(name) {
+    : m_Preprocessor(0), m_ASTContext(C), m_Module(M), m_DiffCommand("diff -u "), m_Name(name) {
+    store();
+  }*/
+  ClangInternalState::ClangInternalState(ASTContext& C, Preprocessor& PP, llvm::Module& M, 
+                                         const std::string& name)
+    : m_ASTContext(C), m_Preprocessor(PP), m_Module(M), m_DiffCommand("diff -u ")
+    , m_Name(name) {
     store();
   }
 
@@ -37,21 +44,23 @@ namespace cling {
     remove(m_IncludedFilesFile.c_str());
     remove(m_ASTFile.c_str());
     remove(m_LLVMModuleFile.c_str());
+    remove(m_MacrosFile.c_str());
   }
 
   void ClangInternalState::store() {
-    m_LookupTablesOS.reset(createOutputFile("cling-lookup",
-                                            &m_LookupTablesFile));
-    m_IncludedFilesOS.reset(createOutputFile("cling-included", 
-                                             &m_IncludedFilesFile));
-    m_ASTOS.reset(createOutputFile("cling-ast", &m_ASTFile));
-    m_LLVMModuleOS.reset(createOutputFile("cling-module", &m_LLVMModuleFile));
-    
+
+    m_LookupTablesOS.reset(createOutputFile("lookup", &m_LookupTablesFile));
+    m_IncludedFilesOS.reset(createOutputFile("included", &m_IncludedFilesFile));
+    m_ASTOS.reset(createOutputFile("ast", &m_ASTFile));
+    m_LLVMModuleOS.reset(createOutputFile("module", &m_LLVMModuleFile));
+    m_MacrosOS.reset(createOutputFile("macros", &m_MacrosFile));
+
     printLookupTables(*m_LookupTablesOS.get(), m_ASTContext);
     printIncludedFiles(*m_IncludedFilesOS.get(), 
                        m_ASTContext.getSourceManager());
     printAST(*m_ASTOS.get(), m_ASTContext);
     printLLVMModule(*m_LLVMModuleOS.get(), m_Module);
+    printMacroDefinitions(*m_MacrosOS.get(), m_Preprocessor);
   }
   namespace {
     std::string getCurrentTimeAsString() {
@@ -234,4 +243,13 @@ namespace cling {
                                            llvm::Module& M) {
     M.print(Out, /*AssemblyAnnotationWriter*/ 0);
   }
+
+  void ClangInternalState::printMacroDefinitions(llvm::raw_ostream& Out,
+                            clang::Preprocessor& PP) {
+    for (clang::Preprocessor::macro_iterator I = PP.macro_begin(),
+         E = PP.macro_end(); I != E; ++I) {
+        Out<<(*I).first<<'\n';
+    }  
+  }
+
 } // end namespace cling

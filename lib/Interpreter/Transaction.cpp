@@ -171,6 +171,30 @@ namespace cling {
   void Transaction::forceAppend(Decl* D) {
     forceAppend(DelayCallInfo(DeclGroupRef(D), kCCIHandleTopLevelDecl));
   }
+
+  void Transaction::append(MacroDecl MDE) {
+    assert(!MDE.m_II && "Appending null IdentifierInfo?!");
+    assert(!MDE.m_MD && "Appending null MacroDirective?!");
+    assert(getState() == kCollecting
+           && "Cannot append declarations in current state.");
+    forceAppend(MDE);
+  }
+
+  void Transaction::forceAppend(MacroDecl MDE) {
+    assert(!MDE.m_II && "Appending null IdentifierInfo?!");
+    assert(!MDE.m_MD && "Appending null MacroDirective?!");
+    assert(getState() == kCollecting
+           && "Cannot append declarations in current state.");
+#ifndef NDEBUG
+    // Check for duplicates
+    for (size_t i = 0, e = m_MacroDeclQueue.size(); i < e; ++i) {
+      MacroDecl &oldMacroDecl (m_MacroDeclQueue[i]);
+      assert(oldMacroDecl != MDE && "Duplicates?!");
+    }
+#endif
+
+    m_MacroDeclQueue.push_back(MDE);
+  }  
   
   void Transaction::erase(iterator pos) {
     assert(!empty() && "Erasing from an empty transaction.");

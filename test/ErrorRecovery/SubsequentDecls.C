@@ -21,7 +21,7 @@ int OverloadedF(int i) { return i + 100;}
 .rawInput 0
 
 int __my_i = 10 
-// CHECK: (int) 10  
+// CHECK: (int) 10
 OverloadedF(__my_i) 
 // CHECK: (int) 110
 TemplatedF(__my_i) 

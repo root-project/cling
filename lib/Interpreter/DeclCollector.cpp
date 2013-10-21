@@ -13,6 +13,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclGroup.h"
 #include "clang/Serialization/ASTDeserializationListener.h"
+#include "clang/Lex/Token.h"
 
 #include "clang/CodeGen/ModuleBuilder.h"
 
@@ -79,6 +80,12 @@ namespace cling {
     Transaction::DelayCallInfo DCI(DeclGroupRef(D),
                                    Transaction::kCCIHandleCXXStaticMemberVarInstantiation);
     m_CurTransaction->append(DCI);
+  }
+
+  void DeclCollector::MacroDefined (const clang::Token &MacroNameTok,
+                                    const clang::MacroDirective *MD) {
+    Transaction::MacroDecl MDE(MacroNameTok.getIdentifierInfo(), MD);
+    m_CurTransaction->append(MDE);
   }
   
 } // namespace cling

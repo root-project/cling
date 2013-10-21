@@ -7,6 +7,7 @@
 #include "cling/Interpreter/CIFactory.h"
 
 #include "DeclCollector.h"
+#include "MacroCollectorCallback.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TargetInfo.h"
@@ -277,7 +278,11 @@ namespace cling {
     CI->setASTContext(Ctx);
 
     // Set up the ASTConsumers
-    CI->setASTConsumer(new DeclCollector());
+    DeclCollector* collector = new DeclCollector();
+    CI->setASTConsumer(collector);
+
+    // Add the callback keeping track of the macro definitions
+    //PP.addPPCallbacks(collector);
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;
