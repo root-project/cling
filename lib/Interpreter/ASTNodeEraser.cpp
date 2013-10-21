@@ -17,6 +17,7 @@
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
 
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
@@ -35,6 +36,10 @@ namespace cling {
     ///\brief The Sema object being reverted (contains the AST as well).
     ///
     Sema* m_Sema;
+
+    ///\brief The execution engine, either JIT or MCJIT, being recovered.
+    ///
+    llvm::ExecutionEngine* m_EEngine;
 
     ///\brief The current transaction being reverted.
     ///
@@ -55,7 +60,8 @@ namespace cling {
     FileIDs m_FilesToUncache;
 
   public:
-    DeclReverter(Sema* S, const Transaction* T): m_Sema(S), m_CurTransaction(T) {
+    DeclReverter(Sema* S, llvm::ExecutionEngine* EE, const Transaction* T)
+      : m_Sema(S), m_EEngine(EE), m_CurTransaction(T) {
       m_Mangler.reset(m_Sema->getASTContext().createMangleContext());
     }
     ~DeclReverter();
@@ -258,7 +264,7 @@ namespace cling {
 
     DeclContext* DC = ND->getDeclContext();
 
-    // If the decl was removed make sure that we fix the lookup
+     // If the decl was removed make sure that we fix the lookup
     if (Successful) {
       Scope* S = m_Sema->getScopeForContext(DC);
       if (S)
@@ -283,6 +289,9 @@ namespace cling {
 
       llvm::GlobalValue* GV 
         = m_CurTransaction->getModule()->getNamedValue(mangledName);
+      // Remove the mapping from the JIT, otherwise it locks the GV and 
+      // replaceAllUsesWith doesn't work
+      m_EEngine->updateGlobalMapping(GV, 0);
 
       if (!GV->use_empty())
         GV->replaceAllUsesWith(llvm::UndefValue::get(GV->getType()));
@@ -512,14 +521,14 @@ namespace cling {
     return false;
   }
 
-  ASTNodeEraser::ASTNodeEraser(Sema* S) : m_Sema(S) {
-  }
+  ASTNodeEraser::ASTNodeEraser(Sema* S, llvm::ExecutionEngine* EE)
+    : m_Sema(S), m_EEngine(EE) { }
 
   ASTNodeEraser::~ASTNodeEraser() {
   }
 
   bool ASTNodeEraser::RevertTransaction(const Transaction* T) {
-    DeclReverter DeclRev(m_Sema, T);
+    DeclReverter DeclRev(m_Sema, m_EEngine, T);
     bool Successful = true;
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),

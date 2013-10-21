@@ -448,7 +448,8 @@ namespace cling {
   void IncrementalParser::rollbackTransaction(Transaction* T) const {
     assert(T->getIssuedDiags() == Transaction::kErrors 
            && "Rolling back with no errors");
-    ASTNodeEraser NodeEraser(&getCI()->getSema());
+    ASTNodeEraser NodeEraser(&getCI()->getSema(),
+                             m_Interpreter->getExecutionEngine());
 
     if (NodeEraser.RevertTransaction(T))
       T->setState(Transaction::kRolledBack);
@@ -620,7 +621,8 @@ namespace cling {
     assert(T->getModule() && 
            "Trying to uncodegen transaction taken in syntax only mode. ");
 
-    ASTNodeEraser NodeEraser(&getCI()->getSema());
+    ASTNodeEraser NodeEraser(&getCI()->getSema(), 
+                             m_Interpreter->getExecutionEngine());
     NodeEraser.RevertTransaction(T);
 
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
