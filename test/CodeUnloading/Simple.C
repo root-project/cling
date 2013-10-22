@@ -6,9 +6,12 @@ int f = 0;
 .U
 .rawInput 1
 extern "C" int printf(const char* fmt, ...);
-void f() {
+int f() {
   printf("Now f is a function\n");
-}
+  return 0;
+} int a = f();
+.U
 .rawInput 0
-f()
- //CHECK: Now f is a function
+//CHECK: Now f is a function
+double f = 3.14
+//CHECK: (double) 3.14

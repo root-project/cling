@@ -313,12 +313,20 @@ namespace cling {
 
       llvm::GlobalValue* GV 
         = m_CurTransaction->getModule()->getNamedValue(mangledName);
-      // Remove the mapping from the JIT, otherwise it locks the GV and 
-      // replaceAllUsesWith doesn't work
-      m_EEngine->updateGlobalMapping(GV, 0);
 
-      if (!GV->use_empty())
-        GV->replaceAllUsesWith(llvm::UndefValue::get(GV->getType()));
+      if (!GV->use_empty()) {
+        // Assert that if there was a use it is not coming from the explicit AST
+        // node, but from the implicitly generated functions, which ensure
+        // the initialization order semantics. Such functions are:
+        // _GLOBAL__I* and __cxx_global_var_init*
+        // 
+        assert(GV->hasOneUse() 
+               && "Must have only one use coming from the static inits");
+        // We can 'afford' to drop all the references because we know that the
+        // static init functions must be called only once, and that was already
+        // done.
+        GV->use_back()->dropAllReferences();
+      }
       GV->eraseFromParent();
     }
 
