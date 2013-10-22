@@ -41,6 +41,15 @@ namespace utils {
     ///
     static bool IsWrapper(const clang::NamedDecl* ND);
 
+    ///\brief Get the mangled name of a NamedDecl.
+    ///
+    ///\param [in]  D - try to mangle this decl's name.
+    ///\param [out] mangledName - put the mangled name in here.
+    ///
+    static void maybeMangleDeclName(const clang::NamedDecl* D,
+                                    std::string& mangledName);
+
+
     ///\brief Retrieves the last expression of a function body. If it was a
     /// DeclStmt with a variable declaration, creates DeclRefExpr and adds it to
     /// the function body.

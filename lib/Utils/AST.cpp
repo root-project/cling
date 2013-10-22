@@ -13,8 +13,11 @@
 #include "clang/AST/DeclTemplate.h"
 
 #include "llvm/ADT/ArrayRef.h"
+#include "clang/AST/Mangle.h"
 #include "llvm/ADT/StringRef.h"
+
 #include <stdio.h>
+
 using namespace clang;
 
 namespace cling {
@@ -38,6 +41,43 @@ namespace utils {
 
     return StringRef(ND->getNameAsString())
       .startswith(Synthesize::UniquePrefix);
+  }
+
+  void Analyze::maybeMangleDeclName(const clang::NamedDecl* D,
+                                        std::string& mangledName) {
+    ///Get the mangled name of a NamedDecl.
+    ///
+    ///D - mangle this decl's name
+    ///mangledName - put the mangled name in here
+    llvm::OwningPtr<MangleContext> mangleCtx;
+    mangleCtx.reset(D->getASTContext().createMangleContext());
+    if (mangleCtx->shouldMangleDeclName(D)) {
+      llvm::raw_string_ostream RawStr(mangledName);
+      switch(D->getKind()) {
+      case Decl::CXXConstructor:
+        //Ctor_Complete,          // Complete object ctor
+        //Ctor_Base,              // Base object ctor
+        //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
+        mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D), 
+                                 Ctor_Complete, RawStr);
+        break;
+
+      case Decl::CXXDestructor:
+        //Dtor_Deleting, // Deleting dtor
+        //Dtor_Complete, // Complete object dtor
+        //Dtor_Base      // Base object dtor
+        mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
+                                 Dtor_Complete, RawStr);
+        break;
+
+      default :
+        mangleCtx->mangleName(D, RawStr);
+        break;
+      }
+      RawStr.flush();
+    } else {
+      mangledName = D->getNameAsString();
+    }
   }
 
   Expr* Analyze::GetOrCreateLastExpr(FunctionDecl* FD, 

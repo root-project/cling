@@ -21,7 +21,6 @@
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/Mangle.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
@@ -253,7 +252,7 @@ namespace cling {
       NSD = utils::Lookup::Namespace(&getSema(), "internal");
       NamedDecl* ND = utils::Lookup::Named(&getSema(), "local_cxa_atexit", NSD);
       std::string mangledName;
-      maybeMangleDeclName(ND, mangledName);
+      utils::Analyze::maybeMangleDeclName(ND, mangledName);
       m_ExecutionContext->addSymbol(mangledName.c_str(),
                          (void*)(intptr_t)&runtime::internal::local_cxa_atexit);
 
@@ -662,7 +661,7 @@ namespace cling {
       return kExeUnkownFunction;
 
     std::string mangledNameIfNeeded;
-    maybeMangleDeclName(FD, mangledNameIfNeeded);
+    utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
     ExecutionContext::ExecutionResult ExeRes =
        m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
                                            getCI()->getASTContext(),
@@ -845,43 +844,6 @@ namespace cling {
     m_ExecutionContext->runStaticDestructorsOnce(getModule());
   }
 
-  void Interpreter::maybeMangleDeclName(const clang::NamedDecl* D,
-                                        std::string& mangledName) const {
-    ///Get the mangled name of a NamedDecl.
-    ///
-    ///D - mangle this decl's name
-    ///mangledName - put the mangled name in here
-    llvm::OwningPtr<MangleContext> mangleCtx;
-    mangleCtx.reset(D->getASTContext().createMangleContext());
-    if (mangleCtx->shouldMangleDeclName(D)) {
-      llvm::raw_string_ostream RawStr(mangledName);
-      switch(D->getKind()) {
-      case Decl::CXXConstructor:
-        //Ctor_Complete,          // Complete object ctor
-        //Ctor_Base,              // Base object ctor
-        //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
-        mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D), 
-                                 Ctor_Complete, RawStr);
-        break;
-
-      case Decl::CXXDestructor:
-        //Dtor_Deleting, // Deleting dtor
-        //Dtor_Complete, // Complete object dtor
-        //Dtor_Base      // Base object dtor
-        mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
-                                 Dtor_Complete, RawStr);
-        break;
-
-      default :
-        mangleCtx->mangleName(D, RawStr);
-        break;
-      }
-      RawStr.flush();
-    } else {
-      mangledName = D->getNameAsString();
-    }
-  }
-
   void Interpreter::ignoreFakeDiagnostics() const {
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     // Disable warnings which doesn't make sense when using the prompt
@@ -911,7 +873,7 @@ namespace cling {
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
     std::string mangledName;
-    maybeMangleDeclName(D, mangledName);
+    utils::Analyze::maybeMangleDeclName(D, mangledName);
     return getAddressOfGlobal(mangledName.c_str(), fromJIT);
   }
 
