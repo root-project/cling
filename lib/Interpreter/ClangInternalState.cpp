@@ -153,6 +153,11 @@ namespace cling {
       llvm::errs() << differences << "\n";
       differences = "";
     }
+    if (differentContent(m_MacrosFile, other.m_MacrosFile, differences)){
+      llvm::errs() << "Differences in the Macro Definitions \n";
+      llvm::errs() << differences << "\n";
+      differences = "";
+    }
   }
 
   bool ClangInternalState::differentContent(const std::string& file1, 
@@ -248,7 +253,7 @@ namespace cling {
                             clang::Preprocessor& PP) {
     for (clang::Preprocessor::macro_iterator I = PP.macro_begin(),
          E = PP.macro_end(); I != E; ++I) {
-        Out<<(*I).first<<'\n';
+        Out<<(*I).first->getName()<<'\n';
     }  
   }
 
