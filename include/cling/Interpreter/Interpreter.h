@@ -37,7 +37,6 @@ namespace clang {
   class DeclContext;
   class FunctionDecl;
   class NamedDecl;
-  class MangleContext;
   class Parser;
   class QualType;
   class Sema;
@@ -137,10 +136,6 @@ namespace cling {
     ///\brief Cling's reflection information query.
     ///
     llvm::OwningPtr<LookupHelper> m_LookupHelper;
-
-    ///\brief Helper object for mangling names.
-    ///
-    mutable llvm::OwningPtr<clang::MangleContext> m_MangleCtx;
 
     ///\brief Counter used when we need unique names.
     ///

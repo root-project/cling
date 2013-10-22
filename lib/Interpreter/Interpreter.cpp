@@ -851,30 +851,29 @@ namespace cling {
     ///
     ///D - mangle this decl's name
     ///mangledName - put the mangled name in here
-    if (!m_MangleCtx) {
-      m_MangleCtx.reset(getCI()->getASTContext().createMangleContext());
-    }
-    if (m_MangleCtx->shouldMangleDeclName(D)) {
+    llvm::OwningPtr<MangleContext> mangleCtx;
+    mangleCtx.reset(D->getASTContext().createMangleContext());
+    if (mangleCtx->shouldMangleDeclName(D)) {
       llvm::raw_string_ostream RawStr(mangledName);
       switch(D->getKind()) {
       case Decl::CXXConstructor:
         //Ctor_Complete,          // Complete object ctor
         //Ctor_Base,              // Base object ctor
         //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
-        m_MangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D), 
-                                   Ctor_Complete, RawStr);
+        mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D), 
+                                 Ctor_Complete, RawStr);
         break;
 
       case Decl::CXXDestructor:
         //Dtor_Deleting, // Deleting dtor
         //Dtor_Complete, // Complete object dtor
         //Dtor_Base      // Base object dtor
-        m_MangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
-                                   Dtor_Complete, RawStr);
+        mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
+                                 Dtor_Complete, RawStr);
         break;
 
       default :
-        m_MangleCtx->mangleName(D, RawStr);
+        mangleCtx->mangleName(D, RawStr);
         break;
       }
       RawStr.flush();
