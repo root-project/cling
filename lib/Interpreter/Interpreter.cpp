@@ -610,6 +610,13 @@ namespace cling {
   }
 
   bool Interpreter::ShouldWrapInput(const std::string& input) {
+    // TODO: For future reference.
+    // Parser* P = const_cast<clang::Parser*>(m_IncrParser->getParser());
+    // Parser::TentativeParsingAction TA(P);
+    // TPResult result = P->isCXXDeclarationSpecifier();
+    // TA.Revert();
+    // return result == TPResult::True();
+
     llvm::OwningPtr<llvm::MemoryBuffer> buf;
     buf.reset(llvm::MemoryBuffer::getMemBuffer(input, "Cling Preparse Buf"));
     Lexer WrapLexer(SourceLocation(), getSema().getLangOpts(), input.c_str(), 
