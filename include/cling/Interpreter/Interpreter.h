@@ -36,6 +36,7 @@ namespace clang {
   class Decl;
   class DeclContext;
   class FunctionDecl;
+  class GlobalDecl;
   class NamedDecl;
   class Parser;
   class QualType;
@@ -549,7 +550,8 @@ namespace cling {
     ///\param[in]  D       - the global's Decl to find
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
-    void* getAddressOfGlobal(const clang::NamedDecl* D, bool* fromJIT = 0) const;
+    void* getAddressOfGlobal(const clang::GlobalDecl& D, 
+                             bool* fromJIT = 0) const;
 
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///

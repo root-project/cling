@@ -21,6 +21,7 @@
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/GlobalDecl.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
@@ -251,8 +252,9 @@ namespace cling {
       NSD = utils::Lookup::Namespace(&getSema(), "runtime");
       NSD = utils::Lookup::Namespace(&getSema(), "internal");
       NamedDecl* ND = utils::Lookup::Named(&getSema(), "local_cxa_atexit", NSD);
+      GlobalDecl GD(cast<FunctionDecl>(ND));
       std::string mangledName;
-      utils::Analyze::maybeMangleDeclName(ND, mangledName);
+      utils::Analyze::maybeMangleDeclName(GD, mangledName);
       m_ExecutionContext->addSymbol(mangledName.c_str(),
                          (void*)(intptr_t)&runtime::internal::local_cxa_atexit);
 
@@ -879,11 +881,11 @@ namespace cling {
     return m_ExecutionContext->addSymbol(symbolName, symbolAddress);
   }
 
-  void* Interpreter::getAddressOfGlobal(const clang::NamedDecl* D,
+  void* Interpreter::getAddressOfGlobal(const GlobalDecl& GD,
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
     std::string mangledName;
-    utils::Analyze::maybeMangleDeclName(D, mangledName);
+    utils::Analyze::maybeMangleDeclName(GD, mangledName);
     return getAddressOfGlobal(mangledName.c_str(), fromJIT);
   }
 
