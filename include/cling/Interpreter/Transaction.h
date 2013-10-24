@@ -373,7 +373,7 @@ namespace cling {
 
     ///\brief Erases an element at given position.
     ///
-    void erase(size_t pos);
+    void erase(iterator pos);
 
     ///\brief Resets empty transaction so that it could be reused.
     /// 

@@ -77,7 +77,7 @@ namespace cling {
       if ((*this)[i].m_DGR.isNull() && (*this)[i].m_Call == kCCINone) {
         ++markerPos;
         if (nestedPos == markerPos) {
-          erase(i);
+          erase(m_DeclQueue.begin() + i);
           break;
         }
       }
@@ -171,9 +171,11 @@ namespace cling {
     forceAppend(DelayCallInfo(DeclGroupRef(D), kCCIHandleTopLevelDecl));
   }
   
-  void Transaction::erase(size_t pos) {
+  void Transaction::erase(iterator pos) {
     assert(!empty() && "Erasing from an empty transaction.");
-    m_DeclQueue.erase(decls_begin() + pos);
+    m_DeclQueue.erase(pos);
+    if (!pos->m_DGR.isNull() && m_WrapperFD == *pos->m_DGR.begin())
+      m_WrapperFD = 0;
   }
 
   void Transaction::DelayCallInfo::dump() const {
