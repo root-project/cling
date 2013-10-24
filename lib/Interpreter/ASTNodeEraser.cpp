@@ -563,8 +563,10 @@ namespace cling {
     DeclReverter DeclRev(m_Sema, m_EEngine, T);
     bool Successful = true;
 
-    for (Transaction::const_reverse_iterator I = T->rdecls_begin(),
-           E = T->rdecls_end(); I != E; ++I) {
+    for (Transaction::const_iterator I = T->decls_begin(),
+           E = T->decls_end(); I != E; ++I) {
+      if ((*I).m_Call != Transaction::kCCIHandleTopLevelDecl)
+        continue;
       const DeclGroupRef& DGR = (*I).m_DGR;
 
       for (DeclGroupRef::const_iterator
