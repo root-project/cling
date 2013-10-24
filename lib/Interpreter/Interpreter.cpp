@@ -708,13 +708,14 @@ namespace cling {
     // This gets reset with the clang::Diagnostics().Reset()
     ignoreFakeDiagnostics();
 
-    Transaction* lastT = m_IncrParser->Compile(input, CO);
-    if (lastT->getIssuedDiags() != Transaction::kErrors) {
-      if (T)
-        *T = lastT;
-      return Interpreter::kSuccess;
-    }
+    if (Transaction* lastT = m_IncrParser->Compile(input, CO))
+      if (lastT->getIssuedDiags() != Transaction::kErrors) {
+        if (T)
+          *T = lastT;
+        return Interpreter::kSuccess;
+      }
 
+    //return Interpreter::kSuccess;
     return Interpreter::kFailure;
   }
 
@@ -732,19 +733,21 @@ namespace cling {
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
 
-    Transaction* lastT = m_IncrParser->Compile(Wrapper, CO);
-    assert((!V || lastT->size()) && "No decls created!?");
-    assert((lastT->getState() == Transaction::kCommitted
-           || lastT->getState() == Transaction::kRolledBack) 
-           && "Not committed?");
-    assert(lastT->getWrapperFD() && "Must have wrapper!");
-    if (lastT->getIssuedDiags() != Transaction::kErrors)
-      if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
-        return Interpreter::kSuccess;
-    if (V)
-      *V = StoredValueRef::invalidValue();
+    if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
+      assert((!V || lastT->size()) && "No decls created!?");
+      assert((lastT->getState() == Transaction::kCommitted
+              || lastT->getState() == Transaction::kRolledBack) 
+             && "Not committed?");
+      assert(lastT->getWrapperFD() && "Must have wrapper!");
+      if (lastT->getIssuedDiags() != Transaction::kErrors)
+        if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
+          return Interpreter::kSuccess;
+      if (V)
+        *V = StoredValueRef::invalidValue();
 
-    return Interpreter::kFailure;
+      return Interpreter::kFailure;
+    }
+    return Interpreter::kSuccess;
   }
 
   Interpreter::CompilationResult
