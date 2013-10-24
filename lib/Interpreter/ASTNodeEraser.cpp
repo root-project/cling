@@ -108,9 +108,19 @@ namespace cling {
     ///
     bool VisitFunctionDecl(FunctionDecl* FD);
 
+    ///\brief Specialize the removal of constructors due to the fact the we need
+    /// the constructor type (aka CXXCtorType). The information is located in
+    /// the CXXConstructExpr of usually VarDecls. 
+    /// See clang::CodeGen::CodeGenFunction::EmitCXXConstructExpr.
+    ///
+    /// What we will do instead is to brute-force and try to remove from the 
+    /// llvm::Module all ctors of this class with all the types.
+    ///
+    ///\param[in] CXXCtor - The declaration to be removed.
     ///
     ///\returns true on success.
     ///
+    bool VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor);
 
     ///\brief Removes the DeclCotnext and its decls.
     /// @param[in] DC - The declaration to be removed.
@@ -421,14 +431,32 @@ namespace cling {
       return false;
     }
 
+    // The Structors need to be handled differently.
+    if (isa<CXXConstructorDecl>(FD) || isa<CXXDestructorDecl>(FD))
+      return Successful;
     //If the transaction was committed we need to cleanup the execution engine.
     GlobalDecl GD(FD);
+
     RemoveDeclFromModule(GD);
 
     return Successful;
   }
 
+  bool DeclReverter::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
+    bool Successful = VisitCXXMethodDecl(CXXCtor);
 
+    // Brute-force all possibly generated ctors.
+    // Ctor_Complete            Complete object ctor.
+    // Ctor_Base                Base object ctor.
+    // Ctor_CompleteAllocating 	Complete object allocating ctor. 
+    GlobalDecl GD(CXXCtor, Ctor_Complete);
+    RemoveDeclFromModule(GD);
+    GD = GlobalDecl(CXXCtor, Ctor_Base);
+    RemoveDeclFromModule(GD);
+    GD = GlobalDecl(CXXCtor, Ctor_CompleteAllocating);
+    RemoveDeclFromModule(GD);
+    return Successful;
+  }
 
   bool DeclReverter::VisitDeclContext(DeclContext* DC) {
     bool Successful = true;
