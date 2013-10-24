@@ -280,14 +280,13 @@ namespace cling {
 
       if (isOnScopeChains(ND))
         m_Sema->IdResolver.RemoveDecl(ND);
-
     }
 
     return Successful;
   }
 
   bool DeclReverter::VisitVarDecl(VarDecl* VD) {
-    bool Successful = VisitNamedDecl(VD);
+    bool Successful = VisitDeclaratorDecl(VD);
 
     DeclContext* DC = VD->getDeclContext();
     Scope* S = m_Sema->getScopeForContext(DC);
