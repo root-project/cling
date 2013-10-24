@@ -108,12 +108,9 @@ namespace cling {
     ///
     bool VisitFunctionDecl(FunctionDecl* FD);
 
-    ///\brief Removes the enumerator and its enumerator constants.
-    /// @param[in] ED - The declaration to be removed.
     ///
     ///\returns true on success.
     ///
-    bool VisitEnumDecl(EnumDecl* ED);
 
     ///\brief Removes the DeclCotnext and its decls.
     /// @param[in] DC - The declaration to be removed.
@@ -424,16 +421,8 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitEnumDecl(EnumDecl* ED) {
-    bool Successful = true;
 
-    for (EnumDecl::enumerator_iterator I = ED->enumerator_begin(),
-           E = ED->enumerator_end(); I != E; ++I) {
-      assert(I->getDeclName() && "EnumConstantDecl with no name?");
-      Successful = VisitNamedDecl(*I) && Successful;
-    }
 
-    Successful = VisitNamedDecl(ED) && Successful;
   bool DeclReverter::VisitDeclContext(DeclContext* DC) {
     bool Successful = true;
     typedef llvm::SmallVector<Decl*, 64> Decls;
