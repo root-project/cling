@@ -54,33 +54,32 @@ namespace utils {
       = cast<NamedDecl>(const_cast<clang::Decl*>(GD.getDecl()));
     llvm::OwningPtr<MangleContext> mangleCtx;
     mangleCtx.reset(D->getASTContext().createMangleContext());
-    if (mangleCtx->shouldMangleDeclName(D)) {
-      llvm::raw_string_ostream RawStr(mangledName);
-      switch(D->getKind()) {
-      case Decl::CXXConstructor:
-        //Ctor_Complete,          // Complete object ctor
-        //Ctor_Base,              // Base object ctor
-        //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
-        mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D), 
-                                 GD.getCtorType(), RawStr);
-        break;
+    assert(mangleCtx->shouldMangleDeclName(D) || D->getIdentifier()
+           && "Attempting to mangle unnamed decl.");
+    
+    llvm::raw_string_ostream RawStr(mangledName);
+    switch(D->getKind()) {
+    case Decl::CXXConstructor:
+      //Ctor_Complete,          // Complete object ctor
+      //Ctor_Base,              // Base object ctor
+      //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
+      mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D), 
+                               GD.getCtorType(), RawStr);
+      break;
 
-      case Decl::CXXDestructor:
-        //Dtor_Deleting, // Deleting dtor
-        //Dtor_Complete, // Complete object dtor
-        //Dtor_Base      // Base object dtor
-        mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
-                                 GD.getDtorType(), RawStr);
-        break;
+    case Decl::CXXDestructor:
+      //Dtor_Deleting, // Deleting dtor
+      //Dtor_Complete, // Complete object dtor
+      //Dtor_Base      // Base object dtor
+      mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
+                               GD.getDtorType(), RawStr);
+      break;
 
-      default :
-        mangleCtx->mangleName(D, RawStr);
-        break;
-      }
-      RawStr.flush();
-    } else {
-      mangledName = D->getNameAsString();
+    default :
+      mangleCtx->mangleName(D, RawStr);
+      break;
     }
+    RawStr.flush();
   }
 
   Expr* Analyze::GetOrCreateLastExpr(FunctionDecl* FD, 
