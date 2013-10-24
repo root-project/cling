@@ -447,7 +447,8 @@ namespace cling {
   }
 
   bool DeclReverter::VisitNamespaceDecl(NamespaceDecl* NSD) {
-    bool Successful = VisitNamedDecl(NSD);
+    bool Successful = VisitDeclContext(NSD);
+    Successful = VisitNamedDecl(NSD);
 
     //DeclContext* DC = NSD->getPrimaryContext();
     DeclContext* DC = NSD->getDeclContext();
