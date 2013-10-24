@@ -508,8 +508,7 @@ namespace cling {
     //
     if (m_CurTransaction->getState() == Transaction::kCommitted) {
       std::string mangledName;
-      const NamedDecl* ND = cast<NamedDecl>(GD.getDecl());
-      utils::Analyze::maybeMangleDeclName(ND, mangledName);
+      utils::Analyze::maybeMangleDeclName(GD, mangledName);
 
       llvm::GlobalValue* GV 
         = m_CurTransaction->getModule()->getNamedValue(mangledName);
