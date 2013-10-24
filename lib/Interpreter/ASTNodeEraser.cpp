@@ -115,6 +115,12 @@ namespace cling {
     ///
     bool VisitEnumDecl(EnumDecl* ED);
 
+    ///\brief Removes the DeclCotnext and its decls.
+    /// @param[in] DC - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitDeclContext(DeclContext* DC);
 
     ///\brief Removes the namespace.
     /// @param[in] NSD - The declaration to be removed.
@@ -428,7 +434,19 @@ namespace cling {
     }
 
     Successful = VisitNamedDecl(ED) && Successful;
+  bool DeclReverter::VisitDeclContext(DeclContext* DC) {
+    bool Successful = true;
+    typedef llvm::SmallVector<Decl*, 64> Decls;
+    Decls declsToErase;
+    // Removing from single-linked list invalidates the iterators.
+    for (DeclContext::decl_iterator I = DC->decls_begin(); 
+         I != DC->decls_end(); ++I) {
+      declsToErase.push_back(*I);
+    }
 
+    for(Decls::iterator I = declsToErase.begin(), E = declsToErase.end(); 
+        I != E; ++I)
+      Successful = Visit(*I) && Successful;
     return Successful;
   }
 
