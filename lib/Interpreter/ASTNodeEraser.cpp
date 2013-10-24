@@ -126,7 +126,15 @@ namespace cling {
     ///
     bool VisitNamespaceDecl(NamespaceDecl* NSD);
 
-    void RemoveDeclFromModule(const GlobalDecl& GD) const;
+    ///\brief Removes a Tag (class/union/struct/enum). Most of the other
+    /// containers fall back into that case.
+    /// @param[in] TD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitTagDecl(TagDecl* TD);
+
+    void RemoveDeclFromModule(GlobalDecl& GD) const;
     void RemoveStaticInit(llvm::Function& F) const;
 
     /// @name Helpers
@@ -465,7 +473,13 @@ namespace cling {
     return Successful;
   }
 
-  void DeclReverter::RemoveDeclFromModule(const GlobalDecl& GD) const {
+  bool DeclReverter::VisitTagDecl(TagDecl* TD) {
+    bool Successful = VisitDeclContext(TD);
+    Successful = VisitTypeDecl(TD);
+    return Successful;
+  }
+
+  void DeclReverter::RemoveDeclFromModule(GlobalDecl& GD) const {
     // if it was successfully removed from the AST we have to check whether
     // code was generated and remove it.
 
