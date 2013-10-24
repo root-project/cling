@@ -15,6 +15,7 @@ namespace clang {
   class Expr;
   class DeclContext;
   class DeclarationName;
+  class GlobalDecl;
   class FunctionDecl;
   class IntegerLiteral;
   class NamedDecl;
@@ -41,12 +42,12 @@ namespace utils {
     ///
     static bool IsWrapper(const clang::NamedDecl* ND);
 
-    ///\brief Get the mangled name of a NamedDecl.
+    ///\brief Get the mangled name of a GlobalDecl.
     ///
-    ///\param [in]  D - try to mangle this decl's name.
+    ///\param [in]  GD - try to mangle this decl's name.
     ///\param [out] mangledName - put the mangled name in here.
     ///
-    static void maybeMangleDeclName(const clang::NamedDecl* D,
+    static void maybeMangleDeclName(const clang::GlobalDecl& GD,
                                     std::string& mangledName);
 
 

@@ -8,6 +8,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclarationName.h"
+#include "clang/AST/GlobalDecl.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/AST/DeclTemplate.h"
@@ -43,12 +44,14 @@ namespace utils {
       .startswith(Synthesize::UniquePrefix);
   }
 
-  void Analyze::maybeMangleDeclName(const clang::NamedDecl* D,
-                                        std::string& mangledName) {
+  void Analyze::maybeMangleDeclName(const clang::GlobalDecl& GD,
+                                    std::string& mangledName) {
     ///Get the mangled name of a NamedDecl.
     ///
     ///D - mangle this decl's name
     ///mangledName - put the mangled name in here
+    clang::NamedDecl* D
+      = cast<NamedDecl>(const_cast<clang::Decl*>(GD.getDecl()));
     llvm::OwningPtr<MangleContext> mangleCtx;
     mangleCtx.reset(D->getASTContext().createMangleContext());
     if (mangleCtx->shouldMangleDeclName(D)) {
