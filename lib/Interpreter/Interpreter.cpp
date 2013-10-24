@@ -710,15 +710,17 @@ namespace cling {
     // This gets reset with the clang::Diagnostics().Reset()
     ignoreFakeDiagnostics();
 
-    if (Transaction* lastT = m_IncrParser->Compile(input, CO))
+    if (Transaction* lastT = m_IncrParser->Compile(input, CO)) {
       if (lastT->getIssuedDiags() != Transaction::kErrors) {
         if (T)
           *T = lastT;
         return Interpreter::kSuccess;
       }
+      return Interpreter::kFailure;     
+    }
 
-    //return Interpreter::kSuccess;
-    return Interpreter::kFailure;
+    // Even if the transaction was empty it is still success.
+    return Interpreter::kSuccess;
   }
 
   Interpreter::CompilationResult
