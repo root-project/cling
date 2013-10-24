@@ -8,6 +8,7 @@
 #include "ASTDumper.h"
 #include "ASTNodeEraser.h"
 #include "AutoSynthesizer.h"
+#include "CheckEmptyTransactionTransformer.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
@@ -79,6 +80,7 @@ namespace cling {
     m_ASTTransformers.push_back(new DeclExtractor(TheSema));
     m_ASTTransformers.push_back(new ReturnSynthesizer(TheSema));
     m_ASTTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
+    m_ASTTransformers.push_back(new CheckEmptyTransactionTransformer());
     
     // Register the IR Transformers
     m_IRTransformers.push_back(new IRDumper());
@@ -196,6 +198,12 @@ namespace cling {
       m_TransactionPool->releaseTransaction(T);
       return 0;
     }
+    
+    transformTransactionAST(T);
+    if (T->empty()) {
+      m_TransactionPool->releaseTransaction(T);
+      return 0;
+    }
 
     const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
 
@@ -239,7 +247,6 @@ namespace cling {
           commitTransaction(*I);
     }
 
-    transformTransactionAST(T);
     // If there was an error coming from the transformers.
     if (T->getIssuedDiags() == Transaction::kErrors) {
       rollbackTransaction(T);
@@ -515,8 +522,7 @@ namespace cling {
     else if (ParseRes == kFailed)
       CurT->setIssuedDiags(Transaction::kErrors);
 
-    if (const Transaction* EndedT = endTransaction(CurT)) {
-      assert(EndedT == CurT && "Not ending the expected transaction.");
+    if ((CurT = endTransaction(CurT))) {
       commitTransaction(CurT);
     }
 
