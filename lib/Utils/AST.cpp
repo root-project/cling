@@ -46,16 +46,18 @@ namespace utils {
 
   void Analyze::maybeMangleDeclName(const clang::GlobalDecl& GD,
                                     std::string& mangledName) {
-    ///Get the mangled name of a NamedDecl.
-    ///
-    ///D - mangle this decl's name
-    ///mangledName - put the mangled name in here
+    // copied and adapted from clang::CodeGen::CodeGenModule::getMangledName
+
     clang::NamedDecl* D
       = cast<NamedDecl>(const_cast<clang::Decl*>(GD.getDecl()));
     llvm::OwningPtr<MangleContext> mangleCtx;
     mangleCtx.reset(D->getASTContext().createMangleContext());
-    assert(mangleCtx->shouldMangleDeclName(D) || D->getIdentifier()
-           && "Attempting to mangle unnamed decl.");
+    if (!mangleCtx->shouldMangleDeclName(D)) {
+      IdentifierInfo *II = D->getIdentifier();
+      assert(II && "Attempt to mangle unnamed decl.");
+      mangledName = II->getName();
+      return;
+    }
     
     llvm::raw_string_ostream RawStr(mangledName);
     switch(D->getKind()) {
