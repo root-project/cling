@@ -48,10 +48,8 @@ namespace cling {
     std::string m_DiffCommand;
     std::string m_Name;
   public:
-    /*ClangInternalState(clang::ASTContext& C, llvm::Module& M,
-                       const std::string& Name);*/
-    ClangInternalState(clang::ASTContext& C, clang::Preprocessor& PP, llvm::Module& M, 
-                                         const std::string& name);
+    ClangInternalState(clang::ASTContext& AC, clang::Preprocessor& PP,
+                       llvm::Module& M, const std::string& name);
     ~ClangInternalState();
 
     ///\brief It is convenient the state object to be named so that can be

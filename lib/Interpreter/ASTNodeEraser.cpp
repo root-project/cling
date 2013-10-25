@@ -17,6 +17,8 @@
 #include "clang/Basic/FileManager.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
+#include "clang/Lex/MacroInfo.h"
+#include "clang/Lex/Preprocessor.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JIT.h" // For debugging the EE in gdb
@@ -667,14 +669,150 @@ namespace cling {
     return false;
   }
 
+  ///\brief The class does the actual work of removing a macro definition and
+  /// resetting the internal structures of the compiler
+  ///
+  class MacroReverter {
+  private:
+    typedef llvm::DenseSet<FileID> FileIDs;
+
+    ///\brief The Sema object being reverted (contains the AST as well).
+    ///
+    Sema* m_Sema;
+
+    ///\brief The current transaction being reverted.
+    ///
+    const Transaction* m_CurTransaction;
+
+    ///\brief The mangler used to get the mangled names of the declarations
+    /// that we are removing from the module.
+    ///
+    llvm::OwningPtr<MangleContext> m_Mangler;
+
+
+    ///\brief Reverted declaration contains a SourceLocation, representing a 
+    /// place in the file where it was seen. Clang caches that file and even if
+    /// a declaration is removed and the file is edited we hit the cached entry.
+    /// This ADT keeps track of the files from which the reverted declarations
+    /// came from so that in the end they could be removed from clang's cache.
+    ///
+    FileIDs m_FilesToUncache;
+
+  public:
+    MacroReverter(Sema* S, const Transaction* T): m_Sema(S), m_CurTransaction(T) {
+      m_Mangler.reset(m_Sema->getASTContext().createMangleContext());
+    }
+    ~MacroReverter();
+
+    ///\brief Interface with nice name, forwarding to Visit.
+    ///
+    ///\param[in] D - The declaration to forward.
+    ///\returns true on success.
+    ///
+    bool RevertMacro(const Transaction::MacroDecl MD) { return VisitMacro(MD); }
+
+    ///\brief Function that contains common actions, done for every removal of
+    /// declaration.
+    ///
+    /// For example: We must uncache the cached include, which brought that
+    /// declaration in the AST.
+    ///\param[in] D - A declaration.
+    ///
+    void PreVisitMacro(const Transaction::MacroDecl MD);
+
+    ///\brief If it falls back in the base class just remove the declaration
+    /// only from the declaration context.
+    /// @param[in] D - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitMacro(const Transaction::MacroDecl MD);
+
+  };
+
+  MacroReverter::~MacroReverter() {
+    SourceManager& SM = m_Sema->getSourceManager();
+    for (FileIDs::iterator I = m_FilesToUncache.begin(), 
+           E = m_FilesToUncache.end(); I != E; ++I) {
+      const SrcMgr::FileInfo& fInfo = SM.getSLocEntry(*I).getFile();
+      // We need to reset the cache
+      SrcMgr::ContentCache* cache 
+        = const_cast<SrcMgr::ContentCache*>(fInfo.getContentCache());
+      FileEntry* entry = const_cast<FileEntry*>(cache->ContentsEntry);
+      // We have to reset the file entry size to keep the cache and the file
+      // entry in sync.
+      if (entry) {
+        cache->replaceBuffer(0,/*free*/true);
+        FileManager::modifyFileEntry(entry, /*size*/0, 0);
+      }
+    }
+
+    // Clean up the pending instantiations
+    m_Sema->PendingInstantiations.clear();
+    m_Sema->PendingLocalImplicitInstantiations.clear();
+  }
+
+  void MacroReverter::PreVisitMacro(const Transaction::MacroDecl MD) {
+    const SourceLocation Loc = (MD.m_MD)->getLocation();
+    const SourceManager& SM = m_Sema->getSourceManager();
+    FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
+    if (!FID.isInvalid() && !m_FilesToUncache.count(FID)) 
+      m_FilesToUncache.insert(FID);
+  }
+
+  bool MacroReverter::VisitMacro(const Transaction::MacroDecl MD) {
+    assert(&MD && "The Macro is null");
+    PreVisitMacro(MD);
+
+    Preprocessor& PP = m_Sema->getPreprocessor();
+
+    bool ExistsInPP = false;
+
+    for (Preprocessor::macro_iterator I = PP.macro_begin(), E = PP.macro_end();
+         E !=I; ++I) {
+      if ((*I).first == MD.m_II && (*I).second == MD.m_MD) {
+        ExistsInPP = true;
+        break;
+      }
+    }
+     bool Successful = false;
+    // Undef the definition
+    const MacroInfo* MI = (MD.m_MD)->getMacroInfo();
+    for (MacroInfo::tokens_iterator TI = MI->tokens_begin(),
+          TE = MI->tokens_end(); TI != TE; ++TI) {
+      //PP.HandleUndefDirective(TI*);
+      Successful = true;
+    }
+
+    // ExistsInDC && Successful
+    // true          false      -> false // In the context but cannot delete
+    // false         false      -> true  // Not in the context cannot delete
+    // true          true       -> true  // In the context and can delete
+    // false         true       -> assert // Not in the context but can delete ?
+    assert(!(!ExistsInPP && Successful) && \
+           "Not in the context but can delete?!");
+    if (ExistsInPP && !Successful)
+      return false;
+    else { // in release we'd want the assert to fall into true
+      m_Sema->getDiagnostics().Reset();
+      return true;
+    }
+  }
+
   ASTNodeEraser::ASTNodeEraser(Sema* S, llvm::ExecutionEngine* EE)
     : m_Sema(S), m_EEngine(EE) { }
+
+  ASTNodeEraser::ASTNodeEraser(Sema* S) : m_Sema(S) {
+  }
 
   ASTNodeEraser::~ASTNodeEraser() {
   }
 
   bool ASTNodeEraser::RevertTransaction(Transaction* T) {
     DeclReverter DeclRev(m_Sema, m_EEngine, T);
+  bool ASTNodeEraser::RevertTransaction(const Transaction* T) {
+    DeclReverter DeclRev(m_Sema, T);
+    MacroReverter MacroRev(m_Sema, T);
     bool Successful = true;
 
     for (Transaction::const_iterator I = T->decls_begin(),
@@ -688,6 +826,12 @@ namespace cling {
         // Get rid of the declaration. If the declaration has name we should
         // heal the lookup tables as well
         Successful = DeclRev.RevertDecl(*Di) && Successful;
+
+    for (Transaction::const_reverse_macros_iterator MI = T->rmacros_begin(),
+          ME = T->rmacros_end(); MI != ME; ++MI) {
+      // Get rid of the macro definition
+      Successful = MacroRev.RevertMacro(*MI) && Successful;
+    }  
 #ifndef NDEBUG
         assert(Successful && "Cannot handle that yet!");
 #endif

@@ -12,6 +12,7 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "llvm/Support/raw_ostream.h"
+#include "clang/Lex/MacroInfo.h"
 
 using namespace clang;
 
@@ -201,6 +202,11 @@ namespace cling {
     if (!pos->m_DGR.isNull() && m_WrapperFD == *pos->m_DGR.begin())
       m_WrapperFD = 0;
     m_DeclQueue.erase(pos);
+  }
+
+  void Transaction::eraseMacro(size_t pos) {
+    assert(!emptyMacros() && "Erasing from an empty transaction.");
+    m_MacroDeclQueue.erase(macros_begin() + pos);
   }
 
   void Transaction::DelayCallInfo::dump() const {

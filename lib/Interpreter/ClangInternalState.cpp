@@ -26,14 +26,10 @@
 using namespace clang;
 
 namespace cling {
-  /*ClangInternalState::ClangInternalState(ASTContext& C, llvm::Module& M, 
-                                         const std::string& name)
-    : m_Preprocessor(0), m_ASTContext(C), m_Module(M), m_DiffCommand("diff -u "), m_Name(name) {
-    store();
-  }*/
-  ClangInternalState::ClangInternalState(ASTContext& C, Preprocessor& PP, llvm::Module& M, 
-                                         const std::string& name)
-    : m_ASTContext(C), m_Preprocessor(PP), m_Module(M), m_DiffCommand("diff -u ")
+  
+  ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
+                                         llvm::Module& M, const std::string& name)
+    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M), m_DiffCommand("diff -u ")
     , m_Name(name) {
     store();
   }
@@ -253,8 +249,8 @@ namespace cling {
                             clang::Preprocessor& PP) {
     for (clang::Preprocessor::macro_iterator I = PP.macro_begin(),
          E = PP.macro_end(); I != E; ++I) {
-        Out<<(*I).first->getName()<<'\n';
+      const MacroInfo* MI = (*I).second->getMacroInfo();
+      PP.DumpMacro(*MI);
     }  
   }
-
 } // end namespace cling

@@ -233,19 +233,28 @@ namespace cling {
     }
 
     typedef MacroDeclQueue::iterator macros_iterator;
-    typedef MacroDeclQueue::const_iterator macros_const_iterator;
-    iterator macros_begin() {
-      return m_DeclQueue.begin(); 
+    typedef MacroDeclQueue::const_iterator const_macros_iterator;
+    typedef MacroDeclQueue::const_reverse_iterator const_reverse_macros_iterator;
+
+    macros_iterator macros_begin() {
+      return m_MacroDeclQueue.begin(); 
     }
-    iterator macros_end() {
-      return m_DeclQueue.end();
+    macros_iterator macros_end() {
+      return m_MacroDeclQueue.end();
     }
-    const_iterator macros_begin() const {
-      return m_DeclQueue.begin(); 
+    const_macros_iterator macros_begin() const {
+      return m_MacroDeclQueue.begin(); 
     }
-    const_iterator macros_end() const {
-      return m_DeclQueue.end();
+    const_macros_iterator macros_end() const {
+      return m_MacroDeclQueue.end();
     }
+    const_reverse_macros_iterator rmacros_begin() const {
+      return m_MacroDeclQueue.rbegin();
+    }
+    const_reverse_macros_iterator rmacros_end() const {
+      return m_MacroDeclQueue.rend();
+    }
+
 
     /// \}
 
@@ -355,6 +364,12 @@ namespace cling {
         && (!m_NestedTransactions || m_NestedTransactions->empty());
     }
 
+    //\brief Returns whether there are macros in the transaction.
+    ///
+    bool emptyMacros() const {
+      return m_MacroDeclQueue.empty();
+    }
+
     ///\brief Appends a declaration group and source from which consumer 
     /// interface it came from to the transaction.
     ///
@@ -414,6 +429,10 @@ namespace cling {
     ///\brief Erases an element at given position.
     ///
     void erase(iterator pos);
+
+    ///\brief Erases an element at given position.
+    ///
+    void eraseMacro(size_t pos);
 
     ///\brief Resets empty transaction so that it could be reused.
     /// 

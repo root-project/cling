@@ -69,8 +69,10 @@ namespace cling {
     /// \}
 
     /// Macro support
-    void MacroDefined (const clang::Token &MacroNameTok, const clang::MacroDirective *MD);
-
+    void MacroDefined (const clang::Token &MacroNameTok,
+                       const clang::MacroDirective *MD);
+    void MacroUndefined (const clang::Token &MacroNameTok,
+                         const clang::MacroDirective *MD);
     // dyn_cast/isa support
     static bool classof(const clang::ASTConsumer*) { return true; }
   };
