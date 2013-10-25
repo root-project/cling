@@ -165,7 +165,7 @@ namespace cling {
     ///\returns the most recent redeclaration in the new chain.
     ///
     template <typename T>
-    T* RemoveFromRedeclChain(clang::Redeclarable<T>* R) {
+    bool VisitRedeclarable(clang::Redeclarable<T>* R) {
       llvm::SmallVector<T*, 4> PrevDecls;
       T* PrevDecl = 0;
 
@@ -186,8 +186,8 @@ namespace cling {
           PrevDecls[i-1]->setPreviousDeclaration(PrevDecls[i]);
         }
       }
-
-      return PrevDecls.empty() ? 0 : PrevDecls[0]->getMostRecentDecl();
+      return true;
+      //return PrevDecls.empty() ? 0 : PrevDecls[0]->getMostRecentDecl();
     }
 
     /// @}
@@ -282,6 +282,10 @@ namespace cling {
 
     DeclContext* DC = ND->getDeclContext();
 
+    // if the decl was anonymous we are done.
+    if (!ND->getIdentifier())
+      return Successful;
+
      // If the decl was removed make sure that we fix the lookup
     if (Successful) {
       Scope* S = m_Sema->getScopeForContext(DC);
@@ -292,36 +296,20 @@ namespace cling {
         m_Sema->IdResolver.RemoveDecl(ND);
     }
 
-    return Successful;
-  }
-
-  bool DeclReverter::VisitVarDecl(VarDecl* VD) {
-    bool Successful = VisitDeclaratorDecl(VD);
-
-    DeclContext* DC = VD->getDeclContext();
-    Scope* S = m_Sema->getScopeForContext(DC);
-
     // Find other decls that the old one has replaced
     StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
     if (!Map)
       return false;
-    StoredDeclsMap::iterator Pos = Map->find(VD->getDeclName());
-    // FIXME: All of that should be moved in VisitNamedDecl
-    assert((VD->isHidden() || Pos != Map->end())
+    StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
+    assert((ND->isHidden() || Pos != Map->end())
            && "no lookup entry for decl");
 
-    if (Pos->second.isNull())
-      // We need to rewire the list of the redeclarations in order to exclude
-      // the reverted one, because it gets found for example by
-      // Sema::MergeVarDecl and ends up in the lookup
-      //
-      if (VarDecl* MostRecentVD = RemoveFromRedeclChain(VD)) {
+    return Successful;
+  }
 
-        Pos->second.setOnlyValue(MostRecentVD);
-        if (S)
-          S->AddDecl(MostRecentVD);
-        m_Sema->IdResolver.AddDecl(MostRecentVD);
-      }
+  bool DeclReverter::VisitVarDecl(VarDecl* VD) {
+    bool Successful = VisitRedeclarable(VD);
+    Successful = VisitDeclaratorDecl(VD);
 
     //If the transaction was committed we need to cleanup the execution engine.
     GlobalDecl GD(VD);
@@ -330,7 +318,10 @@ namespace cling {
   }
 
   bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
-    bool Successful = true;
+    bool Successful = VisitDeclContext(FD);
+    Successful = VisitRedeclarable(FD);
+    Successful = VisitDeclaratorDecl(FD);
+
 
     DeclContext* DC = FD->getDeclContext();
     Scope* S = m_Sema->getScopeForContext(DC);
@@ -381,62 +372,13 @@ namespace cling {
                                          CanFD->getTemplateSpecializationInfo());
     }
 
-    // Find other decls that the old one has replaced
-    StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
-    if (!Map)
-      return false;
-    StoredDeclsMap::iterator Pos = Map->find(FD->getDeclName());
-    assert(Pos != Map->end() && "no lookup entry for decl");
-
-    if (Pos->second.getAsDecl()) {
-      Successful = VisitNamedDecl(FD) && Successful;
-
-      Pos = Map->find(FD->getDeclName());
-      assert(Pos != Map->end() && "no lookup entry for decl");
-
-      if (Pos->second.isNull()) {
-        // When we have template specialization we have to clean up
-        if (FD->isFunctionTemplateSpecialization()) {
-          while ((FD = FD->getPreviousDecl())) {
-            Successful = VisitNamedDecl(FD) && Successful;
-          }
-          return true;
-        }
-
-        // We need to rewire the list of the redeclarations in order to exclude
-        // the reverted one, because it gets found for example by
-        // Sema::MergeVarDecl and ends up in the lookup
-        //
-        if (FunctionDecl* MostRecentFD = RemoveFromRedeclChain(FD)) {
-          Pos->second.setOnlyValue(MostRecentFD);
-          if (S)
-            S->AddDecl(MostRecentFD);
-          m_Sema->IdResolver.AddDecl(MostRecentFD);
-        }
-      }
-    }
-    else if (Pos->second.getAsVector()) {
-      llvm::SmallVector<NamedDecl*, 4>& Decls = *Pos->second.getAsVector();
-      for(llvm::SmallVector<NamedDecl*, 4>::reverse_iterator I = Decls.rbegin();
-          I != Decls.rend(); ++I)
-        if ((*I) == FD)
-          if (FunctionDecl* MostRecentFD = RemoveFromRedeclChain(FD)) {
-            // This will delete the decl from the vector, because it is 
-            // generated from the decl context.
-            Successful = VisitNamedDecl((*I)) && Successful;
-            (*I) = MostRecentFD;
-          }
-    } else {
-      // There are no decls. But does this really mean "unsuccessful"?
-      return false;
-    }
 
     // The Structors need to be handled differently.
     if (isa<CXXConstructorDecl>(FD) || isa<CXXDestructorDecl>(FD))
       return Successful;
     //If the transaction was committed we need to cleanup the execution engine.
-    GlobalDecl GD(FD);
 
+    GlobalDecl GD(FD);
     RemoveDeclFromModule(GD);
 
     return Successful;
