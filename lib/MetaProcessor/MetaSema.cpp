@@ -38,8 +38,9 @@ namespace cling {
     // get rid of any "/./" by converting them in '/' for the time being
     // we could consider using llvm::sys::fs::canonicalize(), whenever it 
     // gets implemented...
-    while (filename.find("/./") != std::string::npos)
-      filename.replace(filename.find("/./"), 3, "/");
+    size_t at = std::string::npos;
+    while ((at = filename.find("/./")) != std::string::npos)
+      filename.replace(at, 3, "/");
     if (m_Interpreter.loadFile(filename) == Interpreter::kSuccess)
       return AR_Success;
     return AR_Failure;
