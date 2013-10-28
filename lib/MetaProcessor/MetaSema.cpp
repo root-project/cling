@@ -34,7 +34,13 @@ namespace cling {
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) const {
     // TODO: extra checks. Eg if the path is readable, if the file exists...
-    if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess)
+    std::string filename = file.str();
+    // get rid of any "/./" by converting them in '/' for the time being
+    // we could consider using llvm::sys::fs::canonicalize(), whenever it 
+    // gets implemented...
+    while (filename.find("/./") != std::string::npos)
+      filename.replace(filename.find("/./"), 3, "/");
+    if (m_Interpreter.loadFile(filename) == Interpreter::kSuccess)
       return AR_Success;
     return AR_Failure;
   }
