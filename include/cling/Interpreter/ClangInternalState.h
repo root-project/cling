@@ -47,7 +47,7 @@ namespace cling {
                        const std::string& Name);
     ~ClangInternalState();
 
-    ///\Brief It is convenient the state object to be named so that can be
+    ///\brief It is convenient the state object to be named so that can be
     /// easily referenced in case of multiple.
     ///
     const std::string& getName() const { return m_Name; }
