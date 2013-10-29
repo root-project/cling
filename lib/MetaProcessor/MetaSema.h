@@ -77,9 +77,10 @@ namespace cling {
 
     ///\brief Actions to be performed on unload command.
     ///
-    ///\param[in] value - The number of transactons to unload.
+    ///\param[in] value - The number of transactons to unload. By default it 
+    ///                   unloads only the last transaction.
     ///
-    ActionResult actOnUCommand(unsigned value = 0) const;
+    ActionResult actOnUCommand(unsigned value = 1) const;
 
     ///\brief Actions to be performed on add include path. It registers new 
     /// folder where header files can be searched.

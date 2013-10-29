@@ -333,6 +333,8 @@ namespace cling {
       const Token& next = getCurTok();
       if (next.is(tok::constant))
         m_Actions->actOnUCommand(next.getConstant());
+      else
+        m_Actions->actOnUCommand();
       return true;
     }
     return false;
