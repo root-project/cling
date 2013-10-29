@@ -20,13 +20,14 @@ namespace clang {
 namespace cling {
   class TransactionPool {
 #define TRANSACTIONS_IN_BLOCK 8
+#define POOL_SIZE 2 * TRANSACTIONS_IN_BLOCK
   private:
     // It is twice the size of the block because there might be easily around 8
     // transactions in flight which can be empty, which might lead to refill of
     // the smallvector and then the return for reuse will exceed the capacity
     // of the smallvector causing redundant copy of the elements.
     //
-    llvm::SmallVector<Transaction*, 2 * TRANSACTIONS_IN_BLOCK>  m_Transactions;
+    llvm::SmallVector<Transaction*, POOL_SIZE>  m_Transactions;
 
     ///\brief The ASTContext required by cling::Transactions' ctor.
     ///
@@ -65,12 +66,19 @@ namespace cling {
 
     void releaseTransaction(Transaction* T) {
       assert(T->empty() && "Transaction must be empty!");
-      assert(T->getState() == Transaction::kCompleted
+      assert((T->getState() == Transaction::kCompleted ||
+              T->getState() == Transaction::kRolledBack)
              && "Transaction must completed!");
+      if (m_Transactions.size() == POOL_SIZE) {
+        // don't overflow the pool
+        delete T;
+        return;
+      }
       T->reset();
       T->m_State = Transaction::kNumStates;
       m_Transactions.push_back(T);
     }
+#undef POOL_SIZE
 #undef TRANSACTIONS_IN_BLOCK
   };
 
