@@ -684,12 +684,6 @@ namespace cling {
     ///
     const Transaction* m_CurTransaction;
 
-    ///\brief The mangler used to get the mangled names of the declarations
-    /// that we are removing from the module.
-    ///
-    llvm::OwningPtr<MangleContext> m_Mangler;
-
-
     ///\brief Reverted declaration contains a SourceLocation, representing a 
     /// place in the file where it was seen. Clang caches that file and even if
     /// a declaration is removed and the file is edited we hit the cached entry.
@@ -699,35 +693,35 @@ namespace cling {
     FileIDs m_FilesToUncache;
 
   public:
-    MacroReverter(Sema* S, const Transaction* T): m_Sema(S), m_CurTransaction(T) {
-      m_Mangler.reset(m_Sema->getASTContext().createMangleContext());
-    }
+    MacroReverter(Sema* S, const Transaction* T): m_Sema(S)
+                  , m_CurTransaction(T) {}
     ~MacroReverter();
 
     ///\brief Interface with nice name, forwarding to Visit.
     ///
-    ///\param[in] D - The declaration to forward.
+    ///\param[in] MD - The MacroDecl containing the IdentifierInfo and
+    ///                MacroDirective to forward.
     ///\returns true on success.
     ///
     bool RevertMacro(const Transaction::MacroDecl MD) { return VisitMacro(MD); }
 
     ///\brief Function that contains common actions, done for every removal of
-    /// declaration.
+    /// macro.
     ///
     /// For example: We must uncache the cached include, which brought that
     /// declaration in the AST.
-    ///\param[in] D - A declaration.
+    ///\param[in] MD - The MacroDecl containing the IdentifierInfo and
+    ///                MacroDirective to forward.
     ///
     void PreVisitMacro(const Transaction::MacroDecl MD);
 
-    ///\brief If it falls back in the base class just remove the declaration
-    /// only from the declaration context.
-    /// @param[in] D - The declaration to be removed.
+    ///\brief Remove the macro from the Preprocessor.
+    /// @param[in] MD - The MacroDecl containing the IdentifierInfo and
+    ///                MacroDirective to forward.
     ///
     ///\returns true on success.
     ///
     bool VisitMacro(const Transaction::MacroDecl MD);
-
   };
 
   MacroReverter::~MacroReverter() {
@@ -760,43 +754,42 @@ namespace cling {
       m_FilesToUncache.insert(FID);
   }
 
-  bool MacroReverter::VisitMacro(const Transaction::MacroDecl MD) {
-    assert(&MD && "The Macro is null");
-    PreVisitMacro(MD);
+  bool MacroReverter::VisitMacro(const Transaction::MacroDecl MacroD) {
+    assert(&MacroD && "The Macro is null");
+    PreVisitMacro(MacroD);
 
     Preprocessor& PP = m_Sema->getPreprocessor();
 
     bool ExistsInPP = false;
-
+    // Make sure the macro is in the Preprocessor. Not sure if not redundant
+    // because removeMacro looks for the macro anyway in the DenseMap Macros[]
     for (Preprocessor::macro_iterator I = PP.macro_begin(), E = PP.macro_end();
          E !=I; ++I) {
-      if ((*I).first == MD.m_II && (*I).second == MD.m_MD) {
+      if ((*I).first == MacroD.m_II && (*I).second == MacroD.m_MD) {
         ExistsInPP = true;
         break;
       }
     }
-     bool Successful = false;
-    // Undef the definition
-    const MacroInfo* MI = (MD.m_MD)->getMacroInfo();
-    for (MacroInfo::tokens_iterator TI = MI->tokens_begin(),
-          TE = MI->tokens_end(); TI != TE; ++TI) {
-      //PP.HandleUndefDirective(TI*);
-      Successful = true;
-    }
 
-    // ExistsInDC && Successful
-    // true          false      -> false // In the context but cannot delete
-    // false         false      -> true  // Not in the context cannot delete
+    const MacroDirective* MD = MacroD.m_MD;
+    // Undef the definition
+    const MacroInfo* MI = MD->getMacroInfo();
+
+    // If the macro is not defined, this is a noop undef, just return.
+    if (MI == 0) return false;
+
+    // Remove the pair from the macros
+    PP.removeMacro(MacroD.m_II, MacroD.m_MD);
+
+    // ExistsInPP
     // true          true       -> true  // In the context and can delete
-    // false         true       -> assert // Not in the context but can delete ?
-    assert(!(!ExistsInPP && Successful) && \
-           "Not in the context but can delete?!");
-    if (ExistsInPP && !Successful)
-      return false;
-    else { // in release we'd want the assert to fall into true
-      m_Sema->getDiagnostics().Reset();
-      return true;
-    }
+    // false         true       -> assert // Not in the Preprocessor Macros
+    //                                       but can delete ?
+    assert(!ExistsInPP && \
+           "Not in the Preprocessor but can delete?!");
+
+    m_Sema->getDiagnostics().Reset();
+    return true;
   }
 
   ASTNodeEraser::ASTNodeEraser(Sema* S, llvm::ExecutionEngine* EE)
