@@ -250,7 +250,7 @@ namespace cling {
     for (clang::Preprocessor::macro_iterator I = PP.macro_begin(),
          E = PP.macro_end(); I != E; ++I) {
       const MacroInfo* MI = (*I).second->getMacroInfo();
-      PP.DumpMacro(*MI);
+      PP.printMacro(*MI, Out);
     }  
   }
 } // end namespace cling
