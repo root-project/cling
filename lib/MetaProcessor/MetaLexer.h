@@ -60,7 +60,7 @@ namespace cling {
     bool is(tok::TokenKind K) const { return kind == K; }
 
     llvm::StringRef getIdent() const;
-    bool getConstant() const;
+    bool getConstantAsBool() const;
   };
 
   class MetaLexer {

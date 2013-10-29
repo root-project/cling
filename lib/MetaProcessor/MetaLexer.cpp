@@ -15,7 +15,7 @@ namespace cling {
     return llvm::StringRef(bufStart, getLength());
   }
 
-  bool Token::getConstant() const {
+  bool Token::getConstantAsBool() const {
     assert(kind == tok::constant && "Not a constant");
     return *bufStart == '1';
   }

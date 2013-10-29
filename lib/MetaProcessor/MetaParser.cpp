@@ -248,7 +248,7 @@ namespace cling {
       consumeToken();
       skipWhitespace();
       if (getCurTok().is(tok::constant))
-        mode = (MetaSema::SwitchMode)getCurTok().getConstant();
+        mode = (MetaSema::SwitchMode)getCurTok().getConstantAsBool();
       m_Actions->actOnrawInputCommand(mode);
       return true;
     }
@@ -262,7 +262,7 @@ namespace cling {
       consumeToken();
       skipWhitespace();
       if (getCurTok().is(tok::constant))
-        mode = (MetaSema::SwitchMode)getCurTok().getConstant();
+        mode = (MetaSema::SwitchMode)getCurTok().getConstantAsBool();
       m_Actions->actOnprintASTCommand(mode);
       return true;
     }
@@ -276,7 +276,7 @@ namespace cling {
       consumeToken();
       skipWhitespace();
       if (getCurTok().is(tok::constant))
-        mode = (MetaSema::SwitchMode)getCurTok().getConstant();
+        mode = (MetaSema::SwitchMode)getCurTok().getConstantAsBool();
       m_Actions->actOnprintIRCommand(mode);
       return true;
     }
@@ -332,7 +332,7 @@ namespace cling {
       consumeToken();
       skipWhitespace();
       if (getCurTok().is(tok::constant))
-        mode = (MetaSema::SwitchMode)getCurTok().getConstant();
+        mode = (MetaSema::SwitchMode)getCurTok().getConstantAsBool();
       m_Actions->actOndynamicExtensionsCommand(mode);
       return true;
     }
