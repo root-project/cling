@@ -247,10 +247,14 @@ namespace cling {
         if (((DeclContextExt*)DC)->LastDecl == D) {
           // Valid. Thus remove.
           DC->removeDecl(D);
+          // Force rebuilding of the lookup table.
+          //DC->setMustBuildLookupTable();
           return true;
         }
       }
       else {
+        // Force rebuilding of the lookup table.
+        //DC->setMustBuildLookupTable();
         DC->removeDecl(D);
         return true;
       }
@@ -279,6 +283,7 @@ namespace cling {
 #endif
     bool Successful = true;
     DeclContextExt::removeIfLast(DC, D);
+
     // With the bump allocator this is nop.
     if (Successful)
       m_Sema->getASTContext().Deallocate(D);
