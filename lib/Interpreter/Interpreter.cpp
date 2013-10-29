@@ -148,10 +148,6 @@ namespace cling {
     return m_IncrParser->getCodeGenerator();
   }
 
-  void Interpreter::unload() {
-    m_IncrParser->unloadTransaction(0);
-  }
-
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
     m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), 
@@ -770,6 +766,10 @@ namespace cling {
     code += "#include \"" + filename + "\"";
     CompilationResult res = declare(code);
     return res;
+  }
+
+  void Interpreter::unload(unsigned numberOfTransactions) {
+    m_IncrParser->unloadLastNTransactions(numberOfTransactions);
   }
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {

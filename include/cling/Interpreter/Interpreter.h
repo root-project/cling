@@ -249,9 +249,6 @@ namespace cling {
     void ignoreFakeDiagnostics() const;
 
   public:
-
-    void unload();
-
     Interpreter(int argc, const char* const *argv, const char* llvmdir = 0);
     virtual ~Interpreter();
 
@@ -480,6 +477,13 @@ namespace cling {
     ///
     CompilationResult loadFile(const std::string& filename,
                                bool allowSharedLib = true);
+
+    ///\brief Unloads (forgets) given number of transactions.
+    ///
+    ///\param[in] numberOfTransactions - how many transactions to revert 
+    ///                                  starting from the last.
+    ///
+    void unload(unsigned numberOfTransactions);
 
     bool isPrintingAST() const { return m_PrintAST; }
     void enablePrintAST(bool print = true) { m_PrintAST = print; }

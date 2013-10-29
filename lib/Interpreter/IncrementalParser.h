@@ -191,7 +191,18 @@ namespace cling {
     ///
     Transaction* Parse(llvm::StringRef input, const CompilationOptions& Opts);
 
+    ///\brief Unloads last N transactions.
+    ///
+    ///\param[in] N - how many starting from the last seen.
+    ///
+    void unloadLastNTransactions(unsigned N);
+
+    ///\brief Unloads a given transaction.
+    ///
+    ///\param[in] T - The transaction to unload.
+    ///
     void unloadTransaction(Transaction* T);
+
     void printTransactionStructure() const;
 
     ///\brief Adds a UsedAttr to all decls in the transaction.
