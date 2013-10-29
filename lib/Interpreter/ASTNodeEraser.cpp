@@ -603,7 +603,7 @@ namespace cling {
   ASTNodeEraser::~ASTNodeEraser() {
   }
 
-  bool ASTNodeEraser::RevertTransaction(const Transaction* T) {
+  bool ASTNodeEraser::RevertTransaction(Transaction* T) {
     DeclReverter DeclRev(m_Sema, m_EEngine, T);
     bool Successful = true;
 
@@ -627,6 +627,10 @@ namespace cling {
     // Cleanup the module from unused global values.
     //llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
     //globalDCE->runOnModule(*T->getModule());
+    if (Successful)
+      T->setState(Transaction::kRolledBack);
+    else
+      T->setState(Transaction::kRolledBackWithErrors);
 
     return Successful;
   }

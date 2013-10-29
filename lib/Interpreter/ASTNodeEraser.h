@@ -42,7 +42,7 @@ namespace cling {
     ///\param[in] T - The transaction to be removed.
     ///\returns true on success.
     ///
-    bool RevertTransaction(const Transaction* T);
+    bool RevertTransaction(Transaction* T);
   };
 } // end namespace cling
 
