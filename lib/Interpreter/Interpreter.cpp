@@ -734,14 +734,17 @@ namespace cling {
     WrapInput(Wrapper, WrapperName);
 
     if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
-      assert((!V || lastT->size()) && "No decls created!?");
+      //FIXME: uncomment when the macro support comes in the transaction
+      //assert((!V || lastT->size()) && "No decls created!?");
       assert((lastT->getState() == Transaction::kCommitted
               || lastT->getState() == Transaction::kRolledBack) 
              && "Not committed?");
-      assert(lastT->getWrapperFD() && "Must have wrapper!");
-      if (lastT->getIssuedDiags() != Transaction::kErrors)
-        if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
+      if (lastT->getIssuedDiags() != Transaction::kErrors) {
+        if (!lastT->getWrapperFD()) // no wrapper to run
           return Interpreter::kSuccess;
+        else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
+          return Interpreter::kSuccess;
+      }
       if (V)
         *V = StoredValueRef::invalidValue();
 
