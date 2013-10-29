@@ -1,0 +1,18 @@
+--- lib/ExecutionEngine/JIT/JITEmitter.cpp
++++ lib/ExecutionEngine/JIT/JITEmitter.cpp
+@@ -75,6 +75,7 @@ namespace {
+   struct NoRAUWValueMapConfig : public ValueMapConfig<ValueTy> {
+     typedef JITResolverState *ExtraData;
+     static void onRAUW(JITResolverState *, Value *Old, Value *New) {
++      return; // Disable temporarily for testing purposes.
+       llvm_unreachable("The JIT doesn't know how to handle a"
+                        " RAUW on a value it has emitted.");
+     }
+@@ -1196,6 +1197,7 @@ void JITEmitter::EmittedFunctionConfig::onDelete(
+ }
+ void JITEmitter::EmittedFunctionConfig::onRAUW(
+   JITEmitter *, const Function*, const Function*) {
++  return; // Disable temporarily for testing purposes.
+   llvm_unreachable("The JIT doesn't know how to handle a"
+                    " RAUW on a value it has emitted.");
+ }
