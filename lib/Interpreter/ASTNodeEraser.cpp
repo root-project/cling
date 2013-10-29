@@ -262,7 +262,9 @@ namespace cling {
     }
 
     bool Successful = DeclContextExt::removeIfLast(DC, D);
-
+    // With the bump allocator this is nop.
+    if (Successful)
+      m_Sema->getASTContext().Deallocate(D);
     // ExistsInDC && Successful
     // true          false      -> false // In the context but cannot delete
     // false         false      -> true  // Not in the context cannot delete
