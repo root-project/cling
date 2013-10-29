@@ -645,6 +645,7 @@ namespace cling {
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
     if (callbacks)
       callbacks->TransactionUnloaded(*T);
+    m_TransactionPool->releaseTransaction(T);
   }
 
   void IncrementalParser::printTransactionStructure() const {
