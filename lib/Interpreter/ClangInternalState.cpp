@@ -192,6 +192,10 @@ namespace cling {
     std::string ErrMsg;
     clang::PrintingPolicy policy = C.getPrintingPolicy();
     TU->print(Out, policy, Indentation, PrintInstantiation);
+    // TODO: For future when we relpace the bump allocation with slab.
+    //
+    //Out << "Allocated memory: " << C.getAllocatedMemory();
+    //Out << "Side table allocated memory: " << C.getSideTableAllocatedMemory();
     Out.flush();
   }
 
