@@ -19,6 +19,7 @@
 #include "clang/Sema/Sema.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/JIT.h" // For debugging the EE in gdb
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
