@@ -112,7 +112,7 @@ namespace cling {
       || ishelpCommand() || isfileExCommand() || isfilesCommand() || isClassCommand()
       || isgCommand() || isTypedefCommand() || isprintIRCommand()
       || isShellCommand(actionResult, resultValue)
-      || isstoreStateCommand() || iscompareStateCommand();
+      || isstoreStateCommand() || iscompareStateCommand() || isundoCommand();
   }
 
   // L := 'L' FilePath
@@ -320,6 +320,19 @@ namespace cling {
       if (!getCurTok().is(tok::quote))
 	return false; // FIXME: Issue proper diagnostics
       m_Actions->actOncompareStateCommand(ident);
+      return true;
+    }
+    return false;
+  }
+
+  bool MetaParser::isundoCommand() {
+    if (getCurTok().is(tok::ident) &&
+        getCurTok().getIdent().equals("undo")) {
+      consumeToken();  
+      skipWhitespace();
+      const Token& next = getCurTok();
+      if (next.is(tok::constant))
+        m_Actions->actOnUCommand(next.getConstant());
       return true;
     }
     return false;

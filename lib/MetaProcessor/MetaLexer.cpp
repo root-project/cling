@@ -17,7 +17,20 @@ namespace cling {
 
   bool Token::getConstantAsBool() const {
     assert(kind == tok::constant && "Not a constant");
-    return *bufStart == '1';
+    return getConstant() != 0;
+  }
+
+  static int pow10[10] = { 1, 10, 100, 1000, 10000, 
+                           100000, 1000000, 10000000, ~0U};
+  unsigned Token::getConstant() const {
+    assert(kind == tok::constant && "Not a constant");
+    if (value == ~0U) {
+      value = 0;
+      //calculate the value
+      for (size_t i = 0, e = length; i < e; ++i)
+        value += (*(bufStart+i) -'0') * pow10[length - i - 1];
+    }
+    return value;
   }
 
   MetaLexer::MetaLexer(llvm::StringRef line) 
@@ -43,11 +56,9 @@ namespace cling {
         return;
       }
 
-    case '0': case '1':/* case '2': case '3': case '4':
-                          case '5': case '6': case '7': case '8': case '9':*/
-      Tok.setKind(tok::constant);
-      Tok.setLength(1);
-      return;
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+      return LexConstant(C, Tok);
 
     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
     case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
@@ -150,6 +161,15 @@ namespace cling {
       if (Tok.isNot(tok::unknown))
         return;
     }
+  }
+
+  void MetaLexer::LexConstant(char C, Token& Tok) {
+    while (C >= '0' && C <= '9')
+      C = *curPos++;
+
+    --curPos; // Back up over the non ident char.
+    Tok.setLength(curPos - Tok.getBufStart());
+    Tok.setKind(tok::constant);
   }
 
   void MetaLexer::LexIdentifier(char C, Token& Tok) {

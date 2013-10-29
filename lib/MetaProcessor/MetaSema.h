@@ -75,10 +75,11 @@ namespace cling {
     ///
     void actOnqCommand();
 
-    ///\brief Actions to be performed on unload command. For now it tries to 
-    /// unload the last transaction.
+    ///\brief Actions to be performed on unload command.
     ///
-    ActionResult actOnUCommand() const;
+    ///\param[in] value - The number of transactons to unload.
+    ///
+    ActionResult actOnUCommand(unsigned value = 0) const;
 
     ///\brief Actions to be performed on add include path. It registers new 
     /// folder where header files can be searched.

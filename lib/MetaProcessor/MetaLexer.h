@@ -33,7 +33,7 @@ namespace cling {
       raw_ident,  // .*^(' '|'\t')
       comment,    // //
       space,      // (' ' | '\t')*
-      constant,   // (0|1)
+      constant,   // {0-9}
       eof,
       unknown
     };
@@ -44,10 +44,12 @@ namespace cling {
     tok::TokenKind kind;
     const char* bufStart;
     unsigned length;
+    mutable unsigned value;
   public:
     void startToken(const char* Pos = 0) {
-      bufStart = Pos;
       kind = tok::unknown;
+      bufStart = Pos;
+      value = ~0U;
     }
     tok::TokenKind getKind() const { return kind; }
     void setKind(tok::TokenKind K) { kind = K; }
@@ -61,6 +63,7 @@ namespace cling {
 
     llvm::StringRef getIdent() const;
     bool getConstantAsBool() const;
+    unsigned getConstant() const;
   };
 
   class MetaLexer {
@@ -81,7 +84,7 @@ namespace cling {
     // TODO: Revise. We might not need that.
     static void LexPunctuatorAndAdvance(const char*& curPos, Token& Tok);
     static void LexQuotedStringAndAdvance(const char*& curPos, Token& Tok);
-    static void LexNumericConstant(const char* curPos, Token& Tok);
+    void LexConstant(char C, Token& Tok);
     void LexIdentifier(char C, Token& Tok);
     void LexEndOfFile(char C, Token& Tok);
     void LexWhitespace(char C, Token& Tok);

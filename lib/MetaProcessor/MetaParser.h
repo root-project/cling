@@ -28,18 +28,19 @@ namespace cling {
   //                            PrintASTCommand | DynamicExtensionsCommand | HelpCommand |
   //                            FileExCommand | FilesCommand | ClassCommand |
   //                            GCommand | PrintIRCommand | StoreStateCommand | 
-  //                            CompareStateCommand 
+  //                            CompareStateCommand | undoCommand
   //                 LCommand := 'L' FilePath
   //                 qCommand := 'q'
   //                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
   //                 UCommand := 'U'
   //                 ICommand := 'I' [FilePath]
-  //                 OCommand := 'O'[' ']OptimizationLevel
+  //                 OCommand := 'O'[' ']Constant
   //                 RawInputCommand := 'rawInput' [Constant]
   //                 PrintASTCommand := 'printAST' [Constant]
   //                 PrintIRCommand := 'printIR' [Constant]
   //                 StoreStateCommand := 'storeState' "Ident"
   //                 CompareStateCommand := 'compareState' "Ident"
+  //                 undoCommand := 'undo' [Constant]
   //                 DynamicExtensionsCommand := 'dynamicExtensions' [Constant]
   //                 HelpCommand := 'help'
   //                 FileExCommand := 'fileEx'
@@ -50,9 +51,8 @@ namespace cling {
   //                 ArgList := (ExtraArgList) ' ' [ArgList]
   //                 ExtraArgList := AnyString [, ExtraArgList]
   //                 AnyString := *^(' ' | '\t')
-  //                 Constant := 0|1
+  //                 Constant := {0-9}
   //                 Ident := a-zA-Z{a-zA-Z0-9}
-  //                 OptimizationLevel := OptimizationLevel{0-9}
   //
   class MetaParser {
   private:
@@ -61,7 +61,12 @@ namespace cling {
     llvm::SmallVector<Token, 2> m_TokenCache;
     llvm::SmallVector<Token, 4> m_MetaSymbolCache;
   private:
+    ///\brief Returns the current token without consuming it.
+    ///
     inline const Token& getCurTok() { return lookAhead(0); }
+
+    ///\brief Consume the current 'peek' token.
+    ///
     void consumeToken();
     void consumeAnyStringToken(tok::TokenKind stopAt = tok::space);
     const Token& lookAhead(unsigned Num);
@@ -83,6 +88,7 @@ namespace cling {
     bool isprintIRCommand();
     bool isstoreStateCommand();
     bool iscompareStateCommand();
+    bool isundoCommand();
     bool isdynamicExtensionsCommand();
     bool ishelpCommand();
     bool isfileExCommand();
