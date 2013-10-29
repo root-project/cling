@@ -327,7 +327,6 @@ namespace cling {
 
 
     DeclContext* DC = FD->getDeclContext();
-    Scope* S = m_Sema->getScopeForContext(DC);
 
     // Template instantiation of templated function first creates a canonical
     // declaration and after the actual template specialization. For example:
