@@ -684,6 +684,11 @@ namespace cling {
     ///
     const Transaction* m_CurTransaction;
 
+    ///\brief The mangler used to get the mangled names of the declarations
+    /// that we are removing from the module.
+    ///
+    llvm::OwningPtr<MangleContext> m_Mangler;
+
     ///\brief Reverted declaration contains a SourceLocation, representing a
     /// place in the file where it was seen. Clang caches that file and even if
     /// a declaration is removed and the file is edited we hit the cached entry.
@@ -693,8 +698,9 @@ namespace cling {
     FileIDs m_FilesToUncache;
 
   public:
-    MacroReverter(Sema* S, const Transaction* T): m_Sema(S)
-                  , m_CurTransaction(T) {}
+    MacroReverter(Sema* S, const Transaction* T): m_Sema(S), m_CurTransaction(T) {
+      m_Mangler.reset(m_Sema->getASTContext().createMangleContext());              
+    }
     ~MacroReverter();
 
     ///\brief Interface with nice name, forwarding to Visit.
