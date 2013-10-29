@@ -621,7 +621,7 @@ namespace cling {
     while(true) {
       unloadTransaction(m_Transactions.back());
       m_Transactions.pop_back();
-      if (!N--)
+      if (!--N)
         break;
     } 
   }
