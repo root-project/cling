@@ -451,6 +451,7 @@ namespace cling {
   }
 
   void DeclReverter::RemoveDeclFromModule(GlobalDecl& GD) const {
+    using namespace llvm;
     // if it was successfully removed from the AST we have to check whether
     // code was generated and remove it.
 
@@ -481,26 +482,46 @@ namespace cling {
       std::string mangledName;
       utils::Analyze::maybeMangleDeclName(GD, mangledName);
 
-      llvm::GlobalValue* GV 
+      GlobalValue* GV
         = m_CurTransaction->getModule()->getNamedValue(mangledName);
       if (GV) { // May be deferred decl and thus 0
-        if (GV && !GV->use_empty()) {
+        GV->removeDeadConstantUsers();
+        if (!GV->use_empty()) {
           // Assert that if there was a use it is not coming from the explicit 
           // AST node, but from the implicitly generated functions, which ensure
           // the initialization order semantics. Such functions are:
           // _GLOBAL__I* and __cxx_global_var_init*
           // 
-          assert(GV->hasOneUse() 
-                 && "Must have only one use coming from the static inits");
           // We can 'afford' to drop all the references because we know that the
           // static init functions must be called only once, and that was
           // already done.
+          SmallVector<User*, 4> uses;
+          
+          for(llvm::Value::use_iterator I = GV->use_begin(), E = GV->use_end();
+              I != E; ++I) {
+            uses.push_back(*I);
+          }
+
+          for(SmallVector<User*, 4>::iterator I = uses.begin(), E = uses.end();
+              I != E; ++I)
+            if (llvm::Instruction* instr = dyn_cast<llvm::Instruction>(*I)) {
+              llvm::Function* F = instr->getParent()->getParent();
+              if (F->getName().startswith("__cxx_global_var_init"))
+                RemoveStaticInit(*F);
+          }
         
-          //m_EEngine->updateGlobalMapping(GV, 0);
-          //GV->replaceAllUsesWith(llvm::UndefValue::get(GV->getType()));
-          llvm::BasicBlock* BB 
-            = cast<llvm::Instruction>(GV->use_back())->getParent();
-          RemoveStaticInit(*BB->getParent());
+        }
+
+        // Cleanup the jit mapping of GV->addr.
+        m_EEngine->updateGlobalMapping(GV, 0);
+        GV->dropAllReferences();
+        if (!GV->use_empty()) {
+          if (Function* F = dyn_cast<Function>(GV)) {
+            Function* dummy = Function::Create(F->getFunctionType(), F->getLinkage());                                               
+            F->replaceAllUsesWith(dummy);
+          }
+          else
+            GV->replaceAllUsesWith(UndefValue::get(GV->getType()));
         }
         GV->eraseFromParent();
       }
