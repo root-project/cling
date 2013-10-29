@@ -195,7 +195,7 @@ namespace cling {
 #endif
 
     m_MacroDeclQueue.push_back(MDE);
-  }  
+  }
   
   void Transaction::erase(iterator pos) {
     assert(!empty() && "Erasing from an empty transaction.");

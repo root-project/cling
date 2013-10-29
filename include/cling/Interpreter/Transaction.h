@@ -74,6 +74,11 @@ namespace cling {
                  llvm::StringRef prependInfo = "") const;
     };
 
+    ///\brief Each macro pair (is this the same as for decls?)came 
+    /// through different interface at 
+    /// different time. We are being conservative and we want to keep all the 
+    /// call sequence that originally occurred in clang.
+    ///
     struct MacroDecl {
       clang::IdentifierInfo* m_II;
       const clang::MacroDirective* m_MD;
@@ -86,7 +91,7 @@ namespace cling {
       inline bool operator!=(const MacroDecl& rhs) {
         return !operator==(rhs);
       }
-    };  
+    };
 
   private:
     // Intentionally use struct instead of pair because we don't need default 
@@ -137,8 +142,13 @@ namespace cling {
     ///
     clang::ASTContext& m_ASTContext;
 
+    // Intentionally use struct instead of pair because we don't need default 
+    // init.
     // Add macro decls to be able to revert them for error recovery.
     typedef llvm::SmallVector<MacroDecl, 2> MacroDeclQueue;
+
+    ///\brief All seen macros.
+    ///
     MacroDeclQueue m_MacroDeclQueue;
 
   public:
@@ -232,18 +242,19 @@ namespace cling {
       return const_reverse_nested_iterator(0);
     }
 
+    /// Macro iteration
     typedef MacroDeclQueue::iterator macros_iterator;
     typedef MacroDeclQueue::const_iterator const_macros_iterator;
     typedef MacroDeclQueue::const_reverse_iterator const_reverse_macros_iterator;
 
     macros_iterator macros_begin() {
-      return m_MacroDeclQueue.begin(); 
+      return m_MacroDeclQueue.begin();
     }
     macros_iterator macros_end() {
       return m_MacroDeclQueue.end();
     }
     const_macros_iterator macros_begin() const {
-      return m_MacroDeclQueue.begin(); 
+      return m_MacroDeclQueue.begin();
     }
     const_macros_iterator macros_end() const {
       return m_MacroDeclQueue.end();
@@ -400,6 +411,7 @@ namespace cling {
 
     ///\brief Appends teh declaration of a macro.
     void append(MacroDecl MDE);
+    
     ///\brief Appends teh declaration of a macro.
     void forceAppend(MacroDecl MDE);
 

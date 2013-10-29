@@ -87,18 +87,19 @@ namespace cling {
     Transaction::MacroDecl MDE(MacroNameTok.getIdentifierInfo(), MD);
     m_CurTransaction->append(MDE);
   }
-
+  
   void DeclCollector::MacroUndefined (const clang::Token &MacroNameTok,
                                     const clang::MacroDirective *MD) {
     Transaction::MacroDecl MDE(MacroNameTok.getIdentifierInfo(), MD);
-    size_t pos = 0; 
+    // Keep a current pos, more efficient than itarating through again to erase.
+    size_t pos = 0;
     for (Transaction::const_macros_iterator MI = m_CurTransaction->macros_begin(),
           ME = m_CurTransaction->macros_end(); MI != ME; ++MI) {
       pos++;
       if (MDE == *MI) {
         m_CurTransaction->eraseMacro(pos);
-      }  
-    }        
+      }
+    }
   }
-  
+
 } // namespace cling

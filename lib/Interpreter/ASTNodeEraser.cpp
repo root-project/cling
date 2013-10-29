@@ -684,7 +684,7 @@ namespace cling {
     ///
     const Transaction* m_CurTransaction;
 
-    ///\brief Reverted declaration contains a SourceLocation, representing a 
+    ///\brief Reverted declaration contains a SourceLocation, representing a
     /// place in the file where it was seen. Clang caches that file and even if
     /// a declaration is removed and the file is edited we hit the cached entry.
     /// This ADT keeps track of the files from which the reverted declarations
@@ -726,11 +726,11 @@ namespace cling {
 
   MacroReverter::~MacroReverter() {
     SourceManager& SM = m_Sema->getSourceManager();
-    for (FileIDs::iterator I = m_FilesToUncache.begin(), 
+    for (FileIDs::iterator I = m_FilesToUncache.begin(),
            E = m_FilesToUncache.end(); I != E; ++I) {
       const SrcMgr::FileInfo& fInfo = SM.getSLocEntry(*I).getFile();
       // We need to reset the cache
-      SrcMgr::ContentCache* cache 
+      SrcMgr::ContentCache* cache
         = const_cast<SrcMgr::ContentCache*>(fInfo.getContentCache());
       FileEntry* entry = const_cast<FileEntry*>(cache->ContentsEntry);
       // We have to reset the file entry size to keep the cache and the file
@@ -750,7 +750,7 @@ namespace cling {
     const SourceLocation Loc = (MD.m_MD)->getLocation();
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
-    if (!FID.isInvalid() && !m_FilesToUncache.count(FID)) 
+    if (!FID.isInvalid() && !m_FilesToUncache.count(FID))
       m_FilesToUncache.insert(FID);
   }
 
@@ -824,7 +824,7 @@ namespace cling {
           ME = T->rmacros_end(); MI != ME; ++MI) {
       // Get rid of the macro definition
       Successful = MacroRev.RevertMacro(*MI) && Successful;
-    }  
+    }
 #ifndef NDEBUG
         assert(Successful && "Cannot handle that yet!");
 #endif
