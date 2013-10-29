@@ -87,7 +87,8 @@ namespace cling {
   }
 
   void Transaction::reset() {
-    assert(empty() && "The transaction must be empty.");
+    assert((empty() || getState() == kRolledBack) 
+           && "The transaction must be empty.");
     if (Transaction* parent = getParent())
       parent->removeNestedTransaction(this);
     m_Parent = 0;

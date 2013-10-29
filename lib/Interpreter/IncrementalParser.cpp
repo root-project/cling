@@ -645,6 +645,7 @@ namespace cling {
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
     if (callbacks)
       callbacks->TransactionUnloaded(*T);
+    T->setState(Transaction::kRolledBack);
     m_TransactionPool->releaseTransaction(T);
   }
 

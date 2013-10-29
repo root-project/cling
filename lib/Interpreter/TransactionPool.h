@@ -65,7 +65,6 @@ namespace cling {
     }
 
     void releaseTransaction(Transaction* T) {
-      assert(T->empty() && "Transaction must be empty!");
       assert((T->getState() == Transaction::kCompleted ||
               T->getState() == Transaction::kRolledBack)
              && "Transaction must completed!");
