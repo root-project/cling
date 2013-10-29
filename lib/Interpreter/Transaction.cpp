@@ -173,9 +173,9 @@ namespace cling {
   
   void Transaction::erase(iterator pos) {
     assert(!empty() && "Erasing from an empty transaction.");
-    m_DeclQueue.erase(pos);
     if (!pos->m_DGR.isNull() && m_WrapperFD == *pos->m_DGR.begin())
       m_WrapperFD = 0;
+    m_DeclQueue.erase(pos);
   }
 
   void Transaction::DelayCallInfo::dump() const {
