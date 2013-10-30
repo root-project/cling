@@ -240,20 +240,6 @@ namespace cling {
         declare(initializer.str());
       }
 
-      // Find cling::runtime::internal::local_cxa_atexit
-      // We do not have an active transaction and that lookup might trigger
-      // deserialization
-      PushTransactionRAII pushedT(this);
-      NamespaceDecl* NSD = utils::Lookup::Namespace(&getSema(), "cling");
-      NSD = utils::Lookup::Namespace(&getSema(), "runtime");
-      NSD = utils::Lookup::Namespace(&getSema(), "internal");
-      NamedDecl* ND = utils::Lookup::Named(&getSema(), "local_cxa_atexit", NSD);
-      GlobalDecl GD(cast<FunctionDecl>(ND));
-      std::string mangledName;
-      utils::Analyze::maybeMangleDeclName(GD, mangledName);
-      m_ExecutionContext->addSymbol(mangledName.c_str(),
-                         (void*)(intptr_t)&runtime::internal::local_cxa_atexit);
-
     }
     else {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");
