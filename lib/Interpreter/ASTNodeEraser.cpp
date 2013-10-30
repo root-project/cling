@@ -377,9 +377,10 @@ namespace cling {
         size_t specInfoSize = This->getSpecializations().size();
         
         This->getSpecializations().clear();
+        void* InsertPos = 0;
         for (size_t i = 0; i < specInfoSize; ++i)
           if (&specInfos[i] != info) {
-            This->addSpecialization(&specInfos[i], /*InsertPos*/(void*)0);
+            This->addSpecialization(&specInfos[i], InsertPos);
           }
       }
     };
