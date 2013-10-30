@@ -166,17 +166,29 @@ namespace cling {
     ///\returns the most recent redeclaration in the new chain.
     ///
     template <typename T>
-    bool VisitRedeclarable(clang::Redeclarable<T>* R) {
+    bool VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC) {
       llvm::SmallVector<T*, 4> PrevDecls;
-      T* PrevDecl = 0;
-
+      T* PrevDecl = R->getMostRecentDecl();
       // [0]=>C [1]=>B [2]=>A ...
-      while ((PrevDecl = R->getPreviousDecl())) {
-        PrevDecls.push_back(PrevDecl);
-        R = PrevDecl;
+      while (PrevDecl) { // Collect the redeclarations, except the one we remove
+        if (PrevDecl != R)
+          PrevDecls.push_back(PrevDecl);
+        PrevDecl = PrevDecl->getPreviousDecl();
       }
 
       if (!PrevDecls.empty()) {
+        // Make sure we update the lookup maps, because the removed decl might
+        // be registered in the lookup and again findable.
+        StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr();
+        if (Map) {
+          StoredDeclsMap::iterator Pos = 
+            Map->find(((NamedDecl*)R)->getDeclName());
+          if (Pos != Map->end()) {
+            if (Pos->second.getAsDecl() == (T*)R)
+              Pos->second.remove((T*)R);
+            Pos->second.HandleRedeclaration(PrevDecls[0]);
+          }
+        }
         // Put 0 in the end of the array so that the loop will reset the
         // pointer to latest redeclaration in the chain to itself.
         //
@@ -188,7 +200,6 @@ namespace cling {
         }
       }
       return true;
-      //return PrevDecls.empty() ? 0 : PrevDecls[0]->getMostRecentDecl();
     }
 
     /// @}
@@ -311,7 +322,7 @@ namespace cling {
   }
 
   bool DeclReverter::VisitVarDecl(VarDecl* VD) {
-    bool Successful = VisitRedeclarable(VD);
+    bool Successful = VisitRedeclarable(VD, VD->getDeclContext());
     Successful = VisitDeclaratorDecl(VD);
 
     //If the transaction was committed we need to cleanup the execution engine.
@@ -322,9 +333,8 @@ namespace cling {
 
   bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
     bool Successful = VisitDeclContext(FD);
-    Successful = VisitRedeclarable(FD);
+    Successful = VisitRedeclarable(FD, FD->getDeclContext());
     Successful = VisitDeclaratorDecl(FD);
-
 
     DeclContext* DC = FD->getDeclContext();
 
