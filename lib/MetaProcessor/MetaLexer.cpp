@@ -20,8 +20,8 @@ namespace cling {
     return getConstant() != 0;
   }
 
-  static int pow10[10] = { 1, 10, 100, 1000, 10000, 
-                           100000, 1000000, 10000000, ~0U};
+  static unsigned int pow10[10] = { 1, 10, 100, 1000, 10000,
+                                    100000, 1000000, 10000000, ~0U};
   unsigned Token::getConstant() const {
     assert(kind == tok::constant && "Not a constant");
     if (value == ~0U) {
