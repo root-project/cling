@@ -899,8 +899,32 @@ namespace utils {
      
       bool mightHaveChanged = false;
       llvm::SmallVector<TemplateArgument, 4> desArgs;
+      unsigned int argi = 0;
       for(TemplateSpecializationType::iterator I = TST->begin(), E = TST->end();
-          I != E; ++I) {
+          I != E; ++I, ++argi) {
+
+         if (I->getKind() == TemplateArgument::Expression) {
+           // If we have an expression, we need to replace it / desugar it
+           // as it could contain unqualifed (or partially qualified or
+           // private) parts.
+
+           QualType canon = QT->getCanonicalTypeInternal();
+           const RecordType *TSTRecord
+              = dyn_cast<const RecordType>(canon.getTypePtr());
+           if (TSTRecord) {
+             if (const ClassTemplateSpecializationDecl* TSTdecl =
+                dyn_cast<ClassTemplateSpecializationDecl>(TSTRecord->getDecl()))
+             {
+               const TemplateArgumentList& templateArgs
+                 = TSTdecl->getTemplateArgs();
+
+                mightHaveChanged = true;
+                desArgs.push_back(templateArgs[argi]);
+                continue;
+             }
+           }
+         }
+
         if (I->getKind() != TemplateArgument::Type) {
           desArgs.push_back(*I);
           continue;
@@ -949,6 +973,7 @@ namespace utils {
           llvm::SmallVector<TemplateArgument, 4> desArgs;
           for(unsigned int I = 0, E = templateArgs.size();
               I != E; ++I) {
+
             if (templateArgs[I].getKind() != TemplateArgument::Type) {
               desArgs.push_back(templateArgs[I]);
               continue;
@@ -974,10 +999,11 @@ namespace utils {
           // If desugaring happened allocate new type in the AST.
           if (mightHaveChanged) {
             Qualifiers qualifiers = QT.getLocalQualifiers();
-            QT = Ctx.getTemplateSpecializationType(TemplateName(TSTdecl->getSpecializedTemplate()),
+            QT = Ctx.getTemplateSpecializationType(TemplateName(
+                                             TSTdecl->getSpecializedTemplate()),
                                                    desArgs.data(),
                                                    desArgs.size(),
-                                                   TSTRecord->getCanonicalTypeInternal());
+                                         TSTRecord->getCanonicalTypeInternal());
             QT = Ctx.getQualifiedType(QT, qualifiers);
           }
         }

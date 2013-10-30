@@ -53,10 +53,13 @@ namespace NS {
     typedef Content Content_t;
     typedef ::Details::Impl Impl_t;
   };
-  
+
   template <typename T> class TDataPoint {};
   typedef TDataPoint<float> TDataPointF;
   typedef TDataPoint<Double32_t> TDataPointD32;
+
+  const int typeN =1;
+  typedef ArrayType<float, typeN + 1> FArray;
 }
 
 // Anonymous namespace
@@ -271,6 +274,16 @@ lookup.findScope("NS::TDataPointD32", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::TDataPoint<Double32_t>"
+
+lookup.findScope("NS::ArrayType<float,1>", &t);
+QT = clang::QualType(t, 0);
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
+// CHECK: (const char *) "NS::ArrayType<float, 1>"
+
+lookup.findScope("NS::FArray", &t);
+QT = clang::QualType(t, 0);
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
+// CHECK: (const char *) "NS::ArrayType<float, 2>"
 
 lookup.findScope("vector<Details::Impl>::value_type", &t);
 QT = clang::QualType(t, 0);
