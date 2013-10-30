@@ -49,7 +49,6 @@ add_cling_library(clingInterpreter
   ValuePrinter.cpp
   ValuePrinterInfo.cpp
   ValuePrinterSynthesizer.cpp
-  CheckEmptyTransactionTransformer.cpp
   )
   
 set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS -fexceptions)
