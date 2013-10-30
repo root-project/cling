@@ -310,13 +310,26 @@ namespace cling {
         m_Sema->IdResolver.RemoveDecl(ND);
     }
 
-    // Find other decls that the old one has replaced
+#ifndef NDEBUG
     StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
-    if (!Map)
-      return false;
-    StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
-    assert((ND->isHidden() || Pos != Map->end())
-           && "no lookup entry for decl");
+    if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
+      // Make sure we the decl doesn't exist in the lookup tables.
+      StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
+      // Most decls only have one entry in their list, special case it.
+      if (NamedDecl *OldD = Pos->second.getAsDecl())
+        assert(OldD != ND && "Lookup entry still exists.");
+      else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
+        // Otherwise iterate over the list with entries with the same name.
+        // TODO: Walk the redeclaration chain if the entry was a redeclaration. 
+   
+        for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(), 
+               E = Vec->end(); I != E; ++I)
+          assert(*I != ND && "Lookup entry still exists.");
+      }
+      else
+        assert(Pos->second.isNull() && "!?");
+    }
+#endif
 
     return Successful;
   }
