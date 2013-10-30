@@ -23,6 +23,7 @@ add_cling_library(clingInterpreter
   ASTDumper.cpp
   ASTNodeEraser.cpp
   AutoSynthesizer.cpp
+  CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
   ClangInternalState.cpp
   DeclCollector.cpp
