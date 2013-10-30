@@ -7,6 +7,7 @@
 #include "ExecutionContext.h"
 
 #include "cling/Interpreter/StoredValueRef.h"
+#include "cling/Interpreter/Interpreter.h" // FIXME: Remove when at_exit is ready
 
 #include "clang/AST/Type.h"
 
@@ -46,6 +47,19 @@ void ExecutionContext::shuttingDown() {
     const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
     (*AEE.m_Func)(AEE.m_Arg);
   }
+}
+
+void ExecutionContext::remapCXAAtExit() {
+  assert(!m_CxaAtExitRemapped && "__cxa_at_exit already remapped.");
+  llvm::Function* atExit = m_engine->FindFunctionNamed("__cxa_atexit");
+  llvm::Function* clingAtExit
+    = m_engine->FindFunctionNamed("cling_cxa_atexit");
+  assert(atExit && clingAtExit && "atExit and clingAtExit must exist.");
+
+  void* clingAtExitAddr = m_engine->getPointerToFunction(clingAtExit);
+  assert(clingAtExitAddr && "cannot find cling_cxa_atexit");
+  m_engine->updateGlobalMapping(atExit, clingAtExitAddr);
+  m_CxaAtExitRemapped = true;
 }
 
 void ExecutionContext::InitializeBuilder(llvm::Module* m) {
@@ -160,20 +174,6 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
                                   StoredValueRef* returnValue)
 {
   // Call a function without arguments, or with an SRet argument, see SRet below
-
-  if (!m_CxaAtExitRemapped) {
-    // Rewire atexit:
-    llvm::Function* atExit = m_engine->FindFunctionNamed("__cxa_atexit");
-    llvm::Function* clingAtExit
-      = m_engine->FindFunctionNamed("cling_cxa_atexit");
-    if (atExit && clingAtExit) {
-      void* clingAtExitAddr = m_engine->getPointerToFunction(clingAtExit);
-      assert(clingAtExitAddr && "cannot find cling_cxa_atexit");
-      m_engine->updateGlobalMapping(atExit, clingAtExitAddr);
-      m_CxaAtExitRemapped = true;
-    }
-  }
-
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 

@@ -229,8 +229,6 @@ namespace cling {
       declare("#ifdef __CLING__ \n#endif");  
 #endif
       declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
-      declare("#include \"cling/Interpreter/ValuePrinter.h\"");
-
       if (getCodeGenerator()) {
         // Set up the gCling variable if it can be used
         std::stringstream initializer;
@@ -239,7 +237,9 @@ namespace cling {
                     << (uintptr_t)this << ";} }";
         declare(initializer.str());
       }
+      m_ExecutionContext->remapCXAAtExit();
 
+      declare("#include \"cling/Interpreter/ValuePrinter.h\"");
     }
     else {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");

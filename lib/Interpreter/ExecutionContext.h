@@ -64,7 +64,6 @@ namespace cling {
     ///
     bool m_CxaAtExitRemapped;
 
-
     ///\breif Helper that manages when the destructor of an object to be called.
     ///
     /// The object is registered first as an CXAAtExitElement and then cling
@@ -117,7 +116,6 @@ namespace cling {
     ///
     std::vector<CXAAtExitElement> m_AtExitFuncs;
 
-
   public:
     enum ExecutionResult {
       kExeSuccess,
@@ -161,6 +159,11 @@ namespace cling {
     /// still require alive system.
     ///
     void shuttingDown();
+
+    ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, so 
+    /// that the interpreter can call the object destructors at the right time.
+    ///
+    void remapCXAAtExit();
 
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///
