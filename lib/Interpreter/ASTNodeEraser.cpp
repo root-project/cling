@@ -349,8 +349,6 @@ namespace cling {
     Successful = VisitRedeclarable(FD, FD->getDeclContext());
     Successful = VisitDeclaratorDecl(FD);
 
-    DeclContext* DC = FD->getDeclContext();
-
     // Template instantiation of templated function first creates a canonical
     // declaration and after the actual template specialization. For example:
     // template<typename T> T TemplatedF(T t);
