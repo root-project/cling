@@ -17,18 +17,26 @@ namespace llvm {
 namespace cling {
   class StoredValueRef;
 
-  // Can be re-implemented to print type-specific details, e.g. as
-  //   template <typename POSSIBLYDERIVED>
-  //   std::string printValue(const MyClass* const p, POSSIBLYDERIVED* ac,
-  //                          const ValuePrinterInfo& VPI);
+  ///\brief Generic interface to value printing.
+  ///
+  /// Can be re-implemented to print type-specific details, e.g. as
+  ///\code
+  ///   template <typename POSSIBLYDERIVED>
+  ///   std::string printValue(const MyClass* const p, POSSIBLYDERIVED* ac,
+  ///                          const ValuePrinterInfo& VPI);
+  ///\endcode
   template <typename TY>
   std::string printValue(const void* const p, TY* const u,
                          const ValuePrinterInfo& VPI);
 
-  // Can be re-implemented to print a user type differently, e.g. as
-  //   template <typename POSSIBLYDERIVED>
-  //   std::string printType(const MyClass* const p, POSSIBLYDERIVED* ac,
-  //                         const ValuePrinterInfo& VPI);
+  ///\brief Generic interface to type printing.
+  ///
+  /// Can be re-implemented to print a user type differently, e.g. as
+  ///\code
+  ///   template <typename POSSIBLYDERIVED>
+  ///   std::string printType(const MyClass* const p, POSSIBLYDERIVED* ac,
+  ///                         const ValuePrinterInfo& VPI);
+  ///\endcode
   template <typename TY>
   std::string printType(const void* const p, TY* const u,
                         const ValuePrinterInfo& VPI);
@@ -76,14 +84,16 @@ namespace cling {
 
   } // namespace valuePrinterInternal
 
+  ///\brief Catch-all implementation for value printing.
   template <typename TY>
-  std::string  printValue(const void* const p, TY* const /*u*/,
-                          const ValuePrinterInfo& PVI) {
+  std::string printValue(const void* const p, TY* const /*u*/,
+                         const ValuePrinterInfo& PVI) {
     return valuePrinterInternal::printValue_Default(p, PVI);
   }
+  ///\brief Catch-all implementation for type printing.
   template <typename TY>
-  std::string  printType(const void* const p, TY* const /*u*/,
-                         const ValuePrinterInfo& PVI) {
+  std::string printType(const void* const p, TY* const /*u*/,
+                        const ValuePrinterInfo& PVI) {
     return valuePrinterInternal::printType_Default(PVI);
   }
 
