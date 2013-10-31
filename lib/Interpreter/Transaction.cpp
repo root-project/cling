@@ -178,14 +178,6 @@ namespace cling {
     assert(!MDE.m_MD && "Appending null MacroDirective?!");
     assert(getState() == kCollecting
            && "Cannot append declarations in current state.");
-    forceAppend(MDE);
-  }
-
-  void Transaction::forceAppend(MacroDecl MDE) {
-    assert(!MDE.m_II && "Appending null IdentifierInfo?!");
-    assert(!MDE.m_MD && "Appending null MacroDirective?!");
-    assert(getState() == kCollecting
-           && "Cannot append declarations in current state.");
 #ifndef NDEBUG
     // Check for duplicates
     for (size_t i = 0, e = m_MacroDeclQueue.size(); i < e; ++i) {

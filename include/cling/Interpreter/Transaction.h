@@ -80,6 +80,8 @@ namespace cling {
     /// call sequence that originally occurred in clang.
     ///
     struct MacroDecl {
+      // We need to store both the IdentifierInfo and the MacroDirective
+      // because the Preprocessor stores the macros in a DenseMap<II, MD>.
       clang::IdentifierInfo* m_II;
       const clang::MacroDirective* m_MD;
       MacroDecl(clang::IdentifierInfo* II, const clang::MacroDirective* MD)
@@ -411,9 +413,6 @@ namespace cling {
 
     ///\brief Appends teh declaration of a macro.
     void append(MacroDecl MDE);
-    
-    ///\brief Appends teh declaration of a macro.
-    void forceAppend(MacroDecl MDE);
 
     ///\brief Clears all declarations in the transaction.
     ///

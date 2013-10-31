@@ -788,7 +788,8 @@ namespace cling {
     PP.removeMacro(MacroD.m_II, MacroD.m_MD);
 
     // ExistsInPP
-    // true          true       -> true  // In the context and can delete
+    // true          true       -> true  // In the Preprocessor Macros
+    //                                      and can delete
     // false         true       -> assert // Not in the Preprocessor Macros
     //                                       but can delete ?
     assert(!ExistsInPP && \
