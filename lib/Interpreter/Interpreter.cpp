@@ -748,7 +748,8 @@ namespace cling {
           == DynamicLibraryManager::kLoadLibSuccess)
         return kSuccess;
       if (!tryCode) {
-        llvm::errs() << "ERROR in cling::Interpreter::loadFile(): cannot find " << filename << "!\n";
+        llvm::errs() << "ERROR in cling::Interpreter::loadFile(): cannot find "
+                     << filename << "!\n";
         return kFailure;
       }
     }
