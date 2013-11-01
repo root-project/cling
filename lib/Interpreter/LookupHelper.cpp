@@ -1294,7 +1294,7 @@ namespace cling {
   bool LookupHelper::hasFunction(const clang::Decl* scopeDecl,
                                  llvm::StringRef funcName) const {
 
-    //FIXME: remore code duplication with findFunctionArgs() and friends.
+    //FIXME: remove code duplication with findFunctionArgs() and friends.
 
     assert(scopeDecl && "Decl cannot be null");
     //
