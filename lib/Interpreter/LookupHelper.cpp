@@ -586,7 +586,7 @@ namespace cling {
                                                            Context,P,S);
     
     if (TheDecl) {
-      if ( IsOverload( Context, FuncTemplateArgs, GivenArgs, TheDecl) ) {
+      if ( IsOverload(Context, FuncTemplateArgs, GivenArgs, TheDecl) ) {
         return 0;
       } else {
         // Double check const-ness.
@@ -913,6 +913,60 @@ namespace cling {
     S.getDiagnostics().Reset();
 
     return true;
+  }
+
+  static
+  const FunctionDecl* findAnyFunctionSelector(DeclContext* ,
+                           bool /* objectIsConst */,
+                           const llvm::SmallVector<Expr*, 4> &,
+                           LookupResult &Result,
+                           DeclarationNameInfo &,
+                           const TemplateArgumentListInfo* ,
+                           ASTContext&, Parser &, Sema &) {
+    //
+    //  Check for lookup failure.
+    //
+    if (Result.empty())
+      return 0;
+    if (Result.isSingleResult())
+      return dyn_cast<FunctionDecl>(Result.getFoundDecl());
+    else
+      return dyn_cast<FunctionDecl>(*(Result.begin()));
+  }
+
+  const FunctionDecl* LookupHelper::findAnyFunction(const clang::Decl* scopeDecl,
+                                                    llvm::StringRef funcName,
+                                                    bool objectIsConst
+                                                    ) const{
+
+    //FIXME: remove code duplication with findFunctionArgs() and friends.
+
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Some utilities.
+    //
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
+
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
+    ParserStateRAII ResetParserState(P);
+    llvm::SmallVector<Expr*, 4> GivenArgs;
+
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs, objectIsConst,
+                        Context, P, S, findAnyFunctionSelector);
   }
 
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,

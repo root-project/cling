@@ -74,6 +74,20 @@ namespace cling {
     const clang::ClassTemplateDecl* findClassTemplate(llvm::StringRef Name) const;
 
 
+    ///\brief Lookup a function based on its Decl(Context), name (return any
+    ///function that matches the name (and constness if requested).
+    ///
+    ///\param [in] scopeDecl - the scope (namespace or tag) that is searched for
+    ///   the function.
+    ///\param [in] funcName  - the name of the function to find.
+    ///\param [in] objectIsConst - if true search fo function that can
+    ///   be called on a const object ; default to false.
+    ///\returns The function found or null.
+    const clang::FunctionDecl* findAnyFunction(const clang::Decl* scopeDecl,
+                                               llvm::StringRef funcName,
+                                               bool objectIsConst = false
+                                               ) const;
+
     ///\brief Lookup a function based on its Decl(Context), name and parameters.
     ///
     ///\param [in] scopeDecl - the scope (namespace or tag) that is searched for
