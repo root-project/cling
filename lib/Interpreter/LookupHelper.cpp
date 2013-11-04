@@ -563,6 +563,8 @@ namespace cling {
           // We prefer to get the canonical decl for consistency and ease
           // of comparison.
           TheDecl = TheDecl->getCanonicalDecl();
+          if (TheDecl->isTemplateInstantiation() && !TheDecl->isDefined())
+            S.InstantiateFunctionDefinition(SourceLocation(),TheDecl,true);
        }
     }
     return TheDecl;

@@ -125,14 +125,6 @@ public:
    void A_n(B& b) { b.B_f(); }
    void A_n(const char *msg, int ndim = 0) { if (ndim) ++msg; }
 };
-// Note: In CINT, looking up a class template specialization causes
-//       instantiation, but looking up a function template specialization
-//       does not, so we explicitly request the instantiations we are
-//       going to lookup so they will be there to find.
-template void A::A_k(int);
-template void A::A_k(double);
-template void A::B_k(int);
-template void A::B_k(double);
 B b_obj;
 B* b_ptr = &b_obj;
 B* b_ary = new B[3];
