@@ -900,7 +900,7 @@ func_B_m_proto->print(llvm::errs());
 
 
 //
-//  Test finding a member function that const or not
+//  Test finding a member function that are const or not
 //
 
 const clang::FunctionDecl* func_B_n_args = lookup.findFunctionArgs(class_A, "B_n", "", false);
@@ -1281,6 +1281,30 @@ dumpDecl("func_B_plus_proto", func_B_plus_proto);
 //CHECK-NEXT: func_B_plus_proto name: B::operator+
 //CHECK-NEXT: B operator+(B b) {
 //CHECK-NEXT:     return b;
+//CHECK-NEXT: }
+
+//
+// Test finding simple member function (including template instantiations
+// from just the name.
+//
+
+const clang::FunctionDecl* func_B_j_name = lookup.findAnyFunction(class_A, "B_j");
+
+printf("func_B_j_name: 0x%lx\n", (unsigned long) func_B_j_name);
+//CHECK: func_B_j_name: 0x{{[1-9a-f][0-9a-f]*$}}
+func_B_j_name->print(llvm::errs());
+//CHECK-NEXT: void B_j(int vi, int vj) {
+//CHECK-NEXT:   int x = vi;
+//CHECK-NEXT:   int y = vj;
+//CHECK-NEXT: }
+
+const clang::FunctionDecl* func_B_k1_name = lookup.findAnyFunction(class_A, "B_k<int>");
+
+printf("func_B_k1_name: 0x%lx\n", (unsigned long) func_B_k1_name);
+//CHECK: func_B_k1_name: 0x{{[1-9a-f][0-9a-f]*$}}
+func_B_k1_name->print(llvm::errs());
+//CHECK-NEXT: void B_k(int v) {
+//CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 

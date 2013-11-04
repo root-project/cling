@@ -921,8 +921,8 @@ namespace cling {
                            const llvm::SmallVector<Expr*, 4> &,
                            LookupResult &Result,
                            DeclarationNameInfo &,
-                           const TemplateArgumentListInfo* ,
-                           ASTContext&, Parser &, Sema &) {
+                           const TemplateArgumentListInfo* ExplicitTemplateArgs,
+                           ASTContext&, Parser &, Sema &S) {
     //
     //  Check for lookup failure.
     //
@@ -930,11 +930,33 @@ namespace cling {
       return 0;
     if (Result.isSingleResult())
       return dyn_cast<FunctionDecl>(Result.getFoundDecl());
-    else
-      return dyn_cast<FunctionDecl>(*(Result.begin()));
+    else {
+      NamedDecl *aResult = *(Result.begin());
+      FunctionDecl *res = dyn_cast<FunctionDecl>(aResult);
+      if (res) return res;
+      FunctionTemplateDecl *MethodTmpl =dyn_cast<FunctionTemplateDecl>(aResult);
+      if (MethodTmpl) {
+        // pick a specialization that result match the given arguments
+        SourceLocation loc;
+        sema::TemplateDeductionInfo Info(loc);
+        FunctionDecl *fdecl = 0;
+        Sema::TemplateDeductionResult Result
+          = S.DeduceTemplateArguments(MethodTmpl,
+                    const_cast<TemplateArgumentListInfo*>(ExplicitTemplateArgs),
+                                      fdecl,
+                                      Info);
+        if (Result) {
+          // deduction failure
+          return 0;
+        } else {
+          return fdecl;
+        }
+      }
+      return 0;
+    }
   }
 
-  const FunctionDecl* LookupHelper::findAnyFunction(const clang::Decl* scopeDecl,
+  const FunctionDecl* LookupHelper::findAnyFunction(const clang::Decl*scopeDecl,
                                                     llvm::StringRef funcName,
                                                     bool objectIsConst
                                                     ) const{
