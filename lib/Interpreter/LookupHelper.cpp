@@ -949,6 +949,9 @@ namespace cling {
           // deduction failure
           return 0;
         } else {
+          // Instantiate the function is needed.
+          if (!fdecl->isDefined())
+            S.InstantiateFunctionDefinition(loc,fdecl,true);
           return fdecl;
         }
       }

@@ -1298,13 +1298,13 @@ func_B_j_name->print(llvm::errs());
 //CHECK-NEXT:   int y = vj;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_k1_name = lookup.findAnyFunction(class_A, "B_k<int>");
+const clang::FunctionDecl* func_B_k1_name = lookup.findAnyFunction(class_A, "B_k<float>");
 
 printf("func_B_k1_name: 0x%lx\n", (unsigned long) func_B_k1_name);
 //CHECK: func_B_k1_name: 0x{{[1-9a-f][0-9a-f]*$}}
 func_B_k1_name->print(llvm::errs());
-//CHECK-NEXT: void B_k(int v) {
-//CHECK-NEXT:     int x = v;
+//CHECK-NEXT: void B_k(float v) {
+//CHECK-NEXT:     float x = v;
 //CHECK-NEXT: }
 
 
