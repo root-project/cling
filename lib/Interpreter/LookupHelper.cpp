@@ -98,7 +98,10 @@ namespace cling {
     //
     //  Try parsing the type name.
     //
-    TypeResult Res(P.ParseTypeName());
+    clang::ParsedAttributes Attrs(P.getAttrFactory());
+
+    TypeResult Res(P.ParseTypeName(0,Declarator::TypeNameContext,clang::AS_none,
+                                   0,&Attrs));
     if (Res.isUsable()) {
       // Accept it only if the whole name was parsed.
       if (P.NextToken().getKind() == clang::tok::eof) {

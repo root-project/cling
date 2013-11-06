@@ -182,9 +182,22 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 
 // To do: findType does not return the const below:
 // Test desugaring reference (both r- or l- value) types:
-//QT = lookup.findType("const IntRef_t");
-//Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
+// QT = lookup.findType("const IntRef_t");
+// Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // should print:(const char *) "int &const"
+// but this is actually an illegal type:
+
+// C++ [dcl.ref]p1:
+//   Cv-qualified references are ill-formed except when the
+//   cv-qualifiers are introduced through the use of a typedef
+//   (7.1.3) or of a template type argument (14.3), in which
+//   case the cv-qualifiers are ignored.
+
+// So the following is the right behavior:
+
+QT = lookup.findType("const IntRef_t");
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
+// CHECK: (const char *) "int &"
 
 // Test desugaring reference (both r- or l- value) types:
 QT = lookup.findType("IntRef_t");
