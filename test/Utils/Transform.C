@@ -60,6 +60,8 @@ namespace NS {
 
   const int typeN =1;
   typedef ArrayType<float, typeN + 1> FArray;
+
+  typedef int IntNS_t;
 }
 
 // Anonymous namespace
@@ -284,6 +286,10 @@ lookup.findScope("NS::FArray", &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: (const char *) "NS::ArrayType<float, 2>"
+
+QT = lookup.findType("const NS::IntNS_t");
+Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
+// CHECK: (const char *) "const int"
 
 lookup.findScope("vector<Details::Impl>::value_type", &t);
 QT = clang::QualType(t, 0);

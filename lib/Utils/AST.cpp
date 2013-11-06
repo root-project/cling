@@ -1014,6 +1014,8 @@ namespace utils {
       // the keyword (humm ... what about anonymous types?)
       QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
+    } else if (original_prefix) {
+       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
     }
     return QT;   
   }
