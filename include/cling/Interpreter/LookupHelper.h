@@ -20,6 +20,7 @@ namespace clang {
   class Parser;
   class QualType;
   class Type;
+  class ValueDecl;
 }
 
 namespace llvm {
@@ -74,6 +75,14 @@ namespace cling {
     ///
     const clang::ClassTemplateDecl* findClassTemplate(llvm::StringRef Name) const;
 
+    ///\brief Lookup a data member based on its Decl(Context), name.
+    ///
+    ///\param [in] scopeDecl - the scope (namespace or tag) that is searched for
+    ///   the function.
+    ///\param [in] dataName  - the name of the data member to find.
+    ///\returns The value/data member found or null.
+    const clang::ValueDecl* findDataMember(const clang::Decl* scopeDecl,
+                                           llvm::StringRef dataName) const;
 
     ///\brief Lookup a function template based on its Decl(Context), name.
     ///

@@ -370,6 +370,31 @@ namespace cling {
     return 0;
   }
 
+  const ValueDecl* LookupHelper::findDataMember(const clang::Decl* scopeDecl,
+                                                llvm::StringRef dataName
+                                                ) const {
+    // Lookup a data member based on its Decl(Context), name.
+
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    Preprocessor& PP = S.getPreprocessor();
+    
+    IdentifierInfo *dataII = &PP.getIdentifierTable().get(dataName);
+    DeclarationName decl_name( dataII );
+
+    const clang::DeclContext *dc = llvm::cast<clang::DeclContext>(scopeDecl);
+
+    DeclContext::lookup_result lookup = const_cast<clang::DeclContext*>(dc)->lookup(decl_name);
+    for (DeclContext::lookup_iterator I = lookup.begin(), E = lookup.end();
+         I != E; ++I) {
+      const ValueDecl *result = dyn_cast<ValueDecl>(*I);
+      if (result)
+        return result;
+    }
+
+    return 0;
+  }
+
   static
   DeclContext* getContextAndSpec(CXXScopeSpec &SS,
                                  const Decl* scopeDecl,
@@ -1035,7 +1060,7 @@ namespace cling {
   const FunctionDecl* LookupHelper::findAnyFunction(const clang::Decl*scopeDecl,
                                                     llvm::StringRef funcName,
                                                     bool objectIsConst
-                                                    ) const{
+                                                    ) const {
 
     //FIXME: remove code duplication with findFunctionArgs() and friends.
 
