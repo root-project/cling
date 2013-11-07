@@ -83,7 +83,7 @@ $(PROJ_OBJ_DIR)/doxygen.tar.gz: $(DOXYFILES) $(PROJ_OBJ_DIR)/doxygen.cfg
 	$(Verb) $(CP) $(PROJ_OBJ_DIR)/doxygen.tar.gz $(PROJ_OBJ_DIR)/doxygen/html/
 
 gen-doxygen-cfg:
-	$(Echo) Generating doxygen configuration fil
+	$(Echo) Generating doxygen configuration file
 	$(Echo) $(PROJ_OBJ_DIR)/doxygen.cfg
 	cat $(PROJ_SRC_DIR)/doxygen.cfg.in | sed \
 	  -e 's,@docs_srcdir@,'$(PROJ_SRC_DIR)",g" \
