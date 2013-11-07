@@ -162,6 +162,7 @@ namespace cling {
     ///\brief Removes given declaration from the chain of redeclarations.
     /// Rebuilds the chain and sets properly first and last redeclaration.
     /// @param[in] R - The redeclarable, its chain to be rebuilt.
+    /// @param[in] DC - Remove the redecl's lookup entry from this DeclContext.
     ///
     ///\returns the most recent redeclaration in the new chain.
     ///
