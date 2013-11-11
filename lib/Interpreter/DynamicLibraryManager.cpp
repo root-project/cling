@@ -257,10 +257,10 @@ namespace cling {
     // get canonical path name and check if already loaded
 #ifdef WIN32
     char buf[_MAX_PATH];
-    char *res = _fullpath(buf, fullPath.str().c_str(), _MAX_PATH);
+    _fullpath(buf, fullPath.str().c_str(), _MAX_PATH);
 #else
     char buf[PATH_MAX+1];
-    char *res = realpath(fullPath.str().c_str(), buf);
+    realpath(fullPath.str().c_str(), buf);
 #endif
     if (m_loadedLibraries.find(buf) != m_loadedLibraries.end()) return true;
     return false;
