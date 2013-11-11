@@ -182,12 +182,14 @@ namespace cling {
         // be registered in the lookup and again findable.
         StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr();
         if (Map) {
-          StoredDeclsMap::iterator Pos = 
-            Map->find(((NamedDecl*)R)->getDeclName());
-          if (Pos != Map->end()) {
-            if (Pos->second.getAsDecl() == (T*)R)
-              Pos->second.remove((T*)R);
-            Pos->second.HandleRedeclaration(PrevDecls[0]);
+          DeclarationName Name = ((NamedDecl*)((T*)R))->getDeclName();
+          if (!Name.isEmpty()) {
+            StoredDeclsMap::iterator Pos = Map->find(Name);
+            if (Pos != Map->end() && !Pos->second.isNull()) {
+              // If this is a redeclaration of an existing decl, replace the
+              // old one with D.
+              Pos->second.HandleRedeclaration(PrevDecls[0]);
+            }
           }
         }
         // Put 0 in the end of the array so that the loop will reset the
