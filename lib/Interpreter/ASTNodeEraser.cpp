@@ -637,6 +637,7 @@ namespace cling {
 #endif
       }
     }
+    m_Sema->getDiagnostics().Reset();
 
     // Cleanup the module from unused global values.
     //llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
