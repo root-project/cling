@@ -941,6 +941,13 @@ namespace cling {
       if (res) return res;
       FunctionTemplateDecl *MethodTmpl =dyn_cast<FunctionTemplateDecl>(aResult);
       if (MethodTmpl) {
+        if (!ExplicitTemplateArgs || ExplicitTemplateArgs->size()==0) {
+          // Not argument was specified, any instantiation will do.
+
+          if (MethodTmpl->spec_begin() != MethodTmpl->spec_end()) {
+             return *( MethodTmpl->spec_begin() );
+          }
+        }
         // pick a specialization that result match the given arguments
         SourceLocation loc;
         sema::TemplateDeductionInfo Info(loc);
@@ -951,7 +958,7 @@ namespace cling {
                                       fdecl,
                                       Info);
         if (Result) {
-          // deduction failure
+          // Deduction failure.
           return 0;
         } else {
           // Instantiate the function is needed.
