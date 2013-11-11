@@ -265,33 +265,23 @@ namespace cling {
 
     DeclContext* DC = D->getLexicalDeclContext();
 
+#ifndef NDEBUG
     bool ExistsInDC = false;
-
-    for (DeclContext::decl_iterator I = DC->decls_begin(), E = DC->decls_end();
-         E !=I; ++I) {
+    // The decl should be already in, we shouldn't deserialize.
+    for (DeclContext::decl_iterator I = DC->noload_decls_begin(), 
+           E = DC->noload_decls_end(); E !=I; ++I)
       if (*I == D) {
         ExistsInDC = true;
         break;
       }
-    }
-
-    bool Successful = DeclContextExt::removeIfLast(DC, D);
+    //assert(ExistsInDC && "Declaration must exist in the DC");
+#endif
+    bool Successful = true;
+    DeclContextExt::removeIfLast(DC, D);
     // With the bump allocator this is nop.
     if (Successful)
       m_Sema->getASTContext().Deallocate(D);
-    // ExistsInDC && Successful
-    // true          false      -> false // In the context but cannot delete
-    // false         false      -> true  // Not in the context cannot delete
-    // true          true       -> true  // In the context and can delete
-    // false         true       -> assert // Not in the context but can delete ?
-    assert(!(!ExistsInDC && Successful) && \
-           "Not in the context but can delete?!");
-    if (ExistsInDC && !Successful)
-      return false;
-    else { // in release we'd want the assert to fall into true
-      m_Sema->getDiagnostics().Reset();
-      return true;
-    }
+    return Successful;
   }
 
   bool DeclReverter::VisitNamedDecl(NamedDecl* ND) {
