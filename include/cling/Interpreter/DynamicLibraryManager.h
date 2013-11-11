@@ -9,9 +9,9 @@
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringSet.h"
 
 #include "llvm/Support/Path.h"
-
 
 namespace cling {
   class InvocationOptions;
@@ -25,6 +25,7 @@ namespace cling {
     ///\brief DynamicLibraries loaded by this Interpreter.
     ///
     DyLibs m_DyLibs;
+    llvm::StringSet<> m_loadedLibraries;
 
     const InvocationOptions& m_Opts;
 
