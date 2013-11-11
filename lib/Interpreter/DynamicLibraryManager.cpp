@@ -186,12 +186,15 @@ namespace cling {
 #ifdef WIN32
     llvm::SmallString<_MAX_PATH> FullPath;
     char *res = _fullpath((char *)FullPath.data(), FoundDyLib.c_str(), _MAX_PATH);
-    FullPath.set_size(strlen(res));
 #else
     llvm::SmallString<PATH_MAX+1> FullPath;
     char *res = realpath(FoundDyLib.c_str(), (char *)FullPath.data());
-    FullPath.set_size(strlen(res));
 #endif
+    if (res == 0) {
+      llvm::errs() << "cling::Interpreter::tryLinker(): error getting real (canonical) path\n";
+      return kLoadLibError;
+    }
+    FullPath.set_size(strlen(res));
     if (m_loadedLibraries.find(FullPath) != m_loadedLibraries.end())
       return kLoadLibExists;
 
@@ -257,11 +260,15 @@ namespace cling {
     // get canonical path name and check if already loaded
 #ifdef WIN32
     char buf[_MAX_PATH];
-    _fullpath(buf, fullPath.str().c_str(), _MAX_PATH);
+    char *res = _fullpath(buf, fullPath.str().c_str(), _MAX_PATH);
 #else
     char buf[PATH_MAX+1];
-    realpath(fullPath.str().c_str(), buf);
+    char *res = realpath(fullPath.str().c_str(), buf);
 #endif
+    if (res == 0) {
+      llvm::errs() << "cling::Interpreter::isDynamicLibraryLoaded(): error getting real (canonical) path\n";
+      return false;
+    }
     if (m_loadedLibraries.find(buf) != m_loadedLibraries.end()) return true;
     return false;
   }
