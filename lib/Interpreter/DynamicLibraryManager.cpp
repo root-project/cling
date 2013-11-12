@@ -184,10 +184,12 @@ namespace cling {
 
     // get canonical path name and check if already loaded
 #ifdef WIN32
-    llvm::SmallString<_MAX_PATH> FullPath(_MAX_PATH);
+    llvm::SmallString<_MAX_PATH> FullPath;
+    FullPath.set_size(_MAX_PATH);
     char *res = _fullpath((char *)FullPath.data(), FoundDyLib.c_str(), _MAX_PATH);
 #else
-    llvm::SmallString<PATH_MAX+1> FullPath(PATH_MAX+1);
+    llvm::SmallString<PATH_MAX+1> FullPath;
+    FullPath.set_size(PATH_MAX+1);
     char *res = realpath(FoundDyLib.c_str(), (char *)FullPath.data());
 #endif
     if (res == 0) {
