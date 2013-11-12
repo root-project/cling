@@ -274,7 +274,8 @@ namespace cling {
         ExistsInDC = true;
         break;
       }
-    //assert(ExistsInDC && "Declaration must exist in the DC");
+    assert(D->isInvalidDecl() || ExistsInDC 
+           && "Declaration must exist in the DC");
 #endif
     bool Successful = true;
     DeclContextExt::removeIfLast(DC, D);
