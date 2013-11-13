@@ -5,6 +5,7 @@
 #include "cling/Interpreter/LookupHelper.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclTemplate.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <cstdio>
@@ -1306,6 +1307,15 @@ printf("func_B_k1_name_2: 0x%lx\n", (unsigned long) func_B_k1_name_2);
 func_B_k1_name_2->print(llvm::errs());
 //CHECK-NEXT: void B_k(int v) {
 //CHECK-NEXT:     int x = v;
+//CHECK-NEXT: }
+
+const clang::FunctionTemplateDecl* func_B_k_template = lookup.findFunctionTemplate(class_A, "B_k");
+
+printf("func_B_k_template: 0x%lx\n", (unsigned long) func_B_k_template);
+//CHECK: func_B_k_template: 0x{{[1-9a-f][0-9a-f]*$}}
+func_B_k_template->print(llvm::errs());
+//CHECK-NEXT: template <class T> void B_k(T v) {
+//CHECK-NEXT:     T x = v;
 //CHECK-NEXT: }
 
 //

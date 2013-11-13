@@ -411,7 +411,7 @@ namespace cling {
     return foundDC;
   }
 
-  static bool FuncArgTypesMatch(const ASTContext& C, 
+  static bool FuncArgTypesMatch(const ASTContext& C,
                                 const llvm::SmallVector<Expr*, 4> &GivenArgs,
                                 const FunctionProtoType* FPT) {
     // FIXME: What if FTP->arg_size() != GivenArgTypes.size()?
@@ -754,11 +754,6 @@ namespace cling {
     // Given the correctly types arguments, etc. find the function itself.
 
     //
-    //  Our return value.
-    //
-    FunctionDecl* TheDecl = 0;
-
-    //
     //  Make the class we are looking up the function
     //  in the current scope to please the constructor
     //  name lookup.  We do not need to do this otherwise,
@@ -784,7 +779,7 @@ namespace cling {
       P.ExitScope();
       P.getCurScope()->setEntity(OldEntity);
       // Then exit.
-      return TheDecl;
+      return 0;
     }
 
     //
@@ -812,7 +807,7 @@ namespace cling {
       P.ExitScope();
       P.getCurScope()->setEntity(OldEntity);
       // Then cleanup and exit.
-      return TheDecl;
+      return 0;
     }
 
     //
@@ -828,7 +823,7 @@ namespace cling {
     if (Result.getResultKind() != LookupResult::Found &&
         Result.getResultKind() != LookupResult::FoundOverloaded) {
        // Lookup failed.
-       return TheDecl;
+       return 0;
     }
     return functionSelector(foundDC,objectIsConst,GivenArgs,
                             Result,
@@ -921,6 +916,72 @@ namespace cling {
   }
 
   static
+  const FunctionTemplateDecl* findFunctionTemplateSelector(DeclContext* ,
+                                                       bool /* objectIsConst */,
+                                            const llvm::SmallVector<Expr*, 4> &,
+                                                           LookupResult &Result,
+                                                          DeclarationNameInfo &,
+                           const TemplateArgumentListInfo* ExplicitTemplateArgs,
+                                                          ASTContext&, Parser &,
+                                                           Sema &S) {
+    //
+    //  Check for lookup failure.
+    //
+    if (Result.empty())
+      return 0;
+    if (Result.isSingleResult())
+      return dyn_cast<FunctionTemplateDecl>(Result.getFoundDecl());
+    else {
+      for (LookupResult::iterator I = Result.begin(), E = Result.end();
+           I != E; ++I) {
+        NamedDecl* ND = *I;
+        FunctionTemplateDecl *MethodTmpl =dyn_cast<FunctionTemplateDecl>(ND);
+        if (MethodTmpl) {
+          return MethodTmpl;
+        }
+      }
+      return 0;
+    }
+  }
+
+  const FunctionTemplateDecl*
+  LookupHelper::findFunctionTemplate(const clang::Decl* scopeDecl,
+                                     llvm::StringRef templateName,
+                                     bool objectIsConst
+                                     ) const {
+    // Lookup a function template based on its Decl(Context), name.
+
+    //FIXME: remove code duplication with findFunctionArgs() and friends.
+
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Some utilities.
+    //
+    Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
+
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
+    ParserStateRAII ResetParserState(P);
+    llvm::SmallVector<Expr*, 4> GivenArgs;
+
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+    return findFunction(foundDC, SS,
+                        templateName, GivenArgs, objectIsConst,
+                        Context, P, S, findFunctionTemplateSelector);
+  }
+
+  static
   const FunctionDecl* findAnyFunctionSelector(DeclContext* ,
                            bool /* objectIsConst */,
                            const llvm::SmallVector<Expr*, 4> &,
@@ -961,7 +1022,7 @@ namespace cling {
           // Deduction failure.
           return 0;
         } else {
-          // Instantiate the function is needed.
+          // Instantiate the function if needed.
           if (!fdecl->isDefined())
             S.InstantiateFunctionDefinition(loc,fdecl,true);
           return fdecl;
