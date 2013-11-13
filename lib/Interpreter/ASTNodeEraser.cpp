@@ -274,7 +274,7 @@ namespace cling {
         ExistsInDC = true;
         break;
       }
-    assert(D->isInvalidDecl() || ExistsInDC 
+    assert((D->isInvalidDecl() || ExistsInDC)
            && "Declaration must exist in the DC");
 #endif
     bool Successful = true;
