@@ -385,7 +385,7 @@ namespace cling {
 
   bool DeclReverter::VisitVarDecl(VarDecl* VD) {
     bool Successful = VisitRedeclarable(VD, VD->getDeclContext());
-    Successful = VisitDeclaratorDecl(VD);
+    Successful &= VisitDeclaratorDecl(VD);
 
     //If the transaction was committed we need to cleanup the execution engine.
     GlobalDecl GD(VD);
@@ -396,8 +396,8 @@ namespace cling {
   bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
     // FunctionDecl : DeclaratiorDecl, DeclContext, Redeclarable
     bool Successful = VisitRedeclarable(FD, FD->getDeclContext());
-    Successful = VisitDeclContext(FD);
-    Successful = VisitDeclaratorDecl(FD);
+    Successful &= VisitDeclContext(FD);
+    Successful &= VisitDeclaratorDecl(FD);
 
     // Template instantiation of templated function first creates a canonical
     // declaration and after the actual template specialization. For example:
@@ -511,13 +511,13 @@ namespace cling {
       m_Sema->IdResolver.AddDecl(NewNSD);
     }
 
-    Successful = VisitNamedDecl(NSD);
+    Successful &= VisitNamedDecl(NSD);
     return Successful;
   }
 
   bool DeclReverter::VisitTagDecl(TagDecl* TD) {
     bool Successful = VisitDeclContext(TD);
-    Successful = VisitTypeDecl(TD);
+    Successful &= VisitTypeDecl(TD);
     return Successful;
   }
 
