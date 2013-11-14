@@ -384,6 +384,7 @@ namespace cling {
   }
 
   bool DeclReverter::VisitVarDecl(VarDecl* VD) {
+    // VarDecl : DeclaratiorDecl, Redeclarable
     bool Successful = VisitRedeclarable(VD, VD->getDeclContext());
     Successful &= VisitDeclaratorDecl(VD);
 
