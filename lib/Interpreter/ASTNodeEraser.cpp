@@ -182,13 +182,40 @@ namespace cling {
         // be registered in the lookup and again findable.
         StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr();
         if (Map) {
-          DeclarationName Name = ((NamedDecl*)((T*)R))->getDeclName();
+          NamedDecl* ND = (NamedDecl*)((T*)R);
+          DeclarationName Name = ND->getDeclName();
           if (!Name.isEmpty()) {
             StoredDeclsMap::iterator Pos = Map->find(Name);
             if (Pos != Map->end() && !Pos->second.isNull()) {
               // If this is a redeclaration of an existing decl, replace the
               // old one with D.
-              Pos->second.HandleRedeclaration(PrevDecls[0]);
+              if (!Pos->second.HandleRedeclaration(PrevDecls[0])) {
+                // We are probably in the case where we had overloads and we 
+                // deleted an overload definition but we still have its 
+                // declaration. Say void f(); void f(int); void f(int) {}
+                // If f(int) was in the lookup table we remove it but we must
+                // put the declaration of void f(int);
+                if (Pos->second.getAsDecl() == ND)
+                  Pos->second.setOnlyValue(PrevDecls[0]);
+                else if (StoredDeclsList::DeclsTy* Vec 
+                         = Pos->second.getAsVector()) {
+                  bool wasReplaced = false;
+                  for (StoredDeclsList::DeclsTy::iterator I= Vec->begin(),
+                         E = Vec->end(); I != E; ++I)
+                    if (*I == ND) {
+                      // We need to replace it exactly at the same place where
+                      // the old one was. The reason is cling diff-based 
+                      // test suite
+                      *I = PrevDecls[0];
+                      wasReplaced = true;
+                      break;
+                    }
+                  // This will make the DeclContext::removeDecl happy. It also
+                  // tries to remove the decl from the lookup.
+                  if (wasReplaced)
+                    Pos->second.AddSubsequentDecl(ND);
+                }
+              }
             }
           }
         }
@@ -367,8 +394,9 @@ namespace cling {
   }
 
   bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
-    bool Successful = VisitDeclContext(FD);
-    Successful = VisitRedeclarable(FD, FD->getDeclContext());
+    // FunctionDecl : DeclaratiorDecl, DeclContext, Redeclarable
+    bool Successful = VisitRedeclarable(FD, FD->getDeclContext());
+    Successful = VisitDeclContext(FD);
     Successful = VisitDeclaratorDecl(FD);
 
     // Template instantiation of templated function first creates a canonical
