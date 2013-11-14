@@ -308,25 +308,48 @@ namespace cling {
       if (isOnScopeChains(ND))
         m_Sema->IdResolver.RemoveDecl(ND);
     }
-
-#ifndef NDEBUG
+    
+    // Cleanup the lookup tables.
     StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
     if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
       // Make sure we the decl doesn't exist in the lookup tables.
       StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
-      // Most decls only have one entry in their list, special case it.
-      if (NamedDecl *OldD = Pos->second.getAsDecl())
-        assert(OldD != ND && "Lookup entry still exists.");
-      else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
-        // Otherwise iterate over the list with entries with the same name.
-        // TODO: Walk the redeclaration chain if the entry was a redeclaration. 
-   
-        for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(), 
-               E = Vec->end(); I != E; ++I)
-          assert(*I != ND && "Lookup entry still exists.");
+      if ( Pos != Map->end()) {
+        // Most decls only have one entry in their list, special case it.
+        if (Pos->second.getAsDecl() == ND)
+          Pos->second.remove(ND);
+        else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
+          // Otherwise iterate over the list with entries with the same name.
+          // TODO: Walk the redeclaration chain if the entry was a redeclaration.    
+          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(), 
+                 E = Vec->end(); I != E; ++I)
+            if (*I == ND)
+              Pos->second.remove(ND);            
+        }
+        if (Pos->second.isNull())
+          Map->erase(Pos);
       }
-      else
-        assert(Pos->second.isNull() && "!?");
+    }
+
+#ifndef NDEBUG
+    if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
+      // Make sure we the decl doesn't exist in the lookup tables.
+      StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
+      if ( Pos != Map->end()) {
+        // Most decls only have one entry in their list, special case it.
+        if (NamedDecl *OldD = Pos->second.getAsDecl())
+          assert(OldD != ND && "Lookup entry still exists.");
+        else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
+          // Otherwise iterate over the list with entries with the same name.
+          // TODO: Walk the redeclaration chain if the entry was a redeclaration. 
+          
+          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(), 
+                 E = Vec->end(); I != E; ++I)
+            assert(*I != ND && "Lookup entry still exists.");
+        }
+        else
+          assert(Pos->second.isNull() && "!?");
+      }
     }
 #endif
 
