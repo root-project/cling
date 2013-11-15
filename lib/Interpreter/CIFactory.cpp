@@ -282,7 +282,7 @@ namespace cling {
     CI->setASTConsumer(collector);
 
     // Add the callback keeping track of the macro definitions
-    //PP.addPPCallbacks(collector);
+    PP.addPPCallbacks(collector);
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;

@@ -74,23 +74,24 @@ namespace cling {
                  llvm::StringRef prependInfo = "") const;
     };
 
-    ///\brief Each macro pair (is this the same as for decls?)came 
-    /// through different interface at 
-    /// different time. We are being conservative and we want to keep all the 
+    ///\brief Each macro pair (is this the same as for decls?)came
+    /// through different interface at
+    /// different time. We are being conservative and we want to keep all the
     /// call sequence that originally occurred in clang.
     ///
-    struct MacroDecl {
+    struct MacroDirectiveInfo {
       // We need to store both the IdentifierInfo and the MacroDirective
       // because the Preprocessor stores the macros in a DenseMap<II, MD>.
       clang::IdentifierInfo* m_II;
       const clang::MacroDirective* m_MD;
-      MacroDecl(clang::IdentifierInfo* II, const clang::MacroDirective* MD)
+      MacroDirectiveInfo(clang::IdentifierInfo* II,
+                         const clang::MacroDirective* MD)
                 : m_II(II), m_MD(MD) {}
-      inline bool operator==(const MacroDecl& rhs) {
+      inline bool operator==(const MacroDirectiveInfo& rhs) {
         return m_II == rhs.m_II
           && m_MD == rhs.m_MD;
       }
-      inline bool operator!=(const MacroDecl& rhs) {
+      inline bool operator!=(const MacroDirectiveInfo& rhs) {
         return !operator==(rhs);
       }
     };
@@ -144,14 +145,14 @@ namespace cling {
     ///
     clang::ASTContext& m_ASTContext;
 
-    // Intentionally use struct instead of pair because we don't need default 
+    // Intentionally use struct instead of pair because we don't need default
     // init.
     // Add macro decls to be able to revert them for error recovery.
-    typedef llvm::SmallVector<MacroDecl, 2> MacroDeclQueue;
+    typedef llvm::SmallVector<MacroDirectiveInfo, 2> MacroDirectiveInfoQueue;
 
     ///\brief All seen macros.
     ///
-    MacroDeclQueue m_MacroDeclQueue;
+    MacroDirectiveInfoQueue m_MacroDirectiveInfoQueue;
 
   public:
 
@@ -245,27 +246,27 @@ namespace cling {
     }
 
     /// Macro iteration
-    typedef MacroDeclQueue::iterator macros_iterator;
-    typedef MacroDeclQueue::const_iterator const_macros_iterator;
-    typedef MacroDeclQueue::const_reverse_iterator const_reverse_macros_iterator;
+    typedef MacroDirectiveInfoQueue::iterator macros_iterator;
+    typedef MacroDirectiveInfoQueue::const_iterator const_macros_iterator;
+    typedef MacroDirectiveInfoQueue::const_reverse_iterator const_reverse_macros_iterator;
 
     macros_iterator macros_begin() {
-      return m_MacroDeclQueue.begin();
+      return m_MacroDirectiveInfoQueue.begin();
     }
     macros_iterator macros_end() {
-      return m_MacroDeclQueue.end();
+      return m_MacroDirectiveInfoQueue.end();
     }
     const_macros_iterator macros_begin() const {
-      return m_MacroDeclQueue.begin();
+      return m_MacroDirectiveInfoQueue.begin();
     }
     const_macros_iterator macros_end() const {
-      return m_MacroDeclQueue.end();
+      return m_MacroDirectiveInfoQueue.end();
     }
     const_reverse_macros_iterator rmacros_begin() const {
-      return m_MacroDeclQueue.rbegin();
+      return m_MacroDirectiveInfoQueue.rbegin();
     }
     const_reverse_macros_iterator rmacros_end() const {
-      return m_MacroDeclQueue.rend();
+      return m_MacroDirectiveInfoQueue.rend();
     }
 
 
@@ -374,13 +375,8 @@ namespace cling {
     ///
     bool empty() const {
       return m_DeclQueue.empty() && m_DeserializedDeclQueue.empty()
-        && (!m_NestedTransactions || m_NestedTransactions->empty());
-    }
-
-    //\brief Returns whether there are macros in the transaction.
-    ///
-    bool emptyMacros() const {
-      return m_MacroDeclQueue.empty();
+        && (!m_NestedTransactions || m_NestedTransactions->empty()
+        && m_MacroDirectiveInfoQueue.empty());
     }
 
     ///\brief Appends a declaration group and source from which consumer 
@@ -411,8 +407,8 @@ namespace cling {
     ///
     void forceAppend(clang::Decl *D);
 
-    ///\brief Appends teh declaration of a macro.
-    void append(MacroDecl MDE);
+    ///\brief Appends the declaration of a macro.
+    void append(MacroDirectiveInfo MDE);
 
     ///\brief Clears all declarations in the transaction.
     ///
@@ -440,10 +436,6 @@ namespace cling {
     ///\brief Erases an element at given position.
     ///
     void erase(iterator pos);
-
-    ///\brief Erases an element at given position.
-    ///
-    void eraseMacro(size_t pos);
 
     ///\brief Resets empty transaction so that it could be reused.
     /// 

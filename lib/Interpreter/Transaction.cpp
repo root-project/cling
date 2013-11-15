@@ -196,11 +196,6 @@ namespace cling {
     m_DeclQueue.erase(pos);
   }
 
-  void Transaction::eraseMacro(size_t pos) {
-    assert(!emptyMacros() && "Erasing from an empty transaction.");
-    m_MacroDeclQueue.erase(macros_begin() + pos);
-  }
-
   void Transaction::DelayCallInfo::dump() const {
     PrintingPolicy Policy((LangOptions()));
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);

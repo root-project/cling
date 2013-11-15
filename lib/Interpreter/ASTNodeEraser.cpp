@@ -147,6 +147,24 @@ namespace cling {
     ///
     bool VisitTagDecl(TagDecl* TD);
 
+    ///\brief Function that contains common actions, done for every removal of
+    /// macro.
+    ///
+    /// For example: We must uncache the cached include, which brought that
+    /// declaration in the AST.
+    ///\param[in] MD - The MacroDecl containing the IdentifierInfo and
+    ///                MacroDirective to forward.
+    ///
+    void PreVisitMacro(const Transaction::MacroDirective* MD);
+
+    ///\brief Remove the macro from the Preprocessor.
+    /// @param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
+    ///                MacroDirective to forward.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitMacro(const Transaction::MacroDirectiveInfo MD);
+
     void RemoveDeclFromModule(GlobalDecl& GD) const;
     void RemoveStaticInit(llvm::Function& F) const;
 
@@ -160,6 +178,14 @@ namespace cling {
     ///\returns true if the ND was found in the lookup chain.
     ///
     bool isOnScopeChains(clang::NamedDecl* ND);
+
+    ///\brief Interface with nice name, forwarding to Visit.
+    ///
+    ///\param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
+    ///                MacroDirective to forward.
+    ///\returns true on success.
+    ///
+    bool RevertMacro(const Transaction::MacroDirectiveInfo MD) { return VisitMacro(MD); }
 
     ///\brief Removes given declaration from the chain of redeclarations.
     /// Rebuilds the chain and sets properly first and last redeclaration.
@@ -669,103 +695,20 @@ namespace cling {
     return false;
   }
 
-  ///\brief The class does the actual work of removing a macro definition and
-  /// resetting the internal structures of the compiler
-  ///
-  class MacroReverter {
-  private:
-    typedef llvm::DenseSet<FileID> FileIDs;
-
-    ///\brief The Sema object being reverted (contains the AST as well).
-    ///
-    Sema* m_Sema;
-
-    ///\brief The current transaction being reverted.
-    ///
-    const Transaction* m_CurTransaction;
-
-    ///\brief The mangler used to get the mangled names of the declarations
-    /// that we are removing from the module.
-    ///
-    llvm::OwningPtr<MangleContext> m_Mangler;
-
-    ///\brief Reverted declaration contains a SourceLocation, representing a
-    /// place in the file where it was seen. Clang caches that file and even if
-    /// a declaration is removed and the file is edited we hit the cached entry.
-    /// This ADT keeps track of the files from which the reverted declarations
-    /// came from so that in the end they could be removed from clang's cache.
-    ///
-    FileIDs m_FilesToUncache;
-
-  public:
-    MacroReverter(Sema* S, const Transaction* T): m_Sema(S), m_CurTransaction(T) {
-      m_Mangler.reset(m_Sema->getASTContext().createMangleContext());              
-    }
-    ~MacroReverter();
-
-    ///\brief Interface with nice name, forwarding to Visit.
-    ///
-    ///\param[in] MD - The MacroDecl containing the IdentifierInfo and
-    ///                MacroDirective to forward.
-    ///\returns true on success.
-    ///
-    bool RevertMacro(const Transaction::MacroDecl MD) { return VisitMacro(MD); }
-
-    ///\brief Function that contains common actions, done for every removal of
-    /// macro.
-    ///
-    /// For example: We must uncache the cached include, which brought that
-    /// declaration in the AST.
-    ///\param[in] MD - The MacroDecl containing the IdentifierInfo and
-    ///                MacroDirective to forward.
-    ///
-    void PreVisitMacro(const Transaction::MacroDecl MD);
-
-    ///\brief Remove the macro from the Preprocessor.
-    /// @param[in] MD - The MacroDecl containing the IdentifierInfo and
-    ///                MacroDirective to forward.
-    ///
-    ///\returns true on success.
-    ///
-    bool VisitMacro(const Transaction::MacroDecl MD);
-  };
-
-  MacroReverter::~MacroReverter() {
-    SourceManager& SM = m_Sema->getSourceManager();
-    for (FileIDs::iterator I = m_FilesToUncache.begin(),
-           E = m_FilesToUncache.end(); I != E; ++I) {
-      const SrcMgr::FileInfo& fInfo = SM.getSLocEntry(*I).getFile();
-      // We need to reset the cache
-      SrcMgr::ContentCache* cache
-        = const_cast<SrcMgr::ContentCache*>(fInfo.getContentCache());
-      FileEntry* entry = const_cast<FileEntry*>(cache->ContentsEntry);
-      // We have to reset the file entry size to keep the cache and the file
-      // entry in sync.
-      if (entry) {
-        cache->replaceBuffer(0,/*free*/true);
-        FileManager::modifyFileEntry(entry, /*size*/0, 0);
-      }
-    }
-
-    // Clean up the pending instantiations
-    m_Sema->PendingInstantiations.clear();
-    m_Sema->PendingLocalImplicitInstantiations.clear();
-  }
-
-  void MacroReverter::PreVisitMacro(const Transaction::MacroDecl MD) {
-    const SourceLocation Loc = (MD.m_MD)->getLocation();
+  void MacroReverter::PreVisitMacro(const Transaction::MacroDirective* MD) {
+    const SourceLocation Loc = MD->getLocation();
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
     if (!FID.isInvalid() && !m_FilesToUncache.count(FID))
       m_FilesToUncache.insert(FID);
   }
 
-  bool MacroReverter::VisitMacro(const Transaction::MacroDecl MacroD) {
+  bool DeclReverter::VisitMacro(const Transaction::MacroDirectiveInfo MacroD) {
     assert(&MacroD && "The Macro is null");
-    PreVisitMacro(MacroD);
+    PreVisitDecl(MacroD.m_MD);
 
     Preprocessor& PP = m_Sema->getPreprocessor();
-
+#ifndef NDEBUG
     bool ExistsInPP = false;
     // Make sure the macro is in the Preprocessor. Not sure if not redundant
     // because removeMacro looks for the macro anyway in the DenseMap Macros[]
@@ -776,6 +719,9 @@ namespace cling {
         break;
       }
     }
+    assert(!ExistsInPP && \
+           "Not in the Preprocessor but can delete?!");
+#endif
 
     const MacroDirective* MD = MacroD.m_MD;
     // Undef the definition
@@ -787,22 +733,11 @@ namespace cling {
     // Remove the pair from the macros
     PP.removeMacro(MacroD.m_II, MacroD.m_MD);
 
-    // ExistsInPP
-    // true          true       -> true  // In the Preprocessor Macros
-    //                                      and can delete
-    // false         true       -> assert // Not in the Preprocessor Macros
-    //                                       but can delete ?
-    assert(!ExistsInPP && \
-           "Not in the Preprocessor but can delete?!");
-
-    m_Sema->getDiagnostics().Reset();
     return true;
   }
 
   ASTNodeEraser::ASTNodeEraser(Sema* S, llvm::ExecutionEngine* EE)
-    : m_Sema(S), m_EEngine(EE) { }
-
-  ASTNodeEraser::ASTNodeEraser(Sema* S) : m_Sema(S) {
+    : m_Sema(S), m_EEngine(EE) {
   }
 
   ASTNodeEraser::~ASTNodeEraser() {
@@ -810,9 +745,6 @@ namespace cling {
 
   bool ASTNodeEraser::RevertTransaction(Transaction* T) {
     DeclReverter DeclRev(m_Sema, m_EEngine, T);
-  bool ASTNodeEraser::RevertTransaction(const Transaction* T) {
-    DeclReverter DeclRev(m_Sema, T);
-    MacroReverter MacroRev(m_Sema, T);
     bool Successful = true;
 
     for (Transaction::const_iterator I = T->decls_begin(),
@@ -830,7 +762,7 @@ namespace cling {
     for (Transaction::const_reverse_macros_iterator MI = T->rmacros_begin(),
           ME = T->rmacros_end(); MI != ME; ++MI) {
       // Get rid of the macro definition
-      Successful = MacroRev.RevertMacro(*MI) && Successful;
+      Successful = DeclRev.RevertMacro(*MI) && Successful;
     }
 #ifndef NDEBUG
         assert(Successful && "Cannot handle that yet!");

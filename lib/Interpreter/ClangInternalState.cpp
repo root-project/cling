@@ -29,8 +29,8 @@ namespace cling {
 
   ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
                                          llvm::Module& M, const std::string& name)
-    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M), m_DiffCommand("diff -u ")
-    , m_Name(name) {
+    : m_ASTContext(AC), m_Module(M), m_DiffCommand("diff -u ")
+    , m_Name(name), m_Preprocessor(PP) {
     store();
   }
 
@@ -45,8 +45,10 @@ namespace cling {
 
   void ClangInternalState::store() {
 
-    m_LookupTablesOS.reset(createOutputFile("lookup", &m_LookupTablesFile));
-    m_IncludedFilesOS.reset(createOutputFile("included", &m_IncludedFilesFile));
+    m_LookupTablesOS.reset(createOutputFile("lookup",
+                                            &m_LookupTablesFile));
+    m_IncludedFilesOS.reset(createOutputFile("included",
+                                             &m_IncludedFilesFile));
     m_ASTOS.reset(createOutputFile("ast", &m_ASTFile));
     m_LLVMModuleOS.reset(createOutputFile("module", &m_LLVMModuleFile));
     m_MacrosOS.reset(createOutputFile("macros", &m_MacrosFile));
