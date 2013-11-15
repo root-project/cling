@@ -65,6 +65,7 @@ namespace cling {
     ///\param[in] file1 - A file to diff
     ///\param[in] file2 - A file to diff
     ///\param[in] differences - The differences if any between file1 and file2
+    ///\param[in] ignores - A list of differences to ignore.
     ///\returns true if there is difference in the contents.
     ///
     bool differentContent(const std::string& file1, const std::string& file2, 
