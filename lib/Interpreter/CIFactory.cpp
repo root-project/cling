@@ -7,7 +7,6 @@
 #include "cling/Interpreter/CIFactory.h"
 
 #include "DeclCollector.h"
-#include "MacroCollectorCallback.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TargetInfo.h"
@@ -18,6 +17,7 @@
 #include "clang/Driver/Tool.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Sema/Sema.h"
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Option/ArgList.h"
@@ -69,13 +69,14 @@ namespace cling {
                                         const char* const *argv,
                                         const char* llvmdir) {
     return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv,
-                    llvmdir);
+                    llvmdir, new DeclCollector());
   }
 
   CompilerInstance* CIFactory::createCI(llvm::MemoryBuffer* buffer,
                                         int argc,
                                         const char* const *argv,
-                                        const char* llvmdir) {
+                                        const char* llvmdir,
+                                        DeclCollector* stateCollector) {
     // Create an instance builder, passing the llvmdir and arguments.
     //
     //  Initialize the llvm library.
@@ -112,7 +113,6 @@ namespace cling {
       resource_path = "";
     }
 
-    //______________________________________
     DiagnosticOptions* DefaultDiagnosticOptions = new DiagnosticOptions();
     DefaultDiagnosticOptions->ShowColors = llvm::sys::Process::StandardErrHasColors() ? 1 : 0;
     TextDiagnosticPrinter* DiagnosticPrinter
@@ -277,16 +277,20 @@ namespace cling {
                                      /*size_reserve*/0, /*DelayInit*/false);
     CI->setASTContext(Ctx);
 
+    if (stateCollector) {
+      // Add the callback keeping track of the macro definitions
+      PP.addPPCallbacks(stateCollector);
+    }
+    else 
+      stateCollector = new DeclCollector();
     // Set up the ASTConsumers
-    DeclCollector* collector = new DeclCollector();
-    CI->setASTConsumer(collector);
-
-    // Add the callback keeping track of the macro definitions
-    PP.addPPCallbacks(static_cast<PPCallbacks*>(collector));
+    CI->setASTConsumer(stateCollector);
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;
     CI->createSema(TU_Complete, CCC);
+
+    CI->takeASTConsumer(); // We transfer to ownership to the PP only
 
     // Set CodeGen options
     // CI->getCodeGenOpts().DebugInfo = 1; // want debug info

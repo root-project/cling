@@ -51,11 +51,10 @@ namespace cling {
                                        const char* llvmdir):
     m_Interpreter(interp), m_Consumer(0) {
 
-    CompilerInstance* CI
-      = CIFactory::createCI(0, argc, argv, llvmdir);
+    CompilerInstance* CI = CIFactory::createCI("", argc, argv, llvmdir);
     assert(CI && "CompilerInstance is (null)!");
 
-    m_Consumer = dyn_cast<DeclCollector>(&CI->getASTConsumer());
+    m_Consumer = dyn_cast<DeclCollector>(&CI->getSema().getASTConsumer());
     assert(m_Consumer && "Expected ChainedConsumer!");
 
     m_CI.reset(CI);

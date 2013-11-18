@@ -20,6 +20,7 @@ namespace clang {
 }
 
 namespace cling {
+  class DeclCollector;
   class CIFactory {
   public:
     // TODO: Add overload that takes file not MemoryBuffer
@@ -31,7 +32,8 @@ namespace cling {
     static clang::CompilerInstance* createCI(llvm::MemoryBuffer* buffer,
                                              int argc,
                                              const char* const *argv,
-                                             const char* llvmdir);
+                                             const char* llvmdir, 
+                                             DeclCollector* stateCollector);
   private:
     //---------------------------------------------------------------------
     //! Constructor
