@@ -29,7 +29,7 @@ namespace cling {
   /// cling::DeclCollector is responsible for appending all the declarations 
   /// seen by clang.
   ///
-  class DeclCollector: public clang::ASTConsumer, public clang::PPCallbacks {
+  class DeclCollector: public clang::PPCallbacks, public clang::ASTConsumer  {
   private:
     Transaction* m_CurTransaction;
 
@@ -69,8 +69,8 @@ namespace cling {
     /// \}
 
     /// Macro support
-    void MacroDefined (const clang::Token &MacroNameTok,
-                       const clang::MacroDirective *MD);
+    virtual void MacroDefined (const clang::Token &MacroNameTok,
+                               const clang::MacroDirective *MD);
     // dyn_cast/isa support
     static bool classof(const clang::ASTConsumer*) { return true; }
   };

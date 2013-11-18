@@ -82,9 +82,9 @@ namespace cling {
     m_CurTransaction->append(DCI);
   }
 
-  void DeclCollector::MacroDefined (const clang::Token &MacroNameTok,
-                                    const clang::MacroDirective *MD) {
-    Transaction::MacroDecl MDE(MacroNameTok.getIdentifierInfo(), MD);
+  void DeclCollector::MacroDefined(const clang::Token &MacroNameTok,
+                                   const clang::MacroDirective *MD) {
+    Transaction::MacroDirectiveInfo MDE(MacroNameTok.getIdentifierInfo(), MD);
     m_CurTransaction->append(MDE);
   }
 

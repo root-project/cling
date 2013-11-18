@@ -375,8 +375,8 @@ namespace cling {
     ///
     bool empty() const {
       return m_DeclQueue.empty() && m_DeserializedDeclQueue.empty()
-        && (!m_NestedTransactions || m_NestedTransactions->empty()
-        && m_MacroDirectiveInfoQueue.empty());
+        && (!m_NestedTransactions || m_NestedTransactions->empty())
+        && m_MacroDirectiveInfoQueue.empty();
     }
 
     ///\brief Appends a declaration group and source from which consumer 

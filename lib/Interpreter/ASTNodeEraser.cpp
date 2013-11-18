@@ -155,7 +155,7 @@ namespace cling {
     ///\param[in] MD - The MacroDecl containing the IdentifierInfo and
     ///                MacroDirective to forward.
     ///
-    void PreVisitMacro(const Transaction::MacroDirective* MD);
+    void PreVisitMacro(const clang::MacroDirective* MD);
 
     ///\brief Remove the macro from the Preprocessor.
     /// @param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
@@ -695,7 +695,7 @@ namespace cling {
     return false;
   }
 
-  void MacroReverter::PreVisitMacro(const Transaction::MacroDirective* MD) {
+  void DeclReverter::PreVisitMacro(const clang::MacroDirective* MD) {
     const SourceLocation Loc = MD->getLocation();
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
@@ -705,7 +705,7 @@ namespace cling {
 
   bool DeclReverter::VisitMacro(const Transaction::MacroDirectiveInfo MacroD) {
     assert(&MacroD && "The Macro is null");
-    PreVisitDecl(MacroD.m_MD);
+    PreVisitMacro(MacroD.m_MD);
 
     Preprocessor& PP = m_Sema->getPreprocessor();
 #ifndef NDEBUG

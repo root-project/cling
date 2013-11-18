@@ -178,6 +178,8 @@ namespace cling {
                              bool* fromJIT = 0) const;
 
     llvm::ExecutionEngine* getExecutionEngine() const {
+      if (!m_engine)
+        return 0;
       return m_engine.get();
     }
 
