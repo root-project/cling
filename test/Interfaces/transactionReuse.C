@@ -33,7 +33,7 @@ void generateNestedTransaction(int depth) {
 generateNestedTransaction(5);
 const cling::Transaction* T = gCling->getFirstTransaction();
 while(T) {
-  if (!T->size())
+  if (T->empty())
     printf("Empty transaction detected!\n");
   else if (T->getWrapperFD() && T->getWrapperFD()->getKind() != clang::Decl::Function)
     printf("Unexpected wrapper kind!\n");
