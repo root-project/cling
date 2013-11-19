@@ -290,7 +290,7 @@ namespace cling {
     CodeCompleteConsumer* CCC = 0;
     CI->createSema(TU_Complete, CCC);
 
-    CI->takeASTConsumer(); // We transfer to ownership to the PP only
+    CI->takeASTConsumer(); // Transfer to ownership to the PP only
 
     // Set CodeGen options
     // CI->getCodeGenOpts().DebugInfo = 1; // want debug info
