@@ -12,6 +12,8 @@
 #include "llvm/ADT/SmallVector.h"
 
 #include <iostream>
+#include <cstdio>
+#include <string>
 
 void printScope(const clang::DeclContext *ctxt) {
 //  llvm::raw_string_ostream OS(S);
