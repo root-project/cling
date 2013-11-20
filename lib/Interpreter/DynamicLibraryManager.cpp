@@ -147,6 +147,7 @@ namespace cling {
       llvm::SmallVector<std::string, 16>
         SearchPaths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
       GetSystemLibraryPaths(SearchPaths);
+      SearchPaths.push_back("."); // search also in the current directory
 
       findSharedLibrary(filename, SearchPaths, FoundDyLib, exists, isDyLib);
 
