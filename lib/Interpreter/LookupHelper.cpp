@@ -736,7 +736,10 @@ namespace cling {
     //
     //  Create a fake file to parse the function name.
     //
+    // FIXME:, TODO: Cleanup that complete mess.
+    ParserStateRAII ResetParserState(P);
     {
+      PP.getDiagnostics().setSuppressAllDiagnostics(true);
       llvm::MemoryBuffer* SB
            = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
                                                 + "\n", "lookup.funcname.file");
