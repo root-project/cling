@@ -867,6 +867,86 @@ namespace cling {
     // Very very ugly. TODO: Revisit and extract out as interpreter arg
     Diag.setDiagnosticMapping(clang::diag::ext_auto_type_specifier,
                               clang::diag::MAP_IGNORE, SourceLocation());
+    /*
+     In CallFunc we currently always (intentionally and somewhat necessarily)
+     always fully specify member function template, however this can lead to
+     an ambiguity with a class template.  For example in
+     roottest/cling/functionTemplate we get:
+
+     input_line_171:3:15: warning: lookup of 'set' in member access expression is ambiguous; using member of 't'
+           ((t*)obj)->set<int>(*(int*)args[0]);
+                      ^
+     /local2/pcanal/cint_working/rootcling/root/roottest/cling/functionTemplate/t.h:19:9: note: lookup in the object type 't' refers here
+           void set(T targ) {
+                ^
+     /usr/lib/gcc/x86_64-redhat-linux/4.4.5/../../../../include/c++/4.4.5/bits/stl_set.h:87:11: note: lookup from the current scope refers here
+            class set
+                  ^
+     This is an intention warning implemented in clang, see
+         http://llvm.org/viewvc/llvm-project?view=revision&revision=105518
+
+     which 'should have been' an error:
+
+     C++ [basic.lookup.classref] requires this to be an error, but,
+     because it's hard to work around, Clang downgrades it to a warning as
+     an extension.</p>
+
+     // C++98 [basic.lookup.classref]p1:
+     // In a class member access expression (5.2.5), if the . or -> token is
+     // immediately followed by an identifier followed by a <, the identifier must
+     // be looked up to determine whether the < is the beginning of a template
+     // argument list (14.2) or a less-than operator. The identifier is first
+     // looked up in the class of the object expression. If the identifier is not
+     // found, it is then looked up in the context of the entire postfix-expression
+     // and shall name a class or function template. If the lookup in the class of
+     // the object expression finds a template, the name is also looked up in the
+     // context of the entire postfix-expression and
+     // -- if the name is not found, the name found in the class of the object
+     // expression is used, otherwise
+     // -- if the name is found in the context of the entire postfix-expression
+     // and does not name a class template, the name found in the class of the
+     // object expression is used, otherwise
+     // -- if the name found is a class template, it must refer to the same
+     // entity as the one found in the class of the object expression,
+     // otherwise the program is ill-formed.
+
+     See -Wambiguous-member-template
+
+     An alternative to disabling the diagnostics is to use a method function
+     pointer:
+
+     #include <set>
+     using namespace std;
+
+     extern "C" int printf(const char*,...);
+
+     struct S {
+        template <typename T>
+        void set(T) {};
+
+        virtual void virtua() { printf("S\n"); }
+     };
+
+     struct T: public S {
+        void virtua() { printf("T\n"); }
+     };
+
+     int main() {
+        S *s = new T();
+        typedef void (S::*Func_p)(int);
+        Func_p p = &S::set<int>;
+        (s->*p)(12);
+
+        typedef void (S::*Vunc_p)(void);
+        Vunc_p q = &S::virtua;
+        (s->*q)(); // prints "T"
+        return 0;
+     }
+   */
+   Diag.setDiagnosticMapping(clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
+                              clang::diag::MAP_IGNORE, SourceLocation());
+
+
   }
 
   bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress) {
