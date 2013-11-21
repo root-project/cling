@@ -667,13 +667,8 @@ namespace cling {
     // Don't codegen statics coming in from a module; they are already part of
     // the library.
     if (const VarDecl* VD = dyn_cast<VarDecl>(D))
-      if (VD->hasGlobalStorage()) {
-        if (VD->hasInit() 
-            && VD->getInit()->isConstantInitializer(VD->getASTContext(),false))
-          return false;
-        else
-          return true;
-      }
+      if (VD->hasGlobalStorage() && !VD->getType().isConstQualified())
+        return true;
     return false;
   }
 
