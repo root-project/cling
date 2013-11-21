@@ -1503,6 +1503,4 @@ namespace cling {
                         funcName, GivenArgs, false /* objectIsConst */,
                         Context, P, S, hasFunctionSelector);
   }
-
-
 } // end namespace cling
