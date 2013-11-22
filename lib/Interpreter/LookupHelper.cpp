@@ -737,7 +737,6 @@ namespace cling {
     //  Create a fake file to parse the function name.
     //
     // FIXME:, TODO: Cleanup that complete mess.
-    ParserStateRAII ResetParserState(P);
     {
       PP.getDiagnostics().setSuppressAllDiagnostics(true);
       llvm::MemoryBuffer* SB
@@ -798,6 +797,7 @@ namespace cling {
     S.EnterDeclaratorContext(P.getCurScope(), foundDC);
 
     UnqualifiedId FuncId;
+    ParserStateRAII ResetParserState(P);
     if (!ParseWithShortcuts(foundDC,SS,funcName,P,S,FuncId)) {
       // Failed parse, cleanup.
       // Destroy the scope we created first, and
