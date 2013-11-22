@@ -388,7 +388,7 @@ namespace cling {
     for (DeclContext::lookup_iterator I = lookup.begin(), E = lookup.end();
          I != E; ++I) {
       const ValueDecl *result = dyn_cast<ValueDecl>(*I);
-      if (result)
+      if (result && !isa<FunctionDecl>(result))
         return result;
     }
 
