@@ -74,11 +74,11 @@ namespace cling {
     m_NestedTransactions->erase(m_NestedTransactions->begin() + nestedPos);
     // We need to remove the marker too.
     int markerPos = -1;
-    for (size_t i = 0; i < size(); ++i) {
-      if ((*this)[i].m_DGR.isNull() && (*this)[i].m_Call == kCCINone) {
+    for (iterator I = decls_begin(), E = decls_end(); I != E; ++I) {
+      if (I->m_DGR.isNull() && I->m_Call == kCCINone) {
         ++markerPos;
         if (nestedPos == markerPos) {
-          erase(m_DeclQueue.begin() + i);
+          erase(I); // Safe because of the break stmt.
           break;
         }
       }
@@ -296,8 +296,8 @@ namespace cling {
          I != E; ++I) {
       (*I)->printStructure(nindent + 3);
     }
-    llvm::errs() << indent << " state: " << stateNames[getState()] << ", "
-                 << size() << " decl groups, ";
+    llvm::errs() << indent << " state: " << stateNames[getState()]
+                 << " decl groups, ";
     if (hasNestedTransactions())
       llvm::errs() << m_NestedTransactions->size();
     else

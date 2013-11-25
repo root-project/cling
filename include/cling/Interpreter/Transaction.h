@@ -359,18 +359,6 @@ namespace cling {
       return m_NestedTransactions->back();
     }
 
-    ///\brief Direct access.
-    ///
-    const DelayCallInfo& operator[](size_t I) const { return m_DeclQueue[I]; }
-
-    ///\brief Direct access, non-const.
-    ///
-    DelayCallInfo& operator[](size_t I) { return m_DeclQueue[I]; }
-
-    ///\brief Returns the declaration count.
-    ///
-    size_t size() const { return m_DeclQueue.size(); }
-
     ///\brief Returns whether there are declarations in the transaction.
     ///
     bool empty() const {

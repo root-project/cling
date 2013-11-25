@@ -209,12 +209,13 @@ namespace cling {
       Initialize();
     }
 
-    // size can change in the loop!
-    for (size_t Idx = 0; Idx < getTransaction()->size(); ++Idx) {
-      // Copy DCI, might get reallocated below.
-      Transaction::DelayCallInfo I = (*getTransaction())[Idx];
-      for (DeclGroupRef::const_iterator J = I.m_DGR.begin(), 
-             JE = I.m_DGR.end(); J != JE; ++J)
+    const Transaction* T = getTransaction();
+    for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
+         I != E; ++I) {
+      // Copy DCI; it might get relocated below.
+      Transaction::DelayCallInfo DCI = *I;
+      for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(), 
+             JE = DCI.m_DGR.end(); J != JE; ++J)
         if (ShouldVisit(*J) && (*J)->hasBody()) {
           if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*J)) {
             // Set the decl context, which is needed by Evaluate.

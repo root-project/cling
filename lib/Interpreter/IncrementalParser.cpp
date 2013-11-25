@@ -291,11 +291,13 @@ namespace cling {
 
   void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) const {
     ASTContext& C = T->getASTContext();
-    for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
-      Transaction::DelayCallInfo I = (*T)[Idx];
+    for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
+         I != E; ++I) {
+      // Copy DCI; it might get relocated below.
+      Transaction::DelayCallInfo DCI = *I;
       // FIXME: implement for multiple decls in a DGR.
-      assert(I.m_DGR.isSingleDecl());
-      Decl* D = I.m_DGR.getSingleDecl();
+      assert(DCI.m_DGR.isSingleDecl());
+      Decl* D = DCI.m_DGR.getSingleDecl();
       if (!D->hasAttr<clang::UsedAttr>())
         D->addAttr(::new (D->getASTContext())
                    clang::UsedAttr(D->getSourceRange(), D->getASTContext(),
@@ -322,9 +324,10 @@ namespace cling {
 
     // Could trigger derserialization of decls.
     Transaction* deserT = beginTransaction(CompilationOptions());
-    for (size_t Idx = 0; Idx < T->size() /*can change in the loop!*/; ++Idx) {
+    for (Transaction::const_iterator TI = T->decls_begin(), TE = T->decls_end();
+         TI != TE; ++TI) {
       // Copy DCI; it might get relocated below.
-      Transaction::DelayCallInfo I = (*T)[Idx];
+      Transaction::DelayCallInfo I = *TI;
 
       if (I.m_Call == Transaction::kCCIHandleTopLevelDecl)
         getCodeGenerator()->HandleTopLevelDecl(I.m_DGR);
