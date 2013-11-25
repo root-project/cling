@@ -271,6 +271,9 @@ namespace cling {
                                      /*size_reserve*/0, /*DelayInit*/false);
     CI->setASTContext(Ctx);
 
+    //FIXME: This is bad workaround for use-cases which need only a CI to parse
+    //things, like pragmas. In that case we cannot controll the interpreter's
+    // state collector thus detach from whatever possible.
     if (stateCollector) {
       // Add the callback keeping track of the macro definitions
       PP.addPPCallbacks(stateCollector);
