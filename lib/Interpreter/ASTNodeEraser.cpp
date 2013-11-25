@@ -719,8 +719,7 @@ namespace cling {
         break;
       }
     }
-    assert(!ExistsInPP && \
-           "Not in the Preprocessor but can delete?!");
+    assert(ExistsInPP && "Not in the Preprocessor?!");
 #endif
 
     const MacroDirective* MD = MacroD.m_MD;
