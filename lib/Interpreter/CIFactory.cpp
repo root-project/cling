@@ -237,31 +237,25 @@ namespace cling {
                                           /*UserFilesAreVolatile*/ true); 
     CI->setSourceManager(SM); // FIXME: SM leaks.
 
-    // Set up the memory buffer
-    if (buffer)
-      CI->getSourceManager().createMainFileIDForMemBuffer(buffer);
-    else {
-      // As main file we want
-      // * a virtual file that is claiming to be huge 
-      // * with an empty memory buffer attached (to bring the content)
-      SourceManager& SM = CI->getSourceManager();
-      FileManager& FM = SM.getFileManager();
-      // Build the virtual file
-      const char* Filename = "InteractiveInputLineIncluder.h";
-      const std::string& CGOptsMainFileName
-        = CI->getInvocation().getCodeGenOpts().MainFileName;
-      if (!CGOptsMainFileName.empty())
-        Filename = CGOptsMainFileName.c_str();
-      const FileEntry* FE
-        = FM.getVirtualFile(Filename, 1U << 15U, time(0));
-      FileID MainFileID = SM.createMainFileID(FE, SrcMgr::C_User);
-      const SrcMgr::SLocEntry& MainFileSLocE = SM.getSLocEntry(MainFileID);
-      const SrcMgr::ContentCache* MainFileCC
-        = MainFileSLocE.getFile().getContentCache();
-      llvm::MemoryBuffer* MainFileMB
-        = llvm::MemoryBuffer::getMemBuffer("/*CLING MAIN FILE*/\n");
-      const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(MainFileMB);
-    }
+    // As main file we want
+    // * a virtual file that is claiming to be huge 
+    // * with an empty memory buffer attached (to bring the content)
+    FileManager& FM = SM->getFileManager();
+    // Build the virtual file
+    const char* Filename = "InteractiveInputLineIncluder.h";
+    const std::string& CGOptsMainFileName
+      = CI->getInvocation().getCodeGenOpts().MainFileName;
+    if (!CGOptsMainFileName.empty())
+      Filename = CGOptsMainFileName.c_str();
+    const FileEntry* FE
+      = FM.getVirtualFile(Filename, 1U << 15U, time(0));
+    FileID MainFileID = SM->createMainFileID(FE, SrcMgr::C_User);
+    const SrcMgr::SLocEntry& MainFileSLocE = SM->getSLocEntry(MainFileID);
+    const SrcMgr::ContentCache* MainFileCC
+      = MainFileSLocE.getFile().getContentCache();
+    if (!buffer)
+      buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/\n");
+    const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(buffer);
 
     // Set up the preprocessor
     CI->createPreprocessor();
