@@ -29,8 +29,8 @@ namespace cling {
 
   ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
                                          llvm::Module& M, const std::string& name)
-    : m_ASTContext(AC), m_Module(M), m_DiffCommand("diff -u ")
-    , m_Name(name), m_Preprocessor(PP) {
+    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M), 
+      m_DiffCommand("diff -u "), m_Name(name) {
     store();
   }
 
