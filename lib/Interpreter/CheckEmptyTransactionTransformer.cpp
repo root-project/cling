@@ -18,12 +18,6 @@ using namespace clang;
 namespace cling {
   void CheckEmptyTransactionTransformer::Transform() {
     Transaction* T = getTransaction();
-    // If there is more than a wrapper exit early. There might be an empty 
-    // nested transction, because of the static inits.
-    //if (!((T->hasNestedTransactions() && (*T->nested_begin())->empty() && 
-    //      T->size() == 2) || T->size() == 1))
-    //  return;
-
     if (FunctionDecl* FD = T->getWrapperFD()) {
       CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
       if (!CS->size() || (CS->size() == 1 && isa<NullStmt>(CS->body_back()))) {
