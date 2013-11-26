@@ -42,8 +42,8 @@ namespace cling {
     std::string m_ASTFile;
     std::string m_LLVMModuleFile;
     std::string m_MacrosFile;
-    clang::Preprocessor& m_Preprocessor;
     clang::ASTContext& m_ASTContext;
+    clang::Preprocessor& m_Preprocessor;
     llvm::Module& m_Module;
     std::string m_DiffCommand;
     std::string m_Name;

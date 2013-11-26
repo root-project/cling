@@ -704,7 +704,7 @@ namespace cling {
   }
 
   bool DeclReverter::VisitMacro(const Transaction::MacroDirectiveInfo MacroD) {
-    assert(&MacroD && "The Macro is null");
+    assert(MacroD && "The Macro is null");
     PreVisitMacro(MacroD.m_MD);
 
     Preprocessor& PP = m_Sema->getPreprocessor();
