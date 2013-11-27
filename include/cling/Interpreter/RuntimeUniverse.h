@@ -25,6 +25,11 @@
 struct __float128;
 #endif
 
+#ifdef _LIBCPP_EXTERN_TEMPLATE
+#undef _LIBCPP_EXTERN_TEMPLATE
+#define _LIBCPP_EXTERN_TEMPLATE(...)
+#endif
+
 #include "cling/Interpreter/RuntimeException.h"
 
 namespace cling {
