@@ -412,17 +412,29 @@ namespace cling {
   }
 
   bool DeclReverter::VisitVarDecl(VarDecl* VD) {
+    // Cleanup the module if the transaction was committed and code was 
+    // generated. This has to go first, because it may need the AST information
+    // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
+    GlobalDecl GD(VD);
+    RemoveDeclFromModule(GD);
+
     // VarDecl : DeclaratiorDecl, Redeclarable
     bool Successful = VisitRedeclarable(VD, VD->getDeclContext());
     Successful &= VisitDeclaratorDecl(VD);
 
-    //If the transaction was committed we need to cleanup the execution engine.
-    GlobalDecl GD(VD);
-    RemoveDeclFromModule(GD);
     return Successful;
   }
 
   bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
+    // The Structors need to be handled differently.
+    if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
+      // Cleanup the module if the transaction was committed and code was 
+      // generated. This has to go first, because it may need the AST info
+      // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
+      GlobalDecl GD(FD);
+      RemoveDeclFromModule(GD);
+    }
+
     // FunctionDecl : DeclaratiorDecl, DeclContext, Redeclarable
     bool Successful = VisitRedeclarable(FD, FD->getDeclContext());
     Successful &= VisitDeclContext(FD);
@@ -475,20 +487,13 @@ namespace cling {
                                          CanFD->getTemplateSpecializationInfo());
     }
 
-
-    // The Structors need to be handled differently.
-    if (isa<CXXConstructorDecl>(FD) || isa<CXXDestructorDecl>(FD))
-      return Successful;
-    //If the transaction was committed we need to cleanup the execution engine.
-
-    GlobalDecl GD(FD);
-    RemoveDeclFromModule(GD);
-
     return Successful;
   }
 
   bool DeclReverter::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
-    bool Successful = VisitCXXMethodDecl(CXXCtor);
+    // Cleanup the module if the transaction was committed and code was 
+    // generated. This has to go first, because it may need the AST information
+    // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
 
     // Brute-force all possibly generated ctors.
     // Ctor_Complete            Complete object ctor.
@@ -500,6 +505,8 @@ namespace cling {
     RemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXCtor, Ctor_CompleteAllocating);
     RemoveDeclFromModule(GD);
+
+    bool Successful = VisitCXXMethodDecl(CXXCtor);
     return Successful;
   }
 
