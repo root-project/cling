@@ -91,6 +91,12 @@ namespace cling {
   void Transaction::reset() {
     assert((empty() || getState() == kRolledBack) 
            && "The transaction must be empty.");
+    // When we unload we want to clear the containers.
+    if (!empty()) {
+      m_DeserializedDeclQueue.clear();
+      m_DeclQueue.clear();
+      m_MacroDirectiveInfoQueue.clear();
+    }
     if (Transaction* parent = getParent())
       parent->removeNestedTransaction(this);
     m_Parent = 0;
@@ -102,7 +108,6 @@ namespace cling {
     m_WrapperFD = 0;
     m_Next = 0;
   }
-
  
   void Transaction::append(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
