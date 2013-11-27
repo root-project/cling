@@ -43,7 +43,8 @@ namespace cling {
   Transaction::~Transaction() {
     if (hasNestedTransactions())
       for (size_t i = 0; i < m_NestedTransactions->size(); ++i) {
-        assert((*m_NestedTransactions)[i]->getState() == kCommitted 
+        assert(((*m_NestedTransactions)[i]->getState() == kCommitted 
+                || (*m_NestedTransactions)[i]->getState() == kRolledBack)
                && "All nested transactions must be committed!");
         delete (*m_NestedTransactions)[i];
       }
