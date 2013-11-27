@@ -717,8 +717,9 @@ namespace cling {
     bool ExistsInPP = false;
     // Make sure the macro is in the Preprocessor. Not sure if not redundant
     // because removeMacro looks for the macro anyway in the DenseMap Macros[]
-    for (Preprocessor::macro_iterator I = PP.macro_begin(), E = PP.macro_end();
-         E !=I; ++I) {
+    for (Preprocessor::macro_iterator 
+           I = PP.macro_begin(/*IncludeExternalMacros*/false), 
+           E = PP.macro_end(/*IncludeExternalMacros*/false); E !=I; ++I) {
       if ((*I).first == MacroD.m_II && (*I).second == MacroD.m_MD) {
         ExistsInPP = true;
         break;
