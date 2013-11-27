@@ -256,6 +256,10 @@ namespace cling {
         for(unsigned i = PrevDecls.size() - 1; i > 0; --i) {
           PrevDecls[i-1]->setPreviousDeclaration(PrevDecls[i]);
         }
+        // Set the previous decl of the removed decl to point to the first 
+        // in the new chain. This is helpful when R is a DeclContext we call
+        // mangle, which does iteration over the redecl chain.
+        R->setPreviousDeclaration(PrevDecls.front());
       }
       return true;
     }
