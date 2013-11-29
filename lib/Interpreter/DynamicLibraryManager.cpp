@@ -16,6 +16,7 @@
 
 #ifdef WIN32
 #include <Windows.h>
+#include <shlobj.h>
 #else
 #include <limits.h> /* PATH_MAX */
 #include <dlfcn.h>
@@ -40,8 +41,7 @@ namespace cling {
 #elif defined(LLVM_ON_UNIX)
         Magic == file_magic::elf_shared_object
 #elif defined(LLVM_ON_WIN32)
-# error "Windows DLLs  not yet implemented!"
-        //Magic == file_magic::pecoff_executable?
+		(Magic == file_magic::pecoff_executable)
 #else
 # error "Unsupported platform."
 #endif
@@ -184,7 +184,7 @@ namespace cling {
     assert(!FoundDyLib.empty() && "The shared lib exists but can't find it!");
 
     // get canonical path name and check if already loaded
-#ifdef WIN32
+#if defined(LLVM_ON_WIN32)
     llvm::SmallString<_MAX_PATH> FullPath("");
     char *res = _fullpath((char *)FullPath.data(), FoundDyLib.c_str(), _MAX_PATH);
 #else
@@ -199,14 +199,14 @@ namespace cling {
     if (m_loadedLibraries.find(FullPath) != m_loadedLibraries.end())
       return kLoadLibExists;
 
-    // TODO: !permanent case
-#ifdef WIN32
-# error "Windows DLL opening still needs to be implemented!"
-    void* dyLibHandle = needs to be implemented!;
     std::string errMsg;
+    // TODO: !permanent case
+#if defined(LLVM_ON_WIN32)
+    HMODULE dyLibHandle = LoadLibraryEx(FullPath.c_str(), NULL, DONT_RESOLVE_DLL_REFERENCES);
+    errMsg = "LoadLibraryEx: GetLastError() returned ";
+    errMsg += GetLastError();
 #else
     const void* dyLibHandle = dlopen(FullPath.c_str(), RTLD_LAZY|RTLD_GLOBAL);
-    std::string errMsg;
     if (const char* DyLibError = dlerror()) {
       errMsg = DyLibError;
     }
@@ -259,7 +259,7 @@ namespace cling {
   bool
   DynamicLibraryManager::isDynamicLibraryLoaded(llvm::StringRef fullPath) const {
     // get canonical path name and check if already loaded
-#ifdef WIN32
+#if defined(LLVM_ON_WIN32)
     char buf[_MAX_PATH];
     char *res = _fullpath(buf, fullPath.str().c_str(), _MAX_PATH);
 #else
