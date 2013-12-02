@@ -686,6 +686,8 @@ namespace utils {
     bool fullyQualifyType,
     bool fullyQualifyTmpltArg)                                                
   {
+    if (QT.isNull())
+      return QT;
     // If there are no constraints, then use the standard desugaring.
     if (TypeConfig.empty() && !fullyQualifyType && !fullyQualifyTmpltArg)
       return QT.getDesugaredType(Ctx);
