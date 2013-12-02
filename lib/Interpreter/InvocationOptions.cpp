@@ -55,6 +55,7 @@ namespace {
 
   static void ParseStartupOpts(cling::InvocationOptions& Opts,
                                InputArgList& Args /* , Diags */) {
+    Opts.ErrorOut = Args.hasArg(OPT__errorout);
     Opts.NoLogo = Args.hasArg(OPT__nologo);
     Opts.ShowVersion = Args.hasArg(OPT_version);
     Opts.Verbose = Args.hasArg(OPT_v);

@@ -458,6 +458,8 @@ namespace cling {
   void IncrementalParser::rollbackTransaction(Transaction* T) const {
     assert(T->getIssuedDiags() == Transaction::kErrors 
            && "Rolling back with no errors");
+    if (m_Interpreter->getOptions().ErrorOut)
+      return;
     ASTNodeEraser NodeEraser(&getCI()->getSema(),
                              m_Interpreter->getExecutionEngine());
 

@@ -421,7 +421,8 @@ namespace cling {
     return getCI()->getSema();
   }
 
-   llvm::ExecutionEngine* Interpreter::getExecutionEngine() const {
+  llvm::ExecutionEngine* Interpreter::getExecutionEngine() const {
+    if (!m_ExecutionContext) return 0;
     return m_ExecutionContext->getExecutionEngine();
   }
 
