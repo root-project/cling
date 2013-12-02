@@ -1036,6 +1036,7 @@ namespace utils {
     DeclarationName DName = &S->Context.Idents.get(Name);
     LookupResult R(*S, DName, SourceLocation(),
                    Sema::LookupNestedNameSpecifierName);
+    R.suppressDiagnostics();
     if (!Within)
       S->LookupName(R, S->TUScope);
     else
@@ -1059,6 +1060,7 @@ namespace utils {
                            const DeclContext* Within) {
     LookupResult R(*S, Name, SourceLocation(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
+    R.suppressDiagnostics();
     if (!Within)
       S->LookupName(R, S->TUScope);
     else

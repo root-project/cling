@@ -826,6 +826,7 @@ namespace cling {
     SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
     LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName,
                         Sema::NotForRedeclaration);
+    Result.suppressDiagnostics();
     if (!S.LookupQualifiedName(Result, foundDC)) {
       // Lookup failed.
       // Destroy the scope we created first, and
