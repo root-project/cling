@@ -254,10 +254,6 @@ namespace cling {
 
   void ClangInternalState::printMacroDefinitions(llvm::raw_ostream& Out,
                             clang::Preprocessor& PP) {
-    for (clang::Preprocessor::macro_iterator I = PP.macro_begin(),
-         E = PP.macro_end(); I != E; ++I) {
-      const MacroInfo* MI = (*I).second->getMacroInfo();
-      PP.printMacro(*MI, Out);
-    }
+    PP.printMacros(Out);
   }
 } // end namespace cling
