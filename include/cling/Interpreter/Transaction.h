@@ -88,8 +88,7 @@ namespace cling {
                          const clang::MacroDirective* MD)
                 : m_II(II), m_MD(MD) {}
       inline bool operator==(const MacroDirectiveInfo& rhs) {
-        return m_II == rhs.m_II
-          && m_MD == rhs.m_MD;
+        return m_II == rhs.m_II && m_MD == rhs.m_MD;
       }
       inline bool operator!=(const MacroDirectiveInfo& rhs) {
         return !operator==(rhs);
