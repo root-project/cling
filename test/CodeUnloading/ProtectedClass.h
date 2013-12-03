@@ -1,0 +1,6 @@
+#ifndef PROTECTED_TRIVIAL_CLASS
+#define PROTECTED_TRIVIAL_CLASS
+class Trivial {
+
+};
+#endif // PROTECTED_TRIVIAL_CLASS
