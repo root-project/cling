@@ -338,6 +338,8 @@ namespace cling {
     bool Successful = VisitDecl(ND);
 
     DeclContext* DC = ND->getDeclContext();
+    while (DC->isTransparentContext())
+      DC = DC->getLookupParent();
 
     // if the decl was anonymous we are done.
     if (!ND->getIdentifier())
