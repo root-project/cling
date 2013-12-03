@@ -10,6 +10,7 @@
 #include "cling/Interpreter/CompilationOptions.h"
 
 #include "clang/AST/DeclGroup.h"
+#include "clang/Basic/SourceLocation.h"
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
@@ -152,6 +153,11 @@ namespace cling {
     ///\brief All seen macros.
     ///
     MacroDirectiveInfoQueue m_MacroDirectiveInfoQueue;
+
+    ///\brief The FileID for the top-most memory buffer that started the 
+    /// transaction.
+    ///
+    clang::FileID m_BufferFID;
 
   public:
 
@@ -419,6 +425,9 @@ namespace cling {
     const clang::ASTContext& getASTContext() const {
       return m_ASTContext;
     }
+
+    void setBufferFID(clang::FileID FID) { m_BufferFID = FID; }
+    clang::FileID getBufferFID() const { return m_BufferFID; }
 
     ///\brief Erases an element at given position.
     ///

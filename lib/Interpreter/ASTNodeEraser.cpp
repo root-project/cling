@@ -70,14 +70,13 @@ namespace cling {
     ///
     bool RevertDecl(Decl* D) { return Visit(D); }
 
-    ///\brief Function that contains common actions, done for every removal of
-    /// declaration.
+    ///\brief Function that collects the files which we must reread from disk.
     ///
-    /// For example: We must uncache the cached include, which brought that
-    /// declaration in the AST.
+    /// For example: We must uncache the cached include, which brought a
+    /// declaration or a macro diretive definition in the AST.
     ///\param[in] D - A declaration.
     ///
-    void PreVisitDecl(Decl* D);
+    void CollectFilesToUncache(SourceLocation Loc);
 
     ///\brief If it falls back in the base class just remove the declaration
     /// only from the declaration context.
@@ -146,16 +145,6 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitTagDecl(TagDecl* TD);
-
-    ///\brief Function that contains common actions, done for every removal of
-    /// macro.
-    ///
-    /// For example: We must uncache the cached include, which brought that
-    /// declaration in the AST.
-    ///\param[in] MD - The MacroDecl containing the IdentifierInfo and
-    ///                MacroDirective to forward.
-    ///
-    void PreVisitMacro(const clang::MacroDirective* MD);
 
     ///\brief Remove the macro from the Preprocessor.
     /// @param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
@@ -285,11 +274,11 @@ namespace cling {
     m_Sema->PendingLocalImplicitInstantiations.clear();
   }
 
-  void DeclReverter::PreVisitDecl(Decl *D) {
-    const SourceLocation Loc = D->getLocStart();
+  void DeclReverter::CollectFilesToUncache(SourceLocation Loc) {
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
-    if (!FID.isInvalid() && !m_FilesToUncache.count(FID)) 
+    if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID()
+        && !m_FilesToUncache.count(FID)) 
       m_FilesToUncache.insert(FID);
   }
 
@@ -320,7 +309,7 @@ namespace cling {
 
   bool DeclReverter::VisitDecl(Decl* D) {
     assert(D && "The Decl is null");
-    PreVisitDecl(D);
+    CollectFilesToUncache(D->getLocStart());
 
     DeclContext* DC = D->getLexicalDeclContext();
 
@@ -702,18 +691,10 @@ namespace cling {
     return false;
   }
 
-  void DeclReverter::PreVisitMacro(const clang::MacroDirective* MD) {
-    const SourceLocation Loc = MD->getLocation();
-    const SourceManager& SM = m_Sema->getSourceManager();
-    FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
-    if (!FID.isInvalid() && !m_FilesToUncache.count(FID))
-      m_FilesToUncache.insert(FID);
-  }
-
   bool DeclReverter::VisitMacro(const Transaction::MacroDirectiveInfo MacroD) {
     assert(MacroD.m_MD && "The MacroDirective is null");
     assert(MacroD.m_II && "The IdentifierInfo is null");
-    PreVisitMacro(MacroD.m_MD);
+    CollectFilesToUncache(MacroD.m_MD->getLocation());
 
     Preprocessor& PP = m_Sema->getPreprocessor();
 #ifndef NDEBUG
@@ -723,7 +704,9 @@ namespace cling {
     for (Preprocessor::macro_iterator 
            I = PP.macro_begin(/*IncludeExternalMacros*/false), 
            E = PP.macro_end(/*IncludeExternalMacros*/false); E !=I; ++I) {
-      if ((*I).first == MacroD.m_II && (*I).second == MacroD.m_MD) {
+      if ((*I).first == MacroD.m_II) {
+        // FIXME:check whether we have the concrete directive on the macro chain
+        // && (*I).second == MacroD.m_MD
         ExistsInPP = true;
         break;
       }
@@ -739,7 +722,7 @@ namespace cling {
     if (MI == 0) return false;
 
     // Remove the pair from the macros
-    PP.removeMacro(MacroD.m_II, MacroD.m_MD);
+    PP.removeMacro(MacroD.m_II, const_cast<MacroDirective*>(MacroD.m_MD));
 
     return true;
   }

@@ -594,6 +594,7 @@ namespace cling {
                                              /*LoadedOffset*/0, NewLoc);
 
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
+    m_Consumer->getTransaction()->setBufferFID(FID);
 
     Parser::DeclGroupPtrTy ADecl;
 
@@ -650,7 +651,7 @@ namespace cling {
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
     if (callbacks)
       callbacks->TransactionUnloaded(*T);
-    m_TransactionPool->releaseTransaction(T);
+    //m_TransactionPool->releaseTransaction(T);
   }
 
   void IncrementalParser::printTransactionStructure() const {

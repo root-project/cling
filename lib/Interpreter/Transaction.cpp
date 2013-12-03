@@ -38,6 +38,7 @@ namespace cling {
     m_WrapperFD = 0;
     m_Next = 0;
     //m_ASTContext = C;
+    m_BufferFID = FileID(); // sets it to invalid.
   }
 
   Transaction::~Transaction() {
