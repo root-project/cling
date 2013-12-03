@@ -347,8 +347,7 @@ namespace cling {
 
      // If the decl was removed make sure that we fix the lookup
     if (Successful) {
-      Scope* S = m_Sema->getScopeForContext(DC);
-      if (S)
+      if (Scope* S = m_Sema->getScopeForContext(DC))
         S->RemoveDecl(ND);
 
       if (isOnScopeChains(ND))
