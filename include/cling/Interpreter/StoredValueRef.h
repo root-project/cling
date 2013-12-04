@@ -38,6 +38,9 @@ namespace cling {
       /// of our type
       long long getAllocSizeInBytes() const;
 
+      /// \brief Interpreter reference used to destruct the object.
+      Interpreter& m_Interp;
+
       /// \brief Memory allocated for value, owned by this value
       ///
       /// Points to memory allocated for storing the value, if it
@@ -48,10 +51,7 @@ namespace cling {
       ///
       /// Can be pointed-to by m_Mem to avoid extra memory allocation for
       /// small values.
-      char m_Buf[80]; // increases sizeof(*this) from 48->128
-
-      /// \brief Interpreter reference used to destruct the object.
-      Interpreter& m_Interp;
+      char m_Buf[72]; // increases sizeof(*this) from 48->128
     };
 
     llvm::IntrusiveRefCntPtr<StoredValue> m_Value;

@@ -20,7 +20,7 @@ using namespace llvm;
 StoredValueRef::StoredValue::StoredValue(Interpreter& interp,
                                          QualType clangTy, 
                                          const llvm::Type* llvm_Ty)
-  : Value(GenericValue(), clangTy, llvm_Ty), m_Mem(0), m_Interp(interp) {
+  : Value(GenericValue(), clangTy, llvm_Ty), m_Interp(interp), m_Mem(0){
   if (clangTy->isIntegralOrEnumerationType() ||
       clangTy->isRealFloatingType() ||
       clangTy->hasPointerRepresentation()) {
