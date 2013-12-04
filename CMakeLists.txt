@@ -109,7 +109,7 @@ macro(add_cling_library name)
     if(NOT cflag)
       set(cflag "")
     endif(NOT cflag)
-    set(cflag "${cflag} ")
+    set(cflag "${cflag} /Za")
     set_target_properties(${name} PROPERTIES COMPILE_FLAGS ${cflag})
   endif(MSVC)
   install(TARGETS ${name}

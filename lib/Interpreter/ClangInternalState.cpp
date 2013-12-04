@@ -23,11 +23,6 @@
 #include <string>
 #include <time.h>
 
-#ifdef WIN32
-#define popen _popen
-#define pclose _pclose
-#endif
-
 using namespace clang;
 
 namespace cling {
