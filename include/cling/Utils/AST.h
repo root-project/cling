@@ -233,7 +233,7 @@ namespace utils {
     CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
                               const clang::TagDecl *TD, bool FullyQualify);
 
-  }; // end namespace TypeName
+  } // end namespace TypeName
 } // end namespace utils
 } // end namespace cling
 #endif // CLING_UTILS_AST_H
