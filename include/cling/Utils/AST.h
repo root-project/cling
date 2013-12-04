@@ -227,9 +227,12 @@ namespace utils {
     ///\param[in] Ctx - the AST Context to be used.
     ///\param[in] TD - the TagDecl for which a NestedNameSpecifier is
     /// requested.
+    ///\param[in] FullyQualify - Convert all template arguments into fully
+    /// qualified names.
     clang::NestedNameSpecifier*
     CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
-                              const clang::TagDecl *TD);
+                              const clang::TagDecl *TD, bool FullyQualify);
+
   }; // end namespace TypeName
 } // end namespace utils
 } // end namespace cling

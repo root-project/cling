@@ -242,14 +242,15 @@ namespace utils {
   }
 
   static NestedNameSpecifier* CreateOuterNNS(const ASTContext& Ctx,
-                                             const Decl* D) {
+                                             const Decl* D,
+                                             bool FullyQualify) {
     const DeclContext* DC = D->getDeclContext();
     if (const NamespaceDecl* NS = dyn_cast<NamespaceDecl>(DC)) {
       if (NS->getDeclName())
         return TypeName::CreateNestedNameSpecifier(Ctx, NS);
       return 0; // no starting '::'
     } else if (const TagDecl* TD = dyn_cast<TagDecl>(DC)) {
-      return TypeName::CreateNestedNameSpecifier(Ctx, TD);
+      return TypeName::CreateNestedNameSpecifier(Ctx, TD, FullyQualify);
     }
     return 0; // no starting '::'    
   }
@@ -328,7 +329,8 @@ namespace utils {
         }
         TagDecl *tdecl = dyn_cast<TagDecl>(idecl);
         if (tdecl) {
-          return TypeName::CreateNestedNameSpecifier(Ctx,tdecl);
+          return TypeName::CreateNestedNameSpecifier(Ctx, tdecl,
+                                                     true /*FullyQualified*/);
         }
       }
     }
@@ -387,7 +389,8 @@ namespace utils {
           } else {
             const TagDecl *tdecl = dyn_cast<TagDecl>(declContext);
             if (tdecl) {
-              prefix = TypeName::CreateNestedNameSpecifier(Ctx,tdecl);
+              prefix = TypeName::CreateNestedNameSpecifier(Ctx, tdecl,
+                                                      false /*FullyQualified*/);
             }
           }
         } else {
@@ -396,7 +399,8 @@ namespace utils {
           // It could also be a CXXMethod for example.
           const TagDecl *tdecl = dyn_cast<TagDecl>(declContext);
           if (tdecl) {
-            prefix = TypeName::CreateNestedNameSpecifier(Ctx,tdecl);
+            prefix = TypeName::CreateNestedNameSpecifier(Ctx,tdecl,
+                                                      false /*FullyQualified*/);
           }
         }
       }
@@ -925,7 +929,8 @@ namespace utils {
               // It could also be a CXXMethod for example.
               TagDecl *tdecl = dyn_cast<TagDecl>(outer);
               if (tdecl) {
-                prefix = TypeName::CreateNestedNameSpecifier(Ctx,tdecl);
+                prefix = TypeName::CreateNestedNameSpecifier(Ctx,tdecl,
+                                                      false /*FullyQualified*/);
                 prefix = GetPartiallyDesugaredNNS(Ctx,prefix,TypeConfig);
               }
             }
@@ -1117,7 +1122,8 @@ namespace utils {
 
   static NestedNameSpecifier*
   CreateNestedNameSpecifierForScopeOf(const ASTContext& Ctx,
-                                      const Type *TypePtr)
+                                      const Type *TypePtr,
+                                      bool FullyQualified)
   {
     // Create a nested name specifier for the declaring context of the type.
 
@@ -1168,7 +1174,8 @@ namespace utils {
         return TypeName::CreateNestedNameSpecifier(Ctx,outer_ns);
       } else {
         assert(llvm::isa<TagDecl>(outer) && "not in namespace of TagDecl");
-        return TypeName::CreateNestedNameSpecifier(Ctx, llvm::dyn_cast<TagDecl>(outer));
+        return TypeName::CreateNestedNameSpecifier(Ctx, llvm::dyn_cast<TagDecl>(outer),
+                                                   FullyQualified);
       }
     }
     return 0;
@@ -1201,7 +1208,8 @@ namespace utils {
         // Do we need to make one up?
 
         // NOTE: Should check whether the type has changed or not.
-        outer_scope = CreateNestedNameSpecifierForScopeOf(Ctx,scope_type);
+        outer_scope = CreateNestedNameSpecifierForScopeOf(Ctx,scope_type,
+                                                       true /*FullyQualified*/);
         return clang::NestedNameSpecifier::Create(Ctx,outer_scope,
                                                   false /* template keyword wanted */,
                                                   scope_type);
@@ -1214,20 +1222,25 @@ namespace utils {
   NestedNameSpecifier*
   TypeName::CreateNestedNameSpecifier(const ASTContext& Ctx,
                                       const NamespaceDecl* Namesp) {
-    return NestedNameSpecifier::Create(Ctx, CreateOuterNNS(Ctx, Namesp), Namesp);
+    bool FullyQualified = true; // doesn't matter, DeclContexts are namespaces
+    return NestedNameSpecifier::Create(Ctx, CreateOuterNNS(Ctx, Namesp,
+                                                           FullyQualified),
+                                       Namesp);
   }
   
   NestedNameSpecifier*
   TypeName::CreateNestedNameSpecifier(const ASTContext& Ctx,
-                                      const TagDecl *TD) {
-    const Type* QT
-      = GetFullyQualifiedLocalType(Ctx, Ctx.getTypeDeclType(TD).getTypePtr());
-    return NestedNameSpecifier::Create(Ctx, CreateOuterNNS(Ctx, TD),
+                                      const TagDecl *TD, bool FullyQualify) {
+    const Type* Ty
+      = Ctx.getTypeDeclType(TD).getTypePtr();
+    if (FullyQualify)
+      Ty = GetFullyQualifiedLocalType(Ctx, Ty);
+    return NestedNameSpecifier::Create(Ctx,
+                                       CreateOuterNNS(Ctx, TD, FullyQualify),
                                        false /* template keyword wanted */,
-                                       QT);
+                                       Ty);
   }
   
-
   QualType
   TypeName::GetFullyQualifiedType(QualType QT, const ASTContext& Ctx) {
     // Return the fully qualified type, if we need to recurse through any
@@ -1285,7 +1298,8 @@ namespace utils {
 
       // Create a nested name specifier if needed (i.e. if the decl context
       // is not the global scope.
-      prefix = CreateNestedNameSpecifierForScopeOf(Ctx,QT.getTypePtr());
+      prefix = CreateNestedNameSpecifierForScopeOf(Ctx,QT.getTypePtr(),
+                                                   true /*FullyQualified*/);
 
       // move the qualifiers on the outer type (avoid 'std::const string'!)
       if (prefix) {
