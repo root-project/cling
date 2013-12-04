@@ -39,7 +39,11 @@ namespace cling {
          || Magic == file_magic::macho_dynamically_linked_shared_lib
          || Magic == file_magic::macho_dynamically_linked_shared_lib_stub)
 #elif defined(LLVM_ON_UNIX)
+#ifdef __CYGWIN__
+        Magic == file_magic::pecoff_executable
+#else
         Magic == file_magic::elf_shared_object
+#endif
 #elif defined(LLVM_ON_WIN32)
 		(Magic == file_magic::pecoff_executable)
 #else
