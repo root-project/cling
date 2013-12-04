@@ -10,23 +10,33 @@
 #include "cling/Interpreter/Value.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 
+namespace clang {
+  class CXXRecordDecl;
+}
+
 namespace cling {
+  class Interpreter;
   ///\brief A type, value pair.
   //
   /// Reference counted wrapper around a cling::Value with storage allocation.
   class StoredValueRef {
   private:
     class StoredValue: public Value, public llvm::RefCountedBase<StoredValue> {
+    private:
+      /// \brief Destruct the object stored by this value.
+      void Destruct();
+      /// \brief Get the function address of the wrapper of the destructor.
+      void* GetDtorWrapperPtr(clang::CXXRecordDecl* CXXRD);
     public:
       /// \brief Construct a valid StoredValue, allocating as needed.
-      StoredValue(const clang::ASTContext&, clang::QualType clangTy, 
+      StoredValue(Interpreter& interp, clang::QualType clangTy,
                   const llvm::Type* llvmTy);
       /// \brief Destruct and deallocate if necessary.
       ~StoredValue();
 
       /// \brief Number of bytes that need to be allocated to hold a value
       /// of our type
-      long long getAllocSizeInBytes(const clang::ASTContext& ctx) const;
+      long long getAllocSizeInBytes() const;
 
       /// \brief Memory allocated for value, owned by this value
       ///
@@ -39,6 +49,9 @@ namespace cling {
       /// Can be pointed-to by m_Mem to avoid extra memory allocation for
       /// small values.
       char m_Buf[80]; // increases sizeof(*this) from 48->128
+
+      /// \brief Interpreter reference used to destruct the object.
+      Interpreter& m_Interp;
     };
 
     llvm::IntrusiveRefCntPtr<StoredValue> m_Value;
@@ -47,15 +60,14 @@ namespace cling {
 
   public:
     /// \brief Allocate an object of type t and return a StoredValueRef to it.
-    static StoredValueRef allocate(const clang::ASTContext& ctx,
+    static StoredValueRef allocate(Interpreter& interp,
                                    clang::QualType t, const llvm::Type* llvmTy);
     /// \brief Create a bitwise copy of value wrapped in a StoredValueRef.
-    static StoredValueRef bitwiseCopy(const clang::ASTContext& ctx,
-                                      const Value& value);
+    static StoredValueRef bitwiseCopy(Interpreter& interp, const Value& value);
     /// \brief Create a bitwise copy of svalue.
-    static StoredValueRef bitwiseCopy(const clang::ASTContext& ctx,
+    static StoredValueRef bitwiseCopy(Interpreter& interp,
                                       const StoredValueRef svalue) {
-      return bitwiseCopy(ctx, *svalue.m_Value);
+      return bitwiseCopy(interp, *svalue.m_Value);
     }
 
     /// \brief Creates an invalid value.
@@ -74,7 +86,7 @@ namespace cling {
     Value& get() { return *m_Value; }
 
     /// \brief Dump the referenced value.
-    void dump(clang::ASTContext& ctx) const;
+    void dump() const;
   };
 } // end namespace cling
 
