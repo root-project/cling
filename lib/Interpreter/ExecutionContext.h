@@ -1,6 +1,5 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id$
 // author:  Axel Naumann <axel@cern.ch>
 //------------------------------------------------------------------------------
 
@@ -34,6 +33,7 @@ namespace cling {
   } // end namespace runtime
 
   class StoredValueRef;
+  class Interpreter;
 
   class ExecutionContext {
   public:
@@ -137,7 +137,7 @@ namespace cling {
     void runStaticDestructorsOnce(llvm::Module* m);
 
     ExecutionResult executeFunction(llvm::StringRef function,
-                                    const clang::ASTContext& Ctx,
+                                    Interpreter& interp,
                                     clang::QualType retType,
                                     StoredValueRef* returnValue = 0);
 

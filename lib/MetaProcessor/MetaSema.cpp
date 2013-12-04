@@ -223,7 +223,7 @@ namespace cling {
       retGV.IntVal = llvm::APInt(sizeof(int) * 8, ret, true /*isSigned*/);
       Value V(retGV, Ctx.IntTy);
       if (result)
-        *result = StoredValueRef::bitwiseCopy(Ctx, V);
+        *result = StoredValueRef::bitwiseCopy(m_Interpreter, V);
 
       return (ret == 0) ? AR_Success : AR_Failure;
     }

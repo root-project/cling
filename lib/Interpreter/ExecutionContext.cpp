@@ -198,7 +198,7 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
 
 ExecutionContext::ExecutionResult
 ExecutionContext::executeFunction(llvm::StringRef funcname,
-                                  const clang::ASTContext& Ctx,
+                                  Interpreter& interp,
                                   clang::QualType retType,
                                   StoredValueRef* returnValue)
 {
@@ -238,7 +238,8 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
   if (f->hasStructRetAttr()) {
     // Function expects to receive the storage for the returned aggregate as
     // first argument. Allocate returnValue:
-    aggregateRet = StoredValueRef::allocate(Ctx, retType, f->getReturnType());
+    aggregateRet = StoredValueRef::allocate(interp, retType,
+                                            f->getReturnType());
     if (returnValue) {
       *returnValue = aggregateRet;
     } else {
@@ -252,7 +253,7 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
   if (wantReturn) {
     llvm::GenericValue gvRet = m_engine->runFunction(f, args);
     // rescue the ret value (which might be aggregate) from the stack
-    *returnValue = StoredValueRef::bitwiseCopy(Ctx, Value(gvRet, retType));
+    *returnValue = StoredValueRef::bitwiseCopy(interp, Value(gvRet, retType));
   } else {
     m_engine->runFunction(f, args);
   }
