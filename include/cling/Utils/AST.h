@@ -20,8 +20,10 @@ namespace clang {
   class IntegerLiteral;
   class NamedDecl;
   class NamespaceDecl;
+  class NestedNameSpecifier;
   class QualType;
   class Sema;
+  class TagDecl;
   class Type;
 }
 
@@ -190,6 +192,45 @@ namespace utils {
                                    const clang::DeclContext* Within = 0);
 
   };
+
+  namespace TypeName {
+    ///\brief Convert the type into one with fully qualified template
+    /// arguments.
+    ///\param[in] QT - the type for which the fully qualified type will be
+    /// returned.
+    ///\param[in] Ctx - the ASTContext to be used.
+    clang::QualType GetFullyQualifiedType(clang::QualType QT,
+                                          const clang::ASTContext& Ctx);
+
+    ///\brief Get the fully qualified name for a type. This includes full
+    /// qualification of all template parameters etc.
+    ///
+    ///\param[in] QT - the type for which the fully qualified name will be
+    /// returned.
+    ///\param[in] Ctx - the ASTContext to be used.
+    std::string GetFullyQualifiedName(clang::QualType QT,
+                                      const clang::ASTContext &Ctx);
+
+    ///\brief Create a NestedNameSpecifier for Namesp and its enclosing
+    /// scopes.
+    ///
+    ///\param[in] Ctx - the AST Context to be used.
+    ///\param[in] Namesp - the NamespaceDecl for which a NestedNameSpecifier
+    /// is requested.
+    clang::NestedNameSpecifier*
+    CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
+                              const clang::NamespaceDecl* Namesp);
+
+    ///\brief Create a NestedNameSpecifier for TagDecl and its enclosing
+    /// scopes.
+    ///
+    ///\param[in] Ctx - the AST Context to be used.
+    ///\param[in] TD - the TagDecl for which a NestedNameSpecifier is
+    /// requested.
+    clang::NestedNameSpecifier*
+    CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
+                              const clang::TagDecl *TD);
+  }; // end namespace TypeName
 } // end namespace utils
 } // end namespace cling
 #endif // CLING_UTILS_AST_H
