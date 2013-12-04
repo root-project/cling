@@ -7,11 +7,12 @@
 #include "cling/Interpreter/StoredValueRef.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/ValuePrinter.h"
+#include "cling/Utils/AST.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclCXX.h"
-#include "llvm/ExecutionEngine/GenericValue.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace cling;
 using namespace clang;
@@ -57,8 +58,11 @@ void* StoredValueRef::StoredValue::GetDtorWrapperPtr(CXXRecordDecl* CXXRD) {
     return dtorWrapperPtr;
 
   std::string code("extern \"C\" void ");
-  std::string typeName = getClangType().getAsString();
-  code += funcname + "(void*obj){((" + typeName + "*)obj)->~" + typeName +"();}";
+  std::string typeName
+    = utils::TypeName::GetFullyQualifiedName(getClangType(),
+                                             CXXRD->getASTContext());
+  code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
+    + typeName +"();}";
   m_Interp.declare(code);
   return m_Interp.getAddressOfGlobal(funcname.c_str());
 }
@@ -75,6 +79,8 @@ void StoredValueRef::StoredValue::Destruct() {
   //       `-ImplicitCastExpr 'struct XB *' <LValueToRValue>
   //         `-DeclRefExpr  'struct XB *' lvalue ParmVar 'obj' 'struct XB *'
 
+  if (getClangType.isConst())
+    return;
   const RecordType* RT = dyn_cast<RecordType>(getClangType());
   if (!RT)
     return;
