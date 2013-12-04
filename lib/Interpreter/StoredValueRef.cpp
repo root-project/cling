@@ -62,7 +62,7 @@ void* StoredValueRef::StoredValue::GetDtorWrapperPtr(CXXRecordDecl* CXXRD) {
     = utils::TypeName::GetFullyQualifiedName(getClangType(),
                                              CXXRD->getASTContext());
   code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
-    + typeName +"();}";
+    + getClangType().toString() +"();}";
   m_Interp.declare(code);
   return m_Interp.getAddressOfGlobal(funcname.c_str());
 }
