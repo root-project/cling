@@ -87,13 +87,13 @@ void StoredValueRef::StoredValue::Destruct() {
   //       `-ImplicitCastExpr 'struct XB *' <LValueToRValue>
   //         `-DeclRefExpr  'struct XB *' lvalue ParmVar 'obj' 'struct XB *'
 
-  if (getClangType.isConst())
+  if (getClangType().isConstQualified())
     return;
   const RecordType* RT = dyn_cast<RecordType>(getClangType());
   if (!RT)
     return;
   CXXRecordDecl* CXXRD = dyn_cast<CXXRecordDecl>(RT->getDecl());
-  if (!CXXRD || CXXRD->hasTrivialDestructor())
+  if (!CXXRD || CXXRD->hasTrivialDestructor() || !CXXRD->getDeclName())
     return;
 
   CXXRD = CXXRD->getCanonicalDecl();
