@@ -32,11 +32,6 @@ namespace cling {
   ///
   class ClangInternalState {
   private:
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_LookupTablesOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_IncludedFilesOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_ASTOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_LLVMModuleOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_MacrosOS;
     std::string m_LookupTablesFile;
     std::string m_IncludedFilesFile;
     std::string m_ASTFile;

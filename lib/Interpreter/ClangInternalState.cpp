@@ -49,6 +49,12 @@ namespace cling {
   }
 
   void ClangInternalState::store() {
+    // Cannot use the stack (private copy ctor)
+    llvm::OwningPtr<llvm::raw_fd_ostream> m_LookupTablesOS;
+    llvm::OwningPtr<llvm::raw_fd_ostream> m_IncludedFilesOS;
+    llvm::OwningPtr<llvm::raw_fd_ostream> m_ASTOS;
+    llvm::OwningPtr<llvm::raw_fd_ostream> m_LLVMModuleOS;
+    llvm::OwningPtr<llvm::raw_fd_ostream> m_MacrosOS;
 
     m_LookupTablesOS.reset(createOutputFile("lookup",
                                             &m_LookupTablesFile));
