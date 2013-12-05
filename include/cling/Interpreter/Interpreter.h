@@ -231,7 +231,7 @@ namespace cling {
     ///
     ///\param [in] fname - The function name.
     ///\param [in,out] res - The return result of the run function. Must be
-    ///       initialized to point to the return value's location if the 
+    ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
     ///
     ///\returns The result of the execution.
@@ -247,6 +247,15 @@ namespace cling {
     /// compilation. Eg. unused expression warning and so on.
     ///
     void ignoreFakeDiagnostics() const;
+
+    ///\brief Compile the function definition and return its Decl.
+    ///
+    ///\param[in] name - name of the function, used to find its Decl.
+    ///\param[in] code - function definition, starting with 'extern "C"'.
+    ///\param[in] withAccessControl - whether to enforce access restrictions.
+    const clang::FunctionDecl* ParseCFunction(llvm::StringRef name,
+                                              llvm::StringRef code,
+                                              bool withAccessControl);
 
   public:
     Interpreter(int argc, const char* const *argv, const char* llvmdir = 0);
@@ -546,6 +555,18 @@ namespace cling {
 
     const Transaction* getFirstTransaction() const;
 
+    ///\brief Compile extern "C" function and return its address.
+    ///
+    ///\param[in] name - function name
+    ///\param[in] code - function definition, must contain 'extern "C"'
+    ///\param[in] ifUniq - only compile this function if no function
+    /// with the same name exists, else return the existing address
+    ///\param[in] withAccessControl - whether to enforce access restrictions
+    ///
+    ///\returns the address of the function or 0 if the compilation failed.
+    void* compileFunction(llvm::StringRef name, llvm::StringRef code,
+                          bool ifUniq = true, bool withAccessControl = true);
+
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///
     /// JIT symbols might not be immediately convertible to e.g. a function
@@ -553,8 +574,7 @@ namespace cling {
     ///
     ///\param[in]  D       - the global's Decl to find
     ///\param[out] fromJIT - whether the symbol was JITted.
-    ///
-    void* getAddressOfGlobal(const clang::GlobalDecl& D, 
+    void* getAddressOfGlobal(const clang::GlobalDecl& D,
                              bool* fromJIT = 0) const;
 
     ///\brief Gets the address of an existing global and whether it was JITted.

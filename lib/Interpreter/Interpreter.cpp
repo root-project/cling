@@ -35,6 +35,7 @@
 #include "clang/Sema/SemaInternal.h"
 
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -667,6 +668,145 @@ namespace cling {
     return ConvertExecutionResult(ExeRes);
   }
 
+  const FunctionDecl* Interpreter::ParseCFunction(StringRef name,
+                                                  StringRef code,
+                                                  bool withAccessControl) {
+    /*
+    In CallFunc we currently always (intentionally and somewhat necessarily)
+    always fully specify member function template, however this can lead to
+    an ambiguity with a class template.  For example in
+    roottest/cling/functionTemplate we get:
+
+    input_line_171:3:15: warning: lookup of 'set' in member access expression
+    is ambiguous; using member of 't'
+    ((t*)obj)->set<int>(*(int*)args[0]);
+               ^
+    roottest/cling/functionTemplate/t.h:19:9: note: lookup in the object type
+    't' refers here
+    void set(T targ) {
+         ^
+    /usr/include/c++/4.4.5/bits/stl_set.h:87:11: note: lookup from the
+    current scope refers here
+    class set
+          ^
+    This is an intention warning implemented in clang, see
+    http://llvm.org/viewvc/llvm-project?view=revision&revision=105518
+
+    which 'should have been' an error:
+
+    C++ [basic.lookup.classref] requires this to be an error, but,
+    because it's hard to work around, Clang downgrades it to a warning as
+    an extension.</p>
+
+    // C++98 [basic.lookup.classref]p1:
+    // In a class member access expression (5.2.5), if the . or -> token is
+    // immediately followed by an identifier followed by a <, the identifier
+    // must be looked up to determine whether the < is the beginning of a
+    // template argument list (14.2) or a less-than operator. The identifier
+    // is first looked up in the class of the object expression. If the
+    // identifier is not found, it is then looked up in the context of the
+    // entire postfix-expression and shall name a class or function template. If
+    // the lookup in the class of the object expression finds a template, the
+    // name is also looked up in the context of the entire postfix-expression
+    // and
+    // -- if the name is not found, the name found in the class of the
+    // object expression is used, otherwise
+    // -- if the name is found in the context of the entire postfix-expression
+    // and does not name a class template, the name found in the class of the
+    // object expression is used, otherwise
+    // -- if the name found is a class template, it must refer to the same
+    // entity as the one found in the class of the object expression,
+    // otherwise the program is ill-formed.
+
+    See -Wambiguous-member-template
+
+    An alternative to disabling the diagnostics is to use a pointer to
+    member function:
+
+    #include <set>
+    using namespace std;
+
+    extern "C" int printf(const char*,...);
+
+    struct S {
+    template <typename T>
+    void set(T) {};
+
+    virtual void virtua() { printf("S\n"); }
+    };
+
+    struct T: public S {
+    void virtua() { printf("T\n"); }
+    };
+
+    int main() {
+    S *s = new T();
+    typedef void (S::*Func_p)(int);
+    Func_p p = &S::set<int>;
+    (s->*p)(12);
+
+    typedef void (S::*Vunc_p)(void);
+    Vunc_p q = &S::virtua;
+    (s->*q)(); // prints "T"
+    return 0;
+    }
+    */
+    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    Diag.setDiagnosticMapping(
+                       clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
+                       clang::diag::MAP_IGNORE, SourceLocation());
+
+
+    LangOptions& LO = const_cast<LangOptions&>(getCI()->getLangOpts());
+    bool savedAccessControl = LO.AccessControl;
+    LO.AccessControl = withAccessControl;
+    cling::Transaction* T = 0;
+    cling::Interpreter::CompilationResult CR = declare(code, &T);
+    LO.AccessControl = savedAccessControl;
+
+    if (CR != cling::Interpreter::kSuccess)
+      return 0;
+
+    for (cling::Transaction::const_iterator I = T->decls_begin(),
+           E = T->decls_end(); I != E; ++I) {
+      if (I->m_Call != cling::Transaction::kCCIHandleTopLevelDecl)
+        continue;
+      const FunctionDecl* D = dyn_cast<FunctionDecl>(*I->m_DGR.begin());
+      if (!D || !isa<TranslationUnitDecl>(D->getDeclContext()))
+        continue;
+      const IdentifierInfo* II = D->getDeclName().getAsIdentifierInfo();
+      if (II && II->getName() == name)
+        return D;
+    }
+    return 0;
+  }
+
+  void*
+  Interpreter::compileFunction(llvm::StringRef name, llvm::StringRef code,
+                               bool ifUnique, bool withAccessControl) {
+    //
+    //  Compile the wrapper code.
+    //
+    const llvm::GlobalValue* GV = 0;
+    if (ifUnique)
+      GV = getModule()->getNamedValue(name);
+
+    if (!GV) {
+      const FunctionDecl* FD = ParseCFunction(name, code, withAccessControl);
+      if (!FD) return 0;
+      //
+      //  Get the wrapper function pointer
+      //  from the ExecutionEngine (the JIT).
+      //
+      GV = getModule()->getNamedValue(name);
+    }
+
+    if (!GV)
+      return 0;
+
+    return m_ExecutionContext->getPointerToGlobalFromJIT(*GV);
+  }
+
   void Interpreter::createUniqueName(std::string& out) {
     out += utils::Synthesize::UniquePrefix;
     llvm::raw_string_ostream(out) << m_UniqueCounter++;
@@ -677,7 +817,7 @@ namespace cling {
   }
 
   llvm::StringRef Interpreter::createUniqueWrapper() {
-    const size_t size 
+    const size_t size
       = sizeof(utils::Synthesize::UniquePrefix) + sizeof(m_UniqueCounter);
     llvm::SmallString<size> out(utils::Synthesize::UniquePrefix);
     llvm::raw_svector_ostream(out) << m_UniqueCounter++;
