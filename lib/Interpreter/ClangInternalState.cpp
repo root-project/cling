@@ -211,6 +211,9 @@ namespace cling {
     }
 
     bool VisitDeclContext(DeclContext* DC) {
+      // If the lookup is pending for building, force its creation.
+      if (DC == DC->getPrimaryContext() && !DC->getLookupPtr())
+        DC->buildLookup();
       DC->dumpLookups(m_OS);
       return true;
     }
