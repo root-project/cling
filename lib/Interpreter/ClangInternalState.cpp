@@ -192,9 +192,12 @@ namespace cling {
         differences += buffer;
     }
     pclose(pipe);
+
+    if (!differences.empty())
+      llvm::errs() << diffCall << " " << file1 << " " << file2 << "\n";
+
     return !differences.empty();
   }
-
 
   class DumpLookupTables : public RecursiveASTVisitor<DumpLookupTables> {
   private:
