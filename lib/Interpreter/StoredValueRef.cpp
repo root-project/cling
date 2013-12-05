@@ -6,10 +6,13 @@
 
 #include "cling/Interpreter/StoredValueRef.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/ValuePrinter.h"
 #include "cling/Utils/AST.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
+#include "llvm/IR/Module.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -53,18 +56,23 @@ void* StoredValueRef::StoredValue::GetDtorWrapperPtr(CXXRecordDecl* CXXRD) {
     llvm::raw_string_ostream namestr(funcname);
     namestr << "__cling_StoredValue_Destruct_" << CXXRD;
   }
-  void* dtorWrapperPtr = m_Interp.getAddressOfGlobal(funcname.c_str());
-  if (dtorWrapperPtr)
-    return dtorWrapperPtr;
 
   std::string code("extern \"C\" void ");
-  std::string typeName
-    = utils::TypeName::GetFullyQualifiedName(getClangType(),
-                                             CXXRD->getASTContext());
-  code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
-    + getClangType().toString() +"();}";
-  m_Interp.declare(code);
-  return m_Interp.getAddressOfGlobal(funcname.c_str());
+  {
+    std::string typeName
+      = utils::TypeName::GetFullyQualifiedName(getClangType(),
+                                               CXXRD->getASTContext());
+    clang::PrintingPolicy Policy(CXXRD->getASTContext().getPrintingPolicy());
+    Policy.SuppressTagKeyword = true; // no "class" in "class A"
+    Policy.SuppressScope = true; // no "A::" in "A::B"
+    Policy.PolishForDeclaration = true; // no attributes
+    std::string dtorName = getClangType().getAsString(Policy);
+    code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
+      + dtorName + "();}";
+  }
+
+  return m_Interp.compileFunction(funcname, code, true /*ifUniq*/,
+                                  false /*withAccessControl*/);
 }
 
 void StoredValueRef::StoredValue::Destruct() {
