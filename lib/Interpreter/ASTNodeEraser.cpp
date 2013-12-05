@@ -313,18 +313,6 @@ namespace cling {
 
     DeclContext* DC = D->getLexicalDeclContext();
 
-#ifndef NDEBUG
-    bool ExistsInDC = false;
-    // The decl should be already in, we shouldn't deserialize.
-    for (DeclContext::decl_iterator I = DC->noload_decls_begin(), 
-           E = DC->noload_decls_end(); E !=I; ++I)
-      if (*I == D) {
-        ExistsInDC = true;
-        break;
-      }
-    assert((D->isInvalidDecl() || ExistsInDC)
-           && "Declaration must exist in the DC");
-#endif
     bool Successful = true;
     DeclContextExt::removeIfLast(DC, D);
 
