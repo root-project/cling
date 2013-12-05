@@ -38,9 +38,8 @@ namespace cling {
                                                 m_FoundDRE->getLocStart(), 
                                                 m_FoundDRE->getLocEnd());
           assert(!DS.isInvalid() && "Invalid DeclStmt.");
-          Stmts.insert(I, DS.take());
+          I = Stmts.insert(I, DS.take());
           m_HandledDecls.insert(m_FoundDRE->getDecl());
-          ++I;
         }
       }
       CS->setStmts(m_Sema->getASTContext(), Stmts.data(), Stmts.size());
