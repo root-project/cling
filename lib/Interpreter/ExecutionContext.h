@@ -14,8 +14,9 @@
 #include <set>
 
 namespace llvm {
-  class Module;
   class ExecutionEngine;
+  class GlobalValue;
+  class Module;
 }
 
 namespace clang {
@@ -176,6 +177,13 @@ namespace cling {
     ///
     void* getAddressOfGlobal(llvm::Module* m, const char* mangledName,
                              bool* fromJIT = 0) const;
+
+    ///\brief Return the address of a global from the ExecutionEngine (as
+    /// opposed to dynamic libraries). Forces the emission of the symbol if
+    /// it has not happened yet.
+    ///
+    ///param[in] GV - global value for which the address will be returned.
+    void* getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const;
 
     llvm::ExecutionEngine* getExecutionEngine() const {
       if (!m_engine)

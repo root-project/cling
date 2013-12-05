@@ -413,3 +413,12 @@ void* ExecutionContext::getAddressOfGlobal(llvm::Module* m,
   }
   return address;
 }
+
+void*
+ExecutionContext::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const {
+  if (void* addr = m_engine->getPointerToGlobalIfAvailable(&GV))
+    return addr;
+
+  //  Function not yet codegened by the JIT, force this to happen now.
+  return m_engine->getPointerToGlobal(&GV);
+}
