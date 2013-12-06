@@ -771,12 +771,17 @@ namespace cling {
            E = T->decls_end(); I != E; ++I) {
       if (I->m_Call != cling::Transaction::kCCIHandleTopLevelDecl)
         continue;
-      const FunctionDecl* D = dyn_cast<FunctionDecl>(*I->m_DGR.begin());
-      if (!D || !isa<TranslationUnitDecl>(D->getDeclContext()))
-        continue;
-      const IdentifierInfo* II = D->getDeclName().getAsIdentifierInfo();
-      if (II && II->getName() == name)
-        return D;
+      if (const LinkageSpecDecl* LSD
+          = dyn_cast<LinkageSpecDecl>(*I->m_DGR.begin())) {
+        DeclContext::decl_iterator DeclBegin = LSD->decls_begin();
+        if (DeclBegin == LSD->decls_end())
+          continue;
+        if (const FunctionDecl* D = dyn_cast<FunctionDecl>(*DeclBegin)) {
+          const IdentifierInfo* II = D->getDeclName().getAsIdentifierInfo();
+          if (II && II->getName() == name)
+            return D;
+        }
+      }
     }
     return 0;
   }
