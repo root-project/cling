@@ -437,19 +437,22 @@ namespace cling {
       static void removeSpecialization(FunctionTemplateDecl* self, 
                                 const FunctionTemplateSpecializationInfo* info) {
         assert(self && "Cannot be null!");
-        typedef llvm::SmallVector<FunctionTemplateSpecializationInfo*, 4> FTSI;
+        typedef llvm::SmallVector<FunctionTemplateSpecializationInfo*,4> Vector;
+        typedef llvm::FoldingSetVector< FunctionTemplateSpecializationInfo> Set;
         FunctionTemplateDeclExt* This = (FunctionTemplateDeclExt*) self;
-        // We can't just copy because in the end of the scope we will call the
-        // dtor of the elements.
-        FunctionTemplateSpecializationInfo* specInfos
-          = &(*This->getSpecializations().begin());
-        size_t specInfoSize = This->getSpecializations().size();
-        
+        Vector specInfos;
+        Set specs = This->getSpecializations();
+        // Copy the addresses and then cleanup the list of specializations.
+        for(Set::iterator I = specs.begin(), E = specs.end(); I != E; ++I)
+          specInfos.push_back(&*I);
         This->getSpecializations().clear();
+
+        //Append the new list of specializations.
         void* InsertPos = 0;
-        for (size_t i = 0; i < specInfoSize; ++i)
-          if (&specInfos[i] != info) {
-            This->addSpecialization(&specInfos[i], InsertPos);
+        for (size_t i = 0, e = specInfos.size(); i < e; ++i)
+          if (specInfos[i] != info) {
+            specInfos[i]->SetNextInBucket(0); // reset the next in bucket.
+            This->addSpecialization(specInfos[i], InsertPos);
           }
       }
     };
