@@ -750,7 +750,8 @@ namespace cling {
     const MacroInfo* MI = MD->getMacroInfo();
 
     // If the macro is not defined, this is a noop undef, just return.
-    if (MI == 0) return false;
+    if (MI == 0)
+      return false;
 
     // Remove the pair from the macros
     PP.removeMacro(MacroD.m_II, const_cast<MacroDirective*>(MacroD.m_MD));
@@ -784,11 +785,6 @@ namespace cling {
       }
     }
 
-    for (Transaction::const_reverse_macros_iterator MI = T->rmacros_begin(),
-          ME = T->rmacros_end(); MI != ME; ++MI) {
-      // Get rid of the macro definition
-      Successful = DeclRev.RevertMacro(*MI) && Successful;
-    }
 #ifndef NDEBUG
     assert(Successful && "Cannot handle that yet!");
 #endif
