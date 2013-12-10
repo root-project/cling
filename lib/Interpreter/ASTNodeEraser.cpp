@@ -435,25 +435,43 @@ namespace cling {
     class FunctionTemplateDeclExt : public FunctionTemplateDecl {
     public:
       static void removeSpecialization(FunctionTemplateDecl* self, 
-                                const FunctionTemplateSpecializationInfo* info) {
-        assert(self && "Cannot be null!");
-        typedef llvm::SmallVector<FunctionTemplateSpecializationInfo*,4> Vector;
+                                       const FunctionDecl* specialization) {
+        assert(self && specialization && "Cannot be null!");
+        typedef llvm::SmallVector<FunctionDecl*, 4> Specializations;
         typedef llvm::FoldingSetVector< FunctionTemplateSpecializationInfo> Set;
+
         FunctionTemplateDeclExt* This = (FunctionTemplateDeclExt*) self;
-        Vector specInfos;
-        Set specs = This->getSpecializations();
-        // Copy the addresses and then cleanup the list of specializations.
-        for(Set::iterator I = specs.begin(), E = specs.end(); I != E; ++I)
-          specInfos.push_back(&*I);
+        Specializations specializations;
+        const Set& specs = This->getSpecializations();
+
+        if (!specs.size()) // nothing to remove
+          return;
+
+        // Collect all the specializations without the one to remove.
+        for(Set::const_iterator I = specs.begin(),E = specs.end(); I != E; ++I){
+          assert(I->Function && "Must have a specialization.");
+          if (I->Function != specialization)
+            specializations.push_back(I->Function);
+        }
+
         This->getSpecializations().clear();
 
-        //Append the new list of specializations.
+        //Readd the collected specializations.
         void* InsertPos = 0;
-        for (size_t i = 0, e = specInfos.size(); i < e; ++i)
-          if (specInfos[i] != info) {
-            specInfos[i]->SetNextInBucket(0); // reset the next in bucket.
-            This->addSpecialization(specInfos[i], InsertPos);
-          }
+        FunctionTemplateSpecializationInfo* FTSI = 0;
+        for (size_t i = 0, e = specializations.size(); i < e; ++i) {
+          FTSI = specializations[i]->getTemplateSpecializationInfo();
+          assert(FTSI && "Must not be null.");
+          // Avoid assertion on add.
+          FTSI->SetNextInBucket(0);
+          This->addSpecialization(FTSI, InsertPos);
+        }
+#ifndef NDEBUG
+        const TemplateArgumentList* args
+          = specialization->getTemplateSpecializationArgs();
+        assert(!self->findSpecialization(args->data(), args->size(),  InsertPos)
+               && "Finds the removed decl again!");
+#endif
       }
     };
 
@@ -464,8 +482,7 @@ namespace cling {
       FunctionDecl* CanFD = FD->getCanonicalDecl();
       FunctionTemplateDecl* FTD
         = FD->getTemplateSpecializationInfo()->getTemplate();
-      FunctionTemplateDeclExt::removeSpecialization(FTD, 
-                                         CanFD->getTemplateSpecializationInfo());
+      FunctionTemplateDeclExt::removeSpecialization(FTD, CanFD);
     }
 
     return Successful;
