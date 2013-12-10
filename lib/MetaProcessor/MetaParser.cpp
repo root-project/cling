@@ -115,7 +115,8 @@ namespace cling {
       || ishelpCommand() || isfileExCommand() || isfilesCommand() || isClassCommand()
       || isgCommand() || isTypedefCommand() || isprintIRCommand()
       || isShellCommand(actionResult, resultValue)
-      || isstoreStateCommand() || iscompareStateCommand() || isundoCommand();
+      || isstoreStateCommand() || iscompareStateCommand() || isundoCommand()
+      || isRedirectCommand(actionResult);
   }
 
   // L := 'L' FilePath
@@ -138,6 +139,49 @@ namespace cling {
     }
     // TODO: Some fine grained diagnostics
     return result;
+  }
+
+  // <RedirectCommand := '<' FilePath
+  // FilePath := AnyString
+  // AnyString := .*^(' ' | '\t')
+  bool MetaParser::isRedirectCommand(MetaSema::ActionResult& actionResult) {
+    MetaSema::SwitchMode stream = MetaSema::kOn; //kOn =1 stdout
+    if (getCurTok().is(tok::constant)) {
+      // > or 1> the redirection is for stdout stream
+      // 2> redirection for stderr stream
+      if (getCurTok().getConstant() == 2) {
+        stream = MetaSema::kToggle; //kToggle = 2 stderr
+      }
+      consumeToken();  
+    }
+    if(getCurTok().is(tok::greater)) {
+      MetaSema::SwitchMode append = MetaSema::kOff;
+      consumeToken();
+      // check whether we have >>
+      if (getCurTok().is(tok::greater))
+        append = MetaSema::kOn;
+      llvm::StringRef file;
+      if (getCurTok().is(tok::eof)) {
+        file  = llvm::StringRef();
+      }
+      else {
+        consumeAnyStringToken();
+        if (getCurTok().is(tok::raw_ident)) {
+          file = getCurTok().getIdent();
+          consumeToken();
+        }
+        else {
+          file  = llvm::StringRef();
+        }
+      }
+      actionResult =
+          m_Actions->actOnRedirectCommand(file/*file*/,
+                                          stream/*which stream to redirect*/,
+                                          append/*append mode*/);
+      return true;
+    }  
+      
+    return false;
   }
 
   // XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]

@@ -45,7 +45,7 @@ namespace cling {
     char C = *curPos++;
     switch (C) {
     case '[': case ']': case '(': case ')': case '{': case '}': case '"':
-    case '\'': case '\\': case ',': case '.': case '!': case '?':
+    case '\'': case '\\': case ',': case '.': case '!': case '?': case '>':
       // INTENTIONAL FALL THROUGHs
       return LexPunctuator(C, Tok);
 
@@ -110,7 +110,8 @@ namespace cling {
     case '!'  : Tok.setKind(tok::excl_mark); break;
     case '?'  : Tok.setKind(tok::quest_mark); break;
     case '/'  : Tok.setKind(tok::slash); break;
-    case '\\'  : Tok.setKind(tok::backslash); break;
+    case '\\' : Tok.setKind(tok::backslash); break;
+    case '>'  : Tok.setKind(tok::greater); break;
     case '\0' : Tok.setKind(tok::eof); Tok.setLength(0); break;// if static call
     default: Tok.setLength(0); break;
     }
@@ -176,7 +177,7 @@ namespace cling {
   }
 
   void MetaLexer::LexIdentifier(char C, Token& Tok) {
-    while (C == '_' || (C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z')
+    while (C == '_' || C == '>' || (C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z')
            || (C >= '0' && C <= '9'))
       C = *curPos++;
 

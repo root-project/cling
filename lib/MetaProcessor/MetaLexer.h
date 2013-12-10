@@ -32,11 +32,13 @@ namespace cling {
       quest_mark, // "?"
       slash,      // "/"
       backslash,  // "\"
+      greater,    // ">"
       ident,      // (a-zA-Z)[(0-9a-zA-Z)*]
       raw_ident,  // .*^(' '|'\t')
       comment,    // //
       space,      // (' ' | '\t')*
       constant,   // {0-9}
+
       eof,
       unknown
     };
