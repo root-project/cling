@@ -102,7 +102,8 @@ void StoredValueRef::StoredValue::Destruct() {
     return;
 
   typedef void (*DtorWrapperFunc_t)(void* obj);
-  DtorWrapperFunc_t wrapperFuncPtr = (DtorWrapperFunc_t) funcPtr;
+  // Go via void** to avoid fun-cast warning:
+  DtorWrapperFunc_t wrapperFuncPtr = *(DtorWrapperFunc_t*) &funcPtr;
   (*wrapperFuncPtr)(getAs<void*>());
 }
 
