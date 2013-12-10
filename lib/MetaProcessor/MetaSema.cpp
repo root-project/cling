@@ -28,6 +28,7 @@
 #include "clang/Basic/SourceManager.h"
 
 #include <cstdlib>
+#include <iostream>
 
 namespace cling {
 
@@ -40,6 +41,44 @@ namespace cling {
     if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess)
       return AR_Success;
     return AR_Failure;
+  }
+
+  MetaSema::ActionResult MetaSema::actOnRedirectCommand(llvm::StringRef file,
+                         SwitchMode stream/* = kOn stdout*/,
+                         SwitchMode append/*kOff*/) const {
+    
+    if (stream == kOn) {  
+      //bool flag = !m_Interpreter.isStdoutRedirectEnabled();
+      if (!file.str().empty()) {
+        std::cout << "Print stdout to file " << file.str() << " ";
+        const char* fileName = file.str().c_str();
+        std::string errorInfo;
+        llvm::raw_fd_ostream Out(fileName, errorInfo);
+        m_Interpreter.setOutStream(Out);
+      }
+      else {
+        std::cout << "Print to the stdout ";
+        //m_Interpreter.setOutStream(kOff);
+      }
+    }
+    else if (stream == kToggle) {
+      if (!file.str().empty()) {
+        std::cout << "Print stderr to file " << file.str() << " ";
+        //m_Interpreter.setErrStream(kOn);
+      }
+      else {
+        std::cout << "Print to the stderr ";
+        //m_Interpreter.setErrStream(kOff);
+      }
+      
+    }
+    if (append == kOn) {
+      std::cout << "by appending.\n";
+    }
+    else {
+      std::cout << ".\n";
+    }
+    return AR_Success;
   }
 
   void MetaSema::actOnComment(llvm::StringRef comment) const {

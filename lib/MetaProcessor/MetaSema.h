@@ -51,6 +51,16 @@ namespace cling {
     ///
     ActionResult actOnLCommand(llvm::StringRef file) const;
 
+    ///\brief < Redirect command redirects the standard output
+    ///
+    ///\param[in] file - The file where the output is redirected
+    ///\param[in] mode - The file or stdout.
+    ///\param[in] stream - The optional stream to redirect.
+    ///
+    ActionResult actOnRedirectCommand(llvm::StringRef file,
+                                    SwitchMode stream = kOn /*stdout*/,
+                                    SwitchMode append = kOff) const;
+
     ///\brief Actions that need to be performed on occurance of a comment.
     ///
     /// That is useful when the comments are meaningful for the interpreter. For
