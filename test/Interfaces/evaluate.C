@@ -40,3 +40,21 @@ void f(int) { return; }
 gCling->evaluate("f", V);
 V.isValid() //CHECK: {{\([_]B|b}}ool) true
 // end PR#98434
+
+.rawInput 1
+struct WithDtor {
+   static int fgCount;
+   WithDtor() { ++fgCount; }
+   WithDtor(const WithDtor&) { ++fgCount; }
+   ~WithDtor() { --fgCount; }
+};
+int WithDtor::fgCount = 0;
+WithDtor getWithDtor() { return WithDtor(); }
+.rawInput 0
+
+cling::StoredValueRef* VOnHeap = new cling::StoredValueRef();
+gCling->evaluate("getWithDtor()", *VOnHeap);
+*VOnHeap //CHECK: (cling::StoredValueRef) boxes [(WithDtor) @0x{{.*}}]
+WithDtor::fgCount //CHECK: (int) 1
+delete VOnHeap;
+WithDtor::fgCount //CHECK: (int) 0
