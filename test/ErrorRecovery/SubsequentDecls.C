@@ -4,6 +4,7 @@
 .rawInput 1
 extern int __my_i;
 template<typename T> T TemplatedF(T t);
+template<> double TemplatedF(double); // forward declare TemplatedF
 int OverloadedF(int i);
 float OverloadedF(float f){ return f + 100.111f;}
 double OverloadedF(double d){ return d + 10.11f; };
@@ -14,6 +15,8 @@ namespace test { int y = 0; }
 #include "SubsequentDecls.h"
 .compareState "testSubsequentDecls"
 // CHECK-NOT: Differences
+
+TemplatedF((int)2) // expected-diagnostics{{C++ requires a type specifier for all declarations}} expected-diagnostics{{expected ';' after top level declarator}}
 
 .rawInput 1
 template<> int TemplatedF(int i) { return i + 100; }
@@ -27,4 +30,6 @@ OverloadedF(__my_i)
 TemplatedF(__my_i) 
 // CHECK: (int) 110
 
+TemplatedF((double)3.14) 
+// CHECK: use of undefined symbol '_Z10TemplatedFIdET_S0_'
 .q

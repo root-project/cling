@@ -3,6 +3,7 @@
 
 // Template specializations
 template<> int TemplatedF(int t){return t + 10;}
+template<> double TemplatedF(double t){return t + 3.14;}
 
 // Aliases
 typedef struct A AStruct;
