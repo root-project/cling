@@ -70,14 +70,6 @@ namespace cling {
     ///
     bool RevertDecl(Decl* D) { return Visit(D); }
 
-    ///\brief Function that collects the files which we must reread from disk.
-    ///
-    /// For example: We must uncache the cached include, which brought a
-    /// declaration or a macro diretive definition in the AST.
-    ///\param[in] D - A declaration.
-    ///
-    void CollectFilesToUncache(SourceLocation Loc);
-
     ///\brief If it falls back in the base class just remove the declaration
     /// only from the declaration context.
     /// @param[in] D - The declaration to be removed.
@@ -250,6 +242,16 @@ namespace cling {
     }
 
     /// @}
+
+  private:
+    ///\brief Function that collects the files which we must reread from disk.
+    ///
+    /// For example: We must uncache the cached include, which brought a
+    /// declaration or a macro diretive definition in the AST.
+    ///\param[in] Loc - The source location of the reverted declaration.
+    ///
+    void CollectFilesToUncache(SourceLocation Loc);
+
   };
 
   DeclReverter::~DeclReverter() {
