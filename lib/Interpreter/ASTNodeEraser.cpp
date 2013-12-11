@@ -439,6 +439,8 @@ namespace cling {
       static void removeSpecialization(FunctionTemplateDecl* self, 
                                        const FunctionDecl* specialization) {
         assert(self && specialization && "Cannot be null!");
+        assert(specialization == specialization->getCanonicalDecl() 
+               && "Not the canonical specialization!?");
         typedef llvm::SmallVector<FunctionDecl*, 4> Specializations;
         typedef llvm::FoldingSetVector< FunctionTemplateSpecializationInfo> Set;
 
