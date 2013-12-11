@@ -479,14 +479,30 @@ namespace cling {
       }
     };
 
-    if (FD->isFunctionTemplateSpecialization()) {
-      // 1. Remove the canonical decl.
-      // TODO: Can the canonical have another DeclContext and Scope, different
-      // from the specialization's implementation?
-      FunctionDecl* CanFD = FD->getCanonicalDecl();
+    if (FD->isFunctionTemplateSpecialization() && FD->isCanonicalDecl()) {
+      // Only the canonical declarations are registered in the list of the
+      // specializations.
       FunctionTemplateDecl* FTD
         = FD->getTemplateSpecializationInfo()->getTemplate();
-      FunctionTemplateDeclExt::removeSpecialization(FTD, CanFD);
+      // The canonical declaration of every specialization is registered with
+      // the FunctionTemplateDecl.
+      // Note this might revert too much in the case:
+      //   template<typename T> T f(){ return T();}
+      //   template<> int f();
+      //   template<> int f() { return 0;}
+      // when the template specialization was forward declared the canonical
+      // becomes the first forward declaration. If the canonical forward
+      // declaration was declared outside the set of the decls to revert we have
+      // to keep it registered as a template specialization.
+      // 
+      // In order to diagnose mismatches of the specializations, clang 'injects'
+      // a implicit forward declaration making it very hard distinguish between
+      // the explicit and the implicit forward declaration. So far the only way
+      // to distinguish is by source location comparison.
+      // FIXME: When the misbehavior of clang is fixed we must avoid relying on
+      // source locations
+      FunctionDecl* canonSpecialization = FD->getCanonicalDecl();
+      FunctionTemplateDeclExt::removeSpecialization(FTD, canonSpecialization);
     }
 
     return Successful;
