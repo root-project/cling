@@ -124,7 +124,7 @@ StoredValueRef StoredValueRef::allocate(Interpreter& interp, QualType t,
 }
 
 StoredValueRef StoredValueRef::bitwiseCopy(Interpreter& interp,
-                                           const Value& value) {
+                                           const cling::Value& value) {
   StoredValue* SValue 
     = new StoredValue(interp, value.getClangType(), value.getLLVMType());
   if (SValue->m_Mem) {

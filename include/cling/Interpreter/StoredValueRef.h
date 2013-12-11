@@ -63,7 +63,7 @@ namespace cling {
     static StoredValueRef allocate(Interpreter& interp,
                                    clang::QualType t, const llvm::Type* llvmTy);
     /// \brief Create a bitwise copy of value wrapped in a StoredValueRef.
-    static StoredValueRef bitwiseCopy(Interpreter& interp, const Value& value);
+    static StoredValueRef bitwiseCopy(Interpreter& interp, const cling::Value& value);
     /// \brief Create a bitwise copy of svalue.
     static StoredValueRef bitwiseCopy(Interpreter& interp,
                                       const StoredValueRef svalue) {
