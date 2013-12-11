@@ -501,8 +501,7 @@ namespace cling {
       // to distinguish is by source location comparison.
       // FIXME: When the misbehavior of clang is fixed we must avoid relying on
       // source locations
-      FunctionDecl* canonSpecialization = FD->getCanonicalDecl();
-      FunctionTemplateDeclExt::removeSpecialization(FTD, canonSpecialization);
+      FunctionTemplateDeclExt::removeSpecialization(FTD, FD);
     }
 
     return Successful;
