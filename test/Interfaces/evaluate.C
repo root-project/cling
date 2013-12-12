@@ -41,6 +41,7 @@ gCling->evaluate("f", V);
 V.isValid() //CHECK: {{\([_]B|b}}ool) true
 // end PR#98434
 
+// Check lifetime of objects in StoredValue
 .rawInput 1
 struct WithDtor {
    static int fgCount;
@@ -50,11 +51,21 @@ struct WithDtor {
 };
 int WithDtor::fgCount = 0;
 WithDtor getWithDtor() { return WithDtor(); }
+#include <vector>
+std::vector<WithDtor> getWithDtorVec() { std::vector<WithDtor> ret; ret.resize(7); return ret; }
 .rawInput 0
 
 cling::StoredValueRef* VOnHeap = new cling::StoredValueRef();
 gCling->evaluate("getWithDtor()", *VOnHeap);
 *VOnHeap //CHECK: (cling::StoredValueRef) boxes [(WithDtor) @0x{{.*}}]
 WithDtor::fgCount //CHECK: (int) 1
+delete VOnHeap;
+WithDtor::fgCount //CHECK: (int) 0
+
+// Check destructor call for templates
+VOnHeap = new cling::StoredValueRef();
+gCling->evaluate("getWithDtorVec()", *VOnHeap);
+*VOnHeap //CHECK: (cling::StoredValueRef) boxes [(std::vector<WithDtor>) @0x{{.*}}]
+WithDtor::fgCount //CHECK: (int) 7
 delete VOnHeap;
 WithDtor::fgCount //CHECK: (int) 0

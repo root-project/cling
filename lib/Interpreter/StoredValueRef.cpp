@@ -62,11 +62,7 @@ void* StoredValueRef::StoredValue::GetDtorWrapperPtr(CXXRecordDecl* CXXRD) {
     std::string typeName
       = utils::TypeName::GetFullyQualifiedName(getClangType(),
                                                CXXRD->getASTContext());
-    clang::PrintingPolicy Policy(CXXRD->getASTContext().getPrintingPolicy());
-    Policy.SuppressTagKeyword = true; // no "class" in "class A"
-    Policy.SuppressScope = true; // no "A::" in "A::B"
-    Policy.PolishForDeclaration = true; // no attributes
-    std::string dtorName = getClangType().getAsString(Policy);
+    std::string dtorName = CXXRD->getNameAsString();
     code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
       + dtorName + "();}";
   }
@@ -87,11 +83,24 @@ void StoredValueRef::StoredValue::Destruct() {
   //       `-ImplicitCastExpr 'struct XB *' <LValueToRValue>
   //         `-DeclRefExpr  'struct XB *' lvalue ParmVar 'obj' 'struct XB *'
 
-  if (getClangType().isConstQualified())
-    return;
-  const RecordType* RT = dyn_cast<RecordType>(getClangType());
-  if (!RT)
-    return;
+  QualType QT = getClangType();
+  const RecordType* RT = 0;
+  while (!RT) {
+    if (QT.isConstQualified())
+      return;
+    const clang::Type* Ty = QT.getTypePtr();
+    RT = dyn_cast<RecordType>(Ty);
+    if (!RT) {
+      const ElaboratedType* ET = 0;
+      const TemplateSpecializationType* TT = 0;
+      if ((ET = dyn_cast<ElaboratedType>(Ty)))
+        QT = ET->getNamedType();
+      else if ((TT = dyn_cast<TemplateSpecializationType>(Ty)))
+        QT = TT->desugar();
+      if (!RT && !ET && !TT)
+        return;
+    }
+  }
   CXXRecordDecl* CXXRD = dyn_cast<CXXRecordDecl>(RT->getDecl());
   if (!CXXRD || CXXRD->hasTrivialDestructor() || !CXXRD->getDeclName())
     return;
