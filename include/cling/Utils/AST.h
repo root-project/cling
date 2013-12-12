@@ -32,8 +32,7 @@ namespace utils {
 
   ///\brief Class containing static utility functions analizing ASTNodes or 
   /// types.
-  class Analyze {
-  public:
+  namespace Analyze {
 
     ///\brief Checks whether the declaration is a interpreter-generated wrapper
     /// function.
@@ -42,15 +41,15 @@ namespace utils {
     ///
     ///\returns true if the decl is a interpreter-generated wrapper function.
     ///
-    static bool IsWrapper(const clang::NamedDecl* ND);
+    bool IsWrapper(const clang::NamedDecl* ND);
 
     ///\brief Get the mangled name of a GlobalDecl.
     ///
     ///\param [in]  GD - try to mangle this decl's name.
     ///\param [out] mangledName - put the mangled name in here.
     ///
-    static void maybeMangleDeclName(const clang::GlobalDecl& GD,
-                                    std::string& mangledName);
+    void maybeMangleDeclName(const clang::GlobalDecl& GD,
+                             std::string& mangledName);
 
 
     ///\brief Retrieves the last expression of a function body. If it was a
@@ -69,44 +68,43 @@ namespace utils {
     ///                           synthesis of the DeclRefExpr. 
     ///\returns 0 if the operation wasn't successful.
     ///
-    static clang::Expr* GetOrCreateLastExpr(clang::FunctionDecl* FD, 
-                                            int* FoundAt = 0,
-                                            bool omitDeclStmts = true,
-                                            clang::Sema* S = 0);
+    clang::Expr* GetOrCreateLastExpr(clang::FunctionDecl* FD,
+                                     int* FoundAt = 0,
+                                     bool omitDeclStmts = true,
+                                     clang::Sema* S = 0);
   };
 
   ///\brief Class containing static utility functions synthesizing AST nodes or
   /// types.
   ///
-  class Synthesize {
-  public:
-    static const char* const UniquePrefix;
+  namespace Synthesize {
+
+    extern const char* const UniquePrefix;
 
     ///\brief Synthesizes c-style cast in the AST from given pointer and type to
     /// cast to.
     ///
-    static clang::Expr* CStyleCastPtrExpr(clang::Sema* S, clang::QualType Ty, 
-                                          uint64_t Ptr);
+    clang::Expr* CStyleCastPtrExpr(clang::Sema* S, clang::QualType Ty,
+                                   uint64_t Ptr);
 
     ///\brief Synthesizes c-style cast in the AST from given pointer and type to
     /// cast to.
     ///
-    static clang::Expr* CStyleCastPtrExpr(clang::Sema* S, clang::QualType Ty, 
-                                          clang::Expr* E);
+    clang::Expr* CStyleCastPtrExpr(clang::Sema* S, clang::QualType Ty,
+                                   clang::Expr* E);
 
     ///\brief Synthesizes integer literal given an unsigned.
     ///
     //  TODO: Use Sema::ActOnIntegerConstant.
-    static clang::IntegerLiteral* IntegerLiteralExpr(clang::ASTContext& C, 
-                                                     uint64_t Ptr);
+    clang::IntegerLiteral* IntegerLiteralExpr(clang::ASTContext& C,
+                                              uint64_t Ptr);
 
   };
 
   ///\brief Class containing static utility functions transforming AST nodes or
   /// types.
   ///
-  class Transform {
-  public:
+  namespace Transform {
 
     ///\brief Class containing the information on how to configure the
     /// transformation
@@ -123,8 +121,8 @@ namespace utils {
     };
      
     ///\brief Remove one layer of sugar, but only some kinds.
-    static bool SingleStepPartiallyDesugarType(clang::QualType& QT,
-                                               const clang::ASTContext& C);
+    bool SingleStepPartiallyDesugarType(clang::QualType& QT,
+                                        const clang::ASTContext& C);
 
     ///\brief "Desugars" a type while skipping the ones in the set.
     ///
@@ -137,19 +135,17 @@ namespace utils {
     ///\param[in] fullyQualify - if true insert Elaborated where needed.
     ///\returns Partially desugared QualType
     ///
-    static
     clang::QualType
     GetPartiallyDesugaredType(const clang::ASTContext& Ctx, clang::QualType QT,
-      const Config& TypeConfig,
-      bool fullyQualify = true);
+                              const Config& TypeConfig,
+                              bool fullyQualify = true);
 
   };
 
   ///\brief Class containing static utility functions looking up names. Very
   /// useful for quick, simple lookups.
   /// 
-  class Lookup {
-  public:
+  namespace Lookup {
 
     ///\brief Quick lookup for a single namespace declaration in a given 
     /// declaration context.
@@ -160,9 +156,9 @@ namespace utils {
     ///                    TranslationUnitDecl is used.
     ///\returns the found result (if single) or 0.
     ///
-    static clang::NamespaceDecl* Namespace(clang::Sema* S,
-                                           const char* Name,
-                                          const clang::DeclContext* Within = 0);
+    clang::NamespaceDecl* Namespace(clang::Sema* S,
+                                    const char* Name,
+                                    const clang::DeclContext* Within = 0);
 
     ///\brief Quick lookup for a single named declaration in a given 
     /// declaration context.
@@ -173,9 +169,9 @@ namespace utils {
     ///                    TranslationUnitDecl is used.
     ///\returns the found result (if single) or 0.
     ///
-    static clang::NamedDecl* Named(clang::Sema* S,
-                                   const char* Name,
-                                   const clang::DeclContext* Within = 0);
+    clang::NamedDecl* Named(clang::Sema* S,
+                            const char* Name,
+                            const clang::DeclContext* Within = 0);
 
     ///\brief Quick lookup for a single namespace declaration in a given 
     /// declaration context.
@@ -187,9 +183,9 @@ namespace utils {
     ///                    TranslationUnitDecl is used.
     ///\returns the found result (if single) or 0.
     ///
-    static clang::NamedDecl* Named(clang::Sema* S,
-                                   const clang::DeclarationName& Name,
-                                   const clang::DeclContext* Within = 0);
+    clang::NamedDecl* Named(clang::Sema* S,
+                            const clang::DeclarationName& Name,
+                            const clang::DeclContext* Within = 0);
 
   };
 
