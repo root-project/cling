@@ -72,7 +72,8 @@ namespace utils {
                                      int* FoundAt = 0,
                                      bool omitDeclStmts = true,
                                      clang::Sema* S = 0);
-  };
+
+  }
 
   ///\brief Class containing static utility functions synthesizing AST nodes or
   /// types.
@@ -99,7 +100,7 @@ namespace utils {
     clang::IntegerLiteral* IntegerLiteralExpr(clang::ASTContext& C,
                                               uint64_t Ptr);
 
-  };
+  }
 
   ///\brief Class containing static utility functions transforming AST nodes or
   /// types.
@@ -140,7 +141,7 @@ namespace utils {
                               const Config& TypeConfig,
                               bool fullyQualify = true);
 
-  };
+  }
 
   ///\brief Class containing static utility functions looking up names. Very
   /// useful for quick, simple lookups.
@@ -187,7 +188,7 @@ namespace utils {
                             const clang::DeclarationName& Name,
                             const clang::DeclContext* Within = 0);
 
-  };
+  }
 
   namespace TypeName {
     ///\brief Convert the type into one with fully qualified template

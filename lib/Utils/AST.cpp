@@ -614,7 +614,7 @@ namespace utils {
     return false;
   }
 
-  bool SingleStepPartiallyDesugarTypeImpl(QualType& QT)
+  static bool SingleStepPartiallyDesugarTypeImpl(QualType& QT)
   {
     //  WARNING:
     //
