@@ -551,7 +551,7 @@ namespace utils {
   static bool IsCompilerDetails(const TagType *tagTy)
   {
     // Return true if the TagType is a 'details' of the std implementation.
-    // (For now it means declared in std and __gnu_cxx
+    // (For now it means declared in __gnu_cxx or starting with underscore).
 
     const TagDecl *decl = tagTy->getDecl();
     assert(decl);
