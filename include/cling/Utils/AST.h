@@ -73,6 +73,13 @@ namespace utils {
                                      bool omitDeclStmts = true,
                                      clang::Sema* S = 0);
 
+    ///\brief Return true if the decl has been declared in ths std namespace
+    /// or is a compiler details (in __gnu_cxx and starting with a leading
+    /// underscore).
+    ///
+    ///\param[in] decl          - The declaration being analyzed.
+    bool IsStdOrCompilerDetails(const clang::NamedDecl &decl);
+
   }
 
   ///\brief Class containing static utility functions synthesizing AST nodes or

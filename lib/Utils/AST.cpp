@@ -548,6 +548,32 @@ namespace utils {
     }
   }
 
+  bool Analyze::IsStdOrCompilerDetails(const NamedDecl &decl)
+  {
+    // Return true if the TagType is a 'details' of the std implementation
+    // or declared within std.
+    // Details means (For now) declared in __gnu_cxx or starting with
+    // underscore.
+
+    IdentifierInfo *info = decl.getDeclName().getAsIdentifierInfo();
+    if (info && info->getNameStart()[0] == '_') {
+      // We have a name starting by _, this is reserve for compiler
+      // implementation, so let's not desugar to it.
+      return true;
+    }
+    // And let's check if it is in one of the know compiler implementation
+    // namespace.
+    const NamedDecl *outer =dyn_cast_or_null<NamedDecl>(decl.getDeclContext());
+    while (outer && outer->getName().size() ) {
+      if (outer->getName().compare("std") == 0 ||
+          outer->getName().compare("__gnu_cxx") == 0) {
+        return true;
+      }
+      outer = dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
+    }
+    return false;
+  }
+
   static bool IsCompilerDetails(const TagType *tagTy)
   {
     // Return true if the TagType is a 'details' of the std implementation.
