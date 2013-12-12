@@ -1,4 +1,4 @@
-// RUN: cat %s | %cling | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify | FileCheck %s
 // XFAIL:*
 
 // Test whether the interpreter is able to generate properly the symbols 
