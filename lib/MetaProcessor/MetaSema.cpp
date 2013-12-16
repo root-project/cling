@@ -24,6 +24,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 
+
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Basic/SourceManager.h"
 
@@ -34,7 +35,7 @@ namespace cling {
 
   MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta) 
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
-      m_Outs(m_MetaProcessor.getOuts()){ }
+      m_Outs(m_MetaProcessor.getOuts()) { }
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) const {
     // TODO: extra checks. Eg if the path is readable, if the file exists...
@@ -44,41 +45,18 @@ namespace cling {
   }
 
   MetaSema::ActionResult MetaSema::actOnRedirectCommand(llvm::StringRef file,
-                         SwitchMode stream/* = kOn stdout*/,
-                         SwitchMode append/*kOff*/) const {
-    
-    if (stream == kOn) {  
-      //bool flag = !m_Interpreter.isStdoutRedirectEnabled();
-      if (!file.str().empty()) {
-        std::cout << "Print stdout to file " << file.str() << " ";
-        const char* fileName = file.str().c_str();
-        std::string errorInfo;
-        llvm::raw_fd_ostream Out(fileName, errorInfo);
-        m_Interpreter.setOutStream(Out);
-      }
-      else {
-        std::cout << "Print to the stdout ";
-        //m_Interpreter.setOutStream(kOff);
-      }
-    }
-    else if (stream == kToggle) {
-      if (!file.str().empty()) {
-        std::cout << "Print stderr to file " << file.str() << " ";
-        //m_Interpreter.setErrStream(kOn);
-      }
-      else {
-        std::cout << "Print to the stderr ";
-        //m_Interpreter.setErrStream(kOff);
-      }
-      
-    }
-    if (append == kOn) {
-      std::cout << "by appending.\n";
+                         Interpreter::RedirectStream stream,
+                         bool append) {
+
+    if (!file.str().empty()) {
+      m_Interpreter.enableRedirect(true);
+      m_Interpreter.setOutStream(file, stream, append);
+      return AR_Success;
     }
     else {
-      std::cout << ".\n";
+      m_Interpreter.enableRedirect();
     }
-    return AR_Success;
+    return AR_Failure;
   }
 
   void MetaSema::actOnComment(llvm::StringRef comment) const {

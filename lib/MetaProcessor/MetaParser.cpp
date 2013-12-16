@@ -141,25 +141,32 @@ namespace cling {
     return result;
   }
 
-  // <RedirectCommand := '<' FilePath
+  // <RedirectCommand := '>' FilePath
   // FilePath := AnyString
   // AnyString := .*^(' ' | '\t')
   bool MetaParser::isRedirectCommand(MetaSema::ActionResult& actionResult) {
-    MetaSema::SwitchMode stream = MetaSema::kOn; //kOn =1 stdout
+
+    // Default redirect is stdout.
+    Interpreter::RedirectStream stream = cling::Interpreter::kSTDOUT;
+    //
     if (getCurTok().is(tok::constant)) {
       // > or 1> the redirection is for stdout stream
       // 2> redirection for stderr stream
-      if (getCurTok().getConstant() == 2) {
-        stream = MetaSema::kToggle; //kToggle = 2 stderr
+      // &> redirection for both stdout & stderr
+      switch (getCurTok().getConstant()) {
+        case '1': stream = cling::Interpreter::kSTDOUT; break;
+        case '2': stream = cling::Interpreter::kSTDERR; break;
+        case '&': stream = cling::Interpreter::kSTDBOTH; break;
+        default: stream = cling::Interpreter::kSTDOUT;
       }
       consumeToken();  
     }
     if(getCurTok().is(tok::greater)) {
-      MetaSema::SwitchMode append = MetaSema::kOff;
+      bool append = false;
       consumeToken();
       // check whether we have >>
       if (getCurTok().is(tok::greater))
-        append = MetaSema::kOn;
+        append = true;
       llvm::StringRef file;
       if (getCurTok().is(tok::eof)) {
         file  = llvm::StringRef();

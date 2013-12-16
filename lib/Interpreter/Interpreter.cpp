@@ -42,9 +42,14 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <cstdio>
+#include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <unistd.h>
+#include <stdio.h>
 
 using namespace clang;
 
@@ -132,6 +137,35 @@ namespace cling {
     }
   }
 
+  Interpreter::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(Interpreter* i)
+  :m_Interpreter(i) {
+
+    if (m_Interpreter->isRedirectEnabled()) {
+      if (!m_Interpreter->m_FileOut.empty()) {
+        std::cout<<"The out file: "<<m_Interpreter->m_FileOut<<"\n";
+        terminalOut = ttyname(STDOUT_FILENO);
+        stdout = freopen(m_Interpreter->m_FileOut.c_str(), "a", stdout);
+      }
+      if (!m_Interpreter->m_FileErr.empty()) {
+        std::cout<<"The err file: "<<m_Interpreter->m_FileErr<<"\n";
+        terminalErr = ttyname(STDERR_FILENO);
+        stderr = freopen(m_Interpreter->m_FileErr.c_str(), "a", stderr);
+      }
+    }
+  }
+
+  void Interpreter::MaybeRedirectOutputRAII::pop() {
+
+    if(m_Interpreter->isRedirectEnabled()) {
+      if (terminalOut) {
+        stdout = freopen(terminalOut, "w", stdout);
+      }
+      if (terminalErr) {
+        stderr = freopen(terminalErr, "w", stderr);
+      }
+    }
+  }
+
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
   // GetMainExecutable (since some platforms don't support taking the
@@ -155,7 +189,8 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
     m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), 
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
+    m_RedirectEnabled(false), m_FileOut(""), m_FileErr("") {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -650,6 +685,7 @@ namespace cling {
 
   Interpreter::ExecutionResult
   Interpreter::RunFunction(const FunctionDecl* FD, StoredValueRef* res /*=0*/) {
+
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return kExeCompilationError;
 
@@ -863,6 +899,7 @@ namespace cling {
                                 const CompilationOptions& CO,
                                 StoredValueRef* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
+    MaybeRedirectOutputRAII RAII(const_cast<Interpreter*>(this));
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
     ignoreFakeDiagnostics();
@@ -1050,6 +1087,29 @@ namespace cling {
     // Note: The first thing this routine does is getCanonicalType(), so we
     //       do not need to do that first.
     return getCodeGenerator()->ConvertType(QT);
+  }
+
+  void Interpreter::setOutStream(llvm::StringRef file,
+                                 RedirectStream stream,
+                                 bool append) {
+    if (isRedirectEnabled()) {
+      if (stream == kSTDOUT || stream == kSTDBOTH) {
+        m_FileOut = file;
+        if (!append) {
+          FILE* f = fopen(m_FileOut.c_str(), "w");
+        }
+        std::cout<<"The parameter out is: "<<file.str()<<"\n";
+        std::cout<<"The result out is: "<<m_FileOut<<"\n";
+      }
+      if (stream == kSTDERR || stream == kSTDBOTH) {
+        m_FileErr = file;
+        if (!append) {
+          FILE* f = fopen(m_FileErr.c_str(), "w");
+        }
+        std::cout<<"The parameter err is: "<<file.str()<<"\n";
+        std::cout<<"The result err is: "<<m_FileOut<<"\n";
+      }
+    }
   }
 
 } // namespace cling
