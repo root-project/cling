@@ -163,6 +163,7 @@ namespace cling {
     }
     if (getCurTok().is(tok::ampersand)) {
       stream = cling::Interpreter::kSTDBOTH;
+      consumeToken();
     }
     if (getCurTok().is(tok::greater)) {
       bool append = false;

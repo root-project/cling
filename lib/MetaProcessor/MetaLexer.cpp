@@ -113,7 +113,7 @@ namespace cling {
     case '/'  : Tok.setKind(tok::slash); break;
     case '\\' : Tok.setKind(tok::backslash); break;
     case '>'  : Tok.setKind(tok::greater); break;
-    case '%'  : Tok.setKind(tok::ampersand); break;
+    case '&'  : Tok.setKind(tok::ampersand); break;
     case '\0' : Tok.setKind(tok::eof); Tok.setLength(0); break;// if static call
     default: Tok.setLength(0); break;
     }

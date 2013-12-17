@@ -120,7 +120,6 @@ namespace cling {
     };
 
     enum RedirectStream {
-      kSTDIN,
       kSTDOUT,
       kSTDERR,
       kSTDBOTH
@@ -181,12 +180,8 @@ namespace cling {
     ///
     bool m_RawInputEnabled;
 
-    ///flag redirect
+    ///flag redirect out
     bool m_RedirectEnabled;
-
-    //bool m_AppendOut;
-
-    //bool m_AppendErr;
 
     std::string m_FileOut;
 

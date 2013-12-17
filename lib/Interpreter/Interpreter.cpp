@@ -138,29 +138,25 @@ namespace cling {
   }
 
   Interpreter::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(Interpreter* i)
-  :m_Interpreter(i) {
+  :m_Interpreter(i), terminalOut(0), terminalErr(0) {
 
-    if (m_Interpreter->isRedirectEnabled()) {
-      if (!m_Interpreter->m_FileOut.empty()) {
-        terminalOut = ttyname(STDOUT_FILENO);
-        stdout = freopen(m_Interpreter->m_FileOut.c_str(), "a", stdout);
-      }
-      if (!m_Interpreter->m_FileErr.empty()) {
-        terminalErr = ttyname(STDERR_FILENO);
-        stderr = freopen(m_Interpreter->m_FileErr.c_str(), "a", stderr);
-      }
+    if (!m_Interpreter->m_FileOut.empty()) {
+      terminalOut = ttyname(STDOUT_FILENO);
+      stdout = freopen(m_Interpreter->m_FileOut.c_str(), "a", stdout);
+    }
+    if (!m_Interpreter->m_FileErr.empty()) {
+      terminalErr = ttyname(STDERR_FILENO);
+      stderr = freopen(m_Interpreter->m_FileErr.c_str(), "a", stderr);
     }
   }
 
   void Interpreter::MaybeRedirectOutputRAII::pop() {
 
-    if(m_Interpreter->isRedirectEnabled()) {
-      if (terminalOut) {
-        stdout = freopen(terminalOut, "w", stdout);
-      }
-      if (terminalErr) {
-        stderr = freopen(terminalErr, "w", stderr);
-      } 
+    if (terminalOut) {
+      stdout = freopen(terminalOut, "w", stdout);
+    }
+    if (terminalErr) {
+      stderr = freopen(terminalErr, "w", stderr);
     }
   }
 
@@ -1090,18 +1086,16 @@ namespace cling {
   void Interpreter::setOutStream(llvm::StringRef file,
                                  RedirectStream stream,
                                  bool append) {
-    if (isRedirectEnabled()) {
-      if (stream == kSTDOUT || stream == kSTDBOTH) {
-        m_FileOut = file;
-        if (!append) {
-          FILE* f = fopen(m_FileOut.c_str(), "w");
-        }
+    if (stream == kSTDOUT || stream == kSTDBOTH) {
+      m_FileOut = file;
+      if (!append && !m_FileOut.empty()) {
+        FILE* f = fopen(m_FileOut.c_str(), "w");
       }
-      if (stream == kSTDERR || stream == kSTDBOTH) {
-        m_FileErr = file;
-        if (!append) {
-          FILE* f = fopen(m_FileErr.c_str(), "w");
-        }
+    }
+    if (stream == kSTDERR || stream == kSTDBOTH) {
+      m_FileErr = file;
+      if (!append && !m_FileErr.empty()) {
+        FILE* f = fopen(m_FileErr.c_str(), "w");
       }
     }
   }

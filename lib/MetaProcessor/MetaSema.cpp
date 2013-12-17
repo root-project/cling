@@ -49,13 +49,17 @@ namespace cling {
                          bool append) {
 
     if (!file.str().empty()) {
-      m_Interpreter.enableRedirect(true);
+      //m_Interpreter.enableRedirect(true);
       m_Interpreter.setOutStream(file, stream, append);
       return AR_Success;
     }
     else {
-      m_Interpreter.enableRedirect();
+      m_Interpreter.setOutStream(file, stream, append);
+      return AR_Success;
     }
+    //else {
+      //m_Interpreter.enableRedirect();
+    //}
     return AR_Failure;
   }
 
