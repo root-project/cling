@@ -10,13 +10,11 @@
 #ifndef CLING_META_SEMA_H
 #define CLING_META_SEMA_H
 
-#include "llvm/Support/raw_ostream.h"
 #include "cling/Interpreter/Interpreter.h"
 
 namespace llvm {
   class StringRef;
   class raw_ostream;
-  class raw_fd_ostream;
 }
 
 namespace cling {
@@ -32,8 +30,6 @@ namespace cling {
     MetaProcessor& m_MetaProcessor;
     bool m_IsQuitRequested;
     llvm::raw_ostream& m_Outs; // Shortens m_MetaProcessor->getOuts()
-    llvm::raw_fd_ostream* m_OutRedirect;
-    llvm::raw_fd_ostream* m_ErrRedirect;
   public:
     enum SwitchMode {
       kOff = 0,
@@ -64,8 +60,8 @@ namespace cling {
     ///\param[in] stream - The optional stream to redirect.
     ///
     ActionResult actOnRedirectCommand(llvm::StringRef file,
-                                    Interpreter::RedirectStream stream,
-                                    bool append);
+                                     cling::Interpreter::RedirectStream stream,
+                                     bool append);
 
     ///\brief Actions that need to be performed on occurance of a comment.
     ///

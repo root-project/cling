@@ -14,7 +14,6 @@
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <string>
 #include <cstdlib>
@@ -24,7 +23,6 @@
 
 namespace llvm {
   class raw_ostream;
-  class raw_fd_ostream;
   struct GenericValue;
   class ExecutionEngine;
   class LLVMContext;

@@ -35,7 +35,7 @@ namespace cling {
 
   MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta) 
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
-      m_Outs(m_MetaProcessor.getOuts()) { }
+      m_Outs(m_MetaProcessor.getOuts()){ }
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) const {
     // TODO: extra checks. Eg if the path is readable, if the file exists...

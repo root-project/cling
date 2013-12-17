@@ -153,15 +153,18 @@ namespace cling {
       // > or 1> the redirection is for stdout stream
       // 2> redirection for stderr stream
       // &> redirection for both stdout & stderr
-      switch (getCurTok().getConstant()) {
-        case '1': stream = cling::Interpreter::kSTDOUT; break;
-        case '2': stream = cling::Interpreter::kSTDERR; break;
-        case '&': stream = cling::Interpreter::kSTDBOTH; break;
-        default: stream = cling::Interpreter::kSTDOUT;
+      unsigned constant = getCurTok().getConstant();
+      if (constant == 2) {
+        stream = cling::Interpreter::kSTDERR;
+      } else if (constant != 1) {
+        return false;
       }
-      consumeToken();  
+      consumeToken();
     }
-    if(getCurTok().is(tok::greater)) {
+    if (getCurTok().is(tok::ampersand)) {
+      stream = cling::Interpreter::kSTDBOTH;
+    }
+    if (getCurTok().is(tok::greater)) {
       bool append = false;
       consumeToken();
       // check whether we have >>
@@ -186,8 +189,7 @@ namespace cling {
                                           stream/*which stream to redirect*/,
                                           append/*append mode*/);
       return true;
-    }  
-      
+    } 
     return false;
   }
 

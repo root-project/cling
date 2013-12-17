@@ -33,12 +33,12 @@ namespace cling {
       slash,      // "/"
       backslash,  // "\"
       greater,    // ">"
+      ampersand,   // "&"
       ident,      // (a-zA-Z)[(0-9a-zA-Z)*]
       raw_ident,  // .*^(' '|'\t')
       comment,    // //
       space,      // (' ' | '\t')*
       constant,   // {0-9}
-
       eof,
       unknown
     };

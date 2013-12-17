@@ -142,12 +142,10 @@ namespace cling {
 
     if (m_Interpreter->isRedirectEnabled()) {
       if (!m_Interpreter->m_FileOut.empty()) {
-        std::cout<<"The out file: "<<m_Interpreter->m_FileOut<<"\n";
         terminalOut = ttyname(STDOUT_FILENO);
         stdout = freopen(m_Interpreter->m_FileOut.c_str(), "a", stdout);
       }
       if (!m_Interpreter->m_FileErr.empty()) {
-        std::cout<<"The err file: "<<m_Interpreter->m_FileErr<<"\n";
         terminalErr = ttyname(STDERR_FILENO);
         stderr = freopen(m_Interpreter->m_FileErr.c_str(), "a", stderr);
       }
@@ -162,7 +160,7 @@ namespace cling {
       }
       if (terminalErr) {
         stderr = freopen(terminalErr, "w", stderr);
-      }
+      } 
     }
   }
 
@@ -1098,16 +1096,12 @@ namespace cling {
         if (!append) {
           FILE* f = fopen(m_FileOut.c_str(), "w");
         }
-        std::cout<<"The parameter out is: "<<file.str()<<"\n";
-        std::cout<<"The result out is: "<<m_FileOut<<"\n";
       }
       if (stream == kSTDERR || stream == kSTDBOTH) {
         m_FileErr = file;
         if (!append) {
           FILE* f = fopen(m_FileErr.c_str(), "w");
         }
-        std::cout<<"The parameter err is: "<<file.str()<<"\n";
-        std::cout<<"The result err is: "<<m_FileOut<<"\n";
       }
     }
   }

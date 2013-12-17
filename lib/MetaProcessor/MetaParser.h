@@ -33,7 +33,7 @@ namespace cling {
   //                            GCommand | PrintIRCommand | StoreStateCommand | 
   //                            CompareStateCommand | undoCommand
   //                 LCommand := 'L' FilePath
-  //                 >Command := '<' FilePath  
+  //                 >Command := '>' FilePath
   //                 qCommand := 'q'
   //                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
   //                 UCommand := 'U'
