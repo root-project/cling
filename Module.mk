@@ -68,7 +68,7 @@ ifeq ($(ROOTBUILD),debug)
 endif
 CLINGCXXFLAGS += $(CLINGCXXNDEBUG)
 
-ifneq (,$(findstring $(ARCH),win32gcc win64gcc))
+ifneq (,$(filter $(ARCH),win32gcc win64gcc))
 # Hide llvm / clang symbols:
 CLINGLDFLAGSEXTRA += -Wl,--exclude-libs,ALL 
 endif
@@ -82,7 +82,7 @@ CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 	$(filter-out -lLLVMipa,$(shell $(LLVMCONFIG) --libs)))\
 	$(shell $(LLVMCONFIG) --ldflags)
 
-ifneq (,$(findstring $(ARCH),win32gcc win64gcc))
+ifneq (,$(filter $(ARCH),win32gcc win64gcc))
 # for EnumProcessModules() in TCling.cxx
 CLINGLIBEXTRA += -lpsapi
 endif
