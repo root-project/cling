@@ -1,4 +1,6 @@
 // RUN: cat %s | %cling -Xclang -verify | FileCheck %s
+// XFAIL: i686, i386
+// due to aggregate return in getWithDtor(); see ROOT-5860
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/StoredValueRef.h"
