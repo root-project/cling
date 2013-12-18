@@ -13,6 +13,9 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <stdlib.h>
+#include <algorithm>
+#include <iostream>
+#include <stdio.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -94,11 +97,44 @@ namespace cling {
         if (llvm::sys::fs::is_directory(llvm::StringRef(at)))
           Paths.push_back(at);
     }
-
-    Paths.push_back("/usr/local/lib/");
-    Paths.push_back("/usr/X11R6/lib/");
-    Paths.push_back("/usr/lib/");
-    Paths.push_back("/lib/");
+    static bool initialized = false;
+    static std::vector<std::string> SysPaths;
+    if (!initialized) {
+      // trick to get the system search path
+      std::string cmd("LD_DEBUG=libs LD_PRELOAD=DOESNOTEXIST ls 2>&1");
+      FILE *pf = popen(cmd.c_str (), "r");
+      std::string result = "";
+      std::string sys_path = "";
+      char buffer[128];
+      while (!feof(pf)) {
+         if (fgets(buffer, 128, pf) != NULL)
+            result += buffer;
+      }
+      pclose(pf);
+      std::size_t from = result.find("search path=", result.find("(LD_LIBRARY_PATH)"));
+      std::size_t to = result.find("(system search path)");
+      if (from != std::string::npos && to != std::string::npos) {
+         from += 12;
+         sys_path = result.substr(from, to-from);
+         sys_path.erase(std::remove_if(sys_path.begin(), sys_path.end(), isspace), sys_path.end());
+         sys_path += ':'; 
+      }
+      static const char PathSeparator = ':';
+      const char* at = sys_path.c_str();
+      const char* delim = strchr(at, PathSeparator);
+      while (delim != 0) {
+        std::string tmp(at, size_t(delim-at));
+        if (llvm::sys::fs::is_directory(tmp.c_str()))
+          SysPaths.push_back(tmp);
+        at = delim + 1;
+        delim = strchr(at, PathSeparator);
+      }
+      initialized = true;
+    }
+    std::vector<std::string>::const_iterator it = SysPaths.begin();
+    while ((++it) != SysPaths.end()) {
+      Paths.push_back((*it).c_str());
+    }
   }
 #elif defined(LLVM_ON_WIN32)
   static void GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
