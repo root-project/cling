@@ -26,14 +26,41 @@
 #include <fstream>
 #include <cstdlib>
 #include <cctype>
+#include <unistd.h>
+#include <stdio.h>
 
 
 using namespace clang;
 
 namespace cling {
 
+  MetaProcessor::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(MetaProcessor* p)
+  :m_MetaProcessor(p), terminalOut(0), terminalErr(0) {
+    //Empty file acts as a flag.
+    if (!m_MetaProcessor->m_FileOut.empty()) {
+      terminalOut = ttyname(STDOUT_FILENO);
+      stdout = freopen(m_MetaProcessor->m_FileOut.c_str(), "a", stdout);
+    }
+    //Empty file acts as a flag.
+    if (!m_MetaProcessor->m_FileErr.empty()) {
+      terminalErr = ttyname(STDERR_FILENO);
+      stderr = freopen(m_MetaProcessor->m_FileErr.c_str(), "a", stderr);
+    }
+  }
+
+  void MetaProcessor::MaybeRedirectOutputRAII::pop() {
+
+    //Switch back to standard output after line is processed.
+    if (terminalOut) {
+      stdout = freopen(terminalOut, "w", stdout);
+    }
+    if (terminalErr) {
+      stderr = freopen(terminalErr, "w", stderr);
+    }
+  }
+
   MetaProcessor::MetaProcessor(Interpreter& interp, raw_ostream& outs) 
-    : m_Interp(interp), m_Outs(outs) {
+    : m_Interp(interp), m_Outs(outs), m_FileOut(""), m_FileErr("") {
     m_InputValidator.reset(new InputValidator());
     m_MetaParser.reset(new MetaParser(new MetaSema(interp, *this)));
   }
@@ -222,6 +249,22 @@ namespace cling {
     if (topmost)
       m_TopExecutingFile = llvm::StringRef();
     return ret;
+  }
+
+  void MetaProcessor::setStdStream(llvm::StringRef file,
+                                   RedirectStream stream, bool append) {
+    if (stream == kSTDOUT || stream == kSTDBOTH) {
+      m_FileOut = file;
+      if (!append && !m_FileOut.empty()) {
+        FILE* f = fopen(m_FileOut.c_str(), "w");
+      }
+    }
+    if (stream == kSTDERR || stream == kSTDBOTH) {
+      m_FileErr = file;
+      if (!append && !m_FileErr.empty()) {
+        FILE* f = fopen(m_FileErr.c_str(), "w");
+      }
+    }
   }
 
 } // end namespace cling

@@ -52,6 +52,37 @@ namespace cling {
     ///
     llvm::raw_ostream& m_Outs;
 
+    //brief The file name for the redirection of the stdout.
+    ///
+    std::string m_FileOut;
+
+    ///brief The file name for the redirection of the stderr.
+    ///
+    std::string m_FileErr;
+
+  public:
+    enum RedirectStream {
+      kSTDOUT,
+      kSTDERR,
+      kSTDBOTH
+    };
+
+  public:
+    ///brief Class to be created for each processing input to be
+    /// able to redirect std.
+    class MaybeRedirectOutputRAII {
+    private:
+      MetaProcessor* m_MetaProcessor;
+      char *terminalOut;
+      char *terminalErr;
+
+    public:
+      MaybeRedirectOutputRAII(MetaProcessor* p);
+      ~MaybeRedirectOutputRAII() { pop(); }
+    private:
+      void pop();
+    };
+
   public:
     MetaProcessor(Interpreter& interp, llvm::raw_ostream& outs);
     ~MetaProcessor();
@@ -128,6 +159,14 @@ namespace cling {
                       StoredValueRef* result,
                       bool ignoreOutmostBlock = false);
 
+    ///\brief Set the stdout and stderr stream to the appropriate file.
+    ///
+    ///\param [in] file - The file for teh redirection
+    ///\param [in] stream - Which stream to redirect: stdout, stderr or both.
+    ///\param [in] append - Write in append mode.
+    ///
+    void setStdStream(llvm::StringRef file, RedirectStream stream,
+                      bool append);
   };
 } // end namespace cling
 

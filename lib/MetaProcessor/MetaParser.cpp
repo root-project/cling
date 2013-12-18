@@ -141,28 +141,29 @@ namespace cling {
     return result;
   }
 
-  // <RedirectCommand := '>' FilePath
+  // >RedirectCommand := '>' FilePath
   // FilePath := AnyString
   // AnyString := .*^(' ' | '\t')
   bool MetaParser::isRedirectCommand(MetaSema::ActionResult& actionResult) {
 
     // Default redirect is stdout.
-    Interpreter::RedirectStream stream = cling::Interpreter::kSTDOUT;
+    MetaProcessor::RedirectStream stream = MetaProcessor::kSTDOUT;
     //
     if (getCurTok().is(tok::constant)) {
       // > or 1> the redirection is for stdout stream
       // 2> redirection for stderr stream
-      // &> redirection for both stdout & stderr
       unsigned constant = getCurTok().getConstant();
       if (constant == 2) {
-        stream = cling::Interpreter::kSTDERR;
+        stream = MetaProcessor::kSTDERR;
+      // Wrong constant, do not redirect.
       } else if (constant != 1) {
         return false;
       }
       consumeToken();
     }
+    // &> redirection for both stdout & stderr
     if (getCurTok().is(tok::ampersand)) {
-      stream = cling::Interpreter::kSTDBOTH;
+      stream = MetaProcessor::kSTDBOTH;
       consumeToken();
     }
     if (getCurTok().is(tok::greater)) {
@@ -185,6 +186,7 @@ namespace cling {
           file  = llvm::StringRef();
         }
       }
+      // Empty file means std.
       actionResult =
           m_Actions->actOnRedirectCommand(file/*file*/,
                                           stream/*which stream to redirect*/,

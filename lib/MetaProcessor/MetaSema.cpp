@@ -35,7 +35,7 @@ namespace cling {
 
   MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta) 
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
-      m_Outs(m_MetaProcessor.getOuts()){ }
+      m_Outs(m_MetaProcessor.getOuts()) { }
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) const {
     // TODO: extra checks. Eg if the path is readable, if the file exists...
@@ -45,21 +45,17 @@ namespace cling {
   }
 
   MetaSema::ActionResult MetaSema::actOnRedirectCommand(llvm::StringRef file,
-                         Interpreter::RedirectStream stream,
+                         MetaProcessor::RedirectStream stream,
                          bool append) {
 
     if (!file.str().empty()) {
-      //m_Interpreter.enableRedirect(true);
-      m_Interpreter.setOutStream(file, stream, append);
+      m_MetaProcessor.setStdStream(file, stream, append);
       return AR_Success;
     }
     else {
-      m_Interpreter.setOutStream(file, stream, append);
+      m_MetaProcessor.setStdStream(file, stream, append);
       return AR_Success;
     }
-    //else {
-      //m_Interpreter.enableRedirect();
-    //}
     return AR_Failure;
   }
 
@@ -256,5 +252,8 @@ namespace cling {
     // nothing to run - should this be success or failure?
     return AR_Failure;
   }
+
+
+
 
 } // end namespace cling

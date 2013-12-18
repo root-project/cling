@@ -119,25 +119,6 @@ namespace cling {
       kNumExeResults
     };
 
-    enum RedirectStream {
-      kSTDOUT,
-      kSTDERR,
-      kSTDBOTH
-    };
-
-  private:
-    class MaybeRedirectOutputRAII {
-    private:
-      Interpreter* m_Interpreter;
-      char *terminalOut;
-      char *terminalErr;
-
-    public:
-      MaybeRedirectOutputRAII(Interpreter* i);
-      ~MaybeRedirectOutputRAII() { pop(); }
-      void pop();
-    };
-
   private:
 
     ///\brief Interpreter invocation options.
@@ -179,13 +160,6 @@ namespace cling {
     ///\brief Flag toggling the raw input on or off.
     ///
     bool m_RawInputEnabled;
-
-    ///flag redirect out
-    bool m_RedirectEnabled;
-
-    std::string m_FileOut;
-
-    std::string m_FileErr;
 
     ///\brief Interpreter callbacks.
     ///
@@ -534,12 +508,6 @@ namespace cling {
 
     bool isRawInputEnabled() const { return m_RawInputEnabled; }
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
-
-    bool isRedirectEnabled() const { return m_RedirectEnabled; }
-    void enableRedirect(bool redirect = false) { m_RedirectEnabled = redirect;}
-
-    void setOutStream(llvm::StringRef out, RedirectStream stream,
-                      bool append);
 
     clang::CompilerInstance* getCI() const;
     const clang::Sema& getSema() const;

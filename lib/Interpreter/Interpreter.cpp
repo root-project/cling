@@ -137,29 +137,6 @@ namespace cling {
     }
   }
 
-  Interpreter::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(Interpreter* i)
-  :m_Interpreter(i), terminalOut(0), terminalErr(0) {
-
-    if (!m_Interpreter->m_FileOut.empty()) {
-      terminalOut = ttyname(STDOUT_FILENO);
-      stdout = freopen(m_Interpreter->m_FileOut.c_str(), "a", stdout);
-    }
-    if (!m_Interpreter->m_FileErr.empty()) {
-      terminalErr = ttyname(STDERR_FILENO);
-      stderr = freopen(m_Interpreter->m_FileErr.c_str(), "a", stderr);
-    }
-  }
-
-  void Interpreter::MaybeRedirectOutputRAII::pop() {
-
-    if (terminalOut) {
-      stdout = freopen(terminalOut, "w", stdout);
-    }
-    if (terminalErr) {
-      stderr = freopen(terminalErr, "w", stderr);
-    }
-  }
-
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
   // GetMainExecutable (since some platforms don't support taking the
@@ -183,8 +160,7 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
     m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), 
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
-    m_RedirectEnabled(false), m_FileOut(""), m_FileErr("") {
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -893,7 +869,7 @@ namespace cling {
                                 const CompilationOptions& CO,
                                 StoredValueRef* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
-    MaybeRedirectOutputRAII RAII(const_cast<Interpreter*>(this));
+
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
     ignoreFakeDiagnostics();
@@ -1081,23 +1057,6 @@ namespace cling {
     // Note: The first thing this routine does is getCanonicalType(), so we
     //       do not need to do that first.
     return getCodeGenerator()->ConvertType(QT);
-  }
-
-  void Interpreter::setOutStream(llvm::StringRef file,
-                                 RedirectStream stream,
-                                 bool append) {
-    if (stream == kSTDOUT || stream == kSTDBOTH) {
-      m_FileOut = file;
-      if (!append && !m_FileOut.empty()) {
-        FILE* f = fopen(m_FileOut.c_str(), "w");
-      }
-    }
-    if (stream == kSTDERR || stream == kSTDBOTH) {
-      m_FileErr = file;
-      if (!append && !m_FileErr.empty()) {
-        FILE* f = fopen(m_FileErr.c_str(), "w");
-      }
-    }
   }
 
 } // namespace cling
