@@ -135,7 +135,7 @@ namespace cling {
     while ((++it) != SysPaths.end()) {
       Paths.push_back((*it).c_str());
     }
-#if __APPLE__
+#ifdef __APPLE__
     Paths.push_back("/usr/local/lib/");
     Paths.push_back("/usr/X11R6/lib/");
     Paths.push_back("/usr/lib/");
