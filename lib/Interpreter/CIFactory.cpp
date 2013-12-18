@@ -19,6 +19,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 
+#include "llvm/Config/llvm-config.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Target/TargetOptions.h"
@@ -29,6 +30,7 @@
 #include "llvm/Support/Process.h"
 
 #include <ctime>
+#include <cstdio>
 
 using namespace clang;
 
@@ -70,6 +72,95 @@ namespace cling {
                                         const char* llvmdir) {
     return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv,
                     llvmdir, new DeclCollector());
+  }
+
+  ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
+  /// a mismatch could cause havoc. Reports if ABI versions differ.
+  static void CheckABICompatibility() {
+#ifdef __GLIBCXX__
+# define CLING_CXXABIV __GLIBCXX__
+# define CLING_CXXABIS "__GLIBCXX__"
+#elif _LIBCPP_ABI_VERSION
+# define CLING_CXXABIV _LIBCPP_ABI_VERSION
+# define CLING_CXXABIS "_LIBCPP_ABI_VERSION"
+#else
+# define CLING_CXXABIV -1 // intentionally invalid macro name
+# define CLING_CXXABIS "-1" // intentionally invalid macro name
+    llvm::errs()
+      << "Warning in cling::CIFactory::createCI():\n  "
+      "C++ ABI check not implemented for this standard library\n";
+    return;
+#endif
+    static const char* runABIQuery
+      = "echo '#include <vector>' | " LLVM_CXX " -xc++ -dM -E - "
+      "| grep 'define " CLING_CXXABIS "' | awk '{print $3}'";
+    bool ABIReadError = true;
+    if (FILE *pf = ::popen(runABIQuery, "r")) {
+      char buf[2048];
+      if (fgets(buf, 2048, pf)) {
+        size_t lenbuf = strlen(buf);
+        if (lenbuf) {
+          ABIReadError = false;
+          buf[lenbuf - 1] = 0;   // remove trailing \n
+          int runABIVersion = ::atoi(buf);
+          if (runABIVersion != CLING_CXXABIV) {
+            llvm::errs()
+              << "ERROR in cling::CIFactory::createCI():\n  "
+              "C++ ABI mismatch, compiled with "
+              CLING_CXXABIS " v" << CLING_CXXABIV
+              << " running with v" << runABIVersion << "\n";
+          }
+        }
+      }
+      ::pclose(pf);
+    }
+    if (ABIReadError) {
+      llvm::errs()
+        << "ERROR in cling::CIFactory::createCI():\n  "
+        "Possible C++ standard library mismatch, compiled with "
+        CLING_CXXABIS " v" << CLING_CXXABIV
+        << " but cannot extract standard library version from current compiler "
+        LLVM_CXX "\n";
+    }
+#undef CLING_CXXABIV
+#undef CLING_CXXABIS
+  }
+
+  ///\brief Adds standard library -I used by whatever compiler is found in PATH.
+  static void AddHostCXXIncludes(std::vector<const char*>& args) {
+    static bool IncludesSet = false;
+    static std::vector<std::string> HostCXXI;
+    if (!IncludesSet) {
+      IncludesSet = true;
+      static const char *CppInclQuery =
+        "echo | " LLVM_CXX " -xc++ -E -v - 2>&1 >/dev/null "
+        "| awk '/^#include </,/^End of search"
+        "/{if (!/^#include </ && !/^End of search/){ print }}' "
+        "| grep -E \"(c|g)\\+\\+\"";
+      if (FILE *pf = ::popen(CppInclQuery, "r")) {
+
+        HostCXXI.push_back("-nostdinc++");
+        char buf[2048];
+        while (fgets(buf, sizeof(buf), pf) && buf[0]) {
+          size_t lenbuf = strlen(buf);
+          buf[lenbuf - 1] = 0;   // remove trailing \n
+          // Skip leading whitespace:
+          const char* start = buf;
+          while (start < buf + lenbuf && *start == ' ')
+            ++start;
+          if (*start) {
+            HostCXXI.push_back("-I");
+            HostCXXI.push_back(start);
+          }
+        }
+        ::pclose(pf);
+      }
+      CheckABICompatibility();
+    }
+
+    for (std::vector<std::string>::const_iterator
+           I = HostCXXI.begin(), E = HostCXXI.end(); I != E; ++I)
+      args.push_back(I->c_str());
   }
 
   CompilerInstance* CIFactory::createCI(llvm::MemoryBuffer* buffer,
@@ -136,6 +227,7 @@ namespace cling {
     }
     argvCompile.push_back("-c");
     argvCompile.push_back("-");
+    AddHostCXXIncludes(argvCompile);
 
     clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
                                  "cling.out",
