@@ -135,6 +135,12 @@ namespace cling {
     while ((++it) != SysPaths.end()) {
       Paths.push_back((*it).c_str());
     }
+#if __APPLE__
+    Paths.push_back("/usr/local/lib/");
+    Paths.push_back("/usr/X11R6/lib/");
+    Paths.push_back("/usr/lib/");
+    Paths.push_back("/lib/");
+#endif
   }
 #elif defined(LLVM_ON_WIN32)
   static void GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
