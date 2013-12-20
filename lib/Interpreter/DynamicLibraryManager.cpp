@@ -97,7 +97,17 @@ namespace cling {
         if (llvm::sys::fs::is_directory(llvm::StringRef(at)))
           Paths.push_back(at);
     }
-#ifndef __CYGWIN__
+#if defined(__APPLE__) || defined(__CYGWIN__)
+    Paths.push_back("/usr/local/lib/");
+    Paths.push_back("/usr/X11R6/lib/");
+    Paths.push_back("/usr/lib/");
+    Paths.push_back("/lib/");
+
+    Paths.push_back("/lib/x86_64-linux-gnu/");
+    Paths.push_back("/usr/local/lib64/");
+    Paths.push_back("/usr/lib64/");
+    Paths.push_back("/lib64/");
+#else
     static bool initialized = false;
     static std::vector<std::string> SysPaths;
     if (!initialized) {
@@ -136,17 +146,6 @@ namespace cling {
     while ((++it) != SysPaths.end()) {
       Paths.push_back((*it).c_str());
     }
-#endif
-#if defined(__APPLE__) || defined(__CYGWIN__)
-    Paths.push_back("/usr/local/lib/");
-    Paths.push_back("/usr/X11R6/lib/");
-    Paths.push_back("/usr/lib/");
-    Paths.push_back("/lib/");
-
-    Paths.push_back("/lib/x86_64-linux-gnu/");
-    Paths.push_back("/usr/local/lib64/");
-    Paths.push_back("/usr/lib64/");
-    Paths.push_back("/lib64/");
 #endif
   }
 #elif defined(LLVM_ON_WIN32)
