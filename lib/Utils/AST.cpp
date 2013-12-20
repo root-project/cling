@@ -1320,7 +1320,7 @@ namespace utils {
         const NamespaceDecl *ns = prefix->getAsNamespace();
         if (!(ns && ns->isAnonymousNamespace())) {
           prefix_qualifiers = QT.getLocalQualifiers();
-          prefix = GetFullyQualifiedTypeNNS(Ctx, prefix);
+          prefix = GetFullyQualifiedNameSpecifier(Ctx, prefix);
           QT = QualType(etype_input->getNamedType().getTypePtr(),0);
         } else {
           prefix = 0;
