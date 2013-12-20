@@ -1213,44 +1213,6 @@ namespace utils {
     return 0;
   }
 
-
-  static NestedNameSpecifier*
-  GetFullyQualifiedTypeNNS(const ASTContext& Ctx,
-                           NestedNameSpecifier* scope) {
-    // Make sure that the given namespecifier has a fully qualifying chain
-    // (a name specifier for each of the declaring context) and that each
-    // of the element of the chain, if they are templates, have all they
-    // template argument fully qualified.
-
-    const Type* scope_type = scope->getAsType();
-    if (scope_type) {
-      scope_type = GetFullyQualifiedLocalType(Ctx, scope_type);
-
-      // This is not a namespace, so we might need to also look at its
-      // (potential) template parameter.
-      NestedNameSpecifier* outer_scope = scope->getPrefix();
-      if (outer_scope) {
-        outer_scope = GetFullyQualifiedTypeNNS(Ctx, outer_scope);
-
-        // NOTE: Should check whether the type has changed or not?
-        return NestedNameSpecifier::Create(Ctx,outer_scope,
-                                           false /* template keyword wanted */,
-                                           scope_type);
-      } else {
-        // Do we need to make one up?
-
-        // NOTE: Should check whether the type has changed or not.
-        outer_scope = CreateNestedNameSpecifierForScopeOf(Ctx,scope_type,
-                                                       true /*FullyQualified*/);
-        return NestedNameSpecifier::Create(Ctx,outer_scope,
-                                           false /* template keyword wanted */,
-                                           scope_type);
-      }
-    }
-    return scope;
-  }
-
-
   NestedNameSpecifier*
   TypeName::CreateNestedNameSpecifier(const ASTContext& Ctx,
                                       const NamespaceDecl* Namesp) {
