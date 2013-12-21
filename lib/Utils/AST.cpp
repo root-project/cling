@@ -264,6 +264,9 @@ namespace utils {
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
                                                   NestedNameSpecifier* scope) {
     // Return a fully qualified version of this name specifier
+    if (scope->getKind() == NestedNameSpecifier::Global)
+      return scope;
+
     NestedNameSpecifier *outer_nns = scope;
     while( outer_nns->getPrefix()
           && outer_nns->getKind() != NestedNameSpecifier::Global) {
@@ -309,8 +312,7 @@ namespace utils {
     if (needCreate) {
       if (NamespaceDecl *ns = scope->getAsNamespace()) {
         return TypeName::CreateNestedNameSpecifier(Ctx,ns);
-      } else if (NamespaceAliasDecl *alias = scope->getAsNamespaceAlias())
-      {
+      } else if (NamespaceAliasDecl *alias = scope->getAsNamespaceAlias()) {
         return TypeName::CreateNestedNameSpecifier(Ctx,
                                      alias->getNamespace()->getCanonicalDecl());
 
@@ -1280,7 +1282,8 @@ namespace utils {
       prefix = etype_input->getQualifier();
       if (prefix) {
         const NamespaceDecl *ns = prefix->getAsNamespace();
-        if (!(ns && ns->isAnonymousNamespace())) {
+        if (prefix != NestedNameSpecifier::GlobalSpecifier(Ctx)
+            && !(ns && ns->isAnonymousNamespace())) {
           prefix_qualifiers = QT.getLocalQualifiers();
           prefix = GetFullyQualifiedNameSpecifier(Ctx, prefix);
           QT = QualType(etype_input->getNamedType().getTypePtr(),0);
