@@ -25,6 +25,7 @@ namespace clang {
   class Sema;
   class TagDecl;
   class Type;
+  class TypedefNameDecl;
 }
 
 namespace cling {
@@ -236,6 +237,19 @@ namespace utils {
     clang::NestedNameSpecifier*
     CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
                               const clang::TagDecl *TD, bool FullyQualify);
+
+    ///\brief Create a NestedNameSpecifier for TypedefDecl and its enclosing
+    /// scopes.
+    ///
+    ///\param[in] Ctx - the AST Context to be used.
+    ///\param[in] TD - the TypedefDecl for which a NestedNameSpecifier is
+    /// requested.
+    ///\param[in] FullyQualify - Convert all template arguments (of possible
+    /// parent scopes) into fully qualified names.
+    clang::NestedNameSpecifier*
+    CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
+                              const clang::TypedefNameDecl *TD,
+                              bool FullyQualify);
 
   } // end namespace TypeName
 } // end namespace utils

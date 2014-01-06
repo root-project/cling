@@ -253,9 +253,11 @@ namespace utils {
     if (const NamespaceDecl* NS = dyn_cast<NamespaceDecl>(DC)) {
       if (NS->getDeclName())
         return TypeName::CreateNestedNameSpecifier(Ctx, NS);
-      return 0; // no starting '::'
+      return 0; // no starting '::', no anonymous
     } else if (const TagDecl* TD = dyn_cast<TagDecl>(DC)) {
       return TypeName::CreateNestedNameSpecifier(Ctx, TD, FullyQualify);
+    } else if (const TypedefNameDecl* TDD = dyn_cast<TypedefNameDecl>(DC)) {
+      return TypeName::CreateNestedNameSpecifier(Ctx, TDD, FullyQualify);
     }
     return 0; // no starting '::'
   }
@@ -264,84 +266,33 @@ namespace utils {
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
                                                   NestedNameSpecifier* scope) {
     // Return a fully qualified version of this name specifier
-    if (scope->getKind() == NestedNameSpecifier::Global)
+    if (scope->getKind() == NestedNameSpecifier::Global) {
+      // Already fully qualified.
       return scope;
-
-    NestedNameSpecifier *outer_nns = scope;
-    while( outer_nns->getPrefix()
-          && outer_nns->getKind() != NestedNameSpecifier::Global) {
-      outer_nns = outer_nns->getPrefix();
     }
-    Decl* decl = 0;
-    if (outer_nns->getKind() == NestedNameSpecifier::Global) {
-      // leave decl to 0.
-    } else if (const Type *type = outer_nns->getAsType()) {
+
+    if (const Type *type = scope->getAsType()) {
       // Find decl context.
-      const TypedefType* typedeftype = dyn_cast_or_null<TypedefType>(type);
-      if (typedeftype) {
-        decl = typedeftype->getDecl();
+      const TagDecl* TD = 0;
+      if (const TagType* tagdecltype = dyn_cast<TagType>(type)) {
+        TD = tagdecltype->getDecl();
       } else {
-        // There are probably other cases ...
-        const TagType* tagdecltype = dyn_cast_or_null<TagType>(type);
-        if (tagdecltype) {
-          decl = tagdecltype->getDecl();
-        } else {
-          decl = type->getAsCXXRecordDecl();
-        }
+        TD = type->getAsCXXRecordDecl();
       }
-    } else if ( (decl = outer_nns->getAsNamespace()) ) {
-      // Found decl.
-    } else if ( (decl = outer_nns->getAsNamespaceAlias()) ) {
-      // Found decl.
+      if (TD) {
+        return TypeName::CreateNestedNameSpecifier(Ctx, TD,
+                                                   true /*FullyQualified*/);
+      } else if (const TypedefType* TDD = dyn_cast<TypedefType>(type)) {
+        return TypeName::CreateNestedNameSpecifier(Ctx, TDD->getDecl(),
+                                                   true /*FullyQualified*/);
+      }
+    } else if (const NamespaceDecl* NS = scope->getAsNamespace()) {
+      return TypeName::CreateNestedNameSpecifier(Ctx, NS);
+    } else if (const NamespaceAliasDecl* alias = scope->getAsNamespaceAlias()) {
+      const NamespaceDecl* NS = alias->getNamespace()->getCanonicalDecl();
+      return TypeName::CreateNestedNameSpecifier(Ctx, NS);
     }
 
-    bool needCreate = false;
-    if (decl == 0) {
-      // We have the global namespace in there, we don't want it.
-      needCreate = true;
-    } else {
-      NamedDecl* outer = dyn_cast<NamedDecl>(decl->getDeclContext());
-      NamespaceDecl* outer_ns = dyn_cast<NamespaceDecl>(decl->getDeclContext());
-      if (outer
-          && !(outer_ns && outer_ns->isAnonymousNamespace())
-          && outer->getName().size() )
-      {
-        needCreate = true;
-      }
-    }
-    if (needCreate) {
-      if (NamespaceDecl *ns = scope->getAsNamespace()) {
-        return TypeName::CreateNestedNameSpecifier(Ctx,ns);
-      } else if (NamespaceAliasDecl *alias = scope->getAsNamespaceAlias()) {
-        return TypeName::CreateNestedNameSpecifier(Ctx,
-                                     alias->getNamespace()->getCanonicalDecl());
-
-      } else {
-        // We should only create the nested name specifier
-        // if the outer scope is really a TagDecl.
-        // It could also be a CXXMethod for example.
-        const Type *type = scope->getAsType();
-        const TypedefType* typedeftype = dyn_cast_or_null<TypedefType>(type);
-        Decl *idecl;
-        if (typedeftype) {
-          idecl = typedeftype->getDecl();
-        } else {
-          // There are probably other cases ...
-          const TagType* tagdecltype = dyn_cast_or_null<TagType>(type);
-          if (tagdecltype) {
-            idecl = tagdecltype->getDecl();
-          } else {
-            idecl = type->getAsCXXRecordDecl();
-          }
-        }
-        TagDecl *tdecl = dyn_cast<TagDecl>(idecl);
-        if (tdecl) {
-          return TypeName::CreateNestedNameSpecifier(Ctx, tdecl,
-                                                     true /*FullyQualified*/);
-        }
-      }
-    }
-    // It was fine.
     return scope;
   }
 
@@ -1222,6 +1173,16 @@ namespace utils {
     return NestedNameSpecifier::Create(Ctx, CreateOuterNNS(Ctx, Namesp,
                                                            FullyQualified),
                                        Namesp);
+  }
+
+  NestedNameSpecifier*
+  TypeName::CreateNestedNameSpecifier(const ASTContext& Ctx,
+                                      const TypedefNameDecl* TD,
+                                      bool FullyQualify) {
+    return NestedNameSpecifier::Create(Ctx, CreateOuterNNS(Ctx, TD,
+                                                           FullyQualify),
+                                       true /*Template*/,
+                                       TD->getTypeForDecl());
   }
 
   NestedNameSpecifier*
