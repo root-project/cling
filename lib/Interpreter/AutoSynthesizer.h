@@ -1,7 +1,10 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: cb7241880ebcbba87b2ae16476c2812afd7ff571 $
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #ifndef CLING_AUTO_SYNTHESIZER_H

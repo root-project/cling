@@ -1,7 +1,10 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: IncrementalParser.h 42072 2011-11-16 19:27:35Z vvassilev $
 // author:  Vassil Vassilev <vvasilev@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #ifndef CLING_COMPILATION_OPTIONS

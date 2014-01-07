@@ -1,7 +1,10 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: Interpreter.cpp 45775 2012-08-31 14:54:11Z vvassilev $
 // author:  Vassil Vassilev <vvasilev@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/DynamicExprInfo.h"

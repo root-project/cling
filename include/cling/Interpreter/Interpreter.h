@@ -1,7 +1,10 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: cd58ec48f1f279a480adfbf866320fc658a41b2d $
 // author:  Lukasz Janyst <ljanyst@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #ifndef CLING_INTERPRETER_H

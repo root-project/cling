@@ -1,7 +1,10 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: 437122046a46b828d7e11a9ab281b2f9c50f8aec $
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #include "CheckEmptyTransactionTransformer.h"

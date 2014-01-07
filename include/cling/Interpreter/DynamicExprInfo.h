@@ -1,7 +1,10 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: DynamicLookupRuntimeUniverse.h 44568 2012-06-05 12:48:15Z axel $
 // author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #ifndef CLING_DYNAMIC_EXPR_INFO_H

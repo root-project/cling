@@ -1,7 +1,10 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: Value.cpp 48537 2013-02-11 17:30:03Z vvassilev $
 // author:  Axel Naumann <axel@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/Value.h"

@@ -1,7 +1,10 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
-// version: $Id: 1b0fb422149b1f3c27b917010553d13030150d58 $
 // author: Timur Pocheptsov <Timur.Pocheptsov@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
 #include "Display.h"
