@@ -1,0 +1,55 @@
+This file lists the most important contributors to the Cling interpreter.
+It is sorted by name and formatted to allow easy grepping and beautification
+by scripts. The fields are: name (N), email (E), description (D).
+
+Please let us know if you are not on this list while you should be, or if
+something in your entry is incorrect.
+
+-------------------
+
+N: Jerome Beclin
+E: jerome.beclin@cern.ch
+D: Contributions to unload verification.
+
+N: Bertrand Bellenot
+E: bertrand.bellenot@cern.ch
+D: Windows ports: MS Visual Studio; cygwin.
+D: File system interaction: search paths, shared libraries.
+
+N: Philippe Canal
+E: pcanal@fnal.gov
+D: Core developer of cling.
+
+N: Cristina Cristescu
+E: bianca-cristina.cristescu@cern.ch
+D: Output redirection.
+D: Contributions to unloading.
+
+N: Baozeng Ding
+E: sploving1@gmail.com
+D: Null-pointer deref protection.
+
+N: Lukasz Janyst
+E: ljanyst@cern.ch
+D: Initial prototype of cling.
+
+N: Axel Naumann
+E: axel@cern.ch
+D: Core developer of cling.
+
+N: Timur Pocheptsov
+E: Timur.Pocheptsov@cern.ch
+D: .class, .typedef prompt interfaces.
+
+N: Fons Rademakers
+E: Fons.Rademakers@cern.ch
+D: Contributions to libc++ support.
+
+N: Paul Russo
+E: russo@fnal.gov
+D: Lookup routines.
+D: Function call interfaces.
+
+N: Vassil Vassilev
+E: vvasilev@cern.ch
+D: Main developer of cling.
