@@ -1,3 +1,11 @@
+//------------------------------------------------------------------------------
+// CLING - the C++ LLVM-based InterpreterG :)
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
+//------------------------------------------------------------------------------
+
 // RUN: test "x`uname -m|sed 's,i.86,i386,'`" = "xi386" || cat %s | %cling -Xclang -verify | FileCheck %s
 // Not running on 32 bit due to aggregate return in getWithDtor(); see ROOT-5860
 
