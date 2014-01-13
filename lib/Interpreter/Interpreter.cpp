@@ -42,12 +42,9 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <iostream>
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <unistd.h>
 
 using namespace clang;
 
@@ -653,7 +650,6 @@ namespace cling {
 
   Interpreter::ExecutionResult
   Interpreter::RunFunction(const FunctionDecl* FD, StoredValueRef* res /*=0*/) {
-
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return kExeCompilationError;
 
@@ -867,7 +863,6 @@ namespace cling {
                                 const CompilationOptions& CO,
                                 StoredValueRef* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
-
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
     ignoreFakeDiagnostics();
