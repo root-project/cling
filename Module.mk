@@ -14,6 +14,7 @@ CLINGS       := $(wildcard $(MODDIR)/lib/Interpreter/*.cpp) \
                 $(wildcard $(MODDIR)/lib/Utils/*.cpp)
 CLINGO       := $(call stripsrc,$(CLINGS:.cpp=.o))
 CLINGEXCEPO  := $(call stripsrc,$(MODDIR)/lib/Interpreter/RuntimeException.o)
+CLINGCOMPDH  := $(call stripsrc,$(MODDIR)/lib/Interpreter/cling-compiledata.h)
 
 CLINGDEP     := $(CLINGO:.o=.d)
 
@@ -88,7 +89,7 @@ CLINGLIBEXTRA += -lpsapi
 endif
 
 ##### local rules #####
-.PHONY:         all-$(MODNAME) clean-$(MODNAME) distclean-$(MODNAME)
+.PHONY:         all-$(MODNAME) clean-$(MODNAME) distclean-$(MODNAME) FORCE
 
 all-$(MODNAME):
 
@@ -127,6 +128,11 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS))  -D__cplusplus -- $<
 	$(CXX) $(OPT) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
 
+$(CLINGCOMPDH): FORCE
+	@echo '#define LLVM_CXX "$(CXX) $(OPT) $(CLINGCXXFLAGS)"' > $@_tmp
+	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
+	@rm -f $@_tmp
+
 ifneq ($(LLVMDEV),)
 ifneq ($(PLATFORM),macosx)
 # -Wl,-E exports all symbols, such that the JIT can find them.
@@ -151,3 +157,5 @@ endif
 $(CLINGEXCEPO): CLINGEXCCXXFLAGS := -fexceptions
 $(CLINGETC) : $(LLVMLIB)
 $(CLINGO)   : $(CLINGETC)
+$(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): $(CLINGCOMPDH)
+$(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): CLINGCXXFLAGS += -I$(dir $(CLINGCOMPDH))

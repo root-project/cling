@@ -10,6 +10,7 @@
 #include "cling/Interpreter/CIFactory.h"
 
 #include "DeclCollector.h"
+#include "cling-compiledata.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TargetInfo.h"
@@ -22,7 +23,6 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 
-#include "llvm/Config/llvm-config.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Target/TargetOptions.h"

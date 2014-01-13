@@ -26,4 +26,12 @@ CPPFLAGS += -I$(PROJ_SRC_DIR)/../../include -I$(PROJ_SRC_DIR)/../../../clang/inc
 
 include $(CLING_LEVEL)/Makefile
 
+$(ObjRootDir)/cling-compiledata.h: FORCE
+	@echo '#define LLVM_CXX "$(CXX) $(CPP.BaseFlags) $(CXX.Flags)"' > $@_tmp
+	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
+	@rm -f $@_tmp
+
 $(ObjRootDir)/RuntimeException.o: CXX.Flags := $(subst -fno-exceptions,,$(CXX.Flags))
+$(ObjRootDir)/CIFactory.o: $(ObjRootDir)/cling-compiledata.h
+$(ObjRootDir)/CIFactory.o: CXX.Flags += -I$(ObjRootDir)
+
