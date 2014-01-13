@@ -45,7 +45,7 @@ namespace cling {
   }
 
   MetaSema::ActionResult MetaSema::actOnRedirectCommand(llvm::StringRef file,
-                         MetaProcessor::RedirectStream stream,
+                         MetaProcessor::RedirectionScope stream,
                          bool append) {
 
     if (!file.str().empty()) {

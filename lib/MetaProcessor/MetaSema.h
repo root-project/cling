@@ -65,7 +65,7 @@ namespace cling {
     ///\param[in] stream - The optional stream to redirect.
     ///
     ActionResult actOnRedirectCommand(llvm::StringRef file,
-                                      MetaProcessor::RedirectStream stream,
+                                      MetaProcessor::RedirectionScope stream,
                                       bool append);
 
     ///\brief Actions that need to be performed on occurance of a comment.

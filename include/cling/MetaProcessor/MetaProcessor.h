@@ -61,10 +61,10 @@ namespace cling {
     std::string m_FileErr;
 
   public:
-    enum RedirectStream {
-      kSTDOUT,
-      kSTDERR,
-      kSTDBOTH
+    enum RedirectionScope {
+      kSTDOUT = 1,
+      kSTDERR = 2,
+      kSTDBOTH = 3
     };
 
   public:
@@ -165,7 +165,7 @@ namespace cling {
     ///\param [in] stream - Which stream to redirect: stdout, stderr or both.
     ///\param [in] append - Write in append mode.
     ///
-    void setStdStream(llvm::StringRef file, RedirectStream stream,
+    void setStdStream(llvm::StringRef file, RedirectionScope stream,
                       bool append);
   };
 } // end namespace cling

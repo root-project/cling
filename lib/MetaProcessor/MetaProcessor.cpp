@@ -252,14 +252,14 @@ namespace cling {
   }
 
   void MetaProcessor::setStdStream(llvm::StringRef file,
-                                   RedirectStream stream, bool append) {
-    if (stream == kSTDOUT || stream == kSTDBOTH) {
+                                   RedirectionScope stream, bool append) {
+    if (stream & kSTDOUT || stream & kSTDBOTH) {
       m_FileOut = file;
       if (!append && !m_FileOut.empty()) {
         FILE* f = fopen(m_FileOut.c_str(), "w");
       }
     }
-    if (stream == kSTDERR || stream == kSTDBOTH) {
+    if (stream & kSTDERR || stream & kSTDBOTH) {
       m_FileErr = file;
       if (!append && !m_FileErr.empty()) {
         FILE* f = fopen(m_FileErr.c_str(), "w");

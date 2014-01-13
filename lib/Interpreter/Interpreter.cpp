@@ -42,14 +42,12 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <unistd.h>
-#include <stdio.h>
 
 using namespace clang;
 

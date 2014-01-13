@@ -18,6 +18,7 @@
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace cling {
 
@@ -147,7 +148,7 @@ namespace cling {
   bool MetaParser::isRedirectCommand(MetaSema::ActionResult& actionResult) {
 
     // Default redirect is stdout.
-    MetaProcessor::RedirectStream stream = MetaProcessor::kSTDOUT;
+    MetaProcessor::RedirectionScope stream = MetaProcessor::kSTDOUT;
     //
     if (getCurTok().is(tok::constant)) {
       // > or 1> the redirection is for stdout stream
@@ -157,7 +158,8 @@ namespace cling {
         stream = MetaProcessor::kSTDERR;
       // Wrong constant, do not redirect.
       } else if (constant != 1) {
-        return false;
+        llvm::errs() << "cling::MetaParser::isRedirectCommand(): invalid file descriptor number " << constant << "\n";
+        return true;
       }
       consumeToken();
     }
