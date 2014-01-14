@@ -26,6 +26,8 @@ CPPFLAGS += -I$(PROJ_SRC_DIR)/../../include -I$(PROJ_SRC_DIR)/../../../clang/inc
 
 include $(CLING_LEVEL)/Makefile
 
+.PHONY: FORCE
+
 $(ObjRootDir)/cling-compiledata.h: FORCE
 	@echo '#define LLVM_CXX "$(CXX) $(CPP.BaseFlags) $(CXX.Flags)"' > $@_tmp
 	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
