@@ -63,3 +63,10 @@ set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS -fexceptions)
 
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
 #                 ClangDriverOptions ClangCC1Options ClangCC1AsOptions)
+
+add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
+  "#define LLVM_CXX \"${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
+")
