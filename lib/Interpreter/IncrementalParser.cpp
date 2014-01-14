@@ -664,13 +664,23 @@ namespace cling {
   }
 
   bool IncrementalParser::shouldIgnore(const Decl* D) const {
+    // This function is called for all "deserialized" decls, where the
+    // "deserialized" decl either really comes from an AST file or from
+    // a header that's loaded to import the AST for a library with a dictionary
+    // (the non-PCM case).
+    //
     // Functions that are inlined must be sent to CodeGen - they will not have a
     // symbol in the library.
     if (const FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {
-      if (D->isFromASTFile())
+      if (D->isFromASTFile()) {
         return !FD->hasBody();
-      else
-        return !FD->isInlined();
+      } else {
+        // If the decl must be emitted then it will be in the library.
+        // If not, we must expose it to CodeGen now because it might
+        // not be in the library. Does this correspond to a weak symbol
+        // by definition?
+        return !(FD->isInlined() || FD->isTemplateInstantiation());
+      }
     }
 
     // Don't codegen statics coming in from a module; they are already part of
