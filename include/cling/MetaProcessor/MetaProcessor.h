@@ -14,6 +14,7 @@
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/SmallString.h"
 
 namespace cling {
 
@@ -76,17 +77,22 @@ namespace cling {
       ///brief Stores the terminal name for after the redirection
       /// when nested redirection - should change name to
       /// previousOutFile.
-      char *terminalOut;
+      llvm::SmallString<1024> m_PrevStdoutFileName;
       ///brief Stores the terminal name for after the redirection
       /// when nested redirection - should change name to
       /// previousErrFile.
-      char *terminalErr;
+      llvm::SmallString<1024> m_PrevStderrFileName;
 
     public:
       MaybeRedirectOutputRAII(MetaProcessor* p);
       ~MaybeRedirectOutputRAII() { pop(); }
     private:
       void pop();
+      bool cacheStd(int fd, llvm::SmallVectorImpl<char>& prevFile);
+      void redirect(int fd, llvm::SmallVectorImpl<char>& prevFile,
+                    std::string fileName, struct _IO_FILE * standard);
+      void unredirect(llvm::SmallVectorImpl<char>& prevFile,
+                      struct _IO_FILE * standard);
     };
 
   public:

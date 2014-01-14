@@ -35,53 +35,87 @@ using namespace clang;
 namespace cling {
 
   MetaProcessor::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(MetaProcessor* p)
-  :m_MetaProcessor(p), terminalOut(0), terminalErr(0) {
+  :m_MetaProcessor(p), m_PrevStdoutFileName(""), m_PrevStderrFileName("") {
     //Empty file acts as a flag.
-    if (!m_MetaProcessor->m_FileOut.empty()) {
-       terminalOut = ttyname(STDOUT_FILENO);
-/*
-      int ttyname_Result = ttyname_r(STDOUT_FILENO, terminalOut, 100);
-      if (ttyname_Result == EBADF) {
-        llvm::errs() << "Error in cling::MetaProcessor: Bad file descriptor.";
-      } else if (ttyname_Result == ENOTTY) {
-        llvm::errs() << "File descriptor does not refer to a terminal device.";
-      } else if (ttyname_Result == ERANGE) {
-        llvm::errs() << "Error in cling::MetaProcessor: (ttyname_r()) buflen"
-                     << " was too small to allow storing the pathname.";
-      }*/
-      stdout = freopen(m_MetaProcessor->m_FileOut.c_str(), "a", stdout);
+    redirect(STDOUT_FILENO, m_PrevStdoutFileName, m_MetaProcessor->m_FileOut, stdout);
+    // Deal with the case 2>&1 and 2&>1
+    if (strcmp(m_MetaProcessor->m_FileErr.c_str(), "_IO_2_1_stdout_") == 0) {
+      SmallString<1024> stdoutName;
+      cacheStd(STDERR_FILENO, stdoutName);
+      m_MetaProcessor->m_FileErr = stdoutName.c_str();
     }
     //Empty file acts as a flag.
-    if (!m_MetaProcessor->m_FileErr.empty()) {
-      terminalErr = ttyname(STDERR_FILENO);
-/*
-      int ttyname_Result = ttyname_r(STDERR_FILENO, terminalErr, 100);
-      if (ttyname_Result == EBADF) {
-        llvm::errs() << "Error in cling::MetaProcessor: Bad file descriptor.";
-      } else if (ttyname_Result == ENOTTY) {
-        llvm::errs() << "File descriptor does not refer to a terminal device.";
-      } else if (ttyname_Result == ERANGE) {
-        llvm::errs() << "Error in cling::MetaProcessor: (ttyname_r()) buflen"
-                     << " was too small to allow storing the pathname.";
-      }*/
-      if (strcmp(m_MetaProcessor->m_FileErr.c_str(), "_IO_2_1_stdout_") == 0) {
-        char* Out = ttyname(STDOUT_FILENO);
-        stderr = freopen(Out, "a", stderr);
-      }
-      else stderr = freopen(m_MetaProcessor->m_FileErr.c_str(), "a", stderr);
-    }
+    redirect(STDERR_FILENO, m_PrevStderrFileName, m_MetaProcessor->m_FileErr, stderr);
+
   }
 
   void MetaProcessor::MaybeRedirectOutputRAII::pop() {
 
-    //Switch back to standard output after line is processed.
-    if (terminalOut) {
-      stdout = freopen(terminalOut, "w", stdout);
+    unredirect(m_PrevStdoutFileName, stdout);
+    unredirect(m_PrevStderrFileName, stderr);
+  }
+
+  bool MetaProcessor::MaybeRedirectOutputRAII::cacheStd(int fd,
+                                                      llvm::SmallVectorImpl<char>& file) {
+
+    int ttyname_Result = ttyname_r(fd, const_cast<char*>(file.data()), file.capacity());
+    while (ttyname_Result == ERANGE) {
+      file.reserve(16*file.capacity());
+      ttyname_Result = ttyname_r(fd, const_cast<char*>(file.data()), file.capacity());
     }
-    if (terminalErr) {
-      stderr = freopen(terminalErr, "w", stderr);
+
+    if (ttyname_Result == 0) {
+      file.set_size(strlen(file.data()));
+      return true;
+    } else if (ttyname_Result == EBADF) {
+      llvm::errs() << "Error in cling::MetaProcessor: Bad file descriptor.";
+    } else if (ttyname_Result == ENOTTY) {
+      llvm::errs() << "File descriptor does not refer to a terminal device.";
+    } else if (ttyname_Result == EAGAIN) {
+      llvm::errs() << "The device driver was in use by another process, or the driver"
+                   << "was unable to carry out the request due to an outstanding command in progress.";
+    } else if (ttyname_Result == EINTR) {
+      llvm::errs() << "The function was interrupted by a signal.";
+    } else if (ttyname_Result == ENOSYS) {
+      llvm::errs() << "The ttyname_r() function isn't implemented for the filesystem specified by filedes.";
+    } else if (ttyname_Result == EPERM) {
+      llvm::errs() << "The process doesn't have sufficient permission to carry out the requested command.";
+    }
+    return false;
+  }
+
+  void MetaProcessor::MaybeRedirectOutputRAII::redirect(int fd,
+                                                        llvm::SmallVectorImpl<char>& prevFile,
+                                                        std::string fileName,
+                                                        struct _IO_FILE * standard) {
+    if (!fileName.empty()) {
+      //Cache prevous stdout.
+      if (!cacheStd(fd, prevFile)) {
+        llvm::errs() << "cling::MetaProcessor Error: Was not able to cache "
+                     << "previous output. Will not be able to redirect back.";
+      }
+      _IO_FILE * redirectionFile = freopen(fileName.c_str(), "a", standard);
+      if (!redirectionFile) {
+        llvm::errs() << "cling::MetaProcessor Error: The file path is not valid.";
+      } else {
+        standard = redirectionFile;
+      }
     }
   }
+
+  void MetaProcessor::MaybeRedirectOutputRAII::unredirect(llvm::SmallVectorImpl<char>& file,
+                                                          struct _IO_FILE * standard) {
+    //Switch back to standard output after line is processed.
+    if (!file.empty()) {
+      _IO_FILE * redirectionFile = freopen(file.data(), "w", standard);
+      if (!redirectionFile) {
+        llvm::errs() << "cling::MetaProcessor Error: The file path is not valid.";
+      } else {
+        standard = redirectionFile;
+      }
+    }
+  }
+
 
   MetaProcessor::MetaProcessor(Interpreter& interp, raw_ostream& outs) 
     : m_Interp(interp), m_Outs(outs), m_FileOut(""), m_FileErr("") {
