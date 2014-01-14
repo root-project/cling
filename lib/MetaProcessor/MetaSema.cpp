@@ -48,15 +48,8 @@ namespace cling {
                          MetaProcessor::RedirectionScope stream,
                          bool append) {
 
-    if (!file.str().empty()) {
-      m_MetaProcessor.setStdStream(file, stream, append);
-      return AR_Success;
-    }
-    else {
-      m_MetaProcessor.setStdStream(file, stream, append);
-      return AR_Success;
-    }
-    return AR_Failure;
+    m_MetaProcessor.setStdStream(file, stream, append);
+    return AR_Success;
   }
 
   void MetaSema::actOnComment(llvm::StringRef comment) const {

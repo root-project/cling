@@ -147,45 +147,61 @@ namespace cling {
   // AnyString := .*^(' ' | '\t')
   bool MetaParser::isRedirectCommand(MetaSema::ActionResult& actionResult) {
 
+    unsigned constant_FD = 0;
     // Default redirect is stdout.
     MetaProcessor::RedirectionScope stream = MetaProcessor::kSTDOUT;
-    //
+
     if (getCurTok().is(tok::constant)) {
       // > or 1> the redirection is for stdout stream
       // 2> redirection for stderr stream
-      unsigned constant = getCurTok().getConstant();
-      if (constant == 2) {
+      constant_FD = getCurTok().getConstant();
+      if (constant_FD == 2) {
         stream = MetaProcessor::kSTDERR;
-      // Wrong constant, do not redirect.
-      } else if (constant != 1) {
-        llvm::errs() << "cling::MetaParser::isRedirectCommand(): invalid file descriptor number " << constant << "\n";
+      // Wrong constant_FD, do not redirect.
+      } else if (constant_FD != 1) {
+        llvm::errs() << "cling::MetaParser::isRedirectCommand(): invalid file descriptor number " << constant_FD << "\n";
         return true;
       }
       consumeToken();
     }
     // &> redirection for both stdout & stderr
     if (getCurTok().is(tok::ampersand)) {
-      stream = MetaProcessor::kSTDBOTH;
+      if (constant_FD != 2) {
+        stream = MetaProcessor::kSTDBOTH;
+      }
       consumeToken();
     }
     if (getCurTok().is(tok::greater)) {
       bool append = false;
       consumeToken();
-      // check whether we have >>
-      if (getCurTok().is(tok::greater))
-        append = true;
-      llvm::StringRef file;
-      if (getCurTok().is(tok::eof)) {
-        file  = llvm::StringRef();
-      }
-      else {
-        consumeAnyStringToken();
-        if (getCurTok().is(tok::raw_ident)) {
-          file = getCurTok().getIdent();
+      // check for syntax like: 2>&1
+      if (getCurTok().is(tok::ampersand)) {
+        if (constant_FD != 2) {
+          stream = MetaProcessor::kSTDBOTH;
+        }
+        consumeToken();
+      } else {
+        // check whether we have >>
+        if (getCurTok().is(tok::greater)) {
+          append = true;
           consumeToken();
         }
-        else {
+      }
+      llvm::StringRef file;
+      if (getCurTok().is(tok::constant) && getCurTok().getConstant() == 1) {
+        file = llvm::StringRef("_IO_2_1_stdout_");
+      } else {
+        if (getCurTok().is(tok::eof)) {
           file  = llvm::StringRef();
+        } else {
+          consumeAnyStringToken();
+          if (getCurTok().is(tok::raw_ident)) {
+            file = getCurTok().getIdent();
+            consumeToken();
+          }
+          else {
+            file  = llvm::StringRef();
+          }
         }
       }
       // Empty file means std.

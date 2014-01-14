@@ -73,7 +73,13 @@ namespace cling {
     class MaybeRedirectOutputRAII {
     private:
       MetaProcessor* m_MetaProcessor;
+      ///brief Stores the terminal name for after the redirection
+      /// when nested redirection - should change name to
+      /// previousOutFile.
       char *terminalOut;
+      ///brief Stores the terminal name for after the redirection
+      /// when nested redirection - should change name to
+      /// previousErrFile.
       char *terminalErr;
 
     public:

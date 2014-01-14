@@ -10,10 +10,7 @@
 #ifndef CLING_META_SEMA_H
 #define CLING_META_SEMA_H
 
-#include "cling/Interpreter/Interpreter.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
-
-#include <cstdlib>
 
 namespace llvm {
   class StringRef;
@@ -58,11 +55,11 @@ namespace cling {
     ///
     ActionResult actOnLCommand(llvm::StringRef file) const;
 
-    ///\brief < Redirect command redirects the standard output
+    ///\brief < Redirect command.
     ///
     ///\param[in] file - The file where the output is redirected
-    ///\param[in] mode - The file or stdout.
     ///\param[in] stream - The optional stream to redirect.
+    ///\param[in] append - Write or append to the file.
     ///
     ActionResult actOnRedirectCommand(llvm::StringRef file,
                                       MetaProcessor::RedirectionScope stream,

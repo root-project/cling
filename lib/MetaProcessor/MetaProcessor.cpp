@@ -38,13 +38,37 @@ namespace cling {
   :m_MetaProcessor(p), terminalOut(0), terminalErr(0) {
     //Empty file acts as a flag.
     if (!m_MetaProcessor->m_FileOut.empty()) {
-      terminalOut = ttyname(STDOUT_FILENO);
+       terminalOut = ttyname(STDOUT_FILENO);
+/*
+      int ttyname_Result = ttyname_r(STDOUT_FILENO, terminalOut, 100);
+      if (ttyname_Result == EBADF) {
+        llvm::errs() << "Error in cling::MetaProcessor: Bad file descriptor.";
+      } else if (ttyname_Result == ENOTTY) {
+        llvm::errs() << "File descriptor does not refer to a terminal device.";
+      } else if (ttyname_Result == ERANGE) {
+        llvm::errs() << "Error in cling::MetaProcessor: (ttyname_r()) buflen"
+                     << " was too small to allow storing the pathname.";
+      }*/
       stdout = freopen(m_MetaProcessor->m_FileOut.c_str(), "a", stdout);
     }
     //Empty file acts as a flag.
     if (!m_MetaProcessor->m_FileErr.empty()) {
       terminalErr = ttyname(STDERR_FILENO);
-      stderr = freopen(m_MetaProcessor->m_FileErr.c_str(), "a", stderr);
+/*
+      int ttyname_Result = ttyname_r(STDERR_FILENO, terminalErr, 100);
+      if (ttyname_Result == EBADF) {
+        llvm::errs() << "Error in cling::MetaProcessor: Bad file descriptor.";
+      } else if (ttyname_Result == ENOTTY) {
+        llvm::errs() << "File descriptor does not refer to a terminal device.";
+      } else if (ttyname_Result == ERANGE) {
+        llvm::errs() << "Error in cling::MetaProcessor: (ttyname_r()) buflen"
+                     << " was too small to allow storing the pathname.";
+      }*/
+      if (strcmp(m_MetaProcessor->m_FileErr.c_str(), "_IO_2_1_stdout_") == 0) {
+        char* Out = ttyname(STDOUT_FILENO);
+        stderr = freopen(Out, "a", stderr);
+      }
+      else stderr = freopen(m_MetaProcessor->m_FileErr.c_str(), "a", stderr);
     }
   }
 
@@ -253,13 +277,14 @@ namespace cling {
 
   void MetaProcessor::setStdStream(llvm::StringRef file,
                                    RedirectionScope stream, bool append) {
-    if (stream & kSTDOUT || stream & kSTDBOTH) {
+
+    if (stream & kSTDOUT) {
       m_FileOut = file;
       if (!append && !m_FileOut.empty()) {
         FILE* f = fopen(m_FileOut.c_str(), "w");
       }
     }
-    if (stream & kSTDERR || stream & kSTDBOTH) {
+    if (stream & kSTDERR) {
       m_FileErr = file;
       if (!append && !m_FileErr.empty()) {
         FILE* f = fopen(m_FileErr.c_str(), "w");
