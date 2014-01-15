@@ -9,6 +9,7 @@
 #set(LLVM_LINK_COMPONENTS mc)
 #set(LLVM_USED_LIBS clangBasic clangAST clangParse)
 
+set(LLVM_REQUIRES_EH true)
 
 add_cling_library(clingUserInterface
   UserInterface.cpp
@@ -35,8 +36,6 @@ IF(MSVC)
   string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
   set_target_properties(clingUserInterface PROPERTIES
   COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
-ELSE()
-  set_target_properties(clingUserInterface PROPERTIES COMPILE_FLAGS "-fexceptions")
 ENDIF()
 
 #add_subdirectory(textinput)
