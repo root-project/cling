@@ -30,9 +30,13 @@ void cling__runtime__internal__throwNullDerefException(void* Sema, void* Expr) {
 
 namespace cling {
   namespace runtime {
+    // Pin vtable
+    InterpreterException::~InterpreterException() {}
+
     const char* InterpreterException::what() const throw() {
       return "runtime_exception\n";
     }
+
 
     NullDerefException::NullDerefException(clang::Sema* S, clang::Expr* E)
       : m_Sema(S), m_Arg(E) {}
