@@ -319,20 +319,25 @@ namespace cling {
     return ret;
   }
 
+  void MetaProcessor::setFileStream(std::string& fileStorage,
+                                    llvm::StringRef file, bool append) {
+    fileStorage = file;
+      if (!append && !fileStorage.empty()) {
+        if (fopen(fileStorage.c_str(), "w")) {
+          llvm::errs() << "cling::MetaProcessor Error: The file path is not"
+                       << " valid.";
+        }
+      }
+  }
+
   void MetaProcessor::setStdStream(llvm::StringRef file,
                                    RedirectionScope stream, bool append) {
 
     if (stream & kSTDOUT) {
-      m_FileOut = file;
-      if (!append && !m_FileOut.empty()) {
-        fopen(m_FileOut.c_str(), "w");
-      }
+      setFileStream(m_FileOut, file, append);
     }
     if (stream & kSTDERR) {
-      m_FileErr = file;
-      if (!append && !m_FileErr.empty()) {
-        fopen(m_FileErr.c_str(), "w");
-      }
+      setFileStream(m_FileErr, file, append);
     }
   }
 

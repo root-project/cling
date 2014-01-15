@@ -174,12 +174,18 @@ namespace cling {
 
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///
-    ///\param [in] file - The file for teh redirection
+    ///\param [in] file - The file for the redirection.
     ///\param [in] stream - Which stream to redirect: stdout, stderr or both.
     ///\param [in] append - Write in append mode.
     ///
     void setStdStream(llvm::StringRef file, RedirectionScope stream,
                       bool append);
+  private:
+    ///\brief Set a stream to a file
+    ///
+    ///\param [in] file - The file for the redirection.
+    void setFileStream(std::string& fileStorage, llvm::StringRef file,
+                       bool append);
   };
 } // end namespace cling
 
