@@ -28,7 +28,7 @@ using namespace llvm::opt;
 namespace {
 
 #define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM, \
+#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
                HELPTEXT, METAVAR)
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
@@ -36,10 +36,10 @@ namespace {
 
   static const OptTable::Info ClingInfoTable[] = {
 #define PREFIX(NAME, VALUE)
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, FLAGS, PARAM, \
+#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
                HELPTEXT, METAVAR)   \
   { PREFIX, NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, PARAM, \
-    FLAGS, OPT_##GROUP, OPT_##ALIAS },
+    FLAGS, OPT_##GROUP, OPT_##ALIAS, ALIASARGS },
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
 #undef PREFIX
