@@ -34,10 +34,12 @@ using namespace clang;
 
 namespace cling {
 
-  MetaProcessor::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(MetaProcessor* p)
+  MetaProcessor::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(
+                                          MetaProcessor* p)
   :m_MetaProcessor(p), m_PrevStdoutFileName(""), m_PrevStderrFileName("") {
     //Empty file acts as a flag.
-    redirect(STDOUT_FILENO, m_PrevStdoutFileName, m_MetaProcessor->m_FileOut, stdout);
+    redirect(STDOUT_FILENO, m_PrevStdoutFileName, m_MetaProcessor->m_FileOut,
+             stdout);
     // Deal with the case 2>&1 and 2&>1
     if (strcmp(m_MetaProcessor->m_FileErr.c_str(), "_IO_2_1_stdout_") == 0) {
       SmallString<1024> stdoutName;
@@ -45,7 +47,8 @@ namespace cling {
       m_MetaProcessor->m_FileErr = stdoutName.c_str();
     }
     //Empty file acts as a flag.
-    redirect(STDERR_FILENO, m_PrevStderrFileName, m_MetaProcessor->m_FileErr, stderr);
+    redirect(STDERR_FILENO, m_PrevStderrFileName, m_MetaProcessor->m_FileErr,
+             stderr);
 
   }
 
@@ -56,12 +59,14 @@ namespace cling {
   }
 
   bool MetaProcessor::MaybeRedirectOutputRAII::cacheStd(int fd,
-                                                      llvm::SmallVectorImpl<char>& file) {
+                                            llvm::SmallVectorImpl<char>& file) {
 
-    int ttyname_Result = ttyname_r(fd, const_cast<char*>(file.data()), file.capacity());
+    int ttyname_Result = ttyname_r(fd, const_cast<char*>(file.data()),
+                                   file.capacity());
     while (ttyname_Result == ERANGE) {
       file.reserve(16*file.capacity());
-      ttyname_Result = ttyname_r(fd, const_cast<char*>(file.data()), file.capacity());
+      ttyname_Result = ttyname_r(fd, const_cast<char*>(file.data()),
+                                 file.capacity());
     }
 
     if (ttyname_Result == 0) {
@@ -72,22 +77,25 @@ namespace cling {
     } else if (ttyname_Result == ENOTTY) {
       llvm::errs() << "File descriptor does not refer to a terminal device.";
     } else if (ttyname_Result == EAGAIN) {
-      llvm::errs() << "The device driver was in use by another process, or the driver"
-                   << "was unable to carry out the request due to an outstanding command in progress.";
+      llvm::errs() << "The device driver was in use by another process, or the"
+                   << "driver was unable to carry out the request due to an"
+                   << "outstanding command in progress.";
     } else if (ttyname_Result == EINTR) {
       llvm::errs() << "The function was interrupted by a signal.";
     } else if (ttyname_Result == ENOSYS) {
-      llvm::errs() << "The ttyname_r() function isn't implemented for the filesystem specified by filedes.";
+      llvm::errs() << "The ttyname_r() function isn't implemented for the"
+                   << "filesystem specified by filedes.";
     } else if (ttyname_Result == EPERM) {
-      llvm::errs() << "The process doesn't have sufficient permission to carry out the requested command.";
+      llvm::errs() << "The process doesn't have sufficient permission to carry"
+                   << "out the requested command.";
     }
     return false;
   }
 
   void MetaProcessor::MaybeRedirectOutputRAII::redirect(int fd,
-                                                        llvm::SmallVectorImpl<char>& prevFile,
-                                                        std::string fileName,
-                                                        FILE* file) {
+                                          llvm::SmallVectorImpl<char>& prevFile,
+                                          std::string fileName,
+                                          FILE* file) {
     if (!fileName.empty()) {
       //Cache prevous stdout.
       if (!cacheStd(fd, prevFile)) {
@@ -96,20 +104,22 @@ namespace cling {
       }
       FILE * redirectionFile = freopen(fileName.c_str(), "a", file);
       if (!redirectionFile) {
-        llvm::errs() << "cling::MetaProcessor Error: The file path is not valid.";
+        llvm::errs()<<"cling::MetaProcessor Error: The file path is not valid.";
       } else {
         file = redirectionFile;
       }
     }
   }
 
-  void MetaProcessor::MaybeRedirectOutputRAII::unredirect(llvm::SmallVectorImpl<char>& filename,
-                                                          FILE* file) {
+  void MetaProcessor::MaybeRedirectOutputRAII::unredirect(
+                                          llvm::SmallVectorImpl<char>& filename,
+                                          FILE* file) {
     //Switch back to standard output after line is processed.
     if (!filename.empty()) {
       FILE* redirectionFile = freopen(filename.data(), "w", file);
       if (!redirectionFile) {
-        llvm::errs() << "cling::MetaProcessor Error: The file path is not valid.";
+        llvm::errs() << "cling::MetaProcessor Error: "
+                     << "The file path is not valid.";
       } else {
         file = redirectionFile;
       }
@@ -315,13 +325,13 @@ namespace cling {
     if (stream & kSTDOUT) {
       m_FileOut = file;
       if (!append && !m_FileOut.empty()) {
-        FILE* f = fopen(m_FileOut.c_str(), "w");
+        fopen(m_FileOut.c_str(), "w");
       }
     }
     if (stream & kSTDERR) {
       m_FileErr = file;
       if (!append && !m_FileErr.empty()) {
-        FILE* f = fopen(m_FileErr.c_str(), "w");
+        fopen(m_FileErr.c_str(), "w");
       }
     }
   }

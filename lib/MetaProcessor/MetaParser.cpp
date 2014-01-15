@@ -159,7 +159,8 @@ namespace cling {
         stream = MetaProcessor::kSTDERR;
       // Wrong constant_FD, do not redirect.
       } else if (constant_FD != 1) {
-        llvm::errs() << "cling::MetaParser::isRedirectCommand(): invalid file descriptor number " << constant_FD << "\n";
+        llvm::errs() << "cling::MetaParser::isRedirectCommand():"
+                     << "invalid file descriptor number " << constant_FD <<"\n";
         return true;
       }
       consumeToken();
@@ -301,7 +302,8 @@ namespace cling {
         } else {
           consumeAnyStringToken(tok::eof);
           const Token& lastStringToken = getCurTok();
-          if (lastStringToken.is(tok::raw_ident) && lastStringToken.getLength()) {
+          if (lastStringToken.is(tok::raw_ident)
+              && lastStringToken.getLength()) {
             int level = 0;
             if (!lastStringToken.getIdent().getAsInteger(10, level) && level >= 0) {
               //TODO: process .O XXX
