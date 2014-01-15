@@ -15,6 +15,7 @@
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/SmallString.h"
+#include <stdio.h>
 
 namespace cling {
 
@@ -90,9 +91,9 @@ namespace cling {
       void pop();
       bool cacheStd(int fd, llvm::SmallVectorImpl<char>& prevFile);
       void redirect(int fd, llvm::SmallVectorImpl<char>& prevFile,
-                    std::string fileName, struct _IO_FILE * standard);
+                    std::string fileName, FILE* standard);
       void unredirect(llvm::SmallVectorImpl<char>& prevFile,
-                      struct _IO_FILE * standard);
+                      FILE* standard);
     };
 
   public:

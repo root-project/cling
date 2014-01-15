@@ -87,31 +87,31 @@ namespace cling {
   void MetaProcessor::MaybeRedirectOutputRAII::redirect(int fd,
                                                         llvm::SmallVectorImpl<char>& prevFile,
                                                         std::string fileName,
-                                                        struct _IO_FILE * standard) {
+                                                        FILE* file) {
     if (!fileName.empty()) {
       //Cache prevous stdout.
       if (!cacheStd(fd, prevFile)) {
         llvm::errs() << "cling::MetaProcessor Error: Was not able to cache "
                      << "previous output. Will not be able to redirect back.";
       }
-      _IO_FILE * redirectionFile = freopen(fileName.c_str(), "a", standard);
+      FILE * redirectionFile = freopen(fileName.c_str(), "a", file);
       if (!redirectionFile) {
         llvm::errs() << "cling::MetaProcessor Error: The file path is not valid.";
       } else {
-        standard = redirectionFile;
+        file = redirectionFile;
       }
     }
   }
 
-  void MetaProcessor::MaybeRedirectOutputRAII::unredirect(llvm::SmallVectorImpl<char>& file,
-                                                          struct _IO_FILE * standard) {
+  void MetaProcessor::MaybeRedirectOutputRAII::unredirect(llvm::SmallVectorImpl<char>& filename,
+                                                          FILE* file) {
     //Switch back to standard output after line is processed.
-    if (!file.empty()) {
-      _IO_FILE * redirectionFile = freopen(file.data(), "w", standard);
+    if (!filename.empty()) {
+      FILE* redirectionFile = freopen(filename.data(), "w", file);
       if (!redirectionFile) {
         llvm::errs() << "cling::MetaProcessor Error: The file path is not valid.";
       } else {
-        standard = redirectionFile;
+        file = redirectionFile;
       }
     }
   }
