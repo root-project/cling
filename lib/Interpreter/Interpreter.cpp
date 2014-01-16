@@ -195,7 +195,7 @@ namespace cling {
     }
     // Add remaining part
     AddIncludePath(InclPaths);
-#else
+#endif
     llvm::SmallString<512> P(GetExecutablePath(argv[0]));
     if (!P.empty()) {
       // Remove /cling from foo/bin/clang
@@ -209,7 +209,6 @@ namespace cling {
       if (llvm::sys::fs::is_directory(P.str()))
         AddIncludePath(P.str());
     }
-#endif
 
     // Enable incremental processing, which prevents the preprocessor destroying
     // the lexer on EOF token.
