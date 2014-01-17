@@ -113,7 +113,7 @@ namespace cling {
           int runABIVersion = ::atoi(buf);
           if (runABIVersion != CLING_CXXABIV) {
             llvm::errs()
-              << "ERROR in cling::CIFactory::createCI():\n  "
+              << "Warning in cling::CIFactory::createCI():\n  "
               "C++ ABI mismatch, compiled with "
               CLING_CXXABIS " v" << CLING_CXXABIV
               << " running with v" << runABIVersion << "\n";
@@ -124,7 +124,7 @@ namespace cling {
     }
     if (ABIReadError) {
       llvm::errs()
-        << "ERROR in cling::CIFactory::createCI():\n  "
+        << "Warning in cling::CIFactory::createCI():\n  "
         "Possible C++ standard library mismatch, compiled with "
         CLING_CXXABIS " v" << CLING_CXXABIV
         << " but cannot extract standard library version from current compiler "
@@ -325,8 +325,10 @@ namespace cling {
                  == llvm::Triple::x86_64) {
         CI->getInvocation().getPreprocessorOpts().addMacroDef("__x86_64=1");
       } else {
-        llvm::errs() << "Warning: unhandled target architecture "
-                     << CI->getTarget().getTriple().getArchName() << '\n';
+        llvm::errs()
+          << "Warning in cling::CIFactory::createCI():\n  "
+          "unhandled target architecture "
+          << CI->getTarget().getTriple().getArchName() << '\n';
       }
     }
 
@@ -334,11 +336,11 @@ namespace cling {
     CI->createFileManager();
     SourceManager* SM = new SourceManager(CI->getDiagnostics(),
                                           CI->getFileManager(),
-                                          /*UserFilesAreVolatile*/ true); 
+                                          /*UserFilesAreVolatile*/ true);
     CI->setSourceManager(SM); // FIXME: SM leaks.
 
     // As main file we want
-    // * a virtual file that is claiming to be huge 
+    // * a virtual file that is claiming to be huge
     // * with an empty memory buffer attached (to bring the content)
     FileManager& FM = SM->getFileManager();
     // Build the virtual file
