@@ -202,8 +202,7 @@ namespace cling {
       llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
       // Remove /bin   from foo/bin
       ExeIncl = llvm::sys::path::parent_path(ExeIncl);
-      P.resize(ExeIncl.size() + 1);
-      P[ExeIncl.size()] = 0;
+      P.resize(ExeIncl.size());
       // Get foo/include
       llvm::sys::path::append(P, "include");
       if (llvm::sys::fs::is_directory(P.str()))
