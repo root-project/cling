@@ -25,8 +25,8 @@
 
 #ifdef _LIBCPP_EXTERN_TEMPLATE
 #undef _LIBCPP_EXTERN_TEMPLATE
-#define _LIBCPP_EXTERN_TEMPLATE(...)
 #endif
+#define _LIBCPP_EXTERN_TEMPLATE(...)
 
 #include "cling/Interpreter/RuntimeException.h"
 
