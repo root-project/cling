@@ -23,11 +23,6 @@
 
 #ifdef __cplusplus
 
-#ifdef __CLING__CXX11
-// FIXME, see http://llvm.org/bugs/show_bug.cgi?id=13530
-struct __float128;
-#endif
-
 #ifdef _LIBCPP_EXTERN_TEMPLATE
 #undef _LIBCPP_EXTERN_TEMPLATE
 #define _LIBCPP_EXTERN_TEMPLATE(...)
