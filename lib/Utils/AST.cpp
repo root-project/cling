@@ -1158,12 +1158,8 @@ namespace utils {
 
       if (outer_ns) {
         return TypeName::CreateNestedNameSpecifier(Ctx,outer_ns);
-      } else {
-        assert(llvm::isa<TagDecl>(outer) && "not in namespace of TagDecl");
-        return
-          TypeName::CreateNestedNameSpecifier(Ctx,
-                                              llvm::dyn_cast<TagDecl>(outer),
-                                              FullyQualified);
+      } else if (const TagDecl* TD = llvm::dyn_cast<TagDecl>(outer)) {
+        return TypeName::CreateNestedNameSpecifier(Ctx, TD, FullyQualified);
       }
     }
     return 0;
