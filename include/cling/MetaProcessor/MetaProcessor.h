@@ -54,13 +54,18 @@ namespace cling {
     ///
     llvm::raw_ostream& m_Outs;
 
-    //brief The file name for the redirection of the stdout.
+    ///\brief The file descriptor of the copy of stdout.
     ///
-    std::string m_FileOut;
+    int m_backupFDStdout;
 
-    ///brief The file name for the redirection of the stderr.
+    ///brief
     ///
-    std::string m_FileErr;
+    int m_backupFDStderr;
+
+    ///brief Stores the stack for the redirect file paths for out.
+    llvm::SmallVector<llvm::SmallString<128>, 2> m_PrevStdoutFileName;
+    ///brief Stores the stack for the redirect file paths for err.
+    llvm::SmallVector<llvm::SmallString<128>, 2> m_PrevStderrFileName;
 
   public:
     enum RedirectionScope {
@@ -75,25 +80,16 @@ namespace cling {
     class MaybeRedirectOutputRAII {
     private:
       MetaProcessor* m_MetaProcessor;
-      ///brief Stores the terminal name for after the redirection
-      /// when nested redirection - should change name to
-      /// previousOutFile.
-      llvm::SmallString<1024> m_PrevStdoutFileName;
-      ///brief Stores the terminal name for after the redirection
-      /// when nested redirection - should change name to
-      /// previousErrFile.
-      llvm::SmallString<1024> m_PrevStderrFileName;
+      int m_isCurrentlyRedirecting;
 
     public:
       MaybeRedirectOutputRAII(MetaProcessor* p);
       ~MaybeRedirectOutputRAII() { pop(); }
     private:
       void pop();
-      bool cacheStd(int fd, llvm::SmallVectorImpl<char>& prevFile);
-      void redirect(int fd, llvm::SmallVectorImpl<char>& prevFile,
-                    std::string fileName, FILE* standard);
-      void unredirect(llvm::SmallVectorImpl<char>& prevFile,
-                      FILE* standard);
+      void redirect(FILE* file, const std::string& fileName,
+                    MetaProcessor::RedirectionScope scope);
+      void unredirect(int backFD, int expectedFD, FILE* file);
     };
 
   public:
@@ -171,7 +167,6 @@ namespace cling {
     readInputFromFile(llvm::StringRef filename,
                       StoredValueRef* result,
                       bool ignoreOutmostBlock = false);
-
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///
     ///\param [in] file - The file for the redirection.
@@ -184,8 +179,18 @@ namespace cling {
     ///\brief Set a stream to a file
     ///
     ///\param [in] file - The file for the redirection.
-    void setFileStream(std::string& fileStorage, llvm::StringRef file,
-                       bool append);
+    ///\param [in] append - Write in append mode.
+    ///\param [in] fd - File descriptor for the file we want to open.
+    ///\param [out] prevFileStack - The stack of previous file paths.
+    void setFileStream(llvm::StringRef file, bool append, int fd,
+                  llvm::SmallVector<llvm::SmallString<128> ,2>& prevFileStack);
+
+    ///\brief Copy a file descriptor.
+    ///
+    ///\param [in] fd - The fd to be copied.
+
+    ///\returns - The copy of the file descriptor.
+    int copyFileDescriptor(int fd);
   };
 } // end namespace cling
 
