@@ -128,7 +128,7 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS))  -D__cplusplus -- $<
 	$(CXX) $(OPT) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
 
-$(CLINGCOMPDH): FORCE
+$(CLINGCOMPDH): FORCE $(LLVMDEP)
 	@echo '#define LLVM_CXX "$(CXX) $(OPT) $(CLINGCXXFLAGS)"' > $@_tmp
 	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
 	@rm -f $@_tmp
