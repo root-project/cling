@@ -580,7 +580,8 @@ namespace utils {
       while ( outer && outer->getName().size() ) {
         // NOTE: Net is being cast too widely, replace by a lookup.
         // or by using Sema::getStdNamespace
-        if (outer->getName().compare("std") == 0) {
+         if (outer->getDeclContext()->isTranslationUnit()
+             && outer->getName().compare("std") == 0) {
           // And now let's check that the target is also within std.
           const Type *underlyingType
             = decl->getUnderlyingType().getSplitDesugaredType().Ty;
