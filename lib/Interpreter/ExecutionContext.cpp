@@ -36,7 +36,7 @@ bool ExecutionContext::m_LazyFuncCreatorDiagsSuppressed = false;
 
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
 ExecutionContext::ExecutionContext(llvm::Module* m) 
-  : m_RunningStaticInits(false), m_CxaAtExitRemapped(false)
+  : m_CxaAtExitRemapped(false)
 {
   assert(m && "llvm::Module must not be null!");
   m_AtExitFuncs.reserve(256);
@@ -270,9 +270,6 @@ ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
   assert(m_engine && "Code generation did not create an engine!");
 
-  if (m_RunningStaticInits)
-     return kExeSuccess;
-
   llvm::GlobalVariable* GV
      = m->getGlobalVariable("llvm.global_ctors", true);
   // Nothing to do is good, too.
@@ -287,10 +284,11 @@ ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
   // the init priority, which we ignore.
   llvm::ConstantArray *InitList
     = llvm::dyn_cast<llvm::ConstantArray>(GV->getInitializer());
+
+  GV->eraseFromParent();
+
   if (InitList == 0)
     return kExeSuccess;
-
-  m_RunningStaticInits = true;
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
@@ -326,16 +324,12 @@ ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
         }
         freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
         m_unresolvedSymbols.clear();
-        m_RunningStaticInits = false;
         return kExeUnresolvedSymbols;
       }
       m_engine->runFunction(F, std::vector<llvm::GenericValue>());
     }
   }
 
-  GV->eraseFromParent();
-
-  m_RunningStaticInits = false;
   return kExeSuccess;
 }
 

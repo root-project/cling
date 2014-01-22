@@ -61,10 +61,6 @@ namespace cling {
     ///
     llvm::OwningPtr<llvm::ExecutionEngine> m_engine;
 
-    ///\brief prevent the recursive run of the static inits
-    ///
-    bool m_RunningStaticInits;
-
     ///\brief Whether cxa_at_exit has been rewired to the Interpreter's version
     ///
     bool m_CxaAtExitRemapped;
