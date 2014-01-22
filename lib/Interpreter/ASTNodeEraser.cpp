@@ -53,7 +53,7 @@ namespace cling {
     ///
     const Transaction* m_CurTransaction;
 
-    ///\brief Reverted declaration contains a SourceLocation, representing a 
+    ///\brief Reverted declaration contains a SourceLocation, representing a
     /// place in the file where it was seen. Clang caches that file and even if
     /// a declaration is removed and the file is edited we hit the cached entry.
     /// This ADT keeps track of the files from which the reverted declarations
@@ -254,7 +254,6 @@ namespace cling {
     ///\param[in] Loc - The source location of the reverted declaration.
     ///
     void CollectFilesToUncache(SourceLocation Loc);
-
   };
 
   DeclReverter::~DeclReverter() {
@@ -346,7 +345,7 @@ namespace cling {
       if (isOnScopeChains(ND))
         m_Sema->IdResolver.RemoveDecl(ND);
     }
-    
+
     // Cleanup the lookup tables.
     StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
     if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
@@ -358,11 +357,11 @@ namespace cling {
           Pos->second.remove(ND);
         else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
           // Otherwise iterate over the list with entries with the same name.
-          // TODO: Walk the redeclaration chain if the entry was a redeclaration.    
-          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(), 
+          // TODO: Walk the redeclaration chain if the entry was a redeclaration
+          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
                  E = Vec->end(); I != E; ++I)
             if (*I == ND)
-              Pos->second.remove(ND);            
+              Pos->second.remove(ND);
         }
         if (Pos->second.isNull())
           Map->erase(Pos);
@@ -379,9 +378,9 @@ namespace cling {
           assert(OldD != ND && "Lookup entry still exists.");
         else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
           // Otherwise iterate over the list with entries with the same name.
-          // TODO: Walk the redeclaration chain if the entry was a redeclaration. 
-          
-          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(), 
+          // TODO: Walk the redeclaration chain if the entry was a redeclaration.
+
+          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
                  E = Vec->end(); I != E; ++I)
             assert(*I != ND && "Lookup entry still exists.");
         }
@@ -411,7 +410,7 @@ namespace cling {
   bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
     // The Structors need to be handled differently.
     if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
-      // Cleanup the module if the transaction was committed and code was 
+      // Cleanup the module if the transaction was committed and code was
       // generated. This has to go first, because it may need the AST info
       // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
       GlobalDecl GD(FD);
@@ -439,10 +438,10 @@ namespace cling {
     //
     class FunctionTemplateDeclExt : public FunctionTemplateDecl {
     public:
-      static void removeSpecialization(FunctionTemplateDecl* self, 
+      static void removeSpecialization(FunctionTemplateDecl* self,
                                        const FunctionDecl* specialization) {
         assert(self && specialization && "Cannot be null!");
-        assert(specialization == specialization->getCanonicalDecl() 
+        assert(specialization == specialization->getCanonicalDecl()
                && "Not the canonical specialization!?");
         typedef llvm::SmallVector<FunctionDecl*, 4> Specializations;
         typedef llvm::FoldingSetVector< FunctionTemplateSpecializationInfo> Set;
@@ -497,7 +496,7 @@ namespace cling {
       // becomes the first forward declaration. If the canonical forward
       // declaration was declared outside the set of the decls to revert we have
       // to keep it registered as a template specialization.
-      // 
+      //
       // In order to diagnose mismatches of the specializations, clang 'injects'
       // a implicit forward declaration making it very hard distinguish between
       // the explicit and the implicit forward declaration. So far the only way
@@ -511,14 +510,14 @@ namespace cling {
   }
 
   bool DeclReverter::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
-    // Cleanup the module if the transaction was committed and code was 
+    // Cleanup the module if the transaction was committed and code was
     // generated. This has to go first, because it may need the AST information
     // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
 
     // Brute-force all possibly generated ctors.
     // Ctor_Complete            Complete object ctor.
     // Ctor_Base                Base object ctor.
-    // Ctor_CompleteAllocating 	Complete object allocating ctor. 
+    // Ctor_CompleteAllocating 	Complete object allocating ctor.
     GlobalDecl GD(CXXCtor, Ctor_Complete);
     RemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXCtor, Ctor_Base);
@@ -535,12 +534,12 @@ namespace cling {
     typedef llvm::SmallVector<Decl*, 64> Decls;
     Decls declsToErase;
     // Removing from single-linked list invalidates the iterators.
-    for (DeclContext::decl_iterator I = DC->decls_begin(); 
+    for (DeclContext::decl_iterator I = DC->decls_begin();
          I != DC->decls_end(); ++I) {
       declsToErase.push_back(*I);
     }
 
-    for(Decls::iterator I = declsToErase.begin(), E = declsToErase.end(); 
+    for(Decls::iterator I = declsToErase.begin(), E = declsToErase.end();
         I != E; ++I)
       Successful = Visit(*I) && Successful;
     return Successful;
@@ -556,7 +555,7 @@ namespace cling {
     if (!Map)
       return false;
     StoredDeclsMap::iterator Pos = Map->find(NSD->getDeclName());
-    assert(Pos != Map->end() && !Pos->second.isNull() 
+    assert(Pos != Map->end() && !Pos->second.isNull()
            && "no lookup entry for decl");
 
     if (NSD != NSD->getOriginalNamespace()) {
@@ -584,25 +583,25 @@ namespace cling {
 
     // From llvm's mailing list, explanation of the RAUW'd assert:
     //
-    // The problem isn't with your call to 
-    // replaceAllUsesWith per se, the problem is that somebody (I would guess 
+    // The problem isn't with your call to
+    // replaceAllUsesWith per se, the problem is that somebody (I would guess
     // the JIT?) is holding it in a ValueMap.
     //
-    // We used to have a problem that some parts of the code would keep a 
+    // We used to have a problem that some parts of the code would keep a
     // mapping like so:
     //    std::map<Value *, ...>
-    // while somebody else would modify the Value* without them noticing, 
-    // leading to a dangling pointer in the map. To fix that, we invented the 
-    // ValueMap which puts a Use that doesn't show up in the use_iterator on 
-    // the Value it holds. When the Value is erased or RAUW'd, the ValueMap is 
-    // notified and in this case decides that's not okay and terminates the 
+    // while somebody else would modify the Value* without them noticing,
+    // leading to a dangling pointer in the map. To fix that, we invented the
+    // ValueMap which puts a Use that doesn't show up in the use_iterator on
+    // the Value it holds. When the Value is erased or RAUW'd, the ValueMap is
+    // notified and in this case decides that's not okay and terminates the
     // program.
     //
-    // Probably what's happened here is that the calling function has had its 
-    // code generated by the JIT, but not the callee. Thus the JIT emitted a 
-    // call to a generated stub, and will do the codegen of the callee once 
-    // that stub is reached. Of course, once the JIT is in this state, it holds 
-    // on to the Function with a ValueMap in order to prevent things from 
+    // Probably what's happened here is that the calling function has had its
+    // code generated by the JIT, but not the callee. Thus the JIT emitted a
+    // call to a generated stub, and will do the codegen of the callee once
+    // that stub is reached. Of course, once the JIT is in this state, it holds
+    // on to the Function with a ValueMap in order to prevent things from
     // getting out of sync.
     //
     if (m_CurTransaction->getState() == Transaction::kCommitted) {
@@ -614,16 +613,16 @@ namespace cling {
       if (GV) { // May be deferred decl and thus 0
         GV->removeDeadConstantUsers();
         if (!GV->use_empty()) {
-          // Assert that if there was a use it is not coming from the explicit 
+          // Assert that if there was a use it is not coming from the explicit
           // AST node, but from the implicitly generated functions, which ensure
           // the initialization order semantics. Such functions are:
           // _GLOBAL__I* and __cxx_global_var_init*
-          // 
+          //
           // We can 'afford' to drop all the references because we know that the
           // static init functions must be called only once, and that was
           // already done.
           SmallVector<User*, 4> uses;
-          
+
           for(llvm::Value::use_iterator I = GV->use_begin(), E = GV->use_end();
               I != E; ++I) {
             uses.push_back(*I);
@@ -636,7 +635,6 @@ namespace cling {
               if (F->getName().startswith("__cxx_global_var_init"))
                 RemoveStaticInit(*F);
           }
-        
         }
 
         // Cleanup the jit mapping of GV->addr.
@@ -644,7 +642,8 @@ namespace cling {
         GV->dropAllReferences();
         if (!GV->use_empty()) {
           if (Function* F = dyn_cast<Function>(GV)) {
-            Function* dummy = Function::Create(F->getFunctionType(), F->getLinkage());                                               
+            Function* dummy
+              = Function::Create(F->getFunctionType(), F->getLinkage());
             F->replaceAllUsesWith(dummy);
           }
           else
@@ -656,7 +655,7 @@ namespace cling {
   }
 
   void DeclReverter::RemoveStaticInit(llvm::Function& F) const {
-    // In our very controlled case the parent of the BasicBlock is the 
+    // In our very controlled case the parent of the BasicBlock is the
     // static init llvm::Function.
     assert(F.getName().startswith("__cxx_global_var_init")
            && "Not a static init");
@@ -695,7 +694,7 @@ namespace cling {
     // Template instantiations should also not be pushed into scope.
     if (isa<FunctionDecl>(ND) &&
         cast<FunctionDecl>(ND)->isFunctionTemplateSpecialization())
-      return false; 
+      return false;
 
     // Using directives are not registered onto the scope chain
     if (isa<UsingDirectiveDecl>(ND))
@@ -716,7 +715,7 @@ namespace cling {
     // Sema::PerformPendingInstantiations
     // if (isa<FunctionDecl>(D) &&
     //     cast<FunctionDecl>(D)->getTemplateInstantiationPattern())
-    //   return false;ye
+    //   return false;
 
 
     return false;
@@ -732,8 +731,8 @@ namespace cling {
     bool ExistsInPP = false;
     // Make sure the macro is in the Preprocessor. Not sure if not redundant
     // because removeMacro looks for the macro anyway in the DenseMap Macros[]
-    for (Preprocessor::macro_iterator 
-           I = PP.macro_begin(/*IncludeExternalMacros*/false), 
+    for (Preprocessor::macro_iterator
+           I = PP.macro_begin(/*IncludeExternalMacros*/false),
            E = PP.macro_end(/*IncludeExternalMacros*/false); E !=I; ++I) {
       if ((*I).first == MacroD.m_II) {
         // FIXME:check whether we have the concrete directive on the macro chain
