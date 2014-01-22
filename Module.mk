@@ -129,6 +129,7 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(CXX) $(OPT) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
 
 $(CLINGCOMPDH): FORCE $(LLVMDEP)
+	@mkdir -p $(dir $@)
 	@echo '#define LLVM_CXX "$(CXX) $(OPT) $(CLINGCXXFLAGS)"' > $@_tmp
 	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
 	@rm -f $@_tmp
