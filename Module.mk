@@ -53,8 +53,8 @@ INCLUDEFILES += $(CLINGDEP)
 # include dir for picking up RuntimeUniverse.h etc - need to
 # 1) copy relevant headers to include/
 # 2) rely on TCling to addIncludePath instead of using CLING_..._INCL below
-CLINGCXXFLAGS = -I$(CLINGDIR)/include $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags) \
-	-fno-strict-aliasing)
+CLINGCXXFLAGS += -I$(CLINGDIR)/include $(patsubst -O%,,$(shell $(LLVMCONFIG) \
+                 --cxxflags) -fno-strict-aliasing)
 
 ifeq ($(CTORSINITARRAY),yes)
 CLINGLDFLAGSEXTRA := -Wl,--no-ctors-in-init-array
