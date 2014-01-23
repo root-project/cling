@@ -88,6 +88,7 @@ void StoredValueRef::StoredValue::Destruct() {
 
   QualType QT = getClangType();
   const RecordType* RT = 0;
+  // Find the underlying record type.
   while (!RT) {
     if (QT.isConstQualified())
       return;
@@ -105,6 +106,9 @@ void StoredValueRef::StoredValue::Destruct() {
     }
   }
   CXXRecordDecl* CXXRD = dyn_cast<CXXRecordDecl>(RT->getDecl());
+  // Freeing will happen either way; construction only exists for RecordDecls.
+  // And it's only worth calling it for non-trivial d'tors. But without
+  // synthesizing AST nodes we can only invoke the d'tor for named decls.
   if (!CXXRD || CXXRD->hasTrivialDestructor() || !CXXRD->getDeclName())
     return;
 
