@@ -669,9 +669,9 @@ namespace cling {
     return ConvertExecutionResult(ExeRes);
   }
 
-  const FunctionDecl* Interpreter::ParseCFunction(StringRef name,
-                                                  StringRef code,
-                                                  bool withAccessControl) {
+  const FunctionDecl* Interpreter::DeclareCFunction(StringRef name,
+                                                    StringRef code,
+                                                    bool withAccessControl) {
     /*
     In CallFunc we currently always (intentionally and somewhat necessarily)
     always fully specify member function template, however this can lead to
@@ -798,7 +798,7 @@ namespace cling {
       GV = getModule()->getNamedValue(name);
 
     if (!GV) {
-      const FunctionDecl* FD = ParseCFunction(name, code, withAccessControl);
+      const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl);
       if (!FD) return 0;
       //
       //  Get the wrapper function pointer

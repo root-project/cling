@@ -256,9 +256,9 @@ namespace cling {
     ///\param[in] name - name of the function, used to find its Decl.
     ///\param[in] code - function definition, starting with 'extern "C"'.
     ///\param[in] withAccessControl - whether to enforce access restrictions.
-    const clang::FunctionDecl* ParseCFunction(llvm::StringRef name,
-                                              llvm::StringRef code,
-                                              bool withAccessControl);
+    const clang::FunctionDecl* DeclareCFunction(llvm::StringRef name,
+                                                llvm::StringRef code,
+                                                bool withAccessControl);
 
   public:
     Interpreter(int argc, const char* const *argv, const char* llvmdir = 0);
