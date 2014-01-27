@@ -58,13 +58,13 @@ namespace cling {
     ///
     int m_backupFDStdout;
 
-    ///brief
+    ///\brief The file descriptor of the copy of stdout.
     ///
     int m_backupFDStderr;
 
-    ///brief Stores the stack for the redirect file paths for out.
+    ///\brief Stores the stack for the redirect file paths for out.
     llvm::SmallVector<llvm::SmallString<128>, 2> m_PrevStdoutFileName;
-    ///brief Stores the stack for the redirect file paths for err.
+    ///\brief Stores the stack for the redirect file paths for err.
     llvm::SmallVector<llvm::SmallString<128>, 2> m_PrevStderrFileName;
 
   public:
@@ -75,7 +75,7 @@ namespace cling {
     };
 
   public:
-    ///brief Class to be created for each processing input to be
+    ///\brief Class to be created for each processing input to be
     /// able to redirect std.
     class MaybeRedirectOutputRAII {
     private:
