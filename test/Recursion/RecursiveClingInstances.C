@@ -20,5 +20,5 @@ gCling->process("cling::Interpreter *DefaultInterp;");
 gCling->process("DefaultInterp = new cling::Interpreter(1, &argV);");
 gCling->process("DefaultInterp->process(\"#include \\\"cling/Interpreter/Interpreter.h\\\"\");");
 gCling->process("DefaultInterp->process(\"std::string s; gCling->createUniqueName(s); s.c_str()\");");
-// CHECK: ({{const char *|const_pointer}}) "__cling_Un1Qu31"
+// CHECK: ({{const char [*]|const_pointer}}) "__cling_Un1Qu31"
 .q
