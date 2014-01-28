@@ -164,6 +164,13 @@ add_subdirectory(tools)
 
 # TODO: docs.
 #add_subdirectory(test)
+option(CLING_INCLUDE_TESTS
+       "Generate build targets for the Cling unit tests."
+       ${LLVM_INCLUDE_TESTS})
+
+if( CLING_INCLUDE_TESTS )
+  add_subdirectory(test)
+endif()
 
 # Workaround for MSVS10 to avoid the Dialog Hell
 # FIXME: This could be removed with future version of CMake.
