@@ -146,8 +146,10 @@ namespace cling {
       initialized = true;
     }
     std::vector<std::string>::const_iterator it = SysPaths.begin();
-    while ((++it) != SysPaths.end()) {
-      Paths.push_back((*it).c_str());
+    if (it != SysPaths.end()) {
+      while ((++it) != SysPaths.end()) {
+        Paths.push_back((*it).c_str());
+      }
     }
 #endif
   }
