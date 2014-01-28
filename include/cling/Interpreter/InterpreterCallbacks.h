@@ -26,6 +26,9 @@ namespace clang {
   class Scope;
   class TagDecl;
   class Type;
+  class Token;
+  class FileEntry;
+  class Module;
 }
 
 namespace cling {
@@ -104,6 +107,16 @@ namespace cling {
 
     clang::ASTDeserializationListener* 
     getInterpreterDeserializationListener() const;
+
+   virtual void InclusionDirective(clang::SourceLocation /*HashLoc*/,
+                                   const clang::Token &/*IncludeTok*/,
+                                   llvm::StringRef FileName,
+                                   bool /*IsAngled*/,
+                                   clang::CharSourceRange /*FilenameRange*/,
+                                   const clang::FileEntry */*File*/,
+                                   llvm::StringRef /*SearchPath*/,
+                                   llvm::StringRef /*RelativePath*/,
+                                   const clang::Module */*Imported*/) {}
 
     virtual bool FileNotFound(llvm::StringRef FileName, 
                               llvm::SmallVectorImpl<char>& RecoveryPath);

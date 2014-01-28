@@ -32,6 +32,20 @@ namespace cling {
     InterpreterPPCallbacks(InterpreterCallbacks* C) : m_Callbacks(C) { }
     ~InterpreterPPCallbacks() { }
 
+    virtual void InclusionDirective(clang::SourceLocation HashLoc,
+                                    const clang::Token &IncludeTok,
+                                    llvm::StringRef FileName,
+                                    bool IsAngled,
+                                    clang::CharSourceRange FilenameRange,
+                                    const clang::FileEntry *File,
+                                    llvm::StringRef SearchPath,
+                                    llvm::StringRef RelativePath,
+                                    const clang::Module *Imported) {
+      if (m_Callbacks)
+        m_Callbacks->InclusionDirective(HashLoc, IncludeTok, FileName,
+                                        IsAngled, FilenameRange, File,
+                                        SearchPath, RelativePath, Imported);
+    }
     virtual bool FileNotFound(llvm::StringRef FileName,
                               llvm::SmallVectorImpl<char>& RecoveryPath) {
       if (m_Callbacks)
