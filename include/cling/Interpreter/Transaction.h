@@ -53,6 +53,7 @@ namespace cling {
       kCCIHandleVTable,
       kCCIHandleCXXImplicitFunctionInstantiation,
       kCCIHandleCXXStaticMemberVarInstantiation,
+      kCCICompleteTentativeDefinition,
       kCCINumStates
     };
 

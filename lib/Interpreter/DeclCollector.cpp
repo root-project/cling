@@ -68,7 +68,11 @@ namespace cling {
   }
 
   void DeclCollector::CompleteTentativeDefinition(VarDecl* VD) {
-    assert(0 && "Not implemented yet!");
+    // C has tentative definitions which we might need to deal with when running
+    // in C mode.
+    Transaction::DelayCallInfo DCI(DeclGroupRef(VD),
+                                   Transaction::kCCICompleteTentativeDefinition);
+    m_CurTransaction->append(DCI);
   }
 
   void DeclCollector::HandleTranslationUnit(ASTContext& Ctx) {
