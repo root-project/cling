@@ -145,6 +145,7 @@ namespace cling {
       }
       initialized = true;
     }
+
     for (std::vector<std::string>::const_iterator I = SysPaths.begin(),
            E = SysPaths.end(); I != E; ++I)
       Paths.push_back((*I).c_str());
