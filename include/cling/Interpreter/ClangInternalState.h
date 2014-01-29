@@ -42,12 +42,12 @@ namespace cling {
     std::string m_MacrosFile;
     clang::ASTContext& m_ASTContext;
     clang::Preprocessor& m_Preprocessor;
-    llvm::Module& m_Module;
+    llvm::Module* m_Module;
     std::string m_DiffCommand;
     std::string m_Name;
   public:
     ClangInternalState(clang::ASTContext& AC, clang::Preprocessor& PP,
-                       llvm::Module& M, const std::string& name);
+                       llvm::Module* M, const std::string& name);
     ~ClangInternalState();
 
     ///\brief It is convenient the state object to be named so that can be

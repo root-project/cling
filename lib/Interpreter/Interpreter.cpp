@@ -154,7 +154,7 @@ namespace cling {
 
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
-    m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false), 
+    m_UniqueCounter(0), m_PrintAST(false), m_PrintIR(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
@@ -172,8 +172,8 @@ namespace cling {
                                              &LeftoverArgs[0],
                                              llvmdir));
     Sema& SemaRef = getSema();
-    m_LookupHelper.reset(new LookupHelper(new Parser(SemaRef.getPreprocessor(), 
-                                                     SemaRef, 
+    m_LookupHelper.reset(new LookupHelper(new Parser(SemaRef.getPreprocessor(),
+                                                     SemaRef,
                                                      /*SkipFunctionBodies*/false,
                                                      /*isTemp*/true), this));
 
@@ -300,9 +300,9 @@ namespace cling {
   void Interpreter::storeInterpreterState(const std::string& name) const {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
-    ClangInternalState* state 
+    ClangInternalState* state
       = new ClangInternalState(getCI()->getASTContext(),
-                               getCI()->getPreprocessor(), *getModule(), name);
+                               getCI()->getPreprocessor(), getModule(), name);
     m_StoredStates.push_back(state);
   }
 
@@ -310,7 +310,7 @@ namespace cling {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
     ClangInternalState state(getCI()->getASTContext(),
-                             getCI()->getPreprocessor(), *getModule(), name);
+                             getCI()->getPreprocessor(), getModule(), name);
     for (unsigned i = 0, e = m_StoredStates.size(); i != e; ++i) {
       if (m_StoredStates[i]->getName() == name) {
         m_StoredStates[i]->compare(state);
@@ -429,7 +429,9 @@ namespace cling {
   }
 
   llvm::Module* Interpreter::getModule() const {
-    return m_IncrParser->getCodeGenerator()->GetModule();
+    if (m_IncrParser->hasCodeGenerator())
+      return m_IncrParser->getCodeGenerator()->GetModule();
+    return 0;
   }
 
   ///\brief Maybe transform the input line to implement cint command line

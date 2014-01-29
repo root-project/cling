@@ -36,8 +36,8 @@ using namespace clang;
 namespace cling {
 
   ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
-                                         llvm::Module& M, const std::string& name)
-    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M), 
+                                         llvm::Module* M, const std::string& name)
+    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M),
       m_DiffCommand("diff -u --text "), m_Name(name) {
     store();
   }
@@ -68,10 +68,11 @@ namespace cling {
     m_MacrosOS.reset(createOutputFile("macros", &m_MacrosFile));
 
     printLookupTables(*m_LookupTablesOS.get(), m_ASTContext);
-    printIncludedFiles(*m_IncludedFilesOS.get(), 
+    printIncludedFiles(*m_IncludedFilesOS.get(),
                        m_ASTContext.getSourceManager());
     printAST(*m_ASTOS.get(), m_ASTContext);
-    printLLVMModule(*m_LLVMModuleOS.get(), m_Module);
+    if (m_Module)
+      printLLVMModule(*m_LLVMModuleOS.get(), *m_Module);
     printMacroDefinitions(*m_MacrosOS.get(), m_Preprocessor);
   }
   namespace {
