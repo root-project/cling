@@ -149,7 +149,7 @@ namespace cling {
     ///
     bool VisitMacro(const Transaction::MacroDirectiveInfo MD);
 
-    void RemoveDeclFromModule(GlobalDecl& GD) const;
+    void MaybeRemoveDeclFromModule(GlobalDecl& GD) const;
     void RemoveStaticInit(llvm::Function& F) const;
 
     /// @name Helpers
@@ -398,7 +398,7 @@ namespace cling {
     // generated. This has to go first, because it may need the AST information
     // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
     GlobalDecl GD(VD);
-    RemoveDeclFromModule(GD);
+    MaybeRemoveDeclFromModule(GD);
 
     // VarDecl : DeclaratiorDecl, Redeclarable
     bool Successful = VisitRedeclarable(VD, VD->getDeclContext());
@@ -414,7 +414,7 @@ namespace cling {
       // generated. This has to go first, because it may need the AST info
       // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
       GlobalDecl GD(FD);
-      RemoveDeclFromModule(GD);
+      MaybeRemoveDeclFromModule(GD);
     }
 
     // FunctionDecl : DeclaratiorDecl, DeclContext, Redeclarable
@@ -519,11 +519,11 @@ namespace cling {
     // Ctor_Base                Base object ctor.
     // Ctor_CompleteAllocating 	Complete object allocating ctor.
     GlobalDecl GD(CXXCtor, Ctor_Complete);
-    RemoveDeclFromModule(GD);
+    MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXCtor, Ctor_Base);
-    RemoveDeclFromModule(GD);
+    MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXCtor, Ctor_CompleteAllocating);
-    RemoveDeclFromModule(GD);
+    MaybeRemoveDeclFromModule(GD);
 
     bool Successful = VisitCXXMethodDecl(CXXCtor);
     return Successful;
@@ -576,7 +576,9 @@ namespace cling {
     return Successful;
   }
 
-  void DeclReverter::RemoveDeclFromModule(GlobalDecl& GD) const {
+  void DeclReverter::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
+    if (!m_CurTransaction->getModule()) // syntax-only mode exit
+      return;
     using namespace llvm;
     // if it was successfully removed from the AST we have to check whether
     // code was generated and remove it.

@@ -653,8 +653,6 @@ namespace cling {
 
     assert(T->getState() == Transaction::kCommitted && 
            "Unloading not commited transaction?");
-    assert(T->getModule() && 
-           "Trying to uncodegen transaction taken in syntax only mode. ");
 
     ASTNodeEraser NodeEraser(&getCI()->getSema(), 
                              m_Interpreter->getExecutionEngine());
