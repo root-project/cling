@@ -145,12 +145,9 @@ namespace cling {
       }
       initialized = true;
     }
-    std::vector<std::string>::const_iterator it = SysPaths.begin();
-    if (it != SysPaths.end()) {
-      while ((++it) != SysPaths.end()) {
-        Paths.push_back((*it).c_str());
-      }
-    }
+    for (std::vector<std::string>::const_iterator I = SysPaths.begin(),
+           E = SysPaths.end(); I != E; ++I)
+      Paths.push_back((*I).c_str());
 #endif
   }
 #elif defined(LLVM_ON_WIN32)
