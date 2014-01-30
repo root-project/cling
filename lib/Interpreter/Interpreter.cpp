@@ -843,7 +843,7 @@ namespace cling {
                                Transaction** T /* = 0 */) const {
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
-    ignoreFakeDiagnostics();
+    MaybeIgnoreFakeDiagnostics();
 
     if (Transaction* lastT = m_IncrParser->Compile(input, CO)) {
       if (lastT->getIssuedDiags() != Transaction::kErrors) {
@@ -865,7 +865,7 @@ namespace cling {
                                 Transaction** T /* = 0 */) {
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
-    ignoreFakeDiagnostics();
+    MaybeIgnoreFakeDiagnostics();
 
     // Wrap the expression
     std::string WrapperName;
@@ -1003,7 +1003,10 @@ namespace cling {
     m_ExecutionContext->runStaticDestructorsOnce(getModule());
   }
 
-  void Interpreter::ignoreFakeDiagnostics() const {
+  void Interpreter::MaybeIgnoreFakeDiagnostics() const {
+    // In rawInput mode we want to be as close as possible to the compiler.
+    if (isRawInputEnabled())
+      return;
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
