@@ -90,7 +90,7 @@ namespace cling {
   }
 
   // Copied with modifications from CompilerInstance.cpp
-  llvm::raw_fd_ostream* 
+  llvm::raw_fd_ostream*
   ClangInternalState::createOutputFile(llvm::StringRef OutFile,
                                        std::string *TempPathName/*=0*/,
                                        bool RemoveFileOnSignal/*=true*/) {
@@ -132,7 +132,7 @@ namespace cling {
     typedef llvm::SmallVector<const char*, 1024> Builtins;
     Builtins builtinNames;
     m_ASTContext.BuiltinInfo.GetBuiltinNames(builtinNames);
-    for (Builtins::iterator I = builtinNames.begin(); 
+    for (Builtins::iterator I = builtinNames.begin();
          I != builtinNames.end();) {
       if (llvm::StringRef(*I).startswith("__builtin"))
         I = builtinNames.erase(I);
@@ -140,16 +140,16 @@ namespace cling {
         ++I;
     }
 
-    builtinNames.push_back(".*__builtin.*");      
-    
-    if (differentContent(m_LookupTablesFile, other.m_LookupTablesFile, 
+    builtinNames.push_back(".*__builtin.*");
+
+    if (differentContent(m_LookupTablesFile, other.m_LookupTablesFile,
                          differences, &builtinNames)) {
       llvm::errs() << "Differences in the lookup tables\n";
       llvm::errs() << differences << "\n";
       differences = "";
     }
 
-    if (differentContent(m_IncludedFilesFile, other.m_IncludedFilesFile, 
+    if (differentContent(m_IncludedFilesFile, other.m_IncludedFilesFile,
                          differences)) {
       llvm::errs() << "Differences in the included files\n";
       llvm::errs() << differences << "\n";
@@ -173,8 +173,8 @@ namespace cling {
     }
   }
 
-  bool ClangInternalState::differentContent(const std::string& file1, 
-                                            const std::string& file2, 
+  bool ClangInternalState::differentContent(const std::string& file1,
+                                            const std::string& file2,
                                             std::string& differences,
                 const llvm::SmallVectorImpl<const char*>* ignores/*=0*/) const {
     std::string diffCall = m_DiffCommand;
@@ -223,13 +223,13 @@ namespace cling {
     }
   };
 
-  void ClangInternalState::printLookupTables(llvm::raw_ostream& Out, 
+  void ClangInternalState::printLookupTables(llvm::raw_ostream& Out,
                                              ASTContext& C) {
     DumpLookupTables dumper(Out);
     dumper.TraverseDecl(C.getTranslationUnitDecl());
   }
 
-  void ClangInternalState::printIncludedFiles(llvm::raw_ostream& Out, 
+  void ClangInternalState::printIncludedFiles(llvm::raw_ostream& Out,
                                               SourceManager& SM) {
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
@@ -263,7 +263,7 @@ namespace cling {
     Out.flush();
   }
 
-  void ClangInternalState::printLLVMModule(llvm::raw_ostream& Out, 
+  void ClangInternalState::printLLVMModule(llvm::raw_ostream& Out,
                                            llvm::Module& M) {
     M.print(Out, /*AssemblyAnnotationWriter*/ 0);
   }
