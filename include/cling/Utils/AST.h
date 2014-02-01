@@ -27,6 +27,7 @@ namespace clang {
   class QualType;
   class Sema;
   class TagDecl;
+  class TemplateDecl;
   class Type;
   class TypedefNameDecl;
 }
@@ -134,6 +135,12 @@ namespace utils {
       
       SkipCollection    m_toSkip;
       ReplaceCollection m_toReplace;
+
+      ///\brief Returns the number of default argument that should be dropped.
+      /// from the name of the template instances.
+      ///
+      ///\param[in] decl          - The declaration being analyzed.
+      unsigned int DropDefaultArg(clang::TemplateDecl &Template) const;
 
       bool empty() const { return m_toSkip.size()==0 && m_toReplace.empty(); }
     };

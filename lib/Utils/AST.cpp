@@ -583,6 +583,32 @@ namespace utils {
     return false;
   }
 
+  unsigned int
+  Transform::Config::DropDefaultArg(clang::TemplateDecl &Template) const
+  {
+    /// Return the number of default argument to drop.
+
+    if (Analyze::IsStdClass(Template)) {
+      static const char *stls[] =  //container names
+        {"vector","list","deque","map","multimap","set","multiset",0};
+      static unsigned int values[] =       //number of default arg.
+        {1,1,1,2,2,2,2};
+      StringRef name = Template.getName();
+      for(int k=0;stls[k];k++) {
+        if ( name.equals(stls[k]) ) return values[k];
+      }
+    }
+    // Check in some struct if the Template decl is registered something like
+    /*
+     DefaultCollection::const_iterator iter;
+     iter = m_defaultArgs.find(&Template);
+     if (iter != m_defaultArgs.end()) {
+        return iter->second;
+     }
+    */
+    return 0;
+  }
+
   static bool ShouldKeepTypedef(QualType QT,
                            const llvm::SmallSet<const Type*, 4>& TypesToSkip)
   {
