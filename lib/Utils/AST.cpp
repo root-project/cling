@@ -534,6 +534,30 @@ namespace utils {
     return false;
   }
 
+  bool Analyze::IsStdClass(const clang::NamedDecl &cl)
+  {
+    // Return true if the class or template is declared directly in the
+    // std namespace (modulo inline namespace).
+
+    const clang::DeclContext *ctx = cl.getDeclContext();
+
+    while (ctx && ctx->isInlineNamespace()) {
+      ctx = ctx->getParent();
+    }
+
+    if (ctx && ctx->isNamespace())
+    {
+      const clang::NamedDecl *parent = llvm::dyn_cast<clang::NamedDecl> (ctx);
+      if (parent) {
+        if (parent->getDeclContext()->isTranslationUnit()
+            && parent->getQualifiedNameAsString()=="std") {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   static bool IsCompilerDetails(const TagType *tagTy)
   {
     // Return true if the TagType is a 'details' of the std implementation.

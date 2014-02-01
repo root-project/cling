@@ -77,6 +77,12 @@ namespace utils {
                                      bool omitDeclStmts = true,
                                      clang::Sema* S = 0);
 
+    ///\brief Return true if the class or template is declared directly in the
+    /// std namespace (modulo inline namespace).
+    ///
+    ///\param[in] decl          - The declaration being analyzed.
+    bool IsStdClass(const clang::NamedDecl &cl);
+
     ///\brief Return true if the decl has been declared in ths std namespace
     /// or is a compiler details (in __gnu_cxx and starting with a leading
     /// underscore).
