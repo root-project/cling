@@ -106,7 +106,7 @@ namespace cling {
     llvm::sys::fs::make_absolute(TempPath);
     assert(llvm::sys::fs::is_directory(TempPath.str()) && "Must be a folder.");
     // Create a temporary file.
-    llvm::sys::path::append(TempPath, OutFile);
+    llvm::sys::path::append(TempPath, "cling-" + OutFile);
     TempPath += "-" + getCurrentTimeAsString();
     TempPath += "-%%%%%%%%";
     int fd;
