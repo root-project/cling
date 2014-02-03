@@ -45,6 +45,9 @@ namespace cling {
     llvm::Module* m_Module;
     std::string m_DiffCommand;
     std::string m_Name;
+    ///\brief Takes the ownership after compare was made.
+    ///
+    llvm::OwningPtr<ClangInternalState> m_DiffPair;
   public:
     ClangInternalState(clang::ASTContext& AC, clang::Preprocessor& PP,
                        llvm::Module* M, const std::string& name);
@@ -59,9 +62,9 @@ namespace cling {
     ///
     void store();
 
-    ///\brief Compares two states.
+    ///\brief Compares the states with the current state of the same objects.
     ///
-    void compare(ClangInternalState& other);
+    void compare(const std::string& name);
 
     ///\brief Runs diff on two files.
     ///\param[in] file1 - A file to diff

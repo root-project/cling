@@ -36,9 +36,10 @@ using namespace clang;
 namespace cling {
 
   ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
-                                         llvm::Module* M, const std::string& name)
+                                         llvm::Module* M,
+                                         const std::string& name)
     : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M),
-      m_DiffCommand("diff -u --text "), m_Name(name) {
+      m_DiffCommand("diff -u --text "), m_Name(name), m_DiffPair(0) {
     store();
   }
 
@@ -126,7 +127,10 @@ namespace cling {
     return OS.take();
   }
 
-  void ClangInternalState::compare(ClangInternalState& other) {
+  void ClangInternalState::compare(const std::string& name) {
+    assert(name == m_Name && "Different names!?");
+    m_DiffPair.reset(new ClangInternalState(m_ASTContext, m_Preprocessor,
+                                            m_Module, name));
     std::string differences = "";
     // Ignore the builtins
     typedef llvm::SmallVector<const char*, 1024> Builtins;
@@ -142,31 +146,32 @@ namespace cling {
 
     builtinNames.push_back(".*__builtin.*");
 
-    if (differentContent(m_LookupTablesFile, other.m_LookupTablesFile,
+    if (differentContent(m_LookupTablesFile, m_DiffPair->m_LookupTablesFile,
                          differences, &builtinNames)) {
       llvm::errs() << "Differences in the lookup tables\n";
       llvm::errs() << differences << "\n";
       differences = "";
     }
 
-    if (differentContent(m_IncludedFilesFile, other.m_IncludedFilesFile,
+    if (differentContent(m_IncludedFilesFile, m_DiffPair->m_IncludedFilesFile,
                          differences)) {
       llvm::errs() << "Differences in the included files\n";
       llvm::errs() << differences << "\n";
       differences = "";
     }
-    if (differentContent(m_ASTFile, other.m_ASTFile, differences)) {
+    if (differentContent(m_ASTFile, m_DiffPair->m_ASTFile, differences)) {
       llvm::errs() << "Differences in the AST \n";
       llvm::errs() << differences << "\n";
       differences = "";
     }
 
-    if (differentContent(m_LLVMModuleFile, other.m_LLVMModuleFile, differences)){
+    if (differentContent(m_LLVMModuleFile, m_DiffPair->m_LLVMModuleFile,
+                         differences)) {
       llvm::errs() << "Differences in the llvm Module \n";
       llvm::errs() << differences << "\n";
       differences = "";
     }
-    if (differentContent(m_MacrosFile, other.m_MacrosFile, differences)){
+    if (differentContent(m_MacrosFile, m_DiffPair->m_MacrosFile, differences)){
       llvm::errs() << "Differences in the Macro Definitions \n";
       llvm::errs() << differences << "\n";
       differences = "";

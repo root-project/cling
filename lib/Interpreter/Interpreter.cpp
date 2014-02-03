@@ -252,7 +252,8 @@ namespace cling {
   Interpreter::~Interpreter() {
     if (m_ExecutionContext)
       m_ExecutionContext->shuttingDown();
-    assert(!m_StoredStates.size() && "Unbalanced store/compare state.");
+    for (size_t i = 0, e = m_StoredStates.size(); i != e; ++i)
+      delete m_StoredStates[i];
     getCI()->getDiagnostics().getClient()->EndSourceFile();
   }
 
@@ -307,18 +308,18 @@ namespace cling {
   }
 
   void Interpreter::compareInterpreterState(const std::string& name) const {
-    // This may induce deserialization
-    PushTransactionRAII RAII(this);
-    ClangInternalState state(getCI()->getASTContext(),
-                             getCI()->getPreprocessor(), getModule(), name);
-    for (unsigned i = 0, e = m_StoredStates.size(); i != e; ++i) {
+    short foundAtPos = -1;
+    for (short i = 0, e = m_StoredStates.size(); i != e; ++i) {
       if (m_StoredStates[i]->getName() == name) {
-        m_StoredStates[i]->compare(state);
-        // Remove from the stack and free the storage.
-        delete *m_StoredStates.erase(m_StoredStates.begin() + i);
+        foundAtPos = i;
         break;
       }
     }
+    assert(foundAtPos>-1 && "The name doesnt exist. Unbalanced store/compare");
+
+    // This may induce deserialization
+    PushTransactionRAII RAII(this);
+    m_StoredStates[foundAtPos]->compare(name);
   }
 
   void Interpreter::printIncludedFiles(llvm::raw_ostream& Out) const {
