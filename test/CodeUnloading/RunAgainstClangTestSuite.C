@@ -1,1 +1,1 @@
-//RUN: bash make -C %p/../clang/test/ CLANG=%p/clangTestUnloader.sh 
+//RUN: make -C %testexecdir/../../clang/ test TESTSUITE=Sema CLANG=%p/clangTestUnloader.sh
