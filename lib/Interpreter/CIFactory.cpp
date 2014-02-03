@@ -127,8 +127,12 @@ namespace cling {
         << "Warning in cling::CIFactory::createCI():\n  "
         "Possible C++ standard library mismatch, compiled with "
         CLING_CXXABIS " v" << CLING_CXXABIV
-        << " but cannot extract standard library version from current compiler "
-        LLVM_CXX "\n";
+        << " but extraction of runtime standard library version failed.\n"
+        "Invoking:\n"
+        "    " << runABIQuery << "\n"
+        "results in\n";
+      int ExitCode = system(runABIQuery);
+      llvm::errs() << "with exit code " << ExitCode << "\n";
     }
 #undef CLING_CXXABIV
 #undef CLING_CXXABIS
