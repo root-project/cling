@@ -26,9 +26,15 @@
 #include <fstream>
 #include <cstdlib>
 #include <cctype>
-#include <unistd.h>
 #include <stdio.h>
-
+#ifndef WIN32
+#include <unistd.h>
+#else
+#include <io.h>
+#define STDIN_FILENO  0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+#endif
 
 using namespace clang;
 
