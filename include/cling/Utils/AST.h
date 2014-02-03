@@ -82,7 +82,7 @@ namespace utils {
     /// std namespace (modulo inline namespace).
     ///
     ///\param[in] decl          - The declaration being analyzed.
-    bool IsStdClass(const clang::NamedDecl &cl);
+    bool IsStdClass(const clang::NamedDecl &decl);
 
     ///\brief Return true if the decl has been declared in ths std namespace
     /// or is a compiler details (in __gnu_cxx and starting with a leading
@@ -139,8 +139,8 @@ namespace utils {
       ///\brief Returns the number of default argument that should be dropped.
       /// from the name of the template instances.
       ///
-      ///\param[in] decl          - The declaration being analyzed.
-      unsigned int DropDefaultArg(clang::TemplateDecl &Template) const;
+      ///\param[in] templateDecl   - The declaration being analyzed.
+      unsigned int DropDefaultArg(clang::TemplateDecl &templateDecl) const;
 
       bool empty() const { return m_toSkip.size()==0 && m_toReplace.empty(); }
     };
