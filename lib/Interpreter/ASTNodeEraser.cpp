@@ -199,9 +199,20 @@ namespace cling {
           if (!Name.isEmpty()) {
             StoredDeclsMap::iterator Pos = Map->find(Name);
             if (Pos != Map->end() && !Pos->second.isNull()) {
+              DeclContext::lookup_result decls = Pos->second.getLookupResult();
+              bool isInTheLookup = false;
+              for(DeclContext::lookup_result::const_iterator I = decls.begin(),
+                    E = decls.end(); I != E; ++I) {
+                if (*I == ND) { // the decl is registered in the lookup
+                  isInTheLookup = true;
+                  break;
+                }
+              }
+              //
+              //Pos->second.AddSubsequentDecl(PrevDecls[0]);
               // If this is a redeclaration of an existing decl, replace the
               // old one with D.
-              if (!Pos->second.HandleRedeclaration(PrevDecls[0])) {
+              if (isInTheLookup/*!Pos->second.HandleRedeclaration(PrevDecls[0])*/) {
                 // We are probably in the case where we had overloads and we 
                 // deleted an overload definition but we still have its 
                 // declaration. Say void f(); void f(int); void f(int) {}
@@ -218,14 +229,15 @@ namespace cling {
                       // We need to replace it exactly at the same place where
                       // the old one was. The reason is cling diff-based 
                       // test suite
+                      assert(*I != PrevDecls[0] && "DAFUQ");
                       *I = PrevDecls[0];
                       wasReplaced = true;
                       break;
                     }
                   // This will make the DeclContext::removeDecl happy. It also
                   // tries to remove the decl from the lookup.
-                  if (wasReplaced)
-                    Pos->second.AddSubsequentDecl(ND);
+                  //if (wasReplaced)
+                  //  Pos->second.AddSubsequentDecl(ND);
                 }
               }
             }
