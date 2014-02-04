@@ -74,8 +74,10 @@ namespace cling {
 
     Value& operator =(const Value& other);
 
-    llvm::GenericValue getGV() const;
-    void setGV(llvm::GenericValue GV);
+    const llvm::GenericValue& getGV() const;
+    llvm::GenericValue& getGV();
+    void setGV(const llvm::GenericValue& GV);
+
     clang::QualType getClangType() const;
     const llvm::Type* getLLVMType() const { return m_LLVMType; }
     void setLLVMType(const llvm::Type* Ty) { m_LLVMType = Ty; }

@@ -58,10 +58,15 @@ Value& Value::operator =(const Value& other) {
   return *this;
 }
 
-llvm::GenericValue Value::getGV() const {
+const llvm::GenericValue& Value::getGV() const {
   return reinterpret_cast<const llvm::GenericValue&>(m_GV);
 }
-void Value::setGV(llvm::GenericValue GV) {
+
+llvm::GenericValue& Value::getGV() {
+  return reinterpret_cast<llvm::GenericValue&>(m_GV);
+}
+
+void Value::setGV(const llvm::GenericValue& GV) {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   reinterpret_cast<llvm::GenericValue&>(m_GV) = GV;
