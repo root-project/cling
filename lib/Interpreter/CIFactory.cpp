@@ -145,7 +145,7 @@ namespace cling {
     if (!IncludesSet) {
       IncludesSet = true;
       static const char *CppInclQuery =
-        "echo | LANG=C " LLVM_CXX " -xc++ -E -v - 2>&1 >/dev/null "
+        "echo | LC_ALL=C " LLVM_CXX " -xc++ -E -v - 2>&1 >/dev/null "
         "| awk '/^#include </,/^End of search"
         "/{if (!/^#include </ && !/^End of search/){ print }}' "
         "| grep -E \"(c|g)\\+\\+\"";
