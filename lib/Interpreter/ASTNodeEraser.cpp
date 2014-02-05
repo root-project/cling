@@ -105,6 +105,15 @@ namespace cling {
     ///
     bool VisitFunctionDecl(FunctionDecl* FD);
 
+    ///\brief Removes the declaration clang's internal structures. This case
+    /// looks very much to VisitFunctionDecl, but FunctionTemplateDecl doesn't
+    /// derive from FunctionDecl and thus we need to handle it 'by hand'.
+    /// @param[in] FD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD);
+
     ///\brief Specialize the removal of constructors due to the fact the we need
     /// the constructor type (aka CXXCtorType). The information is located in
     /// the CXXConstructExpr of usually VarDecls. 
@@ -520,6 +529,11 @@ namespace cling {
 
     return Successful;
   }
+
+  bool DeclReverter::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
+    return VisitFunctionDecl(FTD->getTemplatedDecl());
+  }
+
 
   bool DeclReverter::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
     // Cleanup the module if the transaction was committed and code was
