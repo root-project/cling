@@ -167,6 +167,16 @@ namespace cling {
         }
         ::pclose(pf);
       }
+      // HostCXXI contains at least -nostdinc++, -I
+      if (HostCXXI.size() < 3) {
+        llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract "
+          "standard library include paths!\n"
+          "Invoking:\n"
+          "    " << CppInclQuery << "\n"
+          "results in\n";
+        int ExitCode = system(CppInclQuery);
+        llvm::errs() << "with exit code " << ExitCode << "\n";
+      }
       CheckABICompatibility();
     }
 
