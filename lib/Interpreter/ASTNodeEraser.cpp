@@ -105,15 +105,6 @@ namespace cling {
     ///
     bool VisitFunctionDecl(FunctionDecl* FD);
 
-    ///\brief Removes the declaration clang's internal structures. This case
-    /// looks very much to VisitFunctionDecl, but FunctionTemplateDecl doesn't
-    /// derive from FunctionDecl and thus we need to handle it 'by hand'.
-    /// @param[in] FD - The declaration to be removed.
-    ///
-    ///\returns true on success.
-    ///
-    bool VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD);
-
     ///\brief Specialize the removal of constructors due to the fact the we need
     /// the constructor type (aka CXXCtorType). The information is located in
     /// the CXXConstructExpr of usually VarDecls. 
@@ -157,6 +148,19 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitMacro(const Transaction::MacroDirectiveInfo MD);
+
+    ///@name Templates
+    ///@{
+
+    ///\brief Removes template from the redecl chain. Templates are 
+    /// redeclarables also.
+    /// @param[in] R - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitRedeclarableTemplateDecl(RedeclarableTemplateDecl* R);
+
+    ///@}
 
     void MaybeRemoveDeclFromModule(GlobalDecl& GD) const;
     void RemoveStaticInit(llvm::Function& F) const;
@@ -530,11 +534,6 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
-    return VisitFunctionDecl(FTD->getTemplatedDecl());
-  }
-
-
   bool DeclReverter::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
     // Cleanup the module if the transaction was committed and code was
     // generated. This has to go first, because it may need the AST information
@@ -783,6 +782,18 @@ namespace cling {
     PP.removeMacro(MacroD.m_II, const_cast<MacroDirective*>(MacroD.m_MD));
 
     return true;
+  }
+
+  bool DeclReverter::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
+    bool Successful = false;
+
+    // Remove specializations:
+    for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(), 
+           E = FTD->spec_end(); I != E; ++I)
+      Successful = Visit(*I);
+
+    Successful &= VisitFunctionDecl(FTD->getTemplatedDecl());
+    return Successful;
   }
 
   ASTNodeEraser::ASTNodeEraser(Sema* S, llvm::ExecutionEngine* EE)
