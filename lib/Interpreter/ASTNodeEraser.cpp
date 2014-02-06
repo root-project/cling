@@ -230,6 +230,10 @@ namespace cling {
             StoredDeclsMap::iterator Pos = Map->find(Name);
             if (Pos != Map->end() && !Pos->second.isNull()) {
               DeclContext::lookup_result decls = Pos->second.getLookupResult();
+
+              assert(std::find(decls.begin(), decls.end(), PrevDecls[0]) == decls.end()
+                     && "The decls is already registered!?");
+
               for(DeclContext::lookup_result::iterator I = decls.begin(),
                     E = decls.end(); I != E; ++I) {
                 if (*I == ND) { // the decl is registered in the lookup
