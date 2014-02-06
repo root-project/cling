@@ -295,16 +295,6 @@ namespace cling {
       m_FilesToUncache.insert(FID);
   }
 
-  // Gives us access to the protected members that we need.
-  class DeclContextExt : public DeclContext {
-  public:
-    static bool removeIfLast(DeclContext* DC, Decl* D) {
-      if (DC->containsDecl(D))
-        DC->removeDecl(D);
-      return true;
-    }
-  };
-
   bool DeclReverter::VisitDecl(Decl* D) {
     assert(D && "The Decl is null");
     CollectFilesToUncache(D->getLocStart());
@@ -312,7 +302,8 @@ namespace cling {
     DeclContext* DC = D->getLexicalDeclContext();
 
     bool Successful = true;
-    DeclContextExt::removeIfLast(DC, D);
+    if (DC->containsDecl(D))
+      DC->removeDecl(D);
 
     // With the bump allocator this is nop.
     if (Successful)
