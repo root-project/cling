@@ -334,13 +334,13 @@ namespace cling {
           Pos->second.remove(ND);
         else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
           // Otherwise iterate over the list with entries with the same name.
-          // TODO: Walk the redeclaration chain if the entry was a redeclaration
           for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
                  E = Vec->end(); I != E; ++I)
             if (*I == ND)
               Pos->second.remove(ND);
         }
-        if (Pos->second.isNull())
+        if (Pos->second.isNull() || 
+            (Pos->second.getAsVector() && !Pos->second.getAsVector()->size()))
           Map->erase(Pos);
       }
     }
