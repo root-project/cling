@@ -160,6 +160,23 @@ namespace cling {
     ///
     bool VisitRedeclarableTemplateDecl(RedeclarableTemplateDecl* R);
 
+
+    ///\brief Removes the declaration clang's internal structures. This case
+    /// looks very much to VisitFunctionDecl, but FunctionTemplateDecl doesn't
+    /// derive from FunctionDecl and thus we need to handle it 'by hand'.
+    /// @param[in] FTD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD);
+
+    ///\brief Removes the template declaration clang's internal structures.
+    /// @param[in] CTD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitClassTemplateDecl(ClassTemplateDecl* CTD);
+
     ///@}
 
     void MaybeRemoveDeclFromModule(GlobalDecl& GD) const;
@@ -737,8 +754,14 @@ namespace cling {
     return true;
   }
 
+  bool DeclReverter::VisitRedeclarableTemplateDecl(RedeclarableTemplateDecl* R){
+    bool Successful = VisitRedeclarable(R, R->getDeclContext());
+    Successful &= VisitTemplateDecl(R);
+    return Successful;
+  }
+
   bool DeclReverter::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
-    bool Successful = false;
+    bool Successful = VisitRedeclarableTemplateDecl(FTD);
 
     // Remove specializations:
     for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(), 
@@ -746,6 +769,17 @@ namespace cling {
       Successful = Visit(*I);
 
     Successful &= VisitFunctionDecl(FTD->getTemplatedDecl());
+    return Successful;
+  }
+
+  bool DeclReverter::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
+    bool Successful = VisitRedeclarableTemplateDecl(CTD);
+    // Remove specializations:
+    for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(), 
+           E = CTD->spec_end(); I != E; ++I)
+      Successful = Visit(*I);
+
+    Successful &= Visit(CTD->getTemplatedDecl());
     return Successful;
   }
 
