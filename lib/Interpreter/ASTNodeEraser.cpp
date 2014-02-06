@@ -282,24 +282,9 @@ namespace cling {
   class DeclContextExt : public DeclContext {
   public:
     static bool removeIfLast(DeclContext* DC, Decl* D) {
-      if (!D->getNextDeclInContext()) {
-        // Either last (remove!), or invalid (nothing to remove)
-        if (((DeclContextExt*)DC)->LastDecl == D) {
-          // Valid. Thus remove.
-          DC->removeDecl(D);
-          // Force rebuilding of the lookup table.
-          //DC->setMustBuildLookupTable();
-          return true;
-        }
-      }
-      else {
-        // Force rebuilding of the lookup table.
-        //DC->setMustBuildLookupTable();
+      if (DC->containsDecl(D))
         DC->removeDecl(D);
-        return true;
-      }
-
-      return false;
+      return true;
     }
   };
 
