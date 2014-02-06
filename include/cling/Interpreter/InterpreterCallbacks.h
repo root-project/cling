@@ -109,14 +109,14 @@ namespace cling {
     getInterpreterDeserializationListener() const;
 
    virtual void InclusionDirective(clang::SourceLocation /*HashLoc*/,
-                                   const clang::Token &/*IncludeTok*/,
+                                   const clang::Token& /*IncludeTok*/,
                                    llvm::StringRef FileName,
                                    bool /*IsAngled*/,
                                    clang::CharSourceRange /*FilenameRange*/,
-                                   const clang::FileEntry */*File*/,
+                                   const clang::FileEntry* /*File*/,
                                    llvm::StringRef /*SearchPath*/,
                                    llvm::StringRef /*RelativePath*/,
-                                   const clang::Module */*Imported*/) {}
+                                   const clang::Module* /*Imported*/) {}
 
     virtual bool FileNotFound(llvm::StringRef FileName, 
                               llvm::SmallVectorImpl<char>& RecoveryPath);
