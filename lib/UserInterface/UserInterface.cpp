@@ -101,16 +101,18 @@ namespace cling {
       PrintLogo();
     }
 
-    // History file is $HOME/.cling_history
-    static const char* histfile = ".cling_history";
     llvm::SmallString<512> histfilePath;
-    GetUserHomeDirectory(histfilePath);
-    llvm::sys::path::append(histfilePath, histfile);
+    if (!getenv("CLING_NOHISTORY")) {
+      // History file is $HOME/.cling_history
+      static const char* histfile = ".cling_history";
+      GetUserHomeDirectory(histfilePath);
+      llvm::sys::path::append(histfilePath, histfile);
+    }
 
     using namespace textinput;
     StreamReader* R = StreamReader::Create();
     TerminalDisplay* D = TerminalDisplay::Create();
-    TextInput TI(*R, *D, histfilePath.c_str());
+    TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
