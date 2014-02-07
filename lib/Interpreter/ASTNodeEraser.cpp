@@ -825,8 +825,13 @@ namespace cling {
         // Get rid of the declaration. If the declaration has name we should
         // heal the lookup tables as well
         Successful = DeclRev.RevertDecl(*Di) && Successful;
-
       }
+    }
+
+    for (Transaction::const_reverse_macros_iterator MI = T->rmacros_begin(),
+           ME = T->rmacros_end(); MI != ME; ++MI) {
+      // Get rid of the macro definition
+      Successful = DeclRev.RevertMacro(*MI) && Successful;
     }
 
 #ifndef NDEBUG
