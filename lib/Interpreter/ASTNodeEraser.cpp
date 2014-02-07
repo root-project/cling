@@ -215,7 +215,9 @@ namespace cling {
     ///                MacroDirective to forward.
     ///\returns true on success.
     ///
-    bool RevertMacro(const Transaction::MacroDirectiveInfo MD) { return VisitMacro(MD); }
+    bool RevertMacro(Transaction::MacroDirectiveInfo MD) { 
+      return VisitMacro(MD);
+    }
 
     ///\brief Removes given declaration from the chain of redeclarations.
     /// Rebuilds the chain and sets properly first and last redeclaration.
@@ -737,7 +739,7 @@ namespace cling {
     return false;
   }
 
-  bool DeclReverter::VisitMacro(const Transaction::MacroDirectiveInfo MacroD) {
+  bool DeclReverter::VisitMacro(Transaction::MacroDirectiveInfo MacroD) {
     assert(MacroD.m_MD && "The MacroDirective is null");
     assert(MacroD.m_II && "The IdentifierInfo is null");
     CollectFilesToUncache(MacroD.m_MD->getLocation());
