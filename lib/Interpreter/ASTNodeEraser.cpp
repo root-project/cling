@@ -576,27 +576,11 @@ namespace cling {
   }
 
   bool DeclReverter::VisitNamespaceDecl(NamespaceDecl* NSD) {
-    bool Successful = VisitDeclContext(NSD);
-
-    // If this wasn't the original namespace we need to nominate a new one and
-    // store it in the lookup tables.
-    DeclContext* DC = NSD->getDeclContext();
-    StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
-    if (!Map)
-      return false;
-    StoredDeclsMap::iterator Pos = Map->find(NSD->getDeclName());
-    assert(Pos != Map->end() && !Pos->second.isNull()
-           && "no lookup entry for decl");
-
-    if (NSD != NSD->getOriginalNamespace()) {
-      NamespaceDecl* NewNSD = NSD->getOriginalNamespace();
-      Pos->second.setOnlyValue(NewNSD);
-      if (Scope* S = m_Sema->getScopeForContext(DC))
-        S->AddDecl(NewNSD);
-      m_Sema->IdResolver.AddDecl(NewNSD);
-    }
-
+    // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
+    bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
+    Successful &= VisitDeclContext(NSD);
     Successful &= VisitNamedDecl(NSD);
+
     return Successful;
   }
 
