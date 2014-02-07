@@ -89,6 +89,22 @@ namespace cling {
     ///
     bool VisitNamedDecl(NamedDecl* ND);
 
+    ///\brief Removes a using shadow declaration, created in the cases:
+    ///\code
+    /// namespace A {
+    ///   void foo();
+    /// }
+    /// namespace B {
+    ///   using A::foo; // <- a UsingDecl
+    ///                 // Also creates a UsingShadowDecl for A::foo() in B
+    /// }
+    ///\endcode
+    ///\param[in] USD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitUsingShadowDecl(UsingShadowDecl* USD);
+
     ///\brief Removes the declaration from the lookup chains and from the
     /// declaration context and it rebuilds the redeclaration chain.
     /// @param[in] VD - The declaration to be removed.
@@ -378,6 +394,19 @@ namespace cling {
       }
     }
 #endif
+
+    return Successful;
+  }
+
+  bool DeclReverter::VisitUsingShadowDecl(UsingShadowDecl* USD) {
+    // UsingShadowDecl: NamedDecl, Redeclarable
+    bool Successful = false;
+    // FIXME: This is needed when we have newest clang:
+    //Successful = VisitRedeclarable(USD, USD->getDeclContext());
+    Successful &= VisitNamedDecl(USD);
+
+    // Unregister from the using decl that it shadows.
+    USD->getUsingDecl()->removeShadowDecl(USD);
 
     return Successful;
   }
