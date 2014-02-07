@@ -29,4 +29,6 @@ gCling->process("\"Root\"", &V);
 // CHECK: (const char [5]) "Root"
 V
 // CHECK: (cling::StoredValueRef) boxes [(const char *) "Root"]
+gCling->declare("typedef enum {k1,k2} enumName");
+// CHECK:
 // End PR #98146
