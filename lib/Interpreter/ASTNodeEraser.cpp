@@ -445,8 +445,11 @@ namespace cling {
     }
 
     // FunctionDecl : DeclaratiorDecl, DeclContext, Redeclarable
-    bool Successful = VisitRedeclarable(FD, FD->getDeclContext());
-    Successful &= VisitDeclContext(FD);
+    // We start with the decl context first, because parameters are part of the
+    // DeclContext and when trying to remove them we need the full redecl chain
+    // still in place.
+    bool Successful = VisitDeclContext(FD);
+    Successful &= VisitRedeclarable(FD, FD->getDeclContext());
     Successful &= VisitDeclaratorDecl(FD);
 
     // Template instantiation of templated function first creates a canonical
