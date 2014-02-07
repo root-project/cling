@@ -23,6 +23,7 @@
 #include "llvm/Support/Signals.h"
 
 #include <cstdio>
+#include <sstream>
 #include <string>
 #include <time.h>
 
@@ -275,6 +276,26 @@ namespace cling {
 
   void ClangInternalState::printMacroDefinitions(llvm::raw_ostream& Out,
                             clang::Preprocessor& PP) {
-    PP.printMacros(Out);
+    std::string contents;
+    llvm::raw_string_ostream contentsOS(contents);
+    PP.printMacros(contentsOS);
+    contentsOS.flush();
+    Out << "Ordered Alphabetically:\n";
+    std::vector<std::string> elems;
+    {
+      // Split the string into lines.
+      char delim = '\n';
+      std::stringstream ss(contents);
+      std::string item;
+      while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+      }
+      // Sort them alphabetically
+      std::sort(elems.begin(), elems.end());
+    }
+    for(std::vector<std::string>::iterator I = elems.begin(), 
+          E = elems.end(); I != E; ++I)
+      Out << *I << '\n';
+    Out.flush();
   }
 } // end namespace cling
