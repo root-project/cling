@@ -415,11 +415,17 @@ namespace cling {
   }
 
   bool DeclReverter::VisitVarDecl(VarDecl* VD) {
-    // Cleanup the module if the transaction was committed and code was 
-    // generated. This has to go first, because it may need the AST information
-    // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
-    GlobalDecl GD(VD);
-    MaybeRemoveDeclFromModule(GD);
+    // llvm::Module cannot contain:
+    // * variables and parameters with dependent context;
+    // * mangled names for parameters;
+    if (!isa<ParmVarDecl>(VD) && !VD->getDeclContext()->isDependentContext()) {
+      // Cleanup the module if the transaction was committed and code was
+      // generated. This has to go first, because it may need the AST 
+      // information which we will remove soon. (Eg. mangleDeclName iterates the
+      // redecls)
+      GlobalDecl GD(VD);
+      MaybeRemoveDeclFromModule(GD);
+    }
 
     // VarDecl : DeclaratiorDecl, Redeclarable
     bool Successful = VisitRedeclarable(VD, VD->getDeclContext());
