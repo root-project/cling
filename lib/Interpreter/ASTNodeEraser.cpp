@@ -827,6 +827,9 @@ namespace cling {
         // Get rid of the declaration. If the declaration has name we should
         // heal the lookup tables as well
         Successful = DeclRev.RevertDecl(*Di) && Successful;
+#ifndef NDEBUG
+        assert(Successful && "Cannot handle that yet!");
+#endif
       }
     }
 
@@ -834,11 +837,11 @@ namespace cling {
            ME = T->rmacros_end(); MI != ME; ++MI) {
       // Get rid of the macro definition
       Successful = DeclRev.RevertMacro(*MI) && Successful;
+#ifndef NDEBUG
+      assert(Successful && "Cannot handle that yet!");
+#endif
     }
 
-#ifndef NDEBUG
-    assert(Successful && "Cannot handle that yet!");
-#endif
 
     m_Sema->getDiagnostics().Reset();
     m_Sema->getDiagnostics().getClient()->clear();
