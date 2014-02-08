@@ -165,6 +165,14 @@ namespace cling {
     ///
     bool VisitTagDecl(TagDecl* TD);
 
+    ///\brief Removes a RecordDecl. We shouldn't remove the implicit class 
+    /// declaration.
+    ///\param[in] RD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitRecordDecl(RecordDecl* RD);
+
     ///\brief Remove the macro from the Preprocessor.
     /// @param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
     ///                MacroDirective to forward.
@@ -605,6 +613,31 @@ namespace cling {
   bool DeclReverter::VisitTagDecl(TagDecl* TD) {
     bool Successful = VisitDeclContext(TD);
     Successful &= VisitTypeDecl(TD);
+    return Successful;
+  }
+
+  bool DeclReverter::VisitRecordDecl(RecordDecl* RD) {
+    if (RD->isInjectedClassName())
+      return true;
+
+    /// The injected class name in C++ is the name of the class that
+    /// appears inside the class itself. For example:
+    ///
+    /// \code
+    /// struct C {
+    ///   // C is implicitly declared here as a synonym for the class name.
+    /// };
+    ///
+    /// C::C c; // same as "C c;"
+    /// \endcode
+    // It is another question why it is on the redecl chain.
+    RecordDecl* PrevRD = RD->getPreviousDecl();
+    bool Successful = VisitTagDecl(RD);
+    if (PrevRD) {
+      assert(PrevRD->isInjectedClassName() && "Not injected classname?");
+      Successful &= VisitTagDecl(PrevRD);
+    }
+
     return Successful;
   }
 
