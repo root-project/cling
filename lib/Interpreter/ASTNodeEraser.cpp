@@ -202,7 +202,8 @@ namespace cling {
     ///
     bool VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD);
 
-    ///\brief Removes the template declaration clang's internal structures.
+    ///\brief Removes a class template declaration from clang's internal
+    /// structures.
     /// @param[in] CTD - The declaration to be removed.
     ///
     ///\returns true on success.
