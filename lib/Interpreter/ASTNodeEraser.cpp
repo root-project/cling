@@ -105,6 +105,14 @@ namespace cling {
     ///
     bool VisitUsingShadowDecl(UsingShadowDecl* USD);
 
+    ///\brief Removes a typedef name decls. A base class for TypedefDecls and
+    /// TypeAliasDecls.
+    ///\param[in] TND - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitTypedefNameDecl(TypedefNameDecl* TND);
+
     ///\brief Removes the declaration from the lookup chains and from the
     /// declaration context and it rebuilds the redeclaration chain.
     /// @param[in] VD - The declaration to be removed.
@@ -415,6 +423,14 @@ namespace cling {
 
     return Successful;
   }
+
+  bool DeclReverter::VisitTypedefNameDecl(TypedefNameDecl* TND) {
+    // TypedefNameDecl: TypeDecl, Redeclarable
+    bool Successful = VisitRedeclarable(TND, TND->getDeclContext());
+    Successful &= VisitTypeDecl(TND);
+    return Successful;
+  }
+
 
   bool DeclReverter::VisitVarDecl(VarDecl* VD) {
     // llvm::Module cannot contain:
