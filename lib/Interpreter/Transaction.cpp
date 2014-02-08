@@ -224,6 +224,7 @@ namespace cling {
       "kCCIHandleVTable",
       "kCCIHandleCXXImplicitFunctionInstantiation",
       "kCCIHandleCXXStaticMemberVarInstantiation",
+      "kCCICompleteTentativeDefinition",
     };
     assert((sizeof(stateNames) /sizeof(void*)) == Transaction::kCCINumStates 
            && "Missing states?");
