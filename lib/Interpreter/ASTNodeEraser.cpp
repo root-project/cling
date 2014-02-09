@@ -843,6 +843,7 @@ namespace cling {
   }
 
   bool DeclReverter::VisitRedeclarableTemplateDecl(RedeclarableTemplateDecl* R){
+    // RedeclarableTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = VisitRedeclarable(R, R->getDeclContext());
     Successful &= VisitTemplateDecl(R);
     return Successful;
