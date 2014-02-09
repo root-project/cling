@@ -863,12 +863,14 @@ namespace cling {
   }
 
   bool DeclReverter::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
-    bool Successful = VisitRedeclarableTemplateDecl(CTD);
+    // ClassTemplateDecl: TemplateDecl, Redeclarable
+    bool Successful = true;
     // Remove specializations:
     for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(), 
            E = CTD->spec_end(); I != E; ++I)
-      Successful = Visit(*I);
+      Successful &= Visit(*I);
 
+    Successful &= VisitRedeclarableTemplateDecl(CTD);
     Successful &= Visit(CTD->getTemplatedDecl());
     return Successful;
   }
