@@ -850,13 +850,14 @@ namespace cling {
   }
 
   bool DeclReverter::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
-    bool Successful = VisitRedeclarableTemplateDecl(FTD);
+    bool Successful = true;
 
     // Remove specializations:
     for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(), 
            E = FTD->spec_end(); I != E; ++I)
-      Successful = Visit(*I);
+      Successful &= Visit(*I);
 
+    Successful &= VisitRedeclarableTemplateDecl(FTD);
     Successful &= VisitFunctionDecl(FTD->getTemplatedDecl());
     return Successful;
   }
