@@ -210,6 +210,15 @@ namespace cling {
     ///
     bool VisitClassTemplateDecl(ClassTemplateDecl* CTD);
 
+    ///\brief Removes a class template specialization declaration from clang's
+    /// internal structures.
+    /// @param[in] CTSD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* 
+                                              CTSD);
+
     ///@}
 
     void MaybeRemoveDeclFromModule(GlobalDecl& GD) const;
@@ -874,6 +883,65 @@ namespace cling {
     Successful &= Visit(CTD->getTemplatedDecl());
     return Successful;
   }
+
+  bool DeclReverter::VisitClassTemplateSpecializationDecl(
+                                        ClassTemplateSpecializationDecl* CTSD) {
+
+    // A template specialization is attached to the list of specialization of
+    // the templated class.
+    //
+    class ClassTemplateDeclExt : public ClassTemplateDecl {
+    public:
+      static void removeSpecialization(ClassTemplateDecl* self,
+                                       ClassTemplateSpecializationDecl* spec) {
+        assert(self && spec && "Cannot be null!");
+        assert(spec == spec->getCanonicalDecl()
+               && "Not the canonical specialization!?");
+        typedef llvm::SmallVector<ClassTemplateSpecializationDecl*, 4> Specializations;
+        typedef llvm::FoldingSetVector<ClassTemplateSpecializationDecl> Set;
+
+        ClassTemplateDeclExt* This = (ClassTemplateDeclExt*) self;
+        Specializations specializations;
+        Set& specs = This->getSpecializations();
+
+        if (!specs.size()) // nothing to remove
+          return;
+
+        // Collect all the specializations without the one to remove.
+        for(Set::iterator I = specs.begin(),E = specs.end(); I != E; ++I){
+          if (&*I != spec)
+            specializations.push_back(&*I);
+        }
+
+        This->getSpecializations().clear();
+
+        //Readd the collected specializations.
+        void* InsertPos = 0;
+        ClassTemplateSpecializationDecl* CTSD = 0;
+        for (size_t i = 0, e = specializations.size(); i < e; ++i) {
+          CTSD = specializations[i];
+          assert(CTSD && "Must not be null.");
+          // Avoid assertion on add.
+          CTSD->SetNextInBucket(0);
+          This->AddSpecialization(CTSD, InsertPos);
+        }
+#ifndef NDEBUG
+        const TemplateArgumentList& args
+          = spec->getTemplateInstantiationArgs();
+        assert(!self->findSpecialization(args.data(), args.size(),  InsertPos)
+               && "Finds the removed decl again!");
+#endif
+      }
+    };
+
+    ClassTemplateSpecializationDecl* CanonCTSD =
+      static_cast<ClassTemplateSpecializationDecl*>(CTSD->getCanonicalDecl());
+    ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
+                                               CanonCTSD);
+    // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
+    return VisitCXXRecordDecl(CTSD);
+  }
+
 
   ASTNodeEraser::ASTNodeEraser(Sema* S, llvm::ExecutionEngine* EE)
     : m_Sema(S), m_EEngine(EE) {
