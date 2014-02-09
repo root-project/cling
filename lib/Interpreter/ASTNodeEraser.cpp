@@ -634,13 +634,27 @@ namespace cling {
     /// C::C c; // same as "C c;"
     /// \endcode
     // It is another question why it is on the redecl chain.
-    RecordDecl* PrevRD = RD->getPreviousDecl();
-    bool Successful = VisitTagDecl(RD);
-    if (PrevRD) {
-      assert(PrevRD->isInjectedClassName() && "Not injected classname?");
-      Successful &= VisitTagDecl(PrevRD);
+    // The test show it can be either: 
+    // ... <- InjectedC <- C <- ..., i.e previous decl or
+    // ... <- C <- InjectedC <- ...
+    RecordDecl* InjectedRD = RD->getPreviousDecl();
+    if (!(InjectedRD && InjectedRD->isInjectedClassName())) {
+      InjectedRD = RD->getMostRecentDecl();
+      while (InjectedRD) {
+        if (InjectedRD->isInjectedClassName() 
+            && InjectedRD->getPreviousDecl() == RD)
+          break;
+        InjectedRD = InjectedRD->getPreviousDecl(); 
+      }
     }
 
+    bool Successful = true;
+    if (InjectedRD) {
+      assert(InjectedRD->isInjectedClassName() && "Not injected classname?");
+      Successful &= VisitRedeclarable(InjectedRD, InjectedRD->getDeclContext());
+    }
+
+    Successful &= VisitTagDecl(RD);
     return Successful;
   }
 
