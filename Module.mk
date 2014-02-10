@@ -53,8 +53,8 @@ INCLUDEFILES += $(CLINGDEP)
 # include dir for picking up RuntimeUniverse.h etc - need to
 # 1) copy relevant headers to include/
 # 2) rely on TCling to addIncludePath instead of using CLING_..._INCL below
-CLINGCXXFLAGS += -I$(CLINGDIR)/include $(patsubst -O%,,$(shell $(LLVMCONFIG) \
-                 --cxxflags) -fno-strict-aliasing)
+CLINGLLVMCXXFLAGS := $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags))
+CLINGCXXFLAGS += -I$(CLINGDIR)/include $(CLINGLLVMCXXFLAGS) -fno-strict-aliasing
 
 ifeq ($(CTORSINITARRAY),yes)
 CLINGLDFLAGSEXTRA := -Wl,--no-ctors-in-init-array
@@ -68,6 +68,7 @@ ifeq ($(ROOTBUILD),debug)
   endif
 endif
 CLINGCXXFLAGS += $(CLINGCXXNDEBUG)
+CLINGCXXFLAGSNOI := $(patsubst -I%,,$(CLINGCXXFLAGS))
 
 ifneq (,$(filter $(ARCH),win32gcc win64gcc))
 # Hide llvm / clang symbols:
@@ -130,7 +131,7 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 
 $(CLINGCOMPDH): FORCE $(LLVMDEP)
 	@mkdir -p $(dir $@)
-	@echo '#define LLVM_CXX "$(CXX) $(OPT) $(CLINGCXXFLAGS)"' > $@_tmp
+	@echo '#define LLVM_CXX "$(CXX) $(OPT) $(CLINGCXXFLAGSNOI)"' > $@_tmp
 	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
 	@rm -f $@_tmp
 
