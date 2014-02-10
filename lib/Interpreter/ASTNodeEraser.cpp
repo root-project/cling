@@ -16,6 +16,7 @@
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/DependentDiagnostic.h"
 #include "clang/AST/GlobalDecl.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Sema/Scope.h"
@@ -470,6 +471,24 @@ namespace cling {
     return Successful;
   }
 
+  namespace {
+    typedef llvm::SmallVector<VarDecl*, 2> Vars;
+    class StaticVarCollector : public RecursiveASTVisitor<StaticVarCollector> {
+      Vars& m_V;
+    public:
+      StaticVarCollector(FunctionDecl* FD, Vars& V) : m_V(V) {
+        TraverseStmt(FD->getBody());
+      }
+      bool VisitDeclStmt(DeclStmt* DS) {
+        for(DeclStmt::decl_iterator I = DS->decl_begin(), E = DS->decl_end();
+            I != E; ++I)
+          if (VarDecl* VD = dyn_cast<VarDecl>(*I))
+            if (VD->isStaticLocal())
+              m_V.push_back(VD);
+        return true;
+      }
+    };
+  }
   bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
     // The Structors need to be handled differently.
     if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
@@ -478,8 +497,15 @@ namespace cling {
       // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
       GlobalDecl GD(FD);
       MaybeRemoveDeclFromModule(GD);
+      // Handle static locals. void func() { static int var; } is represented in
+      // the llvm::Module is a global named @func.var
+      Vars V;
+      StaticVarCollector c(FD, V);
+      for (Vars::iterator I = V.begin(), E = V.end(); I != E; ++I) {
+        GlobalDecl GD(*I);
+        MaybeRemoveDeclFromModule(GD);
+      }
     }
-
     // FunctionDecl : DeclaratiorDecl, DeclContext, Redeclarable
     // We start with the decl context first, because parameters are part of the
     // DeclContext and when trying to remove them we need the full redecl chain
@@ -700,6 +726,16 @@ namespace cling {
     if (m_CurTransaction->getState() == Transaction::kCommitted) {
       std::string mangledName;
       utils::Analyze::maybeMangleDeclName(GD, mangledName);
+
+      // Handle static locals. void func() { static int var; } is represented in
+      // the llvm::Module is a global named @func.var
+      if (const VarDecl* VD = dyn_cast<VarDecl>(GD.getDecl()))
+        if (VD->isStaticLocal()) {
+          std::string functionMangledName;
+          GlobalDecl FDGD(cast<FunctionDecl>(VD->getDeclContext()));
+          utils::Analyze::maybeMangleDeclName(FDGD, functionMangledName);
+          mangledName = functionMangledName + "." + mangledName;
+        }
 
       GlobalValue* GV
         = m_CurTransaction->getModule()->getNamedValue(mangledName);
