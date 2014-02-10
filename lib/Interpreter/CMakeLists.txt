@@ -68,7 +68,8 @@ add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
 
 # Remove all -I from CMAKE_CXX_FLAGS
-set(CMAKE_CXX_FLAGS_NO_I ${CMAKE_CXX_FLAGS})
+string(REPLACE ";" " " __flags "${CMAKE_CXX_FLAGS}")
+string(REGEX REPLACE "-I[^ ]+" "" CMAKE_CXX_FLAGS_NO_I "${__flags}")
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
   "#define LLVM_CXX \"${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
