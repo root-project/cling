@@ -1,11 +1,12 @@
 #!/bin/bash
 
-cling_binary=~/workspace/llvm_root/obj/Debug+Asserts/bin/cling
+cling_binary=/home/vvassilev/workspace/llvm/obj/Debug+Asserts/bin/cling
 invocation="$@"
 file=""
 cling_args="--nologo"
 while ! [ "$1" = "" ] ; do
     case $1 in
+        -print-file-name=include) `dirname $cling_binary`/clang $1; exit $?; ;;
         -cc1) ;;
         -triple) echo -e "Ignoring (probably invalid target): $invocation\n" >&2; exit 0; shift;;
         -internal-isystem) ;;
