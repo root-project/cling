@@ -34,9 +34,11 @@ case ${file##*.} in
 esac
 cling_args="$cling_args $langopt"
 
+#sed 's,^\(// *RUN:.*\)| *FileCheck\b.*$,\1,' $file > ${file}_repl
+
 testcase=".rawInput\n.storeState \"a\"\n";
 testcase+="#include \"$file\"\n"
-if echo $cling_args | grep '-verify' || ! grep -q 'expected-error' $file; then
+if echo $cling_args | grep '-verify' > /dev/null || ! grep -q 'expected-error' $file > /dev/null; then
     testcase+=".U\n"
 fi
 testcase+=".compareState \"a\"\n"
