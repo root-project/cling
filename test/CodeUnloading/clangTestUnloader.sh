@@ -14,6 +14,7 @@ while ! [ "$1" = "" ] ; do
         -target-abi) shift;;
         -I) cling_args="$cling_args -I $2"; shift ;;
         -ast-dump-filter) cling_args="$cling_args -Xclang -ast-dump-filter -Xclang $2"; shift ;;
+        -o) if [ "$2" == "-" ] ; then shift; shift; fi;; # ignore cling does it by default
         -I*) cling_args="$cling_args $1" ;;
         -*) cling_args="$cling_args -Xclang $1" ;;
         *) file=$1
