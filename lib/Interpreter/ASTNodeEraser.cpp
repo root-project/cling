@@ -970,12 +970,6 @@ namespace cling {
           CTSD->SetNextInBucket(0);
           This->AddSpecialization(CTSD, InsertPos);
         }
-#ifndef NDEBUG
-        const TemplateArgumentList& args
-          = spec->getTemplateInstantiationArgs();
-        assert(!self->findSpecialization(args.data(), args.size(),  InsertPos)
-               && "Finds the removed decl again!");
-#endif
       }
     };
 
