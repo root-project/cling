@@ -91,6 +91,16 @@ namespace utils {
     ///\param[in] decl          - The declaration being analyzed.
     bool IsStdOrCompilerDetails(const clang::NamedDecl &decl);
 
+    ///\brief Checks whether the declaration was pushed onto the declaration
+    /// chains.
+    ///\param[in] ND - The declaration that is being checked.
+    ///\param[in] SemaR - Sema.
+    ///
+    ///\returns true if the ND was found in the lookup chain.
+    ///
+    // See Sema::PushOnScopeChains
+    ///
+    bool isOnScopeChains(const clang::NamedDecl* ND, clang::Sema& SemaR);
   }
 
   ///\brief Class containing static utility functions synthesizing AST nodes or

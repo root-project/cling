@@ -558,6 +558,50 @@ namespace utils {
     return false;
   }
 
+  // See Sema::PushOnScopeChains
+  bool Analyze::isOnScopeChains(const NamedDecl* ND, Sema& SemaR) {
+
+    // Named decls without name shouldn't be in. Eg: struct {int a};
+    if (!ND->getDeclName())
+      return false;
+
+    // Out-of-line definitions shouldn't be pushed into scope in C++.
+    // Out-of-line variable and function definitions shouldn't even in C.
+    if ((isa<VarDecl>(ND) || isa<FunctionDecl>(ND)) && ND->isOutOfLine() &&
+        !ND->getDeclContext()->getRedeclContext()->Equals(
+                        ND->getLexicalDeclContext()->getRedeclContext()))
+      return false;
+
+    // Template instantiations should also not be pushed into scope.
+    if (isa<FunctionDecl>(ND) &&
+        cast<FunctionDecl>(ND)->isFunctionTemplateSpecialization())
+      return false;
+
+    // Using directives are not registered onto the scope chain
+    if (isa<UsingDirectiveDecl>(ND))
+      return false;
+
+    IdentifierResolver::iterator
+      IDRi = SemaR.IdResolver.begin(ND->getDeclName()),
+      IDRiEnd = SemaR.IdResolver.end();
+
+    for (; IDRi != IDRiEnd; ++IDRi) {
+      if (ND == *IDRi)
+        return true;
+    }
+
+
+    // Check if the declaration is template instantiation, which is not in
+    // any DeclContext yet, because it came from
+    // Sema::PerformPendingInstantiations
+    // if (isa<FunctionDecl>(D) &&
+    //     cast<FunctionDecl>(D)->getTemplateInstantiationPattern())
+    //   return false;
+
+
+    return false;
+  }
+
   static bool IsCompilerDetails(const TagType *tagTy)
   {
     // Return true if the TagType is a 'details' of the std implementation.

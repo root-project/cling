@@ -118,10 +118,11 @@ namespace cling {
           DeclContext* OldDC = ND->getDeclContext();
 
           // Make sure the decl is not found at its old possition
-          OldDC->removeDecl(ND);
+          ND->getLexicalDeclContext()->removeDecl(ND);
           if (Scope* S = m_Sema->getScopeForContext(OldDC)) {
             S->RemoveDecl(ND);
-            m_Sema->IdResolver.RemoveDecl(ND);
+            if (utils::Analyze::isOnScopeChains(ND, *m_Sema))
+              m_Sema->IdResolver.RemoveDecl(ND);
           }
 
           if (ND->getDeclContext() == ND->getLexicalDeclContext())

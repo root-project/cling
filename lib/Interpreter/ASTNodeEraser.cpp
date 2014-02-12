@@ -228,14 +228,6 @@ namespace cling {
     /// @name Helpers
     /// @{
 
-    ///\brief Checks whether the declaration was pushed onto the declaration
-    /// chains.
-    /// @param[in] ND - The declaration that is being checked.
-    ///
-    ///\returns true if the ND was found in the lookup chain.
-    ///
-    bool isOnScopeChains(clang::NamedDecl* ND);
-
     ///\brief Interface with nice name, forwarding to Visit.
     ///
     ///\param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
@@ -379,7 +371,7 @@ namespace cling {
       if (Scope* S = m_Sema->getScopeForContext(DC))
         S->RemoveDecl(ND);
 
-      if (isOnScopeChains(ND))
+      if (utils::Analyze::isOnScopeChains(ND, *m_Sema))
         m_Sema->IdResolver.RemoveDecl(ND);
     }
 
@@ -812,51 +804,6 @@ namespace cling {
     llvm::BasicBlock* BB = cast<llvm::Instruction>(F.use_back())->getParent();
     BB->getParent()->eraseFromParent();
     F.eraseFromParent();
-  }
-
-
-  // See Sema::PushOnScopeChains
-  bool DeclReverter::isOnScopeChains(NamedDecl* ND) {
-
-    // Named decls without name shouldn't be in. Eg: struct {int a};
-    if (!ND->getDeclName())
-      return false;
-
-    // Out-of-line definitions shouldn't be pushed into scope in C++.
-    // Out-of-line variable and function definitions shouldn't even in C.
-    if ((isa<VarDecl>(ND) || isa<FunctionDecl>(ND)) && ND->isOutOfLine() &&
-        !ND->getDeclContext()->getRedeclContext()->Equals(
-                        ND->getLexicalDeclContext()->getRedeclContext()))
-      return false;
-
-    // Template instantiations should also not be pushed into scope.
-    if (isa<FunctionDecl>(ND) &&
-        cast<FunctionDecl>(ND)->isFunctionTemplateSpecialization())
-      return false;
-
-    // Using directives are not registered onto the scope chain
-    if (isa<UsingDirectiveDecl>(ND))
-      return false;
-
-    IdentifierResolver::iterator
-      IDRi = m_Sema->IdResolver.begin(ND->getDeclName()),
-      IDRiEnd = m_Sema->IdResolver.end();
-
-    for (; IDRi != IDRiEnd; ++IDRi) {
-      if (ND == *IDRi)
-        return true;
-    }
-
-
-    // Check if the declaration is template instantiation, which is not in
-    // any DeclContext yet, because it came from
-    // Sema::PerformPendingInstantiations
-    // if (isa<FunctionDecl>(D) &&
-    //     cast<FunctionDecl>(D)->getTemplateInstantiationPattern())
-    //   return false;
-
-
-    return false;
   }
 
   bool DeclReverter::VisitMacro(Transaction::MacroDirectiveInfo MacroD) {
