@@ -125,6 +125,15 @@ namespace cling {
           }
 
           if (ND->getDeclContext() == ND->getLexicalDeclContext())
+
+          // For variable definitions causing var/function ambiguity such as:
+          // MyClass my();, C++ standard says it shall be resolved as a function
+          //
+          // In the particular context this definition is inside a function
+          // already, but clang thinks it as a lambda, so we need to ignore the
+          // check decl context vs lexical decl context.
+          if (ND->getDeclContext() == ND->getLexicalDeclContext()
+              || isa<FunctionDecl>(ND))
             ND->setLexicalDeclContext(DC);
           else 
             assert(0 && "Not implemented: Decl with different lexical context");
