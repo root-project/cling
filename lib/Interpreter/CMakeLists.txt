@@ -59,7 +59,9 @@ add_cling_library(clingInterpreter
   ValuePrinterSynthesizer.cpp
   )
   
+if(NOT WIN32)
 set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS -fexceptions)
+endif()
 
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
 #                 ClangDriverOptions ClangCC1Options ClangCC1AsOptions)
