@@ -125,8 +125,6 @@ namespace cling {
               m_Sema->IdResolver.RemoveDecl(ND);
           }
 
-          if (ND->getDeclContext() == ND->getLexicalDeclContext())
-
           // For variable definitions causing var/function ambiguity such as:
           // MyClass my();, C++ standard says it shall be resolved as a function
           //
