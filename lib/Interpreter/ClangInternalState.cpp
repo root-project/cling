@@ -153,7 +153,6 @@ namespace cling {
       llvm::errs() << differences << "\n";
       differences = "";
     }
-
     if (differentContent(m_IncludedFilesFile, m_DiffPair->m_IncludedFilesFile,
                          differences)) {
       llvm::errs() << "Differences in the included files\n";
@@ -165,12 +164,20 @@ namespace cling {
       llvm::errs() << differences << "\n";
       differences = "";
     }
+    if (m_Module) {
+      // We want to skip the intrinsics
+      builtinNames.clear();
+      for (llvm::Module::const_iterator I = m_Module->begin(),
+             E = m_Module->end(); I != E; ++I)
+        if (I->isIntrinsic())
+          builtinNames.push_back(I->getName().data());
 
-    if (differentContent(m_LLVMModuleFile, m_DiffPair->m_LLVMModuleFile,
-                         differences)) {
-      llvm::errs() << "Differences in the llvm Module \n";
-      llvm::errs() << differences << "\n";
-      differences = "";
+      if (differentContent(m_LLVMModuleFile, m_DiffPair->m_LLVMModuleFile,
+                           differences, &builtinNames)) {
+        llvm::errs() << "Differences in the llvm Module \n";
+        llvm::errs() << differences << "\n";
+        differences = "";
+      }
     }
     if (differentContent(m_MacrosFile, m_DiffPair->m_MacrosFile, differences)){
       llvm::errs() << "Differences in the Macro Definitions \n";
