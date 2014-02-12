@@ -740,6 +740,15 @@ namespace cling {
       GlobalValue* GV
         = m_CurTransaction->getModule()->getNamedValue(mangledName);
       if (GV) { // May be deferred decl and thus 0
+        // createGVExtractionPass - If deleteFn is true, this pass deletes
+        // the specified global values. Otherwise, it deletes as much of the
+        // module as possible, except for the global values specified.
+        //
+        //std::vector<GlobalValue*> GVs;
+        //GVs.push_back(GV);
+        //llvm::ModulePass* GVExtract = llvm::createGVExtractionPass(GVs, true);
+        //GVExtract->runOnModule(*m_CurTransaction->getModule());
+
         GV->removeDeadConstantUsers();
         if (!GV->use_empty()) {
           // Assert that if there was a use it is not coming from the explicit
