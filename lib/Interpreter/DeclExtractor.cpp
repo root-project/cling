@@ -143,10 +143,10 @@ namespace cling {
     bool hasNoErrors = !CheckForClashingNames(TouchedDecls, DC, TUScope);
     if (hasNoErrors) {
       for (size_t i = 0; i < TouchedDecls.size(); ++i) {
-	// We should skip the checks for annonymous decls and we should not
-	// register them in the lookup.
-	if (!TouchedDecls[i]->getDeclName())
-	  continue;
+        // We should skip the checks for annonymous decls and we should not
+        // register them in the lookup.
+        if (!TouchedDecls[i]->getDeclName())
+          continue;
 
         m_Sema->PushOnScopeChains(TouchedDecls[i],
                                   m_Sema->getScopeForContext(DC),
