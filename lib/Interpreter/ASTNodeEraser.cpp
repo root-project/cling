@@ -1030,8 +1030,10 @@ namespace cling {
     m_Sema->getDiagnostics().getClient()->clear();
 
     // Cleanup the module from unused global values.
-    //llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
-    //globalDCE->runOnModule(*T->getModule());
+    // if (T->getModule()) {
+    //   llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
+    //   globalDCE->runOnModule(*T->getModule());
+    // }
     if (Successful)
       T->setState(Transaction::kRolledBack);
     else
