@@ -229,6 +229,11 @@ namespace cling {
                         // Success, type is complete, instantiations have
                         // been done.
                         TheDecl = TD->getDefinition();
+                        if (TheDecl->isInvalidDecl())
+                          return 0;
+                      } else {
+                        // We cannot instantiate the scope: not a valid decl.
+                        return 0;
                       }
                     }
                   }
@@ -435,6 +440,8 @@ namespace cling {
       // Forward decl or instantiation failure, we cannot use it.
       return 0;
     }
+    if (scopeDecl->isInvalidDecl())
+      return 0;
 
     return foundDC;
   }
@@ -595,7 +602,10 @@ namespace cling {
           // of comparison.
           TheDecl = TheDecl->getCanonicalDecl();
           if (TheDecl->isTemplateInstantiation() && !TheDecl->isDefined())
-            S.InstantiateFunctionDefinition(SourceLocation(),TheDecl,true);
+            S.InstantiateFunctionDefinition(SourceLocation(), TheDecl,
+                                            true /*recursive instantiation*/);
+          if (TheDecl->isInvalidDecl())
+            return 0;
        }
     }
     return TheDecl;
@@ -1056,7 +1066,10 @@ namespace cling {
         } else {
           // Instantiate the function if needed.
           if (!fdecl->isDefined())
-            S.InstantiateFunctionDefinition(loc,fdecl,true);
+            S.InstantiateFunctionDefinition(loc, fdecl,
+                                            true /*recursive instantiation*/);
+          if (fdecl->isInvalidDecl())
+            return 0;
           return fdecl;
         }
       }
