@@ -61,6 +61,13 @@ add_cling_library(clingInterpreter
   
 if(NOT WIN32)
 set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS -fexceptions)
+else()
+#set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS " /EHsc ")
+# the line above doesn't work, and it gives the following warnings:
+# cl : Command line warning D9025: overriding '/EHs' with '/EHs-'
+# cl : Command line warning D9025: overriding '/EHc' with '/EHc-'
+# so let's change the global compiler flags instead:
+string(REPLACE "/EHs-c-" "/EHsc" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
