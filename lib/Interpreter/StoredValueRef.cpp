@@ -25,9 +25,8 @@ using namespace clang;
 using namespace llvm;
 
 StoredValueRef::StoredValue::StoredValue(Interpreter& interp,
-                                         QualType clangTy, 
-                                         const llvm::Type* llvm_Ty)
-  : Value(GenericValue(), clangTy, llvm_Ty), m_Interp(interp), m_Mem(0){
+                                         QualType clangTy)
+  : Value(GenericValue(), clangTy), m_Interp(interp), m_Mem(0){
   if (clangTy->isIntegralOrEnumerationType() ||
       clangTy->isRealFloatingType() ||
       clangTy->hasPointerRepresentation()) {
@@ -134,15 +133,14 @@ void StoredValueRef::dump() const {
   valuePrinterInternal::StreamStoredValueRef(llvm::errs(), this, ctx);
 }
 
-StoredValueRef StoredValueRef::allocate(Interpreter& interp, QualType t,
-                                        const llvm::Type* llvmTy) {
-  return new StoredValue(interp, t, llvmTy);
+StoredValueRef StoredValueRef::allocate(Interpreter& interp, QualType t) {
+  return new StoredValue(interp, t);
 }
 
 StoredValueRef StoredValueRef::bitwiseCopy(Interpreter& interp,
                                            const cling::Value& value) {
   StoredValue* SValue 
-    = new StoredValue(interp, value.getClangType(), value.getLLVMType());
+    = new StoredValue(interp, value.getClangType());
   if (SValue->m_Mem) {
     const char* src = (const char*)value.getGV().PointerVal;
     // It's not a pointer. LLVM stores a char[5] (i.e. 5 x i8) as an i40,

@@ -32,8 +32,7 @@ namespace cling {
       void* GetDtorWrapperPtr(clang::CXXRecordDecl* CXXRD);
     public:
       /// \brief Construct a valid StoredValue, allocating as needed.
-      StoredValue(Interpreter& interp, clang::QualType clangTy,
-                  const llvm::Type* llvmTy);
+      StoredValue(Interpreter& interp, clang::QualType clangTy);
       /// \brief Destruct and deallocate if necessary.
       ~StoredValue();
 
@@ -64,7 +63,7 @@ namespace cling {
   public:
     /// \brief Allocate an object of type t and return a StoredValueRef to it.
     static StoredValueRef allocate(Interpreter& interp,
-                                   clang::QualType t, const llvm::Type* llvmTy);
+                                   clang::QualType t);
     /// \brief Create a bitwise copy of value wrapped in a StoredValueRef.
     static StoredValueRef bitwiseCopy(Interpreter& interp, const cling::Value& value);
     /// \brief Create a bitwise copy of svalue.

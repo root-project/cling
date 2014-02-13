@@ -13,6 +13,8 @@
 #include "cling/Interpreter/Interpreter.h" // FIXME: Remove when at_exit is ready
 
 #include "clang/AST/Type.h"
+#include "clang/AST/ASTContext.h"
+#include "clang/Sema/Sema.h"
 
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/LLVMContext.h"
@@ -213,6 +215,8 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
       "could not find function named " << funcname << '\n';
     return kExeFunctionNotCompiled;
   }
+  typedef void (*PromptWrapper_t)(void*);
+  PromptWrapper_t func = (PromptWrapper_t)
   m_engine->getPointerToFunction(f);
   // check if there is any unresolved symbol in the list
   if (!m_unresolvedSymbols.empty()) {
@@ -232,31 +236,10 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
     return kExeUnresolvedSymbols;
   }
 
-  std::vector<llvm::GenericValue> args;
-  bool wantReturn = (returnValue);
-  StoredValueRef aggregateRet;
-
-  if (f->hasStructRetAttr()) {
-    // Function expects to receive the storage for the returned aggregate as
-    // first argument. Allocate returnValue:
-    aggregateRet = StoredValueRef::allocate(interp, retType,
-                                            f->getReturnType());
-    if (returnValue) {
-      *returnValue = aggregateRet;
-    } else {
-      returnValue = &aggregateRet;
-    }
-    args.push_back(returnValue->get().getGV());
-    // will get set as arg0, must not assign.
-    wantReturn = false;
-  }
-
-  if (wantReturn) {
-    llvm::GenericValue gvRet = m_engine->runFunction(f, args);
-    // rescue the ret value (which might be aggregate) from the stack
-    *returnValue = StoredValueRef::bitwiseCopy(interp, Value(gvRet, retType));
+  if (!returnValue) {
+    (*func)(0);
   } else {
-    m_engine->runFunction(f, args);
+    (*func)(returnValue);
   }
 
   return kExeSuccess;
@@ -394,3 +377,69 @@ ExecutionContext::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const {
   //  Function not yet codegened by the JIT, force this to happen now.
   return m_engine->getPointerToGlobal(&GV);
 }
+
+namespace {
+  ///\brief Allocate the StoredValueRef and return the GenericValue
+  /// for an expression evaluated at the prompt.
+  ///
+  ///\param [in] interp - The cling::Interpreter to allocate the SToredValueRef.
+  ///\param [in] vpQT - The opaque ptr for the clang::QualType of value stored.
+  ///\param [out] vpStoredValRef - The StoredValueRef that is allocated.
+  static llvm::GenericValue& allocateStoredRefValueAndGetGV(Interpreter& interp,
+                                                       void* vpQT,
+                                                       void* vpStoredValRef) {
+    clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
+    cling::StoredValueRef& SVR = *(cling::StoredValueRef*)vpStoredValRef;
+    return StoredValueRef::allocate(interp, QT).get().getGV();
+  }
+}
+
+namespace runtime {
+  namespace internal {
+    void setValueNoAlloc(void* vpInterp, void* vpStoredValRef, void* vpQT,
+                         float value) {
+      cling::Interpreter* interp = (cling::Interpreter*)(vpInterp);
+      allocateStoredRefValueAndGetGV(*interp, vpQT,
+                                     vpStoredValRef).FloatVal = value;
+    }
+    void setValueNoAlloc(void* vpInterp, void* vpStoredValRef, void* vpQT,
+                         double value) {
+      cling::Interpreter* interp = (cling::Interpreter*)(vpInterp);
+      allocateStoredRefValueAndGetGV(*interp, vpQT,
+                                     vpStoredValRef).DoubleVal = value;
+    }
+    void setValueNoAlloc(void* vpInterp, void* vpStoredValRef, void* vpQT,
+                         uint64_t value) {
+      cling::Interpreter* interp = (cling::Interpreter*)(vpInterp);
+      clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
+      // Unsigned integer types.
+      allocateStoredRefValueAndGetGV(*interp, vpQT, vpStoredValRef).IntVal =
+        llvm::APInt(interp->getSema().getASTContext().getTypeSize(QT),
+                                                                value, false);
+
+    }
+    void setValueNoAlloc(void* vpInterp, void* vpStoredValRef, void* vpQT,
+                         int64_t value) {
+      cling::Interpreter* interp = (cling::Interpreter*)(vpInterp);
+      clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
+      // Signed integer types.
+      allocateStoredRefValueAndGetGV(*interp, vpQT, vpStoredValRef).IntVal =
+        llvm::APInt(interp->getSema().getASTContext().getTypeSize(QT),
+                                                                value, true);
+    }
+    void setValueNoAlloc(void* vpInterp, void* vpStoredValRef, void* vpQT,
+                         void* value) {
+      cling::Interpreter* interp = (cling::Interpreter*)(vpInterp);
+      allocateStoredRefValueAndGetGV(*interp, vpQT,
+                                     vpStoredValRef).PointerVal = value;
+    }
+
+    void* setValueWithAlloc(void* vpInterp,  void* vpQT,
+                            void* vpStoredValRef) {
+      cling::Interpreter* interp = (cling::Interpreter*)(vpInterp);
+      return allocateStoredRefValueAndGetGV(*interp, vpQT,
+                                            vpStoredValRef).PointerVal;
+    }
+  }
+}
+
