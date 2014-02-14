@@ -692,8 +692,10 @@ namespace cling {
 
     // Don't codegen statics coming in from a module; they are already part of
     // the library.
+    // We do need to expose static variables from template instantiations.
     if (const VarDecl* VD = dyn_cast<VarDecl>(D))
-      if (VD->hasGlobalStorage() && !VD->getType().isConstQualified())
+      if (VD->hasGlobalStorage() && !VD->getType().isConstQualified()
+          && VD->getTemplateSpecializationKind() == TSK_Undeclared)
         return true;
     return false;
   }
