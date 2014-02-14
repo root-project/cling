@@ -68,7 +68,7 @@ ifeq ($(ROOTBUILD),debug)
   endif
 endif
 CLINGCXXFLAGS += $(CLINGCXXNDEBUG)
-CLINGCXXFLAGSNOI := $(patsubst -I%,,$(CLINGCXXFLAGS))
+CLINGCXXFLAGSNOI = $(patsubst -I%,,$(CLINGCXXFLAGS))
 
 ifneq (,$(filter $(ARCH),win32gcc win64gcc))
 # Hide llvm / clang symbols:
