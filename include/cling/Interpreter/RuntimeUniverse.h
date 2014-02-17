@@ -106,7 +106,8 @@ namespace cling {
       ///                    in GenericValue.
       ///\param [out] vpStoredValRef - The StoredValueRef that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* value);
+      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
+                           const void* value);
 
       ///\brief Set the value of the Generic value and return the address
       /// for the allocated storage space.

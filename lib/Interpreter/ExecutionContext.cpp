@@ -415,11 +415,12 @@ namespace runtime {
       allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).IntVal =
         llvm::APInt(C.getTypeSize(QT), value, /*isSigned*/false);
     }
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* value) {
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, const void* value){
       cling::Interpreter* i = (cling::Interpreter*)(vpI);
-      allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).PointerVal = value;
+      allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).PointerVal
+        = const_cast<void*>(value);
     }
-    void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT ) {
+    void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT) {
       cling::Interpreter* i = (cling::Interpreter*)(vpI);
       return allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).PointerVal;
     }
