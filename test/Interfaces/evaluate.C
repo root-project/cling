@@ -36,7 +36,7 @@ V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 cling::StoredValueRef Result;
 gCling->evaluate("V", Result);
 // Here we check what happens for record type like cling::StoredValueRef; they are returned by reference.
-Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef &) &0x{{.*}}]
+Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef) boxes [(int *) 0x12]]
 V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 // Savannah #96277
