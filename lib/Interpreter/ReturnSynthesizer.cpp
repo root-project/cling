@@ -138,7 +138,7 @@ namespace cling {
           // case 2):
           //   new (setValueWithAlloc(gCling, &SVR, lastExprTy)) (lastExpr)
           // case 2.1):
-          //   copyArray(src, placement, N)
+          //   copyArray(src, placement, size)
 
           if (lastExprTy->isVoidType()) {
             // do nothing;
