@@ -117,8 +117,42 @@ namespace cling {
       ///
       ///\returns the address where the value should be put.
       ///
-      void* setValueWithAlloc(Interpreter& vpI, void* vpSVR, void* vpQT);
+      void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT);
 
+      ///\brief Placement new doesn't work for arrays. It needs to be called on
+      /// each element. For non-PODs we also need to call the *structors. This
+      /// handles also multi dimension arrays since the init order is
+      /// independent on the dimensions.
+      ///
+      /// We must be consistent with clang. Eg:
+      ///\code
+      ///extern "C" int printf(const char*,...);
+      // struct S {
+      //    static int sI;
+      //    int I;
+      //    S(): I(sI++) {}
+      // };
+      // int S::sI = 0;
+      // S arr[5][3];
+      // int main() {
+      //    for (int i = 0; i < 5; ++i)
+      //    for (int j = 0; j < 3; ++j)
+      //       printf("[%d][%d]%d\n", i, j, arr[i][j].I);
+      //    return 0;
+      // }
+      ///\endcode
+      /// must be consistent with what clang does, since it is not well defined
+      /// in the C++ standard.
+      ///
+      ///\param[in] src - array to copy
+      ///\param[in] placement - where to copy
+      ///\param[in] N - size of the array.
+      ///
+      template <typename T>
+      void copyArray(T* src, void* placement, int size) {
+        for (int i = 0; i < size; ++i)
+          new ((void*)(((T*)placement) + i)) T(src[i]);
+      }
 
 //__cxa_atexit is declared later for WIN32
 #if (!_WIN32)

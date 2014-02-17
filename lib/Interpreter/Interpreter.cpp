@@ -645,7 +645,7 @@ namespace cling {
 
   void Interpreter::WrapInput(std::string& input, std::string& fname) {
     fname = createUniqueWrapper();
-    input.insert(0, "void " + fname + "() {\n ");
+    input.insert(0, "void " + fname + "(cling::StoredValueRef*) {\n ");
     input.append("\n;\n}");
   }
 

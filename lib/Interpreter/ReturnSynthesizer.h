@@ -14,7 +14,9 @@
 
 namespace clang {
   class ASTContext;
+  class Expr;
   class Sema;
+  class VarDecl;
 }
 
 namespace llvm {
@@ -29,6 +31,22 @@ namespace cling {
     ///\brief Needed for the AST transformations, owned by Sema.
     ///
     clang::ASTContext* m_Context;
+    
+    ///\brief cling::runtime::gCling variable cache.
+    ///
+    clang::VarDecl* m_gClingVD;
+
+    ///\brief cling::runtime::internal::setValueNoAlloc cache.
+    ///
+    clang::Expr* m_UnresolvedNoAlloc;
+
+    ///\brief cling::runtime::internal::setValueWithAlloc cache.
+    ///
+    clang::Expr* m_UnresolvedWithAlloc;
+
+    ///\brief cling::runtime::internal::copyArray cache.
+    ///
+    clang::Expr* m_UnresolvedCopyArray;
 
 public:
     ///\ brief Constructs the return synthesizer.
@@ -40,6 +58,38 @@ public:
     virtual ~ReturnSynthesizer();
 
     virtual void Transform();
+
+  private:
+
+    ///\brief
+    /// Here we don't want to depend on the JIT runFunction, because of its
+    /// limitations, when it comes to return value handling. There it is
+    /// not clear who provides the storage and who cleans it up in a
+    /// platform independent way.
+    //
+    /// Depending on the type we need to synthesize a call to cling:
+    /// 0) void : do nothing;
+    /// 1) enum, integral, float, double, referece, pointer types : 
+    ///      call to cling::internal::setValueNoAlloc(...);
+    /// 2) object type (alloc on the stack) :
+    ///      cling::internal::setValueWithAlloc
+    ///   2.1) constant arrays:
+    ///          call to cling::runtime::internal::copyArray(...)
+    ///   
+    /// We need to synthesize later:
+    /// Wrapper has signature: void w(cling::StoredValueRef SVR)
+    /// case 1):
+    ///   setValueNoAlloc(gCling, &SVR, lastExprTy, lastExpr())
+    /// case 2):
+    ///   new (setValueWithAlloc(gCling, &SVR, lastExprTy)) (lastExpr)
+    /// case 2.1):
+    ///   copyArray(src, placement, N)
+    ///
+    clang::Expr* SynthesizeSVRInit(clang::Expr* E) const;
+
+    // Find and cache cling::runtime::gCling, setValueNoAlloc, 
+    // setValueWithAlloc on first request.
+    void FindAndCacheRuntimeDecls();
   };
 
 } // namespace cling
