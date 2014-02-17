@@ -18,6 +18,13 @@ V // CHECK: (cling::StoredValueRef) <<<invalid>>> @0x{{.*}}
 gCling->evaluate("return 1;", V);
 V // CHECK: (cling::StoredValueRef) boxes [(int) 1]
 
+// Returns must put the result in the StoredValueRef.
+bool cond = true;
+gCling->evaluate("if (cond) return \"true\"; else return 0;", V);
+V // CHECK: (cling::StoredValueRef) boxes [(const char [5]) true]
+gCling->evaluate("cond = false; if (cond) return \"true\"; else return 0;", V);
+V // CHECK: (cling::StoredValueRef) boxes [(int) 0]
+
 long LongV = 17;
 gCling->evaluate("LongV;", V);
 V // CHECK: (cling::StoredValueRef) boxes [(long) 17]
