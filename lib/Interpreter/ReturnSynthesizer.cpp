@@ -61,7 +61,8 @@ namespace cling {
     Expr* lastExpr = utils::Analyze::GetOrCreateLastExpr(FD, &foundAtPos, 
                                                          /*omitDS*/false,
                                                          m_Sema);
-    assert(foundAtPos != -1 && "What!?");
+    if (foundAtPos < 0)
+      return;
 
     typedef llvm::SmallVector<Stmt**, 4> StmtIters;
     StmtIters returnStmts;
