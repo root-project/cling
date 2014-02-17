@@ -19,10 +19,6 @@ namespace clang {
   class VarDecl;
 }
 
-namespace llvm {
-  class raw_ostream;
-}
-
 namespace cling {
 
   class ReturnSynthesizer : public TransactionTransformer {
