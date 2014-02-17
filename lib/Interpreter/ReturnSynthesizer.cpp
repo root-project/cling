@@ -155,9 +155,9 @@ namespace cling {
             if (ImplicitCastExpr* VoidCast 
                 = dyn_cast<ImplicitCastExpr>(RS->getRetValue()))
               VoidCast->setSubExpr(SVRInit);
-            else
-              **I = SVRInit;
           }
+          else
+            **I = SVRInit;
         }
       }
     }
