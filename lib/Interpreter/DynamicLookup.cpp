@@ -759,9 +759,9 @@ namespace cling {
 
     const FunctionProtoType* FPT = Fn->getType()->getAs<FunctionProtoType>();
     FunctionProtoType::ExtProtoInfo EPI = FPT->getExtProtoInfo();
-    llvm::ArrayRef<QualType> ArgTypes(FPT->arg_type_begin(),
-                                      FPT->getNumArgs());
-    QualType FnTy = m_Context->getFunctionType(Fn->getResultType(),
+    llvm::ArrayRef<QualType> ArgTypes(FPT->param_type_begin(),
+                                      FPT->getNumParams());
+    QualType FnTy = m_Context->getFunctionType(Fn->getReturnType(),
                                                ArgTypes,
                                                EPI);
     DeclRefExpr* DRE = m_Sema->BuildDeclRefExpr(Fn,

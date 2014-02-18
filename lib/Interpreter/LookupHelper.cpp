@@ -60,8 +60,7 @@ namespace cling {
       //
       // Note: Consuming the EOF token will pop the include stack.
       //
-      P->SkipUntil(tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
-                   /*StopAtCodeCompletion*/false);
+      P->SkipUntil(tok::eof);
       PP.enableIncrementalProcessing(ResetIncrementalProcessing);
       P->getActions().getDiagnostics().Reset();
       PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
@@ -253,8 +252,7 @@ namespace cling {
     //
     //  Cleanup after failed parse as a nested-name-specifier.
     //
-    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
-                /*StopAtCodeCompletion*/false);
+    P.SkipUntil(clang::tok::eof);
     S.getDiagnostics().Reset();
     //
     //  Setup to reparse as a type.
@@ -450,8 +448,8 @@ namespace cling {
                                 const llvm::SmallVector<Expr*, 4> &GivenArgs,
                                 const FunctionProtoType* FPT) {
     // FIXME: What if FTP->arg_size() != GivenArgTypes.size()?
-    FunctionProtoType::arg_type_iterator ATI = FPT->arg_type_begin();
-    FunctionProtoType::arg_type_iterator E = FPT->arg_type_end();
+    FunctionProtoType::param_type_iterator ATI = FPT->param_type_begin();
+    FunctionProtoType::param_type_iterator E = FPT->param_type_end();
     llvm::SmallVector<Expr*, 4>::const_iterator GAI = GivenArgs.begin();
     for (; ATI && (ATI != E); ++ATI, ++GAI) {
       if ((*GAI)->isLValue()) {
@@ -484,7 +482,7 @@ namespace cling {
       return false;
     }
     const FunctionProtoType* FPT = llvm::cast<FunctionProtoType>(FQT);
-    if ((GivenArgs.size() != FPT->getNumArgs()) ||
+    if ((GivenArgs.size() != FPT->getNumParams()) ||
         //(GivenArgsAreEllipsis != FPT->isVariadic()) ||
         !FuncArgTypesMatch(C, GivenArgs, FPT)) {
       return true;
@@ -800,7 +798,7 @@ namespace cling {
     //  and may be able to remove it in the future if
     //  the way constructors are looked up changes.
     //
-    void* OldEntity = P.getCurScope()->getEntity();
+    DeclContext* OldEntity = P.getCurScope()->getEntity();
     DeclContext* TUCtx = Context.getTranslationUnitDecl();
     P.getCurScope()->setEntity(TUCtx);
     P.EnterScope(Scope::DeclScope);
@@ -950,8 +948,7 @@ namespace cling {
     //
     //  Cleanup after prototype parse.
     //
-    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
-                /*StopAtCodeCompletion*/false);
+    P.SkipUntil(clang::tok::eof);
     S.getDiagnostics().Reset();
 
     return true;
@@ -1343,8 +1340,7 @@ namespace cling {
     //
     //  Cleanup after the arg list parse.
     //
-    P.SkipUntil(clang::tok::eof, /*StopAtSemi*/false, /*DontConsume*/false,
-                /*StopAtCodeCompletion*/false);
+    P.SkipUntil(clang::tok::eof);
     S.getDiagnostics().Reset();
     return true;
   }

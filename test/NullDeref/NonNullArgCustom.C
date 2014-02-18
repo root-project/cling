@@ -15,7 +15,7 @@
 // Qualified functions.
 extern "C" int printf(const char* fmt, ...);
 namespace custom_namespace {
-  void standaloneFunc(void* p, int q, float* s) __attribute__((nonnull(1,3))) { // expected-warning {{GCC does not allow nonnull attribute in this position on a function definition}}
+  void standaloneFunc(void* p, int q, float* s) __attribute__((nonnull(1,3))) { // expected-warning {{GCC does not allow 'nonnull' attribute in this position on a function definition}}
     if (!p || !s) 
       printf("Must not be called with 0 args.\n");
   }

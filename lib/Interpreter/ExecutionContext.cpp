@@ -19,8 +19,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
-#include "llvm/Analysis/Verifier.h"
-#include "llvm/Assembly/PrintModulePass.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/Support/raw_ostream.h"
@@ -350,30 +348,6 @@ ExecutionContext::runStaticDestructorsOnce(llvm::Module* m) {
     (*AEE.m_Func)(AEE.m_Arg);
   }
   m_AtExitFuncs.clear();
-}
-
-int
-ExecutionContext::verifyModule(llvm::Module* m)
-{
-  //
-  //  Verify generated module.
-  //
-  bool mod_has_errs = llvm::verifyModule(*m, llvm::PrintMessageAction);
-  if (mod_has_errs) {
-    return 1;
-  }
-  return 0;
-}
-
-void
-ExecutionContext::printModule(llvm::Module* m)
-{
-  //
-  //  Print module LLVM code in human-readable form.
-  //
-  llvm::PassManager PM;
-  PM.add(llvm::createPrintModulePass(&llvm::errs()));
-  PM.run(*m);
 }
 
 void

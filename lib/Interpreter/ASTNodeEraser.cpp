@@ -291,7 +291,7 @@ namespace cling {
 
         // 0 <- A <- B <- C
         for(unsigned i = PrevDecls.size() - 1; i > 0; --i) {
-          PrevDecls[i-1]->setPreviousDeclaration(PrevDecls[i]);
+          PrevDecls[i-1]->setPreviousDecl(PrevDecls[i]);
         }
       }
       return true;

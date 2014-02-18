@@ -239,7 +239,7 @@ namespace cling {
       createUniqueName(VarName);
       IdentifierInfo& IIVD = m_Context->Idents.get(VarName);
       VarDecl* VD = VarDecl::Create(*m_Context, TUDC, Loc, Loc, &IIVD,
-                                    FD->getResultType(), (TypeSourceInfo*)0,
+                                    FD->getReturnType(), (TypeSourceInfo*)0,
                                     SC_None);
       LookupResult R(*m_Sema, FD->getDeclName(), Loc, Sema::LookupMemberName);
       R.addDecl(FD);
@@ -280,8 +280,8 @@ namespace cling {
         // So either we have to do it by hand or we can call the top-most
         // function that does the check. Currently the top-most clang function
         // doing the checks creates an AST node, which we don't want.
-        CheckTagDeclaration(TD, Previous);
-
+        if (!CheckTagDeclaration(TD, Previous))
+          return true;
       }
       else if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
         LookupResult Previous(*m_Sema, ND->getDeclName(), ND->getLocation(),
@@ -295,11 +295,10 @@ namespace cling {
         // And if the previous wasn't used the VD's used flag gets updated to 
         // not used too.
         if(VDWasUsed)
-          VD->setIsUsed(true);
+          VD->setIsUsed();
+        if (VD->isInvalidDecl())
+          return true;
       }
-
-      if (ND->isInvalidDecl())
-        return true;
     }
 
     return false;
@@ -437,7 +436,6 @@ namespace cling {
 
       // Note:  there used to be some attempt at recovery here.
       if (Previous.isAmbiguous()) {
-        NewTD->setInvalidDecl();
         return false;
       }
 
@@ -551,7 +549,6 @@ namespace cling {
                 << PrevEnum->isScoped();
               m_Sema->Diag(PrevTagDecl->getLocation(), diag::note_previous_use);
 
-              NewTD->setInvalidDecl();
               return false;
             }
             else if (PrevEnum->isFixed()) {
@@ -566,7 +563,6 @@ namespace cling {
                 m_Sema->Diag(PrevTagDecl->getLocation(),
                              diag::note_previous_use);
 
-                NewTD->setInvalidDecl();
                 return false;
               }
             }
@@ -575,7 +571,6 @@ namespace cling {
                 << PrevEnum->isFixed();
               m_Sema->Diag(PrevTagDecl->getLocation(), diag::note_previous_use);
 
-              NewTD->setInvalidDecl();
               return false;
             }
           }
@@ -676,7 +671,6 @@ namespace cling {
       }
     }
     if (Invalid) {
-      NewTD->setInvalidDecl();
       return false;
     }
 

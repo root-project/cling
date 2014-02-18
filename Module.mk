@@ -82,7 +82,7 @@ CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 		Frontend Serialization Driver CodeGen Parse Sema Analysis RewriteCore AST Edit Lex Basic) \
 	$(patsubst -lLLVM%Disassembler,,\
 	$(filter-out -lLLVMipa,$(shell $(LLVMCONFIG) --libs)))\
-	$(shell $(LLVMCONFIG) --ldflags)
+	$(shell $(LLVMCONFIG) --ldflags) $(shell $(LLVMCONFIG) --system-libs)
 
 ifneq (,$(filter $(ARCH),win32gcc win64gcc))
 # for EnumProcessModules() in TCling.cxx

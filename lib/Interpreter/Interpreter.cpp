@@ -666,7 +666,7 @@ namespace cling {
     ExecutionContext::ExecutionResult ExeRes =
        m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
                                            *this,
-                                           FD->getResultType(), res);
+                                           FD->getReturnType(), res);
     if (res && res->isValid())
       res->get().setLLVMType(getLLVMType(res->get().getClangType()));
     return ConvertExecutionResult(ExeRes);
@@ -993,6 +993,12 @@ namespace cling {
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     ExecutionContext::ExecutionResult ExeRes
        = m_ExecutionContext->runStaticInitializersOnce(module);
+
+    // Avoid eternal additions to llvm.ident; see
+    // CodeGenModule::EmitVersionIdentMetadata().
+    llvm::NamedMDNode *IdentMetadata = module->getNamedMetadata("llvm.ident");
+    if (IdentMetadata)
+      module->eraseNamedMetadata(IdentMetadata);
 
     // Reset the module builder to clean up global initializers, c'tors, d'tors
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
