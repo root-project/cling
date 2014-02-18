@@ -27,10 +27,13 @@ CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
         llvm/ADT/OwningPtr.h \
         llvm/ADT/StringRef.h \
         llvm/Config/llvm-config.h \
+        llvm/Support/AlignOf.h \
         llvm/Support/Allocator.h \
         llvm/Support/Casting.h \
         llvm/Support/Compiler.h \
         llvm/Support/DataTypes.h \
+        llvm/Support/MathExtras.h \
+        llvm/Support/SwapByteOrder.h \
         llvm/Support/type_traits.h
 
 CLINGETC     := $(addprefix etc/cling/Interpreter/,$(CLINGETC_CLING)) \
