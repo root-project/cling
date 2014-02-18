@@ -291,7 +291,6 @@ namespace cling {
     m_gClingVD = cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling", NSD));
     NSD = utils::Lookup::Namespace(m_Sema, "internal",NSD);
 
-    SourceLocation NoSLoc = SourceLocation();
     LookupResult R(*m_Sema, &m_Context->Idents.get("setValueNoAlloc"),
                    SourceLocation(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
