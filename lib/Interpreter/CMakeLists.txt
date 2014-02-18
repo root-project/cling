@@ -48,7 +48,7 @@ add_cling_library(clingInterpreter
   LookupHelper.cpp
   NullDerefProtectionTransformer.cpp
   RequiredSymbols.cpp
-  ReturnSynthesizer.cpp
+  ValueExtractionSynthesizer.cpp
   RuntimeException.cpp
   StoredValueRef.cpp
   Transaction.cpp
