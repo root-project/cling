@@ -87,3 +87,7 @@ gCling->evaluate("getWithDtorVec()", *VOnHeap);
 WithDtor::fgCount //CHECK: (int) 7
 delete VOnHeap;
 WithDtor::fgCount //CHECK: (int) 0
+
+// long doubles (tricky for the JIT).
+gCling->evaluate("17.42L", V);
+V // CHECK: (cling::StoredValueRef) boxes [(long double) 17.4200000{{[0-9]*}}]
