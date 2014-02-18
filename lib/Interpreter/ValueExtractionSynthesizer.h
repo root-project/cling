@@ -7,8 +7,8 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#ifndef CLING_RETURN_SYNTHESIZER_H
-#define CLING_RETURN_SYNTHESIZER_H
+#ifndef CLING_VALUE_EXTRACTION_SYNTHESIZER_H
+#define CLING_VALUE_EXTRACTION_SYNTHESIZER_H
 
 #include "TransactionTransformer.h"
 
@@ -21,7 +21,7 @@ namespace clang {
 
 namespace cling {
 
-  class ReturnSynthesizer : public TransactionTransformer {
+  class ValueExtractionSynthesizer : public TransactionTransformer {
 
   private:
     ///\brief Needed for the AST transformations, owned by Sema.
@@ -49,9 +49,9 @@ public:
     ///
     ///\param[in] S - The semantic analysis object.
     ///
-    ReturnSynthesizer(clang::Sema* S);
+    ValueExtractionSynthesizer(clang::Sema* S);
     
-    virtual ~ReturnSynthesizer();
+    virtual ~ValueExtractionSynthesizer();
 
     virtual void Transform();
 
@@ -90,4 +90,4 @@ public:
 
 } // namespace cling
 
-#endif // CLING_RETURN_SYNTHESIZER_H
+#endif // CLING_VALUE_EXTRACTION_SYNTHESIZER_H

@@ -7,7 +7,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "ReturnSynthesizer.h"
+#include "ValueExtractionSynthesizer.h"
 
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
@@ -21,13 +21,13 @@
 using namespace clang;
 
 namespace cling {
-  ReturnSynthesizer::ReturnSynthesizer(clang::Sema* S)
+  ValueExtractionSynthesizer::ValueExtractionSynthesizer(clang::Sema* S)
     : TransactionTransformer(S), m_Context(&S->getASTContext()), m_gClingVD(0),
       m_UnresolvedNoAlloc(0), m_UnresolvedWithAlloc(0),
       m_UnresolvedCopyArray(0) { }
 
   // pin the vtable here.
-  ReturnSynthesizer::~ReturnSynthesizer() 
+  ValueExtractionSynthesizer::~ValueExtractionSynthesizer() 
   { }
 
   namespace {
@@ -51,7 +51,7 @@ namespace cling {
     };
   }
 
-  void ReturnSynthesizer::Transform() {
+  void ValueExtractionSynthesizer::Transform() {
     if (!getTransaction()->getCompilationOpts().ResultEvaluation)
       return;
 
@@ -164,7 +164,7 @@ namespace cling {
     }
   }
 
-  Expr* ReturnSynthesizer::SynthesizeSVRInit(Expr* E) const {
+  Expr* ValueExtractionSynthesizer::SynthesizeSVRInit(Expr* E) const {
     // Build a reference to gCling
     ExprResult gClingDRE
       = m_Sema->BuildDeclRefExpr(m_gClingVD, m_Context->VoidPtrTy,
@@ -284,7 +284,7 @@ namespace cling {
     return Call.take();
   }
 
-  void ReturnSynthesizer::FindAndCacheRuntimeDecls() {
+  void ValueExtractionSynthesizer::FindAndCacheRuntimeDecls() {
     assert(!m_gClingVD && "Called multiple times!?");
     NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
     NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
