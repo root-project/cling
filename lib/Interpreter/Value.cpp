@@ -17,8 +17,7 @@
 namespace cling {
 
 Value::Value():
-  m_ClangType(),
-  m_LLVMType()
+  m_ClangType()
 {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
@@ -26,8 +25,7 @@ Value::Value():
 }
 
 Value::Value(const Value& other):
-  m_ClangType(other.m_ClangType),
-  m_LLVMType(other.m_LLVMType)
+  m_ClangType(other.m_ClangType)
 {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
@@ -35,16 +33,7 @@ Value::Value(const Value& other):
 }
 
 Value::Value(const llvm::GenericValue& v, clang::QualType t) 
-  : m_ClangType(t.getAsOpaquePtr()), m_LLVMType(0)
-{
-  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
-         && "GlobalValue buffer too small");
-  new (m_GV) llvm::GenericValue(v);
-}
-
-Value::Value(const llvm::GenericValue& v, clang::QualType clangTy, 
-          const llvm::Type* llvmTy) 
-  : m_ClangType(clangTy.getAsOpaquePtr()), m_LLVMType(llvmTy)
+  : m_ClangType(t.getAsOpaquePtr())
 {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
@@ -53,7 +42,6 @@ Value::Value(const llvm::GenericValue& v, clang::QualType clangTy,
 
 Value& Value::operator =(const Value& other) {
   m_ClangType = other.m_ClangType;
-  m_LLVMType = other.m_LLVMType;
   setGV(other.getGV());
   return *this;
 }

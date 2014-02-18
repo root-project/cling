@@ -14,7 +14,6 @@
 #include <assert.h>
 
 namespace llvm {
-  class Type;
   struct GenericValue;
 }
 namespace clang {
@@ -45,9 +44,6 @@ namespace cling {
     /// dependencies.
     void* /*clang::QualType*/ m_ClangType;
 
-    /// \brief the value's type according to clang
-    const llvm::Type* m_LLVMType;
-
     enum EStorageType {
       kSignedIntegerOrEnumerationType,
       kUnsignedIntegerOrEnumerationType,
@@ -67,10 +63,7 @@ namespace cling {
     Value();
     Value(const Value& other);
     /// \brief Construct a valid Value.
-    Value(const llvm::GenericValue& v, clang::QualType t);
-
-    Value(const llvm::GenericValue& v, clang::QualType clangTy, 
-          const llvm::Type* llvmTy);
+    Value(const llvm::GenericValue& v, clang::QualType clangTy);
 
     Value& operator =(const Value& other);
 
@@ -79,8 +72,6 @@ namespace cling {
     void setGV(const llvm::GenericValue& GV);
 
     clang::QualType getClangType() const;
-    const llvm::Type* getLLVMType() const { return m_LLVMType; }
-    void setLLVMType(const llvm::Type* Ty) { m_LLVMType = Ty; }
 
     /// \brief Determine whether the Value has been set.
     //
