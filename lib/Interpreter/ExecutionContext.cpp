@@ -216,8 +216,8 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
     return kExeFunctionNotCompiled;
   }
   typedef void (*PromptWrapper_t)(void*);
-  PromptWrapper_t func = (PromptWrapper_t)
-  m_engine->getPointerToFunction(f);
+  PromptWrapper_t func
+    = reinterpret_cast<PromptWrapper_t>(m_engine->getPointerToFunction(f));
   // check if there is any unresolved symbol in the list
   if (!m_unresolvedSymbols.empty()) {
     llvm::SmallVector<llvm::Function*, 100> funcsToFree;
