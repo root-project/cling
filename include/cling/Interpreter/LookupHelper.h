@@ -42,17 +42,23 @@ namespace cling {
     Interpreter* m_Interpreter; // we do not own.
   public:
 
+    enum DiagSetting {
+      NoDiagnostics,
+      WithDiagnostics
+    };
+
     LookupHelper(clang::Parser* P, Interpreter* interp);
     ~LookupHelper();
 
     ///\brief Lookup a type by name, starting from the global
     /// namespace.
     ///
-    /// \param [in] typeName - The type to lookup.
+    ///\param [in] typeName - The type to lookup.
+    ///\param [in] diag - Whether to diagnose lookup failures.
+    ///\returns On a failed lookup retval.isNull() will be true.
     ///
-    /// \retval retval - On a failed lookup retval.isNull() will be true.
-    ///
-    clang::QualType findType(llvm::StringRef typeName) const;
+    clang::QualType findType(llvm::StringRef typeName,
+                             DiagSetting diagOnOff) const;
 
     ///\brief Lookup a class declaration by name, starting from the global
     /// namespace, also handles struct, union, namespace, and enum.
@@ -63,29 +69,35 @@ namespace cling {
     ///                          or enum to lookup; NULL otherwise.
     ///\param [in] instantiateTemplate - When true, will attempt to instantiate
     ///                          a class template satisfying the rquest.
+    ///\param [in] diag - Whether to diagnose lookup failures.
     ///\returns The found declaration or null.
     ///
     const clang::Decl* findScope(llvm::StringRef className,
+                                 DiagSetting diagOnOff,
                                  const clang::Type** resultType = 0,
                                  bool instantiateTemplate = true) const;
 
-     
+
     ///\brief Lookup a class template declaration by name, starting from 
     /// the global namespace, also handles struct, union, namespace, and enum.
     ///
     ///\param [in] Name   - The name of the class template to lookup.
+    ///\param [in] diag - Whether to diagnose lookup failures.
     ///\returns The found declaration or null.
     ///
-    const clang::ClassTemplateDecl* findClassTemplate(llvm::StringRef Name) const;
+    const clang::ClassTemplateDecl*
+    findClassTemplate(llvm::StringRef Name, DiagSetting diagOnOff) const;
 
     ///\brief Lookup a data member based on its Decl(Context), name.
     ///
     ///\param [in] scopeDecl - the scope (namespace or tag) that is searched for
     ///   the function.
     ///\param [in] dataName  - the name of the data member to find.
+    ///\param [in] diag - whether to diagnose lookup failures.
     ///\returns The value/data member found or null.
     const clang::ValueDecl* findDataMember(const clang::Decl* scopeDecl,
-                                           llvm::StringRef dataName) const;
+                                           llvm::StringRef dataName,
+                                           DiagSetting diagOnOff) const;
 
     ///\brief Lookup a function template based on its Decl(Context), name.
     ///
@@ -94,12 +106,13 @@ namespace cling {
     ///\param [in] templateName  - the name of the function template to find.
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
+    ///\param [in] diag - whether to diagnose lookup failures.
     ///\returns The function template found or null.
-    const clang::FunctionTemplateDecl* findFunctionTemplate(
-                                                   const clang::Decl* scopeDecl,
-                                                   llvm::StringRef templateName,
-                                                      bool objectIsConst = false
-                                                            ) const;
+    const clang::FunctionTemplateDecl*
+    findFunctionTemplate(const clang::Decl* scopeDecl,
+                         llvm::StringRef templateName,
+                         DiagSetting diagOnOff,
+                         bool objectIsConst = false) const;
 
 
     ///\brief Lookup a function based on its Decl(Context), name (return any
@@ -110,11 +123,11 @@ namespace cling {
     ///\param [in] funcName  - the name of the function to find.
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
+    ///\param [in] diag - whether to diagnose lookup failures.
     ///\returns The function found or null.
-    const clang::FunctionDecl* findAnyFunction(const clang::Decl* scopeDecl,
-                                               llvm::StringRef funcName,
-                                               bool objectIsConst = false
-                                               ) const;
+    const clang::FunctionDecl*
+    findAnyFunction(const clang::Decl* scopeDecl, llvm::StringRef funcName,
+                    DiagSetting diagOnOff, bool objectIsConst = false) const;
 
     ///\brief Lookup a function based on its Decl(Context), name and parameters.
     ///
@@ -125,17 +138,17 @@ namespace cling {
     ///   parantheses). Example: "size_t,int".
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
+    ///\param [in] diag - whether to diagnose lookup failures.
     ///\returns The function found or null.
-    const clang::FunctionDecl* findFunctionProto(const clang::Decl* scopeDecl,
-                                                 llvm::StringRef funcName,
-                                                 llvm::StringRef funcProto,
-                                                 bool objectIsConst = false
-                                                 ) const;
+    const clang::FunctionDecl*
+    findFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
+                      llvm::StringRef funcProto, DiagSetting diagOnOff,
+                      bool objectIsConst = false) const;
 
-    const clang::FunctionDecl* findFunctionArgs(const clang::Decl* scopeDecl,
-                                                llvm::StringRef funcName,
-                                                llvm::StringRef funcArgs,
-                                                bool objectIsConst = false) const;
+    const clang::FunctionDecl*
+    findFunctionArgs(const clang::Decl* scopeDecl, llvm::StringRef funcName,
+                     llvm::StringRef funcArgs, DiagSetting diagOnOff,
+                     bool objectIsConst = false) const;
 
     ///\brief Lookup a function based on its Decl(Context), name and parameters.
     ///
@@ -145,12 +158,13 @@ namespace cling {
     ///\param [in] funcProto - the list of types of the function parameters
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
+    ///\param [in] diag - whether to diagnose lookup failures.
     ///\returns The function found or null.
-     const clang::FunctionDecl* findFunctionProto(const clang::Decl* scopeDecl,
-                                                  llvm::StringRef funcName,
-                    const llvm::SmallVector<clang::QualType, 4>& funcProto,
-                                                  bool objectIsConst = false
-                                                  ) const;
+     const clang::FunctionDecl*
+     findFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
+                       const llvm::SmallVector<clang::QualType, 4>& funcProto,
+                       DiagSetting diagOnOff,
+                       bool objectIsConst = false) const;
 
 
     ///\brief Lookup a function based on its Decl(Context), name and parameters.
@@ -163,12 +177,12 @@ namespace cling {
     ///   parantheses). Example: "size_t,int".
     ///\param[in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
+    ///\param [in] diag - Whether to diagnose lookup failures.
     ///\returns The function found or null.
-    const clang::FunctionDecl* matchFunctionProto(const clang::Decl* scopeDecl,
-                                                  llvm::StringRef funcName,
-                                                  llvm::StringRef funcProto,
-                                                  bool objectIsConst
-                                                  ) const;
+    const clang::FunctionDecl*
+    matchFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
+                       llvm::StringRef funcProto, DiagSetting diagOnOff,
+                       bool objectIsConst) const;
 
     ///\brief Lookup a function based on its Decl(Context), name and parameters.
     ///   where the result if any must have exactly the arguments requested.
@@ -179,31 +193,36 @@ namespace cling {
     ///\param[in] funcProto - the list of types of the function parameters
     ///\param[in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
+    ///\param [in] diag - whether to diagnose lookup failures.
     ///\returns The function found or null.
-    const clang::FunctionDecl* matchFunctionProto(const clang::Decl* scopeDecl,
-                                                   llvm::StringRef funcName,
-                     const llvm::SmallVector<clang::QualType, 4>& funcProto,
-                                                   bool objectIsConst
-                                                   ) const;
+    const clang::FunctionDecl*
+    matchFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
+                       const llvm::SmallVector<clang::QualType, 4>& funcProto,
+                       DiagSetting diagOnOff, bool objectIsConst) const;
 
     ///\brief Lookup given argument list and return each argument as an
     /// expression.
     ///
     ///\param[in] argList - The string representation of the argument list.
-    ///
     ///\param[out] argExprs - The corresponding expressions to the argList.
+    ///\param [in] diag - whether to diagnose lookup failures.
     ///
     void findArgList(llvm::StringRef argList,
-                     llvm::SmallVector<clang::Expr*, 4>& argExprs) const;
+                     llvm::SmallVector<clang::Expr*, 4>& argExprs,
+                     DiagSetting diagOnOff) const;
 
 
     ///\brief Test whether a function with the given name exists.
-    bool hasFunction(const clang::Decl* scopeDecl,
-                     llvm::StringRef funcName) const;
+    ///
+    ///\param [in] scopeDecl - scope in which to look for the function.
+    ///\param [in] funcName - name of the function to look for.
+    ///\param [in] diag - whether to diagnose lookup failures.
+    bool hasFunction(const clang::Decl* scopeDecl, llvm::StringRef funcName,
+                     DiagSetting diagOnOff) const;
 
   private:
-    void prepareForParsing(llvm::StringRef code, 
-                           llvm::StringRef bufferName) const;
+    void prepareForParsing(llvm::StringRef code, llvm::StringRef bufferName,
+                           DiagSetting diagOnOff) const;
   };
 
 } // end namespace

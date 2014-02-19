@@ -29,10 +29,10 @@ void symbol_requester() {
    cling_PrintValue(0, 0, 0);
    valuePrinterInternal::flushToStream(llvm::outs(), "");
    LookupHelper h(0,0);
-   h.findType("");
-   h.findScope("");
-   h.findFunctionProto(0, "", "");
-   h.findFunctionArgs(0, "", "");
+   h.findType("", LookupHelper::NoDiagnostics);
+   h.findScope("", LookupHelper::NoDiagnostics);
+   h.findFunctionProto(0, "", "", LookupHelper::NoDiagnostics);
+   h.findFunctionArgs(0, "", "", LookupHelper::NoDiagnostics);
    runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
    InterpreterCallbacks cb(0);

@@ -538,7 +538,8 @@ void ClassPrinter::DisplayClass(const std::string& className)const
   fSeenDecls.clear();
 
   const cling::LookupHelper &lookupHelper = fInterpreter->getLookupHelper();
-  if (const Decl* const decl = lookupHelper.findScope(className)) {
+  if (const Decl* const decl
+      = lookupHelper.findScope(className, cling::LookupHelper::NoDiagnostics)) {
     if (const CXXRecordDecl* const classDecl = dyn_cast<CXXRecordDecl>(decl)) {
       if (classDecl->hasDefinition())
         DisplayClassDecl(classDecl);
@@ -1319,7 +1320,8 @@ void TypedefPrinter::DisplayTypedef(const std::string& typedefName)const
   assert(fInterpreter != 0 && "DisplayTypedef, fInterpreter is null");
   
   const cling::LookupHelper &lookupHelper = fInterpreter->getLookupHelper();
-  const QualType type = lookupHelper.findType(typedefName);
+  const QualType type
+    = lookupHelper.findType(typedefName, cling::LookupHelper::NoDiagnostics);
 
   if(!type.isNull()) {
     if (const TypedefType* const typedefType = type->getAs<TypedefType>()) {

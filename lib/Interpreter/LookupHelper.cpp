@@ -82,7 +82,8 @@ namespace cling {
 
   LookupHelper::~LookupHelper() {}
 
-  QualType LookupHelper::findType(llvm::StringRef typeName) const {
+  QualType LookupHelper::findType(llvm::StringRef typeName,
+                                  DiagSetting diagOnOff) const {
     //
     //  Our return value.
     //
@@ -96,7 +97,8 @@ namespace cling {
     // Use P for shortness
     Parser& P = *m_Parser;
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(typeName, llvm::StringRef("lookup.type.by.name.file"));
+    prepareForParsing(typeName, llvm::StringRef("lookup.type.by.name.file"),
+                      diagOnOff);
     //
     //  Try parsing the type name.
     //
@@ -115,6 +117,7 @@ namespace cling {
   }
 
   const Decl* LookupHelper::findScope(llvm::StringRef className,
+                                      DiagSetting diagOnOff,
                                       const Type** resultType /* = 0 */,
                                       bool instantiateTemplate/*=true*/) const {
     //
@@ -133,7 +136,7 @@ namespace cling {
 
     ParserStateRAII ResetParserState(P);
     prepareForParsing(className.str() + "::",
-                      llvm::StringRef("lookup.class.by.name.file"));
+                      llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
     //
     //  Our return values.
     //
@@ -288,7 +291,8 @@ namespace cling {
     return TheDecl;
   }
 
-  const ClassTemplateDecl* LookupHelper::findClassTemplate(llvm::StringRef Name) const {
+  const ClassTemplateDecl* LookupHelper::findClassTemplate(llvm::StringRef Name,
+                                                           DiagSetting diagOnOff) const {
     //
     //  Find a class template decl given its name.
     //
@@ -303,7 +307,7 @@ namespace cling {
     ASTContext& Context = S.getASTContext();
     ParserStateRAII ResetParserState(P);
     prepareForParsing(Name.str(),
-                      llvm::StringRef("lookup.class.by.name.file"));
+                      llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
 
     //
     //  Prevent failing on an assert in TryAnnotateCXXScopeToken.
@@ -377,8 +381,8 @@ namespace cling {
   }
 
   const ValueDecl* LookupHelper::findDataMember(const clang::Decl* scopeDecl,
-                                                llvm::StringRef dataName
-                                                ) const {
+                                                llvm::StringRef dataName,
+                                                DiagSetting diagOnOff) const {
     // Lookup a data member based on its Decl(Context), name.
 
     Parser& P = *m_Parser;
@@ -649,9 +653,10 @@ namespace cling {
   }
 
   static bool ParseWithShortcuts(DeclContext* foundDC, CXXScopeSpec &SS,
-                          llvm::StringRef funcName,
-                          Parser &P, Sema &S,
-                          UnqualifiedId &FuncId) {
+                                 llvm::StringRef funcName,
+                                 Parser &P, Sema &S,
+                                 UnqualifiedId &FuncId,
+                                 LookupHelper::DiagSetting diagOnOff) {
      
     // Use a very simple parse step that dectect whether the name search (which
     // is already supposed to be an unqualified name) is a simple identifier,
@@ -749,7 +754,8 @@ namespace cling {
     //
     // FIXME:, TODO: Cleanup that complete mess.
     {
-      PP.getDiagnostics().setSuppressAllDiagnostics(true);
+      PP.getDiagnostics().setSuppressAllDiagnostics(diagOnOff ==
+                                                   LookupHelper::NoDiagnostics);
       llvm::MemoryBuffer* SB
            = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
                                                 + "\n", "lookup.funcname.file");
@@ -787,8 +793,9 @@ namespace cling {
                                        LookupResult &Result,
                                        DeclarationNameInfo &FuncNameInfo,
                               const TemplateArgumentListInfo* FuncTemplateArgs,
-                                       ASTContext& Context, Parser &P, Sema &S)
-                  ) {
+                                       ASTContext& Context, Parser &P, Sema &S),
+                 LookupHelper::DiagSetting diagOnOff
+                 ) {
     // Given the correctly types arguments, etc. find the function itself.
 
     //
@@ -809,7 +816,7 @@ namespace cling {
 
     UnqualifiedId FuncId;
     ParserStateRAII ResetParserState(P);
-    if (!ParseWithShortcuts(foundDC,SS,funcName,P,S,FuncId)) {
+    if (!ParseWithShortcuts(foundDC,SS,funcName,P,S,FuncId, diagOnOff)) {
       // Failed parse, cleanup.
       // Destroy the scope we created first, and
       // restore the original.
@@ -986,8 +993,8 @@ namespace cling {
   const FunctionTemplateDecl*
   LookupHelper::findFunctionTemplate(const clang::Decl* scopeDecl,
                                      llvm::StringRef templateName,
-                                     bool objectIsConst
-                                     ) const {
+                                     DiagSetting diagOnOff,
+                                     bool objectIsConst) const {
     // Lookup a function template based on its Decl(Context), name.
 
     //FIXME: remove code duplication with findFunctionArgs() and friends.
@@ -1017,7 +1024,8 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         templateName, GivenArgs, objectIsConst,
-                        Context, P, S, findFunctionTemplateSelector);
+                        Context, P, S, findFunctionTemplateSelector,
+                        diagOnOff);
   }
 
   static
@@ -1076,8 +1084,8 @@ namespace cling {
 
   const FunctionDecl* LookupHelper::findAnyFunction(const clang::Decl*scopeDecl,
                                                     llvm::StringRef funcName,
-                                                    bool objectIsConst
-                                                    ) const {
+                                                    DiagSetting diagOnOff,
+                                                    bool objectIsConst) const {
 
     //FIXME: remove code duplication with findFunctionArgs() and friends.
 
@@ -1106,14 +1114,15 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S, findAnyFunctionSelector);
+                        Context, P, S, findAnyFunctionSelector,
+                        diagOnOff);
   }
 
-  const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
-                                                      llvm::StringRef funcName,
-                               const llvm::SmallVector<QualType, 4>& funcProto,
-                                                      bool objectIsConst
-                                                      ) const {
+  const FunctionDecl*
+  LookupHelper::findFunctionProto(const Decl* scopeDecl,
+                                  llvm::StringRef funcName,
+                                 const llvm::SmallVector<QualType,4>& funcProto,
+                                  DiagSetting diagOnOff, bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
@@ -1146,19 +1155,20 @@ namespace cling {
     //  Parse the prototype now.
     //
     ParserStateRAII ResetParserState(P);
-    prepareForParsing("", llvm::StringRef("func.prototype.file"));     
+    prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
                         Context, P, S,
-                        overloadFunctionSelector);
+                        overloadFunctionSelector,
+                        diagOnOff);
   }
    
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
                                                       llvm::StringRef funcName,
                                                       llvm::StringRef funcProto,
-                                                      bool objectIsConst
-                                                      ) const {
+                                                      DiagSetting diagOnOff,
+                                                      bool objectIsConst) const{
     assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
@@ -1183,7 +1193,7 @@ namespace cling {
     //  Parse the prototype now.
     //
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
+    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
 
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
@@ -1197,14 +1207,16 @@ namespace cling {
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
                         Context, P, S,
-                        overloadFunctionSelector);
+                        overloadFunctionSelector,
+                        diagOnOff);
   }
 
-  const FunctionDecl* LookupHelper::matchFunctionProto(const Decl* scopeDecl,
-                                                       llvm::StringRef funcName,
-                                                       llvm::StringRef funcProto,
-                                                       bool objectIsConst
-                                                       ) const {
+  const FunctionDecl*
+  LookupHelper::matchFunctionProto(const Decl* scopeDecl,
+                                   llvm::StringRef funcName,
+                                   llvm::StringRef funcProto,
+                                   DiagSetting diagOnOff,
+                                   bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
@@ -1229,7 +1241,7 @@ namespace cling {
     //  Parse the prototype now.
     //
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"));
+    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
 
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
@@ -1243,14 +1255,16 @@ namespace cling {
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
                         Context, P, S,
-                        matchFunctionSelector);
+                        matchFunctionSelector,
+                        diagOnOff);
   }
 
-  const FunctionDecl* LookupHelper::matchFunctionProto(const Decl* scopeDecl,
-                                                       llvm::StringRef funcName,
+  const FunctionDecl*
+  LookupHelper::matchFunctionProto(const Decl* scopeDecl,
+                                   llvm::StringRef funcName,
                                 const llvm::SmallVector<QualType, 4>& funcProto,
-                                                       bool objectIsConst
-                                                       ) const {
+                                   DiagSetting diagOnOff,
+                                   bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
@@ -1284,12 +1298,13 @@ namespace cling {
     //  Parse the prototype now.
     //
     ParserStateRAII ResetParserState(P);
-    prepareForParsing("", llvm::StringRef("func.prototype.file"));
+    prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
                         Context, P, S,
-                        matchFunctionSelector);
+                        matchFunctionSelector,
+                        diagOnOff);
   }
    
   static
@@ -1345,11 +1360,12 @@ namespace cling {
     return true;
   }
 
-  const FunctionDecl* LookupHelper::findFunctionArgs(const Decl* scopeDecl,
-                                                     llvm::StringRef funcName,
-                                                     llvm::StringRef funcArgs,
-                                                     bool objectIsConst
-                                                     ) const {
+  const FunctionDecl*
+  LookupHelper::findFunctionArgs(const Decl* scopeDecl,
+                                 llvm::StringRef funcName,
+                                 llvm::StringRef funcArgs,
+                                 DiagSetting diagOnOff,
+                                 bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
     //
     //  Some utilities.
@@ -1374,7 +1390,7 @@ namespace cling {
     //  Parse the arguments now.
     //
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcArgs, llvm::StringRef("func.args.file"));
+    prepareForParsing(funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcArgs.empty()) {
@@ -1386,11 +1402,13 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S, overloadFunctionSelector);
+                        Context, P, S, overloadFunctionSelector,
+                        diagOnOff);
   }
 
   void LookupHelper::findArgList(llvm::StringRef argList,
-                                 llvm::SmallVector<Expr*, 4>& argExprs) const {
+                                 llvm::SmallVector<Expr*, 4>& argExprs,
+                                 DiagSetting diagOnOff) const {
     if (argList.empty()) return;
 
     //
@@ -1399,7 +1417,7 @@ namespace cling {
     // Use P for shortness
     Parser& P = *m_Parser;    
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(argList, llvm::StringRef("arg.list.file"));
+    prepareForParsing(argList, llvm::StringRef("arg.list.file"), diagOnOff);
     //
     //  Parse the arguments now.
     //
@@ -1426,14 +1444,15 @@ namespace cling {
   }
 
   void LookupHelper::prepareForParsing(llvm::StringRef code,
-                                       llvm::StringRef bufferName) const {
+                                       llvm::StringRef bufferName,
+                                       DiagSetting diagOnOff) const {
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
     Preprocessor& PP = P.getPreprocessor();
     //
     //  Tell the diagnostic engine to ignore all diagnostics.
     //
-    PP.getDiagnostics().setSuppressAllDiagnostics(true);
+    PP.getDiagnostics().setSuppressAllDiagnostics(diagOnOff == NoDiagnostics);
     //
     //  Tell the parser to not attempt spelling correction.
     //
@@ -1485,7 +1504,8 @@ namespace cling {
   }
 
   bool LookupHelper::hasFunction(const clang::Decl* scopeDecl,
-                                 llvm::StringRef funcName) const {
+                                 llvm::StringRef funcName,
+                                 DiagSetting diagOnOff) const {
 
     //FIXME: remove code duplication with findFunctionArgs() and friends.
 
@@ -1514,6 +1534,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, false /* objectIsConst */,
-                        Context, P, S, hasFunctionSelector);
+                        Context, P, S, hasFunctionSelector,
+                        diagOnOff);
   }
 } // end namespace cling
