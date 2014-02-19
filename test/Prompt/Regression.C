@@ -33,3 +33,5 @@ V
 typedef enum {k1,k2} enumName;
 enumName var
 // CHECK: (enumName) (::k1) : (int) 0
+const enumName constVar = (enumName) 1 // k2 is invisible!
+// CHECK: (const enumName) (::k2) : (int) 1
