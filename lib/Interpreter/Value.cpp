@@ -29,18 +29,14 @@ Value::Value(const Value& other) : m_ClangType(other.m_ClangType) {
 }
 
 Value::Value(const llvm::GenericValue& v, clang::QualType t) 
-  : m_ClangType(t.getAsOpaquePtr())
-{
-<<<<<<< HEAD
-=======
+  : m_ClangType(t.getAsOpaquePtr()) {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue(v);
 }
 
-Value::Value(const llvm::GenericValue& v, clang::QualType clangTy, 
-             const llvm::Type* llvmTy) : m_ClangType(clangTy.getAsOpaquePtr()) {
->>>>>>> Remove llvm::Type from the cling::Value
+Value::Value(const llvm::GenericValue& v, clang::QualType clangTy)
+  : m_ClangType(clangTy.getAsOpaquePtr()) {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue(v);
