@@ -61,7 +61,7 @@ namespace cling {
   class ClangInternalState;
   class CompilationOptions;
   class DynamicLibraryManager;
-  class ExecutionContext;
+  class IncrementalExecutor;
   class IncrementalParser;
   class InterpreterCallbacks;
   class LookupHelper;
@@ -131,7 +131,7 @@ namespace cling {
 
     ///\brief Cling's execution engine - a well wrapped llvm execution engine.
     ///
-    llvm::OwningPtr<ExecutionContext> m_ExecutionContext;
+    llvm::OwningPtr<IncrementalExecutor> m_Executor;
 
     ///\brief Cling's worker class implementing the incremental compilation.
     ///
@@ -242,7 +242,7 @@ namespace cling {
     ExecutionResult RunFunction(const clang::FunctionDecl* FD,
                                 StoredValueRef* res = 0);
 
-    ///\brief Forwards to cling::ExecutionContext::addSymbol.
+    ///\brief Forwards to cling::IncrementalExecutor::addSymbol.
     ///
     bool addSymbol(const char* symbolName,  void* symbolAddress);
 

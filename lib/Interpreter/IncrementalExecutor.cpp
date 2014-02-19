@@ -7,7 +7,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "ExecutionContext.h"
+#include "IncrementalExecutor.h"
 
 #include "clang/AST/Type.h"
 #include "clang/Sema/Sema.h"
@@ -24,14 +24,14 @@
 
 using namespace cling;
 
-std::set<std::string> ExecutionContext::m_unresolvedSymbols;
-std::vector<ExecutionContext::LazyFunctionCreatorFunc_t>
-  ExecutionContext::m_lazyFuncCreator;
+std::set<std::string> IncrementalExecutor::m_unresolvedSymbols;
+std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
+  IncrementalExecutor::m_lazyFuncCreator;
 
-bool ExecutionContext::m_LazyFuncCreatorDiagsSuppressed = false;
+bool IncrementalExecutor::m_LazyFuncCreatorDiagsSuppressed = false;
 
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-ExecutionContext::ExecutionContext(llvm::Module* m) 
+IncrementalExecutor::IncrementalExecutor(llvm::Module* m) 
   : m_CxaAtExitRemapped(false)
 {
   assert(m && "llvm::Module must not be null!");
@@ -40,16 +40,16 @@ ExecutionContext::ExecutionContext(llvm::Module* m)
 }
 
 // Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-ExecutionContext::~ExecutionContext() {}
+IncrementalExecutor::~IncrementalExecutor() {}
 
-void ExecutionContext::shuttingDown() {
+void IncrementalExecutor::shuttingDown() {
   for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
     const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
     (*AEE.m_Func)(AEE.m_Arg);
   }
 }
 
-void ExecutionContext::remapCXAAtExit() {
+void IncrementalExecutor::remapCXAAtExit() {
   assert(!m_CxaAtExitRemapped && "__cxa_at_exit already remapped.");
   llvm::Function* clingAtExit
     = m_engine->FindFunctionNamed("cling_cxa_atexit");
@@ -90,7 +90,7 @@ void ExecutionContext::remapCXAAtExit() {
   m_CxaAtExitRemapped = true;
 }
 
-void ExecutionContext::InitializeBuilder(llvm::Module* m) {
+void IncrementalExecutor::InitializeBuilder(llvm::Module* m) {
   //
   //  Create an execution engine to use.
   //
@@ -114,14 +114,15 @@ void ExecutionContext::InitializeBuilder(llvm::Module* m) {
 
   m_engine.reset(builder.create());
   if (!m_engine)
-     llvm::errs() << "cling::ExecutionContext::InitializeBuilder(): " << errMsg;
+     llvm::errs() << "cling::IncrementalExecutor::InitializeBuilder(): "
+                  << errMsg;
   assert(m_engine && "Cannot create module!");
 
   // install lazy function creators
   m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
 }
 
-int ExecutionContext::CXAAtExit(void (*func) (void*), void* arg, void* dso, 
+int IncrementalExecutor::CXAAtExit(void (*func) (void*), void* arg, void* dso, 
                                 void* clangDecl) {
   // Register a CXAAtExit function
   clang::Decl* LastTLD = (clang::Decl*)clangDecl;
@@ -132,15 +133,15 @@ int ExecutionContext::CXAAtExit(void (*func) (void*), void* arg, void* dso,
 void unresolvedSymbol()
 {
   // throw exception?
-  llvm::errs() << "ExecutionContext: calling unresolved symbol, "
+  llvm::errs() << "IncrementalExecutor: calling unresolved symbol, "
     "see previous error message!\n";
 }
 
-void* ExecutionContext::HandleMissingFunction(const std::string& mangled_name)
+void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name)
 {
   // Not found in the map, add the symbol in the list of unresolved symbols
   if (m_unresolvedSymbols.insert(mangled_name).second) {
-    llvm::errs() << "ExecutionContext: use of undefined symbol '"
+    llvm::errs() << "IncrementalExecutor: use of undefined symbol '"
                  << mangled_name << "'!\n";
   }
 
@@ -150,7 +151,7 @@ void* ExecutionContext::HandleMissingFunction(const std::string& mangled_name)
 }
 
 void*
-ExecutionContext::NotifyLazyFunctionCreators(const std::string& mangled_name)
+IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
 {
   for (std::vector<LazyFunctionCreatorFunc_t>::iterator it
          = m_lazyFuncCreator.begin(), et = m_lazyFuncCreator.end();
@@ -195,8 +196,8 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
   }
 }
 
-ExecutionContext::ExecutionResult
-ExecutionContext::executeFunction(llvm::StringRef funcname,
+IncrementalExecutor::ExecutionResult
+IncrementalExecutor::executeFunction(llvm::StringRef funcname,
                                   StoredValueRef* returnValue)
 {
   // Call a function without arguments, or with an SRet argument, see SRet below
@@ -205,7 +206,7 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
 
   llvm::Function* f = m_engine->FindFunctionNamed(funcname.str().c_str());
   if (!f) {
-    llvm::errs() << "ExecutionContext::executeFunction: "
+    llvm::errs() << "IncrementalExecutor::executeFunction: "
       "could not find function named " << funcname << '\n';
     return kExeFunctionNotCompiled;
   }
@@ -221,7 +222,7 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
     llvm::SmallVector<llvm::Function*, 100> funcsToFree;
     for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
            e = m_unresolvedSymbols.end(); i != e; ++i) {
-      llvm::errs() << "ExecutionContext::executeFunction: symbol '" << *i
+      llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
                    << "' unresolved while linking function '" << funcname
                    << "'!\n";
       llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
@@ -241,8 +242,8 @@ ExecutionContext::executeFunction(llvm::StringRef funcname,
 }
 
 
-ExecutionContext::ExecutionResult
-ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
+IncrementalExecutor::ExecutionResult
+IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
   assert(m_engine && "Code generation did not create an engine!");
 
@@ -291,7 +292,7 @@ ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
         llvm::SmallVector<llvm::Function*, 100> funcsToFree;
         for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
                e = m_unresolvedSymbols.end(); i != e; ++i) {
-          llvm::errs() << "ExecutionContext::runStaticInitializersOnce: symbol '" << *i
+          llvm::errs() << "IncrementalExecutor::runStaticInitializersOnce: symbol '" << *i
                        << "' unresolved while linking static initializer '"
                        << F->getName() << "'!\n";
           llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
@@ -310,7 +311,7 @@ ExecutionContext::runStaticInitializersOnce(llvm::Module* m) {
 }
 
 void
-ExecutionContext::runStaticDestructorsOnce(llvm::Module* m) {
+IncrementalExecutor::runStaticDestructorsOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
   assert(m_engine && "Code generation did not create an engine!");
 
@@ -329,13 +330,13 @@ ExecutionContext::runStaticDestructorsOnce(llvm::Module* m) {
 }
 
 void
-ExecutionContext::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
+IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 {
   m_lazyFuncCreator.push_back(fp);
 }
 
-bool ExecutionContext::addSymbol(const char* symbolName,  void* symbolAddress) {
-
+bool
+IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
   void* actualAddress
     = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
   if (actualAddress)
@@ -345,9 +346,9 @@ bool ExecutionContext::addSymbol(const char* symbolName,  void* symbolAddress) {
   return true;
 }
 
-void* ExecutionContext::getAddressOfGlobal(llvm::Module* m,
-                                           const char* symbolName,
-                                           bool* fromJIT /*=0*/) const {
+void* IncrementalExecutor::getAddressOfGlobal(llvm::Module* m,
+                                              const char* symbolName,
+                                              bool* fromJIT /*=0*/) const {
   // Return a symbol's address, and whether it was jitted.
   void* address
     = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
@@ -365,11 +366,10 @@ void* ExecutionContext::getAddressOfGlobal(llvm::Module* m,
 }
 
 void*
-ExecutionContext::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const {
+IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV)const{
   if (void* addr = m_engine->getPointerToGlobalIfAvailable(&GV))
     return addr;
 
   //  Function not yet codegened by the JIT, force this to happen now.
   return m_engine->getPointerToGlobal(&GV);
 }
-

@@ -10,7 +10,7 @@
 #include "cling/Interpreter/Interpreter.h"
 
 #include "DynamicLookup.h"
-#include "ExecutionContext.h"
+#include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
 
 #include "cling/Interpreter/CIFactory.h"
@@ -51,13 +51,13 @@ using namespace clang;
 namespace {
 
   static cling::Interpreter::ExecutionResult
-  ConvertExecutionResult(cling::ExecutionContext::ExecutionResult ExeRes) {
+  ConvertExecutionResult(cling::IncrementalExecutor::ExecutionResult ExeRes) {
     switch (ExeRes) {
-    case cling::ExecutionContext::kExeSuccess:
+    case cling::IncrementalExecutor::kExeSuccess:
       return cling::Interpreter::kExeSuccess;
-    case cling::ExecutionContext::kExeFunctionNotCompiled:
+    case cling::IncrementalExecutor::kExeFunctionNotCompiled:
       return cling::Interpreter::kExeFunctionNotCompiled;
-    case cling::ExecutionContext::kExeUnresolvedSymbols:
+    case cling::IncrementalExecutor::kExeUnresolvedSymbols:
       return cling::Interpreter::kExeUnresolvedSymbols;
     default: break;
     }
@@ -76,7 +76,7 @@ namespace cling {
         // FIXME: Bind to the module symbols.
         Decl* lastTLD = incrP->getLastTransaction()->getLastDecl().getSingleDecl();
  
-        int result = cling->m_ExecutionContext->CXAAtExit(func, arg, dso, lastTLD);
+        int result = cling->m_Executor->CXAAtExit(func, arg, dso, lastTLD);
         return result;
       }
     } // end namespace internal
@@ -179,7 +179,7 @@ namespace cling {
 
     if (m_IncrParser->hasCodeGenerator()) {
       llvm::Module* theModule = m_IncrParser->getCodeGenerator()->GetModule();
-      m_ExecutionContext.reset(new ExecutionContext(theModule));
+      m_Executor.reset(new IncrementalExecutor(theModule));
     }
 
     m_IncrParser->Initialize();
@@ -238,7 +238,7 @@ namespace cling {
           "cling::Interpreter *gCling=(cling::Interpreter*)"
                     << (uintptr_t)this << ";} }";
         declare(initializer.str());
-        m_ExecutionContext->remapCXAAtExit();
+        m_Executor->remapCXAAtExit();
       }
 
       declare("#include \"cling/Interpreter/ValuePrinter.h\"");
@@ -250,8 +250,8 @@ namespace cling {
   }
 
   Interpreter::~Interpreter() {
-    if (m_ExecutionContext)
-      m_ExecutionContext->shuttingDown();
+    if (m_Executor)
+      m_Executor->shuttingDown();
     for (size_t i = 0, e = m_StoredStates.size(); i != e; ++i)
       delete m_StoredStates[i];
     getCI()->getDiagnostics().getClient()->EndSourceFile();
@@ -425,8 +425,8 @@ namespace cling {
   }
 
   llvm::ExecutionEngine* Interpreter::getExecutionEngine() const {
-    if (!m_ExecutionContext) return 0;
-    return m_ExecutionContext->getExecutionEngine();
+    if (!m_Executor) return 0;
+    return m_Executor->getExecutionEngine();
   }
 
   llvm::Module* Interpreter::getModule() const {
@@ -663,8 +663,8 @@ namespace cling {
 
     std::string mangledNameIfNeeded;
     utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
-    ExecutionContext::ExecutionResult ExeRes =
-       m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(), res);
+    IncrementalExecutor::ExecutionResult ExeRes =
+       m_Executor->executeFunction(mangledNameIfNeeded.c_str(), res);
     return ConvertExecutionResult(ExeRes);
   }
 
@@ -809,7 +809,7 @@ namespace cling {
     if (!GV)
       return 0;
 
-    return m_ExecutionContext->getPointerToGlobalFromJIT(*GV);
+    return m_Executor->getPointerToGlobalFromJIT(*GV);
   }
 
   void Interpreter::createUniqueName(std::string& out) {
@@ -915,11 +915,11 @@ namespace cling {
   }
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
-    m_ExecutionContext->installLazyFunctionCreator(fp);
+    m_Executor->installLazyFunctionCreator(fp);
   }
 
   void Interpreter::suppressLazyFunctionCreatorDiags(bool suppressed/*=true*/) {
-    m_ExecutionContext->suppressLazyFunctionCreatorDiags(suppressed);
+    m_Executor->suppressLazyFunctionCreatorDiags(suppressed);
   }
 
   StoredValueRef Interpreter::Evaluate(const char* expr, DeclContext* DC,
@@ -984,11 +984,11 @@ namespace cling {
   Interpreter::runStaticInitializersOnce(const Transaction& T) const {
     assert(m_IncrParser->hasCodeGenerator() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
-    // Forward to ExecutionContext; should not be called by
+    // Forward to IncrementalExecutor; should not be called by
     // anyone except for IncrementalParser.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
-    ExecutionContext::ExecutionResult ExeRes
-       = m_ExecutionContext->runStaticInitializersOnce(module);
+    IncrementalExecutor::ExecutionResult ExeRes
+       = m_Executor->runStaticInitializersOnce(module);
 
     // Avoid eternal additions to llvm.ident; see
     // CodeGenModule::EmitVersionIdentMetadata().
@@ -1003,7 +1003,7 @@ namespace cling {
   }
 
   void Interpreter::runStaticDestructorsOnce() {
-    m_ExecutionContext->runStaticDestructorsOnce(getModule());
+    m_Executor->runStaticDestructorsOnce(getModule());
   }
 
   void Interpreter::MaybeIgnoreFakeDiagnostics() const {
@@ -1027,11 +1027,11 @@ namespace cling {
   }
 
   bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress) {
-    // Forward to ExecutionContext;
+    // Forward to IncrementalExecutor;
     if (!symbolName || !symbolAddress )
       return false;
 
-    return m_ExecutionContext->addSymbol(symbolName, symbolAddress);
+    return m_Executor->addSymbol(symbolName, symbolAddress);
   }
 
   void* Interpreter::getAddressOfGlobal(const GlobalDecl& GD,
@@ -1046,6 +1046,6 @@ namespace cling {
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
-    return m_ExecutionContext->getAddressOfGlobal(module, SymName, fromJIT);
+    return m_Executor->getAddressOfGlobal(module, SymName, fromJIT);
   }
 } // namespace cling

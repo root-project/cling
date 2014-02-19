@@ -39,7 +39,7 @@ add_cling_library(clingInterpreter
   DynamicLibraryManager.cpp
   DynamicLookup.cpp
   DynamicExprInfo.cpp
-  ExecutionContext.cpp
+  IncrementalExecutor.cpp
   IncrementalParser.cpp
   Interpreter.cpp
   InterpreterCallbacks.cpp

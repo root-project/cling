@@ -7,8 +7,8 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#ifndef CLING_EXECUTIONCONTEXT_H
-#define CLING_EXECUTIONCONTEXT_H
+#ifndef CLING_INCREMENTAL_EXECUTOR_H
+#define CLING_INCREMENTAL_EXECUTOR_H
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/OwningPtr.h"
@@ -37,7 +37,7 @@ namespace cling {
 
   class StoredValueRef;
 
-  class ExecutionContext {
+  class IncrementalExecutor {
   public:
     typedef void* (*LazyFunctionCreatorFunc_t)(const std::string&);
 
@@ -123,8 +123,8 @@ namespace cling {
       kNumExeResults
     };
 
-    ExecutionContext(llvm::Module* m);
-    ~ExecutionContext();
+    IncrementalExecutor(llvm::Module* m);
+    ~IncrementalExecutor();
 
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
     void suppressLazyFunctionCreatorDiags(bool suppressed = true) {
@@ -203,4 +203,4 @@ namespace cling {
                                                    void* interp);
   };
 } // end cling
-#endif // CLING_EXECUTIONCONTEXT_H
+#endif // CLING_INCREMENTAL_EXECUTOR_H
