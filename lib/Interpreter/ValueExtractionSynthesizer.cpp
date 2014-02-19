@@ -361,7 +361,7 @@ namespace runtime {
       cling::Interpreter* i = (cling::Interpreter*)(vpI);
       clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
       llvm::APInt& IntVal
-        = allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).IntVal;
+        = allocateStoredRefValueAndGetGV(i, vpSVR, vpQT).IntVal;
       clang::ASTContext& C = i->getSema().getASTContext();
       // GenericValue has no built-in storage for long double.
       // Instead, build a APFloat with long double characteristics...
