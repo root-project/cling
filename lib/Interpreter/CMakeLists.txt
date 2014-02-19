@@ -67,7 +67,8 @@ else()
 # cl : Command line warning D9025: overriding '/EHs' with '/EHs-'
 # cl : Command line warning D9025: overriding '/EHc' with '/EHc-'
 # so let's change the global compiler flags instead:
-string(REPLACE "/EHs-c-" "/EHsc" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "/EHs-c-" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif()
 
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
