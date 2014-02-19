@@ -28,28 +28,30 @@ class C {};
 } // namespace M
 } // namespace N
 typedef int my_int;
+using clang::QualType;
+using cling::LookupHelper;
 .rawInput 0
 
 
-const cling::LookupHelper& lookup = gCling->getLookupHelper();
+const LookupHelper& lookup = gCling->getLookupHelper();
 
-clang::QualType cl_A = lookup.findType("A");
+QualType cl_A = lookup.findType("A", LookupHelper::WithDiagnostics);
 cl_A.getAsString().c_str()
 //CHECK: ({{const char [*]|const_pointer}}) "class A"
 
-clang::QualType cl_B_in_N = lookup.findType("N::B");
+QualType cl_B_in_N = lookup.findType("N::B", LookupHelper::WithDiagnostics);
 cl_B_in_N.getAsString().c_str()
 //CHECK: ({{const char [*]|const_pointer}}) "N::B"
 
-clang::QualType cl_C_in_M = lookup.findType("N::M::C");
+QualType cl_C_in_M = lookup.findType("N::M::C", LookupHelper::WithDiagnostics);
 cl_C_in_M.getAsString().c_str()
 //CHECK: ({{const char [*]|const_pointer}}) "N::M::C"
 
-clang::QualType builtin_int = lookup.findType("int");
+QualType builtin_int = lookup.findType("int", LookupHelper::WithDiagnostics);
 builtin_int.getAsString().c_str()
 //CHECK: ({{const char [*]|const_pointer}}) "int"
 
-clang::QualType typedef_my_int = lookup.findType("my_int");
+QualType typedef_my_int = lookup.findType("my_int", LookupHelper::WithDiagnostics);
 typedef_my_int.getAsString().c_str()
 //CHECK: ({{const char [*]|const_pointer}}) "my_int"
 

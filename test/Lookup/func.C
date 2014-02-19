@@ -40,7 +40,8 @@ void dumpDecl(const char* title, const clang::Decl* D) {
 //  otherwise known as the translation unit decl.
 //
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
-const clang::Decl* G = lookup.findScope("");
+cling::LookupHelper::DiagSetting diags = cling::LookupHelper::WithDiagnostics;
+const clang::Decl* G = lookup.findScope("", diags);
 printf("G: 0x%lx\n", (unsigned long) G);
 //CHECK: G: 0x{{[1-9a-f][0-9a-f]*$}}
 
@@ -147,11 +148,11 @@ char b_ary_arena[256];
 //  We need these class declarations.
 //
 
-const clang::Decl* class_A = lookup.findScope("A");
+const clang::Decl* class_A = lookup.findScope("A", diags);
 printf("class_A: 0x%lx\n", (unsigned long) class_A);
 //CHECK: class_A: 0x{{[1-9a-f][0-9a-f]*$}}
 
-const clang::Decl* class_B = lookup.findScope("B");
+const clang::Decl* class_B = lookup.findScope("B", diags);
 printf("class_B: 0x%lx\n", (unsigned long) class_B);
 //CHECK-NEXT: class_B: 0x{{[1-9a-f][0-9a-f]*$}}
 
@@ -161,7 +162,7 @@ printf("class_B: 0x%lx\n", (unsigned long) class_B);
 //  We need to fetch the namespace N declaration.
 //
 
-const clang::Decl* namespace_N = lookup.findScope("N");
+const clang::Decl* namespace_N = lookup.findScope("N", diags);
 printf("namespace_N: 0x%lx\n", (unsigned long) namespace_N);
 //CHECK: namespace_N: 0x{{[1-9a-f][0-9a-f]*$}}
 
@@ -171,8 +172,8 @@ printf("namespace_N: 0x%lx\n", (unsigned long) namespace_N);
 //  Test finding a global function taking no args.
 //
 
-const clang::FunctionDecl* G_f_args = lookup.findFunctionArgs(G, "G_f", "");
-const clang::FunctionDecl* G_f_proto = lookup.findFunctionProto(G, "G_f", "");
+const clang::FunctionDecl* G_f_args = lookup.findFunctionArgs(G, "G_f", "", diags);
+const clang::FunctionDecl* G_f_proto = lookup.findFunctionProto(G, "G_f", "", diags);
 
 printf("G_f_args: 0x%lx\n", (unsigned long) G_f_args);
 //CHECK-NEXT: G_f_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -194,8 +195,8 @@ G_f_proto->print(llvm::errs());
 //  Test finding a global function taking a single int argument.
 //
 
-const clang::FunctionDecl* G_a_args = lookup.findFunctionArgs(G, "G_a", "0");
-const clang::FunctionDecl* G_a_proto = lookup.findFunctionProto(G, "G_a", "int");
+const clang::FunctionDecl* G_a_args = lookup.findFunctionArgs(G, "G_a", "0", diags);
+const clang::FunctionDecl* G_a_proto = lookup.findFunctionProto(G, "G_a", "int", diags);
 
 printf("G_a_args: 0x%lx\n", (unsigned long) G_a_args);
 //CHECK: G_a_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -217,8 +218,8 @@ G_a_proto->print(llvm::errs());
 //  Test finding a global function taking an int and a double argument.
 //
 
-const clang::FunctionDecl* G_b_args = lookup.findFunctionArgs(G, "G_b", "0,0.0");
-const clang::FunctionDecl* G_b_proto = lookup.findFunctionProto(G, "G_b", "int,double");
+const clang::FunctionDecl* G_b_args = lookup.findFunctionArgs(G, "G_b", "0,0.0", diags);
+const clang::FunctionDecl* G_b_proto = lookup.findFunctionProto(G, "G_b", "int,double", diags);
 
 printf("G_b_args: 0x%lx\n", (unsigned long) G_b_args);
 //CHECK: G_b_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -242,8 +243,8 @@ G_b_proto->print(llvm::errs());
 //  Test finding a global overloaded function.
 //
 
-const clang::FunctionDecl* G_c1_args = lookup.findFunctionArgs(G, "G_c", "0,0");
-const clang::FunctionDecl* G_c1_proto = lookup.findFunctionProto(G, "G_c", "int,int");
+const clang::FunctionDecl* G_c1_args = lookup.findFunctionArgs(G, "G_c", "0,0", diags);
+const clang::FunctionDecl* G_c1_proto = lookup.findFunctionProto(G, "G_c", "int,int", diags);
 
 printf("G_c1_args: 0x%lx\n", (unsigned long) G_c1_args);
 //CHECK: G_c1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -261,8 +262,8 @@ G_c1_proto->print(llvm::errs());
 //CHECK-NEXT:     int y = vj;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* G_c2_args = lookup.findFunctionArgs(G, "G_c", "0,0.0");
-const clang::FunctionDecl* G_c2_proto = lookup.findFunctionProto(G, "G_c", "int,double");
+const clang::FunctionDecl* G_c2_args = lookup.findFunctionArgs(G, "G_c", "0,0.0", diags);
+const clang::FunctionDecl* G_c2_proto = lookup.findFunctionProto(G, "G_c", "int,double", diags);
 
 printf("G_c2_args: 0x%lx\n", (unsigned long) G_c2_args);
 //CHECK: G_c2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -286,8 +287,8 @@ G_c2_proto->print(llvm::errs());
 //  Test finding simple global template instantiations.
 //
 
-const clang::FunctionDecl* G_d1_args = lookup.findFunctionArgs(G, "G_d<int>", "0");
-const clang::FunctionDecl* G_d1_proto = lookup.findFunctionProto(G, "G_d<int>", "int");
+const clang::FunctionDecl* G_d1_args = lookup.findFunctionArgs(G, "G_d<int>", "0", diags);
+const clang::FunctionDecl* G_d1_proto = lookup.findFunctionProto(G, "G_d<int>", "int", diags);
 
 printf("G_d1_args: 0x%lx\n", (unsigned long) G_d1_args);
 //CHECK: G_d1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -303,8 +304,8 @@ G_d1_proto->print(llvm::errs());
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* G_d2_args = lookup.findFunctionArgs(G, "G_d<double>", "0.0");
-const clang::FunctionDecl* G_d2_proto = lookup.findFunctionProto(G, "G_d<double>", "double");
+const clang::FunctionDecl* G_d2_args = lookup.findFunctionArgs(G, "G_d<double>", "0.0", diags);
+const clang::FunctionDecl* G_d2_proto = lookup.findFunctionProto(G, "G_d<double>", "double", diags);
 
 printf("G_d2_args: 0x%lx\n", (unsigned long) G_d2_args);
 //CHECK: G_d2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -326,8 +327,8 @@ G_d2_proto->print(llvm::errs());
 //  Test finding a namespace function taking no args.
 //
 
-const clang::FunctionDecl* H_f_args = lookup.findFunctionArgs(namespace_N, "H_f", "");
-const clang::FunctionDecl* H_f_proto = lookup.findFunctionProto(namespace_N, "H_f", "");
+const clang::FunctionDecl* H_f_args = lookup.findFunctionArgs(namespace_N, "H_f", "", diags);
+const clang::FunctionDecl* H_f_proto = lookup.findFunctionProto(namespace_N, "H_f", "", diags);
 
 printf("H_f_args: 0x%lx\n", (unsigned long) H_f_args);
 //CHECK: H_f_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -349,8 +350,8 @@ H_f_proto->print(llvm::errs());
 //  Test finding a namespace function taking a single int argument.
 //
 
-const clang::FunctionDecl* H_a_args = lookup.findFunctionArgs(namespace_N, "H_a", "0");
-const clang::FunctionDecl* H_a_proto = lookup.findFunctionProto(namespace_N, "H_a", "int");
+const clang::FunctionDecl* H_a_args = lookup.findFunctionArgs(namespace_N, "H_a", "0", diags);
+const clang::FunctionDecl* H_a_proto = lookup.findFunctionProto(namespace_N, "H_a", "int", diags);
 
 printf("H_a_args: 0x%lx\n", (unsigned long) H_a_args);
 //CHECK: H_a_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -372,8 +373,8 @@ H_a_proto->print(llvm::errs());
 //  Test finding a namespace function taking an int and a double argument.
 //
 
-const clang::FunctionDecl* H_b_args = lookup.findFunctionArgs(namespace_N, "H_b", "0,0.0");
-const clang::FunctionDecl* H_b_proto = lookup.findFunctionProto(namespace_N, "H_b", "int,double");
+const clang::FunctionDecl* H_b_args = lookup.findFunctionArgs(namespace_N, "H_b", "0,0.0", diags);
+const clang::FunctionDecl* H_b_proto = lookup.findFunctionProto(namespace_N, "H_b", "int,double", diags);
 
 printf("H_b_args: 0x%lx\n", (unsigned long) H_b_args);
 //CHECK: H_b_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -397,8 +398,8 @@ H_b_proto->print(llvm::errs());
 //  Test finding a namespace overloaded function.
 //
 
-const clang::FunctionDecl* H_c1_args = lookup.findFunctionArgs(namespace_N, "H_c", "0,0");
-const clang::FunctionDecl* H_c1_proto = lookup.findFunctionProto(namespace_N, "H_c", "int,int");
+const clang::FunctionDecl* H_c1_args = lookup.findFunctionArgs(namespace_N, "H_c", "0,0", diags);
+const clang::FunctionDecl* H_c1_proto = lookup.findFunctionProto(namespace_N, "H_c", "int,int", diags);
 
 printf("H_c1_args: 0x%lx\n", (unsigned long) H_c1_args);
 //CHECK: H_c1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -416,8 +417,8 @@ H_c1_proto->print(llvm::errs());
 //CHECK-NEXT:     int y = vj;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* H_c2_args = lookup.findFunctionArgs(namespace_N, "H_c", "0,0.0");
-const clang::FunctionDecl* H_c2_proto = lookup.findFunctionProto(namespace_N, "H_c", "int,double");
+const clang::FunctionDecl* H_c2_args = lookup.findFunctionArgs(namespace_N, "H_c", "0,0.0", diags);
+const clang::FunctionDecl* H_c2_proto = lookup.findFunctionProto(namespace_N, "H_c", "int,double", diags);
 
 printf("H_c2_args: 0x%lx\n", (unsigned long) H_c2_args);
 //CHECK: H_c2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -441,8 +442,8 @@ H_c2_proto->print(llvm::errs());
 //  Test finding simple namespace template instantiations.
 //
 
-const clang::FunctionDecl* H_d1_args = lookup.findFunctionArgs(namespace_N, "H_d<int>", "0");
-const clang::FunctionDecl* H_d1_proto = lookup.findFunctionProto(namespace_N, "H_d<int>", "int");
+const clang::FunctionDecl* H_d1_args = lookup.findFunctionArgs(namespace_N, "H_d<int>", "0", diags);
+const clang::FunctionDecl* H_d1_proto = lookup.findFunctionProto(namespace_N, "H_d<int>", "int", diags);
 
 printf("H_d1_args: 0x%lx\n", (unsigned long) H_d1_args);
 //CHECK: H_d1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -458,8 +459,8 @@ H_d1_proto->print(llvm::errs());
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* H_d2_args = lookup.findFunctionArgs(namespace_N, "H_d<double>", "0.0");
-const clang::FunctionDecl* H_d2_proto = lookup.findFunctionProto(namespace_N, "H_d<double>", "double");
+const clang::FunctionDecl* H_d2_args = lookup.findFunctionArgs(namespace_N, "H_d<double>", "0.0", diags);
+const clang::FunctionDecl* H_d2_proto = lookup.findFunctionProto(namespace_N, "H_d<double>", "double", diags);
 
 printf("H_d2_args: 0x%lx\n", (unsigned long) H_d2_args);
 //CHECK: H_d2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -481,8 +482,8 @@ H_d2_proto->print(llvm::errs());
 //  Test finding a member function taking no args.
 //
 
-const clang::FunctionDecl* func_A_f_args = lookup.findFunctionArgs(class_A, "A_f", "");
-const clang::FunctionDecl* func_A_f_proto = lookup.findFunctionProto(class_A, "A_f", "");
+const clang::FunctionDecl* func_A_f_args = lookup.findFunctionArgs(class_A, "A_f", "", diags);
+const clang::FunctionDecl* func_A_f_proto = lookup.findFunctionProto(class_A, "A_f", "", diags);
 
 printf("func_A_f_args: 0x%lx\n", (unsigned long) func_A_f_args);
 //CHECK: func_A_f_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -504,8 +505,8 @@ func_A_f_proto->print(llvm::errs());
 //  Test finding a member function taking an int arg.
 //
 
-const clang::FunctionDecl* func_A_g_args = lookup.findFunctionArgs(class_A, "A_g", "0");
-const clang::FunctionDecl* func_A_g_proto = lookup.findFunctionProto(class_A, "A_g", "int");
+const clang::FunctionDecl* func_A_g_args = lookup.findFunctionArgs(class_A, "A_g", "0", diags);
+const clang::FunctionDecl* func_A_g_proto = lookup.findFunctionProto(class_A, "A_g", "int", diags);
 
 printf("func_A_g_args: 0x%lx\n", (unsigned long) func_A_g_args);
 //CHECK: func_A_g_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -527,8 +528,8 @@ func_A_g_proto->print(llvm::errs());
 //  Test finding a member function taking an int and a double argument.
 //
 
-const clang::FunctionDecl* func_A_h_args = lookup.findFunctionArgs(class_A, "A_h", "0,0.0");
-const clang::FunctionDecl* func_A_h_proto = lookup.findFunctionProto(class_A, "A_h", "int,double");
+const clang::FunctionDecl* func_A_h_args = lookup.findFunctionArgs(class_A, "A_h", "0,0.0", diags);
+const clang::FunctionDecl* func_A_h_proto = lookup.findFunctionProto(class_A, "A_h", "int,double", diags);
 
 printf("func_A_h_args: 0x%lx\n", (unsigned long) func_A_h_args);
 //CHECK: func_A_h_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -552,8 +553,8 @@ func_A_h_proto->print(llvm::errs());
 //  Test finding an overloaded member function.
 //
 
-const clang::FunctionDecl* func_A_j1_args = lookup.findFunctionArgs(class_A, "A_j", "0,0");
-const clang::FunctionDecl* func_A_j1_proto = lookup.findFunctionProto(class_A, "A_j", "int,int");
+const clang::FunctionDecl* func_A_j1_args = lookup.findFunctionArgs(class_A, "A_j", "0,0", diags);
+const clang::FunctionDecl* func_A_j1_proto = lookup.findFunctionProto(class_A, "A_j", "int,int", diags);
 
 printf("func_A_j1_args: 0x%lx\n", (unsigned long) func_A_j1_args);
 //CHECK: func_A_j1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -571,8 +572,8 @@ func_A_j1_proto->print(llvm::errs());
 //CHECK-NEXT:     int y = vj;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_A_j2_args = lookup.findFunctionArgs(class_A, "A_j", "0,0.0");
-const clang::FunctionDecl* func_A_j2_proto = lookup.findFunctionProto(class_A, "A_j", "int,double");
+const clang::FunctionDecl* func_A_j2_args = lookup.findFunctionArgs(class_A, "A_j", "0,0.0", diags);
+const clang::FunctionDecl* func_A_j2_proto = lookup.findFunctionProto(class_A, "A_j", "int,double", diags);
 
 printf("func_A_j2_args: 0x%lx\n", (unsigned long) func_A_j2_args);
 //CHECK: func_A_j2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -596,8 +597,8 @@ func_A_j2_proto->print(llvm::errs());
 //  Test finding simple member function template instantiations.
 //
 
-const clang::FunctionDecl* func_A_k1_args = lookup.findFunctionArgs(class_A, "A_k<int>", "0");
-const clang::FunctionDecl* func_A_k1_proto = lookup.findFunctionProto(class_A, "A_k<int>", "int");
+const clang::FunctionDecl* func_A_k1_args = lookup.findFunctionArgs(class_A, "A_k<int>", "0", diags);
+const clang::FunctionDecl* func_A_k1_proto = lookup.findFunctionProto(class_A, "A_k<int>", "int", diags);
 
 printf("func_A_k1_args: 0x%lx\n", (unsigned long) func_A_k1_args);
 //CHECK: func_A_k1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -613,8 +614,8 @@ func_A_k1_proto->print(llvm::errs());
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_A_k2_args = lookup.findFunctionArgs(class_A, "A_k<double>", "0.0");
-const clang::FunctionDecl* func_A_k2_proto = lookup.findFunctionProto(class_A, "A_k<double>", "double");
+const clang::FunctionDecl* func_A_k2_args = lookup.findFunctionArgs(class_A, "A_k<double>", "0.0", diags);
+const clang::FunctionDecl* func_A_k2_proto = lookup.findFunctionProto(class_A, "A_k<double>", "double", diags);
 
 printf("func_A_k2_args: 0x%lx\n", (unsigned long) func_A_k2_args);
 //CHECK: func_A_k2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -636,8 +637,8 @@ func_A_k2_proto->print(llvm::errs());
 //  Test finding a member function taking a const int reference arg.
 //
 
-const clang::FunctionDecl* func_A_m_args = lookup.findFunctionArgs(class_A, "A_m", "0");
-const clang::FunctionDecl* func_A_m_proto = lookup.findFunctionProto(class_A, "A_m", "const int&");
+const clang::FunctionDecl* func_A_m_args = lookup.findFunctionArgs(class_A, "A_m", "0", diags);
+const clang::FunctionDecl* func_A_m_proto = lookup.findFunctionProto(class_A, "A_m", "const int&", diags);
 
 printf("func_A_m_args: 0x%lx\n", (unsigned long) func_A_m_args);
 //CHECK: func_A_m_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -656,8 +657,8 @@ func_A_m_proto->print(llvm::errs());
 //
 //  Test finding a member function taking an obj reference arg.
 //
-const clang::FunctionDecl* func_A_n_args = lookup.findFunctionArgs(class_A, "A_n", "*(new B())");
-const clang::FunctionDecl* func_A_n_proto = lookup.findFunctionProto(class_A, "A_n", "B&");
+const clang::FunctionDecl* func_A_n_args = lookup.findFunctionArgs(class_A, "A_n", "*(new B())", diags);
+const clang::FunctionDecl* func_A_n_proto = lookup.findFunctionProto(class_A, "A_n", "B&", diags);
 
 printf("func_A_n_args: 0x%lx\n", (unsigned long) func_A_n_args);
 //CHECK: func_A_n_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -676,8 +677,8 @@ func_A_n_proto->print(llvm::errs());
 //
 //  Test finding a member function taking with a default argument.
 //
-const clang::FunctionDecl* func_A_n2_args = lookup.findFunctionArgs(class_A, "A_n", "\"\"");
-const clang::FunctionDecl* func_A_n2_proto = lookup.findFunctionProto(class_A, "A_n", "const char *");
+const clang::FunctionDecl* func_A_n2_args = lookup.findFunctionArgs(class_A, "A_n", "\"\"", diags);
+const clang::FunctionDecl* func_A_n2_proto = lookup.findFunctionProto(class_A, "A_n", "const char *", diags);
 
 printf("func_A_n2_args: 0x%lx\n", (unsigned long) func_A_n2_args);
 //CHECK: func_A_n2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -700,8 +701,8 @@ func_A_n2_proto->print(llvm::errs());
 //  Test finding a member function taking no args in a base class.
 //
 
-const clang::FunctionDecl* func_B_F_args = lookup.findFunctionArgs(class_A, "B_f", "");
-const clang::FunctionDecl* func_B_F_proto = lookup.findFunctionProto(class_A, "B_f", "");
+const clang::FunctionDecl* func_B_F_args = lookup.findFunctionArgs(class_A, "B_f", "", diags);
+const clang::FunctionDecl* func_B_F_proto = lookup.findFunctionProto(class_A, "B_f", "", diags);
 
 printf("func_B_F_args: 0x%lx\n", (unsigned long) func_B_F_args);
 //CHECK: func_B_F_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -723,8 +724,8 @@ func_B_F_proto->print(llvm::errs());
 //  Test finding a member function taking an int arg in a base class.
 //
 
-const clang::FunctionDecl* func_B_G_args = lookup.findFunctionArgs(class_A, "B_g", "0");
-const clang::FunctionDecl* func_B_G_proto = lookup.findFunctionProto(class_A, "B_g", "int");
+const clang::FunctionDecl* func_B_G_args = lookup.findFunctionArgs(class_A, "B_g", "0", diags);
+const clang::FunctionDecl* func_B_G_proto = lookup.findFunctionProto(class_A, "B_g", "int", diags);
 
 printf("func_B_G_args: 0x%lx\n", (unsigned long) func_B_G_args);
 //CHECK: func_B_G_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -747,8 +748,8 @@ func_B_G_proto->print(llvm::errs());
 //  in a base class.
 //
 
-const clang::FunctionDecl* func_B_h_args = lookup.findFunctionArgs(class_A, "B_h", "0,0.0");
-const clang::FunctionDecl* func_B_h_proto = lookup.findFunctionProto(class_A, "B_h", "int,double");
+const clang::FunctionDecl* func_B_h_args = lookup.findFunctionArgs(class_A, "B_h", "0,0.0", diags);
+const clang::FunctionDecl* func_B_h_proto = lookup.findFunctionProto(class_A, "B_h", "int,double", diags);
 
 printf("func_B_h_args: 0x%lx\n", (unsigned long) func_B_h_args);
 //CHECK: func_B_h_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -772,12 +773,12 @@ func_B_h_proto->print(llvm::errs());
 //  in a base class using the preparse types.
 //
 llvm::SmallVector<clang::QualType, 4> types;
-types.push_back(lookup.findType("int"));
-types.push_back(lookup.findType("float"));
-const clang::FunctionDecl* func_B_h_proto_type = lookup.findFunctionProto(class_A, "B_h", types);
+types.push_back(lookup.findType("int", diags));
+types.push_back(lookup.findType("float", diags));
+const clang::FunctionDecl* func_B_h_proto_type = lookup.findFunctionProto(class_A, "B_h", types, diags);
 types.pop_back();
-types.push_back(lookup.findType("double"));
-const clang::FunctionDecl* func_B_h_match_proto_type = lookup.matchFunctionProto(class_A, "B_h", types, false);
+types.push_back(lookup.findType("double", diags));
+const clang::FunctionDecl* func_B_h_match_proto_type = lookup.matchFunctionProto(class_A, "B_h", types, diags, false);
 
 printf("func_B_h_proto_type: 0x%lx\n", (unsigned long) func_B_h_proto_type);
 //CHECK: func_B_h_proto_type: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -800,8 +801,8 @@ func_B_h_match_proto_type->print(llvm::errs());
 //  Test finding an overloaded member function in a base class.
 //
 
-const clang::FunctionDecl* func_B_j1_args = lookup.findFunctionArgs(class_A, "B_j", "0,0");
-const clang::FunctionDecl* func_B_j1_proto = lookup.findFunctionProto(class_A, "B_j", "int,int");
+const clang::FunctionDecl* func_B_j1_args = lookup.findFunctionArgs(class_A, "B_j", "0,0", diags);
+const clang::FunctionDecl* func_B_j1_proto = lookup.findFunctionProto(class_A, "B_j", "int,int", diags);
 
 printf("func_B_j1_args: 0x%lx\n", (unsigned long) func_B_j1_args);
 //CHECK: func_B_j1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -819,8 +820,8 @@ func_B_j1_proto->print(llvm::errs());
 //CHECK-NEXT:     int y = vj;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_j2_args = lookup.findFunctionArgs(class_A, "B_j", "0,0.0");
-const clang::FunctionDecl* func_B_j2_proto = lookup.findFunctionProto(class_A, "B_j", "int,double");
+const clang::FunctionDecl* func_B_j2_args = lookup.findFunctionArgs(class_A, "B_j", "0,0.0", diags);
+const clang::FunctionDecl* func_B_j2_proto = lookup.findFunctionProto(class_A, "B_j", "int,double", diags);
 
 printf("func_B_j2_args: 0x%lx\n", (unsigned long) func_B_j2_args);
 //CHECK: func_B_j2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -844,8 +845,8 @@ func_B_j2_proto->print(llvm::errs());
 //  Test finding simple member function template instantiations in a base class.
 //
 
-const clang::FunctionDecl* func_B_k1_args = lookup.findFunctionArgs(class_A, "B_k<int>", "0");
-const clang::FunctionDecl* func_B_k1_proto = lookup.findFunctionProto(class_A, "B_k<int>", "int");
+const clang::FunctionDecl* func_B_k1_args = lookup.findFunctionArgs(class_A, "B_k<int>", "0", diags);
+const clang::FunctionDecl* func_B_k1_proto = lookup.findFunctionProto(class_A, "B_k<int>", "int", diags);
 
 printf("func_B_k1_args: 0x%lx\n", (unsigned long) func_B_k1_args);
 //CHECK: func_B_k1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -861,8 +862,8 @@ func_B_k1_proto->print(llvm::errs());
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_k2_args = lookup.findFunctionArgs(class_A, "B_k<double>", "0.0");
-const clang::FunctionDecl* func_B_k2_proto = lookup.findFunctionProto(class_A, "B_k<double>", "double");
+const clang::FunctionDecl* func_B_k2_args = lookup.findFunctionArgs(class_A, "B_k<double>", "0.0", diags);
+const clang::FunctionDecl* func_B_k2_proto = lookup.findFunctionProto(class_A, "B_k<double>", "double", diags);
 
 printf("func_B_k2_args: 0x%lx\n", (unsigned long) func_B_k2_args);
 //CHECK: func_B_k2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -882,8 +883,8 @@ func_B_k2_proto->print(llvm::errs());
 //  Test finding a member function taking a const int reference arg in a base class.
 //
 
-const clang::FunctionDecl* func_B_m_args = lookup.findFunctionArgs(class_A, "B_m", "0");
-const clang::FunctionDecl* func_B_m_proto = lookup.findFunctionProto(class_A, "B_m", "const int&");
+const clang::FunctionDecl* func_B_m_args = lookup.findFunctionArgs(class_A, "B_m", "0", diags);
+const clang::FunctionDecl* func_B_m_proto = lookup.findFunctionProto(class_A, "B_m", "const int&", diags);
 
 printf("func_B_m_args: 0x%lx\n", (unsigned long) func_B_m_args);
 //CHECK: func_B_m_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -904,8 +905,8 @@ func_B_m_proto->print(llvm::errs());
 //  Test finding a member function that are const or not
 //
 
-const clang::FunctionDecl* func_B_n_args = lookup.findFunctionArgs(class_A, "B_n", "", false);
-const clang::FunctionDecl* func_B_n_proto = lookup.findFunctionProto(class_A, "B_n", "", false);
+const clang::FunctionDecl* func_B_n_args = lookup.findFunctionArgs(class_A, "B_n", "", diags, false);
+const clang::FunctionDecl* func_B_n_proto = lookup.findFunctionProto(class_A, "B_n", "", diags, false);
 
 printf("func_B_n_args: 0x%lx\n", (unsigned long) func_B_n_args);
 //CHECK: func_B_n_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -921,8 +922,8 @@ func_B_n_proto->print(llvm::errs());
 //CHECK-NEXT:     return this->m_B_i;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_const_B_n_args = lookup.findFunctionArgs(class_A, "B_n", "", true);
-const clang::FunctionDecl* func_const_B_n_proto = lookup.findFunctionProto(class_A, "B_n", "", true);
+const clang::FunctionDecl* func_const_B_n_args = lookup.findFunctionArgs(class_A, "B_n", "", diags, true);
+const clang::FunctionDecl* func_const_B_n_proto = lookup.findFunctionProto(class_A, "B_n", "", diags, true);
 printf("func_const_B_n_args: 0x%lx\n", (unsigned long) func_const_B_n_args);
 //CHECK: func_const_B_n_args: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_n_args->print(llvm::errs());
@@ -937,8 +938,8 @@ func_const_B_n_proto->print(llvm::errs());
 //CHECK-NEXT:     return this->m_B_i;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_const_B_m_proto = lookup.findFunctionProto(class_A, "B_m", "const int&", true);
-const clang::FunctionDecl* func_const_B_o_proto = lookup.findFunctionProto(class_A, "B_o", "", true);
+const clang::FunctionDecl* func_const_B_m_proto = lookup.findFunctionProto(class_A, "B_m", "const int&", diags, true);
+const clang::FunctionDecl* func_const_B_o_proto = lookup.findFunctionProto(class_A, "B_o", "", diags, true);
 printf("func_const_B_m_proto: 0x%lx\n", (unsigned long) func_const_B_m_proto);
 //CHECK: func_const_B_m_proto: 0x0
 
@@ -950,7 +951,7 @@ func_const_B_o_proto->print(llvm::errs());
 //CHECK-NEXT: }
 
 // Test exact matches
-const clang::FunctionDecl* func_const_B_p_proto = lookup.findFunctionProto(class_A, "B_p", "double", true);
+const clang::FunctionDecl* func_const_B_p_proto = lookup.findFunctionProto(class_A, "B_p", "double", diags, true);
 printf("func_const_B_p_proto 1: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 1: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_p_proto->print(llvm::errs());
@@ -958,11 +959,11 @@ func_const_B_p_proto->print(llvm::errs());
 //CHECK-NEXT:     return 0; 
 //CHECK-NEXT: }
 
-func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "double", true);
+func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "double", diags, true);
 printf("func_const_B_p_proto 2: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 2: 0x0
 
-func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "float", true);
+func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "float", diags, true);
 printf("func_const_B_p_proto 3: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 3: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_p_proto->print(llvm::errs());
@@ -970,11 +971,11 @@ func_const_B_p_proto->print(llvm::errs());
 //CHECK-NEXT:     return 0; 
 //CHECK-NEXT: }
 
-func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "float", false);
+func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "float", diags, false);
 printf("func_const_B_p_proto 4: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 4: 0x0
 
-func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "int", false);
+func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "int", diags, false);
 printf("func_const_B_p_proto 5: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 5: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_p_proto->print(llvm::errs());
@@ -982,15 +983,15 @@ func_const_B_p_proto->print(llvm::errs());
 //CHECK-NEXT:     return 0; 
 //CHECK-NEXT: }
 
-func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "int", true);
+func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "int", diags, true);
 printf("func_const_B_p_proto 6: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 6: 0x0
 
-func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "short", false);
+func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "short", diags, false);
 printf("func_const_B_p_proto 6: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 6: 0x0
 
-func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "long", false);
+func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "long", diags, false);
 printf("func_const_B_p_proto 6: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 6: 0x0
 
@@ -998,8 +999,8 @@ printf("func_const_B_p_proto 6: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //  Test finding constructors.
 //
 //
-const clang::FunctionDecl* func_B_ctr1_args = lookup.findFunctionArgs(class_B, "B", "");
-const clang::FunctionDecl* func_B_ctr1_proto = lookup.findFunctionProto(class_B, "B", "");
+const clang::FunctionDecl* func_B_ctr1_args = lookup.findFunctionArgs(class_B, "B", "", diags);
+const clang::FunctionDecl* func_B_ctr1_proto = lookup.findFunctionProto(class_B, "B", "", diags);
 
 printf("func_B_ctr1_args: 0x%lx\n", (unsigned long) func_B_ctr1_args);
 //CHECK: func_B_ctr1_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1015,8 +1016,8 @@ func_B_ctr1_proto->print(llvm::errs());
 //CHECK-NEXT: B() : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_ctr2_args = lookup.findFunctionArgs(class_B, "B", "0,0.0");
-const clang::FunctionDecl* func_B_ctr2_proto = lookup.findFunctionProto(class_B, "B", "int,double");
+const clang::FunctionDecl* func_B_ctr2_args = lookup.findFunctionArgs(class_B, "B", "0,0.0", diags);
+const clang::FunctionDecl* func_B_ctr2_proto = lookup.findFunctionProto(class_B, "B", "int,double", diags);
 
 printf("func_B_ctr2_args: 0x%lx\n", (unsigned long) func_B_ctr2_args);
 //CHECK: func_B_ctr2_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1033,8 +1034,8 @@ func_B_ctr2_proto->print(llvm::errs());
 //CHECK-NEXT: }
 
 B* force_B_char_ctr = new B('a');
-const clang::FunctionDecl* func_B_ctr3_args = lookup.findFunctionArgs(class_B, "B", "'a'");
-const clang::FunctionDecl* func_B_ctr3_proto = lookup.findFunctionProto(class_B, "B", "char");
+const clang::FunctionDecl* func_B_ctr3_args = lookup.findFunctionArgs(class_B, "B", "'a'", diags);
+const clang::FunctionDecl* func_B_ctr3_proto = lookup.findFunctionProto(class_B, "B", "char", diags);
 
 dumpDecl("func_B_ctr3_args", func_B_ctr3_args);
 //CHECK: func_B_ctr3_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1051,8 +1052,8 @@ dumpDecl("func_B_ctr3_proto", func_B_ctr3_proto);
 //CHECK-NEXT: }
 
 B* force_B_char_ptr_ctr = new B((char*)0);
-const clang::FunctionDecl* func_B_ctr4_args = lookup.findFunctionArgs(class_B, "B", "(char*)0");
-const clang::FunctionDecl* func_B_ctr4_proto = lookup.findFunctionProto(class_B, "B", "char*");
+const clang::FunctionDecl* func_B_ctr4_args = lookup.findFunctionArgs(class_B, "B", "(char*)0", diags);
+const clang::FunctionDecl* func_B_ctr4_proto = lookup.findFunctionProto(class_B, "B", "char*", diags);
 
 dumpDecl("func_B_ctr4_args", func_B_ctr4_args);
 //CHECK: func_B_ctr4_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1077,8 +1078,8 @@ printf("func_B_ctr4_proto has body: %d\n", func_B_ctr4_proto->hasBody());
 //  Test finding destructors.
 //
 
-const clang::FunctionDecl* func_B_dtr_args = lookup.findFunctionArgs(class_B, "~B", "");
-const clang::FunctionDecl* func_B_dtr_proto = lookup.findFunctionProto(class_B, "~B", "");
+const clang::FunctionDecl* func_B_dtr_args = lookup.findFunctionArgs(class_B, "~B", "", diags);
+const clang::FunctionDecl* func_B_dtr_proto = lookup.findFunctionProto(class_B, "~B", "", diags);
 
 dumpDecl("func_B_dtr_args", func_B_dtr_args);
 //CHECK: func_B_dtr_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1102,8 +1103,8 @@ dumpDecl("func_B_dtr_proto", func_B_dtr_proto);
 //  Test finding free store operator new.
 //
 
-const clang::FunctionDecl* func_B_new_args = lookup.findFunctionArgs(class_B, "operator new", "sizeof(B)");
-const clang::FunctionDecl* func_B_new_proto = lookup.findFunctionProto(class_B, "operator new", "std::size_t");
+const clang::FunctionDecl* func_B_new_args = lookup.findFunctionArgs(class_B, "operator new", "sizeof(B)", diags);
+const clang::FunctionDecl* func_B_new_proto = lookup.findFunctionProto(class_B, "operator new", "std::size_t", diags);
 
 dumpDecl("func_B_new_args", func_B_new_args);
 //CHECK: func_B_new_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1119,8 +1120,8 @@ dumpDecl("func_B_new_proto", func_B_new_proto);
 //CHECK-NEXT:     return ::operator new(sz);
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_new_plcmt_args = lookup.findFunctionArgs(class_B, "operator new", "sizeof(B),((B*)&b_arena[0])+2");
-const clang::FunctionDecl* func_B_new_plcmt_proto = lookup.findFunctionProto(class_B, "operator new", "std::size_t,void*");
+const clang::FunctionDecl* func_B_new_plcmt_args = lookup.findFunctionArgs(class_B, "operator new", "sizeof(B),((B*)&b_arena[0])+2", diags);
+const clang::FunctionDecl* func_B_new_plcmt_proto = lookup.findFunctionProto(class_B, "operator new", "std::size_t,void*", diags);
 
 dumpDecl("func_B_new_plcmt_args", func_B_new_plcmt_args);
 //CHECK: func_B_new_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1136,8 +1137,8 @@ dumpDecl("func_B_new_plcmt_proto", func_B_new_plcmt_proto);
 //CHECK-NEXT:     return arena;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_new_ary_args = lookup.findFunctionArgs(class_B, "operator new[]", "sizeof(B)*3");
-const clang::FunctionDecl* func_B_new_ary_proto = lookup.findFunctionProto(class_B, "operator new[]", "std::size_t");
+const clang::FunctionDecl* func_B_new_ary_args = lookup.findFunctionArgs(class_B, "operator new[]", "sizeof(B)*3", diags);
+const clang::FunctionDecl* func_B_new_ary_proto = lookup.findFunctionProto(class_B, "operator new[]", "std::size_t", diags);
 
 dumpDecl("func_B_new_ary_args", func_B_new_ary_args);
 //CHECK: func_B_new_ary_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1153,8 +1154,8 @@ dumpDecl("func_B_new_ary_proto", func_B_new_ary_proto);
 //CHECK-NEXT:     return ::operator new[](sz);
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_new_ary_plcmt_args = lookup.findFunctionArgs(class_B, "operator new[]", "sizeof(B)*3,&b_ary_arena[0]");
-const clang::FunctionDecl* func_B_new_ary_plcmt_proto = lookup.findFunctionProto(class_B, "operator new[]", "std::size_t,void*");
+const clang::FunctionDecl* func_B_new_ary_plcmt_args = lookup.findFunctionArgs(class_B, "operator new[]", "sizeof(B)*3,&b_ary_arena[0]", diags);
+const clang::FunctionDecl* func_B_new_ary_plcmt_proto = lookup.findFunctionProto(class_B, "operator new[]", "std::size_t,void*", diags);
 
 dumpDecl("func_B_new_ary_plcmt_args", func_B_new_ary_plcmt_args);
 //CHECK: func_B_new_ary_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1174,8 +1175,8 @@ dumpDecl("func_B_new_ary_plcmt_proto", func_B_new_ary_plcmt_proto);
 //  Test finding free store operator delete.
 //
 
-const clang::FunctionDecl* func_B_del_args = lookup.findFunctionArgs(class_B, "operator delete", "b_ptr");
-const clang::FunctionDecl* func_B_del_proto = lookup.findFunctionProto(class_B, "operator delete", "void*");
+const clang::FunctionDecl* func_B_del_args = lookup.findFunctionArgs(class_B, "operator delete", "b_ptr", diags);
+const clang::FunctionDecl* func_B_del_proto = lookup.findFunctionProto(class_B, "operator delete", "void*", diags);
 
 dumpDecl("func_B_del_args", func_B_del_args);
 //CHECK: func_B_del_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1191,8 +1192,8 @@ dumpDecl("func_B_del_proto", func_B_del_proto);
 //CHECK-NEXT:     ::operator delete(vp);
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_del_plcmt_args = lookup.findFunctionArgs(class_B, "operator delete", "((B*)&b_arena[0])+2,&b_arena[0]");
-const clang::FunctionDecl* func_B_del_plcmt_proto = lookup.findFunctionProto(class_B, "operator delete", "void*,void*");
+const clang::FunctionDecl* func_B_del_plcmt_args = lookup.findFunctionArgs(class_B, "operator delete", "((B*)&b_arena[0])+2,&b_arena[0]", diags);
+const clang::FunctionDecl* func_B_del_plcmt_proto = lookup.findFunctionProto(class_B, "operator delete", "void*,void*", diags);
 
 dumpDecl("func_B_del_plcmt_args", func_B_del_plcmt_args);
 //CHECK: func_B_del_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1206,8 +1207,8 @@ dumpDecl("func_B_del_plcmt_proto", func_B_del_plcmt_proto);
 //CHECK-NEXT: void operator delete(void *vp, void *arena) {
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_del_ary_args = lookup.findFunctionArgs(class_B, "operator delete[]", "b_ary");
-const clang::FunctionDecl* func_B_del_ary_proto = lookup.findFunctionProto(class_B, "operator delete[]", "void*");
+const clang::FunctionDecl* func_B_del_ary_args = lookup.findFunctionArgs(class_B, "operator delete[]", "b_ary", diags);
+const clang::FunctionDecl* func_B_del_ary_proto = lookup.findFunctionProto(class_B, "operator delete[]", "void*", diags);
 
 dumpDecl("func_B_del_ary_args", func_B_del_ary_args);
 //CHECK: func_B_del_ary_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1223,8 +1224,8 @@ dumpDecl("func_B_del_ary_proto", func_B_del_ary_proto);
 //CHECK-NEXT:     ::operator delete[](vp);
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_del_ary_plcmt_args = lookup.findFunctionArgs(class_B, "operator delete[]", "(B*)b_arena[3],&b_arena[0]");
-const clang::FunctionDecl* func_B_del_ary_plcmt_proto = lookup.findFunctionProto(class_B, "operator delete[]", "void*,void*");
+const clang::FunctionDecl* func_B_del_ary_plcmt_args = lookup.findFunctionArgs(class_B, "operator delete[]", "(B*)b_arena,&b_arena[0]", diags);
+const clang::FunctionDecl* func_B_del_ary_plcmt_proto = lookup.findFunctionProto(class_B, "operator delete[]", "void*,void*", diags);
 
 dumpDecl("func_B_del_ary_plcmt_args", func_B_del_ary_plcmt_args);
 //CHECK: func_B_del_ary_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1244,8 +1245,8 @@ dumpDecl("func_B_del_ary_plcmt_proto", func_B_del_ary_plcmt_proto);
 //  Test finding unary member operator.
 //
 
-const clang::FunctionDecl* func_B_star_args = lookup.findFunctionArgs(class_B, "operator*", "");
-const clang::FunctionDecl* func_B_star_proto = lookup.findFunctionProto(class_B, "operator*", "");
+const clang::FunctionDecl* func_B_star_args = lookup.findFunctionArgs(class_B, "operator*", "", diags);
+const clang::FunctionDecl* func_B_star_proto = lookup.findFunctionProto(class_B, "operator*", "", diags);
 
 dumpDecl("func_B_star_args", func_B_star_args);
 //CHECK: func_B_star_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1267,8 +1268,8 @@ dumpDecl("func_B_star_proto", func_B_star_proto);
 //  Test finding binary member operator.
 //
 
-const clang::FunctionDecl* func_B_plus_args = lookup.findFunctionArgs(class_B, "operator+", "b_obj");
-const clang::FunctionDecl* func_B_plus_proto = lookup.findFunctionProto(class_B, "operator+", "B");
+const clang::FunctionDecl* func_B_plus_args = lookup.findFunctionArgs(class_B, "operator+", "b_obj", diags);
+const clang::FunctionDecl* func_B_plus_proto = lookup.findFunctionProto(class_B, "operator+", "B", diags);
 
 dumpDecl("func_B_plus_args", func_B_plus_args);
 //CHECK: func_B_plus_args: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1289,7 +1290,7 @@ dumpDecl("func_B_plus_proto", func_B_plus_proto);
 // from just the name.
 //
 
-const clang::FunctionDecl* func_B_j_name = lookup.findAnyFunction(class_A, "B_j");
+const clang::FunctionDecl* func_B_j_name = lookup.findAnyFunction(class_A, "B_j", diags);
 
 printf("func_B_j_name: 0x%lx\n", (unsigned long) func_B_j_name);
 //CHECK: func_B_j_name: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1299,7 +1300,7 @@ func_B_j_name->print(llvm::errs());
 //CHECK-NEXT:   int y = vj;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_k1_name = lookup.findAnyFunction(class_A, "B_k<float>");
+const clang::FunctionDecl* func_B_k1_name = lookup.findAnyFunction(class_A, "B_k<float>", diags);
 
 printf("func_B_k1_name: 0x%lx\n", (unsigned long) func_B_k1_name);
 //CHECK: func_B_k1_name: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1308,7 +1309,7 @@ func_B_k1_name->print(llvm::errs());
 //CHECK-NEXT:     float x = v;
 //CHECK-NEXT: }
 
-const clang::FunctionDecl* func_B_k1_name_2 = lookup.findAnyFunction(class_A, "B_k");
+const clang::FunctionDecl* func_B_k1_name_2 = lookup.findAnyFunction(class_A, "B_k", diags);
 
 printf("func_B_k1_name_2: 0x%lx\n", (unsigned long) func_B_k1_name_2);
 //CHECK: func_B_k1_name_2: 0x{{[1-9a-f][0-9a-f]*$}}
@@ -1317,7 +1318,7 @@ func_B_k1_name_2->print(llvm::errs());
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
-const clang::FunctionTemplateDecl* func_B_k_template = lookup.findFunctionTemplate(class_A, "B_k");
+const clang::FunctionTemplateDecl* func_B_k_template = lookup.findFunctionTemplate(class_A, "B_k", diags);
 
 printf("func_B_k_template: 0x%lx\n", (unsigned long) func_B_k_template);
 //CHECK: func_B_k_template: 0x{{[1-9a-f][0-9a-f]*$}}

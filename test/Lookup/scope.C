@@ -18,14 +18,16 @@
 
 using namespace std;
 using namespace llvm;
+using namespace cling;
 
 .rawInput 1
 class A {};
 .rawInput 0
 
-const cling::LookupHelper& lookup = gCling->getLookupHelper();
-const clang::Decl* cl_A = lookup.findScope("A");
+const LookupHelper& lookup = gCling->getLookupHelper();
+LookupHelper::DiagSetting diags = LookupHelper::WithDiagnostics;
 
+const clang::Decl* cl_A = lookup.findScope("A", diags);
 printf("cl_A: 0x%lx\n", (unsigned long) cl_A);
 //CHECK: cl_A: 0x{{[1-9a-f][0-9a-f]*$}}
 cast<clang::NamedDecl>(cl_A)->getQualifiedNameAsString().c_str()
@@ -38,7 +40,7 @@ class A {};
 .rawInput 0
 
 
-const clang::Decl* cl_A_in_N = lookup.findScope("N::A");
+const clang::Decl* cl_A_in_N = lookup.findScope("N::A", diags);
 printf("cl_A_in_N: 0x%lx\n", (unsigned long) cl_A_in_N);
 //CHECK: cl_A_in_N: 0x{{[1-9a-f][0-9a-f]*$}}
 cast<clang::NamedDecl>(cl_A_in_N)->getQualifiedNameAsString().c_str()
@@ -55,7 +57,7 @@ class A {};
 }
 .rawInput 0
 
-const clang::Decl* cl_A_in_NMP = lookup.findScope("N::M::P::A");
+const clang::Decl* cl_A_in_NMP = lookup.findScope("N::M::P::A", diags);
 cl_A_in_NMP
 //CHECK: (const clang::Decl *) 0x{{[1-9a-f][0-9a-f]*$}}
 cast<clang::NamedDecl>(cl_A_in_NMP)->getQualifiedNameAsString().c_str()
@@ -66,7 +68,7 @@ cast<clang::NamedDecl>(cl_A_in_NMP)->getQualifiedNameAsString().c_str()
 template <class T> class B { T b; };
 .rawInput 0
 
-const clang::Decl* cl_B_int = lookup.findScope("B<int>");
+const clang::Decl* cl_B_int = lookup.findScope("B<int>", diags);
 printf("cl_B_int: 0x%lx\n", (unsigned long) cl_B_int);
 //CHECK-NEXT: cl_B_int: 0x{{[1-9a-f][0-9a-f]*$}}
 
@@ -83,8 +85,8 @@ template <typename T> struct W { T member; };
 .rawInput 0
 
 const clang::Type* resType = 0;
-lookup.findScope("W<Int_t>", &resType);
-//resType->dump(); 
+lookup.findScope("W<Int_t>", diags, &resType);
+//resType->dump();
 clang::QualType(resType,0).getAsString().c_str()
 //CHECK-NEXT: ({{const char [*]|const_pointer}}) "W<Int_t>"
 

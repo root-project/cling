@@ -61,6 +61,7 @@ class A {
 
 
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
+cling::LookupHelper::DiagSetting diags = cling::LookupHelper::WithDiagnostics;
 std::string buf;
 clang::PrintingPolicy Policy(gCling->getSema().getASTContext().getPrintingPolicy());
 
@@ -68,7 +69,7 @@ clang::PrintingPolicy Policy(gCling->getSema().getASTContext().getPrintingPolicy
 //  We need to fetch the global scope declaration,
 //  otherwise known as the translation unit decl.
 //
-const clang::Decl* G = lookup.findScope("");
+const clang::Decl* G = lookup.findScope("", diags);
 printf("G: 0x%lx\n", (unsigned long) G);
 //CHECK: G: 0x{{[1-9a-f][0-9a-f]*$}}
 
@@ -76,15 +77,15 @@ printf("G: 0x%lx\n", (unsigned long) G);
 //  We need these class declarations.
 //
 
-const clang::Decl* class_tempFlt = lookup.findScope("aTemplate<float>");
+const clang::Decl* class_tempFlt = lookup.findScope("aTemplate<float>", diags);
 printf("class_tempFlt: 0x%lx\n", (unsigned long) class_tempFlt);
 //CHECK: class_tempFlt: 0x{{[1-9a-f][0-9a-f]*$}}
 
-const clang::Decl* class_A = lookup.findScope("A");
+const clang::Decl* class_A = lookup.findScope("A", diags);
 printf("class_A: 0x%lx\n", (unsigned long) class_A);
 //CHECK-NEXT: class_A: 0x{{[1-9a-f][0-9a-f]*$}}
 
-const clang::Decl* namespace_NS = lookup.findScope("NS");
+const clang::Decl* namespace_NS = lookup.findScope("NS", diags);
 printf("namespace_NS: 0x%lx\n", (unsigned long) namespace_NS);
 //CHECK-NEXT: namespace_NS: 0x{{[1-9a-f][0-9a-f]*$}}
 
@@ -93,43 +94,43 @@ printf("namespace_NS: 0x%lx\n", (unsigned long) namespace_NS);
 //
 const clang::ValueDecl *decl;
 
-decl = lookup.findDataMember(G,"gValue");
+decl = lookup.findDataMember(G,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is not a named decl
 //CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'int'
 
-decl = lookup.findDataMember(class_tempFlt,"gValue");
+decl = lookup.findDataMember(class_tempFlt,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is aTemplate
 //CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'float':'float' static
 
-decl = lookup.findDataMember(class_tempFlt,"fMember");
+decl = lookup.findDataMember(class_tempFlt,"fMember", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is aTemplate
 //CHECK-NEXT: FieldDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> fMember 'float':'float'
 
-decl = lookup.findDataMember(namespace_NS,"gValue");
+decl = lookup.findDataMember(namespace_NS,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is NS
 //CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'double'
 
-decl = lookup.findDataMember(namespace_NS,"gValue2");
+decl = lookup.findDataMember(namespace_NS,"gValue2", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is NS
 //CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue2 'double'
 
-decl = lookup.findDataMember(class_A,"gValue");
+decl = lookup.findDataMember(class_A,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is A
 //CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'short' static
 
-decl = lookup.findDataMember(class_A,"fMember");
+decl = lookup.findDataMember(class_A,"fMember", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is A
