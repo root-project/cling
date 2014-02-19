@@ -22,7 +22,7 @@ namespace cling {
   class MetaProcessor;
   class StoredValueRef;
 
-  ///\brief Semantic analysis for our home-grown language. All implementation 
+  ///\brief Semantic analysis for our home-grown language. All implementation
   /// details of the commands should go here.
   class MetaSema {
   private:
@@ -48,7 +48,7 @@ namespace cling {
 
     const Interpreter& getInterpreter() const { return m_Interpreter; }
     bool isQuitRequested() const { return m_IsQuitRequested; }
-    
+
     ///\brief L command includes the given file or loads the given library.
     ///
     ///\param[in] file - The file/library to be loaded.
@@ -94,12 +94,12 @@ namespace cling {
 
     ///\brief Actions to be performed on unload command.
     ///
-    ///\param[in] value - The number of transactons to unload. By default it 
+    ///\param[in] value - The number of transactons to unload. By default it
     ///                   unloads only the last transaction.
     ///
     ActionResult actOnUCommand(unsigned value = 1) const;
 
-    ///\brief Actions to be performed on add include path. It registers new 
+    ///\brief Actions to be performed on add include path. It registers new
     /// folder where header files can be searched.
     ///
     ///\param[in] path - The path to add to header search.
@@ -137,14 +137,14 @@ namespace cling {
     ///
     void actOncompareStateCommand(llvm::StringRef name) const;
 
-    ///\brief Switches on/off the experimental dynamic extensions (dynamic 
+    ///\brief Switches on/off the experimental dynamic extensions (dynamic
     /// scopes) and late binding.
     ///
     ///\param[in] mode - either on/off or toggle.
     ///
     void actOndynamicExtensionsCommand(SwitchMode mode = kToggle) const;
 
-    ///\brief Prints out the help message with the description of the meta 
+    ///\brief Prints out the help message with the description of the meta
     /// commands.
     ///
     void actOnhelpCommand() const;
@@ -169,11 +169,11 @@ namespace cling {
 
     ///\brief Prints out information about global variables.
     ///
-    ///\param[in] varName - The name of the global variable 
+    ///\param[in] varName - The name of the global variable
     //                      if empty prints them all.
     ///
     void actOngCommand(llvm::StringRef varName) const;
-    
+
     ///\brief Prints out information about typedefs.
     ///
     ///\param[in] typedefName - The name of typedef if empty prints them all.

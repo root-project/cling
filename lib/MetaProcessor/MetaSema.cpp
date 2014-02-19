@@ -33,7 +33,7 @@
 
 namespace cling {
 
-  MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta) 
+  MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta)
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
       m_Outs(m_MetaProcessor.getOuts()) { }
 
@@ -57,8 +57,8 @@ namespace cling {
     m_Interpreter.declare(comment);
   }
 
-  MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file, 
-                                                 llvm::StringRef args, 
+  MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file,
+                                                 llvm::StringRef args,
                                                  StoredValueRef* result) {
     // Fall back to the meta processor for now.
     Interpreter::CompilationResult compRes = Interpreter::kFailure;
@@ -130,7 +130,7 @@ namespace cling {
     m_Interpreter.compareInterpreterState(name);
   }
 
-  void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/) 
+  void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/)
     const {
     if (mode == kToggle) {
       bool flag = !m_Interpreter.isDynamicLookupEnabled();
@@ -194,12 +194,12 @@ namespace cling {
     */
   }
 
-  void MetaSema::actOnfilesCommand() const { 
+  void MetaSema::actOnfilesCommand() const {
     m_Interpreter.printIncludedFiles(m_Outs);
   }
 
   void MetaSema::actOnclassCommand(llvm::StringRef className) const {
-    if (!className.empty()) 
+    if (!className.empty())
       DisplayClass(m_Outs, &m_Interpreter, className.str().c_str(), true);
     else
       DisplayClasses(m_Outs, &m_Interpreter, false);
@@ -222,7 +222,7 @@ namespace cling {
     else
       DisplayTypedef(m_Outs, &m_Interpreter, typedefName.str().c_str());
   }
-  
+
   MetaSema::ActionResult
   MetaSema::actOnShellCommand(llvm::StringRef commandLine,
                               StoredValueRef* result) const {
@@ -245,8 +245,4 @@ namespace cling {
     // nothing to run - should this be success or failure?
     return AR_Failure;
   }
-
-
-
-
 } // end namespace cling
