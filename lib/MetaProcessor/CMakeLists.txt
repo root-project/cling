@@ -17,3 +17,8 @@ add_cling_library(clingMetaProcessor
   MetaParser.cpp
   MetaProcessor.cpp
   MetaSema.cpp)
+
+if ( MSVC )
+  set_target_properties(clingMetaProcessor PROPERTIES
+  COMPILE_FLAGS "/D_HAS_EXCEPTIONS=0")
+endif ()
