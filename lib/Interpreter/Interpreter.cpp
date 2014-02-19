@@ -1048,8 +1048,4 @@ namespace cling {
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     return m_ExecutionContext->getAddressOfGlobal(module, SymName, fromJIT);
   }
-<<<<<<< HEAD
-
-=======
->>>>>>> Remove llvm::Type from the cling::Value
 } // namespace cling
