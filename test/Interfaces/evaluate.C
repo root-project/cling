@@ -90,4 +90,4 @@ WithDtor::fgCount //CHECK: (int) 0
 
 // long doubles (tricky for the JIT).
 gCling->evaluate("17.42L", V);
-V // CHECK: (cling::StoredValueRef) boxes [(long double) 17.4200000{{[0-9]*}}]
+V // CHECK: (cling::StoredValueRef) boxes [(long double) 17.4200000{{[0-9]*}}L]
