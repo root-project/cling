@@ -37,7 +37,6 @@ namespace cling {
   } // end namespace runtime
 
   class StoredValueRef;
-  class Interpreter;
 
   class ExecutionContext {
   public:
@@ -137,7 +136,6 @@ namespace cling {
     void runStaticDestructorsOnce(llvm::Module* m);
 
     ExecutionResult executeFunction(llvm::StringRef function,
-                                    Interpreter& interp,
                                     clang::QualType retType,
                                     StoredValueRef* returnValue = 0);
 

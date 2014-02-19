@@ -665,7 +665,6 @@ namespace cling {
     utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
     ExecutionContext::ExecutionResult ExeRes =
        m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
-                                           *this,
                                            FD->getReturnType(), res);
     if (res && res->isValid())
       res->get().setLLVMType(getLLVMType(res->get().getClangType()));
