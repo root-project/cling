@@ -591,17 +591,8 @@ namespace cling {
     ///
     void* getAddressOfGlobal(const char* SymName, bool* fromJIT = 0) const;
 
-    ///\brief Asks clang::CodeGen::CodeGenTypes for the low level (llvm) type of
-    /// a given QualType.
-    ///
-    ///\param [in] QT - The QualType.
-    ///
-    ///\returns The llvm::Type corresponing to the given QualType.
-    ///
-    const llvm::Type* getLLVMType(clang::QualType QT);
-
     friend class runtime::internal::LifetimeHandler;
-    friend int runtime::internal::local_cxa_atexit(void (*func) (void*), 
+    friend int runtime::internal::local_cxa_atexit(void (*func) (void*),
                                                    void* arg, void* dso,
                                                    void* interp);
 

@@ -1050,13 +1050,4 @@ namespace cling {
     return m_ExecutionContext->getAddressOfGlobal(module, SymName, fromJIT);
   }
 
-  const llvm::Type* Interpreter::getLLVMType(QualType QT) {
-    if (!m_IncrParser->hasCodeGenerator())
-      return 0;
-
-    // Note: The first thing this routine does is getCanonicalType(), so we
-    //       do not need to do that first.
-    return getCodeGenerator()->ConvertType(QT);
-  }
-
 } // namespace cling
