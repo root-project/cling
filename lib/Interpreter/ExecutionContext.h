@@ -23,7 +23,6 @@ namespace llvm {
 }
 
 namespace clang {
-  class ASTContext;
   class Decl;
   class QualType;
 }
@@ -136,7 +135,6 @@ namespace cling {
     void runStaticDestructorsOnce(llvm::Module* m);
 
     ExecutionResult executeFunction(llvm::StringRef function,
-                                    clang::QualType retType,
                                     StoredValueRef* returnValue = 0);
 
     ///\brief Adds a symbol (function) to the execution engine.

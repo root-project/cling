@@ -10,7 +10,6 @@
 #include "ExecutionContext.h"
 
 #include "clang/AST/Type.h"
-#include "clang/AST/ASTContext.h"
 #include "clang/Sema/Sema.h"
 
 #include "llvm/IR/Constants.h"
@@ -198,7 +197,6 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
 
 ExecutionContext::ExecutionResult
 ExecutionContext::executeFunction(llvm::StringRef funcname,
-                                  clang::QualType retType,
                                   StoredValueRef* returnValue)
 {
   // Call a function without arguments, or with an SRet argument, see SRet below
