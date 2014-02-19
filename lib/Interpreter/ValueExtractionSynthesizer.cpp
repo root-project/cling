@@ -27,8 +27,7 @@ namespace cling {
       m_UnresolvedCopyArray(0) { }
 
   // pin the vtable here.
-  ValueExtractionSynthesizer::~ValueExtractionSynthesizer() 
-  { }
+  ValueExtractionSynthesizer::~ValueExtractionSynthesizer() { }
 
   namespace {
     class ReturnStmtCollector : public StmtVisitor<ReturnStmtCollector> {
@@ -58,7 +57,7 @@ namespace cling {
     FunctionDecl* FD = getTransaction()->getWrapperFD();
 
     int foundAtPos = -1;
-    Expr* lastExpr = utils::Analyze::GetOrCreateLastExpr(FD, &foundAtPos, 
+    Expr* lastExpr = utils::Analyze::GetOrCreateLastExpr(FD, &foundAtPos,
                                                          /*omitDS*/false,
                                                          m_Sema);
     if (foundAtPos < 0)
@@ -69,15 +68,15 @@ namespace cling {
     ReturnStmtCollector collector(returnStmts);
     CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
     collector.VisitStmt(CS);
-    
+
     if (isa<Expr>(*(CS->body_begin() + foundAtPos)))
       returnStmts.push_back(CS->body_begin() + foundAtPos);
 
     // We want to support cases such as:
     // gCling->evaluate("if() return 'A' else return 12", V), that puts in V,
-    // either A or 12. 
-    // In this case the void wrapper is compiled with the stmts returning 
-    // values. Sema would cast them to void, but the code will still be 
+    // either A or 12.
+    // In this case the void wrapper is compiled with the stmts returning
+    // values. Sema would cast them to void, but the code will still be
     // executed. For example:
     // int g(); void f () { return g(); } will still call g().
     //
@@ -128,13 +127,13 @@ namespace cling {
           //
           // Depending on the type we need to synthesize a call to cling:
           // 0) void : do nothing;
-          // 1) enum, integral, float, double, referece, pointer types : 
+          // 1) enum, integral, float, double, referece, pointer types :
           //      call to cling::internal::setValueNoAlloc(...);
           // 2) object type (alloc on the stack) :
           //      cling::internal::setValueWithAlloc
           //   2.1) constant arrays:
           //          call to cling::runtime::internal::copyArray(...)
-          //   
+          //
           // We need to synthesize later:
           // Wrapper has signature: void w(cling::StoredValueRef SVR)
           // case 1):
@@ -156,7 +155,7 @@ namespace cling {
           // if we had return stmt update to execute the SVR init, even if the
           // wrapper returns void.
           if (RS) {
-            if (ImplicitCastExpr* VoidCast 
+            if (ImplicitCastExpr* VoidCast
                 = dyn_cast<ImplicitCastExpr>(RS->getRetValue()))
               VoidCast->setSubExpr(SVRInit);
           }
@@ -174,7 +173,7 @@ namespace cling {
                                  VK_RValue, SourceLocation());
     // We have the wrapper as Sema's CurContext
     FunctionDecl* FD = cast<FunctionDecl>(m_Sema->CurContext);
-          
+
     // Build a reference to StoredValueRef* in the wrapper, should be
     // the only argument of the wrapper.
     ExprResult wrapperSVRDRE
@@ -238,14 +237,14 @@ namespace cling {
       }
     }
     else if (desugaredTy->isIntegralOrEnumerationType()
-             || desugaredTy->isReferenceType() 
+             || desugaredTy->isReferenceType()
              || desugaredTy->isPointerType()
              || desugaredTy->isFloatingType()) {
       if (desugaredTy->isIntegralOrEnumerationType()) {
-        // 1)  enum, integral, float, double, referece, pointer types : 
+        // 1)  enum, integral, float, double, referece, pointer types :
         //      call to cling::internal::setValueNoAlloc(...);
 
-        // If the type is enum or integral we need to force-cast it into 
+        // If the type is enum or integral we need to force-cast it into
         // uint64 in order to pick up the correct overload.
         if (desugaredTy->isIntegralOrEnumerationType()) {
           QualType UInt64Ty = m_Context->UnsignedLongLongTy;
@@ -258,7 +257,7 @@ namespace cling {
       }
       else if (desugaredTy->isReferenceType()) {
         // we need to get the address of the references
-        Expr* E = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf, 
+        Expr* E = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf,
                                        E).take();
         CallArgs.push_back(E);
       }
@@ -299,17 +298,17 @@ namespace cling {
                    Sema::ForRedeclaration);
 
     m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty() 
+    assert(!R.empty()
            && "Cannot find cling::runtime::internal::setValueNoAlloc");
 
     CXXScopeSpec CSS;
-    m_UnresolvedNoAlloc 
+    m_UnresolvedNoAlloc
       = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
 
     R.clear();
     R.setLookupName(&m_Context->Idents.get("setValueWithAlloc"));
     m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty() 
+    assert(!R.empty()
            && "Cannot find cling::runtime::internal::setValueWithAlloc");
     m_UnresolvedWithAlloc
       = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
