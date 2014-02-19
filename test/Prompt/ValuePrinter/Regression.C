@@ -34,3 +34,5 @@ int *p = (int*)0x123;
 p // CHECK: (int *) 0x123
 const int *q = (int*)0x123;
 q // CHECK: (const int *) 0x123
+
+0.00001234L // CHECK: (long double) 1.234e-05L
