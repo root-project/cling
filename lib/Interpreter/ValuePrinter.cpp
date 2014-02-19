@@ -24,6 +24,7 @@
 #include "llvm/ExecutionEngine/GenericValue.h"
 
 #include <string>
+#include <sstream>
 #include <cstdio>
 
 // Fragment copied from LLVM's raw_ostream.cpp
@@ -184,6 +185,15 @@ static void StreamFunction(llvm::raw_ostream& o, const void* addr,
   o << '\n';
 }
 
+static void StreamLongDouble(llvm::raw_ostream& o, const Value* value,
+                             clang::ASTContext& C) {
+  llvm::APFloat LDbl(C.getFloatTypeSemantics(value->getClangType()),
+                     value->getGV().IntVal);
+  llvm::SmallString<24> Buf;
+  LDbl.toString(Buf);
+  o << Buf << 'L';
+}
+
 static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
                              clang::ASTContext& C) {
   if (!value || !value->isValid()) {
@@ -194,7 +204,9 @@ static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
       << value->getClangType().getAsString(C.getPrintingPolicy())
       << ") ";
     clang::QualType valType = value->getClangType().getDesugaredType(C);
-    if (valType->isFloatingType())
+    if (C.hasSameType(valType, C.LongDoubleTy))
+      StreamLongDouble(o, value, C);
+    else if (valType->isFloatingType())
       o << value->getGV().DoubleVal;
     else if (valType->isIntegerType())
       o << value->getGV().IntVal.getSExtValue();
@@ -260,6 +272,11 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
       break;
     case clang::BuiltinType::Float:  o << *(const float*)p; break;
     case clang::BuiltinType::Double: o << *(const double*)p; break;
+    case clang::BuiltinType::LongDouble: {
+      std::stringstream ssLD;
+      ssLD << *(const long double*)p;
+      o << ssLD.str() << 'L'; break;
+    }
     default:
       StreamObj(o, p, ValuePrinterInfo(Ty, &C));
     }
