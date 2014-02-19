@@ -86,6 +86,18 @@ namespace cling {
       void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, double value);
 
       ///\brief Set the value of the GenericValue for the expression
+      ///   evaluated at the prompt. Extract through
+      ///   APFloat(ASTContext::getFloatTypeSemantics(QT), const APInt &)
+      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
+      ///\param [in] value - The value of the assignment to be stored
+      ///                    in GenericValue.
+      ///\param [out] vpSVR - The StoredValueRef that is created.
+      ///
+      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
+                           long double value);
+
+      ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
       /// We are using unsigned long long instead of uint64, because we don't
       /// want to #include the header.
@@ -95,7 +107,7 @@ namespace cling {
       ///                    in GenericValue.
       ///\param [out] vpSVR - The StoredValueRef that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, 
+      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
                            unsigned long long value);
 
       ///\brief Set the value of the GenericValue for the expression

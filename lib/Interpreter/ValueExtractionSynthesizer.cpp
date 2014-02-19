@@ -357,6 +357,22 @@ namespace runtime {
       cling::Interpreter* i = (cling::Interpreter*)(vpI);
       allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).DoubleVal = value;
     }
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
+                         long double value) {
+      cling::Interpreter* i = (cling::Interpreter*)(vpI);
+      clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
+      llvm::APInt& IntVal
+        = allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).IntVal;
+      clang::ASTContext& C = i->getSema().getASTContext();
+      // GenericValue has no built-in storage for long double.
+      // Instead, build a APFloat with long double characteristics...
+      llvm::APFloat APF(C.getFloatTypeSemantics(QT.getDesugaredType(C)));
+      // ... "bit-cast" it to an APInt to initialize its bit length ...
+      IntVal = APF.bitcastToAPInt();
+      // ... and just memcpy the bits over.
+      memcpy(const_cast<uint64_t*>(IntVal.getRawData()), &value,
+             (IntVal.getBitWidth() + 7) / 8);
+    }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, 
                          unsigned long long value) {
       cling::Interpreter* i = (cling::Interpreter*)(vpI);
