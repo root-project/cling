@@ -102,6 +102,9 @@ namespace cling {
 
       if (lastExpr) {
         QualType lastExprTy = lastExpr->getType();
+        // May happen on auto types which resolve to dependent.
+        if (lastExprTy->isDependentType())
+          continue;
         // Set up lastExpr properly.
         if (!lastExprTy->isVoidType()) {
           // Change the void function's return type

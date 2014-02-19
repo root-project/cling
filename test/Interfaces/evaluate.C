@@ -24,6 +24,9 @@ V // CHECK: (cling::StoredValueRef) boxes [(const char [5]) "true"]
 gCling->evaluate("cond = false; if (cond) return \"true\"; else return 0;", V);
 V // CHECK: (cling::StoredValueRef) boxes [(int) 0]
 
+gCling->evaluate("auto a = 12.3; a;", V);
+V // CHECK: (cling::StoredValueRef) boxes [(double) 1.230000e+01]
+
 long LongV = 17;
 gCling->evaluate("LongV;", V);
 V // CHECK: (cling::StoredValueRef) boxes [(long) 17]
