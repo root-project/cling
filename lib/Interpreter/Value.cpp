@@ -16,17 +16,13 @@
 
 namespace cling {
 
-Value::Value():
-  m_ClangType()
-{
+Value::Value() :m_ClangType() {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue();
 }
 
-Value::Value(const Value& other):
-  m_ClangType(other.m_ClangType)
-{
+Value::Value(const Value& other) : m_ClangType(other.m_ClangType) {
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue(other.getGV());
@@ -35,6 +31,16 @@ Value::Value(const Value& other):
 Value::Value(const llvm::GenericValue& v, clang::QualType t) 
   : m_ClangType(t.getAsOpaquePtr())
 {
+<<<<<<< HEAD
+=======
+  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
+         && "GlobalValue buffer too small");
+  new (m_GV) llvm::GenericValue(v);
+}
+
+Value::Value(const llvm::GenericValue& v, clang::QualType clangTy, 
+             const llvm::Type* llvmTy) : m_ClangType(clangTy.getAsOpaquePtr()) {
+>>>>>>> Remove llvm::Type from the cling::Value
   assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
          && "GlobalValue buffer too small");
   new (m_GV) llvm::GenericValue(v);

@@ -664,8 +664,7 @@ namespace cling {
     std::string mangledNameIfNeeded;
     utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
     ExecutionContext::ExecutionResult ExeRes =
-       m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(),
-                                           FD->getReturnType(), res);
+       m_ExecutionContext->executeFunction(mangledNameIfNeeded.c_str(), res);
     return ConvertExecutionResult(ExeRes);
   }
 
@@ -1049,5 +1048,8 @@ namespace cling {
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     return m_ExecutionContext->getAddressOfGlobal(module, SymName, fromJIT);
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> Remove llvm::Type from the cling::Value
 } // namespace cling
