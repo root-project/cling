@@ -338,11 +338,12 @@ namespace {
   ///\param [in] vpQT - The opaque ptr for the clang::QualType of value stored.
   ///\param [out] vpStoredValRef - The StoredValueRef that is allocated.
   static llvm::GenericValue&
-  allocateStoredRefValueAndGetGV(cling::Interpreter& i, void* vpSVR,
-                                 void* vpQT) {
+  allocateStoredRefValueAndGetGV(void* vpI, void* vpSVR, void* vpQT) {
+    cling::Interpreter* i = (cling::Interpreter*)vpI;
     clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
     cling::StoredValueRef& SVR = *(cling::StoredValueRef*)vpSVR;
-    SVR = cling::StoredValueRef::allocate(i, QT);
+    // Here the copy keeps the refcounted value alive.
+    SVR = cling::StoredValueRef::allocate(*i, QT);
     return SVR.get().getGV();
   }
 }
@@ -350,12 +351,10 @@ namespace cling {
 namespace runtime {
   namespace internal {
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, float value) {
-      cling::Interpreter* i = (cling::Interpreter*)(vpI);
-      allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).FloatVal = value;
+      allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).FloatVal = value;
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, double value) {
-      cling::Interpreter* i = (cling::Interpreter*)(vpI);
-      allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).DoubleVal = value;
+      allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).DoubleVal = value;
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
                          long double value) {
@@ -373,24 +372,22 @@ namespace runtime {
       memcpy(const_cast<uint64_t*>(IntVal.getRawData()), &value,
              (IntVal.getBitWidth() + 7) / 8);
     }
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, 
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
                          unsigned long long value) {
       cling::Interpreter* i = (cling::Interpreter*)(vpI);
       clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
       clang::ASTContext& C = i->getSema().getASTContext();
 
       // Unsigned integer types.
-      allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).IntVal =
+      allocateStoredRefValueAndGetGV(i, vpSVR, vpQT).IntVal =
         llvm::APInt(C.getTypeSize(QT), value, /*isSigned*/false);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, const void* value){
-      cling::Interpreter* i = (cling::Interpreter*)(vpI);
-      allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).PointerVal
+      allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).PointerVal
         = const_cast<void*>(value);
     }
     void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT) {
-      cling::Interpreter* i = (cling::Interpreter*)(vpI);
-      return allocateStoredRefValueAndGetGV(*i, vpSVR, vpQT).PointerVal;
+      return allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).PointerVal;
     }
   } // end namespace internal
 } // end namespace runtime
