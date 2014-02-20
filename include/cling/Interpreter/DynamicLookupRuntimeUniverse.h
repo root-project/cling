@@ -49,10 +49,12 @@ namespace runtime {
         cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
                                          ExprInfo->isValuePrinterRequested())
                             );
-      // Check whether the expected return type and the actual return type are
-      // compatible with Sema::CheckAssingmentConstraints or
-      // ASTContext::typesAreCompatible.
-      return result.get().getAs<T>();
+      if (result.isValid())
+        // Check whether the expected return type and the actual return type are
+        // compatible with Sema::CheckAssingmentConstraints or
+        // ASTContext::typesAreCompatible.
+        return result.get().getAs<T>();
+      return T();
     }
 
     /// \brief EvaluateT specialization for the case where we instantiate with
