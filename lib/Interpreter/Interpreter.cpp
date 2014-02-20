@@ -280,6 +280,14 @@ namespace cling {
     HeaderSearchOptions& headerOpts = CI->getHeaderSearchOpts();
     const bool IsFramework = false;
     const bool IsSysRootRelative = true;
+
+    // Avoid duplicates; just return early if incpath is already in UserEntries.
+    for (std::vector<HeaderSearchOptions::Entry>::const_iterator
+           I = headerOpts.UserEntries.begin(),
+           E = headerOpts.UserEntries.end(); I != E; ++I)
+      if (I->Path == incpath)
+        return;
+
     headerOpts.AddPath(incpath, frontend::Angled, IsFramework,
                        IsSysRootRelative);
 
