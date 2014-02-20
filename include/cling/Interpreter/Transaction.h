@@ -433,6 +433,14 @@ namespace cling {
     void setBufferFID(clang::FileID FID) { m_BufferFID = FID; }
     clang::FileID getBufferFID() const { return m_BufferFID; }
 
+    ///\brief The transactions could be reused and the pointer couldn't serve
+    /// as a unique handle to a transaction. Unique handles are used by clients
+    /// which want to check whether the interpreter saw more input.
+    ///
+    ///\returns a unique handle to the transaction.
+    ///
+    unsigned getUniqueID() const;
+
     ///\brief Erases an element at given position.
     ///
     void erase(iterator pos);

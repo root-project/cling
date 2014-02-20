@@ -198,7 +198,11 @@ namespace cling {
 
     m_MacroDirectiveInfoQueue.push_back(MDE);
   }
-  
+
+  unsigned Transaction::getUniqueID() const {
+    return m_BufferFID.getHashValue();
+  }
+
   void Transaction::erase(iterator pos) {
     assert(!empty() && "Erasing from an empty transaction.");
     if (!pos->m_DGR.isNull() && m_WrapperFD == *pos->m_DGR.begin())
