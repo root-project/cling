@@ -78,7 +78,12 @@ if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings")
 endif ()
 
-add_definitions(-fno-rtti)  # Need to find a better way of doing this
+# The package needs to be compiler without RTTI information
+if(MSVC)
+  add_definitions(/GR-)
+else()
+  add_definitions(-fno-rtti)
+endif()
 
 if (APPLE)
   set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-flat_namespace -Wl,-undefined -Wl,suppress")
