@@ -123,7 +123,7 @@ namespace cling {
     ///\param [in] funcName  - the name of the function to find.
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///\returns The function found or null.
     const clang::FunctionDecl*
     findAnyFunction(const clang::Decl* scopeDecl, llvm::StringRef funcName,
@@ -138,7 +138,7 @@ namespace cling {
     ///   parantheses). Example: "size_t,int".
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///\returns The function found or null.
     const clang::FunctionDecl*
     findFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
@@ -158,7 +158,7 @@ namespace cling {
     ///\param [in] funcProto - the list of types of the function parameters
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///\returns The function found or null.
      const clang::FunctionDecl*
      findFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
@@ -177,7 +177,7 @@ namespace cling {
     ///   parantheses). Example: "size_t,int".
     ///\param[in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
-    ///\param [in] diag - Whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - Whether to diagnose lookup failures.
     ///\returns The function found or null.
     const clang::FunctionDecl*
     matchFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
@@ -193,7 +193,7 @@ namespace cling {
     ///\param[in] funcProto - the list of types of the function parameters
     ///\param[in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///\returns The function found or null.
     const clang::FunctionDecl*
     matchFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
@@ -205,7 +205,7 @@ namespace cling {
     ///
     ///\param[in] argList - The string representation of the argument list.
     ///\param[out] argExprs - The corresponding expressions to the argList.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///
     void findArgList(llvm::StringRef argList,
                      llvm::SmallVector<clang::Expr*, 4>& argExprs,
@@ -216,7 +216,7 @@ namespace cling {
     ///
     ///\param [in] scopeDecl - scope in which to look for the function.
     ///\param [in] funcName - name of the function to look for.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     bool hasFunction(const clang::Decl* scopeDecl, llvm::StringRef funcName,
                      DiagSetting diagOnOff) const;
 
