@@ -558,6 +558,7 @@ namespace cling {
     clang::ASTDeserializationListener* getASTDeserializationListener() const;
 
     const Transaction* getFirstTransaction() const;
+    const Transaction* getLastTransaction() const;
 
     ///\brief Compile extern "C" function and return its address.
     ///

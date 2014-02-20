@@ -18,6 +18,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Sema.h"
 #include "clang/Serialization/ASTReader.h"
 
 #include "llvm/ADT/SmallVector.h"
@@ -37,10 +38,34 @@ namespace cling {
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
       m_Outs(m_MetaProcessor.getOuts()) { }
 
-  MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) const {
+  MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) {
+
+    // Lookup the file
+    clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
+    clang::FileManager& FM = SM.getFileManager();
+    bool needsRegistration = false;
+    const clang::FileEntry* Entry
+      = FM.getFile(file, /*OpenFile*/false, /*CacheFailure*/false);
+    if (Entry) {
+      Watermarks::iterator Pos = m_Watermarks.find(Entry);
+      if (Pos != m_Watermarks.end()) {
+        const Transaction* unloadPoint = Pos->second;
+        while(m_Interpreter.getLastTransaction() != unloadPoint)
+          m_Interpreter.unload(/*numberOfTransactions*/1);
+        // Unload the last one also.
+        m_Interpreter.unload(/*numberOfTransactions*/1);
+        m_Watermarks.erase(Pos);
+      }
+      else
+        needsRegistration = true;
+    }
+
     // TODO: extra checks. Eg if the path is readable, if the file exists...
-    if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess)
+    if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess) {
+      if (needsRegistration)
+        m_Watermarks[Entry] = m_Interpreter.getLastTransaction();
       return AR_Success;
+    }
     return AR_Failure;
   }
 

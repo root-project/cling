@@ -12,15 +12,22 @@
 
 #include "cling/MetaProcessor/MetaProcessor.h"
 
+#include "llvm/ADT/DenseMap.h"
+
 namespace llvm {
   class StringRef;
   class raw_ostream;
+}
+
+namespace clang {
+  class FileEntry;
 }
 
 namespace cling {
   class Interpreter;
   class MetaProcessor;
   class StoredValueRef;
+  class Transaction;
 
   ///\brief Semantic analysis for our home-grown language. All implementation
   /// details of the commands should go here.
@@ -30,6 +37,8 @@ namespace cling {
     MetaProcessor& m_MetaProcessor;
     bool m_IsQuitRequested;
     llvm::raw_ostream& m_Outs; // Shortens m_MetaProcessor->getOuts()
+    typedef llvm::DenseMap<const clang::FileEntry*, const Transaction*> Watermarks;
+    Watermarks m_Watermarks;
 
   public:
     enum SwitchMode {
@@ -53,7 +62,7 @@ namespace cling {
     ///
     ///\param[in] file - The file/library to be loaded.
     ///
-    ActionResult actOnLCommand(llvm::StringRef file) const;
+    ActionResult actOnLCommand(llvm::StringRef file);
 
     ///\brief < Redirect command.
     ///
