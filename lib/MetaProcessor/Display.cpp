@@ -525,6 +525,8 @@ void ClassPrinter::DisplayAllClasses()const
   fSeenDecls.clear();
 
   fOut.Print("List of classes");
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (decl_iterator decl = tuDecl->decls_begin(); decl != tuDecl->decls_end(); ++decl)
     ProcessDecl(decl);
 }
@@ -612,6 +614,8 @@ void ClassPrinter::ProcessBlockDecl(decl_iterator decl)const
   const BlockDecl* const blockDecl = dyn_cast<BlockDecl>(*decl);
   assert(blockDecl != 0 && "ProcessBlockDecl, internal error - decl is not a BlockDecl");
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (decl_iterator it = blockDecl->decls_begin(); it != blockDecl->decls_end(); ++it)
     ProcessDecl(it);
 }
@@ -627,6 +631,8 @@ void ClassPrinter::ProcessFunctionDecl(decl_iterator decl)const
   const FunctionDecl* const functionDecl = dyn_cast<FunctionDecl>(*decl);
   assert(functionDecl != 0 && "ProcessFunctionDecl, internal error - decl is not a FunctionDecl");
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (decl_iterator it = functionDecl->decls_begin(); it != functionDecl->decls_end(); ++it)
     ProcessDecl(it);
 }
@@ -643,6 +649,8 @@ void ClassPrinter::ProcessNamespaceDecl(decl_iterator decl)const
   const NamespaceDecl* const namespaceDecl = dyn_cast<NamespaceDecl>(*decl);
   assert(namespaceDecl != 0 && "ProcessNamespaceDecl, 'decl' parameter is not a NamespaceDecl");
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (decl_iterator it = namespaceDecl->decls_begin(); it != namespaceDecl->decls_end(); ++it)
     ProcessDecl(it);
 }
@@ -657,6 +665,8 @@ void ClassPrinter::ProcessLinkageSpecDecl(decl_iterator decl)const
   const LinkageSpecDecl* const linkageSpec = dyn_cast<LinkageSpecDecl>(*decl);
   assert(linkageSpec != 0 && "ProcessLinkageSpecDecl, decl is not a LinkageSpecDecl");
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (decl_iterator it = linkageSpec->decls_begin(); it != linkageSpec->decls_end(); ++it)
     ProcessDecl(it);
 }
@@ -677,6 +687,8 @@ void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
 
   DisplayClassDecl(classDecl);
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   //Now we have to check nested scopes for class declarations.
   for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl)
     ProcessDecl(decl);
@@ -696,6 +708,8 @@ void ClassPrinter::ProcessClassTemplateDecl(decl_iterator decl)const
   if (!templateDecl->isThisDeclarationADefinition())
     return;
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   //Now we have to display all the specialization (/instantiations)
   for (ClassTemplateDecl::spec_iterator spec = templateDecl->spec_begin(); 
        spec != templateDecl->spec_end(); ++spec)
@@ -822,6 +836,8 @@ void ClassPrinter::DisplayBasesAsList(const CXXRecordDecl* classDecl)const
 
   //we print a list of base classes as one line, with access specifiers and 'virtual' if needed.
   std::string bases(": ");
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (base_decl_iterator baseIt = classDecl->bases_begin(); baseIt != classDecl->bases_end(); ++baseIt) {
     if (baseIt != classDecl->bases_begin())
       bases += ", ";
@@ -853,6 +869,8 @@ void ClassPrinter::DisplayBasesAsTree(const CXXRecordDecl* classDecl, unsigned n
   assert(fVerbose == true && "DisplayBasesAsTree, call in a simplified output");
 
   std::string textLine;
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (base_decl_iterator baseIt = classDecl->bases_begin(); baseIt != classDecl->bases_end(); ++baseIt) {
     textLine.assign(nSpaces, ' ');
     const RecordType* const type = baseIt->getType()->getAs<RecordType>();
@@ -889,6 +907,8 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl* classDecl)const
 
   std::string textLine;
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (ctor_iterator ctor = classDecl->ctor_begin(); ctor != classDecl->ctor_end(); ++ctor) {
     if (ctor->isImplicit())//Compiler-generated.
       continue;
@@ -969,6 +989,8 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl* classDecl, unsigned n
   std::string textLine;
   const std::string gap(std::max(nSpaces, 1u), ' ');
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   for (field_iterator field = classDecl->field_begin();
        field != classDecl->field_end(); ++field) {
     textLine.clear();
@@ -1100,6 +1122,9 @@ void GlobalsPrinter::DisplayGlobals()const
 
   //fSeenDecls.clear();
 
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
+
   //Try to print global macro definitions (object-like only).
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
@@ -1145,6 +1170,8 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
   //fSeenDecls.clear();
   bool found = false;
   
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
     if (macro->second->getMacroInfo()
@@ -1342,6 +1369,8 @@ void TypedefPrinter::DisplayTypedef(const std::string& typedefName)const
 void TypedefPrinter::ProcessNestedDeclarations(const DeclContext* decl)const
 {
  assert(decl != 0 && "ProcessNestedDeclarations, parameter 'decl' is null");
+  // Could trigger deserialization of decls.
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
  for (decl_iterator it = decl->decls_begin(), eIt = decl->decls_end(); it != eIt; ++it)
    ProcessDecl(it);
 }
