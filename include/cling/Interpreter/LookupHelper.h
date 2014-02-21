@@ -54,7 +54,7 @@ namespace cling {
     /// namespace.
     ///
     ///\param [in] typeName - The type to lookup.
-    ///\param [in] diag - Whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - Whether to diagnose lookup failures.
     ///\returns On a failed lookup retval.isNull() will be true.
     ///
     clang::QualType findType(llvm::StringRef typeName,
@@ -65,11 +65,11 @@ namespace cling {
     ///
     ///\param [in] className   - The name of the class, struct, union,
     ///                          namespace, or enum to lookup.
+    ///\param [in] diagOnOff - Whether to diagnose lookup failures.
     ///\param [out] resultType - The type of the class, struct, union,
     ///                          or enum to lookup; NULL otherwise.
     ///\param [in] instantiateTemplate - When true, will attempt to instantiate
     ///                          a class template satisfying the rquest.
-    ///\param [in] diag - Whether to diagnose lookup failures.
     ///\returns The found declaration or null.
     ///
     const clang::Decl* findScope(llvm::StringRef className,
@@ -78,11 +78,11 @@ namespace cling {
                                  bool instantiateTemplate = true) const;
 
 
-    ///\brief Lookup a class template declaration by name, starting from 
+    ///\brief Lookup a class template declaration by name, starting from
     /// the global namespace, also handles struct, union, namespace, and enum.
     ///
     ///\param [in] Name   - The name of the class template to lookup.
-    ///\param [in] diag - Whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - Whether to diagnose lookup failures.
     ///\returns The found declaration or null.
     ///
     const clang::ClassTemplateDecl*
@@ -93,7 +93,7 @@ namespace cling {
     ///\param [in] scopeDecl - the scope (namespace or tag) that is searched for
     ///   the function.
     ///\param [in] dataName  - the name of the data member to find.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///\returns The value/data member found or null.
     const clang::ValueDecl* findDataMember(const clang::Decl* scopeDecl,
                                            llvm::StringRef dataName,
@@ -106,7 +106,7 @@ namespace cling {
     ///\param [in] templateName  - the name of the function template to find.
     ///\param [in] objectIsConst - if true search fo function that can
     ///   be called on a const object ; default to false.
-    ///\param [in] diag - whether to diagnose lookup failures.
+    ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///\returns The function template found or null.
     const clang::FunctionTemplateDecl*
     findFunctionTemplate(const clang::Decl* scopeDecl,
