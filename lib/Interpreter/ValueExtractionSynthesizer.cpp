@@ -257,9 +257,9 @@ namespace cling {
       }
       else if (desugaredTy->isReferenceType()) {
         // we need to get the address of the references
-        Expr* E = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf,
-                                       E).take();
-        CallArgs.push_back(E);
+        Expr* AddrOfE = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf,
+                                             E).take();
+        CallArgs.push_back(AddrOfE);
       }
       else if (desugaredTy->isPointerType()) {
         // function pointers need explicit void* cast.
