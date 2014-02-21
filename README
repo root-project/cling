@@ -9,36 +9,38 @@
 
 --------------------------------------------------------------------------------
 
-1. I N S T A L L A T I O N   I N S T R U C T I O N S
+1. INSTALLATION 
 
-1.1 Dependencies
+--------------------------------------------------------------------------------
+1.1. Binaries
+   We offer binary snapshots for download at https://ecsft.cern.ch/dist/cling
+--------------------------------------------------------------------------------
+1.2 Source
 
-   CLING source depends on the LLVM [1] and CLANG [2] headers and libraries.
-You will also need CMake [3] >= 2.6.1 or GNU Make to build all of those
-packages and subversion [4] to get the source code.
+   CLING source depends on the LLVM[1] and CLANG[2] headers and libraries.
+You will also need CMake[3] >= 2.6.1 or GNU Make to build all of those
+packages and subversion[4] and git[5] to get the source code.
 
    [1] http://llvm.org
    [2] http://clang.llvm.org
    [3] http://cmake.org
-   [4] http://subversion.tigris.org/
+   [4] http://subversion.tigris.org
+   [5] http://git-scm.com
 
-1.2 Building
+1.2.1 Building
 
-   To build LLVM and CLANG you must:
+   Building LLVM and CLANG you must:
 
    * Check out the sources:
 
-     mkdir src
-     cd src
-     svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
-     cd llvm/tools
-     svn co http://llvm.org/svn/llvm-project/cfe/trunk clang
-     svn co http://root.cern.ch/svn/root/trunk/interpreter/cling cling
-     cd ..
-
-   * Apply some patches
-
-     cat tools/cling/patches/* | patch -p0
+      git clone http://root.cern.ch/git/llvm.git src
+      cd src
+      git checkout cling-patches
+      cd tools
+      git clone http://root.cern.ch/git/cling.git
+      git clone http://root.cern.ch/git/clang.git
+      cd clang
+      git checkout cling-patches
 
    * Configure, build and install them, either using CMake:
 
@@ -48,9 +50,7 @@ packages and subversion [4] to get the source code.
      cmake -DCMAKE_INSTALL_PREFIX=/some/install/dir \
            -DLLVM_TARGETS_TO_BUILD=CBackend\;CppBackend\;X86 \
            -DCMAKE_BUILD_TYPE=Debug \
-           -DCMAKE_CXX_COMPILER=`which c++` \
-           -DCMAKE_C_COMPILER=`which gcc` \
-           ../llvm
+           ../src
      make
      make install
 
@@ -59,12 +59,16 @@ packages and subversion [4] to get the source code.
      cd ..
      mkdir build
      cd build
-     ../llvm/configure --prefix=/some/install/dir
+     ../src/configure --prefix=/some/install/dir
      make
      make install
+--------------------------------------------------------------------------------
 
-2. U S A G E
+2. USAGE
 
-   To interpret a C file type: "./cling test.c". To invoke cling in the
-interactive mode type "cling" without file name.  Use ".L filename" to 
-load libraries or C++ files.  Type C++ code at the prompt to interpret it.
+   To get started run: /some/install/dir/bin/cling --help
+--------------------------------------------------------------------------------
+3. Developers' corner:
+   We have doxygen documentation of cling's code at:
+http://cling.web.cern.ch/cling/doxygen/
+--------------------------------------------------------------------------------
