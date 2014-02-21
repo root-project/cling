@@ -73,7 +73,7 @@ regendoc: gen-doxygen-cfg
 	  $(RM) -rf $(PROJ_OBJ_DIR)/doxygen ; \
 	fi
 	$(Verb) $(DOXYGEN) $(PROJ_OBJ_DIR)/doxygen.cfg
-	$(Verb) sed -i "s/[$$]LatestRev[$$]/`svnversion $(PROJ_SRC_DIR)`/g" \
+	$(Verb) sed -i "s/[$$]LatestRev[$$]/`git show -s --pretty=format:%h $(PROJ_SRC_DIR)`/g" \
 	 $(PROJ_OBJ_DIR)/doxygen/html/*.html
 
 $(PROJ_OBJ_DIR)/doxygen.tar.gz: $(DOXYFILES) $(PROJ_OBJ_DIR)/doxygen.cfg
