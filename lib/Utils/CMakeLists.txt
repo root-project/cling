@@ -14,3 +14,8 @@ set(LLVM_USED_LIBS
 add_cling_library(clingUtils
   AST.cpp
   )
+
+if ( MSVC )
+  set_target_properties(clingUtils PROPERTIES
+  COMPILE_FLAGS "/D_HAS_EXCEPTIONS=0")
+endif ()
