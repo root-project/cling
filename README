@@ -67,6 +67,9 @@ packages and subversion[4] and git[5] to get the source code.
 2. USAGE
 
    To get started run: /some/install/dir/bin/cling --help
+   or type
+   /some/install/dir/bin/cling
+   [cling]$ .help
 --------------------------------------------------------------------------------
 3. Developers' corner:
    We have doxygen documentation of cling's code at:
