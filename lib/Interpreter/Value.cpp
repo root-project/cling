@@ -9,65 +9,96 @@
 
 #include "cling/Interpreter/Value.h"
 
-#include "llvm/ExecutionEngine/GenericValue.h"
-
 #include "clang/AST/Type.h"
 #include "clang/AST/CanonicalType.h"
 
+namespace {
+  ///\brief The allocation starts with this layout; it is followed by the
+  ///  value's object at m_Payload. This class does not inherit from
+  ///  llvm::RefCountedBase because deallocation cannot use this type but must
+  ///  free the character array.
+  class AllocatedValue {
+  public:
+    typedef void (*DtorFunc_t)(void*);
+
+  private:
+    ///\brief The reference count - once 0, this object will be deallocated.
+    mutable unsigned m_RefCnt;
+
+    ///\brief The interpreter that will execute the destructor.
+    DtorFunc_t& m_DtorFunc;
+
+    ///\brief The start of the allocation.
+    char m_Payload[1];
+
+  public:
+    ///\brief Initialize the storage management part of the allocated object.
+    AllocatedValue(DtorFunc_t dtorFunc): m_RefCnt(0), m_DtorFunc(dtorFunc) {}
+
+    char* getPayload() const { return m_Payload; }
+
+    static unsigned getPayloadOffset() {
+      static const AllocatedValue(0) Dummy;
+      return Dummy.m_Payload - &Dummy;
+    }
+
+    static AllocatedValue* getFromPayload(void* payload) {
+      return reinterpret_cast<AllocatedValue*>(payload - getPauloadOffset());
+    }
+
+    void Retain() { ++m_RefCnt; }
+
+    ///\brief This object must be allocated as a char array. Deallocate it as
+    ///   such.
+    void Release() {
+      assert (m_RefCnt > 0 && "Reference count is already zero.");
+      if (--m_RefCnt == 0) {
+        if (dtorFunc)
+          (*dtorFunc)(getPayload());
+        delete [] (char*)this;
+      }
+    }
+  };
+}
+
 namespace cling {
 
-Value::Value() :m_ClangType() {
-  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
-         && "GlobalValue buffer too small");
-  new (m_GV) llvm::GenericValue();
+Value::Value(const Value& other) : m_Type(other.m_Type) {
+  if (needsManagedAllocation())
+    IncreaseManagedReference();
 }
 
-Value::Value(const Value& other) : m_ClangType(other.m_ClangType) {
-  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
-         && "GlobalValue buffer too small");
-  new (m_GV) llvm::GenericValue(other.getGV());
+Value::Value(clang::QualType clangTy, Interpreter& Interp):
+  m_Type(clangTy.getAsOpaquePtr()) {
+  if (needsManagedAllocation())
+    ManagedAllocate(Interp);
 }
 
-Value::Value(const llvm::GenericValue& v, clang::QualType clangTy)
-  : m_ClangType(clangTy.getAsOpaquePtr()) {
-  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
-         && "GlobalValue buffer too small");
-  new (m_GV) llvm::GenericValue(v);
+Value::~Value() {
+  if (needsManagedAllocation())
+    DecreaseManagedReference();
 }
 
 Value& Value::operator =(const Value& other) {
   m_ClangType = other.m_ClangType;
-  setGV(other.getGV());
+  if (needsManagedAllocation())
+    IncreaseManagedReference();
   return *this;
 }
 
-const llvm::GenericValue& Value::getGV() const {
-  return reinterpret_cast<const llvm::GenericValue&>(m_GV);
+clang::QualType Value::getType() const {
+  return clang::QualType::getFromOpaquePtr(m_Type);
 }
 
-llvm::GenericValue& Value::getGV() {
-  return reinterpret_cast<llvm::GenericValue&>(m_GV);
-}
-
-void Value::setGV(const llvm::GenericValue& GV) {
-  assert(sizeof(llvm::GenericValue) <= sizeof(m_GV)
-         && "GlobalValue buffer too small");
-  reinterpret_cast<llvm::GenericValue&>(m_GV) = GV;
-}
-
-clang::QualType Value::getClangType() const {
-  return clang::QualType::getFromOpaquePtr(m_ClangType);
-}
-
-bool Value::isValid() const { return !getClangType().isNull(); }
+bool Value::isValid() const { return !getType().isNull(); }
 
 bool Value::isVoid(const clang::ASTContext& ASTContext) const {
-  return isValid() 
-    && getClangType().getDesugaredType(ASTContext)->isVoidType();
+  return isValid()
+    && ASTContext.isEquivalentTye(getType(), ASTContent.VoidType());
 }
 
 Value::EStorageType Value::getStorageType() const {
-  const clang::Type* desugCanon = getClangType()->getUnqualifiedDesugaredType();
+  const clang::Type* desugCanon = getType()->getUnqualifiedDesugaredType();
   desugCanon = desugCanon->getCanonicalTypeUnqualified()->getTypePtr()
     ->getUnqualifiedDesugaredType();
   if (desugCanon->isSignedIntegerOrEnumerationType())
@@ -82,47 +113,37 @@ Value::EStorageType Value::getStorageType() const {
         return kFloatType;
       else if (BT->getKind() == clang::BuiltinType::LongDouble)
         return kLongDoubleType;
-  } else if (desugCanon->isPointerType() || desugCanon->isObjectType() || desugCanon->isReferenceType())
+  } else if (desugCanon->isPointerType() || desugCanon->isObjectType()
+             || desugCanon->isReferenceType())
     return kPointerType;
   return kUnsupportedType;
 }
 
-void* Value::getAs(void**) const { return getGV().PointerVal; }
-double Value::getAs(double*) const { return getGV().DoubleVal; }
-long double Value::getAs(long double*) const {
-  return getAs((double*)0);
+bool Value::needsManagedAllocation() const {
+  return !m_Type->getUnsugaredType()->isBuiltinType();
 }
-float Value::getAs(float*) const { return getGV().FloatVal; }
-bool Value::getAs(bool*) const { return getGV().IntVal.getBoolValue(); }
-signed char Value::getAs(signed char*) const {
-  return (signed char) getAs((signed long long*)0);
+
+void Value::ManagedAllocate(Interpreter& interp) {
+  void* dtorFunc = 0;
+  if (clang::RecordType* RTy = clang::dyn_cast<clang::RecordType>(m_Type))
+    dtorFunc = GetDtorWrapperPtr(RTy->getDecl());
+
+  const ASTContext& ctx = m_Interp.getCI()->getASTContext();
+  unsigned payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
+  char* alloc = new char[AllocatedValue::getPayloadOffset() + ];
+  AllocatedValue* allocVal = new (alloc) AllocatedValue(dtorFunc);
+  m_Storage.m_Ptr = allocVal->getPayload();
 }
-unsigned char Value::getAs(unsigned char*) const {
-  return (unsigned char) getAs((unsigned long long*)0);
+
+void IncreaseManagedReference() {
+  AllocatedValue::getFromPayload(m_Ptr)
 }
-signed short Value::getAs(signed short*) const {
-  return (signed short) getAs((signed long long*)0);
-}
-unsigned short Value::getAs(unsigned short*) const {
-  return (unsigned short) getAs((unsigned long long*)0);
-}
-signed int Value::getAs(signed int*) const {
-  return (signed int) getAs((signed long long*)0);
-}
-unsigned int Value::getAs(unsigned int*) const {
-  return (unsigned int) getAs((unsigned long long*)0);
-}
-signed long Value::getAs(signed long*) const {
-  return (long) getAs((signed long long*)0);
-}
-unsigned long Value::getAs(unsigned long*) const {
-  return (signed long) getAs((unsigned long long*)0);
-}
-signed long long Value::getAs(signed long long*) const {
-  return getGV().IntVal.getSExtValue();
-}
-unsigned long long Value::getAs(unsigned long long*) const {
-  return getGV().IntVal.getZExtValue(); 
-}
+
+    /// \brief Decrease ref count on managed storage.
+    void DecreaseManagedReference();
+
+    /// \brief Get the function address of the wrapper of the destructor.
+    void* GetDtorWrapperPtr(clang::CXXRecordDecl* CXXRD);
+
 
 } // namespace cling

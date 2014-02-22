@@ -13,15 +13,14 @@
 #include <stddef.h>
 #include <assert.h>
 
-namespace llvm {
-  struct GenericValue;
-}
 namespace clang {
   class ASTContext;
   class QualType;
 }
 
 namespace cling {
+  class Interpreter;
+
   ///\brief A type, value pair.
   //
   /// Type-safe value access and setting. Simple (built-in) casting is
@@ -29,20 +28,26 @@ namespace cling {
   /// parameter that matches the Value's type.
   ///
   /// The class represents a llvm::GenericValue with its corresponding
-  /// clang::QualType. Use-cases:
-  /// 1. Expression evaluation: we need to know the type of the GenericValue
-  /// that we have gotten from the JIT
-  /// 2. Value printer: needs to know the type in order to skip the printing of
-  /// void types
-  /// 3. Parameters for calls given an llvm::Function and a clang::FunctionDecl.
+  /// clang::QualType. Use-cases are expression evaluation, value printing
+  /// and parameters for function calls.
   class Value {
   protected:
-    /// \brief value
-    char /*llvm::GenericValue*/ m_GV[48]; // 48 bytes on 64bit
+    ///\brief Multi-purpose storage.
+    ///
+    union Storage {
+      unsigned long long m_ULL;
+      void* m_Ptr; /// Can point to allocation, see needsManagedAllocation().
+      float m_Float;
+      double m_Double;
+      long double m_LongDouble;
+    };
 
-    /// \brief the value's type according to clang, stored as void* to reduce
+    /// \brief The actual value.
+    Storage m_Storage;
+
+    /// \brief The value's type, stored as opaque void* to reduce
     /// dependencies.
-    void* /*clang::QualType*/ m_ClangType;
+    void* m_Type;
 
     enum EStorageType {
       kSignedIntegerOrEnumerationType,
@@ -57,21 +62,38 @@ namespace cling {
     /// \brief Retrieve the underlying, canonical, desugared, unqualified type.
     EStorageType getStorageType() const;
 
-  public:
+    /// \brief Whether this type needs managed heap, i.e. the storage provided
+    /// by Storage is insufficient.
+    bool needsManagedAllocation() const;
 
+    /// \brief Allocate storage as needed by the type.
+    void ManagedAllocate(Interpreter& interp);
+
+    /// \brief Increase ref count on managed storage.
+    void IncreaseManagedReference();
+
+    /// \brief Decrease ref count on managed storage.
+    void DecreaseManagedReference();
+
+    /// \brief Get the function address of the wrapper of the destructor.
+    void* GetDtorWrapperPtr(clang::CXXRecordDecl* CXXRD);
+
+
+  public:
     /// \brief Default constructor, creates a value that IsInvalid().
-    Value();
+    Value() {}
+    /// \brief Copy a value.
     Value(const Value& other);
-    /// \brief Construct a valid Value.
-    Value(const llvm::GenericValue& v, clang::QualType clangTy);
+    /// \brief Construct a valid but ininitialized Value. After this call the
+    ///   value's storage can be accessed; i.e. calls ManagedAllocate() if
+    ///   needed.
+    Value(clang::QualType Ty, Interpreter& Interp);
+    /// \brief Destruct the value; calls ManagedFree() if needed.
+    ~Value();
 
     Value& operator =(const Value& other);
 
-    const llvm::GenericValue& getGV() const;
-    llvm::GenericValue& getGV();
-    void setGV(const llvm::GenericValue& GV);
-
-    clang::QualType getClangType() const;
+    clang::QualType getType() const;
 
     /// \brief Determine whether the Value has been set.
     //
@@ -89,27 +111,23 @@ namespace cling {
     bool hasValue(const clang::ASTContext& ASTContext) const {
       return isValid() && !isVoid(ASTContext); }
 
-    /// \brief Get the value without type checking.
+    /// \brief Get a reference to the value without type checking.
+    /// T *must* correspond to type. Else use simplisticCastAs()!
     template <typename T>
-    T getAs() const;
+    T& getAs() { return getAs((T*)0); }
+
+    /// \brief Get the value without type checking.
+    /// T *must* correspond to type. Else use simplisticCastAs()!
+    template <typename T>
+    T getAs() const { return const_cast<Value*>(this)->getAs<T>(); }
 
     template <typename T>
     T* getAs(T**) const { return (T*)getAs((void**)0); }
-    void* getAs(void**) const;
-    double getAs(double*) const;
-    long double getAs(long double*) const;
-    float getAs(float*) const;
-    bool getAs(bool*) const;
-    signed char getAs(signed char*) const;
-    unsigned char getAs(unsigned char*) const;
-    signed short getAs(signed short*) const;
-    unsigned short getAs(unsigned short*) const;
-    signed int getAs(signed int*) const;
-    unsigned int getAs(unsigned int*) const;
-    signed long getAs(signed long*) const;
-    unsigned long getAs(unsigned long*) const;
-    signed long long getAs(signed long long*) const;
-    unsigned long long getAs(unsigned long long*) const;
+    void*& getAs(void**) { return m_Storage.m_Ptr; }
+    double& getAs(double*) { return m_Storage.m_Double; }
+    long double& getAs(long double*) { return m_Storage.m_LongDouble; }
+    float& getAs(float*) { return m_Storage.m_Float; }
+    unsigned long long& getAs(unsigned long long*) { return m_Storage.m_ULL; }
 
     /// \brief Get the value.
     //
@@ -120,12 +138,6 @@ namespace cling {
     T simplisticCastAs() const;
   };
 
-
-  template <typename T>
-  T Value::getAs() const {
-    // T *must* correspond to type. Else use simplisticCastAs()!
-    return getAs((T*)0);
-  }
   template <typename T>
   T Value::simplisticCastAs() const {
     EStorageType storageType = getStorageType();
