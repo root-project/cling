@@ -424,7 +424,7 @@ namespace cling {
 
   bool DeclReverter::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
-    bool Successful = false;
+    bool Successful = true;
     // FIXME: This is needed when we have newest clang:
     //Successful = VisitRedeclarable(USD, USD->getDeclContext());
     Successful &= VisitNamedDecl(USD);
