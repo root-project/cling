@@ -90,8 +90,12 @@ static void StreamCharPtr(llvm::raw_ostream& o, const char* const v) {
   else o << "\"";
 }
 
-static void StreamRef(llvm::raw_ostream& o, const void* v) {
-  o <<"&" << v;
+static void StreamRef(llvm::raw_ostream& o, const void* v,
+                      const ValuePrinterInfo& VPI) {
+  const clang::ReferenceType* RTy
+    = llvm::dyn_cast<clang::ReferenceType>(VPI.getType().getTypePtr());
+  ValuePrinterInfo VPIRefed(RTy->getPointeeType(), VPI.getASTContext());
+  StreamValue(o, v, VPIRefed);
 }
 
 static void StreamPtr(llvm::raw_ostream& o, const void* v) {
@@ -309,7 +313,7 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
     o << " : (int) " << ValAsAPSInt.toString(/*Radix = */10);
   }
   else if (Ty->isReferenceType())
-    StreamRef(o, p);
+    StreamRef(o, p, VPI);
   else if (Ty->isPointerType()) {
     clang::QualType PointeeTy = Ty->getPointeeType();
     if (PointeeTy->isCharType())
