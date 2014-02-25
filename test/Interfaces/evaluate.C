@@ -38,7 +38,7 @@ V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 cling::StoredValueRef Result;
 gCling->evaluate("V", Result);
 // Here we check what happens for record type like cling::StoredValueRef; they are returned by reference.
-Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef) boxes [(int *) 0x12]]
+Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef &) boxes [(int *) 0x12]]
 V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
 
 // Savannah #96277
@@ -91,3 +91,89 @@ WithDtor::fgCount //CHECK: (int) 0
 // long doubles (tricky for the JIT).
 gCling->evaluate("17.42L", V);
 V // CHECK: (cling::StoredValueRef) boxes [(long double) 17.4200000{{[0-9]*}}L]
+
+
+// Test references, temporaries
+.rawInput 1
+extern "C" int printf(const char*,...);
+struct Tracer {
+  std::string Content;
+  static int InstanceCount;
+  Tracer(const char* str): Content(str) { ++InstanceCount; dump("ctor"); }
+  Tracer(const Tracer& o): Content(o.Content + "+") {
+    ++InstanceCount; dump("copy");
+  }
+  ~Tracer() {--InstanceCount; dump("dtor");}
+  std::string asStr() const {
+    return Content + "{" + (char)('0' + InstanceCount) + "}";
+  }
+  void dump(const char* tag) { printf("%s:%s\n", asStr().c_str(), tag); }
+};
+int Tracer::InstanceCount = 0;
+
+Tracer ObjMaker() { return Tracer("MADE"); }
+Tracer& RefMaker() { static Tracer R("REF"); return R; }
+const Tracer& ConstRefMaker() {static Tracer R("CONSTREF"); return R;}
+namespace cling {
+  // FIXME: inline printValue is not used by PrintClingValue()!
+  std::string printValue(const Tracer* const p, const Tracer* const u,
+                         const ValuePrinterInfo& VPI) {
+    return p->asStr();
+  }
+}
+void dumpTracerSVR(cling::StoredValueRef& svr) {
+  ((Tracer*)svr.get().getAs<void*>())->dump("dump");
+}
+.rawInput 0
+
+// Creating the static in constructs one object. It gets returned by
+// reference; it should only be destructed by ~JIT, definitely not by
+// ~StoredValueRef (which should only store a Tracer&)
+gCling->evaluate("RefMaker()", V);
+// This is the local static:
+// CHECK: REF{1}:ctor
+printf("RefMaker() done\n"); // CHECK-NEXT: RefMaker() done
+V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer &) @{{.*}}]
+dumpTracerSVR(V); // CHECK-NEXT: REF{1}:dump
+
+// Setting a new value should destruct the old - BUT it's a ref thus no
+// destruction.
+
+// Create a temporary. Copies it into V through placement-new and copy
+// construction. The latter is elided; the temporary *is* what's stored in V.
+// Thus all we see is the construction of the temporary.
+gCling->evaluate("ObjMaker()", V);
+// The temporary gets created:
+// CHECK-NEXT:MADE{2}:ctor
+printf("ObjMaker() done\n"); //CHECK-NEXT: ObjMaker() done
+V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer) @{{.*}}]
+dumpTracerSVR(V); // CHECK-NEXT: MADE{2}:dump
+
+// Creating a variable:
+Tracer RT("VAR"); // CHECK-NEXT: VAR{3}:ctor
+
+// The following is a declRefExpr of lvalue type. We explicitly treat this as
+// a reference; i.e. the cling::Value will claim to store a Tracer&. No extra
+// construction, no extra allocation should happen.
+//
+// Setting a new value should destruct the old:
+// CHECK-NEXT: MADE{2}:dtor
+gCling->evaluate("RT", V); // should not call any ctor!
+printf("RT done\n"); //CHECK-NEXT: RT done
+V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer &) @{{.*}}]
+dumpTracerSVR(V); // CHECK-NEXT: VAR{2}:dump
+
+// The following creates a copy, explicitly. This temporary object is then put
+// into the StoredValueRef.
+//
+gCling->evaluate("(Tracer)RT", V);
+// Copies RT:
+//CHECK-NEXT: VAR+{3}:copy
+printf("(Tracer)RT done\n"); //CHECK-NEXT: RT done
+V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer) @{{.*}}]
+dumpTracerSVR(V); // CHECK-NEXT: VAR+{3}:dump
+
+// Destruct the variables with static storage:
+// CHECK-NEXT: VAR{2}:dtor
+// CHECK-NEXT: REF{1}:dtor
+// CHECK-NEXT: VAR+{0}:dtor
