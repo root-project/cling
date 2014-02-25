@@ -52,7 +52,7 @@ namespace cling {
 
     ///\brief The output stream being used for various purposes.
     ///
-    llvm::raw_ostream& m_Outs;
+    llvm::raw_ostream* m_Outs;
 
     ///\brief The file descriptor of the copy of stdout.
     ///
@@ -98,7 +98,21 @@ namespace cling {
 
     const Interpreter& getInterpreter() const { return m_Interp; }
 
-    llvm::raw_ostream& getOuts() const { return m_Outs; }
+    ///\brief Get the output stream used by the MetaProcessor for its output.
+    /// (in contrast to the interpreter's output which is redirected using
+    /// setStdStream()).
+    llvm::raw_ostream& getOuts() const { return *m_Outs; }
+
+    ///\brief Set the output stream used by the MetaProcessor for its output.
+    /// (in contrast to the interpreter's output which is redirected using
+    /// setStdStream()).
+    ///
+    ///\returns the address of the previous output stream, or 0 if it was unset.
+    llvm::raw_ostream* setOuts(llvm::raw_ostream& outs) {
+      llvm::raw_ostream* prev = m_Outs;
+      m_Outs = &outs;
+      return prev;
+    }
 
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement

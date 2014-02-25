@@ -35,8 +35,7 @@
 namespace cling {
 
   MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta)
-    : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false),
-      m_Outs(m_MetaProcessor.getOuts()) { }
+    : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false) { }
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) {
 
@@ -119,7 +118,7 @@ namespace cling {
       bool flag = !m_Interpreter.isRawInputEnabled();
       m_Interpreter.enableRawInput(flag);
       // FIXME:
-      m_Outs << (flag ? "U" :"Not u") << "sing raw input\n";
+      m_MetaProcessor.getOuts() << (flag ? "U" :"Not u") << "sing raw input\n";
     }
     else
       m_Interpreter.enableRawInput(mode);
@@ -130,7 +129,7 @@ namespace cling {
       bool flag = !m_Interpreter.isPrintingAST();
       m_Interpreter.enablePrintAST(flag);
       // FIXME:
-      m_Outs << (flag ? "P" : "Not p") << "rinting AST\n";
+      m_MetaProcessor.getOuts() << (flag ? "P" : "Not p") << "rinting AST\n";
     }
     else
       m_Interpreter.enablePrintAST(mode);
@@ -141,7 +140,7 @@ namespace cling {
       bool flag = !m_Interpreter.isPrintingIR();
       m_Interpreter.enablePrintIR(flag);
       // FIXME:
-      m_Outs << (flag ? "P" : "Not p") << "rinting IR\n";
+      m_MetaProcessor.getOuts() << (flag ? "P" : "Not p") << "rinting IR\n";
     }
     else
       m_Interpreter.enablePrintIR(mode);
@@ -161,7 +160,8 @@ namespace cling {
       bool flag = !m_Interpreter.isDynamicLookupEnabled();
       m_Interpreter.enableDynamicLookup(flag);
       // FIXME:
-      m_Outs << (flag ? "U" : "Not u") << "sing dynamic extensions\n";
+      m_MetaProcessor.getOuts()
+        << (flag ? "U" : "Not u") << "sing dynamic extensions\n";
     }
     else
       m_Interpreter.enableDynamicLookup(mode);
@@ -169,36 +169,37 @@ namespace cling {
 
   void MetaSema::actOnhelpCommand() const {
     std::string& metaString = m_Interpreter.getOptions().MetaString;
-    m_Outs << "Cling meta commands usage\n";
-    m_Outs << "Syntax: .Command [arg0 arg1 ... argN]\n";
-    m_Outs << "\n";
-    m_Outs << metaString << "q\t\t\t\t- Exit the program\n";
-    m_Outs << metaString << "L <filename>\t\t\t - Load file or library\n";
-    m_Outs << metaString << "(x|X) <filename>[args]\t\t- Same as .L and runs a ";
-    m_Outs << "function with signature ";
-    m_Outs << "\t\t\t\tret_type filename(args)\n";
-    m_Outs << metaString << "I [path]\t\t\t- Shows the include path. If a path is ";
-    m_Outs << "given - \n\t\t\t\tadds the path to the include paths\n";
-    m_Outs << metaString << "@ \t\t\t\t- Cancels and ignores the multiline input\n";
-    m_Outs << metaString << "rawInput [0|1]\t\t\t- Toggle wrapping and printing ";
-    m_Outs << "the execution\n\t\t\t\tresults of the input\n";
-    m_Outs << metaString << "dynamicExtensions [0|1]\t- Toggles the use of the ";
-    m_Outs << "dynamic scopes and the \t\t\t\tlate binding\n";
-    m_Outs << metaString << "printAST [0|1]\t\t\t- Toggles the printing of input's ";
-    m_Outs << "corresponding \t\t\t\tAST nodes\n";
-    m_Outs << metaString << "help\t\t\t\t- Shows this information\n";
+    llvm::raw_ostream& outs = m_MetaProcessor.getOuts();
+    outs << "Cling meta commands usage\n"
+      "Syntax: .Command [arg0 arg1 ... argN]\n"
+      "\n"
+         << metaString << "q\t\t\t\t- Exit the program\n"
+         << metaString << "L <filename>\t\t\t - Load file or library\n"
+         << metaString << "(x|X) <filename>[args]\t\t- Same as .L and runs a "
+      "function with signature "
+      "\t\t\t\tret_type filename(args)\n"
+         << metaString <<"I [path]\t\t\t- Shows the include path. If a path is "
+      "given - \n\t\t\t\tadds the path to the include paths\n"
+         << metaString <<"@ \t\t\t\t- Cancels and ignores the multiline input\n"
+         << metaString << "rawInput [0|1]\t\t\t- Toggle wrapping and printing "
+      "the execution\n\t\t\t\tresults of the input\n"
+         << metaString << "dynamicExtensions [0|1]\t- Toggles the use of the "
+      "dynamic scopes and the \t\t\t\tlate binding\n"
+         << metaString << "printAST [0|1]\t\t\t- Toggles the printing of "
+      "input's corresponding \t\t\t\tAST nodes\n"
+         << metaString << "help\t\t\t\t- Shows this information\n";
   }
 
   void MetaSema::actOnfileExCommand() const {
     const clang::SourceManager& SM = m_Interpreter.getCI()->getSourceManager();
     SM.getFileManager().PrintStats();
 
-    m_Outs << "\n***\n\n";
+    m_MetaProcessor.getOuts() << "\n***\n\n";
 
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
-      m_Outs << (*I).first->getName();
-      m_Outs << "\n";
+      m_MetaProcessor.getOuts() << (*I).first->getName();
+      m_MetaProcessor.getOuts() << "\n";
     }
     /* Only available in clang's trunk:
     clang::ASTReader* Reader = m_Interpreter.getCI()->getModuleManager();
@@ -212,40 +213,43 @@ namespace cling {
       const InputFiles_t& InputFiles = (*I)->InputFilesLoaded;
       for (InputFiles_t::const_iterator IFI = InputFiles.begin(),
              IFE = InputFiles.end(); IFI != IFE; ++IFI) {
-        m_Outs << IFI->getPointer()->getName();
-        m_Outs << "\n";
+        m_MetaProcessor.getOuts() << IFI->getPointer()->getName();
+        m_MetaProcessor.getOuts() << "\n";
       }
     }
     */
   }
 
   void MetaSema::actOnfilesCommand() const {
-    m_Interpreter.printIncludedFiles(m_Outs);
+    m_Interpreter.printIncludedFiles(m_MetaProcessor.getOuts());
   }
 
   void MetaSema::actOnclassCommand(llvm::StringRef className) const {
     if (!className.empty())
-      DisplayClass(m_Outs, &m_Interpreter, className.str().c_str(), true);
+      DisplayClass(m_MetaProcessor.getOuts(),
+                   &m_Interpreter, className.str().c_str(), true);
     else
-      DisplayClasses(m_Outs, &m_Interpreter, false);
+      DisplayClasses(m_MetaProcessor.getOuts(), &m_Interpreter, false);
   }
 
   void MetaSema::actOnClassCommand() const {
-    DisplayClasses(m_Outs, &m_Interpreter, true);
+    DisplayClasses(m_MetaProcessor.getOuts(), &m_Interpreter, true);
   }
 
   void MetaSema::actOngCommand(llvm::StringRef varName) const {
     if (varName.empty())
-      DisplayGlobals(m_Outs, &m_Interpreter);
+      DisplayGlobals(m_MetaProcessor.getOuts(), &m_Interpreter);
     else
-      DisplayGlobal(m_Outs, &m_Interpreter, varName.str().c_str());
+      DisplayGlobal(m_MetaProcessor.getOuts(),
+                    &m_Interpreter, varName.str().c_str());
   }
 
   void MetaSema::actOnTypedefCommand(llvm::StringRef typedefName) const {
     if (typedefName.empty())
-      DisplayTypedefs(m_Outs, &m_Interpreter);
+      DisplayTypedefs(m_MetaProcessor.getOuts(), &m_Interpreter);
     else
-      DisplayTypedef(m_Outs, &m_Interpreter, typedefName.str().c_str());
+      DisplayTypedef(m_MetaProcessor.getOuts(),
+                     &m_Interpreter, typedefName.str().c_str());
   }
 
   MetaSema::ActionResult

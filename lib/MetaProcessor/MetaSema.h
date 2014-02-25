@@ -36,7 +36,6 @@ namespace cling {
     Interpreter& m_Interpreter;
     MetaProcessor& m_MetaProcessor;
     bool m_IsQuitRequested;
-    llvm::raw_ostream& m_Outs; // Shortens m_MetaProcessor->getOuts()
     typedef llvm::DenseMap<const clang::FileEntry*, const Transaction*> Watermarks;
     Watermarks m_Watermarks;
 
