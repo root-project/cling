@@ -180,6 +180,17 @@ namespace cling {
       = m_Sema->BuildDeclRefExpr(FD->getParamDecl(0), m_Context->VoidPtrTy,
                                  VK_RValue, E->getLocStart());
     QualType ETy = E->getType();
+    QualType desugaredTy = ETy.getDesugaredType(*m_Context);
+
+    // The expr result is transported as reference, pointer, array, float etc
+    // based on the desugared type. We should still expose the typedef'ed
+    // (sugared) type to the cling::Value.
+    if (desugaredTy->isRecordType() && !isa<ExprWithCleanups>(E)) {
+      // returning a lvalue (not a temporary): the value should contain
+      // a reference to the lvalue instead of copying it.
+      desugaredTy = m_Context->getLValueReferenceType(desugaredTy);
+      ETy = m_Context->getLValueReferenceType(ETy);
+    }
     Expr* ETyVP
       = utils::Synthesize::CStyleCastPtrExpr(m_Sema, m_Context->VoidPtrTy,
                                              (uint64_t)ETy.getAsOpaquePtr());
@@ -191,7 +202,6 @@ namespace cling {
 
     ExprResult Call;
     SourceLocation noLoc;
-    const Type* desugaredTy = ETy->getUnqualifiedDesugaredType();
     if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()) {
       // 2) object types :
       // call new (setValueWithAlloc(gCling, &SVR, ETy)) (E)
@@ -200,7 +210,7 @@ namespace cling {
                                    E->getLocEnd());
       Expr* placement = Call.take();
       if (const ConstantArrayType* constArray
-          = dyn_cast<ConstantArrayType>(desugaredTy)) {
+          = dyn_cast<ConstantArrayType>(desugaredTy.getTypePtr())) {
         CallArgs.clear();
         CallArgs.push_back(E);
         CallArgs.push_back(placement);
