@@ -647,6 +647,7 @@ namespace cling {
   void IncrementalParser::unloadTransaction(Transaction* T) {
     if (!T)
       T = getLastTransaction();
+    assert (T == getLastTransaction() && "We always must revert the last T");
 
     if (T->getState() == Transaction::kRolledBackWithErrors)
       return; // The transaction was already 'unloaded'/'reverted'.
