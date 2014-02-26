@@ -24,7 +24,6 @@ namespace llvm {
 
 namespace clang {
   class Decl;
-  class QualType;
 }
 
 namespace cling {
