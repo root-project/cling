@@ -638,7 +638,6 @@ namespace cling {
     
     while(true) {
       unloadTransaction(m_Transactions.back());
-      m_Transactions.pop_back();
       if (!--N)
         break;
     } 
@@ -662,6 +661,9 @@ namespace cling {
     InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
     if (callbacks)
       callbacks->TransactionUnloaded(*T);
+
+    // Remove from the queue
+    m_Transactions.pop_back();
     //m_TransactionPool->releaseTransaction(T);
   }
 
