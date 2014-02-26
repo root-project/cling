@@ -122,11 +122,11 @@ void IncrementalExecutor::InitializeBuilder(llvm::Module* m) {
   m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
 }
 
-int IncrementalExecutor::CXAAtExit(void (*func) (void*), void* arg, void* dso, 
-                                void* clangDecl) {
+int IncrementalExecutor::CXAAtExit(void (*func) (void*), void* arg, void* dso,
+                                void* clingT) {
   // Register a CXAAtExit function
-  clang::Decl* LastTLD = (clang::Decl*)clangDecl;
-  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, dso, LastTLD));
+  cling::Transaction* T = (cling::Transaction*)clingT;
+  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, dso, T));
   return 0; // happiness
 }
 

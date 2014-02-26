@@ -22,11 +22,8 @@ namespace llvm {
   class Module;
 }
 
-namespace clang {
-  class Decl;
-}
-
 namespace cling {
+  class Transaction;
   namespace runtime {
     namespace internal {
       int local_cxa_atexit(void (*func) (void*), void* arg, void* dso, 
@@ -84,12 +81,12 @@ namespace cling {
       ///                   shared lib.(The destructor of the object.)
       ///\param [in] arg - The argument the func to be called with.
       ///\param [in] dso - The dynamic shared object handle.
-      ///\param [in] fromTLD - The unloading of this top level declaration will
-      ///                      trigger the atexit function.
+      ///\param [in] fromT - The unloading of this transaction will trigger the
+      ///                    atexit function.
       ///
       CXAAtExitElement(void (*func) (void*), void* arg, void* dso,
-                       clang::Decl* fromTLD):
-        m_Func(func), m_Arg(arg), m_DSO(dso), m_FromTLD(fromTLD) {}
+                       Transaction* fromT):
+        m_Func(func), m_Arg(arg), m_DSO(dso), m_FromT(fromT) {}
 
       ///\brief The function to be called.
       ///
@@ -106,7 +103,7 @@ namespace cling {
       ///\brief Clang's top level declaration, whose unloading will trigger the
       /// call this atexit function.
       ///
-      clang::Decl* m_FromTLD; //FIXME: Should be bound to the llvm symbol.
+      Transaction* m_FromT; //FIXME: Should be bound to the llvm symbol.
     };
 
     ///\brief Static object, which are bound to unloading of certain declaration
@@ -193,7 +190,7 @@ namespace cling {
     void InitializeBuilder(llvm::Module* m);
     ///\brief We keep track of the entities whose dtor we need to call.
     ///
-    int CXAAtExit(void (*func) (void*), void* arg, void* dso, void* clangDecl);
+    int CXAAtExit(void (*func) (void*), void* arg, void* dso, void* clingT);
 
     // This is the caller of CXAAtExit. We want to keep it private so we need
     // to make the caller a friend.

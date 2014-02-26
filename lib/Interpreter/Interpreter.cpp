@@ -74,10 +74,9 @@ namespace cling {
         Interpreter* cling = (cling::Interpreter*)interp;
         IncrementalParser* incrP = cling->m_IncrParser.get();
         // FIXME: Bind to the module symbols.
-        Decl* lastTLD = incrP->getLastTransaction()->getLastDecl().getSingleDecl();
- 
-        int result = cling->m_Executor->CXAAtExit(func, arg, dso, lastTLD);
-        return result;
+        cling::Transaction* T = incrP->getLastTransaction();
+
+        return cling->m_Executor->CXAAtExit(func, arg, dso, T);
       }
     } // end namespace internal
   } // end namespace runtime
