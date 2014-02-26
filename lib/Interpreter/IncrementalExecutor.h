@@ -11,6 +11,7 @@
 #define CLING_INCREMENTAL_EXECUTOR_H
 
 #include "llvm/ADT/OwningPtr.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <vector>
@@ -106,10 +107,11 @@ namespace cling {
       Transaction* m_FromT; //FIXME: Should be bound to the llvm symbol.
     };
 
+    typedef llvm::SmallVector<CXAAtExitElement, 128> AtExitFunctions;
     ///\brief Static object, which are bound to unloading of certain declaration
     /// to be destructed.
     ///
-    std::vector<CXAAtExitElement> m_AtExitFuncs;
+    AtExitFunctions m_AtExitFuncs;
 
   public:
     enum ExecutionResult {
