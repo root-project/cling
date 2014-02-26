@@ -128,7 +128,7 @@ namespace cling {
     }
 
     ExecutionResult runStaticInitializersOnce(llvm::Module* m);
-    void runStaticDestructorsOnce(llvm::Module* m);
+    void runStaticDestructorsOnce();
 
     ExecutionResult executeFunction(llvm::StringRef function,
                                     StoredValueRef* returnValue = 0);
