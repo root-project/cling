@@ -10,8 +10,8 @@
 #ifndef CLING_INCREMENTAL_EXECUTOR_H
 #define CLING_INCREMENTAL_EXECUTOR_H
 
-#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/OwningPtr.h"
+#include "llvm/ADT/StringRef.h"
 
 #include <vector>
 #include <set>
