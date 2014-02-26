@@ -313,8 +313,9 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
 void
 IncrementalExecutor::runStaticDestructorsOnce() {
   // 'Unload' the cxa_atexit entities.
-  for (size_t I = 0, E = m_AtExitFuncs.size(); I < E; ++I) {
-    const CXAAtExitElement& AEE = m_AtExitFuncs[E-I-1];
+  for (AtExitFunctions::reverse_iterator I = m_AtExitFuncs.rbegin(),
+         E = m_AtExitFuncs.rend(); I != E; ++I) {
+    const CXAAtExitElement& AEE = *I;
     (*AEE.m_Func)(AEE.m_Arg);
   }
   m_AtExitFuncs.clear();
