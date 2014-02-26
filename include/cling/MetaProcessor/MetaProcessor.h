@@ -22,7 +22,7 @@ namespace cling {
   class Interpreter;
   class InputValidator;
   class MetaParser;
-  class StoredValueRef;
+  class Value;
 
   ///\brief Class that helps processing meta commands, which add extra
   /// interactivity. Syntax .Command [arg0 arg1 ... argN]
@@ -117,7 +117,7 @@ namespace cling {
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement
     /// @param[in] input_line - the user input
-    /// @param[out] result - the cling::StoredValueRef as result of the
+    /// @param[out] result - the cling::Value as result of the
     ///             execution of the last statement
     /// @param[out] compRes - whether compilation was successful
     ///
@@ -127,7 +127,7 @@ namespace cling {
     ///
     int process(const char* input_line,
                 Interpreter::CompilationResult& compRes,
-                cling::StoredValueRef* result);
+                cling::Value* result);
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.
@@ -142,7 +142,7 @@ namespace cling {
     /// function with signature void filename(args)
     /// @param[in] file - the filename
     /// @param[in] args - the args without ()
-    /// @param[out] result - the cling::StoredValueRef as result of the
+    /// @param[out] result - the cling::Value as result of the
     ///             execution of the last statement
     /// @param[out] compRes - whether compilation was successful
     ///
@@ -150,7 +150,7 @@ namespace cling {
     ///
     bool executeFile(llvm::StringRef file, llvm::StringRef args, 
                      Interpreter::CompilationResult& compRes,
-                     cling::StoredValueRef* result);
+                     cling::Value* result);
 
     ///\brief Get the file name that is currently executing as passed to
     /// the currently active executeFile(). The returned StringRef::data() is
@@ -171,7 +171,7 @@ namespace cling {
     ///\brief Reads prompt input from file.
     ///
     ///\param [in] filename - The file to read.
-    /// @param[out] result - the cling::StoredValueRef as result of the
+    /// @param[out] result - the cling::Value as result of the
     ///             execution of the last statement
     ///\param [in] ignoreOutmostBlock - Whether to ignore enlosing {}.
     ///
@@ -179,7 +179,7 @@ namespace cling {
     ///
     Interpreter::CompilationResult
     readInputFromFile(llvm::StringRef filename,
-                      StoredValueRef* result,
+                      Value* result,
                       bool ignoreOutmostBlock = false);
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///

@@ -25,7 +25,7 @@ namespace llvm {
 
 namespace cling {
   class Transaction;
-  class StoredValueRef;
+  class Value;
 
   class IncrementalExecutor {
   public:
@@ -119,7 +119,7 @@ namespace cling {
     void runAndRemoveStaticDestructors(Transaction* T);
 
     ExecutionResult executeFunction(llvm::StringRef function,
-                                    StoredValueRef* returnValue = 0);
+                                    Value* returnValue = 0);
 
     ///\brief Adds a symbol (function) to the execution engine.
     ///

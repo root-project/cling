@@ -22,7 +22,7 @@ namespace llvm {
 namespace cling {
   class MetaLexer;
   class MetaSema;
-  class StoredValueRef;
+  class Value;
 
   // Command syntax: MetaCommand := <CommandSymbol><Command>
   //                 CommandSymbol := '.' | '//.'
@@ -78,12 +78,12 @@ namespace cling {
 
     bool isCommandSymbol();
     bool isCommand(MetaSema::ActionResult& actionResult,
-                   StoredValueRef* resultValue);
+                   Value* resultValue);
     bool isLCommand(MetaSema::ActionResult& actionResult);
     bool isRedirectCommand(MetaSema::ActionResult& actionResult);
     bool isExtraArgList();
     bool isXCommand(MetaSema::ActionResult& actionResult,
-                    StoredValueRef* resultValue);
+                    Value* resultValue);
     bool isqCommand();
     bool isUCommand(MetaSema::ActionResult& actionResult);
     bool isICommand();
@@ -102,7 +102,7 @@ namespace cling {
     bool isgCommand();
     bool isTypedefCommand();
     bool isShellCommand(MetaSema::ActionResult& actionResult,
-                        StoredValueRef* resultValue);
+                        Value* resultValue);
   public:
     MetaParser(MetaSema* Actions);
     void enterNewInputLine(llvm::StringRef Line);
@@ -112,7 +112,7 @@ namespace cling {
     ///\returns true if it was meta command.
     ///
     bool isMetaCommand(MetaSema::ActionResult& actionResult,
-                       StoredValueRef* resultValue);
+                       Value* resultValue);
 
     ///\brief Returns whether quit was requested via .q command
     ///

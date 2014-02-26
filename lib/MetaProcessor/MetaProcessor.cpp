@@ -14,7 +14,7 @@
 #include "MetaParser.h"
 #include "MetaSema.h"
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/StoredValueRef.h"
+#include "cling/Interpreter/Value.h"
 
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/TargetInfo.h"
@@ -116,9 +116,9 @@ namespace cling {
 
   int MetaProcessor::process(const char* input_text,
                              Interpreter::CompilationResult& compRes,
-                             StoredValueRef* result) {
+                             Value* result) {
     if (result)
-      *result = StoredValueRef::invalidValue();
+      *result = Value();
     compRes = Interpreter::kSuccess;
     int expectedIndent = m_InputValidator->getExpectedIndent();
     
@@ -174,7 +174,7 @@ namespace cling {
   // Run a file: .x file[(args)]
   bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
                                   Interpreter::CompilationResult& compRes,
-                                  StoredValueRef* result) {
+                                  Value* result) {
     // Look for start of parameters:
     typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
@@ -204,7 +204,7 @@ namespace cling {
 
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
-                                 StoredValueRef* result,
+                                 Value* result,
                                  bool ignoreOutmostBlock /*=false*/) {
 
     {

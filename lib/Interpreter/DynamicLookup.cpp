@@ -12,11 +12,9 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
-#include "cling/Interpreter/StoredValueRef.h"
+#include "cling/Interpreter/Value.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
-
-#include "llvm/ExecutionEngine/GenericValue.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -880,11 +878,11 @@ namespace cling {
       std::string ctor("new ");
       ctor += type;
       ctor += ExprInfo->getExpr();
-      StoredValueRef res = Interp->Evaluate(ctor.c_str(), DC,
-                                            ExprInfo->isValuePrinterRequested()
-                                     );
-        m_Memory = (void*)res.get().getGV().PointerVal;
-      }
+      Value res = Interp->Evaluate(ctor.c_str(), DC,
+                                   ExprInfo->isValuePrinterRequested()
+                                   );
+      m_Memory = (void*)res.getAs<void*>();
+    }
 
     LifetimeHandler::~LifetimeHandler() {
       std::string str;

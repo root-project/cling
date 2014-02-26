@@ -10,12 +10,10 @@
 #ifndef CLING_VALUE_H
 #define CLING_VALUE_H
 
-#include <stddef.h>
-#include <assert.h>
-
 namespace clang {
   class ASTContext;
   class QualType;
+  class RecordDecl;
 }
 
 namespace cling {
@@ -35,6 +33,7 @@ namespace cling {
     ///\brief Multi-purpose storage.
     ///
     union Storage {
+      long long m_LL;
       unsigned long long m_ULL;
       void* m_Ptr; /// Can point to allocation, see needsManagedAllocation().
       float m_Float;
@@ -67,16 +66,15 @@ namespace cling {
     bool needsManagedAllocation() const;
 
     /// \brief Allocate storage as needed by the type.
-    void ManagedAllocate(Interpreter& interp);
+    void ManagedAllocate(Interpreter* interp);
 
-    /// \brief Increase ref count on managed storage.
-    void IncreaseManagedReference();
-
-    /// \brief Decrease ref count on managed storage.
-    void DecreaseManagedReference();
+    /// \brief Assert in case of an unsupported type. Outlined to reduce include
+    ///   dependencies.
+    void AssertOnUnsupportedTypeCast() const;
 
     /// \brief Get the function address of the wrapper of the destructor.
-    void* GetDtorWrapperPtr(clang::CXXRecordDecl* CXXRD);
+    void* GetDtorWrapperPtr(const clang::RecordDecl* RD,
+                            Interpreter& interp) const;
 
 
   public:
@@ -87,7 +85,7 @@ namespace cling {
     /// \brief Construct a valid but ininitialized Value. After this call the
     ///   value's storage can be accessed; i.e. calls ManagedAllocate() if
     ///   needed.
-    Value(clang::QualType Ty, Interpreter& Interp);
+    Value(clang::QualType Ty, Interpreter* Interp);
     /// \brief Destruct the value; calls ManagedFree() if needed.
     ~Value();
 
@@ -127,6 +125,7 @@ namespace cling {
     double& getAs(double*) { return m_Storage.m_Double; }
     long double& getAs(long double*) { return m_Storage.m_LongDouble; }
     float& getAs(float*) { return m_Storage.m_Float; }
+    long long& getAs(long long*) { return m_Storage.m_LL; }
     unsigned long long& getAs(unsigned long long*) { return m_Storage.m_ULL; }
 
     /// \brief Get the value.
@@ -143,7 +142,7 @@ namespace cling {
     EStorageType storageType = getStorageType();
     switch (storageType) {
     case kSignedIntegerOrEnumerationType:
-      return (T) getAs<signed long long>();
+      return (T) getAs<long long>();
     case kUnsignedIntegerOrEnumerationType:
       return (T) getAs<unsigned long long>();
     case kDoubleType:
@@ -153,9 +152,9 @@ namespace cling {
     case kLongDoubleType:
       return (T) getAs<long double>();
     case kPointerType:
-      return (T) (size_t) getAs<void*>();
+      return (T) (unsigned long) getAs<void*>();
     case kUnsupportedType:
-      assert("unsupported type in Value, cannot cast simplistically!" && 0);
+      AssertOnUnsupportedTypeCast();
     }
     return T();
   }

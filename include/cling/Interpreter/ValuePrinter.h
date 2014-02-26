@@ -18,7 +18,7 @@ namespace llvm {
 }
 
 namespace cling {
-  class StoredValueRef;
+  class Value;
 
   ///\brief Generic interface to value printing.
   ///
@@ -50,8 +50,8 @@ namespace cling {
                                    const ValuePrinterInfo& PVI);
     std::string printType_Default(const ValuePrinterInfo& PVI);
 
-    void StreamStoredValueRef(llvm::raw_ostream& o, const StoredValueRef* VR,
-                              clang::ASTContext& C);
+    void StreamClingValue(llvm::raw_ostream& o, const Value* VR,
+                          clang::ASTContext& C);
 
     void flushToStream(llvm::raw_ostream& o, const std::string& s);
 

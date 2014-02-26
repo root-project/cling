@@ -20,8 +20,8 @@
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
-#include "cling/Interpreter/StoredValueRef.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
@@ -461,7 +461,7 @@ namespace cling {
   /// semantics (declarations are global) and compile to produce a module.
   ///
   Interpreter::CompilationResult
-  Interpreter::process(const std::string& input, StoredValueRef* V /* = 0 */,
+  Interpreter::process(const std::string& input, Value* V /* = 0 */,
                        Transaction** T /* = 0 */) {
     if (isRawInputEnabled() || !ShouldWrapInput(input))
       return declare(input, T);
@@ -571,7 +571,7 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
-  Interpreter::evaluate(const std::string& input, StoredValueRef& V) {
+  Interpreter::evaluate(const std::string& input, Value& V) {
     // Here we might want to enforce further restrictions like: Only one
     // ExprStmt can be evaluated and etc. Such enforcement cannot happen in the
     // worker, because it is used from various places, where there is no such
@@ -585,7 +585,7 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
-  Interpreter::echo(const std::string& input, StoredValueRef* V /* = 0 */) {
+  Interpreter::echo(const std::string& input, Value* V /* = 0 */) {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = CompilationOptions::VPEnabled;
@@ -662,12 +662,12 @@ namespace cling {
 
   void Interpreter::WrapInput(std::string& input, std::string& fname) {
     fname = createUniqueWrapper();
-    input.insert(0, "void " + fname + "(cling::StoredValueRef*) {\n ");
+    input.insert(0, "void " + fname + "(cling::Value*) {\n ");
     input.append("\n;\n}");
   }
 
   Interpreter::ExecutionResult
-  Interpreter::RunFunction(const FunctionDecl* FD, StoredValueRef* res /*=0*/) {
+  Interpreter::RunFunction(const FunctionDecl* FD, Value* res /*=0*/) {
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return kExeCompilationError;
 
@@ -873,7 +873,7 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::EvaluateInternal(const std::string& input, 
                                 const CompilationOptions& CO,
-                                StoredValueRef* V, /* = 0 */
+                                Value* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
     StateDebuggerRAII stateDebugger(this);
 
@@ -909,7 +909,7 @@ namespace cling {
           return Interpreter::kSuccess;
       }
       if (V)
-        *V = StoredValueRef::invalidValue();
+        *V = Value();
 
       return Interpreter::kFailure;
     }
@@ -957,7 +957,11 @@ namespace cling {
     m_Executor->installLazyFunctionCreator(fp);
   }
 
-  StoredValueRef Interpreter::Evaluate(const char* expr, DeclContext* DC,
+  void Interpreter::suppressLazyFunctionCreatorDiags(bool suppressed/*=true*/) {
+    m_Executor->suppressLazyFunctionCreatorDiags(suppressed);
+  }
+
+  Value Interpreter::Evaluate(const char* expr, DeclContext* DC,
                                        bool ValuePrinterReq) {
     Sema& TheSema = getCI()->getSema();
     // The evaluation should happen on the global scope, because of the wrapper
@@ -967,7 +971,7 @@ namespace cling {
     Sema::ContextRAII pushDC(TheSema, 
                              TheSema.getASTContext().getTranslationUnitDecl());
 
-    StoredValueRef Result;
+    Value Result;
     getCallbacks()->SetIsRuntime(true);
     if (ValuePrinterReq)
       echo(expr, &Result);

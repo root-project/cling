@@ -26,8 +26,8 @@ namespace clang {
 namespace cling {
   class Interpreter;
   class MetaProcessor;
-  class StoredValueRef;
   class Transaction;
+  class Value;
 
   ///\brief Semantic analysis for our home-grown language. All implementation
   /// details of the commands should go here.
@@ -94,7 +94,7 @@ namespace cling {
     ///                     expression.
     ///
     ActionResult actOnxCommand(llvm::StringRef file, llvm::StringRef args,
-                               StoredValueRef* result);
+                               Value* result);
 
     ///\brief Actions to be performed on quit.
     ///
@@ -199,7 +199,7 @@ namespace cling {
     ///\param[out] result - if not NULL will hold shell exit code at return.
     ///
     ActionResult actOnShellCommand(llvm::StringRef commandLine,
-                                   StoredValueRef* result) const;
+                                   Value* result) const;
   };
 
 } // end namespace cling

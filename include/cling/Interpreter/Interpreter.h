@@ -62,7 +62,7 @@ namespace cling {
   class IncrementalParser;
   class InterpreterCallbacks;
   class LookupHelper;
-  class StoredValueRef;
+  class Value;
   class Transaction;
 
   ///\brief Class that implements the interpreter-like behavior. It manages the
@@ -210,7 +210,7 @@ namespace cling {
     ///
     CompilationResult EvaluateInternal(const std::string& input,
                                        const CompilationOptions& CO,
-                                       StoredValueRef* V = 0,
+                                       Value* V = 0,
                                        Transaction** T = 0);
 
     ///\brief Decides whether the input line should be wrapped or not by using
@@ -243,7 +243,7 @@ namespace cling {
     ///\returns The result of the execution.
     ///
     ExecutionResult RunFunction(const clang::FunctionDecl* FD,
-                                StoredValueRef* res = 0);
+                                Value* res = 0);
 
     ///\brief Forwards to cling::IncrementalExecutor::addSymbol.
     ///
@@ -386,7 +386,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult process(const std::string& input, StoredValueRef* V = 0,
+    CompilationResult process(const std::string& input, Value* V = 0,
                               Transaction** T = 0);
 
     ///\brief Parses input line, which doesn't contain statements. No code 
@@ -451,7 +451,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult evaluate(const std::string& input, StoredValueRef& V);
+    CompilationResult evaluate(const std::string& input, Value& V);
 
     ///\brief Compiles input line, which contains only expressions and prints
     /// out the result of its execution.
@@ -466,7 +466,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     /// 
-    CompilationResult echo(const std::string& input, StoredValueRef* V = 0);
+    CompilationResult echo(const std::string& input, Value* V = 0);
 
     ///\brief Compiles input line and runs.
     ///
@@ -537,7 +537,7 @@ namespace cling {
     ///
     ///\returns The result of the evaluation if the expression.
     ///
-    StoredValueRef Evaluate(const char* expr, clang::DeclContext* DC,
+    Value Evaluate(const char* expr, clang::DeclContext* DC,
                             bool ValuePrinterReq = false);
 
     ///\brief Interpreter callbacks accessors.

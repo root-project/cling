@@ -163,7 +163,7 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
 
 IncrementalExecutor::ExecutionResult
 IncrementalExecutor::executeFunction(llvm::StringRef funcname,
-                                     StoredValueRef* returnValue) {
+                                     Value* returnValue) {
   // Call a function without arguments, or with an SRet argument, see SRet below
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();

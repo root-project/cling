@@ -14,7 +14,7 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
-#include "cling/Interpreter/StoredValueRef.h"
+#include "cling/Interpreter/Value.h"
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
@@ -87,7 +87,7 @@ namespace cling {
   }
 
   bool MetaParser::isMetaCommand(MetaSema::ActionResult& actionResult,
-                                 StoredValueRef* resultValue) {
+                                 Value* resultValue) {
     return isCommandSymbol() && isCommand(actionResult, resultValue);
   }
 
@@ -105,9 +105,9 @@ namespace cling {
   }
 
   bool MetaParser::isCommand(MetaSema::ActionResult& actionResult,
-                             StoredValueRef* resultValue) {
+                             Value* resultValue) {
     if (resultValue)
-      *resultValue = StoredValueRef::invalidValue();
+      *resultValue = Value();
     return isLCommand(actionResult)
       || isXCommand(actionResult, resultValue)
       || isqCommand() || isUCommand(actionResult) || isICommand()
@@ -219,9 +219,9 @@ namespace cling {
   // ArgList := (ExtraArgList) ' ' [ArgList]
   // ExtraArgList := AnyString [, ExtraArgList]
   bool MetaParser::isXCommand(MetaSema::ActionResult& actionResult,
-                              StoredValueRef* resultValue) {
+                              Value* resultValue) {
     if (resultValue)
-      *resultValue = StoredValueRef::invalidValue();
+      *resultValue = Value();
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident) && (Tok.getIdent().equals("x")
                                || Tok.getIdent().equals("X"))) {
@@ -514,9 +514,9 @@ namespace cling {
   }
 
   bool MetaParser::isShellCommand(MetaSema::ActionResult& actionResult,
-                                  StoredValueRef* resultValue) {
+                                  Value* resultValue) {
     if (resultValue)
-      *resultValue = StoredValueRef::invalidValue();
+      *resultValue = Value();
     actionResult = MetaSema::AR_Failure;
     const Token& Tok = getCurTok();
     if (Tok.is(tok::excl_mark)) {

@@ -11,7 +11,6 @@
 
 #include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/ValuePrinterInfo.h"
-#include "cling/Interpreter/StoredValueRef.h"
 #include "cling/Interpreter/Value.h"
 
 #include "clang/AST/ASTContext.h"
@@ -191,36 +190,9 @@ static void StreamFunction(llvm::raw_ostream& o, const void* addr,
 
 static void StreamLongDouble(llvm::raw_ostream& o, const Value* value,
                              clang::ASTContext& C) {
-  llvm::APFloat LDbl(C.getFloatTypeSemantics(value->getClangType()),
-                     value->getGV().IntVal);
-  llvm::SmallString<24> Buf;
-  LDbl.toString(Buf);
-  o << Buf << 'L';
-}
-
-static void StreamClingValue(llvm::raw_ostream& o, const Value* value,
-                             clang::ASTContext& C) {
-  if (!value || !value->isValid()) {
-    o << "<<<invalid>>> @" << value;
-  } else {
-    o << "boxes [";
-    o << "("
-      << value->getClangType().getAsString(C.getPrintingPolicy())
-      << ") ";
-    clang::QualType valType = value->getClangType().getDesugaredType(C);
-    if (C.hasSameType(valType, C.LongDoubleTy))
-      StreamLongDouble(o, value, C);
-    else if (valType->isFloatingType())
-      o << value->getGV().DoubleVal;
-    else if (valType->isIntegerType())
-      o << value->getGV().IntVal.getSExtValue();
-    else if (valType->isBooleanType())
-      o << value->getGV().IntVal.getBoolValue();
-    else
-      StreamValue(o, value->getGV().PointerVal,
-                  ValuePrinterInfo(valType, &C));
-    o << "]";
-  }
+  std::stringstream sstr;
+  sstr << value->getAs<long double>();
+  o << sstr.str() << 'L';
 }
 
 static void StreamObj(llvm::raw_ostream& o, const void* v,
@@ -228,12 +200,13 @@ static void StreamObj(llvm::raw_ostream& o, const void* v,
   const clang::Type* Ty = VPI.getType().getTypePtr();
   if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl()) {
     std::string QualName = CXXRD->getQualifiedNameAsString();
-    if (QualName == "cling::StoredValueRef"){
-      valuePrinterInternal::StreamStoredValueRef(o, (const StoredValueRef*)v,
-                                                 *VPI.getASTContext());
+    if (QualName == "cling::Value"){
+      valuePrinterInternal::StreamClingValue(o, (const Value*)v,
+                                             *VPI.getASTContext());
       return;
     } else if (QualName == "cling::Value") {
-      StreamClingValue(o, (const Value*)v, *VPI.getASTContext());
+      valuePrinterInternal::StreamClingValue(o, (const Value*)v,
+                                             *VPI.getASTContext());
       return;
     }
   } // if CXXRecordDecl
@@ -353,13 +326,31 @@ namespace valuePrinterInternal {
     return buf;
   }
 
-  void StreamStoredValueRef(llvm::raw_ostream& o,
-                            const StoredValueRef* VR,
-                            clang::ASTContext& C) {
-    if (VR->isValid()) {
-      StreamClingValue(o, &VR->get(), C);
+  void StreamClingValue(llvm::raw_ostream& o, const Value* value,
+                        clang::ASTContext& C) {
+    if (!value || !value->isValid()) {
+      o << "<<<invalid>>> @" << value;
     } else {
-      o << "<<<invalid>>> @" << VR;
+      clang::QualType QT = value->getType();
+      o << "boxes [";
+      o << "("
+        << QT.getAsString(C.getPrintingPolicy())
+        << ") ";
+      clang::QualType valType = QT.getDesugaredType(C);
+      if (C.hasSameType(valType, C.LongDoubleTy))
+        StreamLongDouble(o, value, C);
+      else if (valType->isFloatingType())
+        o << value->simplisticCastAs<double>();
+      else if (valType->isIntegerType()) {
+        if (valType->hasSignedIntegerRepresentation())
+          o << value->getAs<long long>();
+        else
+          o << value->getAs<unsigned long long>();
+      } else if (valType->isBooleanType())
+        o << (value->getAs<unsigned long long>() ? "true" : "false");
+      else
+        StreamValue(o, value->getAs<void*>(), ValuePrinterInfo(valType, &C));
+      o << "]";
     }
   }
 
