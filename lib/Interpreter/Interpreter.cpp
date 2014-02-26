@@ -1013,10 +1013,6 @@ namespace cling {
     return ConvertExecutionResult(ExeRes);
   }
 
-  void Interpreter::runStaticDestructorsOnce() {
-    m_Executor->runStaticDestructorsOnce(getModule());
-  }
-
   void Interpreter::MaybeIgnoreFakeDiagnostics() const {
     // In rawInput mode we want to be as close as possible to the compiler.
     if (isRawInputEnabled())
