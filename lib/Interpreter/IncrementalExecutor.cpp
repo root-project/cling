@@ -315,12 +315,6 @@ IncrementalExecutor::runStaticDestructorsOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
   assert(m_engine && "Code generation did not create an engine!");
 
-  llvm::GlobalVariable* gdtors
-    = m->getGlobalVariable("llvm.global_dtors", true);
-  if (gdtors) {
-    m_engine->runStaticConstructorsDestructors(true);
-  }
-
   // 'Unload' the cxa_atexit entities.
   for (size_t I = 0, E = m_AtExitFuncs.size(); I < E; ++I) {
     const CXAAtExitElement& AEE = m_AtExitFuncs[E-I-1];
