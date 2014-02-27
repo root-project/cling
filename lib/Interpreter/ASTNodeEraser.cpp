@@ -1014,4 +1014,10 @@ namespace cling {
 
     return Successful;
   }
+
+  bool ASTNodeEraser::RevertDecl(Decl* D) {
+    Transaction T(D->getASTContext());
+    T.append(D);
+    return RevertTransaction(&T);
+  }
 } // end namespace cling
