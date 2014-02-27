@@ -633,16 +633,6 @@ namespace cling {
     return IncrementalParser::kSuccess;
   }
 
-  void IncrementalParser::unloadLastNTransactions(unsigned N) {
-    assert(N <= m_Transactions.size() && "Unloading more than ever seen.");
-    
-    while(true) {
-      unloadTransaction(m_Transactions.back());
-      if (!--N)
-        break;
-    } 
-  }
-  
   void IncrementalParser::unloadTransaction(Transaction* T) {
     if (!T)
       T = getLastTransaction();

@@ -918,7 +918,14 @@ namespace cling {
   }
 
   void Interpreter::unload(unsigned numberOfTransactions) {
-    m_IncrParser->unloadLastNTransactions(numberOfTransactions);
+    while(true) {
+      cling::Transaction* T = m_IncrParser->getLastTransaction();
+      m_IncrParser->unloadTransaction(T);
+      m_Executor->runAndRemoveStaticDestructors(T);
+      if (!--numberOfTransactions)
+        break;
+    }
+
   }
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
