@@ -132,10 +132,10 @@ namespace cling {
 
     ///\brief Specialize the removal of constructors due to the fact the we need
     /// the constructor type (aka CXXCtorType). The information is located in
-    /// the CXXConstructExpr of usually VarDecls. 
+    /// the CXXConstructExpr of usually VarDecls.
     /// See clang::CodeGen::CodeGenFunction::EmitCXXConstructExpr.
     ///
-    /// What we will do instead is to brute-force and try to remove from the 
+    /// What we will do instead is to brute-force and try to remove from the
     /// llvm::Module all ctors of this class with all the types.
     ///
     ///\param[in] CXXCtor - The declaration to be removed.
@@ -143,6 +143,18 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor);
+
+    ///\brief Specialize the removal of destructors due to the fact the we need
+    /// the to erase the dtor decl and the deleting operator.
+    ///
+    /// We will brute-force and try to remove from the llvm::Module all dtors of
+    /// this class with all the types.
+    ///
+    ///\param[in] CXXDtor - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitCXXDestructorDecl(CXXDestructorDecl* CXXDtor);
 
     ///\brief Removes the DeclCotnext and its decls.
     /// @param[in] DC - The declaration to be removed.
@@ -610,6 +622,26 @@ namespace cling {
     MaybeRemoveDeclFromModule(GD);
 
     bool Successful = VisitCXXMethodDecl(CXXCtor);
+    return Successful;
+  }
+
+  bool DeclReverter::VisitCXXDestructorDecl(CXXDestructorDecl* CXXDtor) {
+    // Cleanup the module if the transaction was committed and code was
+    // generated. This has to go first, because it may need the AST information
+    // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
+
+    // Brute-force all possibly generated dtors.
+    // Dtor_Deleting            Deleting dtor.
+    // Dtor_Base                Base object dtor.
+    // Dtor_Complete            Complete object dtor.
+    GlobalDecl GD(CXXDtor, Dtor_Deleting);
+    MaybeRemoveDeclFromModule(GD);
+    GD = GlobalDecl(CXXDtor, Dtor_Base);
+    MaybeRemoveDeclFromModule(GD);
+    GD = GlobalDecl(CXXDtor, Dtor_Complete);
+    MaybeRemoveDeclFromModule(GD);
+
+    bool Successful = VisitCXXMethodDecl(CXXDtor);
     return Successful;
   }
 
