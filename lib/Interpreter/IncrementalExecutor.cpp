@@ -310,15 +310,25 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
   return kExeSuccess;
 }
 
-void
-IncrementalExecutor::runStaticDestructorsOnce() {
+void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
+  assert(T && "Must be set");
+  // Collect all the dtors bound to this transaction.
+  AtExitFunctions boundToT;
+  for (AtExitFunctions::iterator I = m_AtExitFuncs.begin();
+       I != m_AtExitFuncs.end();)
+    if (I->m_FromT == T) {
+      boundToT.push_back(*I);
+      I = m_AtExitFuncs.erase(I);
+    }
+    else
+      ++I;
+
   // 'Unload' the cxa_atexit entities.
-  for (AtExitFunctions::reverse_iterator I = m_AtExitFuncs.rbegin(),
-         E = m_AtExitFuncs.rend(); I != E; ++I) {
+  for (AtExitFunctions::reverse_iterator I = boundToT.rbegin(),
+         E = boundToT.rend(); I != E; ++I) {
     const CXAAtExitElement& AEE = *I;
     (*AEE.m_Func)(AEE.m_Arg);
   }
-  m_AtExitFuncs.clear();
 }
 
 void

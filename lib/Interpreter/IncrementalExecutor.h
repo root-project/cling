@@ -130,7 +130,12 @@ namespace cling {
     }
 
     ExecutionResult runStaticInitializersOnce(llvm::Module* m);
-    void runStaticDestructorsOnce();
+
+    ///\brief Runs all destructors bound to the given transaction and removes
+    /// them from the list.
+    ///\param[in] T - Transaction to which the dtors were bound.
+    ///
+    void runAndRemoveStaticDestructors(Transaction* T);
 
     ExecutionResult executeFunction(llvm::StringRef function,
                                     StoredValueRef* returnValue = 0);
