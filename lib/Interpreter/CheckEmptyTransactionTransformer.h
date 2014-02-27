@@ -12,11 +12,16 @@
 
 #include "TransactionTransformer.h"
 
+namespace clang {
+  class Sema;
+}
+
 namespace cling {
 
   class CheckEmptyTransactionTransformer : public TransactionTransformer {
   public:
-    CheckEmptyTransactionTransformer() : TransactionTransformer(/*Sema=*/0) { }
+    CheckEmptyTransactionTransformer(clang::Sema* S)
+      : TransactionTransformer(S) { }
     virtual void Transform();
   };
 } // end namespace cling

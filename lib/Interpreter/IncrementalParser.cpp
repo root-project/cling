@@ -83,8 +83,8 @@ namespace cling {
     m_ASTTransformers.push_back(new DeclExtractor(TheSema));
     m_ASTTransformers.push_back(new ValueExtractionSynthesizer(TheSema));
     m_ASTTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
-    m_ASTTransformers.push_back(new CheckEmptyTransactionTransformer());
-    
+    m_ASTTransformers.push_back(new CheckEmptyTransactionTransformer(TheSema));
+ 
     // Register the IR Transformers
     m_IRTransformers.push_back(new IRDumper());
   }

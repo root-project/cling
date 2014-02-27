@@ -9,10 +9,12 @@
 
 #include "CheckEmptyTransactionTransformer.h"
 
+#include "ASTNodeEraser.h"
 #include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/Sema/Sema.h"
 
 #include <algorithm>
 
@@ -28,13 +30,15 @@ namespace cling {
         DeclGroupRef DGR(FD);
         Transaction::DelayCallInfo DCI (DGR,
                                         Transaction::kCCIHandleTopLevelDecl);
-        Transaction::iterator found 
+        Transaction::iterator found
           = std::find(T->decls_begin(), T->decls_end(), DCI);
         if (found != T->decls_end()) {
           T->erase(found);
         }
-        //FIXME: Replace with a invocation to the decl reverter.
-        FD->getLexicalDeclContext()->removeDecl(FD);
+        cling::Transaction T(m_Sema->getASTContext());
+        T.append(FD);
+        ASTNodeEraser eraser(m_Sema, /*ExecutionEngine*/0);
+        eraser.RevertTransaction(&T);
       }
     }
   }
