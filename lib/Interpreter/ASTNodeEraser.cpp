@@ -601,7 +601,7 @@ namespace cling {
     // Brute-force all possibly generated ctors.
     // Ctor_Complete            Complete object ctor.
     // Ctor_Base                Base object ctor.
-    // Ctor_CompleteAllocating 	Complete object allocating ctor.
+    // Ctor_CompleteAllocating  Complete object allocating ctor.
     GlobalDecl GD(CXXCtor, Ctor_Complete);
     MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXCtor, Ctor_Base);
