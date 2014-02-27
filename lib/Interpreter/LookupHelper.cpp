@@ -9,6 +9,7 @@
 
 #include "cling/Interpreter/LookupHelper.h"
 
+#include "ASTNodeEraser.h"
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
@@ -146,7 +147,7 @@ namespace cling {
       setResultType = resultType;
     *setResultType = 0;
 
-    const Decl* TheDecl = 0;
+    Decl* TheDecl = 0;
 
     //
     //  Prevent failing on an assert in TryAnnotateCXXScopeToken.
@@ -231,8 +232,12 @@ namespace cling {
                         // Success, type is complete, instantiations have
                         // been done.
                         TheDecl = TD->getDefinition();
-                        if (TheDecl->isInvalidDecl())
+                        if (TheDecl->isInvalidDecl()) {
+                          // if the decl is invalid try to clean up
+                          ASTNodeEraser eraser(&S, /*ExecutionEngine*/0);
+                          eraser.RevertDecl(TheDecl);
                           return 0;
+                        }
                       } else {
                         // We cannot instantiate the scope: not a valid decl.
                         return 0;
@@ -442,8 +447,12 @@ namespace cling {
       // Forward decl or instantiation failure, we cannot use it.
       return 0;
     }
-    if (scopeDecl->isInvalidDecl())
+    if (scopeDecl->isInvalidDecl()) {
+      // if the decl is invalid try to clean up
+      ASTNodeEraser eraser(&S, /*ExecutionEngine*/0);
+      eraser.RevertDecl(const_cast<Decl*>(scopeDecl));
       return 0;
+    }
 
     return foundDC;
   }
@@ -606,8 +615,12 @@ namespace cling {
           if (TheDecl->isTemplateInstantiation() && !TheDecl->isDefined())
             S.InstantiateFunctionDefinition(SourceLocation(), TheDecl,
                                             true /*recursive instantiation*/);
-          if (TheDecl->isInvalidDecl())
+          if (TheDecl->isInvalidDecl()) {
+            // if the decl is invalid try to clean up
+            ASTNodeEraser eraser(&S, /*ExecutionEngine*/0);
+            eraser.RevertDecl(const_cast<FunctionDecl*>(TheDecl));
             return 0;
+          }
        }
     }
     return TheDecl;
@@ -1073,8 +1086,12 @@ namespace cling {
           if (!fdecl->isDefined())
             S.InstantiateFunctionDefinition(loc, fdecl,
                                             true /*recursive instantiation*/);
-          if (fdecl->isInvalidDecl())
+          if (fdecl->isInvalidDecl()) {
+            // if the decl is invalid try to clean up
+            ASTNodeEraser eraser(&S, /*ExecutionEngine*/0);
+            eraser.RevertDecl(fdecl);
             return 0;
+          }
           return fdecl;
         }
       }
