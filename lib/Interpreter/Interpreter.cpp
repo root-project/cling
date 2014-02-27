@@ -920,8 +920,8 @@ namespace cling {
   void Interpreter::unload(unsigned numberOfTransactions) {
     while(true) {
       cling::Transaction* T = m_IncrParser->getLastTransaction();
-      m_IncrParser->unloadTransaction(T);
       m_Executor->runAndRemoveStaticDestructors(T);
+      m_IncrParser->unloadTransaction(T);
       if (!--numberOfTransactions)
         break;
     }
