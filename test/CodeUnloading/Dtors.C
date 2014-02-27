@@ -7,7 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
-
+//XFAIL:*
 extern "C" int printf(const char* fmt, ...);
 .storeState "preUnload"
 class ClassWithDtor{
