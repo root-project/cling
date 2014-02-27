@@ -310,7 +310,8 @@ namespace cling {
     PushTransactionRAII RAII(this);
     ClangInternalState* state
       = new ClangInternalState(getCI()->getASTContext(),
-                               getCI()->getPreprocessor(), getModule(), name);
+                               getCI()->getPreprocessor(), getModule(),
+                               getCodeGenerator(), name);
     m_StoredStates.push_back(state);
   }
 

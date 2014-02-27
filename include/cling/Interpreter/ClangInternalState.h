@@ -18,6 +18,7 @@
 
 namespace clang {
   class ASTContext;
+  class CodeGenerator;
   class SourceManager;
   class Preprocessor;
 }
@@ -42,6 +43,7 @@ namespace cling {
     std::string m_MacrosFile;
     clang::ASTContext& m_ASTContext;
     clang::Preprocessor& m_Preprocessor;
+    clang::CodeGenerator* m_CodeGen;
     llvm::Module* m_Module;
     std::string m_DiffCommand;
     std::string m_Name;
@@ -50,7 +52,8 @@ namespace cling {
     llvm::OwningPtr<ClangInternalState> m_DiffPair;
   public:
     ClangInternalState(clang::ASTContext& AC, clang::Preprocessor& PP,
-                       llvm::Module* M, const std::string& name);
+                       llvm::Module* M, clang::CodeGenerator* CG,
+                       const std::string& name);
     ~ClangInternalState();
 
     ///\brief It is convenient the state object to be named so that can be
@@ -81,7 +84,8 @@ namespace cling {
     static void printIncludedFiles(llvm::raw_ostream& Out,
                                    clang::SourceManager& SM);
     static void printAST(llvm::raw_ostream& Out, clang::ASTContext& C);
-    static void printLLVMModule(llvm::raw_ostream& Out, llvm::Module& M);
+    static void printLLVMModule(llvm::raw_ostream& Out, llvm::Module& M,
+                                clang::CodeGenerator& CG);
     static void printMacroDefinitions(llvm::raw_ostream& Out,
                                       clang::Preprocessor& PP);
   private:

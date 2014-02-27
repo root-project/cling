@@ -14,6 +14,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/CodeGen/ModuleBuilder.h"
 
 #include "llvm/ADT/SmallString.h"
 #include "llvm/IR/Module.h"
@@ -37,9 +38,9 @@ using namespace clang;
 namespace cling {
 
   ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
-                                         llvm::Module* M,
+                                         llvm::Module* M, CodeGenerator* CG,
                                          const std::string& name)
-    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M),
+    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M), m_CodeGen(CG),
       m_DiffCommand("diff -u --text "), m_Name(name), m_DiffPair(0) {
     store();
   }
@@ -74,7 +75,7 @@ namespace cling {
                        m_ASTContext.getSourceManager());
     printAST(*m_ASTOS.get(), m_ASTContext);
     if (m_Module)
-      printLLVMModule(*m_LLVMModuleOS.get(), *m_Module);
+      printLLVMModule(*m_LLVMModuleOS.get(), *m_Module, *m_CodeGen);
     printMacroDefinitions(*m_MacrosOS.get(), m_Preprocessor);
   }
   namespace {
@@ -131,7 +132,7 @@ namespace cling {
   void ClangInternalState::compare(const std::string& name) {
     assert(name == m_Name && "Different names!?");
     m_DiffPair.reset(new ClangInternalState(m_ASTContext, m_Preprocessor,
-                                            m_Module, name));
+                                            m_Module, m_CodeGen, name));
     std::string differences = "";
     // Ignore the builtins
     typedef llvm::SmallVector<const char*, 1024> Builtins;
@@ -165,6 +166,7 @@ namespace cling {
       differences = "";
     }
     if (m_Module) {
+      assert(m_CodeGen && "Must have CodeGen set");
       // We want to skip the intrinsics
       builtinNames.clear();
       for (llvm::Module::const_iterator I = m_Module->begin(),
@@ -277,8 +279,10 @@ namespace cling {
   }
 
   void ClangInternalState::printLLVMModule(llvm::raw_ostream& Out,
-                                           llvm::Module& M) {
+                                           llvm::Module& M,
+                                           CodeGenerator& CG) {
     M.print(Out, /*AssemblyAnnotationWriter*/ 0);
+    CG.print(Out);
   }
 
   void ClangInternalState::printMacroDefinitions(llvm::raw_ostream& Out,
