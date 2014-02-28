@@ -44,7 +44,7 @@ namespace cling {
   void MetaParser::consumeToken() {
     if (m_TokenCache.size())
       m_TokenCache.erase(m_TokenCache.begin());
-    
+
     lookAhead(0);
   }
 
@@ -56,7 +56,7 @@ namespace cling {
     // Add the new token in which we will merge the others.
     Token& MergedTok = m_TokenCache.front();
 
-    if (MergedTok.is(stopAt) || MergedTok.is(tok::eof) 
+    if (MergedTok.is(stopAt) || MergedTok.is(tok::eof)
         || MergedTok.is(tok::comment))
       return;
 
@@ -91,8 +91,8 @@ namespace cling {
     return isCommandSymbol() && isCommand(actionResult, resultValue);
   }
 
-  bool MetaParser::isQuitRequested() const { 
-    return m_Actions->isQuitRequested(); 
+  bool MetaParser::isQuitRequested() const {
+    return m_Actions->isQuitRequested();
   }
 
   bool MetaParser::isCommandSymbol() {
@@ -211,7 +211,7 @@ namespace cling {
                                           stream/*which stream to redirect*/,
                                           append/*append mode*/);
       return true;
-    } 
+    }
     return false;
   }
 
@@ -251,7 +251,7 @@ namespace cling {
   bool MetaParser::isExtraArgList() {
     // This might be expanded if we need better arg parsing.
     consumeAnyStringToken(tok::r_paren);
-    
+
     return getCurTok().is(tok::raw_ident);
   }
 
@@ -284,7 +284,7 @@ namespace cling {
     }
     return false;
   }
-  
+
   bool MetaParser::isOCommand() {
     const Token& currTok = getCurTok();
     if (currTok.is(tok::ident)) {
@@ -369,14 +369,14 @@ namespace cling {
       consumeToken();
       skipWhitespace();
       if (!getCurTok().is(tok::quote))
-	return false; // FIXME: Issue proper diagnostics
+        return false; // FIXME: Issue proper diagnostics
       consumeToken();
       if (!getCurTok().is(tok::ident))
-	return false; // FIXME: Issue proper diagnostics
+        return false; // FIXME: Issue proper diagnostics
       std::string ident = getCurTok().getIdent();
       consumeToken();
       if (!getCurTok().is(tok::quote))
-	return false; // FIXME: Issue proper diagnostics
+        return false; // FIXME: Issue proper diagnostics
       m_Actions->actOnstoreStateCommand(ident);
       return true;
     }
@@ -390,14 +390,14 @@ namespace cling {
       consumeToken();
       skipWhitespace();
       if (!getCurTok().is(tok::quote))
-	return false; // FIXME: Issue proper diagnostics
+        return false; // FIXME: Issue proper diagnostics
       consumeToken();
       if (!getCurTok().is(tok::ident))
-	return false; // FIXME: Issue proper diagnostics
+        return false; // FIXME: Issue proper diagnostics
       std::string ident = getCurTok().getIdent();
       consumeToken();
       if (!getCurTok().is(tok::quote))
-	return false; // FIXME: Issue proper diagnostics
+        return false; // FIXME: Issue proper diagnostics
       m_Actions->actOncompareStateCommand(ident);
       return true;
     }
@@ -422,7 +422,7 @@ namespace cling {
   bool MetaParser::isundoCommand() {
     if (getCurTok().is(tok::ident) &&
         getCurTok().getIdent().equals("undo")) {
-      consumeToken();  
+      consumeToken();
       skipWhitespace();
       const Token& next = getCurTok();
       if (next.is(tok::constant))
@@ -450,7 +450,7 @@ namespace cling {
 
   bool MetaParser::ishelpCommand() {
     const Token& Tok = getCurTok();
-    if (Tok.is(tok::quest_mark) || 
+    if (Tok.is(tok::quest_mark) ||
         (Tok.is(tok::ident) && Tok.getIdent().equals("help"))) {
       m_Actions->actOnhelpCommand();
       return true;
@@ -506,7 +506,7 @@ namespace cling {
     }
     return false;
   }
-  
+
   bool MetaParser::isTypedefCommand() {
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident)) {
@@ -522,7 +522,7 @@ namespace cling {
     }
     return false;
   }
-  
+
   bool MetaParser::isShellCommand(MetaSema::ActionResult& actionResult,
                                   StoredValueRef* resultValue) {
     if (resultValue)

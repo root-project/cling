@@ -30,7 +30,7 @@ namespace cling {
   //                            ICommand | OCommand | RawInputCommand |
   //                            PrintASTCommand | DynamicExtensionsCommand | HelpCommand |
   //                            FileExCommand | FilesCommand | ClassCommand |
-  //                            GCommand | PrintIRCommand | StoreStateCommand | 
+  //                            GCommand | PrintIRCommand | StoreStateCommand |
   //                            CompareStateCommand | StatsCommand | undoCommand
   //                 LCommand := 'L' FilePath
   //                 >Command := '>' FilePath
