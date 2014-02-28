@@ -159,9 +159,6 @@ namespace cling {
     ///
     bool m_PrintAST;
 
-    ///\brief Flag toggling the AST printing on or off.
-    ///
-    bool m_PrintIR;
 
     ///\brief Flag toggling the dynamic scopes on or off.
     ///
