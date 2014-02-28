@@ -145,6 +145,12 @@ namespace cling {
     ///
     void actOncompareStateCommand(llvm::StringRef name) const;
 
+    ///\brief Show stats for various internal data structures.
+    ///
+    ///\param[in] name - Name of the structure.
+    ///
+    void actOnstatsCommand(llvm::StringRef name) const;
+
     ///\brief Switches on/off the experimental dynamic extensions (dynamic
     /// scopes) and late binding.
     ///

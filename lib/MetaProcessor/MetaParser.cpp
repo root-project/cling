@@ -112,11 +112,11 @@ namespace cling {
       || isXCommand(actionResult, resultValue)
       || isqCommand() || isUCommand(actionResult) || isICommand()
       || isOCommand() || israwInputCommand() || isprintASTCommand()
-      || isdynamicExtensionsCommand()
-      || ishelpCommand() || isfileExCommand() || isfilesCommand() || isClassCommand()
-      || isgCommand() || isTypedefCommand() || isprintIRCommand()
-      || isShellCommand(actionResult, resultValue)
-      || isstoreStateCommand() || iscompareStateCommand() || isundoCommand()
+      || isdynamicExtensionsCommand() || ishelpCommand() || isfileExCommand()
+      || isfilesCommand() || isClassCommand() || isgCommand()
+      || isTypedefCommand() || isprintIRCommand()
+      || isShellCommand(actionResult, resultValue) || isstoreStateCommand()
+      || iscompareStateCommand() || isstatsCommand() || isundoCommand()
       || isRedirectCommand(actionResult);
   }
 
@@ -399,6 +399,21 @@ namespace cling {
       if (!getCurTok().is(tok::quote))
 	return false; // FIXME: Issue proper diagnostics
       m_Actions->actOncompareStateCommand(ident);
+      return true;
+    }
+    return false;
+  }
+
+  bool MetaParser::isstatsCommand() {
+    if (getCurTok().is(tok::ident) &&
+        getCurTok().getIdent().equals("stats")) {
+      consumeToken();
+      skipWhitespace();
+      if (!getCurTok().is(tok::ident))
+        return false; // FIXME: Issue proper diagnostics
+      std::string ident = getCurTok().getIdent();
+      consumeToken();
+      m_Actions->actOnstatsCommand(ident);
       return true;
     }
     return false;

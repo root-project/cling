@@ -154,6 +154,12 @@ namespace cling {
     m_Interpreter.compareInterpreterState(name);
   }
 
+  void MetaSema::actOnstatsCommand(llvm::StringRef name) const {
+    if (name.equals("ast")) {
+      m_Interpreter.getCI()->getSema().getASTContext().PrintStats();
+    }
+  }
+
   void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/)
     const {
     if (mode == kToggle) {
