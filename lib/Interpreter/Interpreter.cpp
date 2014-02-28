@@ -999,15 +999,6 @@ namespace cling {
     Ctx.setExternalSource(astContextExternalSource);
   }
 
-  //FIXME: Get rid of that.
-  clang::ASTDeserializationListener*
-  Interpreter::getASTDeserializationListener() const {
-    if (!m_Callbacks)
-      return 0;
-    return m_Callbacks->getInterpreterDeserializationListener();
-  }
-
-
   const Transaction* Interpreter::getFirstTransaction() const {
     return m_IncrParser->getFirstTransaction();
   }

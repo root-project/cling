@@ -554,10 +554,6 @@ namespace cling {
       return m_DyLibManager.get();
     }
 
-    // FIXME: remove once modules are there; see
-    // DeclCollector::HandleTopLevelDecl().
-    clang::ASTDeserializationListener* getASTDeserializationListener() const;
-
     const Transaction* getFirstTransaction() const;
     const Transaction* getLastTransaction() const;
 
