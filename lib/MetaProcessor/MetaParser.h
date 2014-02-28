@@ -30,7 +30,7 @@ namespace cling {
   //                            ICommand | OCommand | RawInputCommand |
   //                            PrintASTCommand | DynamicExtensionsCommand | HelpCommand |
   //                            FileExCommand | FilesCommand | ClassCommand |
-  //                            GCommand | PrintIRCommand | StoreStateCommand |
+  //                            GCommand | StoreStateCommand |
   //                            CompareStateCommand | StatsCommand | undoCommand
   //                 LCommand := 'L' FilePath
   //                 >Command := '>' FilePath
@@ -41,7 +41,6 @@ namespace cling {
   //                 OCommand := 'O'[' ']Constant
   //                 RawInputCommand := 'rawInput' [Constant]
   //                 PrintASTCommand := 'printAST' [Constant]
-  //                 PrintIRCommand := 'printIR' [Constant]
   //                 StoreStateCommand := 'storeState' "Ident"
   //                 CompareStateCommand := 'compareState' "Ident"
   //                 StatsCommand := 'stats' ['ast']
@@ -91,7 +90,6 @@ namespace cling {
     bool isOCommand();
     bool israwInputCommand();
     bool isprintASTCommand();
-    bool isprintIRCommand();
     bool isstoreStateCommand();
     bool iscompareStateCommand();
     bool isstatsCommand();

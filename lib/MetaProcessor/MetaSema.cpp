@@ -135,17 +135,6 @@ namespace cling {
       m_Interpreter.enablePrintAST(mode);
   }
 
-  void MetaSema::actOnprintIRCommand(SwitchMode mode/* = kToggle*/) const {
-    if (mode == kToggle) {
-      bool flag = !m_Interpreter.isPrintingIR();
-      m_Interpreter.enablePrintIR(flag);
-      // FIXME:
-      m_MetaProcessor.getOuts() << (flag ? "P" : "Not p") << "rinting IR\n";
-    }
-    else
-      m_Interpreter.enablePrintIR(mode);
-  }
-
   void MetaSema::actOnstoreStateCommand(llvm::StringRef name) const {
     m_Interpreter.storeInterpreterState(name);
   }

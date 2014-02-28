@@ -131,6 +131,30 @@ namespace cling {
     }
   }
 
+  Interpreter::StateDebuggerRAII::StateDebuggerRAII(const Interpreter* i)
+    : m_Interpreter(i) {
+    if (!i->isPrintingAST())
+      return;
+    const CompilerInstance& CI = *m_Interpreter->getCI();
+    m_State.reset(new ClangInternalState(CI.getASTContext(),
+                                         CI.getPreprocessor(),
+                                         i->getModule(),
+                                         i->getCodeGenerator(),
+                                         "aName"));
+  }
+
+  Interpreter::StateDebuggerRAII::~StateDebuggerRAII() {
+    pop();
+  }
+
+  void Interpreter::StateDebuggerRAII::pop() const {
+    if (!m_Interpreter->isPrintingAST())
+      return;
+    const CompilerInstance& CI = *m_Interpreter->getCI();
+    m_State->compare("aName");
+
+  }
+
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
   // GetMainExecutable (since some platforms don't support taking the
@@ -458,7 +482,6 @@ namespace cling {
     CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
-    CO.IRDebug = isPrintingIR();
 
     if (EvaluateInternal(input, CO, V, T) == Interpreter::kFailure) {
       return Interpreter::kFailure;
@@ -476,7 +499,6 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
-    CO.IRDebug = isPrintingIR();
 
     return DeclareInternal(input, CO, T);
   }
@@ -535,8 +557,7 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
-    CO.IRDebug = isPrintingIR();
-    
+
     // When doing parseForModule avoid warning about the user code
     // being loaded ... we probably might as well extend this to
     // ALL warnings ... but this will suffice for now (working
@@ -555,7 +576,6 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingAST();
-    CO.IRDebug = isPrintingIR();
 
     return DeclareInternal(input, CO, T);
   }
@@ -592,7 +612,6 @@ namespace cling {
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = 0;
     CO.Debug = isPrintingAST();
-    CO.IRDebug = isPrintingIR();
     return EvaluateInternal(input, CO);
   }
 
@@ -846,6 +865,8 @@ namespace cling {
   Interpreter::DeclareInternal(const std::string& input, 
                                const CompilationOptions& CO,
                                Transaction** T /* = 0 */) const {
+    StateDebuggerRAII stateDebugger(this);
+
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
     MaybeIgnoreFakeDiagnostics();
@@ -868,6 +889,8 @@ namespace cling {
                                 const CompilationOptions& CO,
                                 StoredValueRef* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
+    StateDebuggerRAII stateDebugger(this);
+
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset()
     MaybeIgnoreFakeDiagnostics();

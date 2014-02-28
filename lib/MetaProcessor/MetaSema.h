@@ -127,12 +127,6 @@ namespace cling {
     ///
     void actOnprintASTCommand(SwitchMode mode = kToggle) const;
 
-    ///\brief Prints out the IR representation of the input.
-    ///
-    ///\param[in] mode - either on/off or toggle.
-    ///
-    void actOnprintIRCommand(SwitchMode mode = kToggle) const;
-
     ///\brief Store the interpreter's state.
     ///
     ///\param[in] name - Name of the files where the state will be stored

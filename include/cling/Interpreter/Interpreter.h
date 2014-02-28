@@ -87,6 +87,16 @@ namespace cling {
       void pop() const;
     };
 
+    class StateDebuggerRAII {
+    private:
+      const Interpreter* m_Interpreter;
+      llvm::OwningPtr<ClangInternalState> m_State;
+    public:
+      StateDebuggerRAII(const Interpreter* i);
+      ~StateDebuggerRAII();
+      void pop() const;
+    };
+
     ///\brief Describes the return result of the different routines that do the
     /// incremental compilation.
     ///
@@ -500,9 +510,6 @@ namespace cling {
 
     bool isPrintingAST() const { return m_PrintAST; }
     void enablePrintAST(bool print = true) { m_PrintAST = print; }
-
-    bool isPrintingIR() const { return m_PrintIR; }
-    void enablePrintIR(bool print = true) { m_PrintIR = print; }
 
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() const { return m_DynamicLookupEnabled; }

@@ -8,14 +8,12 @@
 //------------------------------------------------------------------------------
 
 #include "IncrementalParser.h"
-#include "ASTDumper.h"
 #include "ASTNodeEraser.h"
 #include "AutoSynthesizer.h"
 #include "CheckEmptyTransactionTransformer.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
-#include "IRDumper.h"
 #include "NullDerefProtectionTransformer.h"
 #include "ValueExtractionSynthesizer.h"
 #include "TransactionPool.h"
@@ -79,14 +77,10 @@ namespace cling {
     m_ASTTransformers.push_back(new AutoSynthesizer(TheSema));
     m_ASTTransformers.push_back(new EvaluateTSynthesizer(TheSema));
     m_ASTTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
-    m_ASTTransformers.push_back(new ASTDumper());
     m_ASTTransformers.push_back(new DeclExtractor(TheSema));
     m_ASTTransformers.push_back(new ValueExtractionSynthesizer(TheSema));
     m_ASTTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
     m_ASTTransformers.push_back(new CheckEmptyTransactionTransformer(TheSema));
-
-    // Register the IR Transformers
-    m_IRTransformers.push_back(new IRDumper());
   }
 
   void IncrementalParser::Initialize() {
