@@ -48,10 +48,6 @@ namespace cling {
     ///
     static std::vector<LazyFunctionCreatorFunc_t> m_lazyFuncCreator;
 
-    ///\brief Whether or not the function creator to be queried.
-    ///
-    static bool m_LazyFuncCreatorDiagsSuppressed;
-
     ///\brief The llvm ExecutionEngine.
     ///
     llvm::OwningPtr<llvm::ExecutionEngine> m_engine;
@@ -125,9 +121,6 @@ namespace cling {
     ~IncrementalExecutor();
 
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
-    void suppressLazyFunctionCreatorDiags(bool suppressed = true) {
-      m_LazyFuncCreatorDiagsSuppressed = suppressed;
-    }
 
     ExecutionResult runStaticInitializersOnce(llvm::Module* m);
 

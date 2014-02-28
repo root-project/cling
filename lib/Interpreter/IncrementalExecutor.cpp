@@ -28,8 +28,6 @@ std::set<std::string> IncrementalExecutor::m_unresolvedSymbols;
 std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   IncrementalExecutor::m_lazyFuncCreator;
 
-bool IncrementalExecutor::m_LazyFuncCreatorDiagsSuppressed = false;
-
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
 IncrementalExecutor::IncrementalExecutor(llvm::Module* m) 
   : m_CxaAtExitRemapped(false)
@@ -157,12 +155,9 @@ IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
          = m_lazyFuncCreator.begin(), et = m_lazyFuncCreator.end();
        it != et; ++it) {
     void* ret = (void*)((LazyFunctionCreatorFunc_t)*it)(mangled_name);
-    if (ret) 
+    if (ret)
       return ret;
   }
-
-  if (m_LazyFuncCreatorDiagsSuppressed)
-    return 0;
 
   return HandleMissingFunction(mangled_name);
 }

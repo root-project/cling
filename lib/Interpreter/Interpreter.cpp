@@ -960,10 +960,6 @@ namespace cling {
     m_Executor->installLazyFunctionCreator(fp);
   }
 
-  void Interpreter::suppressLazyFunctionCreatorDiags(bool suppressed/*=true*/) {
-    m_Executor->suppressLazyFunctionCreatorDiags(suppressed);
-  }
-
   StoredValueRef Interpreter::Evaluate(const char* expr, DeclContext* DC,
                                        bool ValuePrinterReq) {
     Sema& TheSema = getCI()->getSema();
