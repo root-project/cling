@@ -28,7 +28,6 @@ set( LLVM_LINK_COMPONENTS
 
 
 add_cling_library(clingInterpreter
-  ASTDumper.cpp
   ASTNodeEraser.cpp
   AutoSynthesizer.cpp
   CheckEmptyTransactionTransformer.cpp
@@ -44,7 +43,6 @@ add_cling_library(clingInterpreter
   Interpreter.cpp
   InterpreterCallbacks.cpp
   InvocationOptions.cpp
-  IRDumper.cpp
   LookupHelper.cpp
   NullDerefProtectionTransformer.cpp
   RequiredSymbols.cpp
