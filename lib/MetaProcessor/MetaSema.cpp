@@ -124,15 +124,15 @@ namespace cling {
       m_Interpreter.enableRawInput(mode);
   }
 
-  void MetaSema::actOnprintASTCommand(SwitchMode mode/* = kToggle*/) const {
+  void MetaSema::actOnprintDebugCommand(SwitchMode mode/* = kToggle*/) const {
     if (mode == kToggle) {
-      bool flag = !m_Interpreter.isPrintingAST();
-      m_Interpreter.enablePrintAST(flag);
+      bool flag = !m_Interpreter.isPrintingDebug();
+      m_Interpreter.enablePrintDebug(flag);
       // FIXME:
-      m_MetaProcessor.getOuts() << (flag ? "P" : "Not p") << "rinting AST\n";
+      m_MetaProcessor.getOuts() << (flag ? "P" : "Not p") << "rinting Debug\n";
     }
     else
-      m_Interpreter.enablePrintAST(mode);
+      m_Interpreter.enablePrintDebug(mode);
   }
 
   void MetaSema::actOnstoreStateCommand(llvm::StringRef name) const {
@@ -180,8 +180,8 @@ namespace cling {
       "the execution\n\t\t\t\tresults of the input\n"
          << metaString << "dynamicExtensions [0|1]\t- Toggles the use of the "
       "dynamic scopes and the \t\t\t\tlate binding\n"
-         << metaString << "printAST [0|1]\t\t\t- Toggles the printing of "
-      "input's corresponding \t\t\t\tAST nodes\n"
+         << metaString << "printDebug [0|1]\t\t\t- Toggles the printing of "
+      "input's corresponding \t\t\t\tstate changes\n"
          << metaString << "help\t\t\t\t- Shows this information\n";
   }
 

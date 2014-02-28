@@ -111,7 +111,7 @@ namespace cling {
     return isLCommand(actionResult)
       || isXCommand(actionResult, resultValue)
       || isqCommand() || isUCommand(actionResult) || isICommand()
-      || isOCommand() || israwInputCommand() || isprintASTCommand()
+      || isOCommand() || israwInputCommand() || isprintDebugCommand()
       || isdynamicExtensionsCommand() || ishelpCommand() || isfileExCommand()
       || isfilesCommand() || isClassCommand() || isgCommand()
       || isTypedefCommand()
@@ -334,15 +334,15 @@ namespace cling {
     return false;
   }
 
-  bool MetaParser::isprintASTCommand() {
+  bool MetaParser::isprintDebugCommand() {
     if (getCurTok().is(tok::ident) &&
-        getCurTok().getIdent().equals("printAST")) {
+        getCurTok().getIdent().equals("printDebug")) {
       MetaSema::SwitchMode mode = MetaSema::kToggle;
       consumeToken();
       skipWhitespace();
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstantAsBool();
-      m_Actions->actOnprintASTCommand(mode);
+      m_Actions->actOnprintDebugCommand(mode);
       return true;
     }
     return false;

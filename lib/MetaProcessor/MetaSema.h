@@ -121,11 +121,11 @@ namespace cling {
     ///
     void actOnrawInputCommand(SwitchMode mode = kToggle) const;
 
-    ///\brief Prints out the the AST representation of the input.
+    ///\brief Prints out the the Debug information of the state changes.
     ///
     ///\param[in] mode - either on/off or toggle.
     ///
-    void actOnprintASTCommand(SwitchMode mode = kToggle) const;
+    void actOnprintDebugCommand(SwitchMode mode = kToggle) const;
 
     ///\brief Store the interpreter's state.
     ///

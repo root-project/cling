@@ -155,10 +155,9 @@ namespace cling {
     ///
     unsigned long long m_UniqueCounter;
 
-    ///\brief Flag toggling the AST printing on or off.
+    ///\brief Flag toggling the Debug printing on or off.
     ///
-    bool m_PrintAST;
-
+    bool m_PrintDebug;
 
     ///\brief Flag toggling the dynamic scopes on or off.
     ///
@@ -505,8 +504,8 @@ namespace cling {
     ///
     void unload(unsigned numberOfTransactions);
 
-    bool isPrintingAST() const { return m_PrintAST; }
-    void enablePrintAST(bool print = true) { m_PrintAST = print; }
+    bool isPrintingDebug() const { return m_PrintDebug; }
+    void enablePrintDebug(bool print = true) { m_PrintDebug = print; }
 
     void enableDynamicLookup(bool value = true);
     bool isDynamicLookupEnabled() const { return m_DynamicLookupEnabled; }

@@ -133,7 +133,7 @@ namespace cling {
 
   Interpreter::StateDebuggerRAII::StateDebuggerRAII(const Interpreter* i)
     : m_Interpreter(i) {
-    if (!i->isPrintingAST())
+    if (!i->isPrintingDebug())
       return;
     const CompilerInstance& CI = *m_Interpreter->getCI();
     m_State.reset(new ClangInternalState(CI.getASTContext(),
@@ -148,7 +148,7 @@ namespace cling {
   }
 
   void Interpreter::StateDebuggerRAII::pop() const {
-    if (!m_Interpreter->isPrintingAST())
+    if (!m_Interpreter->isPrintingDebug())
       return;
     const CompilerInstance& CI = *m_Interpreter->getCI();
     m_State->compare("aName");
@@ -177,7 +177,7 @@ namespace cling {
 
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/) :
-    m_UniqueCounter(0), m_PrintAST(false),
+    m_UniqueCounter(0), m_PrintDebug(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
@@ -481,7 +481,7 @@ namespace cling {
     CO.ValuePrinting = CompilationOptions::VPAuto;
     CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
-    CO.Debug = isPrintingAST();
+    CO.Debug = isPrintingDebug();
 
     if (EvaluateInternal(input, CO, V, T) == Interpreter::kFailure) {
       return Interpreter::kFailure;
@@ -498,7 +498,7 @@ namespace cling {
     CO.ValuePrinting = 0;
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
-    CO.Debug = isPrintingAST();
+    CO.Debug = isPrintingDebug();
 
     return DeclareInternal(input, CO, T);
   }
@@ -556,7 +556,7 @@ namespace cling {
     CO.ValuePrinting = 0;
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
-    CO.Debug = isPrintingAST();
+    CO.Debug = isPrintingDebug();
 
     // When doing parseForModule avoid warning about the user code
     // being loaded ... we probably might as well extend this to
@@ -575,7 +575,7 @@ namespace cling {
     CO.ValuePrinting = 0;
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = isDynamicLookupEnabled();
-    CO.Debug = isPrintingAST();
+    CO.Debug = isPrintingDebug();
 
     return DeclareInternal(input, CO, T);
   }
@@ -611,7 +611,7 @@ namespace cling {
     CO.ValuePrinting = 0;
     CO.ResultEvaluation = 0;
     CO.DynamicScoping = 0;
-    CO.Debug = isPrintingAST();
+    CO.Debug = isPrintingDebug();
     return EvaluateInternal(input, CO);
   }
 
