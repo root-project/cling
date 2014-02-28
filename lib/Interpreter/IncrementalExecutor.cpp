@@ -29,12 +29,40 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   IncrementalExecutor::m_lazyFuncCreator;
 
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-IncrementalExecutor::IncrementalExecutor(llvm::Module* m) 
-  : m_CxaAtExitRemapped(false)
-{
+IncrementalExecutor::IncrementalExecutor(llvm::Module* m)
+  : m_CxaAtExitRemapped(false) {
   assert(m && "llvm::Module must not be null!");
   m_AtExitFuncs.reserve(256);
-  InitializeBuilder(m);
+
+  //
+  //  Create an execution engine to use.
+  //
+  assert(m && "Module cannot be null");
+
+  // Note: Engine takes ownership of the module.
+  llvm::EngineBuilder builder(m);
+
+  std::string errMsg;
+  builder.setErrorStr(&errMsg);
+  builder.setOptLevel(llvm::CodeGenOpt::Less);
+  builder.setEngineKind(llvm::EngineKind::JIT);
+  builder.setAllocateGVsWithCode(false);
+
+  // EngineBuilder uses default c'ted TargetOptions, too:
+  llvm::TargetOptions TargetOpts;
+  TargetOpts.NoFramePointerElim = 1;
+  TargetOpts.JITEmitDebugInfo = 1;
+
+  builder.setTargetOptions(TargetOpts);
+
+  m_engine.reset(builder.create());
+  if (!m_engine)
+     llvm::errs() << "cling::IncrementalExecutor::IncrementalExecutor(): "
+                  << errMsg;
+  assert(m_engine && "Cannot create module!");
+
+  // install lazy function creators
+  m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
 }
 
 // Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
@@ -86,38 +114,6 @@ void IncrementalExecutor::remapCXAAtExit() {
   assert(clingAtExitAddr && "cannot find cling_cxa_atexit");
   m_engine->updateGlobalMapping(atExit, clingAtExitAddr);
   m_CxaAtExitRemapped = true;
-}
-
-void IncrementalExecutor::InitializeBuilder(llvm::Module* m) {
-  //
-  //  Create an execution engine to use.
-  //
-  assert(m && "Module cannot be null");
-
-  // Note: Engine takes ownership of the module.
-  llvm::EngineBuilder builder(m);
-
-  std::string errMsg;
-  builder.setErrorStr(&errMsg);
-  builder.setOptLevel(llvm::CodeGenOpt::Less);
-  builder.setEngineKind(llvm::EngineKind::JIT);
-  builder.setAllocateGVsWithCode(false);
-
-  // EngineBuilder uses default c'ted TargetOptions, too:
-  llvm::TargetOptions TargetOpts;
-  TargetOpts.NoFramePointerElim = 1;
-  TargetOpts.JITEmitDebugInfo = 1;
-
-  builder.setTargetOptions(TargetOpts);
-
-  m_engine.reset(builder.create());
-  if (!m_engine)
-     llvm::errs() << "cling::IncrementalExecutor::InitializeBuilder(): "
-                  << errMsg;
-  assert(m_engine && "Cannot create module!");
-
-  // install lazy function creators
-  m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
 }
 
 int IncrementalExecutor::CXAAtExit(void (*func) (void*), void* arg, void* dso,

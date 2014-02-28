@@ -187,7 +187,6 @@ namespace cling {
     static void* HandleMissingFunction(const std::string&);
     static void* NotifyLazyFunctionCreators(const std::string&);
 
-    void InitializeBuilder(llvm::Module* m);
     ///\brief We keep track of the entities whose dtor we need to call.
     ///
     int CXAAtExit(void (*func) (void*), void* arg, void* dso, void* clingT);
