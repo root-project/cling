@@ -648,10 +648,6 @@ namespace cling {
                              m_Interpreter->getExecutionEngine());
     NodeEraser.RevertTransaction(T);
 
-    InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks();
-    if (callbacks)
-      callbacks->TransactionUnloaded(*T);
-
     // Remove from the queue
     m_Transactions.pop_back();
     //m_TransactionPool->releaseTransaction(T);
