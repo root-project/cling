@@ -138,7 +138,7 @@ namespace cling {
     const CompilerInstance& CI = *m_Interpreter->getCI();
     m_State.reset(new ClangInternalState(CI.getASTContext(),
                                          CI.getPreprocessor(),
-                                         i->getModule(),
+                                         i->getCodeGenerator()->GetModule(),
                                          i->getCodeGenerator(),
                                          "aName"));
   }
@@ -334,7 +334,8 @@ namespace cling {
     PushTransactionRAII RAII(this);
     ClangInternalState* state
       = new ClangInternalState(getCI()->getASTContext(),
-                               getCI()->getPreprocessor(), getModule(),
+                               getCI()->getPreprocessor(),
+                               getCodeGenerator()->GetModule(),
                                getCodeGenerator(), name);
     m_StoredStates.push_back(state);
   }
@@ -459,12 +460,6 @@ namespace cling {
   llvm::ExecutionEngine* Interpreter::getExecutionEngine() const {
     if (!m_Executor) return 0;
     return m_Executor->getExecutionEngine();
-  }
-
-  llvm::Module* Interpreter::getModule() const {
-    if (m_IncrParser->hasCodeGenerator())
-      return m_IncrParser->getCodeGenerator()->GetModule();
-    return 0;
   }
 
   ///\brief Maybe transform the input line to implement cint command line
@@ -821,7 +816,7 @@ namespace cling {
     //
     const llvm::GlobalValue* GV = 0;
     if (ifUnique)
-      GV = getModule()->getNamedValue(name);
+      GV = getCodeGenerator()->GetModule()->getNamedValue(name);
 
     if (!GV) {
       const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl);
@@ -830,7 +825,7 @@ namespace cling {
       //  Get the wrapper function pointer
       //  from the ExecutionEngine (the JIT).
       //
-      GV = getModule()->getNamedValue(name);
+      GV = getCodeGenerator()->GetModule()->getNamedValue(name);
     }
 
     if (!GV)

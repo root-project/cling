@@ -518,8 +518,6 @@ namespace cling {
     clang::Sema& getSema();
     llvm::ExecutionEngine* getExecutionEngine() const;
 
-    llvm::Module* getModule() const;
-
     //FIXME: This must be in InterpreterCallbacks.
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
 
