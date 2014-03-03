@@ -150,9 +150,7 @@ namespace cling {
   void Interpreter::StateDebuggerRAII::pop() const {
     if (!m_Interpreter->isPrintingDebug())
       return;
-    const CompilerInstance& CI = *m_Interpreter->getCI();
     m_State->compare("aName");
-
   }
 
   // This function isn't referenced outside its translation unit, but it
