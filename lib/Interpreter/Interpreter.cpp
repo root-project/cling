@@ -83,27 +83,35 @@ namespace cling {
 }
 
 
-namespace cling {
-
-  // FIXME: workaround until JIT supports exceptions
-  jmp_buf* Interpreter::m_JumpBuf;
-
 #if (!_WIN32)
   // "Declared" to the JIT in RuntimeUniverse.h
+namespace cling {
   namespace runtime {
     namespace internal {
-      struct __trigger__cxa_atexit {
-        ~__trigger__cxa_atexit();
+      struct trigger__cxa_atexit {
+        ~trigger__cxa_atexit();
       } /*S*/;
-      __trigger__cxa_atexit::~__trigger__cxa_atexit() {
+      trigger__cxa_atexit::~trigger__cxa_atexit() {
         if (std::getenv("bar") == (char*)-1) {
           llvm::errs() <<
-            "UNEXPECTED cling::runtime::internal::__trigger__cxa_atexit\n";
+            "UNEXPECTED cling::runtime::internal::trigger__cxa_atexit\n";
         }
       }
     }
   }
+} // namespace cling
+
+namespace {
+  cling::runtime::internal::trigger__cxa_atexit ForceTheSymbol;
+};
+
 #endif
+
+
+namespace cling {
+
+  // FIXME: workaround until JIT supports exceptions
+  jmp_buf* Interpreter::m_JumpBuf;
 
   Interpreter::PushTransactionRAII::PushTransactionRAII(const Interpreter* i)
     : m_Interpreter(i) {

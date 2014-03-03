@@ -169,8 +169,8 @@ namespace cling {
 //__cxa_atexit is declared later for WIN32
 #if (!_WIN32)
       // Force the module to define __cxa_atexit, we need it.
-      struct __trigger__cxa_atexit {
-        ~__trigger__cxa_atexit(); // implemented in Interpreter.cpp
+      struct trigger__cxa_atexit {
+        ~trigger__cxa_atexit(); // implemented in Interpreter.cpp
       } S;
 #endif
 
