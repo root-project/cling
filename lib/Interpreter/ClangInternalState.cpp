@@ -40,7 +40,7 @@ namespace cling {
   ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
                                          llvm::Module* M, CodeGenerator* CG,
                                          const std::string& name)
-    : m_ASTContext(AC), m_Preprocessor(PP), m_Module(M), m_CodeGen(CG),
+    : m_ASTContext(AC), m_Preprocessor(PP), m_CodeGen(CG), m_Module(M),
       m_DiffCommand("diff -u --text "), m_Name(name), m_DiffPair(0) {
     store();
   }
