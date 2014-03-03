@@ -340,7 +340,7 @@ IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::Module* m,
-                                              const char* symbolName,
+                                              llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) const {
   // Return a symbol's address, and whether it was jitted.
   void* address

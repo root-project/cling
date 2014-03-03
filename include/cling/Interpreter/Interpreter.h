@@ -586,7 +586,7 @@ namespace cling {
     ///\param[in]  SymName - the name of the global to search
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
-    void* getAddressOfGlobal(const char* SymName, bool* fromJIT = 0) const;
+    void* getAddressOfGlobal(llvm::StringRef SymName, bool* fromJIT = 0) const;
 
     friend class runtime::internal::LifetimeHandler;
     friend int runtime::internal::local_cxa_atexit(void (*func) (void*),

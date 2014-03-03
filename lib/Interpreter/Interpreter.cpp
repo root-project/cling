@@ -1071,7 +1071,7 @@ namespace cling {
     return getAddressOfGlobal(mangledName.c_str(), fromJIT);
   }
 
-  void* Interpreter::getAddressOfGlobal(const char* SymName,
+  void* Interpreter::getAddressOfGlobal(llvm::StringRef SymName,
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
