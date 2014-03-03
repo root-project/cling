@@ -157,7 +157,7 @@ lookup.findScope("InsideAnonymous", diags, &t);
 QT = clang::QualType(t, 0);
 //QT.getAsString().c_str()c
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "class <anonymous>::InsideAnonymous"
+// CHECK: ({{const char [*]|const_pointer}}) "class <anonymous namespace>::InsideAnonymous"
 
 // The above result is not quite want we want, so the client must using 
 // the following:

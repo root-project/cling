@@ -1084,7 +1084,7 @@ const clang::FunctionDecl* func_B_dtr_proto = lookup.findFunctionProto(class_B, 
 dumpDecl("func_B_dtr_args", func_B_dtr_args);
 //CHECK: func_B_dtr_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_dtr_args name: B::~B
-//CHECK-NEXT: virtual void ~B() {
+//CHECK-NEXT: virtual ~B() {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
 //CHECK-NEXT: }
@@ -1092,7 +1092,7 @@ dumpDecl("func_B_dtr_args", func_B_dtr_args);
 dumpDecl("func_B_dtr_proto", func_B_dtr_proto);
 //CHECK: func_B_dtr_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_dtr_proto name: B::~B
-//CHECK-NEXT: virtual void ~B() {
+//CHECK-NEXT: virtual ~B() {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
 //CHECK-NEXT: }
