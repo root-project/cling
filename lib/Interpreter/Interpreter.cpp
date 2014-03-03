@@ -103,7 +103,7 @@ namespace cling {
 
 namespace {
   cling::runtime::internal::trigger__cxa_atexit ForceTheSymbol;
-};
+}
 
 #endif
 
