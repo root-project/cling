@@ -184,64 +184,20 @@ namespace cling {
     llvm::SmallVector<Transaction*, 2> IncrParserTransactions;
     m_IncrParser->Initialize(IncrParserTransactions);
 
-    // Add configuration paths to interpreter's include files.
-#ifdef CLING_INCLUDE_PATHS
-    llvm::StringRef InclPaths(CLING_INCLUDE_PATHS);
-    for (std::pair<llvm::StringRef, llvm::StringRef> Split = InclPaths.split(':');
-         !Split.second.empty(); Split = InclPaths.split(':')) {
-      if (llvm::sys::fs::is_directory(Split.first))
-        AddIncludePath(Split.first);
-      InclPaths = Split.second;
-    }
-    // Add remaining part
-    AddIncludePath(InclPaths);
-#endif
-    llvm::SmallString<512> P(GetExecutablePath(argv[0]));
-    if (!P.empty()) {
-      // Remove /cling from foo/bin/clang
-      llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
-      // Remove /bin   from foo/bin
-      ExeIncl = llvm::sys::path::parent_path(ExeIncl);
-      P.resize(ExeIncl.size());
-      // Get foo/include
-      llvm::sys::path::append(P, "include");
-      if (llvm::sys::fs::is_directory(P.str()))
-        AddIncludePath(P.str());
-    }
-
     handleFrontendOptions();
+
+    AddRuntimeIncludePaths();
 
     // Tell the diagnostic client that we are entering file parsing mode.
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
-    if (getCI()->getLangOpts().CPlusPlus) {
-      // Set up common declarations which are going to be available
-      // only at runtime
-      // Make sure that the universe won't be included to compile time by using
-      // -D __CLING__ as CompilerInstance's arguments
-#ifdef _WIN32
-      // We have to use the #defined __CLING__ on windows first. 
-      //FIXME: Find proper fix.
-      declare("#ifdef __CLING__ \n#endif");  
-#endif
-      declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
-      if (getCodeGenerator()) {
-        // Set up the gCling variable if it can be used
-        std::stringstream initializer;
-        initializer << "namespace cling {namespace runtime { "
-          "cling::Interpreter *gCling=(cling::Interpreter*)"
-                    << (uintptr_t)this << ";} }";
-        declare(initializer.str());
-      }
+    if (getCI()->getLangOpts().CPlusPlus)
+      IncludeCxxRuntime();
+    else
+      IncludeCRuntime();
 
-      declare("#include \"cling/Interpreter/ValuePrinter.h\"");
-    }
-    else {
-      declare("#include \"cling/Interpreter/CValuePrinter.h\"");
-    }
-
-    for (llvm::SmallVectorImpl<Transaction*>::const_iterator
+   for (llvm::SmallVectorImpl<Transaction*>::const_iterator
            I = IncrParserTransactions.begin(), E = IncrParserTransactions.end();
          I != E; ++I)
       m_IncrParser->commitTransaction(*I);
@@ -266,6 +222,63 @@ namespace cling {
     if (m_Opts.Help) {
       m_Opts.PrintHelp();
     }
+  }
+
+  void Interpreter::AddRuntimeIncludePaths() {
+    // Add configuration paths to interpreter's include files.
+#ifdef CLING_INCLUDE_PATHS
+    llvm::StringRef InclPaths(CLING_INCLUDE_PATHS);
+    for (std::pair<llvm::StringRef, llvm::StringRef> Split
+           = InclPaths.split(':');
+         !Split.second.empty(); Split = InclPaths.split(':')) {
+      if (llvm::sys::fs::is_directory(Split.first))
+        AddIncludePath(Split.first);
+      InclPaths = Split.second;
+    }
+    // Add remaining part
+    AddIncludePath(InclPaths);
+#endif
+    llvm::SmallString<512> P(GetExecutablePath(argv[0]));
+    if (!P.empty()) {
+      // Remove /cling from foo/bin/clang
+      llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
+      // Remove /bin   from foo/bin
+      ExeIncl = llvm::sys::path::parent_path(ExeIncl);
+      P.resize(ExeIncl.size());
+      // Get foo/include
+      llvm::sys::path::append(P, "include");
+      if (llvm::sys::fs::is_directory(P.str()))
+        AddIncludePath(P.str());
+    }
+
+  }
+
+  void Interpreter::IncludeCxxRuntime() {
+    // Set up common declarations which are going to be available
+    // only at runtime
+    // Make sure that the universe won't be included to compile time by using
+    // -D __CLING__ as CompilerInstance's arguments
+#ifdef _WIN32
+    // We have to use the #defined __CLING__ on windows first.
+    //FIXME: Find proper fix.
+    declare("#ifdef __CLING__ \n#endif");
+#endif
+    declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
+
+    if (getCodeGenerator()) {
+      // Set up the gCling variable if it can be used
+      std::stringstream initializer;
+      initializer << "namespace cling {namespace runtime { "
+        "cling::Interpreter *gCling=(cling::Interpreter*)"
+                  << (uintptr_t)this << ";} }";
+      declare(initializer.str());
+    }
+
+    declare("#include \"cling/Interpreter/ValuePrinter.h\"");
+  }
+
+  void Interpreter::IncludeCRuntime() {
+    declare("#include \"cling/Interpreter/CValuePrinter.h\"");
   }
 
   void Interpreter::AddIncludePath(llvm::StringRef incpath)

@@ -264,6 +264,13 @@ namespace cling {
                                                 llvm::StringRef code,
                                                 bool withAccessControl);
 
+    ///\brief Set up include paths for runtime headers.
+    void AddRuntimeIncludePaths();
+    ///\brief Include C++ runtime headers and definitions.
+    void IncludeCxxRuntime();
+    ///\brief Include C runtime headers and definitions.
+    void IncludeCRuntime();
+
   public:
     Interpreter(int argc, const char* const *argv, const char* llvmdir = 0);
     virtual ~Interpreter();
