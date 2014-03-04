@@ -172,7 +172,7 @@ namespace cling {
                         const cling::Transaction* clingT);
 
   private:
-    ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, so 
+    ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, such
     /// that the interpreter can call the object destructors at the right time.
     ///
     void remapCXAAtExit();

@@ -167,8 +167,12 @@ namespace cling {
                                              &LeftoverArgs[0],
                                              llvmdir));
     Sema& SemaRef = getSema();
-    m_LookupHelper.reset(new LookupHelper(new Parser(SemaRef.getPreprocessor(),
-                                                     SemaRef,
+    Preprocessor& PP = SemaRef.getPreprocessor();
+    // Enable incremental processing, which prevents the preprocessor destroying
+    // the lexer on EOF token.
+    PP.enableIncrementalProcessing();
+
+    m_LookupHelper.reset(new LookupHelper(new Parser(PP, SemaRef,
                                                      /*SkipFunctionBodies*/false,
                                                      /*isTemp*/true), this));
 
@@ -177,7 +181,8 @@ namespace cling {
       m_Executor.reset(new IncrementalExecutor(theModule));
     }
 
-    m_IncrParser->Initialize();
+    llvm::SmallVector<Transaction*, 2> IncrParserTransactions;
+    m_IncrParser->Initialize(IncrParserTransactions);
 
     // Add configuration paths to interpreter's include files.
 #ifdef CLING_INCLUDE_PATHS
@@ -204,16 +209,11 @@ namespace cling {
         AddIncludePath(P.str());
     }
 
-    // Enable incremental processing, which prevents the preprocessor destroying
-    // the lexer on EOF token.
-    getSema().getPreprocessor().enableIncrementalProcessing();
-
     handleFrontendOptions();
 
     // Tell the diagnostic client that we are entering file parsing mode.
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(),
-                            &getCI()->getPreprocessor());
+    DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
     if (getCI()->getLangOpts().CPlusPlus) {
       // Set up common declarations which are going to be available
@@ -241,6 +241,10 @@ namespace cling {
       declare("#include \"cling/Interpreter/CValuePrinter.h\"");
     }
 
+    for (llvm::SmallVectorImpl<Transaction*>::const_iterator
+           I = IncrParserTransactions.begin(), E = IncrParserTransactions.end();
+         I != E; ++I)
+      m_IncrParser->commitTransaction(*I);
   }
 
   Interpreter::~Interpreter() {

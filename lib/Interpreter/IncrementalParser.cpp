@@ -83,7 +83,8 @@ namespace cling {
     m_ASTTransformers.push_back(new CheckEmptyTransactionTransformer(TheSema));
   }
 
-  void IncrementalParser::Initialize() {
+  void
+  IncrementalParser::Initialize(llvm::SmallVectorImpl<Transaction*> &result) {
     m_TransactionPool.reset(new TransactionPool(getCI()->getASTContext()));
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
@@ -104,7 +105,7 @@ namespace cling {
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/);
       if (Transaction* EndedT = endTransaction(CurT))
-        commitTransaction(EndedT);
+        result.push_back(EndedT);
     }
 
     Transaction* CurT = beginTransaction(CO);
@@ -124,7 +125,7 @@ namespace cling {
       External->StartTranslationUnit(m_Consumer);
 
     if (Transaction* EndedT = endTransaction(CurT))
-      commitTransaction(EndedT);
+      result.push_back(EndedT);
   }
 
   IncrementalParser::~IncrementalParser() {
