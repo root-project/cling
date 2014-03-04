@@ -76,39 +76,16 @@ void IncrementalExecutor::shuttingDown() {
 }
 
 void IncrementalExecutor::remapCXAAtExit() {
-  assert(!m_CxaAtExitRemapped && "__cxa_at_exit already remapped.");
+  if (m_CxaAtExitRemapped)
+    return;
+
+  llvm::Function* atExit = m_engine->FindFunctionNamed("__cxa_atexit");
+  if (!atExit)
+    return;
+
   llvm::Function* clingAtExit
     = m_engine->FindFunctionNamed("cling_cxa_atexit");
   assert(clingAtExit && "cling_cxa_atexit must exist.");
-
-  llvm::Function* atExit = m_engine->FindFunctionNamed("__cxa_atexit");
-  if (!atExit) {
-    // Inject __cxa_atexit into module
-    llvm::Type* retTy = 0;
-    llvm::Type* voidPtrTy = 0;
-    if (sizeof(int) == 4) {
-      retTy = llvm::Type::getInt32Ty(llvm::getGlobalContext());
-      voidPtrTy = llvm::Type::getInt32PtrTy(llvm::getGlobalContext());
-    } else if (sizeof(int) == 8) {
-      retTy = llvm::Type::getInt64Ty(llvm::getGlobalContext());
-      voidPtrTy = llvm::Type::getInt64PtrTy(llvm::getGlobalContext());
-    } else {
-      assert(retTy && "Unsupported sizeof(int)!");
-      retTy = llvm::Type::getInt64Ty(llvm::getGlobalContext());
-      voidPtrTy = llvm::Type::getInt64PtrTy(llvm::getGlobalContext());
-    }
-
-    llvm::SmallVector<llvm::Type*, 3> argTy;
-    argTy.push_back(voidPtrTy);
-    argTy.push_back(voidPtrTy);
-    argTy.push_back(voidPtrTy);
-    llvm::FunctionType* cxaatexitTy
-      = llvm::FunctionType::get(retTy, argTy, false /*varArg*/);
-    llvm::Function* atexitFunc
-      = llvm::Function::Create(cxaatexitTy, llvm::GlobalValue::InternalLinkage,
-                               "__cxa_atexit", 0 /*module*/);
-    m_engine->addGlobalMapping(atexitFunc, clingAtExit);
-  }
 
   void* clingAtExitAddr = m_engine->getPointerToFunction(clingAtExit);
   assert(clingAtExitAddr && "cannot find cling_cxa_atexit");
@@ -194,6 +171,8 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
+  remapCXAAtExit();
+
   llvm::Function* f = m_engine->FindFunctionNamed(funcname.str().c_str());
   if (!f) {
     llvm::errs() << "IncrementalExecutor::executeFunction: "
@@ -276,6 +255,7 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
 
     // Execute the ctor/dtor function!
     if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
+      remapCXAAtExit();
       m_engine->getPointerToFunction(F);
       // check if there is any unresolved symbol in the list
       if (!m_unresolvedSymbols.empty()) {
@@ -340,7 +320,7 @@ IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::Module* m,
                                               llvm::StringRef symbolName,
-                                              bool* fromJIT /*=0*/) const {
+                                              bool* fromJIT /*=0*/) {
   // Return a symbol's address, and whether it was jitted.
   void* address
     = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
@@ -352,13 +332,15 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::Module* m,
     if (!gvar)
       return 0;
 
+    remapCXAAtExit();
     address = m_engine->getPointerToGlobal(gvar);
   }
   return address;
 }
 
 void*
-IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV)const{
+IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
+  remapCXAAtExit();
   if (void* addr = m_engine->getPointerToGlobalIfAvailable(&GV))
     return addr;
 

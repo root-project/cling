@@ -141,11 +141,6 @@ namespace cling {
     ///
     void shuttingDown();
 
-    ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, so 
-    /// that the interpreter can call the object destructors at the right time.
-    ///
-    void remapCXAAtExit();
-
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///
     /// JIT symbols might not be immediately convertible to e.g. a function
@@ -156,14 +151,14 @@ namespace cling {
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
     void* getAddressOfGlobal(llvm::Module* m, llvm::StringRef mangledName,
-                             bool* fromJIT = 0) const;
+                             bool* fromJIT = 0);
 
     ///\brief Return the address of a global from the ExecutionEngine (as
     /// opposed to dynamic libraries). Forces the emission of the symbol if
     /// it has not happened yet.
     ///
     ///param[in] GV - global value for which the address will be returned.
-    void* getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const;
+    void* getPointerToGlobalFromJIT(const llvm::GlobalValue& GV);
 
     llvm::ExecutionEngine* getExecutionEngine() const {
       if (!m_engine)
@@ -177,6 +172,11 @@ namespace cling {
                         const cling::Transaction* clingT);
 
   private:
+    ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, so 
+    /// that the interpreter can call the object destructors at the right time.
+    ///
+    void remapCXAAtExit();
+
     static void* HandleMissingFunction(const std::string&);
     static void* NotifyLazyFunctionCreators(const std::string&);
 

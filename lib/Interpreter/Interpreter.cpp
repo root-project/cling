@@ -233,7 +233,6 @@ namespace cling {
           "cling::Interpreter *gCling=(cling::Interpreter*)"
                     << (uintptr_t)this << ";} }";
         declare(initializer.str());
-        m_Executor->remapCXAAtExit();
       }
 
       declare("#include \"cling/Interpreter/ValuePrinter.h\"");
