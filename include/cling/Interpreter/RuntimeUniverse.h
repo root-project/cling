@@ -49,8 +49,7 @@ namespace cling {
       ///
       /// Implemented in Interpreter.cpp
       ///
-      int local_cxa_atexit(void (*func) (void*), void* arg, void* dso, 
-                           void* interp);
+      int local_cxa_atexit(void (*func) (void*), void* arg, void* interp);
 
       /// \brief Some of clang's routines rely on valid source locations and
       /// source ranges. This member can be looked up and source locations and
@@ -183,7 +182,7 @@ extern "C" {
 
 extern "C" {
   int cling_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
-    return cling::runtime::internal::local_cxa_atexit(func, arg, dso,
+    return cling::runtime::internal::local_cxa_atexit(func, arg,
                                                  (void*)cling::runtime::gCling);
   }
 

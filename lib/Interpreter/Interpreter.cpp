@@ -69,46 +69,12 @@ namespace cling {
   namespace runtime {
     namespace internal {
       // "Declared" to the JIT in RuntimeUniverse.h
-      int local_cxa_atexit(void (*func) (void*), void* arg, void* dso,
-                           void* interp) {
+      void local_cxa_atexit(void (*func) (void*), void* arg, void* interp) {
         Interpreter* cling = (cling::Interpreter*)interp;
-        IncrementalParser* incrP = cling->m_IncrParser.get();
-        // FIXME: Bind to the module symbols.
-        cling::Transaction* T = incrP->getLastTransaction();
-
-        return cling->m_Executor->CXAAtExit(func, arg, dso, T);
+        cling->AddAtExitFunc(func, arg);
       }
     } // end namespace internal
   } // end namespace runtime
-}
-
-
-#if (!_WIN32)
-  // "Declared" to the JIT in RuntimeUniverse.h
-namespace cling {
-  namespace runtime {
-    namespace internal {
-      struct trigger__cxa_atexit {
-        ~trigger__cxa_atexit();
-      } /*S*/;
-      trigger__cxa_atexit::~trigger__cxa_atexit() {
-        if (std::getenv("bar") == (char*)-1) {
-          llvm::errs() <<
-            "UNEXPECTED cling::runtime::internal::trigger__cxa_atexit\n";
-        }
-      }
-    }
-  }
-} // namespace cling
-
-namespace {
-  cling::runtime::internal::trigger__cxa_atexit ForceTheSymbol;
-}
-
-#endif
-
-
-namespace cling {
 
   // FIXME: workaround until JIT supports exceptions
   jmp_buf* Interpreter::m_JumpBuf;
@@ -1077,5 +1043,9 @@ namespace cling {
     // Return a symbol's address, and whether it was jitted.
     llvm::Module* module = m_IncrParser->getCodeGenerator()->GetModule();
     return m_Executor->getAddressOfGlobal(module, SymName, fromJIT);
+  }
+
+  void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {
+    m_Executor->AddAtExitFunc(Func, Arg, getLastTransaction());
   }
 } // namespace cling

@@ -116,12 +116,11 @@ void IncrementalExecutor::remapCXAAtExit() {
   m_CxaAtExitRemapped = true;
 }
 
-int IncrementalExecutor::CXAAtExit(void (*func) (void*), void* arg, void* dso,
-                                void* clingT) {
+void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
+                                        const cling::Transaction* clingT) {
   // Register a CXAAtExit function
   cling::Transaction* T = (cling::Transaction*)clingT;
-  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, dso, T));
-  return 0; // happiness
+  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, T));
 }
 
 void unresolvedSymbol()

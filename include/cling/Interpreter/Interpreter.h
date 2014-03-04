@@ -49,9 +49,6 @@ namespace clang {
 namespace cling {
   namespace runtime {
     namespace internal {
-      int local_cxa_atexit(void (*func) (void*), void* arg, void* dso, 
-                           void* interp);
-
       class DynamicExprInfo;
       template <typename T>
       T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC);
@@ -586,11 +583,14 @@ namespace cling {
     ///
     void* getAddressOfGlobal(llvm::StringRef SymName, bool* fromJIT = 0) const;
 
-    friend class runtime::internal::LifetimeHandler;
-    friend int runtime::internal::local_cxa_atexit(void (*func) (void*),
-                                                   void* arg, void* dso,
-                                                   void* interp);
+    ///\brief Add an atexit function.
+    ///
+    ///\param[in] Func - Function to be called.
+    ///\param[in] Arg - argument passed to the function.
+    ///
+    void AddAtExitFunc(void (*Func) (void*), void* Arg);
 
+    friend class runtime::internal::LifetimeHandler;
     // FIXME: workaround until JIT supports exceptions
     static jmp_buf*& getNullDerefJump() { return m_JumpBuf; }
   };

@@ -25,13 +25,6 @@ namespace llvm {
 
 namespace cling {
   class Transaction;
-  namespace runtime {
-    namespace internal {
-      int local_cxa_atexit(void (*func) (void*), void* arg, void* dso, 
-                           void* interp);
-    } // end namespace internal
-  } // end namespace runtime
-
   class StoredValueRef;
 
   class IncrementalExecutor {
@@ -77,13 +70,12 @@ namespace cling {
       ///\param [in] func - The function to be called on exit or unloading of
       ///                   shared lib.(The destructor of the object.)
       ///\param [in] arg - The argument the func to be called with.
-      ///\param [in] dso - The dynamic shared object handle.
       ///\param [in] fromT - The unloading of this transaction will trigger the
       ///                    atexit function.
       ///
-      CXAAtExitElement(void (*func) (void*), void* arg, void* dso,
-                       Transaction* fromT):
-        m_Func(func), m_Arg(arg), m_DSO(dso), m_FromT(fromT) {}
+      CXAAtExitElement(void (*func) (void*), void* arg,
+                       const Transaction* fromT):
+        m_Func(func), m_Arg(arg), m_FromT(fromT) {}
 
       ///\brief The function to be called.
       ///
@@ -93,14 +85,10 @@ namespace cling {
       ///
       void* m_Arg;
 
-      /// \brief The DSO handle.
-      ///
-      void* m_DSO;
-
       ///\brief Clang's top level declaration, whose unloading will trigger the
       /// call this atexit function.
       ///
-      Transaction* m_FromT; //FIXME: Should be bound to the llvm symbol.
+      const Transaction* m_FromT; //FIXME: Should be bound to the llvm symbol.
     };
 
     typedef llvm::SmallVector<CXAAtExitElement, 128> AtExitFunctions;
@@ -183,19 +171,15 @@ namespace cling {
       return m_engine.get();
     }
 
+    ///\brief Keep track of the entities whose dtor we need to call.
+    ///
+     void AddAtExitFunc(void (*func) (void*), void* arg,
+                        const cling::Transaction* clingT);
+
   private:
     static void* HandleMissingFunction(const std::string&);
     static void* NotifyLazyFunctionCreators(const std::string&);
 
-    ///\brief We keep track of the entities whose dtor we need to call.
-    ///
-    int CXAAtExit(void (*func) (void*), void* arg, void* dso, void* clingT);
-
-    // This is the caller of CXAAtExit. We want to keep it private so we need
-    // to make the caller a friend.
-    friend int runtime::internal::local_cxa_atexit(void (*func) (void*), 
-                                                   void* arg, void* dso,
-                                                   void* interp);
   };
 } // end cling
 #endif // CLING_INCREMENTAL_EXECUTOR_H
