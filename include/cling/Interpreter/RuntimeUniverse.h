@@ -43,11 +43,6 @@ namespace cling {
     /// the dynamic scopes and the runtime bindings
     extern Interpreter* gCling;
 
-    /// \brief The function is used to deal with null pointer dereference.
-    /// It receives input from a user and decides to proceed or not by the
-    /// input.
-    bool shouldProceed(void* S, void* T);
-
     namespace internal {
       ///\brief Manually provided by cling missing function resolution using
       /// addSymbol()
@@ -165,15 +160,6 @@ namespace cling {
         for (int i = 0; i < size; ++i)
           new ((void*)(((T*)placement) + i)) T(src[i]);
       }
-
-//__cxa_atexit is declared later for WIN32
-#if (!_WIN32)
-      // Force the module to define __cxa_atexit, we need it.
-      struct trigger__cxa_atexit {
-        ~trigger__cxa_atexit(); // implemented in Interpreter.cpp
-      } S;
-#endif
-
     } // end namespace internal
   } // end namespace runtime
 } // end namespace cling
