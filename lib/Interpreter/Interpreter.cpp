@@ -186,7 +186,7 @@ namespace cling {
 
     handleFrontendOptions();
 
-    AddRuntimeIncludePaths();
+    AddRuntimeIncludePaths(argv[0]);
 
     // Tell the diagnostic client that we are entering file parsing mode.
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
@@ -212,7 +212,11 @@ namespace cling {
   }
 
   const char* Interpreter::getVersion() const {
-    return "$Id$";
+#ifdef CLING_VERSION
+    return CLING_VERSION
+#else
+    return "<unknown>";
+#endif
   }
 
   void Interpreter::handleFrontendOptions() {
@@ -224,7 +228,7 @@ namespace cling {
     }
   }
 
-  void Interpreter::AddRuntimeIncludePaths() {
+  void Interpreter::AddRuntimeIncludePaths(const char* argv0) {
     // Add configuration paths to interpreter's include files.
 #ifdef CLING_INCLUDE_PATHS
     llvm::StringRef InclPaths(CLING_INCLUDE_PATHS);
@@ -238,7 +242,7 @@ namespace cling {
     // Add remaining part
     AddIncludePath(InclPaths);
 #endif
-    llvm::SmallString<512> P(GetExecutablePath(argv[0]));
+    llvm::SmallString<512> P(GetExecutablePath(argv0));
     if (!P.empty()) {
       // Remove /cling from foo/bin/clang
       llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
