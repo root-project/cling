@@ -94,9 +94,8 @@ void IncrementalExecutor::remapCXAAtExit() {
 }
 
 void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
-                                        const cling::Transaction* clingT) {
+                                        const cling::Transaction* T) {
   // Register a CXAAtExit function
-  cling::Transaction* T = (cling::Transaction*)clingT;
   m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, T));
 }
 
