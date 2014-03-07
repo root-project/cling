@@ -19,6 +19,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/FileManager.h"
+#include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Lex/MacroInfo.h"
@@ -34,6 +35,214 @@
 using namespace clang;
 
 namespace cling {
+
+  // Copied and adapted from GlobalDCE.cpp
+  class GlobalValueEraser {
+  private:
+    llvm::SmallPtrSet<llvm::GlobalValue*, 32> AliveGlobals;
+    llvm::SmallPtrSet<llvm::Constant *, 8> SeenConstants;
+    clang::CodeGenerator* m_CodeGen;
+  public:
+    GlobalValueEraser(clang::CodeGenerator* CG) : m_CodeGen(CG) { }
+
+    ///\brief Erases the given global value and all unused leftovers
+    ///
+    ///\param[GV] - The removal starting point.
+    ///
+    ///\returns true if something was erased.
+    ///
+    bool EraseGlobalValue(llvm::GlobalValue* GV) {
+      using namespace llvm;
+      bool Changed = false;
+      // if (Function* F = dyn_cast<Function>(GV)) {
+      //   RemoveUnusedGlobalValue(*F);
+      //   // Functions with external linkage are needed if they have a body
+      //   if (!F->isDiscardableIfUnused() &&
+      //       !F->isDeclaration() && !F->hasAvailableExternallyLinkage())
+      //     GlobalIsNeeded(F);
+      // }
+      // else if (GlobalVariable* Var = dyn_cast<GlobalVariable>(GV)) {
+      //   RemoveUnusedGlobalValue(*Var);
+      //   // Externally visible & appending globals are needed, if they have an
+      //   // initializer.
+      //   if (!Var->isDiscardableIfUnused() &&
+      //       !Var->isDeclaration() && !Var->hasAvailableExternallyLinkage())
+      //     GlobalIsNeeded(Var);
+      // }
+      // else if (GlobalAlias* GA = dyn_cast<GlobalAlias>(GV)) {
+      //   RemoveUnusedGlobalValue(*GA);
+      //   // Externally visible aliases are needed.
+      //   if (!GA->isDiscardableIfUnused())
+      //     GlobalIsNeeded(GA);
+      // }
+
+      llvm::Module& M = *m_CodeGen->GetModule();
+
+      // Loop over the module, adding globals which are obviously necessary.
+      for (llvm::Module::iterator I = M.begin(), E = M.end(); I != E; ++I) {
+        if (I == GV)
+          continue;
+        Changed |= RemoveUnusedGlobalValue(*I);
+        // Functions with external linkage are needed if they have a body
+        if (!I->isDiscardableIfUnused() &&
+            !I->isDeclaration() && !I->hasAvailableExternallyLinkage())
+          GlobalIsNeeded(I);
+      }
+
+      for (llvm::Module::global_iterator I = M.global_begin(),
+             E = M.global_end(); I != E; ++I) {
+        if (I == GV)
+          continue;
+        Changed |= RemoveUnusedGlobalValue(*I);
+        // Externally visible & appending globals are needed, if they have an
+        // initializer.
+        if (!I->isDiscardableIfUnused() &&
+            !I->isDeclaration() && !I->hasAvailableExternallyLinkage())
+          GlobalIsNeeded(I);
+      }
+
+      for (llvm::Module::alias_iterator I = M.alias_begin(), E = M.alias_end();
+           I != E; ++I) {
+        if (I == GV)
+          continue;
+        Changed |= RemoveUnusedGlobalValue(*I);
+        // Externally visible aliases are needed.
+        if (!I->isDiscardableIfUnused())
+          GlobalIsNeeded(I);
+      }
+
+      // Now that all globals which are needed are in the AliveGlobals set, we
+      // loop through the program, deleting those which are not alive.
+      //
+
+      // The first pass is to drop initializers of global vars which are dead.
+      std::vector<GlobalVariable*> DeadGlobalVars; // Keep track of dead globals
+      for (llvm::Module::global_iterator I = M.global_begin(),
+             E = M.global_end(); I != E; ++I)
+        if (!AliveGlobals.count(I)) {
+          DeadGlobalVars.push_back(I);         // Keep track of dead globals
+          I->setInitializer(0);
+        }
+
+      // The second pass drops the bodies of functions which are dead...
+      std::vector<Function*> DeadFunctions;
+      for (llvm::Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
+        if (!AliveGlobals.count(I)) {
+          DeadFunctions.push_back(I);         // Keep track of dead globals
+          if (!I->isDeclaration())
+            I->deleteBody();
+        }
+
+      // The third pass drops targets of aliases which are dead...
+      std::vector<GlobalAlias*> DeadAliases;
+      for (llvm::Module::alias_iterator I = M.alias_begin(), E = M.alias_end();
+           I != E; ++I)
+        if (!AliveGlobals.count(I)) {
+          DeadAliases.push_back(I);
+          I->setAliasee(0);
+        }
+
+      if (!DeadFunctions.empty()) {
+        // Now that all interferences have been dropped, delete the actual
+        // objects themselves.
+        for (unsigned i = 0, e = DeadFunctions.size(); i != e; ++i) {
+          RemoveUnusedGlobalValue(*DeadFunctions[i]);
+          M.getFunctionList().erase(DeadFunctions[i]);
+        }
+        Changed = true;
+      }
+
+      if (!DeadGlobalVars.empty()) {
+        for (unsigned i = 0, e = DeadGlobalVars.size(); i != e; ++i) {
+          RemoveUnusedGlobalValue(*DeadGlobalVars[i]);
+          m_CodeGen->forgetGlobal(DeadGlobalVars[i]);
+          M.getGlobalList().erase(DeadGlobalVars[i]);
+        }
+        Changed = true;
+      }
+
+      // Now delete any dead aliases.
+      if (!DeadAliases.empty()) {
+        for (unsigned i = 0, e = DeadAliases.size(); i != e; ++i) {
+          RemoveUnusedGlobalValue(*DeadAliases[i]);
+          M.getAliasList().erase(DeadAliases[i]);
+        }
+        Changed = true;
+      }
+
+      // Make sure that all memory is released
+      AliveGlobals.clear();
+      SeenConstants.clear();
+
+      return Changed;
+    }
+
+  private:
+    /// GlobalIsNeeded - the specific global value as needed, and
+    /// recursively mark anything that it uses as also needed.
+    void GlobalIsNeeded(llvm::GlobalValue *G) {
+      using namespace llvm;
+      // If the global is already in the set, no need to reprocess it.
+      if (!AliveGlobals.insert(G))
+        return;
+
+      if (GlobalVariable *GV = dyn_cast<GlobalVariable>(G)) {
+        // If this is a global variable, we must make sure to add any global
+        // values referenced by the initializer to the alive set.
+        if (GV->hasInitializer())
+          MarkUsedGlobalsAsNeeded(GV->getInitializer());
+      } else if (GlobalAlias *GA = dyn_cast<GlobalAlias>(G)) {
+        // The target of a global alias is needed.
+        MarkUsedGlobalsAsNeeded(GA->getAliasee());
+      } else {
+        // Otherwise this must be a function object.  We have to scan the body
+        // of the function looking for constants and global values which are
+        // used as operands.  Any operands of these types must be processed to
+        // ensure that any globals used will be marked as needed.
+        Function *F = cast<Function>(G);
+
+        if (F->hasPrefixData())
+          MarkUsedGlobalsAsNeeded(F->getPrefixData());
+
+        for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB)
+          for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ++I)
+            for (User::op_iterator U = I->op_begin(), E = I->op_end();U!=E; ++U)
+              if (GlobalValue *GV = dyn_cast<GlobalValue>(*U))
+                GlobalIsNeeded(GV);
+              else if (Constant *C = dyn_cast<Constant>(*U))
+                MarkUsedGlobalsAsNeeded(C);
+      }
+    }
+
+    void MarkUsedGlobalsAsNeeded(llvm::Constant *C) {
+      using namespace llvm;
+      if (GlobalValue *GV = dyn_cast<GlobalValue>(C))
+        return GlobalIsNeeded(GV);
+
+      // Loop over all of the operands of the constant, adding any globals they
+      // use to the list of needed globals.
+      for (User::op_iterator I = C->op_begin(), E = C->op_end(); I != E; ++I) {
+        Constant *Op = dyn_cast<Constant>(*I);
+        // We already processed this constant there's no need to do it again.
+        if (Op && SeenConstants.insert(Op))
+          MarkUsedGlobalsAsNeeded(Op);
+      }
+    }
+
+    // RemoveUnusedGlobalValue - Loop over all of the uses of the specified
+    // GlobalValue, looking for the constant pointer ref that may be pointing to
+    // it. If found, check to see if the constant pointer ref is safe to
+    // destroy, and if so, nuke it.  This will reduce the reference count on the
+    // global value, which might make it deader.
+    //
+    bool RemoveUnusedGlobalValue(llvm::GlobalValue &GV) {
+      using namespace llvm;
+      if (GV.use_empty())
+        return false;
+      GV.removeDeadConstantUsers();
+      return GV.use_empty();
+    }
+  };
 
   ///\brief The class does the actual work of removing a declaration and
   /// resetting the internal structures of the compiler
@@ -768,8 +977,8 @@ namespace cling {
           mangledName = functionMangledName + "." + mangledName;
         }
 
-      GlobalValue* GV
-        = m_CurTransaction->getModule()->getNamedValue(mangledName);
+      llvm::Module* M = m_CurTransaction->getModule();
+      GlobalValue* GV = M->getNamedValue(mangledName);
       if (GV) { // May be deferred decl and thus 0
         // createGVExtractionPass - If deleteFn is true, this pass deletes
         // the specified global values. Otherwise, it deletes as much of the
@@ -780,10 +989,10 @@ namespace cling {
         //llvm::ModulePass* GVExtract = llvm::createGVExtractionPass(GVs, true);
         //GVExtract->runOnModule(*m_CurTransaction->getModule());
 
-        GV->removeDeadConstantUsers();
-        if (!GV->use_empty()) {
+        //GV->removeDeadConstantUsers();
+        /*if (!GV->use_empty()) {
           // Assert that if there was a use it is not coming from the explicit
-          // AST node, but from the implicitly generated functions, which ensure
+          // A node, but from the implicitly generated functions, which ensure
           // the initialization order semantics. Such functions are:
           // _GLOBAL__I* and __cxx_global_var_init*
           //
@@ -804,21 +1013,25 @@ namespace cling {
               if (F->getName().startswith("__cxx_global_var_init"))
                 RemoveStaticInit(*F);
           }
-        }
+          }*/
 
         // Cleanup the jit mapping of GV->addr.
         m_EEngine->updateGlobalMapping(GV, 0);
-        GV->dropAllReferences();
-        if (!GV->use_empty()) {
-          if (Function* F = dyn_cast<Function>(GV)) {
-            Function* dummy
-              = Function::Create(F->getFunctionType(), F->getLinkage());
-            F->replaceAllUsesWith(dummy);
-          }
-          else
-            GV->replaceAllUsesWith(UndefValue::get(GV->getType()));
-        }
-        GV->eraseFromParent();
+        //GV->dropAllReferences();
+        // if (!GV->use_empty()) {
+        //   if (Function* F = dyn_cast<Function>(GV)) {
+        //     Function* dummy
+        //       = Function::Create(F->getFunctionType(), F->getLinkage());
+        //     F->replaceAllUsesWith(dummy);
+        //   }
+        //   else
+        //     GV->replaceAllUsesWith(UndefValue::get(GV->getType()));
+        // }
+        GlobalValueEraser GVEraser(m_CodeGen);
+        GVEraser.EraseGlobalValue(GV);
+
+        //GV->eraseFromParent();
+        //GV->removeDeadConstantUsers();
       }
     }
   }
