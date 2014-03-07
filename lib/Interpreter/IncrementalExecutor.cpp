@@ -270,7 +270,26 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
         m_unresolvedSymbols.clear();
         return kExeUnresolvedSymbols;
       }
-      m_engine->runFunction(F, std::vector<llvm::GenericValue>());
+      executeFunction(F->getName());
+      //m_engine->runFunction(F, std::vector<llvm::GenericValue>());
+      // Cleanup also the dangling init functions. They are in the form:
+      // define internal void @_GLOBAL__I_aN() section "..."{
+      // entry:
+      //   call void @__cxx_global_var_init(N-1)()
+      //   ret void
+      // }
+      //
+      // define internal void @__cxx_global_var_init(N-1)() section "..." {
+      // entry:
+      //   call void @_ZN7MyClassC1Ev(%struct.MyClass* @n)
+      //   ret void
+      // }
+
+      // Erase __cxx_global_var_init(N-1)() first.
+      Function* GlobalVarInitF =
+        cast<Function>(F->getEntryBlock().getFirstNonPHI()->getOperand(0));
+      F->eraseFromParent();
+      GlobalVarInitF->eraseFromParent();
     }
   }
 
