@@ -46,6 +46,10 @@ namespace cling {
     ///
     Sema* m_Sema;
 
+    ///\brief The clang code generator, being recovered.
+    ///
+    clang::CodeGenerator* m_CodeGen;
+
     ///\brief The execution engine, either JIT or MCJIT, being recovered.
     ///
     llvm::ExecutionEngine* m_EEngine;
@@ -63,8 +67,9 @@ namespace cling {
     FileIDs m_FilesToUncache;
 
   public:
-    DeclReverter(Sema* S, llvm::ExecutionEngine* EE, const Transaction* T)
-      : m_Sema(S), m_EEngine(EE), m_CurTransaction(T) { }
+    DeclReverter(Sema* S, clang::CodeGenerator* CG, llvm::ExecutionEngine* EE,
+                 const Transaction* T)
+      : m_Sema(S), m_CodeGen(CG), m_EEngine(EE), m_CurTransaction(T) { }
     ~DeclReverter();
 
     ///\brief Interface with nice name, forwarding to Visit.
@@ -656,8 +661,10 @@ namespace cling {
     }
 
     for(Decls::iterator I = declsToErase.begin(), E = declsToErase.end();
-        I != E; ++I)
+        I != E; ++I) {
       Successful = Visit(*I) && Successful;
+      assert(Successful);
+    }
     return Successful;
   }
 
@@ -961,15 +968,16 @@ namespace cling {
   }
 
 
-  ASTNodeEraser::ASTNodeEraser(Sema* S, llvm::ExecutionEngine* EE)
-    : m_Sema(S), m_EEngine(EE) {
+  ASTNodeEraser::ASTNodeEraser(Sema* S, clang::CodeGenerator* CG,
+                               llvm::ExecutionEngine* EE)
+    : m_Sema(S), m_CodeGen(CG), m_EEngine(EE) {
   }
 
   ASTNodeEraser::~ASTNodeEraser() {
   }
 
   bool ASTNodeEraser::RevertTransaction(Transaction* T) {
-    DeclReverter DeclRev(m_Sema, m_EEngine, T);
+    DeclReverter DeclRev(m_Sema, m_CodeGen, m_EEngine, T);
     bool Successful = true;
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),

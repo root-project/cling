@@ -15,6 +15,7 @@ namespace llvm {
 }
 
 namespace clang {
+  class CodeGenerator;
   class Decl;
   class Sema;
 }
@@ -28,10 +29,12 @@ namespace cling {
   class ASTNodeEraser {
   private:
     clang::Sema* m_Sema;
+    clang::CodeGenerator* m_CodeGen;
     llvm::ExecutionEngine* m_EEngine;
 
   public:
-    ASTNodeEraser(clang::Sema* S, llvm::ExecutionEngine* EE);
+    ASTNodeEraser(clang::Sema* S, clang::CodeGenerator* CG,
+                  llvm::ExecutionEngine* EE);
     ~ASTNodeEraser();
 
     ///\brief Rolls back given transaction from the AST.
