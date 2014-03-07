@@ -227,7 +227,8 @@ namespace cling {
     }
 
     DiagnosticOptions* DefaultDiagnosticOptions = new DiagnosticOptions();
-    DefaultDiagnosticOptions->ShowColors = llvm::sys::Process::StandardErrHasColors() ? 1 : 0;
+    DefaultDiagnosticOptions->ShowColors
+      = llvm::sys::Process::StandardErrHasColors() ? 1 : 0;
     TextDiagnosticPrinter* DiagnosticPrinter
       = new TextDiagnosticPrinter(llvm::errs(), DefaultDiagnosticOptions);
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
