@@ -467,7 +467,7 @@ namespace cling {
            && "Rolling back with no errors");
     if (m_Interpreter->getOptions().ErrorOut)
       return;
-    ASTNodeEraser NodeEraser(&getCI()->getSema(),
+    ASTNodeEraser NodeEraser(&getCI()->getSema(), m_CodeGen.get(),
                              m_Interpreter->getExecutionEngine());
 
     if (NodeEraser.RevertTransaction(T))
@@ -639,7 +639,7 @@ namespace cling {
     assert(T->getState() == Transaction::kCommitted && 
            "Unloading not commited transaction?");
 
-    ASTNodeEraser NodeEraser(&getCI()->getSema(), 
+    ASTNodeEraser NodeEraser(&getCI()->getSema(), m_CodeGen.get(),
                              m_Interpreter->getExecutionEngine());
     NodeEraser.RevertTransaction(T);
 
