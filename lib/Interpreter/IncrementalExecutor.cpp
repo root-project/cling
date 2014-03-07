@@ -9,9 +9,6 @@
 
 #include "IncrementalExecutor.h"
 
-#include "clang/AST/Type.h"
-#include "clang/Sema/Sema.h"
-
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
@@ -22,7 +19,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/DynamicLibrary.h"
 
-using namespace cling;
+using namespace llvm;
+namespace cling {
 
 std::set<std::string> IncrementalExecutor::m_unresolvedSymbols;
 std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
@@ -346,3 +344,4 @@ IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
   //  Function not yet codegened by the JIT, force this to happen now.
   return m_engine->getPointerToGlobal(&GV);
 }
+}// end namespace cling
