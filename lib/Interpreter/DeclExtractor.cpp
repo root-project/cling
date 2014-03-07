@@ -181,6 +181,19 @@ namespace cling {
 
     CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
 
+    // The order matters, because when we extract decls from the wrapper we
+    // append them to the transaction. If the transaction gets unloaded it will
+    // introduce a fake dependency, so put the move last.
+    Transaction* T = getTransaction();
+    for (Transaction::iterator I = T->decls_begin(), E = T->decls_end();
+         I != E; ++I)
+      if (!I->m_DGR.isNull() && I->m_DGR.isSingleDecl()
+          && I->m_DGR.getSingleDecl() == T->getWrapperFD()) {
+        T->erase(I);
+        break;
+      }
+    T->forceAppend(FD);
+
     // Put the wrapper after its declarations. (Nice when AST dumping)
     DC->removeDecl(FD);
     DC->addDecl(FD);
