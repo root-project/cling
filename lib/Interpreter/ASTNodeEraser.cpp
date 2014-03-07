@@ -679,8 +679,8 @@ namespace cling {
 
   bool DeclReverter::VisitTagDecl(TagDecl* TD) {
     // TagDecl: TypeDecl, DeclContext, Redeclarable
-    bool Successful = VisitRedeclarable(TD, TD->getDeclContext());
-    Successful &= VisitDeclContext(TD);
+    bool Successful = VisitDeclContext(TD);
+    Successful &= VisitRedeclarable(TD, TD->getDeclContext());
     Successful &= VisitTypeDecl(TD);
     return Successful;
   }
