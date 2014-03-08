@@ -194,7 +194,7 @@ namespace cling {
     //
     //  Initialize the llvm library.
     llvm::InitializeNativeTarget();
-    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeNativeTargetAsmPrinter();
     llvm::SmallString<512> resource_path;
     if (llvmdir) {
       resource_path = llvmdir;
