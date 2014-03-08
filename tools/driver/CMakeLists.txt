@@ -27,6 +27,9 @@ set(LLVM_NO_DEAD_STRIP 1)
 add_cling_executable(cling
   cling.cpp)
 
+set_target_properties(cling
+  PROPERTIES ENABLE_EXPORTS 1)
+
 target_link_libraries(cling
   clangAST
   clangAnalysis
