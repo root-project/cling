@@ -7,7 +7,11 @@
 #------------------------------------------------------------------------------
 
 set( LLVM_LINK_COMPONENTS
-  ${LLVM_TARGETS_TO_BUILD}
+  ${LLVM_NATIVE_ARCH}
+  ${LLVM_NATIVE_ARCH}codegen
+  ${LLVM_NATIVE_ARCH}info
+  ${LLVM_NATIVE_ARCH}asmprinter
+  ${LLVM_NATIVE_ARCH}utils
   asmparser
   bitreader
   bitwriter
@@ -18,14 +22,7 @@ set( LLVM_LINK_COMPONENTS
   executionengine
   target
   jit
-  x86info
-  x86asmprinter
 )
-
-#set(LLVM_USED_LIBS
-#  clingWhatever
-#)
-
 
 add_cling_library(clingInterpreter
   ASTNodeEraser.cpp
@@ -55,6 +52,9 @@ add_cling_library(clingInterpreter
   ValuePrinter.cpp
   ValuePrinterInfo.cpp
   ValuePrinterSynthesizer.cpp
+
+  LINK_LIBS
+  clangBasic
   )
   
 if(NOT WIN32)

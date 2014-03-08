@@ -6,9 +6,6 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-#set(LLVM_LINK_COMPONENTS mc)
-#set(LLVM_USED_LIBS clangBasic clangAST clangParse)
-
 set(LLVM_REQUIRES_EH true)
 
 add_cling_library(clingUserInterface

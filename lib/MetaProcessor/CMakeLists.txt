@@ -6,17 +6,17 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-set(LLVM_USED_LIBS 
-	clangBasic
-	)
-
 add_cling_library(clingMetaProcessor
   Display.cpp
   InputValidator.cpp
   MetaLexer.cpp
   MetaParser.cpp
   MetaProcessor.cpp
-  MetaSema.cpp)
+  MetaSema.cpp
+
+  LINK_LIBS
+  clangBasic
+  )
 
 if ( MSVC )
   set_target_properties(clingMetaProcessor PROPERTIES
