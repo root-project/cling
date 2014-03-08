@@ -21,6 +21,9 @@ set( LLVM_LINK_COMPONENTS
   native
   )
 
+# Keep symbols for JIT resolution
+set(LLVM_NO_DEAD_STRIP 1)
+
 add_cling_executable(cling
   cling.cpp)
 
