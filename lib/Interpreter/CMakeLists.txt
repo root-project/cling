@@ -10,16 +10,11 @@ set( LLVM_LINK_COMPONENTS
   ${LLVM_NATIVE_ARCH}
   ${LLVM_NATIVE_ARCH}codegen
   ${LLVM_NATIVE_ARCH}info
-  ${LLVM_NATIVE_ARCH}asmprinter
   ${LLVM_NATIVE_ARCH}utils
-  asmparser
   bitreader
   bitwriter
   codegen
-  linker
   support
-  mc
-  executionengine
   target
   jit
 )
