@@ -74,11 +74,27 @@ endif()
 
 add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
+add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/Interpreter.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
 
 # Remove all -I from CMAKE_CXX_FLAGS
 string(REPLACE ";" " " __flags "${CMAKE_CXX_FLAGS}")
 string(REGEX REPLACE "-I[^ ]+" "" CMAKE_CXX_FLAGS_NO_I "${__flags}")
+find_program(git_executable NAMES git git.exe git.cmd)
+if( git_executable )
+  execute_process(COMMAND ${git_executable} describe --always
+          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+          TIMEOUT 5
+          RESULT_VARIABLE git_result
+          OUTPUT_VARIABLE git_output
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if( git_result EQUAL 0 )
+    set(CLING_VERSION "${git_output}")
+  endif( )
+endif( git_executable )
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
   "#define LLVM_CXX \"${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
-")
+#define CLING_VERSION \"${CLING_VERSION}\"
+"
+)

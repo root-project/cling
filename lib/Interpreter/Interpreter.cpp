@@ -9,6 +9,7 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
+#include "cling-compiledata.h"
 #include "DynamicLookup.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
