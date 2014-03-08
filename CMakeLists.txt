@@ -91,44 +91,59 @@ endif ()
 include(LLVMParseArguments)
 
 macro(add_cling_library name)
-  llvm_process_sources(srcs ${ARGN})
+  cmake_parse_arguments(ARG
+    ""
+    ""
+    "ADDITIONAL_HEADERS"
+    ${ARGN})
+  set(srcs)
   if(MSVC_IDE OR XCODE)
-    string( REGEX MATCHALL "/[^/]+" split_path ${CMAKE_CURRENT_SOURCE_DIR})
-    list( GET split_path -1 dir)
-    file( GLOB_RECURSE headers
-      ../../include/cling${dir}/*.h
-      ../../include/cling${dir}/*.td
-      ../../include/cling${dir}/*.def)
-    set(srcs ${srcs} ${headers})
+    # Add public headers
+    file(RELATIVE_PATH lib_path
+      ${CLING_SOURCE_DIR}/lib/
+      ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    if(NOT lib_path MATCHES "^[.][.]")
+      file( GLOB_RECURSE headers
+        ${CLING_SOURCE_DIR}/include/cling/${lib_path}/*.h
+        ${CLING_SOURCE_DIR}/include/cling/${lib_path}/*.def
+      )
+      set_source_files_properties(${headers} PROPERTIES HEADER_FILE_ONLY ON)
+
+      file( GLOB_RECURSE tds
+        ${CLING_SOURCE_DIR}/include/cling/${lib_path}/*.td
+      )
+      source_group("TableGen descriptions" FILES ${tds})
+      set_source_files_properties(${tds}} PROPERTIES HEADER_FILE_ONLY ON)
+
+      if(headers OR tds)
+	set(srcs ${headers} ${tds})
+      endif()
+    endif()
   endif(MSVC_IDE OR XCODE)
-  if (MODULE)
-    set(libkind MODULE)
-  elseif (SHARED_LIBRARY)
-    set(libkind SHARED)
-  else()
-    set(libkind)
+  if(srcs OR ARG_ADDITIONAL_HEADERS)
+    set(srcs
+      ADDITIONAL_HEADERS
+      ${srcs}
+      ${ARG_ADDITIONAL_HEADERS} # It may contain unparsed unknown args.
+      )
   endif()
-  add_library( ${name} ${libkind} ${srcs} )
-  if( LLVM_COMMON_DEPENDS )
-    add_dependencies( ${name} ${LLVM_COMMON_DEPENDS} )
-  endif( LLVM_COMMON_DEPENDS )
+  llvm_add_library(${name} ${ARG_UNPARSED_ARGUMENTS} ${srcs})
 
-  target_link_libraries( ${name} ${LLVM_USED_LIBS} )
-  llvm_config( ${name} ${LLVM_LINK_COMPONENTS} )
-  target_link_libraries( ${name} ${LLVM_COMMON_LIBS} )
-  link_system_libs( ${name} )
+  if(TARGET ${name})
+    target_link_libraries(${name} ${cmake_2_8_12_INTERFACE} ${LLVM_COMMON_LIBS})
 
-  if(MSVC)
-    get_target_property(cflag ${name} COMPILE_FLAGS)
-    if(NOT cflag)
-      set(cflag "")
-    endif(NOT cflag)
-    set(cflag "${cflag} ")
-    set_target_properties(${name} PROPERTIES COMPILE_FLAGS ${cflag})
-  endif(MSVC)
-  install(TARGETS ${name}
-    LIBRARY DESTINATION lib${LLVM_LIBDIR_SUFFIX}
-    ARCHIVE DESTINATION lib${LLVM_LIBDIR_SUFFIX})
+    if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY OR ${name} STREQUAL "libcling")
+      install(TARGETS ${name}
+        LIBRARY DESTINATION lib${LLVM_LIBDIR_SUFFIX}
+        ARCHIVE DESTINATION lib${LLVM_LIBDIR_SUFFIX}
+        RUNTIME DESTINATION bin)
+    endif()
+  else()
+    # Add empty "phony" target
+    add_custom_target(${name})
+  endif()
+
   set_target_properties(${name} PROPERTIES FOLDER "Cling libraries")
 endmacro(add_cling_library)
 
