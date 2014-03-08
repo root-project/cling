@@ -165,3 +165,6 @@ $(CLINGETC) : $(LLVMLIB)
 $(CLINGO)   : $(CLINGETC)
 $(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): $(CLINGCOMPDH)
 $(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): CLINGCXXFLAGS += -I$(dir $(CLINGCOMPDH))
+$(call stripsrc,$(MODDIR)/lib/Interpreter/Interpreter.o): $(CLINGCOMPDH)
+$(call stripsrc,$(MODDIR)/lib/Interpreter/Interpreter.o): CLINGCXXFLAGS += -I$(dir $(CLINGCOMPDH))
+
