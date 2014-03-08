@@ -37,4 +37,6 @@ $(ObjRootDir)/cling-compiledata.h: FORCE
 $(ObjRootDir)/RuntimeException.o: CXX.Flags := $(subst -fno-exceptions,,$(CXX.Flags))
 $(ObjRootDir)/CIFactory.o: $(ObjRootDir)/cling-compiledata.h
 $(ObjRootDir)/CIFactory.o: CXX.Flags += -I$(ObjRootDir)
+$(ObjRootDir)/Interpreter.o: $(ObjRootDir)/cling-compiledata.h
+$(ObjRootDir)/Interpreter.o: CXX.Flags += -I$(ObjRootDir)
 
