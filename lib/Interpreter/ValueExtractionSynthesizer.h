@@ -73,7 +73,7 @@ public:
     ///          call to cling::runtime::internal::copyArray(...)
     ///   
     /// We need to synthesize later:
-    /// Wrapper has signature: void w(cling::StoredValueRef SVR)
+    /// Wrapper has signature: void w(cling::Value V)
     /// case 1):
     ///   setValueNoAlloc(gCling, &SVR, lastExprTy, lastExpr())
     /// case 2):

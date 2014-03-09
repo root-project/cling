@@ -56,69 +56,69 @@ namespace cling {
 
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
-      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The float value of the assignment to be stored
       ///                    in GenericValue.
-      ///\param [out] vpSVR - The StoredValueRef that is created.
+      ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, float value);
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, float value);
 
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
-      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The double value of the assignment to be stored
       ///                    in GenericValue.
-      ///\param [out] vpSVR - The StoredValueRef that is created.
+      ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, double value);
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, double value);
 
       ///\brief Set the value of the GenericValue for the expression
       ///   evaluated at the prompt. Extract through
       ///   APFloat(ASTContext::getFloatTypeSemantics(QT), const APInt &)
-      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The value of the assignment to be stored
       ///                    in GenericValue.
-      ///\param [out] vpSVR - The StoredValueRef that is created.
+      ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT,
                            long double value);
 
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
       /// We are using unsigned long long instead of uint64, because we don't
       /// want to #include the header.
-      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The uint64_t value of the assignment to be stored
       ///                    in GenericValue.
-      ///\param [out] vpSVR - The StoredValueRef that is created.
+      ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT,
                            unsigned long long value);
 
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
-      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The void* value of the assignment to be stored
       ///                    in GenericValue.
-      ///\param [out] vpSVR - The StoredValueRef that is created.
+      ///\param [out] vpV - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT,
                            const void* value);
 
       ///\brief Set the value of the Generic value and return the address
       /// for the allocated storage space.
-      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
-      ///\param [out] vpSVR - The StoredValueRef that is created.
+      ///\param [out] vpV - The Value that is created.
       ///
       ///\returns the address where the value should be put.
       ///
-      void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT);
+      void* setValueWithAlloc(void* vpI, void* vpV, void* vpQT);
 
       ///\brief Placement new doesn't work for arrays. It needs to be called on
       /// each element. For non-PODs we also need to call the *structors. This

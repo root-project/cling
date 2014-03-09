@@ -9,44 +9,44 @@
 // RUN: cat %s | %cling -Xclang -verify | FileCheck %s
 
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/StoredValueRef.h"
+#include "cling/Interpreter/Value.h"
 
-cling::StoredValueRef V;
-V // CHECK: (cling::StoredValueRef) <<<invalid>>> @0x{{.*}}
+cling::Value V;
+V // CHECK: (cling::Value) <<<invalid>>> @0x{{.*}}
 
 gCling->evaluate("return 1;", V);
-V // CHECK: (cling::StoredValueRef) boxes [(int) 1]
+V // CHECK: (cling::Value) boxes [(int) 1]
 
-// Returns must put the result in the StoredValueRef.
+// Returns must put the result in the Value.
 bool cond = true;
 gCling->evaluate("if (cond) return \"true\"; else return 0;", V);
-V // CHECK: (cling::StoredValueRef) boxes [(const char [5]) "true"]
+V // CHECK: (cling::Value) boxes [(const char [5]) "true"]
 gCling->evaluate("cond = false; if (cond) return \"true\"; else return 0;", V);
-V // CHECK: (cling::StoredValueRef) boxes [(int) 0]
+V // CHECK: (cling::Value) boxes [(int) 0]
 
 gCling->evaluate("auto a = 12.3; a;", V);
-V // CHECK: (cling::StoredValueRef) boxes [(double) 1.230000e+01]
+V // CHECK: (cling::Value) boxes [(double) 1.230000e+01]
 
 long LongV = 17;
 gCling->evaluate("LongV;", V);
-V // CHECK: (cling::StoredValueRef) boxes [(long) 17]
+V // CHECK: (cling::Value) boxes [(long) 17]
 
 int* IntP = (int*)0x12;
 gCling->evaluate("IntP;", V);
-V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
+V // CHECK: (cling::Value) boxes [(int *) 0x12]
 
-cling::StoredValueRef Result;
+cling::Value Result;
 gCling->evaluate("V", Result);
-// Here we check what happens for record type like cling::StoredValueRef; they are returned by reference.
-Result // CHECK: (cling::StoredValueRef) boxes [(cling::StoredValueRef &) boxes [(int *) 0x12]]
-V // CHECK: (cling::StoredValueRef) boxes [(int *) 0x12]
+// Here we check what happens for record type like cling::Value; they are returned by reference.
+Result // CHECK: (cling::Value) boxes [(cling::Value &) boxes [(int *) 0x12]]
+V // CHECK: (cling::Value) boxes [(int *) 0x12]
 
 // Savannah #96277
 gCling->evaluate("gCling->declare(\"double sin(double);\"); double one = sin(3.141/2);", V);
-V // CHECK: (cling::StoredValueRef) boxes [(double) 1.000000e+00]
+V // CHECK: (cling::Value) boxes [(double) 1.000000e+00]
 
 gCling->process("double one = sin(3.141/2);", &V);
-V // CHECK: (cling::StoredValueRef) boxes [(double) 1.000000e+00]
+V // CHECK: (cling::Value) boxes [(double) 1.000000e+00]
 one // CHECK: (double) 1.000
 int one; // expected-error {{redefinition of 'one' with a different type: 'int' vs 'double'}} expected-note {{previous definition is here}}
 
@@ -59,7 +59,7 @@ gCling->evaluate("f", V);
 V.isValid() //CHECK: {{\([_]B|b}}ool) true
 // end PR#98434
 
-// Check lifetime of objects in StoredValue
+// Check lifetime of objects in Value
 .rawInput 1
 struct WithDtor {
    static int fgCount;
@@ -73,25 +73,24 @@ WithDtor getWithDtor() { return WithDtor(); }
 std::vector<WithDtor> getWithDtorVec() { std::vector<WithDtor> ret; ret.resize(7); return ret; }
 .rawInput 0
 
-cling::StoredValueRef* VOnHeap = new cling::StoredValueRef();
+cling::Value* VOnHeap = new cling::Value();
 gCling->evaluate("getWithDtor()", *VOnHeap);
-*VOnHeap //CHECK: (cling::StoredValueRef) boxes [(WithDtor) @0x{{.*}}]
+*VOnHeap //CHECK: (cling::Value) boxes [(WithDtor) @0x{{.*}}]
 WithDtor::fgCount //CHECK: (int) 1
 delete VOnHeap;
 WithDtor::fgCount //CHECK: (int) 0
 
 // Check destructor call for templates
-VOnHeap = new cling::StoredValueRef();
+VOnHeap = new cling::Value();
 gCling->evaluate("getWithDtorVec()", *VOnHeap);
-*VOnHeap //CHECK: (cling::StoredValueRef) boxes [(std::vector<WithDtor>) @0x{{.*}}]
+*VOnHeap //CHECK: (cling::Value) boxes [(std::vector<WithDtor>) @0x{{.*}}]
 WithDtor::fgCount //CHECK: (int) 7
 delete VOnHeap;
 WithDtor::fgCount //CHECK: (int) 0
 
 // long doubles (tricky for the JIT).
 gCling->evaluate("17.42L", V);
-V // CHECK: (cling::StoredValueRef) boxes [(long double) 17.4200000{{[0-9]*}}L]
-
+V // CHECK: (cling::Value) boxes [(long double) 17.42{{[0-9]*}}L]
 
 // Test references, temporaries
 .rawInput 1
@@ -121,19 +120,19 @@ namespace cling {
     return p->asStr();
   }
 }
-void dumpTracerSVR(cling::StoredValueRef& svr) {
-  ((Tracer*)svr.get().getAs<void*>())->dump("dump");
+void dumpTracerSVR(cling::Value& svr) {
+  ((Tracer*)svr.getAs<void*>())->dump("dump");
 }
 .rawInput 0
 
 // Creating the static in constructs one object. It gets returned by
 // reference; it should only be destructed by ~JIT, definitely not by
-// ~StoredValueRef (which should only store a Tracer&)
+// ~Value (which should only store a Tracer&)
 gCling->evaluate("RefMaker()", V);
 // This is the local static:
 // CHECK: REF{1}:ctor
 printf("RefMaker() done\n"); // CHECK-NEXT: RefMaker() done
-V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer &) @{{.*}}]
+V // CHECK-NEXT: (cling::Value) boxes [(Tracer &) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: REF{1}:dump
 
 // Setting a new value should destruct the old - BUT it's a ref thus no
@@ -146,7 +145,7 @@ gCling->evaluate("ObjMaker()", V);
 // The temporary gets created:
 // CHECK-NEXT:MADE{2}:ctor
 printf("ObjMaker() done\n"); //CHECK-NEXT: ObjMaker() done
-V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer) @{{.*}}]
+V // CHECK-NEXT: (cling::Value) boxes [(Tracer) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: MADE{2}:dump
 
 // Creating a variable:
@@ -160,17 +159,17 @@ Tracer RT("VAR"); // CHECK-NEXT: VAR{3}:ctor
 // CHECK-NEXT: MADE{2}:dtor
 gCling->evaluate("RT", V); // should not call any ctor!
 printf("RT done\n"); //CHECK-NEXT: RT done
-V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer &) @{{.*}}]
+V // CHECK-NEXT: (cling::Value) boxes [(Tracer &) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: VAR{2}:dump
 
 // The following creates a copy, explicitly. This temporary object is then put
-// into the StoredValueRef.
+// into the Value.
 //
 gCling->evaluate("(Tracer)RT", V);
 // Copies RT:
 //CHECK-NEXT: VAR+{3}:copy
 printf("(Tracer)RT done\n"); //CHECK-NEXT: RT done
-V // CHECK-NEXT: (cling::StoredValueRef) boxes [(Tracer) @{{.*}}]
+V // CHECK-NEXT: (cling::Value) boxes [(Tracer) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: VAR+{3}:dump
 
 // Destruct the variables with static storage:

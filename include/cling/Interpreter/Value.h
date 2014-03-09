@@ -61,10 +61,6 @@ namespace cling {
     /// \brief Retrieve the underlying, canonical, desugared, unqualified type.
     EStorageType getStorageType() const;
 
-    /// \brief Whether this type needs managed heap, i.e. the storage provided
-    /// by Storage is insufficient.
-    bool needsManagedAllocation() const;
-
     /// \brief Allocate storage as needed by the type.
     void ManagedAllocate(Interpreter* interp);
 
@@ -79,7 +75,7 @@ namespace cling {
 
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
-    Value() {}
+    Value(): m_Type(0) {}
     /// \brief Copy a value.
     Value(const Value& other);
     /// \brief Construct a valid but ininitialized Value. After this call the
@@ -93,6 +89,11 @@ namespace cling {
 
     clang::QualType getType() const;
 
+    /// \brief Whether this type needs managed heap, i.e. the storage provided
+    /// by the m_Storage member is insufficient, or a non-trivial destructor
+    /// must be called.
+    bool needsManagedAllocation() const;
+
     /// \brief Determine whether the Value has been set.
     //
     /// Determine whether the Value has been set by checking
@@ -100,14 +101,14 @@ namespace cling {
     bool isValid() const;
 
     /// \brief Determine whether the Value is set but void.
-    bool isVoid(const clang::ASTContext& ASTContext) const;
+    bool isVoid(const clang::ASTContext& Ctx) const;
 
     /// \brief Determine whether the Value is set and not void.
     //
     /// Determine whether the Value is set and not void.
     /// Only in this case can getAs() or simplisticCastAs() be called.
-    bool hasValue(const clang::ASTContext& ASTContext) const {
-      return isValid() && !isVoid(ASTContext); }
+    bool hasValue(const clang::ASTContext& Ctx) const {
+      return isValid() && !isVoid(Ctx); }
 
     /// \brief Get a reference to the value without type checking.
     /// T *must* correspond to type. Else use simplisticCastAs()!
@@ -120,7 +121,7 @@ namespace cling {
     T getAs() const { return const_cast<Value*>(this)->getAs<T>(); }
 
     template <typename T>
-    T* getAs(T**) const { return (T*)getAs((void**)0); }
+    T*& getAs(T**) const { return (T*&)getAs((void**)0); }
     void*& getAs(void**) { return m_Storage.m_Ptr; }
     double& getAs(double*) { return m_Storage.m_Double; }
     long double& getAs(long double*) { return m_Storage.m_LongDouble; }
@@ -128,7 +129,21 @@ namespace cling {
     long long& getAs(long long*) { return m_Storage.m_LL; }
     unsigned long long& getAs(unsigned long long*) { return m_Storage.m_ULL; }
 
-    /// \brief Get the value.
+    void*& getPtr() { return m_Storage.m_Ptr; }
+    double& getDouble() { return m_Storage.m_Double; }
+    long double& getLongDouble() { return m_Storage.m_LongDouble; }
+    float& getFloat() { return m_Storage.m_Float; }
+    long long& getLL() { return m_Storage.m_LL; }
+    unsigned long long& getULL() { return m_Storage.m_ULL; }
+
+    void* getPtr() const { return m_Storage.m_Ptr; }
+    double getDouble() const { return m_Storage.m_Double; }
+    long double getLongDouble() const { return m_Storage.m_LongDouble; }
+    float getFloat() const { return m_Storage.m_Float; }
+    long long getLL() const { return m_Storage.m_LL; }
+    unsigned long long getULL() const { return m_Storage.m_ULL; }
+
+    /// \brief Get the value with cast.
     //
     /// Get the value cast to T. This is similar to reinterpret_cast<T>(value),
     /// casting the value of builtins (except void), enums and pointers.

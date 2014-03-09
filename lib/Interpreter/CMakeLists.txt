@@ -37,7 +37,6 @@ add_cling_library(clingInterpreter
   RequiredSymbols.cpp
   ValueExtractionSynthesizer.cpp
   RuntimeException.cpp
-  StoredValueRef.cpp
   Transaction.cpp
   TransactionTransformer.cpp
   TransactionUnloader.cpp

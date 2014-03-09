@@ -74,7 +74,8 @@ namespace {
 
 namespace cling {
 
-Value::Value(const Value& other) : m_Type(other.m_Type) {
+Value::Value(const Value& other):
+  m_Type(other.m_Type), m_Storage(other.m_Storage) {
   if (needsManagedAllocation())
     AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
 }
@@ -86,7 +87,13 @@ Value::Value(clang::QualType clangTy, Interpreter* Interp):
 }
 
 Value& Value::operator =(const Value& other) {
+  // Release old value.
+  if (needsManagedAllocation())
+    AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Release();
+
+  // Retain new one.
   m_Type = other.m_Type;
+  m_Storage = other.m_Storage;
   if (needsManagedAllocation())
     AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
   return *this;
@@ -103,8 +110,8 @@ clang::QualType Value::getType() const {
 
 bool Value::isValid() const { return !getType().isNull(); }
 
-bool Value::isVoid(const clang::ASTContext& ASTContext) const {
-  return isValid() && ASTContext.hasSameType(getType(), ASTContext.VoidTy);
+bool Value::isVoid(const clang::ASTContext& Ctx) const {
+  return isValid() && Ctx.hasSameType(getType(), Ctx.VoidTy);
 }
 
 Value::EStorageType Value::getStorageType() const {
@@ -130,14 +137,16 @@ Value::EStorageType Value::getStorageType() const {
 }
 
 bool Value::needsManagedAllocation() const {
-  return !getType()->getUnqualifiedDesugaredType()->isBuiltinType();
+  if (!isValid()) return false;
+  const clang::Type* UnqDes = getType()->getUnqualifiedDesugaredType();
+  return UnqDes->isRecordType() || UnqDes->isArrayType()
+    || UnqDes->isMemberPointerType();
 }
 
 void Value::ManagedAllocate(Interpreter* interp) {
   assert(interp && "This type requires the interpreter for value allocation");
   void* dtorFunc = 0;
-  if (const clang::RecordType* RTy
-      = clang::dyn_cast<clang::RecordType>(getType()))
+  if (const clang::RecordType* RTy = getType()->getAs<clang::RecordType>())
     dtorFunc = GetDtorWrapperPtr(RTy->getDecl(), *interp);
 
   const clang::ASTContext& ctx = interp->getCI()->getASTContext();

@@ -16,7 +16,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
-#include "cling/Interpreter/StoredValueRef.h"
+#include "cling/Interpreter/Value.h"
 
 namespace cling {
 
@@ -45,7 +45,7 @@ namespace runtime {
     /// evaluated at runtime.
     template<typename T>
     T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      StoredValueRef result(
+      Value result(
         cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
                                          ExprInfo->isValuePrinterRequested())
                             );
@@ -53,7 +53,7 @@ namespace runtime {
         // Check whether the expected return type and the actual return type are
         // compatible with Sema::CheckAssingmentConstraints or
         // ASTContext::typesAreCompatible.
-        return result.get().getAs<T>();
+        return result.simplisticCastAs<T>();
       return T();
     }
 
