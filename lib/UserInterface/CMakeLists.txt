@@ -30,7 +30,7 @@ add_cling_library(clingUserInterface
 IF(MSVC)
   # windows.h doesn't compile with /Za
   get_target_property(NON_ANSI_COMPILE_FLAGS clingUserInterface COMPILE_FLAGS)
-  if(NON_ANSI_COMPILE_FLAGS-NOFOUND)
+  if(NON_ANSI_COMPILE_FLAGS-NOTFOUND)
     set(NON_ANSI_COMPILE_FLAGS "")
   endif()
   string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
