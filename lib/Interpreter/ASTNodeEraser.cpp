@@ -850,9 +850,9 @@ namespace cling {
     // Dtor_Complete            Complete object dtor.
     GlobalDecl GD(CXXDtor, Dtor_Deleting);
     MaybeRemoveDeclFromModule(GD);
-    GD = GlobalDecl(CXXDtor, Dtor_Base);
-    MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXDtor, Dtor_Complete);
+    MaybeRemoveDeclFromModule(GD);
+    GD = GlobalDecl(CXXDtor, Dtor_Base);
     MaybeRemoveDeclFromModule(GD);
 
     bool Successful = VisitCXXMethodDecl(CXXDtor);
