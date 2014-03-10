@@ -372,7 +372,6 @@ namespace cling {
     ///@}
 
     void MaybeRemoveDeclFromModule(GlobalDecl& GD) const;
-    void RemoveStaticInit(llvm::Function& F) const;
 
     /// @name Helpers
     /// @{
@@ -907,28 +906,6 @@ namespace cling {
         GVEraser.EraseGlobalValue(GV);
       }
     }
-  }
-
-  void DeclReverter::RemoveStaticInit(llvm::Function& F) const {
-    // In our very controlled case the parent of the BasicBlock is the
-    // static init llvm::Function.
-    assert(F.getName().startswith("__cxx_global_var_init")
-           && "Not a static init");
-    assert(F.hasInternalLinkage() && "Not a static init");
-    // The static init functions have the layout:
-    // declare internal void @__cxx_global_var_init1() section "..."
-    //
-    // define internal void @_GLOBAL__I_a2() section "..." {
-    // entry:
-    //  call void @__cxx_global_var_init1()
-    //  ret void
-    // }
-    //
-    assert(F.hasOneUse() && "Must have only one use");
-    // erase _GLOBAL__I* first
-    llvm::BasicBlock* BB = cast<llvm::Instruction>(F.use_back())->getParent();
-    BB->getParent()->eraseFromParent();
-    F.eraseFromParent();
   }
 
   bool DeclReverter::VisitMacro(Transaction::MacroDirectiveInfo MacroD) {
