@@ -30,14 +30,15 @@ add_cling_library(clingUserInterface
 IF(MSVC)
   # windows.h doesn't compile with /Za
   get_target_property(NON_ANSI_COMPILE_FLAGS clingUserInterface COMPILE_FLAGS)
-  if(NON_ANSI_COMPILE_FLAGS-NOTFOUND)
-    set(NON_ANSI_COMPILE_FLAGS "")
+  if(${NON_ANSI_COMPILE_FLAGS})
+    string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
+    # add /EHsc exception handling flag
+    set(NON_ANSI_COMPILE_FLAGS "${NON_ANSI_COMPILE_FLAGS} /EHsc")
+  else()
+    set(NON_ANSI_COMPILE_FLAGS "/EHsc")
   endif()
-  string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
-  # add /EHsc exception handling flag
-  set(NON_ANSI_COMPILE_FLAGS "${NON_ANSI_COMPILE_FLAGS} /EHsc")
   set_target_properties(clingUserInterface PROPERTIES
-  COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
+    COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
 ENDIF()
 
 #add_subdirectory(textinput)
