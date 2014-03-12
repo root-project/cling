@@ -62,7 +62,6 @@ namespace cling {
       // Collect all uses of globals by GV
       CollectAllUsesOfGlobals(GV);
 
-      llvm::Module& M = *m_CodeGen->GetModule();
       // The first pass is to drop initializers of global vars which are dead.
       for (Globals::iterator I = VisitedGlobals.begin(),
              E = VisitedGlobals.end(); I != E; ++I)
