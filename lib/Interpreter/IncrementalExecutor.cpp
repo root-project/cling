@@ -184,7 +184,7 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
 
   // check if there is any unresolved symbol in the list
   if (!m_unresolvedSymbols.empty()) {
-    llvm::SmallVector<llvm::Function*, 100> funcsToFree;
+    llvm::SmallVector<llvm::Function*, 128> funcsToFree;
     for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
            e = m_unresolvedSymbols.end(); i != e; ++i) {
       llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
