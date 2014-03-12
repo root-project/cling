@@ -175,6 +175,9 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
       "could not find function named " << funcname << '\n';
     return kExeFunctionNotCompiled;
   }
+  assert (f->getFunctionType()->getNumParams() == 1
+          && (*f->getFunctionType()->param_begin())->isPtrOrPtrVectorTy() &&
+          "Wrong signature");
   typedef void (*PromptWrapper_t)(void*);
   union {
     PromptWrapper_t wrapperFunction;
