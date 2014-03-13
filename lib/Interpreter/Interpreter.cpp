@@ -934,7 +934,8 @@ namespace cling {
   void Interpreter::unload(unsigned numberOfTransactions) {
     while(true) {
       cling::Transaction* T = m_IncrParser->getLastTransaction();
-      m_Executor->runAndRemoveStaticDestructors(T);
+      if (m_Executor) // we also might be in fsyntax-only mode.
+        m_Executor->runAndRemoveStaticDestructors(T);
       m_IncrParser->unloadTransaction(T);
 
       if (InterpreterCallbacks* callbacks = getCallbacks())
