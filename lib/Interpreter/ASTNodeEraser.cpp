@@ -50,7 +50,7 @@ namespace cling {
 
     ///\brief Erases the given global value and all unused leftovers
     ///
-    ///\param[GV] - The removal starting point.
+    ///\param[in] GV - The removal starting point.
     ///
     ///\returns true if something was erased.
     ///
