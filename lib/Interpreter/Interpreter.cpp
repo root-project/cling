@@ -326,11 +326,12 @@ namespace cling {
   void Interpreter::storeInterpreterState(const std::string& name) const {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
+    CodeGenerator* CG = getCodeGenerator();
     ClangInternalState* state
       = new ClangInternalState(getCI()->getASTContext(),
                                getCI()->getPreprocessor(),
-                               getCodeGenerator()->GetModule(),
-                               getCodeGenerator(), name);
+                               CG ? CG->GetModule() : 0,
+                               CG, name);
     m_StoredStates.push_back(state);
   }
 
