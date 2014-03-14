@@ -209,7 +209,6 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
   return kExeSuccess;
 }
 
-
 IncrementalExecutor::ExecutionResult
 IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
@@ -230,6 +229,8 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
   llvm::ConstantArray *InitList
     = llvm::dyn_cast<llvm::ConstantArray>(GV->getInitializer());
 
+  // We need to delete it here just in case we have recursive inits, otherwise
+  // it will call inits multiple times.
   GV->eraseFromParent();
 
   if (InitList == 0)
