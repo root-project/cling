@@ -25,6 +25,66 @@ public:
 .U
 //CHECK: Dtor called, N=0
 .compareState "preUnload"
-
 //CHECK-NOT: Differences
+
+
+
+// Make sure that the static template member inits get unloaded correctly.
+// See CodeGenModule::EmitCXXGlobalVarDeclInitFunc() - they get emitted *next*
+// to GLOBAL__I_a, not as call nodes within GLOBAL__I_a.
+.storeState "preUnload3"
+.rawInput 1
+struct XYZ {
+   XYZ(int I = -10): m(I) {}
+   int m;
+};
+
+template <typename T> struct S {
+   static XYZ one;
+   static XYZ two;
+};
+template <typename T> XYZ S<T>::one = XYZ(12);
+template <typename T> XYZ S<T>::two = XYZ(17);
+
+XYZ a = XYZ(12);
+XYZ b = XYZ(12);
+
+int T(){
+   S<int> o;
+   return o.one.m;
+}
+.rawInput 0
+.undo 7
+.compareState "preUnload3"
+
+
+
+
+// Make sure we have exactly one symbol of ~X(), i.e. that the unloading does
+// not remove it and CodeGen re-emits in upon seeing a new use in X c;
+.storeState "preUnload2"
+.rawInput 1
+extern "C" int printf(const char*, ...);
+struct X {
+   X(): i(12) {}
+   ~X() { static int I = 0; printf("~X: %d\n", ++I); }
+   int i;
+};
+X a;
+int S() {
+   X b;
+   return a.i + b.i;
+}
+.rawInput 0
+S() // CHECK: (int) 24
+.undo 3 // Remove up to "X a;"
+// CHECK-NEXT: ~X: 1
+// CHECK-NEXT: ~X: 2
+X c;
+.undo 3
+// CHECK-NEXT: ~X: 3
+.compareState "preUnload2"
+
+
+
 .q
