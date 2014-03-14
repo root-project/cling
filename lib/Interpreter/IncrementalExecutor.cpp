@@ -10,6 +10,7 @@
 #include "IncrementalExecutor.h"
 
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/PassManager.h"
@@ -278,6 +279,12 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
       //executeFunction(F->getName());
       m_engine->runFunction(F, std::vector<llvm::GenericValue>());
       initFuncs.push_back(F);
+      if (F->getName().startswith("_GLOBAL__I_a")) {
+        BasicBlock& BB = F->getEntryBlock();
+        for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
+          if (CallInst* call = dyn_cast<CallInst>(I))
+            initFuncs.push_back(call->getCalledFunction());
+      }
     }
   }
 
@@ -298,10 +305,8 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
     // }
 
     // Erase __cxx_global_var_init(N-1)() first.
-    Function* GlobalVarInitF =
-      cast<Function>((*I)->getEntryBlock().getFirstNonPHI()->getOperand(0));
+    (*I)->removeDeadConstantUsers();
     (*I)->eraseFromParent();
-    GlobalVarInitF->eraseFromParent();
   }
 
   return kExeSuccess;
