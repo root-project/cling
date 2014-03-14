@@ -287,6 +287,7 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
     // define internal void @_GLOBAL__I_aN() section "..."{
     // entry:
     //   call void @__cxx_global_var_init(N-1)()
+    //   call void @__cxx_global_var_initM()
     //   ret void
     // }
     //
