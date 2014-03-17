@@ -85,8 +85,7 @@ namespace cling {
       ReturnStmt* RS = dyn_cast<ReturnStmt>(**I);
       if (RS) {
         if (Expr* RetV = RS->getRetValue()) {
-          QualType RetTy = RetV->getType();
-          assert (RetTy->isVoidType() && "Must be void type.");
+          assert (RetV->getType()->isVoidType() && "Must be void type.");
           // Any return statement will have been "healed" by Sema
           // to correspond to the original void return type of the
           // wrapper, using a ImplicitCastExpr 'void' <ToVoid>.
