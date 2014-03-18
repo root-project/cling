@@ -460,17 +460,9 @@ namespace cling {
     SourceManager& SM = m_Sema->getSourceManager();
     for (FileIDs::iterator I = m_FilesToUncache.begin(), 
            E = m_FilesToUncache.end(); I != E; ++I) {
-      const SrcMgr::FileInfo& fInfo = SM.getSLocEntry(*I).getFile();
       // We need to reset the cache
-      SrcMgr::ContentCache* cache 
-        = const_cast<SrcMgr::ContentCache*>(fInfo.getContentCache());
-      FileEntry* entry = const_cast<FileEntry*>(cache->ContentsEntry);
-      // We have to reset the file entry size to keep the cache and the file
-      // entry in sync.
-      if (entry) {
-        cache->replaceBuffer(0,/*free*/true);
-        FileManager::modifyFileEntry(entry, /*size*/0, 0);
-      }
+      if (const FileEntry* entry = SM.getFileEntryForID(*I))
+        SM.invalidateCache(entry);
     }
 
     // Clean up the pending instantiations
