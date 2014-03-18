@@ -23,6 +23,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 
+#include "llvm/Config/config.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Target/TargetOptions.h"
@@ -80,6 +81,37 @@ namespace cling {
                                         const char* llvmdir) {
     return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv,
                     llvmdir, new DeclCollector());
+  }
+
+  // This must be a copy of clang::getClangToolFullVersion(). Luckily
+  // we'll notice quickly if it ever changes! :-)
+  static std::string CopyOfClanggetClangToolFullVersion(StringRef ToolName) {
+    std::string buf;
+    llvm::raw_string_ostream OS(buf);
+#ifdef CLANG_VENDOR
+    OS << CLANG_VENDOR;
+#endif
+    OS << ToolName << " version " CLANG_VERSION_STRING " "
+       << getClangFullRepositoryVersion();
+
+    // If vendor supplied, include the base LLVM version as well.
+#ifdef CLANG_VENDOR
+    OS << " (based on LLVM " << PACKAGE_VERSION << ")";
+#endif
+
+    return OS.str();
+  }
+
+  ///\brief Check the compile-time clang version vs the run-time clang version,
+  /// a mismatch could cause havoc. Reports if clang versions differ.
+  static void CheckClangCompatibility() {
+    if (clang::getClangToolFullVersion("cling")
+        != CopyOfClanggetClangToolFullVersion("cling"))
+      llvm::errs()
+        << "Warning in cling::CIFactory::createCI():\n  "
+        "Using incompatible clang library! "
+        "Please use the one provided by cling!\n";
+    return;
   }
 
   ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
@@ -192,6 +224,9 @@ namespace cling {
                                         DeclCollector* stateCollector) {
     // Create an instance builder, passing the llvmdir and arguments.
     //
+
+    CheckClangCompatibility();
+
     //  Initialize the llvm library.
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
