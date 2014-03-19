@@ -58,7 +58,8 @@ INCLUDEFILES += $(CLINGDEP)
 # 1) copy relevant headers to include/
 # 2) rely on TCling to addIncludePath instead of using CLING_..._INCL below
 CLINGLLVMCXXFLAGS = $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags))
-CLINGCXXFLAGS += -I$(CLINGDIR)/include $(CLINGLLVMCXXFLAGS) -fno-strict-aliasing
+# -ffunction-sections breaks the debugger on some platforms ... and does not help libCling at all.
+CLINGCXXFLAGS += -I$(CLINGDIR)/include $(filter-out -ffunction-sections,$(CLINGLLVMCXXFLAGS)) -fno-strict-aliasing
 
 ifeq ($(CTORSINITARRAY),yes)
 CLINGLDFLAGSEXTRA := -Wl,--no-ctors-in-init-array
