@@ -15,7 +15,7 @@
 error_here; 
 
 .compareState "testCurrentFailures"
-// CHECK-NOT: File with AST differencies stored in: testCurrentFailuresAST.diff
+// CHECK-NOT: Differences
 
  // This is broken case where we want to declare a function inside a wrapper 
  // function, when the error recovery kicks in it segfaults.
