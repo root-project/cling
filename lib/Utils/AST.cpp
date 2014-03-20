@@ -602,31 +602,6 @@ namespace utils {
     return false;
   }
 
-  static bool IsCompilerDetails(const TagType *tagTy)
-  {
-    // Return true if the TagType is a 'details' of the std implementation.
-    // (For now it means declared in __gnu_cxx or starting with underscore).
-
-    const TagDecl *decl = tagTy->getDecl();
-    assert(decl);
-    IdentifierInfo *info = decl->getDeclName().getAsIdentifierInfo();
-    if (info && info->getNameStart()[0] == '_') {
-      // We have a name starting by _, this is reserve for compiler
-      // implementation, so let's not desugar to it.
-      return true;
-    }
-    // And let's check if it is in one of the know compiler implementation
-    // namespace.
-    const NamedDecl *outer =dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
-    while (outer && outer->getName().size() ) {
-      if (outer->getName().compare("__gnu_cxx") == 0) {
-        return true;
-      }
-      outer = dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
-    }
-    return false;
-  }
-
   unsigned int
   Transform::Config::DropDefaultArg(clang::TemplateDecl &Template) const
   {
@@ -658,41 +633,7 @@ namespace utils {
   {
     // Return true, if we should keep this typedef rather than desugaring it.
 
-    if ( 0 != TypesToSkip.count(QT.getTypePtr()) )
-      return true;
-
-    const TypedefType* typedeftype =
-      dyn_cast_or_null<TypedefType>(QT.getTypePtr());
-    const TypedefNameDecl* decl = typedeftype ? typedeftype->getDecl() : 0;
-    if (decl) {
-      const NamedDecl* outer
-        = dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
-      // We want to keep the typedef that are defined within std and
-      // are pointing to something also declared in std (usually an
-      // implementation details like std::basic_string or __gnu_cxx::iterator.
-
-      while ( outer && outer->getName().size() ) {
-        // NOTE: Net is being cast too widely, replace by a lookup.
-        // or by using Sema::getStdNamespace
-         if (outer->getDeclContext()->isTranslationUnit()
-             && outer->getName().compare("std") == 0) {
-          // And now let's check that the target is also within std.
-          const Type *underlyingType
-            = decl->getUnderlyingType().getSplitDesugaredType().Ty;
-          const ElaboratedType *elTy = dyn_cast<ElaboratedType>(underlyingType);
-          if (elTy) {
-            underlyingType = elTy->getNamedType().getTypePtr();
-          }
-          const TagType *tagTy = underlyingType->getAs<TagType>();
-          if (tagTy) {
-            bool details = IsCompilerDetails(tagTy);
-            if (details) return true;
-          }
-        }
-        outer = dyn_cast_or_null<NamedDecl>(outer->getDeclContext());
-      }
-    }
-    return false;
+    return 0 != TypesToSkip.count(QT.getTypePtr());
   }
 
   static bool SingleStepPartiallyDesugarTypeImpl(QualType& QT)

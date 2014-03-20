@@ -36,7 +36,7 @@ template <typename T, typename U> class C {};
 typedef C<A<B<Double32_t, Int_t> >, Double32_t > CTD;
 typedef C<A<B<const Double32_t, const Int_t> >, Double32_t > CTDConst;
 
-template <typename key, typename value, typename compare_operation = std::less<key>, typename alloc = std::allocator<std::pair<const key, value> > > class cmap { key fKey; const value fValue; alloc fAlloc; };
+template <typename key, typename value, typename compare_operation = std::less<key>, typename alloc = std::allocator<std::pair<const key, value> > > class cmap { key fKey; const value fValue; alloc fAlloc; public: cmap() : fValue(0) {} };
    // : public std::map<key, value, compare_operation, alloc> {
 
 template <typename key, typename value = const key> class mypair { public: key fKey; value fValue; };
@@ -108,10 +108,10 @@ public:
   Embedded_objects::EmbeddedClasses::Embedded5 m_emb5;
   Embedded_objects::EmbeddedTypedef::Embedded6 m_emb6;
   typedef std::vector<int> vecint;
-  vecint::iterator m_iter;
+  vecint* m_iter;
   const Eenum m_enum;
   typedef vector<int> vecint2;
-  vecint2::iterator m_iter2;
+  vecint2* m_iter2;
 };
 
 namespace NS1 {
@@ -141,7 +141,6 @@ transConfig.m_toSkip.insert(lookup.findType("string", diags).getTypePtr());
 transConfig.m_toSkip.insert(lookup.findType("std::string", diags).getTypePtr());
 
 const clang::Type* t = 0;
-const clang::TypedefType *td = 0;
 clang::QualType QT;
 using namespace cling::utils;
 
@@ -318,19 +317,6 @@ QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: ({{const char [*]|const_pointer}}) "Details::Impl"
 
-lookup.findScope("vector<Details::Impl>::iterator", diags, &t);
-QT = clang::QualType(t, 0);
-Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "std::vector<Details::Impl>::iterator"
-
-lookup.findScope("vector<Details::Impl>::const_iterator", diags, &t);
-QT = clang::QualType(t, 0);
-td = QT->getAs<clang::TypedefType>();
-clang::TypedefNameDecl *tdDecl = td->getDecl();
-QT = Ctx.getTypedefType(tdDecl);
-Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig, true).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "std::vector<Details::Impl, std::allocator<Details::Impl> >::const_iterator"
-
 const clang::Decl*decl=lookup.findScope("Embedded_objects", diags,&t);
 if (decl) {
   const clang::CXXRecordDecl *cxxdecl
@@ -356,9 +342,9 @@ if (decl) {
 // CHECK: Embedded_objects::EmbeddedClasses::Embedded4
 // CHECK: Embedded_objects::EmbeddedClasses::Embedded5
 // CHECK: Embedded_objects::EmbeddedClasses::Embedded6
-// CHECK: std::vector<int>::iterator
+// CHECK: std::vector<int> *
 // CHECK: const Embedded_objects::Eenum
-// CHECK: std::vector<int>::iterator
+// CHECK: std::vector<int> *
 
 // In the partial desugaring add support for the case where we have a type
 // that point to an already completely desugared template instantiation in
