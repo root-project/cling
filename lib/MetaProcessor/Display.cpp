@@ -453,6 +453,8 @@ public:
   void DisplayClass(const std::string& className)const;
 
   void SetVerbose(bool verbose);
+  
+  void Reset();
 private:
 
   //These are declarations, which can contain nested class declarations,
@@ -474,13 +476,16 @@ private:
     assert(decl != 0 && "ProcessTypeOfMember, 'decl' parameter is null");
 
     if (const RecordType* const recordType = decl->getType()->template getAs<RecordType>()) {
-      if (const CXXRecordDecl* const classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition()))
-        DisplayDataMembers(classDecl, nSpaces);
+      if (const CXXRecordDecl* const classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition())) {
+        if (fSeenDecls.find(classDecl) == fSeenDecls.end())
+          DisplayDataMembers(classDecl, nSpaces);
+      }
     } else if (const ArrayType* const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
       if (const Type* const elType = arrayType->getBaseElementTypeUnsafe()) {
         if (const RecordType* const recordType = elType->getAs<RecordType>()) {
           if (const CXXRecordDecl* classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition()))
-            DisplayDataMembers(classDecl, nSpaces);
+            if (fSeenDecls.find(classDecl) == fSeenDecls.end())
+              DisplayDataMembers(classDecl, nSpaces);
         }
       }
     }
@@ -522,8 +527,6 @@ void ClassPrinter::DisplayAllClasses()const
   const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayAllClasses, translation unit is empty");
 
-  fSeenDecls.clear();
-
   fOut.Print("List of classes");
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
@@ -536,8 +539,6 @@ void ClassPrinter::DisplayClass(const std::string& className)const
 {
   //Just in case asserts were deleted from ctor:
   assert(fInterpreter != 0 && "DisplayClass, fCompiler is null");
-
-  fSeenDecls.clear();
 
   const cling::LookupHelper &lookupHelper = fInterpreter->getLookupHelper();
   if (const Decl* const decl
@@ -559,6 +560,12 @@ void ClassPrinter::DisplayClass(const std::string& className)const
 void ClassPrinter::SetVerbose(bool verbose)
 {
   fVerbose = verbose;
+}
+
+//______________________________________________________________________________
+void ClassPrinter::Reset()
+{
+  fSeenDecls.clear();
 }
 
 //______________________________________________________________________________
@@ -1119,8 +1126,6 @@ void GlobalsPrinter::DisplayGlobals()const
 
   const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayGlobals, translation unit is empty");
-
-  //fSeenDecls.clear();
 
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
