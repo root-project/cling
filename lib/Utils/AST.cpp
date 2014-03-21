@@ -724,9 +724,15 @@ namespace utils {
         //return false;
       }
       case Type::TemplateSpecialization: {
-        return false;
         //const TemplateSpecializationType* Ty =
         //  llvm::cast<TemplateSpecializationType>(QTy);
+        // Too broad, this returns a the target template but with
+        // canonical argument types.
+        //if (Ty->isTypeAlias()) {
+        //  QT = Ty->getAliasedType();
+        //  return true;
+        //}
+        // Too broad, this returns the canonical type
         //if (Ty->isSugared()) {
         //  QT = Ty->desugar();
         //  return true;
@@ -969,6 +975,38 @@ namespace utils {
     // desugar them as well.
     if (const TemplateSpecializationType* TST
        = dyn_cast<const TemplateSpecializationType>(QT.getTypePtr())) {
+
+      if (TST->isTypeAlias()) {
+        QualType targetType = TST->getAliasedType();
+        /*
+        // We really need to find a way to propagate/keep the opaque typedef
+        // that are available in TST to the aliased type.  We would need
+        // to do something like:
+
+        QualType targetType = TST->getAliasedType();
+        QualType resubst = ReSubstTemplateArg(targetType,TST);
+        return GetPartiallyDesugaredTypeImpl(Ctx, resubst, TypeConfig,
+                                             fullyQualifyType,
+                                             fullyQualifyTmpltArg);
+
+        // But this is not quite right (ReSubstTemplateArg is from TMetaUtils)
+        // as it does not resubst for
+
+          template <typename T> using myvector = std::vector<T>;
+          myvector<Double32_t> vd32d;
+
+        // and does not work at all for
+
+          template<class T> using ptr = T*;
+          ptr<Double32_t> p2;
+        
+        // as the target is not a template.
+        */
+        // So for now just return move on with the least lose we can do
+        return GetPartiallyDesugaredTypeImpl(Ctx, targetType, TypeConfig,
+                                           fullyQualifyType,
+                                           fullyQualifyTmpltArg);
+      }
 
       bool mightHaveChanged = false;
       llvm::SmallVector<TemplateArgument, 4> desArgs;

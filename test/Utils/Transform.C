@@ -70,6 +70,7 @@ namespace NS {
   typedef ArrayType<float, typeN + 1> FArray;
 
   typedef int IntNS_t;
+
 }
 
 // Anonymous namespace
@@ -107,22 +108,46 @@ public:
   EmbeddedTypedef::Embedded4 m_emb4;
   Embedded_objects::EmbeddedClasses::Embedded5 m_emb5;
   Embedded_objects::EmbeddedTypedef::Embedded6 m_emb6;
+
   typedef std::vector<int> vecint;
   vecint* m_iter;
   const Eenum m_enum;
   typedef vector<int> vecint2;
   vecint2* m_iter2;
+  vector<Double32_t> vd32a;
+  typedef vector<Double32_t> vecd32t1;
+  vecd32t1 vd32b;
+
+  using vecd32t2 = vector<Double32_t>;
+  vecd32t2 vd32c;
+
+  template <typename T> using myvector = std::vector<T>;
+  myvector<float> vfa;
+  // Not yet, the desugar of template alias do not keep the opaque typedef.
+  // myvector<Double32_t> vd32d;
+
+  Double32_t *p1;
+
+  template<class T> using ptr = T*;
+  ptr<float> p2;
+  // Not yet, the desugar of template alias do not keep the opaque typedef.
+  // ptr<Double32_t> p3;
+
 };
 
 namespace NS1 {
   namespace NS2 {
     namespace NS3 {
+      inline namespace InlinedNamespace {
+        class InsideInline {};
+      }
       class Point {};
       class Inner3 {
       public:
         Point p1;
         NS3::Point p2;
         ::NS1::NS2::NS3::Point p3;
+        InsideInline p4;
       };
     }
   }
@@ -345,6 +370,14 @@ if (decl) {
 // CHECK: std::vector<int> *
 // CHECK: const Embedded_objects::Eenum
 // CHECK: std::vector<int> *
+// CHECK: std::vector<Double32_t>
+// CHECK: std::vector<Double32_t>
+// CHECK: std::vector<Double32_t>
+// CHECK: std::vector<float>
+// NOT-YET-CHECK: std::vector<Double32_t>
+// CHECK: Double32_t *
+// CHECK: float *
+// NOT-YET-CHECK: Double32_t *
 
 // In the partial desugaring add support for the case where we have a type
 // that point to an already completely desugared template instantiation in
