@@ -98,7 +98,6 @@ namespace cling {
     const std::string& PCHFileName
       = m_CI->getInvocation ().getPreprocessorOpts().ImplicitPCHInclude;
     if (!PCHFileName.empty()) {
-      
       Transaction* CurT = beginTransaction(CO);
       m_CI->createPCHExternalASTSource(PCHFileName,
                                        true /*DisablePCHValidation*/,
@@ -124,8 +123,12 @@ namespace cling {
     if (External)
       External->StartTranslationUnit(m_Consumer);
 
+    // DO NOT commit the transactions here: static initialization in these
+    // transactions requires gCling through local_cxa_atexit(), but that has not
+    // been defined yet!
     if (Transaction* EndedT = endTransaction(CurT))
       result.push_back(EndedT);
+
   }
 
   IncrementalParser::~IncrementalParser() {

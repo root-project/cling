@@ -198,7 +198,9 @@ namespace cling {
     else
       IncludeCRuntime();
 
-   for (llvm::SmallVectorImpl<Transaction*>::const_iterator
+    // Commit the transactions, now that gCling is set up. It is needed for
+    // static initialization in these transactions through local_cxa_atexit().
+    for (llvm::SmallVectorImpl<Transaction*>::const_iterator
            I = IncrParserTransactions.begin(), E = IncrParserTransactions.end();
          I != E; ++I)
       m_IncrParser->commitTransaction(*I);
