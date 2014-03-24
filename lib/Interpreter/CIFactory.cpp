@@ -456,8 +456,10 @@ namespace cling {
 
   void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
-    Opts.Exceptions = 1;
-    Opts.CXXExceptions = 1;
+    if (Opts.CPlusPlus) {
+      Opts.Exceptions = 1;
+      Opts.CXXExceptions = 1;
+    }
     Opts.Deprecated = 1;
     //Opts.Modules = 1;
 
@@ -469,7 +471,8 @@ namespace cling {
 #if /*GCC*/ (defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__))   \
   || /*clang*/ (defined(__has_feature) && __has_feature(cxx_decltype))   \
   || /*ICC*/ ((!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && defined(__INTEL_COMPILER) && (__STDC_HOSTED__ && (__INTEL_COMPILER <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__))
-    Opts.CPlusPlus11 = 1;
+    if (Opts.CPlusPlus)
+      Opts.CPlusPlus11 = 1;
 #endif
 
   }
