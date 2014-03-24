@@ -477,8 +477,6 @@ namespace cling {
       T->setState(Transaction::kRolledBack);
     else
       T->setState(Transaction::kRolledBackWithErrors);
-
-    m_CI->getDiagnostics().Reset();
   }
 
   std::vector<const Transaction*> IncrementalParser::getAllTransactions() {
