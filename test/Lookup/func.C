@@ -1084,7 +1084,7 @@ const clang::FunctionDecl* func_B_dtr_proto = lookup.findFunctionProto(class_B, 
 dumpDecl("func_B_dtr_args", func_B_dtr_args);
 //CHECK: func_B_dtr_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_dtr_args name: B::~B
-//CHECK-NEXT: virtual ~B() {
+//CHECK-NEXT: virtual ~B() {{noexcept}} {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
 //CHECK-NEXT: }
@@ -1092,7 +1092,7 @@ dumpDecl("func_B_dtr_args", func_B_dtr_args);
 dumpDecl("func_B_dtr_proto", func_B_dtr_proto);
 //CHECK: func_B_dtr_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_dtr_proto name: B::~B
-//CHECK-NEXT: virtual ~B() {
+//CHECK-NEXT: virtual ~B() {{noexcept}} {
 //CHECK-NEXT:     delete this->m_B_ip;
 //CHECK-NEXT:     this->m_B_ip = 0;
 //CHECK-NEXT: }
@@ -1181,14 +1181,14 @@ const clang::FunctionDecl* func_B_del_proto = lookup.findFunctionProto(class_B, 
 dumpDecl("func_B_del_args", func_B_del_args);
 //CHECK: func_B_del_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_args name: B::operator delete
-//CHECK-NEXT: void operator delete(void *vp) {
+//CHECK-NEXT: void operator delete(void *vp) {{noexcept}} {
 //CHECK-NEXT:     ::operator delete(vp);
 //CHECK-NEXT: }
 
 dumpDecl("func_B_del_proto", func_B_del_proto);
 //CHECK: func_B_del_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_proto name: B::operator delete
-//CHECK-NEXT: void operator delete(void *vp) {
+//CHECK-NEXT: void operator delete(void *vp) {{noexcept}} {
 //CHECK-NEXT:     ::operator delete(vp);
 //CHECK-NEXT: }
 
@@ -1198,13 +1198,13 @@ const clang::FunctionDecl* func_B_del_plcmt_proto = lookup.findFunctionProto(cla
 dumpDecl("func_B_del_plcmt_args", func_B_del_plcmt_args);
 //CHECK: func_B_del_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_plcmt_args name: B::operator delete
-//CHECK-NEXT: void operator delete(void *vp, void *arena) {
+//CHECK-NEXT: void operator delete(void *vp, void *arena) {{noexcept}} {
 //CHECK-NEXT: }
 
 dumpDecl("func_B_del_plcmt_proto", func_B_del_plcmt_proto);
 //CHECK: func_B_del_plcmt_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_plcmt_proto name: B::operator delete
-//CHECK-NEXT: void operator delete(void *vp, void *arena) {
+//CHECK-NEXT: void operator delete(void *vp, void *arena) {{noexcept}} {
 //CHECK-NEXT: }
 
 const clang::FunctionDecl* func_B_del_ary_args = lookup.findFunctionArgs(class_B, "operator delete[]", "b_ary", diags);
@@ -1213,14 +1213,14 @@ const clang::FunctionDecl* func_B_del_ary_proto = lookup.findFunctionProto(class
 dumpDecl("func_B_del_ary_args", func_B_del_ary_args);
 //CHECK: func_B_del_ary_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_ary_args name: B::operator delete[]
-//CHECK-NEXT: void operator delete[](void *vp) {
+//CHECK-NEXT: void operator delete[](void *vp) {{noexcept}} {
 //CHECK-NEXT:     ::operator delete[](vp);
 //CHECK-NEXT: }
 
 dumpDecl("func_B_del_ary_proto", func_B_del_ary_proto);
 //CHECK: func_B_del_ary_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_ary_proto name: B::operator delete[]
-//CHECK-NEXT: void operator delete[](void *vp) {
+//CHECK-NEXT: void operator delete[](void *vp) {{noexcept}} {
 //CHECK-NEXT:     ::operator delete[](vp);
 //CHECK-NEXT: }
 
@@ -1230,13 +1230,13 @@ const clang::FunctionDecl* func_B_del_ary_plcmt_proto = lookup.findFunctionProto
 dumpDecl("func_B_del_ary_plcmt_args", func_B_del_ary_plcmt_args);
 //CHECK: func_B_del_ary_plcmt_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_ary_plcmt_args name: B::operator delete[]
-//CHECK-NEXT: void operator delete[](void *vp, void *arena) {
+//CHECK-NEXT: void operator delete[](void *vp, void *arena) {{noexcept}} {
 //CHECK-NEXT: }
 
 dumpDecl("func_B_del_ary_plcmt_proto", func_B_del_ary_plcmt_proto);
 //CHECK: func_B_del_ary_plcmt_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_del_ary_plcmt_proto name: B::operator delete[]
-//CHECK-NEXT: void operator delete[](void *vp, void *arena) {
+//CHECK-NEXT: void operator delete[](void *vp, void *arena) noexcept {
 //CHECK-NEXT: }
 
 
