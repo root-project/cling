@@ -142,11 +142,6 @@ namespace cling {
           // case 2.1):
           //   copyArray(src, placement, size)
 
-          if (lastExprTy->isVoidType()) {
-            // do nothing;
-            return;
-          }
-
           if (!m_gClingVD)
             FindAndCacheRuntimeDecls();
 
