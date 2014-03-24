@@ -455,7 +455,7 @@ namespace cling {
       T->setIssuedDiags(Transaction::kErrors);
   }
 
-  bool IncrementalParser::transformTransactionIR(Transaction* T) const {
+  bool IncrementalParser::transformTransactionIR(Transaction* T) {
     // Transform IR
     bool success = true;
     for (size_t i = 0; success && i < m_IRTransformers.size(); ++i)
@@ -465,11 +465,15 @@ namespace cling {
     return success;
   }
 
-  void IncrementalParser::rollbackTransaction(Transaction* T) const {
-    assert(T->getIssuedDiags() == Transaction::kErrors 
-           && "Rolling back with no errors");
+  void IncrementalParser::rollbackTransaction(Transaction* T) {
+    assert(T && "Must have value");
+    assert(T == getLastTransaction() && "We always must revert the last T");
+    assert((T->getState() != Transaction::kRolledBack ||
+            T->getState() != Transaction::kRolledBackWithErrors) &&
+           "Transaction already rolled back.");
     if (m_Interpreter->getOptions().ErrorOut)
       return;
+
     ASTNodeEraser NodeEraser(&getCI()->getSema(), m_CodeGen.get(),
                              m_Interpreter->getExecutionEngine());
 
@@ -477,6 +481,10 @@ namespace cling {
       T->setState(Transaction::kRolledBack);
     else
       T->setState(Transaction::kRolledBackWithErrors);
+
+    // Remove from the queue
+    m_Transactions.pop_back();
+    //m_TransactionPool->releaseTransaction(T);
   }
 
   std::vector<const Transaction*> IncrementalParser::getAllTransactions() {
@@ -627,26 +635,6 @@ namespace cling {
       return IncrementalParser::kSuccessWithWarnings;
 
     return IncrementalParser::kSuccess;
-  }
-
-  void IncrementalParser::unloadTransaction(Transaction* T) {
-    if (!T)
-      T = getLastTransaction();
-    assert (T == getLastTransaction() && "We always must revert the last T");
-
-    if (T->getState() == Transaction::kRolledBackWithErrors)
-      return; // The transaction was already 'unloaded'/'reverted'.
-
-    assert(T->getState() == Transaction::kCommitted && 
-           "Unloading not commited transaction?");
-
-    ASTNodeEraser NodeEraser(&getCI()->getSema(), m_CodeGen.get(),
-                             m_Interpreter->getExecutionEngine());
-    NodeEraser.RevertTransaction(T);
-
-    // Remove from the queue
-    m_Transactions.pop_back();
-    //m_TransactionPool->releaseTransaction(T);
   }
 
   void IncrementalParser::printTransactionStructure() const {

@@ -940,7 +940,7 @@ namespace cling {
         callbacks->TransactionUnloaded(*T);
       if (m_Executor) // we also might be in fsyntax-only mode.
         m_Executor->runAndRemoveStaticDestructors(T);
-      m_IncrParser->unloadTransaction(T);
+      m_IncrParser->rollbackTransaction(T);
 
       if (!--numberOfTransactions)
         break;

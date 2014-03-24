@@ -133,14 +133,15 @@ namespace cling {
     ///
     void codeGenTransaction(Transaction* T);
 
-    ///\brief Reverts the AST into its previous state.
+    ///\brief Reverts the interpreter into its previous state.
     ///
     /// If one of the declarations caused error in clang it is rolled back from
     /// the AST. This is essential feature for the error recovery subsystem.
+    /// Also this is a key entry point for the code unloading.
     ///
     ///\param[in] T - The transaction to be reverted from the AST
     ///
-    void rollbackTransaction(Transaction* T) const; 
+    void rollbackTransaction(Transaction* T);
 
     ///\brief Returns the first transaction the incremental parser saw.
     ///
@@ -194,12 +195,6 @@ namespace cling {
     ///
     Transaction* Parse(llvm::StringRef input, const CompilationOptions& Opts);
 
-    ///\brief Unloads a given transaction.
-    ///
-    ///\param[in] T - The transaction to unload.
-    ///
-    void unloadTransaction(Transaction* T);
-
     void printTransactionStructure() const;
 
     ///\brief Adds a UsedAttr to all decls in the transaction.
@@ -225,7 +220,7 @@ namespace cling {
     ///
     ///\param[in] T - the transaction to be transformed.
     ///
-    bool transformTransactionIR(Transaction* T) const;
+    bool transformTransactionIR(Transaction* T);
 
     ///\brief Initializes a virtual file, which will be able to produce valid
     /// source locations, with the proper offsets.
