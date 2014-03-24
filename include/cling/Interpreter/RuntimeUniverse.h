@@ -110,14 +110,14 @@ namespace cling {
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The void* value of the assignment to be stored
       ///                    in GenericValue.
-      ///\param [out] vpStoredValRef - The StoredValueRef that is created.
+      ///\param [out] vpSVR - The StoredValueRef that is created.
       ///
       void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
                            const void* value);
 
       ///\brief Set the value of the Generic value and return the address
       /// for the allocated storage space.
-      ///\param [in] vp - The cling::Interpreter for StoredValueRef.
+      ///\param [in] vpI - The cling::Interpreter for StoredValueRef.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [out] vpSVR - The StoredValueRef that is created.
       ///
@@ -133,26 +133,26 @@ namespace cling {
       /// We must be consistent with clang. Eg:
       ///\code
       ///extern "C" int printf(const char*,...);
-      // struct S {
-      //    static int sI;
-      //    int I;
-      //    S(): I(sI++) {}
-      // };
-      // int S::sI = 0;
-      // S arr[5][3];
-      // int main() {
-      //    for (int i = 0; i < 5; ++i)
-      //    for (int j = 0; j < 3; ++j)
-      //       printf("[%d][%d]%d\n", i, j, arr[i][j].I);
-      //    return 0;
-      // }
+      /// struct S {
+      ///    static int sI;
+      ///    int I;
+      ///    S(): I(sI++) {}
+      /// };
+      /// int S::sI = 0;
+      /// S arr[5][3];
+      /// int main() {
+      ///    for (int i = 0; i < 5; ++i)
+      ///    for (int j = 0; j < 3; ++j)
+      ///       printf("[%d][%d]%d\n", i, j, arr[i][j].I);
+      ///    return 0;
+      /// }
       ///\endcode
       /// must be consistent with what clang does, since it is not well defined
       /// in the C++ standard.
       ///
       ///\param[in] src - array to copy
       ///\param[in] placement - where to copy
-      ///\param[in] N - size of the array.
+      ///\param[in] size - size of the array.
       ///
       template <typename T>
       void copyArray(T* src, void* placement, int size) {
@@ -186,7 +186,7 @@ extern "C" {
                                                  (void*)cling::runtime::gCling);
   }
 
-  ///\Brief a function that throws NullDerefException. This allows to 'hide' the
+  ///\brief a function that throws NullDerefException. This allows to 'hide' the
   /// definition of the exceptions from the RuntimeUniverse and allows us to 
   /// run cling in -no-rtti mode. 
   /// 
