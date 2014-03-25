@@ -456,8 +456,8 @@ namespace cling {
 
   void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
+    Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
-      Opts.Exceptions = 1;
       Opts.CXXExceptions = 1;
     }
     Opts.Deprecated = 1;
