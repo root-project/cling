@@ -37,7 +37,7 @@ namespace cling {
         }
         // We know that it didn't end up in the EE by design.
         ASTNodeEraser eraser(m_Sema, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-        eraser.RevertDecl(FD);
+        eraser.UnloadDecl(FD);
       }
     }
   }

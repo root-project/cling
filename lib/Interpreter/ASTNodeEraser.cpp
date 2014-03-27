@@ -169,11 +169,11 @@ namespace cling {
   ///\brief The class does the actual work of removing a declaration and
   /// resetting the internal structures of the compiler
   ///
-  class DeclReverter : public DeclVisitor<DeclReverter, bool> {
+  class DeclUnloader : public DeclVisitor<DeclUnloader, bool> {
   private:
     typedef llvm::DenseSet<FileID> FileIDs;
 
-    ///\brief The Sema object being reverted (contains the AST as well).
+    ///\brief The Sema object being unloaded (contains the AST as well).
     ///
     Sema* m_Sema;
 
@@ -185,30 +185,30 @@ namespace cling {
     ///
     llvm::ExecutionEngine* m_EEngine;
 
-    ///\brief The current transaction being reverted.
+    ///\brief The current transaction being unloaded.
     ///
     const Transaction* m_CurTransaction;
 
-    ///\brief Reverted declaration contains a SourceLocation, representing a
+    ///\brief Unloaded declaration contains a SourceLocation, representing a
     /// place in the file where it was seen. Clang caches that file and even if
     /// a declaration is removed and the file is edited we hit the cached entry.
-    /// This ADT keeps track of the files from which the reverted declarations
+    /// This ADT keeps track of the files from which the unloaded declarations
     /// came from so that in the end they could be removed from clang's cache.
     ///
     FileIDs m_FilesToUncache;
 
   public:
-    DeclReverter(Sema* S, clang::CodeGenerator* CG, llvm::ExecutionEngine* EE,
+    DeclUnloader(Sema* S, clang::CodeGenerator* CG, llvm::ExecutionEngine* EE,
                  const Transaction* T)
       : m_Sema(S), m_CodeGen(CG), m_EEngine(EE), m_CurTransaction(T) { }
-    ~DeclReverter();
+    ~DeclUnloader();
 
     ///\brief Interface with nice name, forwarding to Visit.
     ///
     ///\param[in] D - The declaration to forward.
     ///\returns true on success.
     ///
-    bool RevertDecl(Decl* D) { return Visit(D); }
+    bool UnloadDecl(Decl* D) { return Visit(D); }
 
     ///\brief If it falls back in the base class just remove the declaration
     /// only from the declaration context.
@@ -381,7 +381,7 @@ namespace cling {
     ///                MacroDirective to forward.
     ///\returns true on success.
     ///
-    bool RevertMacro(Transaction::MacroDirectiveInfo MD) { 
+    bool UnloadMacro(Transaction::MacroDirectiveInfo MD) { 
       return VisitMacro(MD);
     }
 
@@ -418,7 +418,7 @@ namespace cling {
               for(DeclContext::lookup_result::iterator I = decls.begin(),
                     E = decls.end(); I != E; ++I) {
                 // FIXME: A decl meant to be added in the lookup already exists
-                // in the lookup table. My assumption is that the DeclReverted
+                // in the lookup table. My assumption is that the DeclUnloader
                 // adds it here. This needs to be investigated mode. For now
                 // std::find gets promoted from assert to condition :)
                 if (*I == ND && std::find(decls.begin(), decls.end(), 
@@ -451,12 +451,12 @@ namespace cling {
     ///
     /// For example: We must uncache the cached include, which brought a
     /// declaration or a macro diretive definition in the AST.
-    ///\param[in] Loc - The source location of the reverted declaration.
+    ///\param[in] Loc - The source location of the unloaded declaration.
     ///
     void CollectFilesToUncache(SourceLocation Loc);
   };
 
-  DeclReverter::~DeclReverter() {
+  DeclUnloader::~DeclUnloader() {
     SourceManager& SM = m_Sema->getSourceManager();
     for (FileIDs::iterator I = m_FilesToUncache.begin(), 
            E = m_FilesToUncache.end(); I != E; ++I) {
@@ -470,7 +470,7 @@ namespace cling {
     m_Sema->PendingLocalImplicitInstantiations.clear();
   }
 
-  void DeclReverter::CollectFilesToUncache(SourceLocation Loc) {
+  void DeclUnloader::CollectFilesToUncache(SourceLocation Loc) {
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
     if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID()
@@ -478,7 +478,7 @@ namespace cling {
       m_FilesToUncache.insert(FID);
   }
 
-  bool DeclReverter::VisitDecl(Decl* D) {
+  bool DeclUnloader::VisitDecl(Decl* D) {
     assert(D && "The Decl is null");
     CollectFilesToUncache(D->getLocStart());
 
@@ -494,7 +494,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitNamedDecl(NamedDecl* ND) {
+  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
     bool Successful = VisitDecl(ND);
 
     DeclContext* DC = ND->getDeclContext();
@@ -561,7 +561,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitUsingShadowDecl(UsingShadowDecl* USD) {
+  bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
     bool Successful = true;
     // FIXME: This is needed when we have newest clang:
@@ -574,7 +574,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitTypedefNameDecl(TypedefNameDecl* TND) {
+  bool DeclUnloader::VisitTypedefNameDecl(TypedefNameDecl* TND) {
     // TypedefNameDecl: TypeDecl, Redeclarable
     bool Successful = VisitRedeclarable(TND, TND->getDeclContext());
     Successful &= VisitTypeDecl(TND);
@@ -582,7 +582,7 @@ namespace cling {
   }
 
 
-  bool DeclReverter::VisitVarDecl(VarDecl* VD) {
+  bool DeclUnloader::VisitVarDecl(VarDecl* VD) {
     // llvm::Module cannot contain:
     // * variables and parameters with dependent context;
     // * mangled names for parameters;
@@ -620,7 +620,7 @@ namespace cling {
       }
     };
   }
-  bool DeclReverter::VisitFunctionDecl(FunctionDecl* FD) {
+  bool DeclUnloader::VisitFunctionDecl(FunctionDecl* FD) {
     // The Structors need to be handled differently.
     if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
       // Cleanup the module if the transaction was committed and code was
@@ -711,13 +711,13 @@ namespace cling {
         = FD->getTemplateSpecializationInfo()->getTemplate();
       // The canonical declaration of every specialization is registered with
       // the FunctionTemplateDecl.
-      // Note this might revert too much in the case:
+      // Note this might unload too much in the case:
       //   template<typename T> T f(){ return T();}
       //   template<> int f();
       //   template<> int f() { return 0;}
       // when the template specialization was forward declared the canonical
       // becomes the first forward declaration. If the canonical forward
-      // declaration was declared outside the set of the decls to revert we have
+      // declaration was declared outside the set of the decls to unload we have
       // to keep it registered as a template specialization.
       //
       // In order to diagnose mismatches of the specializations, clang 'injects'
@@ -732,7 +732,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
+  bool DeclUnloader::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
     // Cleanup the module if the transaction was committed and code was
     // generated. This has to go first, because it may need the AST information
     // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
@@ -752,7 +752,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitCXXDestructorDecl(CXXDestructorDecl* CXXDtor) {
+  bool DeclUnloader::VisitCXXDestructorDecl(CXXDestructorDecl* CXXDtor) {
     // Cleanup the module if the transaction was committed and code was
     // generated. This has to go first, because it may need the AST information
     // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
@@ -772,7 +772,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitDeclContext(DeclContext* DC) {
+  bool DeclUnloader::VisitDeclContext(DeclContext* DC) {
     bool Successful = true;
     typedef llvm::SmallVector<Decl*, 64> Decls;
     Decls declsToErase;
@@ -790,7 +790,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitNamespaceDecl(NamespaceDecl* NSD) {
+  bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
     bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
     Successful &= VisitDeclContext(NSD);
@@ -799,7 +799,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitTagDecl(TagDecl* TD) {
+  bool DeclUnloader::VisitTagDecl(TagDecl* TD) {
     // TagDecl: TypeDecl, DeclContext, Redeclarable
     bool Successful = VisitDeclContext(TD);
     Successful &= VisitRedeclarable(TD, TD->getDeclContext());
@@ -807,7 +807,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitRecordDecl(RecordDecl* RD) {
+  bool DeclUnloader::VisitRecordDecl(RecordDecl* RD) {
     if (RD->isInjectedClassName())
       return true;
 
@@ -846,7 +846,7 @@ namespace cling {
     return Successful;
   }
 
-  void DeclReverter::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
+  void DeclUnloader::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
     if (!m_CurTransaction->getModule()) // syntax-only mode exit
       return;
     using namespace llvm;
@@ -899,7 +899,7 @@ namespace cling {
     }
   }
 
-  bool DeclReverter::VisitMacro(Transaction::MacroDirectiveInfo MacroD) {
+  bool DeclUnloader::VisitMacro(Transaction::MacroDirectiveInfo MacroD) {
     assert(MacroD.m_MD && "The MacroDirective is null");
     assert(MacroD.m_II && "The IdentifierInfo is null");
     CollectFilesToUncache(MacroD.m_MD->getLocation());
@@ -936,14 +936,14 @@ namespace cling {
     return true;
   }
 
-  bool DeclReverter::VisitRedeclarableTemplateDecl(RedeclarableTemplateDecl* R){
+  bool DeclUnloader::VisitRedeclarableTemplateDecl(RedeclarableTemplateDecl* R){
     // RedeclarableTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = VisitRedeclarable(R, R->getDeclContext());
     Successful &= VisitTemplateDecl(R);
     return Successful;
   }
 
-  bool DeclReverter::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
+  bool DeclUnloader::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
     bool Successful = true;
 
     // Remove specializations:
@@ -956,7 +956,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
+  bool DeclUnloader::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
     // ClassTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = true;
     // Remove specializations:
@@ -969,7 +969,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclReverter::VisitClassTemplateSpecializationDecl(
+  bool DeclUnloader::VisitClassTemplateSpecializationDecl(
                                         ClassTemplateSpecializationDecl* CTSD) {
 
     // A template specialization is attached to the list of specialization of
@@ -1031,7 +1031,7 @@ namespace cling {
   }
 
   bool ASTNodeEraser::RevertTransaction(Transaction* T) {
-    DeclReverter DeclRev(m_Sema, m_CodeGen, m_EEngine, T);
+    DeclUnloader DeclU(m_Sema, m_CodeGen, m_EEngine, T);
     bool Successful = true;
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),
@@ -1044,7 +1044,7 @@ namespace cling {
              Di = DGR.end() - 1, E = DGR.begin() - 1; Di != E; --Di) {
         // Get rid of the declaration. If the declaration has name we should
         // heal the lookup tables as well
-        Successful = DeclRev.RevertDecl(*Di) && Successful;
+        Successful = DeclU.UnloadDecl(*Di) && Successful;
 #ifndef NDEBUG
         assert(Successful && "Cannot handle that yet!");
 #endif
@@ -1054,7 +1054,7 @@ namespace cling {
     for (Transaction::const_reverse_macros_iterator MI = T->rmacros_begin(),
            ME = T->rmacros_end(); MI != ME; ++MI) {
       // Get rid of the macro definition
-      Successful = DeclRev.RevertMacro(*MI) && Successful;
+      Successful = DeclU.UnloadMacro(*MI) && Successful;
 #ifndef NDEBUG
       assert(Successful && "Cannot handle that yet!");
 #endif
@@ -1077,7 +1077,7 @@ namespace cling {
     return Successful;
   }
 
-  bool ASTNodeEraser::RevertDecl(Decl* D) {
+  bool ASTNodeEraser::UnloadDecl(Decl* D) {
     Transaction T(D->getASTContext());
     T.append(D);
     return RevertTransaction(&T);

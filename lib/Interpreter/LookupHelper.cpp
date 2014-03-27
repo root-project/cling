@@ -236,7 +236,7 @@ namespace cling {
                           // if the decl is invalid try to clean up
                           ASTNodeEraser eraser(&S, /*CodeGenerator*/0,
                                                /*ExecutionEngine*/0);
-                          eraser.RevertDecl(TheDecl);
+                          eraser.UnloadDecl(TheDecl);
                           return 0;
                         }
                       } else {
@@ -451,7 +451,7 @@ namespace cling {
     if (scopeDecl->isInvalidDecl()) {
       // if the decl is invalid try to clean up
       ASTNodeEraser eraser(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-      eraser.RevertDecl(const_cast<Decl*>(scopeDecl));
+      eraser.UnloadDecl(const_cast<Decl*>(scopeDecl));
       return 0;
     }
 
@@ -619,7 +619,7 @@ namespace cling {
           if (TheDecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
             ASTNodeEraser eraser(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-            eraser.RevertDecl(const_cast<FunctionDecl*>(TheDecl));
+            eraser.UnloadDecl(const_cast<FunctionDecl*>(TheDecl));
             return 0;
           }
        }
@@ -1090,7 +1090,7 @@ namespace cling {
           if (fdecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
             ASTNodeEraser eraser(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-            eraser.RevertDecl(fdecl);
+            eraser.UnloadDecl(fdecl);
             return 0;
           }
           return fdecl;
