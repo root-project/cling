@@ -7,7 +7,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "ASTNodeEraser.h"
+#include "TransactionUnloader.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
 
@@ -1022,15 +1022,15 @@ namespace cling {
   }
 
 
-  ASTNodeEraser::ASTNodeEraser(Sema* S, clang::CodeGenerator* CG,
+  TransactionUnloader::TransactionUnloader(Sema* S, clang::CodeGenerator* CG,
                                llvm::ExecutionEngine* EE)
     : m_Sema(S), m_CodeGen(CG), m_EEngine(EE) {
   }
 
-  ASTNodeEraser::~ASTNodeEraser() {
+  TransactionUnloader::~TransactionUnloader() {
   }
 
-  bool ASTNodeEraser::RevertTransaction(Transaction* T) {
+  bool TransactionUnloader::RevertTransaction(Transaction* T) {
     DeclUnloader DeclU(m_Sema, m_CodeGen, m_EEngine, T);
     bool Successful = true;
 
@@ -1077,7 +1077,7 @@ namespace cling {
     return Successful;
   }
 
-  bool ASTNodeEraser::UnloadDecl(Decl* D) {
+  bool TransactionUnloader::UnloadDecl(Decl* D) {
     Transaction T(D->getASTContext());
     T.append(D);
     return RevertTransaction(&T);

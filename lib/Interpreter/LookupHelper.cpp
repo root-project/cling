@@ -9,7 +9,7 @@
 
 #include "cling/Interpreter/LookupHelper.h"
 
-#include "ASTNodeEraser.h"
+#include "TransactionUnloader.h"
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
@@ -234,9 +234,9 @@ namespace cling {
                         TheDecl = TD->getDefinition();
                         if (TheDecl->isInvalidDecl()) {
                           // if the decl is invalid try to clean up
-                          ASTNodeEraser eraser(&S, /*CodeGenerator*/0,
-                                               /*ExecutionEngine*/0);
-                          eraser.UnloadDecl(TheDecl);
+                          TransactionUnloader U(&S, /*CodeGenerator*/0,
+                                                /*ExecutionEngine*/0);
+                          U.UnloadDecl(TheDecl);
                           return 0;
                         }
                       } else {
@@ -450,8 +450,8 @@ namespace cling {
     }
     if (scopeDecl->isInvalidDecl()) {
       // if the decl is invalid try to clean up
-      ASTNodeEraser eraser(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-      eraser.UnloadDecl(const_cast<Decl*>(scopeDecl));
+      TransactionUnloader U(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
+      U.UnloadDecl(const_cast<Decl*>(scopeDecl));
       return 0;
     }
 
@@ -618,8 +618,8 @@ namespace cling {
                                             true /*recursive instantiation*/);
           if (TheDecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
-            ASTNodeEraser eraser(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-            eraser.UnloadDecl(const_cast<FunctionDecl*>(TheDecl));
+            TransactionUnloader U(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
+            U.UnloadDecl(const_cast<FunctionDecl*>(TheDecl));
             return 0;
           }
        }
@@ -1089,8 +1089,8 @@ namespace cling {
                                             true /*recursive instantiation*/);
           if (fdecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
-            ASTNodeEraser eraser(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-            eraser.UnloadDecl(fdecl);
+            TransactionUnloader U(&S, /*CodeGenerator*/0, /*ExecutionEngine*/0);
+            U.UnloadDecl(fdecl);
             return 0;
           }
           return fdecl;

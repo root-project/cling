@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "IncrementalParser.h"
-#include "ASTNodeEraser.h"
+
 #include "AutoSynthesizer.h"
 #include "BackendPass.h"
 #include "CheckEmptyTransactionTransformer.h"
@@ -18,6 +18,7 @@
 #include "NullDerefProtectionTransformer.h"
 #include "ValueExtractionSynthesizer.h"
 #include "TransactionPool.h"
+#include "TransactionUnloader.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/Interpreter.h"
@@ -485,10 +486,10 @@ namespace cling {
     if (m_Interpreter->getOptions().ErrorOut)
       return;
 
-    ASTNodeEraser NodeEraser(&getCI()->getSema(), m_CodeGen.get(),
-                             m_Interpreter->getExecutionEngine());
+    TransactionUnloader U(&getCI()->getSema(), m_CodeGen.get(),
+                          m_Interpreter->getExecutionEngine());
 
-    if (NodeEraser.RevertTransaction(T))
+    if (U.RevertTransaction(T))
       T->setState(Transaction::kRolledBack);
     else
       T->setState(Transaction::kRolledBackWithErrors);

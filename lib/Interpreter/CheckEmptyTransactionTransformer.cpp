@@ -9,7 +9,7 @@
 
 #include "CheckEmptyTransactionTransformer.h"
 
-#include "ASTNodeEraser.h"
+#include "TransactionUnloader.h"
 #include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/Decl.h"
@@ -36,8 +36,8 @@ namespace cling {
           T->erase(found);
         }
         // We know that it didn't end up in the EE by design.
-        ASTNodeEraser eraser(m_Sema, /*CodeGenerator*/0, /*ExecutionEngine*/0);
-        eraser.UnloadDecl(FD);
+        TransactionUnloader U(m_Sema, /*CodeGenerator*/0, /*ExecutionEngine*/0);
+        U.UnloadDecl(FD);
       }
     }
   }

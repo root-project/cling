@@ -7,8 +7,8 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#ifndef CLING_AST_NODE_ERASER
-#define CLING_AST_NODE_ERASER
+#ifndef CLING_TRANSACTION_UNLOADER
+#define CLING_TRANSACTION_UNLOADER
 
 namespace llvm {
   class ExecutionEngine;
@@ -26,16 +26,16 @@ namespace cling {
 
   ///\brief A simple eraser class that removes already created AST Nodes.
   ///
-  class ASTNodeEraser {
+  class TransactionUnloader {
   private:
     clang::Sema* m_Sema;
     clang::CodeGenerator* m_CodeGen;
     llvm::ExecutionEngine* m_EEngine;
 
   public:
-    ASTNodeEraser(clang::Sema* S, clang::CodeGenerator* CG,
-                  llvm::ExecutionEngine* EE);
-    ~ASTNodeEraser();
+    TransactionUnloader(clang::Sema* S, clang::CodeGenerator* CG,
+                        llvm::ExecutionEngine* EE);
+    ~TransactionUnloader();
 
     ///\brief Rolls back given transaction from the AST.
     ///
