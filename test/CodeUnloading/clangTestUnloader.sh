@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cling_binary=/home/vvassilev/workspace/llvm/obj/Debug+Asserts/bin/cling
+#cling_binary=/home/vvassilev/workspace/llvm/obj/Debug+Asserts/bin/cling
+cling_binary=/home/vvassilev/workspace/root/interpreter/llvm/obj/Debug+Asserts/bin/cling
 invocation="$@"
 file=""
 cling_args="--nologo"
@@ -16,6 +17,7 @@ while ! [ "$1" = "" ] ; do
         -ast-dump-filter) cling_args="$cling_args -Xclang -ast-dump-filter -Xclang $2"; shift ;;
         -o) if [ "$2" == "-" ] ; then shift; shift; fi;; # ignore cling does it by default
         -I*) cling_args="$cling_args $1" ;;
+        -x) cling_args="$cling_args -Xclang $1 -Xclang $2"; shift ;;
         -*) cling_args="$cling_args -Xclang $1" ;;
         *) file=$1
     esac
