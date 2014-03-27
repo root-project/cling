@@ -268,11 +268,11 @@ namespace cling {
     TextDiagnosticPrinter* DiagnosticPrinter
       = new TextDiagnosticPrinter(llvm::errs(), DefaultDiagnosticOptions);
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
-    DiagnosticsEngine* Diagnostics
-      = new DiagnosticsEngine(DiagIDs, DefaultDiagnosticOptions,
-                              DiagnosticPrinter, /*Owns it*/ true); // LEAKS!
-    Diagnostics->setSuppressSystemWarnings(true);
-    SetClingCustomDiagnosticMappings(*Diagnostics);
+    llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
+      Diags(new DiagnosticsEngine(DiagIDs, DefaultDiagnosticOptions,
+                                  DiagnosticPrinter, /*Owns it*/ true));
+    Diags->setSuppressSystemWarnings(true);
+    SetClingCustomDiagnosticMappings(*Diags);
 
     std::vector<const char*> argvCompile(argv, argv + argc);
     // We do C++ by default; append right after argv[0] name
@@ -292,14 +292,14 @@ namespace cling {
 
     clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
                                  "cling.out",
-                                 *Diagnostics);
+                                 *Diags);
     //Driver.setWarnMissingInput(false);
     Driver.setCheckInputsExist(false); // think foo.C(12)
     llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());
     llvm::OwningPtr<clang::driver::Compilation>
       Compilation(Driver.BuildCompilation(RF));
     const clang::driver::ArgStringList* CC1Args
-      = GetCC1Arguments(Diagnostics, Compilation.get());
+      = GetCC1Arguments(Diags.getPtr(), Compilation.get());
     if (CC1Args == NULL) {
       return 0;
     }
@@ -307,7 +307,7 @@ namespace cling {
       Invocation = new clang::CompilerInvocation;
     clang::CompilerInvocation::CreateFromArgs(*Invocation, CC1Args->data() + 1,
                                               CC1Args->data() + CC1Args->size(),
-                                              *Diagnostics);
+                                              *Diags);
     Invocation->getFrontendOpts().DisableFree = true;
 
     if (Invocation->getHeaderSearchOpts().UseBuiltinIncludes &&
@@ -337,7 +337,7 @@ namespace cling {
     // Create and setup a compiler instance.
     CompilerInstance* CI = new CompilerInstance();
     CI->setInvocation(Invocation);
-    CI->setDiagnostics(Diagnostics);
+    CI->setDiagnostics(Diags.getPtr());
     {
       //
       //  Buffer the error messages while we process
