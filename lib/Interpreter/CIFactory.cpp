@@ -270,6 +270,7 @@ namespace cling {
     DiagnosticsEngine* Diagnostics
       = new DiagnosticsEngine(DiagIDs, DefaultDiagnosticOptions,
                               DiagnosticPrinter, /*Owns it*/ true); // LEAKS!
+    Diagnostics->setSuppressSystemWarnings(true);
 
     std::vector<const char*> argvCompile(argv, argv + argc);
     // We do C++ by default; append right after argv[0] name
