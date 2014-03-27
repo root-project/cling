@@ -335,7 +335,7 @@ namespace cling {
     }
 
     // Create and setup a compiler instance.
-    CompilerInstance* CI = new CompilerInstance();
+    llvm::OwningPtr<CompilerInstance> CI(new CompilerInstance());
     CI->setInvocation(Invocation);
     CI->setDiagnostics(Diags.getPtr());
     {
@@ -354,17 +354,12 @@ namespace cling {
           .addMacroDef("__CLING__CXX11");
       }
 
-      if (CI->getDiagnostics().hasErrorOccurred()) {
-        delete CI;
-        CI = 0;
+      if (CI->getDiagnostics().hasErrorOccurred())
         return 0;
-      }
     }
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
                                                &Invocation->getTargetOpts()));
     if (!CI->hasTarget()) {
-      delete CI;
-      CI = 0;
       return 0;
     }
     CI->getTarget().setForcedLangOptions(CI->getLangOpts());
@@ -432,7 +427,7 @@ namespace cling {
       // Add the callback keeping track of the macro definitions
       PP.addPPCallbacks(stateCollector);
     }
-    else 
+    else
       stateCollector = new DeclCollector();
     // Set up the ASTConsumers
     CI->setASTConsumer(stateCollector);
@@ -452,7 +447,7 @@ namespace cling {
                                                  // the JIT to crash
     CI->getCodeGenOpts().VerifyModule = 0; // takes too long
 
-    return CI;
+    return CI.take(); // Passes over the ownership to the caller.
   }
 
   void CIFactory::SetClingCustomDiagnosticMappings(DiagnosticsEngine& Diags) {
