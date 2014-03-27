@@ -335,8 +335,7 @@ namespace cling {
     // Create and setup a compiler instance.
     CompilerInstance* CI = new CompilerInstance();
     CI->setInvocation(Invocation);
-
-    CI->createDiagnostics(DiagnosticPrinter, /*ShouldOwnClient=*/ false);
+    CI->setDiagnostics(Diagnostics);
     {
       //
       //  Buffer the error messages while we process
