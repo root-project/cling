@@ -20,6 +20,7 @@ namespace llvm {
 }
 
 namespace clang {
+  class DiagnosticsEngine;
 }
 
 namespace cling {
@@ -43,7 +44,8 @@ namespace cling {
     //---------------------------------------------------------------------
     CIFactory() {}
     ~CIFactory() {}
-    static void SetClingCustomDiagnosticMappings(DiagnosticsEngine& Diags);
+    static void SetClingCustomDiagnosticMappings(clang::DiagnosticsEngine&
+                                                 Diags);
     static void SetClingCustomLangOpts(clang::LangOptions& Opts);
     static void SetClingTargetLangOpts(clang::LangOptions& Opts,
                                        const clang::TargetInfo& Target);
