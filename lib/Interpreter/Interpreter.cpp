@@ -36,7 +36,7 @@
 // when clang is ready.
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
-#include "clang/Sema/SemaInternal.h"
+#include "clang/Sema/SemaDiagnostic.h"
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
