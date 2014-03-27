@@ -22,6 +22,7 @@
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
+#include "clang/Sema/SemaDiagnostic.h"
 
 #include "llvm/Config/config.h"
 #include "llvm/IR/LLVMContext.h"
@@ -271,6 +272,7 @@ namespace cling {
       = new DiagnosticsEngine(DiagIDs, DefaultDiagnosticOptions,
                               DiagnosticPrinter, /*Owns it*/ true); // LEAKS!
     Diagnostics->setSuppressSystemWarnings(true);
+    SetClingCustomDiagnosticMappings(*Diagnostics);
 
     std::vector<const char*> argvCompile(argv, argv + argc);
     // We do C++ by default; append right after argv[0] name
@@ -451,6 +453,20 @@ namespace cling {
     CI->getCodeGenOpts().VerifyModule = 0; // takes too long
 
     return CI;
+  }
+
+  void CIFactory::SetClingCustomDiagnosticMappings(DiagnosticsEngine& Diags) {
+    // Disable warnings which doesn't make sense when using the prompt
+    // This gets reset with the clang::Diagnostics().Reset(/*soft*/=false)
+    SourceLocation noLoc;
+    Diags.setDiagnosticMapping(clang::diag::warn_unused_expr,
+                               clang::diag::MAP_IGNORE, noLoc);
+    Diags.setDiagnosticMapping(clang::diag::warn_unused_call,
+                               clang::diag::MAP_IGNORE, noLoc);
+    Diags.setDiagnosticMapping(clang::diag::warn_unused_comparison,
+                               clang::diag::MAP_IGNORE, noLoc);
+    Diags.setDiagnosticMapping(clang::diag::ext_return_has_expr,
+                               clang::diag::MAP_IGNORE, noLoc);
   }
 
   void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {

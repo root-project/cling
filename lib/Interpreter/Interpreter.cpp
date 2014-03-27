@@ -859,10 +859,6 @@ namespace cling {
                                Transaction** T /* = 0 */) const {
     StateDebuggerRAII stateDebugger(this);
 
-    // Disable warnings which doesn't make sense when using the prompt
-    // This gets reset with the clang::Diagnostics().Reset()
-    MaybeIgnoreFakeDiagnostics();
-
     if (Transaction* lastT = m_IncrParser->Compile(input, CO)) {
       if (lastT->getIssuedDiags() != Transaction::kErrors) {
         if (T)
@@ -882,10 +878,6 @@ namespace cling {
                                 StoredValueRef* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
     StateDebuggerRAII stateDebugger(this);
-
-    // Disable warnings which doesn't make sense when using the prompt
-    // This gets reset with the clang::Diagnostics().Reset()
-    MaybeIgnoreFakeDiagnostics();
 
     // Wrap the expression
     std::string WrapperName;
@@ -1025,26 +1017,6 @@ namespace cling {
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
 
     return ConvertExecutionResult(ExeRes);
-  }
-
-  void Interpreter::MaybeIgnoreFakeDiagnostics() const {
-    // In rawInput mode we want to be as close as possible to the compiler.
-    if (isRawInputEnabled())
-      return;
-    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
-    // Disable warnings which doesn't make sense when using the prompt
-    // This gets reset with the clang::Diagnostics().Reset()
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_expr,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_call,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    Diag.setDiagnosticMapping(clang::diag::warn_unused_comparison,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    Diag.setDiagnosticMapping(clang::diag::ext_return_has_expr,
-                              clang::diag::MAP_IGNORE, SourceLocation());
-    // Very very ugly. TODO: Revisit and extract out as interpreter arg
-    Diag.setDiagnosticMapping(clang::diag::ext_auto_type_specifier,
-                              clang::diag::MAP_IGNORE, SourceLocation());
   }
 
   bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress) {

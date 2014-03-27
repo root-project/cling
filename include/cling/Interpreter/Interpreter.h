@@ -249,12 +249,6 @@ namespace cling {
     ///
     bool addSymbol(const char* symbolName,  void* symbolAddress);
 
-    ///\brief Ignores meaningless diagnostics in the context of the incremental
-    /// compilation unless in rawInput mode. Eg. unused expression warning and
-    /// so on.
-    ///
-    void MaybeIgnoreFakeDiagnostics() const;
-
     ///\brief Compile the function definition and return its Decl.
     ///
     ///\param[in] name - name of the function, used to find its Decl.

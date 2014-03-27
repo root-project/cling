@@ -35,7 +35,7 @@ namespace cling {
     static clang::CompilerInstance* createCI(llvm::MemoryBuffer* buffer,
                                              int argc,
                                              const char* const *argv,
-                                             const char* llvmdir, 
+                                             const char* llvmdir,
                                              DeclCollector* stateCollector);
   private:
     //---------------------------------------------------------------------
@@ -43,6 +43,7 @@ namespace cling {
     //---------------------------------------------------------------------
     CIFactory() {}
     ~CIFactory() {}
+    static void SetClingCustomDiagnosticMappings(DiagnosticsEngine& Diags);
     static void SetClingCustomLangOpts(clang::LangOptions& Opts);
     static void SetClingTargetLangOpts(clang::LangOptions& Opts,
                                        const clang::TargetInfo& Target);
