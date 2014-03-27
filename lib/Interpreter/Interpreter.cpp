@@ -32,8 +32,6 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/Preprocessor.h"
-#include "clang/Parse/ParseDiagnostic.h" // FIXME: remove this back-dependency!
-// when clang is ready.
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
