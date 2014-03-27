@@ -192,7 +192,7 @@ namespace cling {
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
     if (getCI()->getLangOpts().CPlusPlus)
-      IncludeCxxRuntime();
+      IncludeCXXRuntime();
     else
       IncludeCRuntime();
 
@@ -259,7 +259,7 @@ namespace cling {
 
   }
 
-  void Interpreter::IncludeCxxRuntime() {
+  void Interpreter::IncludeCXXRuntime() {
     // Set up common declarations which are going to be available
     // only at runtime
     // Make sure that the universe won't be included to compile time by using

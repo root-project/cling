@@ -259,10 +259,15 @@ namespace cling {
                                                 bool withAccessControl);
 
     ///\brief Set up include paths for runtime headers.
+    ///
     void AddRuntimeIncludePaths(const char* argv0);
+
     ///\brief Include C++ runtime headers and definitions.
-    void IncludeCxxRuntime();
+    ///
+    void IncludeCXXRuntime();
+
     ///\brief Include C runtime headers and definitions.
+    ///
     void IncludeCRuntime();
 
   public:
