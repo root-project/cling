@@ -16,6 +16,7 @@ namespace llvm {
 
 namespace clang {
   class CodeGenerator;
+  class CompilerInstance;
   class Decl;
   class Sema;
 }

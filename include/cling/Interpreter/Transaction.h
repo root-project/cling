@@ -25,7 +25,9 @@ namespace clang {
   class FunctionDecl;
   class IdentifierInfo;
   class MacroDirective;
+  class Preprocessor;
   struct PrintingPolicy;
+  class Sema;
 }
 
 namespace llvm {
@@ -98,6 +100,8 @@ namespace cling {
       inline bool operator!=(const MacroDirectiveInfo& rhs) {
         return !operator==(rhs);
       }
+      void dump(const clang::Preprocessor& PP) const;
+      void print(llvm::raw_ostream& Out, const clang::Preprocessor& PP) const;
     };
 
   private:
@@ -145,9 +149,9 @@ namespace cling {
     ///
     const Transaction* m_Next;
 
-    ///\brief The ASTContext
+    ///\brief The Sema holding the ASTContext and the Preprocessor.
     ///
-    clang::ASTContext& m_ASTContext;
+    clang::Sema& m_Sema;
 
     // Intentionally use struct instead of pair because we don't need default
     // init.
@@ -165,10 +169,10 @@ namespace cling {
 
   public:
 
-    Transaction(clang::ASTContext& C);
-    Transaction(const CompilationOptions& Opts, clang::ASTContext& C);
+    Transaction(clang::Sema& S);
+    Transaction(const CompilationOptions& Opts, clang::Sema& S);
 
-    void Initialize(clang::ASTContext& C);
+    void Initialize(clang::Sema& S);
 
     ~Transaction();
 
@@ -422,13 +426,6 @@ namespace cling {
 
     const Transaction* getNext() const { return m_Next; }
     void setNext(Transaction* T) { m_Next = T; }
-
-    clang::ASTContext& getASTContext() {
-      return m_ASTContext;
-    }
-    const clang::ASTContext& getASTContext() const {
-      return m_ASTContext;
-    }
 
     void setBufferFID(clang::FileID FID) { m_BufferFID = FID; }
     clang::FileID getBufferFID() const { return m_BufferFID; }

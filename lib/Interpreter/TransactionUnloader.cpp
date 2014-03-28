@@ -1046,7 +1046,7 @@ namespace clang {
 
 namespace cling {
   TransactionUnloader::TransactionUnloader(Sema* S, clang::CodeGenerator* CG,
-                               llvm::ExecutionEngine* EE)
+                                           llvm::ExecutionEngine* EE)
     : m_Sema(S), m_CodeGen(CG), m_EEngine(EE) {
   }
 
@@ -1101,7 +1101,7 @@ namespace cling {
   }
 
   bool TransactionUnloader::UnloadDecl(Decl* D) {
-    Transaction T(D->getASTContext());
+    Transaction T(*m_Sema);
     T.append(D);
     return RevertTransaction(&T);
   }

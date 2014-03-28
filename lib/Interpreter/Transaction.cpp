@@ -14,33 +14,36 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/PrettyPrinter.h"
-#include "llvm/Support/raw_ostream.h"
 #include "clang/Lex/MacroInfo.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Sema/Sema.h"
+
+#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 
 namespace cling {
 
-  Transaction::Transaction(ASTContext& C) : m_ASTContext(C) {
-    Initialize(C);
+  Transaction::Transaction(Sema& S) : m_Sema(S) {
+    Initialize(S);
   }
 
-  Transaction::Transaction(const CompilationOptions& Opts, ASTContext& C)
-    : m_ASTContext(C) {
-    Initialize(C);
+  Transaction::Transaction(const CompilationOptions& Opts, Sema& S)
+    : m_Sema(S) {
+    Initialize(S);
     m_Opts = Opts; // intentional copy.
   }
 
-  void Transaction::Initialize(ASTContext& C) {
+  void Transaction::Initialize(Sema& S) {
     m_NestedTransactions.reset(0);
-    m_Parent = 0; 
+    m_Parent = 0;
     m_State = kCollecting;
     m_IssuedDiags = kNone;
     m_Opts = CompilationOptions();
     m_Module = 0; 
     m_WrapperFD = 0;
     m_Next = 0;
-    //m_ASTContext = C;
+    //m_Sema = S;
     m_BufferFID = FileID(); // sets it to invalid.
   }
 
@@ -253,14 +256,23 @@ namespace cling {
     }
   }
 
+  void Transaction::MacroDirectiveInfo::dump(const clang::Preprocessor& PP) const {
+    print(llvm::errs(), PP);
+  }
+
+  void Transaction::MacroDirectiveInfo::print(llvm::raw_ostream& Out,
+                                              const clang::Preprocessor& PP) const {
+    PP.printMacro(this->m_II, this->m_MD, Out);
+  }
+
   void Transaction::dump() const {
-    const ASTContext& C = getASTContext();
+    const ASTContext& C = m_Sema.getASTContext();
     PrintingPolicy Policy = C.getPrintingPolicy();
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::dumpPretty() const {
-    const ASTContext& C = getASTContext();      
+    const ASTContext& C = m_Sema.getASTContext();
     PrintingPolicy Policy(C.getLangOpts());
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
@@ -276,7 +288,7 @@ namespace cling {
         Out<<"+====================================================+\n";
         Out<<"        Nested Transaction" << nestedT << "           \n";
         Out<<"+====================================================+\n";
-        (*m_NestedTransactions)[nestedT++]->print(Out, Policy, Indent, 
+        (*m_NestedTransactions)[nestedT++]->print(Out, Policy, Indent,
                                                   PrintInstantiation);
         Out<< "\n";
         Out<<"+====================================================+\n";
@@ -287,11 +299,15 @@ namespace cling {
     }
 
     // Print the deserialized decls if any.
-    for (const_iterator I = deserialized_decls_begin(), 
+    for (const_iterator I = deserialized_decls_begin(),
            E = deserialized_decls_end(); I != E; ++I) {
-      
       assert(!I->m_DGR.isNull() && "Must not contain null DGR.");
       I->print(Out, Policy, Indent, PrintInstantiation, "Deserialized");
+    }
+
+    for (Transaction::const_reverse_macros_iterator MI = rmacros_begin(),
+           ME = rmacros_end(); MI != ME; ++MI) {
+      MI->print(Out, m_Sema.getPreprocessor());
     }
   }
 

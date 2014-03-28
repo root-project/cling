@@ -97,7 +97,7 @@ namespace cling {
 
   void
   IncrementalParser::Initialize(llvm::SmallVectorImpl<Transaction*> &result) {
-    m_TransactionPool.reset(new TransactionPool(getCI()->getASTContext()));
+    m_TransactionPool.reset(new TransactionPool(getCI()->getSema()));
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
@@ -305,7 +305,7 @@ namespace cling {
   }
 
   void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) const {
-    ASTContext& C = T->getASTContext();
+    ASTContext& C = m_CI->getASTContext();
     for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
          I != E; ++I) {
       // Copy DCI; it might get relocated below.
