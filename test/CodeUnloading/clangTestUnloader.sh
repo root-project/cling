@@ -39,7 +39,8 @@ cling_args="$cling_args $langopt"
 #sed 's,^\(// *RUN:.*\)| *FileCheck\b.*$,\1,' $file > ${file}_repl
 
 testcase=".rawInput\n.storeState \"a\"\n";
-testcase+="#include \"$file\"\n"
+testcase+=".L $file\n"
+#testcase+=".L $file\n"
 if echo $cling_args | grep '-verify' > /dev/null || ! grep -q 'expected-error' $file > /dev/null; then
     testcase+=".U\n"
 fi
