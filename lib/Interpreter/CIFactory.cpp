@@ -262,18 +262,6 @@ namespace cling {
       resource_path = "";
     }
 
-    DiagnosticOptions* DefaultDiagnosticOptions = new DiagnosticOptions();
-    DefaultDiagnosticOptions->ShowColors
-      = llvm::sys::Process::StandardErrHasColors() ? 1 : 0;
-    TextDiagnosticPrinter* DiagnosticPrinter
-      = new TextDiagnosticPrinter(llvm::errs(), DefaultDiagnosticOptions);
-    llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
-    llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
-      Diags(new DiagnosticsEngine(DiagIDs, DefaultDiagnosticOptions,
-                                  DiagnosticPrinter, /*Owns it*/ true));
-    Diags->setSuppressSystemWarnings(true);
-    SetClingCustomDiagnosticMappings(*Diags);
-
     std::vector<const char*> argvCompile(argv, argv + argc);
     // We do C++ by default; append right after argv[0] name
     // Only insert it if there is no other "-x":
@@ -290,6 +278,20 @@ namespace cling {
     argvCompile.push_back("-");
     AddHostCXXIncludes(argvCompile);
 
+    clang::CompilerInvocation*
+      Invocation = new clang::CompilerInvocation;
+    // The compiler invocation is the owner of the diagnostic options.
+    // Everything else points to them.
+    DiagnosticOptions& DiagOpts = Invocation->getDiagnosticOpts();
+    TextDiagnosticPrinter* DiagnosticPrinter
+      = new TextDiagnosticPrinter(llvm::errs(), &DiagOpts);
+    llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
+    llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
+      Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
+                                  DiagnosticPrinter, /*Owns it*/ true));
+    Diags->setSuppressSystemWarnings(true);
+    SetClingCustomDiagnosticMappings(*Diags);
+
     clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
                                  "cling.out",
                                  *Diags);
@@ -303,8 +305,6 @@ namespace cling {
     if (CC1Args == NULL) {
       return 0;
     }
-    clang::CompilerInvocation*
-      Invocation = new clang::CompilerInvocation;
     clang::CompilerInvocation::CreateFromArgs(*Invocation, CC1Args->data() + 1,
                                               CC1Args->data() + CC1Args->size(),
                                               *Diags);
