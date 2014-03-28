@@ -19,6 +19,7 @@ set( LLVM_LINK_COMPONENTS
 add_cling_library(clingInterpreter
   ASTNodeEraser.cpp
   AutoSynthesizer.cpp
+  BackendPass.cpp
   CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
   ClangInternalState.cpp
