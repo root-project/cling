@@ -10,6 +10,7 @@
 #include "IncrementalParser.h"
 #include "ASTNodeEraser.h"
 #include "AutoSynthesizer.h"
+#include "BackendPass.h"
 #include "CheckEmptyTransactionTransformer.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
@@ -81,6 +82,16 @@ namespace cling {
     m_ASTTransformers.push_back(new ValueExtractionSynthesizer(TheSema));
     m_ASTTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
     m_ASTTransformers.push_back(new CheckEmptyTransactionTransformer(TheSema));
+
+    if (m_CodeGen) {
+      llvm::Module* TheModule = m_CodeGen->GetModule();
+      // IR passes make sense if we do CodeGen.
+      m_IRTransformers.push_back(new BackendPass(TheSema, TheModule,
+                                                 CI->getDiagnostics(),
+                                                 CI->getTargetOpts(),
+                                                 CI->getLangOpts(),
+                                                 CI->getCodeGenOpts()));
+    }
   }
 
   void
