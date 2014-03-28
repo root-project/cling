@@ -34,7 +34,10 @@
 
 using namespace clang;
 
-namespace cling {
+// FIXME: rename back to cling when gcc fix the
+// namespace cling { using cling::DeclUnloader DeclUnloader} bug
+namespace clang {
+  using namespace cling;
 
   // Copied and adapted from GlobalDCE.cpp
   class GlobalValueEraser {
@@ -225,6 +228,13 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitNamedDecl(NamedDecl* ND);
+
+    ///\brief Removes the declaration from Sema's unused decl registry
+    /// @param[in] DD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitDeclaratorDecl(DeclaratorDecl* DD);
 
     ///\brief Removes a using shadow declaration, created in the cases:
     ///\code
@@ -559,6 +569,16 @@ namespace cling {
 #endif
 
     return Successful;
+  }
+
+  bool DeclUnloader::VisitDeclaratorDecl(DeclaratorDecl* DD) {
+    // VisitDeclaratorDecl: ValueDecl
+    auto found = std::find(m_Sema->UnusedFileScopedDecls.begin(/*ExtSource*/0),
+                           m_Sema->UnusedFileScopedDecls.end(), DD);
+    if (found != m_Sema->UnusedFileScopedDecls.end())
+      m_Sema->UnusedFileScopedDecls.erase(found, found);
+
+    return VisitValueDecl(DD);
   }
 
   bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
@@ -1020,8 +1040,9 @@ namespace cling {
     // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
     return VisitCXXRecordDecl(CTSD);
   }
+} // end namespace clang
 
-
+namespace cling {
   TransactionUnloader::TransactionUnloader(Sema* S, clang::CodeGenerator* CG,
                                llvm::ExecutionEngine* EE)
     : m_Sema(S), m_CodeGen(CG), m_EEngine(EE) {
@@ -1083,3 +1104,4 @@ namespace cling {
     return RevertTransaction(&T);
   }
 } // end namespace cling
+
