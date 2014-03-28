@@ -7,16 +7,13 @@
 #------------------------------------------------------------------------------
 
 set( LLVM_LINK_COMPONENTS
-  ${LLVM_NATIVE_ARCH}
-  ${LLVM_NATIVE_ARCH}codegen
-  ${LLVM_NATIVE_ARCH}info
-  ${LLVM_NATIVE_ARCH}utils
-  bitreader
   bitwriter
-  codegen
-  support
-  target
   jit
+  native
+  option
+  ipo
+  instrumentation
+  objcarcopts
 )
 
 add_cling_library(clingInterpreter
