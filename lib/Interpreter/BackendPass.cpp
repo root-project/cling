@@ -46,7 +46,8 @@ namespace {
     InlinerKeepDeadFunc(Pass* I):
       CallGraphSCCPass(ID), m_Inliner((Inliner*)I) { }
 
-    bool doInitialization(CallGraph &CG) {
+    using llvm::Pass::doInitialization;
+    bool doInitialization(CallGraph &CG) override {
       // Forward out Resolver now that we are registered.
       if (!m_Inliner->getResolver())
         m_Inliner->setResolver(getResolver());
