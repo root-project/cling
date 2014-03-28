@@ -10,7 +10,7 @@ while ! [ "$1" = "" ] ; do
         -print-file-name=include) `dirname $cling_binary`/clang $1; exit $?; ;;
         -cc1) ;;
         -triple) echo -e "Ignoring (probably invalid target): $invocation\n" >&2; exit 0; shift;;
-        -internal-isystem) ;;
+        -internal-isystem) cling_args="$cling_args -Xclang -internal-isystem -Xclang $2"; shift;;
         -triple=*) echo -e "Ignoring (probably invalid target): $invocation\n" >&2; exit 0;;
         -target-abi) shift;;
         -I) cling_args="$cling_args -I $2"; shift ;;
