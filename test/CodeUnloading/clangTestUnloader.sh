@@ -46,6 +46,10 @@ fi
 testcase+=".compareState \"a\"\n"
 testcase+=".q"
 
+echo -e "\n\e[32mREAL INVOCATION:\e[0m" >&2
+echo "$invocation" >&2
+echo -e "\n" >&2
+
 echo -e "\n\e[32mRUNNING:\e[0m" >&2
 echo "echo -e '$testcase' | $cling_binary $cling_args" >&2
 echo -e "\n" >&2
