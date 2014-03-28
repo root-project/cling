@@ -573,10 +573,12 @@ namespace clang {
 
   bool DeclUnloader::VisitDeclaratorDecl(DeclaratorDecl* DD) {
     // VisitDeclaratorDecl: ValueDecl
-    auto found = std::find(m_Sema->UnusedFileScopedDecls.begin(/*ExtSource*/0),
+    auto found = std::find(m_Sema->UnusedFileScopedDecls.begin(/*ExtSource*/0,
+                                                               /*Local*/true),
                            m_Sema->UnusedFileScopedDecls.end(), DD);
     if (found != m_Sema->UnusedFileScopedDecls.end())
-      m_Sema->UnusedFileScopedDecls.erase(found, found);
+      m_Sema->UnusedFileScopedDecls.erase(found,
+                                          m_Sema->UnusedFileScopedDecls.end());
 
     return VisitValueDecl(DD);
   }
