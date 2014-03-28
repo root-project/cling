@@ -20,6 +20,7 @@
 #include "clang/Driver/Job.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
+#include "clang/Frontend/VerifyDiagnosticConsumer.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
@@ -265,12 +266,18 @@ namespace cling {
     std::vector<const char*> argvCompile(argv, argv + argc);
     // We do C++ by default; append right after argv[0] name
     // Only insert it if there is no other "-x":
-    bool haveMinusX = false;
-    for (const char* const* iarg = argv; !haveMinusX && iarg < argv + argc;
+    bool hasMinusX = false;
+    bool hasMinusVerify = false;
+    for (const char* const* iarg = argv; iarg < argv + argc;
          ++iarg) {
-      haveMinusX = !strcmp(*iarg, "-x");
+      if (!hasMinusX)
+        hasMinusX = !strcmp(*iarg, "-x");
+      if (!hasMinusVerify)
+        hasMinusVerify = !strcmp(*iarg, "-verify");
+      if (hasMinusX && hasMinusVerify)
+        break;
     }
-    if (!haveMinusX) {
+    if (!hasMinusX) {
       argvCompile.insert(argvCompile.begin() + 1,"-x");
       argvCompile.insert(argvCompile.begin() + 2, "c++");
     }
@@ -289,8 +296,9 @@ namespace cling {
     llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
       Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
                                   DiagnosticPrinter, /*Owns it*/ true));
-    Diags->setSuppressSystemWarnings(true);
-    SetClingCustomDiagnosticMappings(*Diags);
+    // If we are not in test mode, set up our diagnostic mappings
+    if (!hasMinusVerify)
+      SetClingCustomDiagnosticMappings(*Diags);
 
     clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
                                  "cling.out",
@@ -309,6 +317,12 @@ namespace cling {
                                               CC1Args->data() + CC1Args->size(),
                                               *Diags);
     Invocation->getFrontendOpts().DisableFree = true;
+    // Copied from CompilerInstance::createDiagnostics:
+    // Chain in -verify checker, if requested.
+    if (DiagOpts.VerifyDiagnostics)
+      Diags->setClient(new clang::VerifyDiagnosticConsumer(*Diags));
+    // Configure our handling of diagnostics.
+    ProcessWarningOptions(*Diags, DiagOpts);
 
     if (Invocation->getHeaderSearchOpts().UseBuiltinIncludes &&
         !resource_path.empty()) {
