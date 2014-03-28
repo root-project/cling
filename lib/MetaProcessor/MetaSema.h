@@ -100,12 +100,17 @@ namespace cling {
     ///
     void actOnqCommand();
 
+    ///\brief Unloads the last N inputs lines.
+    ///
+    ///\param[in] N - The inputs to unload.
+    ///
+    ActionResult actOnUndoCommand(unsigned N = 1);
+
     ///\brief Actions to be performed on unload command.
     ///
-    ///\param[in] value - The number of transactons to unload. By default it
-    ///                   unloads only the last transaction.
+    ///\param[in] file - The file to unload.
     ///
-    ActionResult actOnUCommand(unsigned value = 1) const;
+    ActionResult actOnUCommand(llvm::StringRef file);
 
     ///\brief Actions to be performed on add include path. It registers new
     /// folder where header files can be searched.

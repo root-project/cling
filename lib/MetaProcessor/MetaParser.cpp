@@ -129,8 +129,7 @@ namespace cling {
       consumeAnyStringToken();
       if (getCurTok().is(tok::raw_ident)) {
         result = true;
-        actionResult =
-          m_Actions->actOnLCommand(getCurTok().getIdent());
+        actionResult = m_Actions->actOnLCommand(getCurTok().getIdent());
         consumeToken();
         if (getCurTok().is(tok::comment)) {
           consumeAnyStringToken();
@@ -267,8 +266,13 @@ namespace cling {
   bool MetaParser::isUCommand(MetaSema::ActionResult& actionResult) {
     actionResult = MetaSema::AR_Failure;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("U")) {
-      actionResult = m_Actions->actOnUCommand();
-      return true;
+      consumeAnyStringToken();
+      llvm::StringRef path;
+      if (getCurTok().is(tok::raw_ident)) {
+        path = getCurTok().getIdent();
+        actionResult = m_Actions->actOnUCommand(path);
+        return true;
+      }
     }
     return false;
   }
@@ -412,9 +416,9 @@ namespace cling {
       skipWhitespace();
       const Token& next = getCurTok();
       if (next.is(tok::constant))
-        m_Actions->actOnUCommand(next.getConstant());
+        m_Actions->actOnUndoCommand(next.getConstant());
       else
-        m_Actions->actOnUCommand();
+        m_Actions->actOnUndoCommand();
       return true;
     }
     return false;

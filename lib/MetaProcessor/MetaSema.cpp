@@ -38,31 +38,19 @@ namespace cling {
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false) { }
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) {
-
-    // Lookup the file
-    clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
-    clang::FileManager& FM = SM.getFileManager();
-    bool needsRegistration = false;
-    const clang::FileEntry* Entry
-      = FM.getFile(file, /*OpenFile*/false, /*CacheFailure*/false);
-    if (Entry) {
-      Watermarks::iterator Pos = m_Watermarks.find(Entry);
-      if (Pos != m_Watermarks.end()) {
-        const Transaction* unloadPoint = Pos->second;
-        while(m_Interpreter.getLastTransaction() != unloadPoint)
-          m_Interpreter.unload(/*numberOfTransactions*/1);
-        // Unload the last one also.
-        m_Interpreter.unload(/*numberOfTransactions*/1);
-        m_Watermarks.erase(Pos);
-      }
-      else
-        needsRegistration = true;
-    }
+    ActionResult result = actOnUCommand(file);
+    if (result != AR_Success)
+      return result;
 
     // TODO: extra checks. Eg if the path is readable, if the file exists...
     if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess) {
-      if (needsRegistration)
+      clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
+      clang::FileManager& FM = SM.getFileManager();
+      const clang::FileEntry* Entry
+        = FM.getFile(file, /*OpenFile*/false, /*CacheFailure*/false);
+      if (Entry && !m_Watermarks[Entry]) // register as a watermark
         m_Watermarks[Entry] = m_Interpreter.getLastTransaction();
+
       return AR_Success;
     }
     return AR_Failure;
@@ -100,10 +88,30 @@ namespace cling {
     m_IsQuitRequested = true;
   }
 
-  MetaSema::ActionResult MetaSema::actOnUCommand(unsigned value /*=1*/) const {
-     // FIXME: unload, once implemented, must return success / failure
-     m_Interpreter.unload(value);
-     return AR_Success;
+  MetaSema::ActionResult MetaSema::actOnUndoCommand(unsigned N/*=1*/) {
+    m_Interpreter.unload(N);
+    return AR_Success;
+  }
+
+  MetaSema::ActionResult MetaSema::actOnUCommand(llvm::StringRef file) {
+    // FIXME: unload, once implemented, must return success / failure
+    // Lookup the file
+    clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
+    clang::FileManager& FM = SM.getFileManager();
+    const clang::FileEntry* Entry
+      = FM.getFile(file, /*OpenFile*/false, /*CacheFailure*/false);
+    if (Entry) {
+      Watermarks::iterator Pos = m_Watermarks.find(Entry);
+      if (Pos != m_Watermarks.end()) {
+        const Transaction* unloadPoint = Pos->second;
+        while(m_Interpreter.getLastTransaction() != unloadPoint)
+          m_Interpreter.unload(/*numberOfTransactions*/1);
+        // Unload the last one also.
+        m_Interpreter.unload(/*numberOfTransactions*/1);
+        m_Watermarks.erase(Pos);
+      }
+    }
+    return AR_Success;
   }
 
   void MetaSema::actOnICommand(llvm::StringRef path) const {

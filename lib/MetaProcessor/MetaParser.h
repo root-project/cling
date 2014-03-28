@@ -36,7 +36,7 @@ namespace cling {
   //                 >Command := '>' FilePath
   //                 qCommand := 'q'
   //                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
-  //                 UCommand := 'U'
+  //                 UCommand := 'U' FilePath
   //                 ICommand := 'I' [FilePath]
   //                 OCommand := 'O'[' ']Constant
   //                 RawInputCommand := 'rawInput' [Constant]
