@@ -120,9 +120,9 @@ namespace cling {
 #ifdef __GLIBCXX__
 # define CLING_CXXABIV __GLIBCXX__
 # define CLING_CXXABIS "__GLIBCXX__"
-#elif _LIBCPP_ABI_VERSION
-# define CLING_CXXABIV _LIBCPP_ABI_VERSION
-# define CLING_CXXABIS "_LIBCPP_ABI_VERSION"
+#elif _LIBCPP_VERSION
+# define CLING_CXXABIV _LIBCPP_VERSION
+# define CLING_CXXABIS "_LIBCPP_VERSION"
 #else
 # define CLING_CXXABIV -1 // intentionally invalid macro name
 # define CLING_CXXABIS "-1" // intentionally invalid macro name
