@@ -64,3 +64,5 @@ echo "run $cling_args < /tmp/testcase" >&2
 echo -e "\n" >&2
 
 echo -e $testcase | $cling_binary $cling_args
+
+#Known failures: Sema/warn-unused-function.c < We cannot know whether we need a function or not
