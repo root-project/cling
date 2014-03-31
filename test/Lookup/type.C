@@ -37,22 +37,22 @@ const LookupHelper& lookup = gCling->getLookupHelper();
 
 QualType cl_A = lookup.findType("A", LookupHelper::WithDiagnostics);
 cl_A.getAsString().c_str()
-//CHECK: ({{const char [*]|const_pointer}}) "class A"
+//CHECK: ({{[^)]+}}) "class A"
 
 QualType cl_B_in_N = lookup.findType("N::B", LookupHelper::WithDiagnostics);
 cl_B_in_N.getAsString().c_str()
-//CHECK: ({{const char [*]|const_pointer}}) "N::B"
+//CHECK: ({{[^)]+}}) "N::B"
 
 QualType cl_C_in_M = lookup.findType("N::M::C", LookupHelper::WithDiagnostics);
 cl_C_in_M.getAsString().c_str()
-//CHECK: ({{const char [*]|const_pointer}}) "N::M::C"
+//CHECK: ({{[^)]+}}) "N::M::C"
 
 QualType builtin_int = lookup.findType("int", LookupHelper::WithDiagnostics);
 builtin_int.getAsString().c_str()
-//CHECK: ({{const char [*]|const_pointer}}) "int"
+//CHECK: ({{[^)]+}}) "int"
 
 QualType typedef_my_int = lookup.findType("my_int", LookupHelper::WithDiagnostics);
 typedef_my_int.getAsString().c_str()
-//CHECK: ({{const char [*]|const_pointer}}) "my_int"
+//CHECK: ({{[^)]+}}) "my_int"
 
 .q

@@ -31,7 +31,7 @@ const clang::Decl* cl_A = lookup.findScope("A", diags);
 printf("cl_A: 0x%lx\n", (unsigned long) cl_A);
 //CHECK: cl_A: 0x{{[1-9a-f][0-9a-f]*$}}
 cast<clang::NamedDecl>(cl_A)->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{const char [*]|const_pointer}}) "A"
+//CHECK-NEXT: ({{[^)]+}}) "A"
 
 .rawInput 1
 namespace N {
@@ -44,7 +44,7 @@ const clang::Decl* cl_A_in_N = lookup.findScope("N::A", diags);
 printf("cl_A_in_N: 0x%lx\n", (unsigned long) cl_A_in_N);
 //CHECK: cl_A_in_N: 0x{{[1-9a-f][0-9a-f]*$}}
 cast<clang::NamedDecl>(cl_A_in_N)->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{const char [*]|const_pointer}}) "N::A"
+//CHECK-NEXT: ({{[^)]+}}) "N::A"
 
 
 .rawInput 1
@@ -61,7 +61,7 @@ const clang::Decl* cl_A_in_NMP = lookup.findScope("N::M::P::A", diags);
 cl_A_in_NMP
 //CHECK: (const clang::Decl *) 0x{{[1-9a-f][0-9a-f]*$}}
 cast<clang::NamedDecl>(cl_A_in_NMP)->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{const char [*]|const_pointer}}) "N::M::P::A"
+//CHECK-NEXT: ({{[^)]+}}) "N::M::P::A"
 
 
 .rawInput 1
@@ -88,5 +88,5 @@ const clang::Type* resType = 0;
 lookup.findScope("W<Int_t>", diags, &resType);
 //resType->dump();
 clang::QualType(resType,0).getAsString().c_str()
-//CHECK-NEXT: ({{const char [*]|const_pointer}}) "W<Int_t>"
+//CHECK-NEXT: ({{[^)]+}}) "W<Int_t>"
 

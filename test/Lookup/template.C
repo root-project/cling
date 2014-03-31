@@ -38,7 +38,7 @@ const clang::ClassTemplateDecl* tmplt_out = lookup.findClassTemplate("TmpltOutsi
 printf("tmplt_out: 0x%lx\n", (unsigned long) tmplt_out);
 //CHECK: tmplt_out: 0x{{[1-9a-f][0-9a-f]*$}}
 tmplt_out->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{const char [*]|const_pointer}}) "TmpltOutside"
+//CHECK-NEXT: ({{[^)]+}}) "TmpltOutside"
 
 
 const clang::ClassTemplateDecl* tmplt_inside = lookup.findClassTemplate("OuterClass::TmpltInside", diags);
@@ -46,7 +46,7 @@ const clang::ClassTemplateDecl* tmplt_inside = lookup.findClassTemplate("OuterCl
 printf("tmplt_inside: 0x%lx\n", (unsigned long) tmplt_out);
 //CHECK: tmplt_inside: 0x{{[1-9a-f][0-9a-f]*$}}
 tmplt_inside->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{const char [*]|const_pointer}}) "OuterClass::TmpltInside"
+//CHECK-NEXT: ({{[^)]+}}) "OuterClass::TmpltInside"
 
 
 const clang::ClassTemplateDecl* tmplt_vec = lookup.findClassTemplate("std::vector", diags);
@@ -54,5 +54,5 @@ const clang::ClassTemplateDecl* tmplt_vec = lookup.findClassTemplate("std::vecto
 printf("tmplt_vec: 0x%lx\n", (unsigned long) tmplt_vec);
 //CHECK: tmplt_vec: 0x{{[1-9a-f][0-9a-f]*$}}
 tmplt_vec->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{const char [*]|const_pointer}}) "std::{{(__1::)?}}vector"
+//CHECK-NEXT: ({{[^)]+}}) "std::{{(__1::)?}}vector"
 

@@ -174,14 +174,14 @@ lookup.findScope("Details::Impl", diags, &t);
 QT = clang::QualType(t, 0);
 //QT.getAsString().c_str()
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "Details::Impl"
+// CHECK: ({{[^)]+}}) "Details::Impl"
 
 // Test the behavior for a class inside an anonymous namespace
 lookup.findScope("InsideAnonymous", diags, &t);
 QT = clang::QualType(t, 0);
 //QT.getAsString().c_str()c
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "class <anonymous namespace>::InsideAnonymous"
+// CHECK: ({{[^)]+}}) "class <anonymous namespace>::InsideAnonymous"
 
 // The above result is not quite want we want, so the client must using 
 // the following:
@@ -194,22 +194,22 @@ Policy.SuppressScope = true;      // Force the scope to be coming from a clang::
 std::string name;
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsStringInternal(name,Policy);
 name.c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "InsideAnonymous"
+// CHECK: ({{[^)]+}}) "InsideAnonymous"
 
 // Test desugaring pointers types:
 QT = lookup.findType("Int_t*", diags);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK:({{const char [*]|const_pointer}}) "int *"
+// CHECK:({{[^)]+}}) "int *"
 
 QT = lookup.findType("const IntPtr_t*", diags);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK:({{const char [*]|const_pointer}}) "int *const *"
+// CHECK:({{[^)]+}}) "int *const *"
 
 
 // Test desugaring reference (both r- or l- value) types:
 QT = lookup.findType("const IntPtr_t&", diags);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK:({{const char [*]|const_pointer}}) "int *const &"
+// CHECK:({{[^)]+}}) "int *const &"
 
 //TODO: QT = lookup.findType("IntPtr_t[32], diags");
 
@@ -217,7 +217,7 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // Test desugaring reference (both r- or l- value) types:
 // QT = lookup.findType("const IntRef_t", diags);
 // Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// should print:({{const char [*]|const_pointer}}) "int &const"
+// should print:({{[^)]+}}) "int &const"
 // but this is actually an illegal type:
 
 // C++ [dcl.ref]p1:
@@ -228,119 +228,122 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 
 // So the following is the right behavior:
 
-QT = lookup.findType("const IntRef_t", diags);
+// Will issue
+// "'const' qualifier on reference type 'IntRef_t' (aka 'int &') has no effect"
+// thus suppress diagnostics
+QT = lookup.findType("const IntRef_t", cling::LookupHelper::NoDiagnostics);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "int &"
+// CHECK: ({{[^)]+}}) "int &"
 
 // Test desugaring reference (both r- or l- value) types:
 QT = lookup.findType("IntRef_t", diags);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK:({{const char [*]|const_pointer}}) "int &"
+// CHECK:({{[^)]+}}) "int &"
 
 
 //Desugar template parameters:
 lookup.findScope("A<B<Double32_t, Int_t*> >", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK:({{const char [*]|const_pointer}}) "A<B<Double32_t, int *> >"
+// CHECK:({{[^)]+}}) "A<B<Double32_t, int *> >"
 
 lookup.findScope("A<B<Double32_t, std::size_t*> >", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK:({{const char [*]|const_pointer}}) "A<B<Double32_t, unsigned {{long|int}} *> >"
+// CHECK:({{[^)]+}}) "A<B<Double32_t, unsigned {{long|int}} *> >"
 
 lookup.findScope("CTD", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "C<A<B<Double32_t, int> >, Double32_t>"
+// CHECK: ({{[^)]+}}) "C<A<B<Double32_t, int> >, Double32_t>"
 
 lookup.findScope("CTDConst", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "C<A<B<const Double32_t, const int> >, Double32_t>"
+// CHECK: ({{[^)]+}}) "C<A<B<const Double32_t, const int> >, Double32_t>"
 
 lookup.findScope("std::pair<const std::string,int>", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "std::pair<const std::string, int>"
+// CHECK: ({{[^)]+}}) "std::pair<const std::string, int>"
 
 lookup.findScope("NS::Array<NS::ArrayType<double> >", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::Array<NS::ArrayType<double> >"
+// CHECK: ({{[^)]+}}) "NS::Array<NS::ArrayType<double> >"
 
 lookup.findScope("NS::Array<NS::ArrayType<Double32_t> >", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::Array<NS::ArrayType<Double32_t> >"
+// CHECK: ({{[^)]+}}) "NS::Array<NS::ArrayType<Double32_t> >"
 
 lookup.findScope("NS::Container<Long_t>::Content", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::Container<long>::Content"
+// CHECK: ({{[^)]+}}) "NS::Container<long>::Content"
 
 QT = lookup.findType("NS::Container<Long_t>::Value_t", diags);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "long"
+// CHECK: ({{[^)]+}}) "long"
 
 lookup.findScope("NS::Container<Long_t>::Content_t", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::Container<long>::Content"
+// CHECK: ({{[^)]+}}) "NS::Container<long>::Content"
 
 lookup.findScope("NS::Container<Long_t>::Impl_t", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "Details::Impl"
+// CHECK: ({{[^)]+}}) "Details::Impl"
 
 lookup.findScope("NS::Container<Double32_t>::Content", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::Container<Double32_t>::Content"
+// CHECK: ({{[^)]+}}) "NS::Container<Double32_t>::Content"
 
 QT = lookup.findType("NS::Container<Double32_t>::Value_t", diags);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "double"
+// CHECK: ({{[^)]+}}) "double"
 // Really we would want it to say Double32_t but oh well.
 
 lookup.findScope("NS::Container<Double32_t>::Content_t", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::Container<Double32_t>::Content"
+// CHECK: ({{[^)]+}}) "NS::Container<Double32_t>::Content"
 
 lookup.findScope("NS::Container<Double32_t>::Impl_t", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "Details::Impl"
+// CHECK: ({{[^)]+}}) "Details::Impl"
 
 lookup.findScope("NS::TDataPointF", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::TDataPoint<float>"
+// CHECK: ({{[^)]+}}) "NS::TDataPoint<float>"
 
 lookup.findScope("NS::TDataPointD32", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::TDataPoint<Double32_t>"
+// CHECK: ({{[^)]+}}) "NS::TDataPoint<Double32_t>"
 
 lookup.findScope("NS::ArrayType<float,1>", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::ArrayType<float, 1>"
+// CHECK: ({{[^)]+}}) "NS::ArrayType<float, 1>"
 
 lookup.findScope("NS::FArray", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "NS::ArrayType<float, 2>"
+// CHECK: ({{[^)]+}}) "NS::ArrayType<float, 2>"
 
 QT = lookup.findType("const NS::IntNS_t", diags);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "const int"
+// CHECK: ({{[^)]+}}) "const int"
 
 lookup.findScope("vector<Details::Impl>::value_type", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK: ({{const char [*]|const_pointer}}) "Details::Impl"
+// CHECK: ({{[^)]+}}) "Details::Impl"
 
 const clang::Decl*decl=lookup.findScope("Embedded_objects", diags,&t);
 if (decl) {
