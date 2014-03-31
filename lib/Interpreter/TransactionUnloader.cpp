@@ -375,7 +375,7 @@ namespace clang {
     ///
     ///\returns true on success.
     ///
-    bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* 
+    bool VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl*
                                               CTSD);
 
     ///@}
@@ -991,56 +991,102 @@ namespace clang {
     return Successful;
   }
 
+  namespace {
+  // A template specialization is attached to the list of specialization of
+  // the templated class.
+  //
+  class ClassTemplateDeclExt : public ClassTemplateDecl {
+  public:
+    static void removeSpecialization(ClassTemplateDecl* self,
+                                     ClassTemplateSpecializationDecl* spec) {
+      assert(!isa<ClassTemplatePartialSpecializationDecl>(spec) &&
+             "Use removePartialSpecialization");
+      assert(self && spec && "Cannot be null!");
+      assert(spec == spec->getCanonicalDecl()
+             && "Not the canonical specialization!?");
+      typedef llvm::SmallVector<ClassTemplateSpecializationDecl*, 4> Specializations;
+      typedef llvm::FoldingSetVector<ClassTemplateSpecializationDecl> Set;
+
+      ClassTemplateDeclExt* This = (ClassTemplateDeclExt*) self;
+      Specializations specializations;
+      Set& specs = This->getSpecializations();
+
+      if (!specs.size()) // nothing to remove
+        return;
+
+      // Collect all the specializations without the one to remove.
+      for(Set::iterator I = specs.begin(),E = specs.end(); I != E; ++I){
+        if (&*I != spec)
+          specializations.push_back(&*I);
+      }
+
+      This->getSpecializations().clear();
+
+      //Readd the collected specializations.
+      void* InsertPos = 0;
+      ClassTemplateSpecializationDecl* CTSD = 0;
+      for (size_t i = 0, e = specializations.size(); i < e; ++i) {
+        CTSD = specializations[i];
+        assert(CTSD && "Must not be null.");
+        // Avoid assertion on add.
+        CTSD->SetNextInBucket(0);
+        This->AddSpecialization(CTSD, InsertPos);
+      }
+    }
+
+    static void removePartialSpecialization(ClassTemplateDecl* self,
+                                 ClassTemplatePartialSpecializationDecl* spec) {
+      assert(self && spec && "Cannot be null!");
+      assert(spec == spec->getCanonicalDecl()
+             && "Not the canonical specialization!?");
+      typedef llvm::SmallVector<ClassTemplatePartialSpecializationDecl*, 4>
+        Specializations;
+      typedef llvm::FoldingSetVector<ClassTemplatePartialSpecializationDecl> Set;
+
+      ClassTemplateDeclExt* This = (ClassTemplateDeclExt*) self;
+      Specializations specializations;
+      Set& specs = This->getPartialSpecializations();
+
+      if (!specs.size()) // nothing to remove
+        return;
+
+      // Collect all the specializations without the one to remove.
+      for(Set::iterator I = specs.begin(),E = specs.end(); I != E; ++I){
+        if (&*I != spec)
+          specializations.push_back(&*I);
+      }
+
+      This->getPartialSpecializations().clear();
+
+      //Readd the collected specializations.
+      void* InsertPos = 0;
+      ClassTemplatePartialSpecializationDecl* CTPSD = 0;
+      for (size_t i = 0, e = specializations.size(); i < e; ++i) {
+        CTPSD = specializations[i];
+        assert(CTPSD && "Must not be null.");
+        // Avoid assertion on add.
+        CTPSD->SetNextInBucket(0);
+        This->AddPartialSpecialization(CTPSD, InsertPos);
+      }
+    }
+  };
+  } // end anonymous namespace
+
+
   bool DeclUnloader::VisitClassTemplateSpecializationDecl(
                                         ClassTemplateSpecializationDecl* CTSD) {
-
-    // A template specialization is attached to the list of specialization of
-    // the templated class.
-    //
-    class ClassTemplateDeclExt : public ClassTemplateDecl {
-    public:
-      static void removeSpecialization(ClassTemplateDecl* self,
-                                       ClassTemplateSpecializationDecl* spec) {
-        assert(self && spec && "Cannot be null!");
-        assert(spec == spec->getCanonicalDecl()
-               && "Not the canonical specialization!?");
-        typedef llvm::SmallVector<ClassTemplateSpecializationDecl*, 4> Specializations;
-        typedef llvm::FoldingSetVector<ClassTemplateSpecializationDecl> Set;
-
-        ClassTemplateDeclExt* This = (ClassTemplateDeclExt*) self;
-        Specializations specializations;
-        Set& specs = This->getSpecializations();
-
-        if (!specs.size()) // nothing to remove
-          return;
-
-        // Collect all the specializations without the one to remove.
-        for(Set::iterator I = specs.begin(),E = specs.end(); I != E; ++I){
-          if (&*I != spec)
-            specializations.push_back(&*I);
-        }
-
-        This->getSpecializations().clear();
-
-        //Readd the collected specializations.
-        void* InsertPos = 0;
-        ClassTemplateSpecializationDecl* CTSD = 0;
-        for (size_t i = 0, e = specializations.size(); i < e; ++i) {
-          CTSD = specializations[i];
-          assert(CTSD && "Must not be null.");
-          // Avoid assertion on add.
-          CTSD->SetNextInBucket(0);
-          This->AddSpecialization(CTSD, InsertPos);
-        }
-      }
-    };
-
+    // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
+    bool Successful = VisitCXXRecordDecl(CTSD);
     ClassTemplateSpecializationDecl* CanonCTSD =
       static_cast<ClassTemplateSpecializationDecl*>(CTSD->getCanonicalDecl());
-    ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
-                                               CanonCTSD);
-    // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
-    return VisitCXXRecordDecl(CTSD);
+    if (auto D = dyn_cast<ClassTemplatePartialSpecializationDecl>(CanonCTSD))
+      ClassTemplateDeclExt::removePartialSpecialization(
+                                                    D->getSpecializedTemplate(),
+                                                    D);
+    else
+      ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
+                                                 CanonCTSD);
+    return Successful;
   }
 } // end namespace clang
 
