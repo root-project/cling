@@ -18,7 +18,7 @@ public:
   static int get12(){ return 12; } 
   double getMember(){ return member; } 
 }; MyClass m; m.getMember(); MyClass::get12();
-.U
+.undo
 .compareState "preUnload"
 //CHECK-NOT: Differences
 float MyClass = 1.1

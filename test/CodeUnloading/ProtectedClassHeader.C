@@ -9,6 +9,6 @@
 // RUN: cat %s | %cling -I%p
 .storeState "a"
 #include "ProtectedClass.h"
-.U
+.undo
 .compareState "a"
 // CHECK-NOT: Differences

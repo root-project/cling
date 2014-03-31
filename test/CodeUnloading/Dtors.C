@@ -22,7 +22,7 @@ public:
     printf("Dtor called, N=%d\n", N);
   }
 }; ClassWithDtor m;
-.U
+.undo
 //CHECK: Dtor called, N=0
 .compareState "preUnload"
 //CHECK-NOT: Differences
