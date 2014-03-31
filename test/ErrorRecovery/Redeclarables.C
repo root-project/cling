@@ -29,7 +29,7 @@ int my_funct() {
 
 int my_int = 20;
 
-my_int
+(void)my_int
 // CHECK: (int) 20
 
 my_funct()
