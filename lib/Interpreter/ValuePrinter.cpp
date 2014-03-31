@@ -288,7 +288,8 @@ static void StreamValue(llvm::raw_ostream& o, const void* const p,
   else if (Ty.getAsString().compare("class std::basic_string<char>") == 0
            || Ty.getAsString().compare("class std::__1::basic_string<char, "
                                        "struct std::__1::char_traits<char>, "
-                                       "class std::__1::allocator<char> >")
+                                       "class std::__1::allocator<char> >") == 0
+           || Ty.getAsString().compare("class std::__1::basic_string<char>")
            == 0) {
     StreamObj(o, p, ValuePrinterInfo(Ty, &C));
     o << " "; // force a space
