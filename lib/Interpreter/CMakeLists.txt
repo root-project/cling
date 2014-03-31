@@ -17,7 +17,6 @@ set( LLVM_LINK_COMPONENTS
 )
 
 add_cling_library(clingInterpreter
-  ASTNodeEraser.cpp
   AutoSynthesizer.cpp
   BackendPass.cpp
   CheckEmptyTransactionTransformer.cpp
@@ -41,6 +40,7 @@ add_cling_library(clingInterpreter
   StoredValueRef.cpp
   Transaction.cpp
   TransactionTransformer.cpp
+  TransactionUnloader.cpp
   Value.cpp
   ValuePrinter.cpp
   ValuePrinterInfo.cpp
