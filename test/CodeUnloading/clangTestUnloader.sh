@@ -40,9 +40,10 @@ cling_args="$cling_args $langopt"
 
 testcase=".rawInput\n.storeState \"a\"\n";
 testcase+=".L $file\n"
-#testcase+=".L $file\n"
-if echo $cling_args | grep '-verify' > /dev/null || ! grep -q 'expected-error' $file > /dev/null; then
-    testcase+=".U\n"
+testcase+=".L $file\n"
+clang_preprocessed=$(`dirname $cling_binary`/clang `echo "$invocation -E -CC" | sed 's,\-verify, ,g'`)
+if echo $cling_args | grep '-verify' > /dev/null && ! echo $clang_preprocessed | grep -q 'expected-error' > /dev/null; then
+    testcase+=".U $file\n"
 fi
 testcase+=".compareState \"a\"\n"
 testcase+=".q"
