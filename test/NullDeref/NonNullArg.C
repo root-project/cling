@@ -12,9 +12,9 @@
 // XFAIL: darwin
 
 char *p = 0;
-(void)strcmp("a", p); // expected-warning {{null passed to a callee which requires a non-null argument}}
+strcmp("a", p); // expected-warning {{null passed to a callee which requires a non-null argument}}
 
-(void)strcmp(p, "a"); // expected-warning {{null passed to a callee which requires a non-null argument}}
+strcmp(p, "a"); // expected-warning {{null passed to a callee which requires a non-null argument}}
 
 extern "C" int printf(const char* fmt, ...);
 .rawInput 1

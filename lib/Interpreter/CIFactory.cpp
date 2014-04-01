@@ -267,14 +267,11 @@ namespace cling {
     // We do C++ by default; append right after argv[0] name
     // Only insert it if there is no other "-x":
     bool hasMinusX = false;
-    bool hasMinusVerify = false;
     for (const char* const* iarg = argv; iarg < argv + argc;
          ++iarg) {
       if (!hasMinusX)
         hasMinusX = !strcmp(*iarg, "-x");
-      if (!hasMinusVerify)
-        hasMinusVerify = !strcmp(*iarg, "-verify");
-      if (hasMinusX && hasMinusVerify)
+      if (hasMinusX)
         break;
     }
     if (!hasMinusX) {
@@ -296,10 +293,6 @@ namespace cling {
     llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
       Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
                                   DiagnosticPrinter, /*Owns it*/ true));
-    // If we are not in test mode, set up our diagnostic mappings
-    if (!hasMinusVerify)
-      SetClingCustomDiagnosticMappings(*Diags);
-
     clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
                                  "cling.out",
                                  *Diags);
@@ -462,9 +455,6 @@ namespace cling {
     CI->getCodeGenOpts().VerifyModule = 0; // takes too long
 
     return CI.take(); // Passes over the ownership to the caller.
-  }
-
-  void CIFactory::SetClingCustomDiagnosticMappings(DiagnosticsEngine& Diags) {
   }
 
   void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {
