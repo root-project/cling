@@ -63,7 +63,8 @@ namespace cling {
       //
       P->SkipUntil(tok::eof);
       PP.enableIncrementalProcessing(ResetIncrementalProcessing);
-      P->getActions().getDiagnostics().Reset();
+      // Doesn't reset the diagnostic mappings
+      P->getActions().getDiagnostics().Reset(/*soft=*/true);
       PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
       const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking =
          OldSpellChecking;
@@ -262,7 +263,8 @@ namespace cling {
     //  Cleanup after failed parse as a nested-name-specifier.
     //
     P.SkipUntil(clang::tok::eof);
-    S.getDiagnostics().Reset();
+    // Doesn't reset the diagnostic mappings
+    S.getDiagnostics().Reset(/*soft=*/true);
     //
     //  Setup to reparse as a type.
     //
@@ -970,7 +972,8 @@ namespace cling {
     //  Cleanup after prototype parse.
     //
     P.SkipUntil(clang::tok::eof);
-    S.getDiagnostics().Reset();
+    // Doesn't reset the diagnostic mappings
+    S.getDiagnostics().Reset(/*soft=*/true);
 
     return true;
   }
@@ -1374,7 +1377,8 @@ namespace cling {
     //  Cleanup after the arg list parse.
     //
     P.SkipUntil(clang::tok::eof);
-    S.getDiagnostics().Reset();
+    // Doesn't reset the diagnostic mappings
+    S.getDiagnostics().Reset(/*soft=*/true);
     return true;
   }
 
