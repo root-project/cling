@@ -162,7 +162,7 @@ namespace cling {
     ///\returns The function found or null.
      const clang::FunctionDecl*
      findFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
-                       const llvm::SmallVector<clang::QualType, 4>& funcProto,
+                       const llvm::SmallVectorImpl<clang::QualType>& funcProto,
                        DiagSetting diagOnOff,
                        bool objectIsConst = false) const;
 
@@ -197,7 +197,7 @@ namespace cling {
     ///\returns The function found or null.
     const clang::FunctionDecl*
     matchFunctionProto(const clang::Decl* scopeDecl, llvm::StringRef funcName,
-                       const llvm::SmallVector<clang::QualType, 4>& funcProto,
+                       const llvm::SmallVectorImpl<clang::QualType>& funcProto,
                        DiagSetting diagOnOff, bool objectIsConst) const;
 
     ///\brief Lookup given argument list and return each argument as an
@@ -208,7 +208,7 @@ namespace cling {
     ///\param [in] diagOnOff - whether to diagnose lookup failures.
     ///
     void findArgList(llvm::StringRef argList,
-                     llvm::SmallVector<clang::Expr*, 4>& argExprs,
+                     llvm::SmallVectorImpl<clang::Expr*>& argExprs,
                      DiagSetting diagOnOff) const;
 
 

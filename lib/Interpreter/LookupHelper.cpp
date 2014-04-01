@@ -461,12 +461,12 @@ namespace cling {
   }
 
   static bool FuncArgTypesMatch(const ASTContext& C,
-                                const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                                const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                                 const FunctionProtoType* FPT) {
     // FIXME: What if FTP->arg_size() != GivenArgTypes.size()?
     FunctionProtoType::param_type_iterator ATI = FPT->param_type_begin();
     FunctionProtoType::param_type_iterator E = FPT->param_type_end();
-    llvm::SmallVector<Expr*, 4>::const_iterator GAI = GivenArgs.begin();
+    llvm::SmallVectorImpl<Expr*>::const_iterator GAI = GivenArgs.begin();
     for (; ATI && (ATI != E); ++ATI, ++GAI) {
       if ((*GAI)->isLValue()) {
         // If the user specified a reference we may have transform it into
@@ -488,7 +488,7 @@ namespace cling {
 
   static bool IsOverload(const ASTContext& C,
                          const TemplateArgumentListInfo* FuncTemplateArgs,
-                         const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                         const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                          const FunctionDecl* FD) {
 
     //FunctionTemplateDecl* FTD = FD->getDescribedFunctionTemplate();
@@ -509,7 +509,7 @@ namespace cling {
   static
   const FunctionDecl* overloadFunctionSelector(DeclContext* foundDC,
                                                bool objectIsConst,
-                                  const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                                  const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                                      LookupResult &Result,
                                      DeclarationNameInfo &FuncNameInfo,
                               const TemplateArgumentListInfo* FuncTemplateArgs,
@@ -632,7 +632,7 @@ namespace cling {
   static
   const FunctionDecl* matchFunctionSelector(DeclContext* foundDC,
                                             bool objectIsConst,
-                                  const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                                  const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                                      LookupResult &Result,
                                      DeclarationNameInfo &FuncNameInfo,
                               const TemplateArgumentListInfo* FuncTemplateArgs,
@@ -800,12 +800,12 @@ namespace cling {
   template <typename T>
   T findFunction(DeclContext* foundDC, CXXScopeSpec &SS,
                  llvm::StringRef funcName,
-                 const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                 const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                  bool objectIsConst,
                  ASTContext& Context, Parser &P, Sema &S,
                  T (*functionSelector)(DeclContext* foundDC,
                                        bool objectIsConst,
-                                  const llvm::SmallVector<Expr*, 4> &GivenArgs,
+                                  const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                                        LookupResult &Result,
                                        DeclarationNameInfo &FuncNameInfo,
                               const TemplateArgumentListInfo* FuncTemplateArgs,
@@ -896,14 +896,14 @@ namespace cling {
   }
 
   static
-  bool getExprProto(llvm::SmallVector<ExprAlloc, 4> &ExprMemory,
-                    llvm::SmallVector<Expr*, 4> &GivenArgs,
-                    const llvm::SmallVector<QualType, 4> &GivenTypes) {
+  bool getExprProto(llvm::SmallVectorImpl<ExprAlloc> &ExprMemory,
+                    llvm::SmallVectorImpl<Expr*> &GivenArgs,
+                    const llvm::SmallVectorImpl<QualType> &GivenTypes) {
     //
     //  Create the array of Expr from the array of Types.
     //
      
-    typedef llvm::SmallVector<QualType, 4>::const_iterator iterator;
+    typedef llvm::SmallVectorImpl<QualType>::const_iterator iterator;
     for(iterator iter = GivenTypes.begin(), end = GivenTypes.end();
         iter != end;
         ++iter) {
@@ -925,8 +925,8 @@ namespace cling {
   }
 
   static
-  bool ParseProto(llvm::SmallVector<ExprAlloc, 4> &ExprMemory,
-                  llvm::SmallVector<Expr*, 4> &GivenArgs,
+  bool ParseProto(llvm::SmallVectorImpl<ExprAlloc> &ExprMemory,
+                  llvm::SmallVectorImpl<Expr*> &GivenArgs,
                   ASTContext& Context, Parser &P,Sema &S) {
     //
     //  Parse the prototype now.
@@ -981,7 +981,7 @@ namespace cling {
   static
   const FunctionTemplateDecl* findFunctionTemplateSelector(DeclContext* ,
                                                        bool /* objectIsConst */,
-                                            const llvm::SmallVector<Expr*, 4> &,
+                                            const llvm::SmallVectorImpl<Expr*> &,
                                                            LookupResult &Result,
                                                           DeclarationNameInfo &,
                            const TemplateArgumentListInfo* ExplicitTemplateArgs,
@@ -1048,7 +1048,7 @@ namespace cling {
   static
   const FunctionDecl* findAnyFunctionSelector(DeclContext* ,
                            bool /* objectIsConst */,
-                           const llvm::SmallVector<Expr*, 4> &,
+                           const llvm::SmallVectorImpl<Expr*> &,
                            LookupResult &Result,
                            DeclarationNameInfo &,
                            const TemplateArgumentListInfo* ExplicitTemplateArgs,
@@ -1142,7 +1142,7 @@ namespace cling {
   const FunctionDecl*
   LookupHelper::findFunctionProto(const Decl* scopeDecl,
                                   llvm::StringRef funcName,
-                                 const llvm::SmallVector<QualType,4>& funcProto,
+                                 const llvm::SmallVectorImpl<QualType>& funcProto,
                                   DiagSetting diagOnOff, bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
     //
@@ -1283,7 +1283,7 @@ namespace cling {
   const FunctionDecl*
   LookupHelper::matchFunctionProto(const Decl* scopeDecl,
                                    llvm::StringRef funcName,
-                                const llvm::SmallVector<QualType, 4>& funcProto,
+                                const llvm::SmallVectorImpl<QualType>& funcProto,
                                    DiagSetting diagOnOff,
                                    bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
@@ -1329,7 +1329,7 @@ namespace cling {
   }
    
   static
-  bool ParseArgs(llvm::SmallVector<Expr*, 4> &GivenArgs,
+  bool ParseArgs(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                  ASTContext& Context, Parser &P, Sema &S) {
 
     //
@@ -1429,7 +1429,7 @@ namespace cling {
   }
 
   void LookupHelper::findArgList(llvm::StringRef argList,
-                                 llvm::SmallVector<Expr*, 4>& argExprs,
+                                 llvm::SmallVectorImpl<Expr*>& argExprs,
                                  DiagSetting diagOnOff) const {
     if (argList.empty()) return;
 
@@ -1509,7 +1509,7 @@ namespace cling {
   static
   bool hasFunctionSelector(DeclContext* ,
                            bool /* objectIsConst */,
-                           const llvm::SmallVector<Expr*, 4> &,
+                           const llvm::SmallVectorImpl<Expr*> &,
                            LookupResult &Result,
                            DeclarationNameInfo &,
                            const TemplateArgumentListInfo* ,
