@@ -75,9 +75,15 @@ namespace {
 namespace cling {
 
 Value::Value(const Value& other):
-  m_Type(other.m_Type), m_Storage(other.m_Storage) {
+  m_Storage(other.m_Storage), m_Type(other.m_Type) {
   if (needsManagedAllocation())
     AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
+}
+
+Value::Value(Value&& other):
+  m_Storage(other.m_Storage), m_Type(other.m_Type) {
+  // Invalidate other so it will not release.
+  other.m_Type = 0;
 }
 
 Value::Value(clang::QualType clangTy, Interpreter* Interp):
@@ -96,6 +102,20 @@ Value& Value::operator =(const Value& other) {
   m_Storage = other.m_Storage;
   if (needsManagedAllocation())
     AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
+  return *this;
+}
+
+Value& Value::operator =(Value&& other) {
+  // Release old value.
+  if (needsManagedAllocation())
+    AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Release();
+
+  // Move new one.
+  m_Type = other.m_Type;
+  m_Storage = other.m_Storage;
+  // Invalidate other so it will not release.
+  other.m_Type = 0;
+
   return *this;
 }
 

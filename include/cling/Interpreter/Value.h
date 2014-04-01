@@ -78,6 +78,8 @@ namespace cling {
     Value(): m_Type(0) {}
     /// \brief Copy a value.
     Value(const Value& other);
+    /// \brief Move a value.
+    Value(Value&& other);
     /// \brief Construct a valid but ininitialized Value. After this call the
     ///   value's storage can be accessed; i.e. calls ManagedAllocate() if
     ///   needed.
@@ -86,6 +88,7 @@ namespace cling {
     ~Value();
 
     Value& operator =(const Value& other);
+    Value& operator =(Value&& other);
 
     clang::QualType getType() const;
 
