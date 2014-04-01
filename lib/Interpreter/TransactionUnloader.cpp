@@ -804,8 +804,8 @@ namespace clang {
       declsToErase.push_back(*I);
     }
 
-    for(Decls::iterator I = declsToErase.begin(), E = declsToErase.end();
-        I != E; ++I) {
+    for(Decls::reverse_iterator I = declsToErase.rbegin(),
+          E = declsToErase.rend(); I != E; ++I) {
       Successful = Visit(*I) && Successful;
       assert(Successful);
     }
