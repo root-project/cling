@@ -882,11 +882,25 @@ namespace cling {
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
 
+    // Disable warnings which doesn't make sense when using the prompt
+    // This gets reset with the clang::Diagnostics().Reset(/*soft*/=false)
+    SourceLocation Loc = m_IncrParser->getLastMemoryBufferEndLoc();
+    DiagnosticsEngine& Diags = getCI()->getDiagnostics();
+    Diags.pushMappings(Loc);
+    Loc = Loc.getLocWithOffset(1);
+    Diags.setDiagnosticMapping(clang::diag::warn_unused_expr,
+                               clang::diag::MAP_IGNORE, Loc);
+    Diags.setDiagnosticMapping(clang::diag::warn_unused_call,
+                               clang::diag::MAP_IGNORE, Loc);
+    Diags.setDiagnosticMapping(clang::diag::warn_unused_comparison,
+                               clang::diag::MAP_IGNORE, Loc);
+    Diags.setDiagnosticMapping(clang::diag::ext_return_has_expr,
+                               clang::diag::MAP_IGNORE, Loc);
+    Loc = Loc.getLocWithOffset(1);
     if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
-      //FIXME: uncomment when the macro support comes in the transaction
-      //assert((!V || lastT->size()) && "No decls created!?");
+      Diags.popMappings(Loc);
       assert((lastT->getState() == Transaction::kCommitted
-              || lastT->getState() == Transaction::kRolledBack) 
+              || lastT->getState() == Transaction::kRolledBack)
              && "Not committed?");
       if (lastT->getIssuedDiags() != Transaction::kErrors) {
         if (!lastT->getWrapperFD()) // no wrapper to run
@@ -899,6 +913,7 @@ namespace cling {
 
       return Interpreter::kFailure;
     }
+    Diags.popMappings(Loc);
     return Interpreter::kSuccess;
   }
 

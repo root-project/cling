@@ -108,6 +108,7 @@ namespace cling {
     clang::Parser* getParser() const { return m_Parser.get(); }
     clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen.get(); }
     bool hasCodeGenerator() const { return m_CodeGen.get(); }
+    clang::SourceLocation getLastMemoryBufferEndLoc() const;
 
     /// \{
     /// \name Transaction Support

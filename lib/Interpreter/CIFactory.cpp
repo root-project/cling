@@ -465,17 +465,6 @@ namespace cling {
   }
 
   void CIFactory::SetClingCustomDiagnosticMappings(DiagnosticsEngine& Diags) {
-    // Disable warnings which doesn't make sense when using the prompt
-    // This gets reset with the clang::Diagnostics().Reset(/*soft*/=false)
-    SourceLocation noLoc;
-    Diags.setDiagnosticMapping(clang::diag::warn_unused_expr,
-                               clang::diag::MAP_IGNORE, noLoc);
-    Diags.setDiagnosticMapping(clang::diag::warn_unused_call,
-                               clang::diag::MAP_IGNORE, noLoc);
-    Diags.setDiagnosticMapping(clang::diag::warn_unused_comparison,
-                               clang::diag::MAP_IGNORE, noLoc);
-    Diags.setDiagnosticMapping(clang::diag::ext_return_has_expr,
-                               clang::diag::MAP_IGNORE, noLoc);
   }
 
   void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {

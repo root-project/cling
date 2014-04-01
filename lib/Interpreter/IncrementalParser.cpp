@@ -143,6 +143,12 @@ namespace cling {
 
   }
 
+  SourceLocation IncrementalParser::getLastMemoryBufferEndLoc() const {
+    const SourceManager& SM = getCI()->getSourceManager();
+    SourceLocation Result = SM.getLocForStartOfFile(m_VirtualFileID);
+    return Result.getLocWithOffset(m_MemoryBuffers.size() + 1);
+  }
+
   IncrementalParser::~IncrementalParser() {
     if (hasCodeGenerator()) {
       getCodeGenerator()->ReleaseModule();
@@ -612,8 +618,7 @@ namespace cling {
 
     // Create SourceLocation, which will allow clang to order the overload
     // candidates for example
-    SourceLocation NewLoc = SM.getLocForStartOfFile(m_VirtualFileID);
-    NewLoc = NewLoc.getLocWithOffset(m_MemoryBuffers.size() + 1);
+    SourceLocation NewLoc = getLastMemoryBufferEndLoc().getLocWithOffset(1);
 
     // Create FileID for the current buffer
     FileID FID = SM.createFileIDForMemBuffer(m_MemoryBuffers.back(),
