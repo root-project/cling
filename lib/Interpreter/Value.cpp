@@ -24,6 +24,7 @@ namespace {
   ///  value's object at m_Payload. This class does not inherit from
   ///  llvm::RefCountedBase because deallocation cannot use this type but must
   ///  free the character array.
+
   class AllocatedValue {
   public:
     typedef void (*DtorFunc_t)(void*);
@@ -38,12 +39,22 @@ namespace {
     ///\brief The start of the allocation.
     char m_Payload[1];
 
+    static DtorFunc_t PtrToFunc(void* ptr) {
+      union {
+        void* m_Ptr;
+        DtorFunc_t m_Func;
+      };
+      m_Ptr = ptr;
+      return m_Func;
+    }
+
+
   public:
     ///\brief Initialize the storage management part of the allocated object.
     ///  The allocator is referencing it, thus initialize m_RefCnt with 1.
     ///\param [in] dtorFunc - the function to be called before deallocation.
     AllocatedValue(void* dtorFunc):
-      m_RefCnt(1), m_DtorFunc((DtorFunc_t)dtorFunc) {}
+      m_RefCnt(1), m_DtorFunc(PtrToFunc(dtorFunc)) {}
 
     char* getPayload() { return m_Payload; }
 
