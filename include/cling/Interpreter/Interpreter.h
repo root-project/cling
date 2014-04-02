@@ -176,6 +176,13 @@ namespace cling {
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
 
+    ///\ brief The last pragma pop point we faked. This helps emulating clang's
+    /// logic when it comes to pragma handling and diagnostic states.
+    /// NOTE: this approach continues to add up states, which can be a
+    /// performance penalty.
+    ///
+    unsigned m_LastCustomPragmaDiagPopPoint;
+
     ///\brief: FIXME: workaround until JIT supports exceptions
     static jmp_buf* m_JumpBuf;
 

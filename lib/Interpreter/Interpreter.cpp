@@ -871,7 +871,7 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
-  Interpreter::EvaluateInternal(const std::string& input, 
+  Interpreter::EvaluateInternal(const std::string& input,
                                 const CompilationOptions& CO,
                                 Value* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
@@ -884,9 +884,16 @@ namespace cling {
 
     // Disable warnings which doesn't make sense when using the prompt
     // This gets reset with the clang::Diagnostics().Reset(/*soft*/=false)
+    // using clang's API we simulate:
+    // #pragma warning push
+    // #pragma warning ignore ...
+    // #pragma warning ignore ...
+    // #pragma warning pop
     SourceLocation Loc = m_IncrParser->getLastMemoryBufferEndLoc();
     DiagnosticsEngine& Diags = getCI()->getDiagnostics();
     Diags.pushMappings(Loc);
+    // The source locations of #pragma warning ignore must be greater than
+    // the ones from #pragma push
     Loc = Loc.getLocWithOffset(1);
     Diags.setDiagnosticMapping(clang::diag::warn_unused_expr,
                                clang::diag::MAP_IGNORE, Loc);
@@ -896,8 +903,16 @@ namespace cling {
                                clang::diag::MAP_IGNORE, Loc);
     Diags.setDiagnosticMapping(clang::diag::ext_return_has_expr,
                                clang::diag::MAP_IGNORE, Loc);
-    Loc = Loc.getLocWithOffset(1);
     if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
+      Loc = m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
+      // if the location was the same we are in recursive calls and to avoid an
+      // assert in clang we should increment by a value.
+      if (SourceLocation::getFromRawEncoding(m_LastCustomPragmaDiagPopPoint)
+          == Loc)
+        // Nested #pragma pop-s must be on different source locations.
+        Loc = Loc.getLocWithOffset(1);
+      m_LastCustomPragmaDiagPopPoint = Loc.getRawEncoding();
+
       Diags.popMappings(Loc);
       assert((lastT->getState() == Transaction::kCommitted
               || lastT->getState() == Transaction::kRolledBack)
@@ -913,7 +928,7 @@ namespace cling {
 
       return Interpreter::kFailure;
     }
-    Diags.popMappings(Loc);
+    Diags.popMappings(Loc.getLocWithOffset(1));
     return Interpreter::kSuccess;
   }
 
