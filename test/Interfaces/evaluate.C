@@ -17,6 +17,9 @@ V // CHECK: (cling::Value) <<<invalid>>> @0x{{.*}}
 gCling->evaluate("return 1;", V);
 V // CHECK: (cling::Value) boxes [(int) 1]
 
+gCling->evaluate("(void)V", V);
+V // CHECK-NEXT: (cling::Value) boxes [(void) @0x{{.*}}]
+
 // Returns must put the result in the Value.
 bool cond = true;
 gCling->evaluate("if (cond) return \"true\"; else return 0;", V);

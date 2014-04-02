@@ -107,58 +107,56 @@ namespace cling {
         if (lastExprTy->isDependentType())
           continue;
         // Set up lastExpr properly.
-        if (!lastExprTy->isVoidType()) {
-          // Change the void function's return type
-          // We can't PushDeclContext, because we don't have scope.
-          Sema::ContextRAII pushedDC(*m_Sema, FD);
+        // Change the void function's return type
+        // We can't PushDeclContext, because we don't have scope.
+        Sema::ContextRAII pushedDC(*m_Sema, FD);
 
-          if (lastExprTy->isFunctionType()) {
-            // A return type of function needs to be converted to
-            // pointer to function.
-            lastExprTy = m_Context->getPointerType(lastExprTy);
-            lastExpr = m_Sema->ImpCastExprToType(lastExpr, lastExprTy,
-                                                 CK_FunctionToPointerDecay,
-                                                 VK_RValue).take();
-          }
-
-          //
-          // Here we don't want to depend on the JIT runFunction, because of its
-          // limitations, when it comes to return value handling. There it is
-          // not clear who provides the storage and who cleans it up in a
-          // platform independent way.
-          //
-          // Depending on the type we need to synthesize a call to cling:
-          // 0) void : do nothing;
-          // 1) enum, integral, float, double, referece, pointer types :
-          //      call to cling::internal::setValueNoAlloc(...);
-          // 2) object type (alloc on the stack) :
-          //      cling::internal::setValueWithAlloc
-          //   2.1) constant arrays:
-          //          call to cling::runtime::internal::copyArray(...)
-          //
-          // We need to synthesize later:
-          // Wrapper has signature: void w(cling::Value SVR)
-          // case 1):
-          //   setValueNoAlloc(gCling, &SVR, lastExprTy, lastExpr())
-          // case 2):
-          //   new (setValueWithAlloc(gCling, &SVR, lastExprTy)) (lastExpr)
-          // case 2.1):
-          //   copyArray(src, placement, size)
-
-          if (!m_gClingVD)
-            FindAndCacheRuntimeDecls();
-
-          Expr* SVRInit = SynthesizeSVRInit(lastExpr);
-          // if we had return stmt update to execute the SVR init, even if the
-          // wrapper returns void.
-          if (RS) {
-            if (ImplicitCastExpr* VoidCast
-                = dyn_cast<ImplicitCastExpr>(RS->getRetValue()))
-              VoidCast->setSubExpr(SVRInit);
-          }
-          else
-            **I = SVRInit;
+        if (lastExprTy->isFunctionType()) {
+          // A return type of function needs to be converted to
+          // pointer to function.
+          lastExprTy = m_Context->getPointerType(lastExprTy);
+          lastExpr = m_Sema->ImpCastExprToType(lastExpr, lastExprTy,
+                                               CK_FunctionToPointerDecay,
+                                               VK_RValue).take();
         }
+
+        //
+        // Here we don't want to depend on the JIT runFunction, because of its
+        // limitations, when it comes to return value handling. There it is
+        // not clear who provides the storage and who cleans it up in a
+        // platform independent way.
+        //
+        // Depending on the type we need to synthesize a call to cling:
+        // 0) void : set the value's type to void;
+        // 1) enum, integral, float, double, referece, pointer types :
+        //      call to cling::internal::setValueNoAlloc(...);
+        // 2) object type (alloc on the stack) :
+        //      cling::internal::setValueWithAlloc
+        //   2.1) constant arrays:
+        //          call to cling::runtime::internal::copyArray(...)
+        //
+        // We need to synthesize later:
+        // Wrapper has signature: void w(cling::Value SVR)
+        // case 1):
+        //   setValueNoAlloc(gCling, &SVR, lastExprTy, lastExpr())
+        // case 2):
+        //   new (setValueWithAlloc(gCling, &SVR, lastExprTy)) (lastExpr)
+        // case 2.1):
+        //   copyArray(src, placement, size)
+
+        if (!m_gClingVD)
+          FindAndCacheRuntimeDecls();
+
+        Expr* SVRInit = SynthesizeSVRInit(lastExpr);
+        // if we had return stmt update to execute the SVR init, even if the
+        // wrapper returns void.
+        if (RS) {
+          if (ImplicitCastExpr* VoidCast
+              = dyn_cast<ImplicitCastExpr>(RS->getRetValue()))
+            VoidCast->setSubExpr(SVRInit);
+        }
+        else
+          **I = SVRInit;
       }
     }
   }
@@ -199,7 +197,14 @@ namespace cling {
 
     ExprResult Call;
     SourceLocation noLoc;
-    if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()) {
+    if (desugaredTy->isVoidType()) {
+      // In cases where the cling::Value gets reused we need to reset the
+      // previous settings to void.
+      Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
+                                   E->getLocStart(), CallArgs,
+                                   E->getLocEnd());
+    }
+    else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
       // 2) object types :
       // call new (setValueWithAlloc(gCling, &SVR, ETy)) (E)
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedWithAlloc,
@@ -351,6 +356,10 @@ namespace {
 namespace cling {
 namespace runtime {
   namespace internal {
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT) {
+      // In cases of void we 'just' need to change the type of the value.
+      allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT);
+    }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, float value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<float>() = value;
     }

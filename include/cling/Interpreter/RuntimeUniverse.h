@@ -54,6 +54,14 @@ namespace cling {
       /// when clang emits diagnostics on artificially inserted AST node.
       int InterpreterGeneratedCodeDiagnosticsMaybeIncorrect;
 
+
+      ///\brief Set the type of a void expression evaluated at the prompt.
+      ///\param [in] vpI - The cling::Interpreter for Value.
+      ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
+      ///\param [out] vpSVR - The Value that is created.
+      ///
+      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT);
+
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
       ///\param [in] vpI - The cling::Interpreter for Value.
