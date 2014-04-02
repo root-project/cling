@@ -200,9 +200,14 @@ namespace cling {
     if (desugaredTy->isVoidType()) {
       // In cases where the cling::Value gets reused we need to reset the
       // previous settings to void.
+      // We need to synthesize setValueNoAlloc(...), E, because we still need
+      // to run E.
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
                                    E->getLocStart(), CallArgs,
                                    E->getLocEnd());
+      Call = m_Sema->CreateBuiltinBinOp(Call.get()->getLocStart(), BO_Comma,
+                                        Call.take(), E);
+
     }
     else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
       // 2) object types :
