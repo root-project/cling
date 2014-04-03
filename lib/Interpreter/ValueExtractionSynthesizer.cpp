@@ -151,8 +151,11 @@ namespace cling {
         // if we had return stmt update to execute the SVR init, even if the
         // wrapper returns void.
         if (RS) {
-          if (ImplicitCastExpr* VoidCast
-              = dyn_cast<ImplicitCastExpr>(RS->getRetValue()))
+          Expr* retValue = RS->getRetValue();
+          if (!retValue)
+            RS->setRetValue(SVRInit);
+          else if (ImplicitCastExpr* VoidCast
+                   = dyn_cast<ImplicitCastExpr>(retValue))
             VoidCast->setSubExpr(SVRInit);
         }
         else
