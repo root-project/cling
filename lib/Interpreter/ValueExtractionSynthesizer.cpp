@@ -87,16 +87,29 @@ namespace cling {
          I != E; ++I) {
       ReturnStmt* RS = dyn_cast<ReturnStmt>(**I);
       if (RS) {
-        if (Expr* RetV = RS->getRetValue()) {
-          assert (RetV->getType()->isVoidType() && "Must be void type.");
+        // When we are handling a return stmt, the last expression must be the
+        // return stmt value. Ignore the calculation of the lastStmt because it
+        // might be wrong, in cases where the return is not in the end of the 
+        // function.
+        lastExpr = RS->getRetValue();
+        if (lastExpr) {
+          assert (lastExpr->getType()->isVoidType() && "Must be void type.");
           // Any return statement will have been "healed" by Sema
           // to correspond to the original void return type of the
           // wrapper, using a ImplicitCastExpr 'void' <ToVoid>.
           // Remove that.
-          if (ImplicitCastExpr* VoidCast = dyn_cast<ImplicitCastExpr>(RetV)) {
+          if (ImplicitCastExpr* VoidCast
+              = dyn_cast<ImplicitCastExpr>(lastExpr)) {
             lastExpr = VoidCast->getSubExpr();
           }
         }
+        // if no value assume void
+        else {
+          // We can't PushDeclContext, because we don't have scope.
+          Sema::ContextRAII pushedDC(*m_Sema, FD);
+          RS->setRetValue(SynthesizeSVRInit(0));
+        }
+
       }
       else
         lastExpr = cast<Expr>(**I);
@@ -151,11 +164,8 @@ namespace cling {
         // if we had return stmt update to execute the SVR init, even if the
         // wrapper returns void.
         if (RS) {
-          Expr* retValue = RS->getRetValue();
-          if (!retValue)
-            RS->setRetValue(SVRInit);
-          else if (ImplicitCastExpr* VoidCast
-                   = dyn_cast<ImplicitCastExpr>(retValue))
+          if (ImplicitCastExpr* VoidCast
+              = dyn_cast<ImplicitCastExpr>(RS->getRetValue()))
             VoidCast->setSubExpr(SVRInit);
         }
         else
@@ -174,10 +184,12 @@ namespace cling {
 
     // Build a reference to Value* in the wrapper, should be
     // the only argument of the wrapper.
+    SourceLocation locStart = (E) ? E->getLocStart() : FD->getLocStart();
+    SourceLocation locEnd = (E) ? E->getLocEnd() : FD->getLocEnd();
     ExprResult wrapperSVRDRE
       = m_Sema->BuildDeclRefExpr(FD->getParamDecl(0), m_Context->VoidPtrTy,
-                                 VK_RValue, E->getLocStart());
-    QualType ETy = E->getType();
+                                 VK_RValue, locStart);
+    QualType ETy = (E) ? E->getType() : m_Context->VoidTy;
     QualType desugaredTy = ETy.getDesugaredType(*m_Context);
 
     // The expr result is transported as reference, pointer, array, float etc
@@ -206,18 +218,16 @@ namespace cling {
       // We need to synthesize setValueNoAlloc(...), E, because we still need
       // to run E.
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
-                                   E->getLocStart(), CallArgs,
-                                   E->getLocEnd());
-      Call = m_Sema->CreateBuiltinBinOp(Call.get()->getLocStart(), BO_Comma,
-                                        Call.take(), E);
+                                   locStart, CallArgs, locEnd);
+      if (E)
+        Call = m_Sema->CreateBuiltinBinOp(locStart, BO_Comma, Call.take(), E);
 
     }
     else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
       // 2) object types :
       // call new (setValueWithAlloc(gCling, &SVR, ETy)) (E)
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedWithAlloc,
-                                   E->getLocStart(), CallArgs,
-                                   E->getLocEnd());
+                                   locStart, CallArgs, locEnd);
       Expr* placement = Call.take();
       if (const ConstantArrayType* constArray
           = dyn_cast<ConstantArrayType>(desugaredTy.getTypePtr())) {
@@ -233,8 +243,7 @@ namespace cling {
         // 2.1) arrays:
         // call copyArray(T* src, void* placement, int size)
         Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedCopyArray,
-                                     E->getLocStart(), CallArgs,
-                                     E->getLocEnd());
+                                     locStart, CallArgs, locEnd);
 
       }
       else {
@@ -296,8 +305,7 @@ namespace cling {
         CallArgs.push_back(E);
       }
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
-                                   E->getLocStart(), CallArgs,
-                                   E->getLocEnd());
+                                   locStart, CallArgs, locEnd);
     }
     else
       assert(0 && "Unhandled code path?");

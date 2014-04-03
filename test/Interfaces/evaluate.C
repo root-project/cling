@@ -23,9 +23,13 @@ V // CHECK-NEXT: (cling::Value) boxes [(void) @0x{{.*}}]
 // Returns must put the result in the Value.
 bool cond = true;
 gCling->evaluate("if (cond) return \"true\"; else return 0;", V);
-V // CHECK: (cling::Value) boxes [(const char [5]) "true"]
+V // CHECK-NEXT: (cling::Value) boxes [(const char [5]) "true"]
+gCling->evaluate("if (cond) return; else return 12;", V);
+V // CHECK-NEXT: (cling::Value) boxes [(void) @0x{{.*}}]
+gCling->evaluate("if (cond) return; int aa = 12;", V);
+V // CHECK-NEXT: (cling::Value) boxes [(void) @0x{{.*}}]
 gCling->evaluate("cond = false; if (cond) return \"true\"; else return 0;", V);
-V // CHECK: (cling::Value) boxes [(int) 0]
+V // CHECK-NEXT: (cling::Value) boxes [(int) 0]
 
 gCling->evaluate("auto a = 12.3; a;", V);
 V // CHECK: (cling::Value) boxes [(double) 1.230000e+01]
