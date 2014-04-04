@@ -1105,9 +1105,16 @@ namespace cling {
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),
            E = T->rdecls_end(); I != E; ++I) {
-      if ((*I).m_Call != Transaction::kCCIHandleTopLevelDecl)
-        continue;
+      const Transaction::ConsumerCallInfo& Call = I->m_Call;
       const DeclGroupRef& DGR = (*I).m_DGR;
+
+      // The non templated classes come through HandleTopLevelDecl and
+      // HandleTagDeclDefinition, this is why we need to filter.
+      if (Call == Transaction::kCCIHandleTagDeclDefinition)
+        if (const CXXRecordDecl* D
+            = dyn_cast<CXXRecordDecl>(DGR.getSingleDecl()))
+          if (D->getTemplateSpecializationKind() == TSK_Undeclared)
+            continue;
 
       for (DeclGroupRef::const_iterator
              Di = DGR.end() - 1, E = DGR.begin() - 1; Di != E; --Di) {
