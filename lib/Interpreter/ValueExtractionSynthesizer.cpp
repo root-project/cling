@@ -157,9 +157,6 @@ namespace cling {
         // case 2.1):
         //   copyArray(src, placement, size)
 
-        if (!m_gClingVD)
-          FindAndCacheRuntimeDecls();
-
         Expr* SVRInit = SynthesizeSVRInit(lastExpr);
         // if we had return stmt update to execute the SVR init, even if the
         // wrapper returns void.
@@ -174,7 +171,10 @@ namespace cling {
     }
   }
 
-  Expr* ValueExtractionSynthesizer::SynthesizeSVRInit(Expr* E) const {
+  Expr* ValueExtractionSynthesizer::SynthesizeSVRInit(Expr* E) {
+    if (!m_gClingVD)
+      FindAndCacheRuntimeDecls();
+
     // Build a reference to gCling
     ExprResult gClingDRE
       = m_Sema->BuildDeclRefExpr(m_gClingVD, m_Context->VoidPtrTy,

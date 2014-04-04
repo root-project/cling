@@ -50,7 +50,7 @@ public:
     ///\param[in] S - The semantic analysis object.
     ///
     ValueExtractionSynthesizer(clang::Sema* S);
-    
+
     virtual ~ValueExtractionSynthesizer();
 
     virtual void Transform();
@@ -65,13 +65,13 @@ public:
     //
     /// Depending on the type we need to synthesize a call to cling:
     /// 0) void : do nothing;
-    /// 1) enum, integral, float, double, referece, pointer types : 
+    /// 1) enum, integral, float, double, referece, pointer types :
     ///      call to cling::internal::setValueNoAlloc(...);
     /// 2) object type (alloc on the stack) :
     ///      cling::internal::setValueWithAlloc
     ///   2.1) constant arrays:
     ///          call to cling::runtime::internal::copyArray(...)
-    ///   
+    ///
     /// We need to synthesize later:
     /// Wrapper has signature: void w(cling::Value V)
     /// case 1):
@@ -81,7 +81,7 @@ public:
     /// case 2.1):
     ///   copyArray(src, placement, N)
     ///
-    clang::Expr* SynthesizeSVRInit(clang::Expr* E) const;
+    clang::Expr* SynthesizeSVRInit(clang::Expr* E);
 
     // Find and cache cling::runtime::gCling, setValueNoAlloc, 
     // setValueWithAlloc on first request.
