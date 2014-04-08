@@ -214,6 +214,11 @@ namespace cling {
     if (ignoreOutmostBlock && !content.empty()) {
       static const char whitespace[] = " \t\r\n";
       std::string::size_type posNonWS = content.find_first_not_of(whitespace);
+      // Handle comments before leading {
+      while (content[posNonWS] == '/' && content[posNonWS+1] == '/') {
+        // Remove the comment line
+        posNonWS = content.find_last_of('\n', posNonWS+2)+1;
+      }
       std::string::size_type replaced = posNonWS;
       if (posNonWS != std::string::npos) {
         if (content[posNonWS] == '{') {
@@ -228,20 +233,31 @@ namespace cling {
             if (content[posNonWS] == '}') {
               content[posNonWS] = ' '; // replace '}'
             } else {
+              std::string::size_type posComment = content.find_last_of('}');
+                if (content[posComment] == '}') {
+                  content[posComment] = ' '; // replace '}'
+                }
+                posComment = content.find_first_not_of(whitespace, posComment);
+              if (content[posComment] == '/' && content[posComment+1] == '/') {
               // More text (comments) are okay after the last '}', but
               // we can not easily find it to remove it (so we need to upgrade
               // this code to better handle the case with comments or
               // preprocessor code before and after the leading { and
               // trailing })
-              content[replaced] = '{';
-              // By putting the '{' back, we keep the code as consistent as
-              // the user wrote it ... but we should still warn that we not 
-              // goint to treat this file an unamed macro.
-              llvm::errs() 
-               << "Warning in cling::MetaProcessor: can not find the closing '}', "
-               << llvm::sys::path::filename(filename)
-               << " is not handled as an unamed script!\n";
-            }
+                while (posComment <= posNonWS) {
+                  content[posComment++] = ' '; // replace '}' and comment
+                }
+              } else {
+                content[replaced] = '{';
+                // By putting the '{' back, we keep the code as consistent as
+                // the user wrote it ... but we should still warn that we not
+                // goint to treat this file an unamed macro.
+                llvm::errs()
+                << "Warning in cling::MetaProcessor: can not find the closing '}', "
+                << llvm::sys::path::filename(filename)
+                << " is not handled as an unamed script!\n";
+              } // did not find '}''
+            } // remove comments after the trailing '}'
           } // find '}'
         } // have '{'
       } // have non-whitespace
