@@ -88,6 +88,11 @@ namespace clang {
           RemoveUnusedGlobalValue(**I);
           if ((*I)->getNumUses())
             continue;
+
+          // Required by ::DwarfEHPrepare::InsertUnwindResumeCalls (in the JIT)
+          if ((*I)->getName().equals("_Unwind_Resume"))
+            continue;
+
           m_EEngine->updateGlobalMapping(*I, 0);
           m_CodeGen->forgetGlobal(*I);
           (*I)->eraseFromParent();
