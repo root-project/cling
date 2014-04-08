@@ -477,7 +477,7 @@ namespace clang {
            E = m_FilesToUncache.end(); I != E; ++I) {
       // We need to reset the cache
       if (const FileEntry* entry = SM.getFileEntryForID(*I))
-        SM.invalidateCache(entry);
+        SM.invalidateCache(const_cast<FileEntry*>(entry));
     }
 
     // Clean up the pending instantiations
