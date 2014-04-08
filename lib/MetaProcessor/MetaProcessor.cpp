@@ -171,37 +171,6 @@ namespace cling {
     return m_InputValidator->getExpectedIndent();
   }
 
-  // Run a file: .x file[(args)]
-  bool MetaProcessor::executeFile(llvm::StringRef file, llvm::StringRef args,
-                                  Interpreter::CompilationResult& compRes,
-                                  Value* result) {
-    // Look for start of parameters:
-    typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
-
-    StringRefPair pairPathFile = file.rsplit('/');
-    if (pairPathFile.second.empty()) {
-       pairPathFile.second = pairPathFile.first;
-    }
-    StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
-
-    Interpreter::CompilationResult interpRes = m_Interp.loadFile(file);
-    if (interpRes == Interpreter::kSuccess) {
-      std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
-      m_CurrentlyExecutingFile = file;
-      bool topmost = !m_TopExecutingFile.data();
-      if (topmost)
-        m_TopExecutingFile = m_CurrentlyExecutingFile;
-      
-      interpRes = m_Interp.process(expression, result);
-
-      m_CurrentlyExecutingFile = llvm::StringRef();
-      if (topmost)
-        m_TopExecutingFile = llvm::StringRef();
-    }
-    compRes = interpRes;
-    return (interpRes != Interpreter::kFailure);
-  }
-
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                  Value* result,

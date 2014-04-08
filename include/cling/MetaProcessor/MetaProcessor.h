@@ -137,37 +137,6 @@ namespace cling {
     ///
     int getExpectedIndent() const;
 
-    ///\brief Executes a file given the CINT specific rules. Mainly used as:
-    /// .x filename[(args)], which in turn includes the filename and runs a
-    /// function with signature void filename(args)
-    /// @param[in] file - the filename
-    /// @param[in] args - the args without ()
-    /// @param[out] result - the cling::Value as result of the
-    ///             execution of the last statement
-    /// @param[out] compRes - whether compilation was successful
-    ///
-    ///\returns true on success
-    ///
-    bool executeFile(llvm::StringRef file, llvm::StringRef args, 
-                     Interpreter::CompilationResult& compRes,
-                     cling::Value* result);
-
-    ///\brief Get the file name that is currently executing as passed to
-    /// the currently active executeFile(). The returned StringRef::data() is
-    /// NULL if no file is currently processed. For recursive calls to
-    /// executeFile(), getCurrentlyExecutingFile() will return the nested file
-    /// whereas getTopExecutingFile() returns the outer most file.
-    llvm::StringRef getCurrentlyExecutingFile() const {
-      return m_CurrentlyExecutingFile;
-    }
-
-    ///\brief Get the file name that is passed to the top most currently active
-    /// executeFile(). The returned StringRef::data() is NULL if no file is
-    /// currently processed.
-    llvm::StringRef getTopExecutingFile() const {
-      return m_TopExecutingFile;
-    }
-    
     ///\brief Reads prompt input from file.
     ///
     ///\param [in] filename - The file to read.

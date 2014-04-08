@@ -72,16 +72,22 @@ namespace cling {
   MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file,
                                                  llvm::StringRef args,
                                                  Value* result) {
-    // Fall back to the meta processor for now.
-    Interpreter::CompilationResult compRes = Interpreter::kFailure;
-    m_MetaProcessor.executeFile(file.str(), args.str(), compRes, result);
-    ActionResult actionResult = AR_Failure;
-    if (compRes == Interpreter::kSuccess)
-       actionResult = AR_Success;
-    return actionResult;
+    MetaSema::ActionResult actionResult = actOnLCommand(file);
+    if (actionResult = AR_Success) {
+      // Look for start of parameters:
+      typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
-    //m_Interpreter.loadFile(path.str());
-    // TODO: extra checks. Eg if the path is readable, if the file exists...
+      StringRefPair pairPathFile = file.rsplit('/');
+      if (pairPathFile.second.empty()) {
+        pairPathFile.second = pairPathFile.first;
+      }
+      StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
+
+      std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
+      if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
+        actionResult = AR_Failure;
+    }
+    return actionResult;
   }
 
   void MetaSema::actOnqCommand() {
