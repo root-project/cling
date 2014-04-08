@@ -811,6 +811,9 @@ namespace cling {
     //  Compile the wrapper code.
     //
     const llvm::GlobalValue* GV = 0;
+    if (!getCodeGenerator())
+      return 0;
+
     if (ifUnique)
       GV = getCodeGenerator()->GetModule()->getNamedValue(name);
 
