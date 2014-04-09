@@ -73,7 +73,7 @@ namespace cling {
                                                  llvm::StringRef args,
                                                  Value* result) {
     MetaSema::ActionResult actionResult = actOnLCommand(file);
-    if (actionResult = AR_Success) {
+    if (actionResult == AR_Success) {
       // Look for start of parameters:
       typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
 
