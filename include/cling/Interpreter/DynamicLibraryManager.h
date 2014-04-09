@@ -26,9 +26,9 @@ namespace cling {
     ///\brief Describes the result of loading a library.
     ///
     enum LoadLibResult {
-      kLoadLibSuccess, // library loaded successfully
-      kLoadLibExists,  // library was already loaded
-      kLoadLibError, // library was not found
+      kLoadLibSuccess, ///< library loaded successfully
+      kLoadLibExists,  ///< library was already loaded
+      kLoadLibError, ///< library was not found
       kLoadLibNumResults
     };
 
