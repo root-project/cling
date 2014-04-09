@@ -95,8 +95,17 @@ if( git_executable )
   endif( )
 endif( git_executable )
 
+# Remove absolute path from CMAKE_CXX_COMPILER
+get_filename_component(_path ${CMAKE_CXX_COMPILER} PATH)
+get_filename_component(_name ${CMAKE_CXX_COMPILER} NAME)
+if("$ENV{PATH}" MATCHES ${_path})
+  set(CMAKE_CXX_COMPILER_RELATIVE ${_name})
+else()
+  set(CMAKE_CXX_COMPILER_RELATIVE ${CMAKE_CXX_COMPILER})
+endif()
+
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
-  "#define LLVM_CXX \"${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
+  "#define LLVM_CXX \"${CMAKE_CXX_COMPILER_RELATIVE} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
 #define CLING_VERSION \"${CLING_VERSION}\"
 "
 )
