@@ -68,7 +68,7 @@ namespace cling {
     ///\brief Returns true if the file was a dynamic library and it was already
     /// loaded.
     ///
-    bool isDynamicLibraryLoaded(llvm::StringRef fullPath) const;
+    bool isLibraryLoaded(llvm::StringRef fullPath) const;
 
     ///\brief Explicitly tell the execution engine to use symbols from
     ///       a shared library that would otherwise not be used for symbol

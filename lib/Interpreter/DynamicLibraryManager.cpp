@@ -311,8 +311,7 @@ namespace cling {
     return kLoadLibError;
   }
 
-  bool
-  DynamicLibraryManager::isDynamicLibraryLoaded(llvm::StringRef fullPath) const {
+  bool DynamicLibraryManager::isLibraryLoaded(llvm::StringRef fullPath) const {
     // get canonical path name and check if already loaded
 #if defined(LLVM_ON_WIN32)
     char buf[_MAX_PATH];
