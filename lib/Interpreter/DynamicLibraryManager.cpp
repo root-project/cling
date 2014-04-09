@@ -29,7 +29,7 @@
 #endif
 
 namespace cling {
-  DynamicLibraryManager::DynamicLibraryManager(const InvocationOptions& Opts) 
+  DynamicLibraryManager::DynamicLibraryManager(const InvocationOptions& Opts)
     : m_Opts(Opts) { }
 
   DynamicLibraryManager::~DynamicLibraryManager() {}
@@ -41,17 +41,17 @@ namespace cling {
     exists = (Error == llvm::errc::success);
     return exists &&
 #ifdef __APPLE__
-        (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
-         || Magic == file_magic::macho_dynamically_linked_shared_lib
-         || Magic == file_magic::macho_dynamically_linked_shared_lib_stub)
+      (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
+       || Magic == file_magic::macho_dynamically_linked_shared_lib
+       || Magic == file_magic::macho_dynamically_linked_shared_lib_stub)
 #elif defined(LLVM_ON_UNIX)
 #ifdef __CYGWIN__
-        Magic == file_magic::pecoff_executable
+      (Magic == file_magic::pecoff_executable)
 #else
-        Magic == file_magic::elf_shared_object
+      (Magic == file_magic::elf_shared_object)
 #endif
 #elif defined(LLVM_ON_WIN32)
-		(Magic == file_magic::pecoff_executable)
+      (Magic == file_magic::pecoff_executable)
 #else
 # error "Unsupported platform."
 #endif
