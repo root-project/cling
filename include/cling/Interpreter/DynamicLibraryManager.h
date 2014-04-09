@@ -22,6 +22,16 @@ namespace cling {
   ///\brief A helper class managing dynamic shared objects.
   ///
   class DynamicLibraryManager {
+  public:
+    ///\brief Describes the result of loading a library.
+    ///
+    enum LoadLibResult {
+      kLoadLibSuccess, // library loaded successfully
+      kLoadLibExists,  // library was already loaded
+      kLoadLibError, // library was not found
+      kLoadLibNumResults
+    };
+
   private:
     typedef const void* DyLibHandle;
     typedef llvm::DenseMap<DyLibHandle, std::string> DyLibs;
@@ -38,15 +48,6 @@ namespace cling {
                             bool isAbsolute, bool& exists, bool& isDyLib);
 
   public:
-    ///\brief Describes the result of loading a library.
-    ///
-    enum LoadLibResult {
-      kLoadLibSuccess, // library loaded successfully
-      kLoadLibExists,  // library was already loaded
-      kLoadLibError, // library was not found
-      kLoadLibNumResults
-    };
-
     DynamicLibraryManager(const InvocationOptions& Opts);
     ~DynamicLibraryManager();
 
