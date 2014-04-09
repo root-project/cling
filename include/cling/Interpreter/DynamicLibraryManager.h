@@ -32,6 +32,11 @@ namespace cling {
 
     const InvocationOptions& m_Opts;
 
+    ///\brief Try to load a library file via the llvm::Linker.
+    ///
+    LoadLibResult tryLinker(const std::string& filename, bool permanent,
+                            bool isAbsolute, bool& exists, bool& isDyLib);
+
   public:
     ///\brief Describes the result of loading a library.
     ///
@@ -44,11 +49,6 @@ namespace cling {
 
     DynamicLibraryManager(const InvocationOptions& Opts);
     ~DynamicLibraryManager();
-
-    ///\brief Try to load a library file via the llvm::Linker.
-    ///
-    LoadLibResult tryLinker(const std::string& filename, bool permanent,
-                            bool isAbsolute, bool& exists, bool& isDyLib);
 
     ///\brief Loads a shared library.
     ///
