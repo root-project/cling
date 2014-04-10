@@ -179,7 +179,7 @@ namespace cling {
   }
 
   std::string
-  DynamicLibraryManager::lookupLibInPaths(llvm::StringRef filename) const {
+  DynamicLibraryManager::lookupLibInPaths(llvm::StringRef libStem) const {
     llvm::SmallVector<std::string, 128>
       Paths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
     Paths.append(m_SystemSearchPaths.begin(), m_SystemSearchPaths.end());
@@ -187,7 +187,7 @@ namespace cling {
     for (llvm::SmallVectorImpl<std::string>::const_iterator
            IPath = Paths.begin(), E = Paths.end();IPath != E; ++IPath) {
       llvm::SmallString<512> ThisPath(*IPath); // FIXME: move alloc outside loop
-      llvm::sys::path::append(ThisPath, filename);
+      llvm::sys::path::append(ThisPath, libStem);
       bool exists;
       if (isSharedLib(ThisPath.str(), &exists))
         return ThisPath.str();
@@ -198,14 +198,14 @@ namespace cling {
   }
 
   std::string
-  DynamicLibraryManager::lookupLibMaybeAddExt(llvm::StringRef filename) const {
+  DynamicLibraryManager::lookupLibMaybeAddExt(llvm::StringRef libStem) const {
     using namespace llvm::sys;
 
-    std::string foundDyLib = lookupLibInPaths(filename);
+    std::string foundDyLib = lookupLibInPaths(libStem);
 
     if (foundDyLib.empty()) {
       // Add DyLib extension:
-      llvm::SmallString<512> filenameWithExt(filename);
+      llvm::SmallString<512> filenameWithExt(libStem);
 #if defined(LLVM_ON_UNIX)
 #ifdef __APPLE__
       llvm::SmallString<512>::iterator IStemEnd = filenameWithExt.end() - 1;
@@ -248,23 +248,23 @@ namespace cling {
   }
 
   std::string
-  DynamicLibraryManager::lookupLibrary(llvm::StringRef fileStem) const {
-    llvm::SmallString<128> Absolute(fileStem);
+  DynamicLibraryManager::lookupLibrary(llvm::StringRef libStem) const {
+    llvm::SmallString<128> Absolute(libStem);
     llvm::sys::fs::make_absolute(Absolute);
-    bool isAbsolute = fileStem == Absolute;
+    bool isAbsolute = libStem == Absolute;
 
     // If it is an absolute path, don't try iterate over the paths.
     if (isAbsolute) {
-      if (isSharedLib(fileStem))
-        return fileStem;
+      if (isSharedLib(libStem))
+        return libStem;
       else
         return "";
     }
 
-    std::string foundName = lookupLibMaybeAddExt(fileStem);
-    if (foundName.empty() && !fileStem.startswith("lib")) {
+    std::string foundName = lookupLibMaybeAddExt(libStem);
+    if (foundName.empty() && !libStem.startswith("lib")) {
       // try with "lib" prefix:
-      foundName = lookupLibMaybeAddExt("lib" + fileStem.str());
+      foundName = lookupLibMaybeAddExt("lib" + libStem.str());
     }
 
     if (isSharedLib(foundName))
@@ -273,9 +273,9 @@ namespace cling {
   }
 
   DynamicLibraryManager::LoadLibResult
-  DynamicLibraryManager::loadLibrary(const std::string& filename,
+  DynamicLibraryManager::loadLibrary(const std::string& libStem,
                                      bool permanent) {
-    std::string canonicalLoadedLib = lookupLibrary(filename);
+    std::string canonicalLoadedLib = lookupLibrary(libStem);
     if (canonicalLoadedLib.empty())
       return kLoadLibNotFound;
 
@@ -309,8 +309,8 @@ namespace cling {
     return kLoadLibSuccess;
   }
 
-  void DynamicLibraryManager::unloadLibrary(llvm::StringRef lib) {
-    std::string canonicalLoadedLib = lookupLibrary(lib);
+  void DynamicLibraryManager::unloadLibrary(llvm::StringRef libStem) {
+    std::string canonicalLoadedLib = lookupLibrary(libStem);
     if (!isLibraryLoaded(canonicalLoadedLib))
       return;
 

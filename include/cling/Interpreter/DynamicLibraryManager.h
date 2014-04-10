@@ -51,11 +51,11 @@ namespace cling {
 
     ///\brief Concatenates current include paths and the system include paths
     /// and performs a lookup for the filename.
-    ///\param[in] filename - The filename being looked up
+    ///\param[in] libStem - The filename being looked up
     ///
     ///\returns the canonical path to the file or empty string if not found
     ///
-    std::string lookupLibInPaths(llvm::StringRef filename) const;
+    std::string lookupLibInPaths(llvm::StringRef libStem) const;
 
 
     ///\brief Concatenates current include paths and the system include paths
@@ -73,24 +73,24 @@ namespace cling {
 
     ///\brief Looks up a library taking into account the current include paths
     /// and the system include paths.
-    ///\param[in] fileStem - The filename being looked up
+    ///\param[in] libStem - The filename being looked up
     ///
     ///\returns the canonical path to the file or empty string if not found
     ///
-    std::string lookupLibrary(llvm::StringRef fileStem) const;
+    std::string lookupLibrary(llvm::StringRef libStem) const;
 
     ///\brief Loads a shared library.
     ///
-    ///\param [in] filename - The file to loaded.
+    ///\param [in] libStem - The file to loaded.
     ///\param [in] permanent - If false, the file can be unloaded later.
     ///
     ///\returns kLoadLibSuccess on success, kLoadLibAlreadyLoaded if the library
     /// was already loaded, kLoadLibError if the library cannot be found or any
     /// other error was encountered.
     ///
-    LoadLibResult loadLibrary(const std::string& filename, bool permanent);
+    LoadLibResult loadLibrary(const std::string& libStem, bool permanent);
 
-    void unloadLibrary(llvm::StringRef lib);
+    void unloadLibrary(llvm::StringRef libStem);
 
     ///\brief Returns true if the file was a dynamic library and it was already
     /// loaded.
