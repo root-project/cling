@@ -501,7 +501,6 @@ namespace cling {
     ///\param [in] filename - The file to loaded.
     ///\param [in] allowSharedLib - Whether to try to load the file as shared
     ///                             library.
-    ///
     ///\returns result of the compilation.
     ///
     CompilationResult loadFile(const std::string& filename,
@@ -509,7 +508,7 @@ namespace cling {
 
     ///\brief Unloads (forgets) given number of transactions.
     ///
-    ///\param[in] numberOfTransactions - how many transactions to revert 
+    ///\param[in] numberOfTransactions - how many transactions to revert
     ///                                  starting from the last.
     ///
     void unload(unsigned numberOfTransactions);
