@@ -933,6 +933,27 @@ namespace cling {
     return Interpreter::kSuccess;
   }
 
+  std::string Interpreter::lookupFileOrLibrary(llvm::StringRef file) {
+    const FileEntry* FE = 0;
+
+    //Copied from clang's PPDirectives.cpp
+    bool isAngled = false;
+    // Clang doc says:
+    // "LookupFrom is set when this is a \#include_next directive, it
+    // specifies the file to start searching from."
+    const DirectoryLookup* LookupFrom = 0;
+    const DirectoryLookup* CurDir = 0;
+    Preprocessor& PP = getCI()->getPreprocessor();
+    // PP::LookupFile uses it to issue 'nice' diagnostic
+    SourceLocation fileNameLoc;
+    FE = PP.LookupFile(fileNameLoc, file, isAngled, LookupFrom, CurDir,
+                       /*SearchPath*/0, /*RelativePath*/ 0,
+                       /*suggestedModule*/0, /*SkipCache*/false);
+    if (FE)
+      return FE->getName();
+    return "";
+  }
+
   Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/) {
