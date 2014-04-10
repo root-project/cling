@@ -42,6 +42,10 @@ namespace cling {
     if (result != AR_Success)
       return result;
 
+    // In case of libraries we get .L lib.so, which might automatically pull in
+    // decls (from header files). Thus we want to take the restore point before
+    // loading of the file and revert exclusively if needed.
+    const Transaction* unloadPoint = m_Interpreter.getLastTransaction();
     // TODO: extra checks. Eg if the path is readable, if the file exists...
     if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess) {
       clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
@@ -49,7 +53,7 @@ namespace cling {
       const clang::FileEntry* Entry
         = FM.getFile(file, /*OpenFile*/false, /*CacheFailure*/false);
       if (Entry && !m_Watermarks[Entry]) // register as a watermark
-        m_Watermarks[Entry] = m_Interpreter.getLastTransaction();
+        m_Watermarks[Entry] = unloadPoint;
 
       return AR_Success;
     }
@@ -112,8 +116,6 @@ namespace cling {
         const Transaction* unloadPoint = Pos->second;
         while(m_Interpreter.getLastTransaction() != unloadPoint)
           m_Interpreter.unload(/*numberOfTransactions*/1);
-        // Unload the last one also.
-        m_Interpreter.unload(/*numberOfTransactions*/1);
         m_Watermarks.erase(Pos);
       }
     }
