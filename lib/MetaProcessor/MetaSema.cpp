@@ -47,11 +47,12 @@ namespace cling {
     // loading of the file and revert exclusively if needed.
     const Transaction* unloadPoint = m_Interpreter.getLastTransaction();
     // TODO: extra checks. Eg if the path is readable, if the file exists...
+    std::string canFile = m_Interpreter.lookupFileOrLibrary(file);
     if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess) {
       clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
       clang::FileManager& FM = SM.getFileManager();
       const clang::FileEntry* Entry
-        = FM.getFile(file, /*OpenFile*/false, /*CacheFailure*/false);
+        = FM.getFile(canFile, /*OpenFile*/false, /*CacheFailure*/false);
       if (Entry && !m_Watermarks[Entry]) // register as a watermark
         m_Watermarks[Entry] = unloadPoint;
 
@@ -108,8 +109,11 @@ namespace cling {
     // Lookup the file
     clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
     clang::FileManager& FM = SM.getFileManager();
+
+    //Get the canonical path, taking into account interp and system search paths
+    std::string canonicalFile = m_Interpreter.lookupFileOrLibrary(file);
     const clang::FileEntry* Entry
-      = FM.getFile(file, /*OpenFile*/false, /*CacheFailure*/false);
+      = FM.getFile(canonicalFile, /*OpenFile*/false, /*CacheFailure*/false);
     if (Entry) {
       Watermarks::iterator Pos = m_Watermarks.find(Entry);
       if (Pos != m_Watermarks.end()) {
