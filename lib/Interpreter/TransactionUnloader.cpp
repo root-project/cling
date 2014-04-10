@@ -1113,6 +1113,8 @@ namespace cling {
       const Transaction::ConsumerCallInfo& Call = I->m_Call;
       const DeclGroupRef& DGR = (*I).m_DGR;
 
+      if (Call == Transaction::kCCIHandleVTable)
+        continue;
       // The non templated classes come through HandleTopLevelDecl and
       // HandleTagDeclDefinition, this is why we need to filter.
       if (Call == Transaction::kCCIHandleTagDeclDefinition)
