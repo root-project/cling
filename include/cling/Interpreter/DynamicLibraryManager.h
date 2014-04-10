@@ -39,7 +39,7 @@ namespace cling {
     ///\brief DynamicLibraries loaded by this Interpreter.
     ///
     DyLibs m_DyLibs;
-    llvm::StringSet<> m_loadedLibraries;
+    llvm::StringSet<> m_LoadedLibraries;
 
     ///\brief Contains the list of the current include paths.
     ///

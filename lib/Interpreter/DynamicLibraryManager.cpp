@@ -279,7 +279,7 @@ namespace cling {
     if (canonicalLoadedLib.empty())
       return kLoadLibNotFound;
 
-    if (m_loadedLibraries.find(canonicalLoadedLib) != m_loadedLibraries.end())
+    if (m_LoadedLibraries.find(canonicalLoadedLib) != m_LoadedLibraries.end())
       return kLoadLibAlreadyLoaded;
 
     std::string errMsg;
@@ -305,7 +305,7 @@ namespace cling {
                                                             canonicalLoadedLib));
     if (!insRes.second)
       return kLoadLibAlreadyLoaded;
-    m_loadedLibraries.insert(canonicalLoadedLib);
+    m_LoadedLibraries.insert(canonicalLoadedLib);
     return kLoadLibSuccess;
   }
 
@@ -334,7 +334,7 @@ namespace cling {
     }
 #endif
     m_DyLibs.erase(dyLibHandle);
-    m_loadedLibraries.erase(canonicalLoadedLib);
+    m_LoadedLibraries.erase(canonicalLoadedLib);
   }
 
   bool DynamicLibraryManager::isLibraryLoaded(llvm::StringRef fullPath) const {
@@ -350,7 +350,7 @@ namespace cling {
       llvm::errs() << "cling::Interpreter::isDynamicLibraryLoaded(): error getting real (canonical) path\n";
       return false;
     }
-    if (m_loadedLibraries.find(buf) != m_loadedLibraries.end()) return true;
+    if (m_LoadedLibraries.find(buf) != m_LoadedLibraries.end()) return true;
     return false;
   }
 
