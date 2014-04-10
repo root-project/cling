@@ -28,53 +28,7 @@
 #include <dlfcn.h>
 #endif
 
-namespace cling {
-  DynamicLibraryManager::DynamicLibraryManager(const InvocationOptions& Opts)
-    : m_Opts(Opts) { }
-
-  DynamicLibraryManager::~DynamicLibraryManager() {}
-
-  static bool isSharedLib(llvm::StringRef LibName, bool& exists) {
-    using namespace llvm::sys::fs;
-    file_magic Magic;
-    llvm::error_code Error = identify_magic(LibName, Magic);
-    exists = (Error == llvm::errc::success);
-    return exists &&
-#ifdef __APPLE__
-      (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
-       || Magic == file_magic::macho_dynamically_linked_shared_lib
-       || Magic == file_magic::macho_dynamically_linked_shared_lib_stub)
-#elif defined(LLVM_ON_UNIX)
-#ifdef __CYGWIN__
-      (Magic == file_magic::pecoff_executable)
-#else
-      (Magic == file_magic::elf_shared_object)
-#endif
-#elif defined(LLVM_ON_WIN32)
-      (Magic == file_magic::pecoff_executable)
-#else
-# error "Unsupported platform."
-#endif
-      ;
-  }
-
-  static void
-  findSharedLibrary(llvm::StringRef fileStem,
-                    const llvm::SmallVectorImpl<std::string>& Paths,
-                    llvm::SmallString<512>& FoundDyLib,
-                    bool& exists, bool& isDyLib) {
-    for (llvm::SmallVectorImpl<std::string>::const_iterator
-        IPath = Paths.begin(), EPath = Paths.end(); IPath != EPath; ++IPath) {
-      llvm::SmallString<512> ThisPath(*IPath);
-      llvm::sys::path::append(ThisPath, fileStem);
-      isDyLib = isSharedLib(ThisPath.str(), exists);
-      if (isDyLib)
-        ThisPath.swap(FoundDyLib);
-      if (exists)
-        return;
-    }
-  }
-
+namespace {
 #if defined(LLVM_ON_UNIX)
   static void GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
     char* env_var = getenv("LD_LIBRARY_PATH");
@@ -91,7 +45,7 @@ namespace cling {
       while (delim != 0) {
         std::string tmp(at, size_t(delim-at));
         if (llvm::sys::fs::is_directory(tmp.c_str()))
-            Paths.push_back(tmp);
+          Paths.push_back(tmp);
         at = delim + 1;
         delim = strchr(at, PathSeparator);
       }
@@ -121,17 +75,19 @@ namespace cling {
       std::string sys_path = "";
       char buffer[128];
       while (!feof(pf)) {
-         if (fgets(buffer, 128, pf) != NULL)
-            result += buffer;
+        if (fgets(buffer, 128, pf) != NULL)
+          result += buffer;
       }
       pclose(pf);
-      std::size_t from = result.find("search path=", result.find("(LD_LIBRARY_PATH)"));
+      std::size_t from
+        = result.find("search path=", result.find("(LD_LIBRARY_PATH)"));
       std::size_t to = result.find("(system search path)");
       if (from != std::string::npos && to != std::string::npos) {
-         from += 12;
-         sys_path = result.substr(from, to-from);
-         sys_path.erase(std::remove_if(sys_path.begin(), sys_path.end(), isspace), sys_path.end());
-         sys_path += ':'; 
+        from += 12;
+        sys_path = result.substr(from, to-from);
+        sys_path.erase(std::remove_if(sys_path.begin(), sys_path.end(), isspace),
+                       sys_path.end());
+        sys_path += ':';
       }
       static const char PathSeparator = ':';
       const char* at = sys_path.c_str();
@@ -184,131 +140,201 @@ namespace cling {
 # error "Unsupported platform."
 #endif
 
-  DynamicLibraryManager::LoadLibResult
-  DynamicLibraryManager::tryLinker(const std::string& filename, bool permanent,
-                                   bool isAbsolute, bool& exists,
-                                   bool& isDyLib) {
-    using namespace llvm::sys;
-    exists = false;
-    isDyLib = false;
+}
 
-    llvm::SmallString<512> FoundDyLib;
+namespace cling {
+  DynamicLibraryManager::DynamicLibraryManager(const InvocationOptions& Opts)
+    : m_Opts(Opts) {
+    GetSystemLibraryPaths(m_SystemSearchPaths);
+    m_SystemSearchPaths.push_back(".");
+  }
 
-    if (isAbsolute) {
-      isDyLib = isSharedLib(filename, exists);
-      if (isDyLib)
-        FoundDyLib = filename;
-    } else {
-      llvm::SmallVector<std::string, 16>
-        SearchPaths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
-      GetSystemLibraryPaths(SearchPaths);
-      SearchPaths.push_back("."); // search also in the current directory
+  DynamicLibraryManager::~DynamicLibraryManager() {}
 
-      findSharedLibrary(filename, SearchPaths, FoundDyLib, exists, isDyLib);
+  static bool isSharedLib(llvm::StringRef LibName, bool* exists = 0) {
+    using namespace llvm::sys::fs;
+    file_magic Magic;
+    llvm::error_code Error = identify_magic(LibName, Magic);
+    bool onDisk = (Error == llvm::errc::success);
+    if (exists)
+      *exists = onDisk;
 
-      if (!exists) {
-        // Add DyLib extension:
-        llvm::SmallString<512> filenameWithExt(filename);
-#if defined(LLVM_ON_UNIX)
+    return onDisk &&
 #ifdef __APPLE__
-        llvm::SmallString<512>::iterator IStemEnd = filenameWithExt.end() - 1;
+      (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
+       || Magic == file_magic::macho_dynamically_linked_shared_lib
+       || Magic == file_magic::macho_dynamically_linked_shared_lib_stub)
+#elif defined(LLVM_ON_UNIX)
+#ifdef __CYGWIN__
+      (Magic == file_magic::pecoff_executable)
+#else
+      (Magic == file_magic::elf_shared_object)
 #endif
-        static const char* DyLibExt = ".so";
 #elif defined(LLVM_ON_WIN32)
-        static const char* DyLibExt = ".dll";
+      (Magic == file_magic::pecoff_executable)
 #else
 # error "Unsupported platform."
 #endif
-        filenameWithExt += DyLibExt;
-        findSharedLibrary(filenameWithExt, SearchPaths, FoundDyLib, exists,
-                          isDyLib);
+      ;
+  }
+
+  std::string
+  DynamicLibraryManager::lookupLibInPaths(llvm::StringRef filename) const {
+    llvm::SmallVector<std::string, 128>
+      Paths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
+    Paths.append(m_SystemSearchPaths.begin(), m_SystemSearchPaths.end());
+
+    for (llvm::SmallVectorImpl<std::string>::const_iterator
+           IPath = Paths.begin(), E = Paths.end();IPath != E; ++IPath) {
+      llvm::SmallString<512> ThisPath(*IPath); // FIXME: move alloc outside loop
+      llvm::sys::path::append(ThisPath, filename);
+      bool exists;
+      if (isSharedLib(ThisPath.str(), &exists))
+        return ThisPath.str();
+      if (exists)
+        return "";
+    }
+    return "";
+  }
+
+  std::string
+  DynamicLibraryManager::lookupLibMaybeAddExt(llvm::StringRef filename) const {
+    using namespace llvm::sys;
+
+    std::string foundDyLib = lookupLibInPaths(filename);
+
+    if (foundDyLib.empty()) {
+      // Add DyLib extension:
+      llvm::SmallString<512> filenameWithExt(filename);
+#if defined(LLVM_ON_UNIX)
 #ifdef __APPLE__
-        if (!exists) {
-           filenameWithExt.erase(IStemEnd + 1, filenameWithExt.end());
-           filenameWithExt += ".dylib";
-           findSharedLibrary(filenameWithExt, SearchPaths, FoundDyLib, exists,
-                             isDyLib);
-        }
+      llvm::SmallString<512>::iterator IStemEnd = filenameWithExt.end() - 1;
 #endif
+      static const char* DyLibExt = ".so";
+#elif defined(LLVM_ON_WIN32)
+      static const char* DyLibExt = ".dll";
+#else
+# error "Unsupported platform."
+#endif
+      filenameWithExt += DyLibExt;
+      foundDyLib = lookupLibInPaths(filenameWithExt);
+#ifdef __APPLE__
+      if (foundDyLib.empty()) {
+        filenameWithExt.erase(IStemEnd + 1, filenameWithExt.end());
+        filenameWithExt += ".dylib";
+        FoundDyLib = lookupLibInPaths(filenameWithExt);
       }
+#endif
     }
 
-    if (!isDyLib)
-      return kLoadLibError;
-    
-    assert(!FoundDyLib.empty() && "The shared lib exists but can't find it!");
+    if (foundDyLib.empty())
+      return "";
 
     // get canonical path name and check if already loaded
 #if defined(LLVM_ON_WIN32)
     llvm::SmallString<_MAX_PATH> FullPath("");
-    char *res = _fullpath((char *)FullPath.data(), FoundDyLib.c_str(), _MAX_PATH);
+    char *res = _fullpath((char *)FullPath.data(), foundDyLib.c_str(), _MAX_PATH);
 #else
     llvm::SmallString<PATH_MAX+1> FullPath("");
-    char *res = realpath(FoundDyLib.c_str(), (char *)FullPath.data());
+    char *res = realpath(foundDyLib.c_str(), (char *)FullPath.data());
 #endif
     if (res == 0) {
-      llvm::errs() << "cling::Interpreter::tryLinker(): error getting real (canonical) path\n";
-      return kLoadLibError;
+      llvm::errs() << "cling::Interpreter::tryLinker(): error getting real "
+        "(canonical) path of library " << foundDyLib << '\n';
+      return foundDyLib;
     }
     FullPath.set_size(strlen(res));
-    if (m_loadedLibraries.find(FullPath) != m_loadedLibraries.end())
-      return kLoadLibExists;
+    return FullPath.str();
+  }
+
+  std::string
+  DynamicLibraryManager::lookupLibrary(llvm::StringRef fileStem) const {
+    llvm::SmallString<128> Absolute(fileStem);
+    llvm::sys::fs::make_absolute(Absolute);
+    bool isAbsolute = fileStem == Absolute;
+
+    // If it is an absolute path, don't try iterate over the paths.
+    if (isAbsolute) {
+      if (isSharedLib(fileStem))
+        return fileStem;
+      else
+        return "";
+    }
+
+    std::string foundName = lookupLibMaybeAddExt(fileStem);
+    if (foundName.empty() && !fileStem.startswith("lib")) {
+      // try with "lib" prefix:
+      foundName = lookupLibMaybeAddExt("lib" + fileStem.str());
+    }
+
+    if (isSharedLib(foundName))
+      return foundName;
+    return "";
+  }
+
+  DynamicLibraryManager::LoadLibResult
+  DynamicLibraryManager::loadLibrary(const std::string& filename,
+                                     bool permanent) {
+    std::string canonicalLoadedLib = lookupLibrary(filename);
+    if (canonicalLoadedLib.empty())
+      return kLoadLibNotFound;
+
+    if (m_loadedLibraries.find(canonicalLoadedLib) != m_loadedLibraries.end())
+      return kLoadLibAlreadyLoaded;
 
     std::string errMsg;
     // TODO: !permanent case
 #if defined(LLVM_ON_WIN32)
-    HMODULE dyLibHandle = LoadLibraryEx(FullPath.c_str(), NULL, DONT_RESOLVE_DLL_REFERENCES);
+    HMODULE dyLibHandle = LoadLibraryEx(canonicalLoadedLib.c_str(), NULL,
+                                        DONT_RESOLVE_DLL_REFERENCES);
     errMsg = "LoadLibraryEx: GetLastError() returned ";
     errMsg += GetLastError();
 #else
-    const void* dyLibHandle = dlopen(FullPath.c_str(), RTLD_LAZY|RTLD_GLOBAL);
+    const void* dyLibHandle = dlopen(canonicalLoadedLib.c_str(),
+                                     RTLD_LAZY|RTLD_GLOBAL);
     if (const char* DyLibError = dlerror()) {
       errMsg = DyLibError;
     }
 #endif
     if (!dyLibHandle) {
-      llvm::errs() << "cling::Interpreter::tryLinker(): " << errMsg << '\n';
-      return kLoadLibError;
+      llvm::errs() << "cling::DyLibMan::loadLibrary(): " << errMsg << '\n';
+      return kLoadLibLoadError;
     }
     std::pair<DyLibs::iterator, bool> insRes
       = m_DyLibs.insert(std::pair<DyLibHandle, std::string>(dyLibHandle,
-                                                            FullPath.str()));
+                                                            canonicalLoadedLib));
     if (!insRes.second)
-      return kLoadLibExists;
-    m_loadedLibraries.insert(FullPath);
+      return kLoadLibAlreadyLoaded;
+    m_loadedLibraries.insert(canonicalLoadedLib);
     return kLoadLibSuccess;
   }
 
-  DynamicLibraryManager::LoadLibResult
-  DynamicLibraryManager::loadLibrary(const std::string& filename,
-                                     bool permanent, bool* tryCode) {
-    llvm::SmallString<128> Absolute((llvm::StringRef(filename)));
-    llvm::sys::fs::make_absolute(Absolute);
-    bool isAbsolute = filename == Absolute.c_str();
-    bool exists = false;
-    bool isDyLib = false;
-    LoadLibResult res = tryLinker(filename, permanent, isAbsolute, exists,
-                                  isDyLib);
-    if (tryCode) {
-      *tryCode = !isDyLib;
-      if (isAbsolute)
-        *tryCode &= exists;
-    }
-    if (exists)
-      return res;
+  void DynamicLibraryManager::unloadLibrary(llvm::StringRef lib) {
+    std::string canonicalLoadedLib = lookupLibrary(lib);
+    if (!isLibraryLoaded(canonicalLoadedLib))
+      return;
 
-    if (!isAbsolute && filename.compare(0, 3, "lib")) {
-      // try with "lib" prefix:
-      res = tryLinker("lib" + filename, permanent, false, exists, isDyLib);
-      if (tryCode) {
-        *tryCode = !isDyLib;
-        if (isAbsolute)
-          *tryCode &= exists;
-      }
-      if (res != kLoadLibError)
-        return res;
+    DyLibHandle dyLibHandle = 0;
+    for (DyLibs::const_iterator I = m_DyLibs.begin(), E = m_DyLibs.end();
+         I != E; ++I) {
+      if (I->second == canonicalLoadedLib)
+        dyLibHandle = I->first;
     }
-    return kLoadLibError;
+
+    std::string errMsg;
+    // TODO: !permanent case
+#if defined(LLVM_ON_WIN32)
+    UnloadLibraryEx(dyLibHandle);
+    errMsg = "UnoadLibraryEx: GetLastError() returned ";
+    errMsg += GetLastError();
+#else
+    dlclose(const_cast<void*>(dyLibHandle));
+    if (const char* DyLibError = dlerror()) {
+      errMsg = DyLibError;
+    }
+#endif
+    m_DyLibs.erase(dyLibHandle);
+    m_loadedLibraries.erase(canonicalLoadedLib);
   }
 
   bool DynamicLibraryManager::isLibraryLoaded(llvm::StringRef fullPath) const {

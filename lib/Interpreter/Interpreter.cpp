@@ -951,21 +951,20 @@ namespace cling {
                        /*suggestedModule*/0, /*SkipCache*/false);
     if (FE)
       return FE->getName();
-    return "";
+    return getDynamicLibraryManager()->lookupLibrary(file);
   }
 
   Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/) {
     if (allowSharedLib) {
-      bool tryCode;
-      if (getDynamicLibraryManager()->loadLibrary(filename, false, &tryCode)
-          == DynamicLibraryManager::kLoadLibSuccess)
+      DynamicLibraryManager* DLM = getDynamicLibraryManager();
+      switch (DLM->loadLibrary(filename, /*permanent*/false)) {
+      case DynamicLibraryManager::kLoadLibSuccess: // Intentional fall through
+      case DynamicLibraryManager::kLoadLibAlreadyLoaded:
         return kSuccess;
-      if (!tryCode) {
-        llvm::errs() << "ERROR in cling::Interpreter::loadFile(): cannot find "
-                     << filename << "!\n";
-        return kFailure;
+      default:
+        break;
       }
     }
 

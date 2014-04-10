@@ -27,8 +27,9 @@ namespace cling {
     ///
     enum LoadLibResult {
       kLoadLibSuccess, ///< library loaded successfully
-      kLoadLibExists,  ///< library was already loaded
-      kLoadLibError, ///< library was not found
+      kLoadLibAlreadyLoaded,  ///< library was already loaded
+      kLoadLibNotFound, ///< library was not found
+      kLoadLibLoadError, ///< loading the library failed
       kLoadLibNumResults
     };
 
@@ -40,30 +41,56 @@ namespace cling {
     DyLibs m_DyLibs;
     llvm::StringSet<> m_loadedLibraries;
 
+    ///\brief Contains the list of the current include paths.
+    ///
     const InvocationOptions& m_Opts;
 
-    ///\brief Try to load a library file via the llvm::Linker.
+    ///\brief System's include path, get initialized at construction time.
     ///
-    LoadLibResult tryLinker(const std::string& filename, bool permanent,
-                            bool isAbsolute, bool& exists, bool& isDyLib);
+    llvm::SmallVector<std::string, 32> m_SystemSearchPaths;
 
+    ///\brief Concatenates current include paths and the system include paths
+    /// and performs a lookup for the filename.
+    ///\param[in] filename - The filename being looked up
+    ///
+    ///\returns the canonical path to the file or empty string if not found
+    ///
+    std::string lookupLibInPaths(llvm::StringRef filename) const;
+
+
+    ///\brief Concatenates current include paths and the system include paths
+    /// and performs a lookup for the filename. If still not found it tries to
+    /// add the platform-specific extensions (such as so, dll, dylib) and
+    /// retries the lookup (from lookupLibInPaths)
+    ///\param[in] filename - The filename being looked up
+    ///
+    ///\returns the canonical path to the file or empty string if not found
+    ///
+    std::string lookupLibMaybeAddExt(llvm::StringRef filename) const;
   public:
     DynamicLibraryManager(const InvocationOptions& Opts);
     ~DynamicLibraryManager();
+
+    ///\brief Looks up a library taking into account the current include paths
+    /// and the system include paths.
+    ///\param[in] fileStem - The filename being looked up
+    ///
+    ///\returns the canonical path to the file or empty string if not found
+    ///
+    std::string lookupLibrary(llvm::StringRef fileStem) const;
 
     ///\brief Loads a shared library.
     ///
     ///\param [in] filename - The file to loaded.
     ///\param [in] permanent - If false, the file can be unloaded later.
-    ///\param [out] tryCode - If not NULL, it will be set to false if this file
-    ///                       cannot be included.
     ///
-    ///\returns kLoadLibSuccess on success, kLoadLibExists if the library was
-    /// already loaded, kLoadLibError if the library cannot be found or any
+    ///\returns kLoadLibSuccess on success, kLoadLibAlreadyLoaded if the library
+    /// was already loaded, kLoadLibError if the library cannot be found or any
     /// other error was encountered.
     ///
-    LoadLibResult loadLibrary(const std::string& filename, bool permanent,
-                              bool *tryCode = 0);
+    LoadLibResult loadLibrary(const std::string& filename, bool permanent);
+
+    void unloadLibrary(llvm::StringRef lib);
 
     ///\brief Returns true if the file was a dynamic library and it was already
     /// loaded.

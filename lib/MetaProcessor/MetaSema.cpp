@@ -11,6 +11,7 @@
 
 #include "Display.h"
 
+#include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
@@ -120,6 +121,9 @@ namespace cling {
         const Transaction* unloadPoint = Pos->second;
         while(m_Interpreter.getLastTransaction() != unloadPoint)
           m_Interpreter.unload(/*numberOfTransactions*/1);
+        DynamicLibraryManager* DLM = m_Interpreter.getDynamicLibraryManager();
+        if (DLM->isLibraryLoaded(canonicalFile))
+          DLM->unloadLibrary(canonicalFile);
         m_Watermarks.erase(Pos);
       }
     }
