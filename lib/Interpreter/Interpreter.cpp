@@ -590,7 +590,7 @@ namespace cling {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = CompilationOptions::VPEnabled;
-    CO.ResultEvaluation = 0;
+    CO.ResultEvaluation = (bool)V;
 
     return EvaluateInternal(input, CO, V);
   }
