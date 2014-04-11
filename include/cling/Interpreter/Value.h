@@ -72,6 +72,7 @@ namespace cling {
     void* GetDtorWrapperPtr(const clang::RecordDecl* RD,
                             Interpreter& interp) const;
 
+    unsigned long GetNumberOfElements() const;
 
   public:
     /// \brief Default constructor, creates a value that IsInvalid().

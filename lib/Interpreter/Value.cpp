@@ -36,6 +36,12 @@ namespace {
     ///\brief The destructor function.
     DtorFunc_t m_DtorFunc;
 
+    ///\brief The size of the allocation (for arrays)
+    unsigned long m_AllocSize;
+
+    ///\brief The number of elements in the array
+    unsigned long m_NElements;
+
     ///\brief The start of the allocation.
     char m_Payload[1];
 
@@ -53,13 +59,15 @@ namespace {
     ///\brief Initialize the storage management part of the allocated object.
     ///  The allocator is referencing it, thus initialize m_RefCnt with 1.
     ///\param [in] dtorFunc - the function to be called before deallocation.
-    AllocatedValue(void* dtorFunc):
-      m_RefCnt(1), m_DtorFunc(PtrToFunc(dtorFunc)) {}
+    AllocatedValue(void* dtorFunc, size_t allocSize, size_t nElements):
+      m_RefCnt(1), m_DtorFunc(PtrToFunc(dtorFunc)), m_AllocSize(allocSize),
+      m_NElements(nElements)
+    {}
 
     char* getPayload() { return m_Payload; }
 
     static unsigned getPayloadOffset() {
-      static const AllocatedValue Dummy(0);
+      static const AllocatedValue Dummy(0,0,0);
       return Dummy.m_Payload - (const char*)&Dummy;
     }
 
@@ -75,8 +83,11 @@ namespace {
     void Release() {
       assert (m_RefCnt > 0 && "Reference count is already zero.");
       if (--m_RefCnt == 0) {
-        if (m_DtorFunc)
-          (*m_DtorFunc)(getPayload());
+        if (m_DtorFunc) {
+          char* payload = getPayload();
+          for (size_t el = 0; el < m_NElements; ++el)
+            (*m_DtorFunc)(payload + el * m_AllocSize / m_NElements);
+        }
         delete [] (char*)this;
       }
     }
@@ -145,6 +156,20 @@ bool Value::isVoid(const clang::ASTContext& Ctx) const {
   return isValid() && Ctx.hasSameType(getType(), Ctx.VoidTy);
 }
 
+unsigned long Value::GetNumberOfElements() const {
+  if (const clang::ConstantArrayType* ArrTy
+      = llvm::dyn_cast<clang::ConstantArrayType>(getType())) {
+    llvm::APInt arrSize(sizeof(unsigned long)*8, 1);
+    do {
+      arrSize *= ArrTy->getSize();
+      ArrTy = llvm::dyn_cast<clang::ConstantArrayType>(ArrTy->getElementType()
+                                                       .getTypePtr());
+    } while (ArrTy);
+    return (unsigned long)arrSize.getZExtValue();
+  }
+  return 1;
+}
+
 Value::EStorageType Value::getStorageType() const {
   const clang::Type* desugCanon = getType()->getUnqualifiedDesugaredType();
   desugCanon = desugCanon->getCanonicalTypeUnqualified()->getTypePtr()
@@ -170,20 +195,27 @@ Value::EStorageType Value::getStorageType() const {
 bool Value::needsManagedAllocation() const {
   if (!isValid()) return false;
   const clang::Type* UnqDes = getType()->getUnqualifiedDesugaredType();
-  return UnqDes->isRecordType() || UnqDes->isArrayType()
+  return UnqDes->isRecordType() || UnqDes->isConstantArrayType()
     || UnqDes->isMemberPointerType();
 }
 
 void Value::ManagedAllocate(Interpreter* interp) {
   assert(interp && "This type requires the interpreter for value allocation");
   void* dtorFunc = 0;
-  if (const clang::RecordType* RTy = getType()->getAs<clang::RecordType>())
+  clang::QualType DtorType = getType();
+  // For arrays we destruct the elements.
+  if (const clang::ConstantArrayType* ArrTy
+      = llvm::dyn_cast<clang::ConstantArrayType>(DtorType.getTypePtr())) {
+    DtorType = ArrTy->getElementType();
+  }
+  if (const clang::RecordType* RTy = DtorType->getAs<clang::RecordType>())
     dtorFunc = GetDtorWrapperPtr(RTy->getDecl(), *interp);
 
   const clang::ASTContext& ctx = interp->getCI()->getASTContext();
   unsigned payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
   char* alloc = new char[AllocatedValue::getPayloadOffset() + payloadSize];
-  AllocatedValue* allocVal = new (alloc) AllocatedValue(dtorFunc);
+  AllocatedValue* allocVal = new (alloc) AllocatedValue(dtorFunc, payloadSize,
+                                                        GetNumberOfElements());
   m_Storage.m_Ptr = allocVal->getPayload();
 }
 
@@ -202,9 +234,9 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD,
 
   std::string code("extern \"C\" void ");
   {
+    clang::QualType RDQT(RD->getTypeForDecl(), 0);
     std::string typeName
-      = utils::TypeName::GetFullyQualifiedName(getType(),
-                                               RD->getASTContext());
+      = utils::TypeName::GetFullyQualifiedName(RDQT, RD->getASTContext());
     std::string dtorName = RD->getNameAsString();
     code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
       + dtorName + "();}";
