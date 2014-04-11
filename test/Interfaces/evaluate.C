@@ -179,7 +179,32 @@ printf("(Tracer)RT done\n"); //CHECK-NEXT: RT done
 V // CHECK-NEXT: (cling::Value) boxes [(Tracer) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: VAR+{3}:dump
 
+// Check eval of array var
+Tracer arrV[] = {ObjMaker(), ObjMaker(), ObjMaker()};
+// The array is built:
+//CHECK-NEXT: MADE{4}:ctor
+//CHECK-NEXT: MADE{5}:ctor
+//CHECK-NEXT: MADE{6}:ctor
+
+gCling->evaluate("arrV", V);
+// Now V gets destructed...
+//CHECK-NEXT: VAR+{5}:dtor
+// ...and the elements are copied:
+//CHECK-NEXT: MADE+{6}:copy
+//CHECK-NEXT: MADE+{7}:copy
+//CHECK-NEXT: MADE+{8}:copy
+
+V // CHECK-NEXT: (cling::Value) boxes [(Tracer [3]) { @{{.*}}, @{{.*}}, @{{.*}} }]
+
 // Destruct the variables with static storage:
-// CHECK-NEXT: VAR{2}:dtor
-// CHECK-NEXT: REF{1}:dtor
-// CHECK-NEXT: VAR+{0}:dtor
+// Destruct arrV:
+//CHECK-NEXT: MADE{7}:dtor
+//CHECK-NEXT: MADE{6}:dtor
+//CHECK-NEXT: MADE{5}:dtor
+
+// CHECK-NEXT: VAR{4}:dtor
+// CHECK-NEXT: REF{3}:dtor
+
+//CHECK-NEXT: MADE+{2}:dtor
+//CHECK-NEXT: MADE+{1}:dtor
+//CHECK-NEXT: MADE+{0}:dtor
