@@ -17,6 +17,7 @@
 #include "llvm/Support/Path.h"
 
 namespace cling {
+  class InterpreterCallbacks;
   class InvocationOptions;
 
   ///\brief A helper class managing dynamic shared objects.
@@ -49,6 +50,8 @@ namespace cling {
     ///
     llvm::SmallVector<std::string, 32> m_SystemSearchPaths;
 
+    InterpreterCallbacks* m_Callbacks;
+
     ///\brief Concatenates current include paths and the system include paths
     /// and performs a lookup for the filename.
     ///\param[in] libStem - The filename being looked up
@@ -70,6 +73,9 @@ namespace cling {
   public:
     DynamicLibraryManager(const InvocationOptions& Opts);
     ~DynamicLibraryManager();
+    InterpreterCallbacks* getCallbacks() { return m_Callbacks; }
+    const InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
+    void setCallbacks(InterpreterCallbacks* C) { m_Callbacks = C; }
 
     ///\brief Looks up a library taking into account the current include paths
     /// and the system include paths.

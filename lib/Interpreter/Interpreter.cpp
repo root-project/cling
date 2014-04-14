@@ -1028,6 +1028,8 @@ namespace cling {
     // or a derived class that extends what we need.
     Ctx.ExternalSource.resetWithoutRelease(); // FIXME: make sure we delete it.
     Ctx.setExternalSource(astContextExternalSource);
+    if (DynamicLibraryManager* DLM = getDynamicLibraryManager())
+      DLM->setCallbacks(C);
   }
 
   const Transaction* Interpreter::getFirstTransaction() const {

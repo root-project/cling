@@ -156,6 +156,9 @@ namespace cling {
     ///\param[in] - The Type read by the ASTReader.
     virtual void TypeDeserialized(const clang::Type*) {}
 
+    virtual void LibraryLoaded(const void*, llvm::StringRef) {}
+    virtual void LibraryUnloaded(const void*, llvm::StringRef) {}
+
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
     ///

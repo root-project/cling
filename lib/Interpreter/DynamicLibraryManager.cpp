@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/DynamicLibraryManager.h"
+#include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/InvocationOptions.h"
 
 #include "llvm/Support/DynamicLibrary.h"
@@ -145,7 +146,7 @@ namespace {
 
 namespace cling {
   DynamicLibraryManager::DynamicLibraryManager(const InvocationOptions& Opts)
-    : m_Opts(Opts) {
+    : m_Opts(Opts), m_Callbacks(0) {
     GetSystemLibraryPaths(m_SystemSearchPaths);
     m_SystemSearchPaths.push_back(".");
   }
@@ -320,6 +321,9 @@ namespace cling {
       llvm::errs() << "cling::DyLibMan::loadLibrary(): " << errMsg << '\n';
       return kLoadLibLoadError;
     }
+    else if (InterpreterCallbacks* C = getCallbacks())
+      C->LibraryLoaded(dyLibHandle, canonicalLoadedLib);
+
     std::pair<DyLibs::iterator, bool> insRes
       = m_DyLibs.insert(std::pair<DyLibHandle, std::string>(dyLibHandle,
                                                             canonicalLoadedLib));
@@ -353,6 +357,9 @@ namespace cling {
       errMsg = DyLibError;
     }
 #endif
+    if (InterpreterCallbacks* C = getCallbacks())
+      C->LibraryUnloaded(dyLibHandle, canonicalLoadedLib);
+
     m_DyLibs.erase(dyLibHandle);
     m_LoadedLibraries.erase(canonicalLoadedLib);
   }
