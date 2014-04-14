@@ -248,6 +248,25 @@ namespace cling {
     return FullPath.str();
   }
 
+  static std::string normalizePath(llvm::StringRef path) {
+    // Make the path canonical if the file exists.
+    struct stat buffer;
+    if (stat(path.data(), &buffer) != 0)
+      return "";
+#if defined(LLVM_ON_WIN32)
+    char buf[_MAX_PATH];
+    char *res = _fullpath(buf, path.data(), _MAX_PATH);
+#else
+    char buf[PATH_MAX+1];
+    char *res = realpath(path.data(), buf);
+#endif
+    if (res == 0) {
+      assert(0 && "Cannot normalize!?");
+      return "";
+    }
+    return res;
+  }
+
   std::string
   DynamicLibraryManager::lookupLibrary(llvm::StringRef libStem) const {
     llvm::SmallString<128> Absolute(libStem);
@@ -257,7 +276,7 @@ namespace cling {
     // If it is an absolute path, don't try iterate over the paths.
     if (isAbsolute) {
       if (isSharedLib(libStem))
-        return libStem;
+        return normalizePath(libStem);
       else
         return "";
     }
@@ -269,7 +288,7 @@ namespace cling {
     }
 
     if (isSharedLib(foundName))
-      return foundName;
+      return normalizePath(foundName);
     return "";
   }
 
