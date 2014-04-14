@@ -353,9 +353,6 @@ namespace cling {
       errMsg = DyLibError;
     }
 #endif
-    if (InterpreterCallbacks* C = m_Interpreter.getCallbacks())
-      C->LibraryUnloaded(dyLibHandle, canonicalLoadedLib);
-
     m_DyLibs.erase(dyLibHandle);
     m_LoadedLibraries.erase(canonicalLoadedLib);
   }
