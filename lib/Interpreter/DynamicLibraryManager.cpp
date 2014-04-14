@@ -344,7 +344,7 @@ namespace cling {
     std::string errMsg;
     // TODO: !permanent case
 #if defined(LLVM_ON_WIN32)
-    UnloadLibraryEx(dyLibHandle);
+    FreeLibrary(dyLibHandle);
     errMsg = "UnoadLibraryEx: GetLastError() returned ";
     errMsg += GetLastError();
 #else
