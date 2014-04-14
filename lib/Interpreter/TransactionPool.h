@@ -69,7 +69,12 @@ namespace cling {
       assert((T->getState() == Transaction::kCompleted ||
               T->getState() == Transaction::kRolledBack)
              && "Transaction must completed!");
+
       if (m_Transactions.size() == POOL_SIZE) {
+        // Tell the parent that T is gone.
+        if (T->getParent())
+          T->getParent()->removeNestedTransaction(T);
+
         // don't overflow the pool
         delete T;
         return;
