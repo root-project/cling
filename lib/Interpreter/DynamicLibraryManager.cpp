@@ -353,24 +353,17 @@ namespace cling {
       errMsg = DyLibError;
     }
 #endif
+    if (InterpreterCallbacks* C = m_Interpreter.getCallbacks())
+      C->LibraryUnloaded(dyLibHandle, canonicalLoadedLib);
+
     m_DyLibs.erase(dyLibHandle);
     m_LoadedLibraries.erase(canonicalLoadedLib);
   }
 
   bool DynamicLibraryManager::isLibraryLoaded(llvm::StringRef fullPath) const {
-    // get canonical path name and check if already loaded
-#if defined(LLVM_ON_WIN32)
-    char buf[_MAX_PATH];
-    char *res = _fullpath(buf, fullPath.str().c_str(), _MAX_PATH);
-#else
-    char buf[PATH_MAX+1];
-    char *res = realpath(fullPath.str().c_str(), buf);
-#endif
-    if (res == 0) {
-      llvm::errs() << "cling::Interpreter::isDynamicLibraryLoaded(): error getting real (canonical) path\n";
-      return false;
-    }
-    if (m_LoadedLibraries.find(buf) != m_LoadedLibraries.end()) return true;
+    std::string canonPath = normalizePath(fullPath);
+    if (m_LoadedLibraries.find(canonPath) != m_LoadedLibraries.end())
+      return true;
     return false;
   }
 
