@@ -1142,6 +1142,28 @@ namespace cling {
 #endif
     }
 
+#ifndef NDEBUG
+    size_t DeclSize = std::distance(T->decls_begin(), T->decls_end());
+    if (T->getCompilationOpts().CodeGenerationForModule)
+      assert (!DeclSize && "No parsed decls must happen in parse for module");
+    
+#endif
+    //FIXME: Terrible hack, we *must* get rid of parseForModule by implementing
+    // a header file generator in cling.
+    for (Transaction::const_reverse_iterator I = T->deserialized_rdecls_begin(),
+           E = T->deserialized_rdecls_end(); I != E; ++I) {
+      const DeclGroupRef& DGR = (*I).m_DGR;
+      for (DeclGroupRef::const_iterator
+             Di = DGR.end() - 1, E = DGR.begin() - 1; Di != E; --Di) {
+        // We only want to revert all that came through parseForModule, and 
+        // not the PCH.
+        if (!(*Di)->isFromASTFile())
+          Successful = DeclU.UnloadDecl(*Di) && Successful;
+#ifndef NDEBUG
+        assert(Successful && "Cannot handle that yet!");
+#endif
+      }
+    }
 
     m_Sema->getDiagnostics().Reset(/*soft=*/true);
     m_Sema->getDiagnostics().getClient()->clear();
