@@ -99,9 +99,7 @@ namespace cling {
     bool isfileExCommand();
     bool isfilesCommand();
     bool isClassCommand();
-    //
     bool isNamespaceCommand();
-    //
     bool isgCommand();
     bool isTypedefCommand();
     bool isShellCommand(MetaSema::ActionResult& actionResult,

@@ -33,7 +33,6 @@
 #include "llvm/Support/Path.h"
 
 #include <algorithm>
-#include <iostream>
 #include <cassert>
 #include <cstring>
 #include <cctype>
