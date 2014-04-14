@@ -15,10 +15,10 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <stdlib.h>
 #include <algorithm>
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef WIN32
 #include <Windows.h>
