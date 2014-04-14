@@ -958,8 +958,9 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::loadFile(const std::string& filename,
                         bool allowSharedLib /*=true*/) {
-    if (allowSharedLib) {
-      DynamicLibraryManager* DLM = getDynamicLibraryManager();
+    DynamicLibraryManager* DLM = getDynamicLibraryManager();
+    std::string canonicalLib = DLM->lookupLibrary(filename);
+    if (allowSharedLib && !canonicalLib.empty()) {
       switch (DLM->loadLibrary(filename, /*permanent*/false)) {
       case DynamicLibraryManager::kLoadLibSuccess: // Intentional fall through
       case DynamicLibraryManager::kLoadLibAlreadyLoaded:
