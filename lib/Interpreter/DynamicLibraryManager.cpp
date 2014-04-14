@@ -222,7 +222,7 @@ namespace cling {
       if (foundDyLib.empty()) {
         filenameWithExt.erase(IStemEnd + 1, filenameWithExt.end());
         filenameWithExt += ".dylib";
-        FoundDyLib = lookupLibInPaths(filenameWithExt);
+        foundDyLib = lookupLibInPaths(filenameWithExt);
       }
 #endif
     }
