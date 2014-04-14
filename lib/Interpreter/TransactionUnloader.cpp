@@ -473,11 +473,10 @@ namespace clang {
 
   DeclUnloader::~DeclUnloader() {
     SourceManager& SM = m_Sema->getSourceManager();
-    for (FileIDs::iterator I = m_FilesToUncache.begin(), 
+    for (FileIDs::iterator I = m_FilesToUncache.begin(),
            E = m_FilesToUncache.end(); I != E; ++I) {
       // We need to reset the cache
-      if (const FileEntry* entry = SM.getFileEntryForID(*I))
-        SM.invalidateCache(const_cast<FileEntry*>(entry));
+      SM.invalidateCache(*I);
     }
 
     // Clean up the pending instantiations
