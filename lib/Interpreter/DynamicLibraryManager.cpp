@@ -19,6 +19,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -239,8 +240,8 @@ namespace cling {
     char *res = realpath(foundDyLib.c_str(), (char *)FullPath.data());
 #endif
     if (res == 0) {
-      llvm::errs() << "cling::Interpreter::tryLinker(): error getting real "
-        "(canonical) path of library " << foundDyLib << '\n';
+      llvm::errs() << "cling::DyLibMan::lookupLibMaybeAddExt(): error getting "
+        "real (canonical) path of library " << foundDyLib << '\n';
       return foundDyLib;
     }
     FullPath.set_size(strlen(res));
