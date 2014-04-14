@@ -103,6 +103,8 @@ namespace cling {
     ///\param [in] handle - the system specific shared library handle.
     ///
     static void ExposeHiddenSharedLibrarySymbols(void* handle);
+
+    static std::string normalizePath(llvm::StringRef path);
   };
 } // end namespace cling
 #endif // CLING_DYNAMIC_LIBRARY_MANAGER_H

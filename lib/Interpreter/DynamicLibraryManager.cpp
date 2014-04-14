@@ -248,7 +248,7 @@ namespace cling {
     return FullPath.str();
   }
 
-  static std::string normalizePath(llvm::StringRef path) {
+  std::string DynamicLibraryManager::normalizePath(llvm::StringRef path) {
     // Make the path canonical if the file exists.
     struct stat buffer;
     if (stat(path.data(), &buffer) != 0)

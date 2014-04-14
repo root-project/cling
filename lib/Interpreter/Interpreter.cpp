@@ -934,6 +934,7 @@ namespace cling {
   }
 
   std::string Interpreter::lookupFileOrLibrary(llvm::StringRef file) {
+    std::string canonicalFile = DynamicLibraryManager::normalizePath(file);
     const FileEntry* FE = 0;
 
     //Copied from clang's PPDirectives.cpp
@@ -946,12 +947,12 @@ namespace cling {
     Preprocessor& PP = getCI()->getPreprocessor();
     // PP::LookupFile uses it to issue 'nice' diagnostic
     SourceLocation fileNameLoc;
-    FE = PP.LookupFile(fileNameLoc, file, isAngled, LookupFrom, CurDir,
+    FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, LookupFrom, CurDir,
                        /*SearchPath*/0, /*RelativePath*/ 0,
                        /*suggestedModule*/0, /*SkipCache*/false);
     if (FE)
       return FE->getName();
-    return getDynamicLibraryManager()->lookupLibrary(file);
+    return getDynamicLibraryManager()->lookupLibrary(canonicalFile);
   }
 
   Interpreter::CompilationResult
