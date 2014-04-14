@@ -25,6 +25,8 @@ void DisplayClass(llvm::raw_ostream &stream,
                   const Interpreter *interpreter, const char *className, 
                   bool verbose);
 
+void DisplayNamespaces(llvm::raw_ostream &stream, const Interpreter *interpreter);
+
 void DisplayGlobals(llvm::raw_ostream &stream, const Interpreter *interpreter);
 void DisplayGlobal(llvm::raw_ostream &stream, const Interpreter *interpreter, 
                    const std::string &name);

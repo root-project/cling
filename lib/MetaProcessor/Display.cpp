@@ -33,6 +33,7 @@
 #include "llvm/Support/Path.h"
 
 #include <algorithm>
+#include <iostream>
 #include <cassert>
 #include <cstring>
 #include <cctype>
@@ -1300,6 +1301,92 @@ void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo
   fOut.Print("\n");
 }
 
+//Aux. class traversing TU and printing namespaces.
+class NamespacePrinter {
+public:
+   NamespacePrinter(llvm::raw_ostream& stream, const Interpreter* interpreter);
+   
+   void Print()const;
+
+private:
+   void ProcessNamespaceDeclaration(decl_iterator decl,
+                                    const std::string& enclosingNamespaceName)const;
+
+   FILEPrintHelper fOut;
+   const cling::Interpreter* fInterpreter;
+};
+
+//______________________________________________________________________________
+NamespacePrinter::NamespacePrinter(llvm::raw_ostream& stream,
+                                   const Interpreter* interpreter)
+                     : fOut(stream),
+                       fInterpreter(interpreter)
+{
+   assert(interpreter != nullptr &&
+          "NamespacePrinter, parameter 'interpreter' is null");
+}
+
+//______________________________________________________________________________
+void NamespacePrinter::Print()const
+{
+  assert(fInterpreter != nullptr && "Print, fInterpreter is null");
+
+  const auto compiler = fInterpreter->getCI();
+  assert(compiler != nullptr && "Print, compiler instance is null");
+
+  const auto tu = compiler->getASTContext().getTranslationUnitDecl();
+  assert(tu != nullptr && "Print, translation unit is null");
+
+  const std::string globalNSName;
+
+  fOut.Print("List of namespaces\n");
+  for (auto it = tu->decls_begin(), eIt = tu->decls_end(); it != eIt; ++it) {
+    if (it->getKind() == Decl::Namespace || it->getKind() == Decl::NamespaceAlias)
+      ProcessNamespaceDeclaration(it, globalNSName);
+  }
+}
+
+//______________________________________________________________________________
+void NamespacePrinter::ProcessNamespaceDeclaration(decl_iterator declIt,
+                                const std::string& enclosingNamespaceName)const
+{
+  assert(fInterpreter != 0 &&
+         "ProcessNamespaceDeclaration, fInterpreter is null");
+  assert(*declIt != 0 &&
+         "ProcessNamespaceDeclaration, parameter 'decl' is not a valid iterator");
+
+  if (const auto nsDecl = dyn_cast<NamespaceDecl>(*declIt)) {
+    if (nsDecl->isAnonymousNamespace())
+      return;//TODO: invent some name?
+
+    std::string name(enclosingNamespaceName);
+    if (enclosingNamespaceName.length())
+      name += "::";
+    name += nsDecl->getNameAsString();
+    
+    if (nsDecl->isOriginalNamespace()) {
+      fOut.Print(name.c_str());
+      fOut.Print("\n");
+    }
+  
+    if (const auto ctx = dyn_cast<DeclContext>(*declIt)) {
+      for (auto it = ctx->decls_begin(), eIt = ctx->decls_end(); it != eIt; ++it) {
+        if (it->getKind() == Decl::Namespace ||
+            it->getKind() == Decl::NamespaceAlias)
+          ProcessNamespaceDeclaration(it, name);
+      }
+    }//TODO: else diagnostic?
+  } else if (const auto alDecl = dyn_cast<NamespaceAliasDecl>(*declIt)) {
+    if (enclosingNamespaceName.length()) {
+      fOut.Print((enclosingNamespaceName + "::" +
+                  alDecl->getNameAsString()).c_str());
+    } else
+      fOut.Print(alDecl->getNameAsString().c_str());
+
+    fOut.Print("\n");
+  }
+}
+
 //Print typedefs.
 class TypedefPrinter {
 public:
@@ -1373,11 +1460,11 @@ void TypedefPrinter::DisplayTypedef(const std::string& typedefName)const
 //______________________________________________________________________________
 void TypedefPrinter::ProcessNestedDeclarations(const DeclContext* decl)const
 {
- assert(decl != 0 && "ProcessNestedDeclarations, parameter 'decl' is null");
+  assert(decl != 0 && "ProcessNestedDeclarations, parameter 'decl' is null");
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
- for (decl_iterator it = decl->decls_begin(), eIt = decl->decls_end(); it != eIt; ++it)
-   ProcessDecl(it);
+  for (decl_iterator it = decl->decls_begin(), eIt = decl->decls_end(); it != eIt; ++it)
+    ProcessDecl(it);
 }
 
 //______________________________________________________________________________
@@ -1472,6 +1559,17 @@ void DisplayClass(llvm::raw_ostream& stream, const Interpreter* interpreter,
     printer.SetVerbose(true);//?
     printer.DisplayAllClasses();
   }
+}
+
+//______________________________________________________________________________
+void DisplayNamespaces(llvm::raw_ostream &stream, const Interpreter *interpreter)
+{
+  assert(interpreter != 0 && "DisplayNamespaces, parameter 'interpreter' is null");
+  Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
+  
+  NamespacePrinter printer(stream, interpreter);
+  Interpreter::PushTransactionRAII guard(const_cast<Interpreter *>(interpreter));
+  printer.Print();
 }
 
 //______________________________________________________________________________

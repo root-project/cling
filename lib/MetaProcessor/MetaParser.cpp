@@ -113,7 +113,7 @@ namespace cling {
       || isqCommand() || isUCommand(actionResult) || isICommand()
       || isOCommand() || israwInputCommand() || isprintDebugCommand()
       || isdynamicExtensionsCommand() || ishelpCommand() || isfileExCommand()
-      || isfilesCommand() || isClassCommand() || isgCommand()
+      || isfilesCommand() || isClassCommand() || isNamespaceCommand() || isgCommand()
       || isTypedefCommand()
       || isShellCommand(actionResult, resultValue) || isstoreStateCommand()
       || iscompareStateCommand() || isstatsCommand() || isundoCommand()
@@ -478,6 +478,20 @@ namespace cling {
       }
       else if (Tok.getIdent().equals("Class")) {
         m_Actions->actOnClassCommand();
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  bool MetaParser::isNamespaceCommand() {
+    const Token& Tok = getCurTok();
+    if (Tok.is(tok::ident)) {
+      if (Tok.getIdent().equals("namespace")) {
+        consumeAnyStringToken(tok::eof);
+        if (getCurTok().is(tok::raw_ident))
+          return false;
+        m_Actions->actOnNamespaceCommand();
         return true;
       }
     }

@@ -180,6 +180,10 @@ namespace cling {
     ///
     void actOnClassCommand() const;
 
+    ///\brief Prints out namespace names.
+    ///
+    void actOnNamespaceCommand() const;
+
     ///\brief Prints out information about global variables.
     ///
     ///\param[in] varName - The name of the global variable
