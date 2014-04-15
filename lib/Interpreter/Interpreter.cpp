@@ -967,7 +967,8 @@ namespace cling {
       case DynamicLibraryManager::kLoadLibAlreadyLoaded:
         return kSuccess;
       default:
-        break;
+        // Not a source file (canonical name is non-empty) but can't load.
+        return kFailure;
       }
     }
 
