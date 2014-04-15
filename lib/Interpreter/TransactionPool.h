@@ -37,6 +37,9 @@ namespace cling {
     // We need to free them in blocks.
     //
     //llvm::SmallVector<Transaction*, 64> m_TransactionBlocks;
+#ifndef NDEBUG
+    bool m_Debug;
+#endif
 
   private:
     void RefillPool() {
@@ -49,6 +52,9 @@ namespace cling {
 
   public:
     TransactionPool(clang::Sema& S) : m_Sema(S) {
+#ifndef NDEBUG
+      m_Debug = false;
+#endif
       RefillPool();
     }
 
@@ -61,6 +67,12 @@ namespace cling {
       if (m_Transactions.size() == 0)
         RefillPool();
       Transaction* T = m_Transactions.pop_back_val();
+#ifndef NDEBUG
+      // *Very useful for debugging purposes and setting breakpoints in gdb.
+      if (m_Debug)
+        T = new Transaction(m_Sema);
+#endif
+
       T->m_State = Transaction::kCollecting;
       return T;
     }
