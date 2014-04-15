@@ -966,6 +966,9 @@ namespace cling {
       case DynamicLibraryManager::kLoadLibSuccess: // Intentional fall through
       case DynamicLibraryManager::kLoadLibAlreadyLoaded:
         return kSuccess;
+      case DynamicLibraryManager::kLoadLibNotFound:
+        assert("Cannot find library with existing canonical name!");
+        return kFailure;
       default:
         // Not a source file (canonical name is non-empty) but can't load.
         return kFailure;
