@@ -1144,10 +1144,12 @@ namespace cling {
 
 #ifndef NDEBUG
     size_t DeclSize = std::distance(T->decls_begin(), T->decls_end());
-    if (T->getCompilationOpts().CodeGenerationForModule)
-      assert (!DeclSize && "No parsed decls must happen in parse for module");
-    
+    //FIXME: Move the nested transaction marker out of the decl lists and
+    // reenable this assertion.
+    //if (T->getCompilationOpts().CodeGenerationForModule)
+    //  assert (!DeclSize && "No parsed decls must happen in parse for module");
 #endif
+
     //FIXME: Terrible hack, we *must* get rid of parseForModule by implementing
     // a header file generator in cling.
     for (Transaction::const_reverse_iterator I = T->deserialized_rdecls_begin(),
