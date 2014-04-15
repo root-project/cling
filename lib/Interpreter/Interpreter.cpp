@@ -508,9 +508,9 @@ namespace cling {
     ModuleMap::KnownHeader suggestedModule;
     // PP::LookupFile uses it to issue 'nice' diagnostic
     SourceLocation fileNameLoc;
-    PP.LookupFile(fileNameLoc, headerFile, isAngled, LookupFrom, CurDir, 
-                  /*SearchPath*/0, /*RelativePath*/ 0, &suggestedModule, 
-                  /*SkipCache*/false);
+    PP.LookupFile(fileNameLoc, headerFile, isAngled, LookupFrom, CurDir,
+                  /*SearchPath*/0, /*RelativePath*/ 0, &suggestedModule,
+                  /*SkipCache*/false, /*OpenFile*/ false, /*CacheFail*/ false);
     if (!suggestedModule)
       return Interpreter::kFailure;
 
@@ -949,7 +949,8 @@ namespace cling {
     SourceLocation fileNameLoc;
     FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, LookupFrom, CurDir,
                        /*SearchPath*/0, /*RelativePath*/ 0,
-                       /*suggestedModule*/0, /*SkipCache*/false);
+                       /*suggestedModule*/0, /*SkipCache*/false,
+                       /*OpenFile*/ false, /*CacheFail*/ false);
     if (FE)
       return FE->getName();
     return getDynamicLibraryManager()->lookupLibrary(canonicalFile);
