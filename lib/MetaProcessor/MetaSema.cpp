@@ -49,7 +49,9 @@ namespace cling {
     const Transaction* unloadPoint = m_Interpreter.getLastTransaction();
     // TODO: extra checks. Eg if the path is readable, if the file exists...
     std::string canFile = m_Interpreter.lookupFileOrLibrary(file);
-    if (m_Interpreter.loadFile(file.str()) == Interpreter::kSuccess) {
+    if (canFile.empty())
+      canFile = file;
+    if (m_Interpreter.loadFile(canFile) == Interpreter::kSuccess) {
       clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
       clang::FileManager& FM = SM.getFileManager();
       const clang::FileEntry* Entry

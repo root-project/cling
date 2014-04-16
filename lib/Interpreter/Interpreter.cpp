@@ -935,6 +935,8 @@ namespace cling {
 
   std::string Interpreter::lookupFileOrLibrary(llvm::StringRef file) {
     std::string canonicalFile = DynamicLibraryManager::normalizePath(file);
+    if (canonicalFile.empty())
+      canonicalFile = file;
     const FileEntry* FE = 0;
 
     //Copied from clang's PPDirectives.cpp
