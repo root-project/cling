@@ -241,8 +241,8 @@ namespace cling {
     char *res = realpath(foundDyLib.c_str(), (char *)FullPath.data());
 #endif
     if (res == 0) {
-      llvm::errs() << "cling::DyLibMan::lookupLibMaybeAddExt(): error getting "
-        "real (canonical) path of library " << foundDyLib << '\n';
+      llvm::errs() << "cling::DynamicLibraryManager::lookupLibMaybeAddExt(): "
+        "error getting real (canonical) path of library " << foundDyLib << '\n';
       return foundDyLib;
     }
     FullPath.set_size(strlen(res));
@@ -318,7 +318,8 @@ namespace cling {
     }
 #endif
     if (!dyLibHandle) {
-      llvm::errs() << "cling::DyLibMan::loadLibrary(): " << errMsg << '\n';
+      llvm::errs() << "cling::DynamicLibraryManager::loadLibrary(): " << errMsg
+                   << '\n';
       return kLoadLibLoadError;
     }
     else if (InterpreterCallbacks* C = getCallbacks())
