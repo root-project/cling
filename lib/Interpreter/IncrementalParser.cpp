@@ -296,7 +296,6 @@ namespace cling {
       m_Consumer->setTransaction(T);
       codeGenTransaction(T);
       transformTransactionIR(T);
-      Transaction* nestedT = beginTransaction(CompilationOptions());
       T->setState(Transaction::kCommitted);
       if (m_Interpreter->runStaticInitializersOnce(*T) 
           >= Interpreter::kExeFirstError) {
