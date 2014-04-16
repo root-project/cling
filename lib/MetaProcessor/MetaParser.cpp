@@ -120,19 +120,19 @@ namespace cling {
       || isRedirectCommand(actionResult);
   }
 
-  // L := 'L' FilePath
+  // L := 'L' FilePath Comment
   // FilePath := AnyString
-  // AnyString := .*^(' ' | '\t')
+  // AnyString := .*^('\t' Comment)
   bool MetaParser::isLCommand(MetaSema::ActionResult& actionResult) {
     bool result = false;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("L")) {
-      consumeAnyStringToken();
+      consumeAnyStringToken(tok::comment);
       if (getCurTok().is(tok::raw_ident)) {
         result = true;
         actionResult = m_Actions->actOnLCommand(getCurTok().getIdent());
         consumeToken();
         if (getCurTok().is(tok::comment)) {
-          consumeAnyStringToken();
+          consumeAnyStringToken(tok::eof);
           m_Actions->actOnComment(getCurTok().getIdent());
         }
       }
@@ -194,7 +194,7 @@ namespace cling {
         if (getCurTok().is(tok::eof)) {
           file  = llvm::StringRef();
         } else {
-          consumeAnyStringToken();
+          consumeAnyStringToken(tok::eof);
           if (getCurTok().is(tok::raw_ident)) {
             file = getCurTok().getIdent();
             consumeToken();
@@ -266,7 +266,7 @@ namespace cling {
   bool MetaParser::isUCommand(MetaSema::ActionResult& actionResult) {
     actionResult = MetaSema::AR_Failure;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("U")) {
-      consumeAnyStringToken();
+      consumeAnyStringToken(tok::eof);
       llvm::StringRef path;
       if (getCurTok().is(tok::raw_ident)) {
         path = getCurTok().getIdent();
@@ -279,7 +279,7 @@ namespace cling {
 
   bool MetaParser::isICommand() {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("I")) {
-      consumeAnyStringToken();
+      consumeAnyStringToken(tok::eof);
       llvm::StringRef path;
       if (getCurTok().is(tok::raw_ident))
         path = getCurTok().getIdent();
