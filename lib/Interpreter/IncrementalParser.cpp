@@ -276,11 +276,14 @@ namespace cling {
     // Here we expect a template instantiation. We need to open the transaction
     // that we are currently work with.
     {
+      Transaction* prevConsumerT = m_Consumer->getTransaction();
+      m_Consumer->setTransaction(T);
       Transaction* nestedT = beginTransaction(CompilationOptions());
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
       if (Transaction* T = endTransaction(nestedT))
         commitTransaction(T);
+      m_Consumer->setTransaction(prevConsumerT);
     }
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
 
@@ -289,6 +292,8 @@ namespace cling {
     // decls that need to end up in a transaction. But this one is done
     // with CodeGen...
     if (T->getCompilationOpts().CodeGeneration && hasCodeGenerator()) {
+      Transaction* prevConsumerT = m_Consumer->getTransaction();
+      m_Consumer->setTransaction(T);
       codeGenTransaction(T);
       transformTransactionIR(T);
       Transaction* nestedT = beginTransaction(CompilationOptions());
@@ -300,8 +305,7 @@ namespace cling {
         //rollbackTransaction(nestedT);
         return;
       }
-      if (Transaction* T = endTransaction(nestedT))
-        commitTransaction(T);
+      m_Consumer->setTransaction(prevConsumerT);
     }
     T->setState(Transaction::kCommitted);
 
