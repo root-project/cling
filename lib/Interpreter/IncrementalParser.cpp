@@ -297,12 +297,14 @@ namespace cling {
       codeGenTransaction(T);
       transformTransactionIR(T);
       T->setState(Transaction::kCommitted);
-      if (m_Interpreter->runStaticInitializersOnce(*T) 
-          >= Interpreter::kExeFirstError) {
-        // Roll back on error in a transformer
-        assert(0 && "Error on inits.");
-        //rollbackTransaction(nestedT);
-        return;
+      if (!T->getParent()) {
+        if (m_Interpreter->runStaticInitializersOnce(*T)
+            >= Interpreter::kExeFirstError) {
+          // Roll back on error in a transformer
+          assert(0 && "Error on inits.");
+          //rollbackTransaction(nestedT);
+          return;
+        }
       }
       m_Consumer->setTransaction(prevConsumerT);
     }
