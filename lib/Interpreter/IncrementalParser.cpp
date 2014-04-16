@@ -453,7 +453,7 @@ namespace cling {
     } // for deserialized DGRs
 
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
-    if (endTransaction(deserT))
+    if ((deserT = endTransaction(deserT)))
       commitTransaction(deserT);
   }
 
