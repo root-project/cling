@@ -84,6 +84,13 @@ namespace cling {
     m_ASTTransformers.push_back(new NullDerefProtectionTransformer(TheSema));
     m_ASTTransformers.push_back(new CheckEmptyTransactionTransformer(TheSema));
 
+#ifdef _LIBCPP_VERSION
+    // libc++ relies on force_inline attributes, else symbols will be missing.
+    // But its passes (CallGraph and Inliner) - being module passes - have a
+    // quadratically increasing runtime: for each transaction they need to
+    // iterate over all previous transactions' functions.
+    // Until this is solved (for instance by feeding only the new functions
+    // to the CallGraph) we penalize only the use of libc++.
     if (m_CodeGen) {
       llvm::Module* TheModule = m_CodeGen->GetModule();
       // IR passes make sense if we do CodeGen.
@@ -93,6 +100,7 @@ namespace cling {
                                                  CI->getLangOpts(),
                                                  CI->getCodeGenOpts()));
     }
+#endif
   }
 
   void
