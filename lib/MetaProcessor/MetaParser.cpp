@@ -61,12 +61,19 @@ namespace cling {
       return;
 
     Token Tok = lookAhead(1);
+    Token PrevTok = Tok;
     while (Tok.isNot(stopAt) && Tok.isNot(tok::eof)){
       //MergedTok.setLength(MergedTok.getLength() + Tok.getLength());
       m_TokenCache.erase(m_TokenCache.begin() + 1);
+      PrevTok = Tok;
       Tok = lookAhead(1);
     }
     MergedTok.setKind(tok::raw_ident);
+    if (PrevTok.is(tok::space)) {
+      // for "id <space> eof" the merged token should contain "id", not
+      // "id <space>".
+      Tok = PrevTok;
+    }
     MergedTok.setLength(Tok.getBufStart() - MergedTok.getBufStart());
   }
 
