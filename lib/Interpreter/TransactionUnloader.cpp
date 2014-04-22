@@ -1143,9 +1143,9 @@ namespace cling {
     }
 
 #ifndef NDEBUG
-    size_t DeclSize = std::distance(T->decls_begin(), T->decls_end());
     //FIXME: Move the nested transaction marker out of the decl lists and
     // reenable this assertion.
+    //size_t DeclSize = std::distance(T->decls_begin(), T->decls_end());
     //if (T->getCompilationOpts().CodeGenerationForModule)
     //  assert (!DeclSize && "No parsed decls must happen in parse for module");
 #endif
