@@ -45,6 +45,7 @@
   #define NOGDI
   #define NOMINMAX
   #include <Windows.h>
+  #include <sstream>
   #define popen _popen
   #define pclose _pclose
   #pragma comment(lib, "Advapi32.lib")
@@ -199,15 +200,17 @@ static bool getVisualStudioDir(std::string &path) {
     path = vcinstalldir;
     return true;
   }
-
+  int VSVersion = (_MSC_VER / 100) - 6;
+  std::stringstream keyName;
+  keyName << "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\" << VSVersion << ".0";
   char vsIDEInstallDir[256];
   char vsExpressIDEInstallDir[256];
   // Then try the windows registry.
-  bool hasVCDir = getSystemRegistryString(
-    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\$VERSION",
+  bool hasVCDir = getSystemRegistryString(keyName.str().c_str(),
     "InstallDir", vsIDEInstallDir, sizeof(vsIDEInstallDir) - 1);
-  bool hasVCExpressDir = getSystemRegistryString(
-    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VCExpress\\$VERSION",
+  keyName.str(std::string());
+  keyName << "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VCExpress\\" << VSVersion << ".0";
+  bool hasVCExpressDir = getSystemRegistryString(keyName.str().c_str(),
     "InstallDir", vsExpressIDEInstallDir, sizeof(vsExpressIDEInstallDir) - 1);
     // If we have both vc80 and vc90, pick version we were compiled with.
   if (hasVCDir && vsIDEInstallDir[0]) {
@@ -372,10 +375,10 @@ namespace cling {
 #endif
 #ifdef _MSC_VER
     HKEY regVS;
-    char subKey[256];
-    int VSVersion = (CLING_CXXABIV / 100) - 6;
-    sprintf(subKey, "VisualStudio.DTE.%d.0", VSVersion);
-    if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey, 0, KEY_READ, &regVS) == ERROR_SUCCESS) {
+    int VSVersion = (_MSC_VER / 100) - 6;
+    std::stringstream subKey;
+    subKey << "VisualStudio.DTE." << VSVersion << ".0";
+    if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey.str().c_str(), 0, KEY_READ, &regVS) == ERROR_SUCCESS) {
       RegCloseKey(regVS);
     }
     else {
@@ -457,11 +460,11 @@ namespace cling {
         if (getWindowsSDKDir(WindowsSDKDir)) {
           HostCXXI.push_back("-I");
           HostCXXI.push_back(WindowsSDKDir + "\\include");
-	    }
+        }
         else {
           HostCXXI.push_back("-I");
           HostCXXI.push_back(VSDir + "\\VC\\PlatformSDK\\Include");
-	    }
+        }
       }
 #else // _MSC_VER
       static const char *CppInclQuery =
