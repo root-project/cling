@@ -567,8 +567,8 @@ namespace cling {
       argvCompile.insert(argvCompile.begin() + 1,"-x");
       argvCompile.insert(argvCompile.begin() + 2, "c++");
     }
-    argvCompile.push_back("-c");
-    argvCompile.push_back("-");
+    argvCompile.insert(argvCompile.begin() + 3,"-c");
+    argvCompile.insert(argvCompile.begin() + 4,"-");
     AddHostCXXIncludes(argvCompile);
 
     clang::CompilerInvocation*

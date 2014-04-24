@@ -42,19 +42,18 @@ int main( int argc, char **argv ) {
     interp.loadFile(interp.getOptions().LibsToLoad[I]);
   }
 
-  const std::vector<clang::FrontendInputFile>& Inputs
-    = CI->getInvocation().getFrontendOpts().Inputs;
 
   // Interactive means no input (or one input that's "-")
+  std::vector<std::string>& Inputs = interp.getOptions().Inputs;
   bool Interactive = Inputs.empty() || (Inputs.size() == 1
-                                        && Inputs[0].getFile() == "-");
+                                        && Inputs[0] == "-");
 
   cling::UserInterface ui(interp);
   // If we are not interactive we're supposed to parse files
   if (!Interactive) {
     for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
       std::string line(".x ");
-      line += Inputs[I].getFile();
+      line += Inputs[I];
       cling::Interpreter::CompilationResult compRes;
       ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
     }

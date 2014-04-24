@@ -81,6 +81,21 @@ namespace {
       Opts.LibSearchPath.push_back(LibPaths[i]);
   }
 
+  static void ParseInputs(cling::InvocationOptions& Opts,
+                          int argc, const char* const argv[]) {
+    if (argc <= 1) { return; }
+    unsigned MissingArgIndex, MissingArgCount;
+    llvm::OwningPtr<OptTable> OptsC1(clang::driver::createDriverOptTable());
+    Opts.Inputs.clear();
+    llvm::OwningPtr<InputArgList> Args(
+        OptsC1->ParseArgs(argv+1, argv + argc, MissingArgIndex, MissingArgCount));
+    for (ArgList::const_iterator it = Args->begin(),
+           ie = Args->end(); it != ie; ++it) {
+      if ( (*it)->getOption().getKind() == Option::InputClass ) {
+          Opts.Inputs.push_back(std::string( (*it)->getValue() ) );
+      }
+    }
+  }
 }
 
 cling::InvocationOptions
@@ -107,6 +122,7 @@ cling::InvocationOptions::CreateFromArgs(int argc, const char* const argv[],
   }
   ParseStartupOpts(ClingOpts, *Args /* , Diags */);
   ParseLinkerOpts(ClingOpts, *Args /* , Diags */);
+  ParseInputs(ClingOpts, argc, argv);
   return ClingOpts;
 }
 

@@ -31,6 +31,7 @@ namespace cling {
 
     std::vector<std::string> LibsToLoad;
     std::vector<std::string> LibSearchPath;
+    std::vector<std::string> Inputs;
 
     static InvocationOptions CreateFromArgs(int argc, const char* const argv[],
                                             std::vector<unsigned>& leftoverArgs
