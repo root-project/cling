@@ -1148,8 +1148,15 @@ namespace utils {
     R.suppressDiagnostics();
     if (!Within)
       S->LookupName(R, S->TUScope);
-    else
+    else {
+      if (const clang::TagDecl* TD = dyn_cast<clang::TagDecl>(Within)) {
+        if (!TD->getDefinition()) {
+          // No definition, no lookup result.
+          return 0;
+        }
+      }
       S->LookupQualifiedName(R, const_cast<DeclContext*>(Within));
+    }
 
     if (R.empty())
       return 0;
@@ -1172,8 +1179,15 @@ namespace utils {
     R.suppressDiagnostics();
     if (!Within)
       S->LookupName(R, S->TUScope);
-    else
+    else {
+      if (const clang::TagDecl* TD = dyn_cast<clang::TagDecl>(Within)) {
+        if (!TD->getDefinition()) {
+          // No definition, no lookup result.
+          return 0;
+        }
+      }
       S->LookupQualifiedName(R, const_cast<DeclContext*>(Within));
+    }
 
     if (R.empty())
       return 0;
