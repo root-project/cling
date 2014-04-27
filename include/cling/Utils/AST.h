@@ -189,7 +189,7 @@ namespace utils {
     ///\param[in] Name - The name we are looking up.
     ///\param[in] Within - The context within the lookup is done. If 0 the 
     ///                    TranslationUnitDecl is used.
-    ///\returns the found result (if single) or 0.
+    ///\returns the found NamespaceDecl or 0.
     ///
     clang::NamespaceDecl* Namespace(clang::Sema* S,
                                     const char* Name,
@@ -202,7 +202,7 @@ namespace utils {
     ///\param[in] Name - The name we are looking up.
     ///\param[in] Within - The context within the lookup is done. If 0 the 
     ///                    TranslationUnitDecl is used.
-    ///\returns the found result (if single) or 0.
+    ///\returns the found result if single, -1 if multiple or 0 if not found.
     ///
     clang::NamedDecl* Named(clang::Sema* S,
                             const char* Name,
@@ -216,7 +216,7 @@ namespace utils {
     ///                  DeclarationName.h (faster at runtime).
     ///\param[in] Within - The context within the lookup is done. If 0 the 
     ///                    TranslationUnitDecl is used.
-    ///\returns the found result (if single) or 0.
+    ///\returns the found result if single, -1 if multiple or 0 if not found.
     ///
     clang::NamedDecl* Named(clang::Sema* S,
                             const clang::DeclarationName& Name,

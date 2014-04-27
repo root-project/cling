@@ -1180,8 +1180,9 @@ namespace utils {
 
     R.resolveKind();
 
-    return R.getFoundDecl();
-
+    if (R.isSingleResult())
+      return R.getFoundDecl();
+    return (clang::NamedDecl*)-1;
   }
 
   static NestedNameSpecifier*
