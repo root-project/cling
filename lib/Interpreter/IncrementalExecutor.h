@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <set>
+#include <map>
 
 namespace llvm {
   class ExecutionEngine;
@@ -45,9 +46,13 @@ namespace cling {
     ///
     llvm::OwningPtr<llvm::ExecutionEngine> m_engine;
 
-    ///\brief Whether cxa_at_exit has been rewired to the Interpreter's version
+    ///\brief Symbols to be replaced by special Interpreter implementations.
     ///
-    bool m_CxaAtExitRemapped;
+    /// Replaces the exectution engine's symbol "first" by second.first, or
+    /// if it is NULL, but the symbol second.second which must exist at the time
+    /// the symbol is replaced. The replacement is tried again until first us
+    /// found.
+    std::map<std::string,std::pair<void*,std::string>> m_SymbolsToRemap;
 
     ///\breif Helper that manages when the destructor of an object to be called.
     ///
@@ -175,7 +180,7 @@ namespace cling {
     ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, such
     /// that the interpreter can call the object destructors at the right time.
     ///
-    void remapCXAAtExit();
+    void remapSymbols();
 
     static void* HandleMissingFunction(const std::string&);
     static void* NotifyLazyFunctionCreators(const std::string&);
