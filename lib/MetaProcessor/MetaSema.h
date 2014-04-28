@@ -37,7 +37,9 @@ namespace cling {
     MetaProcessor& m_MetaProcessor;
     bool m_IsQuitRequested;
     typedef llvm::DenseMap<const clang::FileEntry*, const Transaction*> Watermarks;
+    typedef llvm::DenseMap<const Transaction*, const clang::FileEntry*> ReverseWatermarks;
     Watermarks m_Watermarks;
+    ReverseWatermarks m_ReverseWatermarks;
 
   public:
     enum SwitchMode {

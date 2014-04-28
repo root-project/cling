@@ -13,8 +13,11 @@
 
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
+
+#include "../lib/Interpreter/IncrementalParser.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
@@ -47,6 +50,7 @@ namespace cling {
     // decls (from header files). Thus we want to take the restore point before
     // loading of the file and revert exclusively if needed.
     const Transaction* unloadPoint = m_Interpreter.getLastTransaction();
+     // fprintf(stderr,"DEBUG: Load for %s unloadPoint is %p\n",file.str().c_str(),unloadPoint);
     // TODO: extra checks. Eg if the path is readable, if the file exists...
     std::string canFile = m_Interpreter.lookupFileOrLibrary(file);
     if (canFile.empty())
@@ -56,10 +60,12 @@ namespace cling {
       clang::FileManager& FM = SM.getFileManager();
       const clang::FileEntry* Entry
         = FM.getFile(canFile, /*OpenFile*/false, /*CacheFailure*/false);
-      if (Entry && !m_Watermarks[Entry]) // register as a watermark
-        m_Watermarks[Entry] = unloadPoint;
-
-      return AR_Success;
+       if (Entry && !m_Watermarks[Entry]) { // register as a watermark
+          m_Watermarks[Entry] = unloadPoint;
+          m_ReverseWatermarks[unloadPoint] = Entry;
+          //fprintf(stderr,"DEBUG: Load for %s recorded unloadPoint %p\n",file.str().c_str(),unloadPoint);
+       }
+       return AR_Success;
     }
     return AR_Failure;
   }
@@ -119,10 +125,41 @@ namespace cling {
       = FM.getFile(canonicalFile, /*OpenFile*/false, /*CacheFailure*/false);
     if (Entry) {
       Watermarks::iterator Pos = m_Watermarks.find(Entry);
+       //fprintf(stderr,"DEBUG: unload request for %s\n",file.str().c_str());
+
       if (Pos != m_Watermarks.end()) {
         const Transaction* unloadPoint = Pos->second;
-        while(m_Interpreter.getLastTransaction() != unloadPoint)
-          m_Interpreter.unload(/*numberOfTransactions*/1);
+        // Search for the transaction, i.e. verify that is has not already
+        // been unloaded ; This can be removed once all transaction unload
+        // properly information MetaSema that it has been unloaded.
+        bool found = false;
+        //for (auto t : m_Interpreter.m_IncrParser->getAllTransactions()) {
+        for(const Transaction *t = m_Interpreter.getFirstTransaction();
+            t != 0; t = t->getNext()) {
+           //fprintf(stderr,"DEBUG: On unload check For %s unloadPoint is %p are t == %p\n",file.str().c_str(),unloadPoint, t);
+          if (t == unloadPoint ) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          m_MetaProcessor.getOuts() << "!!!ERROR: Transaction for file: " << file << " has already been unloaded\n";
+        } else {
+           //fprintf(stderr,"DEBUG: On Unload For %s unloadPoint is %p\n",file.str().c_str(),unloadPoint);
+          while(m_Interpreter.getLastTransaction() != unloadPoint) {
+             //fprintf(stderr,"DEBUG: unload transaction %p (searching for %p)\n",m_Interpreter.getLastTransaction(),unloadPoint);
+            const clang::FileEntry* EntryUnloaded
+              = m_ReverseWatermarks[m_Interpreter.getLastTransaction()];
+            if (EntryUnloaded) {
+              Watermarks::iterator PosUnloaded
+                = m_Watermarks.find(EntryUnloaded);
+              if (PosUnloaded != m_Watermarks.end()) {
+                m_Watermarks.erase(PosUnloaded);
+              }
+            }
+            m_Interpreter.unload(/*numberOfTransactions*/1);
+          }
+        }
         DynamicLibraryManager* DLM = m_Interpreter.getDynamicLibraryManager();
         if (DLM->isLibraryLoaded(canonicalFile))
           DLM->unloadLibrary(canonicalFile);
