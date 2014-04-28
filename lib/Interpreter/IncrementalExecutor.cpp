@@ -30,9 +30,9 @@ static int boost__detail__atomic_exchange_and_add( int * pw, int dv )
     // *pw += dv;
     // return r;
 
+#if defined( __GNUC__ ) && ( defined( __i386__ ) || defined( __x86_64__ ) )
     int r;
 
-#if defined( __GNUC__ ) && ( defined( __i386__ ) || defined( __x86_64__ ) )
     __asm__ __volatile__
     (
         "lock\n\t"
