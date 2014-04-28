@@ -58,14 +58,27 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
 
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
 IncrementalExecutor::IncrementalExecutor(llvm::Module* m)
-  : m_SymbolsToRemap{
-  {"__cxa_atexit", {0, "cling_cxa_atexit"}},
-  {"_ZN5boost6detail23atomic_exchange_and_addEPii",
-      {(void*)&boost__detail__atomic_exchange_and_add, ""}}
-  }
 {
   assert(m && "llvm::Module must not be null!");
   m_AtExitFuncs.reserve(256);
+
+  // Rewrire __cxa_atexit to ~Interpreter(), thus also global destruction
+  // coming from the JIT.
+  m_SymbolsToRemap["__cxa_atexit"]
+    = std::make_pair((void*)0, std::string("cling_cxa_atexit"));
+
+  // Helper to cast a function pointer to a void*:
+  typedef int (*p2tfunc_t)();
+  union {
+    p2tfunc_t m_func;
+    void* m_ptr;
+  } p2f;
+
+  // Provide a symbol to common boost functions using inline asm such that the
+  // JIT does not need to compile it (and fail doing it due to inline asm).
+  p2f.m_func = (p2tfunc_t) &boost__detail__atomic_exchange_and_add;
+  m_SymbolsToRemap["_ZN5boost6detail23atomic_exchange_and_addEPii"]
+    = std::make_pair((void*)p2f.m_ptr, std::string());
 
   //
   //  Create an execution engine to use.
