@@ -363,8 +363,7 @@ namespace cling {
 # define CLING_CXXABIV _LIBCPP_VERSION
 # define CLING_CXXABIS "_LIBCPP_VERSION"
 #elif defined (_MSC_VER)
-# define CLING_CXXABIV _MSC_VER
-# define CLING_CXXABIS "_MSC_VER"
+    // For MSVC we do not use CLING_CXXABI*
 #else
 # define CLING_CXXABIV -1 // intentionally invalid macro name
 # define CLING_CXXABIS "-1" // intentionally invalid macro name
