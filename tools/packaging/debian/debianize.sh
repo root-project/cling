@@ -11,17 +11,17 @@
 # Uncomment the following line to trace the execution of shell commands
 # set -o xtrace
 
-if [ $# != 1 ]; then
+if [ "${#}" != 1 ]; then
   echo "Error: incorrect number of arguments"
   exit
 fi
 
-if [ $@ != *.tar.bz2 ]; then
+if [ "${@}" != *.tar.bz2 ]; then
   echo "Error: expected a path to a valid tarball (bzip2) as argument"
   exit
 fi
 
-ABSOLUTE_PATH=`readlink -f $@`
+ABSOLUTE_PATH=`readlink -f "$@"`
 TOPDIR=`dirname ${ABSOLUTE_PATH}`
 DIST_FILE=`basename ${ABSOLUTE_PATH}`
 
