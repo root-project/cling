@@ -78,7 +78,7 @@ Vcs-Browser: http://root.cern.ch/gitweb?p=cling.git;a=summary
 Package: cling
 Priority: optional
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: \${shlibs:Depends}, \${misc:Depends}
 Description: interactive C++ interpreter
  Cling is a new and interactive C++11 standard compliant interpreter built
  on the top of Clang and LLVM compiler infrastructure. Its advantages over
