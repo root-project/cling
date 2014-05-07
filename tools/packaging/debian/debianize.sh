@@ -33,7 +33,7 @@ echo "Extracting the tarball.."
 tar -xjf "${ABSOLUTE_PATH}"
 
 echo "Renaming directories and tarball according to the Debian Policy.."
-mv "${TOPDIR}"/$(echo "${DIST_FILE}" | sed s/.tar.bz2//) "${TOPDIR}"/cling-"${VERSION}"
+mv "${TOPDIR}"/${DIST_FILE/.tar.bz2//} "${TOPDIR}"/cling-"${VERSION}"
 cp "${ABSOLUTE_PATH}" "${TOPDIR}"/cling_"${VERSION}".orig.tar.bz2
 
 # Can refer to relative paths after this
