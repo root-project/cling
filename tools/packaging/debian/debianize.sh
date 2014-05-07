@@ -22,22 +22,22 @@ if [ "${@}" != *.tar.bz2 ]; then
 fi
 
 ABSOLUTE_PATH=$(readlink -f "$@")
-TOPDIR=$(dirname ${ABSOLUTE_PATH})
-DIST_FILE=$(basename ${ABSOLUTE_PATH})
+TOPDIR=$(dirname "${ABSOLUTE_PATH}")
+DIST_FILE=$(basename "${ABSOLUTE_PATH}")
 
 # Extract version of Debian package using SED, or using AWK like I have done
 # VERSION=$(echo ${DIST_FILE} | sed 's/.*-//' | sed 's/.tar.bz2//g')
-VERSION=$(echo ${DIST_FILE} | awk -F'[-.]' '{print $6}')
+VERSION=$(echo "${DIST_FILE}" | awk -F'[-.]' '{print $6}')
 
 echo "Extracting the tarball.."
-tar -xjf ${ABSOLUTE_PATH}
+tar -xjf "${ABSOLUTE_PATH}"
 
 echo "Renaming directories and tarball according to the Debian Policy.."
-mv ${TOPDIR}/$(echo ${DIST_FILE} | sed s/.tar.bz2//) ${TOPDIR}/cling-${VERSION}
-cp ${ABSOLUTE_PATH} ${TOPDIR}/cling_${VERSION}.orig.tar.bz2
+mv "${TOPDIR}"/$(echo "${DIST_FILE}" | sed s/.tar.bz2//) "${TOPDIR}"/cling-"${VERSION}"
+cp "${ABSOLUTE_PATH}" "${TOPDIR}"/cling_"${VERSION}".orig.tar.bz2
 
 # Can refer to relative paths after this
-cd ${TOPDIR}/cling-${VERSION}
+cd "${TOPDIR}"/cling-"${VERSION}"
 
 # Create directory: debian
 mkdir -p debian
@@ -156,24 +156,24 @@ EOF
 echo "Old Changelog:" >> debian/changelog
 
 # NOTE: Adapt according to path to the Git source directory
-GIT_DIR=${TOPDIR}/cling
-cd ${GIT_DIR}
-git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> ${TOPDIR}/cling-${VERSION}/debian/changelog
+GIT_DIR="${TOPDIR}"/repos/cling
+cd "${GIT_DIR}"
+git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> "${TOPDIR}"/cling-"${VERSION}"/debian/changelog
 cd -
 
 # Create Debian package
 debuild
 
 echo "Moving all newly created files to cling-${VERSION}-1"
-mkdir ${TOPDIR}/cling-${VERSION}-1
-mv ${TOPDIR}/cling_${VERSION}*.deb ${TOPDIR}/cling-${VERSION}-1
-mv ${TOPDIR}/cling_${VERSION}*.changes ${TOPDIR}/cling-${VERSION}-1
-mv ${TOPDIR}/cling_${VERSION}*.build ${TOPDIR}/cling-${VERSION}-1
-mv ${TOPDIR}/cling_${VERSION}*.dsc ${TOPDIR}/cling-${VERSION}-1
-mv ${TOPDIR}/cling_${VERSION}*.debian.tar.gz ${TOPDIR}/cling-${VERSION}-1
+mkdir "${TOPDIR}"/cling-"${VERSION}"-1
+mv "${TOPDIR}"/cling_"${VERSION}"*.deb "${TOPDIR}"/cling-"${VERSION}"-1
+mv "${TOPDIR}"/cling_"${VERSION}"*.changes "${TOPDIR}"/cling-"${VERSION}"-1
+mv "${TOPDIR}"/cling_"${VERSION}"*.build "${TOPDIR}"/cling-"${VERSION}"-1
+mv "${TOPDIR}"/cling_"${VERSION}"*.dsc "${TOPDIR}"/cling-"${VERSION}"-1
+mv "${TOPDIR}"/cling_"${VERSION}"*.debian.tar.gz "${TOPDIR}"/cling-"${VERSION}"-1
 
 echo "Cleaning up redundant file.."
-rm ${TOPDIR}/cling_${VERSION}*.orig.tar.bz2
-rm -R ${TOPDIR}/cling-${VERSION}
+rm "${TOPDIR}"/cling_"${VERSION}"*.orig.tar.bz2
+rm -R "${TOPDIR}"/cling-"${VERSION}"
 
 echo "Now exiting.."
