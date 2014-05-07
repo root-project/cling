@@ -21,19 +21,19 @@ if [ "${@}" != *.tar.bz2 ]; then
   exit
 fi
 
-ABSOLUTE_PATH=`readlink -f "$@"`
-TOPDIR=`dirname ${ABSOLUTE_PATH}`
-DIST_FILE=`basename ${ABSOLUTE_PATH}`
+ABSOLUTE_PATH=$(readlink -f "$@")
+TOPDIR=$(dirname ${ABSOLUTE_PATH})
+DIST_FILE=$(basename ${ABSOLUTE_PATH})
 
 # Extract version of Debian package using SED, or using AWK like I have done
-# VERSION=`echo ${DIST_FILE} | sed 's/.*-//' | sed 's/.tar.bz2//g'`
-VERSION=`echo ${DIST_FILE} | awk -F'[-.]' '{print $6}'`
+# VERSION=$(echo ${DIST_FILE} | sed 's/.*-//' | sed 's/.tar.bz2//g')
+VERSION=$(echo ${DIST_FILE} | awk -F'[-.]' '{print $6}')
 
 echo "Extracting the tarball.."
 tar -xjf ${ABSOLUTE_PATH}
 
 echo "Renaming directories and tarball according to the Debian Policy.."
-mv ${TOPDIR}/`echo ${DIST_FILE} | sed s/.tar.bz2//` ${TOPDIR}/cling-${VERSION}
+mv ${TOPDIR}/$(echo ${DIST_FILE} | sed s/.tar.bz2//) ${TOPDIR}/cling-${VERSION}
 cp ${ABSOLUTE_PATH} ${TOPDIR}/cling_${VERSION}.orig.tar.bz2
 
 # Can refer to relative paths after this
@@ -150,7 +150,7 @@ cat >> debian/changelog << EOF
 cling (${VERSION}-1) unstable; urgency=low
 
   * [Debian] Update package to version: ${VERSION}
- -- Anirudha Bose <ani07nov@gmail.com>  `date --rfc-2822`
+ -- Anirudha Bose <ani07nov@gmail.com>  $(date --rfc-2822)
 
 EOF
 echo "Old Changelog:" >> debian/changelog
@@ -158,7 +158,7 @@ echo "Old Changelog:" >> debian/changelog
 # NOTE: Adapt according to path to the Git source directory
 GIT_DIR=${TOPDIR}/cling
 cd ${GIT_DIR}
-git log `git rev-list HEAD` --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> ${TOPDIR}/cling-${VERSION}/debian/changelog
+git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> ${TOPDIR}/cling-${VERSION}/debian/changelog
 cd -
 
 # Create Debian package
