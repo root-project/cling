@@ -16,7 +16,9 @@ if [ "${#}" != 1 ]; then
   exit
 fi
 
-if [ "${@}" != *.tar.bz2 ]; then
+echo "${@}" | grep -qE ".tar.bz2$"
+# Check the exit status of the above statement and use it in the test condition
+if [ "${?}" != 0 ]; then
   echo "Error: expected a path to a valid tarball (bzip2) as argument"
   exit
 fi
@@ -26,6 +28,7 @@ TOPDIR=$(dirname "${ABSOLUTE_PATH}")
 DIST_FILE=$(basename "${ABSOLUTE_PATH}")
 
 # Extract version of Debian package using SED, or using AWK like I have done
+# This needs to change after a version system has been defined in the upstream
 # VERSION=$(echo ${DIST_FILE} | sed 's/.*-//' | sed 's/.tar.bz2//g')
 VERSION=$(echo "${DIST_FILE}" | awk -F'[-.]' '{print $6}')
 
