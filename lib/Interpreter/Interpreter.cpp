@@ -215,12 +215,7 @@ namespace cling {
   }
 
   const char* Interpreter::getVersion() const {
-    return "cling http://cern.ch/cling - version "
-#ifdef CLING_VERSION
-      CLING_VERSION;
-#else
-      "<unknown>";
-#endif
+    return CLING_VERSION;
   }
 
   void Interpreter::handleFrontendOptions() {
