@@ -58,6 +58,9 @@ endif
 # We can revisit this when LLVM/Cling support it.
 CXX.Flags += -fno-strict-aliasing
 
+# Determine cling's version:
+CLING_VERSION=$(shell cat "VERSION")
+
 ###
 # Cling Top Level specific stuff.
 
