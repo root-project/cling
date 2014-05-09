@@ -8,6 +8,10 @@
 
 // RUN: %cling %s | FileCheck %s
 
+// same test as test_01.c but ensuring the .c file to be processed
+// is in the working directory (issue ROOT-6244)
+// RUN: cd `dirname %s` ; %cling %s | FileCheck %s
+
 extern "C" int printf(const char*,...);
 
 const char* defaultArgV[] = {"A default argument", "", 0};
