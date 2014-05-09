@@ -15,6 +15,6 @@
 
 class MyClass { public:  MyClass(){ gCling->process("gCling->getVersion()");} };
 
-MyClass *My = new MyClass(); // CHECK: (const char *) "cling http://cern.ch/cling
+MyClass *My = new MyClass(); // CHECK: (const char *) "{{.*}}"
 
 .q
