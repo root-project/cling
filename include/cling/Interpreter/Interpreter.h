@@ -294,7 +294,9 @@ namespace cling {
 
     const clang::Parser& getParser() const;
 
-    clang::CodeGenerator* getCodeGenerator() const;
+    ///\Brief true if -fsyntax-only flag passed.
+    ///
+    bool isInSyntaxOnlyMode() const;
 
     ///\brief Shows the current version of the project.
     ///

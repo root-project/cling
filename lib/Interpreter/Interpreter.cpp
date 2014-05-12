@@ -109,7 +109,7 @@ namespace cling {
     if (!i->isPrintingDebug())
       return;
     const CompilerInstance& CI = *m_Interpreter->getCI();
-    CodeGenerator* CG = i->getCodeGenerator();
+    CodeGenerator* CG = i->m_IncrParser->getCodeGenerator();
     m_State.reset(new ClangInternalState(CI.getASTContext(),
                                          CI.getPreprocessor(),
                                          CG ? CG->GetModule() : 0,
@@ -143,8 +143,9 @@ namespace cling {
     return *m_IncrParser->getParser();
   }
 
-  CodeGenerator* Interpreter::getCodeGenerator() const {
-    return m_IncrParser->getCodeGenerator();
+  bool Interpreter::isInSyntaxOnlyMode() const {
+    return getCI()->getFrontendOpts().ProgramAction
+      == clang::frontend::ParseSyntaxOnly;
   }
 
   Interpreter::Interpreter(int argc, const char* const *argv,
@@ -268,7 +269,7 @@ namespace cling {
 #endif
     declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
 
-    if (getCodeGenerator()) {
+    if (!isInSyntaxOnlyMode()) {
       // Set up the gCling variable if it can be used
       std::stringstream initializer;
       initializer << "namespace cling {namespace runtime { "
@@ -323,7 +324,7 @@ namespace cling {
   void Interpreter::storeInterpreterState(const std::string& name) const {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
-    CodeGenerator* CG = getCodeGenerator();
+    CodeGenerator* CG = m_IncrParser->getCodeGenerator();
     ClangInternalState* state
       = new ClangInternalState(getCI()->getASTContext(),
                                getCI()->getPreprocessor(),
@@ -603,7 +604,7 @@ namespace cling {
   }
 
   Interpreter::CompilationResult Interpreter::emitAllDecls(Transaction* T) {
-    assert(getCodeGenerator() && "No CodeGenerator?");
+    assert(!isInSyntaxOnlyMode() && "No CodeGenerator?");
     m_IncrParser->markWholeTransactionAsUsed(T);
     m_IncrParser->codeGenTransaction(T);
 
@@ -834,11 +835,11 @@ namespace cling {
     //  Compile the wrapper code.
     //
     const llvm::GlobalValue* GV = 0;
-    if (!getCodeGenerator())
+    if (isInSyntaxOnlyMode())
       return 0;
 
     if (ifUnique)
-      GV = getCodeGenerator()->GetModule()->getNamedValue(name);
+      GV = getLastTransaction()->getModule()->getNamedValue(name);
 
     if (!GV) {
       const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl);
@@ -847,7 +848,7 @@ namespace cling {
       //  Get the wrapper function pointer
       //  from the ExecutionEngine (the JIT).
       //
-      GV = getCodeGenerator()->GetModule()->getNamedValue(name);
+      GV = getLastTransaction()->getModule()->getNamedValue(name);
     }
 
     if (!GV)
@@ -1105,7 +1106,8 @@ namespace cling {
       module->eraseNamedMetadata(IdentMetadata);
 
     // Reset the module builder to clean up global initializers, c'tors, d'tors
-    getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+    ASTContext& C = getCI()->getASTContext();
+    m_IncrParser->getCodeGenerator()->HandleTranslationUnit(C);
 
     return ConvertExecutionResult(ExeRes);
   }
@@ -1131,7 +1133,7 @@ namespace cling {
     // Return a symbol's address, and whether it was jitted.
     if (!m_IncrParser->hasCodeGenerator())
       return 0;
-    llvm::Module* module = getCodeGenerator()->GetModule();
+    llvm::Module* module = getLastTransaction()->getModule();
     return m_Executor->getAddressOfGlobal(module, SymName, fromJIT);
   }
 
