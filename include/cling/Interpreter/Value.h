@@ -10,6 +10,10 @@
 #ifndef CLING_VALUE_H
 #define CLING_VALUE_H
 
+namespace llvm {
+  class raw_ostream;
+}
+
 namespace clang {
   class ASTContext;
   class QualType;
@@ -154,6 +158,9 @@ namespace cling {
     /// Values referencing an object are treated as pointers to the object.
     template <typename T>
     T simplisticCastAs() const;
+
+    void print(llvm::raw_ostream& Out) const;
+    void dump() const;
   };
 
   template <typename T>

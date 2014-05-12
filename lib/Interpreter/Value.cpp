@@ -245,4 +245,12 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD,
   return interp.compileFunction(funcname, code, true /*ifUniq*/,
                                 false /*withAccessControl*/);
 }
+
+  void Value::print(llvm::raw_ostream& Out) const {
+
+  }
+
+  void Value::dump() const {
+    print(llvm::errs());
+  }
 } // namespace cling
