@@ -178,7 +178,7 @@ namespace cling {
                                                      /*SkipFunctionBodies*/false,
                                                      /*isTemp*/true), this));
 
-    if (m_IncrParser->hasCodeGenerator()) {
+    if (!isInSyntaxOnlyMode()) {
       llvm::Module* theModule = m_IncrParser->getCodeGenerator()->GetModule();
       m_Executor.reset(new IncrementalExecutor(theModule));
     }
@@ -696,7 +696,7 @@ namespace cling {
     if (getCI()->getDiagnostics().hasErrorOccurred())
       return kExeCompilationError;
 
-    if (!m_IncrParser->hasCodeGenerator()) {
+    if (isInSyntaxOnlyMode()) {
       return kExeNoCodeGen;
     }
 
@@ -1091,7 +1091,7 @@ namespace cling {
 
   Interpreter::ExecutionResult
   Interpreter::runStaticInitializersOnce(const Transaction& T) const {
-    assert(m_IncrParser->hasCodeGenerator() && "Running on what?");
+    assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
     // Forward to IncrementalExecutor; should not be called by
     // anyone except for IncrementalParser.
@@ -1131,7 +1131,7 @@ namespace cling {
   void* Interpreter::getAddressOfGlobal(llvm::StringRef SymName,
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
-    if (!m_IncrParser->hasCodeGenerator())
+    if (isInSyntaxOnlyMode())
       return 0;
     llvm::Module* module = getLastTransaction()->getModule();
     return m_Executor->getAddressOfGlobal(module, SymName, fromJIT);
