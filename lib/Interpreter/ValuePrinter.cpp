@@ -138,7 +138,7 @@ static void StreamFunction(llvm::raw_ostream& o, const void* addr,
   o << "Function @" << addr << '\n';
 
   const clang::DeclRefExpr* DeclRefExp
-    = llvm::dyn_cast_or_null<clang::DeclRefExpr>(VPI.getExpr());
+    = llvm::dyn_cast_or_null<clang::DeclRefExpr>(VPI.tryGetValuePrintedExpr());
   const clang::FunctionDecl* FD = 0;
   if (DeclRefExp)
     FD = llvm::dyn_cast_or_null<clang::FunctionDecl>(DeclRefExp->getDecl());

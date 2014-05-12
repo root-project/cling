@@ -9,6 +9,10 @@
 
 #include "cling/Interpreter/ValuePrinterInfo.h"
 
+#include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/AST.h"
+
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Type.h"
@@ -16,17 +20,27 @@
 using namespace clang;
 
 namespace cling {
-  ValuePrinterInfo::ValuePrinterInfo(Expr* E, ASTContext* Ctx)
-    : m_Type(), m_Expr(E), m_Context(Ctx), m_Flags(0) {
-    Init(E->getType());
+  ValuePrinterInfo::ValuePrinterInfo(Interpreter* I, ASTContext* Ctx)
+    : m_Type(), m_Interpreter(I), m_Context(Ctx), m_Flags(0) {
+    Init(tryGetValuePrintedExpr()->getType());
   }
 
   ValuePrinterInfo::ValuePrinterInfo(QualType Ty, ASTContext* Ctx)
-    : m_Type(), m_Expr(0), m_Context(Ctx), m_Flags(0) {
+    : m_Type(), m_Interpreter(0), m_Context(Ctx), m_Flags(0) {
     Init(Ty);
   }
 
-   void ValuePrinterInfo::Init(clang::QualType Ty) {
+  Expr* ValuePrinterInfo::tryGetValuePrintedExpr() const {
+    const Transaction* T = m_Interpreter->getLastTransaction();
+    assert(T->getWrapperFD() && "Must have a wrapper.");
+    FunctionDecl* FD = T->getWrapperFD();
+    Expr* ExprAttachedTo
+      = utils::Analyze::GetOrCreateLastExpr(FD, /*foundAtPos*/0, /*omitDS*/false,
+                                            &m_Interpreter->getSema());
+    return ExprAttachedTo;
+  }
+
+  void ValuePrinterInfo::Init(clang::QualType Ty) {
     assert(!Ty.isNull() && "Type must be valid!");
     assert(m_Context && "ASTContext cannot be null!");
 

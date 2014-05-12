@@ -17,11 +17,12 @@ namespace clang {
 }
 
 namespace cling {
+  class Interpreter;
 
   class ValuePrinterInfo {
   private:
     void* /* clang::QualType */ m_Type; // QualType buffer to prevent #include
-    clang::Expr* m_Expr;
+    Interpreter* m_Interpreter;
     clang::ASTContext* m_Context;
     unsigned m_Flags;
 
@@ -34,11 +35,11 @@ namespace cling {
       VPI_Polymorphic = 4
     };
 
-    ValuePrinterInfo(clang::Expr* Expr, clang::ASTContext* Ctx);
+    ValuePrinterInfo(Interpreter* I, clang::ASTContext* Ctx);
     ValuePrinterInfo(clang::QualType Ty, clang::ASTContext* Ctx);
+    clang::Expr* tryGetValuePrintedExpr() const;
     const clang::QualType& getType() const {
       return *reinterpret_cast<const clang::QualType*>(&m_Type); }
-    clang::Expr* getExpr() const { return m_Expr; }
     clang::ASTContext* getASTContext() const { return m_Context; }
     unsigned getFlags() { return m_Flags; }
   };

@@ -56,9 +56,9 @@ namespace cling {
     void flushToStream(llvm::raw_ostream& o, const std::string& s);
 
     template <typename T>
-    T& Select(llvm::raw_ostream* o, clang::Expr* E,
+    T& Select(llvm::raw_ostream* o, Interpreter* I,
               clang::ASTContext* C, T& value) {
-      ValuePrinterInfo VPI(E, C);
+      ValuePrinterInfo VPI(I, C);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushToStream(*o, printType(&value, &value, VPI)
                     + printValue(&value, &value, VPI) + '\n');
@@ -66,9 +66,9 @@ namespace cling {
     }
 
     template <typename T>
-    const T& Select(llvm::raw_ostream* o, clang::Expr* E,
+    const T& Select(llvm::raw_ostream* o, Interpreter* I,
               clang::ASTContext* C, const T& value) {
-      ValuePrinterInfo VPI(E, C);
+      ValuePrinterInfo VPI(I, C);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushToStream(*o, printType(&value, &value, VPI)
                     + printValue(&value, &value, VPI) + '\n');
@@ -76,9 +76,9 @@ namespace cling {
     }
 
     template <typename T>
-    T* Select(llvm::raw_ostream* o, clang::Expr* E,
+    T* Select(llvm::raw_ostream* o, Interpreter* I,
                     clang::ASTContext* C, T* value) {
-      ValuePrinterInfo VPI(E, C);
+      ValuePrinterInfo VPI(I, C);
       // Only because we don't want to include llvm::raw_ostream in the header
       flushToStream(*o, printType((const void*) value, value, VPI)
                     + printValue((const void*) value, value, VPI) + '\n');

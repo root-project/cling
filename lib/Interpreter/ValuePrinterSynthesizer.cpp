@@ -152,13 +152,19 @@ namespace cling {
 
     assert(RawOStreamRD && "Declaration of the expr not found!");
     QualType RawOStreamRDTy = m_Context->getTypeDeclType(RawOStreamRD);
-    // 2.4.2 Lookup the expr type
-    CXXRecordDecl* ExprRD
-      = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "Expr",
-                                                 utils::Lookup::Namespace(m_Sema,
-                                                                "clang")));
-   assert(ExprRD && "Declaration of the expr not found!");
-    QualType ExprRDTy = m_Context->getTypeDeclType(ExprRD);
+    // 2.4.2 Lookup the interpreter type
+    NamespaceDecl* ClingRuntimeNSD =
+      utils::Lookup::Namespace(m_Sema,"runtime",
+                               utils::Lookup::Namespace(m_Sema, "cling"));
+    VarDecl* gCling = dyn_cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling",
+                                                             ClingRuntimeNSD));
+    // Build a reference to gCling
+    ExprResult gClingDRE
+      = m_Sema->BuildDeclRefExpr(gCling, gCling->getType(),
+                                 VK_RValue, SourceLocation());
+
+
+    assert(gCling && "Declaration of the expr not found!");
     // 2.4.3 Lookup ASTContext type
     CXXRecordDecl* ASTContextRD
       = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "ASTContext",
@@ -171,9 +177,6 @@ namespace cling {
       = utils::Synthesize::CStyleCastPtrExpr(m_Sema, RawOStreamRDTy,
                                              (uint64_t)m_ValuePrinterStream.get()
                                              );
-
-    Expr* ExprTy = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ExprRDTy, 
-                                                        (uint64_t)E);
     Expr* ASTContextTy 
       = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ASTContextRDTy,
                                              (uint64_t)m_Context);
@@ -196,7 +199,7 @@ namespace cling {
 
     llvm::SmallVector<Expr*, 4> CallArgs;
     CallArgs.push_back(RawOStreamTy);
-    CallArgs.push_back(ExprTy);
+    CallArgs.push_back(gClingDRE.take());
     CallArgs.push_back(ASTContextTy);
     CallArgs.push_back(E);
 
