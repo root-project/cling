@@ -27,10 +27,17 @@ ABSOLUTE_PATH=$(readlink -f "$@")
 TOPDIR=$(dirname "${ABSOLUTE_PATH}")
 DIST_FILE=$(basename "${ABSOLUTE_PATH}")
 
-# Extract version of Debian package using SED, or using AWK like I have done
-# This needs to change after a version system has been defined in the upstream
-# VERSION=$(echo ${DIST_FILE} | sed 's/.*-//' | sed 's/.tar.bz2//g')
-VERSION=$(echo "${DIST_FILE}" | awk -F'[-.]' '{print $6}')
+# Adapt according to path to the Git source directory
+GIT_DIR="${TOPDIR}"/repos/cling
+
+REVISION=$(echo "${DIST_FILE}" | awk -F'[-.]' '{print $6}')
+VERSION=$(cat "${GIT_DIR}"/VERSION)
+
+# If development release, then add revision to the version
+echo "${VERSION}" | grep -qE "dev"
+if [ "${?}" = 0 ]; then
+  VERSION="${VERSION}"-"${REVISION}"
+fi
 
 echo "Extracting the tarball.."
 tar -xjf "${ABSOLUTE_PATH}"
@@ -158,8 +165,6 @@ cling (${VERSION}-1) unstable; urgency=low
 EOF
 echo "Old Changelog:" >> debian/changelog
 
-# NOTE: Adapt according to path to the Git source directory
-GIT_DIR="${TOPDIR}"/repos/cling
 cd "${GIT_DIR}"
 git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> "${TOPDIR}"/cling-"${VERSION}"/debian/changelog
 cd -
