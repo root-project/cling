@@ -53,6 +53,8 @@ if(NOT WIN32)
 set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS -fexceptions)
 endif()
 
+set_source_files_properties(Interpreter.cpp COMPILE_FLAGS -DCLING_VERSION='\"${CLING_VERSION}\"')
+
 #set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS " /EHsc ")
 # the line above doesn't work, and it gives the following warnings:
 # cl : Command line warning D9025: overriding '/EHs' with '/EHs-'
@@ -94,6 +96,5 @@ endif()
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
   "#define LLVM_CXX \"${CMAKE_CXX_COMPILER_RELATIVE} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
-#define CLING_VERSION \"${CLING_VERSION}\"
 "
 )
