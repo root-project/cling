@@ -133,6 +133,28 @@ public:
   // Not yet, the desugar of template alias do not keep the opaque typedef.
   // ptr<Double32_t> p3;
 
+  typedef B<Int_t,Double32_t> t1;
+  typedef t1* t2;
+  typedef t2* t3;
+  typedef t3 t4[3];
+  typedef t4 t5[4];
+  typedef t5& t6;
+  typedef t1& t7;
+  typedef t2& t8;
+  typedef t2  t9;
+  typedef t5* t10;
+
+  t1 d1;
+  t2 d2;
+  t2 d2_1[5];
+  t3 d3;
+  t4 d4;
+  t5 d5;
+  t6 d6;
+  t7 d7;
+  t8 d8;
+  t9 d9;
+  t10 d10;
 };
 
 namespace NS1 {
@@ -381,6 +403,17 @@ if (decl) {
 // CHECK: Double32_t *
 // CHECK: float *
 // NOT-YET-CHECK: Double32_t *
+// CHECK: B<int, Double32_t>
+// CHECK: B<int, Double32_t> *
+// CHECK: B<int, Double32_t> *[5]
+// CHECK: B<int, Double32_t> **
+// CHECK: B<int, Double32_t> **[3]
+// CHECK: B<int, Double32_t> **[4][3]
+// CHECK: B<int, Double32_t> **(&)[4][3]
+// CHECK: B<int, Double32_t> &
+// CHECK: B<int, Double32_t> *&
+// CHECK: B<int, Double32_t> *
+// CHECK: B<int, Double32_t> **(*)[4][3]
 
 // In the partial desugaring add support for the case where we have a type
 // that point to an already completely desugared template instantiation in
