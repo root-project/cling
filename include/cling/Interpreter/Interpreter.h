@@ -571,6 +571,7 @@ namespace cling {
 
     const Transaction* getFirstTransaction() const;
     const Transaction* getLastTransaction() const;
+    const Transaction* getCurrentTransaction() const;
 
     ///\brief Compile extern "C" function and return its address.
     ///

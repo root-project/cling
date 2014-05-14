@@ -151,6 +151,10 @@ namespace cling {
 
   }
 
+  const Transaction* IncrementalParser::getCurrentTransaction() const {
+    return m_Consumer->getTransaction();
+  }
+
   SourceLocation IncrementalParser::getLastMemoryBufferEndLoc() const {
     const SourceManager& SM = getCI()->getSourceManager();
     SourceLocation Result = SM.getLocForStartOfFile(m_VirtualFileID);

@@ -168,6 +168,10 @@ namespace cling {
       return m_Transactions.back();
     }
 
+    ///\brief Returns the currently active transaction.
+    ///
+    const Transaction* getCurrentTransaction() const;
+
     ///\brief Returns the list of transactions seen by the interpreter.
     /// Intentionally makes a copy - that function is meant to be use for debug
     /// purposes.

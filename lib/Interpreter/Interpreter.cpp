@@ -1046,6 +1046,11 @@ namespace cling {
     return m_IncrParser->getLastTransaction();
   }
 
+  const Transaction* Interpreter::getCurrentTransaction() const {
+    return m_IncrParser->getCurrentTransaction();
+  }
+
+
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {
     m_DynamicLookupEnabled = value;
 
