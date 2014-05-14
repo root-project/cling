@@ -59,7 +59,7 @@ endif
 CXX.Flags += -fno-strict-aliasing
 
 # Determine cling's version:
-CLING_VERSION=$(shell cat "VERSION")
+CLING_VERSION=$(shell cat $(PROJ_SRC_DIR)/$(CLING_LEVEL)/VERSION)
 CPP.Flags += -DCLING_VERSION='"$(CLING_VERSION) "'
 
 ###
