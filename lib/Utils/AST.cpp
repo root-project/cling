@@ -773,9 +773,12 @@ namespace utils {
     if (isa<PointerType>(QT.getTypePtr())) {
       // Get the qualifiers.
       Qualifiers quals = QT.getQualifiers();
-      QT = GetPartiallyDesugaredTypeImpl(Ctx, QT->getPointeeType(), TypeConfig,
-                                         fullyQualifyType,fullyQualifyTmpltArg);
-      QT = Ctx.getPointerType(QT);
+      QualType nQT;
+      nQT = GetPartiallyDesugaredTypeImpl(Ctx, QT->getPointeeType(), TypeConfig,
+                                          fullyQualifyType,fullyQualifyTmpltArg);
+      if (nQT == QT->getPointeeType()) return QT;
+
+      QT = Ctx.getPointerType(nQT);
       // Add back the qualifiers.
       QT = Ctx.getQualifiedType(QT, quals);
       return QT;
@@ -797,13 +800,16 @@ namespace utils {
       // Get the qualifiers.
       bool isLValueRefTy = isa<LValueReferenceType>(QT.getTypePtr());
       Qualifiers quals = QT.getQualifiers();
-      QT = GetPartiallyDesugaredTypeImpl(Ctx, QT->getPointeeType(), TypeConfig,
+      QualType nQT;
+      nQT = GetPartiallyDesugaredTypeImpl(Ctx, QT->getPointeeType(), TypeConfig,
                                          fullyQualifyType,fullyQualifyTmpltArg);
+      if (nQT == QT->getPointeeType()) return QT;
+
       // Add the r- or l-value reference type back to the desugared one.
       if (isLValueRefTy)
-        QT = Ctx.getLValueReferenceType(QT);
+        QT = Ctx.getLValueReferenceType(nQT);
       else
-        QT = Ctx.getRValueReferenceType(QT);
+        QT = Ctx.getRValueReferenceType(nQT);
       // Add back the qualifiers.
       QT = Ctx.getQualifiedType(QT, quals);
       return QT;
@@ -821,7 +827,7 @@ namespace utils {
         QualType newQT
            = GetPartiallyDesugaredTypeImpl(Ctx,arr->getElementType(), TypeConfig,
                                          fullyQualifyType,fullyQualifyTmpltArg);
-        if (newQT == QT) return QT;
+        if (newQT == arr->getElementType()) return QT;
         QT = Ctx.getConstantArrayType (newQT,
                                        arr->getSize(),
                                        arr->getSizeModifier(),
@@ -846,7 +852,7 @@ namespace utils {
         QualType newQT
           = GetPartiallyDesugaredTypeImpl(Ctx,arr->getElementType(), TypeConfig,
                                           fullyQualifyType,fullyQualifyTmpltArg);
-        if (newQT == QT) return QT;
+        if (newQT == arr->getElementType()) return QT;
         QT = Ctx.getIncompleteArrayType (newQT,
                                          arr->getSizeModifier(),
                                          arr->getIndexTypeCVRQualifiers());
@@ -857,7 +863,7 @@ namespace utils {
         QualType newQT
           = GetPartiallyDesugaredTypeImpl(Ctx,arr->getElementType(), TypeConfig,
                                           fullyQualifyType,fullyQualifyTmpltArg);
-        if (newQT == QT) return QT;
+        if (newQT == arr->getElementType()) return QT;
         QT = Ctx.getVariableArrayType (newQT,
                                        arr->getSizeExpr(),
                                        arr->getSizeModifier(),
