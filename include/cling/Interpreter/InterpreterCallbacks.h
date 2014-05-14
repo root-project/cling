@@ -103,6 +103,7 @@ namespace cling {
 
     virtual ~InterpreterCallbacks();
 
+    cling::Interpreter* getInterpreter() const { return m_Interpreter; }
     clang::ExternalSemaSource* getInterpreterExternalSemaSource() const;
 
     clang::ASTDeserializationListener* 
