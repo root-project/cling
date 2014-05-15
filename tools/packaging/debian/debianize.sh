@@ -1,55 +1,111 @@
 #! /bin/bash
 
-# Script to package a Cling tarball into a Debian/Ubuntu archive.
+###############################################################################
 #
-# Author: Anirudha Bose (ani07nov@gmail.com)
+#                           The Cling Interpreter
 #
-# This file is dual licensed. You may license this software under
-# one of the following licenses, marked "UI/NCSAOSL" and "LGPL".
-# Read LICENSE.TXT for more details.
+# tools/packaging/debianize.sh: Script to compile Cling and produce tarballs
+# and/or Debian packages for Ubuntu/Debian platforms.
+#
+# <more documentation here>
+#
+# Author: Anirudha Bose <ani07nov@gmail.com>
+#
+# This file is dual-licensed: you can choose to license it under the University
+# of Illinois Open Source License or the GNU Lesser General Public License. See
+# LICENSE.TXT for details.
+#
+###############################################################################
 
-# Uncomment the following line to trace the execution of shell commands
+# Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
 
-if [ "${#}" != 1 ]; then
-  echo "Error: incorrect number of arguments"
-  exit
+workdir=~/ec/build
+srcdir=${workdir}/cling-src
+python=$(type -p python2)
+CLING_SRC_DIR=${srcdir}/tools/cling
+LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
+echo "Last known good LLVM revision is ${LLVMRevision}"
+
+if [ -d "${srcdir}" ]; then
+  cd "${srcdir}"
+  git clean -f -x -d
+  git fetch --tags
+  git checkout ROOT-patches-r${LLVMRevision}
+  git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
+else
+  git clone http://root.cern.ch/git/llvm.git "${srcdir}"
+  cd "${srcdir}"
+  git checkout tags/ROOT-patches-r${LLVMRevision}
 fi
 
-echo "${@}" | grep -qE ".tar.bz2$"
-# Check the exit status of the above statement and use it in the test condition
-if [ "${?}" != 0 ]; then
-  echo "Error: expected a path to a valid tarball (bzip2) as argument"
-  exit
+if [ -d "${srcdir}/tools/clang" ]; then
+  cd "${srcdir}/tools/clang"
+  git clean -f -x -d
+  git fetch --tags
+  git checkout ROOT-patches-r${LLVMRevision}
+  git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
+else
+  git clone http://root.cern.ch/git/clang.git  "${srcdir}/tools/clang"
+  cd "${srcdir}/tools/clang"
+  git checkout ROOT-patches-r${LLVMRevision}
 fi
 
-ABSOLUTE_PATH=$(readlink -f "$@")
-TOPDIR=$(dirname "${ABSOLUTE_PATH}")
-DIST_FILE=$(basename "${ABSOLUTE_PATH}")
+if [ -d "${srcdir}/tools/cling" ]; then
+  cd "${srcdir}/tools/cling"
+  git clean -f -x -d
+  git fetch --tags
+  git checkout master
+  git pull origin master
+  #git checkout $(git describe --match v* --abbrev=0 --tags | head -n 1)
+  #git pull origin refs/tags/$(git describe --match v* --abbrev=0 --tags | head -n 1)
+else
+  git clone http://root.cern.ch/git/cling.git  "${srcdir}/tools/cling"
+  cd "${srcdir}/tools/cling"
+  git checkout $(git describe --match v* --abbrev=0 --tags | head -n 1)
+fi
 
-# Adapt according to path to the Git source directory
-GIT_DIR="${TOPDIR}"/repos/cling
+# Temporary fix (remove after patch is merged upstream)
+cd ${CLING_SRC_DIR}
+# git apply "${workdir}/0001-Fix-wrong-path-of-VERSION-in-Makefile.patch"
 
-REVISION=$(echo "${DIST_FILE}" | awk -F'[-.]' '{print $6}')
-VERSION=$(cat "${GIT_DIR}"/VERSION)
+VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
 
 # If development release, then add revision to the version
+REVISION=$(git log -n 1 --pretty=format:"%H" | cut -c1-10)
 echo "${VERSION}" | grep -qE "dev"
 if [ "${?}" = 0 ]; then
   VERSION="${VERSION}"-"${REVISION}"
 fi
 
-echo "Extracting the tarball.."
-tar -xjf "${ABSOLUTE_PATH}"
+prefix=${workdir}/cling-${VERSION}
 
-echo "Renaming directories and tarball according to the Debian Policy.."
-mv "${TOPDIR}"/"${DIST_FILE/.tar.bz2//}" "${TOPDIR}"/cling-"${VERSION}"
-cp "${ABSOLUTE_PATH}" "${TOPDIR}"/cling_"${VERSION}".orig.tar.bz2
+echo "Create temporary build directory: ${builddir}"
+mkdir -p ${workdir}/builddir
+cd ${workdir}/builddir
 
+echo "Configuring Cling for compilation"
+${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
+
+echo "Building Cling..."
+cores=$(nproc)
+echo "Using ${cores} cores."
+make -j${cores}
+rm -rf ${prefix}
+make install -j${cores}
+
+echo "Compressing ${prefix} to produce a bzip2 tarball..."
+cd ${workdir}
+tar -cjvf cling_${VERSION}.orig.tar.bz2 -C . $(basename ${prefix})
+
+######################################################
+# Debianize the tarball: cling_${VERSION}.orig.tar.bz2
 # Can refer to relative paths after this
-cd "${TOPDIR}"/cling-"${VERSION}"
+######################################################
 
-# Create directory: debian
+cd "${workdir}"/cling-"${VERSION}"
+
+echo "Create directory: debian"
 mkdir -p debian
 
 echo "Create file: debian/source/format"
@@ -165,23 +221,23 @@ cling (${VERSION}-1) unstable; urgency=low
 EOF
 echo "Old Changelog:" >> debian/changelog
 
-cd "${GIT_DIR}"
-git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> "${TOPDIR}"/cling-"${VERSION}"/debian/changelog
+cd "${CLING_SRC_DIR}"
+git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> "${workdir}"/cling-"${VERSION}"/debian/changelog
 cd -
 
 # Create Debian package
 debuild
 
 echo "Moving all newly created files to cling-${VERSION}-1"
-mkdir "${TOPDIR}"/cling-"${VERSION}"-1
-mv "${TOPDIR}"/cling_"${VERSION}"*.deb "${TOPDIR}"/cling-"${VERSION}"-1
-mv "${TOPDIR}"/cling_"${VERSION}"*.changes "${TOPDIR}"/cling-"${VERSION}"-1
-mv "${TOPDIR}"/cling_"${VERSION}"*.build "${TOPDIR}"/cling-"${VERSION}"-1
-mv "${TOPDIR}"/cling_"${VERSION}"*.dsc "${TOPDIR}"/cling-"${VERSION}"-1
-mv "${TOPDIR}"/cling_"${VERSION}"*.debian.tar.gz "${TOPDIR}"/cling-"${VERSION}"-1
+mkdir "${workdir}"/cling-"${VERSION}"-1
+mv "${workdir}"/cling_"${VERSION}"*.deb "${workdir}"/cling-"${VERSION}"-1
+mv "${workdir}"/cling_"${VERSION}"*.changes "${workdir}"/cling-"${VERSION}"-1
+mv "${workdir}"/cling_"${VERSION}"*.build "${workdir}"/cling-"${VERSION}"-1
+mv "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
+mv "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
 
 echo "Cleaning up redundant file.."
-rm "${TOPDIR}"/cling_"${VERSION}"*.orig.tar.bz2
-rm -R "${TOPDIR}"/cling-"${VERSION}"
+rm "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
+rm -R "${workdir}"/cling-"${VERSION}"
 
 echo "Now exiting.."
