@@ -55,6 +55,7 @@ if [ -d "${srcdir}/tools/cling" ]; then
   cd "${srcdir}/tools/cling"
   git clean -f -x -d
   git fetch --tags
+  # Checkout master until we have stable v0.2 tag
   git checkout master
   git pull origin master
   #git checkout $(git describe --match v* --abbrev=0 --tags | head -n 1)
@@ -65,10 +66,7 @@ else
   git checkout $(git describe --match v* --abbrev=0 --tags | head -n 1)
 fi
 
-# Temporary fix (remove after patch is merged upstream)
 cd ${CLING_SRC_DIR}
-# git apply "${workdir}/0001-Fix-wrong-path-of-VERSION-in-Makefile.patch"
-
 VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
 
 # If development release, then add revision to the version
