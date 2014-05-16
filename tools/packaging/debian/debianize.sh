@@ -30,7 +30,7 @@ source ${CLING_SRC_DIR}/tools/packaging/get_platform.sh
 # Fetch the sources for the vendor clone of LLVM
 function fetch_llvm {
   LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
-  echo "Last known good LLVM revision is ${LLVMRevision}"
+  echo "Last known good LLVM revision is: ${LLVMRevision}"
 
   if [ -d "${srcdir}" ]; then
     cd "${srcdir}"
@@ -122,7 +122,6 @@ function tarball {
 ######################################################
 
 function debianize {
-
   cd ${prefix}
   echo "Create directory: debian"
   mkdir -p debian
@@ -270,12 +269,11 @@ function check {
     sudo apt-get install ${1};
   else
     printf "%-10s\t\t[OK]\n" "${1}"
-#    echo -e "${1}\t\t[OK]"
   fi
 }
 
-function usage()
-{
+function usage() {
+  echo ""
   echo "debianize.sh: Script to compile Cling and produce tarballs and/or Debian packages"
   echo ""
   echo "Usage: ./debianize.sh {arg}"
@@ -288,10 +286,16 @@ function usage()
   echo -e "    --deb-tag={tag}\t\tCompile the snapshot of a given tag and produce a Debian package"
 }
 
-while [ "$1" != "" ]; do
-  PARAM=$(echo $1 | awk -F= '{print $1}')
-  VALUE=$(echo $1 | awk -F= '{print $2}')
-  case $PARAM in
+while [ "${1}" != "" ]; do
+  if [ "${#}" != 1 ];
+  then
+    echo "Error: script can handle only one switch at a time"
+    usage
+    exit
+  fi
+  PARAM=$(echo ${1} | awk -F= '{print ${1}}')
+  VALUE=$(echo ${1} | awk -F= '{print ${2}}')
+  case ${PARAM} in
     -h | --help)
         usage
         exit
@@ -351,7 +355,7 @@ while [ "$1" != "" ]; do
         cleanup
         ;;
     *)
-        echo "ERROR: unknown parameter \"$PARAM\""
+        echo "Error: unknown parameter \"${PARAM}\""
         usage
         exit 1
         ;;
