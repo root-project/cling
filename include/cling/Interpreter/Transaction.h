@@ -298,6 +298,7 @@ namespace cling {
     void setIssuedDiags(IssuedDiags val) { m_IssuedDiags = val; }
 
     const CompilationOptions& getCompilationOpts() const { return m_Opts; }
+    CompilationOptions& getCompilationOpts() { return m_Opts; }
     void setCompilationOpts(const CompilationOptions& CO) {
       assert(getState() == kCollecting && "Something wrong with you?");
       m_Opts = CO;

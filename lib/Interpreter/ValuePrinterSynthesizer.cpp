@@ -79,8 +79,13 @@ namespace cling {
       case CompilationOptions::VPAuto:
         if ((int)CS->size() > indexOfLastExpr+1 
             && (*(CS->body_begin() + indexOfLastExpr + 1))
-            && isa<NullStmt>(*(CS->body_begin() + indexOfLastExpr + 1)))
-          return true; // If next is NullStmt disable VP is disabled - exit.
+            && isa<NullStmt>(*(CS->body_begin() + indexOfLastExpr + 1))) {
+          // If next is NullStmt disable VP is disabled - exit. Signal this in
+          // the CO of the transaction.
+          Transaction* T = getTransaction();
+          T->getCompilationOpts().ValuePrinting = CompilationOptions::VPDisabled;
+          return true;
+        }
         break;
       }
 
