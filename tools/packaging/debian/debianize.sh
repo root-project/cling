@@ -80,7 +80,7 @@ function set_version {
   VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
 
   # If development release, then add revision to the version
-  REVISION=$(git log -n 1 --pretty=format:"%H" | cut -c1-10)
+  REVISION=$(git log -n 1 --pretty=format:"%H" | cut -c1-7)
   echo "${VERSION}" | grep -qE "dev"
   if [ "${?}" = 0 ]; then
     VERSION="${VERSION}"-"${REVISION}"
@@ -91,11 +91,11 @@ function compile {
   prefix=${1}
   python=$(type -p python2)
   echo "Create temporary build directory:"
-#  mkdir -p ${workdir}/builddir
+  mkdir -p ${workdir}/builddir
   cd ${workdir}/builddir
 
   echo "Configuring Cling for compilation"
-#  ${srcdir}/configure --disable-compiler-version-checks --with-python=$python --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
+  ${srcdir}/configure --disable-compiler-version-checks --with-python=$python --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
 
   echo "Building Cling..."
   cores=$(nproc)
