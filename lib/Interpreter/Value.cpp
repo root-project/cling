@@ -10,14 +10,21 @@
 #include "cling/Interpreter/Value.h"
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/Transaction.h"
+#include "cling/Interpreter/ValuePrinter.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/CanonicalType.h"
 #include "clang/AST/Type.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Lookup.h"
+#include "clang/Sema/Sema.h"
 
-#include "cling/Interpreter/Interpreter.h"
-#include "cling/Utils/AST.h"
+#include "llvm/Support/raw_os_ostream.h"
+#include "llvm/Support/raw_ostream.h"
+
+#include <iostream>
+#include <sstream>
 
 namespace {
   ///\brief The allocation starts with this layout; it is followed by the
@@ -256,10 +263,116 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD,
 }
 
   void Value::print(llvm::raw_ostream& Out) const {
+    // Try to find user defined printing functions:
+    // cling::printType(const void* const p, TY* const u, const Value& V) and
+    // cling::printValue(const void* const p, TY* const u, const Value& V)
 
+    using namespace clang;
+    Sema& SemaR = m_Interpreter->getSema();
+    ASTContext& C = SemaR.getASTContext();
+    NamespaceDecl* ClingNSD = utils::Lookup::Namespace(&SemaR, "cling");
+    SourceLocation noLoc;
+    LookupResult R(SemaR, &C.Idents.get("printType"), noLoc,
+                   Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+    assert(ClingNSD && "There must be a valid namespace.");
+
+    {
+      // Could trigger deserialization of decls.
+      cling::Interpreter::PushTransactionRAII RAII(m_Interpreter);
+      SemaR.LookupQualifiedName(R, ClingNSD);
+      // We commit here because the possibly deserialized decls from the lookup
+      // will be needed by evaluate.
+    }
+    QualType ValueTy = this->getType();
+    std::string ValueTyStr = ValueTy.getAsString();
+    std::string typeStr;
+    std::string valueStr;
+    if (!R.empty() && ValueTy->isPointerType()) {
+      // There is such a routine call it:
+      std::stringstream printTypeSS;
+      printTypeSS << "cling::printType(";
+      printTypeSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
+      printTypeSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
+      printTypeSS <<"(*(cling::Value*)" << this << "));";
+      Value printTypeV;
+      m_Interpreter->evaluate(printTypeSS.str(), printTypeV);
+      assert(printTypeV.isValid() && "Must return valid value.");
+      typeStr = *(std::string*)printTypeV.getPtr();
+      // CXXScopeSpec CSS;
+      // Expr* UnresolvedLookup
+      //   = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+      // // Build Arg1: const void* const p
+      // QualType ConstVoidPtrTy = C.VoidPtrTy.withConst();
+      // Expr* Arg1
+      //   = utils::Synthesize::CStyleCastPtrExpr(SemaR, ConstVoidPtrTy,
+      //                                          (uint64_t)this->getPtr());
+
+      // // Build Arg2: TY* const u
+      // Expr* Arg2
+      //   = utils::Synthesize::CStyleCastPtrExpr(SemaR, ValueTy,
+      //                                          (uint64_t)this->getPtr());
+
+      // // Build Arg3: const Value&
+      // RecordDecl* ClingValueDecl
+      //   = dyn_cast<RecordDecl>(utils::Lookup::Named(SemaR, "Value",ClingNSD));
+      // assert(ClingValueDecl && "Declaration must be found!");
+      // QualType ClingValueTy = m_Context->getTypeDeclType(ClingValueDecl);
+      // Expr* Arg3
+      //   = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ClingValueTy,
+      //                                          (uint64_t)this);
+      // llvm::SmallVector<Expr*, 4> CallArgs;
+      // CallArgs.push_back(Arg1);
+      // CallArgs.push_back(Arg2);
+      // CallArgs.push_back(Arg3);
+      // Expr* Call = m_Sema->ActOnCallExpr(/*Scope*/0, UnresolvedLookup, noLoc,
+      //                                    CallArgs, noLoc).take();
+    }
+    else {
+      using namespace cling::valuePrinterInternal;
+      typeStr = printType_Default(*this);
+    }
+    R.clear();
+    R.setLookupName(&C.Idents.get("printValue"));
+    {
+      // Could trigger deserialization of decls.
+      cling::Interpreter::PushTransactionRAII RAII(m_Interpreter);
+      SemaR.LookupQualifiedName(R, ClingNSD);
+      // We commit here because the possibly deserialized decls from the lookup
+      // will be needed by evaluate.
+    }
+
+    if (!R.empty() && ValueTy->isPointerType()) {
+      // There is such a routine call it:
+      std::stringstream printValueSS;
+      printValueSS << "cling::printValue(";
+      printValueSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
+      printValueSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
+      printValueSS <<"(*(cling::Value*)" << this << "));";
+      Value printValueV;
+      m_Interpreter->evaluate(printValueSS.str(), printValueV);
+      assert(printValueV.isValid() && "Must return valid value.");
+      valueStr = *(std::string*)printValueV.getPtr();
+    }
+    else {
+      using namespace cling::valuePrinterInternal;
+      valueStr = printValue_Default(*this);
+    }
+
+    // print the type:
+    using namespace cling::valuePrinterInternal;//::Select(Out, this);
+    flushToStream(Out, typeStr + valueStr);
+    flushToStream(Out, std::string("\n"));
+    // print the value:
   }
 
   void Value::dump() const {
-    print(llvm::errs());
+    // We need stream that doesn't close its file descriptor, thus we are not
+    // using llvm::outs. Keeping file descriptor open we will be able to use
+    // the results in pipes (Savannah #99234).
+
+    // Alternatively we could use llvm::errs()
+    llvm::OwningPtr<llvm::raw_ostream> Out;
+    Out.reset(new llvm::raw_os_ostream(std::cout));
+    print(*Out.get());
   }
 } // namespace cling
