@@ -52,6 +52,12 @@ namespace cling {
     /// dependencies.
     void* m_Type;
 
+    ///\brief Interpreter, produced the value.
+    ///
+    ///(Size without this is 24, this member makes it 32)
+    ///
+    Interpreter* m_Interpreter;
+
     enum EStorageType {
       kSignedIntegerOrEnumerationType,
       kUnsignedIntegerOrEnumerationType,
@@ -119,7 +125,7 @@ namespace cling {
 
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
-    Value(): m_Type(0) {}
+    Value(): m_Type(0), m_Interpreter(0) {}
     /// \brief Copy a value.
     Value(const Value& other);
     /// \brief Move a value.
@@ -127,7 +133,7 @@ namespace cling {
     /// \brief Construct a valid but ininitialized Value. After this call the
     ///   value's storage can be accessed; i.e. calls ManagedAllocate() if
     ///   needed.
-    Value(clang::QualType Ty, Interpreter* Interp);
+    Value(clang::QualType Ty, Interpreter& Interp);
     /// \brief Destruct the value; calls ManagedFree() if needed.
     ~Value();
 
@@ -135,6 +141,9 @@ namespace cling {
     Value& operator =(Value&& other);
 
     clang::QualType getType() const;
+    clang::ASTContext& getASTContext() const;
+    Interpreter* getInterpreter() { return m_Interpreter; }
+    const Interpreter* getInterpreter() const { return m_Interpreter; }
 
     /// \brief Whether this type needs managed heap, i.e. the storage provided
     /// by the m_Storage member is insufficient, or a non-trivial destructor

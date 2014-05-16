@@ -9,7 +9,7 @@
 
 #include "cling/Interpreter/Value.h"
 
-#include "llvm/Support/raw_ostream.h"
+#include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/CanonicalType.h"
@@ -97,21 +97,23 @@ namespace {
 namespace cling {
 
 Value::Value(const Value& other):
-  m_Storage(other.m_Storage), m_Type(other.m_Type) {
+  m_Storage(other.m_Storage), m_Type(other.m_Type),
+  m_Interpreter(other.m_Interpreter) {
   if (needsManagedAllocation())
     AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
 }
 
 Value::Value(Value&& other):
-  m_Storage(other.m_Storage), m_Type(other.m_Type) {
+  m_Storage(other.m_Storage), m_Type(other.m_Type),
+  m_Interpreter(other.m_Interpreter) {
   // Invalidate other so it will not release.
   other.m_Type = 0;
 }
 
-Value::Value(clang::QualType clangTy, Interpreter* Interp):
-  m_Type(clangTy.getAsOpaquePtr()) {
+Value::Value(clang::QualType clangTy, Interpreter& Interp):
+  m_Type(clangTy.getAsOpaquePtr()), m_Interpreter(&Interp) {
   if (needsManagedAllocation())
-    ManagedAllocate(Interp);
+    ManagedAllocate(&Interp);
 }
 
 Value& Value::operator =(const Value& other) {
@@ -122,6 +124,7 @@ Value& Value::operator =(const Value& other) {
   // Retain new one.
   m_Type = other.m_Type;
   m_Storage = other.m_Storage;
+  m_Interpreter = other.m_Interpreter;
   if (needsManagedAllocation())
     AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
   return *this;
@@ -135,6 +138,7 @@ Value& Value::operator =(Value&& other) {
   // Move new one.
   m_Type = other.m_Type;
   m_Storage = other.m_Storage;
+  m_Interpreter = other.m_Interpreter;
   // Invalidate other so it will not release.
   other.m_Type = 0;
 
@@ -149,6 +153,11 @@ Value::~Value() {
 clang::QualType Value::getType() const {
   return clang::QualType::getFromOpaquePtr(m_Type);
 }
+
+clang::ASTContext& Value::getASTContext() const {
+  return m_Interpreter->getCI()->getASTContext();
+}
+
 
 bool Value::isValid() const { return !getType().isNull(); }
 

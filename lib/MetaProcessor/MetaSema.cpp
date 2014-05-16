@@ -324,7 +324,7 @@ namespace cling {
       // Build the result
       clang::ASTContext& Ctx = m_Interpreter.getCI()->getASTContext();
       if (result) {
-        *result = Value(Ctx.IntTy, 0);
+        *result = Value(Ctx.IntTy, m_Interpreter);
         result->getAs<long long>() = ret;
       }
 

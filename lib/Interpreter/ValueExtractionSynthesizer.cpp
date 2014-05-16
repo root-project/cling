@@ -380,7 +380,7 @@ namespace {
     clang::QualType QT = clang::QualType::getFromOpaquePtr(vpQT);
     cling::Value& SVR = *(cling::Value*)vpSVR;
     // Here the copy keeps the refcounted value alive.
-    SVR = cling::Value(QT, i);
+    SVR = cling::Value(QT, *i);
     return SVR;
   }
 }
