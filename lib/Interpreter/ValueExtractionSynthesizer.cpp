@@ -182,6 +182,13 @@ namespace cling {
     // We have the wrapper as Sema's CurContext
     FunctionDecl* FD = cast<FunctionDecl>(m_Sema->CurContext);
 
+    ExprWithCleanups* Cleanups = 0;
+    // In case of ExprWithCleanups we need to extend its 'scope' to the call.
+    if (E && isa<ExprWithCleanups>(E)) {
+      Cleanups = cast<ExprWithCleanups>(E);
+      E = Cleanups->getSubExpr();
+    }
+
     // Build a reference to Value* in the wrapper, should be
     // the only argument of the wrapper.
     SourceLocation locStart = (E) ? E->getLocStart() : FD->getLocStart();
@@ -195,7 +202,7 @@ namespace cling {
     // The expr result is transported as reference, pointer, array, float etc
     // based on the desugared type. We should still expose the typedef'ed
     // (sugared) type to the cling::Value.
-    if (desugaredTy->isRecordType() && !isa<ExprWithCleanups>(E)) {
+    if (desugaredTy->isRecordType() && !Cleanups) {
       // returning a lvalue (not a temporary): the value should contain
       // a reference to the lvalue instead of copying it.
       desugaredTy = m_Context->getLValueReferenceType(desugaredTy);
@@ -311,6 +318,14 @@ namespace cling {
       assert(0 && "Unhandled code path?");
 
     assert(!Call.isInvalid() && "Invalid Call");
+
+    // Extend the scope of the temporary cleaner if applicable.
+    if (Cleanups) {
+      Cleanups->setSubExpr(Call.take());
+      Cleanups->setValueKind(Call.take()->getValueKind());
+      Cleanups->setType(Call.take()->getType());
+      return Cleanups;
+    }
     return Call.take();
   }
 
