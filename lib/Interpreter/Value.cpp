@@ -121,7 +121,7 @@ Value::Value(Value&& other):
 Value::Value(clang::QualType clangTy, Interpreter& Interp):
   m_Type(clangTy.getAsOpaquePtr()), m_Interpreter(&Interp) {
   if (needsManagedAllocation())
-    ManagedAllocate(&Interp);
+    ManagedAllocate();
 }
 
 Value& Value::operator =(const Value& other) {
@@ -217,8 +217,7 @@ bool Value::needsManagedAllocation() const {
     || UnqDes->isMemberPointerType();
 }
 
-void Value::ManagedAllocate(Interpreter* interp) {
-  assert(interp && "This type requires the interpreter for value allocation");
+void Value::ManagedAllocate() {
   void* dtorFunc = 0;
   clang::QualType DtorType = getType();
   // For arrays we destruct the elements.
@@ -227,9 +226,9 @@ void Value::ManagedAllocate(Interpreter* interp) {
     DtorType = ArrTy->getElementType();
   }
   if (const clang::RecordType* RTy = DtorType->getAs<clang::RecordType>())
-    dtorFunc = GetDtorWrapperPtr(RTy->getDecl(), *interp);
+    dtorFunc = GetDtorWrapperPtr(RTy->getDecl());
 
-  const clang::ASTContext& ctx = interp->getCI()->getASTContext();
+  const clang::ASTContext& ctx = getASTContext();
   unsigned payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
   char* alloc = new char[AllocatedValue::getPayloadOffset() + payloadSize];
   AllocatedValue* allocVal = new (alloc) AllocatedValue(dtorFunc, payloadSize,
@@ -242,8 +241,7 @@ void Value::AssertOnUnsupportedTypeCast() const {
 }
 
 /// \brief Get the function address of the wrapper of the destructor.
-void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD,
-                               Interpreter& interp) const {
+void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
   std::string funcname;
   {
     llvm::raw_string_ostream namestr(funcname);
@@ -260,8 +258,8 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD,
       + dtorName + "();}";
   }
 
-  return interp.compileFunction(funcname, code, true /*ifUniq*/,
-                                false /*withAccessControl*/);
+  return m_Interpreter->compileFunction(funcname, code, true /*ifUniq*/,
+                                        false /*withAccessControl*/);
 }
 
   void Value::print(llvm::raw_ostream& Out) const {

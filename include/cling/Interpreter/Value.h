@@ -72,15 +72,14 @@ namespace cling {
     EStorageType getStorageType() const;
 
     /// \brief Allocate storage as needed by the type.
-    void ManagedAllocate(Interpreter* interp);
+    void ManagedAllocate();
 
     /// \brief Assert in case of an unsupported type. Outlined to reduce include
     ///   dependencies.
     void AssertOnUnsupportedTypeCast() const;
 
     /// \brief Get the function address of the wrapper of the destructor.
-    void* GetDtorWrapperPtr(const clang::RecordDecl* RD,
-                            Interpreter& interp) const;
+    void* GetDtorWrapperPtr(const clang::RecordDecl* RD) const;
 
     unsigned long GetNumberOfElements() const;
 
