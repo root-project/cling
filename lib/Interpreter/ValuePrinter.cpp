@@ -195,11 +195,40 @@ static void StreamLongDouble(llvm::raw_ostream& o, const Value* value,
   o << sstr.str() << 'L';
 }
 
+static void StreamClingValue(llvm::raw_ostream& o, const Value* value) {
+  if (!value || !value->isValid()) {
+    o << "<<<invalid>>> @" << value;
+  } else {
+    clang::ASTContext& C = value->getASTContext();
+    clang::QualType QT = value->getType();
+    o << "boxes [";
+    o << "("
+      << QT.getAsString(C.getPrintingPolicy())
+      << ") ";
+    clang::QualType valType = QT.getDesugaredType(C).getNonReferenceType();
+    if (C.hasSameType(valType, C.LongDoubleTy))
+      StreamLongDouble(o, value, C);
+    else if (valType->isFloatingType())
+      o << value->simplisticCastAs<double>();
+    else if (valType->isIntegerType()) {
+      if (valType->hasSignedIntegerRepresentation())
+        o << value->simplisticCastAs<long long>();
+      else
+        o << value->simplisticCastAs<unsigned long long>();
+    } else if (valType->isBooleanType())
+      o << (value->simplisticCastAs<bool>() ? "true" : "false");
+    else {
+      StreamValue(o, value->getPtr(), valType, value->getASTContext());
+    }
+    o << "]";
+  }
+}
+
 static void StreamObj(llvm::raw_ostream& o, const void* V, clang::QualType Ty) {
   if (clang::CXXRecordDecl* CXXRD = Ty->getAsCXXRecordDecl()) {
     std::string QualName = CXXRD->getQualifiedNameAsString();
     if (QualName == "cling::Value"){
-      valuePrinterInternal::StreamClingValue(o, (const cling::Value*)V);
+      StreamClingValue(o, (const cling::Value*)V);
       return;
     }
   } // if CXXRecordDecl
@@ -369,35 +398,6 @@ namespace valuePrinterInternal {
       o << ") ";
     }
     return buf;
-  }
-
-  void StreamClingValue(llvm::raw_ostream& o, const Value* value) {
-    if (!value || !value->isValid()) {
-      o << "<<<invalid>>> @" << value;
-    } else {
-      clang::ASTContext& C = value->getASTContext();
-      clang::QualType QT = value->getType();
-      o << "boxes [";
-      o << "("
-        << QT.getAsString(C.getPrintingPolicy())
-        << ") ";
-      clang::QualType valType = QT.getDesugaredType(C).getNonReferenceType();
-      if (C.hasSameType(valType, C.LongDoubleTy))
-        StreamLongDouble(o, value, C);
-      else if (valType->isFloatingType())
-        o << value->simplisticCastAs<double>();
-      else if (valType->isIntegerType()) {
-        if (valType->hasSignedIntegerRepresentation())
-          o << value->simplisticCastAs<long long>();
-        else
-          o << value->simplisticCastAs<unsigned long long>();
-      } else if (valType->isBooleanType())
-        o << (value->simplisticCastAs<bool>() ? "true" : "false");
-      else {
-        StreamValue(o, value->getPtr(), valType, value->getASTContext());
-      }
-      o << "]";
-    }
   }
 
   void flushToStream(llvm::raw_ostream& o, const std::string& s) {

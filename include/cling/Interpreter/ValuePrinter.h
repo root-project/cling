@@ -49,8 +49,6 @@ namespace cling {
     std::string printValue_Default(const Value& V);
     std::string printType_Default(const Value& V);
 
-    void StreamClingValue(llvm::raw_ostream& o, const Value* VR);
-
     void flushToStream(llvm::raw_ostream& o, const std::string& s);
 
   } // namespace valuePrinterInternal
