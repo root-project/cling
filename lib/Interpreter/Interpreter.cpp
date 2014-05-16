@@ -470,7 +470,6 @@ namespace cling {
     CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
-
     if (EvaluateInternal(input, CO, V, T) == Interpreter::kFailure) {
       return Interpreter::kFailure;
     }
@@ -946,10 +945,21 @@ namespace cling {
               || lastT->getState() == Transaction::kRolledBack)
              && "Not committed?");
       if (lastT->getIssuedDiags() != Transaction::kErrors) {
+        Value resultV;
+        if (!V)
+          V = &resultV;
         if (!lastT->getWrapperFD()) // no wrapper to run
           return Interpreter::kSuccess;
-        else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError)
+        else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError){
+          if (lastT->getCompilationOpts().ValuePrinting
+              != CompilationOptions::VPDisabled
+              && V->isValid()
+              // the !V->needsManagedAllocation() case is handled by
+              // dumpIfNoStorage.
+              && V->needsManagedAllocation())
+            V->dump();
           return Interpreter::kSuccess;
+        }
       }
       if (V)
         *V = Value();

@@ -28,7 +28,7 @@ gCling->process("a;", &V);
 gCling->process("\"Root\"", &V);
 // CHECK: (const char [5]) "Root"
 V
-// CHECK: (cling::Value) boxes [(const char *) "Root"]
+// CHECK: (cling::Value &) boxes [(const char [5]) "Root"]
 // End PR #98146
 typedef enum {k1,k2} enumName;
 enumName var

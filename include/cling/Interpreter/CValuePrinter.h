@@ -12,8 +12,6 @@
 #ifdef __cplusplus
 extern "C"
 #endif
-void cling_PrintValue(void* /*clang::Expr**/ E,
-                      void* /*clang::ASTContext**/ C,
-                      const void* value);
+void cling_PrintValue(void* /*cling::Value**/ V);
 
 #endif // CLING_VALUEPRINTERC_H

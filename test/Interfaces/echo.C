@@ -17,4 +17,4 @@ cling::Value V;
 gCling->echo("2;", &V);
 V
 // CHECK-NEXT: 2
-// CHECK-NEXT: (cling::Value) boxes [(const int) 2]
+// CHECK-NEXT: (cling::Value &) boxes [(int) 2]

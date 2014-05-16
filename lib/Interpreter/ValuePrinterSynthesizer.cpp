@@ -99,7 +99,7 @@ namespace cling {
             
         Expr* Result = 0;
         if (m_Sema->getLangOpts().CPlusPlus)
-          Result = SynthesizeCppVP(To);
+          ;//Result = SynthesizeCppVP(To);
         else
           Result = SynthesizeVP(To);
 

@@ -54,7 +54,9 @@ namespace cling {
   }
 
   void ValueExtractionSynthesizer::Transform() {
-    if (!getTransaction()->getCompilationOpts().ResultEvaluation)
+    const CompilationOptions& CO = getTransaction()->getCompilationOpts();
+    // If we do not evaluate the result, or printing out the result return.
+    if (!(CO.ResultEvaluation || CO.ValuePrinting))
       return;
 
     FunctionDecl* FD = getTransaction()->getWrapperFD();
@@ -368,6 +370,26 @@ namespace cling {
 
 // Provide implementation of the functions that ValueExtractionSynthesizer calls
 namespace {
+
+  static void dumpIfNoStorage(void* vpI, void* vpV) {
+    cling::Interpreter* I = (cling::Interpreter*)vpI;
+    const cling::Value& V = *(cling::Value*)vpV;
+    //const cling::Transaction& T = *(cling::Transaction*)vpT);
+    // If the value copies over the temporary we must delay the printing until
+    // the temporary gets copied over. For the rest of the temporaries we *must*
+    // dump here because their lifetime will be gone otherwise. Eg.
+    //
+    // std::string f(); f().c_str() // have to dump during the same stmt.
+    //
+    assert(!V.needsManagedAllocation() && "Must contain non managed temporary");
+    // FIXME: We should pass in the 'right' transaction when we requested the
+    // code. This should happen with extra parameter.
+    const cling::CompilationOptions& CO
+      = I->getLastTransaction()->getCompilationOpts();
+    if (CO.ValuePrinting != cling::CompilationOptions::VPDisabled)
+      V.dump();
+  }
+
   ///\brief Allocate the Value and return the Value
   /// for an expression evaluated at the prompt.
   ///
@@ -390,26 +412,32 @@ namespace runtime {
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT) {
       // In cases of void we 'just' need to change the type of the value.
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT);
+      dumpIfNoStorage(vpI, vpSVR);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, float value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<float>() = value;
+      dumpIfNoStorage(vpI, vpSVR);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<double>() = value;
+      dumpIfNoStorage(vpI, vpSVR);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
                          long double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<long double>()
         = value;
+      dumpIfNoStorage(vpI, vpSVR);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT,
                          unsigned long long value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT)
         .getAs<unsigned long long>() = value;
+      dumpIfNoStorage(vpI, vpSVR);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, const void* value){
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>()
         = const_cast<void*>(value);
+      dumpIfNoStorage(vpI, vpSVR);
     }
     void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT) {
       return allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>();

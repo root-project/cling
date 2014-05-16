@@ -12,48 +12,48 @@
 #include "cling/Interpreter/Value.h"
 
 cling::Value V;
-V // CHECK: (cling::Value) <<<invalid>>> @0x{{.*}}
+V // CHECK: (cling::Value &) <<<invalid>>> @0x{{.*}}
 
 gCling->evaluate("return 1;", V);
-V // CHECK: (cling::Value) boxes [(int) 1]
+V // CHECK: (cling::Value &) boxes [(int) 1]
 
 gCling->evaluate("(void)V", V);
-V // CHECK-NEXT: (cling::Value) boxes [(void) @0x{{.*}}]
+V // CHECK-NEXT: (cling::Value &) boxes [(void) @0x{{.*}}]
 
 // Returns must put the result in the Value.
 bool cond = true;
 gCling->evaluate("if (cond) return \"true\"; else return 0;", V);
-V // CHECK-NEXT: (cling::Value) boxes [(const char [5]) "true"]
+V // CHECK-NEXT: (cling::Value &) boxes [(const char [5]) "true"]
 gCling->evaluate("if (cond) return; else return 12;", V);
-V // CHECK-NEXT: (cling::Value) boxes [(void) @0x{{.*}}]
+V // CHECK-NEXT: (cling::Value &) boxes [(void) @0x{{.*}}]
 gCling->evaluate("if (cond) return; int aa = 12;", V);
-V // CHECK-NEXT: (cling::Value) boxes [(void) @0x{{.*}}]
+V // CHECK-NEXT: (cling::Value &) boxes [(void) @0x{{.*}}]
 gCling->evaluate("cond = false; if (cond) return \"true\"; else return 0;", V);
-V // CHECK-NEXT: (cling::Value) boxes [(int) 0]
+V // CHECK-NEXT: (cling::Value &) boxes [(int) 0]
 
 gCling->evaluate("auto a = 12.3; a;", V);
-V // CHECK: (cling::Value) boxes [(double) 1.230000e+01]
+V // CHECK: (cling::Value &) boxes [(double) 1.230000e+01]
 
 long LongV = 17;
 gCling->evaluate("LongV;", V);
-V // CHECK: (cling::Value) boxes [(long) 17]
+V // CHECK: (cling::Value &) boxes [(long) 17]
 
 int* IntP = (int*)0x12;
 gCling->evaluate("IntP;", V);
-V // CHECK: (cling::Value) boxes [(int *) 0x12]
+V // CHECK: (cling::Value &) boxes [(int *) 0x12]
 
 cling::Value Result;
 gCling->evaluate("V", Result);
 // Here we check what happens for record type like cling::Value; they are returned by reference.
-Result // CHECK: (cling::Value) boxes [(cling::Value &) boxes [(int *) 0x12]]
-V // CHECK: (cling::Value) boxes [(int *) 0x12]
+Result // CHECK: (cling::Value &) boxes [(cling::Value &) boxes [(int *) 0x12]]
+V // CHECK: (cling::Value &) boxes [(int *) 0x12]
 
 // Savannah #96277
 gCling->evaluate("gCling->declare(\"double sin(double);\"); double one = sin(3.141/2);", V);
-V // CHECK: (cling::Value) boxes [(double) 1.000000e+00]
+V // CHECK: (cling::Value &) boxes [(double) 1.000000e+00]
 
 gCling->process("double one = sin(3.141/2);", &V);
-V // CHECK: (cling::Value) boxes [(double) 1.000000e+00]
+V // CHECK: (cling::Value &) boxes [(double) 1.000000e+00]
 one // CHECK: (double) 1.000
 int one; // expected-error {{redefinition of 'one' with a different type: 'int' vs 'double'}} expected-note {{previous definition is here}}
 
@@ -82,7 +82,7 @@ std::vector<WithDtor> getWithDtorVec() { std::vector<WithDtor> ret; ret.resize(7
 
 cling::Value* VOnHeap = new cling::Value();
 gCling->evaluate("getWithDtor()", *VOnHeap);
-*VOnHeap //CHECK: (cling::Value) boxes [(WithDtor) @0x{{.*}}]
+*VOnHeap //CHECK: (cling::Value &) boxes [(WithDtor) @0x{{.*}}]
 WithDtor::fgCount //CHECK: (int) 1
 delete VOnHeap;
 WithDtor::fgCount //CHECK: (int) 0
@@ -90,14 +90,14 @@ WithDtor::fgCount //CHECK: (int) 0
 // Check destructor call for templates
 VOnHeap = new cling::Value();
 gCling->evaluate("getWithDtorVec()", *VOnHeap);
-*VOnHeap //CHECK: (cling::Value) boxes [(std::vector<WithDtor>) @0x{{.*}}]
+*VOnHeap //CHECK: (cling::Value &) boxes [(std::vector<WithDtor>) @0x{{.*}}]
 WithDtor::fgCount //CHECK: (int) 7
 delete VOnHeap;
 WithDtor::fgCount //CHECK: (int) 0
 
 // long doubles (tricky for the JIT).
 gCling->evaluate("17.42L", V);
-V // CHECK: (cling::Value) boxes [(long double) 17.42{{[0-9]*}}L]
+V // CHECK: (cling::Value &) boxes [(long double) 17.42{{[0-9]*}}L]
 
 // Test references, temporaries
 .rawInput 1
@@ -123,7 +123,7 @@ const Tracer& ConstRefMaker() {static Tracer R("CONSTREF"); return R;}
 namespace cling {
   // FIXME: inline printValue is not used by PrintClingValue()!
   std::string printValue(const Tracer* const p, const Tracer* const u,
-                         const ValuePrinterInfo& VPI) {
+                         const Value& V) {
     return p->asStr();
   }
 }
@@ -139,7 +139,7 @@ gCling->evaluate("RefMaker()", V);
 // This is the local static:
 // CHECK: REF{1}:ctor
 printf("RefMaker() done\n"); // CHECK-NEXT: RefMaker() done
-V // CHECK-NEXT: (cling::Value) boxes [(Tracer &) @{{.*}}]
+V // CHECK-NEXT: (cling::Value &) boxes [(Tracer &) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: REF{1}:dump
 
 // Setting a new value should destruct the old - BUT it's a ref thus no
@@ -152,7 +152,7 @@ gCling->evaluate("ObjMaker()", V);
 // The temporary gets created:
 // CHECK-NEXT:MADE{2}:ctor
 printf("ObjMaker() done\n"); //CHECK-NEXT: ObjMaker() done
-V // CHECK-NEXT: (cling::Value) boxes [(Tracer) @{{.*}}]
+V // CHECK-NEXT: (cling::Value &) boxes [(Tracer) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: MADE{2}:dump
 
 // Creating a variable:
@@ -166,7 +166,7 @@ Tracer RT("VAR"); // CHECK-NEXT: VAR{3}:ctor
 // CHECK-NEXT: MADE{2}:dtor
 gCling->evaluate("RT", V); // should not call any ctor!
 printf("RT done\n"); //CHECK-NEXT: RT done
-V // CHECK-NEXT: (cling::Value) boxes [(Tracer &) @{{.*}}]
+V // CHECK-NEXT: (cling::Value &) boxes [(Tracer &) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: VAR{2}:dump
 
 // The following creates a copy, explicitly. This temporary object is then put
@@ -176,7 +176,7 @@ gCling->evaluate("(Tracer)RT", V);
 // Copies RT:
 //CHECK-NEXT: VAR+{3}:copy
 printf("(Tracer)RT done\n"); //CHECK-NEXT: RT done
-V // CHECK-NEXT: (cling::Value) boxes [(Tracer) @{{.*}}]
+V // CHECK-NEXT: (cling::Value &) boxes [(Tracer) @{{.*}}]
 dumpTracerSVR(V); // CHECK-NEXT: VAR+{3}:dump
 
 // Check eval of array var
@@ -194,7 +194,7 @@ gCling->evaluate("arrV", V);
 //CHECK-NEXT: MADE+{7}:copy
 //CHECK-NEXT: MADE+{8}:copy
 
-V // CHECK-NEXT: (cling::Value) boxes [(Tracer [3]) { @{{.*}}, @{{.*}}, @{{.*}} }]
+V // CHECK-NEXT: (cling::Value &) boxes [(Tracer [3]) { @{{.*}}, @{{.*}}, @{{.*}} }]
 
 // Destruct the variables with static storage:
 // Destruct arrV:
