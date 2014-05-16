@@ -24,9 +24,6 @@ workdir=~/ec/build
 srcdir=${workdir}/cling-src
 CLING_SRC_DIR=${srcdir}/tools/cling
 
-# Execute commands in the script get_platform.sh
-source ${CLING_SRC_DIR}/tools/packaging/get_platform.sh
-
 # Fetch the sources for the vendor clone of LLVM
 function fetch_llvm {
   LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
@@ -76,6 +73,10 @@ function fetch_cling {
 }
 
 function set_version {
+
+  # Execute commands in the script get_platform.sh
+  source ${CLING_SRC_DIR}/tools/packaging/get_platform.sh
+
   cd ${CLING_SRC_DIR}
   VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
 
