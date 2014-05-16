@@ -4,7 +4,7 @@
 #
 #                           The Cling Interpreter
 #
-# tools/packaging/debianize.sh: Script to compile Cling and produce tarballs
+# tools/packaging/debian/debianize.sh: Script to compile Cling and produce tarballs
 # and/or Debian packages for Ubuntu/Debian platforms.
 #
 # <more documentation here>
@@ -22,96 +22,117 @@
 
 workdir=~/ec/build
 srcdir=${workdir}/cling-src
-python=$(type -p python2)
 CLING_SRC_DIR=${srcdir}/tools/cling
-LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
-echo "Last known good LLVM revision is ${LLVMRevision}"
 
-if [ -d "${srcdir}" ]; then
-  cd "${srcdir}"
-  git clean -f -x -d
-  git fetch --tags
-  git checkout ROOT-patches-r${LLVMRevision}
-  git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
-else
-  git clone http://root.cern.ch/git/llvm.git "${srcdir}"
-  cd "${srcdir}"
-  git checkout tags/ROOT-patches-r${LLVMRevision}
-fi
+# Execute commands in the script get_platform.sh
+source ${CLING_SRC_DIR}/tools/packaging/get_platform.sh
 
-if [ -d "${srcdir}/tools/clang" ]; then
-  cd "${srcdir}/tools/clang"
-  git clean -f -x -d
-  git fetch --tags
-  git checkout ROOT-patches-r${LLVMRevision}
-  git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
-else
-  git clone http://root.cern.ch/git/clang.git  "${srcdir}/tools/clang"
-  cd "${srcdir}/tools/clang"
-  git checkout ROOT-patches-r${LLVMRevision}
-fi
+# Fetch the sources for the vendor clone of LLVM
+function fetch_llvm {
+  LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
+  echo "Last known good LLVM revision is ${LLVMRevision}"
 
-if [ -d "${srcdir}/tools/cling" ]; then
-  cd "${srcdir}/tools/cling"
-  git clean -f -x -d
-  git fetch --tags
-  # Checkout master until we have stable v0.2 tag
-  git checkout master
-  git pull origin master
-  #git checkout $(git describe --match v* --abbrev=0 --tags | head -n 1)
-  #git pull origin refs/tags/$(git describe --match v* --abbrev=0 --tags | head -n 1)
-else
-  git clone http://root.cern.ch/git/cling.git  "${srcdir}/tools/cling"
-  cd "${srcdir}/tools/cling"
-  git checkout $(git describe --match v* --abbrev=0 --tags | head -n 1)
-fi
+  if [ -d "${srcdir}" ]; then
+    cd "${srcdir}"
+    git clean -f -x -d
+    git fetch --tags
+    git checkout ROOT-patches-r${LLVMRevision}
+    git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
+  else
+    git clone http://root.cern.ch/git/llvm.git "${srcdir}"
+    cd "${srcdir}"
+    git checkout tags/ROOT-patches-r${LLVMRevision}
+  fi
+}
 
-cd ${CLING_SRC_DIR}
-VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
+# Fetch the sources for the vendor clone of Clang
+function fetch_clang {
+  if [ -d "${srcdir}/tools/clang" ]; then
+    cd "${srcdir}/tools/clang"
+    git clean -f -x -d
+    git fetch --tags
+    git checkout ROOT-patches-r${LLVMRevision}
+    git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
+  else
+    git clone http://root.cern.ch/git/clang.git  "${srcdir}/tools/clang"
+    cd "${srcdir}/tools/clang"
+    git checkout ROOT-patches-r${LLVMRevision}
+  fi
+}
 
-# If development release, then add revision to the version
-REVISION=$(git log -n 1 --pretty=format:"%H" | cut -c1-10)
-echo "${VERSION}" | grep -qE "dev"
-if [ "${?}" = 0 ]; then
-  VERSION="${VERSION}"-"${REVISION}"
-fi
+# Fetch the sources for Cling
+function fetch_cling {
+  if [ -d "${srcdir}/tools/cling" ]; then
+    cd "${srcdir}/tools/cling"
+    git clean -f -x -d
+    git fetch --tags
+    git checkout ${1}
+    git pull origin ${1}
+  else
+    git clone http://root.cern.ch/git/cling.git  "${srcdir}/tools/cling"
+    cd "${srcdir}/tools/cling"
+    git checkout ${1}
+  fi
+}
 
-prefix=${workdir}/cling-${VERSION}
+function set_version {
+  cd ${CLING_SRC_DIR}
+  VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
 
-echo "Create temporary build directory: ${builddir}"
-mkdir -p ${workdir}/builddir
-cd ${workdir}/builddir
+  # If development release, then add revision to the version
+  REVISION=$(git log -n 1 --pretty=format:"%H" | cut -c1-10)
+  echo "${VERSION}" | grep -qE "dev"
+  if [ "${?}" = 0 ]; then
+    VERSION="${VERSION}"-"${REVISION}"
+  fi
+}
 
-echo "Configuring Cling for compilation"
-${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
+function compile {
+  prefix=${1}
+  python=$(type -p python2)
+  echo "Create temporary build directory:"
+#  mkdir -p ${workdir}/builddir
+  cd ${workdir}/builddir
 
-echo "Building Cling..."
-cores=$(nproc)
-echo "Using ${cores} cores."
-make -j${cores}
-rm -rf ${prefix}
-make install -j${cores}
+  echo "Configuring Cling for compilation"
+#  ${srcdir}/configure --disable-compiler-version-checks --with-python=$python --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
 
-echo "Compressing ${prefix} to produce a bzip2 tarball..."
-cd ${workdir}
-tar -cjvf cling_${VERSION}.orig.tar.bz2 -C . $(basename ${prefix})
+  echo "Building Cling..."
+  cores=$(nproc)
+  echo "Using ${cores} cores."
+  make -j${cores}
+  rm -rf ${prefix}
+  make install -j${cores}
+}
+
+function tarball_deb {
+  echo "Compressing ${prefix} to produce a bzip2 tarball..."
+  cd ${workdir}
+  tar -cjvf cling_${VERSION}.orig.tar.bz2 -C . $(basename ${prefix})
+}
+
+function tarball {
+  echo "Compressing ${prefix} to produce a bzip2 tarball..."
+  cd ${workdir}
+  tar -cjvf $(basename ${prefix}).tar.bz2 -C . $(basename ${prefix})
+}
 
 ######################################################
 # Debianize the tarball: cling_${VERSION}.orig.tar.bz2
-# Can refer to relative paths after this
 ######################################################
 
-cd "${workdir}"/cling-"${VERSION}"
+function debianize {
 
-echo "Create directory: debian"
-mkdir -p debian
+  cd ${prefix}
+  echo "Create directory: debian"
+  mkdir -p debian
 
-echo "Create file: debian/source/format"
-mkdir -p debian/source
-echo "3.0 (quilt)" > debian/source/format
+  echo "Create file: debian/source/format"
+  mkdir -p debian/source
+  echo "3.0 (quilt)" > debian/source/format
 
-echo "Create file: debian/cling.install"
-cat >> debian/cling.install << EOF
+  echo "Create file: debian/cling.install"
+  cat >> debian/cling.install << EOF
 bin/* /usr/bin
 docs/* /usr/share/doc
 include/* /usr/include
@@ -119,15 +140,15 @@ lib/* /usr/lib
 share/* /usr/share
 EOF
 
-echo "Create file: debian/compact"
-# Optimize binary compression
-echo "7" > debian/compact
+  echo "Create file: debian/compact"
+  # Optimize binary compression
+  echo "7" > debian/compact
 
-echo "Create file: debian/compat"
-echo "9" > debian/compat
+  echo "Create file: debian/compat"
+  echo "9" > debian/compat
 
-echo "Create file: debian/control"
-cat >> debian/control << EOF
+  echo "Create file: debian/control"
+  cat >> debian/control << EOF
 Source: cling
 Section: devel
 Priority: optional
@@ -158,8 +179,8 @@ Description: interactive C++ interpreter
  backward-compatibility with CINT is major priority during the development.
 EOF
 
-echo "Create file: debian/copyright"
-cat >> debian/copyright << EOF
+  echo "Create file: debian/copyright"
+  cat >> debian/copyright << EOF
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: cling
 Source: http://root.cern.ch/gitweb?p=cling.git;a=summary
@@ -195,8 +216,8 @@ Comment: Cling can also be licensed under University of Illinois/NCSA
  More information here: https://github.com/vgvassilev/cling/blob/master/LICENSE.TXT
 EOF
 
-echo "Create file: debian/rules"
-cat >> debian/rules << EOF
+  echo "Create file: debian/rules"
+  cat >> debian/rules << EOF
 #!/usr/bin/make -f
 # -*- makefile -*-
 
@@ -208,34 +229,132 @@ override_dh_auto_build:
 override_dh_auto_install:
 EOF
 
-# The author of the top level changeset is the one who has to sign the Debian package.
-echo "Create file: debian/changelog"
-cat >> debian/changelog << EOF
+  # The author of the top level changeset is the one who has to sign the Debian package.
+  echo "Create file: debian/changelog"
+  cat >> debian/changelog << EOF
 cling (${VERSION}-1) unstable; urgency=low
 
   * [Debian] Update package to version: ${VERSION}
  -- Anirudha Bose <ani07nov@gmail.com>  $(date --rfc-2822)
 
 EOF
-echo "Old Changelog:" >> debian/changelog
+  echo "Old Changelog:" >> debian/changelog
 
-cd "${CLING_SRC_DIR}"
-git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> "${workdir}"/cling-"${VERSION}"/debian/changelog
-cd -
+  cd "${CLING_SRC_DIR}"
+  git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> ${prefix}/debian/changelog
+  cd -
 
-# Create Debian package
-debuild
+  # Create Debian package
+  debuild
+}
 
-echo "Moving all newly created files to cling-${VERSION}-1"
-mkdir "${workdir}"/cling-"${VERSION}"-1
-mv "${workdir}"/cling_"${VERSION}"*.deb "${workdir}"/cling-"${VERSION}"-1
-mv "${workdir}"/cling_"${VERSION}"*.changes "${workdir}"/cling-"${VERSION}"-1
-mv "${workdir}"/cling_"${VERSION}"*.build "${workdir}"/cling-"${VERSION}"-1
-mv "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
-mv "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
+function cleanup {
+  echo "Moving all newly created files to cling-${VERSION}-1"
+  mkdir "${workdir}"/cling-"${VERSION}"-1
+  mv "${workdir}"/cling_"${VERSION}"*.deb "${workdir}"/cling-"${VERSION}"-1
+  mv "${workdir}"/cling_"${VERSION}"*.changes "${workdir}"/cling-"${VERSION}"-1
+  mv "${workdir}"/cling_"${VERSION}"*.build "${workdir}"/cling-"${VERSION}"-1
+  mv "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
+  mv "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
 
-echo "Cleaning up redundant file.."
-rm "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
-rm -R "${workdir}"/cling-"${VERSION}"
+  echo "Cleaning up redundant file.."
+  rm "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
+  rm -R "${workdir}"/cling-"${VERSION}"
+}
 
-echo "Now exiting.."
+function check {
+  if [ $(dpkg-query -W -f='${Status}' ${1} 2>/dev/null | grep -c "ok installed") -eq 0 ];
+  then
+    echo "${1} is required by the script, but is not installed on your system."
+    echo "Running: sudo apt-get install ${1}"
+    sudo apt-get install ${1};
+  else
+    printf "%-10s\t\t[OK]\n" "${1}"
+#    echo -e "${1}\t\t[OK]"
+  fi
+}
+
+function usage()
+{
+  echo "debianize.sh: Script to compile Cling and produce tarballs and/or Debian packages"
+  echo ""
+  echo "Usage: ./debianize.sh {arg}"
+  echo -e "    -h, --help\t\t\tDisplay this help and exit"
+  echo -e "    --check-requirements\tCheck if packages required by the script are installed"
+  echo -e "    --current-dev-tarball\tCompile the latest development snapshot and produce a tarball"
+  echo -e "    --last-stable-tarball\tCompile the last stable snapshot and produce a tarball"
+  echo -e "    --last-stable-deb\t\tCompile the last stable snapshot and produce a Debian package"
+  echo -e "    --tarball-tag={tag}\t\tCompile the snapshot of a given tag and produce a tarball"
+  echo -e "    --deb-tag={tag}\t\tCompile the snapshot of a given tag and produce a Debian package"
+}
+
+while [ "$1" != "" ]; do
+  PARAM=$(echo $1 | awk -F= '{print $1}')
+  VALUE=$(echo $1 | awk -F= '{print $2}')
+  case $PARAM in
+    -h | --help)
+        usage
+        exit
+        ;;
+    --check-requirements)
+        echo "Checking if required softwares are available on this system..."
+        check git
+        check curl
+        check debhelper
+        check devscripts
+        check gnupg
+        ;;
+    --current-dev-tarball)
+        fetch_llvm
+        fetch_clang
+        fetch_cling master
+        set_version
+        compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+        tarball
+        ;;
+    --last-stable-tarball)
+        fetch_llvm
+        fetch_clang
+        cd ${CLING_SRC_DIR}
+        fetch_cling $(git describe --match v* --abbrev=0 --tags | head -n 1)
+        set_version
+        compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+        tarball
+        ;;
+    --last-stable-deb)
+        fetch_llvm
+        fetch_clang
+        cd ${CLING_SRC_DIR}
+        fetch_cling $(git describe --match v* --abbrev=0 --tags | head -n 1)
+        VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
+        compile ${workdir}/cling-${VERSION}
+        tarball_deb
+        debianize
+        cleanup
+        ;;
+    --tarball-tag)
+        fetch_llvm
+        fetch_clang
+        fetch_cling ${VALUE}
+        VERSION=$(echo ${VALUE} | sed s/v//g)
+        compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+        tarball
+        ;;
+    --deb-tag)
+        fetch_llvm
+        fetch_clang
+        fetch_cling ${VALUE}
+        VERSION=$(echo ${VALUE} | sed s/v//g)
+        compile ${workdir}/cling-${VERSION}
+        tarball_deb
+        debianize
+        cleanup
+        ;;
+    *)
+        echo "ERROR: unknown parameter \"$PARAM\""
+        usage
+        exit 1
+        ;;
+  esac
+  shift
+done
