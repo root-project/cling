@@ -78,6 +78,45 @@ namespace cling {
 
     unsigned long GetNumberOfElements() const;
 
+    // Allow simplisticCastAs to be partially specialized.
+    template<typename T>
+    struct CastFwd {
+      static T cast(const Value& V) {
+        EStorageType storageType = V.getStorageType();
+        switch (storageType) {
+        case kSignedIntegerOrEnumerationType:
+          return (T) V.getAs<long long>();
+        case kUnsignedIntegerOrEnumerationType:
+          return (T) V.getAs<unsigned long long>();
+        case kDoubleType:
+          return (T) V.getAs<double>();
+        case kFloatType:
+          return (T) V.getAs<float>();
+        case kLongDoubleType:
+          return (T) V.getAs<long double>();
+        case kPointerType: // intentional fall through.
+          //For pointers the specialization should be called.
+        case kUnsupportedType:
+          V.AssertOnUnsupportedTypeCast();
+        }
+        return T();
+      }
+    };
+
+    template<typename T>
+    struct CastFwd<T*> {
+      static T* cast(const Value& V) {
+        EStorageType storageType = V.getStorageType();
+        switch (storageType) {
+        case kPointerType:
+          return (T*) (unsigned long) V.getAs<void*>();
+        default:
+          V.AssertOnUnsupportedTypeCast(); break;
+        }
+        return 0;
+      }
+    };
+
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
     Value(): m_Type(0) {}
@@ -157,33 +196,14 @@ namespace cling {
     /// casting the value of builtins (except void), enums and pointers.
     /// Values referencing an object are treated as pointers to the object.
     template <typename T>
-    T simplisticCastAs() const;
+    T simplisticCastAs() const {
+      return CastFwd<T>::cast(*this);
+    }
 
     void print(llvm::raw_ostream& Out) const;
     void dump() const;
-  };
 
-  template <typename T>
-  T Value::simplisticCastAs() const {
-    EStorageType storageType = getStorageType();
-    switch (storageType) {
-    case kSignedIntegerOrEnumerationType:
-      return (T) getAs<long long>();
-    case kUnsignedIntegerOrEnumerationType:
-      return (T) getAs<unsigned long long>();
-    case kDoubleType:
-      return (T) getAs<double>();
-    case kFloatType:
-      return (T) getAs<float>();
-    case kLongDoubleType:
-      return (T) getAs<long double>();
-    case kPointerType:
-      return (T) (unsigned long) getAs<void*>();
-    case kUnsupportedType:
-      AssertOnUnsupportedTypeCast();
-    }
-    return T();
-  }
+  };
 } // end namespace cling
 
 #endif // CLING_VALUE_H
