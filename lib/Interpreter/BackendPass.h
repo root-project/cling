@@ -44,9 +44,14 @@ namespace cling {
     llvm::OwningPtr<llvm::TargetMachine> m_TM;
 
   public:
-    ///\brief Initializes a new transaction transformer.
+    ///\brief Initializes the backend pass adaptor.
     ///
     ///\param[in] S - The semantic analysis object.
+    ///\param[in] M - The module to run the passes on.
+    ///\param[in] Diags - Diagnostics engine to be use by the passes.
+    ///\param[in] TOpts - Current target options.
+    ///\param[in] LangOpts - Current language options.
+    ///\param[in] CodeGenOpts - Current CodeGen options.
     ///
     BackendPass(clang::Sema* S, llvm::Module* M,
                 clang::DiagnosticsEngine& Diags,
