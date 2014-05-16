@@ -129,7 +129,7 @@ namespace cling {
     T getAs() const { return const_cast<Value*>(this)->getAs<T>(); }
 
     template <typename T>
-    T*& getAs(T**) const { return (T*&)getAs((void**)0); }
+    T*& getAs(T**) { return (T*&)getAs((void**)0); }
     void*& getAs(void**) { return m_Storage.m_Ptr; }
     double& getAs(double*) { return m_Storage.m_Double; }
     long double& getAs(long double*) { return m_Storage.m_LongDouble; }
