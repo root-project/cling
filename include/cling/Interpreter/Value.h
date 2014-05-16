@@ -157,14 +157,14 @@ namespace cling {
     bool isValid() const;
 
     /// \brief Determine whether the Value is set but void.
-    bool isVoid(const clang::ASTContext& Ctx) const;
+    bool isVoid() const;
 
     /// \brief Determine whether the Value is set and not void.
     //
     /// Determine whether the Value is set and not void.
     /// Only in this case can getAs() or simplisticCastAs() be called.
-    bool hasValue(const clang::ASTContext& Ctx) const {
-      return isValid() && !isVoid(Ctx); }
+    bool hasValue() const {
+      return isValid() && !isVoid(); }
 
     /// \brief Get a reference to the value without type checking.
     /// T *must* correspond to type. Else use simplisticCastAs()!

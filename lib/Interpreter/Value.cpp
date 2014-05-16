@@ -169,7 +169,8 @@ clang::ASTContext& Value::getASTContext() const {
 
 bool Value::isValid() const { return !getType().isNull(); }
 
-bool Value::isVoid(const clang::ASTContext& Ctx) const {
+bool Value::isVoid() const {
+  const clang::ASTContext& Ctx = getASTContext();
   return isValid() && Ctx.hasSameType(getType(), Ctx.VoidTy);
 }
 
