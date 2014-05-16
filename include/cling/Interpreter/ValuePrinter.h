@@ -54,9 +54,6 @@ namespace cling {
     void flushToStream(llvm::raw_ostream& o, const std::string& s);
 
   } // namespace valuePrinterInternal
-
-  ///\brief Catch-all implementation for value printing.
-
 }
 
 #endif // CLING_VALUEPRINTER_H
