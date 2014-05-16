@@ -329,8 +329,8 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD,
       //                                    CallArgs, noLoc).take();
     }
     else {
-      using namespace cling::valuePrinterInternal;
-      typeStr = printType_Default(*this);
+      llvm::raw_string_ostream o(typeStr);
+      cling::valuePrinterInternal::printType_Default(o, *this);
     }
     R.clear();
     R.setLookupName(&C.Idents.get("printValue"));
@@ -355,15 +355,12 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD,
       valueStr = *(std::string*)printValueV.getPtr();
     }
     else {
-      using namespace cling::valuePrinterInternal;
-      valueStr = printValue_Default(*this);
+      llvm::raw_string_ostream o(valueStr);
+      cling::valuePrinterInternal::printValue_Default(o, *this);
     }
 
-    // print the type:
-    using namespace cling::valuePrinterInternal;//::Select(Out, this);
-    flushToStream(Out, typeStr + valueStr);
-    flushToStream(Out, std::string("\n"));
-    // print the value:
+    // print the type and the value:
+    Out << typeStr + valueStr << "\n";
   }
 
   void Value::dump() const {

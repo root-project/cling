@@ -10,9 +10,6 @@
 #ifndef CLING_VALUEPRINTER_H
 #define CLING_VALUEPRINTER_H
 
-#include "cling/Interpreter/Value.h"
-#include <string>
-
 namespace llvm {
   class raw_ostream;
 }
@@ -43,15 +40,10 @@ namespace cling {
   //template <typename TY>
   //std::string printType(const void* const p, TY* const u,
   //                      const Value& V);
-
   namespace valuePrinterInternal {
-
-    std::string printValue_Default(const Value& V);
-    std::string printType_Default(const Value& V);
-
-    void flushToStream(llvm::raw_ostream& o, const std::string& s);
-
-  } // namespace valuePrinterInternal
+    void printValue_Default(llvm::raw_ostream& o, const Value& V);
+    void printType_Default(llvm::raw_ostream& o, const Value& V);
+  } // end namespace valuePrinterInternal
 }
 
 #endif // CLING_VALUEPRINTER_H

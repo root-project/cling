@@ -324,80 +324,67 @@ static void StreamValue(llvm::raw_ostream& o, const void* V,
 
 namespace cling {
 namespace valuePrinterInternal {
-  std::string printValue_Default(const Value& V) {
-    std::string buf;
-    {
-
-      llvm::raw_string_ostream o(buf);
-
-      clang::ASTContext& C = V.getASTContext();
-      clang::QualType Ty = V.getType().getDesugaredType(C);
-      if (const clang::BuiltinType *BT
-          = llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
-        switch (BT->getKind()) {
-        case clang::BuiltinType::Bool: // intentional fall through
-        case clang::BuiltinType::Char_U: // intentional fall through
-        case clang::BuiltinType::Char_S: // intentional fall through
-        case clang::BuiltinType::SChar: // intentional fall through
-        case clang::BuiltinType::Short: // intentional fall through
-        case clang::BuiltinType::Int: // intentional fall through
-        case clang::BuiltinType::Long: // intentional fall through
-        case clang::BuiltinType::LongLong: {
-          long long res = V.getLL();
-          StreamValue(o, (const void*)&res, Ty, C);
-        }
-          break;
-        case clang::BuiltinType::UChar: // intentional fall through
-        case clang::BuiltinType::UShort: // intentional fall through
-        case clang::BuiltinType::UInt: // intentional fall through
-        case clang::BuiltinType::ULong: // intentional fall through
-        case clang::BuiltinType::ULongLong: {
-          unsigned long long res = V.getULL();
-          StreamValue(o, (const void*)&res, Ty, C);
-        }
-          break;
-        case clang::BuiltinType::Float: {
-          float res = V.getFloat();
-          StreamValue(o, (const void*)&res, Ty, C);
-        }
-          break;
-        case clang::BuiltinType::Double: {
-          double res = V.getDouble();
-          StreamValue(o, (const void*)&res, Ty, C);
-        }
-          break;
-        case clang::BuiltinType::LongDouble: {
-          long double res = V.getLongDouble();
-          StreamValue(o, (const void*)&res, Ty, C);
-        }
-          break;
-        default:
-          StreamValue(o, V.getPtr(), Ty, C);
-          break;
-        }
-      }
-      else if (Ty->isIntegralOrEnumerationType()) {
+  void printValue_Default(llvm::raw_ostream& o, const Value& V) {
+    clang::ASTContext& C = V.getASTContext();
+    clang::QualType Ty = V.getType().getDesugaredType(C);
+    if (const clang::BuiltinType *BT
+        = llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
+      switch (BT->getKind()) {
+      case clang::BuiltinType::Bool: // intentional fall through
+      case clang::BuiltinType::Char_U: // intentional fall through
+      case clang::BuiltinType::Char_S: // intentional fall through
+      case clang::BuiltinType::SChar: // intentional fall through
+      case clang::BuiltinType::Short: // intentional fall through
+      case clang::BuiltinType::Int: // intentional fall through
+      case clang::BuiltinType::Long: // intentional fall through
+      case clang::BuiltinType::LongLong: {
         long long res = V.getLL();
-        StreamValue(o, &res, Ty, C);
+        StreamValue(o, (const void*)&res, Ty, C);
       }
-      else if (Ty->isFunctionType())
-        StreamValue(o, &V, Ty, C);
-      else
+        break;
+      case clang::BuiltinType::UChar: // intentional fall through
+      case clang::BuiltinType::UShort: // intentional fall through
+      case clang::BuiltinType::UInt: // intentional fall through
+      case clang::BuiltinType::ULong: // intentional fall through
+      case clang::BuiltinType::ULongLong: {
+        unsigned long long res = V.getULL();
+        StreamValue(o, (const void*)&res, Ty, C);
+      }
+        break;
+      case clang::BuiltinType::Float: {
+        float res = V.getFloat();
+        StreamValue(o, (const void*)&res, Ty, C);
+      }
+        break;
+      case clang::BuiltinType::Double: {
+        double res = V.getDouble();
+        StreamValue(o, (const void*)&res, Ty, C);
+      }
+        break;
+      case clang::BuiltinType::LongDouble: {
+        long double res = V.getLongDouble();
+        StreamValue(o, (const void*)&res, Ty, C);
+      }
+        break;
+      default:
         StreamValue(o, V.getPtr(), Ty, C);
-
+        break;
+      }
     }
-    return buf;
+    else if (Ty->isIntegralOrEnumerationType()) {
+      long long res = V.getLL();
+      StreamValue(o, &res, Ty, C);
+    }
+    else if (Ty->isFunctionType())
+      StreamValue(o, &V, Ty, C);
+    else
+      StreamValue(o, V.getPtr(), Ty, C); 
   }
 
-  std::string printType_Default(const Value& V) {
-    std::string buf;
-    {
-      llvm::raw_string_ostream o(buf);
-      o << "(";
-      o << V.getType().getAsString();
-      o << ") ";
-    }
-    return buf;
+  void printType_Default(llvm::raw_ostream& o, const Value& V) {
+    o << "(";
+    o << V.getType().getAsString();
+    o << ") ";
   }
 
   void flushToStream(llvm::raw_ostream& o, const std::string& s) {
