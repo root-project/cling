@@ -62,7 +62,6 @@ public:
     /// options disallowint it - it will return still true. Returns false on
     /// critical error.
     bool tryAttachVP(clang::FunctionDecl* FD);
-    clang::Expr* SynthesizeCppVP(clang::Expr* E);
     clang::Expr* SynthesizeVP(clang::Expr* E);
     unsigned ClearNullStmts(clang::CompoundStmt* CS);
   };

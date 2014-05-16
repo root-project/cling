@@ -98,9 +98,7 @@ namespace cling {
           To = PE->getSubExpr();
             
         Expr* Result = 0;
-        if (m_Sema->getLangOpts().CPlusPlus)
-          ;//Result = SynthesizeCppVP(To);
-        else
+        if (!m_Sema->getLangOpts().CPlusPlus)
           Result = SynthesizeVP(To);
 
         if (Result)
@@ -119,116 +117,6 @@ namespace cling {
     }
 
     return true;
-  }
-
-  // We need to artificially create:
-  // cling::valuePrinterInternal::Select((void*) raw_ostream,
-  //                                    (ASTContext)Ctx, (Expr*)E, &i);
-  Expr* ValuePrinterSynthesizer::SynthesizeCppVP(Expr* E) {
-    QualType QT = E->getType();
-    // For now we skip void and function pointer types.
-    if (QT.isNull() || QT->isVoidType())
-      return 0;
-
-    // 1. Call gCling->getValuePrinterStream()
-    // 1.1. Find gCling
-    NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
-    NSD = utils::Lookup::Namespace(m_Sema, "valuePrinterInternal", NSD);
-
-
-    DeclarationName PVName = &m_Context->Idents.get("Select");
-    LookupResult R(*m_Sema, PVName, E->getLocStart(), Sema::LookupOrdinaryName,
-                   Sema::ForRedeclaration);
-    assert(NSD && "There must be a valid namespace.");
-    m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty() && "Cannot find valuePrinterInternal::Select(...)");
-
-    CXXScopeSpec CSS;
-    Expr* UnresolvedLookup
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
-
-    // 2.4. Prepare the params
-
-    // 2.4.1 Lookup the llvm::raw_ostream
-    CXXRecordDecl* RawOStreamRD
-      = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "raw_ostream",
-                                                 utils::Lookup::Namespace(m_Sema,
-                                                                "llvm")));
-
-    assert(RawOStreamRD && "Declaration of the expr not found!");
-    QualType RawOStreamRDTy = m_Context->getTypeDeclType(RawOStreamRD);
-    // 2.4.2 Lookup the interpreter type
-    NamespaceDecl* ClingRuntimeNSD =
-      utils::Lookup::Namespace(m_Sema,"runtime",
-                               utils::Lookup::Namespace(m_Sema, "cling"));
-    VarDecl* gCling = dyn_cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling",
-                                                             ClingRuntimeNSD));
-    // Build a reference to gCling
-    ExprResult gClingDRE
-      = m_Sema->BuildDeclRefExpr(gCling, gCling->getType(),
-                                 VK_RValue, SourceLocation());
-
-
-    assert(gCling && "Declaration of the expr not found!");
-    // 2.4.3 Lookup ASTContext type
-    CXXRecordDecl* ASTContextRD
-      = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(m_Sema, "ASTContext",
-                                                 utils::Lookup::Namespace(m_Sema,
-                                                                "clang")));
-    assert(ASTContextRD && "Declaration of the expr not found!");
-    QualType ASTContextRDTy = m_Context->getTypeDeclType(ASTContextRD);
-
-    Expr* RawOStreamTy
-      = utils::Synthesize::CStyleCastPtrExpr(m_Sema, RawOStreamRDTy,
-                                             (uint64_t)m_ValuePrinterStream.get()
-                                             );
-    Expr* ASTContextTy 
-      = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ASTContextRDTy,
-                                             (uint64_t)m_Context);
-
-    // E might contain temporaries. This means that the topmost expr is
-    // ExprWithCleanups. This contains the information about the temporaries and
-    // signals when they should be destroyed.
-    // Here we replace E with call to value printer and we must extend the life
-    // time of those temporaries to the end of the new CallExpr.
-    bool NeedsCleanup = false;
-    if (ExprWithCleanups* EWC = dyn_cast<ExprWithCleanups>(E)) {
-      E = EWC->getSubExpr();
-      NeedsCleanup = true;
-    }
-
-    if (QT->isFunctionPointerType()) {
-       // convert func ptr to void*:
-      E = utils::Synthesize::CStyleCastPtrExpr(m_Sema, m_Context->VoidPtrTy, E);
-    }
-
-    llvm::SmallVector<Expr*, 4> CallArgs;
-    CallArgs.push_back(RawOStreamTy);
-    CallArgs.push_back(gClingDRE.take());
-    CallArgs.push_back(ASTContextTy);
-    CallArgs.push_back(E);
-
-    Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
-
-    // Here we expect a template instantiation. We need to open the transaction
-    // that we are currently work with.
-    Transaction::State oldState = getTransaction()->getState();
-    getTransaction()->setState(Transaction::kCollecting);
-    Expr* Result = m_Sema->ActOnCallExpr(S, UnresolvedLookup, E->getLocStart(),
-                                         CallArgs, E->getLocEnd()).take();
-    getTransaction()->setState(oldState);
-
-    Result = m_Sema->ActOnFinishFullExpr(Result).take();
-    if (NeedsCleanup && !isa<ExprWithCleanups>(Result)) {
-      llvm::ArrayRef<ExprWithCleanups::CleanupObject> Cleanups;
-      ExprWithCleanups* EWC
-        = ExprWithCleanups::Create(*m_Context, Result, Cleanups);
-      Result = EWC;
-    }
-
-    assert(Result && "Cannot create value printer!");
-
-    return Result;
   }
 
   // We need to artificially create:
