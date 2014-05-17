@@ -294,8 +294,8 @@ while [ "${1}" != "" ]; do
     usage
     exit
   fi
-  PARAM=$(echo ${1} | awk -F= '{print ${1}}')
-  VALUE=$(echo ${1} | awk -F= '{print ${2}}')
+  PARAM=$(echo ${1} | awk -F= '{print $1}')
+  VALUE=$(echo ${1} | awk -F= '{print $2}')
   case ${PARAM} in
     -h | --help)
         usage
