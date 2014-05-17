@@ -81,10 +81,10 @@ function set_version {
   VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
 
   # If development release, then add revision to the version
-  REVISION=$(git log -n 1 --pretty=format:"%H" | cut -c1-7)
+  REVISION=$(git log -n 1 --pretty=format:"%H")
   echo "${VERSION}" | grep -qE "dev"
   if [ "${?}" = 0 ]; then
-    VERSION="${VERSION}"-"${REVISION}"
+    VERSION="${VERSION}"-"$(echo ${REVISION} | cut -c1-7)"
   fi
 }
 
@@ -241,7 +241,7 @@ EOF
   echo "Old Changelog:" >> debian/changelog
 
   cd "${CLING_SRC_DIR}"
-  git log $(git rev-list HEAD) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> ${prefix}/debian/changelog
+  git log $(git rev-list ${REVISION}) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> ${prefix}/debian/changelog
   cd -
 
   # Create Debian package
