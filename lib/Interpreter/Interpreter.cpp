@@ -282,6 +282,18 @@ namespace cling {
   }
 
   void Interpreter::IncludeCRuntime() {
+    // Set up the gCling variable if it can be used
+    std::stringstream initializer;
+    initializer << "void* gCling=(void*)" << (uintptr_t)this << ';';
+    declare(initializer.str());
+    // declare("void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT);");
+    // declare("void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, float value);");
+    // declare("void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, double value);");
+    // declare("void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, long double value);");
+    // declare("void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, unsigned long long value);");
+    // declare("void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, const void* value);");
+    // declare("void* setValueWithAlloc(void* vpI, void* vpV, void* vpQT);");
+
     declare("#include \"cling/Interpreter/CValuePrinter.h\"");
   }
 
