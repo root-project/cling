@@ -99,8 +99,8 @@ namespace cling {
           return (T) V.getAs<float>();
         case kLongDoubleType:
           return (T) V.getAs<long double>();
-        case kPointerType: // intentional fall through.
-          //For pointers the specialization should be called.
+        case kPointerType:
+          return (T) (unsigned long) V.getAs<void*>();
         case kUnsupportedType:
           V.AssertOnUnsupportedTypeCast();
         }
