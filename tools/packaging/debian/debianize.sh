@@ -96,7 +96,7 @@ function compile {
   cd ${workdir}/builddir
 
   echo "Configuring Cling for compilation"
-  ${srcdir}/configure --disable-compiler-version-checks --with-python=$python --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
+  ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
 
   echo "Building Cling..."
   cores=$(nproc)
@@ -308,6 +308,13 @@ while [ "${1}" != "" ]; do
         check debhelper
         check devscripts
         check gnupg
+        check python
+        echo -e "\nYou are advised to make sure you have the \"latest\" versions of the above packages installed."
+        echo -e "\nYou can upgrade all your installed packages by:"
+        echo -e "\tsudo apt-get update\n\tsudo apt-get upgrade"
+        echo -e "\nor update only the required packages by:"
+        echo -e "\tsudo apt-get update git curl debhelper devscripts gnupg python"
+
         ;;
     --current-dev-tarball)
         fetch_llvm
