@@ -333,11 +333,13 @@ namespace cling {
 
   void ValueExtractionSynthesizer::FindAndCacheRuntimeDecls() {
     assert(!m_gClingVD && "Called multiple times!?");
-    NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
-    NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
-    m_gClingVD = cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling", NSD));
-    NSD = utils::Lookup::Namespace(m_Sema, "internal",NSD);
-
+    DeclContext* NSD = m_Context->getTranslationUnitDecl();
+    if (m_Sema->getLangOpts().CPlusPlus) {
+      NSD = utils::Lookup::Namespace(m_Sema, "cling");
+      NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
+      m_gClingVD = cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling", NSD));
+      NSD = utils::Lookup::Namespace(m_Sema, "internal",NSD);
+    }
     LookupResult R(*m_Sema, &m_Context->Idents.get("setValueNoAlloc"),
                    SourceLocation(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);

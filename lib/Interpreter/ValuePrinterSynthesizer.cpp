@@ -98,8 +98,8 @@ namespace cling {
           To = PE->getSubExpr();
             
         Expr* Result = 0;
-        if (!m_Sema->getLangOpts().CPlusPlus)
-          Result = SynthesizeVP(To);
+        // if (!m_Sema->getLangOpts().CPlusPlus)
+        //   Result = SynthesizeVP(To);
 
         if (Result)
           *(CS->body_begin()+indexOfLastExpr) = Result;
