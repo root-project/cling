@@ -42,7 +42,6 @@ add_cling_library(clingInterpreter
   TransactionUnloader.cpp
   Value.cpp
   ValuePrinter.cpp
-  ValuePrinterInfo.cpp
   ValuePrinterSynthesizer.cpp
 
   LINK_LIBS

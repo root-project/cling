@@ -296,7 +296,7 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
       for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
              E = unresolved.end(); I < E; ++I) {
         if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
-          if (C.hasSameType(FD->getParamDecl(0)->getType(), ValueTy)) {
+          if (C.hasSameUnqualifiedType(FD->getParamDecl(0)->getType(), ValueTy)){
               hasViablePrintTypeCandidate = true;
               break;
           }
@@ -365,7 +365,7 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
       for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
              E = unresolved.end(); I < E; ++I) {
         if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
-          if (C.hasSameType(FD->getParamDecl(0)->getType(), ValueTy)) {
+          if (C.hasSameUnqualifiedType(FD->getParamDecl(0)->getType(), ValueTy)){
               hasViablePrintValueCandidate = true;
               break;
           }
