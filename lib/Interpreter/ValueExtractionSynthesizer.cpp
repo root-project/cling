@@ -411,10 +411,9 @@ namespace {
 namespace cling {
 namespace runtime {
   namespace internal {
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT) {
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT) {
       // In cases of void we 'just' need to change the type of the value.
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT);
-      dumpIfNoStorage(vpI, vpSVR);
     }
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, float value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<float>() = value;
