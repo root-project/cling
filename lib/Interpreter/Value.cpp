@@ -287,7 +287,23 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
     std::string ValueTyStr = ValueTy.getAsString();
     std::string typeStr;
     std::string valueStr;
+
+    bool hasViablePrintTypeCandidate = false;
     if (!R.empty() && ValueTy->isPointerType()) {
+      // Check if among the candidates there are functions with the same type:
+      const UnresolvedSetImpl& unresolved = R.asUnresolvedSet();
+      // FIXME: Find a way to use the 'proper' overload checks.
+      for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
+             E = unresolved.end(); I < E; ++I) {
+        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
+          if (C.hasSameType(FD->getParamDecl(0)->getType(), ValueTy)) {
+              hasViablePrintTypeCandidate = true;
+              break;
+          }
+      }
+    }
+
+    if (hasViablePrintTypeCandidate) {
       // There is such a routine call it:
       std::stringstream printTypeSS;
       printTypeSS << "cling::printType(";
@@ -341,7 +357,21 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
       // will be needed by evaluate.
     }
 
+    bool hasViablePrintValueCandidate = false;
     if (!R.empty() && ValueTy->isPointerType()) {
+      // Check if among the candidates there are functions with the same type:
+      const UnresolvedSetImpl& unresolved = R.asUnresolvedSet();
+      // FIXME: Find a way to use the 'proper' overload checks.
+      for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
+             E = unresolved.end(); I < E; ++I) {
+        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
+          if (C.hasSameType(FD->getParamDecl(0)->getType(), ValueTy)) {
+              hasViablePrintValueCandidate = true;
+              break;
+          }
+      }
+    }
+    if (hasViablePrintValueCandidate) {
       // There is such a routine call it:
       std::stringstream printValueSS;
       printValueSS << "cling::printValue(";
