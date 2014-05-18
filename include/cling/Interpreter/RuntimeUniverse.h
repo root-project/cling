@@ -58,9 +58,10 @@ namespace cling {
       ///\brief Set the type of a void expression evaluated at the prompt.
       ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
+      ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT);
+      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT);
 
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
@@ -68,9 +69,11 @@ namespace cling {
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The float value of the assignment to be stored
       ///                    in GenericValue.
+      ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, float value);
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
+                           float value);
 
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
@@ -78,9 +81,11 @@ namespace cling {
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The double value of the assignment to be stored
       ///                    in GenericValue.
+      ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, double value);
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
+                           double value);
 
       ///\brief Set the value of the GenericValue for the expression
       ///   evaluated at the prompt. Extract through
@@ -89,9 +94,10 @@ namespace cling {
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The value of the assignment to be stored
       ///                    in GenericValue.
+      ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
                            long double value);
 
       ///\brief Set the value of the GenericValue for the expression
@@ -102,9 +108,10 @@ namespace cling {
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The uint64_t value of the assignment to be stored
       ///                    in GenericValue.
+      ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
                            unsigned long long value);
 
       ///\brief Set the value of the GenericValue for the expression
@@ -113,20 +120,22 @@ namespace cling {
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
       ///\param [in] value - The void* value of the assignment to be stored
       ///                    in GenericValue.
+      ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpV - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
                            const void* value);
 
       ///\brief Set the value of the Generic value and return the address
       /// for the allocated storage space.
       ///\param [in] vpI - The cling::Interpreter for Value.
       ///\param [in] vpQT - The opaque ptr for the clang::QualType of value.
+      ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpV - The Value that is created.
       ///
       ///\returns the address where the value should be put.
       ///
-      void* setValueWithAlloc(void* vpI, void* vpV, void* vpQT);
+      void* setValueWithAlloc(void* vpI, void* vpV, void* vpQT, void* vpT);
 
       ///\brief Placement new doesn't work for arrays. It needs to be called on
       /// each element. For non-PODs we also need to call the *structors. This
