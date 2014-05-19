@@ -7,7 +7,7 @@
 # tools/packaging/debian/debianize.sh: Script to compile Cling and produce tarballs
 # and/or Debian packages for Ubuntu/Debian platforms.
 #
-# <more documentation here>
+# TODO: Add documentation here, or provide link to documentation
 #
 # Author: Anirudha Bose <ani07nov@gmail.com>
 #
@@ -20,12 +20,15 @@
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
 
+# TODO: Change workdir to a suitable path on your system (or Electric Commander).
 workdir=~/ec/build
 srcdir=${workdir}/cling-src
 CLING_SRC_DIR=${srcdir}/tools/cling
 
 # Fetch the sources for the vendor clone of LLVM
 function fetch_llvm {
+  # TODO: Change the URL to use the actual Git repo of Cling, rather than Github.
+  #       Use "git archive --remote=<url> ..." or similar to remove "curl" as dependency.
   LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
   echo "Last known good LLVM revision is: ${LLVMRevision}"
 
@@ -99,6 +102,7 @@ function compile {
   ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
 
   echo "Building Cling..."
+  # TODO: "nproc" program is a part of GNU Coreutils and may not be available on all systems. Use a better solution if needed.
   cores=$(nproc)
   echo "Using ${cores} cores."
   make -j${cores}
@@ -229,7 +233,8 @@ override_dh_auto_build:
 override_dh_auto_install:
 EOF
 
-  # The author of the top level changeset is the one who has to sign the Debian package.
+  # TODO: The author of the top level changeset is the one who has to sign the Debian package.
+  #       Determine the credentials of the uploader programmatically at runtime.
   echo "Create file: debian/changelog"
   cat >> debian/changelog << EOF
 cling (${VERSION}-1) unstable; urgency=low
