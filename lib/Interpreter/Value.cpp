@@ -262,6 +262,25 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
                                         false /*withAccessControl*/);
 }
 
+  static bool hasViableCandidateToCall(clang::LookupResult& R,
+                                       clang::QualType Ty) {
+    using namespace clang;
+    ASTContext& C = R.getSema().getASTContext();
+    if (!R.empty() && Ty->isPointerType()) {
+      // Check if among the candidates there are functions with the same type:
+      const UnresolvedSetImpl& unresolved = R.asUnresolvedSet();
+      // FIXME: Find a way to use the 'proper' overload checks.
+      for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
+             E = unresolved.end(); I < E; ++I) {
+        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
+          if (C.hasSameUnqualifiedType(FD->getParamDecl(0)->getType(), Ty))
+            return true;
+
+      }
+    }
+    return false;
+  }
+
   void Value::print(llvm::raw_ostream& Out) const {
     // Try to find user defined printing functions:
     // cling::printType(const void* const p, TY* const u, const Value& V) and
@@ -288,22 +307,7 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
     std::string typeStr;
     std::string valueStr;
 
-    bool hasViablePrintTypeCandidate = false;
-    if (!R.empty() && ValueTy->isPointerType()) {
-      // Check if among the candidates there are functions with the same type:
-      const UnresolvedSetImpl& unresolved = R.asUnresolvedSet();
-      // FIXME: Find a way to use the 'proper' overload checks.
-      for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
-             E = unresolved.end(); I < E; ++I) {
-        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
-          if (C.hasSameUnqualifiedType(FD->getParamDecl(0)->getType(), ValueTy)){
-              hasViablePrintTypeCandidate = true;
-              break;
-          }
-      }
-    }
-
-    if (hasViablePrintTypeCandidate) {
+    if (hasViableCandidateToCall(R, ValueTy)) {
       // There is such a routine call it:
       std::stringstream printTypeSS;
       printTypeSS << "cling::printType(";
@@ -357,21 +361,7 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
       // will be needed by evaluate.
     }
 
-    bool hasViablePrintValueCandidate = false;
-    if (!R.empty() && ValueTy->isPointerType()) {
-      // Check if among the candidates there are functions with the same type:
-      const UnresolvedSetImpl& unresolved = R.asUnresolvedSet();
-      // FIXME: Find a way to use the 'proper' overload checks.
-      for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
-             E = unresolved.end(); I < E; ++I) {
-        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
-          if (C.hasSameUnqualifiedType(FD->getParamDecl(0)->getType(), ValueTy)){
-              hasViablePrintValueCandidate = true;
-              break;
-          }
-      }
-    }
-    if (hasViablePrintValueCandidate) {
+    if (hasViableCandidateToCall(R, ValueTy)) {
       // There is such a routine call it:
       std::stringstream printValueSS;
       printValueSS << "cling::printValue(";
