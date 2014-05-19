@@ -72,7 +72,7 @@ namespace cling {
       const CompilationOptions& CO(getTransaction()->getCompilationOpts());
       switch (CO.ValuePrinting) {
       case CompilationOptions::VPDisabled:
-        assert("Don't wait that long. Exit early!");
+        assert(0 && "Don't wait that long. Exit early!");
         break;
       case CompilationOptions::VPEnabled:
         break;
