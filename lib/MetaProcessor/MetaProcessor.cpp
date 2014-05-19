@@ -270,7 +270,7 @@ namespace cling {
       m_TopExecutingFile = m_CurrentlyExecutingFile;
     Interpreter::CompilationResult ret;
     // We don't want to value print the results of a unnamed macro.
-    if (process(content + ";").c_str(), ret, result)) {
+    if (process((content + ";").c_str(), ret, result)) {
       // Input file has to be complete.
        llvm::errs()
           << "Error in cling::MetaProcessor: file "
