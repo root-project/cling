@@ -387,12 +387,12 @@ namespace {
     // std::string f(); f().c_str() // have to dump during the same stmt.
     //
     assert(!V.needsManagedAllocation() && "Must contain non managed temporary");
-    // FIXME: We should pass in the 'right' transaction when we requested the
-    // code. This should happen with extra parameter.
-    const cling::CompilationOptions& CO
-      = ((cling::Transaction*)vpT)->getCompilationOpts();
-    if (CO.ValuePrinting != cling::CompilationOptions::VPDisabled)
+    cling::Transaction* T = ((cling::Transaction*)vpT);
+    const cling::CompilationOptions& CO = T->getCompilationOpts();
+    if (CO.ValuePrinting == cling::CompilationOptions::VPEnabled)
       V.dump();
+    assert(CO.ValuePrinting != cling::CompilationOptions::VPAuto
+           && "VPAuto must have been expanded earlier.");
   }
 
   ///\brief Allocate the Value and return the Value
