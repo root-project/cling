@@ -49,16 +49,15 @@ using namespace cling;
 
 // Implements the CValuePrinter interface.
 extern "C" void cling_PrintValue(void* /*cling::Value**/ V) {
-  Value* value = (Value*)V;
+  //Value* value = (Value*)V;
 
   // We need stream that doesn't close its file descriptor, thus we are not
   // using llvm::outs. Keeping file descriptor open we will be able to use
   // the results in pipes (Savannah #99234).
-  llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
+  //llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
 
   //std::string typeStr = printType(value->getPtr(), value->getPtr(), *value);
   //std::string valueStr = printValue(value->getPtr(), value->getPtr(), *value);
-  //valuePrinterInternal::flushToStream(outs, typeStr + valueStr);
 }
 
 
