@@ -173,8 +173,8 @@ namespace cling {
 
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
-                                 Value* result,
-                                 bool ignoreOutmostBlock /*=false*/) {
+                                   Value* result,
+                                   bool ignoreOutmostBlock /*=false*/) {
 
     {
       // check that it's not binary:
