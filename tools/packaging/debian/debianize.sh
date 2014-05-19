@@ -117,7 +117,7 @@ License: LGPL-2.0+
 Comment: Cling can also be licensed under University of Illinois/NCSA
  Open Source License (UI/NCSAOSL).
  .
- More information here: https://github.com/vgvassilev/cling/blob/master/LICENSE.TXT
+ More information here: http://root.cern.ch/gitweb?p=cling.git;a=blob_plain;f=LICENSE.TXT;hb=HEAD
 EOF
 
   echo "Create file: debian/rules"
