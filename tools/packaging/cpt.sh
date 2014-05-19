@@ -40,7 +40,7 @@ function usage {
   echo "Usage: ./cpt.sh {arg}"
   echo -e "    -h, --help\t\t\tDisplay this help and exit"
   echo -e "    --check-requirements\tCheck if packages required by the script are installed"
-  echo -e "    --current-dev-tarball\tCompile the latest development snapshot and produce a tarball"
+  echo -e "    --current-dev={tar,deb}\tCompile the latest development snapshot and produce a tarball/Debian package"
   echo -e "    --last-stable-tarball\tCompile the last stable snapshot and produce a tarball"
   echo -e "    --last-stable-deb\t\tCompile the last stable snapshot and produce a Debian package"
   echo -e "    --tarball-tag={tag}\t\tCompile the snapshot of a given tag and produce a tarball"
@@ -64,7 +64,7 @@ while [ "${1}" != "" ]; do
         ;;
     --check-requirements)
         echo "Checking if required softwares are available on this system..."
-        if [ $DIST = "Ubuntu" ]; then
+        if [ ${DIST} = "Ubuntu" ]; then
           check_ubuntu git
           check_ubuntu curl
           check_ubuntu debhelper
@@ -81,13 +81,20 @@ while [ "${1}" != "" ]; do
         fi
 
         ;;
-    --current-dev-tarball)
+    --current-dev)
         fetch_llvm
         fetch_clang
         fetch_cling master
         set_version
-        compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
-        tarball
+        if [ ${VALUE} = "tar" ]; then
+          compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+          tarball
+        elif [ ${VALUE} = "deb" ]; then
+          compile ${workdir}/cling-${VERSION}
+          tarball_deb
+          debianize
+          cleanup_deb
+        fi
         ;;
     --last-stable-tarball)
         fetch_llvm
