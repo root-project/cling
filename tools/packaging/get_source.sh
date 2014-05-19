@@ -4,10 +4,10 @@
 #
 #                           The Cling Interpreter
 #
-# tools/packaging/get_source.sh: Script to fetch sources of Cling and vendor
-# clones of LLVM and Clang
+# Cling Packaging Tool (CPT)
 #
-# TODO: Add documentation here, or provide link to documentation
+# tools/packaging/get_source.sh: Helper script to fetch sources of Cling and
+# vendor clones of LLVM and Clang from ROOT Projects git repository.
 #
 # Author: Anirudha Bose <ani07nov@gmail.com>
 #

@@ -4,10 +4,10 @@
 #
 #                           The Cling Interpreter
 #
-# tools/packaging/debian/debianize.sh: Script to produce Debian packages for
-# Ubuntu/Debian platforms.
+# Cling Packaging Tool (CPT)
 #
-# TODO: Add documentation here, or provide link to documentation
+# tools/packaging/debian/debianize.sh: Helper script to produce Debian packages
+# for Ubuntu/Debian platforms.
 #
 # Author: Anirudha Bose <ani07nov@gmail.com>
 #

@@ -4,7 +4,10 @@
 #
 #                           The Cling Interpreter
 #
-# tools/packaging/get_platform.sh: Script to detect host platform and OS
+# Cling Packaging Tool (CPT)
+#
+# tools/packaging/get_platform.sh: Helper script to get details of the host
+# platform and Operating System
 #
 # Author: Anirudha Bose <ani07nov@gmail.com>
 #
@@ -19,7 +22,7 @@
 
 OS=$(uname -o)
 
-if [ "$OS" = "Cygwin" ]; then
+if [ "${OS}" = "Cygwin" ]; then
   OS="Windows"
 elif [ "{$OS}" = "Darwin" ]; then
   OS="Mac OS"

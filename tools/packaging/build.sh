@@ -4,10 +4,10 @@
 #
 #                           The Cling Interpreter
 #
-# tools/packaging/build.sh: Script to compile Cling and produce tarballs for
-# all platforms
+# Cling Packaging Tool (CPT)
 #
-# TODO: Add documentation here, or provide link to documentation
+# tools/packaging/build.sh: Helper script to compile Cling and produce tarballs
+# for multiple platforms.
 #
 # Author: Anirudha Bose <ani07nov@gmail.com>
 #

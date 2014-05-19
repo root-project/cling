@@ -35,9 +35,9 @@ source $(dirname ${0})/debian/debianize.sh
 
 function usage {
   echo ""
-  echo "debianize.sh: Script to compile Cling and produce tarballs and/or Debian packages"
+  echo "Cling Packaging Tool"
   echo ""
-  echo "Usage: ./debianize.sh {arg}"
+  echo "Usage: ./cpt.sh {arg}"
   echo -e "    -h, --help\t\t\tDisplay this help and exit"
   echo -e "    --check-requirements\tCheck if packages required by the script are installed"
   echo -e "    --current-dev-tarball\tCompile the latest development snapshot and produce a tarball"
@@ -48,8 +48,7 @@ function usage {
 }
 
 while [ "${1}" != "" ]; do
-  if [ "${#}" != 1 ];
-  then
+  if [ "${#}" != 1 ]; then
     echo "Error: script can handle only one switch at a time"
     usage
     exit
@@ -65,17 +64,21 @@ while [ "${1}" != "" ]; do
         ;;
     --check-requirements)
         echo "Checking if required softwares are available on this system..."
-        check_ubuntu git
-        check_ubuntu curl
-        check_ubuntu debhelper
-        check_ubuntu devscripts
-        check_ubuntu gnupg
-        check_ubuntu python
-        echo -e "\nYou are advised to make sure you have the \"latest\" versions of the above packages installed."
-        echo -e "\nYou can upgrade all your installed packages by:"
-        echo -e "\tsudo apt-get update\n\tsudo apt-get upgrade"
-        echo -e "\nor update only the required packages by:"
-        echo -e "\tsudo apt-get update git curl debhelper devscripts gnupg python"
+        if [ $DIST = "Ubuntu" ]; then
+          check_ubuntu git
+          check_ubuntu curl
+          check_ubuntu debhelper
+          check_ubuntu devscripts
+          check_ubuntu gnupg
+          check_ubuntu python
+          echo -e "\nYou are advised to make sure you have the \"latest\" versions of the above packages installed."
+          echo -e "Update the required packages by:"
+          echo -e "  sudo apt-get update"
+          echo -e "  sudo apt-get install git curl debhelper devscripts gnupg python"
+          exit
+        elif [ ${OS} = "Cygwin" ]; then
+          :
+        fi
 
         ;;
     --current-dev-tarball)
