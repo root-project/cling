@@ -41,8 +41,7 @@ function usage {
   echo -e "    -h, --help\t\t\tDisplay this help and exit"
   echo -e "    --check-requirements\tCheck if packages required by the script are installed"
   echo -e "    --current-dev={tar,deb}\tCompile the latest development snapshot and produce a tarball/Debian package"
-  echo -e "    --last-stable-tarball\tCompile the last stable snapshot and produce a tarball"
-  echo -e "    --last-stable-deb\t\tCompile the last stable snapshot and produce a Debian package"
+  echo -e "    --last-stable={tar,deb}\tCompile the last stable snapshot and produce a tarball/Debian package"
   echo -e "    --tarball-tag={tag}\t\tCompile the snapshot of a given tag and produce a tarball"
   echo -e "    --deb-tag={tag}\t\tCompile the snapshot of a given tag and produce a Debian package"
 }
@@ -64,7 +63,7 @@ while [ "${1}" != "" ]; do
         ;;
     --check-requirements)
         echo "Checking if required softwares are available on this system..."
-        if [ ${DIST} = "Ubuntu" ]; then
+        if [ "${DIST}" = "Ubuntu" ]; then
           check_ubuntu git
           check_ubuntu curl
           check_ubuntu debhelper
@@ -76,45 +75,53 @@ while [ "${1}" != "" ]; do
           echo -e "  sudo apt-get update"
           echo -e "  sudo apt-get install git curl debhelper devscripts gnupg python"
           exit
-        elif [ ${OS} = "Cygwin" ]; then
+        elif [ "${OS}" = "Cygwin" ]; then
           :
         fi
 
         ;;
     --current-dev)
+        if [ "${VALUE}" = "" ]; then
+          echo "Error: Expected a value"
+          usage
+          exit
+        fi
         fetch_llvm
         fetch_clang
         fetch_cling master
         set_version
-        if [ ${VALUE} = "tar" ]; then
+        if [ "${VALUE}" = "tar" ]; then
           compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           tarball
-        elif [ ${VALUE} = "deb" ]; then
+        elif [ "${VALUE}" = "deb" ]; then
           compile ${workdir}/cling-${VERSION}
           tarball_deb
           debianize
           cleanup_deb
         fi
         ;;
-    --last-stable-tarball)
+    --last-stable)
+        if [ "${VALUE}" = "" ]; then
+          echo "Error: Expected a value"
+          usage
+          exit
+        fi
         fetch_llvm
         fetch_clang
         cd ${CLING_SRC_DIR}
         fetch_cling $(git describe --match v* --abbrev=0 --tags | head -n 1)
-        set_version
-        compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
-        tarball
-        ;;
-    --last-stable-deb)
-        fetch_llvm
-        fetch_clang
-        cd ${CLING_SRC_DIR}
-        fetch_cling $(git describe --match v* --abbrev=0 --tags | head -n 1)
-        VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
-        compile ${workdir}/cling-${VERSION}
-        tarball_deb
-        debianize
-        cleanup_deb
+        if [ ${VALUE} = "tar" ]; then
+          set_version
+          compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+          tarball
+        elif [ ${VALUE} = "deb" ]; then
+          VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
+          compile ${workdir}/cling-${VERSION}
+          tarball_deb
+          debianize
+          cleanup_deb
+        fi
+
         ;;
     --tarball-tag)
         fetch_llvm
