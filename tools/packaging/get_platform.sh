@@ -17,14 +17,14 @@
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
 
-OS=$(uname)
+OS=$(uname -o)
 
-if [ "$OS" = "MINGW32_NT" ]; then
+if [ "$OS" = "Cygwin" ]; then
   OS="Windows"
 elif [ "{$OS}" = "Darwin" ]; then
   OS="Mac OS"
 else
-  if [ "${OS}" = "Linux" ] ; then
+  if [ "${OS}" = "GNU/Linux" ] ; then
     if [ -f /etc/redhat-release ] ; then
       DistroBasedOn='RedHat'
       DIST=$(cat /etc/redhat-release |sed s/\ release.*//)
