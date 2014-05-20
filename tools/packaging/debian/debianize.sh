@@ -136,11 +136,12 @@ EOF
   # TODO: The author of the top level changeset is the one who has to sign the Debian package.
   #       Determine the credentials of the uploader programmatically at runtime.
   echo "Create file: debian/changelog"
+  SIGNING_USER=$(gpg --fingerprint | grep uid | sed s/"uid *"//g | tr -s " ")
   cat >> debian/changelog << EOF
 cling (${VERSION}-1) unstable; urgency=low
 
-  * [Debian] Update package to version: ${VERSION}
- -- Anirudha Bose <ani07nov@gmail.com>  $(date --rfc-2822)
+  * [Debian] Create new Debian package of version: ${VERSION}
+ -- ${SIGNING_USER}  $(date --rfc-2822)
 
 EOF
   echo "Old Changelog:" >> debian/changelog
