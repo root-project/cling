@@ -66,7 +66,7 @@ static void StreamValue(llvm::raw_ostream& o, const void* V, clang::QualType QT,
 
 static void StreamChar(llvm::raw_ostream& o, const char v) {
   if (isprint(v))
-    o << '"' << v << "\"";
+    o << '\'' << v << '\'';
   else {
     o << "\\0x";
     o.write_hex(v);
