@@ -28,8 +28,7 @@ srcdir=${workdir}/cling-src
 CLING_SRC_DIR=${srcdir}/tools/cling
 
 # Import helper scripts here
-source $(dirname ${0})/get_source.sh
-source $(dirname ${0})/build.sh
+source $(dirname ${0})/indep.sh
 source $(dirname ${0})/get_platform.sh
 source $(dirname ${0})/debian/debianize.sh
 
