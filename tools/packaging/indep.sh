@@ -127,10 +127,23 @@ function set_version {
 
 function compile {
   prefix=${1}
-  python=$(type -p python2)
+  python=$(type -p python)
+  cores=$(nproc)
   echo "Create temporary build directory:"
   mkdir -p ${workdir}/builddir
   cd ${workdir}/builddir
+
+  if ["${OS}" = "Cygwin"]
+    echo "Configuring CLing with CMake and generating Visual Studio 11 project files..."
+    cmake -G "Visual Studio 11" ${srcdir} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${prefix} -DLLVM_TARGETS_TO_BUILD=CBackend\;CppBackend\;X86 -DPYTHON_EXECUTABLE=${python}
+
+    echo "Building Cling..."
+    echo "Using ${cores} cores."
+    cmake --build . --target clang --config Release
+    cmake --build . --target cling --config Release
+    rm -Rf ${prefix}
+    cmake --build . --target INSTALL --config Release
+  fi
 
   echo "Configuring Cling for compilation"
   ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
@@ -140,13 +153,8 @@ function compile {
   cores=$(nproc)
   echo "Using ${cores} cores."
   make -j${cores}
-  rm -rf ${prefix}
+  rm -Rf ${prefix}
   make install -j${cores}
-}
-
-function compile_cygwin {
-  # Add code to compile using CMake and MSVC 2012
-  :
 }
 
 function tarball {
