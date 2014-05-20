@@ -101,17 +101,21 @@ while [ "${1}" != "" ]; do
         fetch_cling master
         set_version
         if [ "${VALUE}" = "tar" ]; then
-          compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+          if [ "${OS}" = "Cygwin" ]; then
+            compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
+          else
+            compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+          fi
           tarball
-          rm -R ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
-        rm -R ${workdir}/builddir
+
         elif [ "${VALUE}" = "deb" ]; then
           compile ${workdir}/cling-${VERSION}
           tarball_deb
           debianize
           cleanup_deb
-        rm -R ${workdir}/builddir
         fi
+        rm -Rf ${workdir}/builddir
+        rm -Rf ${prefix}
         ;;
     --last-stable)
         if [ "${VALUE}" = "" ]; then
@@ -123,21 +127,25 @@ while [ "${1}" != "" ]; do
         fetch_clang
         cd ${CLING_SRC_DIR}
         fetch_cling $(git describe --match v* --abbrev=0 --tags | head -n 1)
+
         if [ ${VALUE} = "tar" ]; then
           set_version
-          compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
-          rm -R ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+          if [ "${OS}" = "Cygwin" ]; then
+            compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
+          else
+            compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+          fi
           tarball
-        rm -R ${workdir}/builddir
+
         elif [ ${VALUE} = "deb" ]; then
           VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
           compile ${workdir}/cling-${VERSION}
           tarball_deb
           debianize
           cleanup_deb
-        rm -R ${workdir}/builddir
         fi
-
+        rm -Rf ${workdir}/builddir
+        rm -Rf ${prefix}
         ;;
     --tarball-tag)
         fetch_llvm
@@ -146,8 +154,8 @@ while [ "${1}" != "" ]; do
         VERSION=$(echo ${VALUE} | sed s/v//g)
         compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
         tarball
-        rm -R ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
-        rm -R ${workdir}/builddir
+        rm -Rf ${workdir}/builddir
+        rm -Rf ${prefix}
         ;;
     --deb-tag)
         fetch_llvm
@@ -158,7 +166,8 @@ while [ "${1}" != "" ]; do
         tarball_deb
         debianize
         cleanup_deb
-        rm -R ${workdir}/builddir
+        rm -Rf ${workdir}/builddir
+        rm -Rf ${prefix}
         ;;
     *)
         echo "Error: unknown parameter \"${PARAM}\""

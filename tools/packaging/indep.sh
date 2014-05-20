@@ -139,7 +139,7 @@ function compile {
   mkdir -p ${workdir}/builddir
   cd ${workdir}/builddir
 
-  if ["${OS}" = "Cygwin"]
+  if [ "${OS}" = "Cygwin" ]; then
     echo "Configuring CLing with CMake and generating Visual Studio 11 project files..."
     cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${prefix} ../$(basename ${srcdir})
 
