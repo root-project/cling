@@ -23,8 +23,12 @@
 function platform_init {
   OS=$(uname -o)
 
-  if [ "{$OS}" = "Darwin" ]; then
+  if [ "${OS}" = "Cygwin" ]; then
+    DIST="Win"
+
+  elif [ "{$OS}" = "Darwin" ]; then
     OS="Mac OS"
+
   elif [ "${OS}" = "GNU/Linux" ] ; then
     if [ -f /etc/redhat-release ] ; then
       DistroBasedOn='RedHat'
