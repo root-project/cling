@@ -302,7 +302,10 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
       // We commit here because the possibly deserialized decls from the lookup
       // will be needed by evaluate.
     }
-    QualType ValueTy = this->getType();
+    QualType ValueTy = this->getType().getNonReferenceType();
+    if (!ValueTy->isPointerType())
+      ValueTy = C.getPointerType(ValueTy);
+
     std::string ValueTyStr = ValueTy.getAsString();
     std::string typeStr;
     std::string valueStr;
