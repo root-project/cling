@@ -171,9 +171,7 @@ function cleanup_deb {
 function check_ubuntu {
   if [ $(dpkg-query -W -f='${Status}' ${1} 2>/dev/null | grep -c "ok installed") -eq 0 ];
   then
-    echo "${1} is required by the script, but is not installed on your system."
-    echo "Running: sudo apt-get install ${1}"
-    sudo apt-get install ${1};
+    printf "%-10s\t\t[NOT INSTALLED]\n" "${1}"
   else
     printf "%-10s\t\t[OK]\n" "${1}"
   fi

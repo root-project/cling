@@ -30,6 +30,7 @@ CLING_SRC_DIR=${srcdir}/tools/cling
 # Import helper scripts here
 source $(dirname ${0})/indep.sh
 source $(dirname ${0})/debian/debianize.sh
+source $(dirname ${0})/windows/windows_dep.sh
 
 function usage {
   echo ""
@@ -68,13 +69,24 @@ while [ "${1}" != "" ]; do
           check_ubuntu devscripts
           check_ubuntu gnupg
           check_ubuntu python
-          echo -e "\nYou are advised to make sure you have the \"latest\" versions of the above packages installed."
-          echo -e "Update the required packages by:"
+          echo -e "\nInstall/update the required packages by:"
           echo -e "  sudo apt-get update"
           echo -e "  sudo apt-get install git curl debhelper devscripts gnupg python"
           exit
         elif [ "${OS}" = "Cygwin" ]; then
-          :
+          check_cygwin cmake
+          check_cygwin git
+          check_cygwin python
+          check_cygwin curl
+          check_cygwin msvc
+          echo -e "\nPackages required in Windows (Cygwin):"
+          echo -e "  CMake"
+          echo -e "  MSYS Git or Git provided by Cygwin"
+          echo -e "  Python"
+          echo -e "  cURL - provided by Cygwin"
+          echo -e "  Cygwin"
+          echo -e "  Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012"
+          echo -e "\nRefer to the documentation of CPT for information on setting up your Windows environment."
         fi
 
         ;;
