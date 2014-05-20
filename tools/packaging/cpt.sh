@@ -92,11 +92,13 @@ while [ "${1}" != "" ]; do
           compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           tarball
           rm -R ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+          rm -R builddir
         elif [ "${VALUE}" = "deb" ]; then
           compile ${workdir}/cling-${VERSION}
           tarball_deb
           debianize
           cleanup_deb
+          rm -R builddir
         fi
         ;;
     --last-stable)
@@ -114,12 +116,14 @@ while [ "${1}" != "" ]; do
           compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           rm -R ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           tarball
+          rm -R builddir
         elif [ ${VALUE} = "deb" ]; then
           VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
           compile ${workdir}/cling-${VERSION}
           tarball_deb
           debianize
           cleanup_deb
+          rm -R builddir
         fi
 
         ;;
@@ -131,6 +135,7 @@ while [ "${1}" != "" ]; do
         compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
         tarball
         rm -R ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+        rm -R builddir
         ;;
     --deb-tag)
         fetch_llvm
@@ -141,6 +146,7 @@ while [ "${1}" != "" ]; do
         tarball_deb
         debianize
         cleanup_deb
+        rm -R builddir
         ;;
     *)
         echo "Error: unknown parameter \"${PARAM}\""
