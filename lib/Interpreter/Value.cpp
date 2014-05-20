@@ -19,6 +19,7 @@
 #include "clang/AST/Type.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Lookup.h"
+#include "clang/Sema/Overload.h"
 #include "clang/Sema/Sema.h"
 
 #include "llvm/Support/raw_os_ostream.h"
@@ -263,22 +264,50 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
 }
 
   static bool hasViableCandidateToCall(clang::LookupResult& R,
-                                       clang::QualType Ty) {
+                                       const cling::Value& V) {
+    if (R.empty())
+      return false;
     using namespace clang;
-    ASTContext& C = R.getSema().getASTContext();
-    if (!R.empty() && Ty->isPointerType()) {
-      // Check if among the candidates there are functions with the same type:
-      const UnresolvedSetImpl& unresolved = R.asUnresolvedSet();
-      // FIXME: Find a way to use the 'proper' overload checks.
-      for (UnresolvedSetImpl::const_iterator I = unresolved.begin(),
-             E = unresolved.end(); I < E; ++I) {
-        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*I))
-          if (C.hasSameUnqualifiedType(FD->getParamDecl(0)->getType(), Ty))
-            return true;
+    ASTContext& C = V.getASTContext();
+    Sema& SemaR = R.getSema();
+    OverloadCandidateSet overloads((SourceLocation()));
+    QualType Ty = V.getType().getNonReferenceType();
+    if (!Ty->isPointerType())
+      Ty = C.getPointerType(Ty);
 
-      }
-    }
-    return false;
+    NamespaceDecl* ClingNSD = utils::Lookup::Namespace(&SemaR, "cling");
+    RecordDecl* ClingValueDecl
+      = dyn_cast<RecordDecl>(utils::Lookup::Named(&SemaR, "Value",
+                                                  ClingNSD));
+    assert(ClingValueDecl && "Declaration must be found!");
+    QualType ClingValueTy = C.getTypeDeclType(ClingValueDecl);
+
+    // The OverloadCandidateSet requires a QualType to be passed in through an
+    // Expr* as part of Args. We know that we won't be using any node generated.
+    // We need only an answer whether there is an overload taking these argument
+    // types. We cannot afford to create useless Expr* on the AST for this
+    // utility function which may be called thousands of times. Instead, we
+    // create them on the stack and pretend they are on the heap. We get our
+    // answer and forget about doing anything wrong.
+    llvm::SmallVector<Expr, 4> exprsOnStack;
+    SourceLocation noLoc;
+    exprsOnStack.push_back(CXXNullPtrLiteralExpr(Ty, noLoc));
+    exprsOnStack.push_back(CXXNullPtrLiteralExpr(Ty, noLoc));
+    exprsOnStack.push_back(CXXNullPtrLiteralExpr(ClingValueTy, noLoc));
+    llvm::SmallVector<Expr*, 4> exprsFakedOnHeap;
+    exprsFakedOnHeap.push_back(&exprsOnStack[0]);
+    exprsFakedOnHeap.push_back(&exprsOnStack[1]);
+    exprsFakedOnHeap.push_back(&exprsOnStack[2]);
+    llvm::ArrayRef<Expr*> Args = llvm::makeArrayRef(exprsFakedOnHeap.data(),
+                                                    exprsFakedOnHeap.size());
+    // Could trigger deserialization of decls.
+    cling::Interpreter::PushTransactionRAII RAII(V.getInterpreter());
+    SemaR.AddFunctionCandidates(R.asUnresolvedSet(), Args, overloads);
+
+    OverloadCandidateSet::iterator Best;
+    OverloadingResult OR = overloads.BestViableFunction(SemaR,
+                                                        SourceLocation(), Best);
+    return OR == OR_Success;
   }
 
   void Value::print(llvm::raw_ostream& Out) const {
@@ -310,7 +339,7 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
     std::string typeStr;
     std::string valueStr;
 
-    if (hasViableCandidateToCall(R, ValueTy)) {
+    if (hasViableCandidateToCall(R, *this)) {
       // There is such a routine call it:
       std::stringstream printTypeSS;
       printTypeSS << "cling::printType(";
@@ -364,7 +393,7 @@ void* Value::GetDtorWrapperPtr(const clang::RecordDecl* RD) const {
       // will be needed by evaluate.
     }
 
-    if (hasViableCandidateToCall(R, ValueTy)) {
+    if (hasViableCandidateToCall(R, *this)) {
       // There is such a routine call it:
       std::stringstream printValueSS;
       printValueSS << "cling::printValue(";
