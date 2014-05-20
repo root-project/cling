@@ -23,23 +23,19 @@
 function platform_init {
   OS=$(uname -o)
 
-  if [ "${OS}" = "Cygwin" ]; then
-    OS="Windows"
-  elif [ "{$OS}" = "Darwin" ]; then
+  if [ "{$OS}" = "Darwin" ]; then
     OS="Mac OS"
-  else
-    if [ "${OS}" = "GNU/Linux" ] ; then
-      if [ -f /etc/redhat-release ] ; then
-        DistroBasedOn='RedHat'
-        DIST=$(cat /etc/redhat-release |sed s/\ release.*//)
-        PSEUDONAME=$(cat /etc/redhat-release | sed s/.*\(// | sed s/\)//)
-        REV=$(cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//)
-      elif [ -f /etc/debian_version ] ; then
-        DistroBasedOn='Debian'
-        DIST=$(cat /etc/lsb-release | grep '^DISTRIB_ID' | awk -F=  '{ print $2 }')
-        PSEUDONAME=$(cat /etc/lsb-release | grep '^DISTRIB_CODENAME' | awk -F=  '{ print $2 }')
-        REV=$(cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F=  '{ print $2 }')
-      fi
+  elif [ "${OS}" = "GNU/Linux" ] ; then
+    if [ -f /etc/redhat-release ] ; then
+      DistroBasedOn='RedHat'
+      DIST=$(cat /etc/redhat-release |sed s/\ release.*//)
+      PSEUDONAME=$(cat /etc/redhat-release | sed s/.*\(// | sed s/\)//)
+      REV=$(cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//)
+    elif [ -f /etc/debian_version ] ; then
+      DistroBasedOn='Debian'
+      DIST=$(cat /etc/lsb-release | grep '^DISTRIB_ID' | awk -F=  '{ print $2 }')
+      PSEUDONAME=$(cat /etc/lsb-release | grep '^DISTRIB_CODENAME' | awk -F=  '{ print $2 }')
+      REV=$(cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F=  '{ print $2 }')
     fi
   fi
 }
