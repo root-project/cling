@@ -129,32 +129,31 @@ function compile {
   prefix=${1}
   python=$(type -p python)
   cores=$(nproc)
+  # Cleanup previous installation directory if any
+  rm -Rf ${prefix}
   echo "Create temporary build directory:"
   mkdir -p ${workdir}/builddir
   cd ${workdir}/builddir
 
   if ["${OS}" = "Cygwin"]
     echo "Configuring CLing with CMake and generating Visual Studio 11 project files..."
-    cmake -G "Visual Studio 11" ${srcdir} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${prefix} -DLLVM_TARGETS_TO_BUILD=CBackend\;CppBackend\;X86 -DPYTHON_EXECUTABLE=${python}
+    cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${prefix} ../$(basename ${srcdir})
 
     echo "Building Cling..."
     echo "Using ${cores} cores."
     cmake --build . --target clang --config Release
     cmake --build . --target cling --config Release
-    rm -Rf ${prefix}
     cmake --build . --target INSTALL --config Release
+  else
+    echo "Configuring Cling for compilation"
+    ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
+
+    echo "Building Cling..."
+    # TODO: "nproc" program is a part of GNU Coreutils and may not be available on all systems. Use a better solution if needed.
+    echo "Using ${cores} cores."
+    make -j${cores}
+    make install -j${cores}
   fi
-
-  echo "Configuring Cling for compilation"
-  ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
-
-  echo "Building Cling..."
-  # TODO: "nproc" program is a part of GNU Coreutils and may not be available on all systems. Use a better solution if needed.
-  cores=$(nproc)
-  echo "Using ${cores} cores."
-  make -j${cores}
-  rm -Rf ${prefix}
-  make install -j${cores}
 }
 
 function tarball {
