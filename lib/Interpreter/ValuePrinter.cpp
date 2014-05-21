@@ -400,12 +400,5 @@ namespace valuePrinterInternal {
       o << " &";
     o << ") ";
   }
-
-  void flushToStream(llvm::raw_ostream& o, const std::string& s) {
-    // We want to keep stdout and o in sync if o is different from stdout.
-    fflush(stdout);
-    o << s;
-    o.flush();
-  }
 } // end namespace valuePrinterInternal
 } // end namespace cling
