@@ -141,7 +141,7 @@ function compile {
 
   if [ "${OS}" = "Cygwin" ]; then
     echo "Configuring CLing with CMake and generating Visual Studio 11 project files..."
-    cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${prefix} ../$(basename ${srcdir})
+    cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(cygpath --windows --absolute ${prefix}) ../$(basename ${srcdir})
 
     echo "Building Cling..."
     echo "Using ${cores} cores."
