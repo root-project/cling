@@ -32,6 +32,7 @@ namespace cling {
   /// The class represents a llvm::GenericValue with its corresponding
   /// clang::QualType. Use-cases are expression evaluation, value printing
   /// and parameters for function calls.
+  ///
   class Value {
   protected:
     ///\brief Multi-purpose storage.
@@ -208,9 +209,16 @@ namespace cling {
       return CastFwd<T>::cast(*this);
     }
 
+    ///\brief Generic interface to value printing.
+    ///
+    /// Can be re-implemented to print type-specific details, e.g. as
+    ///\code
+    ///   template <typename POSSIBLYDERIVED>
+    ///   std::string printValue(const MyClass* const p, POSSIBLYDERIVED* ac,
+    ///                          const Value& V);
+    ///\endcode
     void print(llvm::raw_ostream& Out) const;
     void dump() const;
-
   };
 } // end namespace cling
 
