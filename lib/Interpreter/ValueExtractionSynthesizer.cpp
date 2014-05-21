@@ -204,7 +204,7 @@ namespace cling {
     // The expr result is transported as reference, pointer, array, float etc
     // based on the desugared type. We should still expose the typedef'ed
     // (sugared) type to the cling::Value.
-    if (desugaredTy->isRecordType() && !Cleanups) {
+    if (desugaredTy->isRecordType() && E->getValueKind() == VK_LValue) {
       // returning a lvalue (not a temporary): the value should contain
       // a reference to the lvalue instead of copying it.
       desugaredTy = m_Context->getLValueReferenceType(desugaredTy);
