@@ -229,7 +229,7 @@ namespace cling {
     std::string& metaString = m_Interpreter.getOptions().MetaString;
     llvm::raw_ostream& outs = m_MetaProcessor.getOuts();
     outs << "\nCling (C/C++ interpreter) meta commands usage\n"
-      "All commands must be preceded by a . (dot), except\n"
+      "All commands must be preceded by a '" << metaString << "', except\n"
       "for the evaluation statement { }\n"
       "===============================================================================\n"
       "Syntax: .Command [arg0 arg1 ... argN]\n"
