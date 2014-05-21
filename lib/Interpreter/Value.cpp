@@ -309,6 +309,11 @@ namespace cling {
     return OR == OR_Success;
   }
 
+  namespace valuePrinterInternal {
+    void printValue_Default(llvm::raw_ostream& o, const Value& V);
+    void printType_Default(llvm::raw_ostream& o, const Value& V);
+  } // end namespace valuePrinterInternal
+
   void Value::print(llvm::raw_ostream& Out) const {
     // Try to find user defined printing functions:
     // cling::printType(const void* const p, TY* const u, const Value& V) and

@@ -14,13 +14,5 @@ namespace llvm {
   class raw_ostream;
 }
 
-namespace cling {
-  class Value;
-
-  namespace valuePrinterInternal {
-    void printValue_Default(llvm::raw_ostream& o, const Value& V);
-    void printType_Default(llvm::raw_ostream& o, const Value& V);
-  } // end namespace valuePrinterInternal
-}
 
 #endif // CLING_VALUEPRINTER_H

@@ -277,8 +277,6 @@ namespace cling {
                   << (uintptr_t)this << ";} }";
       declare(initializer.str());
     }
-
-    declare("#include \"cling/Interpreter/ValuePrinter.h\"");
   }
 
   void Interpreter::IncludeCRuntime() {
