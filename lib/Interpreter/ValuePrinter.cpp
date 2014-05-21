@@ -381,8 +381,23 @@ namespace valuePrinterInternal {
   }
 
   void printType_Default(llvm::raw_ostream& o, const Value& V) {
+    using namespace clang;
+    QualType QT = V.getType().getNonReferenceType();
+    std::string ValueTyStr;
+    if (const TypedefType* TDTy = dyn_cast<TypedefType>(QT))
+      ValueTyStr = TDTy->getDecl()->getQualifiedNameAsString();
+    else if (const TagType* TTy = dyn_cast<TagType>(QT))
+      ValueTyStr = TTy->getDecl()->getQualifiedNameAsString();
+
+    if (ValueTyStr.empty())
+      ValueTyStr = QT.getAsString();
+    else if (QT.hasQualifiers())
+      ValueTyStr = QT.getQualifiers().getAsString() + " " + ValueTyStr;
+
     o << "(";
-    o << V.getType().getAsString();
+    o << ValueTyStr;
+    if (V.getType()->isReferenceType())
+      o << " &";
     o << ") ";
   }
 
