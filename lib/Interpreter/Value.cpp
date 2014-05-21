@@ -423,4 +423,4 @@ namespace cling {
     Out.reset(new llvm::raw_os_ostream(std::cout));
     print(*Out.get());
   }
-} // namespace cling
+} // end namespace cling
