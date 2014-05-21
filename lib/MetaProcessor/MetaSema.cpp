@@ -232,7 +232,7 @@ namespace cling {
       "All commands must be preceded by a '" << metaString << "', except\n"
       "for the evaluation statement { }\n"
       "===============================================================================\n"
-      "Syntax: .Command [arg0 arg1 ... argN]\n"
+      "Syntax: " << metaString << "Command [arg0 arg1 ... argN]\n"
       "\n"
       "   " << metaString << "L <filename>\t\t- Load the given file or library\n"
       "   " << metaString << "(x|X) <filename>[args]\t- Same as .L and runs a "
