@@ -8,6 +8,7 @@
 
 extern "C" int printf(const char* fmt, ...);
 
-class MyClass {
+struct MyClass {
   MyClass() { printf("MyClass ctor called!\n"); }
+  ~MyClass() { printf("MyClass dtor called!\n"); }
 };
