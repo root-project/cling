@@ -31,10 +31,14 @@ function debianize {
   echo "Create directory: debian"
   mkdir -p debian
 
-  echo "Create file: debian/source/format"
   mkdir -p debian/source
+  echo "Create file: debian/source/format"
   echo "3.0 (quilt)" > debian/source/format
 
+  echo "Create file: debian/source/lintian-overrides"
+  cat >> debian/source/lintian-overrides << EOF
+cling source: source-is-missing
+EOF
   echo "Create file: debian/cling.install"
   cat >> debian/cling.install << EOF
 bin/* /usr/bin
