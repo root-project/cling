@@ -29,7 +29,7 @@ using namespace llvm;
 //  otherwise known as the translation unit decl.
 //
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
-const clang::Decl* G = lookup.findScope("");
+const clang::Decl* G = lookup.findScope("", cling::LookupHelper::WithDiagnostics);
 printf("G: 0x%lx\n", (unsigned long) G);
 //CHECK: G: 0x{{[1-9a-f][0-9a-f]*$}}
 
@@ -39,11 +39,10 @@ clang::PrintingPolicy Policy(G->getASTContext().getPrintingPolicy());
 .rawInput 1
 #include <iostream>
 #include <cstdarg>
-void simple_printf(const char *fmt, ...)
-{
+void simple_printf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
- 
+
     while (*fmt != '\0') {
         if (*fmt == 'd') {
             int i = va_arg(args, int);
@@ -58,12 +57,12 @@ void simple_printf(const char *fmt, ...)
         }
         ++fmt;
     }
- 
+
     va_end(args);
 }
 .rawInput 0
 
-const clang::FunctionDecl* variadicF = lookup.findFunctionArgs(G, "simple_printf", "const char*, ...");
+const clang::FunctionDecl* variadicF = lookup.findFunctionArgs(G, "simple_printf", "const char*, ...", cling::LookupHelper::WithDiagnostics);
 printf("simple_printf: 0x%lx\n", (unsigned long) variadicF);
 //CHECK-NEXT: simple_printf: 0x{{[1-9a-f][0-9a-f]*$}}
 
