@@ -158,21 +158,40 @@ override_dh_auto_build:
 override_dh_auto_install:
 EOF
 
-  # TODO: The author of the top level changeset is the one who has to sign the Debian package.
-  #       Determine the credentials of the uploader programmatically at runtime.
   echo "Create file: debian/changelog"
+
   SIGNING_USER=$(gpg --fingerprint | grep uid | sed s/"uid *"//g | tr -s " ")
-  cat >> debian/changelog << EOF
+
+  cat >> ${prefix}/debian/changelog << EOF
 cling (${VERSION}-1) unstable; urgency=low
 
-  * [Debian] Create new Debian package of version: ${VERSION}
- -- ${SIGNING_USER}  $(date --rfc-2822)
-
+  * [Debian] Upload to unstable for version: ${VERSION}
 EOF
-  echo "Old Changelog:" >> debian/changelog
+  cd ${CLING_SRC_DIR}
+  echo "${VERSION}" | grep -qE "dev"
+  if [ "${?}" = 0 ]; then
+    TAG_A=${VERSION/~*/}
+    TAG=$(echo "${TAG_A/v/} 0.1" | awk '{printf "%.1f", $1 - $2}')
+    git log v${TAG}...HEAD --format="  * %s" >> ${prefix}/debian/changelog
+    echo -e "\n -- ${SIGNING_USER}  $(date --rfc-2822)\n" >> ${prefix}/debian/changelog
+  else
+    TAG=${VERSION/v/}
+  fi
 
-  cd "${CLING_SRC_DIR}"
-  git log $(git rev-list ${REVISION}) --format="  * %s%n%n -- %an <%ae>  %cD%n%n" >> ${prefix}/debian/changelog
+  while [ "${TAG}" != "0.1" ]; do
+    CMP=$TAG
+    TAG=$(echo "${TAG} 0.1" | awk '{printf "%.1f", $1 - $2}')
+    echo "${VERSION}" | grep -qE "dev"
+    if [ "${?}" = 0 ]; then
+      echo -e "cling (${TAG/v/}-1) unstable; urgency=low\n" >> ${prefix}/debian/changelog
+    fi
+    git log v${CMP}...v${TAG} --format="  * %s" >> ${prefix}/debian/changelog
+    echo -e "\n -- ${SIGNING_USER}  $(date --rfc-2822)\n" >> ${prefix}/debian/changelog
+  done
+
+  # Changelog entries from first commit to v0.1
+  echo "Old Changelog:" >> ${prefix}/debian/changelog
+  git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n" >> ${prefix}/debian/changelog
   cd -
 
   # Create Debian package
