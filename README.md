@@ -81,3 +81,9 @@ packages and subversion[4] and git[5] to get the source code.
 ##DEVELOPERS' CORNER:  
    We have doxygen documentation of cling's code at:
 http://cling.web.cern.ch/cling/doxygen/
+###CONTRIBUTIONS  
+  Every contribution is very welcome. It is considered as a donation and its copyright and any other related 
+rights become exclusive ownership of the person merged the code or in any other case the main developers.  
+  In order for a contribution to be accepted it has to obey the previously 
+established rules for contribution acceptance in cling's work flow and rules.  
+
