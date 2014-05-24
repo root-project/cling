@@ -9,7 +9,7 @@
 ##===----------------------------------------------------------------------===##
 LEVEL = ../../..
 
-PARALLEL_DIRS = Interpreter MetaProcessor UserInterface Utils
+PARALLEL_DIRS = Interpreter TagsExtension MetaProcessor UserInterface Utils 
 
 include $(LEVEL)/Makefile.common
 

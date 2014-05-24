@@ -65,6 +65,14 @@ namespace cling {
     ///
     ActionResult actOnLCommand(llvm::StringRef file);
 
+    ///\brief T command prepares the tag files for giving semantic hints.
+    ///
+    ///\param[in] file - The directory to be loaded.
+    ///
+    ActionResult actOnTCommand(llvm::StringRef file);
+
+
+
     ///\brief < Redirect command.
     ///
     ///\param[in] file - The file where the output is redirected

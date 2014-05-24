@@ -6,10 +6,13 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-add_subdirectory(Interpreter)
-add_subdirectory(MetaProcessor)
-add_subdirectory(TagsExtension)
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/UserInterface/textinput)
-   add_subdirectory(UserInterface)
-endif()
-add_subdirectory(Utils)
+add_cling_library(clingCtagsExtension
+  CtagsWrapper.cpp
+  Callback.cpp
+  readtags.cpp
+  TagManager.cpp
+  FSUtils.cpp
+
+  LINK_LIBS
+  clangBasic
+  )
