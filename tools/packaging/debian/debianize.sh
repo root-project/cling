@@ -172,7 +172,7 @@ EOF
   if [ "${?}" = 0 ]; then
     TAG_A=${VERSION/~*/}
     TAG=$(echo "${TAG_A/v/} 0.1" | awk '{printf "%.1f", $1 - $2}')
-    git log v${TAG}...HEAD --format="  * %s" >> ${prefix}/debian/changelog
+    git log v${TAG}...HEAD --format="  * %s" | fmt -s >> ${prefix}/debian/changelog
     echo -e "\n -- ${SIGNING_USER}  $(date --rfc-2822)\n" >> ${prefix}/debian/changelog
   else
     TAG=${VERSION/v/}
@@ -185,7 +185,7 @@ EOF
     if [ "${?}" = 0 ]; then
       echo -e "cling (${TAG/v/}-1) unstable; urgency=low\n" >> ${prefix}/debian/changelog
     fi
-    git log v${CMP}...v${TAG} --format="  * %s" >> ${prefix}/debian/changelog
+    git log v${CMP}...v${TAG} --format="  * %s" | fmt -s >> ${prefix}/debian/changelog
     echo -e "\n -- ${SIGNING_USER}  $(date --rfc-2822)\n" >> ${prefix}/debian/changelog
   done
 
@@ -193,7 +193,6 @@ EOF
   echo "Old Changelog:" >> ${prefix}/debian/changelog
   git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n" >> ${prefix}/debian/changelog
   cd -
-
   # Create Debian package
   debuild
 }
