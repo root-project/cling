@@ -1,5 +1,5 @@
-#ifndef CLING_CTAGS_CALLBACK_H
-#define CLING_CTAGS_CALLBACK_H
+#ifndef CLING_CTAGS_AUTOLOAD_CALLBACK_H
+#define CLING_CTAGS_AUTOLOAD_CALLBACK_H
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
@@ -14,7 +14,7 @@ unless these objects are loaded.
 
 .rawInput 0
 #include "cling/TagsExtension/TagManager.h"
-#include "cling/TagsExtension/Callback.h"
+#include "cling/TagsExtension/AutoloadCallback.h"
 cling::TagManager t;
 gCling->setCallbacks(new cling::AutoloadCallback(gCling,&t));
 
@@ -35,12 +35,12 @@ namespace cling {
 
     bool LookupObject (clang::LookupResult &R, clang::Scope *);
     
-    cling::TagManager* getTagManager();
+    TagManager* getTagManager() { return m_Tags; }
   private:
-    cling::Interpreter* m_Interpreter;
-    cling::TagManager* m_Tags;
+    Interpreter* m_Interpreter;
+    TagManager* m_Tags;
   };
-}// end namespace cling
+} // end namespace cling
 
-#endif
+#endif // CLING_CTAGS_AUTOLOAD_CALLBACK_H
 

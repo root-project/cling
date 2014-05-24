@@ -2,22 +2,22 @@
 #include "readtags.h"
 namespace cling {
   ///\brief Implements tag operations for Ctags
-  class CtagsFileWrapper:public TagFileWrapper {
+  class CtagsFileWrapper : public TagFileWrapper {
   public:
-    CtagsFileWrapper(std::string path, bool recurse=true,bool fileP=false);
+    CtagsFileWrapper(std::string path, bool recurse = true, bool fileP = false);
 
     ~CtagsFileWrapper(){}
 
-    std::map<std::string,LookupResult> match
-        (std::string name, bool partialMatch=false);
+    std::map<std::string,LookupResult>
+    match(std::string name, bool partialMatch = false);
 
-    bool newFile(){return m_Generated;}
+    bool newFile() const { return m_Generated; }
 
-    bool validFile(){return m_Validfile;}
+    bool validFile() const { return m_Validfile; }
 
   private:
     void generate(const std::vector<std::string>& cmd,
-                  std::string tagfile="adhoc");
+                  std::string tagfile = "adhoc");
     void generate(std::string file);
 
     void read();

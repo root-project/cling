@@ -71,8 +71,6 @@ namespace cling {
     ///
     ActionResult actOnTCommand(llvm::StringRef file);
 
-
-
     ///\brief < Redirect command.
     ///
     ///\param[in] file - The file where the output is redirected

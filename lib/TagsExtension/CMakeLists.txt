@@ -8,7 +8,7 @@
 
 add_cling_library(clingCtagsExtension
   CtagsWrapper.cpp
-  Callback.cpp
+  AutoloadCallback.cpp
   readtags.cpp
   TagManager.cpp
   FSUtils.cpp

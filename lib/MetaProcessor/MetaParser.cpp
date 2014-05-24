@@ -148,6 +148,7 @@ namespace cling {
     // TODO: Some fine grained diagnostics
     return result;
   }
+
   // T := 'T' FilePath Comment
   // FilePath := AnyString
   // AnyString := .*^('\t' Comment)
@@ -168,7 +169,6 @@ namespace cling {
     // TODO: Some fine grained diagnostics
     return result;
   }
-
 
   // >RedirectCommand := '>' FilePath
   // FilePath := AnyString
