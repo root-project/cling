@@ -44,4 +44,8 @@ namespace cling {
     // FIXME: There is an m_Interpreter in the base class InterpreterCallbacks. 
   }
 
+  TagManager* AutoloadCallback::getTagManager() {
+    return m_Tags;
+  }
+
 }//end namespace cling

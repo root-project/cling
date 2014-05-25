@@ -28,11 +28,11 @@ namespace cling {
 
     ///\brief True if the file was generated and not already present.
     ///
-    virtual bool newFile() = 0;
+    virtual bool newFile() const = 0;
 
     ///\brief True if the file is in a valid state.
     ///
-    virtual bool validFile() = 0;
+    virtual bool validFile() const = 0;
 
     virtual ~TagFileWrapper() {}
 

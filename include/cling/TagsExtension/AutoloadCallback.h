@@ -35,7 +35,7 @@ namespace cling {
 
     bool LookupObject (clang::LookupResult &R, clang::Scope *);
     
-    TagManager* getTagManager() { return m_Tags; }
+    TagManager* getTagManager();
   private:
     Interpreter* m_Interpreter;
     TagManager* m_Tags;
