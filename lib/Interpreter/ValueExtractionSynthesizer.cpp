@@ -258,10 +258,12 @@ namespace {
 
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
                                    locStart, CallArgs, locEnd);
+
       if (E)
         Call = m_Sema->CreateBuiltinBinOp(locStart, BO_Comma, Call.take(), E);
 
-    } else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
+    }
+    else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
       // 2) object types :
       // check existance of copy constructor before call
       if (!availableCopyConstructor(desugaredTy, m_Sema))
@@ -346,7 +348,8 @@ namespace {
       }
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
                                    locStart, CallArgs, locEnd);
-    } else
+    }
+    else
       assert(0 && "Unhandled code path?");
 
     assert(!Call.isInvalid() && "Invalid Call");
