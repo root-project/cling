@@ -184,8 +184,9 @@ namespace {
       if (CXXConstructorDecl* CD = S->LookupCopyingConstructor(RD, QT.getCVRQualifiers())) {
         if (CD ->getAccess() == clang::AccessSpecifier::AS_public) return true;
       }
+      return false;
     }
-    return false;
+    return true;
   }
 }
 
@@ -287,6 +288,7 @@ namespace {
         // call copyArray(T* src, void* placement, int size)
         Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedCopyArray,
                                      locStart, CallArgs, locEnd);
+
       }
       else {
         TypeSourceInfo* ETSI
