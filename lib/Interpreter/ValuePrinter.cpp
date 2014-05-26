@@ -216,9 +216,8 @@ static void StreamClingValue(llvm::raw_ostream& o, const Value* value) {
         o << value->simplisticCastAs<unsigned long long>();
     } else if (valType->isBooleanType())
       o << (value->simplisticCastAs<bool>() ? "true" : "false");
-    else {
+    else if (!valType->isVoidType())
       StreamValue(o, value->getPtr(), valType, value->getASTContext());
-    }
     o << "]";
   }
 }
