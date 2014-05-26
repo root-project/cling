@@ -246,6 +246,16 @@ namespace {
       // previous settings to void.
       // We need to synthesize setValueNoAlloc(...), E, because we still need
       // to run E.
+
+      // FIXME: Suboptimal: this discards the already created AST nodes.
+      QualType vpQT = m_Context->VoidPtrTy;
+      QualType vQT = m_Context->VoidTy;
+      Expr* vpQTVP
+        = utils::Synthesize::CStyleCastPtrExpr(m_Sema, vpQT,
+                                               (uint64_t)vQT.getAsOpaquePtr());
+      CallArgs[2] = vpQTVP;
+
+
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
                                    locStart, CallArgs, locEnd);
       if (E)
@@ -275,7 +285,6 @@ namespace {
         // call copyArray(T* src, void* placement, int size)
         Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedCopyArray,
                                      locStart, CallArgs, locEnd);
-
       }
       else {
         TypeSourceInfo* ETSI
@@ -337,9 +346,8 @@ namespace {
       }
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
                                    locStart, CallArgs, locEnd);
-    } else {
+    } else
       assert(0 && "Unhandled code path?");
-    }
 
     assert(!Call.isInvalid() && "Invalid Call");
 
