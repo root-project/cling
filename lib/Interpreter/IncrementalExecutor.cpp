@@ -9,6 +9,8 @@
 
 #include "IncrementalExecutor.h"
 
+#include "cling/Interpreter/Value.h"
+
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
@@ -236,6 +238,10 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
+  // Set the value to cling::invalid.
+  if (returnValue) {
+    *returnValue = Value();
+  }
   remapSymbols();
 
   llvm::Function* f = m_engine->FindFunctionNamed(funcname.str().c_str());

@@ -175,7 +175,7 @@ namespace cling {
 
 // Helper function for the SynthesizeSVRInit
 namespace {
-  static bool checkCopyConstructor(QualType QT, clang::Sema* S) {
+  static bool availableCopyConstructor(QualType QT, clang::Sema* S) {
     // Check the the existance of the copy constructor the tha placement new will use.
     if (CXXRecordDecl* RD = QT->getAsCXXRecordDecl()) {
       // If it has a trivial copy constructor it is accessible and it is callable.
@@ -241,51 +241,59 @@ namespace {
 
     ExprResult Call;
     SourceLocation noLoc;
-    bool isInvalid = desugaredTy->isVoidType();
-    if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
+    if (desugaredTy->isVoidType()) {
+      // In cases where the cling::Value gets reused we need to reset the
+      // previous settings to void.
+      // We need to synthesize setValueNoAlloc(...), E, because we still need
+      // to run E.
+      Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
+                                   locStart, CallArgs, locEnd);
+      if (E)
+        Call = m_Sema->CreateBuiltinBinOp(locStart, BO_Comma, Call.take(), E);
+
+    } else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
       // 2) object types :
       // check existance of copy constructor before call
-      isInvalid = !checkCopyConstructor(desugaredTy, m_Sema);
-      if (!isInvalid) {
-        // call new (setValueWithAlloc(gCling, &SVR, ETy)) (E)
-        Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedWithAlloc,
+      if (!availableCopyConstructor(desugaredTy, m_Sema))
+        return E;
+      // call new (setValueWithAlloc(gCling, &SVR, ETy)) (E)
+      Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedWithAlloc,
+                                   locStart, CallArgs, locEnd);
+      Expr* placement = Call.take();
+      if (const ConstantArrayType* constArray
+          = dyn_cast<ConstantArrayType>(desugaredTy.getTypePtr())) {
+        CallArgs.clear();
+        CallArgs.push_back(E);
+        CallArgs.push_back(placement);
+        uint64_t arrSize
+          = m_Context->getConstantArrayElementCount(constArray);
+        Expr* arrSizeExpr
+          = utils::Synthesize::IntegerLiteralExpr(*m_Context, arrSize);
+
+        CallArgs.push_back(arrSizeExpr);
+        // 2.1) arrays:
+        // call copyArray(T* src, void* placement, int size)
+        Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedCopyArray,
                                      locStart, CallArgs, locEnd);
-        Expr* placement = Call.take();
-        if (const ConstantArrayType* constArray
-            = dyn_cast<ConstantArrayType>(desugaredTy.getTypePtr())) {
-          CallArgs.clear();
-          CallArgs.push_back(E);
-          CallArgs.push_back(placement);
-          uint64_t arrSize
-            = m_Context->getConstantArrayElementCount(constArray);
-          Expr* arrSizeExpr
-            = utils::Synthesize::IntegerLiteralExpr(*m_Context, arrSize);
 
-          CallArgs.push_back(arrSizeExpr);
-          // 2.1) arrays:
-          // call copyArray(T* src, void* placement, int size)
-          Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedCopyArray,
-                                       locStart, CallArgs, locEnd);
+      }
+      else {
+        TypeSourceInfo* ETSI
+          = m_Context->getTrivialTypeSourceInfo(ETy, noLoc);
 
-        }
-        else {
-          TypeSourceInfo* ETSI
-            = m_Context->getTrivialTypeSourceInfo(ETy, noLoc);
-
-          Call = m_Sema->BuildCXXNew(E->getSourceRange(),
-                                     /*useGlobal ::*/true,
-                                     /*placementLParen*/ noLoc,
-                                     MultiExprArg(placement),
-                                     /*placementRParen*/ noLoc,
-                                     /*TypeIdParens*/ SourceRange(),
-                                     /*allocType*/ ETSI->getType(),
-                                     /*allocTypeInfo*/ETSI,
-                                     /*arraySize*/0,
-                                     /*directInitRange*/E->getSourceRange(),
-                                     /*initializer*/E,
-                                     /*mayContainAuto*/false
-                                     );
-        }
+        Call = m_Sema->BuildCXXNew(E->getSourceRange(),
+                                   /*useGlobal ::*/true,
+                                   /*placementLParen*/ noLoc,
+                                   MultiExprArg(placement),
+                                   /*placementRParen*/ noLoc,
+                                   /*TypeIdParens*/ SourceRange(),
+                                   /*allocType*/ ETSI->getType(),
+                                   /*allocTypeInfo*/ETSI,
+                                   /*arraySize*/0,
+                                   /*directInitRange*/E->getSourceRange(),
+                                   /*initializer*/E,
+                                   /*mayContainAuto*/false
+                                   );
       }
     }
     else if (desugaredTy->isIntegralOrEnumerationType()
@@ -331,17 +339,6 @@ namespace {
                                    locStart, CallArgs, locEnd);
     } else {
       assert(0 && "Unhandled code path?");
-    }
-    if (isInvalid) {
-      // In cases where the cling::Value gets reused we need to reset the
-      // previous settings to void.
-      // We need to synthesize setValueNoAlloc(...), E, because we still need
-      // to run E.
-      Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
-                                   locStart, CallArgs, locEnd);
-      if (E)
-        Call = m_Sema->CreateBuiltinBinOp(locStart, BO_Comma, Call.take(), E);
-
     }
 
     assert(!Call.isInvalid() && "Invalid Call");
