@@ -176,14 +176,18 @@ EOF
     echo -e "\n -- ${SIGNING_USER}  $(date --rfc-2822)\n" >> ${prefix}/debian/changelog
   else
     TAG=${VERSION/v/}
+    if [ ${TAG} = "0.1" ]; then
+      echo -e "\n -- ${SIGNING_USER}  $(date --rfc-2822)\n" >> ${prefix}/debian/changelog
+    fi
+    STABLE_FLAG="1"
   fi
 
   while [ "${TAG}" != "0.1" ]; do
     CMP=$TAG
     TAG=$(echo "${TAG} 0.1" | awk '{printf "%.1f", $1 - $2}')
-    echo "${VERSION}" | grep -qE "dev"
-    if [ "${?}" = 0 ]; then
+    if [ STABLE_FLAG != "1" ]; then
       echo -e "cling (${TAG/v/}-1) unstable; urgency=low\n" >> ${prefix}/debian/changelog
+      STABLE_FLAG="1"
     fi
     git log v${CMP}...v${TAG} --format="  * %s" | fmt -s >> ${prefix}/debian/changelog
     echo -e "\n -- ${SIGNING_USER}  $(date --rfc-2822)\n" >> ${prefix}/debian/changelog
