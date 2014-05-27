@@ -209,5 +209,11 @@ function tarball {
   tar -cjvf $(basename ${prefix}).tar.bz2 -C . $(basename ${prefix})
 }
 
+function cleanup {
+  box_draw "Clean up"
+  rm -Rfv ${workdir}/builddir
+  rm -Rfv ${prefix}
+}
+
 # Initialize variables with details of the platform and Operating System
 platform_init

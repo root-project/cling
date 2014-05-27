@@ -206,14 +206,15 @@ EOF
 function cleanup_deb {
   box_draw "Clean up"
   mkdir -pv "${workdir}"/cling-"${VERSION}"-1
-  mv "${workdir}"/cling_"${VERSION}"*.deb "${workdir}"/cling-"${VERSION}"-1
-  mv "${workdir}"/cling_"${VERSION}"*.changes "${workdir}"/cling-"${VERSION}"-1
-  mv "${workdir}"/cling_"${VERSION}"*.build "${workdir}"/cling-"${VERSION}"-1
-  mv "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
-  mv "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
+  mv -v "${workdir}"/cling_"${VERSION}"*.deb "${workdir}"/cling-"${VERSION}"-1
+  mv -v "${workdir}"/cling_"${VERSION}"*.changes "${workdir}"/cling-"${VERSION}"-1
+  mv -v "${workdir}"/cling_"${VERSION}"*.build "${workdir}"/cling-"${VERSION}"-1
+  mv -v "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
+  mv -v "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
 
-  rm -f "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
-  rm -Rf "${workdir}"/cling-"${VERSION}"
+  rm -fv "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
+  rm -Rfv ${workdir}/builddir
+  rm -Rfv ${prefix}
 }
 
 function check_ubuntu {
