@@ -673,8 +673,25 @@ namespace cling {
 
     if (kind == tok::raw_identifier && !Tok.needsCleaning()) {
       StringRef keyword(Tok.getRawIdentifierData(), Tok.getLength());
-      if (keyword.equals("using"))
-        return false;
+      if (keyword.equals("using")) {
+        // FIXME: Using definitions and declarations should be decl extracted.
+        // Until we have that, don't wrap them if they are the only input.
+        const char* cursor = keyword.data();
+        cursor = strchr(cursor, ';'); // advance to end of using decl / def.
+        if (!cursor) {
+          // Using decl / def without trailing ';' means input consists of only
+          // that using decl /def: should not wrap.
+          return false;
+        }
+        // Skip whitespace after ';'
+        do ++cursor;
+        while (*cursor && isspace(*cursor));
+        if (!*cursor)
+          return false;
+        // There is "more" - let's assume this input consists of a using
+        // declaration or definition plus some code that should be wrapped.
+        return true;
+      }
       if (keyword.equals("extern"))
         return false;
       if (keyword.equals("namespace"))
