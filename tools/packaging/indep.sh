@@ -42,6 +42,22 @@ function platform_init {
       REV=$(cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F=  '{ print $2 }')
     fi
   fi
+
+  if [ ${DIST} = "" ]; then
+    DIST="N/A"
+  fi
+
+  if [ ${DistroBasedOn} = "" ]; then
+    DistroBasedOn="N/A"
+  fi
+
+  if [ ${PSEUDONAME} = "" ]; then
+    PSEUDONAME="N/A"
+  fi
+
+  if [ ${REV} = "" ]; then
+    REV="N/A"
+  fi
 }
 
 function get_OS {
@@ -66,8 +82,31 @@ function get_BIT {
   printf "%s" "$(getconf LONG_BIT)"
 }
 
+# Helper functions to prettify text like that in Debian Build logs
+function box_draw_header {
+  msg="cling ($(uname -m))$(date)"
+  spaces_no=$(echo "80 $(echo ${msg} | wc -m)" | awk '{printf "%d", $1 - $2 - 3}')
+  spacer=$(head -c ${spaces_no} < /dev/zero | tr '\0' ' ')
+  msg="cling ($(uname -m))${spacer}$(date)"
+  echo "\
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ ${msg} ║
+╚══════════════════════════════════════════════════════════════════════════════╝"
+}
+
+function box_draw {
+  msg=${1}
+  spaces_no=$(echo "80 $(echo ${msg} | wc -m)" | awk '{printf "%d", $1 - $2 - 3}')
+  spacer=$(head -c ${spaces_no} < /dev/zero | tr '\0' ' ')
+  echo "\
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ${msg}${spacer} │
+└──────────────────────────────────────────────────────────────────────────────┘"
+}
+
 # Fetch the sources for the vendor clone of LLVM
 function fetch_llvm {
+  box_draw "Fetch source files"
   # TODO: Change the URL to use the actual Git repo of Cling, rather than Github.
   #       Use "git archive --remote=<url> ..." or similar to remove "curl" as dependency.
   LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
@@ -117,7 +156,7 @@ function fetch_cling {
 }
 
 function set_version {
-
+  box_draw "Set Cling version"
   cd ${CLING_SRC_DIR}
   VERSION=$(cat ${CLING_SRC_DIR}/VERSION)
 
@@ -127,41 +166,45 @@ function set_version {
   if [ "${?}" = 0 ]; then
     VERSION="${VERSION}"-"$(echo ${REVISION} | cut -c1-7)"
   fi
+  echo "Version: ${VERSION}"
+  if [ ${REVISION} != "" ]; then
+    echo "Revision: ${REVISION}"
+  fi
 }
 
 function compile {
   prefix=${1}
   python=$(type -p python)
+  # TODO: "nproc" program is a part of GNU Coreutils and may not be available on all systems. Use a better solution if needed.
   cores=$(nproc)
+
   # Cleanup previous installation directory if any
   rm -Rf ${prefix}
-  echo "Create temporary build directory:"
   mkdir -p ${workdir}/builddir
   cd ${workdir}/builddir
 
   if [ "${OS}" = "Cygwin" ]; then
-    echo "Configuring CLing with CMake and generating Visual Studio 11 project files..."
+    box_draw "Configuring Cling with CMake and generating Visual Studio 11 project files"
     cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(cygpath --windows --absolute ${prefix}) ../$(basename ${srcdir})
 
-    echo "Building Cling..."
-    echo "Using ${cores} cores."
+    box_draw "Building Cling (using ${cores} cores)"
     cmake --build . --target clang --config Release
     cmake --build . --target cling --config Release
+    box_draw "Install compiled binaries to prefix (using ${cores} cores)"
     cmake --build . --target INSTALL --config Release
   else
-    echo "Configuring Cling for compilation"
+    box_draw "Configuring Cling for compilation"
     ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
 
-    echo "Building Cling..."
-    # TODO: "nproc" program is a part of GNU Coreutils and may not be available on all systems. Use a better solution if needed.
-    echo "Using ${cores} cores."
+    box_draw "Building Cling (using ${cores} cores)"
     make -j${cores}
+    box_draw "Install compiled binaries to prefix (using ${cores} cores)"
     make install -j${cores}
   fi
 }
 
 function tarball {
-  echo "Compressing ${prefix} to produce a bzip2 tarball..."
+  box_draw "Compressing binaries to produce a bzip2 tarball"
   cd ${workdir}
   tar -cjvf $(basename ${prefix}).tar.bz2 -C . $(basename ${prefix})
 }

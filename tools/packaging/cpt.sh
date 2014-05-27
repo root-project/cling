@@ -52,6 +52,16 @@ while [ "${1}" != "" ]; do
     exit
   fi
 
+  echo "Cling Packaging Tool (CPT)"
+  echo "Arguments passed: ${@}"
+  box_draw_header
+  echo "Operating System: ${OS}"
+  echo "Distribution: ${DIST}"
+  echo "Distro Based On: ${DistroBasedOn}"
+  echo "Pseudo Name: ${PSEUDONAME}"
+  echo "Revision: ${REV}"
+  echo "Architecture: $(uname -m)"
+
   PARAM=$(echo ${1} | awk -F= '{print $1}')
   VALUE=$(echo ${1} | awk -F= '{print $2}')
 
@@ -61,7 +71,7 @@ while [ "${1}" != "" ]; do
         exit
         ;;
     --check-requirements)
-        echo "Checking if required softwares are available on this system..."
+        box_draw "Check if required softwares are available on this system"
         if [ "${DIST}" = "Ubuntu" ]; then
           check_ubuntu git
           check_ubuntu curl

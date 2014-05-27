@@ -21,12 +21,13 @@
 # set -o xtrace
 
 function tarball_deb {
-  echo "Compressing ${prefix} to produce a bzip2 tarball..."
+  box_draw "Compressing compiled binaries to produce a bzip2 tarball"
   cd ${workdir}
   tar -cjvf cling_${VERSION}.orig.tar.bz2 -C . $(basename ${prefix})
 }
 
 function debianize {
+  box_draw "Set up the debian directory"
   cd ${prefix}
   echo "Create directory: debian"
   mkdir -p debian
@@ -197,22 +198,22 @@ EOF
   echo "Old Changelog:" >> ${prefix}/debian/changelog
   git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n" >> ${prefix}/debian/changelog
   cd -
-  # Create Debian package
+
+  box_draw "Run debuild to create Debian package"
   debuild
 }
 
 function cleanup_deb {
-  echo "Moving all newly created files to cling-${VERSION}-1"
-  mkdir "${workdir}"/cling-"${VERSION}"-1
+  box_draw "Clean up"
+  mkdir -pv "${workdir}"/cling-"${VERSION}"-1
   mv "${workdir}"/cling_"${VERSION}"*.deb "${workdir}"/cling-"${VERSION}"-1
   mv "${workdir}"/cling_"${VERSION}"*.changes "${workdir}"/cling-"${VERSION}"-1
   mv "${workdir}"/cling_"${VERSION}"*.build "${workdir}"/cling-"${VERSION}"-1
   mv "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
   mv "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
 
-  echo "Cleaning up redundant file.."
-  rm "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
-  rm -R "${workdir}"/cling-"${VERSION}"
+  rm -f "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
+  rm -Rf "${workdir}"/cling-"${VERSION}"
 }
 
 function check_ubuntu {
