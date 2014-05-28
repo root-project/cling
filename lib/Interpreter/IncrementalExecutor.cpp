@@ -107,9 +107,6 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   builder.setTargetOptions(TargetOpts);
 
   m_engine.reset(builder.create());
-  if (!m_engine)
-     llvm::errs() << "cling::IncrementalExecutor::IncrementalExecutor(): "
-                  << errMsg;
   assert(m_engine && "Cannot create module!");
 
   // install lazy function creators
