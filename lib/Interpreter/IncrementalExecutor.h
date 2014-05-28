@@ -18,6 +18,10 @@
 #include <set>
 #include <map>
 
+namespace clang {
+  class DiagnosticsEngine;
+}
+
 namespace llvm {
   class ExecutionEngine;
   class GlobalValue;
@@ -102,6 +106,10 @@ namespace cling {
     ///
     AtExitFunctions m_AtExitFuncs;
 
+    ///\brief The diagnostics engine, printing out issues coming from the
+    /// incremental executor.
+    clang::DiagnosticsEngine& m_Diags;
+
   public:
     enum ExecutionResult {
       kExeSuccess,
@@ -110,7 +118,7 @@ namespace cling {
       kNumExeResults
     };
 
-    IncrementalExecutor(llvm::Module* m);
+    IncrementalExecutor(llvm::Module* m, clang::DiagnosticsEngine& diags);
     ~IncrementalExecutor();
 
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);

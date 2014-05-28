@@ -189,7 +189,7 @@ namespace cling {
 
     if (!isInSyntaxOnlyMode()) {
       llvm::Module* theModule = m_IncrParser->getCodeGenerator()->GetModule();
-      m_Executor.reset(new IncrementalExecutor(theModule));
+      m_Executor.reset(new IncrementalExecutor(theModule, SemaRef.Diags));
     }
 
     llvm::SmallVector<Transaction*, 2> IncrParserTransactions;
