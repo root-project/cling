@@ -33,14 +33,18 @@ namespace cling {
   private:
     ASTNodes Nodes;
     bool forReplacement;
+    bool m_HasErrorOccurred;
   public:
-    ASTNodeInfo() : forReplacement(false){}
-    ASTNodeInfo(clang::Stmt* S, bool needed) : forReplacement(needed) {
+    ASTNodeInfo() : forReplacement(false), m_HasErrorOccurred(false) {}
+    ASTNodeInfo(clang::Stmt* S, bool needed)
+      : forReplacement(needed), m_HasErrorOccurred(false) {
       Nodes.push_back(S);
     }
 
     bool isForReplacement() { return forReplacement; }
     void setForReplacement(bool val = true) { forReplacement = val; }
+    void setErrorOccurred(bool val = true) { m_HasErrorOccurred = val; }
+    bool hasErrorOccurred() { return m_HasErrorOccurred; }
     bool hasSingleNode() { return Nodes.size() == 1; }
     clang::Stmt* getAsSingleNode() {
       assert(hasSingleNode() && "There is more than one node!");

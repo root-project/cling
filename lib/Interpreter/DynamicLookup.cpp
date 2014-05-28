@@ -222,6 +222,15 @@ namespace cling {
             // Set the decl context, which is needed by Evaluate.
             m_CurDeclContext = FD;
             ASTNodeInfo NewBody = Visit((*J)->getBody());
+            if (NewBody.hasErrorOccurred()) {
+              // Report unsupported feature.
+              DiagnosticsEngine& Diags = m_Sema->getDiagnostics();
+              unsigned diagID
+                = Diags.getCustomDiagID(DiagnosticsEngine::Error,
+                                        "Feature not supported yet");
+              Diags.Report(NewBody.getAsSingleNode()->getLocStart(), diagID);
+              return; // Signal a fatal error.
+            }
             FD->setBody(NewBody.getAsSingleNode());
           }
           assert ((!isa<BlockDecl>(*J) || !isa<ObjCMethodDecl>(*J))
@@ -295,6 +304,8 @@ namespace cling {
       ASTNodes::iterator it;
       for (it = Children.begin(); it != Children.end(); ++it) {
         ASTNodeInfo NewNode = Visit(*it);
+        if (NewNode.hasErrorOccurred())
+          return NewNode; // abort.
         if (!NewNode.hasSingleNode()) {
 
           ASTNodes& NewStmts(NewNode.getNodes());
@@ -349,10 +360,15 @@ namespace cling {
         VarDecl* CuredDecl = cast_or_null<VarDecl>(Node->getSingleDecl());
         assert(CuredDecl && "Not a variable declaration!");
         QualType CuredDeclTy = CuredDecl->getType();
+        if (isa<AutoType>(CuredDeclTy)) {
+          ASTNodeInfo result(Node, false);
+          result.setErrorOccurred();
+          return result;
+        }
         // check if the case is sometype * somevar = init;
         // or some_builtin_type somevar = init;
-        if (CuredDecl->hasInit() && (CuredDeclTy->isAnyPointerType()
-                                     || !CuredDeclTy->isRecordType())) {
+        if (CuredDecl->hasInit() &&
+            (CuredDeclTy->isAnyPointerType() || !CuredDeclTy->isRecordType())) {
           *I = SubstituteUnknownSymbol(CuredDeclTy, CuredDecl->getInit());
           continue;
         }
