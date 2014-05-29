@@ -108,6 +108,10 @@ namespace cling {
     m_IsQuitRequested = true;
   }
 
+  void MetaSema::actOnAtCommand() {
+    m_MetaProcessor.cancelContinuation();
+  }
+
   MetaSema::ActionResult MetaSema::actOnUndoCommand(unsigned N/*=1*/) {
     m_Interpreter.unload(N);
     return AR_Success;

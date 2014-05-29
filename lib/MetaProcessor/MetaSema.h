@@ -102,6 +102,10 @@ namespace cling {
     ///
     void actOnqCommand();
 
+    ///\brief Actions to be performed on request to cancel continuation.
+    ///
+    void actOnAtCommand();
+
     ///\brief Unloads the last N inputs lines.
     ///
     ///\param[in] N - The inputs to unload.

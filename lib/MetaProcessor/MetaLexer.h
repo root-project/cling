@@ -39,6 +39,7 @@ namespace cling {
       comment,    // //
       space,      // (' ' | '\t')*
       constant,   // {0-9}
+      at,         // @
       eof,
       unknown
     };

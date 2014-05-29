@@ -84,6 +84,7 @@ namespace cling {
     bool isExtraArgList();
     bool isXCommand(MetaSema::ActionResult& actionResult,
                     Value* resultValue);
+    bool isAtCommand();
     bool isqCommand();
     bool isUCommand(MetaSema::ActionResult& actionResult);
     bool isICommand();

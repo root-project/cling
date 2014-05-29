@@ -117,6 +117,7 @@ namespace cling {
       *resultValue = Value();
     return isLCommand(actionResult)
       || isXCommand(actionResult, resultValue)
+      || isAtCommand()
       || isqCommand() || isUCommand(actionResult) || isICommand()
       || isOCommand() || israwInputCommand() || isprintDebugCommand()
       || isdynamicExtensionsCommand() || ishelpCommand() || isfileExCommand()
@@ -328,6 +329,17 @@ namespace cling {
       }
     }
 
+    return false;
+  }
+
+  bool MetaParser::isAtCommand() {
+    if (getCurTok().is(tok::at) // && getCurTok().getIdent().equals("@")
+        ) {
+      consumeToken();
+      skipWhitespace();
+      m_Actions->actOnAtCommand();
+      return true;
+    }
     return false;
   }
 

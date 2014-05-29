@@ -142,7 +142,8 @@ namespace cling {
 
       if (actionResult != MetaSema::AR_Success)
         compRes = Interpreter::kFailure;
-      return expectedIndent;
+       // ExpectedIndent might have changed after meta command.
+       return m_InputValidator->getExpectedIndent();
     }
 
     // Check if the current statement is now complete. If not, return to
