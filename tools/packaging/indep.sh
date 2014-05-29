@@ -43,19 +43,19 @@ function platform_init {
     fi
   fi
 
-  if [ ${DIST} = "" ]; then
+  if [ "${DIST}" = "" ]; then
     DIST="N/A"
   fi
 
-  if [ ${DistroBasedOn} = "" ]; then
+  if [ "${DistroBasedOn}" = "" ]; then
     DistroBasedOn="N/A"
   fi
 
-  if [ ${PSEUDONAME} = "" ]; then
+  if [ "${PSEUDONAME}" = "" ]; then
     PSEUDONAME="N/A"
   fi
 
-  if [ ${REV} = "" ]; then
+  if [ "${REV}" = "" ]; then
     REV="N/A"
   fi
 }
@@ -85,9 +85,13 @@ function get_BIT {
 # Helper functions to prettify text like that in Debian Build logs
 function box_draw_header {
   msg="cling ($(uname -m))$(date)"
-  spaces_no=$(echo "80 $(echo ${msg} | wc -m)" | awk '{printf "%d", $1 - $2 - 3}')
+  spaces_no=$(echo "80 $(echo ${msg} | wc -m)" | awk '{printf "%d", $1 - $2 - 4}')
   spacer=$(head -c ${spaces_no} < /dev/zero | tr '\0' ' ')
-  msg="cling ($(uname -m))${spacer}$(date)"
+  if [ ${OS} = "Cygwin" ]; then
+    msg="cling ($(uname -m))${spacer}$(date)"
+  else
+    msg="cling ($(uname -m))${spacer} $(date)"
+  fi
   echo "\
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║ ${msg} ║
