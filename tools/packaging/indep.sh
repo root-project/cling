@@ -207,6 +207,14 @@ function compile {
   fi
 }
 
+function test_cling {
+  box_draw "Run Cling test suite"
+  if [ ${OS} != "Cygwin" ]; then
+    cd ${workdir}/builddir/tools/cling
+    make test
+  fi
+}
+
 function tarball {
   box_draw "Compressing binaries to produce a bzip2 tarball"
   cd ${workdir}

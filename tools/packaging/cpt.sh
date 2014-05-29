@@ -116,10 +116,12 @@ while [ "${1}" != "" ]; do
           else
             compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           fi
+          test_cling
           tarball
           cleanup
         elif [ "${VALUE}" = "deb" ]; then
           compile ${workdir}/cling-${VERSION}
+          test_cling
           tarball_deb
           debianize
           cleanup_deb
@@ -143,11 +145,13 @@ while [ "${1}" != "" ]; do
           else
             compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           fi
+          test_cling
           tarball
           cleanup
         elif [ ${VALUE} = "deb" ]; then
           VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
           compile ${workdir}/cling-${VERSION}
+          test_cling
           tarball_deb
           debianize
           cleanup_deb
@@ -159,6 +163,7 @@ while [ "${1}" != "" ]; do
         fetch_cling ${VALUE}
         VERSION=$(echo ${VALUE} | sed s/v//g)
         compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+        test_cling
         tarball
         cleanup
         ;;
@@ -168,6 +173,7 @@ while [ "${1}" != "" ]; do
         fetch_cling ${VALUE}
         VERSION=$(echo ${VALUE} | sed s/v//g)
         compile ${workdir}/cling-${VERSION}
+        test_cling
         tarball_deb
         debianize
         cleanup_deb
