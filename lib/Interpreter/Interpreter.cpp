@@ -110,6 +110,10 @@ namespace cling {
       return;
     const CompilerInstance& CI = *m_Interpreter->getCI();
     CodeGenerator* CG = i->m_IncrParser->getCodeGenerator();
+
+    // The ClangInternalState can provoke deserialization, we need a transaction.
+    PushTransactionRAII pushedT(i);
+
     m_State.reset(new ClangInternalState(CI.getASTContext(),
                                          CI.getPreprocessor(),
                                          CG ? CG->GetModule() : 0,
