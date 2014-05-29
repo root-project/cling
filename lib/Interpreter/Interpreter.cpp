@@ -111,7 +111,8 @@ namespace cling {
     const CompilerInstance& CI = *m_Interpreter->getCI();
     CodeGenerator* CG = i->m_IncrParser->getCodeGenerator();
 
-    // The ClangInternalState can provoke deserialization, we need a transaction.
+    // The ClangInternalState constructor can provoke deserialization,
+    // we need a transaction.
     PushTransactionRAII pushedT(i);
 
     m_State.reset(new ClangInternalState(CI.getASTContext(),
@@ -122,6 +123,10 @@ namespace cling {
   }
 
   Interpreter::StateDebuggerRAII::~StateDebuggerRAII() {
+    // The ClangInternalState destructor can provoke deserialization,
+    // we need a transaction.
+    PushTransactionRAII pushedT(m_Interpreter);
+
     pop();
   }
 
