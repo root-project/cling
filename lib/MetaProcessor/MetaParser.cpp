@@ -286,7 +286,9 @@ namespace cling {
   }
 
   bool MetaParser::isICommand() {
-    if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("I")) {
+    if (getCurTok().is(tok::ident) &&
+        (   getCurTok().getIdent().equals("I")
+         || getCurTok().getIdent().equals("include"))) {
       consumeAnyStringToken(tok::eof);
       llvm::StringRef path;
       if (getCurTok().is(tok::raw_ident))
