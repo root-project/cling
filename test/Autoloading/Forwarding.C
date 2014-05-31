@@ -24,10 +24,24 @@ template <> class __attribute__((annotate("Spc.h"))) Gen<float>;
 template <typename T,typename U> class  __attribute__((annotate("Def.h"))) Partial;
 template <typename T> class __attribute__((annotate("Spc.h"))) Partial<T,int>;
 
+namespace std {
+  template<typename T,typename A> class __attribute__((annotate("vector"))) vector;
+  template<typename T,typename A> class __attribute__((annotate("list"))) list;
+  template<typename K,typename T,typename C,typename A> class __attribute__((annotate("map"))) map;
+  
+  template<typename Ch,typename Tr,typename A> class basic_string;
+  template<typename T> class char_traits;
+  template<typename T> class allocator;
+  typedef basic_string<char,std::char_traits<char>,std::allocator<char>> string __attribute__((annotate("string"))) ;
+}
 
 .rawInput 0
 
 #include "Def.h"
 #include "Spc.h"
+#include <vector>
+#include <list>
+#include <map>
+#include <string>
 //expected-no-diagnostics
 .q
