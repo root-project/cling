@@ -1,14 +1,11 @@
-
-          _  _  _      _         _  _  _   _           _      _  _  _
-       _ (_)(_)(_) _  (_)       (_)(_)(_) (_) _       (_)  _ (_)(_)(_) _
-      (_)         (_) (_)          (_)    (_)(_)_     (_) (_)         (_)
-      (_)             (_)          (_)    (_)  (_)_   (_) (_)    _  _  _
-      (_)             (_)          (_)    (_)    (_)_ (_) (_)   (_)(_)(_)
-      (_)          _  (_)          (_)    (_)      (_)(_) (_)         (_)
-      (_) _  _  _ (_) (_) _  _   _ (_) _  (_)         (_) (_) _  _  _ (_)
-         (_)(_)(_)    (_)(_)(_) (_)(_)(_) (_)         (_)    (_)(_)(_)(_)
-
---------------------------------------------------------------------------------
+```
+                         ______  __      ____  _   __  ______
+                        / ____/ / /     /  _/ / | / / / ____/
+                       / /     / /      / /  /  |/ / / / __  
+                      / /___  / /___  _/ /  / /|  / / /_/ /  
+                      \____/ /_____/ /___/ /_/ |_/  \____/   
+                                                         
+```
 
 ##DESCRIPTION  
 Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler infrastructure. Cling realizes the read-print-evaluate-loop concept, in order to leverage rapid application development. Implemented as a small extension to LLVM and Clang, the interpreter reuses their strengths such as the praised concise and expressive compiler diagnostics.  
