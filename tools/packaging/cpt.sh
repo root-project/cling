@@ -116,6 +116,7 @@ while [ "${1}" != "" ]; do
           else
             compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           fi
+          install_prefix
           test_cling
           tarball
           cleanup

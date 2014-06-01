@@ -189,7 +189,7 @@ function compile {
 
   if [ "${OS}" = "Cygwin" ]; then
     box_draw "Configuring Cling with CMake and generating Visual Studio 11 project files"
-    cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(cygpath --windows --absolute ${prefix}) ../$(basename ${srcdir})
+    cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(cygpath --windows --absolute ${workdir}/install_tmp) ../$(basename ${srcdir})
 
     box_draw "Building Cling (using ${cores} cores)"
     cmake --build . --target clang --config Release
@@ -198,13 +198,29 @@ function compile {
     cmake --build . --target INSTALL --config Release
   else
     box_draw "Configuring Cling for compilation"
-    ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${prefix} --enable-optimized=yes --enable-cxx11
+    ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${workdir}/install_tmp --enable-optimized=yes --enable-cxx11
 
     box_draw "Building Cling (using ${cores} cores)"
     make -j${cores}
-    box_draw "Install compiled binaries to prefix (using ${cores} cores)"
-    make install -j${cores}
   fi
+}
+
+function install_prefix {
+    if [ "${OS}" = "Cygwin" ]; then
+      box_draw "Install compiled binaries to prefix (using ${cores} cores)"
+      cmake --build . --target INSTALL --config Release
+    else
+      box_draw "Install compiled binaries to prefix (using ${cores} cores)"
+      make install -j${cores}
+    fi
+
+    for f in $(find ${workdir}/install_tmp -type f -printf "%P\n"); do
+      grep -q $(basename $f)[[:space:]] $(dirname ${0})/dist-files.mk
+      if [ ${?} = 0 ]; then
+        mkdir -p ${prefix}/$(dirname $f)
+        cp ${workdir}/install_tmp/$f ${prefix}/$f
+      fi
+    done
 }
 
 function test_cling {
@@ -223,8 +239,12 @@ function tarball {
 
 function cleanup {
   box_draw "Clean up"
-  rm -Rfv ${workdir}/builddir
-  rm -Rfv ${prefix}
+  echo "Remove directory: ${workdir}/builddir"
+  rm -Rf ${workdir}/builddir
+  echo "Remove directory: ${prefix}"
+  rm -Rf ${prefix}
+  echo "Remove directory: ${workdir}/install_prefix"
+  rm -Rf ${workdir}/install_tmp
 }
 
 # Initialize variables with details of the platform and Operating System

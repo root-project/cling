@@ -212,9 +212,10 @@ function cleanup_deb {
   mv -v "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
   mv -v "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
 
-  rm -fv "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
-  rm -Rfv ${workdir}/builddir
-  rm -Rfv ${prefix}
+  rm -f "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
+  rm -Rf ${workdir}/builddir
+  rm -Rf ${prefix}
+  rm -Rf ${workdir}/install_tmp
 }
 
 function check_ubuntu {
