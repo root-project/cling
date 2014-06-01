@@ -26,11 +26,12 @@
 workdir=~/ec/build
 srcdir=${workdir}/cling-src
 CLING_SRC_DIR=${srcdir}/tools/cling
+HOST_CLING_SRC_DIR=$(dirname $(readlink -f ${0}))
 
 # Import helper scripts here
-source $(dirname ${0})/indep.sh
-source $(dirname ${0})/debian/debianize.sh
-source $(dirname ${0})/windows/windows_dep.sh
+source ${HOST_CLING_SRC_DIR}/indep.sh
+source ${HOST_CLING_SRC_DIR}/debian/debianize.sh
+source ${HOST_CLING_SRC_DIR}/windows/windows_dep.sh
 
 function usage {
   echo ""
@@ -122,6 +123,7 @@ while [ "${1}" != "" ]; do
           cleanup
         elif [ "${VALUE}" = "deb" ]; then
           compile ${workdir}/cling-${VERSION}
+          install_prefix
           test_cling
           tarball_deb
           debianize

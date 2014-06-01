@@ -215,7 +215,7 @@ function install_prefix {
     fi
 
     for f in $(find ${workdir}/install_tmp -type f -printf "%P\n"); do
-      grep -q $(basename $f)[[:space:]] $(dirname ${0})/dist-files.mk
+      grep -q $(basename $f)[[:space:]] ${HOST_CLING_SRC_DIR}/dist-files.mk
       if [ ${?} = 0 ]; then
         mkdir -p ${prefix}/$(dirname $f)
         cp ${workdir}/install_tmp/$f ${prefix}/$f
