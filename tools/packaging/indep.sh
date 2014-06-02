@@ -84,14 +84,10 @@ function get_BIT {
 
 # Helper functions to prettify text like that in Debian Build logs
 function box_draw_header {
-  msg="cling ($(uname -m))$(date)"
-  spaces_no=$(echo "80 $(echo ${msg} | wc -m)" | awk '{printf "%d", $1 - $2 - 4}')
+  msg="cling ($(uname -m))$(date --rfc-2822)"
+  spaces_no=$(echo "80 $(echo ${msg} | wc -m)" | awk '{printf "%d", $1 - $2 - 3}')
   spacer=$(head -c ${spaces_no} < /dev/zero | tr '\0' ' ')
-  if [ ${OS} = "Cygwin" ]; then
-    msg="cling ($(uname -m))${spacer}$(date)"
-  else
-    msg="cling ($(uname -m))${spacer} $(date)"
-  fi
+  msg="cling ($(uname -m))${spacer}$(date --rfc-2822)"
   echo "\
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║ ${msg} ║
