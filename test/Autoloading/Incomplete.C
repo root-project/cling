@@ -6,26 +6,20 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling 2>&1 -I %S -Xclang -verify
-// Test enumTest
+// RUN: cat %s | %cling -I %S -Xclang -verify
+// Test incompleteType
+
 #include "cling/TagsExtension/TagManager.h"
 #include "cling/TagsExtension/Callback.h"
 cling::TagManager t;
 gCling->setCallbacks(new cling::AutoloadCallback(gCling,&t));
 
 .rawInput 1
-enum __attribute__((annotate("Enum.h"))) class EC;
+class __attribute__((annotate("Def.h"))) C;
+//expected-warning + {{}}
+//expected-note + {{}}
 .rawInput 0
-EC x=EC::A; 
-// expected-error {{}}
 
-enum E:unsigned int;
-template <typename T> class __attribute__((annotate("Def.h"))) Gen;
-template <> class __attribute__((annotate("Enum.h"))) Gen<E>;
+C c;
+//expected-error {{}}
 
-.rawInput 1
-#include "Enum.h"
-.rawInput 0
-EC x=EC::A;
-
-.q

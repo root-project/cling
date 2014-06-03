@@ -8,6 +8,7 @@
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
 // Test forwardDeclaration
+
 .rawInput 1
 int id(int) __attribute__((annotate("Def.h")));
 
@@ -43,13 +44,5 @@ namespace std {
 
 .rawInput 0
 
-#include "Def.h"
-#include "Spc.h"
-#include <vector>
-#include <list>
-#include <map>
-#include <string>
-#include <algorithm>
-#include <type_traits>
 //expected-no-diagnostics
 .q
