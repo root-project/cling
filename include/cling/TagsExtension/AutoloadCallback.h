@@ -34,11 +34,14 @@ namespace cling {
       //virtual functions ARE meant to be overriden!
 
     bool LookupObject (clang::LookupResult &R, clang::Scope *);
+    bool LookupObject (clang::TagDecl* t);
     
     TagManager* getTagManager();
   private:
     Interpreter* m_Interpreter;
     TagManager* m_Tags;
+
+    void report(clang::SourceLocation l, std::string name,std::string header);
   };
 } // end namespace cling
 
