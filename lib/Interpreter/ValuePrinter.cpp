@@ -325,11 +325,11 @@ static void StreamValue(llvm::raw_ostream& o, const void* V,
   else if (Ty->isPointerType()) {
     clang::QualType PointeeTy = Ty->getPointeeType();
     if (PointeeTy->isCharType())
-      StreamCharPtr(o, (const char*)V);
+      StreamCharPtr(o, *(const char**)V);
     else if (PointeeTy->isFunctionProtoType())
       StreamFunction(o, V, PointeeTy, Interp);
     else
-      StreamPtr(o, V);
+      StreamPtr(o, *(void**)V);
   }
   else if (Ty->isArrayType())
     StreamArr(o, V, Ty, Interp);
