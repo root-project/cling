@@ -92,19 +92,15 @@ Install/update the required packages by:
 EOT
           exit
         elif [ "${OS}" = "Cygwin" ]; then
+          check_cygwin cygwin # Doesn't make much sense. This is for the appeasement of users.
           check_cygwin cmake
           check_cygwin git
           check_cygwin python
           check_cygwin curl
           check_cygwin msvc
           cat <<- EOT
-  Packages required in Windows (Cygwin):
-  CMake
-  MSYS Git or Git provided by Cygwin
-  Python
-  cURL - provided by Cygwin
-  Cygwin
-  Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 201
+  Additional packages required in Windows (Cygwin):
+  Microsoft Visual Studio 11 (2012), with Microsoft Visual C++
 
 Refer to the documentation of CPT for information on setting up your Windows environment.
 
