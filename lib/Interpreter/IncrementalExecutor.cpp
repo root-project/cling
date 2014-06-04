@@ -265,13 +265,15 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
     llvm::SmallVector<llvm::Function*, 128> funcsToFree;
     for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
            e = m_unresolvedSymbols.end(); i != e; ++i) {
-      unsigned diagID = m_Diags.getCustomDiagID(clang::DiagnosticsEngine::Error,
-                                                "%0 unresolved while jitting %1");
-      m_Diags.Report(diagID) << *i << funcname; // TODO: demangle the names.
+      // FIXME: This causes a lot of test failures, for some reason it causes
+      //unsigned diagID = m_Diags.getCustomDiagID(clang::DiagnosticsEngine::Error,
+      //                                          "%0 unresolved while jitting %1");
+      // the call to HandleMissingFunction to be elided.
+      //m_Diags.Report(diagID) << *i << funcname; // TODO: demangle the names.
 
-      // llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
-      //              << "' unresolved while linking function '" << funcname
-      //              << "'!\n";
+      llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
+                   << "' unresolved while linking function '" << funcname
+                   << "'!\n";
       llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
       // i could also reference a global variable, in which case ff == 0.
       if (ff)
