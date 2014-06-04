@@ -16,7 +16,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
-#include "cling/TagsExtension/Callback.h"
+#include "cling/TagsExtension/AutoloadCallback.h"
 
 #include "../lib/Interpreter/IncrementalParser.h"
 

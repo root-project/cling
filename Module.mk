@@ -11,6 +11,7 @@ CLINGDIR     := $(MODDIR)
 ##### libCling #####
 CLINGS       := $(wildcard $(MODDIR)/lib/Interpreter/*.cpp) \
                 $(wildcard $(MODDIR)/lib/MetaProcessor/*.cpp) \
+                $(wildcard $(MODDIR)/lib/TagsExtension/*.cpp) \
                 $(wildcard $(MODDIR)/lib/Utils/*.cpp)
 CLINGO       := $(call stripsrc,$(CLINGS:.cpp=.o))
 CLINGEXCEPO  := $(call stripsrc,$(MODDIR)/lib/Interpreter/RuntimeException.o)

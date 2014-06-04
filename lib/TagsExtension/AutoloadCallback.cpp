@@ -1,4 +1,4 @@
-#include "cling/TagsExtension/Callback.h"
+#include "cling/TagsExtension/AutoloadCallback.h"
 #include "clang/Basic/Diagnostic.h"
 #include "llvm/ADT/SmallVector.h"
 #include "clang/Sema/Sema.h"
