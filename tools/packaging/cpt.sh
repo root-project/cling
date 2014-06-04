@@ -34,21 +34,25 @@ source ${HOST_CLING_SRC_DIR}/debian/debianize.sh
 source ${HOST_CLING_SRC_DIR}/windows/windows_dep.sh
 
 function usage {
-  echo ""
-  echo "Cling Packaging Tool"
-  echo ""
-  echo "Usage: ./cpt.sh {arg}"
-  echo -e "    -h, --help\t\t\tDisplay this help and exit"
-  echo -e "    --check-requirements\tCheck if packages required by the script are installed"
-  echo -e "    --current-dev={tar,deb}\tCompile the latest development snapshot and produce a tarball/Debian package"
-  echo -e "    --last-stable={tar,deb}\tCompile the last stable snapshot and produce a tarball/Debian package"
-  echo -e "    --tarball-tag={tag}\t\tCompile the snapshot of a given tag and produce a tarball"
-  echo -e "    --deb-tag={tag}\t\tCompile the snapshot of a given tag and produce a Debian package"
+	cat <<- EOT
+  Cling Packaging Tool
+
+  Usage: ${0##/*/} [options]
+
+  Options:
+  -h|--help				Display this message and exit
+  -c|--check-requirements		Check if packages required by the script are installed
+  --current-dev={tar,deb}		Compile the latest development snapshot and produce a tarball/Debian package
+  --last-stable={tar,deb}		Compile the last stable snapshot and produce a tarball/Debian package
+  --tarball-tag={tag}			Compile the snapshot of a given tag and produce a tarball
+  --deb-tag={tag}			Compile the snapshot of a given tag and produce a Debian package
+
+EOT
 }
 
 while [ "${1}" != "" ]; do
-  if [ "${#}" != 1 ]; then
-    echo "Error: script can handle only one switch at a time"
+  if [ "${#}" != "1" ]; then
+    echo "Error: cannot handle multiple switches"
     usage
     exit
   fi
@@ -80,9 +84,12 @@ while [ "${1}" != "" ]; do
           check_ubuntu devscripts
           check_ubuntu gnupg
           check_ubuntu python
-          echo -e "\nInstall/update the required packages by:"
-          echo -e "  sudo apt-get update"
-          echo -e "  sudo apt-get install git curl debhelper devscripts gnupg python"
+          cat <<- EOT
+
+Install/update the required packages by:
+  sudo apt-get update
+  sudo apt-get install git curl debhelper devscripts gnupg python
+EOT
           exit
         elif [ "${OS}" = "Cygwin" ]; then
           check_cygwin cmake
@@ -90,14 +97,18 @@ while [ "${1}" != "" ]; do
           check_cygwin python
           check_cygwin curl
           check_cygwin msvc
-          echo -e "\nPackages required in Windows (Cygwin):"
-          echo -e "  CMake"
-          echo -e "  MSYS Git or Git provided by Cygwin"
-          echo -e "  Python"
-          echo -e "  cURL - provided by Cygwin"
-          echo -e "  Cygwin"
-          echo -e "  Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012"
-          echo -e "\nRefer to the documentation of CPT for information on setting up your Windows environment."
+          cat <<- EOT
+  Packages required in Windows (Cygwin):
+  CMake
+  MSYS Git or Git provided by Cygwin
+  Python
+  cURL - provided by Cygwin
+  Cygwin
+  Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 201
+
+Refer to the documentation of CPT for information on setting up your Windows environment.
+
+EOT
         fi
 
         ;;
