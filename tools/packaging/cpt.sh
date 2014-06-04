@@ -167,12 +167,14 @@ EOT
           else
             compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
           fi
+          install_prefix
           test_cling
           tarball
           cleanup
         elif [ ${VALUE} = "deb" ]; then
           VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
           compile ${workdir}/cling-${VERSION}
+          install_prefix
           test_cling
           tarball_deb
           debianize
@@ -185,6 +187,7 @@ EOT
         fetch_cling ${VALUE}
         VERSION=$(echo ${VALUE} | sed s/v//g)
         compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
+        install_prefix
         test_cling
         tarball
         cleanup
@@ -195,6 +198,7 @@ EOT
         fetch_cling ${VALUE}
         VERSION=$(echo ${VALUE} | sed s/v//g)
         compile ${workdir}/cling-${VERSION}
+        install_prefix
         test_cling
         tarball_deb
         debianize
