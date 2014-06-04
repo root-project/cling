@@ -84,12 +84,24 @@ while [ "${1}" != "" ]; do
           check_ubuntu devscripts
           check_ubuntu gnupg
           check_ubuntu python
-          cat <<- EOT
-
+          echo -e "\nCPT will now attempt to update/install the requisite packages automatically. Do you want to continue?"
+          select yn in "Yes" "No"; do
+            case $yn in
+              Yes)
+                sudo apt-get update
+                sudo apt-get install git curl debhelper devscripts gnupg python
+                break
+                ;;
+              No)
+                cat <<- EOT
 Install/update the required packages by:
   sudo apt-get update
   sudo apt-get install git curl debhelper devscripts gnupg python
 EOT
+                break
+                ;;
+            esac
+          done
           exit
         elif [ "${OS}" = "Cygwin" ]; then
           check_cygwin cygwin # Doesn't make much sense. This is for the appeasement of users.
