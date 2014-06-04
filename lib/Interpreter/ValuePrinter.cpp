@@ -114,7 +114,7 @@ static void StreamArr(llvm::raw_ostream& o, const void* V, clang::QualType Ty,
     size_t Size = (size_t)APSize.getZExtValue();
     o << "{ ";
     for (size_t i = 0; i < Size; ++i) {
-      StreamValue(o, (const char*) V + i * ElBytes, ElementTy, interp);
+      StreamValue(o, *((const char**) ((const char*)V + i * ElBytes)), ElementTy, interp);
       if (i + 1 < Size) {
         if (i == 4) {
           o << "...";
@@ -325,11 +325,11 @@ static void StreamValue(llvm::raw_ostream& o, const void* V,
   else if (Ty->isPointerType()) {
     clang::QualType PointeeTy = Ty->getPointeeType();
     if (PointeeTy->isCharType())
-      StreamCharPtr(o, *(const char**)V);
+      StreamCharPtr(o, (const char*)V);
     else if (PointeeTy->isFunctionProtoType())
       StreamFunction(o, V, PointeeTy, Interp);
     else
-      StreamPtr(o, *(void**)V);
+      StreamPtr(o, V);
   }
   else if (Ty->isArrayType())
     StreamArr(o, V, Ty, Interp);
