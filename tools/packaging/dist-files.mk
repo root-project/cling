@@ -24,7 +24,12 @@ BIN_FILES_1 := \
 BIN_FILES := \
   $(addprefix @prefix@/bin/, $(BIN_FILES_1))
 
-DOCS_FILES_1 :=
+DOCS_FILES_1 := \
+  llvm/html/cling/cling.html \
+  llvm/html/cling/manpage.css \
+  \
+  llvm/ps/cling.ps 
+# CAUTION: The trailing space above is needed. DO NOT delete.
   
 DOCS_FILES := \
   $(addprefix @prefix@/docs/, $(DOCS_FILES_1))
@@ -1184,7 +1189,10 @@ LIB_CLANG_HEADERS_1 := \
 LIB_CLANG_HEADERS := \
   $(addprefix @prefix@/lib/, $(LIB_CLANG_HEADERS_1))
 
-SHARE_FILES_1 :=
+SHARE_FILES_1 := \
+  man/man1/cling.1 
+# CAUTION: The trailing space above is needed. DO NOT delete.
+
   
 SHARE_FILES := \
   $(addprefix @prefix@/share/, $(SHARE_FILES_1))
