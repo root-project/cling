@@ -10,6 +10,7 @@
 
 CLING_LEVEL := ..
 PROJ_OBJ_DIR = .
+DIRS       := tools
 
 include $(CLING_LEVEL)/Makefile
 
