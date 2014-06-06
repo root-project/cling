@@ -146,7 +146,7 @@ namespace cling {
 
     CXXScopeSpec CSS;
     Expr* UnresolvedLookup
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
 
 
     Expr* VoidEArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
@@ -159,7 +159,7 @@ namespace cling {
     if (!QT->isPointerType()) {
       while(ImplicitCastExpr* ICE = dyn_cast<ImplicitCastExpr>(E))
         E = ICE->getSubExpr();
-      E = m_Sema->BuildUnaryOp(S, NoSLoc, UO_AddrOf, E).take();
+      E = m_Sema->BuildUnaryOp(S, NoSLoc, UO_AddrOf, E).get();
     }
 
     llvm::SmallVector<Expr*, 4> CallArgs;
@@ -168,7 +168,7 @@ namespace cling {
     CallArgs.push_back(E);
 
     Expr* Result = m_Sema->ActOnCallExpr(S, UnresolvedLookup, E->getLocStart(),
-                                         CallArgs, E->getLocEnd()).take();
+                                         CallArgs, E->getLocEnd()).get();
     assert(Result && "Cannot create value printer!");
 
     return Result;

@@ -129,7 +129,7 @@ namespace utils {
               // Get the location of the place we will insert.
               SourceLocation Loc
                 = newBody[indexOfLastExpr]->getLocEnd().getLocWithOffset(1);
-              Expr* DRE = S->BuildDeclRefExpr(VD, VDTy,VK_LValue, Loc).take();
+              Expr* DRE = S->BuildDeclRefExpr(VD, VDTy,VK_LValue, Loc).get();
               assert(DRE && "Cannot be null");
               indexOfLastExpr++;
               newBody.insert(newBody.begin() + indexOfLastExpr, DRE);
@@ -163,7 +163,7 @@ namespace utils {
 
     TypeSourceInfo* TSI = Ctx.getTrivialTypeSourceInfo(Ty, SourceLocation());
     Expr* Result
-      = S->BuildCStyleCastExpr(SourceLocation(), TSI,SourceLocation(),E).take();
+      = S->BuildCStyleCastExpr(SourceLocation(), TSI,SourceLocation(),E).get();
     assert(Result && "Cannot create CStyleCastPtrExpr");
     return Result;
   }

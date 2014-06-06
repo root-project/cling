@@ -41,7 +41,7 @@ namespace cling {
                                                 m_FoundDRE->getLocStart(),
                                                 m_FoundDRE->getLocEnd());
           assert(!DS.isInvalid() && "Invalid DeclStmt.");
-          I = Stmts.insert(I, DS.take());
+          I = Stmts.insert(I, DS.get());
           m_HandledDecls.insert(m_FoundDRE->getDecl());
         }
       }

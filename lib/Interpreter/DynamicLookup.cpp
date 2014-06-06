@@ -430,7 +430,7 @@ namespace cling {
         DeclarationNameInfo NameInfo(m_gCling->getDeclName(),
                                      m_gCling->getLocStart());
         Expr* gClingDRE
-          = m_Sema->BuildDeclarationNameExpr(CXXSS, NameInfo ,m_gCling).take();
+          = m_Sema->BuildDeclarationNameExpr(CXXSS, NameInfo ,m_gCling).get();
         Inits.push_back(gClingDRE);
 
         // 2.3 Create a variable from LifetimeHandler.
@@ -454,7 +454,7 @@ namespace cling {
                                        m_NoELoc,
                                        Inits);
         m_Sema->AddInitializerToDecl(HandlerInstance,
-                                     InitExprResult.take(),
+                                     InitExprResult.get(),
                                      /*DirectInit*/ true,
                                      /*TypeMayContainAuto*/ false);
 
@@ -472,7 +472,7 @@ namespace cling {
                                      HandlerTy,
                                      VK_LValue,
                                      m_NoSLoc
-                                     ).takeAs<DeclRefExpr>();
+                                     ).getAs<DeclRefExpr>();
         // 3.2 Create a MemberExpr to getMemory from its declaration.
         CXXScopeSpec SS;
         LookupResult MemberLookup(*m_Sema, m_LHgetMemoryDecl->getDeclName(),
@@ -490,19 +490,19 @@ namespace cling {
                                                      /*FirstQualifierInScope=*/0,
                                                             MemberLookup,
                                                             /*TemplateArgs=*/0
-                                                            ).take();
+                                                            ).get();
         // 3.3 Build the actual call
         Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
         Expr* theCall = m_Sema->ActOnCallExpr(S,
                                               MemberExpr,
                                               m_NoSLoc,
                                               MultiExprArg(),
-                                              m_NoELoc).take();
+                                              m_NoELoc).get();
         // Cast to the type LHS type
         Expr* Result
           = utils::Synthesize::CStyleCastPtrExpr(m_Sema, CuredDeclTy, theCall);
         // Cast once more (dereference the cstyle cast)
-        Result = m_Sema->BuildUnaryOp(S, m_NoSLoc, UO_Deref, Result).take();
+        Result = m_Sema->BuildUnaryOp(S, m_NoSLoc, UO_Deref, Result).get();
         // 4.
         CuredDecl->setType(m_Context->getLValueReferenceType(CuredDeclTy));
         // 5.
@@ -660,7 +660,7 @@ namespace cling {
 
       Expr* UnOp
         = m_Sema->BuildUnaryOp(S, Addresses[i]->getLocStart(), UO_AddrOf,
-                               Addresses[i]).take();
+                               Addresses[i]).get();
       if (!UnOp) {
         // Not good, return what we had.
         llvm::errs() << "Error while creating dynamic expression for:\n  ";
@@ -680,13 +680,13 @@ namespace cling {
     // We need valid source locations to avoid assert(InitList.isExplicit()...)
     InitListExpr* ILE = m_Sema->ActOnInitList(m_NoSLoc,
                                               Inits,
-                                              m_NoELoc).takeAs<InitListExpr>();
+                                              m_NoELoc).getAs<InitListExpr>();
     TypeSourceInfo* TSI
       = m_Context->getTrivialTypeSourceInfo(VarAddrTy, m_NoSLoc);
     Expr* ExprAddresses = m_Sema->BuildCompoundLiteralExpr(m_NoSLoc,
                                                            TSI,
                                                            m_NoELoc,
-                                                           ILE).take();
+                                                           ILE).get();
     assert (ExprAddresses && "Could not build the void* array");
     m_Sema->ImpCastExprToType(ExprAddresses,
                               m_Context->getPointerType(m_Context->VoidPtrTy),
@@ -695,9 +695,9 @@ namespace cling {
     // Is the result of the expression to be printed or not
     Expr* VPReq = 0;
     if (ValuePrinterReq)
-      VPReq = m_Sema->ActOnCXXBoolLiteral(m_NoSLoc, tok::kw_true).take();
+      VPReq = m_Sema->ActOnCXXBoolLiteral(m_NoSLoc, tok::kw_true).get();
     else
-      VPReq = m_Sema->ActOnCXXBoolLiteral(m_NoSLoc, tok::kw_false).take();
+      VPReq = m_Sema->ActOnCXXBoolLiteral(m_NoSLoc, tok::kw_false).get();
 
     llvm::SmallVector<Expr*, 4> CtorArgs;
     CtorArgs.push_back(ExprTemplate);
@@ -723,9 +723,9 @@ namespace cling {
                                        //valid!
                                        // TODO: Propose a patch in clang
                                        m_NoRange,
-                                       Initializer.take(),
+                                       Initializer.get(),
                                        /*TypeMayContainAuto*/false
-                                       ).take();
+                                       ).get();
     return Result;
   }
 
@@ -801,7 +801,7 @@ namespace cling {
                                                 FnTy,
                                                 VK_RValue,
                                                 m_NoSLoc
-                                                ).takeAs<DeclRefExpr>();
+                                                ).getAs<DeclRefExpr>();
 
     getTransaction()->setState(oldState);
 
@@ -814,7 +814,7 @@ namespace cling {
                                                SubTree->getLocStart(),
                                                CallArgs,
                                                SubTree->getLocEnd()
-                                               ).takeAs<CallExpr>();
+                                               ).getAs<CallExpr>();
     assert (EvalCall && "Cannot create call to Eval");
 
     return EvalCall;

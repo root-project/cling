@@ -228,10 +228,10 @@ namespace cling {
 
       CXXScopeSpec CSS;
       Expr* UnresolvedLookup
-        = m_Sema.BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+        = m_Sema.BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
 
       Expr* call = m_Sema.ActOnCallExpr(S, UnresolvedLookup, noLoc,
-                                        args, noLoc).take();
+                                        args, noLoc).get();
       // Check whether we can get the argument'value. If the argument is
       // null, throw an exception direclty. If the argument is not null
       // then ignore this argument and continue to deal with the next
@@ -249,10 +249,10 @@ namespace cling {
 
       Decl* varDecl = 0;
       Stmt* varStmt = 0;
-      Sema::FullExprArg FullCond(m_Sema.MakeFullExpr(ER.take()));
+      Sema::FullExprArg FullCond(m_Sema.MakeFullExpr(ER.get()));
       StmtResult IfStmt = m_Sema.ActOnIfStmt(Loc, FullCond, varDecl,
                                              call, Loc, varStmt);
-      return IfStmt.take();
+      return IfStmt.get();
     }
 
     bool isDeclCandidate(FunctionDecl * FDecl) {

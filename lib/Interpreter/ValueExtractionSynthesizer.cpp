@@ -132,7 +132,7 @@ namespace cling {
           lastExprTy = m_Context->getPointerType(lastExprTy);
           lastExpr = m_Sema->ImpCastExprToType(lastExpr, lastExprTy,
                                                CK_FunctionToPointerDecay,
-                                               VK_RValue).take();
+                                               VK_RValue).get();
         }
 
         //
@@ -237,8 +237,8 @@ namespace {
                                              (uint64_t)getTransaction());
 
     llvm::SmallVector<Expr*, 6> CallArgs;
-    CallArgs.push_back(gClingDRE.take());
-    CallArgs.push_back(wrapperSVRDRE.take());
+    CallArgs.push_back(gClingDRE.get());
+    CallArgs.push_back(wrapperSVRDRE.get());
     CallArgs.push_back(ETyVP);
     CallArgs.push_back(ETransaction);
 
@@ -263,7 +263,7 @@ namespace {
                                    locStart, CallArgs, locEnd);
 
       if (E)
-        Call = m_Sema->CreateBuiltinBinOp(locStart, BO_Comma, Call.take(), E);
+        Call = m_Sema->CreateBuiltinBinOp(locStart, BO_Comma, Call.get(), E);
 
     }
     else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
@@ -274,7 +274,7 @@ namespace {
       // call new (setValueWithAlloc(gCling, &SVR, ETy)) (E)
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedWithAlloc,
                                    locStart, CallArgs, locEnd);
-      Expr* placement = Call.take();
+      Expr* placement = Call.get();
       if (const ConstantArrayType* constArray
           = dyn_cast<ConstantArrayType>(desugaredTy.getTypePtr())) {
         CallArgs.clear();
@@ -326,14 +326,14 @@ namespace {
           TypeSourceInfo* TSI
             = m_Context->getTrivialTypeSourceInfo(UInt64Ty, noLoc);
           Expr* castedE
-            = m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).take();
+            = m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).get();
           CallArgs.push_back(castedE);
         }
       }
       else if (desugaredTy->isReferenceType()) {
         // we need to get the address of the references
         Expr* AddrOfE = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf,
-                                             E).take();
+                                             E).get();
         CallArgs.push_back(AddrOfE);
       }
       else if (desugaredTy->isPointerType()) {
@@ -342,7 +342,7 @@ namespace {
         TypeSourceInfo* TSI
           = m_Context->getTrivialTypeSourceInfo(VoidPtrTy, noLoc);
         Expr* castedE
-          = m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).take();
+          = m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).get();
         CallArgs.push_back(castedE);
       }
       else if (desugaredTy->isFloatingType()) {
@@ -360,12 +360,12 @@ namespace {
 
     // Extend the scope of the temporary cleaner if applicable.
     if (Cleanups) {
-      Cleanups->setSubExpr(Call.take());
-      Cleanups->setValueKind(Call.take()->getValueKind());
-      Cleanups->setType(Call.take()->getType());
+      Cleanups->setSubExpr(Call.get());
+      Cleanups->setValueKind(Call.get()->getValueKind());
+      Cleanups->setType(Call.get()->getType());
       return Cleanups;
     }
-    return Call.take();
+    return Call.get();
   }
 
   void ValueExtractionSynthesizer::FindAndCacheRuntimeDecls() {
@@ -387,7 +387,7 @@ namespace {
 
     CXXScopeSpec CSS;
     m_UnresolvedNoAlloc
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
 
     R.clear();
     R.setLookupName(&m_Context->Idents.get("setValueWithAlloc"));
@@ -395,14 +395,14 @@ namespace {
     assert(!R.empty()
            && "Cannot find cling::runtime::internal::setValueWithAlloc");
     m_UnresolvedWithAlloc
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
 
     R.clear();
     R.setLookupName(&m_Context->Idents.get("copyArray"));
     m_Sema->LookupQualifiedName(R, NSD);
     assert(!R.empty() && "Cannot find cling::runtime::internal::copyArray");
     m_UnresolvedCopyArray
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
+      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
   }
 } // end namespace cling
 
