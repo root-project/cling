@@ -9,6 +9,7 @@
 
 #include "BackendPass.h"
 
+#include "llvm/ADT/StringSwitch.h"
 #include "llvm/Analysis/InlineCost.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
@@ -132,8 +133,7 @@ static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
   PM.add(createAddressSanitizerFunctionPass(
       LangOpts.Sanitize.InitOrder,
       LangOpts.Sanitize.UseAfterReturn,
-      LangOpts.Sanitize.UseAfterScope,
-      CGOpts.SanitizerBlacklistFile));
+      LangOpts.Sanitize.UseAfterScope));
   PM.add(createAddressSanitizerModulePass(
       LangOpts.Sanitize.InitOrder,
       CGOpts.SanitizerBlacklistFile));
@@ -144,8 +144,7 @@ static void addMemorySanitizerPass(const PassManagerBuilder &Builder,
   const PassManagerBuilderWithOpts &BuilderWrapper =
       static_cast<const PassManagerBuilderWithOpts&>(Builder);
   const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
-  PM.add(createMemorySanitizerPass(CGOpts.SanitizeMemoryTrackOrigins,
-                                   CGOpts.SanitizerBlacklistFile));
+  PM.add(createMemorySanitizerPass(CGOpts.SanitizeMemoryTrackOrigins));
 
   // MemorySanitizer inserts complex instrumentation that mostly follows
   // the logic of the original code, but operates on "shadow" values.
@@ -165,7 +164,7 @@ static void addThreadSanitizerPass(const PassManagerBuilder &Builder,
   const PassManagerBuilderWithOpts &BuilderWrapper =
       static_cast<const PassManagerBuilderWithOpts&>(Builder);
   const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
-  PM.add(createThreadSanitizerPass(CGOpts.SanitizerBlacklistFile));
+  PM.add(createThreadSanitizerPass());
 }
 
 static void addDataFlowSanitizerPass(const PassManagerBuilder &Builder,
@@ -214,29 +213,17 @@ namespace cling {
                                    const clang::LangOptions& LangOpts,
                                    const clang::CodeGenOptions& CodeGenOpts) {
     // Create the TargetMachine for generating code.
-    // FIXME: Expose these capabilities via actual APIs!!!! Aside from just
-    // being gross, this is also totally broken if we ever care about
-    // concurrency.
+    unsigned CodeModel =
+      llvm::StringSwitch<unsigned>(CodeGenOpts.CodeModel)
+      .Case("small", llvm::CodeModel::Small)
+      .Case("kernel", llvm::CodeModel::Kernel)
+      .Case("medium", llvm::CodeModel::Medium)
+      .Case("large", llvm::CodeModel::Large)
+      .Case("default", llvm::CodeModel::Default)
+      .Default(~0u);
+    assert(CodeModel != ~0u && "invalid code model!");
+    llvm::CodeModel::Model CM = static_cast<llvm::CodeModel::Model>(CodeModel);
 
-    TargetMachine::setAsmVerbosityDefault(CodeGenOpts.AsmVerbose);
-
-    TargetMachine::setFunctionSections(CodeGenOpts.FunctionSections);
-    TargetMachine::setDataSections    (CodeGenOpts.DataSections);
-
-    // FIXME: Parse this earlier.
-    llvm::CodeModel::Model CM;
-    if (CodeGenOpts.CodeModel == "small") {
-      CM = llvm::CodeModel::Small;
-    } else if (CodeGenOpts.CodeModel == "kernel") {
-      CM = llvm::CodeModel::Kernel;
-    } else if (CodeGenOpts.CodeModel == "medium") {
-      CM = llvm::CodeModel::Medium;
-    } else if (CodeGenOpts.CodeModel == "large") {
-      CM = llvm::CodeModel::Large;
-    } else {
-      assert(CodeGenOpts.CodeModel.empty() && "Invalid code model!");
-      CM = llvm::CodeModel::Default;
-    }
 
     SmallVector<const char *, 16> BackendArgs;
     BackendArgs.push_back("cling"); // Fake program name.
@@ -336,7 +323,16 @@ namespace cling {
     Options.DisableTailCalls = CodeGenOpts.DisableTailCalls;
     Options.TrapFuncName = CodeGenOpts.TrapFuncName;
     Options.PositionIndependentExecutable = LangOpts.PIELevel != 0;
-    Options.EnableSegmentedStacks = CodeGenOpts.EnableSegmentedStacks;
+
+    Options.FunctionSections = CodeGenOpts.FunctionSections;
+    Options.DataSections = CodeGenOpts.DataSections;
+
+    Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
+    Options.MCOptions.MCSaveTempLabels = CodeGenOpts.SaveTempLabels;
+    Options.MCOptions.MCUseDwarfDirectory = !CodeGenOpts.NoDwarfDirectoryAsm;
+    Options.MCOptions.MCNoExecStack = CodeGenOpts.NoExecStack;
+    Options.MCOptions.AsmVerbose = CodeGenOpts.AsmVerbose;
+
 
     Triple TheTriple;
     TheTriple.setTriple(sys::getProcessTriple());
@@ -352,17 +348,6 @@ namespace cling {
                                                        TargetOpts.CPU,
                                                        FeaturesStr, Options,
                                                        RM, CM, OptLevel);
-
-    if (CodeGenOpts.RelaxAll)
-      TM->setMCRelaxAll(true);
-    if (CodeGenOpts.SaveTempLabels)
-      TM->setMCSaveTempLabels(true);
-    if (CodeGenOpts.NoDwarf2CFIAsm)
-      TM->setMCUseCFI(false);
-    if (!CodeGenOpts.NoDwarfDirectoryAsm)
-      TM->setMCUseDwarfDirectory(true);
-    if (CodeGenOpts.NoExecStack)
-      TM->setMCNoExecStack(true);
 
     return TM;
   }
