@@ -125,7 +125,8 @@ namespace cling {
       m_CI->createPCHExternalASTSource(PCHFileName,
                                        true /*DisablePCHValidation*/,
                                        true /*AllowPCHWithCompilerErrors*/,
-                                       0 /*DeserializationListener*/);
+                                       0 /*DeserializationListener*/,
+                                       true /*OwnsDeserializationListener*/);
       if (Transaction* EndedT = endTransaction(CurT))
         result.push_back(EndedT);
     }
