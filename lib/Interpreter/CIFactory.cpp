@@ -704,18 +704,13 @@ namespace cling {
     const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(buffer);
 
     // Set up the preprocessor
-    CI->createPreprocessor();
+    CI->createPreprocessor(TU_Complete);
     Preprocessor& PP = CI->getPreprocessor();
     PP.getBuiltinInfo().InitializeBuiltins(PP.getIdentifierTable(),
                                            PP.getLangOpts());
 
     // Set up the ASTContext
-    ASTContext *Ctx = new ASTContext(CI->getLangOpts(),
-                                     PP.getSourceManager(), &CI->getTarget(),
-                                     PP.getIdentifierTable(),
-                                     PP.getSelectorTable(), PP.getBuiltinInfo(),
-                                     /*size_reserve*/0, /*DelayInit*/false);
-    CI->setASTContext(Ctx);
+    CI->createASTContext();
 
     //FIXME: This is bad workaround for use-cases which need only a CI to parse
     //things, like pragmas. In that case we cannot controll the interpreter's
