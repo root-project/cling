@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-clang - the Clang C, C++, and Objective-C compiler
+cling - the LVM based interactive C++ interpreter
 
 =head1 SYNOPSIS
 
-B<clang> [B<-c>|B<-S>|B<-E>] B<-std=>I<standard> B<-g>
+B<cling> [B<-c>|B<-S>|B<-E>] B<-std=>I<standard> B<-g>
   [B<-O0>|B<-O1>|B<-O2>|B<-O3>|B<-Ofast>|B<-Os>|B<-Oz>|B<-O>|B<-O4>]
   B<-W>I<warnings...> B<-pedantic>
   B<-I>I<dir...> B<-L>I<dir...>
@@ -19,71 +19,70 @@ B<clang> [B<-c>|B<-S>|B<-E>] B<-std=>I<standard> B<-g>
 
 =head1 DESCRIPTION
 
-B<clang> is a C, C++, and Objective-C compiler which encompasses preprocessing,
-parsing, optimization, code generation, assembly, and linking.  Depending on
-which high-level mode setting is passed, Clang will stop before doing a full
-link.  While Clang is highly integrated, it is important to understand the
-stages of compilation, to understand how to invoke it.  These stages are:
+B<cling> is an interactive C++11 standard compliant interpreter, built on the
+top of LLVM and Clang libraries. Its advantages over the standard interpreters
+are that it has command line prompt and uses just-in-time (JIT) compiler for
+compilation. Many of the developers (e.g. Mono in their project called
+CSharpRepl) of such kind of software applications name them interactive
+compilers.
+
+One of Cling's main goals is to provide contemporary, high-performance
+alternative of the current C++ interpreter in the ROOT project - CINT. The
+backward-compatibility with CINT is major priority during the development.
+Cling serves as a core component of the ROOT system for storing and analyzing
+the data of the Large Hadron Collider (LHC) experiments.
 
 =over
 
-=item B<Driver>
+=item B<Command Line>
 
-The B<clang> executable is actually a small driver which controls the overall
-execution of other tools such as the compiler, assembler and linker.  Typically
-you do not need to interact with the driver, but you transparently use it to run
-the other tools.
+B<cling> has its own command line, which looks like any other Unix shell.
+The emacs-like command line editor is what we call interactive command line or
+interactive shell.
 
-=item B<Preprocessing>
+Once we start Cling it automatically includes several header files and its
+own runtime universe. Thus it creates the minimal environment for the user to
+start.
 
-This stage handles tokenization of the input source file, macro expansion,
-#include expansion and handling of other preprocessor directives.  The output of
-this stage is typically called a ".i" (for C), ".ii" (for C++), ".mi" (for 
-Objective-C) , or ".mii" (for Objective-C++) file.
+=item B<Grammer>
 
-=item B<Parsing and Semantic Analysis>
+Cling is capable to parse everything that Clang can do. Current clang status
+can be found in this link L<http://clang.llvm.org/cxx_status.html>.
 
-This stage parses the input file, translating preprocessor tokens into a parse
-tree.  Once in the form of a parser tree, it applies semantic analysis to compute
-types for expressions as well and determine whether the code is well formed. This
-stage is responsible for generating most of the compiler warnings as well as
-parse errors.  The output of this stage is an "Abstract Syntax Tree" (AST).
+In addition Cling will be able to parse the CINT specific C++ extensions.
 
-=item B<Code Generation and Optimization>
+=item B<Metaprocessor>
 
-This stage translates an AST into low-level intermediate code (known as "LLVM
-IR") and ultimately to machine code.  This phase is responsible for optimizing
-the generated code and handling target-specific code generation.  The output of
-this stage is typically called a ".s" file or "assembly" file.
+B<Cling Metaprocessor> provides convenient and easy to use interface for
+changing the interpreter's internal state or for executing handy commands.
+Cling provides the following metaprocessor commands:
 
-Clang also supports the use of an integrated assembler, in which the code
-generator produces object files directly. This avoids the overhead of generating
-the ".s" file and of calling the target assembler.
+B<syntax:> .(command), where command is:
 
-=item B<Assembler>
+    .x filename.cxx - loads filename and calls void filename() if defined
+    .L library | filename.cxx - loads library or filename.cxx
+    .printAST - shows the abstract syntax tree after each processed entity
+    .I path - adds an include path
 
-This stage runs the target assembler to translate the output of the compiler
-into a target object file.  The output of this stage is typically called a ".o"
-file or "object" file.
 
-=item B<Linker>
+=item B<Used Technologies>
 
-This stage runs the target linker to merge multiple object files into an
-executable or dynamic library.  The output of this stage is typically called an
-"a.out", ".dylib" or ".so" file.
+The Low Level Virtual Machine (LLVM) L<http://llvm.org/> is a compiler
+infrastructure, written in C++, which is designed for compile-time, link-time,
+run-time, and "idle-time" optimization of programs written in arbitrary
+programming languages. Originally implemented for C/C++, the
+language-independent design (and the success) of LLVM has since spawned a wide
+variety of front ends, including Objective-C, Fortran, Ada, Haskell, Java
+bytecode, Python, Ruby, ActionScript, GLSL, and others.
+
+Clang L<http://clang.llvm.org/> is a compiler front end for the C, C++,
+Objective-C and Objective-C++ programming languages. It uses the Low Level
+Virtual Machine (LLVM) as its back end, and as such Clang is part of LLVM
+releases since LLVM 2.6. Its goal is to offer a replacement to the GNU Compiler
+Collection (GCC). Development is sponsored by Apple. Clang is available under a
+free software licence.
 
 =back
-
-The Clang compiler supports a large number of options to control each of these
-stages.  In addition to compilation of code, Clang also supports other tools:
-
-B<Clang Static Analyzer>
-
-The Clang Static Analyzer is a tool that scans source code to try to find bugs
-through code analysis.  This tool uses many parts of Clang and is built into the
-same driver.  Please see L<http://clang-analyzer.llvm.org> for more details
-on how to use the static analyzer.
-
 
 =head1 OPTIONS
 
@@ -365,10 +364,6 @@ to the linker depending on the stage selection options).
 
 =cut
 
-##=item B<-fnext-runtime> B<-fobjc-nonfragile-abi> B<-fgnu-runtime>
-##These options specify which Objective-C runtime the code generator should
-##target.  FIXME: we don't want people poking these generally.
-
 =pod
 
 =back
@@ -526,15 +521,6 @@ Do not search clang's builtin directory for include files.
 
 =cut
 
-## TODO, but do we really want people using this stuff?
-#=item B<-idirafter>I<directory>
-#=item B<-iquote>I<directory>
-#=item B<-isystem>I<directory>
-#=item B<-iprefix>I<directory>
-#=item B<-iwithprefix>I<directory>
-#=item B<-iwithprefixbefore>I<directory>
-#=item B<-isysroot>
-
 =pod
 
 
@@ -543,23 +529,6 @@ Do not search clang's builtin directory for include files.
 
 
 =cut
-
-### TODO someday.
-#=head2 Warning Control Options
-#=over
-#=back
-#=head2 Code Generation and Optimization Options
-#=over
-#=back
-#=head2 Assembler Options
-#=over
-#=back
-#=head2 Linker Options
-#=over
-#=back
-#=head2 Static Analyzer Options
-#=over
-#=back
 
 =pod
 
@@ -598,16 +567,16 @@ targets.
 
 =head1 BUGS
 
-To report bugs, please visit L<http://llvm.org/bugs/>.  Most bug reports should
-include preprocessed source files (use the B<-E> option) and the full output of 
-the compiler, along with information to reproduce.
+To report bugs, please visit L<http://root.cern.ch/drupal/content/bug-tracker>.
+Most bug reports should include preprocessed source files and the full output
+of the compiler, along with information to reproduce.
 
 =head1 SEE ALSO
 
- as(1), ld(1)
+ clang(1), as(1), ld(1)
 
 =head1 AUTHOR
 
-Maintained by the Clang / LLVM Team (L<http://clang.llvm.org>).
+Developed by The ROOT Team; CERN and Fermilab (L<http://cern.ch/cling>).
 
 =cut
