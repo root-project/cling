@@ -684,7 +684,7 @@ namespace cling {
     const tok::TokenKind kind = Tok.getKind();
 
     if (kind == tok::raw_identifier && !Tok.needsCleaning()) {
-      StringRef keyword(Tok.getRawIdentifierData(), Tok.getLength());
+      StringRef keyword(Tok.getRawIdentifier());
       if (keyword.equals("using")) {
         // FIXME: Using definitions and declarations should be decl extracted.
         // Until we have that, don't wrap them if they are the only input.
@@ -714,7 +714,7 @@ namespace cling {
     else if (kind == tok::hash) {
       WrapLexer.LexFromRawLexer(Tok);
       if (Tok.is(tok::raw_identifier) && !Tok.needsCleaning()) {
-        StringRef keyword(Tok.getRawIdentifierData(), Tok.getLength());
+        StringRef keyword(Tok.getRawIdentifier());
         if (keyword.equals("include"))
           return false;
       }
