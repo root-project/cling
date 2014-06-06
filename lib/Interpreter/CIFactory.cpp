@@ -25,6 +25,7 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 
+#include "llvm/ADT/OwningPtr.h"
 #include "llvm/Config/config.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Option/ArgList.h"
@@ -583,7 +584,6 @@ namespace cling {
       Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
                                   DiagnosticPrinter, /*Owns it*/ true));
     clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
-                                 "cling.out",
                                  *Diags);
     //Driver.setWarnMissingInput(false);
     Driver.setCheckInputsExist(false); // think foo.C(12)
