@@ -694,7 +694,8 @@ namespace cling {
       Filename = CGOptsMainFileName.c_str();
     const FileEntry* FE
       = FM.getVirtualFile(Filename, 1U << 15U, time(0));
-    FileID MainFileID = SM->createMainFileID(FE, SrcMgr::C_User);
+    FileID MainFileID = SM->createFileID(FE, SourceLocation(), SrcMgr::C_User);
+    SM->setMainFileID(MainFileID);
     const SrcMgr::SLocEntry& MainFileSLocE = SM->getSLocEntry(MainFileID);
     const SrcMgr::ContentCache* MainFileCC
       = MainFileSLocE.getFile().getContentCache();
