@@ -1348,7 +1348,7 @@ namespace cling {
       while (P.getCurToken().isNot(tok::eof)) {
         ExprResult Res = P.ParseAssignmentExpression();
         if (Res.isUsable()) {
-          Expr* expr = Res.release();
+          Expr* expr = Res.get();
           GivenArgs.push_back(expr);
           if (first_time) {
             first_time = false;
@@ -1449,7 +1449,7 @@ namespace cling {
       while (P.getCurToken().isNot(tok::eof)) {
         ExprResult Res = P.ParseAssignmentExpression();
         if (Res.isUsable()) {
-          argExprs.push_back(Res.release());
+          argExprs.push_back(Res.get());
         }
         else {
           hasUnusableResult = true;
