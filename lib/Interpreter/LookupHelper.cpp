@@ -272,7 +272,7 @@ namespace cling {
     llvm::MemoryBuffer* SB =
       llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
                                            "lookup.type.file");
-    clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+    clang::FileID FID = S.getSourceManager().createFileID(SB);
     PP.EnterSourceFile(FID, 0, clang::SourceLocation());
     PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
 
@@ -775,7 +775,7 @@ namespace cling {
       llvm::MemoryBuffer* SB
            = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
                                                 + "\n", "lookup.funcname.file");
-      clang::FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+      clang::FileID FID = S.getSourceManager().createFileID(SB);
       PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
       PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
     }
@@ -1495,7 +1495,7 @@ namespace cling {
       llvm::MemoryBuffer* SB
          = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
                                                 bufferName.str());
-      FileID FID = S.getSourceManager().createFileIDForMemBuffer(SB);
+      FileID FID = S.getSourceManager().createFileID(SB);
       //
       //  Switch to the new file the way #include does.
       //
