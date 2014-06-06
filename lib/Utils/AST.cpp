@@ -17,8 +17,9 @@
 #include "clang/AST/DeclTemplate.h"
 
 #include "llvm/ADT/ArrayRef.h"
-#include "clang/AST/Mangle.h"
+#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
+#include "clang/AST/Mangle.h"
 
 #include <stdio.h>
 
