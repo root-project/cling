@@ -157,7 +157,7 @@ namespace cling {
     using namespace llvm::sys::fs;
     file_magic Magic;
     llvm::error_code Error = identify_magic(LibName, Magic);
-    bool onDisk = (Error == llvm::errc::success);
+    bool onDisk = (Error != llvm::errc::no_such_file_or_directory);
     if (exists)
       *exists = onDisk;
 

@@ -114,7 +114,7 @@ namespace cling {
     TempPath += "-%%%%%%%%";
     int fd;
     if (llvm::sys::fs::createUniqueFile(TempPath.str(), fd, TempPath)
-        == llvm::errc::success) {
+        != llvm::errc::no_such_file_or_directory) {
       OS.reset(new llvm::raw_fd_ostream(fd, /*shouldClose=*/true));
       OSFile = TempPath.str();
     }
