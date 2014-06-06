@@ -539,7 +539,8 @@ namespace cling {
     //
     //  Construct the overload candidate set.
     //
-    OverloadCandidateSet Candidates(FuncNameInfo.getLoc());
+    OverloadCandidateSet Candidates(FuncNameInfo.getLoc(),
+                                    OverloadCandidateSet::CSK_Normal);
     for (LookupResult::iterator I = Result.begin(), E = Result.end();
          I != E; ++I) {
       NamedDecl* ND = *I;

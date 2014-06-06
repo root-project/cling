@@ -268,7 +268,8 @@ namespace cling {
     using namespace clang;
     ASTContext& C = V.getASTContext();
     Sema& SemaR = R.getSema();
-    OverloadCandidateSet overloads((SourceLocation()));
+    OverloadCandidateSet overloads(SourceLocation(),
+                                    OverloadCandidateSet::CSK_Normal);
     QualType Ty = V.getType().getNonReferenceType();
     if (!Ty->isPointerType())
       Ty = C.getPointerType(Ty);
