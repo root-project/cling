@@ -65,10 +65,16 @@ while [ "${1}" != "" ]; do
   echo "Distro Based On: ${DistroBasedOn}"
   echo "Pseudo Name: ${PSEUDONAME}"
   echo "Revision: ${REV}"
-  echo "Architecture: $(uname -m)"
+  echo -e "Architecture: $(uname -m)\n"
 
   PARAM=$(echo ${1} | awk -F= '{print $1}')
   VALUE=$(echo ${1} | awk -F= '{print $2}')
+
+  # Cannot cross-compile for Windows from any other OS
+  if [ "${OS}" != "Cygwin" -a "${VALUE}" = "nsis" ]; then
+    echo "Error: Cross-compilation for Windows not supported (yet)"
+    exit
+  fi
 
   case ${PARAM} in
     -h | --help)
@@ -147,6 +153,13 @@ EOT
           tarball_deb
           debianize
           cleanup_deb
+	elif [ "${VALUE}" = "nsis" ]; then
+          compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
+          install_prefix
+          test_cling
+          # NSIS compilation support TBA
+          # build_nsi
+          # cleanup
         fi
         ;;
     --last-stable)
@@ -179,6 +192,13 @@ EOT
           tarball_deb
           debianize
           cleanup_deb
+	elif [ "${VALUE}" = "nsis" ]; then
+          compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
+          install_prefix
+          test_cling
+          # NSIS compilation support TBA
+          # build_nsi
+          # cleanup
         fi
         ;;
     --tarball-tag)
