@@ -30,7 +30,6 @@ target_link_libraries(cling
   clingMetaProcessor
   clingInterpreter
   clingUtils
-  clingCtagsExtension
   )
 
 install(TARGETS cling

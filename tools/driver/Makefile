@@ -21,7 +21,7 @@ CXXFLAGS = -fno-rtti
 NO_DEAD_STRIP := 1
 
 LINK_COMPONENTS := bitwriter jit native option ipo instrumentation objcarcopts
-USEDLIBS = clingUserInterface.a clingMetaProcessor.a clingTagsExtension.a clingInterpreter.a clingUITextInput.a clingUtils.a clangFrontend.a clangSerialization.a clangDriver.a clangCodeGen.a clangParse.a clangSema.a clangEdit.a clangAnalysis.a clangAST.a clangLex.a clangBasic.a
+USEDLIBS = clingUserInterface.a clingMetaProcessor.a clingInterpreter.a clingUITextInput.a clingUtils.a clangFrontend.a clangSerialization.a clangDriver.a clangCodeGen.a clangParse.a clangSema.a clangEdit.a clangAnalysis.a clangAST.a clangLex.a clangBasic.a
 
 include $(LEVEL)/Makefile.common
 

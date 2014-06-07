@@ -8,10 +8,8 @@
 
 // RUN: cat %s | %cling 2>&1 -I %S -Xclang -verify
 // Test enumTest
-#include "cling/TagsExtension/TagManager.h"
-#include "cling/TagsExtension/Callback.h"
-cling::TagManager t;
-gCling->setCallbacks(new cling::AutoloadCallback(gCling,&t));
+#include "cling/Interpreter/AutoloadCallback.h"
+gCling->setCallbacks(new cling::AutoloadCallback(gCling));
 
 .rawInput 1
 enum __attribute__((annotate("Enum.h"))) class EC;

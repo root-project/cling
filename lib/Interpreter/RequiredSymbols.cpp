@@ -12,7 +12,7 @@
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
-
+#include "cling/Interpreter/AutoloadCallback.h"
 #include "clang/AST/Type.h"
 
 #include "llvm/Support/raw_ostream.h"
@@ -31,6 +31,7 @@ void symbol_requester() {
    runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
    InterpreterCallbacks cb(0);
+   AutoloadCallback a(&I);
 }
 }
 }
