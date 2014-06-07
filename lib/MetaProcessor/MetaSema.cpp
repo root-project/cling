@@ -16,7 +16,6 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
-#include "cling/TagsExtension/AutoloadCallback.h"
 
 #include "../lib/Interpreter/IncrementalParser.h"
 
@@ -73,20 +72,7 @@ namespace cling {
   }
 
   MetaSema::ActionResult MetaSema::actOnTCommand(llvm::StringRef file) {
-      //llvm::outs()<<file<<": directory to be recursively tagged.\n";
-      AutoloadCallback *ctic
-        = static_cast<AutoloadCallback*>(m_Interpreter.getCallbacks());
-      //FIXME: Temporary Implementation
-      // May cause a segfault if .T is used when the CTags callback is not set
-      // This will require modifying Interpreter to 'know' about the extension
-      if (ctic){
-        auto path = m_Interpreter.lookupFileOrLibrary(file);
-        if(path != "")
-            file = path;
-        ctic->getTagManager()->AddTagFile(file);
-        return AR_Success;
-      }
-      else return AR_Failure;
+      return AR_Failure;
   }
 
   MetaSema::ActionResult MetaSema::actOnRedirectCommand(llvm::StringRef file,

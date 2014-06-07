@@ -8,7 +8,6 @@
 
 add_subdirectory(Interpreter)
 add_subdirectory(MetaProcessor)
-add_subdirectory(TagsExtension)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/UserInterface/textinput)
    add_subdirectory(UserInterface)
 endif()
