@@ -34,3 +34,15 @@ function check_cygwin {
     printf "%-10s\t\t[OK]\n" "${1}"
   fi
 }
+
+function build_nsis {
+  box_draw "Check SourceForge project page of NSIS"
+  NSIS_VERSION=$(wget -q -O- 'http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/' | \
+    grep '<a href="' | \
+    sed -n 's,.*<a href="v\([0-9]\)\([^"]*\)".*,\1.\2,p' | \
+    tail -1)
+  echo "Latest version of NSIS is: "${NSIS_VERSION}
+  box_draw "Download NSIS compiler (makensis.exe)"
+  wget "http://sourceforge.net/projects/nsis/files/NSIS%203%20Pre-release/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip"
+  unzip -d ${workdir}/install_tmp nsis-${NSIS_VERSION}.zip
+}
