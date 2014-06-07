@@ -85,7 +85,7 @@ while [ "${1}" != "" ]; do
         box_draw "Check if required softwares are available on this system"
         if [ "${DIST}" = "Ubuntu" ]; then
           check_ubuntu git
-          check_ubuntu curl
+          check_ubuntu wget
           check_ubuntu debhelper
           check_ubuntu devscripts
           check_ubuntu gnupg
@@ -95,14 +95,14 @@ while [ "${1}" != "" ]; do
             case $yn in
               Yes)
                 sudo apt-get update
-                sudo apt-get install git curl debhelper devscripts gnupg python
+                sudo apt-get install git wget debhelper devscripts gnupg python
                 break
                 ;;
               No)
                 cat <<- EOT
 Install/update the required packages by:
   sudo apt-get update
-  sudo apt-get install git curl debhelper devscripts gnupg python
+  sudo apt-get install git wget debhelper devscripts gnupg python
 EOT
                 break
                 ;;
@@ -114,7 +114,7 @@ EOT
           check_cygwin cmake
           check_cygwin git
           check_cygwin python
-          check_cygwin curl
+          check_cygwin wget
           check_cygwin msvc
           cat <<- EOT
   Additional packages required in Windows (Cygwin):

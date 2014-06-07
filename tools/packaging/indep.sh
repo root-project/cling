@@ -108,8 +108,8 @@ function box_draw {
 function fetch_llvm {
   box_draw "Fetch source files"
   # TODO: Change the URL to use the actual Git repo of Cling, rather than Github.
-  #       Use "git archive --remote=<url> ..." or similar to remove "curl" as dependency.
-  LLVMRevision=$(curl --silent https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
+  #       Use "git archive --remote=<url> ..." or similar to remove "wget" as dependency.
+  LLVMRevision=$(wget -q -O- https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
   echo "Last known good LLVM revision is: ${LLVMRevision}"
 
   if [ -d "${srcdir}" ]; then
