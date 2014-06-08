@@ -1,3 +1,5 @@
+#include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/AutoloadCallback.h"
 #include "clang/Basic/Diagnostic.h"
 #include "llvm/ADT/SmallVector.h"
