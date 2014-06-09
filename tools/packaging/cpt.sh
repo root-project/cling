@@ -118,10 +118,8 @@ EOT
           # Check Windows registry for keys that prove an MS Visual Studio 11.0 installation
           check_cygwin msvc
           cat <<- EOT
-  Additional packages required in Windows (Cygwin):
-  Microsoft Visual Studio 11 (2012), with Microsoft Visual C++
-
 Refer to the documentation of CPT for information on setting up your Windows environment.
+[tools/packaging/README.md]
 
 EOT
         fi
