@@ -115,6 +115,7 @@ EOT
           check_cygwin git
           check_cygwin python
           check_cygwin wget
+          # Check Windows registry for keys that prove an MS Visual Studio 11.0 installation
           check_cygwin msvc
           cat <<- EOT
   Additional packages required in Windows (Cygwin):

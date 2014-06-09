@@ -21,8 +21,20 @@
 # set -o xtrace
 
 function check_cygwin {
+  # Check for Cygwin
   if [ "${1}" = "cygwin" ]; then
     printf "%-10s\t\t[OK]\n" "${1}"
+
+  # Check for Microsoft Visual Studio 11.0
+  elif [ "${1}" = "msvc" ]; then
+    cmd.exe /C REG QUERY "HKEY_CLASSES_ROOT\VisualStudio.DTE.11.0" | grep -qE "ERROR"
+    if [ "${?}" = 0 ]; then
+      printf "%-10s\t\t[NOT INSTALLED]\n" "${1}"
+    else
+      printf "%-10s\t\t[OK]\n" "${1}"
+    fi
+
+  # Check for other tools
   elif [ "$(command -v ${1})" = "" ]; then
     printf "%-10s\t\t[NOT INSTALLED]\n" "${1}"
   else
