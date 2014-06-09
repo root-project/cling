@@ -21,13 +21,8 @@
 # set -o xtrace
 
 function check_cygwin {
-  if [ "${1}" = "Cygwin" ]; then
-    if [ "${OS}" = "Cygwin" ]; then
-      printf "%-10s\t\t[OK]\n" "${1}"
-    else
-      printf "%-10s\t\t[NOT INSTALLED]\n" "${1}"
-    fi
-
+  if [ "${1}" = "cygwin" ]; then
+    printf "%-10s\t\t[OK]\n" "${1}"
   elif [ "$(command -v ${1})" = "" ]; then
     printf "%-10s\t\t[NOT INSTALLED]\n" "${1}"
   else
