@@ -169,8 +169,7 @@ EOT
         fi
         fetch_llvm
         fetch_clang
-        cd ${CLING_SRC_DIR}
-        fetch_cling $(git describe --match v* --abbrev=0 --tags | head -n 1)
+        fetch_cling last-stable
 
         if [ ${VALUE} = "tar" ]; then
           set_version
@@ -184,7 +183,7 @@ EOT
           tarball
           cleanup
         elif [ ${VALUE} = "deb" ]; then
-          VERSION=$(git describe --match v* --abbrev=0 --tags | head -n 1 | sed s/v//g)
+          set_version
           compile ${workdir}/cling-${VERSION}
           install_prefix
           test_cling

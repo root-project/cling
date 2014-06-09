@@ -142,16 +142,30 @@ function fetch_clang {
 
 # Fetch the sources for Cling
 function fetch_cling {
-  if [ -d "${srcdir}/tools/cling" ]; then
-    cd "${srcdir}/tools/cling"
+  if [ -d ${CLING_SRC_DIR} ]; then
+    cd ${CLING_SRC_DIR}
     git clean -f -x -d
     git fetch --tags
-    git checkout ${1}
-    git pull origin ${1}
+
+    if [ ${1} = "last-stable" ]; then
+      checkout_branch=$(git describe --match v* --abbrev=0 --tags | head -n 1)
+    elif [ ${1} = "master" ]; then
+      checkout_branch="master"
+    fi
+
+    git checkout ${checkout_branch}
+    git pull origin ${checkout_branch}
   else
-    git clone http://root.cern.ch/git/cling.git  "${srcdir}/tools/cling"
-    cd "${srcdir}/tools/cling"
-    git checkout ${1}
+    git clone http://root.cern.ch/git/cling.git  ${CLING_SRC_DIR}
+    cd ${CLING_SRC_DIR}
+
+    if [ ${1} = "last-stable" ]; then
+      checkout_branch=$(git describe --match v* --abbrev=0 --tags | head -n 1)
+    elif [ ${1} = "master" ]; then
+      checkout_branch="master"
+    fi
+
+    git checkout ${checkout_branch}
   fi
 }
 
