@@ -47,12 +47,12 @@ might also want to configure GnuPG to not ask for the passphrase while signing
 the Debian package.
 
 ####Windows (Cygwin)
-Below is a list of required packages for Windows (Win32-x86).
+Below is a list of required packages for Windows (Win32-x86):
 
-[CMake]  
+[CMake] for Windows  
 [MSYS Git] or Git provided by Cygwin  
 [Cygwin]  
-[Python]  
+[Python] for Windows  
 wget - provided by Cygwin  
 Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012
 [CMake]:http://www.cmake.org/
@@ -98,9 +98,9 @@ cd tools/packaging/
 ```
 **Tip:** To make things easy for yourself in future, you should keep the Cygwin
 installer file you had downloaded previously in a safe place. Cygwin allows an
-easy way to install new packages with the following comand:
+easy way to install new packages through command-line. See an example below:
 ```sh
-setup-x86.exe -nqP git, wget
+/cygdrive/c/cygwin/setup-x86.exe -nqP wget
 ```
 
 License
