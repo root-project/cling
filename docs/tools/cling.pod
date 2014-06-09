@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-cling - the LVM based interactive C++ interpreter
+cling - the LLVM based interactive C++ interpreter
 
 =head1 SYNOPSIS
 
@@ -525,13 +525,6 @@ Do not search clang's builtin directory for include files.
 
 
 =back
-
-
-
-=cut
-
-=pod
-
 
 =head1 ENVIRONMENT
 
