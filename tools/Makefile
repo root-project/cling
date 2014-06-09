@@ -9,6 +9,6 @@
 ##===----------------------------------------------------------------------===##
 
 LEVEL := ../../..
-DIRS := driver
+DIRS := driver fwd
 
 include $(LEVEL)/Makefile.common
