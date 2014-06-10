@@ -13,6 +13,7 @@
 #include "DynamicLookup.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
+#include "AutoloadingVisitor.h"
 
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/ClangInternalState.h"
@@ -1185,5 +1186,23 @@ namespace cling {
 
   void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {
     m_Executor->AddAtExitFunc(Func, Arg, getLastTransaction());
+  }
+
+  void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
+                                           llvm::StringRef outFile) {
+    cling::Transaction* T;
+    this->declare(std::string("#include \"") + std::string(inFile) + "\"", &T);
+    for(auto dcit=T->decls_begin(); dcit!=T->decls_end(); ++dcit) {
+      Transaction::DelayCallInfo& dci = *dcit;
+
+      for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
+        clang::Decl* decl = *dit;
+        auto visitor = new AutoloadingVisitor(inFile,outFile);
+        visitor->TraverseDecl(decl);
+        delete visitor;
+      }
+
+    }
+    return;
   }
 } // namespace cling

@@ -614,6 +614,9 @@ namespace cling {
     ///
     void AddAtExitFunc(void (*Func) (void*), void* Arg);
 
+
+    void GenerateAutoloadingMap(llvm::StringRef inFile,llvm::StringRef outFile);
+
     friend class runtime::internal::LifetimeHandler;
     // FIXME: workaround until JIT supports exceptions
     static jmp_buf*& getNullDerefJump() { return m_JumpBuf; }
