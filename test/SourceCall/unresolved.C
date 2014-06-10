@@ -18,10 +18,8 @@ extern "C" int functionWithoutDefinition();
 
 int i = 42;
 i = functionWithoutDefinition();
-// CHECK: IncrementalExecutor: use of undefined symbol 'functionWithoutDefinition'!
 // CHECK: IncrementalExecutor::executeFunction: symbol 'functionWithoutDefinition' unresolved while linking function 
 i = foo();
-// CHECK: IncrementalExecutor: use of undefined symbol '{{.*}}foo{{.*}}'!
 // CHECK: IncrementalExecutor::executeFunction: symbol '{{.*}}foo{{.*}}' unresolved while linking function 
 
 extern "C" int printf(const char* fmt, ...);
@@ -34,7 +32,6 @@ functionWithoutDefinition();
 // CHECK: IncrementalExecutor::executeFunction: symbol 'functionWithoutDefinition' unresolved while linking function 
 
 bar();
-// CHECK: IncrementalExecutor: use of undefined symbol '{{.*}}foo{{.*}}'!
 // CHECK: IncrementalExecutor::executeFunction: symbol '{{.*}}foo{{.*}}' unresolved while linking function 
 bar();
 // CHECK: IncrementalExecutor: calling unresolved symbol, see previous error message!

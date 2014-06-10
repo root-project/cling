@@ -39,5 +39,6 @@ TemplatedF(__my_i)
 // CHECK: (int) 110
 
 TemplatedF((double)3.14) 
-// CHECK: use of undefined symbol '_Z10TemplatedFIdET_S0_'
+// CHECK: IncrementalExecutor::executeFunction: symbol '_Z10TemplatedFIdET_S0_' unresolved while linking function 
+
 .q
