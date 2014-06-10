@@ -20,6 +20,7 @@ add_cling_library(clingInterpreter
   AutoSynthesizer.cpp
   AutoloadingTransform.cpp
   AutoloadCallback.cpp
+  AutoloadingVisitor.cpp
   BackendPass.cpp
   CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
