@@ -41,6 +41,9 @@ function debianize {
 cling source: source-is-missing
 EOF
 
+: '
+# This section is no longer valid. I have kept it as a reference if we plan to
+# distribute libcling.so or any other library with the package.
   echo "Create file: debian/postinst"
   cat >> debian/postinst << EOF
 #! /bin/sh -e
@@ -60,6 +63,7 @@ ldconfig -l /usr/lib/libclang.so
 
 exit 0
 EOF
+'
 
   echo "Create file: debian/cling.install"
   cat >> debian/cling.install << EOF
