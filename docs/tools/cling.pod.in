@@ -56,14 +56,7 @@ In addition Cling will be able to parse the CINT specific C++ extensions.
 B<Cling Metaprocessor> provides convenient and easy to use interface for
 changing the interpreter's internal state or for executing handy commands.
 Cling provides the following metaprocessor commands:
-
-B<syntax:> .(command), where command is:
-
-    .x filename.cxx - loads filename and calls void filename() if defined
-    .L library | filename.cxx - loads library or filename.cxx
-    .printAST - shows the abstract syntax tree after each processed entity
-    .I path - adds an include path
-
+%help_msg%
 
 =item B<Used Technologies>
 
