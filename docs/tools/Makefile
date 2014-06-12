@@ -108,7 +108,8 @@ install-ps:: $(PS)
 	$(Verb) $(MKDIR) $(PS_DIR)
 	$(Verb) $(DataInstall) $(PS) $(PS_DIR)
 
-install-local:: podgen | $(INSTALL_TARGETS)
+install-local:: podgen
+	$(MAKE) $(INSTALL_TARGETS)
 
 uninstall-local::
 	$(Echo) Uninstalling Cling Tools Documentation
