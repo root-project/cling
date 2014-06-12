@@ -80,6 +80,9 @@ html: $(HTML)
 man: $(MAN)
 ps: $(PS)
 
+podgen:
+	@python $(SRC_DOC_DIR)/in2pod.py $(PROJ_OBJ_ROOT)/Release+Asserts/bin/cling
+
 EXTRA_DIST := $(POD)
 
 clean-local::
@@ -105,7 +108,7 @@ install-ps:: $(PS)
 	$(Verb) $(MKDIR) $(PS_DIR)
 	$(Verb) $(DataInstall) $(PS) $(PS_DIR)
 
-install-local:: $(INSTALL_TARGETS)
+install-local:: podgen | $(INSTALL_TARGETS)
 
 uninstall-local::
 	$(Echo) Uninstalling Cling Tools Documentation
