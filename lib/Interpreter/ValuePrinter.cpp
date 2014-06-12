@@ -114,7 +114,12 @@ static void StreamArr(llvm::raw_ostream& o, const void* V, clang::QualType Ty,
     size_t Size = (size_t)APSize.getZExtValue();
     o << "{ ";
     for (size_t i = 0; i < Size; ++i) {
-      StreamValue(o, *((const char**) ((const char*)V + i * ElBytes)), ElementTy, interp);
+      // Handle the case of constant size array of pointers. Eg. const char*[]
+      if (ElementTy->isPointerType())
+        StreamValue(o, *(const char**)V + i * ElBytes, ElementTy, interp);
+      else
+        StreamValue(o, (const char*)V + i * ElBytes, ElementTy, interp);
+
       if (i + 1 < Size) {
         if (i == 4) {
           o << "...";
@@ -395,8 +400,13 @@ namespace valuePrinterInternal {
     }
     else if (Ty->isFunctionType())
       StreamValue(o, &V, Ty, Interp);
-    else
+    else if (Ty->isPointerType() || Ty->isReferenceType()
+              || Ty->isArrayType())
       StreamValue(o, V.getPtr(), Ty, Interp);
+    else {
+      assert(0 && "I don't know what I am printing.");
+      StreamValue(o, &V, Ty, Interp);
+    }
   }
 
   void printType_Default(llvm::raw_ostream& o, const Value& V) {
