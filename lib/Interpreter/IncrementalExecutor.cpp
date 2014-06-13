@@ -267,8 +267,9 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
            e = m_unresolvedSymbols.end(); i != e; ++i) {
       // FIXME: This causes a lot of test failures, for some reason it causes
       // the call to HandleMissingFunction to be elided.
-      //unsigned diagID = m_Diags.getCustomDiagID(clang::DiagnosticsEngine::Error,
-      //                                          "%0 unresolved while jitting %1");
+      unsigned diagID = m_Diags.getCustomDiagID(clang::DiagnosticsEngine::Error,
+                                                "%0 unresolved while jitting %1");
+      (void)diagID;
       //m_Diags.Report(diagID) << *i << funcname; // TODO: demangle the names.
 
       llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
