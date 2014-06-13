@@ -287,11 +287,19 @@ namespace cling {
         //return ASTNodeInfo(Node, /*needs eval*/false);
       }
 
-    // Visit the other parts - they will fall naturally into Stmt or
-    // CompoundStmt where we know what to do.
-    Visit(Node->getThen());
-    if (Stmt* ElseExpr = Node->getElse())
-      Visit(ElseExpr);
+    // Visit the other parts - they will fall naturally into CompoundStmt
+    // where we know what to do. For Stmt, though, we need to substitute here,
+    // knowing the "target" type.
+    ASTNodeInfo thenInfo = Visit(Node->getThen());
+    if (thenInfo.isForReplacement())
+      Node->setThen(SubstituteUnknownSymbol(m_Context->VoidTy,
+                                            thenInfo.getAs<Expr>()));
+    if (Stmt* ElseExpr = Node->getElse()) {
+      ASTNodeInfo elseInfo = Visit(ElseExpr);
+      if (elseInfo.isForReplacement())
+        Node->setElse(SubstituteUnknownSymbol(m_Context->VoidTy,
+                                              elseInfo.getAs<Expr>()));
+    }
 
     return ASTNodeInfo(Node, false);
   }
@@ -564,7 +572,7 @@ namespace cling {
 
   ASTNodeInfo EvaluateTSynthesizer::VisitCallExpr(CallExpr* E) {
     // FIXME: Maybe we need to handle the arguments
-    // ASTNodeInfo NewNode = Visit(E->getCallee());
+    //ASTNodeInfo NewNode = Visit(E->getCallee());
     return ASTNodeInfo (E, IsArtificiallyDependent(E));
   }
 
