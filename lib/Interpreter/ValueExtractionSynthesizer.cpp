@@ -182,7 +182,9 @@ namespace {
       if(RD->hasTrivialCopyConstructor()) return true;
       // Lookup the copy canstructor and check its accessiblity.
       if (CXXConstructorDecl* CD = S->LookupCopyingConstructor(RD, QT.getCVRQualifiers())) {
-        if (CD ->getAccess() == clang::AccessSpecifier::AS_public) return true;
+        if (!CD->isDeleted() && CD ->getAccess() == clang::AccessSpecifier::AS_public) {
+          return true;
+        }
       }
       return false;
     }
