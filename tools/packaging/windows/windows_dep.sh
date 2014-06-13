@@ -53,3 +53,76 @@ function build_nsis {
   wget "http://sourceforge.net/projects/nsis/files/NSIS%203%20Pre-release/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip"
   unzip -d ${workdir}/install_tmp nsis-${NSIS_VERSION}.zip
 }
+
+function make_nsi {
+  cd ${prefix}
+  # create installer script
+  echo "; Cling setup script ${prefix}" > ${workdir}/cling.nsi
+  # installer settings
+  cat >> ${workdir}/cling.nsi << EOF
+!define APP_NAME "Cling"
+!define COMP_NAME "CERN"
+!define WEB_SITE "http://cling.web.cern.ch/"
+!define VERSION "${VERSION}"
+!define COPYRIGHT "Copyright © 2007-2014 by the Authors; Developed by The ROOT Team, CERN and Fermilab"
+!define DESCRIPTION "Interactive C++ interpreter"
+!define INSTALLER_FILES "${CLING_SRC_DIR}/tools/packaging/windows"
+!define INSTALLER_NAME "$(basename ${prefix})-setup.exe"
+!define MAIN_APP_EXE "cling.exe"
+!define INSTALL_TYPE "SetShellVarContext current"
+!define PRODUCT_ROOT_KEY "HKLM"
+!define PRODUCT_KEY "Software\Cling"
+
+###############################################################################
+
+VIProductVersion  "\${VERSION}"
+VIAddVersionKey "ProductName"  "\${APP_NAME}"
+VIAddVersionKey "CompanyName"  "\${COMP_NAME}"
+VIAddVersionKey "LegalCopyright"  "\${COPYRIGHT}"
+VIAddVersionKey "FileDescription"  "\${DESCRIPTION}"
+VIAddVersionKey "FileVersion"  "\${VERSION}"
+
+###############################################################################
+
+Name "\${APP_NAME}"
+Caption "\${APP_NAME}"
+OutFile "\${INSTALLER_NAME}"
+BrandingText "\${APP_NAME}"
+XPStyle on
+InstallDir "C:\\Cling\\cling-\${VERSION}"
+
+###############################################################################
+; MUI settings
+!include "MUI.nsh"
+
+!define MUI_ABORTWARNING
+!define MUI_UNABORTWARNING
+!define MUI_HEADERIMAGE
+
+; Theme
+; Artwork TBA
+
+!insertmacro MUI_PAGE_WELCOME
+
+!define MUI_LICENSEPAGE_TEXT_BOTTOM "The source code for Cling is freely redistributable under the terms of the GNU Lesser General Public License (LGPL) as published by the Free Software Foundation."
+!define MUI_LICENSEPAGE_BUTTON "Next >"
+!insertmacro MUI_PAGE_LICENSE "${CLING_SRC_DIR}/LICENSE.TXT"
+
+!insertmacro MUI_PAGE_DIRECTORY
+
+!insertmacro MUI_PAGE_INSTFILES
+
+!define MUI_FINISHPAGE_RUN "\$INSTDIR\bin\\\${MAIN_APP_EXE}"
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_UNPAGE_FINISH
+
+!insertmacro MUI_LANGUAGE "English"
+
+###############################################################################
+EOF
+}
