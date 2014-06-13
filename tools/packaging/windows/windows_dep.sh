@@ -142,5 +142,54 @@ EOF
   cat >> ${workdir}/cling.nsi << EOF
 
 SectionEnd
+
+Section make_uninstaller
+ ; Write the uninstall keys for Windows
+ SetOutPath "\$INSTDIR"
+ WriteRegStr HKLM "Software\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "DisplayName" "Cling"
+ WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "UninstallString" "\$INSTDIR\uninstall.exe"
+ WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoModify" 1
+ WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoRepair" 1
+ WriteUninstaller "uninstall.exe"
+SectionEnd
+
+; start menu
+# TODO: This is currently hardcoded.
+Section "Shortcuts"
+
+ CreateDirectory "\$SMPROGRAMS\\Cling"
+ CreateShortCut "\$SMPROGRAMS\\Cling\\Uninstall.lnk" "\$INSTDIR\\uninstall.exe" "" "\$INSTDIR\\uninstall.exe" 0
+ CreateShortCut "\$SMPROGRAMS\Cling\\Cling.lnk" "\$INSTDIR\\bin\\cling.exe" "" "\$INSTDIR\\$ICON" 0
+ CreateDirectory "\$SMPROGRAMS\\Cling\\Documentation"
+ CreateShortCut "\$SMPROGRAMS\\Cling\\Documentation\\Cling (PS).lnk" "\$INSTDIR\\docs\\llvm\\ps\\cling.ps" "" "" 0
+ CreateShortCut "\$SMPROGRAMS\\Cling\\Documentation\\Cling (HTML).lnk" "\$INSTDIR\\docs\\llvm\\html\\cling\\cling.html" "" "" 0
+
+SectionEnd
+
+Section "Uninstall"
+
+ DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Cling"
+ DeleteRegKey HKLM "Software\Cling"
+
+ ; Remove shortcuts
+ Delete "\$SMPROGRAMS\Cling\*.*"
+ Delete "\$SMPROGRAMS\Cling\Documentation\*.*"
+ Delete "\$SMPROGRAMS\Cling\Documentation"
+ RMDir "\$SMPROGRAMS\Cling"
+
+EOF
+
+# insert dir list (backwards order) for uninstall files
+  for f in $(find ${prefix} -depth -type d -printf "%P\n"); do
+    winf=$(echo $f | sed 's,/,\\\\,g')
+    echo " Delete \"\$INSTDIR\\$winf\\*.*\"" >> ${workdir}/cling.nsi
+    echo " RmDir \"\$INSTDIR\\$winf\"" >> ${workdir}/cling.nsi
+  done
+
+# last bit of the uninstaller
+  cat >> ${workdir}/cling.nsi << EOF
+ Delete "\$INSTDIR\*.*"
+ RmDir "\$INSTDIR"
+SectionEnd
 EOF
 }
