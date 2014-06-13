@@ -54,6 +54,7 @@ Below is a list of required packages for Windows (Win32-x86):
 [Cygwin]  
 [Python] for Windows  
 wget - provided by Cygwin  
+unzip - provided by Cygwin  
 Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012
 [CMake]:http://www.cmake.org/
 [MSYS Git]:http://msysgit.github.io/
