@@ -124,5 +124,22 @@ InstallDir "C:\\Cling\\cling-\${VERSION}"
 !insertmacro MUI_LANGUAGE "English"
 
 ###############################################################################
+
+; file section
+Section "MainFiles"
+EOF
+
+  # Insert the files to be installed
+  IFS=$'\n'
+  for f in $(find ${prefix} -type d -printf "%P\n"); do
+    winf=$(echo $f | sed 's,/,\\\\,g')
+    echo " CreateDirectory \"\$INSTDIR\\$winf\"" >> ${workdir}/cling.nsi
+    echo " SetOutPath \"\$INSTDIR\\$winf\"" >> ${workdir}/cling.nsi
+    find "${prefix}/$f" -maxdepth 1 -type f -printf " File \"%p\"\n" >> ${workdir}/cling.nsi
+  done
+
+  cat >> ${workdir}/cling.nsi << EOF
+
+SectionEnd
 EOF
 }
