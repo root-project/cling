@@ -42,7 +42,7 @@ function check_cygwin {
   fi
 }
 
-function build_nsis {
+function get_nsis {
   box_draw "Check SourceForge project page of NSIS"
   NSIS_VERSION=$(wget -q -O- 'http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/' | \
     grep '<a href="' | \
