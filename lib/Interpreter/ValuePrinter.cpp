@@ -116,7 +116,7 @@ static void StreamArr(llvm::raw_ostream& o, const void* V, clang::QualType Ty,
     for (size_t i = 0; i < Size; ++i) {
       // Handle the case of constant size array of pointers. Eg. const char*[]
       if (ElementTy->isPointerType())
-        StreamValue(o, *(const char**)V + i * ElBytes, ElementTy, interp);
+        StreamValue(o, *(const char* const *)V + i * ElBytes, ElementTy, interp);
       else
         StreamValue(o, (const char*)V + i * ElBytes, ElementTy, interp);
 
