@@ -56,7 +56,9 @@ function get_nsis {
 }
 
 function make_nsi {
-  cd ${prefix}
+  cd ${CLING_SRC_DIR}
+  VIProductVersion=$(git describe --match v* --abbrev=0 --tags | head -n 1)
+  cd ${workdir}
   # create installer script
   echo "; Cling setup script ${prefix}" > ${workdir}/cling.nsi
   # installer settings
@@ -76,12 +78,12 @@ function make_nsi {
 
 ###############################################################################
 
-VIProductVersion  "\${VERSION}"
+VIProductVersion  "${VIProductVersion/v/}.0.0"
 VIAddVersionKey "ProductName"  "\${APP_NAME}"
 VIAddVersionKey "CompanyName"  "\${COMP_NAME}"
 VIAddVersionKey "LegalCopyright"  "\${COPYRIGHT}"
 VIAddVersionKey "FileDescription"  "\${DESCRIPTION}"
-VIAddVersionKey "FileVersion"  "\${VERSION}"
+VIAddVersionKey "ProductVersion"  "\${VERSION}"
 
 ###############################################################################
 
