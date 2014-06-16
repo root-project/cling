@@ -70,7 +70,6 @@ function make_nsi {
 !define VERSION "${VERSION}"
 !define COPYRIGHT "Copyright © 2007-2014 by the Authors; Developed by The ROOT Team, CERN and Fermilab"
 !define DESCRIPTION "Interactive C++ interpreter"
-!define INSTALLER_FILES "$(cygpath --windows --absolute ${CLING_SRC_DIR}/tools/packaging/windows)"
 !define INSTALLER_NAME "$(basename ${prefix})-setup.exe"
 !define MAIN_APP_EXE "cling.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
@@ -105,7 +104,8 @@ InstallDir "C:\\Cling\\cling-\${VERSION}"
 !define MUI_HEADERIMAGE
 
 ; Theme
-; Artwork TBA
+!define MUI_ICON "$(cygpath --windows --absolute ${CLING_SRC_DIR}/tools/packaging/windows/ROOT.ico)"
+!define MUI_UNICON "$(cygpath --windows --absolute ${workdir}/install_tmp/nsis-${NSIS_VERSION}/Contrib/Graphics/Icons/orange-uninstall.ico)"
 
 !insertmacro MUI_PAGE_WELCOME
 
