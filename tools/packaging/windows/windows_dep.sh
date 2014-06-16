@@ -67,7 +67,7 @@ function make_nsi {
 !define VERSION "${VERSION}"
 !define COPYRIGHT "Copyright © 2007-2014 by the Authors; Developed by The ROOT Team, CERN and Fermilab"
 !define DESCRIPTION "Interactive C++ interpreter"
-!define INSTALLER_FILES "${CLING_SRC_DIR}/tools/packaging/windows"
+!define INSTALLER_FILES "$(cygpath --windows --absolute ${CLING_SRC_DIR}/tools/packaging/windows)"
 !define INSTALLER_NAME "$(basename ${prefix})-setup.exe"
 !define MAIN_APP_EXE "cling.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
@@ -108,7 +108,7 @@ InstallDir "C:\\Cling\\cling-\${VERSION}"
 
 !define MUI_LICENSEPAGE_TEXT_BOTTOM "The source code for Cling is freely redistributable under the terms of the GNU Lesser General Public License (LGPL) as published by the Free Software Foundation."
 !define MUI_LICENSEPAGE_BUTTON "Next >"
-!insertmacro MUI_PAGE_LICENSE "${CLING_SRC_DIR}/LICENSE.TXT"
+!insertmacro MUI_PAGE_LICENSE "$(cygpath --windows --absolute ${CLING_SRC_DIR}/LICENSE.TXT)"
 
 !insertmacro MUI_PAGE_DIRECTORY
 
@@ -137,7 +137,9 @@ EOF
     winf=$(echo $f | sed 's,/,\\\\,g')
     echo " CreateDirectory \"\$INSTDIR\\$winf\"" >> ${workdir}/cling.nsi
     echo " SetOutPath \"\$INSTDIR\\$winf\"" >> ${workdir}/cling.nsi
-    find "${prefix}/$f" -maxdepth 1 -type f -printf " File \"%p\"\n" >> ${workdir}/cling.nsi
+    for p in $(find "${prefix}/$f" -maxdepth 1 -type f); do
+      echo " File \"$(cygpath --windows --absolute $p)\"" >> ${workdir}/cling.nsi
+    done
   done
 
   cat >> ${workdir}/cling.nsi << EOF
