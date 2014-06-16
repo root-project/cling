@@ -159,7 +159,7 @@ EOT
           test_cling
           get_nsis
           make_nsi
-          # build_nsis
+          build_nsis
           # cleanup
         fi
         ;;
@@ -198,7 +198,7 @@ EOT
           test_cling
           get_nsis
           make_nsi
-          # build_nsis
+          build_nsis
           # cleanup
         fi
         ;;

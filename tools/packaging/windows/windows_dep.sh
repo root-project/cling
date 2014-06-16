@@ -56,6 +56,7 @@ function get_nsis {
 }
 
 function make_nsi {
+  box_draw "Generating cling.nsi"
   cd ${CLING_SRC_DIR}
   VIProductVersion=$(git describe --match v* --abbrev=0 --tags | head -n 1)
   cd ${workdir}
@@ -197,4 +198,9 @@ EOF
  RmDir "\$INSTDIR"
 SectionEnd
 EOF
+}
+
+function build_nsis {
+  box_draw "Building NSIS executable from cling.nsi"
+  ${workdir}/install_tmp/nsis-${NSIS_VERSION}/makensis.exe -V3 ${workdir}/cling.nsi
 }
