@@ -52,6 +52,7 @@ function get_nsis {
   box_draw "Download NSIS compiler (makensis.exe)"
   wget "http://sourceforge.net/projects/nsis/files/NSIS%203%20Pre-release/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip"
   unzip -d ${workdir}/install_tmp nsis-${NSIS_VERSION}.zip
+  chmod -R 775 ${workdir}/install_tmp/nsis-${NSIS_VERSION}
 }
 
 function make_nsi {
