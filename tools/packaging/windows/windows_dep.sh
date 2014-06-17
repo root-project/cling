@@ -83,7 +83,7 @@ VIAddVersionKey "ProductName"  "\${APP_NAME}"
 VIAddVersionKey "CompanyName"  "\${COMP_NAME}"
 VIAddVersionKey "LegalCopyright"  "\${COPYRIGHT}"
 VIAddVersionKey "FileDescription"  "\${DESCRIPTION}"
-VIAddVersionKey "ProductVersion"  "\${VERSION}"
+VIAddVersionKey "FileVersion"  "\${VERSION}"
 
 ###############################################################################
 
