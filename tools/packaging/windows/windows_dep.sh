@@ -202,5 +202,5 @@ EOF
 
 function build_nsis {
   box_draw "Building NSIS executable from cling.nsi"
-  ${workdir}/install_tmp/nsis-${NSIS_VERSION}/makensis.exe -V3 ${workdir}/cling.nsi
+  ${workdir}/install_tmp/nsis-${NSIS_VERSION}/makensis.exe -V3 $(cygpath --windows --absolute ${workdir}/cling.nsi)
 }
