@@ -142,8 +142,23 @@ function fetch_clang {
 
 # Fetch the sources for Cling
 function fetch_cling {
-  if [ -d ${CLING_SRC_DIR} ]; then
+
+  function get_fresh_cling {
+    # ${CLING_GIT_URL} can be overridden. More information in README.md.
+    CLING_GIT_URL=${CLING_GIT_URL:-"http://root.cern.ch/git/cling.git"}
+    git clone ${CLING_GIT_URL} ${CLING_SRC_DIR}
     cd ${CLING_SRC_DIR}
+
+    if [ ${1} = "last-stable" ]; then
+      checkout_branch=$(git describe --match v* --abbrev=0 --tags | head -n 1)
+    elif [ ${1} = "master" ]; then
+      checkout_branch="master"
+    fi
+
+    git checkout ${checkout_branch}
+  }
+
+  function update_old_cling {
     git clean -f -x -d
     git fetch --tags
 
@@ -155,17 +170,24 @@ function fetch_cling {
 
     git checkout ${checkout_branch}
     git pull origin ${checkout_branch}
-  else
-    git clone http://root.cern.ch/git/cling.git  ${CLING_SRC_DIR}
+  }
+
+  if [ -d ${CLING_SRC_DIR} ]; then
     cd ${CLING_SRC_DIR}
-
-    if [ ${1} = "last-stable" ]; then
-      checkout_branch=$(git describe --match v* --abbrev=0 --tags | head -n 1)
-    elif [ ${1} = "master" ]; then
-      checkout_branch="master"
+    if [ ! -z ${CLING_GIT_URL} ]; then
+      grep -q ${CLING_GIT_URL} ${CLING_SRC_DIR}/.git/config
+      if [ ${?} = 0 ]; then
+        update_old_cling ${1}
+      else
+        cd ${srcdir}
+        rm -Rf ${CLING_SRC_DIR}
+        get_fresh_cling ${1}
+      fi
+    else
+      update_old_cling ${1}
     fi
-
-    git checkout ${checkout_branch}
+  else
+    get_fresh_cling ${1}
   fi
 }
 
