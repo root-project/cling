@@ -11,7 +11,7 @@ import inspect
 SCRIPT_DIR=os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 cling_binary=sys.argv[1]
 
-cmd=subprocess.Popen(["echo .help | %s --nologo | fmt -s" %(cling_binary)], stdout=subprocess.PIPE, shell=True)
+cmd=subprocess.Popen(["echo .help | %s --nologo" %(cling_binary)], stdout=subprocess.PIPE, shell=True)
 (out, err) = cmd.communicate()
 if not err:
 	pod_out=open('%s/cling.pod'%(SCRIPT_DIR), 'w')
