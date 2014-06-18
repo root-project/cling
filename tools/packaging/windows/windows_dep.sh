@@ -104,7 +104,7 @@ InstallDir "C:\\Cling\\cling-\${VERSION}"
 !define MUI_HEADERIMAGE
 
 ; Theme
-!define MUI_ICON "$(cygpath --windows --absolute ${CLING_SRC_DIR}/tools/packaging/windows/ROOT.ico)"
+!define MUI_ICON "$(cygpath --windows --absolute ${CLING_SRC_DIR}/tools/packaging/windows/LLVM.ico)"
 !define MUI_UNICON "$(cygpath --windows --absolute ${workdir}/install_tmp/nsis-${NSIS_VERSION}/Contrib/Graphics/Icons/orange-uninstall.ico)"
 
 !insertmacro MUI_PAGE_WELCOME
