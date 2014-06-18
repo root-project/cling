@@ -237,11 +237,11 @@ namespace cling {
   void MetaSema::actOnhelpCommand() const {
     std::string& metaString = m_Interpreter.getOptions().MetaString;
     llvm::raw_ostream& outs = m_MetaProcessor.getOuts();
-    outs << "\nCling (C/C++ interpreter) meta commands usage\n"
-      "All commands must be preceded by a '" << metaString << "', except\n"
-      "for the evaluation statement { }\n"
-      "═══════════════════════════════════════════════════════════════════════════════\n"
-      "Syntax: " << metaString << "Command [arg0 arg1 ... argN]\n"
+    outs << "\n Cling (C/C++ interpreter) meta commands usage\n"
+      " All commands must be preceded by a '" << metaString << "', except\n"
+      " for the evaluation statement { }\n"
+      " ==============================================================================\n"
+      " Syntax: " << metaString << "Command [arg0 arg1 ... argN]\n"
       "\n"
       "   " << metaString << "L <filename>\t\t- Load the given file or library\n\n"
 
