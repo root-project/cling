@@ -976,7 +976,6 @@ INCLUDE_LLVM_FILES := \
   include/llvm/Support/InstIterator.h \
   include/llvm/Support/LeakDetector.h \
   include/llvm/Support/LEB128.h \
-  include/llvm/Support/LICENSE.TXT \
   include/llvm/Support/LineIterator.h \
   include/llvm/Support/Locale.h \
   include/llvm/Support/LockFileManager.h \
