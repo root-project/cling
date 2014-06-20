@@ -221,36 +221,34 @@ function compile {
 
   if [ "${OS}" = "Cygwin" ]; then
     box_draw "Configuring Cling with CMake and generating Visual Studio 11 project files"
-    cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(cygpath --windows --absolute ${workdir}/install_tmp) ../$(basename ${srcdir})
+    cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(cygpath --windows --absolute ${TMP_PREFIX}) ../$(basename ${srcdir})
 
     box_draw "Building Cling (using ${cores} cores)"
     cmake --build . --target clang --config Release
     cmake --build . --target cling --config Release
+
     box_draw "Install compiled binaries to prefix (using ${cores} cores)"
     cmake --build . --target INSTALL --config Release
   else
     box_draw "Configuring Cling for compilation"
-    ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${workdir}/install_tmp --enable-optimized=yes --enable-cxx11
+    ${srcdir}/configure --disable-compiler-version-checks --with-python=${python} --enable-targets=host --prefix=${TMP_PREFIX} --enable-optimized=yes --enable-cxx11
 
     box_draw "Building Cling (using ${cores} cores)"
     make -j${cores}
+
+    box_draw "Install compiled binaries to prefix (using ${cores} cores)"
+    make install -j${cores} prefix=${TMP_PREFIX}
   fi
 }
 
 function install_prefix {
-    if [ "${OS}" = "Cygwin" ]; then
-      box_draw "Install compiled binaries to prefix (using ${cores} cores)"
-      cmake --build . --target INSTALL --config Release
-    else
-      box_draw "Install compiled binaries to prefix (using ${cores} cores)"
-      make install -j${cores}
-    fi
 
-    for f in $(find ${workdir}/install_tmp -type f -printf "%P\n"); do
-      grep -q $(echo $f | sed "s|${workdir}/install_tmp/||g")[[:space:]] ${HOST_CLING_SRC_DIR}/dist-files.mk
+    box_draw "Filtering Cling's libraries and binaries"
+    for f in $(find ${TMP_PREFIX} -type f -printf "%P\n"); do
+      grep -q $(echo $f | sed "s|${TMP_PREFIX}||g")[[:space:]] ${HOST_CLING_SRC_DIR}/dist-files.mk
       if [ ${?} = 0 ]; then
         mkdir -p ${prefix}/$(dirname $f)
-        cp ${workdir}/install_tmp/$f ${prefix}/$f
+        cp ${TMP_PREFIX}/$f ${prefix}/$f
       fi
     done
 }
@@ -275,8 +273,8 @@ function cleanup {
   rm -Rf ${workdir}/builddir
   echo "Remove directory: ${prefix}"
   rm -Rf ${prefix}
-  echo "Remove directory: ${workdir}/install_prefix"
-  rm -Rf ${workdir}/install_tmp
+  echo "Remove directory: ${TMP_PREFIX}"
+  rm -Rf ${TMP_PREFIX}
 }
 
 # Initialize variables with details of the platform and Operating System

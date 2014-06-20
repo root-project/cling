@@ -25,6 +25,7 @@
 # TODO: Change workdir to a suitable path on your system (or Electric Commander)
 workdir=~/ec/build
 srcdir=${workdir}/cling-src
+TMP_PREFIX="/var/tmp/cling_obj"
 CLING_SRC_DIR=${srcdir}/tools/cling
 HOST_CLING_SRC_DIR=$(dirname $(readlink -f ${0}))
 
@@ -224,6 +225,17 @@ EOT
         tarball_deb
         debianize
         cleanup_deb
+        ;;
+    --make-distribution)
+        # This is an internal option in CPT, meant to be integrated into
+        # Cling's build system.
+
+        prefix=$(grep "LLVM_PREFIX=" ${LLVM_OBJ_ROOT}/config.log | sed -e "s|LLVM_PREFIX=||g" -e "s|'||g")
+        set_version
+        install_prefix
+        test_cling
+        # Cleanup
+        rm -Rf ${TMP_PREFIX}
         ;;
     *)
         echo "Error: unknown parameter \"${PARAM}\""
