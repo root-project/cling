@@ -41,13 +41,15 @@ function usage {
   Usage: ${0##/*/} [options]
 
   Options:
-  -h|--help				Display this message and exit
-  -c|--check-requirements		Check if packages required by the script are installed
-  --current-dev={tar,deb}		Compile the latest development snapshot and produce a tarball/Debian package
-  --last-stable={tar,deb}		Compile the last stable snapshot and produce a tarball/Debian package
-  --tarball-tag={tag}			Compile the snapshot of a given tag and produce a tarball
-  --deb-tag={tag}			Compile the snapshot of a given tag and produce a Debian package
+  -h|--help			Display this message and exit
+  -c|--check-requirements	Check if packages required by the script are installed
+  --current-dev={pkg-format}	Compile the latest development snapshot and produce a package in the given format
+  --last-stable={pkg-format}	Compile the last stable snapshot and produce a package in the given format
+  --tarball-tag={tag}		Compile the snapshot of a given tag and produce a tarball
+  --deb-tag={tag}		Compile the snapshot of a given tag and produce a Debian package
 
+  Supported values of "pkg-format": tar | deb | nsis
+  Supported values of "tag": Any Git tag in Cling's repository. Example, v0.1
 EOT
 }
 
@@ -82,7 +84,7 @@ while [ "${1}" != "" ]; do
         usage
         exit
         ;;
-    --check-requirements)
+    -c | --check-requirements)
         box_draw "Check if required softwares are available on this system"
         if [ "${DIST}" = "Ubuntu" ]; then
           check_ubuntu git

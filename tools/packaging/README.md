@@ -42,9 +42,8 @@ sudo apt-get install git wget debhelper devscripts gnupg python
 Make sure GnuPG is properly set up with your correct fingerprint. These
 credentials are needed to sign the Debian package and create Debian changelogs.
 On a build machine (Electric Commander), make sure the fingerprint is of the
-person who is supposed to sign the official uploads. On a build machine, you
-might also want to configure GnuPG to not ask for the passphrase while signing
-the Debian package.
+person who is supposed to sign the official uploads. You might also want to
+configure GnuPG to not ask for the passphrase while signing the Debian package.
 
 ####Windows (Cygwin)
 Below is a list of required packages for Windows (Win32-x86):
@@ -104,8 +103,24 @@ easy way to install new packages through command-line. See an example below:
 /cygdrive/c/cygwin/setup-x86.exe -nqP wget
 ```
 
+###Usage
+```sh
+cd tools/packaging/
+./cpt.sh [options]
+```
+  Options:
+  -h|--help			Display this message and exit
+  -c|--check-requirements	Check if packages required by the script are installed
+  --current-dev={pkg-format}	Compile the latest development snapshot and produce a package in the given format
+  --last-stable={pkg-format}	Compile the last stable snapshot and produce a package in the given format
+  --tarball-tag={tag}		Compile the snapshot of a given tag and produce a tarball
+  --deb-tag={tag}		Compile the snapshot of a given tag and produce a Debian package
+
+  Supported values of "pkg-format": tar | deb | nsis
+  Supported values of "tag": Any Git tag in Cling's repository. Example, v0.1
+
 License
-----
+=======
 Cling Packaging Tool is a part of Cling project and released under the same
 license terms of Cling. You can choose to license it under the University of
 Illinois Open Source License or the GNU Lesser General Public License. See
