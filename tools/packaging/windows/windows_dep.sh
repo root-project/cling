@@ -51,8 +51,10 @@ function get_nsis {
   echo "Latest version of NSIS is: "${NSIS_VERSION}
   box_draw "Download NSIS compiler (makensis.exe)"
   wget "http://sourceforge.net/projects/nsis/files/NSIS%203%20Pre-release/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip"
-  unzip -d ${workdir}/install_tmp nsis-${NSIS_VERSION}.zip
-  chmod -R 775 ${workdir}/install_tmp/nsis-${NSIS_VERSION}
+  wget "http://stahlworks.com/dev/unzip.exe" -P ${TMP_PREFIX}/bin
+  chmod 775 ${TMP_PREFIX}/bin/unzip.exe
+  ${TMP_PREFIX}/bin/unzip.exe -d ${TMP_PREFIX} nsis-${NSIS_VERSION}.zip
+  chmod -R 775 ${TMP_PREFIX}/nsis-${NSIS_VERSION}
 }
 
 function make_nsi {
@@ -202,5 +204,5 @@ EOF
 
 function build_nsis {
   box_draw "Building NSIS executable from cling.nsi"
-  ${workdir}/install_tmp/nsis-${NSIS_VERSION}/makensis.exe -V3 $(cygpath --windows --absolute ${workdir}/cling.nsi)
+  ${TMP_PREFIX}/nsis-${NSIS_VERSION}/makensis.exe -V3 $(cygpath --windows --absolute ${workdir}/cling.nsi)
 }
