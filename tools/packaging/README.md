@@ -107,16 +107,34 @@ easy way to install new packages through command-line. See an example below:
 cd tools/packaging/
 ./cpt.sh [options]
 ```
-  Options:
-  -h|--help			Display this message and exit
-  -c|--check-requirements	Check if packages required by the script are installed
-  --current-dev={pkg-format}	Compile the latest development snapshot and produce a package in the given format
-  --last-stable={pkg-format}	Compile the last stable snapshot and produce a package in the given format
-  --tarball-tag={tag}		Compile the snapshot of a given tag and produce a tarball
-  --deb-tag={tag}		Compile the snapshot of a given tag and produce a Debian package
 
-  Supported values of "pkg-format": tar | deb | nsis
-  Supported values of "tag": Any Git tag in Cling's repository. Example, v0.1
+```
+Options:
+-h|--help                     Display this message and exit
+-c|--check-requirements       Check if packages required by the script are installed
+--current-dev={pkg-format}    Compile the latest development snapshot and produce a package in the given format
+--last-stable={pkg-format}    Compile the last stable snapshot and produce a package in the given format
+--tarball-tag={tag}           Compile the snapshot of a given tag and produce a tarball
+--deb-tag={tag}               Compile the snapshot of a given tag and produce a Debian package
+
+Supported values of "pkg-format": tar | deb | nsis
+Supported values of "tag": Any Git tag in Cling's repository. Example, v0.1
+```
+
+###Overriding Default Variables
+There are a select number of variables which can be set to make CPT work
+differently. This eliminates the need to manually edit the script.
+You can overrride variables by using the following syntax:
+```$ VAR="VALUE" ./cpt.sh --current-dev=tar```.
+
+List of variables in CPT which can be overridden:
+- **CLING_GIT_URL**
+  * Specify the URL of the Git repository of Cling to be used by CPT
+  * **Default value:** "http://root.cern.ch/git/cling.git"
+  * **Usage:** ```CLING_GIT_URL="http://github.com/ani07nov/cling" ./cpt.sh --last-stable=deb```
+  * If the source directory already contains a clone of Cling, but the
+    supplied URL is different from the origin of the existing clone, then it is
+    removed and a fresh clone is done.
 
 License
 =======
