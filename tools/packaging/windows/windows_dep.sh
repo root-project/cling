@@ -132,6 +132,11 @@ InstallDir "C:\\Cling\\cling-\${VERSION}"
 
 ###############################################################################
 
+Function .onInit
+  Call DetectWinVer
+  Call CheckPrevVersion
+FunctionEnd
+
 ; file section
 Section "MainFiles"
 EOF
@@ -234,6 +239,42 @@ is_error:
   MessageBox MB_ICONSTOP|MB_OK "This version of Cling cannot be installed on this system. Cling is supported only on Windows NT systems. Current system: \$0 (version: \$1)"
   Abort
 done:
+  Pop \$1
+  Pop \$0
+FunctionEnd
+
+; Function to check any previously installed version of Cling in the system
+Function CheckPrevVersion
+  Push \$0
+  Push \$1
+  Push \$2
+  IfFileExists "\$INSTDIR\bin\cling.exe" 0 otherver
+  MessageBox MB_OK|MB_ICONSTOP "Another Cling installation (with the same version) has been detected. Please uninstall it first."
+  Abort
+otherver:
+  StrCpy \$0 0
+  StrCpy \$2 ""
+loop:
+  EnumRegKey \$1 \${PRODUCT_ROOT_KEY} "\${PRODUCT_KEY}" \$0
+  StrCmp \$1 "" loopend
+  IntOp \$0 \$0 + 1
+  StrCmp \$2 "" 0 +2
+  StrCpy \$2 "\$1"
+  StrCpy \$2 "\$2, \$1"
+  Goto loop
+loopend:
+  ReadRegStr \$1 \${PRODUCT_ROOT_KEY} "\${PRODUCT_KEY}" "Version"
+  IfErrors finalcheck
+  StrCmp \$2 "" 0 +2
+  StrCpy \$2 "\$1"
+  StrCpy \$2 "\$2, \$1"
+finalcheck:
+  StrCmp \$2 "" done
+  MessageBox MB_YESNO|MB_ICONEXCLAMATION "Another Cling installation (version \$2) has been detected. It is recommended to uninstall it if you intend to use the same installation directory. Do you want to proceed with the installation anyway?" IDYES done IDNO 0
+  Abort
+done:
+  ClearErrors
+  Pop \$2
   Pop \$1
   Pop \$0
 FunctionEnd
