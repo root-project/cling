@@ -25,6 +25,8 @@ function platform_init {
 
   if [ "${OS}" = "Cygwin" ]; then
     DIST="Win"
+    SHLIBEXT=".dll"
+    EXEEXT=".exe"
 
   elif [ "{$OS}" = "Darwin" ]; then
     OS="Mac OS"
@@ -208,6 +210,22 @@ function set_version {
   fi
 }
 
+function set_ext {
+  box_draw "Set binary/library extensions"
+  if [ "${LLVM_OBJ_ROOT}" = "" ]; then
+    LLVM_OBJ_ROOT=${builddir}
+  fi
+  if [ -f ${LLVM_OBJ_ROOT}/config.log ]; then
+    SHLIBEXT=$(grep "SHLIBEXT=" ${LLVM_OBJ_ROOT}/config.log | sed -e "s|SHLIBEXT=||g" -e "s|'||g")
+    EXEEXT=$(grep "^EXEEXT=" ${LLVM_OBJ_ROOT}/config.log | sed -e "s|EXEEXT=||g" -e "s|'||g")
+  else
+    echo "No config.log found in ${LLVM_OBJ_ROOT}. Using default values."
+  fi
+
+  echo "EXEEXT: ${EXEEXT}"
+  echo "SHLIBEXT: ${SHLIBEXT}"
+}
+
 function compile {
   prefix=${1}
   python=$(type -p python)
@@ -243,7 +261,12 @@ function compile {
 
 function install_prefix {
 
+    set_ext
     box_draw "Filtering Cling's libraries and binaries"
+    echo "This is going to take a while. Please wait."
+    sed -i "s|@EXEEXT@|${EXEEXT}|g" ${HOST_CLING_SRC_DIR}/dist-files.mk
+    sed -i "s|@SHLIBEXT@|${SHLIBEXT}|g" ${HOST_CLING_SRC_DIR}/dist-files.mk
+
     for f in $(find ${TMP_PREFIX} -type f -printf "%P\n"); do
       grep -q $(echo $f | sed "s|${TMP_PREFIX}||g")[[:space:]] ${HOST_CLING_SRC_DIR}/dist-files.mk
       if [ ${?} = 0 ]; then
