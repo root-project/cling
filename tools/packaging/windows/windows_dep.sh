@@ -199,6 +199,44 @@ EOF
  Delete "\$INSTDIR\*.*"
  RmDir "\$INSTDIR"
 SectionEnd
+
+; Function to detect Windows version and abort if Cling is unsupported in the current platform
+Function DetectWinVer
+  Push \$0
+  Push \$1
+  ReadRegStr \$0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" CurrentVersion
+  IfErrors is_error is_winnt
+is_winnt:
+  StrCpy \$1 \$0 1
+  StrCmp \$1 4 is_error ; Aborting installation for Windows versions older than Windows 2000
+  StrCmp \$0 "5.0" is_error ; Removing Windows 2000 as supported Windows version
+  StrCmp \$0 "5.1" is_winnt_XP
+  StrCmp \$0 "5.2" is_winnt_2003
+  StrCmp \$0 "6.0" is_winnt_vista
+  StrCmp \$0 "6.1" is_winnt_7
+  StrCmp \$0 "6.2" is_winnt_8
+  StrCmp \$1 6 is_winnt_8 ; Checking for future versions of Windows 8
+  Goto is_error
+
+is_winnt_XP:
+is_winnt_2003:
+is_winnt_vista:
+is_winnt_7:
+is_winnt_8:
+  Goto done
+is_error:
+  StrCpy \$1 \$0
+  ReadRegStr \$0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" ProductName
+  IfErrors 0 +4
+  ReadRegStr \$0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion" Version
+  IfErrors 0 +2
+  StrCpy \$0 "Unknown"
+  MessageBox MB_ICONSTOP|MB_OK "This version of Cling cannot be installed on this system. Cling is supported only on Windows NT systems. Current system: \$0 (version: \$1)"
+  Abort
+done:
+  Pop \$1
+  Pop \$0
+FunctionEnd
 EOF
 }
 
