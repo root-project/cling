@@ -215,11 +215,11 @@ function set_ext {
   if [ "${LLVM_OBJ_ROOT}" = "" ]; then
     LLVM_OBJ_ROOT=${builddir}
   fi
-  if [ -f ${LLVM_OBJ_ROOT}/config.log ]; then
-    SHLIBEXT=$(grep "SHLIBEXT=" ${LLVM_OBJ_ROOT}/config.log | sed -e "s|SHLIBEXT=||g" -e "s|'||g")
-    EXEEXT=$(grep "^EXEEXT=" ${LLVM_OBJ_ROOT}/config.log | sed -e "s|EXEEXT=||g" -e "s|'||g")
+  if [ -f ${LLVM_OBJ_ROOT}/test/lit.site.cfg ]; then
+    SHLIBEXT=$(grep "^config.llvm_shlib_ext = " ${LLVM_OBJ_ROOT}/test/lit.site.cfg | sed -e "s|config.llvm_shlib_ext = ||g" -e 's|"||g')
+    EXEEXT=$(grep "^config.llvm_exe_ext = " ${LLVM_OBJ_ROOT}/test/lit.site.cfg | sed -e "s|config.llvm_exe_ext = ||g" -e 's|"||g')
   else
-    echo "No config.log found in ${LLVM_OBJ_ROOT}. Using default values."
+    echo "${LLVM_OBJ_ROOT}/test/lit.site.cfg: File not generated. Using default values."
   fi
 
   echo "EXEEXT: ${EXEEXT}"
