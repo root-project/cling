@@ -298,6 +298,11 @@ function cleanup {
   rm -Rf ${prefix}
   echo "Remove directory: ${TMP_PREFIX}"
   rm -Rf ${TMP_PREFIX}
+
+  if [ -f ${workdir}/cling.nsi ]; then
+    echo "Remove file: cling.nsi"
+    rm -Rf ${workdir}/cling.nsi
+  fi
 }
 
 # Initialize variables with details of the platform and Operating System

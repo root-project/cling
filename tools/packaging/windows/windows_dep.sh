@@ -50,11 +50,11 @@ function get_nsis {
     tail -1)
   echo "Latest version of NSIS is: "${NSIS_VERSION}
   box_draw "Download NSIS compiler (makensis.exe)"
-  wget "http://sourceforge.net/projects/nsis/files/NSIS%203%20Pre-release/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip"
-  wget "http://stahlworks.com/dev/unzip.exe" -P ${TMP_PREFIX}/bin
-  chmod 775 ${TMP_PREFIX}/bin/unzip.exe
-  ${TMP_PREFIX}/bin/unzip.exe -d ${TMP_PREFIX} nsis-${NSIS_VERSION}.zip
-  chmod -R 775 ${TMP_PREFIX}/nsis-${NSIS_VERSION}
+  wget "http://sourceforge.net/projects/nsis/files/NSIS%203%20Pre-release/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip" -P ${TMP_PREFIX}/nsis
+  wget "http://stahlworks.com/dev/unzip.exe" -P ${TMP_PREFIX}/nsis
+  chmod 775 ${TMP_PREFIX}/nsis/unzip.exe
+  ${TMP_PREFIX}/nsis/unzip.exe $(cygpath -wa ${TMP_PREFIX}/nsis/nsis-${NSIS_VERSION}.zip) -d $(cygpath -wa ${TMP_PREFIX}/nsis/)
+  chmod -R 775 ${TMP_PREFIX}/nsis/nsis-${NSIS_VERSION}
 }
 
 function make_nsi {
@@ -106,8 +106,8 @@ InstallDir "C:\\Cling\\cling-\${VERSION}"
 !define MUI_HEADERIMAGE
 
 ; Theme
-!define MUI_ICON "$(cygpath --windows --absolute ${CLING_SRC_DIR}/tools/packaging/windows/LLVM.ico)"
-!define MUI_UNICON "$(cygpath --windows --absolute ${workdir}/install_tmp/nsis-${NSIS_VERSION}/Contrib/Graphics/Icons/orange-uninstall.ico)"
+!define MUI_ICON "$(cygpath -wa ${CLING_SRC_DIR}/tools/packaging/windows/LLVM.ico)"
+!define MUI_UNICON "$(cygpath -wa ${TMP_PREFIX}/nsis/nsis-${NSIS_VERSION}/Contrib/Graphics/Icons/orange-uninstall.ico)"
 
 !insertmacro MUI_PAGE_WELCOME
 
@@ -283,5 +283,5 @@ EOF
 
 function build_nsis {
   box_draw "Building NSIS executable from cling.nsi"
-  ${TMP_PREFIX}/nsis-${NSIS_VERSION}/makensis.exe -V3 $(cygpath --windows --absolute ${workdir}/cling.nsi)
+  ${TMP_PREFIX}/nsis-${NSIS_VERSION}/nsis/makensis.exe -V3 $(cygpath --windows --absolute ${workdir}/cling.nsi)
 }

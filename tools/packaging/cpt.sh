@@ -162,7 +162,7 @@ EOT
           get_nsis
           make_nsi
           build_nsis
-          # cleanup
+          cleanup
         fi
         ;;
     --last-stable)
@@ -201,7 +201,7 @@ EOT
           get_nsis
           make_nsi
           build_nsis
-          # cleanup
+          cleanup
         fi
         ;;
     --tarball-tag)
