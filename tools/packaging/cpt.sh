@@ -227,14 +227,13 @@ EOT
         debianize
         cleanup_deb
         ;;
-    --make-distribution)
+    --make-proper)
         # This is an internal option in CPT, meant to be integrated into
         # Cling's build system.
 
         prefix=$(grep "LLVM_PREFIX=" ${LLVM_OBJ_ROOT}/config.log | sed -e "s|LLVM_PREFIX=||g" -e "s|'||g")
         set_version
         install_prefix
-        test_cling
         # Cleanup
         rm -Rf ${TMP_PREFIX}
         ;;
