@@ -215,12 +215,13 @@ function set_ext {
   if [ "${LLVM_OBJ_ROOT}" = "" ]; then
     LLVM_OBJ_ROOT=${builddir}
   fi
-  if [ -f ${LLVM_OBJ_ROOT}/test/lit.site.cfg ]; then
-    SHLIBEXT=$(grep "^config.llvm_shlib_ext = " ${LLVM_OBJ_ROOT}/test/lit.site.cfg | sed -e "s|config.llvm_shlib_ext = ||g" -e 's|"||g')
-    EXEEXT=$(grep "^config.llvm_exe_ext = " ${LLVM_OBJ_ROOT}/test/lit.site.cfg | sed -e "s|config.llvm_exe_ext = ||g" -e 's|"||g')
-  else
-    echo "${LLVM_OBJ_ROOT}/test/lit.site.cfg: File not generated. Using default values."
+
+  if [ ! -f ${LLVM_OBJ_ROOT}/test/lit.site.cfg ]; then
+    make -C ${LLVM_OBJ_ROOT}/test lit.site.cfg
   fi
+
+  SHLIBEXT=$(grep "^config.llvm_shlib_ext = " ${LLVM_OBJ_ROOT}/test/lit.site.cfg | sed -e "s|config.llvm_shlib_ext = ||g" -e 's|"||g')
+  EXEEXT=$(grep "^config.llvm_exe_ext = " ${LLVM_OBJ_ROOT}/test/lit.site.cfg | sed -e "s|config.llvm_exe_ext = ||g" -e 's|"||g')
 
   echo "EXEEXT: ${EXEEXT}"
   echo "SHLIBEXT: ${SHLIBEXT}"
