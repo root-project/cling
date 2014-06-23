@@ -9,9 +9,6 @@
 // RUN: cat %s | %cling -I %S -Xclang -verify
 // Test forwardDeclaration
 
-#include "cling/Interpreter/AutoloadCallback.h"
-gCling->setCallbacks(new cling::AutoloadCallback(gCling));
-
 .rawInput 1
 int id(int) __attribute__((annotate("Def.h")));
 

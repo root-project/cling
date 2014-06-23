@@ -7,19 +7,18 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
-// Test incompleteType
+// Test templateFail
 //XFAIL: *
-//Becasue functionality is disabled now
+//All the currently failing stuff
 
-#include "cling/Interpreter/AutoloadCallback.h"
-gCling->setCallbacks(new cling::AutoloadCallback(gCling));
+#include "cling/Interpreter/Interpreter.h"
+// #include "cling/Interpreter/AutoloadCallback.h"
+gCling->GenerateAutoloadingMap("Fail.h","test.h");
 
-.rawInput 1
-class __attribute__((annotate("Def.h"))) C;
-//expected-warning + {{}}
-//expected-note + {{}}
-.rawInput 0
+gCling->process("const char * const argV = \"cling\";");
+gCling->process("cling::Interpreter *DefaultInterp;");
 
-C c;
-//expected-error {{}}
+gCling->process("DefaultInterp = new cling::Interpreter(1, &argV);");
+gCling->process("DefaultInterp->process(\"#include \\\"test.h\\\"\");");
 
+.q

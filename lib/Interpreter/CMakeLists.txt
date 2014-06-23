@@ -20,7 +20,6 @@ add_cling_library(clingInterpreter
   AutoSynthesizer.cpp
   AutoloadingTransform.cpp
   AutoloadCallback.cpp
-  AutoloadingVisitor.cpp
   BackendPass.cpp
   CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
@@ -30,6 +29,7 @@ add_cling_library(clingInterpreter
   DynamicLibraryManager.cpp
   DynamicLookup.cpp
   DynamicExprInfo.cpp
+  ForwardDeclPrinter.cpp
   IncrementalExecutor.cpp
   IncrementalParser.cpp
   Interpreter.cpp
@@ -49,6 +49,7 @@ add_cling_library(clingInterpreter
 
   LINK_LIBS
   clangBasic
+  clangAST
   )
   
 if(NOT WIN32)

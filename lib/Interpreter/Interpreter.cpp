@@ -13,7 +13,7 @@
 #include "DynamicLookup.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
-#include "AutoloadingVisitor.h"
+#include "ForwardDeclPrinter.h"
 
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/ClangInternalState.h"
@@ -1190,19 +1190,65 @@ namespace cling {
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
                                            llvm::StringRef outFile) {
-    cling::Transaction* T;
-    this->declare(std::string("#include \"") + std::string(inFile) + "\"", &T);
-    for(auto dcit=T->decls_begin(); dcit!=T->decls_end(); ++dcit) {
+//    cling::Transaction* T = 0;
+
+//    CompilationResult result = this->declare(std::string("#include \"")
+//                                             + std::string(inFile) + "\"", &T);
+    llvm::SmallVector<std::string,30> incpaths;
+    GetIncludePaths(incpaths,true,false);
+
+    CompilationOptions CO;
+    CO.DeclarationExtraction = 0;
+    CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
+    CO.DynamicScoping = 0;
+    CO.Debug = isPrintingDebug();
+
+    cling::Transaction* T = m_IncrParser->Parse
+            (std::string("#include \"") + std::string(inFile) + "\"", CO);
+
+//    if (result != CompilationResult::kSuccess) {
+//      llvm::outs() << "Compilation failure\n";
+//      return;
+//    }
+    std::string err;
+    llvm::raw_fd_ostream out(outFile.data(), err,
+                             llvm::sys::fs::OpenFlags::F_None);
+
+    ForwardDeclPrinter visitor(out,getSema().getSourceManager());
+
+    for(auto dcit = T->decls_begin(); dcit != T->decls_end(); ++dcit) {
       Transaction::DelayCallInfo& dci = *dcit;
-
-      for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
-        clang::Decl* decl = *dit;
-        auto visitor = new AutoloadingVisitor(inFile,outFile);
-        visitor->TraverseDecl(decl);
-        delete visitor;
+      if(dci.m_DGR.isNull()) {
+          break;
       }
+      if (dci.m_Call == Transaction::kCCIHandleTopLevelDecl) {
+        for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
+          clang::Decl* decl = *dit;
 
+          //skip logic start
+          bool skip = false;
+          auto filename = getSema().getSourceManager().getFilename
+                  (decl->getSourceRange().getBegin());
+          auto path = llvm::sys::path::parent_path(filename);
+          for (auto p : incpaths) {
+            if (llvm::sys::fs::equivalent(p,path)
+                    || llvm::sys::fs::equivalent
+                    (p,llvm::sys::path::parent_path(path))) {
+              skip = true;
+              break;
+            }
+          }
+          if (skip)
+            continue;
+          //skip logic end
+
+          visitor.Visit(decl);
+          out << ";\n";
+        }
+      }
     }
+    T->setState(Transaction::kCommitted);
     return;
   }
-} // namespace cling
+} //end namespace cling

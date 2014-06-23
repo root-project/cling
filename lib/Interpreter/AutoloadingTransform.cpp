@@ -21,8 +21,11 @@ namespace cling {
       Transaction::DelayCallInfo DCI = *I;
       for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
              JE = DCI.m_DGR.end(); J != JE; ++J) {
-        if ( (*J)->hasAttr<AnnotateAttr>() /*FIXME: && CorrectCallbackLoaded() how ? */  )
-          clang::Decl::castToDeclContext(*J)->setHasExternalLexicalStorage();
+
+//FIXME: Enable when safe !
+//        if ( (*J)->hasAttr<AnnotateAttr>() /*FIXME: && CorrectCallbackLoaded() how ? */  )
+//          clang::Decl::castToDeclContext(*J)->setHasExternalLexicalStorage();
+
 
       }
     }
