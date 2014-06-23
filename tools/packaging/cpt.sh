@@ -21,6 +21,7 @@
 
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
+set -o errexit
 
 # TODO: Change workdir to a suitable path on your system (or Electric Commander)
 workdir=~/ec/build
@@ -33,6 +34,9 @@ HOST_CLING_SRC_DIR=$(dirname $(readlink -f ${0}))
 source ${HOST_CLING_SRC_DIR}/indep.sh
 source ${HOST_CLING_SRC_DIR}/debian/debianize.sh
 source ${HOST_CLING_SRC_DIR}/windows/windows_dep.sh
+
+# Trap exceptions, call function "cleanup" and exit
+trap cleanup EXIT INT TERM
 
 function usage {
 	cat <<- EOT

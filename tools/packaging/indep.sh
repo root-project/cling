@@ -19,6 +19,7 @@
 
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
+set -o errexit
 
 function platform_init {
   OS=$(uname -o)
@@ -295,12 +296,16 @@ function cleanup {
   box_draw "Clean up"
   echo "Remove directory: ${workdir}/builddir"
   rm -Rf ${workdir}/builddir
-  echo "Remove directory: ${prefix}"
-  rm -Rf ${prefix}
+
+  if [ -d "${prefix}" ]; then
+    echo "Remove directory: ${prefix}"
+    rm -Rf ${prefix}
+  fi
+
   echo "Remove directory: ${TMP_PREFIX}"
   rm -Rf ${TMP_PREFIX}
 
-  if [ -f ${workdir}/cling.nsi ]; then
+  if [ -f "${workdir}/cling.nsi" ]; then
     echo "Remove file: cling.nsi"
     rm -Rf ${workdir}/cling.nsi
   fi

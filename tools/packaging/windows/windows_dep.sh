@@ -19,6 +19,7 @@
 
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
+set -o errexit
 
 function check_cygwin {
   # Check for Cygwin

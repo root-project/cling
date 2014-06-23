@@ -19,6 +19,7 @@
 
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
+set -o errexit
 
 function tarball_deb {
   box_draw "Compressing compiled binaries to produce a bzip2 tarball"
