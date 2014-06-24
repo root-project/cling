@@ -21,7 +21,6 @@
 
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
-set -o errexit
 
 # TODO: Change workdir to a suitable path on your system (or Electric Commander)
 workdir=~/ec/build
@@ -36,7 +35,7 @@ source ${HOST_CLING_SRC_DIR}/debian/debianize.sh
 source ${HOST_CLING_SRC_DIR}/windows/windows_dep.sh
 
 # Trap exceptions, call function "cleanup" and exit
-trap cleanup EXIT INT TERM
+trap cleanup EXIT HUP INT QUIT TERM ERR
 
 function usage {
 	cat <<- EOT
@@ -56,13 +55,16 @@ function usage {
   Supported values of "pkg-format": tar | deb | nsis
   Supported values of "tag": Any Git tag in Cling's repository. Example, v0.1
 EOT
+  # Reset trap on SIGEXIT. Nothing to cleanup here.
+  trap - EXIT
+  exit
+
 }
 
 while [ "${1}" != "" ]; do
   if [ "${#}" != "1" ]; then
     echo "Error: cannot handle multiple switches"
     usage
-    exit
   fi
 
   echo "Cling Packaging Tool (CPT)"
@@ -81,13 +83,14 @@ while [ "${1}" != "" ]; do
   # Cannot cross-compile for Windows from any other OS
   if [ "${OS}" != "Cygwin" -a "${VALUE}" = "nsis" ] || [ "${OS}" != "Cygwin" -a "${PARAM}" = "--nsis-tag" ]; then
     echo "Error: Cross-compilation for Windows not supported (yet)"
+    # Reset trap on SIGEXIT. Nothing to cleanup here.
+    trap - EXIT
     exit
   fi
 
   case ${PARAM} in
     -h | --help)
         usage
-        exit
         ;;
     -c | --check-requirements)
         box_draw "Check if required softwares are available on this system"
@@ -116,6 +119,8 @@ EOT
                 ;;
             esac
           done
+          # Reset trap on SIGEXIT. Nothing to cleanup here.
+          trap - EXIT
           exit
         elif [ "${OS}" = "Cygwin" ]; then
           check_cygwin cygwin # Doesn't make much sense. This is for the appeasement of users.
@@ -136,7 +141,6 @@ EOT
         if [ "${VALUE}" = "" ]; then
           echo "Error: Expected a value"
           usage
-          exit
         fi
         fetch_llvm
         fetch_clang
@@ -173,7 +177,6 @@ EOT
         if [ "${VALUE}" = "" ]; then
           echo "Error: Expected a value"
           usage
-          exit
         fi
         fetch_llvm
         fetch_clang
@@ -212,7 +215,6 @@ EOT
         if [ "${VALUE}" = "" ]; then
           echo "Error: Expected a value"
           usage
-          exit
         fi
         fetch_llvm
         fetch_clang
@@ -228,7 +230,6 @@ EOT
         if [ "${VALUE}" = "" ]; then
           echo "Error: Expected a value"
           usage
-          exit
         fi
         fetch_llvm
         fetch_clang
@@ -245,7 +246,6 @@ EOT
         if [ "${VALUE}" = "" ]; then
           echo "Error: Expected a value"
           usage
-          exit
         fi
         fetch_llvm
         fetch_clang
@@ -272,7 +272,6 @@ EOT
     *)
         echo "Error: unknown parameter \"${PARAM}\""
         usage
-        exit 1
         ;;
   esac
   shift

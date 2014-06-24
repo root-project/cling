@@ -19,7 +19,6 @@
 
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
-set -o errexit
 
 function platform_init {
   OS=$(uname -o)
@@ -297,6 +296,8 @@ function tarball {
 }
 
 function cleanup {
+  # Newline is required to align boxes prooperly when SIGINT is encountered
+  echo ""
   box_draw "Clean up"
   echo "Remove directory: ${workdir}/builddir"
   rm -Rf ${workdir}/builddir
@@ -313,6 +314,10 @@ function cleanup {
     echo "Remove file: cling.nsi"
     rm -Rf ${workdir}/cling.nsi
   fi
+
+  # Reset trap on SIGEXIT, or else function "cleanup" will be executed twice.
+  trap - EXIT
+  exit
 }
 
 # Initialize variables with details of the platform and Operating System
