@@ -130,7 +130,6 @@ Refer to the documentation of CPT for information on setting up your Windows env
 
 EOT
         fi
-
         ;;
     --current-dev)
         if [ "${VALUE}" = "" ]; then
@@ -209,6 +208,11 @@ EOT
         fi
         ;;
     --tarball-tag)
+        if [ "${VALUE}" = "" ]; then
+          echo "Error: Expected a value"
+          usage
+          exit
+        fi
         fetch_llvm
         fetch_clang
         fetch_cling ${VALUE}
@@ -220,6 +224,11 @@ EOT
         cleanup
         ;;
     --deb-tag)
+        if [ "${VALUE}" = "" ]; then
+          echo "Error: Expected a value"
+          usage
+          exit
+        fi
         fetch_llvm
         fetch_clang
         fetch_cling ${VALUE}
@@ -232,6 +241,11 @@ EOT
         cleanup_deb
         ;;
     --nsis-tag)
+        if [ "${VALUE}" = "" ]; then
+          echo "Error: Expected a value"
+          usage
+          exit
+        fi
         fetch_llvm
         fetch_clang
         fetch_cling ${VALUE}
