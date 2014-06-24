@@ -114,16 +114,37 @@ function fetch_llvm {
   LLVMRevision=$(wget -q -O- https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt)
   echo "Last known good LLVM revision is: ${LLVMRevision}"
 
-  if [ -d "${srcdir}" ]; then
-    cd "${srcdir}"
+  function get_fresh_llvm {
+    # ${LLVM_GIT_URL} can be overridden. More information in README.md.
+    LLVM_GIT_URL=${LLVM_GIT_URL:-"http://root.cern.ch/git/llvm.git"}
+    git clone ${LLVM_GIT_URL} ${srcdir}
+    cd ${srcdir}
+    git checkout ROOT-patches-r${LLVMRevision}
+  }
+
+  function update_old_llvm {
     git clean -f -x -d
     git fetch --tags
     git checkout ROOT-patches-r${LLVMRevision}
     git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
+  }
+
+  if [ -d ${srcdir} ]; then
+    cd ${srcdir}
+    if [ ! -z ${LLVM_GIT_URL} ]; then
+      grep -q ${LLVM_GIT_URL} ${srcdir}/.git/config
+      if [ ${?} = 0 ]; then
+        update_old_llvm
+      else
+        cd ${workdir}
+        rm -Rf ${srcdir}
+        get_fresh_llvm
+      fi
+    else
+      update_old_llvm
+    fi
   else
-    git clone http://root.cern.ch/git/llvm.git "${srcdir}"
-    cd "${srcdir}"
-    git checkout tags/ROOT-patches-r${LLVMRevision}
+    get_fresh_llvm
   fi
 }
 

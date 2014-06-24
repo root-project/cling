@@ -147,6 +147,14 @@ List of variables in CPT which can be overridden:
     supplied URL is different from the origin of the existing clone, then it is
     removed and a fresh clone is done.
 
+- **LLVM_GIT_URL**
+  * Specify the URL of the Git repository of LLVM to be used by CPT
+  * **Default value:** "http://root.cern.ch/git/llvm.git"
+  * **Usage:** ```LLVM_GIT_URL="http://github.com/ani07nov/llvm" ./cpt.sh --current-dev=tar```
+  * If the source directory already contains a clone of LLVM, but the
+    supplied URL is different from the origin of the existing clone, then it is
+    removed and a fresh clone is done.
+
 - **workdir**
   * Specify the working directory of CPT. All sources will be cloned, built
     and installed here. The produced packages will also be found here.
