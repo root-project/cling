@@ -217,7 +217,7 @@ function set_version {
 function set_ext {
   box_draw "Set binary/library extensions"
   if [ "${LLVM_OBJ_ROOT}" = "" ]; then
-    LLVM_OBJ_ROOT=${builddir}
+    LLVM_OBJ_ROOT=${workdir}/builddir
   fi
 
   if [ ! -f ${LLVM_OBJ_ROOT}/test/lit.site.cfg ]; then
