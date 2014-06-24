@@ -78,7 +78,7 @@ while [ "${1}" != "" ]; do
   VALUE=$(echo ${1} | awk -F= '{print $2}')
 
   # Cannot cross-compile for Windows from any other OS
-  if [ "${OS}" != "Cygwin" -a "${VALUE}" = "nsis" ]; then
+  if [ "${OS}" != "Cygwin" -a "${VALUE}" = "nsis" ] || [ "${OS}" != "Cygwin" -a "${PARAM}" = "--nsis-tag" ]; then
     echo "Error: Cross-compilation for Windows not supported (yet)"
     exit
   fi
