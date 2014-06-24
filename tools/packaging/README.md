@@ -128,6 +128,8 @@ differently. This eliminates the need to manually edit the script.
 You can overrride variables by using the following syntax:
 ```$ VAR="VALUE" ./cpt.sh --current-dev=tar```.
 
+Note: Variables are case-sensitive.
+
 List of variables in CPT which can be overridden:
 - **CLING_GIT_URL**
   * Specify the URL of the Git repository of Cling to be used by CPT
@@ -136,6 +138,12 @@ List of variables in CPT which can be overridden:
   * If the source directory already contains a clone of Cling, but the
     supplied URL is different from the origin of the existing clone, then it is
     removed and a fresh clone is done.
+
+- **workdir**
+  * Specify the working directory of CPT. All sources will be cloned, built
+    and installed here. The produced packages will also be found here.
+  * **Default value:** "~/ec/build"
+  * **Usage:** ```workdir="/ec/build/cling" ./cpt.sh --current-dev=deb```
 
 License
 =======

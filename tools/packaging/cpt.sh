@@ -22,8 +22,9 @@
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
 
-# TODO: Change workdir to a suitable path on your system (or Electric Commander)
-workdir=~/ec/build
+# ${workdir} can be overridden. More information in README.md.
+workdir=${workdir:-"~/ec/build"}
+
 srcdir=${workdir}/cling-src
 TMP_PREFIX="/var/tmp/cling_obj"
 CLING_SRC_DIR=${srcdir}/tools/cling
