@@ -51,6 +51,7 @@ function usage {
   --last-stable={pkg-format}	Compile the last stable snapshot and produce a package in the given format
   --tarball-tag={tag}		Compile the snapshot of a given tag and produce a tarball
   --deb-tag={tag}		Compile the snapshot of a given tag and produce a Debian package
+  --nsis-tag={tag}		Compile the snapshot of a given tag and produce an NSIS installer
 
   Supported values of "pkg-format": tar | deb | nsis
   Supported values of "tag": Any Git tag in Cling's repository. Example, v0.1
