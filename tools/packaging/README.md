@@ -45,6 +45,10 @@ On a build machine (Electric Commander), make sure the fingerprint is of the
 person who is supposed to sign the official uploads. You might also want to
 configure GnuPG to not ask for the passphrase while signing the Debian package.
 
+The [Ubuntu Packaging Guide] contains documentation about creating a GPG key
+on an Ubuntu system.
+[Ubuntu Packaging Guide]:http://packaging.ubuntu.com/html/getting-set-up.html#create-your-gpg-key
+
 ####Windows (Cygwin)
 Below is a list of required packages for Windows (Win32-x86):
 

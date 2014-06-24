@@ -20,6 +20,8 @@
 # Uncomment the following line to trace the execution of the shell commands
 # set -o xtrace
 
+SIGNING_USER=$(gpg --fingerprint | grep uid | sed s/"uid *"//g | tr -s " ")
+
 function tarball_deb {
   box_draw "Compressing compiled binaries to produce a bzip2 tarball"
   cd ${workdir}
@@ -165,8 +167,6 @@ EOF
 
   echo "Create file: debian/changelog"
 
-  SIGNING_USER=$(gpg --fingerprint | grep uid | sed s/"uid *"//g | tr -s " ")
-
   cat >> ${prefix}/debian/changelog << EOF
 cling (${VERSION}-1) unstable; urgency=low
 
@@ -212,6 +212,10 @@ function check_ubuntu {
   then
     printf "%-10s\t\t[NOT INSTALLED]\n" "${1}"
   else
-    printf "%-10s\t\t[OK]\n" "${1}"
+    if [ ${1} = "gnupg" -a "${SIGNING_USER}" = "" ]; then
+      printf "%-10s\t\t[INSTALLED - NOT SETUP]\n" "${1}"
+    else
+      printf "%-10s\t\t[OK]\n" "${1}"
+    fi
   fi
 }
