@@ -8,7 +8,6 @@
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
 // Test stlFwd
-//XFAIL: *
 // Only for reference purposes, doesn't actually use FwdPrinter
 namespace std {
     
