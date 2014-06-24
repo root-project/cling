@@ -225,7 +225,7 @@ EOT
         fetch_llvm
         fetch_clang
         fetch_cling ${VALUE}
-        VERSION=$(echo ${VALUE} | sed s/v//g)
+        set_version
         compile ${workdir}/cling-$(get_DIST)-$(get_REVISION)-$(get_BIT)bit-${VERSION}
         install_prefix
         test_cling
@@ -240,7 +240,7 @@ EOT
         fetch_llvm
         fetch_clang
         fetch_cling ${VALUE}
-        VERSION=$(echo ${VALUE} | sed s/v//g)
+        set_version
         compile ${workdir}/cling-${VERSION}
         install_prefix
         test_cling
@@ -256,7 +256,7 @@ EOT
         fetch_llvm
         fetch_clang
         fetch_cling ${VALUE}
-        VERSION=$(echo ${VALUE} | sed s/v//g)
+        set_version
         compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
         install_prefix
         test_cling
