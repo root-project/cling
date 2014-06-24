@@ -156,6 +156,8 @@ function fetch_cling {
       checkout_branch=$(git describe --match v* --abbrev=0 --tags | head -n 1)
     elif [ ${1} = "master" ]; then
       checkout_branch="master"
+    else
+      checkout_branch="${1}"
     fi
 
     git checkout ${checkout_branch}
@@ -169,6 +171,8 @@ function fetch_cling {
       checkout_branch=$(git describe --match v* --abbrev=0 --tags | head -n 1)
     elif [ ${1} = "master" ]; then
       checkout_branch="master"
+    else
+      checkout_branch="${1}"
     fi
 
     git checkout ${checkout_branch}
