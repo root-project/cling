@@ -62,7 +62,12 @@ EOT
 
 }
 
-while [ "${1}" != "" ]; do
+while true; do
+  if [ "${1}" = "" ]; then
+    echo "Error: No arguments passed"
+    usage
+  fi
+
   if [ "${#}" != "1" ]; then
     echo "Error: cannot handle multiple switches"
     usage
