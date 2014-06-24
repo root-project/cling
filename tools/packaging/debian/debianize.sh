@@ -207,21 +207,6 @@ EOF
   debuild
 }
 
-function cleanup_deb {
-  box_draw "Clean up"
-  mkdir -pv "${workdir}"/cling-"${VERSION}"-1
-  mv -v "${workdir}"/cling_"${VERSION}"*.deb "${workdir}"/cling-"${VERSION}"-1
-  mv -v "${workdir}"/cling_"${VERSION}"*.changes "${workdir}"/cling-"${VERSION}"-1
-  mv -v "${workdir}"/cling_"${VERSION}"*.build "${workdir}"/cling-"${VERSION}"-1
-  mv -v "${workdir}"/cling_"${VERSION}"*.dsc "${workdir}"/cling-"${VERSION}"-1
-  mv -v "${workdir}"/cling_"${VERSION}"*.debian.tar.gz "${workdir}"/cling-"${VERSION}"-1
-
-  rm -f "${workdir}"/cling_"${VERSION}"*.orig.tar.bz2
-  rm -Rf ${workdir}/builddir
-  rm -Rf ${prefix}
-  rm -Rf ${workdir}/install_tmp
-}
-
 function check_ubuntu {
   if [ $(dpkg-query -W -f='${Status}' ${1} 2>/dev/null | grep -c "ok installed") -eq 0 ];
   then

@@ -310,6 +310,21 @@ function cleanup {
   echo "Remove directory: ${TMP_PREFIX}"
   rm -Rf ${TMP_PREFIX}
 
+  if [ "${VALUE}" = "deb" -o "${PARAM}" = "--deb-tag" ]; then
+    echo "Create output directory: ${workdir}/cling-${VERSION}-1"
+    mkdir -p ${workdir}/cling-${VERSION}-1
+
+    if [ "$(ls -A ${workdir}/cling_${VERSION}* 2> /dev/null)" != "" ]; then
+      echo "Moving Debian package files to ${workdir}/cling-${VERSION}-1"
+      mv -v ${workdir}/cling_${VERSION}* ${workdir}/cling-${VERSION}-1
+    fi
+
+    if [ "$(ls -A ${workdir}/cling-${VERSION}-1 2> /dev/null)" = "" ]; then
+      echo "Removing empty directory: ${workdir}/cling-${VERSION}-1"
+      rm -Rf ${workdir}/cling-${VERSION}-1
+    fi
+  fi
+
   if [ -f "${workdir}/cling.nsi" ]; then
     echo "Remove file: cling.nsi"
     rm -Rf ${workdir}/cling.nsi

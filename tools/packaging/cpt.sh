@@ -163,7 +163,7 @@ EOT
           test_cling
           tarball_deb
           debianize
-          cleanup_deb
+          cleanup
 	elif [ "${VALUE}" = "nsis" ]; then
           compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
           install_prefix
@@ -201,7 +201,7 @@ EOT
           test_cling
           tarball_deb
           debianize
-          cleanup_deb
+          cleanup
 	elif [ "${VALUE}" = "nsis" ]; then
           compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
           install_prefix
@@ -241,7 +241,7 @@ EOT
         test_cling
         tarball_deb
         debianize
-        cleanup_deb
+        cleanup
         ;;
     --nsis-tag)
         if [ "${VALUE}" = "" ]; then
