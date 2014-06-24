@@ -129,16 +129,37 @@ function fetch_llvm {
 
 # Fetch the sources for the vendor clone of Clang
 function fetch_clang {
-  if [ -d "${srcdir}/tools/clang" ]; then
-    cd "${srcdir}/tools/clang"
+  function get_fresh_clang {
+    # ${CLANG_GIT_URL} can be overridden. More information in README.md.
+    CLANG_GIT_URL=${CLANG_GIT_URL:-"http://root.cern.ch/git/clang.git"}
+    git clone ${CLANG_GIT_URL} ${srcdir}/tools/clang
+    cd ${srcdir}/tools/clang
+    git checkout ROOT-patches-r${LLVMRevision}
+  }
+
+  function update_old_clang {
     git clean -f -x -d
     git fetch --tags
     git checkout ROOT-patches-r${LLVMRevision}
     git pull origin refs/tags/ROOT-patches-r${LLVMRevision}
+  }
+
+  if [ -d ${srcdir}/tools/clang ]; then
+    cd ${srcdir}/tools/clang
+    if [ ! -z ${CLANG_GIT_URL} ]; then
+      grep -q ${CLANG_GIT_URL} ${srcdir}/tools/clang/.git/config
+      if [ ${?} = 0 ]; then
+        update_old_clang
+      else
+        cd ${srcdir}/tools
+        rm -Rf ${srcdir}/tools/clang
+        get_fresh_clang
+      fi
+    else
+      update_old_clang
+    fi
   else
-    git clone http://root.cern.ch/git/clang.git  "${srcdir}/tools/clang"
-    cd "${srcdir}/tools/clang"
-    git checkout ROOT-patches-r${LLVMRevision}
+    get_fresh_clang
   fi
 }
 
