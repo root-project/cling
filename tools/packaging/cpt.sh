@@ -231,6 +231,19 @@ EOT
         debianize
         cleanup_deb
         ;;
+    --nsis-tag)
+        fetch_llvm
+        fetch_clang
+        fetch_cling ${VALUE}
+        VERSION=$(echo ${VALUE} | sed s/v//g)
+        compile ${workdir}/cling-$(get_DIST)$(get_BIT)-${VERSION}
+        install_prefix
+        test_cling
+        get_nsis
+        make_nsi
+        build_nsis
+        cleanup
+        ;;
     --make-proper)
         # This is an internal option in CPT, meant to be integrated into
         # Cling's build system.
