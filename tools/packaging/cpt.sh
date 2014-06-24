@@ -23,7 +23,7 @@
 # set -o xtrace
 
 # ${workdir} can be overridden. More information in README.md.
-workdir=${workdir:-"~/ec/build"}
+workdir=${workdir:-~/ec/build}
 
 srcdir=${workdir}/cling-src
 TMP_PREFIX="/var/tmp/cling_obj"
