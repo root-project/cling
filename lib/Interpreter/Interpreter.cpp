@@ -1190,10 +1190,7 @@ namespace cling {
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
                                            llvm::StringRef outFile) {
-//    cling::Transaction* T = 0;
 
-//    CompilationResult result = this->declare(std::string("#include \"")
-//                                             + std::string(inFile) + "\"", &T);
     llvm::SmallVector<std::string,30> incpaths;
     GetIncludePaths(incpaths,true,false);
 
@@ -1207,15 +1204,31 @@ namespace cling {
     cling::Transaction* T = m_IncrParser->Parse
             (std::string("#include \"") + std::string(inFile) + "\"", CO);
 
-//    if (result != CompilationResult::kSuccess) {
-//      llvm::outs() << "Compilation failure\n";
-//      return;
-//    }
     std::string err;
     llvm::raw_fd_ostream out(outFile.data(), err,
                              llvm::sys::fs::OpenFlags::F_None);
 
+
     ForwardDeclPrinter visitor(out,getSema().getSourceManager());
+
+    std::vector<std::string> macrodefs;
+    for(auto mit = T->macros_begin(); mit != T->macros_end(); ++mit) {
+      Transaction::MacroDirectiveInfo macro = *mit;
+      if ( macro.m_MD->getKind() == MacroDirective::MD_Define) {
+        const MacroInfo* MI = macro.m_MD->getMacroInfo();
+        if ( MI ->getNumTokens()>1 )
+          //FIXME: We can not display function like macros yet
+          continue;
+        out<<"#define " << macro.m_II->getName()<< ' ';
+        for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
+          const Token &Tok = MI->getReplacementToken(i);
+          out << Tok.getName() << ' ';
+          macrodefs.push_back(macro.m_II->getName());
+        }
+        out << '\n';
+      }
+
+    }
 
     for(auto dcit = T->decls_begin(); dcit != T->decls_end(); ++dcit) {
       Transaction::DelayCallInfo& dci = *dcit;
@@ -1247,6 +1260,9 @@ namespace cling {
           out << ";\n";
         }
       }
+    }
+    for (auto m : macrodefs ) {
+      out << "#undef " << m << "\n";
     }
     T->setState(Transaction::kCommitted);
     return;
