@@ -26,6 +26,8 @@ CLINGETC_CLING := DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
 CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
         llvm/ADT/OwningPtr.h \
         llvm/ADT/StringRef.h \
+        llvm/ADT/SmallVector.h \
+	llvm/ADT/iterator_range.h \
         llvm/Config/llvm-config.h \
         llvm/Support/AlignOf.h \
         llvm/Support/Allocator.h \
@@ -33,7 +35,9 @@ CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
         llvm/Support/Compiler.h \
         llvm/Support/DataTypes.h \
         llvm/Support/MathExtras.h \
+        llvm/Support/Memory.h \
         llvm/Support/SwapByteOrder.h \
+	llvm/Support/system_error.h \
         llvm/Support/type_traits.h
 
 CLINGETCPCH  := $(addprefix etc/cling/Interpreter/,$(CLINGETC_CLING)) \

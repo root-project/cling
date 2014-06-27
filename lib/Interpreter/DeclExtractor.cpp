@@ -236,7 +236,8 @@ namespace cling {
           = IntegerLiteral::Create(*m_Context, ZeroInt, m_Context->IntTy,
                                    SourceLocation());
         Stmts.push_back(m_Sema->ActOnReturnStmt(ZeroLit->getExprLoc(),
-                                                ZeroLit, /*Scope*/0).get());
+                                                ZeroLit,
+                                                m_Sema->getCurScope()).get());
       }
 
       // Wrap Stmts into a function body.
