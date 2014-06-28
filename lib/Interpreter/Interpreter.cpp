@@ -1257,7 +1257,7 @@ namespace cling {
           //skip logic end
 
           visitor.Visit(decl);
-          out << ";\n";
+          visitor.printSemiColon();
         }
       }
     }

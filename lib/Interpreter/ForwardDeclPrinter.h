@@ -31,13 +31,14 @@ namespace cling {
 
     std::set<std::string> ClassDeclNames;
     clang::SourceManager& m_SMgr;
-
+    bool m_SkipFlag;
+    //False by default, true if current item is not to be printed
   public:
     ForwardDeclPrinter(llvm::raw_ostream &Out, clang::SourceManager& smgr,
         const clang::PrintingPolicy &Policy =clang::PrintingPolicy(clang::LangOptions()),
         unsigned Indentation = 0, bool PrintInstantiation = false)
       : Out(Out), Policy(Policy), Indentation(Indentation),
-        PrintInstantiation(PrintInstantiation),m_SMgr(smgr)
+        PrintInstantiation(PrintInstantiation),m_SMgr(smgr),m_SkipFlag(false)
         { }
 
     void VisitDeclContext(clang::DeclContext *DC, bool Indent = true);
@@ -71,6 +72,8 @@ namespace cling {
     void PrintTemplateParameters(const clang::TemplateParameterList *Params,
                                const clang::TemplateArgumentList *Args = 0);
     void prettyPrintAttributes(clang::Decl *D);
+    void printSemiColon(bool flag=true);
+    //if flag is true , m_SkipFlag is obeyed and reset.
   };
 }
 #endif

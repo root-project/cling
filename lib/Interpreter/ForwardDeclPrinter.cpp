@@ -49,6 +49,10 @@ namespace cling {
 //          A->printPretty(Out, Policy);
 //        }
 //      }
+    //FIXME: This ignores previous attributes
+    //Do not simply uncomment the above code
+    //In some cases, it prints attribs without the strings at all
+
     Out << " __attribute__((annotate(\""
         << m_SMgr.getFilename(D->getSourceRange().getBegin()) << "\"))) ";
   }
@@ -200,8 +204,10 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitEnumDecl(EnumDecl *D) {
-    if (D->getName().size() == 0)
+    if (D->getName().size() == 0) {
+      m_SkipFlag = true;
       return;
+    }
 
     if (!Policy.SuppressSpecifiers && D->isModulePrivate())
       Out << "__module_private__ ";
@@ -252,13 +258,12 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFunctionDecl(FunctionDecl *D) {
-    if (D->getNameAsString().size() == 0 || D->getNameAsString()[0] == '_')
-      return;
-    if (D->getStorageClass() == SC_Static)
-      return;
-     /*FIXME:Ugly Hack: should idealy never be triggerred */
-    if (D->isCXXClassMember()) {
-      return;
+    if (D->getNameAsString().size() == 0
+          || D->getNameAsString()[0] == '_'
+          || D->getStorageClass() == SC_Static
+          || D->isCXXClassMember()) {
+        m_SkipFlag = true;
+        return;
     }
 
     CXXConstructorDecl *CDecl = dyn_cast<CXXConstructorDecl>(D);
@@ -474,9 +479,6 @@ namespace cling {
     //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
 
     }
-//      Out << " __attribute__((annotate(\""
-//          << m_SMgr.getFilename(D->getSourceRange().getBegin())<< "\"))) ";
-//      Out <<";\n";
   }
 
   void ForwardDeclPrinter::VisitFriendDecl(FriendDecl *D) {
@@ -534,8 +536,8 @@ namespace cling {
 
 
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
-    //FIXME:Ugly hack
     if(D->getStorageClass() == SC_Static) {
+      m_SkipFlag = true;
       return;
     }
     if(D->isDefinedOutsideFunctionOrMethod() && !(D->getStorageClass() == SC_Extern))
@@ -635,10 +637,10 @@ namespace cling {
 //      VisitDeclContext(D);
     for(auto dit=D->decls_begin();dit!=D->decls_end();++dit) {
       this->Visit(*dit);
-      Out << ";\n";
+      printSemiColon();
     }
-
     Indent() << "}\n";
+    m_SkipFlag = true;
   }
 
   void ForwardDeclPrinter::VisitUsingDirectiveDecl(UsingDirectiveDecl *D) {
@@ -657,13 +659,16 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitEmptyDecl(EmptyDecl *D) {
 //    prettyPrintAttributes(D);
+      m_SkipFlag = true;
   }
 
   void ForwardDeclPrinter::VisitCXXRecordDecl(CXXRecordDecl *D) {
 
     if(ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
-          /*|| D->getName().startswith("_")*/)
-      return;
+          /*|| D->getName().startswith("_")*/) {
+        m_SkipFlag = true;
+        return;
+    }
 
     if (D->getNameAsString().size() == 0)
       return;
@@ -802,13 +807,13 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
-    if(D->getNameAsString().size() == 0 || D->getNameAsString()[0] == '_')
-      return;
-//    if (D->getStorageClass() == SC_Static)
-//      return;
-    /*FIXME:Ugly Hack: should idealy never be triggerred */
-    if (D->isCXXClassMember())
-      return;
+    if(D->getNameAsString().size() == 0
+         || D->getNameAsString()[0] == '_'
+         || D->isCXXClassMember()) {
+        m_SkipFlag = true;
+        return;
+    }
+
 
     if (PrintInstantiation) {
       TemplateParameterList *Params = D->getTemplateParameters();
@@ -824,8 +829,10 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
     if(ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
-      || D->getName().size() == 0 )
-     return;
+         || D->getName().size() == 0 ) {
+        m_SkipFlag = true;
+        return;
+    }
     if (PrintInstantiation) {
       TemplateParameterList *Params = D->getTemplateParameters();
       for (ClassTemplateDecl::spec_iterator I = D->spec_begin(),
@@ -843,5 +850,15 @@ namespace cling {
 
       //D->dump();
 
+  }
+  void ForwardDeclPrinter::printSemiColon(bool flag) {
+    if (flag)
+    {
+      if(!m_SkipFlag)
+        Out << ";\n";
+      else
+        m_SkipFlag = false;
+    }
+    else Out << ";\n";
   }
 }//end namespace cling
