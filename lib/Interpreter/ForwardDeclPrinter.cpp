@@ -261,7 +261,9 @@ namespace cling {
     if (D->getNameAsString().size() == 0
           || D->getNameAsString()[0] == '_'
           || D->getStorageClass() == SC_Static
-          || D->isCXXClassMember()) {
+          || D->isCXXClassMember()
+          || hasNestedNameSpecifier(D->getReturnType())
+          || isOperator(D) ) {
         m_SkipFlag = true;
         return;
     }
@@ -665,13 +667,10 @@ namespace cling {
   void ForwardDeclPrinter::VisitCXXRecordDecl(CXXRecordDecl *D) {
 
     if(ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
-          /*|| D->getName().startswith("_")*/) {
+          || D->getNameAsString().size() == 0) {
         m_SkipFlag = true;
         return;
     }
-
-    if (D->getNameAsString().size() == 0)
-      return;
 
     if (!Policy.SuppressSpecifiers && D->isModulePrivate())
       Out << "__module_private__ ";
@@ -809,7 +808,9 @@ namespace cling {
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
     if(D->getNameAsString().size() == 0
          || D->getNameAsString()[0] == '_'
-         || D->isCXXClassMember()) {
+         || D->isCXXClassMember()
+         || hasNestedNameSpecifier(D->getAsFunction()->getReturnType())
+         || isOperator(D->getAsFunction())) {
         m_SkipFlag = true;
         return;
     }
@@ -852,8 +853,7 @@ namespace cling {
 
   }
   void ForwardDeclPrinter::printSemiColon(bool flag) {
-    if (flag)
-    {
+    if (flag) {
       if(!m_SkipFlag)
         Out << ";\n";
       else
@@ -861,4 +861,12 @@ namespace cling {
     }
     else Out << ";\n";
   }
+  bool ForwardDeclPrinter::hasNestedNameSpecifier(QualType q) {
+    //FIXME: Just a placeholder
+    return false;
+  }
+  bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
+    return D->getNameAsString().find("operator")==0;
+  }
+
 }//end namespace cling

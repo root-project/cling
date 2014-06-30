@@ -38,8 +38,9 @@ namespace cling {
         const clang::PrintingPolicy &Policy =clang::PrintingPolicy(clang::LangOptions()),
         unsigned Indentation = 0, bool PrintInstantiation = false)
       : Out(Out), Policy(Policy), Indentation(Indentation),
-        PrintInstantiation(PrintInstantiation),m_SMgr(smgr),m_SkipFlag(false)
-        { }
+        PrintInstantiation(PrintInstantiation),m_SMgr(smgr),m_SkipFlag(false) {
+          this->Policy.SuppressTagKeyword=true;
+    }
 
     void VisitDeclContext(clang::DeclContext *DC, bool Indent = true);
 
@@ -72,8 +73,12 @@ namespace cling {
     void PrintTemplateParameters(const clang::TemplateParameterList *Params,
                                const clang::TemplateArgumentList *Args = 0);
     void prettyPrintAttributes(clang::Decl *D);
+
     void printSemiColon(bool flag=true);
     //if flag is true , m_SkipFlag is obeyed and reset.
+
+    bool hasNestedNameSpecifier(clang::QualType q);
+    bool isOperator(clang::FunctionDecl* D);
   };
 }
 #endif
