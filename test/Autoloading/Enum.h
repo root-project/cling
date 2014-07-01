@@ -10,5 +10,8 @@ enum E : unsigned int {
   E_c
 };
 
-template<> class Gen<E> {
+enum Old {
+  Old_a,
+  Old_b,
+  Old_c
 };

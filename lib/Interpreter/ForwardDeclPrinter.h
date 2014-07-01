@@ -79,6 +79,7 @@ namespace cling {
 
     bool hasNestedNameSpecifier(clang::QualType q);
     bool isOperator(clang::FunctionDecl* D);
+    bool shouldSkipFunction(clang::FunctionDecl* D);
   };
 }
 #endif

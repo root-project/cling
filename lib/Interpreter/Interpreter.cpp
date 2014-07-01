@@ -1191,8 +1191,19 @@ namespace cling {
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
                                            llvm::StringRef outFile) {
 
-    llvm::SmallVector<std::string,30> incpaths;
-    GetIncludePaths(incpaths,true,false);
+    llvm::SmallVector<std::string,30> withSys;
+    GetIncludePaths(withSys,true,false);
+
+    llvm::SmallVector<std::string,30> withoutSys;
+    GetIncludePaths(withoutSys,false,false);
+
+    std::sort(withSys.begin(),withSys.end());
+    std::sort(withoutSys.begin(),withoutSys.end());
+
+    std::vector<std::string> incpaths(withSys.size());
+    std::set_difference(withSys.begin(),withSys.end(),
+                        withoutSys.begin(),withoutSys.end(),
+                        incpaths.begin());
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;

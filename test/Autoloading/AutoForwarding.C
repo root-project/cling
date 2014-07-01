@@ -11,17 +11,10 @@
 
 
 #include "cling/Interpreter/Interpreter.h"
-// #include "cling/Interpreter/AutoloadCallback.h"
 gCling->GenerateAutoloadingMap("Def2.h","test.h");
-
-gCling->process("const char * const argV = \"cling\";");
-gCling->process("cling::Interpreter *DefaultInterp;");
-
-gCling->process("DefaultInterp = new cling::Interpreter(1, &argV);");
-// gCling->process("DefaultInterp->setCallbacks(new cling::AutoloadCallback(DefaultInterp));")
-gCling->process("DefaultInterp->process(\"#include \\\"test.h\\\"\");");
-gCling->process("DefaultInterp->process(\"#include \\\"Def2.h\\\"\");");
-
+.undo 1
+#include "test.h"
+#include "Def2.h"
 //expected-no-diagnostics
 
 .q

@@ -6,22 +6,16 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling 2>&1 -I %S -Xclang -verify
-// Test enumTest
+// RUN: cat %s | %cling -I %S -Xclang -verify
+// Test EnumTest
+//XFAIL: *
 
-.rawInput 1
-enum __attribute__((annotate("Enum.h"))) class EC;
-.rawInput 0
-EC x=EC::A; 
-// expected-error {{}}
-
-enum E:unsigned int;
-template <typename T> class __attribute__((annotate("Def.h"))) Gen;
-template <> class __attribute__((annotate("Enum.h"))) Gen<E>;
-
-.rawInput 1
+#include "cling/Interpreter/Interpreter.h"
+gCling->GenerateAutoloadingMap("Enum.h","test.h");
+.undo 1
+#include "test.h"
 #include "Enum.h"
-.rawInput 0
-EC x=EC::A;
+
+//expected-no-diagnostics
 
 .q

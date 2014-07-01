@@ -229,9 +229,6 @@ namespace cling {
 //        VisitDeclContext(D);
 //        Indent() << "};\n";
 //      }
-
-
-    Indent() << ";\n";
   }
 
   void ForwardDeclPrinter::VisitRecordDecl(RecordDecl *D) {
@@ -258,16 +255,10 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFunctionDecl(FunctionDecl *D) {
-    if (D->getNameAsString().size() == 0
-          || D->getNameAsString()[0] == '_'
-          || D->getStorageClass() == SC_Static
-          || D->isCXXClassMember()
-          || hasNestedNameSpecifier(D->getReturnType())
-          || isOperator(D) ) {
-        m_SkipFlag = true;
-        return;
+    if (shouldSkipFunction(D)) {
+      m_SkipFlag = true;
+      return;
     }
-
     CXXConstructorDecl *CDecl = dyn_cast<CXXConstructorDecl>(D);
       CXXConversionDecl *ConversionDecl = dyn_cast<CXXConversionDecl>(D);
       /*FIXME:Ugly Hack*/
@@ -538,7 +529,8 @@ namespace cling {
 
 
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
-    if(D->getStorageClass() == SC_Static) {
+    if(D->getStorageClass() == SC_Static
+        || hasNestedNameSpecifier(D->getType()) ) {
       m_SkipFlag = true;
       return;
     }
@@ -862,11 +854,38 @@ namespace cling {
     else Out << ";\n";
   }
   bool ForwardDeclPrinter::hasNestedNameSpecifier(QualType q) {
-    //FIXME: Just a placeholder
+    //FIXME: Find a better name for this function
+    //TODO: May not cover all cases, more testing needed
+    auto t = q.getTypePtr();
+    if ( t->isBuiltinType() )
+      return false;
+    if ( t->isAggregateType() ) {
+      CXXRecordDecl* decl = t->getAsCXXRecordDecl();
+      DeclContext* dc = decl->getDeclContext();
+      return isa<CXXRecordDecl>(dc);
+    }
     return false;
   }
   bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
-    return D->getNameAsString().find("operator")==0;
+    return D->getNameAsString().find("operator") == 0;
   }
+  bool ForwardDeclPrinter::shouldSkipFunction(FunctionDecl *D) {
+    bool param = false;
+    //will be true if any of the params turn out to have nested types
 
+    for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
+      if (hasNestedNameSpecifier(D->getParamDecl(i)->getType()))
+        param = true;
+    }
+
+    if (D->getNameAsString().size() == 0
+      || D->getNameAsString()[0] == '_'
+      || D->getStorageClass() == SC_Static
+      || D->isCXXClassMember()
+      || hasNestedNameSpecifier(D->getReturnType())
+      || param
+      || isOperator(D) )
+        return true;
+    return false;
+  }
 }//end namespace cling
