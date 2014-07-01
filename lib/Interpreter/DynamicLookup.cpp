@@ -659,7 +659,8 @@ namespace cling {
     for (unsigned int i = 0; i < Addresses.size(); ++i) {
 
       Expr* UnOp
-        = m_Sema->BuildUnaryOp(S, m_NoSLoc, UO_AddrOf, Addresses[i]).take();
+        = m_Sema->BuildUnaryOp(S, SubTree->getLocStart(), UO_AddrOf,
+                               Addresses[i]).take();
       if (!UnOp) {
         // Not good, return what we had.
         return SubTree;
