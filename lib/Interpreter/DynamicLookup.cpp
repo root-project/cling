@@ -660,6 +660,10 @@ namespace cling {
 
       Expr* UnOp
         = m_Sema->BuildUnaryOp(S, m_NoSLoc, UO_AddrOf, Addresses[i]).take();
+      if (!UnOp) {
+        // Not good, return what we had.
+        return SubTree;
+      }
       m_Sema->ImpCastExprToType(UnOp,
                                 m_Context->getPointerType(m_Context->VoidPtrTy),
                                 CK_BitCast);
