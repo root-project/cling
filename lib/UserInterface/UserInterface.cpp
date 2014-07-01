@@ -109,8 +109,8 @@ namespace cling {
     }
 
     using namespace textinput;
-    StreamReader* R = StreamReader::Create();
-    TerminalDisplay* D = TerminalDisplay::Create();
+    llvm::OwningPtr<StreamReader> R(StreamReader::Create());
+    llvm::OwningPtr<TerminalDisplay> D(TerminalDisplay::Create());
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
     TI.SetPrompt("[cling]$ ");
