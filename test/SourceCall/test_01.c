@@ -8,9 +8,15 @@
 
 // RUN: %cling %s | FileCheck %s
 
-// same test as test_01.c but ensuring the .c file to be processed
+// Ensure the .c file to be processed
 // is in the working directory (issue ROOT-6244)
 // RUN: cd `dirname %s` ; %cling %s | FileCheck %s
+
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
+#endif
 
 extern "C" int printf(const char*,...);
 
