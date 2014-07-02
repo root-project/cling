@@ -35,13 +35,15 @@ from datetime import datetime, tzinfo
 import multiprocessing
 import fileinput
 
-# Platform initialization
+###############################################################################
+#                           Platform initialization                           #
+###############################################################################
+
 OS=platform.system()
 DIST=platform.dist()[0]
-PSEUDONAME=platform.dist()[2]
+RELEASE=platform.dist()[2]
 REV=platform.dist()[1]
 
-# Extension initialization with default values
 if OS == 'Windows':
     EXEEXT = '.exe'
     SHLIBEXT = '.dll'
@@ -57,7 +59,10 @@ else:
     EXEEXT = ''
     SHLIBEXT = ''
 
-# Global variable initialization
+###############################################################################
+#                               Global variables                              #
+###############################################################################
+
 cmdline = ["cmd", "/q", "/k", "echo off"]
 workdir = '/home/ani/ec/build'
 srcdir = '/home/ani/ec/build/cling-src'
@@ -71,7 +76,10 @@ LLVMRevision = urllib2.urlopen("https://raw.githubusercontent.com/ani07nov/cling
 VERSION=''
 
 
-# Platform independent functions
+###############################################################################
+#              Platform independent functions (formerly indep.py)             #
+###############################################################################
+
 def box_draw_header():
   msg='cling (' + platform.machine() + ')' + formatdate(float(datetime.now().strftime("%s")),tzinfo())
   spaces_no = 80 - len(msg) - 4
@@ -500,6 +508,10 @@ def cleanup():
             os.rmdir('%s/cling-%s-1'%(workdir, VERSION))
 
 
+###############################################################################
+#                           argparse configuration                            #
+###############################################################################
+
 parser = argparse.ArgumentParser(description='Cling Packaging Tool')
 parser.add_argument('-c', '--check-requirements', help='Check if packages required by the script are installed', action='store_true')
 parser.add_argument('--current-dev', help='Package the latest development snapshot in one of these formats: tar | deb | nsis')
@@ -508,26 +520,26 @@ parser.add_argument('--tarball-tag', help='Package the snapshot of a given tag i
 parser.add_argument('--deb-tag', help='Package the snapshot of a given tag in a Debian package (.deb)')
 parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in an NSIS installer (.exe)')
 
+# Variable overrides
 parser.add_argument('--with-llvm-url', help='Specify an alternate URL of LLVM repo', default='http://root.cern.ch/git/llvm.git')
 parser.add_argument('--with-clang-url', help='Specify an alternate URL of Clang repo', default='http://root.cern.ch/git/clang.git')
 parser.add_argument('--with-cling-url', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
 parser.add_argument('--with-workdir', help='Specify an alternate working directory for CPT', default=os.path.expanduser('~/ec/build'))
 
-
 args = vars(parser.parse_args())
-
-if len(sys.argv) == 1:
-    print "Error: No arguments passed"
-    parser.print_help()
 
 
 print 'Cling Packaging Tool (CPT)'
-print 'Arguments passed: ' + str(sys.argv)
+print 'Arguments vector: ' + str(sys.argv)
 box_draw_header()
 print 'Operating System: ' + OS
 print 'Distribution: ' + DIST
-print 'Pseudo Name: ' + PSEUDONAME
+print 'Release: ' + RELEASE
 print 'Revision: ' + REV + '\n'
+
+if len(sys.argv) == 1:
+    print "Error: no options passed"
+    parser.print_help()
 
 if args['current_dev']:
     fetch_llvm()
