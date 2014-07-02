@@ -153,6 +153,14 @@ def fetch_llvm():
                          stderr=subprocess.STDOUT,
                          close_fds=True).communicate()
 
+        subprocess.Popen(['git stash'],
+                         cwd=srcdir,
+                         shell=True,
+                         stdin=subprocess.PIPE,
+                         stdout=None,
+                         stderr=subprocess.STDOUT,
+                         close_fds=True).communicate()
+
     if platform.system() == 'Windows':
         pass
     else:
@@ -207,6 +215,14 @@ def fetch_clang():
                          close_fds=True).communicate()
 
         subprocess.Popen(['git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision)],
+                         cwd=srcdir+'/tools/clang',
+                         shell=True,
+                         stdin=subprocess.PIPE,
+                         stdout=None,
+                         stderr=subprocess.STDOUT,
+                         close_fds=True).communicate()
+
+        subprocess.Popen(['git stash'],
                          cwd=srcdir+'/tools/clang',
                          shell=True,
                          stdin=subprocess.PIPE,
@@ -292,6 +308,14 @@ def fetch_cling(arg):
                          close_fds=True).communicate()
 
         subprocess.Popen(['git pull origin %s'%(checkout_branch)],
+                         cwd=CLING_SRC_DIR,
+                         shell=True,
+                         stdin=subprocess.PIPE,
+                         stdout=None,
+                         stderr=subprocess.STDOUT,
+                         close_fds=True).communicate()
+
+        subprocess.Popen(['git stash'],
                          cwd=CLING_SRC_DIR,
                          shell=True,
                          stdin=subprocess.PIPE,
@@ -842,8 +866,8 @@ if args['last_stable']:
         compile(workdir + '/cling-' + VERSION)
         install_prefix()
         test_cling()
-        #tarball_deb()
-        #debianize()
+        tarball_deb()
+        debianize()
         cleanup()
     if args['last_stable'] == 'nsis':
         compile(workdir + '/cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION)
