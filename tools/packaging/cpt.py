@@ -31,7 +31,8 @@ import glob
 import re
 import tarfile
 from email.utils import formatdate
-from datetime import datetime, tzinfo
+from datetime import tzinfo
+import time
 import multiprocessing
 import fileinput
 
@@ -81,10 +82,10 @@ VERSION=''
 ###############################################################################
 
 def box_draw_header():
-  msg='cling (' + platform.machine() + ')' + formatdate(float(datetime.now().strftime("%s")),tzinfo())
+  msg='cling (' + platform.machine() + ')' + formatdate(time.time(),tzinfo())
   spaces_no = 80 - len(msg) - 4
   spacer = ' ' * spaces_no
-  msg='cling (' + platform.machine() + ')' + spacer + formatdate(float(datetime.now().strftime("%s")),tzinfo())
+  msg='cling (' + platform.machine() + ')' + spacer + formatdate(time.time(),tzinfo())
   print '''
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║ %s ║
@@ -730,13 +731,13 @@ cling (%s-1) unstable; urgency=low
         f.close()
 
         f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
-        f.write('\n -- ' + SIGNING_USER + '  ' + formatdate(float(datetime.now().strftime("%s")),tzinfo()) + '\n')
+        f.write('\n -- ' + SIGNING_USER + '  ' + formatdate(time.time(),tzinfo()) + '\n')
         f.close()
     else:
         TAG=VERSION.replace('v', '')
         if TAG == '0.1':
             f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
-            f.write('\n -- ' + SIGNING_USER + '  ' + formatdate(float(datetime.now().strftime("%s")),tzinfo()) + '\n')
+            f.write('\n -- ' + SIGNING_USER + '  ' + formatdate(time.time(),tzinfo()) + '\n')
             f.close()
         STABLE_FLAG = '1'
 
@@ -759,7 +760,7 @@ cling (%s-1) unstable; urgency=low
             f.close()
 
             f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
-            f.write('\n -- ' + SIGNING_USER + '  ' + formatdate(float(datetime.now().strftime("%s")),tzinfo()) + '\n')
+            f.write('\n -- ' + SIGNING_USER + '  ' + formatdate(time.time(),tzinfo()) + '\n')
             f.close()
 
     # Changelog entries from first commit to v0.1
