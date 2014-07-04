@@ -82,23 +82,37 @@ VERSION=''
 ###############################################################################
 
 def box_draw_header():
-  msg='cling (' + platform.machine() + ')' + formatdate(time.time(),tzinfo())
-  spaces_no = 80 - len(msg) - 4
-  spacer = ' ' * spaces_no
-  msg='cling (' + platform.machine() + ')' + spacer + formatdate(time.time(),tzinfo())
-  print '''
+    msg='cling (' + platform.machine() + ')' + formatdate(time.time(),tzinfo())
+    spaces_no = 80 - len(msg) - 4
+    spacer = ' ' * spaces_no
+    msg='cling (' + platform.machine() + ')' + spacer + formatdate(time.time(),tzinfo())
+
+    if OS != 'Windows':
+        print '''
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║ %s ║
 ╚══════════════════════════════════════════════════════════════════════════════╝'''%(msg)
+    else:
+        print '''
++=============================================================================+
+| %s |
++=============================================================================+'''%(msg)
 
 
 def box_draw(msg):
-  spaces_no = 80 - len(msg) - 4
-  spacer = ' ' * spaces_no
-  print '''
+    spaces_no = 80 - len(msg) - 4
+    spacer = ' ' * spaces_no
+
+    if OS != 'Windows':
+        print '''
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ %s%s │
 └──────────────────────────────────────────────────────────────────────────────┘'''%(msg, spacer)
+    else:
+        print '''
++-----------------------------------------------------------------------------+
+| %s%s |
++-----------------------------------------------------------------------------+'''%(msg, spacer)
 
 
 def fetch_llvm():
