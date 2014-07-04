@@ -41,35 +41,66 @@ import fileinput
 ###############################################################################
 
 OS=platform.system()
-DIST=platform.dist()[0]
-RELEASE=platform.dist()[2]
-REV=platform.dist()[1]
+FAMILY=os.name.upper()
 
 if OS == 'Windows':
+    RELEASE = OS + ' ' + platform.release()
+    REV = platform.version()
+
     EXEEXT = '.exe'
     SHLIBEXT = '.dll'
+
+    TMP_PREFIX='C:/Windows/Temp/cling-obj/'
+    workdir = 'C:/ec/build'
+
 elif OS == 'Linux':
+    DIST = platform.linux_distribution()[0]
+    RELEASE = platform.linux_distribution()[2]
+    REV = platform.linux_distribution()[1]
+
     EXEEXT = ''
     SHLIBEXT = '.so'
 
     TMP_PREFIX='/var/tmp/cling-obj/'
+    workdir = os.path.expanduser('~/ec/build')
+
 elif OS == 'Darwin':
+    RELEASE = platform.release()
+    REV = platform.mac_ver()[0]
+
     EXEEXT = ''
     SHLIBEXT = '.dylib'
+
+    TMP_PREFIX='/var/tmp/cling-obj/'
+    workdir = os.path.expanduser('~/ec/build')
+
 else:
+    # Extensions will be detected anyway by set_ext()
     EXEEXT = ''
     SHLIBEXT = ''
+
+    #TODO: Need to test this in other platforms
+    TMP_PREFIX='/var/tmp/cling-obj/'
+    workdir = os.path.expanduser('~/ec/build')
+
+if RELEASE == '':
+    RELEASE = 'N/A'
+
+if DIST == '':
+    DIST = 'N/A'
+
+if REV == '':
+    REV = 'N/A'
+
 
 ###############################################################################
 #                               Global variables                              #
 ###############################################################################
 
-cmdline = ["cmd", "/q", "/k", "echo off"]
-workdir = '/home/ani/ec/build'
-srcdir = '/home/ani/ec/build/cling-src'
+srcdir = os.path.join(workdir, 'cling-src')
+CLING_SRC_DIR = os.path.join(srcdir, 'tools/cling')
+LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
-CLING_SRC_DIR = srcdir + '/tools/cling'
-LLVM_OBJ_ROOT = workdir + '/builddir'
 LLVM_GIT_URL = 'http://root.cern.ch/git/llvm.git'
 CLANG_GIT_URL = 'http://root.cern.ch/git/clang.git'
 CLING_GIT_URL = 'http://root.cern.ch/git/cling.git'
@@ -788,6 +819,7 @@ args = vars(parser.parse_args())
 print 'Cling Packaging Tool (CPT)'
 print 'Arguments vector: ' + str(sys.argv)
 box_draw_header()
+print 'Family: ' + FAMILY
 print 'Operating System: ' + OS
 print 'Distribution: ' + DIST
 print 'Release: ' + RELEASE
