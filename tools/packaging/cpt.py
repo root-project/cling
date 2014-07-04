@@ -112,6 +112,39 @@ VERSION=''
 #              Platform independent functions (formerly indep.py)             #
 ###############################################################################
 
+def exec_subprocess_call(cmd, cwd):
+    if OS == 'Windows':
+        subprocess.Popen(cmd.split(),
+                         cwd=cwd,
+                         shell=True,
+                         stdin=subprocess.PIPE,
+                         stdout=None,
+                         stderr=subprocess.STDOUT).communicate()
+    else:
+        subprocess.Popen([cmd],
+                         cwd=cwd,
+                         shell=True,
+                         stdin=subprocess.PIPE,
+                         stdout=None,
+                         stderr=subprocess.STDOUT).communicate()
+
+def exec_subprocess_check_output(cmd, cwd):
+    if OS == 'Windows':
+        return subprocess.Popen(cmd.split(),
+                     cwd=cwd,
+                     shell=True,
+                     stdin=subprocess.PIPE,
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.STDOUT).communicate()[0]
+    else:
+        return subprocess.Popen([cmd],
+                     cwd=cwd,
+                     shell=True,
+                     stdin=subprocess.PIPE,
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.STDOUT).communicate()[0]
+
+
 def box_draw_header():
     msg='cling (' + platform.machine() + ')' + formatdate(time.time(),tzinfo())
     spaces_no = 80 - len(msg) - 4
@@ -150,209 +183,87 @@ def fetch_llvm():
     box_draw("Fetch source files")
     print "Last known good LLVM revision is: %s"%(LLVMRevision)
     def get_fresh_llvm():
-        subprocess.Popen(['git clone %s %s'%(LLVM_GIT_URL, srcdir)],
-                         cwd=workdir,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git clone %s %s'%(LLVM_GIT_URL, srcdir), workdir)
 
-        subprocess.Popen(['git checkout ROOT-patches-r%s'%(LLVMRevision)],
-                         cwd=srcdir,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), srcdir)
 
     def update_old_llvm():
-        subprocess.Popen(['git clean -f -x -d'],
-                         cwd=srcdir,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git stash', srcdir)
 
-        subprocess.Popen(['git fetch --tags'],
-                         cwd=srcdir,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git clean -f -x -d', srcdir)
 
-        subprocess.Popen(['git checkout ROOT-patches-r%s'%(LLVMRevision)],
-                         cwd=srcdir,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git fetch --tags', srcdir)
 
-        subprocess.Popen(['git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision)],
-                         cwd=srcdir,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), srcdir)
 
-        subprocess.Popen(['git stash'],
-                         cwd=srcdir,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision), srcdir)
 
-    if platform.system() == 'Windows':
-        pass
+    if os.path.isdir(srcdir):
+        update_old_llvm()
     else:
-
-        if os.path.isdir(srcdir):
-            update_old_llvm()
-        else:
-            get_fresh_llvm()
+        get_fresh_llvm()
 
 
 def fetch_clang():
     def get_fresh_clang():
-        subprocess.Popen(['git clone %s %s/tools/clang'%(CLANG_GIT_URL, srcdir)],
-                         cwd=srcdir+'/tools',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
 
-        subprocess.Popen(['git checkout ROOT-patches-r%s'%(LLVMRevision)],
-                         cwd=srcdir+'tools/clang',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git clone %s %s/tools/clang'%(CLANG_GIT_URL, srcdir), os.path.join(srcdir, 'tools'))
+
+        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
     def update_old_clang():
-        subprocess.Popen(['git clean -f -x -d'],
-                         cwd=srcdir+'/tools/clang',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git stash', os.path.join(srcdir, 'tools', 'clang'))
 
-        subprocess.Popen(['git fetch --tags'],
-                         cwd=srcdir+'/tools/clang',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git clean -f -x -d', os.path.join(srcdir, 'tools', 'clang'))
 
-        subprocess.Popen(['git checkout ROOT-patches-r%s'%(LLVMRevision)],
-                         cwd=srcdir+'/tools/clang',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git fetch --tags', os.path.join(srcdir, 'tools', 'clang'))
 
-        subprocess.Popen(['git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision)],
-                         cwd=srcdir+'/tools/clang',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
-        subprocess.Popen(['git stash'],
-                         cwd=srcdir+'/tools/clang',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
-    if platform.system() == 'Windows':
-        pass
+    if os.path.isdir(os.path.join(srcdir, 'tools' 'clang')):
+        update_old_clang()
     else:
-
-        if os.path.isdir(srcdir+'/tools/clang'):
-            update_old_clang()
-        else:
-            get_fresh_clang()
+        get_fresh_clang()
 
 def fetch_cling(arg):
     def get_fresh_cling():
-        subprocess.Popen(['git clone %s %s'%(CLING_GIT_URL, CLING_SRC_DIR)],
-                         cwd=srcdir+'/tools',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git clone %s %s'%(CLING_GIT_URL, CLING_SRC_DIR), os.path.join(srcdir, 'tools'))
+
         if arg == 'last-stable':
-            checkout_branch = subprocess.Popen(['git describe --match v* --abbrev=0 --tags | head -n 1'],
-                                               cwd=CLING_SRC_DIR,
-                                               shell=True,
-                                               stdin=subprocess.PIPE,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.STDOUT).communicate()[0]
+            checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1', CLING_SRC_DIR)
+
         elif arg == 'master':
             checkout_branch = 'master'
         else:
             checkout_branch = arg
 
-        subprocess.Popen(['git checkout %s'%(checkout_branch)],
-                         cwd=CLING_SRC_DIR,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git checkout %s'%(checkout_branch), CLING_SRC_DIR)
 
     def update_old_cling():
-        subprocess.Popen(['git clean -f -x -d'],
-                         cwd=CLING_SRC_DIR,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git stash', CLING_SRC_DIR)
 
-        subprocess.Popen(['git fetch --tags'],
-                         cwd=CLING_SRC_DIR,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git clean -f -x -d', CLING_SRC_DIR)
+
+        exec_subprocess_call('git fetch --tags', CLING_SRC_DIR)
 
         if arg == 'last-stable':
-            checkout_branch = subprocess.Popen(['git describe --match v* --abbrev=0 --tags | head -n 1'],
-                                               cwd=CLING_SRC_DIR,
-                                               shell=True,
-                                               stdin=subprocess.PIPE,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.STDOUT).communicate()[0]
+            checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1', CLING_SRC_DIR)
+
         elif arg == 'master':
             checkout_branch = 'master'
         else:
             checkout_branch = arg
 
-        subprocess.Popen(['git checkout %s'%(checkout_branch)],
-                         cwd=CLING_SRC_DIR,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git checkout %s'%(checkout_branch), CLING_SRC_DIR)
 
-        subprocess.Popen(['git pull origin %s'%(checkout_branch)],
-                         cwd=CLING_SRC_DIR,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('git pull origin %s'%(checkout_branch), CLING_SRC_DIR)
 
-        subprocess.Popen(['git stash'],
-                         cwd=CLING_SRC_DIR,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
-
-    if platform.system() == 'Windows':
-        pass
+    if os.path.isdir(CLING_SRC_DIR):
+        update_old_cling()
     else:
-        if os.path.isdir(CLING_SRC_DIR):
-            update_old_cling()
-        else:
-            get_fresh_cling()
+        get_fresh_cling()
 
 
 def set_version():
@@ -361,12 +272,7 @@ def set_version():
     VERSION=open(CLING_SRC_DIR+'/VERSION', 'r').readline().strip()
 
     # If development release, then add revision to the version
-    REVISION=subprocess.Popen(['git log -n 1 --pretty=format:"%H"'],
-                     cwd=CLING_SRC_DIR,
-                     shell=True,
-                     stdin=subprocess.PIPE,
-                     stdout=subprocess.PIPE,
-                     stderr=subprocess.STDOUT).communicate()[0].strip()
+    REVISION = exec_subprocess_check_output('git log -n 1 --pretty=format:%H', CLING_SRC_DIR).strip()
 
     if '~dev' in VERSION:
         VERSION = VERSION + '-' + REVISION[:7]
@@ -380,12 +286,7 @@ def set_ext():
     global SHLIBEXT
     box_draw("Set binary/library extensions")
     if not os.path.isfile(LLVM_OBJ_ROOT + '/test/lit.site.cfg'):
-        subprocess.Popen(['make lit.site.cfg'],
-                         cwd=LLVM_OBJ_ROOT + '/test',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('make lit.site.cfg', os.path.join(LLVM_OBJ_ROOT, 'test'))
 
     with open(LLVM_OBJ_ROOT + '/test/lit.site.cfg', 'r') as lit_site_cfg:
         for line in lit_site_cfg:
@@ -418,59 +319,25 @@ def compile(arg):
 
     if platform.system() == 'Windows':
         box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
-        subprocess.Popen(['cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ../os.path.basename(%s)'%(TMP_PREFIX, srcdir)],
-                         cwd=LLVM_OBJ_ROOT,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ../os.path.basename(%s)'%(TMP_PREFIX, srcdir), LLVM_OBJ_ROOT)
 
         box_draw("Building Cling (using %s cores)"%(cores))
-        subprocess.Popen(['cmake --build . --target clang --config Release'],
-                         cwd=LLVM_OBJ_ROOT,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('cmake --build . --target clang --config Release', LLVM_OBJ_ROOT)
 
-        subprocess.Popen(['cmake --build . --target cling --config Release'],
-                         cwd=LLVM_OBJ_ROOT,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('cmake --build . --target cling --config Release', LLVM_OBJ_ROOT)
 
         box_draw("Install compiled binaries to prefix (using %s cores)"%(cores))
-        subprocess.Popen(['cmake --build . --target INSTALL --config Release'],
-                         cwd=LLVM_OBJ_ROOT,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('cmake --build . --target INSTALL --config Release', LLVM_OBJ_ROOT)
+
     else:
         box_draw("Configure Cling with GNU Make")
-        subprocess.Popen(['%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11'%(srcdir, python, TMP_PREFIX)],
-                         cwd=LLVM_OBJ_ROOT,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11'%(srcdir, python, TMP_PREFIX), LLVM_OBJ_ROOT)
 
         box_draw("Building Cling (using %s cores)"%(cores))
-        subprocess.Popen(['make -j%s'%(cores)],
-                         cwd=LLVM_OBJ_ROOT,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('make -j%s'%(cores), LLVM_OBJ_ROOT)
 
         box_draw("Install compiled binaries to prefix (using %s cores)"%(cores))
-        subprocess.Popen(['make install -j%s prefix=%s'%(cores, TMP_PREFIX)],
-                         cwd=LLVM_OBJ_ROOT,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('make install -j%s prefix=%s'%(cores, TMP_PREFIX), LLVM_OBJ_ROOT)
 
 
 def install_prefix():
@@ -499,12 +366,7 @@ def install_prefix():
 def test_cling():
     box_draw("Run Cling test suite")
     if platform.system() != 'Windows':
-        subprocess.Popen(['make test'],
-                         cwd=workdir + '/builddir/tools/cling',
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        exec_subprocess_call('make test', workdir + '/builddir/tools/cling')
 
 
 def tarball():
@@ -533,7 +395,7 @@ def cleanup():
         print "Remove file: " + os.path.join(workdir,'cling.nsi')
         os.remove(os.path.join(workdir,'cling.nsi'))
 
-    if args['current_dev'] == 'deb' or args['last-stable'] == 'deb' or args['deb-tag']:
+    if args['current_dev'] == 'deb' or args['last_stable'] == 'deb' or args['deb_tag']:
         print 'Create output directory: %s/cling-%s-1'%(workdir, VERSION)
         os.makedirs('%s/cling-%s-1'%(workdir, VERSION))
 
@@ -548,11 +410,7 @@ def cleanup():
 #            Debian specific functions (ported from debianize.sh)             #
 ###############################################################################
 
-SIGNING_USER = subprocess.Popen(['gpg --fingerprint | grep uid | sed s/"uid *"//g'],
-                                shell=True,
-                                stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT).communicate()[0].strip()
+SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
 
 def tarball_deb():
     box_draw("Compress compiled binaries into a bzip2 tarball")
@@ -731,11 +589,8 @@ cling (%s-1) unstable; urgency=low
 
     if '~dev' in VERSION:
         TAG = str(float(VERSION[:VERSION.find('~')]) - 0.1)
-        template = subprocess.Popen(['git log v' + TAG + '...HEAD --format="  * %s" | fmt -s'],
-                                shell=True,
-                                stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT).communicate()[0]
+        template = exec_subprocess_check_output('git log v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR)
+
         f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
         f.write(template)
         f.close()
@@ -759,11 +614,8 @@ cling (%s-1) unstable; urgency=low
             f.write('cling (' + TAG + '-1) unstable; urgency=low\n')
             f.close()
             STABLE_FLAG = '1'
-            template = subprocess.Popen(['git log v' + CMP + '...v' + TAG + '--format="  * %s" | fmt -s'],
-                                        shell=True,
-                                        stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT).communicate()[0]
+            template = exec_subprocess_check_output('git log v' + CMP + '...v' + TAG + '--format="  * %s" | fmt -s', CLING_SRC_DIR)
+
             f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
             f.write(template)
             f.close()
@@ -777,22 +629,14 @@ cling (%s-1) unstable; urgency=low
     f.write('\nOld Changelog:\n')
     f.close()
 
-    template = subprocess.Popen(['git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n"'],
-                                shell=True,
-                                stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT).communicate()[0]
+    template = exec_subprocess_check_output('git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n"', CLING_SRC_DIR)
+
     f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
     f.write(template)
     f.close()
 
     box_draw("Run debuild to create Debian package")
-    subprocess.Popen(['debuild'],
-                     cwd=prefix,
-                     shell=True,
-                     stdin=subprocess.PIPE,
-                     stdout=None,
-                     stderr=subprocess.STDOUT).communicate()
+    exec_subprocess_call('debuild', prefix)
 
 
 ###############################################################################
