@@ -62,8 +62,8 @@ elif OS == 'Linux':
     EXEEXT = ''
     SHLIBEXT = '.so'
 
-    TMP_PREFIX='/var/tmp/cling-obj/'
-    workdir = os.path.expanduser('~/ec/build')
+    TMP_PREFIX=os.path.join(os.sep, 'var', 'tmp', 'cling-obj' + os.sep)
+    workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 elif OS == 'Darwin':
     DIST = 'N/A'
@@ -73,8 +73,8 @@ elif OS == 'Darwin':
     EXEEXT = ''
     SHLIBEXT = '.dylib'
 
-    TMP_PREFIX='/var/tmp/cling-obj/'
-    workdir = os.path.expanduser('~/ec/build')
+    TMP_PREFIX=os.path.join(os.sep, 'var', 'tmp', 'cling-obj' + os.sep)
+    workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 else:
     # Extensions will be detected anyway by set_ext()
@@ -82,8 +82,8 @@ else:
     SHLIBEXT = ''
 
     #TODO: Need to test this in other platforms
-    TMP_PREFIX='/var/tmp/cling-obj/'
-    workdir = os.path.expanduser('~/ec/build')
+    TMP_PREFIX=os.path.join(os.sep, 'var', 'tmp', 'cling-obj' + os.sep)
+    workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 
 ###############################################################################
@@ -269,7 +269,7 @@ def fetch_cling(arg):
 def set_version():
     global VERSION
     box_draw("Set Cling version")
-    VERSION=open(CLING_SRC_DIR+'/VERSION', 'r').readline().strip()
+    VERSION=open(os.path.join(CLING_SRC_DIR, 'VERSION'), 'r').readline().strip()
 
     # If development release, then add revision to the version
     REVISION = exec_subprocess_check_output('git log -n 1 --pretty=format:%H', CLING_SRC_DIR).strip()
@@ -288,7 +288,7 @@ def set_ext():
     if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT, 'test', 'lit.site.cfg')):
         exec_subprocess_call('make lit.site.cfg', os.path.join(LLVM_OBJ_ROOT, 'test'))
 
-    with open(LLVM_OBJ_ROOT + '/test/lit.site.cfg', 'r') as lit_site_cfg:
+    with open(os.path.join(LLVM_OBJ_ROOT, 'test', 'lit.site.cfg'), 'r') as lit_site_cfg:
         for line in lit_site_cfg:
             if re.match('^config.llvm_shlib_ext = ', line):
                 SHLIBEXT = re.sub('^config.llvm_shlib_ext = ', '', line).replace('"', '').strip()
@@ -344,7 +344,7 @@ def install_prefix():
     set_ext()
     box_draw("Filtering Cling's libraries and binaries")
 
-    for line in fileinput.input(CLING_SRC_DIR + '/tools/packaging/dist-files.mk', inplace=True):
+    for line in fileinput.input(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.mk'), inplace=True):
         if '@EXEEXT@' in line:
             print line.replace('@EXEEXT@', EXEEXT),
         elif '@SHLIBEXT@' in line:
@@ -352,7 +352,7 @@ def install_prefix():
         else:
             print line,
 
-    dist_files = open(CLING_SRC_DIR + '/tools/packaging/dist-files.mk', 'r').read()
+    dist_files = open(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.mk'), 'r').read()
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
             f=os.path.join(root, file).replace(TMP_PREFIX, '')
@@ -365,7 +365,7 @@ def install_prefix():
 def test_cling():
     box_draw("Run Cling test suite")
     if platform.system() != 'Windows':
-        exec_subprocess_call('make test', workdir + '/builddir/tools/cling')
+        exec_subprocess_call('make test', os.path.join(workdir, 'builddir', 'tools', 'cling'))
 
 
 def tarball():
@@ -378,9 +378,9 @@ def tarball():
 def cleanup():
     print "\n"
     box_draw("Clean up")
-    if os.path.isdir(os.path.join(workdir,'builddir')):
-        print "Remove directory: " + os.path.join(workdir,'builddir')
-        shutil.rmtree(os.path.join(workdir,'builddir'))
+    if os.path.isdir(os.path.join(workdir, 'builddir')):
+        print "Remove directory: " + os.path.join(workdir, 'builddir')
+        shutil.rmtree(os.path.join(workdir, 'builddir'))
 
     if os.path.isdir(prefix):
         print "Remove directory: " + prefix
@@ -395,15 +395,15 @@ def cleanup():
         os.remove(os.path.join(workdir,'cling.nsi'))
 
     if args['current_dev'] == 'deb' or args['last_stable'] == 'deb' or args['deb_tag']:
-        print 'Create output directory: %s/cling-%s-1'%(workdir, VERSION)
-        os.makedirs('%s/cling-%s-1'%(workdir, VERSION))
+        print 'Create output directory: ' + os.path.join(workdir, 'cling-%s-1'%(VERSION))
+        os.makedirs(os.path.join(workdir, 'cling-%s-1'%(VERSION)))
 
-        for file in glob.glob(r'%s/cling_%s*'%(workdir, VERSION)):
-            print file + '->' + '%s/cling-%s-1/%s'%(workdir, VERSION, os.path.basename(file))
-            shutil.move(file, '%s/cling-%s-1'%(workdir, VERSION))
+        for file in glob.glob(os.path.join(workdir, 'cling_%s*'%(VERSION))):
+            print file + '->' + os.path.join(workdir, 'cling-%s-1'%(VERSION), os.path.basename(file))
+            shutil.move(file, os.path.join(workdir, 'cling-%s-1'%(VERSION)))
 
-        if not os.listdir('%s/cling-%s-1'%(workdir, VERSION)):
-            os.rmdir('%s/cling-%s-1'%(workdir, VERSION))
+        if not os.listdir(os.path.join(workdir, 'cling-%s-1'%(VERSION))):
+            os.rmdir(os.path.join(workdir, 'cling-%s-1'%(VERSION)))
 
 ###############################################################################
 #            Debian specific functions (ported from debianize.sh)             #
@@ -654,7 +654,7 @@ parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in a
 parser.add_argument('--with-llvm-url', help='Specify an alternate URL of LLVM repo', default='http://root.cern.ch/git/llvm.git')
 parser.add_argument('--with-clang-url', help='Specify an alternate URL of Clang repo', default='http://root.cern.ch/git/clang.git')
 parser.add_argument('--with-cling-url', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
-parser.add_argument('--with-workdir', help='Specify an alternate working directory for CPT', default=os.path.expanduser('~/ec/build'))
+parser.add_argument('--with-workdir', help='Specify an alternate working directory for CPT', default=os.path.expanduser(workdir))
 
 args = vars(parser.parse_args())
 
@@ -678,21 +678,21 @@ if args['current_dev']:
     fetch_cling('master')
     set_version()
     if args['current_dev'] == 'tar':
-        compile(workdir + '/cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION)
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
         test_cling()
         tarball()
         cleanup()
 
     elif args['current_dev'] == "deb":
-        compile(workdir + '/cling-' + VERSION)
+        compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
         test_cling()
         tarball_deb()
         debianize()
         cleanup()
     elif args['current_dev'] == 'nsis':
-        compile(workdir + '/cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION)
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
         test_cling()
         #get_nsis
@@ -708,21 +708,21 @@ if args['last_stable']:
 
     if args['last_stable'] == 'tar':
         set_version()
-        compile(workdir + '/cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION)
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
         test_cling()
         tarball()
         cleanup()
     if args['last_stable'] == 'deb':
         set_version()
-        compile(workdir + '/cling-' + VERSION)
+        compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
         test_cling()
         tarball_deb()
         debianize()
         cleanup()
     if args['last_stable'] == 'nsis':
-        compile(workdir + '/cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION)
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
         test_cling()
         #get_nsis
@@ -735,7 +735,7 @@ if args['tarball_tag']:
     fetch_clang()
     fetch_cling(args['tarball_tag'])
     set_version()
-    compile(workdir + '/cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION)
+    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
     install_prefix()
     test_cling()
     tarball()
@@ -746,11 +746,11 @@ if args['deb_tag']:
     fetch_clang()
     fetch_cling(args['deb_tag'])
     set_version()
-    compile(workdir + '/cling-' + VERSION)
+    compile(os.path.join(workdir, 'cling-' + VERSION))
     install_prefix()
     test_cling()
-    #tarball_deb
-    #debianize
+    tarball_deb
+    debianize
     cleanup()
 
 if args['nsis_tag']:
@@ -758,7 +758,7 @@ if args['nsis_tag']:
     fetch_clang()
     fetch_cling(args['nsis_tag'])
     set_version()
-    compile(workdir + '/cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION)
+    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
     install_prefix()
     test_cling()
     #get_nsis
