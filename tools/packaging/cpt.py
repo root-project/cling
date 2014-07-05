@@ -44,14 +44,15 @@ OS=platform.system()
 FAMILY=os.name.upper()
 
 if OS == 'Windows':
+    DIST = 'N/A'
     RELEASE = OS + ' ' + platform.release()
     REV = platform.version()
 
     EXEEXT = '.exe'
     SHLIBEXT = '.dll'
 
-    TMP_PREFIX='C:/Windows/Temp/cling-obj/'
-    workdir = 'C:/ec/build'
+    TMP_PREFIX='C:\\Windows\\Temp\\cling-obj'
+    workdir = 'C:\\ec\\build'
 
 elif OS == 'Linux':
     DIST = platform.linux_distribution()[0]
@@ -65,6 +66,7 @@ elif OS == 'Linux':
     workdir = os.path.expanduser('~/ec/build')
 
 elif OS == 'Darwin':
+    DIST = 'N/A'
     RELEASE = platform.release()
     REV = platform.mac_ver()[0]
 
@@ -83,22 +85,13 @@ else:
     TMP_PREFIX='/var/tmp/cling-obj/'
     workdir = os.path.expanduser('~/ec/build')
 
-if RELEASE == '':
-    RELEASE = 'N/A'
-
-if DIST == '':
-    DIST = 'N/A'
-
-if REV == '':
-    REV = 'N/A'
-
 
 ###############################################################################
 #                               Global variables                              #
 ###############################################################################
 
 srcdir = os.path.join(workdir, 'cling-src')
-CLING_SRC_DIR = os.path.join(srcdir, 'tools/cling')
+CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
 LLVM_GIT_URL = 'http://root.cern.ch/git/llvm.git'
@@ -114,12 +107,20 @@ VERSION=''
 
 def exec_subprocess_call(cmd, cwd):
     if OS == 'Windows':
-        subprocess.Popen(cmd.split(),
-                         cwd=cwd,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        if '"' not in cmd:
+            subprocess.Popen(cmd.split(),
+                             cwd=cwd,
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=None,
+                             stderr=subprocess.STDOUT).communicate()
+        else:
+            subprocess.Popen(cmd.split('"')[0].split() + [cmd.split('"')[1]] + cmd.split('"')[2].split(),
+                             cwd=cwd,
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=None,
+                             stderr=subprocess.STDOUT).communicate()
     else:
         subprocess.Popen([cmd],
                          cwd=cwd,
@@ -159,7 +160,7 @@ def box_draw_header():
     else:
         print '''
 +=============================================================================+
-| %s |
+| %s|
 +=============================================================================+'''%(msg)
 
 
@@ -175,7 +176,7 @@ def box_draw(msg):
     else:
         print '''
 +-----------------------------------------------------------------------------+
-| %s%s |
+| %s%s|
 +-----------------------------------------------------------------------------+'''%(msg, spacer)
 
 
@@ -206,8 +207,7 @@ def fetch_llvm():
 
 def fetch_clang():
     def get_fresh_clang():
-
-        exec_subprocess_call('git clone %s %s/tools/clang'%(CLANG_GIT_URL, srcdir), os.path.join(srcdir, 'tools'))
+        exec_subprocess_call('git clone %s'%(CLANG_GIT_URL), os.path.join(srcdir, 'tools'))
 
         exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
@@ -222,14 +222,14 @@ def fetch_clang():
 
         exec_subprocess_call('git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
-    if os.path.isdir(os.path.join(srcdir, 'tools' 'clang')):
+    if os.path.isdir(os.path.join(srcdir, 'tools', 'clang')):
         update_old_clang()
     else:
         get_fresh_clang()
 
 def fetch_cling(arg):
     def get_fresh_cling():
-        exec_subprocess_call('git clone %s %s'%(CLING_GIT_URL, CLING_SRC_DIR), os.path.join(srcdir, 'tools'))
+        exec_subprocess_call('git clone %s'%(CLING_GIT_URL), os.path.join(srcdir, 'tools'))
 
         if arg == 'last-stable':
             checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1', CLING_SRC_DIR)
@@ -285,7 +285,7 @@ def set_ext():
     global EXEEXT
     global SHLIBEXT
     box_draw("Set binary/library extensions")
-    if not os.path.isfile(LLVM_OBJ_ROOT + '/test/lit.site.cfg'):
+    if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT, 'test', 'lit.site.cfg')):
         exec_subprocess_call('make lit.site.cfg', os.path.join(LLVM_OBJ_ROOT, 'test'))
 
     with open(LLVM_OBJ_ROOT + '/test/lit.site.cfg', 'r') as lit_site_cfg:
@@ -311,15 +311,15 @@ def compile(arg):
         shutil.rmtree(prefix)
 
     # Cleanup previous build directory if exists
-    if os.path.isdir(workdir + '/builddir'):
-        print "Remove directory: " + workdir + '/builddir'
-        shutil.rmtree(workdir + '/builddir')
+    if os.path.isdir(os.path.join(workdir, 'builddir')):
+        print "Remove directory: " + os.path.join(workdir, 'builddir')
+        shutil.rmtree(os.path.join(workdir, 'builddir'))
 
-    os.makedirs(workdir + '/builddir')
+    os.makedirs(os.path.join(workdir, 'builddir'))
 
     if platform.system() == 'Windows':
         box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
-        exec_subprocess_call('cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ../os.path.basename(%s)'%(TMP_PREFIX, srcdir), LLVM_OBJ_ROOT)
+        exec_subprocess_call('cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s'%(TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
         box_draw("Building Cling (using %s cores)"%(cores))
         exec_subprocess_call('cmake --build . --target clang --config Release', LLVM_OBJ_ROOT)
@@ -343,7 +343,6 @@ def compile(arg):
 def install_prefix():
     set_ext()
     box_draw("Filtering Cling's libraries and binaries")
-    print "This is going to take a while. Please wait."
 
     for line in fileinput.input(CLING_SRC_DIR + '/tools/packaging/dist-files.mk', inplace=True):
         if '@EXEEXT@' in line:
@@ -410,8 +409,6 @@ def cleanup():
 #            Debian specific functions (ported from debianize.sh)             #
 ###############################################################################
 
-SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
-
 def tarball_deb():
     box_draw("Compress compiled binaries into a bzip2 tarball")
     tar = tarfile.open(os.path.join(workdir, 'cling_' + VERSION +'.orig.tar.bz2'), 'w:bz2')
@@ -419,6 +416,8 @@ def tarball_deb():
     tar.close()
 
 def debianize():
+    SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
+
     box_draw("Set up the debian directory")
     print "Create directory: debian"
     os.makedirs(os.path.join(prefix, 'debian'))
