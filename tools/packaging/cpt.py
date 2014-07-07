@@ -91,6 +91,9 @@ else:
 #                               Global variables                              #
 ###############################################################################
 
+# This is needed in Windows
+os.makedirs(workdir)
+
 srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
@@ -132,12 +135,21 @@ def exec_subprocess_call(cmd, cwd):
 
 def exec_subprocess_check_output(cmd, cwd):
     if OS == 'Windows':
-        return subprocess.Popen(cmd.split(),
-                     cwd=cwd,
-                     shell=True,
-                     stdin=subprocess.PIPE,
-                     stdout=subprocess.PIPE,
-                     stderr=subprocess.STDOUT).communicate()[0]
+        if '"' not in cmd:
+            return subprocess.Popen(cmd.split(),
+                                    cwd=cwd,
+                                    shell=True,
+                                    stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT).communicate()[0]
+        else:
+            return subprocess.Popen(cmd.split('"')[0].split() + [cmd.split('"')[1]] + cmd.split('"')[2].split(),
+                                    cwd=cwd,
+                                    shell=True,
+                                    stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT).communicate()[0]
+
     else:
         return subprocess.Popen([cmd],
                      cwd=cwd,
@@ -209,7 +221,7 @@ def wget(url, out_dir):
 
 def fetch_llvm():
     box_draw("Fetch source files")
-    print "Last known good LLVM revision is: %s"%(LLVMRevision)
+    print 'Last known good LLVM revision is: ' + LLVMRevision + '\n'
     def get_fresh_llvm():
         exec_subprocess_call('git clone %s %s'%(LLVM_GIT_URL, srcdir), workdir)
 
@@ -383,10 +395,10 @@ def install_prefix():
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
             f=os.path.join(root, file).replace(TMP_PREFIX, '')
-            if f+' ' in dist_files:
+            if f.lstrip(os.sep).replace(os.sep, '/')+' ' in dist_files:
                 print "Filter: " + f
                 if not os.path.isdir(os.path.join(prefix,os.path.dirname(f))):
-		    os.makedirs(os.path.join(prefix,os.path.dirname(f)))
+                    os.makedirs(os.path.join(prefix,os.path.dirname(f)))
                 shutil.copy(os.path.join(TMP_PREFIX,f), os.path.join(prefix,f))
 
 def test_cling():
@@ -690,9 +702,11 @@ cling (%s-1) unstable; urgency=low
 ###############################################################################
 
 def check_win(pkg):
-  # Check for Microsoft Visual Studio 11.0
+    # Check for Microsoft Visual Studio 11.0
     if pkg == "msvc":
-        if exec_subprocess_call('REG QUERY "HKEY_CLASSES_ROOT\VisualStudio.DTE.11.0"', CLING_SRC_DIR).find('ERROR') == -1:
+        if exec_subprocess_check_output('REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.11.0', 'C:\\').find('ERROR') == -1:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+        else:
             print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
 
     elif pkg == "python":
@@ -702,12 +716,10 @@ def check_win(pkg):
             print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
         else:
             print pkg.ljust(20) + '[OK]'.ljust(30)
-    else:
-        print pkg.ljust(20) + '[OK]'.ljust(30)
 
   # Check for other tools
     else:
-        if exec_subprocess_call('where %s'%(pkg), CLING_SRC_DIR).find('ERROR') != -1:
+        if exec_subprocess_check_output('where %s'%(pkg), 'C:\\').find('ERROR') != -1:
             print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
         else:
             print pkg.ljust(20) + '[OK]'.ljust(30)
@@ -831,7 +843,10 @@ if args['current_dev']:
     fetch_cling('master')
     set_version()
     if args['current_dev'] == 'tar':
-        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
+        if OS == 'Windows':
+            compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
+        else:
+            compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         test_cling()
         tarball()
@@ -861,7 +876,10 @@ if args['last_stable']:
 
     if args['last_stable'] == 'tar':
         set_version()
-        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
+        if OS == 'Windows':
+            compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
+        else:
+            compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         test_cling()
         tarball()
