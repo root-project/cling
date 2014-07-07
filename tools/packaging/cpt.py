@@ -92,7 +92,8 @@ else:
 ###############################################################################
 
 # This is needed in Windows
-os.makedirs(workdir)
+if not os.path.isdir(workdir):
+    os.makedirs(workdir)
 
 srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
