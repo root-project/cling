@@ -436,6 +436,27 @@ def cleanup():
 #            Debian specific functions (ported from debianize.sh)             #
 ###############################################################################
 
+def check_ubuntu(pkg):
+    if exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'"%(pkg), CLING_SRC_DIR).strip() == '0':
+        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+    else:
+        if pkg == "gnupg":
+            SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
+            if SIGNING_USER == '':
+                print pkg.ljust(20) + '[INSTALLED - NOT SETUP]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+        elif pkg == "python":
+            if platform.python_version()[0] == '3':
+                print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+            elif float(platform.python_version()[:3]) < 2.7:
+                print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+
+
 def tarball_deb():
     box_draw("Compress compiled binaries into a bzip2 tarball")
     tar = tarfile.open(os.path.join(workdir, 'cling_' + VERSION +'.orig.tar.bz2'), 'w:bz2')
@@ -668,6 +689,29 @@ cling (%s-1) unstable; urgency=low
 #           Windows specific functions (ported from windows_dep.sh)           #
 ###############################################################################
 
+def check_win(pkg):
+  # Check for Microsoft Visual Studio 11.0
+    if pkg == "msvc":
+        if exec_subprocess_call('REG QUERY "HKEY_CLASSES_ROOT\VisualStudio.DTE.11.0"', CLING_SRC_DIR).find('ERROR') == -1:
+            print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+
+    elif pkg == "python":
+        if platform.python_version()[0] == '3':
+            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+        elif float(platform.python_version()[:3]) < 2.7:
+            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+    else:
+        print pkg.ljust(20) + '[OK]'.ljust(30)
+
+  # Check for other tools
+    else:
+        if exec_subprocess_call('where %s'%(pkg), CLING_SRC_DIR).find('ERROR') != -1:
+            print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+
 def get_win_dep():
     box_draw("Download NSIS compiler")
     html = urllib2.urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read()
@@ -725,11 +769,61 @@ print 'Family: ' + FAMILY
 print 'Operating System: ' + OS
 print 'Distribution: ' + DIST
 print 'Release: ' + RELEASE
-print 'Revision: ' + REV + '\n'
+print 'Revision: ' + REV
+print 'Architecture: ' + platform.machine() + '\n'
 
 if len(sys.argv) == 1:
     print "Error: no options passed"
     parser.print_help()
+
+if args['check_requirements'] == True:
+    box_draw('Check availability of required softwares')
+    if DIST == 'Ubuntu':
+        check_ubuntu('git')
+        check_ubuntu('debhelper')
+        check_ubuntu('devscripts')
+        check_ubuntu('gnupg')
+        check_ubuntu('python')
+        yes = set(['yes','y', 'ye', ''])
+        no = set(['no','n'])
+
+        choice = raw_input('''
+CPT will now attempt to update/install the requisite packages automatically.
+Do you want to continue? [yes/no]: ''').lower()
+        while True:
+            if choice in yes:
+                # Need to communicate values to the shell. Do not use exec_subprocess_call()
+                subprocess.Popen(['sudo apt-get update'],
+                                 shell=True,
+                                 stdin=subprocess.PIPE,
+                                 stdout=None,
+                                 stderr=subprocess.STDOUT).communicate('yes')
+                subprocess.Popen(['sudo apt-get install git debhelper devscripts gnupg python'],
+                                  shell=True,
+                                  stdin=subprocess.PIPE,
+                                  stdout=None,
+                                  stderr=subprocess.STDOUT).communicate('yes')
+                break
+            elif choice in no:
+                print '''
+Install/update the required packages by:
+  sudo apt-get update
+  sudo apt-get install git debhelper devscripts gnupg python
+'''
+                break
+            else:
+                choice = raw_input("Please respond with 'yes' or 'no': ")
+                continue
+
+    elif OS == 'Windows':
+        check_win('git')
+        check_win('python')
+        # Check Windows registry for keys that prove an MS Visual Studio 11.0 installation
+        check_win('msvc')
+        print '''
+Refer to the documentation of CPT for information on setting up your Windows environment.
+[tools/packaging/README.md]
+'''
 
 if args['current_dev']:
     fetch_llvm()
