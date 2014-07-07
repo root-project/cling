@@ -643,7 +643,7 @@ override_dh_auto_install:
 cling (%s-1) unstable; urgency=low
 
   * [Debian] Upload to unstable for version: %s
-'''%(VERSION)
+'''%(VERSION, VERSION)
     f.write(template.ltrip())
     f.close()
 
