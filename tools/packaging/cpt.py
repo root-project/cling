@@ -36,6 +36,7 @@ from datetime import tzinfo
 import time
 import multiprocessing
 import fileinput
+import stat
 
 ###############################################################################
 #                           Platform initialization                           #
@@ -94,6 +95,12 @@ else:
 # This is needed in Windows
 if not os.path.isdir(workdir):
     os.makedirs(workdir)
+
+if os.path.isdir(TMP_PREFIX):
+    shutil.rmtree(TMP_PREFIX)
+
+os.makedirs(TMP_PREFIX)
+
 
 srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
@@ -342,7 +349,7 @@ def set_ext():
 def compile(arg):
     global prefix
     prefix=arg
-    python=sys.executable
+    PYTHON=sys.executable
     cores=multiprocessing.cpu_count()
 
     # Cleanup previous installation directory if any
@@ -358,6 +365,8 @@ def compile(arg):
     os.makedirs(os.path.join(workdir, 'builddir'))
 
     if platform.system() == 'Windows':
+        CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
+
         box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
         exec_subprocess_call('cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s'%(TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
@@ -371,7 +380,7 @@ def compile(arg):
 
     else:
         box_draw("Configure Cling with GNU Make")
-        exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11'%(srcdir, python, TMP_PREFIX), LLVM_OBJ_ROOT)
+        exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11'%(srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
 
         box_draw("Building Cling (using %s cores)"%(cores))
         exec_subprocess_call('make -j%s'%(cores), LLVM_OBJ_ROOT)
@@ -627,7 +636,7 @@ Comment: Cling can also be licensed under University of Illinois/NCSA
 # -*- makefile -*-
 
 %:
-	dh \$@
+	dh $@
 
 override_dh_auto_build:
 
@@ -753,6 +762,254 @@ def get_win_dep():
     os.remove(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'cmake-%s-win32-x86'%(CMAKE_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'cmake'))
 
+def make_nsi():
+    box_draw("Generating cling.nsi")
+    NSIS = os.path.join(TMP_PREFIX, 'bin', 'nsis')
+    VIProductVersion = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1', CLING_SRC_DIR).strip()
+    print 'Create file: ' + os.path.join(workdir, 'cling.nsi')
+    f = open(os.path.join(workdir, 'cling.nsi'), 'w')
+    template = '''
+; Cling setup script %s
+!define APP_NAME "Cling"
+!define COMP_NAME "CERN"
+!define WEB_SITE "http://cling.web.cern.ch/"
+!define VERSION "%s"
+!define COPYRIGHT "Copyright © 2007-2014 by the Authors; Developed by The ROOT Team, CERN and Fermilab"
+!define DESCRIPTION "Interactive C++ interpreter"
+!define INSTALLER_NAME "%s"
+!define MAIN_APP_EXE "cling.exe"
+!define INSTALL_TYPE "SetShellVarContext current"
+!define PRODUCT_ROOT_KEY "HKLM"
+!define PRODUCT_KEY "Software\Cling"
+
+###############################################################################
+
+VIProductVersion  "%s.0.0"
+VIAddVersionKey "ProductName"  "${APP_NAME}"
+VIAddVersionKey "CompanyName"  "${COMP_NAME}"
+VIAddVersionKey "LegalCopyright"  "${COPYRIGHT}"
+VIAddVersionKey "FileDescription"  "${DESCRIPTION}"
+VIAddVersionKey "FileVersion"  "${VERSION}"
+
+###############################################################################
+
+SetCompressor /SOLID Lzma
+Name "${APP_NAME}"
+Caption "${APP_NAME}"
+OutFile "${INSTALLER_NAME}"
+BrandingText "${APP_NAME}"
+XPStyle on
+InstallDir "C:\\Cling\\cling-${VERSION}"
+
+###############################################################################
+; MUI settings
+!include "MUI.nsh"
+
+!define MUI_ABORTWARNING
+!define MUI_UNABORTWARNING
+!define MUI_HEADERIMAGE
+
+; Theme
+!define MUI_ICON "%s\\tools\\packaging\\windows\\LLVM.ico"
+!define MUI_UNICON "%s\\Contrib\\Graphics\\Icons\\orange-uninstall.ico"
+
+!insertmacro MUI_PAGE_WELCOME
+
+!define MUI_LICENSEPAGE_TEXT_BOTTOM "The source code for Cling is freely redistributable under the terms of the GNU Lesser General Public License (LGPL) as published by the Free Software Foundation."
+!define MUI_LICENSEPAGE_BUTTON "Next >"
+!insertmacro MUI_PAGE_LICENSE "%s"
+
+!insertmacro MUI_PAGE_DIRECTORY
+
+!insertmacro MUI_PAGE_INSTFILES
+
+!define MUI_FINISHPAGE_RUN "$INSTDIR\\bin\\${MAIN_APP_EXE}"
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_UNPAGE_FINISH
+
+!insertmacro MUI_LANGUAGE "English"
+
+###############################################################################
+
+Function .onInit
+  Call DetectWinVer
+  Call CheckPrevVersion
+FunctionEnd
+
+; file section
+Section "MainFiles"
+'''%(prefix,
+     VERSION,
+     os.path.basename(prefix) + '-setup.exe',
+     VIProductVersion.replace('v', ''),
+     CLING_SRC_DIR,
+     NSIS,
+     os.path.join(CLING_SRC_DIR, 'LICENSE.TXT'))
+
+    f.write(template.lstrip())
+    f.close()
+
+    # Insert the files to be installed
+    f = open(os.path.join(workdir, 'cling.nsi'), 'a+')
+    for root, dirs, files in os.walk(prefix):
+        f.write(' CreateDirectory "$INSTDIR\\%s"\n'%(root.replace(prefix, '')))
+        f.write(' SetOutPath "$INSTDIR\\%s"\n'%(root.replace(prefix, '')))
+
+        for file in files:
+            path=os.path.join(root, file)
+            f.write(' File "%s"\n'%(path))
+
+    template = '''
+SectionEnd
+
+Section make_uninstaller
+ ; Write the uninstall keys for Windows
+ SetOutPath "$INSTDIR"
+ WriteRegStr HKLM "Software\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "DisplayName" "Cling"
+ WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "UninstallString" "$INSTDIR\uninstall.exe"
+ WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoModify" 1
+ WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoRepair" 1
+ WriteUninstaller "uninstall.exe"
+SectionEnd
+
+; start menu
+# TODO: This is currently hardcoded.
+Section "Shortcuts"
+
+ CreateDirectory "$SMPROGRAMS\\Cling"
+ CreateShortCut "$SMPROGRAMS\\Cling\\Uninstall.lnk" "$INSTDIR\\uninstall.exe" "" "$INSTDIR\\uninstall.exe" 0
+ CreateShortCut "$SMPROGRAMS\Cling\\Cling.lnk" "$INSTDIR\\bin\\cling.exe" "" "${MUI_ICON}" 0
+ CreateDirectory "$SMPROGRAMS\\Cling\\Documentation"
+ CreateShortCut "$SMPROGRAMS\\Cling\\Documentation\\Cling (PS).lnk" "$INSTDIR\\docs\\llvm\\ps\\cling.ps" "" "" 0
+ CreateShortCut "$SMPROGRAMS\\Cling\\Documentation\\Cling (HTML).lnk" "$INSTDIR\\docs\\llvm\\html\\cling\\cling.html" "" "" 0
+
+SectionEnd
+
+Section "Uninstall"
+
+ DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Cling"
+ DeleteRegKey HKLM "Software\Cling"
+
+ ; Remove shortcuts
+ Delete "$SMPROGRAMS\Cling\*.*"
+ Delete "$SMPROGRAMS\Cling\Documentation\*.*"
+ Delete "$SMPROGRAMS\Cling\Documentation"
+ RMDir "$SMPROGRAMS\Cling"
+
+'''
+    f.write(template)
+
+    # insert dir list (depth-first order) for uninstall files
+    def walktree (top = prefix):
+        names = os.listdir(top)
+        for name in names:
+            try:
+                st = os.lstat(os.path.join(top, name))
+            except os.error:
+                continue
+            if stat.S_ISDIR(st.st_mode):
+                for (newtop, children) in walktree (os.path.join(top, name)):
+                    yield newtop, children
+        yield top, names
+
+    def iterate():
+        for (basepath, children) in walktree():
+            f.write(' Delete "%s\\*.*"\n'%(basepath.replace(prefix, '$INSTDIR')))
+            f.write(' RmDir "%s"\n'%(basepath.replace(prefix, '$INSTDIR')))
+
+    iterate()
+
+    # last bit of the uninstaller
+    template = '''
+SectionEnd
+
+; Function to detect Windows version and abort if Cling is unsupported in the current platform
+Function DetectWinVer
+  Push $0
+  Push $1
+  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" CurrentVersion
+  IfErrors is_error is_winnt
+is_winnt:
+  StrCpy $1 $0 1
+  StrCmp $1 4 is_error ; Aborting installation for Windows versions older than Windows 2000
+  StrCmp $0 "5.0" is_error ; Removing Windows 2000 as supported Windows version
+  StrCmp $0 "5.1" is_winnt_XP
+  StrCmp $0 "5.2" is_winnt_2003
+  StrCmp $0 "6.0" is_winnt_vista
+  StrCmp $0 "6.1" is_winnt_7
+  StrCmp $0 "6.2" is_winnt_8
+  StrCmp $1 6 is_winnt_8 ; Checking for future versions of Windows 8
+  Goto is_error
+
+is_winnt_XP:
+is_winnt_2003:
+is_winnt_vista:
+is_winnt_7:
+is_winnt_8:
+  Goto done
+is_error:
+  StrCpy $1 $0
+  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" ProductName
+  IfErrors 0 +4
+  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion" Version
+  IfErrors 0 +2
+  StrCpy $0 "Unknown"
+  MessageBox MB_ICONSTOP|MB_OK "This version of Cling cannot be installed on this system. Cling is supported only on Windows NT systems. Current system: $0 (version: $1)"
+  Abort
+done:
+  Pop $1
+  Pop $0
+FunctionEnd
+
+; Function to check any previously installed version of Cling in the system
+Function CheckPrevVersion
+  Push $0
+  Push $1
+  Push $2
+  IfFileExists "$INSTDIR\\bin\cling.exe" 0 otherver
+  MessageBox MB_OK|MB_ICONSTOP "Another Cling installation (with the same version) has been detected. Please uninstall it first."
+  Abort
+otherver:
+  StrCpy $0 0
+  StrCpy $2 ""
+loop:
+  EnumRegKey $1 ${PRODUCT_ROOT_KEY} "${PRODUCT_KEY}" $0
+  StrCmp $1 "" loopend
+  IntOp $0 $0 + 1
+  StrCmp $2 "" 0 +2
+  StrCpy $2 "$1"
+  StrCpy $2 "$2, $1"
+  Goto loop
+loopend:
+  ReadRegStr $1 ${PRODUCT_ROOT_KEY} "${PRODUCT_KEY}" "Version"
+  IfErrors finalcheck
+  StrCmp $2 "" 0 +2
+  StrCpy $2 "$1"
+  StrCpy $2 "$2, $1"
+finalcheck:
+  StrCmp $2 "" done
+  MessageBox MB_YESNO|MB_ICONEXCLAMATION "Another Cling installation (version $2) has been detected. It is recommended to uninstall it if you intend to use the same installation directory. Do you want to proceed with the installation anyway?" IDYES done IDNO 0
+  Abort
+done:
+  ClearErrors
+  Pop $2
+  Pop $1
+  Pop $0
+FunctionEnd
+'''
+    f.write(template)
+    f.close()
+
+def build_nsis():
+    box_draw("Build NSIS executable from cling.nsi")
+    NSIS = os.path.join(TMP_PREFIX, 'bin', 'nsis')
+    exec_subprocess_call('%s -V3 %s'%(os.path.join(NSIS, 'makensis.exe'), os.path.join(workdir, 'cling.nsi')), workdir)
+
 
 ###############################################################################
 #                           argparse configuration                            #
@@ -845,6 +1102,7 @@ if args['current_dev']:
     set_version()
     if args['current_dev'] == 'tar':
         if OS == 'Windows':
+            get_win_dep()
             compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
         else:
             compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
@@ -861,13 +1119,13 @@ if args['current_dev']:
         debianize()
         cleanup()
     elif args['current_dev'] == 'nsis':
+        get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
         test_cling()
-        #get_nsis
-        #make_nsi
-        #build_nsis
-        cleanup()
+        make_nsi()
+        build_nsis()
+        #cleanup()
  
 
 if args['last_stable']:
@@ -878,6 +1136,7 @@ if args['last_stable']:
     if args['last_stable'] == 'tar':
         set_version()
         if OS == 'Windows':
+            get_win_dep()
             compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
         else:
             compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
@@ -894,12 +1153,12 @@ if args['last_stable']:
         debianize()
         cleanup()
     if args['last_stable'] == 'nsis':
+        get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
         test_cling()
-        #get_nsis
-        #make_nsi
-        #build_nsis
+        make_nsi
+        build_nsis()
         cleanup()
 
 if args['tarball_tag']:
@@ -930,10 +1189,10 @@ if args['nsis_tag']:
     fetch_clang()
     fetch_cling(args['nsis_tag'])
     set_version()
+    get_win_dep()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
     install_prefix()
     test_cling()
-    #get_nsis
-    #make_nsi
-    #build_nsis
+    make_nsi
+    build_nsis()
     cleanup()
