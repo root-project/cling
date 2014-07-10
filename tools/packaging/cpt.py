@@ -653,7 +653,7 @@ cling (%s-1) unstable; urgency=low
 
   * [Debian] Upload to unstable for version: %s
 '''%(VERSION, VERSION)
-    f.write(template.ltrip())
+    f.write(template.lstrip())
     f.close()
 
     if '~dev' in VERSION:
