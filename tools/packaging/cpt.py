@@ -810,7 +810,7 @@ InstallDir "C:\\Cling\\cling-${VERSION}"
 !define MUI_HEADERIMAGE
 
 ; Theme
-!define MUI_ICON "%s\\tools\\packaging\\windows\\LLVM.ico"
+!define MUI_ICON "%s\\tools\\packaging\\LLVM.ico"
 !define MUI_UNICON "%s\\Contrib\\Graphics\\Icons\\orange-uninstall.ico"
 
 !insertmacro MUI_PAGE_WELCOME
