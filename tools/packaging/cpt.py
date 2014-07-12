@@ -482,7 +482,13 @@ def check_ubuntu(pkg):
     elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'"%(pkg), CLING_SRC_DIR).strip() == '0':
         print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
     else:
-        print pkg.ljust(20) + '[OK]'.ljust(30)
+        if pkg == "g++":
+            if float(exec_subprocess_check_output('g++ -dumpversion', CLING_SRC_DIR).strip()) <= 4.7:
+                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
 
 
 def tarball_deb():
@@ -1063,6 +1069,7 @@ if args['check_requirements'] == True:
     box_draw('Check availability of required softwares')
     if DIST == 'Ubuntu':
         check_ubuntu('git')
+        check_ubuntu('g++')
         check_ubuntu('debhelper')
         check_ubuntu('devscripts')
         check_ubuntu('gnupg')
@@ -1082,7 +1089,7 @@ Do you want to continue? [yes/no]: ''').lower()
                                  stdin=subprocess.PIPE,
                                  stdout=None,
                                  stderr=subprocess.STDOUT).communicate('yes')
-                subprocess.Popen(['sudo apt-get install git debhelper devscripts gnupg python'],
+                subprocess.Popen(['sudo apt-get install git g++ debhelper devscripts gnupg python'],
                                   shell=True,
                                   stdin=subprocess.PIPE,
                                   stdout=None,
@@ -1092,7 +1099,7 @@ Do you want to continue? [yes/no]: ''').lower()
                 print '''
 Install/update the required packages by:
   sudo apt-get update
-  sudo apt-get install git debhelper devscripts gnupg python
+  sudo apt-get install git g++ debhelper devscripts gnupg python
 '''
                 break
             else:
