@@ -64,6 +64,7 @@ namespace cling {
   class LookupHelper;
   class Value;
   class Transaction;
+  class AutoloadingStateInfo;
 
   ///\brief Class that implements the interpreter-like behavior. It manages the
   /// incremental compilation.
@@ -185,6 +186,10 @@ namespace cling {
 
     ///\brief: FIXME: workaround until JIT supports exceptions
     static jmp_buf* m_JumpBuf;
+
+    ///\brief: Stores a map from file names to decls that need special
+    /// attention when included after being forward declared
+    llvm::OwningPtr<AutoloadingStateInfo> m_AutoloadingState;
 
     ///\brief Processes the invocation options.
     ///
@@ -616,6 +621,7 @@ namespace cling {
 
 
     void GenerateAutoloadingMap(llvm::StringRef inFile,llvm::StringRef outFile);
+    AutoloadingStateInfo* getAutoloadingState();
 
     friend class runtime::internal::LifetimeHandler;
     // FIXME: workaround until JIT supports exceptions

@@ -1,9 +1,10 @@
 #ifndef CLING_AUTOLOADING_TRANSFORM_H
 #define CLING_AUTOLOADING_TRANSFORM_H
 
+#include "cling/Interpreter/Interpreter.h"
 #include "TransactionTransformer.h"
-
 #include "llvm/ADT/OwningPtr.h"
+
 
 namespace clang {
   class Sema;
@@ -16,11 +17,13 @@ namespace cling {
     ///
     ///\param[in] S - The semantic analysis object.
     ///
-    AutoloadingTransform(clang::Sema* S);
+    AutoloadingTransform(clang::Sema* S,Interpreter* ip);
 
     virtual ~AutoloadingTransform();
 
     virtual void Transform();
+  private:
+    Interpreter* m_Interpreter;
   };
 
 } // namespace cling

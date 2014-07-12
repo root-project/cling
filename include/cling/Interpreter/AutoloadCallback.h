@@ -1,9 +1,8 @@
-#ifndef CLING_CTAGS_AUTOLOAD_CALLBACK_H
-#define CLING_CTAGS_AUTOLOAD_CALLBACK_H
+#ifndef CLING_AUTOLOAD_CALLBACK_H
+#define CLING_AUTOLOAD_CALLBACK_H
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
-#include "clang/Sema/Lookup.h"
 
 #if 0
 This feature is disabled by default until stable.
@@ -22,12 +21,22 @@ namespace cling {
   public:
       AutoloadCallback(cling::Interpreter* interp);
     
-    using cling::InterpreterCallbacks::LookupObject;
+//    using cling::InterpreterCallbacks::LookupObject;
       //^to get rid of bogus warning : "-Woverloaded-virtual"
       //virtual functions ARE meant to be overriden!
 
 //    bool LookupObject (clang::LookupResult &R, clang::Scope *);
-    bool LookupObject (clang::TagDecl* t);
+//    bool LookupObject (clang::TagDecl* t);
+
+    void InclusionDirective(clang::SourceLocation HashLoc,
+                            const clang::Token &IncludeTok,
+                            llvm::StringRef FileName,
+                            bool IsAngled,
+                            clang::CharSourceRange FilenameRange,
+                            const clang::FileEntry *File,
+                            llvm::StringRef SearchPath,
+                            llvm::StringRef RelativePath,
+                            const clang::Module *Imported);
 
   private:
     Interpreter* m_Interpreter;
@@ -37,5 +46,5 @@ namespace cling {
   };
 } // end namespace cling
 
-#endif // CLING_CTAGS_AUTOLOAD_CALLBACK_H
+#endif // CLING_AUTOLOAD_CALLBACK_H
 

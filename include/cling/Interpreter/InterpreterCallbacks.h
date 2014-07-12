@@ -63,7 +63,7 @@ namespace cling {
     ///\brief Our custom PPCallbacks, translating interesting 
     /// events into interpreter callbacks.
     ///
-    llvm::OwningPtr<InterpreterPPCallbacks> m_PPCallbacks;
+    InterpreterPPCallbacks* m_PPCallbacks;
 
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///

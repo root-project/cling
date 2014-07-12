@@ -13,6 +13,8 @@
 #include "cling/Interpreter/Interpreter.h"
 gCling->GenerateAutoloadingMap("Def2.h","test.h");
 .undo 1
+#include "cling/Interpreter/AutoloadCallback.h"
+gCling->setCallbacks(new cling::AutoloadCallback(gCling));
 #include "test.h"
 #include "Def2.h"
 //expected-no-diagnostics

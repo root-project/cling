@@ -1,5 +1,5 @@
 #include "ForwardDeclPrinter.h"
-
+#include "llvm/Support/Path.h"
 namespace cling {
   using namespace clang;
   static QualType GetBaseType(QualType T) {
@@ -53,8 +53,14 @@ namespace cling {
     //Do not simply uncomment the above code
     //In some cases, it prints attribs without the strings at all
 
+    //FIXME: Must print file id or full path
+
+    auto id = m_SMgr.getFileID(D->getSourceRange().getBegin());
+    const clang::FileEntry* entry = m_SMgr.getFileEntryForID(id);
+
+
     Out << " __attribute__((annotate(\""
-        << m_SMgr.getFilename(D->getSourceRange().getBegin()) << "\"))) ";
+        << entry->getName() << "\"))) ";
   }
 
   void ForwardDeclPrinter::ProcessDeclGroup(SmallVectorImpl<Decl*>& Decls) {
@@ -140,7 +146,6 @@ namespace cling {
     this->Indent();
     Visit(*D);
 
-    // FIXME: Need to be able to tell the FwdPrinter when
     const char *Terminator = 0;
     if (isa<OMPThreadPrivateDecl>(*D))
         Terminator = 0;
@@ -667,8 +672,7 @@ namespace cling {
     if (!Policy.SuppressSpecifiers && D->isModulePrivate())
       Out << "__module_private__ ";
     Out << D->getKindName();
-    Out << " __attribute__((annotate(\""
-        << m_SMgr.getFilename(D->getSourceRange().getBegin()) << "\"))) ";
+    prettyPrintAttributes(D);
     if (D->getIdentifier())
       Out << ' ' << *D ;
 
@@ -752,8 +756,8 @@ namespace cling {
           Out << " = ";
           Args->get(i).print(Policy, Out);
         } else if (TTP->hasDefaultArgument()) {
-//            Out << " = ";
-//            Out << TTP->getDefaultArgument().getAsString(Policy);
+            Out << " = ";
+            Out << TTP->getDefaultArgument().getAsString(Policy);
           };
       } else if (const NonTypeTemplateParmDecl *NTTP =
                    dyn_cast<NonTypeTemplateParmDecl>(Param)) {
@@ -770,8 +774,8 @@ namespace cling {
           Out << " = ";
           Args->get(i).print(Policy, Out);
         } else if (NTTP->hasDefaultArgument()) {
-//            Out << " = ";
-//            NTTP->getDefaultArgument()->printPretty(Out, 0, Policy, Indentation);
+            Out << " = ";
+            NTTP->getDefaultArgument()->printPretty(Out, 0, Policy, Indentation);
         }
       } else if (const TemplateTemplateParmDecl *TTPD =
                    dyn_cast<TemplateTemplateParmDecl>(Param)) {

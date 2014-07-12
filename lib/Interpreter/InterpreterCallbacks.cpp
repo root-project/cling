@@ -189,9 +189,9 @@ namespace cling {
     }
 
     if (enablePPCallbacks) {
-      m_PPCallbacks.reset(new InterpreterPPCallbacks(this));
+      m_PPCallbacks = new InterpreterPPCallbacks(this);
       Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
-      PP.addPPCallbacks(m_PPCallbacks.get());
+      PP.addPPCallbacks(m_PPCallbacks);
     }
   }
 
