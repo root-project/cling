@@ -459,24 +459,30 @@ def cleanup():
 ###############################################################################
 
 def check_ubuntu(pkg):
-    if exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'"%(pkg), CLING_SRC_DIR).strip() == '0':
-        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
-    else:
-        if pkg == "gnupg":
-            SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
-            if SIGNING_USER == '':
-                print pkg.ljust(20) + '[INSTALLED - NOT SETUP]'.ljust(30)
-            else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
-        elif pkg == "python":
-            if platform.python_version()[0] == '3':
-                print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
-            elif float(platform.python_version()[:3]) < 2.7:
-                print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
-            else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
+    if pkg == "gnupg":
+        SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
+        if SIGNING_USER == '':
+            print pkg.ljust(20) + '[INSTALLED - NOT SETUP]'.ljust(30)
         else:
             print pkg.ljust(20) + '[OK]'.ljust(30)
+    elif pkg == "python":
+        if platform.python_version()[0] == '3':
+            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+        elif float(platform.python_version()[:3]) < 2.7:
+            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+    elif pkg == "SSL":
+        import socket
+        import httplib
+        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
+            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
+    elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'"%(pkg), CLING_SRC_DIR).strip() == '0':
+        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+    else:
+        print pkg.ljust(20) + '[OK]'.ljust(30)
 
 
 def tarball_deb():
@@ -726,6 +732,13 @@ def check_win(pkg):
             print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
         else:
             print pkg.ljust(20) + '[OK]'.ljust(30)
+    elif pkg == 'SSL':
+        import socket
+        import httplib
+        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
+            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
 
   # Check for other tools
     else:
@@ -1054,6 +1067,7 @@ if args['check_requirements'] == True:
         check_ubuntu('devscripts')
         check_ubuntu('gnupg')
         check_ubuntu('python')
+        check_ubuntu('SSL')
         yes = set(['yes','y', 'ye', ''])
         no = set(['no','n'])
 
@@ -1088,6 +1102,7 @@ Install/update the required packages by:
     elif OS == 'Windows':
         check_win('git')
         check_win('python')
+        check_win('SSL')
         # Check Windows registry for keys that prove an MS Visual Studio 11.0 installation
         check_win('msvc')
         print '''
