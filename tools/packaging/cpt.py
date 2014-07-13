@@ -110,7 +110,8 @@ LLVM_GIT_URL = 'http://root.cern.ch/git/llvm.git'
 CLANG_GIT_URL = 'http://root.cern.ch/git/clang.git'
 CLING_GIT_URL = 'http://root.cern.ch/git/cling.git'
 LLVMRevision = urllib2.urlopen("https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip()
-VERSION=''
+VERSION = ''
+REVISION = ''
 
 
 ###############################################################################
@@ -315,6 +316,7 @@ def fetch_cling(arg):
 
 def set_version():
     global VERSION
+    global REVISION
     box_draw("Set Cling version")
     VERSION=open(os.path.join(CLING_SRC_DIR, 'VERSION'), 'r').readline().strip()
 
@@ -718,6 +720,113 @@ cling (%s-1) unstable; urgency=low
 
     box_draw("Run debuild to create Debian package")
     exec_subprocess_call('debuild', prefix)
+
+###############################################################################
+#                          Red Hat specific functions                         #
+###############################################################################
+
+def check_red_hat(pkg):
+    pass
+
+def rpm_build():
+    global REVISION
+    box_draw("Set up RPM build environment")
+    if os.path.isdir(os.path.join(workdir, 'rpmbuild')):
+        shutil.rmtree(os.path.join(workdir, 'rpmbuild'))
+    os.makedirs(os.path.join(workdir, 'rpmbuild'))
+    os.makedirs(os.path.join(workdir, 'rpmbuild', 'RPMS'))
+    os.makedirs(os.path.join(workdir, 'rpmbuild', 'BUILD'))
+    os.makedirs(os.path.join(workdir, 'rpmbuild', 'SOURCES'))
+    os.makedirs(os.path.join(workdir, 'rpmbuild', 'SPECS'))
+    os.makedirs(os.path.join(workdir, 'rpmbuild', 'tmp'))
+    shutil.move(os.path.join(workdir, os.path.basename(prefix)+'.tar.bz2'), os.path.join(workdir, 'rpmbuild', 'SOURCES'))
+
+
+    box_draw("Generate RPM SPEC file")
+    print 'Create file: ' + os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION))
+    f = open(os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION)), 'w')
+
+    if REVISION == '':
+        REVISION = '1'
+
+    template = '''
+%define        __spec_install_post %{nil}
+%define          debug_package %{nil}
+%define        __os_install_post %{_dbpath}/brp-compress
+
+Summary: Interactive C++ interpreter
+Name: cling
+Version: 0.2~dev
+Release: ''' + REVISION[:7] + '''
+License: LGPL-2.0+
+Group: Development
+SOURCE0 : %{name}-%{version}.tar.bz2
+URL: http://cling.web.cern.ch/
+Vendor: Developed by The ROOT Team; CERN and Fermilab
+Packager: Anirudha Bose <ani07nov@gmail.com>
+
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+
+%description
+Cling is a new and interactive C++11 standard compliant interpreter built
+on the top of Clang and LLVM compiler infrastructure. Its advantages over
+the standard interpreters are that it has command line prompt and uses
+Just In Time (JIT) compiler for compilation. Many of the developers
+(e.g. Mono in their project called CSharpRepl) of such kind of software
+applications name them interactive compilers.
+
+One of Cling's main goals is to provide contemporary, high-performance
+alternative of the current C++ interpreter in the ROOT project - CINT. Cling
+serves as a core component of the ROOT system for storing and analyzing the
+data of the Large Hadron Collider (LHC) experiments. The
+backward-compatibility with CINT is major priority during the development.
+
+%prep
+%setup
+mkdir -p $RPM_BUILD_DIR/%{name}-%{version}/usr/share/doc
+mv $RPM_BUILD_DIR/%{name}-%{version}/bin/ $RPM_BUILD_DIR/%{name}-%{version}/usr
+mv $RPM_BUILD_DIR/%{name}-%{version}/docs/* $RPM_BUILD_DIR/%{name}-%{version}/usr/share/doc/
+mv $RPM_BUILD_DIR/%{name}-%{version}/lib/ $RPM_BUILD_DIR/%{name}-%{version}/usr
+mv $RPM_BUILD_DIR/%{name}-%{version}/include/ $RPM_BUILD_DIR/%{name}-%{version}/usr
+mv $RPM_BUILD_DIR/%{name}-%{version}/share/* $RPM_BUILD_DIR/%{name}-%{version}/usr/share
+
+rm -Rf $RPM_BUILD_DIR/%{name}-%{version}/docs
+rm -Rf $RPM_BUILD_DIR/%{name}-%{version}/share
+
+if [ ${RPM_ARCH} = 'x86_64' ]; then
+    mv $RPM_BUILD_DIR/%{name}-%{version}/usr/lib $RPM_BUILD_DIR/%{name}-%{version}/usr/lib64
+fi
+
+%build
+# Empty section.
+
+%install
+rm -rf %{buildroot}
+mkdir -p  %{buildroot}
+
+# in builddir
+cp -a * %{buildroot}
+
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+%{_bindir}/*
+%{_includedir}/*
+%{_libdir}/
+%{_datadir}/*
+
+%changelog
+* Sun Apr 13 2014  Anirudha Bose <ani07nov@gmail.com>
+- Initial upload
+'''
+    f.write(template.strip())
+    f.close()
+
+    box_draw('Run rpmbuild program')
+    exec_subprocess_call('rpmbuild -ba %s'%(os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION))), os.path.join(workdir, 'rpmbuild'))
 
 ###############################################################################
 #           Windows specific functions (ported from windows_dep.sh)           #
@@ -1133,13 +1242,21 @@ if args['current_dev']:
         tarball()
         cleanup()
 
-    elif args['current_dev'] == "deb":
+    elif args['current_dev'] == 'deb':
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
         test_cling()
         tarball_deb()
         debianize()
         cleanup()
+    elif args['current_dev'] == 'rpm':
+        compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')))
+        install_prefix()
+        test_cling()
+        tarball()
+        rpm_build()
+        cleanup()
+
     elif args['current_dev'] == 'nsis':
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
@@ -1147,7 +1264,7 @@ if args['current_dev']:
         test_cling()
         make_nsi()
         build_nsis()
-        #cleanup()
+        cleanup()
  
 
 if args['last_stable']:
@@ -1166,6 +1283,7 @@ if args['last_stable']:
         test_cling()
         tarball()
         cleanup()
+
     if args['last_stable'] == 'deb':
         set_version()
         compile(os.path.join(workdir, 'cling-' + VERSION))
@@ -1174,7 +1292,18 @@ if args['last_stable']:
         tarball_deb()
         debianize()
         cleanup()
+
+    if args['last_stable'] == 'rpm':
+        set_version()
+        compile(os.path.join(workdir, 'cling-' + VERSION))
+        install_prefix()
+        test_cling()
+        tarball()
+        rpm_build()
+        cleanup()
+
     if args['last_stable'] == 'nsis':
+        set_version()
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
