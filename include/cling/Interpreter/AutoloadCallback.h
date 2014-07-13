@@ -1,8 +1,8 @@
 #ifndef CLING_AUTOLOAD_CALLBACK_H
 #define CLING_AUTOLOAD_CALLBACK_H
 
-#include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
+#include <map>
 
 #if 0
 This feature is disabled by default until stable.
@@ -16,11 +16,22 @@ gCling->setCallbacks(new cling::AutoloadCallback(gCling));
 
 #endif
 
+namespace clang {
+  class Decl;
+  class ClassTemplateDecl;
+  class NamespaceDecl;
+}
+
+namespace cling {
+  class Interpreter;
+  class Transaction;
+}
+
 namespace cling {
   class AutoloadCallback : public cling::InterpreterCallbacks {
   public:
       AutoloadCallback(cling::Interpreter* interp);
-    
+      ~AutoloadCallback();
 //    using cling::InterpreterCallbacks::LookupObject;
       //^to get rid of bogus warning : "-Woverloaded-virtual"
       //virtual functions ARE meant to be overriden!
@@ -37,12 +48,26 @@ namespace cling {
                             llvm::StringRef SearchPath,
                             llvm::StringRef RelativePath,
                             const clang::Module *Imported);
+    void TransactionCommitted(const Transaction& T);
 
   private:
-    Interpreter* m_Interpreter;
+    struct FileInfo {
+      FileInfo():Included(false){}
+      bool Included;
+      std::vector<clang::Decl*> Decls;
+    };
 
+    // The key is the Unique File ID obtained from the source manager.
+    std::map<unsigned,FileInfo> m_Map;
+
+    Interpreter* m_Interpreter;
+//    AutoloadingStateInfo m_State;
 
     void report(clang::SourceLocation l, std::string name,std::string header);
+    void InsertIntoAutoloadingState(clang::Decl* decl,std::string annotation);
+    void HandleDeclVector(std::vector<clang::Decl*> Decls);
+    void HandleNamespace(clang::NamespaceDecl* NS);
+    void HandleClassTemplate(clang::ClassTemplateDecl* CT);
   };
 } // end namespace cling
 

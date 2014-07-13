@@ -14,7 +14,6 @@
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
 #include "ForwardDeclPrinter.h"
-#include "AutoloadingStateInfo.h"
 
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/ClangInternalState.h"
@@ -179,7 +178,6 @@ namespace cling {
     m_IncrParser.reset(new IncrementalParser(this, LeftoverArgs.size(),
                                              &LeftoverArgs[0],
                                              llvmdir));
-    m_AutoloadingState.reset(new AutoloadingStateInfo());
 
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();
@@ -1281,7 +1279,5 @@ namespace cling {
     T->setState(Transaction::kCommitted);
     return;
   }
-  AutoloadingStateInfo* Interpreter::getAutoloadingState() {
-    return m_AutoloadingState.get();
-  }
+
 } //end namespace cling
