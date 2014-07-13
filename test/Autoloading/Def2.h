@@ -9,6 +9,8 @@ namespace M {
     class C :public B<int> {};
     
   }
+  void FunctionWithDefaultArg(int x=0) {
+  }
 }
 namespace stdtest {
   class istream{};
