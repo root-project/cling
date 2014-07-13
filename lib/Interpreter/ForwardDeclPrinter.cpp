@@ -592,9 +592,9 @@ namespace cling {
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
         Out << "(";
       else if (D->getInitStyle() == VarDecl::CInit) {
-//            Out << " = "; //FOR skipping default function args
+            Out << " = "; //Comment for skipping default function args
       }
-//          Init->printPretty(Out, 0, Policy, Indentation);//FOR skipping defalt function args
+          Init->printPretty(Out, 0, Policy, Indentation);//Comment for skipping defalt function args
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
         Out << ")";
       }

@@ -20,6 +20,7 @@ namespace clang {
   class Decl;
   class ClassTemplateDecl;
   class NamespaceDecl;
+  class FunctionDecl;
 }
 
 namespace cling {
@@ -68,6 +69,7 @@ namespace cling {
     void HandleDeclVector(std::vector<clang::Decl*> Decls);
     void HandleNamespace(clang::NamespaceDecl* NS);
     void HandleClassTemplate(clang::ClassTemplateDecl* CT);
+    void HandleFunction(clang::FunctionDecl* F);
   };
 } // end namespace cling
 

@@ -51,6 +51,13 @@ namespace cling {
       }
     }
   }
+  void removeDefaultArg(FunctionDecl* fd) {
+    for (unsigned i = 0, e = fd->getNumParams(); i != e; ++i) {
+      if(fd->getParamDecl(i)->hasDefaultArg()) {
+        fd->getParamDecl(i)->setDefaultArg(nullptr);
+      }
+    }
+  }
 
   void AutoloadCallback::InclusionDirective(clang::SourceLocation HashLoc,
                           const clang::Token &IncludeTok,
@@ -80,6 +87,10 @@ namespace cling {
         clang::ClassTemplateDecl* ct = llvm::cast<clang::ClassTemplateDecl>(decl);
 //        llvm::outs() << ct->getName() <<"\n";
         removeDefaultArg(ct->getTemplateParameters());
+      }
+      if(llvm::isa<clang::FunctionDecl>(decl)) {
+        clang::FunctionDecl* fd = llvm::cast<clang::FunctionDecl>(decl);
+        removeDefaultArg(fd);
       }
 
     }
@@ -137,6 +148,10 @@ namespace cling {
     if(cxxr->hasAttr<AnnotateAttr>())
       InsertIntoAutoloadingState(CT,cxxr->getAttr<AnnotateAttr>()->getAnnotation());
   }
+  void AutoloadCallback::HandleFunction(FunctionDecl *F) {
+    if(F->hasAttr<AnnotateAttr>())
+      InsertIntoAutoloadingState(F,F->getAttr<AnnotateAttr>()->getAnnotation());
+  }
 
   void AutoloadCallback::HandleDeclVector(std::vector<clang::Decl*> Decls) {
     for(auto decl : Decls ) {
@@ -144,6 +159,8 @@ namespace cling {
         HandleClassTemplate(ct);
       if(auto ns = llvm::dyn_cast<NamespaceDecl>(decl))
         HandleNamespace(ns);
+      if(auto f = llvm::dyn_cast<FunctionDecl>(decl))
+        HandleFunction(f);
     }
   }
   void AutoloadCallback::TransactionCommitted(const Transaction &T) {
