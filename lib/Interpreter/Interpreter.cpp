@@ -24,6 +24,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
+#include "cling/Interpreter/AutoloadCallback.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/GlobalDecl.h"
@@ -1278,6 +1279,9 @@ namespace cling {
     }
     T->setState(Transaction::kCommitted);
     return;
+  }
+  void Interpreter::SetAutoloadCallback() {
+    m_Callbacks.reset(new AutoloadCallback(this));
   }
 
 } //end namespace cling

@@ -12,9 +12,7 @@
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
-#include "cling/Interpreter/AutoloadCallback.h"
 #include "clang/AST/Type.h"
-
 #include "llvm/Support/raw_ostream.h"
 
 namespace cling {
@@ -30,8 +28,6 @@ void symbol_requester() {
    h.findFunctionArgs(0, "", "", LookupHelper::NoDiagnostics);
    runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
-   InterpreterCallbacks cb(0);
-   AutoloadCallback a(&I);
 }
 }
 }

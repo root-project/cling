@@ -101,7 +101,6 @@ namespace cling {
     InterpreterCallbacks(interp,true,false,true), m_Interpreter(interp){
   }
   AutoloadCallback::~AutoloadCallback() {
-    m_Map.clear();
   }
 
   void AutoloadCallback::InsertIntoAutoloadingState
