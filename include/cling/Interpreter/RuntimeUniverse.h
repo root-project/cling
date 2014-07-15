@@ -188,23 +188,23 @@ extern "C" {
   void __dso_handle(){}
   //Fake definition to avoid compilation missing function in windows environment
   //it wont ever be called
-  int __cxa_atexit(void (*func) (), void* arg, void* dso) {
+  int __cxa_atexit(void (* /*func*/) (), void* /*arg*/, void* /*dso*/) {
     return 0;
   }
 }
 #endif
 
 extern "C" {
-  int cling_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
+  int cling_cxa_atexit(void (*func) (void*), void* arg, void* /*dso*/) {
     return cling::runtime::internal::local_cxa_atexit(func, arg,
                                                  (void*)cling::runtime::gCling);
   }
 
   ///\brief a function that throws NullDerefException. This allows to 'hide' the
-  /// definition of the exceptions from the RuntimeUniverse and allows us to 
-  /// run cling in -no-rtti mode. 
-  /// 
-  void cling__runtime__internal__throwNullDerefException(void* Sema, 
+  /// definition of the exceptions from the RuntimeUniverse and allows us to
+  /// run cling in -no-rtti mode.
+  ///
+  void cling__runtime__internal__throwNullDerefException(void* Sema,
                                                          void* Expr);
 
 }
