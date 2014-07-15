@@ -1191,7 +1191,9 @@ namespace cling {
   }
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
-                                           llvm::StringRef outFile) {
+                                           llvm::StringRef outFile,
+                                           bool enableMacros,
+                                           bool skipSystem) {
 
     llvm::SmallVector<std::string,30> withSys;
     GetIncludePaths(withSys,true,false);
@@ -1203,7 +1205,8 @@ namespace cling {
     std::sort(withoutSys.begin(),withoutSys.end());
 
     std::vector<std::string> incpaths(withSys.size());
-    std::set_difference(withSys.begin(),withSys.end(),
+    if(skipSystem)
+      std::set_difference(withSys.begin(),withSys.end(),
                         withoutSys.begin(),withoutSys.end(),
                         incpaths.begin());
 
@@ -1225,22 +1228,23 @@ namespace cling {
     ForwardDeclPrinter visitor(out,getSema().getSourceManager());
 
     std::vector<std::string> macrodefs;
-    for(auto mit = T->macros_begin(); mit != T->macros_end(); ++mit) {
-      Transaction::MacroDirectiveInfo macro = *mit;
-      if ( macro.m_MD->getKind() == MacroDirective::MD_Define) {
-        const MacroInfo* MI = macro.m_MD->getMacroInfo();
-        if ( MI ->getNumTokens()>1 )
-          //FIXME: We can not display function like macros yet
-          continue;
-        out<<"#define " << macro.m_II->getName()<< ' ';
-        for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
-          const Token &Tok = MI->getReplacementToken(i);
-          out << Tok.getName() << ' ';
-          macrodefs.push_back(macro.m_II->getName());
+    if(enableMacros) {
+      for(auto mit = T->macros_begin(); mit != T->macros_end(); ++mit) {
+        Transaction::MacroDirectiveInfo macro = *mit;
+        if ( macro.m_MD->getKind() == MacroDirective::MD_Define) {
+          const MacroInfo* MI = macro.m_MD->getMacroInfo();
+          if ( MI ->getNumTokens()>1 )
+            //FIXME: We can not display function like macros yet
+            continue;
+          out<<"#define " << macro.m_II->getName()<< ' ';
+          for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
+            const Token &Tok = MI->getReplacementToken(i);
+            out << Tok.getName() << ' ';
+            macrodefs.push_back(macro.m_II->getName());
+          }
+          out << '\n';
         }
-        out << '\n';
       }
-
     }
 
     for(auto dcit = T->decls_begin(); dcit != T->decls_end(); ++dcit) {
@@ -1252,30 +1256,32 @@ namespace cling {
         for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
           clang::Decl* decl = *dit;
 
-          //skip logic start
-          bool skip = false;
-          auto filename = getSema().getSourceManager().getFilename
-                  (decl->getSourceRange().getBegin());
-          auto path = llvm::sys::path::parent_path(filename);
-          for (auto p : incpaths) {
-            if (llvm::sys::fs::equivalent(p,path)
-                    || llvm::sys::fs::equivalent
-                    (p,llvm::sys::path::parent_path(path))) {
-              skip = true;
-              break;
+          if(skipSystem) {
+            bool skip = false;
+            auto filename = getSema().getSourceManager().getFilename
+                    (decl->getSourceRange().getBegin());
+            auto path = llvm::sys::path::parent_path(filename);
+            for (auto p : incpaths) {
+              if (llvm::sys::fs::equivalent(p,path)
+                      || llvm::sys::fs::equivalent
+                      (p,llvm::sys::path::parent_path(path))) {
+                skip = true;
+                break;
+              }
             }
+            if (skip)
+              continue;
           }
-          if (skip)
-            continue;
-          //skip logic end
 
           visitor.Visit(decl);
           visitor.printSemiColon();
         }
       }
     }
-    for (auto m : macrodefs ) {
-      out << "#undef " << m << "\n";
+    if(enableMacros) {
+      for (auto m : macrodefs ) {
+        out << "#undef " << m << "\n";
+      }
     }
     T->setState(Transaction::kCommitted);
     return;

@@ -615,8 +615,11 @@ namespace cling {
     void AddAtExitFunc(void (*Func) (void*), void* Arg);
 
 
-    void GenerateAutoloadingMap(llvm::StringRef inFile,llvm::StringRef outFile);
+    void GenerateAutoloadingMap(llvm::StringRef inFile,llvm::StringRef outFile,
+                                bool enableMacros = false,
+                                bool skipSystem = true);
     void SetAutoloadCallback();
+    // FIXME: workaround for double deletion problem
 
     friend class runtime::internal::LifetimeHandler;
     // FIXME: workaround until JIT supports exceptions

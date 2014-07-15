@@ -55,12 +55,8 @@ namespace cling {
 
     //FIXME: Must print file id or full path
 
-    auto id = m_SMgr.getFileID(D->getSourceRange().getBegin());
-    const clang::FileEntry* entry = m_SMgr.getFileEntryForID(id);
-
-
     Out << " __attribute__((annotate(\""
-        << entry->getName() << "\"))) ";
+        << m_SMgr.getFilename(D->getSourceRange().getBegin())  << "\"))) ";
   }
 
   void ForwardDeclPrinter::ProcessDeclGroup(SmallVectorImpl<Decl*>& Decls) {
@@ -592,9 +588,11 @@ namespace cling {
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
         Out << "(";
       else if (D->getInitStyle() == VarDecl::CInit) {
+          if(!D->isDefinedOutsideFunctionOrMethod())
             Out << " = "; //Comment for skipping default function args
       }
-          Init->printPretty(Out, 0, Policy, Indentation);//Comment for skipping defalt function args
+      if(!D->isDefinedOutsideFunctionOrMethod())
+        Init->printPretty(Out, 0, Policy, Indentation);//Comment for skipping defalt function args
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
         Out << ")";
       }
@@ -704,7 +702,7 @@ namespace cling {
     //    VisitDeclContext(D);
     //    Indent() << "}";
     //  }
-//      Out << ";\n";
+    Out << ";\n";
     ClassDeclNames.insert(D->getNameAsString());
   }
 
@@ -858,16 +856,18 @@ namespace cling {
     else Out << ";\n";
   }
   bool ForwardDeclPrinter::hasNestedNameSpecifier(QualType q) {
-    //FIXME: Find a better name for this function
+    //FIXME: Results in assert failures for incomplete types
+    //Also, find a better way to check this instead of the following
     //TODO: May not cover all cases, more testing needed
-    auto t = q.getTypePtr();
-    if ( t->isBuiltinType() )
-      return false;
-    if ( t->isAggregateType() ) {
-      CXXRecordDecl* decl = t->getAsCXXRecordDecl();
-      DeclContext* dc = decl->getDeclContext();
-      return isa<CXXRecordDecl>(dc);
-    }
+    //Eg: typedef int foo; inside a class
+//    auto t = q.getTypePtr();
+//    if ( t->isBuiltinType() )
+//      return false;
+//    if ( t->isAggregateType() ) {
+//      CXXRecordDecl* decl = t->getAsCXXRecordDecl();
+//      DeclContext* dc = decl->getDeclContext();
+//      return isa<CXXRecordDecl>(dc);
+//    }
     return false;
   }
   bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
