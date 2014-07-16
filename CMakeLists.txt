@@ -156,9 +156,11 @@ macro(add_cling_executable name)
   set_target_properties(${name} PROPERTIES FOLDER "Cling executables")
 endmacro(add_cling_executable)
 
+get_filename_component(_realpath ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include REALPATH)
 include_directories(BEFORE
   ${CMAKE_CURRENT_BINARY_DIR}/../clang/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include
+  # ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include
+  ${_realpath}
   )
 
 include_directories(BEFORE
