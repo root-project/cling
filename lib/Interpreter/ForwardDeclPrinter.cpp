@@ -670,7 +670,8 @@ namespace cling {
     if (!Policy.SuppressSpecifiers && D->isModulePrivate())
       Out << "__module_private__ ";
     Out << D->getKindName();
-    prettyPrintAttributes(D);
+    if(D->isCompleteDefinition())
+      prettyPrintAttributes(D);
     if (D->getIdentifier())
       Out << ' ' << *D ;
 
@@ -703,7 +704,9 @@ namespace cling {
     //    Indent() << "}";
     //  }
     Out << ";\n";
-    ClassDeclNames.insert(D->getNameAsString());
+    m_SkipFlag = true;
+    if(D->isCompleteDefinition())
+      ClassDeclNames.insert(D->getNameAsString());
   }
 
   void ForwardDeclPrinter::VisitLinkageSpecDecl(LinkageSpecDecl *D) {
