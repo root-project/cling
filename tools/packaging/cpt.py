@@ -462,7 +462,7 @@ def cleanup():
 
 def check_ubuntu(pkg):
     if pkg == "gnupg":
-        SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
+        SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', '/').strip()
         if SIGNING_USER == '':
             print pkg.ljust(20) + '[INSTALLED - NOT SETUP]'.ljust(30)
         else:
@@ -481,11 +481,16 @@ def check_ubuntu(pkg):
             print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
         else:
             print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
-    elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'"%(pkg), CLING_SRC_DIR).strip() == '0':
+    elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'"%(pkg), '/').strip() == '0':
         print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
     else:
-        if pkg == "g++":
-            if float(exec_subprocess_check_output('g++ -dumpversion', CLING_SRC_DIR).strip()) <= 4.7:
+        if pkg == "gcc":
+            if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
+                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+        elif pkg == "g++":
+            if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
                 print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
             else:
                 print pkg.ljust(20) + '[OK]'.ljust(30)
@@ -725,8 +730,38 @@ cling (%s-1) unstable; urgency=low
 #                          Red Hat specific functions                         #
 ###############################################################################
 
-def check_red_hat(pkg):
-    pass
+def check_redhat(pkg):
+    if pkg == "python":
+        if platform.python_version()[0] == '3':
+            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+        elif float(platform.python_version()[:3]) < 2.7:
+            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+    elif pkg == "SSL":
+        import socket
+        import httplib
+        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
+            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
+    elif exec_subprocess_check_output("rpm -qa | grep -w %s"%(pkg), '/').strip() == '':
+        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+    else:
+        if pkg == "gcc-c++":
+            if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
+                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+        elif pkg == "gcc":
+            if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
+                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+
 
 def rpm_build():
     global REVISION
@@ -758,8 +793,8 @@ Summary: Interactive C++ interpreter
 Name: cling
 Version: 0.2~dev
 Release: ''' + REVISION[:7] + '''
-License: LGPL-2.0+
-Group: Development
+License: LGPLv2+ or NCSA
+Group: Development/Languages/Other
 SOURCE0 : %{name}-%{version}.tar.bz2
 URL: http://cling.web.cern.ch/
 Vendor: Developed by The ROOT Team; CERN and Fermilab
@@ -815,7 +850,7 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %{_bindir}/*
 %{_includedir}/*
-%{_libdir}/
+%{_libdir}/*
 %{_datadir}/*
 
 %changelog
@@ -826,7 +861,7 @@ rm -rf %{buildroot}
     f.close()
 
     box_draw('Run rpmbuild program')
-    exec_subprocess_call('rpmbuild -ba %s'%(os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION))), os.path.join(workdir, 'rpmbuild'))
+    exec_subprocess_call('rpmbuild --define "_topdir ${PWD}" -bb %s'%(os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION))), os.path.join(workdir, 'rpmbuild'))
 
 ###############################################################################
 #           Windows specific functions (ported from windows_dep.sh)           #
@@ -1178,6 +1213,7 @@ if args['check_requirements'] == True:
     box_draw('Check availability of required softwares')
     if DIST == 'Ubuntu':
         check_ubuntu('git')
+        check_ubuntu('gcc')
         check_ubuntu('g++')
         check_ubuntu('debhelper')
         check_ubuntu('devscripts')
@@ -1225,6 +1261,37 @@ Install/update the required packages by:
 Refer to the documentation of CPT for information on setting up your Windows environment.
 [tools/packaging/README.md]
 '''
+    elif DIST == 'Fedora':
+        check_redhat('git')
+        check_redhat('gcc')
+        check_redhat('gcc-c++')
+        check_redhat('rpm-build')
+        check_redhat('python')
+        check_redhat('SSL')
+        yes = set(['yes','y', 'ye', ''])
+        no = set(['no','n'])
+
+        choice = raw_input('''
+CPT will now attempt to update/install the requisite packages automatically.
+Do you want to continue? [yes/no]: ''').lower()
+        while True:
+            if choice in yes:
+                # Need to communicate values to the shell. Do not use exec_subprocess_call()
+                subprocess.Popen(['sudo yum install git gcc gcc-c++ rpm-build python'],
+                                  shell=True,
+                                  stdin=subprocess.PIPE,
+                                  stdout=None,
+                                  stderr=subprocess.STDOUT).communicate('yes')
+                break
+            elif choice in no:
+                print '''
+Install/update the required packages by:
+  sudo yum install git gcc gcc-c++ rpm-build python
+'''
+                break
+            else:
+                choice = raw_input("Please respond with 'yes' or 'no': ")
+                continue
 
 if args['current_dev']:
     fetch_llvm()
@@ -1265,7 +1332,6 @@ if args['current_dev']:
         make_nsi()
         build_nsis()
         cleanup()
- 
 
 if args['last_stable']:
     fetch_llvm()
