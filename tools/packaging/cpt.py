@@ -1184,6 +1184,7 @@ parser.add_argument('--current-dev', help='Package the latest development snapsh
 parser.add_argument('--last-stable', help='Package the last stable snapshot in one of these formats: tar | deb | nsis')
 parser.add_argument('--tarball-tag', help='Package the snapshot of a given tag in a tarball (.tar.bz2)')
 parser.add_argument('--deb-tag', help='Package the snapshot of a given tag in a Debian package (.deb)')
+parser.add_argument('--rpm-tag', help='Package the snapshot of a given tag in an RPM package (.rpm)')
 parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in an NSIS installer (.exe)')
 
 # Variable overrides
@@ -1399,6 +1400,18 @@ if args['deb_tag']:
     test_cling()
     tarball_deb
     debianize
+    cleanup()
+
+if args['rpm_tag']:
+    fetch_llvm()
+    fetch_clang()
+    fetch_cling(args['rpm_tag'])
+    set_version()
+    compile(os.path.join(workdir, 'cling-' + VERSION))
+    install_prefix()
+    test_cling()
+    tarball()
+    rpm_build()
     cleanup()
 
 if args['nsis_tag']:
