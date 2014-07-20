@@ -65,7 +65,7 @@ CPT is meant to be executed on cmd.exe prompt. Make sure you have set the
 environment properly before continuing.
 Below is a list of required packages for Windows (Win32-x86):
 
-[MSYS Git]  
+[MSYS Git] for Windows  
 [Python] for Windows  
 Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012
 [MSYS Git]:http://msysgit.github.io/
