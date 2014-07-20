@@ -1299,12 +1299,16 @@ if args['current_dev']:
     fetch_clang()
     fetch_cling('master')
     set_version()
+
     if args['current_dev'] == 'tar':
         if OS == 'Windows':
             get_win_dep()
             compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
         else:
-            compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            if DIST == 'Scientific Linux CERN SLC':
+                compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            else:
+                compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         test_cling()
         tarball()
@@ -1317,6 +1321,7 @@ if args['current_dev']:
         tarball_deb()
         debianize()
         cleanup()
+
     elif args['current_dev'] == 'rpm':
         compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')))
         install_prefix()
@@ -1345,13 +1350,16 @@ if args['last_stable']:
             get_win_dep()
             compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
         else:
-            compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            if DIST == 'Scientific Linux CERN SLC':
+                compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            else:
+                compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         test_cling()
         tarball()
         cleanup()
 
-    if args['last_stable'] == 'deb':
+    elif args['last_stable'] == 'deb':
         set_version()
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
@@ -1360,7 +1368,7 @@ if args['last_stable']:
         debianize()
         cleanup()
 
-    if args['last_stable'] == 'rpm':
+    elif args['last_stable'] == 'rpm':
         set_version()
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
@@ -1369,7 +1377,7 @@ if args['last_stable']:
         rpm_build()
         cleanup()
 
-    if args['last_stable'] == 'nsis':
+    elif args['last_stable'] == 'nsis':
         set_version()
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
@@ -1384,7 +1392,16 @@ if args['tarball_tag']:
     fetch_clang()
     fetch_cling(args['tarball_tag'])
     set_version()
-    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
+
+    if OS == 'Windows':
+        get_win_dep()
+        compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
+    else:
+        if DIST == 'Scientific Linux CERN SLC':
+            compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+        else:
+            compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+
     install_prefix()
     test_cling()
     tarball()
