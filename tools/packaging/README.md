@@ -1,8 +1,8 @@
 Cling Packaging Tool (CPT)
 ==========================
 
-The Cling Packaging Tool is a command-line utility to build Cling from source
-and generate installer bundles for a wide range of platforms.
+The Cling Packaging Tool is a command-line utility written in Python to build
+Cling from source and generate installer bundles for a wide range of platforms.
 
 Cling maintains its own vendor clones of LLVM and Clang (part of ROOT's trunk)
 on which it is based. Due to some policy restrictions we do not distribute
@@ -16,7 +16,8 @@ installer. If you want to manually compile Cling from source, go through the
 
 Below is a list of platforms currently supported by this tool:
   * Ubuntu and distros based on Debian - *DEB packages*
-  * Cygwin or Windows - *NSIS installers*
+  * Windows - *NSIS installers*
+  * Distros based on Red Hat Linux (Fedora/Scientific Linux CERN) - *RPM packages*
   * Virtually any UNIX-like platform which supports Bash - *Tarballs*.
 
 ###Requirements
@@ -27,7 +28,7 @@ performs the required checks automatically and displays useful suggestions too
 specific to your platform.
 ```sh
 cd tools/packaging/
-./cpt.sh --check-requirements
+./cpt.py --check-requirements
 ```
 
 ####Ubuntu/Debian
@@ -35,7 +36,7 @@ On Debian, Ubuntu or any other distro based on Debian which supports APT
 package manager, you can install all the required packages by:
 ```sh
 sudo apt-get update
-sudo apt-get install git wget debhelper devscripts gnupg python
+sudo apt-get install git g++ debhelper devscripts gnupg python
 ```
 
 ######Setting up:
@@ -47,24 +48,29 @@ configure GnuPG to not ask for the passphrase while signing the Debian package.
 
 The [Ubuntu Packaging Guide] contains documentation about creating a GPG key
 on an Ubuntu system.
+
+To test if you have successfully set up your GnuPG key, use the following command:
+```sh
+gpg --fingerprint
+```
+
+Again, all these checks are performed by default when you launch CPT with -c option.
+```sh
+./cpt.py -c
+```
 [Ubuntu Packaging Guide]:http://packaging.ubuntu.com/html/getting-set-up.html#create-your-gpg-key
 
-####Windows (Cygwin)
+####Windows
+CPT is meant to be executed on cmd.exe prompt. Make sure you have set the
+environment properly before continuing.
 Below is a list of required packages for Windows (Win32-x86):
 
-[CMake] for Windows  
-[MSYS Git] or Git provided by Cygwin  
-[Cygwin]  
+[MSYS Git]  
 [Python] for Windows  
-wget - provided by Cygwin  
 Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012
-[CMake]:http://www.cmake.org/
 [MSYS Git]:http://msysgit.github.io/
-[Cygwin]:http://www.cygwin.com/
 [Python]:https://www.python.org/
 
-**Note:** Git provided by Cygwin is recommended over MSYS Git due to some
-known issues.
 ######Setting Up:
 Unlike other UNIX-like platforms, Windows requires you to follow some rules.
 Do not ignore this section unless you want CPT to fail mid-way with wierd
@@ -83,87 +89,86 @@ doesn't contain spaces. For example, you should install Python in a path like
     ```
   * Path to all the required executables should be present in the Windows
     **PATH** environment variable.
-  * If you plan to use MSYS Git, choose the option "Run Git from Windows
+  * In case of MSYS Git, choose the option "Run Git from Windows
     Command Prompt" during installation.
-  * Add these lines in the file ~/.bash_profile of Cygwin. UNIX files just
-    don't run on Windows without this tweak.
-
-    ```sh
-    export SHELLOPTS
-    set -o igncr
-    ```
 
 A good way to check if everything is detected properly by the script is to
 run the following command:
 ```sh
 cd tools/packaging/
-./cpt.sh --check-requirements
+./cpt.py --check-requirements
 ```
-**Tip:** To make things easy for yourself in future, you should keep the Cygwin
-installer file you had downloaded previously in a safe place. Cygwin allows an
-easy way to install new packages through command-line. See an example below:
-```sh
-/cygdrive/c/cygwin/setup-x86.exe -nqP wget
-```
-
 ###Usage
 ```sh
 cd tools/packaging/
-./cpt.sh [options]
 ```
 
 ```
-Options:
--h|--help                     Display this message and exit
--c|--check-requirements       Check if packages required by the script are installed
---current-dev={pkg-format}    Compile the latest development snapshot and produce a package in the given format
---last-stable={pkg-format}    Compile the last stable snapshot and produce a package in the given format
---tarball-tag={tag}           Compile the snapshot of a given tag and produce a tarball
---deb-tag={tag}               Compile the snapshot of a given tag and produce a Debian package
---nsis-tag={tag}              Compile the snapshot of a given tag and produce an NSIS installer
+usage: cpt.py [-h] [-c] [--current-dev CURRENT_DEV]
+              [--last-stable LAST_STABLE] [--tarball-tag TARBALL_TAG]
+              [--deb-tag DEB_TAG] [--rpm-tag RPM_TAG] [--nsis-tag NSIS_TAG]
+              [--with-llvm-url WITH_LLVM_URL]
+              [--with-clang-url WITH_CLANG_URL]
+              [--with-cling-url WITH_CLING_URL] [--with-workdir WITH_WORKDIR]
 
-Supported values of "pkg-format": tar | deb | nsis
-Supported values of "tag": Any Git tag in Cling's repository. Example, v0.1
+Cling Packaging Tool
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c, --check-requirements
+                        Check if packages required by the script are installed
+  --current-dev CURRENT_DEV
+                        Package the latest development snapshot in one of
+                        these formats: tar | deb | nsis
+  --last-stable LAST_STABLE
+                        Package the last stable snapshot in one of these
+                        formats: tar | deb | nsis
+  --tarball-tag TARBALL_TAG
+                        Package the snapshot of a given tag in a tarball
+                        (.tar.bz2)
+  --deb-tag DEB_TAG     Package the snapshot of a given tag in a Debian
+                        package (.deb)
+  --rpm-tag RPM_TAG     Package the snapshot of a given tag in an RPM package
+                        (.rpm)
+  --nsis-tag NSIS_TAG   Package the snapshot of a given tag in an NSIS
+                        installer (.exe)
+  --with-llvm-url WITH_LLVM_URL
+                        Specify an alternate URL of LLVM repo
+  --with-clang-url WITH_CLANG_URL
+                        Specify an alternate URL of Clang repo
+  --with-cling-url WITH_CLING_URL
+                        Specify an alternate URL of Cling repo
+  --with-workdir WITH_WORKDIR
+                        Specify an alternate working directory for CPT
 ```
 
 ###Overriding Default Variables
 There are a select number of variables which can be set to make CPT work
 differently. This eliminates the need to manually edit the script.
 You can overrride variables by using the following syntax:
-```$ VAR="VALUE" ./cpt.sh --current-dev=tar```.
-
-Note: Variables are case-sensitive.
+```$ ./cpt.py --with-cling-url="http://github.com/ani07nov/cling" --current-dev=tar```.
 
 List of variables in CPT which can be overridden:
 - **CLING_GIT_URL**
   * Specify the URL of the Git repository of Cling to be used by CPT
   * **Default value:** "http://root.cern.ch/git/cling.git"
-  * **Usage:** ```CLING_GIT_URL="http://github.com/ani07nov/cling" ./cpt.sh --last-stable=deb```
-  * If the source directory already contains a clone of Cling, but the
-    supplied URL is different from the origin of the existing clone, then it is
-    removed and a fresh clone is done.
+  * **Usage:** ```./cpt.py --with-cling-url="http://github.com/ani07nov/cling" --last-stable=deb```
 
 - **CLANG_GIT_URL**
   * Specify the URL of the Git repository of Clang to be used by CPT
   * **Default value:** "http://root.cern.ch/git/clang.git"
-  * **Usage:** ```CLANG_GIT_URL="http://github.com/ani07nov/clang" ./cpt.sh --last-stable=tar```
-  * If the source directory already contains a clone of Clang, but the
-    supplied URL is different from the origin of the existing clone, then it is
-    removed and a fresh clone is done.
+  * **Usage:** ```./cpt.py --with-clang-url="http://github.com/ani07nov/clang" --last-stable=tar```
 
 - **LLVM_GIT_URL**
   * Specify the URL of the Git repository of LLVM to be used by CPT
   * **Default value:** "http://root.cern.ch/git/llvm.git"
-  * **Usage:** ```LLVM_GIT_URL="http://github.com/ani07nov/llvm" ./cpt.sh --current-dev=tar```
-  * If the source directory already contains a clone of LLVM, but the
-    supplied URL is different from the origin of the existing clone, then it is
-    removed and a fresh clone is done.
+  * **Usage:** ```./cpt.py --with-llvm-url="http://github.com/ani07nov/llvm" --current-dev=tar```
 
 - **workdir**
   * Specify the working directory of CPT. All sources will be cloned, built
     and installed here. The produced packages will also be found here.
   * **Default value:** "~/ec/build"
-  * **Usage:** ```workdir="/ec/build/cling" ./cpt.sh --current-dev=deb```
+  * **Usage:** ```./cpt.py --with-workdir="/ec/build/cling" --current-dev=deb```
 
 License
 =======
