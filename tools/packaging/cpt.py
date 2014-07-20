@@ -1193,6 +1193,8 @@ parser.add_argument('--with-clang-url', help='Specify an alternate URL of Clang 
 parser.add_argument('--with-cling-url', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
 parser.add_argument('--with-workdir', help='Specify an alternate working directory for CPT', default=os.path.expanduser(workdir))
 
+parser.add_argument('--make-proper', help='Internal option to support calls from build system')
+
 args = vars(parser.parse_args())
 
 
@@ -1442,4 +1444,16 @@ if args['nsis_tag']:
     test_cling()
     make_nsi
     build_nsis()
+    cleanup()
+
+if args['make_proper']:
+    # This is an internal option in CPT, meant to be integrated into Cling's build system.
+    global prefix
+    with open(os.path.join(LLVM_OBJ_ROOT, 'config.log'), 'r') as log:
+        for line in log:
+            if re.match('^LLVM_PREFIX=', line):
+                prefix=re.sub('^LLVM_PREFIX=', '', line).replace("'", '').strip()
+
+    set_version()
+    install_prefix()
     cleanup()

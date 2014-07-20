@@ -151,6 +151,8 @@ optional arguments:
                         Specify an alternate URL of Cling repo
   --with-workdir WITH_WORKDIR
                         Specify an alternate working directory for CPT
+  --make-proper MAKE_PROPER
+                        Internal option to support calls from build system
 ```
 
 ###Overriding Default Variables
