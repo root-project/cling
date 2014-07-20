@@ -1262,7 +1262,7 @@ Install/update the required packages by:
 Refer to the documentation of CPT for information on setting up your Windows environment.
 [tools/packaging/README.md]
 '''
-    elif DIST == 'Fedora':
+    elif DIST == 'Fedora' or DIST == 'Scientific Linux CERN SLC':
         check_redhat('git')
         check_redhat('gcc')
         check_redhat('gcc-c++')
