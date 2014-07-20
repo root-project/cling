@@ -30,6 +30,17 @@ specific to your platform.
 cd tools/packaging/
 ./cpt.py --check-requirements
 ```
+Regardless of the platform and operating system, make sure your system has the
+latest and greatest version of Python 2 installed, v2.7 being the absolute minimum.
+CPT uses some features and modules which are not a part of older versions of Python.
+
+All pre-complied binaries of Python ship with built-in support for SSL. However if
+the Python on your system was compiled by you manually, chances are that it doesn't
+have SSL support. This is very likely if you had performed a minimal installation
+of Scientific Linux CERN which doesn't include OpenSSL development package. In such
+a case, you should install openssl-devel, re-compile Python and configure will
+automatically link against the required libraries and produce a binary with SSL
+support.
 
 ####Ubuntu/Debian
 On Debian, Ubuntu or any other distro based on Debian which supports APT
