@@ -7,10 +7,9 @@
 #
 # Cling Packaging Tool (CPT)
 #
-# tools/packaging/cpt.py: Main script which calls other helper scripts to
-# compile and package Cling for multiple platforms.
+# tools/packaging/cpt.py: Python script to launch Cling Packaging Tool (CPT)
 #
-# TODO: Add documentation here, or provide link to documentation
+# Documentation: tools/packaging/README.md
 #
 # Author: Anirudha Bose <ani07nov@gmail.com>
 #
@@ -422,6 +421,7 @@ def test_cling():
 def tarball():
     box_draw("Compress binaries into a bzip2 tarball")
     tar = tarfile.open(prefix+'.tar.bz2', 'w:bz2')
+    print 'Creating archive: ' + os.path.basename(prefix) + '.tar.bz2'
     tar.add(prefix, arcname=os.path.basename(prefix))
     tar.close()
 
@@ -855,7 +855,7 @@ rm -rf %{buildroot}
 
 %changelog
 * Sun Apr 13 2014  Anirudha Bose <ani07nov@gmail.com>
-- Initial upload
+- Initial SPEC file of Cling for RPM packaging
 '''
     f.write(template.strip())
     f.close()
