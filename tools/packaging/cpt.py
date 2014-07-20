@@ -63,7 +63,7 @@ elif OS == 'Linux':
     EXEEXT = ''
     SHLIBEXT = '.so'
 
-    TMP_PREFIX=os.path.join(os.sep, 'var', 'tmp', 'cling-obj' + os.sep)
+    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
     workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 elif OS == 'Darwin':
@@ -74,7 +74,7 @@ elif OS == 'Darwin':
     EXEEXT = ''
     SHLIBEXT = '.dylib'
 
-    TMP_PREFIX=os.path.join(os.sep, 'var', 'tmp', 'cling-obj' + os.sep)
+    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
     workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 else:
@@ -83,7 +83,7 @@ else:
     SHLIBEXT = ''
 
     #TODO: Need to test this in other platforms
-    TMP_PREFIX=os.path.join(os.sep, 'var', 'tmp', 'cling-obj' + os.sep)
+    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
     workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 
