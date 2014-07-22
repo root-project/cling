@@ -10,8 +10,8 @@
 using namespace clang;
 
 namespace cling {
-  AutoloadingTransform::AutoloadingTransform(clang::Sema* S, Interpreter *ip)
-    : TransactionTransformer(S),m_Interpreter(ip) {
+  AutoloadingTransform::AutoloadingTransform(clang::Sema* S, Interpreter*)
+    : TransactionTransformer(S) {
   }
 
   AutoloadingTransform::~AutoloadingTransform()

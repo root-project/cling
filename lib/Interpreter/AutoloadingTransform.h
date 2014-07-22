@@ -22,8 +22,6 @@ namespace cling {
     virtual ~AutoloadingTransform();
 
     virtual void Transform();
-  private:
-    Interpreter* m_Interpreter;
   };
 
 } // namespace cling
