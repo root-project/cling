@@ -12,7 +12,7 @@
 //Becasue functionality is disabled now
 
 #include "cling/Interpreter/Interpreter.h"
-gCling->SetAutoloadCallback();
+gCling->EnableAutoloading();
 
 .rawInput 1
 class __attribute__((annotate("Def.h"))) C;

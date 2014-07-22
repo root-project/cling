@@ -1255,7 +1255,7 @@ namespace cling {
     unload(1);
     return;
   }
-  void Interpreter::SetAutoloadCallback() {
+  void Interpreter::EnableAutoloading() {
     m_Callbacks.reset(new AutoloadCallback(this));
   }
 

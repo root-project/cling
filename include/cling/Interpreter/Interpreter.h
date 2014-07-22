@@ -617,7 +617,7 @@ namespace cling {
 
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false);
-    void SetAutoloadCallback();
+    void EnableAutoloading();
     // FIXME: workaround for double deletion problem
 
     friend class runtime::internal::LifetimeHandler;
