@@ -155,14 +155,14 @@ namespace cling {
   bool MetaParser::isTCommand(MetaSema::ActionResult& actionResult) {
     bool result = false;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("T")) {
-      consumeAnyStringToken(tok::comment);
+      consumeAnyStringToken();
       if (getCurTok().is(tok::raw_ident)) {
-        result = true;
-        actionResult = m_Actions->actOnTCommand(getCurTok().getIdent());
-        consumeToken();
-        if (getCurTok().is(tok::comment)) {
-          consumeAnyStringToken(tok::eof);
-          m_Actions->actOnComment(getCurTok().getIdent());
+        std::string inputFile = getCurTok().getIdent();
+        consumeAnyStringToken(tok::eof);
+        if (getCurTok().is(tok::raw_ident)) {
+          result = true;
+          std::string outputFile = getCurTok().getIdent();
+          actionResult = m_Actions->actOnTCommand(inputFile, outputFile);
         }
       }
     }

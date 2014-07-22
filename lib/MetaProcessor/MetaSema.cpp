@@ -71,8 +71,10 @@ namespace cling {
     return AR_Failure;
   }
 
-  MetaSema::ActionResult MetaSema::actOnTCommand(llvm::StringRef file) {
-      return AR_Failure;
+  MetaSema::ActionResult MetaSema::actOnTCommand(llvm::StringRef inputFile,
+                                                 llvm::StringRef outputFile) {
+    m_Interpreter.GenerateAutoloadingMap(inputFile, outputFile);
+    return AR_Success;
   }
 
   MetaSema::ActionResult MetaSema::actOnRedirectCommand(llvm::StringRef file,

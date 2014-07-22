@@ -67,9 +67,11 @@ namespace cling {
 
     ///\brief T command prepares the tag files for giving semantic hints.
     ///
-    ///\param[in] file - The directory to be loaded.
+    ///\param[in] inputFile - The source file of the map.
+    ///\param[in] outputFile - The forward declaration file.
     ///
-    ActionResult actOnTCommand(llvm::StringRef file);
+    ActionResult actOnTCommand(llvm::StringRef inputFile,
+                               llvm::StringRef outputFile);
 
     ///\brief < Redirect command.
     ///
