@@ -1192,23 +1192,7 @@ namespace cling {
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
                                            llvm::StringRef outFile,
-                                           bool enableMacros,
-                                           bool skipSystem) {
-
-    llvm::SmallVector<std::string,30> withSys;
-    GetIncludePaths(withSys,true,false);
-
-    llvm::SmallVector<std::string,30> withoutSys;
-    GetIncludePaths(withoutSys,false,false);
-
-    std::sort(withSys.begin(),withSys.end());
-    std::sort(withoutSys.begin(),withoutSys.end());
-
-    std::vector<std::string> incpaths(withSys.size());
-    if(skipSystem)
-      std::set_difference(withSys.begin(),withSys.end(),
-                        withoutSys.begin(),withoutSys.end(),
-                        incpaths.begin());
+                                           bool enableMacros) {
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -1256,23 +1240,6 @@ namespace cling {
         for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
           clang::Decl* decl = *dit;
 
-          if(skipSystem) {
-            bool skip = false;
-            auto filename = getSema().getSourceManager().getFilename
-                    (decl->getSourceRange().getBegin());
-            auto path = llvm::sys::path::parent_path(filename);
-            for (auto p : incpaths) {
-              if (llvm::sys::fs::equivalent(p,path)
-                      || llvm::sys::fs::equivalent
-                      (p,llvm::sys::path::parent_path(path))) {
-                skip = true;
-                break;
-              }
-            }
-            if (skip)
-              continue;
-          }
-
           visitor.Visit(decl);
           visitor.printSemiColon();
         }
@@ -1283,7 +1250,9 @@ namespace cling {
         out << "#undef " << m << "\n";
       }
     }
+
     T->setState(Transaction::kCommitted);
+    unload(1);
     return;
   }
   void Interpreter::SetAutoloadCallback() {

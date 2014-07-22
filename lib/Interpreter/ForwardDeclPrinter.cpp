@@ -205,7 +205,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitEnumDecl(EnumDecl *D) {
-    if (D->getName().size() == 0) {
+    if (D->getName().size() == 0 || !D->isFixed()) {
       m_SkipFlag = true;
       return;
     }
@@ -571,6 +571,7 @@ namespace cling {
     //So, we ignore restrict here
     T.removeLocalRestrict();
     T.print(Out, Policy, D->getName());
+//    llvm::outs()<<D->getName()<<"\n";
     T.addRestrict();
 
     Expr *Init = D->getInit();
@@ -743,6 +744,7 @@ namespace cling {
       if (const TemplateTypeParmDecl *TTP =
             dyn_cast<TemplateTypeParmDecl>(Param)) {
 
+
         if (TTP->wasDeclaredWithTypename())
           Out << "typename ";
         else
@@ -756,7 +758,7 @@ namespace cling {
         if (Args) {
           Out << " = ";
           Args->get(i).print(Policy, Out);
-        } else if (TTP->hasDefaultArgument()) {
+        } else if (TTP->hasDefaultArgument() && TTP->getName().size() != 0) {
             Out << " = ";
             Out << TTP->getDefaultArgument().getAsString(Policy);
           };

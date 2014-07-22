@@ -99,6 +99,7 @@ namespace cling {
 
   AutoloadCallback::AutoloadCallback(Interpreter* interp) :
     InterpreterCallbacks(interp,true,false,true), m_Interpreter(interp){
+
   }
   AutoloadCallback::~AutoloadCallback() {
   }
