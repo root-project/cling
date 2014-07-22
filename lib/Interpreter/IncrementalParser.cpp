@@ -593,7 +593,6 @@ namespace cling {
     Transaction* CurT = beginTransaction(Opts);
     ParseInternal(input);
     Transaction* EndedT = endTransaction(CurT);
-    assert(EndedT == CurT && "Not ending the expected transaction.");
     return EndedT;
   }
 
