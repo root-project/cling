@@ -17,7 +17,7 @@ namespace cling {
     ///
     ///\param[in] S - The semantic analysis object.
     ///
-    AutoloadingTransform(clang::Sema* S,Interpreter* ip);
+    AutoloadingTransform(clang::Sema* S,Interpreter*);
 
     virtual ~AutoloadingTransform();
 
