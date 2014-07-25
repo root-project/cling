@@ -98,42 +98,42 @@ decl = lookup.findDataMember(G,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is not a named decl
-//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'int'
+//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:5 gValue 'int'
 
 decl = lookup.findDataMember(class_tempFlt,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is aTemplate
-//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'float':'float' static
+//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:13 gValue 'float':'float' static
 
 decl = lookup.findDataMember(class_tempFlt,"fMember", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is aTemplate
-//CHECK-NEXT: FieldDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> fMember 'float':'float'
+//CHECK-NEXT: FieldDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:6 fMember 'float':'float'
 
 decl = lookup.findDataMember(namespace_NS,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is NS
-//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'double'
+//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:11 gValue 'double'
 
 decl = lookup.findDataMember(namespace_NS,"gValue2", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is NS
-//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue2 'double'
+//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:10 gValue2 'double'
 
 decl = lookup.findDataMember(class_A,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is A
-//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> gValue 'short' static
+//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:17 gValue 'short' static
 
 decl = lookup.findDataMember(class_A,"fMember", diags);
 printScope(decl->getDeclContext());
 decl->dump();
 //CHECK-NEXT: Context is A
-//CHECK-NEXT: FieldDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> fMember 'double'
+//CHECK-NEXT: FieldDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:11 fMember 'double'
 
 .q
