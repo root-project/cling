@@ -11,10 +11,10 @@
 
 
 #include "cling/Interpreter/Interpreter.h"
-gCling->GenerateAutoloadingMap("Def2.h","test.h");
+gCling->GenerateAutoloadingMap("Def2.h","test_auto_forwarding.h");
 .undo 1
 gCling->EnableAutoloading();
-#include "test.h"
+#include "test_auto_forwarding.h"
 #include "Def2.h"
 //expected-no-diagnostics
 
