@@ -30,6 +30,7 @@ namespace cling {
     void Print(clang::AccessSpecifier AS);
 
     std::set<std::string> ClassDeclNames;
+    std::set<std::string> TemplatesWithDefaultArgs;
     clang::SourceManager& m_SMgr;
     bool m_SkipFlag;
     //False by default, true if current item is not to be printed
@@ -71,7 +72,7 @@ namespace cling {
     void VisitClassTemplateSpecializationDecl(clang::ClassTemplateSpecializationDecl* D);
 
     void PrintTemplateParameters(const clang::TemplateParameterList *Params,
-                               const clang::TemplateArgumentList *Args = 0);
+                               const clang::TemplateArgumentList *Args = 0, bool printDefaultArgs = true);
     void prettyPrintAttributes(clang::Decl *D);
 
     void printSemiColon(bool flag=true);

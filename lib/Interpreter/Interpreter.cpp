@@ -160,7 +160,7 @@ namespace cling {
   }
 
   Interpreter::Interpreter(int argc, const char* const *argv,
-                           const char* llvmdir /*= 0*/) :
+                           const char* llvmdir /*= 0*/, bool noRuntime) :
     m_UniqueCounter(0), m_PrintDebug(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
     m_LastCustomPragmaDiagPopPoint(){
@@ -206,11 +206,12 @@ namespace cling {
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
-    if (getCI()->getLangOpts().CPlusPlus)
-      IncludeCXXRuntime();
-    else
-      IncludeCRuntime();
-
+    if (!noRuntime) {
+      if (getCI()->getLangOpts().CPlusPlus)
+        IncludeCXXRuntime();
+      else
+        IncludeCRuntime();
+    }
     // Commit the transactions, now that gCling is set up. It is needed for
     // static initialization in these transactions through local_cxa_atexit().
     for (llvm::SmallVectorImpl<Transaction*>::const_iterator
@@ -1194,6 +1195,9 @@ namespace cling {
                                            llvm::StringRef outFile,
                                            bool enableMacros) {
 
+    const char *const dummy="cling";
+    cling::Interpreter instance(1,&dummy,nullptr,true);
+
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
@@ -1201,7 +1205,7 @@ namespace cling {
     CO.DynamicScoping = 0;
     CO.Debug = isPrintingDebug();
 
-    cling::Transaction* T = m_IncrParser->Parse
+    cling::Transaction* T = instance.m_IncrParser->Parse
             (std::string("#include \"") + std::string(inFile) + "\"", CO);
 
     // If this was already #included we will get a T == 0.
@@ -1256,7 +1260,7 @@ namespace cling {
     }
 
     T->setState(Transaction::kCommitted);
-    unload(1);
+//    unload(1);
     return;
   }
   void Interpreter::EnableAutoloading() {

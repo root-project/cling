@@ -531,12 +531,14 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
     if(D->getStorageClass() == SC_Static
-        || hasNestedNameSpecifier(D->getType()) ) {
+        || hasNestedNameSpecifier(D->getType())
+        || D->isDefinedOutsideFunctionOrMethod()) {
       m_SkipFlag = true;
       return;
     }
-    if(D->isDefinedOutsideFunctionOrMethod() && !(D->getStorageClass() == SC_Extern))
-      Out << "extern ";
+//    if(D->isDefinedOutsideFunctionOrMethod() && !(D->getStorageClass() == SC_Extern))
+//      Out << "extern ";
+
 
     if (!Policy.SuppressSpecifiers) {
       StorageClass SC = D->getStorageClass();
@@ -725,12 +727,15 @@ namespace cling {
       Out << "{\n";
       VisitDeclContext(D);
       Indent() << "}";
-    } else
+    } else {
+      Out << "{\n"; // print braces anyway, as the decl may end up getting skipped
       Visit(*D->decls_begin());
+      Out << "}\n";
+    }
   }
 
   void ForwardDeclPrinter::PrintTemplateParameters(const TemplateParameterList *Params,
-                                              const TemplateArgumentList *Args) {
+                                              const TemplateArgumentList *Args, bool printDefaultArgs ) {
     assert(Params);
     assert(!Args || Params->size() == Args->size());
 
@@ -758,7 +763,8 @@ namespace cling {
         if (Args) {
           Out << " = ";
           Args->get(i).print(Policy, Out);
-        } else if (TTP->hasDefaultArgument() && TTP->getName().size() != 0) {
+        } else if (TTP->hasDefaultArgument() && TTP->getName().size() != 0 /*Workaround*/
+                   && printDefaultArgs) {
             Out << " = ";
             Out << TTP->getDefaultArgument().getAsString(Policy);
           };
@@ -776,7 +782,7 @@ namespace cling {
         if (Args) {
           Out << " = ";
           Args->get(i).print(Policy, Out);
-        } else if (NTTP->hasDefaultArgument()) {
+        } else if (NTTP->hasDefaultArgument() && printDefaultArgs) {
             Out << " = ";
             NTTP->getDefaultArgument()->printPretty(Out, 0, Policy, Indentation);
         }
@@ -791,8 +797,13 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitTemplateDecl(const TemplateDecl *D) {
-    PrintTemplateParameters(D->getTemplateParameters());
 
+    bool isNew  = TemplatesWithDefaultArgs.find(D->getNameAsString())
+            == TemplatesWithDefaultArgs.end();
+
+//    TemplatesWithDefaultArgs.insert(D->getNameAsString());
+
+    PrintTemplateParameters(D->getTemplateParameters(), 0 ,isNew);
     if (const TemplateTemplateParmDecl *TTP =
           dyn_cast<TemplateTemplateParmDecl>(D)) {
       Out << "class ";
@@ -833,11 +844,13 @@ namespace cling {
         m_SkipFlag = true;
         return;
     }
+
     if (PrintInstantiation) {
       TemplateParameterList *Params = D->getTemplateParameters();
       for (ClassTemplateDecl::spec_iterator I = D->spec_begin(),
            E = D->spec_end(); I != E; ++I) {
-        PrintTemplateParameters(Params, &(*I)->getTemplateArgs());
+        bool isNewDef  = ClassDeclNames.find(D->getNameAsString()) == ClassDeclNames.end();
+        PrintTemplateParameters(Params, &(*I)->getTemplateArgs(), isNewDef);
         Visit(*I);
         Out << '\n';
       }

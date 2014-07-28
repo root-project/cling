@@ -278,7 +278,13 @@ namespace cling {
     void IncludeCRuntime();
 
   public:
-    Interpreter(int argc, const char* const *argv, const char* llvmdir = 0);
+    ///\brief Constructor for Interpreter.
+    ///
+    ///\param[in] argc - no. of args.
+    ///\param[in] argv - arguments passed when driver is invoked.
+    ///\param[in] llvmdir - ???
+    ///\param[in] noRuntime - flag to control the presence of runtime universe
+    Interpreter(int argc, const char* const *argv, const char* llvmdir = 0, bool noRuntime = false);
     virtual ~Interpreter();
 
     const InvocationOptions& getOptions() const { return m_Opts; }
