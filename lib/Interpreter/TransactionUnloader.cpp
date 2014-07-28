@@ -400,6 +400,25 @@ namespace clang {
       return VisitMacro(MD);
     }
 
+    // Copied and adapted from: ASTReaderDecl.cpp
+    template<typename DeclT>
+    void setLatestDeclImpl(DeclT* Latest) {
+      //RedeclLink is a protected member.
+      struct RedeclDerived : public Redeclarable<DeclT> {
+        static void setLatest(DeclT* Latest) {
+          Redeclarable<DeclT>* D = Latest->getFirstDecl();
+          ((RedeclDerived*)D)->RedeclLink.setLatest(Latest);
+        }
+      };
+      // Lets allow for now just removal of the last decl in the chain
+      assert(Latest->getMostRecentDecl()->getPreviousDecl() == Latest
+             && "Removing not the one to the last.");
+      RedeclDerived::setLatest(Latest);
+    }
+    void setLatestDeclImpl(...) {
+      llvm_unreachable("attachPreviousDecl on non-redeclarable declaration");
+    }
+
     ///\brief Removes given declaration from the chain of redeclarations.
     /// Rebuilds the chain and sets properly first and last redeclaration.
     /// @param[in] R - The redeclarable, its chain to be rebuilt.
@@ -424,6 +443,7 @@ namespace clang {
         StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr();
         if (Map) {
           NamedDecl* ND = (NamedDecl*)((T*)R);
+          assert(ND == R->getMostRecentDecl() && "Not the most recent decl");
           DeclarationName Name = ND->getDeclName();
           if (!Name.isEmpty()) {
             StoredDeclsMap::iterator Pos = Map->find(Name);
@@ -446,15 +466,8 @@ namespace clang {
             }
           }
         }
-        // Put 0 in the end of the array so that the loop will reset the
-        // pointer to latest redeclaration in the chain to itself.
-        //
-        PrevDecls.push_back(0);
-
-        // 0 <- A <- B <- C
-        for(unsigned i = PrevDecls.size() - 1; i > 0; --i) {
-          PrevDecls[i-1]->setPreviousDecl(PrevDecls[i]);
-        }
+        // Set a new latest redecl.
+        setLatestDeclImpl(R->getPreviousDecl());
       }
       return true;
     }
