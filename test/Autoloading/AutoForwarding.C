@@ -6,9 +6,8 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -I %S -Xclang -verify
+// RUN: cat %s | %cling -I%S -Xclang -verify
 // Test FwdPrinterTest
-
 
 #include "cling/Interpreter/Interpreter.h"
 gCling->GenerateAutoloadingMap("Def2.h","test_auto_forwarding.h");
@@ -16,6 +15,11 @@ gCling->GenerateAutoloadingMap("Def2.h","test_auto_forwarding.h");
 gCling->EnableAutoloading();
 #include "test_auto_forwarding.h"
 #include "Def2.h"
-//expected-no-diagnostics
 
+gCling->GenerateAutoloadingMap("Enum.h","fwd_enums.h");
+.undo 1
+#include "fwd_enums.h"
+#include "Enum.h"
+
+//expected-no-diagnostics
 .q

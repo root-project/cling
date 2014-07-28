@@ -7,7 +7,6 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
-//XFAIL:*
 extern "C" int printf(const char* fmt, ...);
 // force emission of cxa_atexit such that it doesn't pollute the diff.
 class MyClass{public: ~MyClass(){} }mm;

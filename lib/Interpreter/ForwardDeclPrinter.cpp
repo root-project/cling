@@ -205,7 +205,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitEnumDecl(EnumDecl *D) {
-    if (D->getName().size() == 0 || !D->isFixed()) {
+    if (D->getName().size() == 0) {
       m_SkipFlag = true;
       return;
     }
