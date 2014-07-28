@@ -360,7 +360,7 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
       //executeFunction(F->getName());
       m_engine->runFunction(F, std::vector<llvm::GenericValue>());
       initFuncs.push_back(F);
-      if (F->getName().startswith("_GLOBAL__I_a")) {
+      if (F->getName().startswith("_GLOBAL__sub_I__")) {
         BasicBlock& BB = F->getEntryBlock();
         for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
           if (CallInst* call = dyn_cast<CallInst>(I))
