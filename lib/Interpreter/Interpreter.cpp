@@ -1196,7 +1196,16 @@ namespace cling {
                                            bool enableMacros) {
 
     const char *const dummy="cling";
-    cling::Interpreter instance(1,&dummy,nullptr,true);
+    // Create an interpreter without any runtime, producing the fwd decls.
+    cling::Interpreter fwdGen(1, &dummy, nullptr, true);
+
+    // Copy the same header search options to the new instance.
+    Preprocessor& fwdGenPP = fwdGen.getCI()->getPreprocessor();
+    HeaderSearchOptions headerOpts = getCI()->getHeaderSearchOpts();
+    clang::ApplyHeaderSearchOptions(fwdGenPP.getHeaderSearchInfo(), headerOpts,
+                                    fwdGenPP.getLangOpts(),
+                                    fwdGenPP.getTargetInfo().getTriple());
+
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -1205,8 +1214,8 @@ namespace cling {
     CO.DynamicScoping = 0;
     CO.Debug = isPrintingDebug();
 
-    cling::Transaction* T = instance.m_IncrParser->Parse
-            (std::string("#include \"") + std::string(inFile) + "\"", CO);
+    std::string includeFile = std::string("#include \"") + inFile.str() + "\"";
+    cling::Transaction* T = fwdGen.m_IncrParser->Parse(includeFile , CO);
 
     // If this was already #included we will get a T == 0.
     if (!T)
