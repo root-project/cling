@@ -330,7 +330,7 @@ namespace cling {
                        IsSysRootRelative);
 
     Preprocessor& PP = CI->getPreprocessor();
-    ApplyHeaderSearchOptions(PP.getHeaderSearchInfo(), headerOpts,
+    clang::ApplyHeaderSearchOptions(PP.getHeaderSearchInfo(), headerOpts,
                                     PP.getLangOpts(),
                                     PP.getTargetInfo().getTriple());
   }
