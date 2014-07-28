@@ -69,6 +69,8 @@ namespace cling {
                           llvm::StringRef RelativePath,
                           const clang::Module *Imported) {
 
+    if (!File)
+      return;
     auto iterator = m_Map.find(File->getUID());
     if (iterator == m_Map.end())
       return; // nothing to do, file not referred in any annotation
