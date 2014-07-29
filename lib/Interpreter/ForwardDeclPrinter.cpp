@@ -640,7 +640,7 @@ namespace cling {
     Out << "namespace " << *D << " {\n";
 //      VisitDeclContext(D);
     for(auto dit=D->decls_begin();dit!=D->decls_end();++dit) {
-      this->Visit(*dit);
+      Visit(*dit);
       printSemiColon();
     }
     Indent() << "}\n";
