@@ -68,7 +68,6 @@ namespace cling {
                           llvm::StringRef SearchPath,
                           llvm::StringRef RelativePath,
                           const clang::Module *Imported) {
-
     if (!File)
       return;
     auto iterator = m_Map.find(File->getUID());

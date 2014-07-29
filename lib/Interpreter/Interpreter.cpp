@@ -1214,6 +1214,7 @@ namespace cling {
     CO.DynamicScoping = 0;
     CO.Debug = isPrintingDebug();
 
+
     std::string includeFile = std::string("#include \"") + inFile.str() + "\"";
     cling::Transaction* T = fwdGen.m_IncrParser->Parse(includeFile , CO);
 
@@ -1226,7 +1227,7 @@ namespace cling {
                              llvm::sys::fs::OpenFlags::F_None);
 
 
-    ForwardDeclPrinter visitor(out,getSema().getSourceManager());
+    ForwardDeclPrinter visitor(out,fwdGen.getSema().getSourceManager());
 
     std::vector<std::string> macrodefs;
     if(enableMacros) {
@@ -1273,7 +1274,7 @@ namespace cling {
     return;
   }
   void Interpreter::EnableAutoloading() {
-    m_Callbacks.reset(new AutoloadCallback(this));
+    setCallbacks(new AutoloadCallback(this));
   }
 
 } //end namespace cling

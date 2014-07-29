@@ -27,12 +27,17 @@ namespace cling {
              JE = DCI.m_DGR.end(); J != JE; ++J) {
         if (EnumDecl* ED = dyn_cast<EnumDecl>(*J))
           if (ED->hasAttr<AnnotateAttr>() && ED->isFixed()) {
+            auto str = ED->getAttr<AnnotateAttr>()->getAnnotation();
+            char ch = str.back();
+            str.drop_back();
+            ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(),str);
             struct EnumDeclDerived: public EnumDecl {
               static void setFixed(EnumDecl* ED, bool value = true) {
                 ((EnumDeclDerived*)ED)->IsFixed = value;
               }
             };
-            EnumDeclDerived::setFixed(ED, false);
+            if(ch != '1')
+              EnumDeclDerived::setFixed(ED, false);
           }
 //FIXME: Enable when safe !
 //        if ( (*J)->hasAttr<AnnotateAttr>() /*FIXME: && CorrectCallbackLoaded() how ? */  )

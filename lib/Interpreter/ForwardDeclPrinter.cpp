@@ -38,7 +38,7 @@ namespace cling {
       Out << "  ";
     return Out;
   }
-  void ForwardDeclPrinter::prettyPrintAttributes(Decl *D) {
+  void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
 //      if (Policy.PolishForDeclaration)
 //        return;
 
@@ -55,8 +55,12 @@ namespace cling {
 
     //FIXME: Must print file id or full path
 
+    if (D->getSourceRange().isInvalid())
+      return;
     Out << " __attribute__((annotate(\""
-        << m_SMgr.getFilename(D->getSourceRange().getBegin())  << "\"))) ";
+        << m_SMgr.getFilename(D->getSourceRange().getBegin())
+        << " " << extra
+        << "\"))) ";
   }
 
   void ForwardDeclPrinter::ProcessDeclGroup(SmallVectorImpl<Decl*>& Decls) {
@@ -213,7 +217,7 @@ namespace cling {
     if (!Policy.SuppressSpecifiers && D->isModulePrivate())
       Out << "__module_private__ ";
     Out << "enum ";
-    prettyPrintAttributes(D);
+    prettyPrintAttributes(D,std::to_string(D->isFixed()));
     if (D->isScoped()) {
       if (D->isScopedUsingClassTag())
         Out << "class ";
@@ -664,8 +668,8 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitCXXRecordDecl(CXXRecordDecl *D) {
 
-    if(ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
-          || D->getNameAsString().size() == 0) {
+    if(/*ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
+          || */D->getNameAsString().size() == 0) {
         m_SkipFlag = true;
         return;
     }
@@ -725,17 +729,21 @@ namespace cling {
     Out << "extern \"" << l << "\" ";
     if (D->hasBraces()) {
       Out << "{\n";
-      VisitDeclContext(D);
+//      VisitDeclContext(D); //To skip weird typedefs and struct definitions
+      for(auto it = D->decls_begin(); it != D->decls_end(); ++it) {
+        Visit(*it);
+        printSemiColon();
+      }
       Indent() << "}";
     } else {
       Out << "{\n"; // print braces anyway, as the decl may end up getting skipped
       Visit(*D->decls_begin());
-      Out << "}\n";
+      Out << ";}\n";
     }
   }
 
   void ForwardDeclPrinter::PrintTemplateParameters(const TemplateParameterList *Params,
-                                              const TemplateArgumentList *Args, bool printDefaultArgs ) {
+                                              const TemplateArgumentList *Args) {
     assert(Params);
     assert(!Args || Params->size() == Args->size());
 
@@ -763,8 +771,7 @@ namespace cling {
         if (Args) {
           Out << " = ";
           Args->get(i).print(Policy, Out);
-        } else if (TTP->hasDefaultArgument() && TTP->getName().size() != 0 /*Workaround*/
-                   && printDefaultArgs) {
+        } else if (TTP->hasDefaultArgument() && TTP->getName().size() != 0 /*Workaround*/) {
             Out << " = ";
             Out << TTP->getDefaultArgument().getAsString(Policy);
           };
@@ -782,7 +789,7 @@ namespace cling {
         if (Args) {
           Out << " = ";
           Args->get(i).print(Policy, Out);
-        } else if (NTTP->hasDefaultArgument() && printDefaultArgs) {
+        } else if (NTTP->hasDefaultArgument()) {
             Out << " = ";
             NTTP->getDefaultArgument()->printPretty(Out, 0, Policy, Indentation);
         }
@@ -798,12 +805,7 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitTemplateDecl(const TemplateDecl *D) {
 
-    bool isNew  = TemplatesWithDefaultArgs.find(D->getNameAsString())
-            == TemplatesWithDefaultArgs.end();
-
-//    TemplatesWithDefaultArgs.insert(D->getNameAsString());
-
-    PrintTemplateParameters(D->getTemplateParameters(), 0 ,isNew);
+    PrintTemplateParameters(D->getTemplateParameters());
     if (const TemplateTemplateParmDecl *TTP =
           dyn_cast<TemplateTemplateParmDecl>(D)) {
       Out << "class ";
@@ -816,11 +818,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
-    if(D->getNameAsString().size() == 0
-         || D->getNameAsString()[0] == '_'
-         || D->isCXXClassMember()
-         || hasNestedNameSpecifier(D->getAsFunction()->getReturnType())
-         || isOperator(D->getAsFunction())) {
+    if(shouldSkipFunction(D->getAsFunction())) {
         m_SkipFlag = true;
         return;
     }
@@ -839,8 +837,8 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
-    if(ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
-         || D->getName().size() == 0 ) {
+    if(/*ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
+         || */D->getName().size() == 0 ) {
         m_SkipFlag = true;
         return;
     }
@@ -849,8 +847,7 @@ namespace cling {
       TemplateParameterList *Params = D->getTemplateParameters();
       for (ClassTemplateDecl::spec_iterator I = D->spec_begin(),
            E = D->spec_end(); I != E; ++I) {
-        bool isNewDef  = ClassDeclNames.find(D->getNameAsString()) == ClassDeclNames.end();
-        PrintTemplateParameters(Params, &(*I)->getTemplateArgs(), isNewDef);
+        PrintTemplateParameters(Params, &(*I)->getTemplateArgs());
         Visit(*I);
         Out << '\n';
       }
@@ -874,19 +871,23 @@ namespace cling {
     else Out << ";\n";
   }
   bool ForwardDeclPrinter::hasNestedNameSpecifier(QualType q) {
-    //FIXME: Results in assert failures for incomplete types
-    //Also, find a better way to check this instead of the following
-    //TODO: May not cover all cases, more testing needed
-    //Eg: typedef int foo; inside a class
-//    auto t = q.getTypePtr();
-//    if ( t->isBuiltinType() )
-//      return false;
-//    if ( t->isAggregateType() ) {
-//      CXXRecordDecl* decl = t->getAsCXXRecordDecl();
-//      DeclContext* dc = decl->getDeclContext();
-//      return isa<CXXRecordDecl>(dc);
+    //FIXME: This is a workaround and filters out many acceptable cases
+    std::string str = q.getAsString();
+    return str.find("::") != std::string::npos;
+
+//    if (const ElaboratedType *E = dyn_cast<ElaboratedType>(q)) {
+//      NestedNameSpecifier* NNS = E->getQualifier();
+//      if (!NNS)
+//        return false;
+//      return NNS->isDependent() || NNS->isInstantiationDependent();
 //    }
-    return false;
+//    return false;
+
+//          std::string str = q.getAsString();
+//          if(str.find("::") != std::string::npos)
+//            llvm::outs() << q.getAsString() << " " << q.getTypePtr()->getTypeClassName()<<"\n";
+
+      return false;
   }
   bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
     return D->getNameAsString().find("operator") == 0;
