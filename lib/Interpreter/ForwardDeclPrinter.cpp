@@ -1,5 +1,8 @@
 #include "ForwardDeclPrinter.h"
+#include "cling/Interpreter/DynamicLibraryManager.h"
+
 #include "llvm/Support/Path.h"
+
 namespace cling {
   using namespace clang;
   static QualType GetBaseType(QualType T) {
@@ -57,10 +60,12 @@ namespace cling {
 
     if (D->getSourceRange().isInvalid())
       return;
+    std::string file = m_SMgr.getFilename(D->getLocStart());
     Out << " __attribute__((annotate(\""
-        << m_SMgr.getFilename(D->getSourceRange().getBegin())
-        << " " << extra
-        << "\"))) ";
+        << DynamicLibraryManager::normalizePath(file);
+      if (!extra.empty())
+        Out << " " << extra;
+      Out << "\"))) ";
   }
 
   void ForwardDeclPrinter::ProcessDeclGroup(SmallVectorImpl<Decl*>& Decls) {

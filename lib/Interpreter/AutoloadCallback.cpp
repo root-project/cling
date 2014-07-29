@@ -9,7 +9,6 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/AutoloadCallback.h"
-#include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Transaction.h"
 
 
@@ -68,8 +67,8 @@ namespace cling {
                           llvm::StringRef SearchPath,
                           llvm::StringRef RelativePath,
                           const clang::Module *Imported) {
-    if (!File)
-      return;
+    assert(File && "Must have a valid File");
+
     auto iterator = m_Map.find(File->getUID());
     if (iterator == m_Map.end())
       return; // nothing to do, file not referred in any annotation
@@ -105,12 +104,8 @@ namespace cling {
   AutoloadCallback::~AutoloadCallback() {
   }
 
-  void AutoloadCallback::InsertIntoAutoloadingState
-    (clang::Decl* decl,std::string annotation) {
-      std::string canonicalFile = DynamicLibraryManager::normalizePath(annotation);
-
-      if (canonicalFile.empty())
-        canonicalFile = annotation;
+  void AutoloadCallback::InsertIntoAutoloadingState (clang::Decl* decl,
+                                                     std::string annotation) {
 
       clang::Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
       const FileEntry* FE = 0;
@@ -119,13 +114,12 @@ namespace cling {
       const DirectoryLookup* LookupFrom = 0;
       const DirectoryLookup* CurDir = 0;
 
-      FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, LookupFrom, CurDir,
+      FE = PP.LookupFile(fileNameLoc, annotation, isAngled, LookupFrom, CurDir,
                         /*SearchPath*/0, /*RelativePath*/ 0,
                         /*suggestedModule*/0, /*SkipCache*/false,
                         /*OpenFile*/ false, /*CacheFail*/ false);
 
-      if(!FE)
-        return;
+      assert(FE && "Must have a valid FileEntry");
 
       auto& stateMap = m_Map;
       auto iterator = stateMap.find(FE->getUID());
