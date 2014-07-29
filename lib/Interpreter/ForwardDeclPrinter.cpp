@@ -668,8 +668,7 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitCXXRecordDecl(CXXRecordDecl *D) {
 
-    if(/*ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
-          || */D->getNameAsString().size() == 0) {
+    if(D->getNameAsString().size() == 0) {
         m_SkipFlag = true;
         return;
     }
@@ -712,8 +711,6 @@ namespace cling {
     //  }
     Out << ";\n";
     m_SkipFlag = true;
-    if(D->isCompleteDefinition())
-      ClassDeclNames.insert(D->getNameAsString());
   }
 
   void ForwardDeclPrinter::VisitLinkageSpecDecl(LinkageSpecDecl *D) {
@@ -771,7 +768,8 @@ namespace cling {
         if (Args) {
           Out << " = ";
           Args->get(i).print(Policy, Out);
-        } else if (TTP->hasDefaultArgument() && TTP->getName().size() != 0 /*Workaround*/) {
+        } else if (TTP->hasDefaultArgument() &&
+                   !TTP->defaultArgumentWasInherited()) {
             Out << " = ";
             Out << TTP->getDefaultArgument().getAsString(Policy);
           };
@@ -789,7 +787,8 @@ namespace cling {
         if (Args) {
           Out << " = ";
           Args->get(i).print(Policy, Out);
-        } else if (NTTP->hasDefaultArgument()) {
+        } else if (NTTP->hasDefaultArgument() &&
+                   !NTTP->defaultArgumentWasInherited()) {
             Out << " = ";
             NTTP->getDefaultArgument()->printPretty(Out, 0, Policy, Indentation);
         }
@@ -837,8 +836,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
-    if(/*ClassDeclNames.find(D->getNameAsString()) != ClassDeclNames.end()
-         || */D->getName().size() == 0 ) {
+    if(D->getName().size() == 0 ) {
         m_SkipFlag = true;
         return;
     }

@@ -29,7 +29,6 @@ namespace cling {
 
     void Print(clang::AccessSpecifier AS);
 
-    std::set<std::string> ClassDeclNames;
     clang::SourceManager& m_SMgr;
     bool m_SkipFlag;
     //False by default, true if current item is not to be printed
@@ -39,7 +38,7 @@ namespace cling {
         unsigned Indentation = 0, bool PrintInstantiation = false)
       : Out(Out), Policy(Policy), Indentation(Indentation),
         PrintInstantiation(PrintInstantiation),m_SMgr(smgr),m_SkipFlag(false) {
-          this->Policy.SuppressTagKeyword=true;
+      this->Policy.SuppressTagKeyword=true;
     }
 
     void VisitDeclContext(clang::DeclContext *DC, bool Indent = true);
