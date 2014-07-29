@@ -25,8 +25,11 @@ namespace cling {
       std::vector<clang::Decl*> decls;
       for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
              JE = DCI.m_DGR.end(); J != JE; ++J) {
+        if (!ED->hasAttr<AnnotateAttr>())
+          continue;
+
         if (EnumDecl* ED = dyn_cast<EnumDecl>(*J))
-          if (ED->hasAttr<AnnotateAttr>() && ED->isFixed()) {
+          if (ED->isFixed()) {
             auto str = ED->getAttr<AnnotateAttr>()->getAnnotation();
             char ch = str.back();
             str.drop_back();
