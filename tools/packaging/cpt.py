@@ -381,7 +381,10 @@ def compile(arg):
 
     else:
         box_draw("Configure Cling with GNU Make")
-        exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11'%(srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
+        if OS == 'Darwin' and REV.startswith('10.8'):
+            exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes'%(srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
+        else:
+            exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11'%(srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
 
         box_draw("Building Cling (using %s cores)"%(cores))
         exec_subprocess_call('make -j%s'%(cores), LLVM_OBJ_ROOT)
