@@ -3,9 +3,16 @@
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Transaction.h"
 
+#include "clang/AST/ASTContext.h"
+#include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
+#include "clang/AST/ExprCXX.h"
+#include "clang/AST/Type.h"
 #include "clang/Lex/Preprocessor.h"
 
 #include "llvm/Support/Path.h"
+#include "llvm/Support/raw_ostream.h"
+
 
 namespace cling {
   using namespace clang;

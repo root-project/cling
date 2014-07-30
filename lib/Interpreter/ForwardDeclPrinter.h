@@ -1,19 +1,48 @@
 //TODO: Adapted from DeclPrinter, may need to be rewritten
 #ifndef CLING_AUTOLOADING_VISITOR_H
 #define CLING_AUTOLOADING_VISITOR_H
-#include "clang/AST/ASTContext.h"
-#include "clang/AST/Attr.h"
-#include "clang/AST/Decl.h"
-#include "clang/AST/DeclCXX.h"
-#include "clang/AST/DeclObjC.h"
-#include "clang/AST/DeclVisitor.h"
-#include "clang/AST/Expr.h"
-#include "clang/AST/ExprCXX.h"
-#include "clang/AST/PrettyPrinter.h"
-#include "clang/Basic/Module.h"
-#include "llvm/Support/raw_ostream.h"
 
-#include <set>
+#include "clang/AST/DeclVisitor.h"
+#include "clang/AST/PrettyPrinter.h"
+#include "clang/Basic/Specifiers.h"
+
+namespace clang {
+  class ClassTemplateDecl;
+  class ClassTemplateSpecializationDecl;
+  class CXXRecordDecl;
+  class Decl;
+  class DeclContext;
+  class EmptyDecl;
+  class EnumDecl;
+  class EnumConstantDecl;
+  class FieldDecl;
+  class FileScopeAsmDecl;
+  class FriendDecl;
+  class FunctionDecl;
+  class FunctionTemplateDecl;
+  class ImportDecl;
+  class LabelDecl;
+  class LinkageSpecDecl;
+  class NamespaceDecl;
+  class NamespaceAliasDecl;
+  class ParmVarDecl;
+  class QualType;
+  class RecordDecl;
+  class SourceManager;
+  class StaticAssertDecl;
+  class TemplateArgumentList;
+  class TemplateDecl;
+  class TemplateParameterList;
+  class TranslationUnitDecl;
+  class TypeAliasDecl;
+  class TypedefDecl;
+  class VarDecl;
+  class UsingDirectiveDecl;
+}
+
+namespace llvm {
+  class raw_ostream;
+}
 
 namespace cling {
   class Transaction;
