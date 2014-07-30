@@ -15,7 +15,9 @@
 
 
 namespace cling {
+
   using namespace clang;
+
   static QualType GetBaseType(QualType T) {
     // FIXME: This should be on the Type class!
     QualType BaseType = T;
@@ -61,15 +63,15 @@ namespace cling {
     m_Out << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
 
     std::vector<std::string> macrodefs;
-    if(printMacros) {
-      for(auto mit = T.macros_begin(); mit != T.macros_end(); ++mit) {
+    if (printMacros) {
+      for (auto mit = T.macros_begin(); mit != T.macros_end(); ++mit) {
         Transaction::MacroDirectiveInfo macro = *mit;
-        if ( macro.m_MD->getKind() == MacroDirective::MD_Define) {
+        if (macro.m_MD->getKind() == MacroDirective::MD_Define) {
           const MacroInfo* MI = macro.m_MD->getMacroInfo();
-          if ( MI ->getNumTokens()>1 )
+          if (MI ->getNumTokens() > 1)
             //FIXME: We can not display function like macros yet
             continue;
-          m_Out<<"#define " << macro.m_II->getName()<< ' ';
+          m_Out << "#define " << macro.m_II->getName() << ' ';
           for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
             const Token &Tok = MI->getReplacementToken(i);
             m_Out << Tok.getName() << ' ';
@@ -82,18 +84,18 @@ namespace cling {
 
     for(auto dcit = T.decls_begin(); dcit != T.decls_end(); ++dcit) {
       const Transaction::DelayCallInfo& dci = *dcit;
-      if(dci.m_DGR.isNull()) {
+      if (dci.m_DGR.isNull()) {
           break;
       }
       if (dci.m_Call == Transaction::kCCIHandleTopLevelDecl) {
-        for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
+        for (auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
           Visit(*dit);
           printSemiColon();
         }
       }
     }
-    if(printMacros) {
-      for (auto m : macrodefs ) {
+    if (printMacros) {
+      for (auto m : macrodefs) {
         m_Out << "#undef " << m << "\n";
       }
     }
@@ -111,11 +113,12 @@ namespace cling {
   }
 
 
-  raw_ostream& ForwardDeclPrinter::Indent(unsigned Indentation) {
+  llvm::raw_ostream& ForwardDeclPrinter::Indent(unsigned Indentation) {
     for (unsigned i = 0; i != Indentation; ++i)
       m_Out << "  ";
     return m_Out;
   }
+
   void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
 //      if (Policy.PolishForDeclaration)
 //        return;
@@ -144,7 +147,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::ProcessDeclGroup(SmallVectorImpl<Decl*>& Decls) {
-    this->Indent();
+    Indent();
     Decl::printGroup(Decls.data(), Decls.size(), m_Out, m_Policy,
                      m_Indentation);
     m_Out << ";\n";
@@ -173,97 +176,97 @@ namespace cling {
 
     SmallVector<Decl*, 2> Decls;
     for (DeclContext::decl_iterator D = DC->decls_begin(), DEnd = DC->decls_end();
-      D != DEnd; ++D) {
+         D != DEnd; ++D) {
 
-        // Don't print ObjCIvarDecls, as they are printed when visiting the
-        // containing ObjCInterfaceDecl.
-    if (isa<ObjCIvarDecl>(*D))
-      continue;
+      // Don't print ObjCIvarDecls, as they are printed when visiting the
+      // containing ObjCInterfaceDecl.
+      if (isa<ObjCIvarDecl>(*D))
+        continue;
 
-        // Skip over implicit declarations in pretty-printing mode.
-    if (D->isImplicit())
-      continue;
+      // Skip over implicit declarations in pretty-printing mode.
+      if (D->isImplicit())
+        continue;
 
-        // The next bits of code handles stuff like "struct {int x;} a,b"; we're
-        // forced to merge the declarations because there's no other way to
-        // refer to the struct in question.  This limited merging is safe without
-        // a bunch of other checks because it only merges declarations directly
-        // referring to the tag, not typedefs.
-        //
-        // Check whether the current declaration should be grouped with a previous
-        // unnamed struct.
-    QualType CurDeclType = getDeclType(*D);
-    if (!Decls.empty() && !CurDeclType.isNull()) {
+      // The next bits of code handles stuff like "struct {int x;} a,b"; we're
+      // forced to merge the declarations because there's no other way to
+      // refer to the struct in question.  This limited merging is safe without
+      // a bunch of other checks because it only merges declarations directly
+      // referring to the tag, not typedefs.
+      //
+      // Check whether the current declaration should be grouped with a previous
+      // unnamed struct.
+      QualType CurDeclType = getDeclType(*D);
+      if (!Decls.empty() && !CurDeclType.isNull()) {
         QualType BaseType = GetBaseType(CurDeclType);
         if (!BaseType.isNull() && isa<ElaboratedType>(BaseType))
-            BaseType = cast<ElaboratedType>(BaseType)->getNamedType();
+          BaseType = cast<ElaboratedType>(BaseType)->getNamedType();
         if (!BaseType.isNull() && isa<TagType>(BaseType) &&
-                cast<TagType>(BaseType)->getDecl() == Decls[0]) {
-            Decls.push_back(*D);
-            continue;
+            cast<TagType>(BaseType)->getDecl() == Decls[0]) {
+          Decls.push_back(*D);
+          continue;
         }
-    }
+      }
 
-    // If we have a merged group waiting to be handled, handle it now.
-    if (!Decls.empty())
+      // If we have a merged group waiting to be handled, handle it now.
+      if (!Decls.empty())
         ProcessDeclGroup(Decls);
 
-    // If the current declaration is an unnamed tag type, save it
-    // so we can merge it with the subsequent declaration(s) using it.
-    if (isa<TagDecl>(*D) && !cast<TagDecl>(*D)->getIdentifier()) {
+      // If the current declaration is an unnamed tag type, save it
+      // so we can merge it with the subsequent declaration(s) using it.
+      if (isa<TagDecl>(*D) && !cast<TagDecl>(*D)->getIdentifier()) {
         Decls.push_back(*D);
         continue;
-    }
+      }
 
-    if (isa<AccessSpecDecl>(*D)) {
+      if (isa<AccessSpecDecl>(*D)) {
         m_Indentation -= m_Policy.Indentation;
         this->Indent();
         Print(D->getAccess());
         m_Out << ":\n";
         m_Indentation += m_Policy.Indentation;
         continue;
-    }
+      }
 
-    this->Indent();
-    Visit(*D);
+      this->Indent();
+      Visit(*D);
 
-    const char *Terminator = 0;
-    if (isa<OMPThreadPrivateDecl>(*D))
+      const char *Terminator = 0;
+      if (isa<OMPThreadPrivateDecl>(*D))
         Terminator = 0;
-    else if (isa<FunctionDecl>(*D) &&
-             cast<FunctionDecl>(*D)->isThisDeclarationADefinition())
+      else if (isa<FunctionDecl>(*D) &&
+               cast<FunctionDecl>(*D)->isThisDeclarationADefinition())
         Terminator = 0;
-    else if (isa<ObjCMethodDecl>(*D) && cast<ObjCMethodDecl>(*D)->getBody())
+      else if (isa<ObjCMethodDecl>(*D) && cast<ObjCMethodDecl>(*D)->getBody())
         Terminator = 0;
-    else if (isa<NamespaceDecl>(*D) || isa<LinkageSpecDecl>(*D) ||
-             isa<ObjCImplementationDecl>(*D) ||
-             isa<ObjCInterfaceDecl>(*D) ||
-             isa<ObjCProtocolDecl>(*D) ||
-             isa<ObjCCategoryImplDecl>(*D) ||
-             isa<ObjCCategoryDecl>(*D))
+      else if (isa<NamespaceDecl>(*D) || isa<LinkageSpecDecl>(*D) ||
+               isa<ObjCImplementationDecl>(*D) ||
+               isa<ObjCInterfaceDecl>(*D) ||
+               isa<ObjCProtocolDecl>(*D) ||
+               isa<ObjCCategoryImplDecl>(*D) ||
+               isa<ObjCCategoryDecl>(*D))
         Terminator = 0;
-    else if (isa<EnumConstantDecl>(*D)) {
+      else if (isa<EnumConstantDecl>(*D)) {
         DeclContext::decl_iterator Next = D;
         ++Next;
         if (Next != DEnd)
-            Terminator = ",";
-    } else
+          Terminator = ",";
+      } else
         Terminator = ";";
 
-    if (Terminator)
-      m_Out << Terminator;
-    m_Out << "\n";
+      if (Terminator)
+        m_Out << Terminator;
+      m_Out << "\n";
     }
 
     if (!Decls.empty())
-        ProcessDeclGroup(Decls);
+      ProcessDeclGroup(Decls);
 
     if (Indent)
-        m_Indentation -= m_Policy.Indentation;
+      m_Indentation -= m_Policy.Indentation;
   }
 
   void ForwardDeclPrinter::VisitTranslationUnitDecl(TranslationUnitDecl *D) {
-      VisitDeclContext(D, false);
+    VisitDeclContext(D, false);
   }
 
   void ForwardDeclPrinter::VisitTypedefDecl(TypedefDecl *D) {
@@ -346,19 +349,19 @@ namespace cling {
       return;
     }
     CXXConstructorDecl *CDecl = dyn_cast<CXXConstructorDecl>(D);
-      CXXConversionDecl *ConversionDecl = dyn_cast<CXXConversionDecl>(D);
+    CXXConversionDecl *ConversionDecl = dyn_cast<CXXConversionDecl>(D);
       /*FIXME:Ugly Hack*/
 //      if (CDecl||ConversionDecl)
 //          return;
 
     if (!m_Policy.SuppressSpecifiers) {
       switch (D->getStorageClass()) {
-        case SC_None: break;
-        case SC_Extern: m_Out << "extern "; break;
-        case SC_Static: m_Out << "static "; break;
+      case SC_None: break;
+      case SC_Extern: m_Out << "extern "; break;
+      case SC_Static: m_Out << "static "; break;
       case SC_PrivateExtern: m_Out << "__private_extern__ "; break;
-        case SC_Auto: case SC_Register: case SC_OpenCLWorkGroupLocal:
-          llvm_unreachable("invalid for functions");
+      case SC_Auto: case SC_Register: case SC_OpenCLWorkGroupLocal:
+        llvm_unreachable("invalid for functions");
       }
 
       if (D->isInlineSpecified())  m_Out << "inline ";
@@ -398,33 +401,34 @@ namespace cling {
           if (D->getNumParams()) POut << ", ";
           POut << "...";
         }
-      } else if (D->doesThisDeclarationHaveABody() && !D->hasPrototype()) {
-          for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
-            if (i)
-              Proto += ", ";
-            Proto += D->getParamDecl(i)->getNameAsString();
-          }
+      }
+      else if (D->doesThisDeclarationHaveABody() && !D->hasPrototype()) {
+        for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
+          if (i)
+            Proto += ", ";
+          Proto += D->getParamDecl(i)->getNameAsString();
         }
+      }
 
       Proto += ")";
 
       if (FT) {
         if (FT->isConst())
           Proto += " const";
-          if (FT->isVolatile())
-            Proto += " volatile";
-          if (FT->isRestrict())
-            Proto += " __restrict";
+        if (FT->isVolatile())
+          Proto += " volatile";
+        if (FT->isRestrict())
+          Proto += " __restrict";
 
         switch (FT->getRefQualifier()) {
-          case RQ_None:
-            break;
-          case RQ_LValue:
-            Proto += " &";
-            break;
-          case RQ_RValue:
-            Proto += " &&";
-            break;
+        case RQ_None:
+          break;
+        case RQ_LValue:
+          Proto += " &";
+          break;
+        case RQ_RValue:
+          Proto += " &&";
+          break;
         }
       }
 
@@ -437,127 +441,130 @@ namespace cling {
             if (I)
               Proto += ", ";
 
-          Proto += FT->getExceptionType(I).getAsString(SubPolicy);
-        }
+            Proto += FT->getExceptionType(I).getAsString(SubPolicy);
+          }
         Proto += ")";
       } else if (FT && isNoexceptExceptionSpec(FT->getExceptionSpecType())) {
-          Proto += " noexcept";
-          if (FT->getExceptionSpecType() == EST_ComputedNoexcept) {
-            Proto += "(";
-            llvm::raw_string_ostream EOut(Proto);
-            FT->getNoexceptExpr()->printPretty(EOut, 0, SubPolicy,
-                                               m_Indentation);
-            EOut.flush();
-            //Proto += EOut.str()
-            //Commented out to fix swap bug, no idea why this was here
-            //Print was already being called earlier above
-            Proto += ")";
-          }
+        Proto += " noexcept";
+        if (FT->getExceptionSpecType() == EST_ComputedNoexcept) {
+          Proto += "(";
+          llvm::raw_string_ostream EOut(Proto);
+          FT->getNoexceptExpr()->printPretty(EOut, 0, SubPolicy,
+                                             m_Indentation);
+          EOut.flush();
+          //Proto += EOut.str()
+          //Commented out to fix swap bug, no idea why this was here
+          //Print was already being called earlier above
+          Proto += ")";
+        }
       }
 
-        if (CDecl) {
-          bool HasInitializerList = false;
-          for (CXXConstructorDecl::init_const_iterator B = CDecl->init_begin(),
+      if (CDecl) {
+        bool HasInitializerList = false;
+        for (CXXConstructorDecl::init_const_iterator B = CDecl->init_begin(),
                E = CDecl->init_end();
-               B != E; ++B) {
-            CXXCtorInitializer *BMInitializer = (*B);
-            if (BMInitializer->isInClassMemberInitializer())
-              continue;
+             B != E; ++B) {
+          CXXCtorInitializer *BMInitializer = (*B);
+          if (BMInitializer->isInClassMemberInitializer())
+            continue;
 
-            if (!HasInitializerList) {
-              Proto += " : ";
-              m_Out << Proto;
-              Proto.clear();
-              HasInitializerList = true;
+          if (!HasInitializerList) {
+            Proto += " : ";
+            m_Out << Proto;
+            Proto.clear();
+            HasInitializerList = true;
+          } else
+            m_Out << ", ";
+
+          if (BMInitializer->isAnyMemberInitializer()) {
+            FieldDecl *FD = BMInitializer->getAnyMember();
+            m_Out << *FD;
+          } else {
+            m_Out << QualType(BMInitializer->getBaseClass(), 0).getAsString(m_Policy);
+          }
+
+          m_Out << "(";
+          if (!BMInitializer->getInit()) {
+            // Nothing to print
+          }
+          else {
+            Expr *Init = BMInitializer->getInit();
+            if (ExprWithCleanups *Tmp = dyn_cast<ExprWithCleanups>(Init))
+              Init = Tmp->getSubExpr();
+
+            Init = Init->IgnoreParens();
+
+            Expr *SimpleInit = 0;
+            Expr **Args = 0;
+            unsigned NumArgs = 0;
+            if (ParenListExpr *ParenList = dyn_cast<ParenListExpr>(Init)) {
+              Args = ParenList->getExprs();
+              NumArgs = ParenList->getNumExprs();
+            } else if (CXXConstructExpr *Construct
+                       = dyn_cast<CXXConstructExpr>(Init)) {
+              Args = Construct->getArgs();
+              NumArgs = Construct->getNumArgs();
             } else
-              m_Out << ", ";
+              SimpleInit = Init;
 
-            if (BMInitializer->isAnyMemberInitializer()) {
-              FieldDecl *FD = BMInitializer->getAnyMember();
-              m_Out << *FD;
-            } else {
-              m_Out << QualType(BMInitializer->getBaseClass(), 0).getAsString(m_Policy);
-            }
+            if (SimpleInit)
+              SimpleInit->printPretty(m_Out, 0, m_Policy, m_Indentation);
+            else {
+              for (unsigned I = 0; I != NumArgs; ++I) {
+                if (isa<CXXDefaultArgExpr>(Args[I]))
+                  break;
 
-            m_Out << "(";
-            if (!BMInitializer->getInit()) {
-              // Nothing to print
-            } else {
-              Expr *Init = BMInitializer->getInit();
-              if (ExprWithCleanups *Tmp = dyn_cast<ExprWithCleanups>(Init))
-                Init = Tmp->getSubExpr();
-
-              Init = Init->IgnoreParens();
-
-              Expr *SimpleInit = 0;
-              Expr **Args = 0;
-              unsigned NumArgs = 0;
-              if (ParenListExpr *ParenList = dyn_cast<ParenListExpr>(Init)) {
-                Args = ParenList->getExprs();
-                NumArgs = ParenList->getNumExprs();
-              } else if (CXXConstructExpr *Construct
-                                            = dyn_cast<CXXConstructExpr>(Init)) {
-                Args = Construct->getArgs();
-                NumArgs = Construct->getNumArgs();
-              } else
-                SimpleInit = Init;
-
-              if (SimpleInit)
-                SimpleInit->printPretty(m_Out, 0, m_Policy, m_Indentation);
-              else {
-                for (unsigned I = 0; I != NumArgs; ++I) {
-                  if (isa<CXXDefaultArgExpr>(Args[I]))
-                    break;
-
-                  if (I)
-                    m_Out << ", ";
-                  Args[I]->printPretty(m_Out, 0, m_Policy, m_Indentation);
-                }
+                if (I)
+                  m_Out << ", ";
+                Args[I]->printPretty(m_Out, 0, m_Policy, m_Indentation);
               }
             }
-            m_Out << ")";
-            if (BMInitializer->isPackExpansion())
-              m_Out << "...";
           }
-        } else if (!ConversionDecl && !isa<CXXDestructorDecl>(D)) {
-          if (FT && FT->hasTrailingReturn()) {
-            m_Out << "auto " << Proto << " -> ";
-            Proto.clear();
-          }
-          AFT->getReturnType().print(m_Out, m_Policy, Proto);
+          m_Out << ")";
+          if (BMInitializer->isPackExpansion())
+            m_Out << "...";
+        }
+      }
+      else if (!ConversionDecl && !isa<CXXDestructorDecl>(D)) {
+        if (FT && FT->hasTrailingReturn()) {
+          m_Out << "auto " << Proto << " -> ";
           Proto.clear();
         }
-        m_Out << Proto;
-      } else {
-        Ty.print(m_Out, m_Policy, Proto);
+        AFT->getReturnType().print(m_Out, m_Policy, Proto);
+        Proto.clear();
       }
+      m_Out << Proto;
+    }
+    else {
+      Ty.print(m_Out, m_Policy, Proto);
+    }
 
-      prettyPrintAttributes(D);
+    prettyPrintAttributes(D);
 
-      if (D->isPure())
-        m_Out << " = 0";
-      else if (D->isDeletedAsWritten())
-        m_Out << " = delete";
-      else if (D->isExplicitlyDefaulted())
-        m_Out << " = default";
-      else if (D->doesThisDeclarationHaveABody() && !m_Policy.TerseOutput) {
-        if (!D->hasPrototype() && D->getNumParams()) {
-          // This is a K&R function definition, so we need to print the
-          // parameters.
-          m_Out << '\n';
-          ForwardDeclPrinter ParamPrinter(m_Out, m_SMgr, SubPolicy,
-                                          m_Indentation);
-          m_Indentation += m_Policy.Indentation;
-          for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
-            Indent();
-            ParamPrinter.VisitParmVarDecl(D->getParamDecl(i));
-            m_Out << ";\n";
-          }
-          m_Indentation -= m_Policy.Indentation;
-        } else
-       m_Out << ' ';
+    if (D->isPure())
+      m_Out << " = 0";
+    else if (D->isDeletedAsWritten())
+      m_Out << " = delete";
+    else if (D->isExplicitlyDefaulted())
+      m_Out << " = default";
+    else if (D->doesThisDeclarationHaveABody() && !m_Policy.TerseOutput) {
+      if (!D->hasPrototype() && D->getNumParams()) {
+        // This is a K&R function definition, so we need to print the
+        // parameters.
+        m_Out << '\n';
+        ForwardDeclPrinter ParamPrinter(m_Out, m_SMgr, SubPolicy,
+                                        m_Indentation);
+        m_Indentation += m_Policy.Indentation;
+        for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
+          Indent();
+          ParamPrinter.VisitParmVarDecl(D->getParamDecl(i));
+          m_Out << ";\n";
+        }
+        m_Indentation -= m_Policy.Indentation;
+      } else
+        m_Out << ' ';
 
-    //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
+      //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
 
     }
   }
@@ -593,7 +600,7 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       m_Out << "__module_private__ ";
     m_Out << D->getASTContext().getUnqualifiedObjCPointerType(D->getType()).
-        stream(m_Policy, D->getName());
+      stream(m_Policy, D->getName());
 
     if (D->isBitField()) {
       m_Out << " : ";
@@ -618,8 +625,8 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
     if(D->getStorageClass() == SC_Static
-        || hasNestedNameSpecifier(D->getType())
-        || D->isDefinedOutsideFunctionOrMethod()) {
+       || hasNestedNameSpecifier(D->getType())
+       || D->isDefinedOutsideFunctionOrMethod()) {
       m_SkipFlag = true;
       return;
     }
@@ -633,17 +640,17 @@ namespace cling {
         m_Out << VarDecl::getStorageClassSpecifierString(SC) << " ";
 
       switch (D->getTSCSpec()) {
-        case TSCS_unspecified:
-          break;
-        case TSCS___thread:
-          m_Out << "__thread ";
-          break;
-        case TSCS__Thread_local:
-          m_Out << "_Thread_local ";
-          break;
-        case TSCS_thread_local:
-          m_Out << "thread_local ";
-          break;
+      case TSCS_unspecified:
+        break;
+      case TSCS___thread:
+        m_Out << "__thread ";
+        break;
+      case TSCS__Thread_local:
+        m_Out << "_Thread_local ";
+        break;
+      case TSCS_thread_local:
+        m_Out << "thread_local ";
+        break;
       }
 
       if (D->isModulePrivate())
@@ -660,34 +667,36 @@ namespace cling {
     //So, we ignore restrict here
     T.removeLocalRestrict();
     T.print(m_Out, m_Policy, D->getName());
-//    llvm::outs()<<D->getName()<<"\n";
+    //    llvm::outs()<<D->getName()<<"\n";
     T.addRestrict();
 
     Expr *Init = D->getInit();
     if (!m_Policy.SuppressInitializers && Init) {
       bool ImplicitInit = false;
       if (CXXConstructExpr *Construct =
-            dyn_cast<CXXConstructExpr>(Init->IgnoreImplicit())) {
-      if (D->getInitStyle() == VarDecl::CallInit &&
-              !Construct->isListInitialization()) {
-            ImplicitInit = Construct->getNumArgs() == 0 ||
-              Construct->getArg(0)->isDefaultArgument();
+          dyn_cast<CXXConstructExpr>(Init->IgnoreImplicit())) {
+        if (D->getInitStyle() == VarDecl::CallInit &&
+            !Construct->isListInitialization()) {
+          ImplicitInit = Construct->getNumArgs() == 0 ||
+            Construct->getArg(0)->isDefaultArgument();
+        }
       }
-    }
-    if (!ImplicitInit) {
-      if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
-        m_Out << "(";
-      else if (D->getInitStyle() == VarDecl::CInit) {
+      if (!ImplicitInit) {
+        if ((D->getInitStyle() == VarDecl::CallInit)
+            && !isa<ParenListExpr>(Init))
+          m_Out << "(";
+        else if (D->getInitStyle() == VarDecl::CInit) {
           if(!D->isDefinedOutsideFunctionOrMethod())
             m_Out << " = "; //Comment for skipping default function args
-      }
-      if(!D->isDefinedOutsideFunctionOrMethod())
-        //Comment for skipping default function args
-        Init->printPretty(m_Out, 0, m_Policy, m_Indentation);
+        }
+        if (!D->isDefinedOutsideFunctionOrMethod())
+          //Comment for skipping default function args
+          Init->printPretty(m_Out, 0, m_Policy, m_Indentation);
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
         m_Out << ")";
       }
     }
+
     if(D->isDefinedOutsideFunctionOrMethod())
       prettyPrintAttributes(D);
   }
@@ -704,7 +713,7 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitImportDecl(ImportDecl *D) {
     m_Out << "@import " << D->getImportedModule()->getFullModuleName()
-        << ";\n";
+          << ";\n";
   }
 
   void ForwardDeclPrinter::VisitStaticAssertDecl(StaticAssertDecl *D) {
@@ -715,15 +724,15 @@ namespace cling {
     m_Out << ")";
   }
 
-    //----------------------------------------------------------------------------
-    // C++ declarations
-    //----------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  // C++ declarations
+  //----------------------------------------------------------------------------
   void ForwardDeclPrinter::VisitNamespaceDecl(NamespaceDecl *D) {
     if (D->isInline())
       m_Out << "inline ";
     m_Out << "namespace " << *D << " {\n";
 //      VisitDeclContext(D);
-    for(auto dit=D->decls_begin();dit!=D->decls_end();++dit) {
+    for (auto dit=D->decls_begin();dit!=D->decls_end();++dit) {
       Visit(*dit);
       printSemiColon();
     }
@@ -751,8 +760,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitCXXRecordDecl(CXXRecordDecl *D) {
-
-    if(D->getNameAsString().size() == 0) {
+    if (D->getNameAsString().size() == 0) {
         m_SkipFlag = true;
         return;
     }
@@ -760,7 +768,8 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       m_Out << "__module_private__ ";
     m_Out << D->getKindName();
-    if(D->isCompleteDefinition())
+
+    if (D->isCompleteDefinition())
       prettyPrintAttributes(D);
     if (D->getIdentifier())
       m_Out << ' ' << *D ;
@@ -811,7 +820,7 @@ namespace cling {
     if (D->hasBraces()) {
       m_Out << "{\n";
 //      VisitDeclContext(D); //To skip weird typedefs and struct definitions
-      for(auto it = D->decls_begin(); it != D->decls_end(); ++it) {
+      for (auto it = D->decls_begin(); it != D->decls_end(); ++it) {
         Visit(*it);
         printSemiColon();
       }
@@ -836,8 +845,7 @@ namespace cling {
 
       const Decl *Param = Params->getParam(i);
       if (const TemplateTypeParmDecl *TTP =
-            dyn_cast<TemplateTypeParmDecl>(Param)) {
-
+          dyn_cast<TemplateTypeParmDecl>(Param)) {
 
         if (TTP->wasDeclaredWithTypename())
           m_Out << "typename ";
@@ -852,13 +860,15 @@ namespace cling {
         if (Args) {
           m_Out << " = ";
           Args->get(i).print(m_Policy, m_Out);
-        } else if (TTP->hasDefaultArgument() &&
-                   !TTP->defaultArgumentWasInherited()) {
-            m_Out << " = ";
-            m_Out << TTP->getDefaultArgument().getAsString(m_Policy);
-          };
-      } else if (const NonTypeTemplateParmDecl *NTTP =
-                   dyn_cast<NonTypeTemplateParmDecl>(Param)) {
+        }
+        else if (TTP->hasDefaultArgument() &&
+                 !TTP->defaultArgumentWasInherited()) {
+          m_Out << " = ";
+          m_Out << TTP->getDefaultArgument().getAsString(m_Policy);
+        }
+      }
+      else if (const NonTypeTemplateParmDecl *NTTP =
+               dyn_cast<NonTypeTemplateParmDecl>(Param)) {
         m_Out << NTTP->getType().getAsString(m_Policy);
         if (NTTP->isParameterPack() && !isa<PackExpansionType>(NTTP->getType()))
           m_Out << "...";
@@ -871,16 +881,18 @@ namespace cling {
         if (Args) {
           m_Out << " = ";
           Args->get(i).print(m_Policy, m_Out);
-        } else if (NTTP->hasDefaultArgument() &&
-                   !NTTP->defaultArgumentWasInherited()) {
-            m_Out << " = ";
-            NTTP->getDefaultArgument()->printPretty(m_Out, 0, m_Policy,
-                                                    m_Indentation);
         }
-      } else if (const TemplateTemplateParmDecl *TTPD =
-                   dyn_cast<TemplateTemplateParmDecl>(Param)) {
+        else if (NTTP->hasDefaultArgument() &&
+                 !NTTP->defaultArgumentWasInherited()) {
+          m_Out << " = ";
+          NTTP->getDefaultArgument()->printPretty(m_Out, 0, m_Policy,
+                                                  m_Indentation);
+        }
+      }
+      else if (const TemplateTemplateParmDecl *TTPD =
+               dyn_cast<TemplateTemplateParmDecl>(Param)) {
         VisitTemplateDecl(TTPD);
-          // FIXME: print the default argument, if present.
+        // FIXME: print the default argument, if present.
       }
     }
 
@@ -890,28 +902,29 @@ namespace cling {
   void ForwardDeclPrinter::VisitTemplateDecl(const TemplateDecl *D) {
 
     PrintTemplateParameters(D->getTemplateParameters());
+
     if (const TemplateTemplateParmDecl *TTP =
           dyn_cast<TemplateTemplateParmDecl>(D)) {
       m_Out << "class ";
     if (TTP->isParameterPack())
       m_Out << "...";
     m_Out << D->getName();
-    } else {
+    }
+    else {
       Visit(D->getTemplatedDecl());
     }
   }
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
-    if(shouldSkipFunction(D->getAsFunction())) {
-        m_SkipFlag = true;
-        return;
+    if (shouldSkipFunction(D->getAsFunction())) {
+      m_SkipFlag = true;
+      return;
     }
-
 
     if (m_PrintInstantiation) {
       TemplateParameterList *Params = D->getTemplateParameters();
       for (FunctionTemplateDecl::spec_iterator I = D->spec_begin(),
-           E = D->spec_end(); I != E; ++I) {
+             E = D->spec_end(); I != E; ++I) {
         PrintTemplateParameters(Params, (*I)->getTemplateSpecializationArgs());
         Visit(*I);
       }
@@ -921,15 +934,15 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
-    if(D->getName().size() == 0 ) {
-        m_SkipFlag = true;
-        return;
+    if (D->getName().size() == 0 ) {
+      m_SkipFlag = true;
+      return;
     }
 
     if (m_PrintInstantiation) {
       TemplateParameterList *Params = D->getTemplateParameters();
       for (ClassTemplateDecl::spec_iterator I = D->spec_begin(),
-           E = D->spec_end(); I != E; ++I) {
+             E = D->spec_end(); I != E; ++I) {
         PrintTemplateParameters(Params, &(*I)->getTemplateArgs());
         Visit(*I);
         m_Out << '\n';
@@ -938,21 +951,22 @@ namespace cling {
 
     return VisitRedeclarableTemplateDecl(D);
   }
-  void ForwardDeclPrinter::VisitClassTemplateSpecializationDecl
-        (clang::ClassTemplateSpecializationDecl* D) {
 
-      //D->dump();
-
+  void ForwardDeclPrinter::
+  VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* D) {
+    //D->dump();
   }
+
   void ForwardDeclPrinter::printSemiColon(bool flag) {
     if (flag) {
-      if(!m_SkipFlag)
+      if (!m_SkipFlag)
         m_Out << ";\n";
       else
         m_SkipFlag = false;
     }
     else m_Out << ";\n";
   }
+
   bool ForwardDeclPrinter::hasNestedNameSpecifier(QualType q) {
     //FIXME: This is a workaround and filters out many acceptable cases
     std::string str = q.getAsString();
@@ -970,11 +984,13 @@ namespace cling {
 //          if(str.find("::") != std::string::npos)
 //            llvm::outs() << q.getAsString() << " " << q.getTypePtr()->getTypeClassName()<<"\n";
 
-      return false;
+    return false;
   }
+
   bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
     return D->getNameAsString().find("operator") == 0;
   }
+
   bool ForwardDeclPrinter::shouldSkipFunction(FunctionDecl *D) {
     bool param = false;
     //will be true if any of the params turn out to have nested types
@@ -985,13 +1001,13 @@ namespace cling {
     }
 
     if (D->getNameAsString().size() == 0
-      || D->getNameAsString()[0] == '_'
-      || D->getStorageClass() == SC_Static
-      || D->isCXXClassMember()
-      || hasNestedNameSpecifier(D->getReturnType())
-      || param
-      || isOperator(D) )
-        return true;
+        || D->getNameAsString()[0] == '_'
+        || D->getStorageClass() == SC_Static
+        || D->isCXXClassMember()
+        || hasNestedNameSpecifier(D->getReturnType())
+        || param
+        || isOperator(D) )
+      return true;
     return false;
   }
 }//end namespace cling
