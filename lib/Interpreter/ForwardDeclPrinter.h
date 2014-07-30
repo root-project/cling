@@ -20,21 +20,21 @@ namespace cling {
 
   class ForwardDeclPrinter : public clang::DeclVisitor<ForwardDeclPrinter> {
   private:
-    llvm::raw_ostream &Out;
-    clang::PrintingPolicy Policy; // intentional copy
-    unsigned Indentation;
-    bool PrintInstantiation;
+    llvm::raw_ostream &m_Out;
+    clang::PrintingPolicy m_Policy; // intentional copy
+    unsigned m_Indentation;
+    bool m_PrintInstantiation;
 
     clang::SourceManager& m_SMgr;
     bool m_SkipFlag;
     //False by default, true if current item is not to be printed
   public:
-    ForwardDeclPrinter(llvm::raw_ostream &Out, clang::SourceManager& smgr,
+    ForwardDeclPrinter(llvm::raw_ostream& Out, clang::SourceManager& SM,
                        const Transaction& T,
                        unsigned Indentation = 0,
                        bool printMacros = false);
 
-    ForwardDeclPrinter(llvm::raw_ostream &Out, clang::SourceManager& smgr,
+    ForwardDeclPrinter(llvm::raw_ostream &Out, clang::SourceManager& SM,
                        const clang::PrintingPolicy& P,
                        unsigned Indentation = 0);
 
@@ -77,7 +77,7 @@ namespace cling {
     bool isOperator(clang::FunctionDecl* D);
     bool shouldSkipFunction(clang::FunctionDecl* D);
   private:
-    llvm::raw_ostream& Indent() { return Indent(Indentation); }
+    llvm::raw_ostream& Indent() { return Indent(m_Indentation); }
     llvm::raw_ostream& Indent(unsigned Indentation);
 
     void ProcessDeclGroup(llvm::SmallVectorImpl<clang::Decl*>& Decls);
