@@ -19,16 +19,11 @@ namespace cling {
   class Transaction;
 
   class ForwardDeclPrinter : public clang::DeclVisitor<ForwardDeclPrinter> {
+  private:
     llvm::raw_ostream &Out;
     clang::PrintingPolicy Policy; // intentional copy
     unsigned Indentation;
     bool PrintInstantiation;
-
-    llvm::raw_ostream& Indent() { return Indent(Indentation); }
-    llvm::raw_ostream& Indent(unsigned Indentation);
-    void ProcessDeclGroup(llvm::SmallVectorImpl<clang::Decl*>& Decls);
-
-    void Print(clang::AccessSpecifier AS);
 
     clang::SourceManager& m_SMgr;
     bool m_SkipFlag;
@@ -82,6 +77,13 @@ namespace cling {
     bool hasNestedNameSpecifier(clang::QualType q);
     bool isOperator(clang::FunctionDecl* D);
     bool shouldSkipFunction(clang::FunctionDecl* D);
+  private:
+    llvm::raw_ostream& Indent() { return Indent(Indentation); }
+    llvm::raw_ostream& Indent(unsigned Indentation);
+
+    void ProcessDeclGroup(llvm::SmallVectorImpl<clang::Decl*>& Decls);
+
+    void Print(clang::AccessSpecifier AS);
   };
 }
 #endif
