@@ -67,7 +67,7 @@ elif OS == 'Linux':
     workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 elif OS == 'Darwin':
-    DIST = 'N/A'
+    DIST = 'MacOS'
     RELEASE = platform.release()
     REV = platform.mac_ver()[0]
 
