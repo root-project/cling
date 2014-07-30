@@ -168,10 +168,10 @@ namespace cling {
     // Common C declarations
     //----------------------------------------------------------------------------
 
-  void ForwardDeclPrinter::VisitDeclContext(DeclContext *DC, bool Indent) {
+  void ForwardDeclPrinter::VisitDeclContext(DeclContext *DC, bool shouldIndent){
     if (m_Policy.TerseOutput)
       return;
-    if (Indent)
+    if (shouldIndent)
       m_Indentation += m_Policy.Indentation;
 
     SmallVector<Decl*, 2> Decls;
@@ -220,14 +220,14 @@ namespace cling {
 
       if (isa<AccessSpecDecl>(*D)) {
         m_Indentation -= m_Policy.Indentation;
-        this->Indent();
+        Indent();
         Print(D->getAccess());
         m_Out << ":\n";
         m_Indentation += m_Policy.Indentation;
         continue;
       }
 
-      this->Indent();
+      Indent();
       Visit(*D);
 
       const char *Terminator = 0;
@@ -261,7 +261,7 @@ namespace cling {
     if (!Decls.empty())
       ProcessDeclGroup(Decls);
 
-    if (Indent)
+    if (shouldIndent)
       m_Indentation -= m_Policy.Indentation;
   }
 

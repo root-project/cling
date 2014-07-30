@@ -67,7 +67,7 @@ namespace cling {
                        const clang::PrintingPolicy& P,
                        unsigned Indentation = 0);
 
-    void VisitDeclContext(clang::DeclContext *DC, bool Indent = true);
+    void VisitDeclContext(clang::DeclContext *DC, bool shouldIndent = true);
 
     void VisitTranslationUnitDecl(clang::TranslationUnitDecl *D);
     void VisitTypedefDecl(clang::TypedefDecl *D);
