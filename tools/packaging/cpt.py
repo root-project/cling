@@ -52,8 +52,8 @@ if OS == 'Windows':
     EXEEXT = '.exe'
     SHLIBEXT = '.dll'
 
-    TMP_PREFIX='C:\\Windows\\Temp\\cling-obj'
-    workdir = 'C:\\ec\\build'
+    TMP_PREFIX='C:\\Windows\\Temp\\cling-obj\\'
+    workdir = 'C:\\ec\\build\\'
 
 elif OS == 'Linux':
     DIST = platform.linux_distribution()[0]
@@ -909,7 +909,7 @@ def get_win_dep():
     zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
     zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
     print 'Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION))
-    os.remove(os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
+    #os.remove(os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s'%(NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
     box_draw("Download CMake for Windows")
@@ -922,13 +922,13 @@ def get_win_dep():
     zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
     print 'Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION))
-    os.remove(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
+    #os.remove(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'cmake-%s-win32-x86'%(CMAKE_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'cmake'))
 
 def make_nsi():
     box_draw("Generating cling.nsi")
     NSIS = os.path.join(TMP_PREFIX, 'bin', 'nsis')
-    VIProductVersion = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1', CLING_SRC_DIR).strip()
+    VIProductVersion = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags', CLING_SRC_DIR).strip().splitlines()[0]
     print 'Create file: ' + os.path.join(workdir, 'cling.nsi')
     f = open(os.path.join(workdir, 'cling.nsi'), 'w')
     template = '''
