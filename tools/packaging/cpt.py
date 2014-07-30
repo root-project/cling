@@ -1173,6 +1173,89 @@ def build_nsis():
     NSIS = os.path.join(TMP_PREFIX, 'bin', 'nsis')
     exec_subprocess_call('%s -V3 %s'%(os.path.join(NSIS, 'makensis.exe'), os.path.join(workdir, 'cling.nsi')), workdir)
 
+###############################################################################
+#                          Mac OS X specific functions                        #
+###############################################################################
+
+def make_dmg():
+    APP_NAME = 'Cling'
+    VERSION="1.0.0"
+    DMG_BACKGROUND_IMG = 'Background.png'
+    APP_EXE = '%s.app/Contents/MacOS/%s'%(APP_NAME, APP_NAME)
+    VOL_NAME = "%s %s"%(APP_NAME, VERSION)
+    DMG_TMP = "%s-temp.dmg"%(VOL_NAME)
+    DMG_FINAL = "%s.dmg"%(VOL_NAME)
+    STAGING_DIR = "./Install"
+
+    if os.path.isdir(os.path.join(workdir, STAGING_DIR)):
+        print "Remove directory: " + os.path.join(workdir, STAGING_DIR)
+        shutil.rmtree(os.path.join(workdir, STAGING_DIR))
+
+    if os.path.isdir(os.path.join(workdir, DMG_TMP)):
+        print "Remove directory: " + os.path.join(workdir, DMG_TMP)
+        shutil.rmtree(os.path.join(workdir, DMG_TMP))
+
+    if os.path.isdir(os.path.join(workdir, DMG_FINAL)):
+        print "Remove directory: " + os.path.join(workdir, DMG_FINAL)
+        shutil.rmtree(os.path.join(workdir, DMG_FINAL))
+
+    os.makedirs(STAGING_DIR)
+    shutil.copy(os.path.join(workdir,'%s.app'%(APP_NAME)), os.path.join(workdir,STAGING_DIR))
+
+    print 'Stripping file: ' + APP_EXE
+    exec_subprocess_call('strip -u -r %s'%(APP_EXE), workdir)
+
+    SIZE = exec_subprocess_check_output("du -sh %s | sed 's/\([0-9]*\)M\(.*\)/\1/'"%(STAGING_DIR), workdir)
+    SIZE = float(SIZE) + 1.0
+
+    exec_subprocess_call('hdiutil create -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s'%(STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
+
+    print 'Created DMG: ' + DMG_TMP
+    DEVICE = exec_subprocess_check_output("hdiutil attach -readwrite -noverify %s | egrep '^/dev/' | sed 1q | awk '{print $1}')"%(DMG_TMP), workdir)
+    time.sleep(5)
+
+    os.makedirs('/Volumes/%s/.background'%(VOL_NAME))
+    shutil.copy(os.path.join(workdir,DMG_BACKGROUND_IMG), '/Volumes/%s/.background/'%(VOL_NAME))
+
+    ascript = '''
+   tell application "Finder"
+     tell disk "%s"
+           open
+           set current view of container window to icon view
+           set toolbar visible of container window to false
+           set statusbar visible of container window to false
+           set the bounds of container window to {400, 100, 920, 440}
+           set viewOptions to the icon view options of container window
+           set arrangement of viewOptions to not arranged
+           set icon size of viewOptions to 72
+           set background picture of viewOptions to file ".background:%s"
+           set position of item "%s.app" of container window to {160, 205}
+           set position of item "Applications" of container window to {360, 205}
+           close
+           open
+           update without registering applications
+           delay 2
+     end tell
+   end tell
+'''%(VOL_NAME, DMG_BACKGOUND_IMAGE, APP_NAME)
+
+    exec_subprocess_call("echo %s | osascript"%(ascript), workdir)
+    exec_subprocess_call("sync", workdir)
+
+    exec_subprocess_call('hdiutil detach %s'%(DEVICE), CLING_SRC_DIR)
+
+    print "Creating compressed Apple Disk Image"
+    exec_subprocess_call('hdiutil convert %s -format UDZO -imagekey zlib-level=9 -o %s'%(DMG_TMP, DMG_FINAL), workdir)
+
+    if os.path.isdir(os.path.join(workdir, DMG_TMP)):
+        print "Remove directory: " + os.path.join(workdir, DMG_TMP)
+        shutil.rmtree(os.path.join(workdir, DMG_TMP))
+
+    if os.path.isdir(os.path.join(workdir, STAGING_DIR)):
+        print "Remove directory: " + os.path.join(workdir, STAGING_DIR)
+        shutil.rmtree(os.path.join(workdir, STAGING_DIR))
+
+    print 'Done'
 
 ###############################################################################
 #                           argparse configuration                            #
@@ -1341,6 +1424,12 @@ if args['current_dev']:
         build_nsis()
         cleanup()
 
+    elif args['current_dev'] == 'dmg':
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+        install_prefix()
+        test_cling()
+        make_dmg
+
 if args['last_stable']:
     fetch_llvm()
     fetch_clang()
@@ -1448,7 +1537,6 @@ if args['nsis_tag']:
 
 if args['make_proper']:
     # This is an internal option in CPT, meant to be integrated into Cling's build system.
-    global prefix
     with open(os.path.join(LLVM_OBJ_ROOT, 'config.log'), 'r') as log:
         for line in log:
             if re.match('^LLVM_PREFIX=', line):
