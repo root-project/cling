@@ -107,12 +107,17 @@ namespace cling {
   void AutoloadCallback::InsertIntoAutoloadingState (clang::Decl* decl,
                                                      std::string annotation) {
 
+      if (annotation == "")
+        return;
+
       clang::Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
       const FileEntry* FE = 0;
       SourceLocation fileNameLoc;
       bool isAngled = false;
       const DirectoryLookup* LookupFrom = 0;
       const DirectoryLookup* CurDir = 0;
+
+
 
       FE = PP.LookupFile(fileNameLoc, annotation, isAngled, LookupFrom, CurDir,
                         /*SearchPath*/0, /*RelativePath*/ 0,

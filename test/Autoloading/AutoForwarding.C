@@ -16,7 +16,7 @@ gCling->EnableAutoloading();
 #include "test_auto_forwarding.h"
 #include "Def2.h"
 
-gCling->GenerateAutoloadingMap("Enum.h","fwd_enums.h");
+.T Enum.h fwd_enums.h
 #include "fwd_enums.h"
 #include "Enum.h"
 

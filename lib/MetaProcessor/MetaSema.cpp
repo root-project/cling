@@ -74,6 +74,7 @@ namespace cling {
   MetaSema::ActionResult MetaSema::actOnTCommand(llvm::StringRef inputFile,
                                                  llvm::StringRef outputFile) {
     m_Interpreter.GenerateAutoloadingMap(inputFile, outputFile);
+    m_Interpreter.EnableAutoloading();
     return AR_Success;
   }
 

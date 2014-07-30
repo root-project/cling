@@ -8,31 +8,10 @@
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
 // Test stlFwd
-// Only for reference purposes, doesn't actually use FwdPrinter
-namespace std {
+//XFAIL: *
+.T Stlinc.h stl_test.h
+#include "stl_test.h"
+//expected-warning {{}}
 
-  template <typename T,typename A> class __attribute__((annotate("vector"))) vector;
-  template <typename T,typename A> class __attribute__((annotate("list"))) list;
-  template <typename K,typename T,typename C,typename A> class __attribute__((annotate("map"))) map;
-
-  template <typename Ch,typename Tr,typename A> class basic_string;
-  template <typename T> class char_traits;
-  template <typename T> class allocator;
-  typedef basic_string<char,char_traits<char>,allocator<char>> string __attribute__((annotate("string"))) ;
-
-  template <typename R> void sort(R,R) __attribute__((annotate("algorithm")));
-  template <typename R,typename C> void sort(R,R,C) __attribute__((annotate("algorithm")));
-
-  template< bool B, typename T> struct __attribute__((annotate("type_traits"))) enable_if;
-}
-
-#include<vector>
-#include<list>
-#include<type_traits>
-#include<map>
-#include<algorithm>
-#include<string>
-
-//expected-no-diagnostics
 .q
 

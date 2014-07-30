@@ -140,8 +140,9 @@ namespace cling {
     if (D->getSourceRange().isInvalid())
       return;
     std::string file = m_SMgr.getFilename(D->getLocStart());
+//    assert ( file.length() != 0 && "Filename Should not be blank");
     m_Out << " __attribute__((annotate(\""
-          << DynamicLibraryManager::normalizePath(file);
+          << file;
     if (!extra.empty())
       m_Out << " " << extra;
     m_Out << "\"))) ";
@@ -271,6 +272,16 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitTypedefDecl(TypedefDecl *D) {
+//      llvm::StringRef str = D->getTypeSourceInfo()->getType().getAsString();
+//      if (str.startswith("enum")) {
+////        std::pair<StringRef,StringRef> pair = str.split(' ');
+////        m_Out << pair.first;
+////        prettyPrintAttributes(D,"1");
+////        m_Out << pair.second << ": unsigned int ";
+//          m_SkipFlag = true;
+//          //need something more
+//        return;
+//      }
     if (!m_Policy.SuppressSpecifiers) {
       m_Out << "typedef ";
 
