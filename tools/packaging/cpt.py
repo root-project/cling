@@ -67,7 +67,7 @@ elif OS == 'Linux':
     workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
 
 elif OS == 'Darwin':
-    DIST = 'MacOS'
+    DIST = 'MacOSX'
     RELEASE = platform.release()
     REV = platform.mac_ver()[0]
 
@@ -1287,7 +1287,7 @@ args = vars(parser.parse_args())
 print 'Cling Packaging Tool (CPT)'
 print 'Arguments vector: ' + str(sys.argv)
 box_draw_header()
-print 'Family: ' + FAMILY
+print 'Thread Model: ' + FAMILY
 print 'Operating System: ' + OS
 print 'Distribution: ' + DIST
 print 'Release: ' + RELEASE
