@@ -1181,6 +1181,7 @@ def build_nsis():
 ###############################################################################
 
 def make_dmg():
+    box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
     VERSION="1.0.0"
     DMG_BACKGROUND_IMG = 'Background.png'
@@ -1188,11 +1189,15 @@ def make_dmg():
     VOL_NAME = "%s %s"%(APP_NAME, VERSION)
     DMG_TMP = "%s-temp.dmg"%(VOL_NAME)
     DMG_FINAL = "%s.dmg"%(VOL_NAME)
-    STAGING_DIR = "./Install"
+    STAGING_DIR = "Install"
 
     if os.path.isdir(os.path.join(workdir, STAGING_DIR)):
         print "Remove directory: " + os.path.join(workdir, STAGING_DIR)
         shutil.rmtree(os.path.join(workdir, STAGING_DIR))
+
+    if os.path.isdir(os.path.join(workdir, APP_NAME + '.app')):
+        print "Remove directory: " + os.path.join(workdir, APP_NAME + '.app')
+        shutil.rmtree(os.path.join(workdir, APP_NAME + '.app'))
 
     if os.path.isdir(os.path.join(workdir, DMG_TMP)):
         print "Remove directory: " + os.path.join(workdir, DMG_TMP)
@@ -1202,8 +1207,11 @@ def make_dmg():
         print "Remove directory: " + os.path.join(workdir, DMG_FINAL)
         shutil.rmtree(os.path.join(workdir, DMG_FINAL))
 
-    os.makedirs(STAGING_DIR)
-    shutil.copy(os.path.join(workdir,'%s.app'%(APP_NAME)), os.path.join(workdir,STAGING_DIR))
+    os.makedirs(os.path.join(workdir, APP_NAME + '.app' , 'Contents', 'Resources'))
+    shutil.copytree(prefix, os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME)))
+
+    os.makedirs(os.path.join(workdir, STAGING_DIR))
+    shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), os.path.join(workdir,STAGING_DIR))
 
     print 'Stripping file: ' + APP_EXE
     exec_subprocess_call('strip -u -r %s'%(APP_EXE), workdir)
@@ -1430,8 +1438,7 @@ if args['current_dev']:
     elif args['current_dev'] == 'dmg':
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
-        test_cling()
-        make_dmg
+        make_dmg()
 
 if args['last_stable']:
     fetch_llvm()
