@@ -16,10 +16,11 @@
 #include <set>
 
 namespace cling {
+  class Transaction;
 
   class ForwardDeclPrinter : public clang::DeclVisitor<ForwardDeclPrinter> {
     llvm::raw_ostream &Out;
-    clang::PrintingPolicy Policy;
+    clang::PrintingPolicy Policy; // intentional copy
     unsigned Indentation;
     bool PrintInstantiation;
 
@@ -34,13 +35,15 @@ namespace cling {
     //False by default, true if current item is not to be printed
   public:
     ForwardDeclPrinter(llvm::raw_ostream &Out, clang::SourceManager& smgr,
-        const clang::PrintingPolicy &Policy =clang::PrintingPolicy(clang::LangOptions()),
-        unsigned Indentation = 0, bool PrintInstantiation = false)
-      : Out(Out), Policy(Policy), Indentation(Indentation),
-        PrintInstantiation(PrintInstantiation),m_SMgr(smgr),m_SkipFlag(false) {
-      this->Policy.SuppressTagKeyword=true;
-    }
+                       const Transaction& T,
+                       unsigned Indentation = 0,
+                       bool printMacros = false);
 
+    ForwardDeclPrinter(llvm::raw_ostream &Out, clang::SourceManager& smgr,
+                       const clang::PrintingPolicy& P,
+                       unsigned Indentation = 0);
+
+    clang::PrintingPolicy& getPolicy() { return Policy; }
     void VisitDeclContext(clang::DeclContext *DC, bool Indent = true);
 
     void VisitTranslationUnitDecl(clang::TranslationUnitDecl *D);

@@ -1,5 +1,9 @@
 #include "ForwardDeclPrinter.h"
+
 #include "cling/Interpreter/DynamicLibraryManager.h"
+#include "cling/Interpreter/Transaction.h"
+
+#include "clang/Lex/Preprocessor.h"
 
 #include "llvm/Support/Path.h"
 
@@ -35,6 +39,70 @@ namespace cling {
         return VD->getType();
     return QualType();
   }
+
+  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream &Out,
+                                         SourceManager& smgr,
+                                         const Transaction& T,
+                                         unsigned Indentation,
+                                         bool printMacros)
+    : Out(Out), Policy(clang::PrintingPolicy(clang::LangOptions())),
+      Indentation(Indentation), m_SMgr(smgr), m_SkipFlag(false) {
+    PrintInstantiation = false;
+    Policy.SuppressTagKeyword = true;
+
+    // Suppress some unfixable warnings.
+    Out << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
+
+    std::vector<std::string> macrodefs;
+    if(printMacros) {
+      for(auto mit = T.macros_begin(); mit != T.macros_end(); ++mit) {
+        Transaction::MacroDirectiveInfo macro = *mit;
+        if ( macro.m_MD->getKind() == MacroDirective::MD_Define) {
+          const MacroInfo* MI = macro.m_MD->getMacroInfo();
+          if ( MI ->getNumTokens()>1 )
+            //FIXME: We can not display function like macros yet
+            continue;
+          Out<<"#define " << macro.m_II->getName()<< ' ';
+          for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
+            const Token &Tok = MI->getReplacementToken(i);
+            Out << Tok.getName() << ' ';
+            macrodefs.push_back(macro.m_II->getName());
+          }
+          Out << '\n';
+        }
+      }
+    }
+
+    for(auto dcit = T.decls_begin(); dcit != T.decls_end(); ++dcit) {
+      const Transaction::DelayCallInfo& dci = *dcit;
+      if(dci.m_DGR.isNull()) {
+          break;
+      }
+      if (dci.m_Call == Transaction::kCCIHandleTopLevelDecl) {
+        for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
+          Visit(*dit);
+          printSemiColon();
+        }
+      }
+    }
+    if(printMacros) {
+      for (auto m : macrodefs ) {
+        Out << "#undef " << m << "\n";
+      }
+    }
+
+  }
+
+  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream &Out,
+                                         clang::SourceManager& smgr,
+                                         const clang::PrintingPolicy& P,
+                                         unsigned Indentation)
+    : Out(Out), Policy(clang::PrintingPolicy(clang::LangOptions())),
+      Indentation(Indentation), m_SMgr(smgr), m_SkipFlag(false) {
+    PrintInstantiation = false;
+    Policy.SuppressTagKeyword = true;
+  }
+
 
   raw_ostream& ForwardDeclPrinter::Indent(unsigned Indentation) {
     for (unsigned i = 0; i != Indentation; ++i)

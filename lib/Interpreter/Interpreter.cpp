@@ -1227,48 +1227,9 @@ namespace cling {
                              llvm::sys::fs::OpenFlags::F_None);
 
 
-    ForwardDeclPrinter visitor(out,fwdGen.getSema().getSourceManager());
+    ForwardDeclPrinter visitor(out,fwdGen.getSema().getSourceManager(), *T);
 
-    std::vector<std::string> macrodefs;
-    if(enableMacros) {
-      for(auto mit = T->macros_begin(); mit != T->macros_end(); ++mit) {
-        Transaction::MacroDirectiveInfo macro = *mit;
-        if ( macro.m_MD->getKind() == MacroDirective::MD_Define) {
-          const MacroInfo* MI = macro.m_MD->getMacroInfo();
-          if ( MI ->getNumTokens()>1 )
-            //FIXME: We can not display function like macros yet
-            continue;
-          out<<"#define " << macro.m_II->getName()<< ' ';
-          for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
-            const Token &Tok = MI->getReplacementToken(i);
-            out << Tok.getName() << ' ';
-            macrodefs.push_back(macro.m_II->getName());
-          }
-          out << '\n';
-        }
-      }
-    }
-
-    for(auto dcit = T->decls_begin(); dcit != T->decls_end(); ++dcit) {
-      Transaction::DelayCallInfo& dci = *dcit;
-      if(dci.m_DGR.isNull()) {
-          break;
-      }
-      if (dci.m_Call == Transaction::kCCIHandleTopLevelDecl) {
-        for(auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
-          clang::Decl* decl = *dit;
-
-          visitor.Visit(decl);
-          visitor.printSemiColon();
-        }
-      }
-    }
-    if(enableMacros) {
-      for (auto m : macrodefs ) {
-        out << "#undef " << m << "\n";
-      }
-    }
-
+    // Avoid assertion in the ~IncrementalParser.
     T->setState(Transaction::kCommitted);
     // unload(1);
     return;
