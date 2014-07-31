@@ -194,11 +194,11 @@ namespace cling {
       llvm::Module* theModule = m_IncrParser->getCodeGenerator()->GetModule();
       m_Executor.reset(new IncrementalExecutor(theModule, SemaRef.Diags));
     }
-
-    llvm::SmallVector<Transaction*, 2> IncrParserTransactions;
     // Tell the diagnostic client that we are entering file parsing mode.
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
+
+    llvm::SmallVector<Transaction*, 2> IncrParserTransactions;
     m_IncrParser->Initialize(IncrParserTransactions);
 
     handleFrontendOptions();
