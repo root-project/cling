@@ -43,7 +43,7 @@ bool has_suffix(const std::string &str, const std::string &suffix) {
 }
 .rawInput 0
 
-for (int i = 0; i < includePaths.size(); ++i) { // We know STL is first.
+for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
   if (std::regex_match(includePaths[i], dirsToIgnore))
     continue;
   if ((dir = opendir(includePaths[i].c_str())) != NULL) {
