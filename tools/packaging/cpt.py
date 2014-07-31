@@ -1189,11 +1189,11 @@ def make_dmg():
     VOL_NAME = "%s %s"%(APP_NAME, VERSION)
     DMG_TMP = "%s-temp.dmg"%(VOL_NAME)
     DMG_FINAL = "%s.dmg"%(VOL_NAME)
-    STAGING_DIR = "Install"
+    STAGING_DIR = os.path.join(workdir, 'Install')
 
-    if os.path.isdir(os.path.join(workdir, STAGING_DIR)):
-        print "Remove directory: " + os.path.join(workdir, STAGING_DIR)
-        shutil.rmtree(os.path.join(workdir, STAGING_DIR))
+    if os.path.isdir(STAGING_DIR):
+        print "Remove directory: " + STAGING_DIR
+        shutil.rmtree(STAGING_DIR)
 
     if os.path.isdir(os.path.join(workdir, '%s.app'%(APP_NAME))):
         print "Remove directory: " + os.path.join(workdir, '%s.app'%(APP_NAME))
@@ -1213,14 +1213,14 @@ def make_dmg():
     print 'Populate directory: ' + os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME))
     shutil.copytree(prefix, os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME)))
 
-    print 'Copy app bundle to staging area: ' + os.path.join(workdir, STAGING_DIR)
-    shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), os.path.join(workdir, STAGING_DIR))
+    print 'Copy APP Bundle to staging area: ' + STAGING_DIR
+    shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), STAGING_DIR)
 
     print 'Stripping file: ' + APP_EXE
     exec_subprocess_call('strip -u -r %s'%(APP_EXE), workdir)
 
-    SIZE = exec_subprocess_check_output("du -sh %s | sed 's/\([0-9]*\)M\(.*\)/\1/'"%(STAGING_DIR), workdir)
-    SIZE = float(SIZE) + 1.0
+    DU = exec_subprocess_check_output("du -sh %s"%(STAGING_DIR), workdir)
+    SIZE = str(float(DU[:DU.find('M')].strip()) + 1.0)
     print 'Estimated size of application bundle: ' + SIZE
 
     print 'Building temporary Apple Disk Image'
