@@ -1207,13 +1207,14 @@ def make_dmg():
         print "Remove directory: " + os.path.join(workdir, DMG_FINAL)
         shutil.rmtree(os.path.join(workdir, DMG_FINAL))
 
-    print 'Create directory: ' + os.path.join(workdir, '%s.app'%(APP_NAME) , 'Contents', 'Resources')
-    os.makedirs(os.path.join(workdir, '%s.app'%(APP_NAME) , 'Contents', 'Resources'))
+    print 'Create directory: ' + os.path.join(workdir, '%s.app'%(APP_NAME))
+    os.makedirs(os.path.join(workdir, '%s.app'%(APP_NAME)))
+
+    print 'Populate directory: ' + os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME))
     shutil.copytree(prefix, os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME)))
 
-    print 'Create directory: ' + os.path.join(workdir, STAGING_DIR)
-    os.makedirs(os.path.join(workdir, STAGING_DIR))
-    shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), os.path.join(workdir,STAGING_DIR))
+    print 'Copy app bundle to staging area: ' + os.path.join(workdir, STAGING_DIR)
+    shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), os.path.join(workdir, STAGING_DIR))
 
     print 'Stripping file: ' + APP_EXE
     exec_subprocess_call('strip -u -r %s'%(APP_EXE), workdir)
