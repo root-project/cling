@@ -1,4 +1,4 @@
-//RUN: cat %s | %cling | FileCheck %s
+//RUN: cat %s | %cling -Xclang -verify
 //RUN: rm -f /tmp/__cling_fwd_*
 #include "cling/Interpreter/Interpreter.h"
 
@@ -55,10 +55,11 @@ for (int i = 0; i < includePaths.size(); ++i) { // We know STL is first.
         continue;
       if (ent->d_type == DT_REG && strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
         gCling->GenerateAutoloadingMap(ent->d_name, std::string("/tmp/__cling_fwd_") + ent->d_name);
-        printf("%s\n", ent->d_name);
+        //printf("%s\n", ent->d_name);
       }
     }
     closedir(dir);
   }
  }
+//expected-no-diagnostics
 .q
