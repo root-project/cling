@@ -196,15 +196,14 @@ namespace cling {
     }
 
     llvm::SmallVector<Transaction*, 2> IncrParserTransactions;
+    // Tell the diagnostic client that we are entering file parsing mode.
+    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
+    DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
     m_IncrParser->Initialize(IncrParserTransactions);
 
     handleFrontendOptions();
 
     AddRuntimeIncludePaths(argv[0]);
-
-    // Tell the diagnostic client that we are entering file parsing mode.
-    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
     if (!noRuntime) {
       if (getCI()->getLangOpts().CPlusPlus)
