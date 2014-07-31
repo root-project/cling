@@ -591,7 +591,7 @@ namespace cling {
     llvm::OwningPtr<clang::driver::Compilation>
       Compilation(Driver.BuildCompilation(RF));
     const clang::driver::ArgStringList* CC1Args
-      = GetCC1Arguments(Diags.getPtr(), Compilation.get());
+      = GetCC1Arguments(Diags.get(), Compilation.get());
     if (CC1Args == NULL) {
       return 0;
     }
@@ -633,7 +633,7 @@ namespace cling {
     // Create and setup a compiler instance.
     llvm::OwningPtr<CompilerInstance> CI(new CompilerInstance());
     CI->setInvocation(Invocation);
-    CI->setDiagnostics(Diags.getPtr());
+    CI->setDiagnostics(Diags.get());
     {
       //
       //  Buffer the error messages while we process
