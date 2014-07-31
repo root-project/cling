@@ -658,7 +658,7 @@ namespace cling {
     if (!CI->hasTarget()) {
       return 0;
     }
-    CI->getTarget().setForcedLangOptions(CI->getLangOpts());
+    CI->getTarget().adjust(CI->getLangOpts());
     SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
     if (CI->getTarget().getTriple().getOS() == llvm::Triple::Cygwin) {
       // clang "forgets" the basic arch part needed by winnt.h:
