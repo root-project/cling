@@ -1195,9 +1195,9 @@ def make_dmg():
         print "Remove directory: " + os.path.join(workdir, STAGING_DIR)
         shutil.rmtree(os.path.join(workdir, STAGING_DIR))
 
-    if os.path.isdir(os.path.join(workdir, APP_NAME + '.app')):
-        print "Remove directory: " + os.path.join(workdir, APP_NAME + '.app')
-        shutil.rmtree(os.path.join(workdir, APP_NAME + '.app'))
+    if os.path.isdir(os.path.join(workdir, '%s.app'%(APP_NAME))):
+        print "Remove directory: " + os.path.join(workdir, '%s.app'%(APP_NAME))
+        shutil.rmtree(os.path.join(workdir, '%s.app'%(APP_NAME)))
 
     if os.path.isdir(os.path.join(workdir, DMG_TMP)):
         print "Remove directory: " + os.path.join(workdir, DMG_TMP)
@@ -1207,9 +1207,11 @@ def make_dmg():
         print "Remove directory: " + os.path.join(workdir, DMG_FINAL)
         shutil.rmtree(os.path.join(workdir, DMG_FINAL))
 
-    os.makedirs(os.path.join(workdir, APP_NAME + '.app' , 'Contents', 'Resources'))
+    print 'Create directory: ' + os.path.join(workdir, '%s.app'%(APP_NAME) , 'Contents', 'Resources')
+    os.makedirs(os.path.join(workdir, '%s.app'%(APP_NAME) , 'Contents', 'Resources'))
     shutil.copytree(prefix, os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME)))
 
+    print 'Create directory: ' + os.path.join(workdir, STAGING_DIR)
     os.makedirs(os.path.join(workdir, STAGING_DIR))
     shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), os.path.join(workdir,STAGING_DIR))
 
@@ -1218,13 +1220,18 @@ def make_dmg():
 
     SIZE = exec_subprocess_check_output("du -sh %s | sed 's/\([0-9]*\)M\(.*\)/\1/'"%(STAGING_DIR), workdir)
     SIZE = float(SIZE) + 1.0
+    print 'Estimated size of application bundle: ' + SIZE
 
+    print 'Building temporary Apple Disk Image'
     exec_subprocess_call('hdiutil create -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s'%(STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
 
-    print 'Created DMG: ' + DMG_TMP
+    print 'Created Apple Disk Image: ' + DMG_TMP
     DEVICE = exec_subprocess_check_output("hdiutil attach -readwrite -noverify %s | egrep '^/dev/' | sed 1q | awk '{print $1}')"%(DMG_TMP), workdir)
+
+    print 'Wating for device to unmount...'
     time.sleep(5)
 
+    print 'Create directory: ' + '/Volumes/%s/.background'%(VOL_NAME)
     os.makedirs('/Volumes/%s/.background'%(VOL_NAME))
     shutil.copy(os.path.join(workdir,DMG_BACKGROUND_IMG), '/Volumes/%s/.background/'%(VOL_NAME))
 
@@ -1250,12 +1257,16 @@ def make_dmg():
    end tell
 '''%(VOL_NAME, DMG_BACKGOUND_IMAGE, APP_NAME)
 
+    print 'Executing AppleScript...'
     exec_subprocess_call("echo %s | osascript"%(ascript), workdir)
+
+    print 'Performing sync...'
     exec_subprocess_call("sync", workdir)
 
+    print 'Detach device: ' + DEVICE
     exec_subprocess_call('hdiutil detach %s'%(DEVICE), CLING_SRC_DIR)
 
-    print "Creating compressed Apple Disk Image"
+    print "Creating compressed Apple Disk Image..."
     exec_subprocess_call('hdiutil convert %s -format UDZO -imagekey zlib-level=9 -o %s'%(DMG_TMP, DMG_FINAL), workdir)
 
     if os.path.isdir(os.path.join(workdir, DMG_TMP)):
