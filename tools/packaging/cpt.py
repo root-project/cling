@@ -1183,10 +1183,9 @@ def build_nsis():
 def make_dmg():
     box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
-    VERSION="1.0.0"
     DMG_BACKGROUND_IMG = 'Background.png'
     APP_EXE = '%s.app/Contents/MacOS/%s'%(APP_NAME, APP_NAME)
-    VOL_NAME = "%s %s"%(APP_NAME, VERSION)
+    VOL_NAME = "%s-%s"%(APP_NAME.lower(), VERSION)
     DMG_TMP = "%s-temp.dmg"%(VOL_NAME)
     DMG_FINAL = "%s.dmg"%(VOL_NAME)
     STAGING_DIR = os.path.join(workdir, 'Install')
@@ -1227,36 +1226,37 @@ def make_dmg():
     exec_subprocess_call('hdiutil create -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s'%(STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
 
     print 'Created Apple Disk Image: ' + DMG_TMP
-    DEVICE = exec_subprocess_check_output("hdiutil attach -readwrite -noverify %s | egrep '^/dev/' | sed 1q | awk '{print $1}')"%(DMG_TMP), workdir)
+    DEVICE = exec_subprocess_check_output("hdiutil attach -readwrite -noverify -noautoopen %s | egrep '^/dev/' | sed 1q | awk '{print $1}')"%(DMG_TMP), workdir)
 
     print 'Wating for device to unmount...'
     time.sleep(5)
 
-    print 'Create directory: ' + '/Volumes/%s/.background'%(VOL_NAME)
-    os.makedirs('/Volumes/%s/.background'%(VOL_NAME))
-    shutil.copy(os.path.join(workdir,DMG_BACKGROUND_IMG), '/Volumes/%s/.background/'%(VOL_NAME))
+    #print 'Create directory: ' + '/Volumes/%s/.background'%(VOL_NAME)
+    #os.makedirs('/Volumes/%s/.background'%(VOL_NAME))
+    #shutil.copy(os.path.join(workdir,DMG_BACKGROUND_IMG), '/Volumes/%s/.background/'%(VOL_NAME))
 
     ascript = '''
-   tell application "Finder"
-     tell disk "%s"
-           open
-           set current view of container window to icon view
-           set toolbar visible of container window to false
-           set statusbar visible of container window to false
-           set the bounds of container window to {400, 100, 920, 440}
-           set viewOptions to the icon view options of container window
-           set arrangement of viewOptions to not arranged
-           set icon size of viewOptions to 72
-           set background picture of viewOptions to file ".background:%s"
-           set position of item "%s.app" of container window to {160, 205}
-           set position of item "Applications" of container window to {360, 205}
-           close
-           open
-           update without registering applications
-           delay 2
-     end tell
-   end tell
-'''%(VOL_NAME, DMG_BACKGOUND_IMAGE, APP_NAME)
+tell application "Finder"
+  tell disk "%s"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {400, 100, 920, 440}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 72
+        set background picture of viewOptions to file ".background:%s"
+        set position of item "%s.app" of container window to {160, 205}
+        set position of item "Applications" of container window to {360, 205}
+        close
+        open
+        update without registering application
+        delay 2
+  end tell
+end tell
+'''%(VOL_NAME, DMG_BACKGROUND_IMG, APP_NAME)
+    ascript = ascript.strip()
 
     print 'Executing AppleScript...'
     exec_subprocess_call("echo %s | osascript"%(ascript), workdir)
