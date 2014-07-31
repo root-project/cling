@@ -572,8 +572,8 @@ namespace cling {
     // ALL warnings ... but this will suffice for now (working
     // around a real bug in QT :().
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
-    Diag.setDiagnosticMapping(clang::diag::warn_field_is_uninit,
-                              clang::diag::MAP_IGNORE, SourceLocation());
+    Diag.setSeverity(clang::diag::warn_field_is_uninit,
+                     clang::diag::Severity::Ignored, SourceLocation());
     return DeclareInternal(input, CO);
   }
 
@@ -832,9 +832,8 @@ namespace cling {
     }
     */
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
-    Diag.setDiagnosticMapping(
-                       clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
-                       clang::diag::MAP_IGNORE, SourceLocation());
+    Diag.setSeverity(clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
+                     clang::diag::Severity::Ignored, SourceLocation());
 
 
     LangOptions& LO = const_cast<LangOptions&>(getCI()->getLangOpts());
@@ -961,14 +960,14 @@ namespace cling {
     // The source locations of #pragma warning ignore must be greater than
     // the ones from #pragma push
     Loc = Loc.getLocWithOffset(1);
-    Diags.setDiagnosticMapping(clang::diag::warn_unused_expr,
-                               clang::diag::MAP_IGNORE, Loc);
-    Diags.setDiagnosticMapping(clang::diag::warn_unused_call,
-                               clang::diag::MAP_IGNORE, Loc);
-    Diags.setDiagnosticMapping(clang::diag::warn_unused_comparison,
-                               clang::diag::MAP_IGNORE, Loc);
-    Diags.setDiagnosticMapping(clang::diag::ext_return_has_expr,
-                               clang::diag::MAP_IGNORE, Loc);
+    Diags.setSeverity(clang::diag::warn_unused_expr,
+                      clang::diag::Severity::Ignored, Loc);
+    Diags.setSeverity(clang::diag::warn_unused_call,
+                      clang::diag::Severity::Ignored, Loc);
+    Diags.setSeverity(clang::diag::warn_unused_comparison,
+                      clang::diag::Severity::Ignored, Loc);
+    Diags.setSeverity(clang::diag::ext_return_has_expr,
+                      clang::diag::Severity::Ignored, Loc);
     if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
       Loc = m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
       // if the location was the same we are in recursive calls and to avoid an
