@@ -654,7 +654,7 @@ namespace cling {
         return 0;
     }
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
-                                               &Invocation->getTargetOpts()));
+                                               Invocation->TargetOpts));
     if (!CI->hasTarget()) {
       return 0;
     }
