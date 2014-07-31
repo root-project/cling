@@ -1226,7 +1226,7 @@ def make_dmg():
     exec_subprocess_call('hdiutil create -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s'%(STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
 
     print 'Created Apple Disk Image: ' + DMG_TMP
-    DEVICE = exec_subprocess_check_output("hdiutil attach -readwrite -noverify -noautoopen %s | egrep '^/dev/' | sed 1q | awk '{print $1}')"%(DMG_TMP), workdir)
+    DEVICE = exec_subprocess_check_output("hdiutil attach -readwrite -noverify -noautoopen %s | egrep '^/dev/' | sed 1q | awk '{print $1}'"%(DMG_TMP), workdir)
 
     print 'Wating for device to unmount...'
     time.sleep(5)
