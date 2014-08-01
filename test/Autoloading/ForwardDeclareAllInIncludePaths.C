@@ -1,4 +1,4 @@
-//RUN: cat %s | %cling -Xclang -verify
+//RUN: cat %s | %cling -Xclang -verify -DCLING='" %cling "'
 //RUN: rm -f /tmp/__cling_fwd_*
 #include "cling/Interpreter/Interpreter.h"
 
@@ -43,6 +43,8 @@ bool has_suffix(const std::string &str, const std::string &suffix) {
 }
 .rawInput 0
 
+std::string fwdDeclFile;
+std::string nestedCling = CLING; nestedCling += " -Xclang -verify ";
 for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
   if (std::regex_match(includePaths[i], dirsToIgnore))
     continue;
@@ -54,7 +56,11 @@ for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
       if (includePaths[i] == "." && !has_suffix(ent->d_name, ".h"))
         continue;
       if (ent->d_type == DT_REG && strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
-        gCling->GenerateAutoloadingMap(ent->d_name, std::string("/tmp/__cling_fwd_") + ent->d_name);
+        fwdDeclFile = "/tmp/__cling_fwd_"; fwdDeclFile += ent->d_name;
+        gCling->GenerateAutoloadingMap(ent->d_name, fwdDeclFile);
+        // Run it in separate cling and assert it went all fine:
+        printf("%s\n", (nestedCling + fwdDeclFile + " " + ent->d_name).c_str());
+        system((nestedCling + fwdDeclFile + " " + ent->d_name).c_str());
         //printf("%s\n", ent->d_name);
       }
     }
