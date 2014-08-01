@@ -100,7 +100,7 @@ namespace cling {
       if (m_Sema) {
         ASTContext& C = m_Sema->getASTContext();
         // tell the owning ptr to not delete it, the callbacks will delete it.
-        if (C.ExternalSource.getPtr() == this)
+        if (C.ExternalSource.get() == this)
           C.ExternalSource.resetWithoutRelease();
       }
     }
@@ -160,7 +160,7 @@ namespace cling {
       m_DeserializationListener(IDL), m_IsRuntime(false) {
     if (IESS)
       m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
-    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().getPtr();
+    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
     if (IDL && Reader)
       Reader->setDeserializationListener(IDL);
     if (IPPC)
@@ -179,7 +179,7 @@ namespace cling {
       m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
     }
 
-    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().getPtr();
+    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
     if (enableDeserializationListenerCallbacks && Reader) {
       // FIXME: need to create a multiplexer if a DeserializationListener is
       // alreday present.
