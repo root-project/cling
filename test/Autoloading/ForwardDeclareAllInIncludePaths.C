@@ -60,7 +60,7 @@ for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
         gCling->GenerateAutoloadingMap(ent->d_name, fwdDeclFile);
         // Run it in separate cling and assert it went all fine:
         printf("%s\n", (nestedCling + fwdDeclFile + " " + ent->d_name).c_str());
-        system((nestedCling + fwdDeclFile + " " + ent->d_name).c_str());
+        //system((nestedCling + fwdDeclFile + " " + ent->d_name).c_str());
         //printf("%s\n", ent->d_name);
       }
     }
