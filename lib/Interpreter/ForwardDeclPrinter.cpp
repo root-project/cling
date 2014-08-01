@@ -58,6 +58,7 @@ namespace cling {
       m_Indentation(Indentation), m_SMgr(SM), m_SkipFlag(false) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
+    m_Policy.Bool = true; // Avoid printing _Bool instead of bool
 
     // Suppress some unfixable warnings.
     m_Out << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
