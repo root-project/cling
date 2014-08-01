@@ -425,7 +425,7 @@ namespace cling {
     // the results in pipes (Savannah #99234).
 
     // Alternatively we could use llvm::errs()
-    llvm::OwningPtr<llvm::raw_ostream> Out;
+    std::unique_ptr<llvm::raw_ostream> Out;
     Out.reset(new llvm::raw_os_ostream(std::cout));
     print(*Out.get());
   }

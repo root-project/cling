@@ -10,7 +10,7 @@
 #ifndef CLING_USERINTERFACE_H
 #define CLING_USERINTERFACE_H
 
-#include "llvm/ADT/OwningPtr.h"
+#include <memory>
 
 namespace cling {
   class Interpreter;
@@ -20,7 +20,7 @@ namespace cling {
   ///
   class UserInterface {
   private:
-    llvm::OwningPtr<MetaProcessor> m_MetaProcessor;
+    std::unique_ptr<MetaProcessor> m_MetaProcessor;
 
     ///\brief Prints cling's startup logo
     ///

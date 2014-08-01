@@ -43,6 +43,8 @@
 #endif
 #endif
 
+#include <memory>
+
 namespace {
   // Handle fatal llvm errors by throwing an exception.
   // Yes, throwing exceptions in error handlers is bad.
@@ -109,8 +111,8 @@ namespace cling {
     }
 
     using namespace textinput;
-    llvm::OwningPtr<StreamReader> R(StreamReader::Create());
-    llvm::OwningPtr<TerminalDisplay> D(TerminalDisplay::Create());
+    std::unique_ptr<StreamReader> R(StreamReader::Create());
+    std::unique_ptr<TerminalDisplay> D(TerminalDisplay::Create());
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
     TI.SetPrompt("[cling]$ ");

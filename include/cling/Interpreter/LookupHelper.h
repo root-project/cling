@@ -10,9 +10,10 @@
 #ifndef CLING_LOOKUP_HELPER_H
 #define CLING_LOOKUP_HELPER_H
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/SmallVector.h"
+
+#include <memory>
 
 namespace clang {
   class ClassTemplateDecl;
@@ -38,7 +39,7 @@ namespace cling {
   ///
   class LookupHelper {
   private:
-    llvm::OwningPtr<clang::Parser> m_Parser;
+    std::unique_ptr<clang::Parser> m_Parser;
     Interpreter* m_Interpreter; // we do not own.
   public:
 

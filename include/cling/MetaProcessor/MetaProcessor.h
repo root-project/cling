@@ -12,9 +12,10 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/SmallString.h"
+
+#include <memory>
 #include <stdio.h>
 
 namespace cling {
@@ -36,11 +37,11 @@ namespace cling {
     ///\brief The input validator is used to figure out whether to switch to
     /// multiline mode or not. Checks for balanced parenthesis, etc.
     ///
-    llvm::OwningPtr<InputValidator> m_InputValidator;
+    std::unique_ptr<InputValidator> m_InputValidator;
 
     ///\brief The parser used to parse our tiny "meta" language
     ///
-    llvm::OwningPtr<MetaParser> m_MetaParser;
+    std::unique_ptr<MetaParser> m_MetaParser;
 
     ///\brief Currently executing file as passed into executeFile
     ///

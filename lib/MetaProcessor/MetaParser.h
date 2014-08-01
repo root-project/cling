@@ -12,8 +12,9 @@
 
 #include "MetaLexer.h" // for cling::Token
 #include "MetaSema.h" // for ActionResult
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
+
+#include <memory>
 
 namespace llvm {
   class StringRef;
@@ -61,8 +62,8 @@ namespace cling {
   //
   class MetaParser {
   private:
-    llvm::OwningPtr<MetaLexer> m_Lexer;
-    llvm::OwningPtr<MetaSema> m_Actions;
+    std::unique_ptr<MetaLexer> m_Lexer;
+    std::unique_ptr<MetaSema> m_Actions;
     llvm::SmallVector<Token, 2> m_TokenCache;
     llvm::SmallVector<Token, 4> m_MetaSymbolCache;
   private:

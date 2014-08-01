@@ -12,11 +12,11 @@
 
 #include "cling/Interpreter/InvocationOptions.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 
-#include <string>
 #include <cstdlib>
+#include <memory>
+#include <string>
 
 // FIXME: workaround until JIT supports exceptions
 #include <setjmp.h>
@@ -87,7 +87,7 @@ namespace cling {
     class StateDebuggerRAII {
     private:
       const Interpreter* m_Interpreter;
-      llvm::OwningPtr<ClangInternalState> m_State;
+      std::unique_ptr<ClangInternalState> m_State;
     public:
       StateDebuggerRAII(const Interpreter* i);
       ~StateDebuggerRAII();
@@ -134,19 +134,19 @@ namespace cling {
 
     ///\brief The llvm library state, a per-thread object.
     ///
-    llvm::OwningPtr<llvm::LLVMContext> m_LLVMContext;
+    std::unique_ptr<llvm::LLVMContext> m_LLVMContext;
 
     ///\brief Cling's execution engine - a well wrapped llvm execution engine.
     ///
-    llvm::OwningPtr<IncrementalExecutor> m_Executor;
+    std::unique_ptr<IncrementalExecutor> m_Executor;
 
     ///\brief Cling's worker class implementing the incremental compilation.
     ///
-    llvm::OwningPtr<IncrementalParser> m_IncrParser;
+    std::unique_ptr<IncrementalParser> m_IncrParser;
 
     ///\brief Cling's reflection information query.
     ///
-    llvm::OwningPtr<LookupHelper> m_LookupHelper;
+    std::unique_ptr<LookupHelper> m_LookupHelper;
 
     ///\brief Counter used when we need unique names.
     ///
@@ -166,11 +166,11 @@ namespace cling {
 
     ///\brief Interpreter callbacks.
     ///
-    llvm::OwningPtr<InterpreterCallbacks> m_Callbacks;
+    std::unique_ptr<InterpreterCallbacks> m_Callbacks;
 
     ///\brief Dynamic library manager object.
     ///
-    llvm::OwningPtr<DynamicLibraryManager> m_DyLibManager;
+    std::unique_ptr<DynamicLibraryManager> m_DyLibManager;
 
     ///\brief Information about the last stored states through .storeState
     ///

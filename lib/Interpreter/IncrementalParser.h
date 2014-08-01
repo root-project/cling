@@ -12,12 +12,12 @@
 
 #include "clang/Basic/SourceLocation.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <vector>
 #include <deque>
+#include <memory>
 
 namespace llvm {
   struct GenericValue;
@@ -55,10 +55,10 @@ namespace cling {
     Interpreter* m_Interpreter;
 
     // compiler instance.
-    llvm::OwningPtr<clang::CompilerInstance> m_CI;
+    std::unique_ptr<clang::CompilerInstance> m_CI;
 
     // parser (incremental)
-    llvm::OwningPtr<clang::Parser> m_Parser;
+    std::unique_ptr<clang::Parser> m_Parser;
 
     // One buffer for each command line, owner by the source file manager
     std::deque<llvm::MemoryBuffer*> m_MemoryBuffers;
@@ -79,7 +79,7 @@ namespace cling {
 
     ///\brief Code generator
     ///
-    llvm::OwningPtr<clang::CodeGenerator> m_CodeGen;
+    std::unique_ptr<clang::CodeGenerator> m_CodeGen;
 
     ///\brief Contains the transaction AST transformers.
     ///
@@ -91,7 +91,7 @@ namespace cling {
 
     ///\brief Pool of reusable block-allocated transactions.
     ///
-    llvm::OwningPtr<TransactionPool> m_TransactionPool;
+    std::unique_ptr<TransactionPool> m_TransactionPool;
 
   public:
     enum EParseResult {

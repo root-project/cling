@@ -15,9 +15,10 @@
 #include "clang/AST/DeclGroup.h"
 #include "clang/Basic/SourceLocation.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+
+#include <memory>
 
 namespace clang {
   class ASTContext;
@@ -123,7 +124,7 @@ namespace cling {
 
     ///\brief List of nested transactions if any.
     ///
-    llvm::OwningPtr<NestedTransactions> m_NestedTransactions;
+    std::unique_ptr<NestedTransactions> m_NestedTransactions;
 
     ///\brief The enclosing transaction if nested.
     ///
