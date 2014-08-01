@@ -130,13 +130,8 @@ static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
       static_cast<const PassManagerBuilderWithOpts&>(Builder);
   const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
   const LangOptions &LangOpts = BuilderWrapper.getLangOpts();
-  PM.add(createAddressSanitizerFunctionPass(
-      LangOpts.Sanitize.InitOrder,
-      LangOpts.Sanitize.UseAfterReturn,
-      LangOpts.Sanitize.UseAfterScope));
-  PM.add(createAddressSanitizerModulePass(
-      LangOpts.Sanitize.InitOrder,
-      CGOpts.SanitizerBlacklistFile));
+  PM.add(createAddressSanitizerFunctionPass());
+  PM.add(createAddressSanitizerModulePass());
 }
 
 static void addMemorySanitizerPass(const PassManagerBuilder &Builder,
