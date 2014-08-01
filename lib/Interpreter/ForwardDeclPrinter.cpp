@@ -58,6 +58,7 @@ namespace cling {
       m_Indentation(Indentation), m_SMgr(SM), m_SkipFlag(false) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
+
     m_Policy.Bool = true; // Avoid printing _Bool instead of bool
 
     // Suppress some unfixable warnings.
@@ -272,16 +273,34 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitTypedefDecl(TypedefDecl *D) {
-//      llvm::StringRef str = D->getTypeSourceInfo()->getType().getAsString();
-//      if (str.startswith("enum")) {
-////        std::pair<StringRef,StringRef> pair = str.split(' ');
-////        m_Out << pair.first;
-////        prettyPrintAttributes(D,"1");
-////        m_Out << pair.second << ": unsigned int ";
-//          m_SkipFlag = true;
-//          //need something more
+
+//    if (const ElaboratedType* ET =
+//            dyn_cast<ElaboratedType>(D->getTypeSourceInfo()->getType().getTypePtr())) {
+//      if (const EnumType* Enum =
+//            dyn_cast<EnumType>(ET->getNamedType())) {
+
+//        std::string str = "_enum_" + std::to_string(m_UniqueCounter++);
+
+//        VisitEnumDecl(Enum->getDecl(),str);
+//        printSemiColon();
+//        m_Out << "typedef " << str << ' ' << D->getName();
 //        return;
 //      }
+//    }
+
+    llvm::StringRef str = D->getTypeSourceInfo()->getType().getAsString();
+    if (str.startswith("enum")) {
+      std::pair<StringRef,StringRef> pair = str.split(' ');
+      m_IncompatibleTypes.insert(pair.second);
+      m_SkipFlag = true;
+      return;
+    }
+    if (isIncompatibleType(D->getTypeSourceInfo()->getType())) {
+      m_SkipFlag = true;
+      return;
+    }
+
+
     if (!m_Policy.SuppressSpecifiers) {
       m_Out << "typedef ";
 
@@ -360,11 +379,11 @@ namespace cling {
       m_SkipFlag = true;
       return;
     }
+
+    bool hasTrailingReturn = false;
+
     CXXConstructorDecl *CDecl = dyn_cast<CXXConstructorDecl>(D);
     CXXConversionDecl *ConversionDecl = dyn_cast<CXXConversionDecl>(D);
-      /*FIXME:Ugly Hack*/
-//      if (CDecl||ConversionDecl)
-//          return;
 
     if (!m_Policy.SuppressSpecifiers) {
       switch (D->getStorageClass()) {
@@ -541,6 +560,7 @@ namespace cling {
         if (FT && FT->hasTrailingReturn()) {
           m_Out << "auto " << Proto << " -> ";
           Proto.clear();
+          hasTrailingReturn = true;
         }
         AFT->getReturnType().print(m_Out, m_Policy, Proto);
         Proto.clear();
@@ -550,8 +570,8 @@ namespace cling {
     else {
       Ty.print(m_Out, m_Policy, Proto);
     }
-
-    prettyPrintAttributes(D);
+    if (!hasTrailingReturn)
+      prettyPrintAttributes(D);
 
     if (D->isPure())
       m_Out << " = 0";
@@ -637,7 +657,7 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
     if(D->getStorageClass() == SC_Static
-       || hasNestedNameSpecifier(D->getType())
+       || isIncompatibleType(D->getType())
        || D->isDefinedOutsideFunctionOrMethod()) {
       m_SkipFlag = true;
       return;
@@ -979,10 +999,12 @@ namespace cling {
     else m_Out << ";\n";
   }
 
-  bool ForwardDeclPrinter::hasNestedNameSpecifier(QualType q) {
+  bool ForwardDeclPrinter::isIncompatibleType(QualType q) {
     //FIXME: This is a workaround and filters out many acceptable cases
-    std::string str = q.getAsString();
-    return str.find("::") != std::string::npos;
+    llvm::StringRef str = q.getAsString();
+
+    return m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end()
+           || str.find("::") != llvm::StringRef::npos;
 
 //    if (const ElaboratedType *E = dyn_cast<ElaboratedType>(q)) {
 //      NestedNameSpecifier* NNS = E->getQualifier();
@@ -996,7 +1018,6 @@ namespace cling {
 //          if(str.find("::") != std::string::npos)
 //            llvm::outs() << q.getAsString() << " " << q.getTypePtr()->getTypeClassName()<<"\n";
 
-    return false;
   }
 
   bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
@@ -1008,7 +1029,7 @@ namespace cling {
     //will be true if any of the params turn out to have nested types
 
     for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
-      if (hasNestedNameSpecifier(D->getParamDecl(i)->getType()))
+      if (isIncompatibleType(D->getParamDecl(i)->getType()))
         param = true;
     }
 
@@ -1016,7 +1037,7 @@ namespace cling {
         || D->getNameAsString()[0] == '_'
         || D->getStorageClass() == SC_Static
         || D->isCXXClassMember()
-        || hasNestedNameSpecifier(D->getReturnType())
+        || isIncompatibleType(D->getReturnType())
         || param
         || isOperator(D) )
       return true;

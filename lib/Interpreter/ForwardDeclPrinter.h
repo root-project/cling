@@ -5,6 +5,7 @@
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/Basic/Specifiers.h"
+#include <set>
 
 namespace clang {
   class ClassTemplateDecl;
@@ -57,6 +58,9 @@ namespace cling {
     clang::SourceManager& m_SMgr;
     bool m_SkipFlag;
     //False by default, true if current item is not to be printed
+
+    std::set<llvm::StringRef> m_IncompatibleTypes;
+
   public:
     ForwardDeclPrinter(llvm::raw_ostream& Out, clang::SourceManager& SM,
                        const Transaction& T,
@@ -102,7 +106,7 @@ namespace cling {
     void printSemiColon(bool flag=true);
     //if flag is true , m_SkipFlag is obeyed and reset.
 
-    bool hasNestedNameSpecifier(clang::QualType q);
+    bool isIncompatibleType(clang::QualType q);
     bool isOperator(clang::FunctionDecl* D);
     bool shouldSkipFunction(clang::FunctionDecl* D);
   private:
