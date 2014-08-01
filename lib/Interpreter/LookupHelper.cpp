@@ -13,6 +13,7 @@
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Parse/RAIIObjectsForParser.h"
 #include "clang/Sema/Scope.h"
@@ -273,7 +274,8 @@ namespace cling {
       llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
                                            "lookup.type.file");
     clang::FileID FID = S.getSourceManager().createFileID(SB);
-    PP.EnterSourceFile(FID, 0, clang::SourceLocation());
+    SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
+    PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
     PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
 
     //
@@ -671,7 +673,7 @@ namespace cling {
 
   static bool ParseWithShortcuts(DeclContext* foundDC, CXXScopeSpec &SS,
                                  llvm::StringRef funcName,
-                                 Parser &P, Sema &S,
+                                 Interpreter* Interp,
                                  UnqualifiedId &FuncId,
                                  LookupHelper::DiagSetting diagOnOff) {
 
@@ -694,6 +696,8 @@ namespace cling {
     // handle potentially arbitrary spaces and ordering
     // ('const int' vs 'int  const', etc.)
 
+    Parser &P = const_cast<Parser&>(Interp->getParser());
+    Sema &S = Interp->getSema();
     if (funcName.size() == 0) return false;
     Preprocessor& PP = S.getPreprocessor();
 
@@ -777,7 +781,8 @@ namespace cling {
            = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
                                                 + "\n", "lookup.funcname.file");
       clang::FileID FID = S.getSourceManager().createFileID(SB);
-      PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
+      SourceLocation NewLoc = Interp->getNextAvailableLoc();
+      PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
       PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
     }
 
@@ -803,7 +808,7 @@ namespace cling {
                  llvm::StringRef funcName,
                  const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                  bool objectIsConst,
-                 ASTContext& Context, Parser &P, Sema &S,
+                 ASTContext& Context, Interpreter* Interp,
                  T (*functionSelector)(DeclContext* foundDC,
                                        bool objectIsConst,
                                   const llvm::SmallVectorImpl<Expr*> &GivenArgs,
@@ -822,6 +827,8 @@ namespace cling {
     //  and may be able to remove it in the future if
     //  the way constructors are looked up changes.
     //
+    Parser &P = const_cast<Parser&>(Interp->getParser());
+    Sema &S = Interp->getSema();
     DeclContext* OldEntity = P.getCurScope()->getEntity();
     DeclContext* TUCtx = Context.getTranslationUnitDecl();
     P.getCurScope()->setEntity(TUCtx);
@@ -833,7 +840,7 @@ namespace cling {
 
     UnqualifiedId FuncId;
     ParserStateRAII ResetParserState(P);
-    if (!ParseWithShortcuts(foundDC,SS,funcName,P,S,FuncId, diagOnOff)) {
+    if (!ParseWithShortcuts(foundDC, SS, funcName, Interp, FuncId, diagOnOff)) {
       // Failed parse, cleanup.
       // Destroy the scope we created first, and
       // restore the original.
@@ -1042,7 +1049,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         templateName, GivenArgs, objectIsConst,
-                        Context, P, S, findFunctionTemplateSelector,
+                        Context, m_Interpreter, findFunctionTemplateSelector,
                         diagOnOff);
   }
 
@@ -1136,7 +1143,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S, findAnyFunctionSelector,
+                        Context, m_Interpreter, findAnyFunctionSelector,
                         diagOnOff);
   }
 
@@ -1181,7 +1188,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S,
+                        Context, m_Interpreter,
                         overloadFunctionSelector,
                         diagOnOff);
   }
@@ -1228,7 +1235,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S,
+                        Context, m_Interpreter,
                         overloadFunctionSelector,
                         diagOnOff);
   }
@@ -1276,7 +1283,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S,
+                        Context, m_Interpreter,
                         matchFunctionSelector,
                         diagOnOff);
   }
@@ -1324,7 +1331,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S,
+                        Context, m_Interpreter,
                         matchFunctionSelector,
                         diagOnOff);
   }
@@ -1425,7 +1432,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
-                        Context, P, S, overloadFunctionSelector,
+                        Context, m_Interpreter, overloadFunctionSelector,
                         diagOnOff);
   }
 
@@ -1502,7 +1509,8 @@ namespace cling {
       //
       //  Note: To switch back to the main file we must consume an eof token.
       //
-      PP.EnterSourceFile(FID, /*DirLookup=*/0, SourceLocation());
+      SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
+      PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
       PP.Lex(const_cast<Token&>(P.getCurToken()));
     }
   }
@@ -1557,7 +1565,7 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, false /* objectIsConst */,
-                        Context, P, S, hasFunctionSelector,
+                        Context, m_Interpreter, hasFunctionSelector,
                         diagOnOff);
   }
 } // end namespace cling

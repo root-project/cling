@@ -154,6 +154,11 @@ namespace cling {
     return *m_IncrParser->getParser();
   }
 
+  clang::SourceLocation Interpreter::getNextAvailableLoc() const {
+    return m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
+  }
+
+
   bool Interpreter::isInSyntaxOnlyMode() const {
     return getCI()->getFrontendOpts().ProgramAction
       == clang::frontend::ParseSyntaxOnly;

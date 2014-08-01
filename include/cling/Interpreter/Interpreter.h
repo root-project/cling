@@ -44,6 +44,7 @@ namespace clang {
   class Parser;
   class QualType;
   class Sema;
+  class SourceLocation;
 }
 
 namespace cling {
@@ -299,6 +300,10 @@ namespace cling {
     const LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
 
     const clang::Parser& getParser() const;
+
+    ///\brief Returns the next available valid free source location.
+    ///
+    clang::SourceLocation getNextAvailableLoc() const;
 
     ///\brief true if -fsyntax-only flag passed.
     ///
