@@ -737,7 +737,7 @@ namespace clang {
 #ifndef NDEBUG
         const TemplateArgumentList* args
           = specialization->getTemplateSpecializationArgs();
-        assert(!self->findSpecialization(args->data(), args->size(),  InsertPos)
+        assert(!self->findSpecialization(args->asArray(),  InsertPos)
                && "Finds the removed decl again!");
 #endif
       }
