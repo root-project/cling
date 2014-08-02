@@ -98,12 +98,13 @@ namespace cling {
     void VisitFunctionTemplateDecl(clang::FunctionTemplateDecl *D);
     void VisitClassTemplateDecl(clang::ClassTemplateDecl *D);
     void VisitClassTemplateSpecializationDecl(clang::ClassTemplateSpecializationDecl* D);
+    void printDeclType(clang::QualType T, llvm::StringRef DeclName, bool Pack = false);
 
     void PrintTemplateParameters(const clang::TemplateParameterList *Params,
                                const clang::TemplateArgumentList *Args = 0);
-    void prettyPrintAttributes(clang::Decl *D, std::string extra="");
+    void prettyPrintAttributes(clang::Decl *D, std::string extra = "");
 
-    void printSemiColon(bool flag=true);
+    void printSemiColon(bool flag = true);
     //if flag is true , m_SkipFlag is obeyed and reset.
 
     bool isIncompatibleType(clang::QualType q);

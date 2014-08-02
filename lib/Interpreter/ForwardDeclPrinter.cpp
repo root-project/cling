@@ -114,6 +114,16 @@ namespace cling {
     m_Policy.SuppressTagKeyword = true;
   }
 
+  void ForwardDeclPrinter::printDeclType(QualType T, StringRef DeclName, bool Pack) {
+    // Normally, a PackExpansionType is written as T[3]... (for instance, as a
+    // template argument), but if it is the type of a declaration, the ellipsis
+    // is placed before the name being declared.
+    if (auto *PET = T->getAs<PackExpansionType>()) {
+      Pack = true;
+      T = PET->getPattern();
+    }
+    T.print(m_Out, m_Policy, (Pack ? "..." : "") + DeclName);
+  }
 
   llvm::raw_ostream& ForwardDeclPrinter::Indent(unsigned Indentation) {
     for (unsigned i = 0; i != Indentation; ++i)
@@ -698,7 +708,8 @@ namespace cling {
     //Should be __restrict
     //So, we ignore restrict here
     T.removeLocalRestrict();
-    T.print(m_Out, m_Policy, D->getName());
+//    T.print(m_Out, m_Policy, D->getName());
+    printDeclType(T,D->getName());
     //    llvm::outs()<<D->getName()<<"\n";
     T.addRestrict();
 
@@ -885,7 +896,7 @@ namespace cling {
           m_Out << "class ";
 
         if (TTP->isParameterPack())
-          m_Out << "... ";
+          m_Out << "...";
 
         m_Out << *TTP;
 
@@ -901,14 +912,10 @@ namespace cling {
       }
       else if (const NonTypeTemplateParmDecl *NTTP =
                dyn_cast<NonTypeTemplateParmDecl>(Param)) {
-        m_Out << NTTP->getType().getAsString(m_Policy);
-        if (NTTP->isParameterPack() && !isa<PackExpansionType>(NTTP->getType()))
-          m_Out << "...";
-
-        if (IdentifierInfo *Name = NTTP->getIdentifier()) {
-          m_Out << ' ';
-          m_Out << Name->getName();
-        }
+        StringRef Name;
+        if (IdentifierInfo *II = NTTP->getIdentifier())
+          Name = II->getName();
+          printDeclType(NTTP->getType(), Name, NTTP->isParameterPack());
 
         if (Args) {
           m_Out << " = ";
