@@ -63,6 +63,7 @@ namespace cling {
 
     // Suppress some unfixable warnings.
     m_Out << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
+    m_Out << "#pragma clang diagnostic ignored \"-Wignored-attributes\"" <<"\n";
 
     std::vector<std::string> macrodefs;
     if (printMacros) {
