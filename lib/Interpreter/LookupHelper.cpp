@@ -273,8 +273,10 @@ namespace cling {
     llvm::MemoryBuffer* SB =
       llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
                                            "lookup.type.file");
-    clang::FileID FID = S.getSourceManager().createFileID(SB);
-    SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
+      SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
+      FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+                                                     /*LoadedID*/0,
+                                                     /*LoadedOffset*/0, NewLoc);
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
     PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
 
@@ -780,8 +782,10 @@ namespace cling {
       llvm::MemoryBuffer* SB
            = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
                                                 + "\n", "lookup.funcname.file");
-      clang::FileID FID = S.getSourceManager().createFileID(SB);
       SourceLocation NewLoc = Interp->getNextAvailableLoc();
+      FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+                                                     /*LoadedID*/0,
+                                                     /*LoadedOffset*/0, NewLoc);
       PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
       PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
     }
@@ -1503,13 +1507,15 @@ namespace cling {
       llvm::MemoryBuffer* SB
          = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
                                                 bufferName.str());
-      FileID FID = S.getSourceManager().createFileID(SB);
+      SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
+      FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+                                                     /*LoadedID*/0,
+                                                     /*LoadedOffset*/0, NewLoc);
       //
       //  Switch to the new file the way #include does.
       //
       //  Note: To switch back to the main file we must consume an eof token.
       //
-      SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
       PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
       PP.Lex(const_cast<Token&>(P.getCurToken()));
     }
