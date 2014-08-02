@@ -1440,7 +1440,7 @@ if args['current_dev']:
 
     elif args['current_dev'] == 'nsis':
         get_win_dep()
-        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + RELEASE + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         test_cling()
         make_nsi()
