@@ -912,7 +912,6 @@ def get_win_dep():
     zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
     zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
     print 'Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION))
-    #os.remove(os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s'%(NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
     box_draw("Download CMake for Windows")
@@ -925,7 +924,6 @@ def get_win_dep():
     zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
     print 'Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION))
-    #os.remove(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'cmake-%s-win32-x86'%(CMAKE_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'cmake'))
 
 def make_nsi():
