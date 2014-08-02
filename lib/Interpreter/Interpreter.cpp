@@ -959,12 +959,12 @@ namespace cling {
     // #pragma warning ignore ...
     // #pragma warning ignore ...
     // #pragma warning pop
-    SourceLocation Loc = m_IncrParser->getLastMemoryBufferEndLoc();
+    SourceLocation Loc = getNextAvailableLoc();
     DiagnosticsEngine& Diags = getCI()->getDiagnostics();
     Diags.pushMappings(Loc);
     // The source locations of #pragma warning ignore must be greater than
     // the ones from #pragma push
-    Loc = Loc.getLocWithOffset(1);
+    //Loc = Loc.getLocWithOffset(1);
     Diags.setSeverity(clang::diag::warn_unused_expr,
                       clang::diag::Severity::Ignored, Loc);
     Diags.setSeverity(clang::diag::warn_unused_call,
