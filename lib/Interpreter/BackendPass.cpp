@@ -128,8 +128,6 @@ static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
                                       PassManagerBase &PM) {
   const PassManagerBuilderWithOpts &BuilderWrapper =
       static_cast<const PassManagerBuilderWithOpts&>(Builder);
-  const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
-  const LangOptions &LangOpts = BuilderWrapper.getLangOpts();
   PM.add(createAddressSanitizerFunctionPass());
   PM.add(createAddressSanitizerModulePass());
 }
