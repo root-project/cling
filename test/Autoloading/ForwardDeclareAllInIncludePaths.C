@@ -1,4 +1,4 @@
-//RUN: cat %s | %cling -Xclang -verify -DCLING='" %cling "'
+//RUN: cat %s | %cling -Xclang -verify -DCLING='" %cling "' | FileCheck %s
 //RUN: rm -f /tmp/__cling_fwd_*
 #include "cling/Interpreter/Interpreter.h"
 
@@ -59,13 +59,14 @@ for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
         fwdDeclFile = "/tmp/__cling_fwd_"; fwdDeclFile += ent->d_name;
         gCling->GenerateAutoloadingMap(ent->d_name, fwdDeclFile);
         // Run it in separate cling and assert it went all fine:
-        printf("%s\n", (nestedCling + fwdDeclFile + " " + ent->d_name).c_str());
-        //system((nestedCling + fwdDeclFile + " " + ent->d_name).c_str());
+        if(system((nestedCling + fwdDeclFile + " " + ent->d_name + " " + "\"//expected-no-diagnostics\"").c_str()))
+          printf("%s\n", (nestedCling + fwdDeclFile + " " + ent->d_name + "\"//expected-no-diagnostics\"").c_str());
         //printf("%s\n", ent->d_name);
       }
     }
     closedir(dir);
   }
  }
+//CHECK-NOT: {{.*}}
 //expected-no-diagnostics
 .q
