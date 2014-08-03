@@ -45,6 +45,7 @@ bool has_suffix(const std::string &str, const std::string &suffix) {
 
 std::string fwdDeclFile;
 std::string nestedCling = CLING; nestedCling += " -Xclang -verify ";
+std::string sourceCode;
 for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
   if (std::regex_match(includePaths[i], dirsToIgnore))
     continue;
@@ -59,8 +60,12 @@ for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
         fwdDeclFile = "/tmp/__cling_fwd_"; fwdDeclFile += ent->d_name;
         gCling->GenerateAutoloadingMap(ent->d_name, fwdDeclFile);
         // Run it in separate cling and assert it went all fine:
-        if(system((nestedCling + fwdDeclFile + " " + ent->d_name + " " + "\"//expected-no-diagnostics\"").c_str()))
-          printf("%s\n", (nestedCling + fwdDeclFile + " " + ent->d_name + "\"//expected-no-diagnostics\"").c_str());
+        sourceCode = " \"//expected-no-diagnostics\"";
+        sourceCode += " '#include \"" + fwdDeclFile + "\"'";
+        sourceCode += std::string(" '#include \"") + ent->d_name + "\"'";
+
+        if (system((nestedCling + sourceCode).c_str()))
+          printf("%s\n", (nestedCling + sourceCode).c_str());
         //printf("%s\n", ent->d_name);
       }
     }
