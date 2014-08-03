@@ -57,6 +57,16 @@ namespace cling {
       }
   }
 
+  NamedDecl* Transaction::containsNamedDecl(llvm::StringRef name) const {
+    for (auto I = decls_begin(), E = decls_end(); I < E; ++I)
+      for (auto DI : I->m_DGR) {
+        if (NamedDecl* ND = dyn_cast<NamedDecl>(DI))
+          if (name.equals(ND->getNameAsString()))
+            return ND;
+      }
+    return 0;
+  }
+
   void Transaction::addNestedTransaction(Transaction* nested) {
     // Create lazily the list
     if (!m_NestedTransactions)

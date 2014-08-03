@@ -25,6 +25,7 @@ namespace clang {
   class Decl;
   class FunctionDecl;
   class IdentifierInfo;
+  class NamedDecl;
   class MacroDirective;
   class Preprocessor;
   struct PrintingPolicy;
@@ -320,6 +321,10 @@ namespace cling {
         return m_DeclQueue.back().m_DGR;
       return clang::DeclGroupRef();
     }
+
+    ///\brief Returns the NamedDecl* if a Decl with name is present, 0 otherwise.
+    ///
+    clang::NamedDecl* containsNamedDecl(llvm::StringRef name) const;
 
     ///\brief Returns the current last transaction. Useful when the transaction
     /// in still incomplete.
