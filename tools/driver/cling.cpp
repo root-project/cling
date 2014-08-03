@@ -52,7 +52,10 @@ int main( int argc, char **argv ) {
   // If we are not interactive we're supposed to parse files
   if (!Interactive) {
     for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
-      std::string line(".x ");
+      std::string line;
+      if (llvm::sys::fs::exists(Inputs[I]))
+        line += ".x ";
+
       line += Inputs[I];
       cling::Interpreter::CompilationResult compRes;
       ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
