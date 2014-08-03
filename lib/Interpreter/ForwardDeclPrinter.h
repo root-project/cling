@@ -118,10 +118,11 @@ namespace cling {
     bool shouldSkip(clang::FunctionDecl* D);
     bool shouldSkip(clang::CXXRecordDecl* D);
     bool shouldSkip(clang::TypedefDecl* D);
+    bool shouldSkip(clang::VarDecl* D);
+    bool shouldSkip(clang::EnumDecl* D);
     bool shouldSkip(clang::ClassTemplateSpecializationDecl* D){return true;}
     bool shouldSkip(clang::UsingDecl* D){return true;}
     bool shouldSkip(clang::UsingShadowDecl* D){return true;}
-
   private:
     llvm::raw_ostream& Indent() { return Indent(m_Indentation); }
     llvm::raw_ostream& Indent(unsigned Indentation);
