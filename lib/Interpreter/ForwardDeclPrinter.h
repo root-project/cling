@@ -71,7 +71,7 @@ namespace cling {
                        const clang::PrintingPolicy& P,
                        unsigned Indentation = 0);
 
-    void VisitDeclContext(clang::DeclContext *DC, bool shouldIndent = true);
+//    void VisitDeclContext(clang::DeclContext *DC, bool shouldIndent = true);
 
     void VisitTranslationUnitDecl(clang::TranslationUnitDecl *D);
     void VisitTypedefDecl(clang::TypedefDecl *D);
@@ -91,6 +91,8 @@ namespace cling {
     void VisitStaticAssertDecl(clang::StaticAssertDecl *D);
     void VisitNamespaceDecl(clang::NamespaceDecl *D);
     void VisitUsingDirectiveDecl(clang::UsingDirectiveDecl *D);
+    void VisitUsingDecl(clang::UsingDecl* D);
+    void VisitUsingShadowDecl(clang::UsingShadowDecl* D);
     void VisitNamespaceAliasDecl(clang::NamespaceAliasDecl *D);
     void VisitCXXRecordDecl(clang::CXXRecordDecl *D);
     void VisitLinkageSpecDecl(clang::LinkageSpecDecl *D);
@@ -109,12 +111,22 @@ namespace cling {
 
     bool isIncompatibleType(clang::QualType q);
     bool isOperator(clang::FunctionDecl* D);
-    bool shouldSkipFunction(clang::FunctionDecl* D);
+
+    template<typename DeclT>
+    bool shouldSkip(DeclT* D){return false;}
+
+    bool shouldSkip(clang::FunctionDecl* D);
+    bool shouldSkip(clang::CXXRecordDecl* D);
+    bool shouldSkip(clang::TypedefDecl* D);
+    bool shouldSkip(clang::ClassTemplateSpecializationDecl* D){return true;}
+    bool shouldSkip(clang::UsingDecl* D){return true;}
+    bool shouldSkip(clang::UsingShadowDecl* D){return true;}
+
   private:
     llvm::raw_ostream& Indent() { return Indent(m_Indentation); }
     llvm::raw_ostream& Indent(unsigned Indentation);
 
-    void ProcessDeclGroup(llvm::SmallVectorImpl<clang::Decl*>& Decls);
+//    void ProcessDeclGroup(llvm::SmallVectorImpl<clang::Decl*>& Decls);
 
     void Print(clang::AccessSpecifier AS);
   };

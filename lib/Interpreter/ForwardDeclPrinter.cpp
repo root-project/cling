@@ -13,41 +13,40 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
-
 namespace cling {
 
   using namespace clang;
 
-  static QualType GetBaseType(QualType T) {
-    // FIXME: This should be on the Type class!
-    QualType BaseType = T;
-    while (!BaseType->isSpecifierType()) {
-      if (isa<TypedefType>(BaseType))
-        break;
-      else if (const PointerType* PTy = BaseType->getAs<PointerType>())
-        BaseType = PTy->getPointeeType();
-      else if (const BlockPointerType *BPy = BaseType->getAs<BlockPointerType>())
-        BaseType = BPy->getPointeeType();
-      else if (const ArrayType* ATy = dyn_cast<ArrayType>(BaseType))
-        BaseType = ATy->getElementType();
-      else if (const FunctionType* FTy = BaseType->getAs<FunctionType>())
-        BaseType = FTy->getReturnType();
-      else if (const VectorType *VTy = BaseType->getAs<VectorType>())
-        BaseType = VTy->getElementType();
-      else if (const ReferenceType *RTy = BaseType->getAs<ReferenceType>())
-        BaseType = RTy->getPointeeType();
-      else
-        llvm_unreachable("Unknown declarator!");
-    }
-    return BaseType;
-  }
-  static QualType getDeclType(Decl* D) {
-    if (TypedefNameDecl* TDD = dyn_cast<TypedefNameDecl>(D))
-      return TDD->getUnderlyingType();
-    if (ValueDecl* VD = dyn_cast<ValueDecl>(D))
-        return VD->getType();
-    return QualType();
-  }
+//  static QualType GetBaseType(QualType T) {
+//    // FIXME: This should be on the Type class!
+//    QualType BaseType = T;
+//    while (!BaseType->isSpecifierType()) {
+//      if (isa<TypedefType>(BaseType))
+//        break;
+//      else if (const PointerType* PTy = BaseType->getAs<PointerType>())
+//        BaseType = PTy->getPointeeType();
+//      else if (const BlockPointerType *BPy = BaseType->getAs<BlockPointerType>())
+//        BaseType = BPy->getPointeeType();
+//      else if (const ArrayType* ATy = dyn_cast<ArrayType>(BaseType))
+//        BaseType = ATy->getElementType();
+//      else if (const FunctionType* FTy = BaseType->getAs<FunctionType>())
+//        BaseType = FTy->getReturnType();
+//      else if (const VectorType *VTy = BaseType->getAs<VectorType>())
+//        BaseType = VTy->getElementType();
+//      else if (const ReferenceType *RTy = BaseType->getAs<ReferenceType>())
+//        BaseType = RTy->getPointeeType();
+//      else
+//        llvm_unreachable("Unknown declarator!");
+//    }
+//    return BaseType;
+//  }
+//  static QualType getDeclType(Decl* D) {
+//    if (TypedefNameDecl* TDD = dyn_cast<TypedefNameDecl>(D))
+//      return TDD->getUnderlyingType();
+//    if (ValueDecl* VD = dyn_cast<ValueDecl>(D))
+//        return VD->getType();
+//    return QualType();
+//  }
 
   ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream& Out,
                                          SourceManager& SM,
@@ -62,9 +61,11 @@ namespace cling {
     m_Policy.Bool = true; // Avoid printing _Bool instead of bool
 
     // Suppress some unfixable warnings.
+    // TODO: Find proper fix for these issues
     m_Out << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
     m_Out << "#pragma clang diagnostic ignored \"-Wignored-attributes\"" <<"\n";
-
+    m_Out << "#pragma clang diagnostic ignored \"-Wreturn-type-c-linkage\"" <<"\n";
+    
     std::vector<std::string> macrodefs;
     if (printMacros) {
       for (auto mit = T.macros_begin(); mit != T.macros_end(); ++mit) {
@@ -160,14 +161,18 @@ namespace cling {
     m_Out << "\"))) ";
   }
 
-  void ForwardDeclPrinter::ProcessDeclGroup(SmallVectorImpl<Decl*>& Decls) {
-    Indent();
-    Decl::printGroup(Decls.data(), Decls.size(), m_Out, m_Policy,
-                     m_Indentation);
-    m_Out << ";\n";
-    Decls.clear();
-
-  }
+//  void ForwardDeclPrinter::ProcessDeclGroup(SmallVectorImpl<Decl*>& Decls) {
+////    Indent();
+////    Decl::printGroup(Decls.data(), Decls.size(), m_Out, m_Policy,
+////                     m_Indentation);
+////    m_Out << ";\n";
+////    Decls.clear();
+//    for (auto decl : Decls ) {
+//      Visit(decl);
+//      printSemiColon();
+//    }
+//    Decls.clear();
+//  }
 
   void ForwardDeclPrinter::Print(AccessSpecifier AS) {
     switch(AS) {
@@ -182,135 +187,117 @@ namespace cling {
     // Common C declarations
     //----------------------------------------------------------------------------
 
-  void ForwardDeclPrinter::VisitDeclContext(DeclContext *DC, bool shouldIndent){
-    if (m_Policy.TerseOutput)
-      return;
-    if (shouldIndent)
-      m_Indentation += m_Policy.Indentation;
+//  void ForwardDeclPrinter::VisitDeclContext(DeclContext *DC, bool shouldIndent){
+//    if (m_Policy.TerseOutput)
+//      return;
+//    if (shouldIndent)
+//      m_Indentation += m_Policy.Indentation;
 
-    SmallVector<Decl*, 2> Decls;
-    for (DeclContext::decl_iterator D = DC->decls_begin(), DEnd = DC->decls_end();
-         D != DEnd; ++D) {
+//    SmallVector<Decl*, 2> Decls;
+//    for (DeclContext::decl_iterator D = DC->decls_begin(), DEnd = DC->decls_end();
+//         D != DEnd; ++D) {
 
-      // Don't print ObjCIvarDecls, as they are printed when visiting the
-      // containing ObjCInterfaceDecl.
-      if (isa<ObjCIvarDecl>(*D))
-        continue;
+//      // Don't print ObjCIvarDecls, as they are printed when visiting the
+//      // containing ObjCInterfaceDecl.
+//      if (isa<ObjCIvarDecl>(*D))
+//        continue;
 
-      // Skip over implicit declarations in pretty-printing mode.
-      if (D->isImplicit())
-        continue;
+//      // Skip over implicit declarations in pretty-printing mode.
+//      if (D->isImplicit())
+//        continue;
 
-      // The next bits of code handles stuff like "struct {int x;} a,b"; we're
-      // forced to merge the declarations because there's no other way to
-      // refer to the struct in question.  This limited merging is safe without
-      // a bunch of other checks because it only merges declarations directly
-      // referring to the tag, not typedefs.
-      //
-      // Check whether the current declaration should be grouped with a previous
-      // unnamed struct.
-      QualType CurDeclType = getDeclType(*D);
-      if (!Decls.empty() && !CurDeclType.isNull()) {
-        QualType BaseType = GetBaseType(CurDeclType);
-        if (!BaseType.isNull() && isa<ElaboratedType>(BaseType))
-          BaseType = cast<ElaboratedType>(BaseType)->getNamedType();
-        if (!BaseType.isNull() && isa<TagType>(BaseType) &&
-            cast<TagType>(BaseType)->getDecl() == Decls[0]) {
-          Decls.push_back(*D);
-          continue;
-        }
-      }
+//      // The next bits of code handles stuff like "struct {int x;} a,b"; we're
+//      // forced to merge the declarations because there's no other way to
+//      // refer to the struct in question.  This limited merging is safe without
+//      // a bunch of other checks because it only merges declarations directly
+//      // referring to the tag, not typedefs.
+//      //
+//      // Check whether the current declaration should be grouped with a previous
+//      // unnamed struct.
+//      QualType CurDeclType = getDeclType(*D);
+//      if (!Decls.empty() && !CurDeclType.isNull()) {
+//        QualType BaseType = GetBaseType(CurDeclType);
+//        if (!BaseType.isNull() && isa<ElaboratedType>(BaseType))
+//          BaseType = cast<ElaboratedType>(BaseType)->getNamedType();
+//        if (!BaseType.isNull() && isa<TagType>(BaseType) &&
+//            cast<TagType>(BaseType)->getDecl() == Decls[0]) {
+//          Decls.push_back(*D);
+//          continue;
+//        }
+//      }
 
-      // If we have a merged group waiting to be handled, handle it now.
-      if (!Decls.empty())
-        ProcessDeclGroup(Decls);
+//      // If we have a merged group waiting to be handled, handle it now.
+//      if (!Decls.empty())
+//        ProcessDeclGroup(Decls);
 
-      // If the current declaration is an unnamed tag type, save it
-      // so we can merge it with the subsequent declaration(s) using it.
-      if (isa<TagDecl>(*D) && !cast<TagDecl>(*D)->getIdentifier()) {
-        Decls.push_back(*D);
-        continue;
-      }
+//      // If the current declaration is an unnamed tag type, save it
+//      // so we can merge it with the subsequent declaration(s) using it.
+//      if (isa<TagDecl>(*D) && !cast<TagDecl>(*D)->getIdentifier()) {
+//        Decls.push_back(*D);
+//        continue;
+//      }
 
-      if (isa<AccessSpecDecl>(*D)) {
-        m_Indentation -= m_Policy.Indentation;
-        Indent();
-        Print(D->getAccess());
-        m_Out << ":\n";
-        m_Indentation += m_Policy.Indentation;
-        continue;
-      }
+//      if (isa<AccessSpecDecl>(*D)) {
+//        m_Indentation -= m_Policy.Indentation;
+//        Indent();
+//        Print(D->getAccess());
+//        m_Out << ":\n";
+//        m_Indentation += m_Policy.Indentation;
+//        continue;
+//      }
 
-      Indent();
-      Visit(*D);
+//      Indent();
+//      Visit(*D);
 
-      const char *Terminator = 0;
-      if (isa<OMPThreadPrivateDecl>(*D))
-        Terminator = 0;
-      else if (isa<FunctionDecl>(*D) &&
-               cast<FunctionDecl>(*D)->isThisDeclarationADefinition())
-        Terminator = 0;
-      else if (isa<ObjCMethodDecl>(*D) && cast<ObjCMethodDecl>(*D)->getBody())
-        Terminator = 0;
-      else if (isa<NamespaceDecl>(*D) || isa<LinkageSpecDecl>(*D) ||
-               isa<ObjCImplementationDecl>(*D) ||
-               isa<ObjCInterfaceDecl>(*D) ||
-               isa<ObjCProtocolDecl>(*D) ||
-               isa<ObjCCategoryImplDecl>(*D) ||
-               isa<ObjCCategoryDecl>(*D))
-        Terminator = 0;
-      else if (isa<EnumConstantDecl>(*D)) {
-        DeclContext::decl_iterator Next = D;
-        ++Next;
-        if (Next != DEnd)
-          Terminator = ",";
-      } else
-        Terminator = ";";
+//      const char *Terminator = 0;
+//      if (isa<OMPThreadPrivateDecl>(*D))
+//        Terminator = 0;
+//      else if (isa<FunctionDecl>(*D) &&
+//               cast<FunctionDecl>(*D)->isThisDeclarationADefinition())
+//        Terminator = 0;
+//      else if (isa<ObjCMethodDecl>(*D) && cast<ObjCMethodDecl>(*D)->getBody())
+//        Terminator = 0;
+//      else if (isa<NamespaceDecl>(*D) || isa<LinkageSpecDecl>(*D) ||
+//               isa<ObjCImplementationDecl>(*D) ||
+//               isa<ObjCInterfaceDecl>(*D) ||
+//               isa<ObjCProtocolDecl>(*D) ||
+//               isa<ObjCCategoryImplDecl>(*D) ||
+//               isa<ObjCCategoryDecl>(*D))
+//        Terminator = 0;
+//      else if (isa<EnumConstantDecl>(*D)) {
+//        DeclContext::decl_iterator Next = D;
+//        ++Next;
+//        if (Next != DEnd)
+//          Terminator = ",";
+//      } else
+//        Terminator = ";";
 
-      if (Terminator)
-        m_Out << Terminator;
-      m_Out << "\n";
-    }
+//      if (Terminator)
+//        m_Out << Terminator;
+//      m_Out << "\n";
+//    }
 
-    if (!Decls.empty())
-      ProcessDeclGroup(Decls);
+//    if (!Decls.empty())
+//      ProcessDeclGroup(Decls);
 
-    if (shouldIndent)
-      m_Indentation -= m_Policy.Indentation;
-  }
+//    if (shouldIndent)
+//      m_Indentation -= m_Policy.Indentation;
+//  }
 
   void ForwardDeclPrinter::VisitTranslationUnitDecl(TranslationUnitDecl *D) {
-    VisitDeclContext(D, false);
+//    VisitDeclContext(D, false);
+    for (auto it = D->decls_begin(); it != D->decls_end(); ++it) {
+      Visit(*it);
+      printSemiColon();
+    }
   }
 
   void ForwardDeclPrinter::VisitTypedefDecl(TypedefDecl *D) {
 
-//    if (const ElaboratedType* ET =
-//            dyn_cast<ElaboratedType>(D->getTypeSourceInfo()->getType().getTypePtr())) {
-//      if (const EnumType* Enum =
-//            dyn_cast<EnumType>(ET->getNamedType())) {
-
-//        std::string str = "_enum_" + std::to_string(m_UniqueCounter++);
-
-//        VisitEnumDecl(Enum->getDecl(),str);
-//        printSemiColon();
-//        m_Out << "typedef " << str << ' ' << D->getName();
-//        return;
-//      }
-//    }
-
-    llvm::StringRef str = D->getTypeSourceInfo()->getType().getAsString();
-    if (str.startswith("enum")) {
-      std::pair<StringRef,StringRef> pair = str.split(' ');
-      m_IncompatibleTypes.insert(pair.second);
+    if (shouldSkip(D)) {
       m_SkipFlag = true;
       return;
     }
-    if (isIncompatibleType(D->getTypeSourceInfo()->getType())) {
-      m_SkipFlag = true;
-      return;
-    }
-
 
     if (!m_Policy.SuppressSpecifiers) {
       m_Out << "typedef ";
@@ -386,7 +373,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFunctionDecl(FunctionDecl *D) {
-    if (shouldSkipFunction(D)) {
+    if (shouldSkip(D)) {
       m_SkipFlag = true;
       return;
     }
@@ -635,6 +622,7 @@ namespace cling {
 //        Out << "friend ";
 //        VisitRedeclarableTemplateDecl(CTD);
 //      }
+      m_SkipFlag = true;
   }
 
   void ForwardDeclPrinter::VisitFieldDecl(FieldDecl *D) {
@@ -781,7 +769,7 @@ namespace cling {
       printSemiColon();
     }
     Indent() << "}\n";
-    m_SkipFlag = true;
+    m_SkipFlag = true; //Don't print a semi after a namespace
   }
 
   void ForwardDeclPrinter::VisitUsingDirectiveDecl(UsingDirectiveDecl *D) {
@@ -789,6 +777,13 @@ namespace cling {
     if (D->getQualifier())
       D->getQualifier()->print(m_Out, m_Policy);
     m_Out << *D->getNominatedNamespaceAsWritten();
+  }
+
+  void ForwardDeclPrinter::VisitUsingDecl(UsingDecl *D) {
+    m_SkipFlag = true;
+  }
+  void ForwardDeclPrinter::VisitUsingShadowDecl(UsingShadowDecl *D) {
+    m_SkipFlag = true;
   }
 
   void ForwardDeclPrinter::VisitNamespaceAliasDecl(NamespaceAliasDecl *D) {
@@ -804,7 +799,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitCXXRecordDecl(CXXRecordDecl *D) {
-    if (D->getNameAsString().size() == 0) {
+    if (shouldSkip(D)) {
         m_SkipFlag = true;
         return;
     }
@@ -846,8 +841,8 @@ namespace cling {
     //    VisitDeclContext(D);
     //    Indent() << "}";
     //  }
-    m_Out << ";\n";
-    m_SkipFlag = true;
+//    m_Out << ";\n";
+//    m_SkipFlag = true;
   }
 
   void ForwardDeclPrinter::VisitLinkageSpecDecl(LinkageSpecDecl *D) {
@@ -956,7 +951,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
-    if (shouldSkipFunction(D->getAsFunction())) {
+    if (shouldSkip(D->getAsFunction())) {
       m_SkipFlag = true;
       return;
     }
@@ -974,7 +969,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
-    if (D->getName().size() == 0 ) {
+    if (shouldSkip(D->getTemplatedDecl()) ) {
       m_SkipFlag = true;
       return;
     }
@@ -994,7 +989,7 @@ namespace cling {
 
   void ForwardDeclPrinter::
   VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* D) {
-    //D->dump();
+    m_SkipFlag = true;
   }
 
   void ForwardDeclPrinter::printSemiColon(bool flag) {
@@ -1029,12 +1024,13 @@ namespace cling {
   }
 
   bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
+    //TODO: Find a better check for this
     return D->getNameAsString().find("operator") == 0;
   }
 
-  bool ForwardDeclPrinter::shouldSkipFunction(FunctionDecl *D) {
+  bool ForwardDeclPrinter::shouldSkip(FunctionDecl *D) {
     bool param = false;
-    //will be true if any of the params turn out to have nested types
+    //will be true if any of the params turn out to have incompatible types
 
     for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
       if (isIncompatibleType(D->getParamDecl(i)->getType()))
@@ -1050,5 +1046,25 @@ namespace cling {
         || isOperator(D) )
       return true;
     return false;
+  }
+  bool ForwardDeclPrinter::shouldSkip(CXXRecordDecl *D) {
+    return D->getNameAsString().size() == 0;
+  }
+  bool ForwardDeclPrinter::shouldSkip(TypedefDecl *D) {
+    if (const ElaboratedType* ET =
+            dyn_cast<ElaboratedType>(D->getTypeSourceInfo()->getType().getTypePtr())) {
+      if (isa<EnumType>(ET->getNamedType())) {
+        m_IncompatibleTypes.insert(D->getName());
+//        m_SkipFlag = true;
+        return true;
+      }
+    }
+
+    if (isIncompatibleType(D->getTypeSourceInfo()->getType())) {
+//      m_SkipFlag = true;
+      return true;
+    }
+    return false;
+
   }
 }//end namespace cling
