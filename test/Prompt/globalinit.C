@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: %cling %s\(\"%s\"\) | FileCheck %s
+// RUN: %cling %s "globalinit(\"%s\")" | FileCheck %s
 
 #include "cling/Interpreter/Interpreter.h"
 
