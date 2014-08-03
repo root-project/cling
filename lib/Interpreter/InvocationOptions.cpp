@@ -132,6 +132,8 @@ void cling::InvocationOptions::PrintHelp() {
   Opts->PrintHelp(llvm::outs(), "cling",
                   "cling: LLVM/clang C++ Interpreter: http://cern.ch/cling");
 
+  llvm::outs() << "\n\n";
+
   llvm::OwningPtr<OptTable> OptsC1(clang::driver::createDriverOptTable());
   OptsC1->PrintHelp(llvm::outs(), "clang -cc1",
                     "LLVM 'Clang' Compiler: http://clang.llvm.org");
