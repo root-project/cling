@@ -53,7 +53,7 @@ int main( int argc, char **argv ) {
   if (!Interactive) {
     for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
       std::string line;
-      if (llvm::sys::fs::exists(Inputs[I]))
+      if (!interp.lookupFileOrLibrary(Inputs[I]).empty())
         line += ".x ";
 
       line += Inputs[I];
