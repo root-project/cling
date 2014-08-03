@@ -129,14 +129,11 @@ cling::InvocationOptions::CreateFromArgs(int argc, const char* const argv[],
 void cling::InvocationOptions::PrintHelp() {
   llvm::OwningPtr<OptTable> Opts(CreateClingOptTable());
 
-  // We need stream that doesn't close its file descriptor, thus we are not
-  // using llvm::outs. Keeping file descriptor open we will be able to use
-  // the results in pipes (Savannah #99234).
-  Opts->PrintHelp(llvm::errs(), "cling",
+  Opts->PrintHelp(llvm::outs(), "cling",
                   "cling: LLVM/clang C++ Interpreter: http://cern.ch/cling");
 
   llvm::OwningPtr<OptTable> OptsC1(clang::driver::createDriverOptTable());
-  OptsC1->PrintHelp(llvm::errs(), "clang -cc1",
+  OptsC1->PrintHelp(llvm::outs(), "clang -cc1",
                     "LLVM 'Clang' Compiler: http://clang.llvm.org");
 
 }
