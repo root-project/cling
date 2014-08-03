@@ -6,13 +6,13 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -I%p -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -I%p 2>&1 | FileCheck %s
 
 // The main issue is that expected - error is not propagated to the source file and
 // the expected diagnostics get misplaced.
 
 .x CannotDotX.h()
-// expected-error@2 {{use of undeclared identifier 'CannotDotX'}}
+// expected-warning{{'CannotDotX' missing falling back to .L}}
 
 // Here we cannot revert MyClass from CannotDotX.h
 .L CannotDotX.h

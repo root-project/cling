@@ -109,10 +109,17 @@ namespace cling {
 
       // Check if there is a function named after the file.
       const cling::Transaction* T = m_Interpreter.getLastTransaction();
-      // FIXME: Report that we were unable to find the function we were supposed
-      // to call.
-      if (T && !T->containsNamedDecl(pairFuncExt.first))
+      if (T && !T->containsNamedDecl(pairFuncExt.first)) {
+        clang::DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
+        unsigned diagID
+          = Diags.getCustomDiagID (clang::DiagnosticsEngine::Level::Warning,
+                                   "'%0' missing falling back to .L");
+        //FIXME: Figure out how to pass in proper source locations, which we can
+        // use with -verify.
+        Diags.Report(clang::SourceLocation(), diagID)
+          << pairFuncExt.first;
         return AR_Success;
+      }
 
       if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
         actionResult = AR_Failure;
