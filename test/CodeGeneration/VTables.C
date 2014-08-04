@@ -9,7 +9,7 @@
 // RUN: cat %s | %cling -Xclang -verify | FileCheck %s
 // XFAIL:*
 
-// Test whether the interpreter is able to generate properly the symbols 
+// Test whether the interpreter is able to generate properly the symbols
 // and the vtables of classes.
 
 #include "cling/Interpreter/Interpreter.h"
@@ -77,9 +77,9 @@ class V { public: virtual void fV() {} };
 class B1 : virtual public V { /* ... */ };
 class B2 : virtual public V { /* ... */ };
 class B3 : public V { /* ... */ };
-class X : public B1, public B2, public B3 { 
-public: 
-  virtual void fV(){} 
+class X : public B1, public B2, public B3 {
+public:
+  virtual void fV(){}
   struct S {
     virtual void fS() {}
   };

@@ -25,7 +25,7 @@ namespace runtime {
   /// \brief Provides private definitions for the dynamic scopes and runtime
   /// bindings. These builtins should not be used for other purposes.
   namespace internal {
-    
+
     /// \brief LifetimeHandler is used in case of initialization using address
     /// on the automatic store (stack) instead of EvaluateT.
     ///

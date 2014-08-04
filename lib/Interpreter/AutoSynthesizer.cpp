@@ -35,10 +35,10 @@ namespace cling {
       Stmts.append(CS->body_begin(), CS->body_end());
       for (Statements::iterator I = Stmts.begin(); I != Stmts.end(); ++I) {
         if (!TraverseStmt(*I) && !m_HandledDecls.count(m_FoundDRE->getDecl())) {
-          Sema::DeclGroupPtrTy VDPtrTy 
+          Sema::DeclGroupPtrTy VDPtrTy
             = m_Sema->ConvertDeclToDeclGroup(m_FoundDRE->getDecl());
-          StmtResult DS = m_Sema->ActOnDeclStmt(VDPtrTy, 
-                                                m_FoundDRE->getLocStart(), 
+          StmtResult DS = m_Sema->ActOnDeclStmt(VDPtrTy,
+                                                m_FoundDRE->getLocStart(),
                                                 m_FoundDRE->getLocEnd());
           assert(!DS.isInvalid() && "Invalid DeclStmt.");
           I = Stmts.insert(I, DS.take());
@@ -60,7 +60,7 @@ namespace cling {
   };
 } // end namespace cling
 
-namespace cling { 
+namespace cling {
   AutoSynthesizer::AutoSynthesizer(clang::Sema* S)
     : TransactionTransformer(S) {
     // TODO: We would like to keep that local without keeping track of all
@@ -72,7 +72,7 @@ namespace cling {
   }
 
   // pin the vtable here.
-  AutoSynthesizer::~AutoSynthesizer() 
+  AutoSynthesizer::~AutoSynthesizer()
   { }
 
   void AutoSynthesizer::Transform() {
@@ -81,7 +81,7 @@ namespace cling {
          I != E; ++I) {
       // Copy DCI; it might get relocated below.
       Transaction::DelayCallInfo DCI = *I;
-      for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(), 
+      for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(),
              JE = DCI.m_DGR.end(); J != JE; ++J)
         if ((*J)->hasBody())
           m_AutoFixer->Fix(cast<CompoundStmt>((*J)->getBody()));

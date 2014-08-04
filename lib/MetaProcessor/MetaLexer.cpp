@@ -36,8 +36,8 @@ namespace cling {
     return value;
   }
 
-  MetaLexer::MetaLexer(llvm::StringRef line) 
-    : bufferStart(line.data()), curPos(line.data()) 
+  MetaLexer::MetaLexer(llvm::StringRef line)
+    : bufferStart(line.data()), curPos(line.data())
   { }
 
   void MetaLexer::Lex(Token& Tok) {
@@ -50,7 +50,7 @@ namespace cling {
       // INTENTIONAL FALL THROUGHs
       return LexPunctuator(C, Tok);
 
-    case '/': 
+    case '/':
       if (*curPos != '/')
         return LexPunctuator(C, Tok);
       else {
@@ -153,7 +153,7 @@ namespace cling {
     Tok.startToken(curPos);
     while (true) {
       bool escape = false;
-      while ( (escape || *curPos != start) 
+      while ( (escape || *curPos != start)
               && *curPos != '\0' && *curPos != '\r' && *curPos != '\n') {
         escape = ( (*curPos) == '\\' );
         ++curPos;

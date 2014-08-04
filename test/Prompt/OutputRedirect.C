@@ -1,9 +1,9 @@
 // RUN: cat %s | %cling | FileCheck --check-prefix=CHECKOUT %s
 // RUN: cat %s | %cling 2> /tmp/stderr.txt && cat /tmp/stderr.txt | FileCheck --check-prefix=CHECKERR %s
-// RUN: cat %s | %cling | cat /tmp/outfile.txt | FileCheck --check-prefix=CHECK-REDIRECTOUT %s 
+// RUN: cat %s | %cling | cat /tmp/outfile.txt | FileCheck --check-prefix=CHECK-REDIRECTOUT %s
 // RUN: cat %s | %cling | cat /tmp/errfile.txt | FileCheck --check-prefix=CHECK-REDIRECTERR %s
-// RUN: cat %s | %cling | cat /tmp/bothfile.txt | FileCheck --check-prefix=CHECK-REDIRECTBOTH %s 
-// RUN: cat %s | %cling | cat /tmp/anotheroutfile.txt | FileCheck --check-prefix=CHECK-REDIRECTANOTHER %s 
+// RUN: cat %s | %cling | cat /tmp/bothfile.txt | FileCheck --check-prefix=CHECK-REDIRECTBOTH %s
+// RUN: cat %s | %cling | cat /tmp/anotheroutfile.txt | FileCheck --check-prefix=CHECK-REDIRECTANOTHER %s
 
 #include <iostream>
 
@@ -95,7 +95,7 @@ std::cerr << "Err is still in &> file.\n"
 //CHECK-REDIRECTBOTH: Err is still in &> file.
 
 
-// Test toggle stderr to the prompt when redirected with &. 
+// Test toggle stderr to the prompt when redirected with &.
 .2>
 std::cerr << "Err back from &> file.\n"
 //CHECKERR: Err back from &> file.

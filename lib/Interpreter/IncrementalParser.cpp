@@ -172,7 +172,7 @@ namespace cling {
     const Transaction* nextT = 0;
     while (T) {
       assert((T->getState() == Transaction::kCommitted
-              || T->getState() == Transaction::kRolledBackWithErrors 
+              || T->getState() == Transaction::kRolledBackWithErrors
               || T->getState() == Transaction::kNumStates // reset from the pool
               || T->getState() == Transaction::kRolledBack)
              && "Not committed?");
@@ -188,14 +188,14 @@ namespace cling {
       delete m_IRTransformers[i];
   }
 
-  Transaction* IncrementalParser::beginTransaction(const CompilationOptions& 
+  Transaction* IncrementalParser::beginTransaction(const CompilationOptions&
                                                    Opts) {
     Transaction* OldCurT = m_Consumer->getTransaction();
     Transaction* NewCurT = m_TransactionPool->takeTransaction();
     NewCurT->setCompilationOpts(Opts);
-    // If we are in the middle of transaction and we see another begin 
+    // If we are in the middle of transaction and we see another begin
     // transaction - it must be nested transaction.
-    if (OldCurT && OldCurT != NewCurT 
+    if (OldCurT && OldCurT != NewCurT
         && (OldCurT->getState() == Transaction::kCollecting
             || OldCurT->getState() == Transaction::kCompleted)) {
       OldCurT->addNestedTransaction(NewCurT); // takes the ownership
@@ -220,10 +220,10 @@ namespace cling {
     T->setState(Transaction::kCompleted);
     // Empty transaction send it back to the pool.
     if (T->empty()) {
-      assert((!m_Consumer->getTransaction() 
+      assert((!m_Consumer->getTransaction()
               || (m_Consumer->getTransaction() == T))
              && "Cannot release different T");
-      // If a nested transaction the active one should be its parent 
+      // If a nested transaction the active one should be its parent
       // from now on. FIXME: Merge conditional with commitTransaction
       if (T->isNestedTransaction())
         m_Consumer->setTransaction(T->getParent());
@@ -233,7 +233,7 @@ namespace cling {
       m_TransactionPool->releaseTransaction(T);
       return 0;
     }
-    
+
     transformTransactionAST(T);
     if (T->empty()) {
       m_TransactionPool->releaseTransaction(T);
@@ -344,7 +344,7 @@ namespace cling {
                    clang::UsedAttr(D->getSourceRange(), D->getASTContext(),
                                    0/*AttributeSpellingListIndex*/));
     }
-    for (Transaction::iterator I = T->deserialized_decls_begin(), 
+    for (Transaction::iterator I = T->deserialized_decls_begin(),
            E = T->deserialized_decls_end(); I != E; ++I) {
       // FIXME: implement for multiple decls in a DGR.
       assert(I->m_DGR.isSingleDecl());
@@ -406,7 +406,7 @@ namespace cling {
     }
 
     // Treat the deserialized decls differently.
-    for (Transaction::iterator I = T->deserialized_decls_begin(), 
+    for (Transaction::iterator I = T->deserialized_decls_begin(),
            E = T->deserialized_decls_end(); I != E; ++I) {
 
       for (DeclGroupRef::iterator DI = I->m_DGR.begin(), DE = I->m_DGR.end();

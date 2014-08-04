@@ -35,7 +35,7 @@ namespace cling {
     ///\param[in] S - The semantic analysis object.
     ///
     AutoSynthesizer(clang::Sema* S);
-    
+
     virtual ~AutoSynthesizer();
 
     virtual void Transform();

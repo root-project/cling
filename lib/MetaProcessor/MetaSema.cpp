@@ -345,7 +345,7 @@ namespace cling {
   void MetaSema::actOnClassCommand() const {
     DisplayClasses(m_MetaProcessor.getOuts(), &m_Interpreter, true);
   }
-  
+
   void MetaSema::actOnNamespaceCommand() const {
     DisplayNamespaces(m_MetaProcessor.getOuts(), &m_Interpreter);
   }

@@ -8,15 +8,15 @@
 
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
-// Actually test clang::DeclContext::removeDecl(). This function in clang is 
-// the main method that is used for the error recovery. This means when there 
+// Actually test clang::DeclContext::removeDecl(). This function in clang is
+// the main method that is used for the error recovery. This means when there
 // is an error in cling's input we need to revert all the declarations that came
-// in from the same transaction. Even when we have anonymous declarations we 
+// in from the same transaction. Even when we have anonymous declarations we
 // need to be able to remove them from the declaration context. In a compiler's
 // point of view there is no way that one can call removeDecl() and pass in anon
 // decl, because the method is used when shadowing decls, which must have names.
 // The issue is (and we patched it) is that removeDecl is trying to remove the
-// anon decl (which doesn't have name) from the symbol (lookup) tables, which 
+// anon decl (which doesn't have name) from the symbol (lookup) tables, which
 // doesn't make sense.
 // The current test checks if that codepath in removeDecl still exists because
 // it is important for the stable error recovery in cling
@@ -30,7 +30,7 @@ class MyClass {
 };
 .compareState "testMyClass"
  // CHECK-NOT: File with AST differencies stored in: testMyClassAST.diff
- 
+
 .storeState "testStructX"
 struct X {
   union {
@@ -41,7 +41,7 @@ struct X {
   union {
     int i;
     float f;
-    
+
     union {
       float f2;
       mutable double d;
@@ -64,8 +64,8 @@ struct X {
 };
 .compareState "testStructX"
 // CHECK-NOT: File with AST differencies stored in: testStructXAST.diff
-// Make FileCheck happy with having at least one positive rule: 
+// Make FileCheck happy with having at least one positive rule:
 int a = 5
 // CHECK: (int) 5
 .q
- 
+

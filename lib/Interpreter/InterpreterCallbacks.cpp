@@ -22,7 +22,7 @@ using namespace clang;
 
 namespace cling {
 
-  ///\brief Translates 'interesting' for the interpreter 
+  ///\brief Translates 'interesting' for the interpreter
   /// ASTDeserializationListener events into interpreter callback.
   ///
   class InterpreterPPCallbacks : public PPCallbacks {
@@ -55,7 +55,7 @@ namespace cling {
     }
   };
 
-  ///\brief Translates 'interesting' for the interpreter 
+  ///\brief Translates 'interesting' for the interpreter
   /// ASTDeserializationListener events into interpreter callback.
   ///
   class InterpreterDeserializationListener : public ASTDeserializationListener {
@@ -75,7 +75,7 @@ namespace cling {
     }
   };
 
-  ///\brief Translates 'interesting' for the interpreter ExternalSemaSource 
+  ///\brief Translates 'interesting' for the interpreter ExternalSemaSource
   /// events into interpreter callbacks.
   ///
   class InterpreterExternalSemaSource : public clang::ExternalSemaSource {
@@ -91,7 +91,7 @@ namespace cling {
     Sema* m_Sema; // we don't own // FIXME: once we remove ForgetSema delete.
 
   public:
-    InterpreterExternalSemaSource(InterpreterCallbacks* C) 
+    InterpreterExternalSemaSource(InterpreterCallbacks* C)
       : m_Callbacks(C), m_Sema(0) {}
 
     ~InterpreterExternalSemaSource() {
@@ -127,7 +127,7 @@ namespace cling {
     virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S) {
       if (m_Callbacks)
         return m_Callbacks->LookupObject(R, S);
-    
+
       return false;
     }
 
@@ -145,7 +145,7 @@ namespace cling {
         m_Callbacks->LookupObject(Tag);
     }
 
-    void UpdateWithNewDeclsFwd(const DeclContext *DC, DeclarationName Name, 
+    void UpdateWithNewDeclsFwd(const DeclContext *DC, DeclarationName Name,
                                llvm::ArrayRef<NamedDecl*> Decls) {
       SetExternalVisibleDeclsForName(DC, Name, Decls);
     }
@@ -172,7 +172,7 @@ namespace cling {
                         bool enableDeserializationListenerCallbacks/* = false*/,
                                              bool enablePPCallbacks/* = false*/)
     : m_Interpreter(interp), m_IsRuntime(false) {
-    
+
     if (enableExternalSemaSourceCallbacks) {
       m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
       m_ExternalSemaSource->InitializeSema(interp->getSema());
@@ -198,21 +198,21 @@ namespace cling {
   // pin the vtable here
   InterpreterCallbacks::~InterpreterCallbacks() {
     // FIXME: we have to remove the external source at destruction time. Needs
-    // further tweaks of the patch in clang. This will be done later once the 
+    // further tweaks of the patch in clang. This will be done later once the
     // patch is in clang's mainline.
   }
 
-  ExternalSemaSource* 
+  ExternalSemaSource*
   InterpreterCallbacks::getInterpreterExternalSemaSource() const {
     return m_ExternalSemaSource.get();
   }
 
-  ASTDeserializationListener* 
+  ASTDeserializationListener*
   InterpreterCallbacks::getInterpreterDeserializationListener() const {
     return m_DeserializationListener.get();
   }
 
-  bool InterpreterCallbacks::FileNotFound(llvm::StringRef FileName, 
+  bool InterpreterCallbacks::FileNotFound(llvm::StringRef FileName,
                                     llvm::SmallVectorImpl<char>& RecoveryPath) {
     // Default implementation is no op.
     return false;
@@ -233,8 +233,8 @@ namespace cling {
     return false;
   }
 
-  void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC, 
-                                                DeclarationName Name, 
+  void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC,
+                                                DeclarationName Name,
                                              llvm::ArrayRef<NamedDecl*> Decls) {
     if (m_ExternalSemaSource)
       m_ExternalSemaSource->UpdateWithNewDeclsFwd(DC, Name, Decls);
@@ -330,7 +330,7 @@ namespace test {
                                      /*TypeSourceInfo*/0, SC_None);
 
       // Annotate the decl to give a hint in cling. FIXME: Current implementation
-      // is a gross hack, because TClingCallbacks shouldn't know about 
+      // is a gross hack, because TClingCallbacks shouldn't know about
       // EvaluateTSynthesizer at all!
       SourceRange invalidRange;
       Res->addAttr(new (C) AnnotateAttr(invalidRange, C, "__ResolveAtRuntime", 0));
@@ -343,13 +343,13 @@ namespace test {
     return false;
   }
 
-  bool SymbolResolverCallback::ShouldResolveAtRuntime(LookupResult& R, 
+  bool SymbolResolverCallback::ShouldResolveAtRuntime(LookupResult& R,
                                                       Scope* S) {
 
-    if (R.getLookupKind() != Sema::LookupOrdinaryName) 
+    if (R.getLookupKind() != Sema::LookupOrdinaryName)
       return false;
 
-    if (R.isForRedeclaration()) 
+    if (R.isForRedeclaration())
       return false;
 
     if (!R.empty())

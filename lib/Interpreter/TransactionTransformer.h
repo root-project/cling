@@ -51,7 +51,7 @@ namespace cling {
 
     void setTransaction(Transaction* T) { m_Transaction = T; }
 
-    ///\brief The method that does the transformation of a transaction into 
+    ///\brief The method that does the transformation of a transaction into
     /// another. If forwards to the protected virtual Transform method, which
     /// does the actual transformation.
     ///

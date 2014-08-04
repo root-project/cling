@@ -22,7 +22,7 @@ int my_funct();
 // CHECK-NOT: Differences
 
 .rawInput 1
-int my_funct() { 
+int my_funct() {
   return 20;
 }
 .rawInput 0

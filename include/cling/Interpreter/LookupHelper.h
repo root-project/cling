@@ -33,7 +33,7 @@ namespace llvm {
 namespace cling {
   class Interpreter;
   ///\brief Reflection information query interface. The class performs lookups
-  /// in the currently loaded information in the AST, using the same Parser, 
+  /// in the currently loaded information in the AST, using the same Parser,
   /// Sema and Preprocessor objects.
   ///
   class LookupHelper {

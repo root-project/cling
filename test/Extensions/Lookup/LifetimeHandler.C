@@ -8,7 +8,7 @@
 
 // RUN: cat %s | %cling -I%p | FileCheck %s
 // We should revise the destruction of the LifetimeHandlers, because
-// its destructor uses gCling and the CompilerInstance, which are 
+// its destructor uses gCling and the CompilerInstance, which are
 // already gone
 
 #include "cling/Interpreter/Interpreter.h"
@@ -24,7 +24,7 @@ gCling->setCallbacks(SRC);
 // CHECK: After Alpha is Beta {{.*Interpreter.*}}
 // CHECK: Alpha dtor called {{.*Interpreter.*}}
 
-Alpha a(sadasds->getVersion()); 
+Alpha a(sadasds->getVersion());
 printf("%s\n", a.getVar()); // CHECK: {{.*Interpreter.*}}
 
 int res = h->Add10(h->Add10(h->Add10(0))) // CHECK: (int) 30

@@ -21,20 +21,20 @@ class Interpreter;
 
 void DisplayClasses(llvm::raw_ostream &stream,
                     const Interpreter *interpreter, bool verbose);
-void DisplayClass(llvm::raw_ostream &stream, 
-                  const Interpreter *interpreter, const char *className, 
+void DisplayClass(llvm::raw_ostream &stream,
+                  const Interpreter *interpreter, const char *className,
                   bool verbose);
 
 void DisplayNamespaces(llvm::raw_ostream &stream, const Interpreter *interpreter);
 
 void DisplayGlobals(llvm::raw_ostream &stream, const Interpreter *interpreter);
-void DisplayGlobal(llvm::raw_ostream &stream, const Interpreter *interpreter, 
+void DisplayGlobal(llvm::raw_ostream &stream, const Interpreter *interpreter,
                    const std::string &name);
 
 void DisplayTypedefs(llvm::raw_ostream &stream, const Interpreter *interpreter);
 void DisplayTypedef(llvm::raw_ostream &stream, const Interpreter *interpreter,
                     const std::string &name);
-   
+
 }
 
 #endif

@@ -16,11 +16,11 @@
 BEGIN_NAMESPACE int j; END_NAMESPACE
 
 .storeState "testMacroExpansion"
-BEGIN_NAMESPACE int j; END_NAMESPACE // expected-error {{redefinition of 'j'}} expected-note {{previous definition is here}} 
+BEGIN_NAMESPACE int j; END_NAMESPACE // expected-error {{redefinition of 'j'}} expected-note {{previous definition is here}}
 .compareState "testMacroExpansion"
 .rawInput 0
 // CHECK-NOT: Differences
-// Make FileCheck happy with having at least one positive rule: 
+// Make FileCheck happy with having at least one positive rule:
 int a = 5
 // CHECK: (int) 5
 .q

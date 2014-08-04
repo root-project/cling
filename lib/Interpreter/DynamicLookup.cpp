@@ -114,8 +114,8 @@ namespace cling {
   // Constructors
   EvaluateTSynthesizer::EvaluateTSynthesizer(Sema* S)
     : TransactionTransformer(S), m_EvalDecl(0), m_LifetimeHandlerDecl(0),
-      m_LHgetMemoryDecl(0), m_DynamicExprInfoDecl(0), m_DeclContextDecl(0), 
-      m_gCling(0), m_CurDeclContext(0), m_Context(&S->getASTContext()), 
+      m_LHgetMemoryDecl(0), m_DynamicExprInfoDecl(0), m_DeclContextDecl(0),
+      m_gCling(0), m_CurDeclContext(0), m_Context(&S->getASTContext()),
       m_UniqueNameCounter(0), m_NestedCompoundStmts(0)
   { }
 
@@ -126,7 +126,7 @@ namespace cling {
   void EvaluateTSynthesizer::Initialize() {
     // Most of the declaration we are looking up are in cling::runtime::internal
     NamespaceDecl* NSD = utils::Lookup::Namespace(m_Sema, "cling");
-    NamespaceDecl* clingRuntimeNSD 
+    NamespaceDecl* clingRuntimeNSD
       = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
     NSD = utils::Lookup::Namespace(m_Sema, "internal", clingRuntimeNSD);
 
@@ -137,7 +137,7 @@ namespace cling {
                      Sema::ForRedeclaration);
     assert(NSD && "There must be a valid namespace.");
     m_Sema->LookupQualifiedName(R, NSD);
-    // We have specialized EvaluateT but we don't care because the templated 
+    // We have specialized EvaluateT but we don't care because the templated
     // decl is needed.
     TemplateDecl* TplD = dyn_cast_or_null<TemplateDecl>(*R.begin());
     m_EvalDecl = dyn_cast<FunctionDecl>(TplD->getTemplatedDecl());
@@ -215,7 +215,7 @@ namespace cling {
          I != E; ++I) {
       // Copy DCI; it might get relocated below.
       Transaction::DelayCallInfo DCI = *I;
-      for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(), 
+      for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(),
              JE = DCI.m_DGR.end(); J != JE; ++J)
         if (ShouldVisit(*J) && (*J)->hasBody()) {
           if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*J)) {
@@ -329,13 +329,13 @@ namespace cling {
             if (Expr* E = NewNode.getAs<Expr>()) {
               // Check whether value printer has been requested
               bool valuePrinterReq = false;
-              // If this was the last or the last is not null stmt, means that 
+              // If this was the last or the last is not null stmt, means that
               // we need to value print.
               // If this is in a wrapper function's body then look for VP.
               if (FunctionDecl* FD = dyn_cast<FunctionDecl>(m_CurDeclContext))
-                valuePrinterReq 
-                  = m_NestedCompoundStmts < 2  && utils::Analyze::IsWrapper(FD) 
-                  && ((it+1) == Children.end() || ((it+2) == Children.end() 
+                valuePrinterReq
+                  = m_NestedCompoundStmts < 2  && utils::Analyze::IsWrapper(FD)
+                  && ((it+1) == Children.end() || ((it+2) == Children.end()
                                                    && !isa<NullStmt>(*(it+1))));
 
               // Assume void if still not escaped
@@ -427,12 +427,12 @@ namespace cling {
 
         // Build Arg3 cling::Interpreter
         CXXScopeSpec CXXSS;
-        DeclarationNameInfo NameInfo(m_gCling->getDeclName(), 
+        DeclarationNameInfo NameInfo(m_gCling->getDeclName(),
                                      m_gCling->getLocStart());
-        Expr* gClingDRE 
+        Expr* gClingDRE
           = m_Sema->BuildDeclarationNameExpr(CXXSS, NameInfo ,m_gCling).take();
         Inits.push_back(gClingDRE);
-        
+
         // 2.3 Create a variable from LifetimeHandler.
         QualType HandlerTy = m_Context->getTypeDeclType(m_LifetimeHandlerDecl);
         TypeSourceInfo* TSI = m_Context->getTrivialTypeSourceInfo(HandlerTy,
@@ -445,7 +445,7 @@ namespace cling {
                                                    HandlerTy,
                                                    TSI,
                                                    SC_None);
-        
+
         // 2.4 Call the best-match constructor. The method does overload
         // resolution of the constructors and then initializes the new
         // variable with it
@@ -457,7 +457,7 @@ namespace cling {
                                      InitExprResult.take(),
                                      /*DirectInit*/ true,
                                      /*TypeMayContainAuto*/ false);
-        
+
         // 2.5 Register the instance in the enclosing context
         CuredDecl->getDeclContext()->addDecl(HandlerInstance);
         NewNode.addNode(new (m_Context)
@@ -465,7 +465,7 @@ namespace cling {
                                  m_NoSLoc,
                                  m_NoELoc)
                         );
-        
+
         // 3.1 Build a DeclRefExpr, which holds the object
         DeclRefExpr* MemberExprBase
           = m_Sema->BuildDeclRefExpr(HandlerInstance,
@@ -499,7 +499,7 @@ namespace cling {
                                               MultiExprArg(),
                                               m_NoELoc).take();
         // Cast to the type LHS type
-        Expr* Result 
+        Expr* Result
           = utils::Synthesize::CStyleCastPtrExpr(m_Sema, CuredDeclTy, theCall);
         // Cast once more (dereference the cstyle cast)
         Result = m_Sema->BuildUnaryOp(S, m_NoSLoc, UO_Deref, Result).take();
@@ -543,7 +543,7 @@ namespace cling {
     return ASTNodeInfo(Node, 0);
   }
 
-  ASTNodeInfo EvaluateTSynthesizer::VisitBinaryOperator(BinaryOperator* Node) {    
+  ASTNodeInfo EvaluateTSynthesizer::VisitBinaryOperator(BinaryOperator* Node) {
     ASTNodeInfo rhs = Visit(Node->getRHS());
     ASTNodeInfo lhs;
 
@@ -603,7 +603,7 @@ namespace cling {
 
     // Build Arg1
     QualType DCTy = m_Context->getTypeDeclType(m_DeclContextDecl);
-    Expr* Arg1 = utils::Synthesize::CStyleCastPtrExpr(m_Sema, DCTy, 
+    Expr* Arg1 = utils::Synthesize::CStyleCastPtrExpr(m_Sema, DCTy,
                                                     (uint64_t)m_CurDeclContext);
     CallArgs.push_back(Arg1);
 
@@ -681,7 +681,7 @@ namespace cling {
     InitListExpr* ILE = m_Sema->ActOnInitList(m_NoSLoc,
                                               Inits,
                                               m_NoELoc).takeAs<InitListExpr>();
-    TypeSourceInfo* TSI 
+    TypeSourceInfo* TSI
       = m_Context->getTrivialTypeSourceInfo(VarAddrTy, m_NoSLoc);
     Expr* ExprAddresses = m_Sema->BuildCompoundLiteralExpr(m_NoSLoc,
                                                            TSI,
@@ -708,7 +708,7 @@ namespace cling {
     QualType ExprInfoTy = m_Context->getTypeDeclType(m_DynamicExprInfoDecl);
     ExprResult Initializer = m_Sema->ActOnParenListExpr(m_NoSLoc, m_NoELoc,
                                                         CtorArgs);
-    TypeSourceInfo* TrivialTSI 
+    TypeSourceInfo* TrivialTSI
       = m_Context->getTrivialTypeSourceInfo(ExprInfoTy, SourceLocation());
     Expr* Result = m_Sema->BuildCXXNew(m_NoSLoc,
                                        /*UseGlobal=*/false,
@@ -846,7 +846,7 @@ namespace cling {
 
     bool VisitDeclStmt(DeclStmt* DS) {
       DeclGroupRef DGR = DS->getDeclGroup();
-      for (DeclGroupRef::const_iterator I = DGR.begin(), 
+      for (DeclGroupRef::const_iterator I = DGR.begin(),
              E = DGR.end(); I != E; ++I) {
         if (isCandidate(*I)) {
           m_ShouldVisitSubTree = true;
@@ -855,7 +855,7 @@ namespace cling {
       }
       return true;
     }
-    
+
     // In cases when there is no decl stmt, like dep->Call();
     bool VisitDeclRefExpr(DeclRefExpr* DRE) {
       if (isCandidate(DRE->getDecl())) {
@@ -866,7 +866,7 @@ namespace cling {
     }
   };
 
-  bool EvaluateTSynthesizer::ShouldVisit(Decl* D) {    
+  bool EvaluateTSynthesizer::ShouldVisit(Decl* D) {
     DeclVisitor Visitor;
     Visitor.TraverseStmt(D->getBody());
     return Visitor.getShouldVisitSubTree();

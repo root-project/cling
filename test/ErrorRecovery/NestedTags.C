@@ -16,7 +16,7 @@ Currently, builtins cannot reliably ignored in the comparison of before and
 
 // : cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
-// Tests the removal of nested decls 
+// Tests the removal of nested decls
 .storeState "testNestedDecls1"
 struct Outer { struct Inner { enum E{i = 1}; }; };error_here; // expected-error {{use of undeclared identifier 'error_here'}}
 .compareState "testNestedDecls1"
@@ -33,7 +33,7 @@ enum AnEnum {
 // CHECK-NOT: Differences
 
 .rawInput
-namespace Outer { struct Inner { enum E{i = 2}; }; }; 
+namespace Outer { struct Inner { enum E{i = 2}; }; };
 .rawInput
 
 enum A{a};

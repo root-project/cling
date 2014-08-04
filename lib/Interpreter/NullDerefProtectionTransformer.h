@@ -21,7 +21,7 @@ namespace cling {
 
   class NullDerefProtectionTransformer : public TransactionTransformer {
 
-   
+
     public:
       ///\ brief Constructs the NullDeref AST Transformer.
       ///

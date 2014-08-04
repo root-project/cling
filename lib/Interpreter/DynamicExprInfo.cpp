@@ -25,7 +25,7 @@ namespace runtime {
         m_Result = m_Result.erase(found, 1);
         ++i;
       }
- 
+
       return m_Result.c_str();
     }
   } // end namespace internal

@@ -33,7 +33,7 @@ if (!fromJIT) printf("gMyGlobal should come from JIT!\n");
 printf("gMyGlobal: %s\n", comp(addr1, addr2)); // CHECK: gMyGlobal: equal
 
 .rawInput
-namespace N { 
+namespace N {
    int gMyGlobal = 13;
 }
 .rawInput

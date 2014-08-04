@@ -14,7 +14,7 @@ B<cling> [B<-c>|B<-S>|B<-E>] B<-std=>I<standard> B<-g>
   B<-f>I<feature-option...>
   B<-m>I<machine-option...>
   B<-o> I<output-file>
-  B<-stdlib=>I<library> 
+  B<-stdlib=>I<library>
   I<input-filenames>
 
 =head1 DESCRIPTION

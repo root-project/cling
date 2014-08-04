@@ -33,15 +33,15 @@ namespace runtime {
     ///
     class DynamicExprInfo {
     private:
-      
+
       /// \brief The expression template.
       const char* m_Template;
-      
+
       std::string m_Result;
-      
+
       /// \brief The variable list.
       void** m_Addresses;
-      
+
       /// \brief The variable is set if it is required to print out the result of
       /// the dynamic expression after evaluation
       bool m_ValuePrinterReq;
@@ -49,14 +49,14 @@ namespace runtime {
       DynamicExprInfo(const char* templ, void* addresses[], bool valuePrinterReq)
         : m_Template(templ), m_Result(templ), m_Addresses(addresses),
           m_ValuePrinterReq(valuePrinterReq) {}
-      
+
       ///\brief Performs the insertions of the context in the expression just
       /// before evaluation. To be used only at runtime.
       ///
       const char* getExpr();
       bool isValuePrinterRequested() { return m_ValuePrinterReq; }
       const char* getTemplate() const { return m_Template; }
-    };    
+    };
   } // end namespace internal
 } // end namespace runtime
 } // end namespace cling

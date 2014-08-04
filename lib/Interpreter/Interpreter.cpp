@@ -99,7 +99,7 @@ namespace cling {
   }
 
   void Interpreter::PushTransactionRAII::pop() const {
-    if (Transaction* T 
+    if (Transaction* T
         = m_Interpreter->m_IncrParser->endTransaction(m_Transaction)) {
       assert(T == m_Transaction && "Ended different transaction?");
       m_Interpreter->m_IncrParser->commitTransaction(T);
@@ -499,7 +499,7 @@ namespace cling {
     return Interpreter::kSuccess;
   }
 
-  Interpreter::CompilationResult 
+  Interpreter::CompilationResult
   Interpreter::parse(const std::string& input, Transaction** T /*=0*/) const {
     CompilationOptions CO;
     CO.CodeGeneration = 0;
@@ -518,7 +518,7 @@ namespace cling {
     //Copied from clang's PPDirectives.cpp
     bool isAngled = false;
     // Clang doc says:
-    // "LookupFrom is set when this is a \#include_next directive, it specifies 
+    // "LookupFrom is set when this is a \#include_next directive, it specifies
     // the file to start searching from."
     const DirectoryLookup* LookupFrom = 0;
     const DirectoryLookup* CurDir = 0;
@@ -535,7 +535,7 @@ namespace cling {
     // Copied from PPDirectives.cpp
     SmallVector<std::pair<IdentifierInfo *, SourceLocation>, 2> path;
     for (Module *mod = suggestedModule.getModule(); mod; mod = mod->Parent) {
-      IdentifierInfo* II 
+      IdentifierInfo* II
         = &getSema().getPreprocessor().getIdentifierTable().get(mod->Name);
       path.push_back(std::make_pair(II, fileNameLoc));
     }
@@ -576,7 +576,7 @@ namespace cling {
                               clang::diag::MAP_IGNORE, SourceLocation());
     return DeclareInternal(input, CO);
   }
-  
+
   Interpreter::CompilationResult
   Interpreter::declare(const std::string& input, Transaction** T/*=0 */) {
     CompilationOptions CO;
@@ -918,7 +918,7 @@ namespace cling {
   }
 
   Interpreter::CompilationResult
-  Interpreter::DeclareInternal(const std::string& input, 
+  Interpreter::DeclareInternal(const std::string& input,
                                const CompilationOptions& CO,
                                Transaction** T /* = 0 */) const {
     StateDebuggerRAII stateDebugger(this);
@@ -929,7 +929,7 @@ namespace cling {
           *T = lastT;
         return Interpreter::kSuccess;
       }
-      return Interpreter::kFailure;     
+      return Interpreter::kFailure;
     }
 
     // Even if the transaction was empty it is still success.
@@ -1082,17 +1082,17 @@ namespace cling {
                                        bool ValuePrinterReq) {
     Sema& TheSema = getCI()->getSema();
     // The evaluation should happen on the global scope, because of the wrapper
-    // that is created. 
+    // that is created.
     //
     // We can't PushDeclContext, because we don't have scope.
-    Sema::ContextRAII pushDC(TheSema, 
+    Sema::ContextRAII pushDC(TheSema,
                              TheSema.getASTContext().getTranslationUnitDecl());
 
     Value Result;
     getCallbacks()->SetIsRuntime(true);
     if (ValuePrinterReq)
       echo(expr, &Result);
-    else 
+    else
       evaluate(expr, Result);
     getCallbacks()->SetIsRuntime(false);
 

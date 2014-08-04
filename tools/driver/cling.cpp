@@ -62,7 +62,7 @@ int main( int argc, char **argv ) {
     ui.runInteractively(interp.getOptions().NoLogo);
   }
 
-  bool ret = CI->getDiagnostics().getClient()->getNumErrors();   
+  bool ret = CI->getDiagnostics().getClient()->getNumErrors();
 
   // if we are running with -verify a reported has to be returned as unsuccess.
   // This is relevant especially for the test suite.

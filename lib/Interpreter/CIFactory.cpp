@@ -55,7 +55,7 @@ using namespace clang;
 
 // FIXME: This code has been taken (copied from) llvm/tools/clang/lib/Driver/WindowsToolChain.cpp
 // and should probably go to some platform utils place.
-// the code for VS 11.0 and 12.0 common tools (vs110comntools and vs120comntools) 
+// the code for VS 11.0 and 12.0 common tools (vs110comntools and vs120comntools)
 // has been implemented (added) in getVisualStudioDir()
 #ifdef _MSC_VER
 
@@ -383,7 +383,7 @@ namespace cling {
     else {
       llvm::errs()
         << "Warning in cling::CIFactory::createCI():\n  "
-        "Possible C++ standard library mismatch, compiled with Visual Studio v" 
+        "Possible C++ standard library mismatch, compiled with Visual Studio v"
         << VSVersion << ".0,\n"
         "but this version of Visual Studio was not found in your system's registry.\n";
     }

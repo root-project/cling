@@ -303,7 +303,7 @@ namespace cling {
       // Sort them alphabetically
       std::sort(elems.begin(), elems.end());
     }
-    for(std::vector<std::string>::iterator I = elems.begin(), 
+    for(std::vector<std::string>::iterator I = elems.begin(),
           E = elems.end(); I != E; ++I)
       Out << *I << '\n';
     Out.flush();

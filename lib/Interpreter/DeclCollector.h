@@ -28,8 +28,8 @@ namespace cling {
 
   ///\brief Collects declarations and fills them in cling::Transaction.
   ///
-  /// cling::Transaction becomes is a main building block in the interpreter. 
-  /// cling::DeclCollector is responsible for appending all the declarations 
+  /// cling::Transaction becomes is a main building block in the interpreter.
+  /// cling::DeclCollector is responsible for appending all the declarations
   /// seen by clang.
   ///
   class DeclCollector: public clang::PPCallbacks, public clang::ASTConsumer  {
@@ -65,8 +65,8 @@ namespace cling {
     Transaction* getTransaction() { return m_CurTransaction; }
     const Transaction* getTransaction() const { return m_CurTransaction; }
     void setTransaction(Transaction* curT) { m_CurTransaction = curT; }
-    void setTransaction(const Transaction* curT) { 
-      m_CurTransaction = const_cast<Transaction*>(curT); 
+    void setTransaction(const Transaction* curT) {
+      m_CurTransaction = const_cast<Transaction*>(curT);
     }
 
     /// \}

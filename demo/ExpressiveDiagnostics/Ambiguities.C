@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// The demo shows ambiguities in the virtual tables and the nice, expressive 
+// The demo shows ambiguities in the virtual tables and the nice, expressive
 // and accurate errors from clang.
 // Author: Vassil Vassilev <vvasilev@cern.ch>
 

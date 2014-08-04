@@ -396,7 +396,7 @@ namespace cling {
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
     Preprocessor& PP = S.getPreprocessor();
-    
+
     IdentifierInfo *dataII = &PP.getIdentifierTable().get(dataName);
     DeclarationName decl_name( dataII );
 
@@ -528,7 +528,7 @@ namespace cling {
     QualType ClassType;
     Expr::Classification ObjExprClassification;
     if (CXXRecordDecl* CRD = dyn_cast<CXXRecordDecl>(foundDC)) {
-      if (objectIsConst) 
+      if (objectIsConst)
         ClassType = Context.getTypeDeclType(CRD).getCanonicalType().withConst();
       else ClassType = Context.getTypeDeclType(CRD).getCanonicalType();
       OpaqueValueExpr ObjExpr(SourceLocation(),
@@ -645,7 +645,7 @@ namespace cling {
                                                            FuncNameInfo,
                                                            FuncTemplateArgs,
                                                            Context,P,S);
-    
+
     if (TheDecl) {
       if ( IsOverload(Context, FuncTemplateArgs, GivenArgs, TheDecl) ) {
         return 0;
@@ -673,7 +673,7 @@ namespace cling {
                                  Parser &P, Sema &S,
                                  UnqualifiedId &FuncId,
                                  LookupHelper::DiagSetting diagOnOff) {
-     
+
     // Use a very simple parse step that dectect whether the name search (which
     // is already supposed to be an unqualified name) is a simple identifier,
     // a constructor name or a destructor name.  In those 3 cases, we can easily
@@ -681,25 +681,25 @@ namespace cling {
     // parse.  By using this direct creation of the UnqualifiedId, we avoid the
     // 'permanent' cost associated with creating a memory buffer and the
     // associated FileID.
-     
+
     // If the name is a template or an operator, we revert to the regular parse
     // (and its associated permanent cost).
-     
+
     // In the operator case, the additional work is in the case of a conversion
     // operator where we would need to 'quickly' parse the type itself (if want
     // to avoid the permanent cost).
-     
+
     // In the case with the template the problem gets a bit worse as we need to
     // handle potentially arbitrary spaces and ordering
     // ('const int' vs 'int  const', etc.)
-     
+
     if (funcName.size() == 0) return false;
     Preprocessor& PP = S.getPreprocessor();
 
     // See if we can avoid creating the buffer, for now we just look for
     // simple indentifier, constructor and destructor.
-     
-     
+
+
     if (funcName.size() > 8 && strncmp(funcName.data(),"operator",8) == 0
                &&(   funcName[8] == ' ' || funcName[8] == '*'
                   || funcName[8] == '%' || funcName[8] == '&'
@@ -779,7 +779,7 @@ namespace cling {
       PP.EnterSourceFile(FID, /*DirLookup=*/0, clang::SourceLocation());
       PP.Lex(const_cast<clang::Token&>(P.getCurToken()));
     }
-      
+
 
     //
     //  Parse the function name.
@@ -796,7 +796,7 @@ namespace cling {
     return true;
   }
 
-   
+
   template <typename T>
   T findFunction(DeclContext* foundDC, CXXScopeSpec &SS,
                  llvm::StringRef funcName,
@@ -902,7 +902,7 @@ namespace cling {
     //
     //  Create the array of Expr from the array of Types.
     //
-     
+
     typedef llvm::SmallVectorImpl<QualType>::const_iterator iterator;
     for(iterator iter = GivenTypes.begin(), end = GivenTypes.end();
         iter != end;
@@ -962,7 +962,7 @@ namespace cling {
     }
     for(unsigned int slot = 0; slot < nargs; ++slot) {
        Expr* val = (OpaqueValueExpr*)( &ExprMemory[slot] );
-       GivenArgs.push_back(val);  
+       GivenArgs.push_back(val);
     }
     if (P.getCurToken().isNot(tok::eof)) {
       // We did not consume all of the prototype, bad parse.
@@ -1171,7 +1171,7 @@ namespace cling {
         return 0;
       }
     }
-      
+
     //
     //  Parse the prototype now.
     //
@@ -1184,7 +1184,7 @@ namespace cling {
                         overloadFunctionSelector,
                         diagOnOff);
   }
-   
+
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
                                                       llvm::StringRef funcName,
                                                       llvm::StringRef funcProto,
@@ -1294,7 +1294,7 @@ namespace cling {
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
     ASTContext& Context = S.getASTContext();
-      
+
     //
     //  Convert the passed decl into a nested name specifier,
     //  a scope spec, and a decl context.
@@ -1305,8 +1305,8 @@ namespace cling {
     CXXScopeSpec SS;
     DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
     if (!foundDC) return 0;
-      
-     
+
+
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
@@ -1314,7 +1314,7 @@ namespace cling {
         return 0;
       }
     }
-      
+
     //
     //  Parse the prototype now.
     //
@@ -1327,7 +1327,7 @@ namespace cling {
                         matchFunctionSelector,
                         diagOnOff);
   }
-   
+
   static
   bool ParseArgs(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                  ASTContext& Context, Parser &P, Sema &S) {
@@ -1437,7 +1437,7 @@ namespace cling {
     //  Some utilities.
     //
     // Use P for shortness
-    Parser& P = *m_Parser;    
+    Parser& P = *m_Parser;
     ParserStateRAII ResetParserState(P);
     prepareForParsing(argList, llvm::StringRef("arg.list.file"), diagOnOff);
     //

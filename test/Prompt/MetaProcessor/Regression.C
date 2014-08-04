@@ -13,7 +13,7 @@
 
 // PR #93092
 // Don't remove the spaces and tabs
-.L     cling/Interpreter/Interpreter.h    
+.L     cling/Interpreter/Interpreter.h
 .X ./DotXable.h(5)
 // CHECK: 5
 // End PR #93092

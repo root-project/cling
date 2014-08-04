@@ -27,7 +27,7 @@ namespace cling {
 
     ///\brief Exception that is thrown when a null pointer dereference is found
     /// or a method taking non-null arguments is called with NULL argument.
-    /// 
+    ///
     class NullDerefException : public InterpreterException {
     private:
       clang::Sema* m_Sema;
@@ -41,4 +41,4 @@ namespace cling {
     };
   } // end namespace runtime
 } // end namespace cling
-#endif // CLING_RUNTIME_EXCEPTION_H 
+#endif // CLING_RUNTIME_EXCEPTION_H

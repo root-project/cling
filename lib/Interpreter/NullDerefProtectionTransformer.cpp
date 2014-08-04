@@ -49,7 +49,7 @@ namespace cling {
     }
 
     bool isSingleStmt() const { return m_Stmts.size() == 1; }
-    
+
     clang::Stmt* getStmt() {
       assert(isSingleStmt() && "Cannot get multiple stmts.");
       return m_Stmts.front();
@@ -66,7 +66,7 @@ namespace cling {
       clang::SourceLocation noLoc;
       return new (C) clang::CompoundStmt(C, stmts, noLoc, noLoc);
     }
-    
+
     clang::Expr* getExpr() {
       assert(llvm::isa<clang::Expr>(getStmt()) && "Must be an expression.");
       return llvm::cast<clang::Expr>(getStmt());
@@ -91,7 +91,7 @@ namespace cling {
     std::map<clang::FunctionDecl*, std::bitset<32> > m_NonNullArgIndexs;
 
   public:
-    IfStmtInjector(Sema& S) : m_Sema(S) {} 
+    IfStmtInjector(Sema& S) : m_Sema(S) {}
     CompoundStmt* Inject(CompoundStmt* CS) {
       NodeContext result = VisitCompoundStmt(CS);
       return cast<CompoundStmt>(result.getStmt());
@@ -114,8 +114,8 @@ namespace cling {
       }
 
       llvm::ArrayRef<Stmt*> stmtsRef(stmts.data(), stmts.size());
-      CompoundStmt* newCS = new (C) CompoundStmt(C, stmtsRef, 
-                                                 CS->getLBracLoc(), 
+      CompoundStmt* newCS = new (C) CompoundStmt(C, stmtsRef,
+                                                 CS->getLBracLoc(),
                                                  CS->getRBracLoc());
       return NodeContext(newCS);
     }
@@ -136,13 +136,13 @@ namespace cling {
 
     NodeContext VisitBinaryOperator(BinaryOperator* BinOp) {
       NodeContext result(BinOp);
-      
+
       // Here we might get if(check) throw; binop rhs.
       NodeContext rhs = Visit(BinOp->getRHS());
       // Here we might get if(check) throw; binop lhs.
       NodeContext lhs = Visit(BinOp->getLHS());
 
-      // Prepend those checks. It will become: 
+      // Prepend those checks. It will become:
       // if(check_rhs) throw; if (check_lhs) throw; BinOp;
       if (!rhs.isSingleStmt()) {
         // FIXME:we need to loop from 0 to n-1
@@ -158,7 +158,7 @@ namespace cling {
     NodeContext VisitUnaryOperator(UnaryOperator* UnOp) {
       NodeContext result(UnOp);
       if (UnOp->getOpcode() == UO_Deref) {
-        result.prepend(SynthesizeCheck(UnOp->getLocStart(), 
+        result.prepend(SynthesizeCheck(UnOp->getLocStart(),
                                        UnOp->getSubExpr()));
       }
       return result;
@@ -166,8 +166,8 @@ namespace cling {
 
     NodeContext VisitMemberExpr(MemberExpr* ME) {
       NodeContext result(ME);
-      if (ME->isArrow()) {        
-        result.prepend(SynthesizeCheck(ME->getLocStart(), 
+      if (ME->isArrow()) {
+        result.prepend(SynthesizeCheck(ME->getLocStart(),
                                        ME->getBase()->IgnoreImplicit()));
       }
       return result;
@@ -217,7 +217,7 @@ namespace cling {
       Expr *args[] = {VoidSemaArg, VoidExprArg};
 
       Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
-      DeclarationName Name 
+      DeclarationName Name
         = &Context.Idents.get("cling__runtime__internal__throwNullDerefException");
 
       SourceLocation noLoc;

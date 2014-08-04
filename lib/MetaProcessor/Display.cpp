@@ -72,14 +72,14 @@ bool HasUDT(const Decl* decl)
 int NumberOfElements(const ArrayType* type)
 {
   assert(type != 0 && "NumberOfElements, 'type' parameter is null");
-  
+
   if (const ConstantArrayType* const arrayType = dyn_cast<ConstantArrayType>(type)) {
     //We can calculate only the size of constant size array.
     //no conv. to int :(
     const int nElements = int(arrayType->getSize().roundToDouble());
     if (nElements <= 0)
       return 0;
-    
+
     if (const Type* elementType = arrayType->getElementType().getTypePtr()) {
       if (const ArrayType* subArrayType = elementType->getAsArrayTypeUnsafe())
         return nElements* NumberOfElements(subArrayType);
@@ -102,7 +102,7 @@ void AppendClassDeclLocation(const CompilerInstance* compiler, const CXXRecordDe
   const char* const emptyName = "";
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
-  
+
   if (compiler->hasSourceManager()) {
     const SourceManager &sourceManager = compiler->getSourceManager();
     PresumedLoc loc(sourceManager.getPresumedLoc(classDecl->getLocation()));
@@ -168,11 +168,11 @@ void AppendMacroLocation(const CompilerInstance* compiler, const MacroInfo* macr
   //TODO: check what does location for macro definition really means -
   //macro can be defined many times, what do we have in a TranslationUnit in this case?
   //At the moment this function is similar to AppendDeclLocation.
-  
+
   const char* const unknownLocation = "(unknown)";
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
-  
+
   if (compiler->hasSourceManager()) {
     const SourceManager &sourceManager = compiler->getSourceManager();
     PresumedLoc loc(sourceManager.getPresumedLoc(macroInfo->getDefinitionLoc()));
@@ -214,7 +214,7 @@ void AppendClassName(const CXXRecordDecl* classDecl, std::string& name)
 void AppendMemberAccessSpecifier(const Decl* memberDecl, std::string& name)
 {
   assert(memberDecl != 0 && "AppendMemberAccessSpecifier, 'memberDecl' parameter is 0");
-  
+
   switch (memberDecl->getAccess()) {
   case AS_private:
     name += "private:";
@@ -225,7 +225,7 @@ void AppendMemberAccessSpecifier(const Decl* memberDecl, std::string& name)
   case AS_public:
   case AS_none://Public or private?
     name += "public:";
-  }  
+  }
 }
 
 //______________________________________________________________________________
@@ -245,10 +245,10 @@ void AppendConstructorSignature(const CXXConstructorDecl* ctorDecl, std::string&
 
   name += ctorDecl->getNameInfo().getAsString();
   name += "(";
-  
+
   if (ft) {
     llvm::raw_string_ostream stream(name);
-    
+
     for (unsigned i = 0, e = ctorDecl->getNumParams(); i != e; ++i) {
       if (i)
         stream << ", ";
@@ -321,7 +321,7 @@ void AppendClassSize(const CompilerInstance* compiler, const RecordDecl* decl,
 {
   assert(compiler != 0 && "AppendClassSize, 'compiler' parameter is null");
   assert(decl != 0 && "AppendClassSize, 'decl' parameter is null");
-  
+
   if (dyn_cast<ClassTemplatePartialSpecializationDecl>(decl)) {
     textLine += "SIZE: (NA)";
     return;
@@ -340,13 +340,13 @@ void AppendUDTSize(const CompilerInstance* compiler, const Decl* decl, std::stri
 {
   assert(compiler != 0 && "AppendUDTSize, 'compiler' parameter is null");
   assert(decl != 0 && "AppendUDTSize, 'decl' parameter is null");
-  
+
   std::string formatted;
-  
+
   {
   llvm::raw_string_ostream rss(formatted);
   llvm::formatted_raw_ostream frss(rss);
-  
+
   if (const RecordType* const recordType = decl->getType()->template getAs<RecordType>()) {
     if (const RecordDecl* const recordDecl = cast_or_null<RecordDecl>(recordType->getDecl()->getDefinition())) {
       const ASTRecordLayout& layout = compiler->getASTContext().getASTRecordLayout(recordDecl);
@@ -363,9 +363,9 @@ void AppendUDTSize(const CompilerInstance* compiler, const Decl* decl, std::stri
       }
     }
   }
-  
+
   }
-  
+
   formatted.length() ? textLine += formatted : textLine += "NA";
 }
 
@@ -397,7 +397,7 @@ void AppendDataMemberOffset(const CompilerInstance* compiler, const CXXRecordDec
   assert(fieldDecl != 0 && "AppendDataMemberOffset, 'fieldDecl' parameter is null");
 
   const ASTRecordLayout& layout = compiler->getASTContext().getASTRecordLayout(classDecl);
-  
+
   std::string formatted;
   //
   llvm::raw_string_ostream rss(textLine);
@@ -453,7 +453,7 @@ public:
   void DisplayClass(const std::string& className)const;
 
   void SetVerbose(bool verbose);
-  
+
   void Reset();
 private:
 
@@ -468,7 +468,7 @@ private:
   void ProcessLinkageSpecDecl(decl_iterator decl)const;
   void ProcessClassDecl(decl_iterator decl)const;
   void ProcessClassTemplateDecl(decl_iterator decl)const;
-  
+
   template<class Decl>
   void ProcessTypeOfMember(const Decl* decl, unsigned nSpaces)const
   {
@@ -546,10 +546,10 @@ void ClassPrinter::DisplayClass(const std::string& className)const
     if (const CXXRecordDecl* const classDecl = dyn_cast<CXXRecordDecl>(decl)) {
       if (classDecl->hasDefinition())
         DisplayClassDecl(classDecl);
-      else 
-        fOut.Print(("The class " + className + 
+      else
+        fOut.Print(("The class " + className +
                     " does not have any definition available\n").c_str());
-    } else 
+    } else
        fOut.Print(("A " + std::string(decl->getDeclKindName()) + " declaration"
                    " was found for " + className + "\n").c_str());
   } else
@@ -718,7 +718,7 @@ void ClassPrinter::ProcessClassTemplateDecl(decl_iterator decl)const
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   //Now we have to display all the specialization (/instantiations)
-  for (ClassTemplateDecl::spec_iterator spec = templateDecl->spec_begin(); 
+  for (ClassTemplateDecl::spec_iterator spec = templateDecl->spec_begin();
        spec != templateDecl->spec_end(); ++spec)
      ProcessDecl(decl_iterator( *spec ));
 }
@@ -779,10 +779,10 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
 
     DisplayBasesAsTree(classDecl, 0);
     //now list all members.40963410
-    
+
     fOut.Print("List of member variables --------------------------------------------------\n");
     DisplayDataMembers(classDecl, 0);
-    
+
     fOut.Print("List of member functions :---------------------------------------------------\n");
     //CINT has a format like %-15s blah-blah.
     fOut.Print("filename     line:size busy function type and name\n");
@@ -919,7 +919,7 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl* classDecl)const
   for (ctor_iterator ctor = classDecl->ctor_begin(); ctor != classDecl->ctor_end(); ++ctor) {
     if (ctor->isImplicit())//Compiler-generated.
       continue;
-  
+
     textLine.clear();
     AppendMemberFunctionLocation(fInterpreter->getCI(), *ctor, textLine);
     textLine += ' ';
@@ -933,10 +933,10 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl* classDecl)const
   for (method_iterator method = classDecl->method_begin(); method != classDecl->method_end(); ++method) {
     if (method->getKind() == Decl::CXXConstructor)
       continue;
-    
+
     if (method->isImplicit())//Compiler-generated.
       continue;
-    
+
     textLine.clear();
     AppendMemberFunctionLocation(fInterpreter->getCI(), *method, textLine);
     textLine += ' ';
@@ -946,14 +946,14 @@ void ClassPrinter::DisplayMemberFunctions(const CXXRecordDecl* classDecl)const
     textLine += ";\n";
     fOut.Print(textLine.c_str());
   }
-  
+
   //Now, the problem: template member-functions are not in the list of methods.
   //I have to additionally scan class declarations.
   for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl) {
     if (decl->getKind() == Decl::FunctionTemplate) {
       const FunctionTemplateDecl* const ftDecl = dyn_cast<FunctionTemplateDecl>(*decl);
       assert(ftDecl != 0 && "DisplayMemberFunctions, decl is not a function template");
-      
+
       textLine.clear();
       AppendMemberFunctionLocation(fInterpreter->getCI(), *decl, textLine);
       textLine += ' ';
@@ -1036,10 +1036,10 @@ void ClassPrinter::DisplayDataMembers(const CXXRecordDecl* classDecl, unsigned n
           AppendDeclLocation(fInterpreter->getCI(), *enumerator, textLine);
           textLine += gap;
           textLine += "0x0      ";//offset is meaningless.
-          
+
           AppendMemberAccessSpecifier(*enumerator, textLine);
           textLine += ' ';
-          //{//Block to force flush for stream.            
+          //{//Block to force flush for stream.
           //llvm::raw_string_ostream stream(textLine);
           const QualType type(enumerator->getType());
           //const LangOptions lo;
@@ -1094,7 +1094,7 @@ public:
   void DisplayGlobal(const std::string& name)const;
 
 private:
-  
+
   void DisplayVarDecl(const VarDecl* varDecl)const;
   void DisplayEnumeratorDecl(const EnumConstantDecl* enumerator)const;
   void DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo, const MacroInfo* macroInfo)const;
@@ -1120,7 +1120,7 @@ void GlobalsPrinter::DisplayGlobals()const
   typedef Preprocessor::macro_iterator macro_iterator;
 
   assert(fInterpreter != 0 && "DisplayGlobals, fInterpreter is null");
-  
+
   const CompilerInstance* const compiler = fInterpreter->getCI();
   assert(compiler != 0 && "DisplayGlobals, compiler instance is null");
 
@@ -1161,20 +1161,20 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
 {
   typedef EnumDecl::enumerator_iterator enumerator_iterator;
   typedef Preprocessor::macro_iterator macro_iterator;
-  
+
   //TODO: is it ok to compare 'name' with decl->getNameAsString() ??
 
   assert(fInterpreter != 0 && "DisplayGlobal, fInterpreter is null");
-  
+
   const CompilerInstance* const compiler = fInterpreter->getCI();
   assert(compiler != 0 && "DisplayGlobal, compiler instance is null");
-  
+
   const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayGlobal, translation unit is empty");
-  
+
   //fSeenDecls.clear();
   bool found = false;
-  
+
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   const Preprocessor& pp = compiler->getPreprocessor();
@@ -1187,7 +1187,7 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
       }
     }
   }
-  
+
   for (decl_iterator decl = tuDecl->decls_begin(); decl != tuDecl->decls_end(); ++decl) {
     if (const VarDecl* const varDecl = dyn_cast<VarDecl>(*decl)) {
       if (varDecl->getNameAsString() == name) {
@@ -1218,12 +1218,12 @@ void GlobalsPrinter::DisplayVarDecl(const VarDecl* varDecl) const
 {
   assert(fInterpreter != 0 && "DisplayVarDecl, fInterpreter is null");
   assert(varDecl != 0 && "DisplayVarDecl, 'varDecl' parameter is null");
-  
+
   const LangOptions langOpts;
   PrintingPolicy printingPolicy(langOpts);
   printingPolicy.SuppressSpecifiers = false;
   printingPolicy.SuppressInitializers = false;
-  
+
   std::string textLine;
 
   AppendDeclLocation(fInterpreter->getCI(), varDecl, textLine);
@@ -1234,12 +1234,12 @@ void GlobalsPrinter::DisplayVarDecl(const VarDecl* varDecl) const
   textLine += " (address: NA) ";
 
   AppendObjectDeclaration(varDecl, printingPolicy, false, textLine);
-  
+
   if (HasUDT(varDecl)) {
     textLine += ", size = ";
     AppendUDTSize(fInterpreter->getCI(), varDecl, textLine);
   }
-  
+
   textLine += "\n";
   fOut.Print(textLine.c_str());
 }
@@ -1253,11 +1253,11 @@ void GlobalsPrinter::DisplayEnumeratorDecl(const EnumConstantDecl* enumerator)co
   const LangOptions langOpts;
   PrintingPolicy printingPolicy(langOpts);
   printingPolicy.SuppressInitializers = false;
-  
+
   std::string textLine;
-  
+
   AppendDeclLocation(fInterpreter->getCI(), enumerator, textLine);
-  
+
   textLine += " (address: NA) ";//No address, that's an enumerator.
 
   const QualType type(enumerator->getType());
@@ -1265,7 +1265,7 @@ void GlobalsPrinter::DisplayEnumeratorDecl(const EnumConstantDecl* enumerator)co
   textLine += ' ';
 
   AppendObjectDeclaration(enumerator, printingPolicy, false, textLine);
-  
+
   textLine += "\n";
   fOut.Print(textLine.c_str());
 }
@@ -1278,24 +1278,24 @@ void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo
   assert(macroInfo != 0 && "DisplayObjectLikeMacro, 'macroInfo' parameter is null");
 
   std::string textLine;
-  
+
   AppendMacroLocation(fInterpreter->getCI(), macroInfo, textLine);
-  
+
   textLine += " (address: NA) #define ";//No address exists for a macro definition.
-  
+
   textLine += identifierInfo->getName().data();
-  
+
   if (macroInfo->getNumTokens())
     textLine += " =";
 
   assert(fInterpreter->getCI() != 0 && "DisplayObjectLikeMacro, compiler instance is null");
   const Preprocessor &pp = fInterpreter->getCI()->getPreprocessor();
-  
+
   for (unsigned i = 0, e = macroInfo->getNumTokens(); i < e; ++i) {
     textLine += ' ';
     textLine += pp.getSpelling(macroInfo->getReplacementToken(i));
   }
-  
+
   fOut.Print(textLine.c_str());
   fOut.Print("\n");
 }
@@ -1304,7 +1304,7 @@ void GlobalsPrinter::DisplayObjectLikeMacro(const IdentifierInfo* identifierInfo
 class NamespacePrinter {
 public:
    NamespacePrinter(llvm::raw_ostream& stream, const Interpreter* interpreter);
-   
+
    void Print()const;
 
 private:
@@ -1362,12 +1362,12 @@ void NamespacePrinter::ProcessNamespaceDeclaration(decl_iterator declIt,
     if (enclosingNamespaceName.length())
       name += "::";
     name += nsDecl->getNameAsString();
-    
+
     if (nsDecl->isOriginalNamespace()) {
       fOut.Print(name.c_str());
       fOut.Print("\n");
     }
-  
+
     if (const auto ctx = dyn_cast<DeclContext>(*declIt)) {
       for (auto it = ctx->decls_begin(), eIt = ctx->decls_end(); it != eIt; ++it) {
         if (it->getKind() == Decl::Namespace ||
@@ -1419,7 +1419,7 @@ TypedefPrinter::TypedefPrinter(llvm::raw_ostream& stream, const Interpreter* int
 void TypedefPrinter::DisplayTypedefs()const
 {
   assert(fInterpreter != 0 && "DisplayTypedefs, fInterpreter is null");
-  
+
   const CompilerInstance* const compiler = fInterpreter->getCI();
   assert(compiler != 0 && "DisplayTypedefs, compiler instance is null");
 
@@ -1436,7 +1436,7 @@ void TypedefPrinter::DisplayTypedefs()const
 void TypedefPrinter::DisplayTypedef(const std::string& typedefName)const
 {
   assert(fInterpreter != 0 && "DisplayTypedef, fInterpreter is null");
-  
+
   const cling::LookupHelper &lookupHelper = fInterpreter->getLookupHelper();
   const QualType type
     = lookupHelper.findType(typedefName, cling::LookupHelper::NoDiagnostics);
@@ -1446,10 +1446,10 @@ void TypedefPrinter::DisplayTypedef(const std::string& typedefName)const
       if (typedefType->getDecl()) {
         DisplayTypedefDecl(typedefType->getDecl());
         return;
-      } else 
+      } else
         fOut.Print(("A " + std::string(type->getTypeClassName()) + " declaration"
                     " was found for " + typedefName + "\n").c_str());
-     
+
     }
   }
 
@@ -1493,16 +1493,16 @@ void TypedefPrinter::ProcessDecl(decl_iterator decl)const
     if (FunctionDecl * const funDecl = dyn_cast<FunctionDecl>(*decl))
       ProcessNestedDeclarations(funDecl);
     break;
-  }  
+  }
 }
 
 //______________________________________________________________________________
 void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
 {
-  assert(typedefDecl != 0 
+  assert(typedefDecl != 0
          && "DisplayTypedefDecl, parameter 'typedefDecl' is null");
   assert(fInterpreter != 0 && "DisplayTypedefDecl, fInterpreter is null");
-  
+
   std::string textLine;
   AppendDeclLocation(fInterpreter->getCI(), typedefDecl, textLine);
 
@@ -1519,7 +1519,7 @@ void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
        getDesugaredType(typedefDecl->getASTContext()).print(out,printingPolicy);
     //Name for diagnostic will include template arguments if any.
     typedefDecl->getNameForDiagnostic(out,
-                                      printingPolicy,/*qualified=*/true);    
+                                      printingPolicy,/*qualified=*/true);
   }
 
   fOut.Print(textLine.c_str());
@@ -1548,7 +1548,7 @@ void DisplayClass(llvm::raw_ostream& stream, const Interpreter* interpreter,
 
   while (std::isspace(*className))
     ++className;
-  
+
   ClassPrinter printer(stream, interpreter);
 
   if (*className) {
@@ -1565,7 +1565,7 @@ void DisplayNamespaces(llvm::raw_ostream &stream, const Interpreter *interpreter
 {
   assert(interpreter != 0 && "DisplayNamespaces, parameter 'interpreter' is null");
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
-  
+
   NamespacePrinter printer(stream, interpreter);
   Interpreter::PushTransactionRAII guard(const_cast<Interpreter *>(interpreter));
   printer.Print();
@@ -1575,7 +1575,7 @@ void DisplayNamespaces(llvm::raw_ostream &stream, const Interpreter *interpreter
 void DisplayGlobals(llvm::raw_ostream& stream, const Interpreter* interpreter)
 {
   assert(interpreter != 0 && "DisplayGlobals, 'interpreter' parameter is null");
-  
+
   GlobalsPrinter printer(stream, interpreter);
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
@@ -1587,7 +1587,7 @@ void DisplayGlobal(llvm::raw_ostream& stream, const Interpreter* interpreter,
                    const std::string& name)
 {
   assert(interpreter != 0 && "DisplayGlobal, 'interpreter' parameter is null");
-  
+
   GlobalsPrinter printer(stream, interpreter);
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
@@ -1598,7 +1598,7 @@ void DisplayGlobal(llvm::raw_ostream& stream, const Interpreter* interpreter,
 void DisplayTypedefs(llvm::raw_ostream &stream, const Interpreter *interpreter)
 {
    assert(interpreter != 0 && "DisplayTypedefs, parameter 'interpreter' is null");
-   
+
    TypedefPrinter printer(stream, interpreter);
    // Could trigger deserialization of decls.
    Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(interpreter));
@@ -1610,7 +1610,7 @@ void DisplayTypedef(llvm::raw_ostream &stream, const Interpreter *interpreter,
                     const std::string &name)
 {
    assert(interpreter != 0 && "DisplayTypedef, parameter 'interpreter' is null");
-   
+
    TypedefPrinter printer(stream, interpreter);
    printer.DisplayTypedef(name);
 }

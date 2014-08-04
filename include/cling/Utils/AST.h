@@ -35,14 +35,14 @@ namespace clang {
 namespace cling {
 namespace utils {
 
-  ///\brief Class containing static utility functions analizing ASTNodes or 
+  ///\brief Class containing static utility functions analizing ASTNodes or
   /// types.
   namespace Analyze {
 
     ///\brief Checks whether the declaration is a interpreter-generated wrapper
     /// function.
     ///
-    ///\param[in] ND - The decl being checked. If null returns false. 
+    ///\param[in] ND - The decl being checked. If null returns false.
     ///
     ///\returns true if the decl is a interpreter-generated wrapper function.
     ///
@@ -64,13 +64,13 @@ namespace utils {
     /// Useful for value printing (deciding where to attach the value printer)
     /// and value evaluation (deciding that is the type of a value)
     ///
-    ///\param[in] FD            - The declaration being analyzed. 
+    ///\param[in] FD            - The declaration being analyzed.
     ///\param[in] FoundAt       - The position of the expression to be returned
     ///                           in function's body.
     ///\param[in] omitDeclStmts - Whether or not to synthesize DeclRefExpr if
     ///                           there is DeclStmt.
-    ///\param[in] S             - The semantic analysis object used for 
-    ///                           synthesis of the DeclRefExpr. 
+    ///\param[in] S             - The semantic analysis object used for
+    ///                           synthesis of the DeclRefExpr.
     ///\returns 0 if the operation wasn't successful.
     ///
     clang::Expr* GetOrCreateLastExpr(clang::FunctionDecl* FD,
@@ -142,7 +142,7 @@ namespace utils {
       typedef const clang::Type cType;
       typedef llvm::SmallSet<cType*, 4> SkipCollection;
       typedef llvm::DenseMap<cType*, cType*> ReplaceCollection;
-      
+
       SkipCollection    m_toSkip;
       ReplaceCollection m_toReplace;
 
@@ -154,7 +154,7 @@ namespace utils {
 
       bool empty() const { return m_toSkip.size()==0 && m_toReplace.empty(); }
     };
-     
+
     ///\brief Remove one layer of sugar, but only some kinds.
     bool SingleStepPartiallyDesugarType(clang::QualType& QT,
                                         const clang::ASTContext& C);
@@ -165,7 +165,7 @@ namespace utils {
     /// sugared type, which is to be skipped.
     ///\param[in] Ctx - The ASTContext.
     ///\param[in] QT - The type to be partially desugared.
-    ///\param[in] TypeConfig - The set of sugared types which shouldn't be 
+    ///\param[in] TypeConfig - The set of sugared types which shouldn't be
     ///                        desugared and those that should be replaced.
     ///\param[in] fullyQualify - if true insert Elaborated where needed.
     ///\returns Partially desugared QualType
@@ -179,15 +179,15 @@ namespace utils {
 
   ///\brief Class containing static utility functions looking up names. Very
   /// useful for quick, simple lookups.
-  /// 
+  ///
   namespace Lookup {
 
-    ///\brief Quick lookup for a single namespace declaration in a given 
+    ///\brief Quick lookup for a single namespace declaration in a given
     /// declaration context.
     ///
     ///\param[in] S - Semantic Analysis object doing the lookup.
     ///\param[in] Name - The name we are looking up.
-    ///\param[in] Within - The context within the lookup is done. If 0 the 
+    ///\param[in] Within - The context within the lookup is done. If 0 the
     ///                    TranslationUnitDecl is used.
     ///\returns the found NamespaceDecl or 0.
     ///
@@ -195,12 +195,12 @@ namespace utils {
                                     const char* Name,
                                     const clang::DeclContext* Within = 0);
 
-    ///\brief Quick lookup for a single named declaration in a given 
+    ///\brief Quick lookup for a single named declaration in a given
     /// declaration context.
     ///
     ///\param[in] S - Semantic Analysis object doing the lookup.
     ///\param[in] Name - The name we are looking up.
-    ///\param[in] Within - The context within the lookup is done. If 0 the 
+    ///\param[in] Within - The context within the lookup is done. If 0 the
     ///                    TranslationUnitDecl is used.
     ///\returns the found result if single, -1 if multiple or 0 if not found.
     ///
@@ -208,13 +208,13 @@ namespace utils {
                             const char* Name,
                             const clang::DeclContext* Within = 0);
 
-    ///\brief Quick lookup for a single namespace declaration in a given 
+    ///\brief Quick lookup for a single namespace declaration in a given
     /// declaration context.
     ///
     ///\param[in] S - Semantic Analysis object doing the lookup.
-    ///\param[in] Name - The name we are looking up. The & avoids inclusion of 
+    ///\param[in] Name - The name we are looking up. The & avoids inclusion of
     ///                  DeclarationName.h (faster at runtime).
-    ///\param[in] Within - The context within the lookup is done. If 0 the 
+    ///\param[in] Within - The context within the lookup is done. If 0 the
     ///                    TranslationUnitDecl is used.
     ///\returns the found result if single, -1 if multiple or 0 if not found.
     ///

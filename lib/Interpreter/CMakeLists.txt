@@ -51,7 +51,7 @@ add_cling_library(clingInterpreter
   clangBasic
   clangAST
   )
-  
+
 if(NOT WIN32)
 set_source_files_properties(RuntimeException.cpp COMPILE_FLAGS -fexceptions)
 endif()

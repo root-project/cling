@@ -279,7 +279,7 @@ namespace cling {
     ///
     bool GetChildren(ASTNodes& Children, clang::Stmt* Node);
 
-    /// \brief Creates unique name (eg. of a variable). Used internally for 
+    /// \brief Creates unique name (eg. of a variable). Used internally for
     /// AST node synthesis.
     ///
     void createUniqueName(std::string& out);

@@ -33,7 +33,7 @@ void generateNestedTransaction(int depth) {
     sprintf(buff, "int i%d;", depth);
     gCling->process(buff);
   } // this will cause every even transaction to be reused.
-  generateNestedTransaction(--depth);  
+  generateNestedTransaction(--depth);
 }
 
 .rawInput 0

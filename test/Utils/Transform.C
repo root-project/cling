@@ -53,7 +53,7 @@ namespace Details {
 namespace NS {
   template <typename T, int size = 0> class ArrayType {};
   template <typename T> class Array {};
-  
+
   template <typename T> class Container {
   public:
     class Content {};
@@ -86,10 +86,10 @@ public:
   enum Eenum {
     kEnumConst=16
   };
-  
+
   class EmbeddedClasses;
-  typedef EmbeddedClasses EmbeddedTypedef; 
-  
+  typedef EmbeddedClasses EmbeddedTypedef;
+
   class EmbeddedClasses {
   public:
     class Embedded1 {};
@@ -104,7 +104,7 @@ public:
   EmbeddedClasses::Embedded1 m_emb1;
   EmbeddedClasses::Embedded2 m_emb2;
   EmbeddedClasses::Embedded3 m_emb3;
-  
+
   EmbeddedTypedef::Embedded4 m_emb4;
   Embedded_objects::EmbeddedClasses::Embedded5 m_emb5;
   Embedded_objects::EmbeddedTypedef::Embedded6 m_emb6;
@@ -205,7 +205,7 @@ QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 // CHECK: ({{[^)]+}}) "class <anonymous namespace>::InsideAnonymous"
 
-// The above result is not quite want we want, so the client must using 
+// The above result is not quite want we want, so the client must using
 // the following:
 // The scope suppression is required for getting rid of the anonymous part of the name of a class defined in an anonymous namespace.
 // This gives us more control vs not using the clang::ElaboratedType and relying on the Policy.SuppressUnwrittenScope which would

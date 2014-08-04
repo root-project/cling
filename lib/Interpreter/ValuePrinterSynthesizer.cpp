@@ -30,12 +30,12 @@ using namespace clang;
 
 namespace cling {
 
-  ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S, 
+  ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S,
                                                    llvm::raw_ostream* Stream)
     : TransactionTransformer(S), m_Context(&S->getASTContext()) {
     if (Stream)
       m_ValuePrinterStream.reset(Stream);
-    else 
+    else
       m_ValuePrinterStream.reset(new llvm::raw_os_ostream(std::cout));
   }
 
@@ -45,7 +45,7 @@ namespace cling {
   { }
 
   void ValuePrinterSynthesizer::Transform() {
-    if (getTransaction()->getCompilationOpts().ValuePrinting 
+    if (getTransaction()->getCompilationOpts().ValuePrinting
         == CompilationOptions::VPDisabled)
       return;
 
@@ -61,7 +61,7 @@ namespace cling {
     // 2: Expression printing auto - analyze - rely on the omitted ';' to
     //    not produce the suppress marker.
     int indexOfLastExpr = -1;
-    Expr* To = utils::Analyze::GetOrCreateLastExpr(FD, &indexOfLastExpr, 
+    Expr* To = utils::Analyze::GetOrCreateLastExpr(FD, &indexOfLastExpr,
                                                    /*omitDS*/false,
                                                    m_Sema);
     if (To) {
@@ -101,7 +101,7 @@ namespace cling {
         // Strip the parenthesis if any
         if (ParenExpr* PE = dyn_cast<ParenExpr>(To))
           To = PE->getSubExpr();
-            
+
         Expr* Result = 0;
         // if (!m_Sema->getLangOpts().CPlusPlus)
         //   Result = SynthesizeVP(To);
@@ -149,10 +149,10 @@ namespace cling {
       = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
 
 
-    Expr* VoidEArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema, 
+    Expr* VoidEArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
                                                           m_Context->VoidPtrTy,
                                                           (uint64_t)E);
-    Expr* VoidCArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema, 
+    Expr* VoidCArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
                                                           m_Context->VoidPtrTy,
                                                           (uint64_t)m_Context);
 

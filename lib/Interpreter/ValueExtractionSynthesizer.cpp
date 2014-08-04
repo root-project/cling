@@ -91,7 +91,7 @@ namespace cling {
       if (RS) {
         // When we are handling a return stmt, the last expression must be the
         // return stmt value. Ignore the calculation of the lastStmt because it
-        // might be wrong, in cases where the return is not in the end of the 
+        // might be wrong, in cases where the return is not in the end of the
         // function.
         lastExpr = RS->getRetValue();
         if (lastExpr) {

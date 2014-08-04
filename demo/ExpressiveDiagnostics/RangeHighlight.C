@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// The demo shows when there is an error in a subexpression the relevant 
+// The demo shows when there is an error in a subexpression the relevant
 // subexpression is highlighted
 // Author: Vassil Vassilev <vvasilev@cern.ch>
 

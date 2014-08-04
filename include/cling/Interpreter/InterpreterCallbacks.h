@@ -54,13 +54,13 @@ namespace cling {
     ///
     llvm::OwningPtr<InterpreterExternalSemaSource> m_ExternalSemaSource;
 
-    ///\brief Our custom ASTDeserializationListener, translating interesting 
+    ///\brief Our custom ASTDeserializationListener, translating interesting
     /// events into callbacks.
     ///
     llvm::
     OwningPtr<InterpreterDeserializationListener> m_DeserializationListener;
 
-    ///\brief Our custom PPCallbacks, translating interesting 
+    ///\brief Our custom PPCallbacks, translating interesting
     /// events into interpreter callbacks.
     ///
     InterpreterPPCallbacks* m_PPCallbacks;
@@ -69,8 +69,8 @@ namespace cling {
     ///
     bool m_IsRuntime;
   protected:
-    void UpdateWithNewDecls(const clang::DeclContext *DC, 
-                            clang::DeclarationName Name, 
+    void UpdateWithNewDecls(const clang::DeclContext *DC,
+                            clang::DeclarationName Name,
                             llvm::ArrayRef<clang::NamedDecl*> Decls);
   public:
     ///\brief Constructs the callbacks.
@@ -88,10 +88,10 @@ namespace cling {
     ///\brief Constructs the callbacks with default callback adaptors.
     ///
     ///\param[in] interp - an interpreter.
-    ///\param[in] enableExternalSemaSourceCallbacks  - creates a default 
+    ///\param[in] enableExternalSemaSourceCallbacks  - creates a default
     ///           InterpreterExternalSemaSource and attaches it to Sema.
     ///\param[in] enableDeserializationListenerCallbacks - creates a default
-    ///           InterpreterDeserializationListener and attaches it to the 
+    ///           InterpreterDeserializationListener and attaches it to the
     ///           ModuleManager if it is set.
     ///\param[in] enablePPCallbacks  - creates a default InterpreterPPCallbacks
     ///           and attaches it to the Preprocessor.
@@ -106,7 +106,7 @@ namespace cling {
     cling::Interpreter* getInterpreter() const { return m_Interpreter; }
     clang::ExternalSemaSource* getInterpreterExternalSemaSource() const;
 
-    clang::ASTDeserializationListener* 
+    clang::ASTDeserializationListener*
     getInterpreterDeserializationListener() const;
 
    virtual void InclusionDirective(clang::SourceLocation /*HashLoc*/,
@@ -119,7 +119,7 @@ namespace cling {
                                    llvm::StringRef /*RelativePath*/,
                                    const clang::Module* /*Imported*/) {}
 
-    virtual bool FileNotFound(llvm::StringRef FileName, 
+    virtual bool FileNotFound(llvm::StringRef FileName,
                               llvm::SmallVectorImpl<char>& RecoveryPath);
 
     /// \brief This callback is invoked whenever the interpreter needs to

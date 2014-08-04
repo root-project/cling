@@ -17,15 +17,15 @@ ul#mainmenu li {
 .tab_link {
     font: 1.0em Arial,Helvetica, sans-serif;
     font-variant: small-caps;
-    display: block; 
-    float: left; 
+    display: block;
+    float: left;
     text-align: center;
     text-decoration: none;
     line-height: 30px;
     margin: 5px 5px 0px 5px;
     padding: 0px 20px 5px 20px;
     color: #DDD;
-} 
+}
 
 li.selected a.tab_link {
     background-color: #F4F4EE;
@@ -119,7 +119,7 @@ ul#mainmenu li:hover > a.tab_link {
 .column ul {
     color: #FFF;
     text-align: left;
-    margin-left: 1em;   
+    margin-left: 1em;
 }
 
 ul#mainmenu .column ul li {

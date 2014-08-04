@@ -56,28 +56,28 @@ namespace cling {
     ///
     bool ExtractDecl(clang::FunctionDecl* FD);
 
-    /// \brief Creates unique name (eg. of a variable). Used internally for 
+    /// \brief Creates unique name (eg. of a variable). Used internally for
     /// AST node synthesis.
     ///
     void createUniqueName(std::string& out);
 
     ///\brief Enforces semantically correct initialization order.
     ///
-    /// If we consider \code int i = 1; i++; int j = i; \endcode the code 
+    /// If we consider \code int i = 1; i++; int j = i; \endcode the code
     /// snippet will be transformed into
-    /// \code int i; int j = i; void __cling_wrapper() { int++ } \endcode and 
+    /// \code int i; int j = i; void __cling_wrapper() { int++ } \endcode and
     /// the result of will be 1 and not 2. This function scans whether there is
     /// more than one declaration and generates:
-    /// \code 
+    /// \code
     /// int i = 1;
     /// int __fd_init_order__cling_Un1Qu30() {
     ///   i++;
     /// }
     /// int __vd_init_order__cling_Un1Qu31 = __fd_init_order__cling_Un1Qu30();
-    /// int j = i; 
+    /// int j = i;
     /// \endcode
     ///
-    ///\param[in] Stmts - Collection for which have to run as part of the 
+    ///\param[in] Stmts - Collection for which have to run as part of the
     ///                   static initialization.
     ///
     void EnforceInitOrder(llvm::SmallVectorImpl<clang::Stmt*>& Stmts);

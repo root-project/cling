@@ -1,4 +1,4 @@
-html { 
+html {
     height: 100%;
 }
 
@@ -18,7 +18,7 @@ p {
     line-height: 1.7em;
 }
 
-img { 
+img {
     border: 0;
 }
 
@@ -33,11 +33,11 @@ h2 {
     color: #B60000;
 }
 
-h3 { 
+h3 {
     font: normal 155% 'century gothic', arial, sans-serif;
 }
 
-h4, h5, h6 { 
+h4, h5, h6 {
     margin: 0;
     padding: 0 0 5px 0;
     font: normal 120% arial, sans-serif;
@@ -83,7 +83,7 @@ hr {
     clear: both;
 }
 
-a, a:hover { 
+a, a:hover {
     outline: none;
     text-decoration: underline;
     color: #A4AA04;
@@ -105,19 +105,19 @@ a.readmore {
 }
 
 .right {
-    float: right; 
+    float: right;
     width: auto;
     margin-left: 10px;
 }
 
-.center { 
+.center {
     display: block;
     text-align: center;
     margin: 20px auto;
 }
 
 blockquote {
-    margin: 20px 0; 
+    margin: 20px 0;
     padding: 10px 20px 0 20px;
     border: 1px solid #E5E5DB;
     background: #FFF;
@@ -129,7 +129,7 @@ ul {
 
 ul li {
     list-style-type: circle;
-    margin: 0 0 6px 0; 
+    margin: 0 0 6px 0;
     padding: 0 0 4px 5px;
 }
 
@@ -141,7 +141,7 @@ ol li {
     margin: 0 0 11px 0;
 }
 
-#website { 
+#website {
     padding-bottom: 20px;
 }
 
@@ -150,7 +150,7 @@ ol li {
     height: 180px;
 }
 
-#logo { 
+#logo {
     min-width: 860px;
     max-width: 1024px;
     position: relative;
@@ -161,7 +161,7 @@ ol li {
 }
 
 #logo #logo_text {
-    position: absolute; 
+    position: absolute;
     top: 10px;
     left: 0;
 }
@@ -180,7 +180,7 @@ ol li {
     text-decoration: none;
 }
 
-#logo_text h1 a .logo_colour { 
+#logo_text h1 a .logo_colour {
     color: #ECEF01;
 }
 
@@ -218,7 +218,7 @@ ol li {
     background: #FFF;
     border-radius: 20px; -moz-border-radius: 20px;
     border: 1px solid #ECECE0;
-} 
+}
 
 .sidebar {
     float: right;
@@ -229,21 +229,21 @@ ol li {
     -moz-border-radius: 20px; border-radius: 20px;
 }
 .sidebar ul {
-    width: 178px; 
-    padding: 4px 0 0 0; 
+    width: 178px;
+    padding: 4px 0 0 0;
     margin: 4px 0 30px 0;
 }
 
 .sidebar li {
-    list-style: none; 
-    padding: 0 0 7px 0; 
+    list-style: none;
+    padding: 0 0 7px 0;
 }
 
 .sidebar li a, .sidebar li a:hover {
     padding: 0 0 0 35px;
     display: block;
     background: transparent url(link.png) no-repeat left center;
-} 
+}
 
 .sidebar li a.selected {
     color: #444;
@@ -264,7 +264,7 @@ ol li {
 #main ul li {
     list-style-type: none;
     background: url(bullet.png) no-repeat;
-    margin: 0.5em 0 0 0; 
+    margin: 0.5em 0 0 0;
     padding: 0 0 0 25px;
     line-height: 1.5em;
 }
@@ -275,7 +275,7 @@ ol li {
     margin-top: 20px;
     padding: 20px 0 5px 0;
     margin: 0 auto;
-    text-align: center; 
+    text-align: center;
     background: transparent;
     color: #333;
     text-transform: uppercase;
@@ -287,7 +287,7 @@ ol li {
     text-decoration: none;
 }
 
-#footer a:hover { 
+#footer a:hover {
     color: #333;
 }
 
@@ -299,10 +299,10 @@ ol li {
 }
 
 .search {
-    color: #5D5D5D; 
-    border: 1px solid #BBB; 
-    width: 134px; 
-    padding: 4px; 
+    color: #5D5D5D;
+    border: 1px solid #BBB;
+    width: 134px;
+    padding: 4px;
     font: 100% arial, sans-serif;
 }
 
@@ -310,39 +310,39 @@ ol li {
     margin: 15px 0 0 0;
 }
 
-.form_settings p { 
+.form_settings p {
     padding: 0 0 4px 0;
 }
 
 .form_settings span {
-    float: left; 
-    width: 200px; 
+    float: left;
+    width: 200px;
     text-align: left;
 }
-  
+
 .form_settings input, .form_settings textarea {
-    padding: 5px; 
-    width: 299px; 
-    font: 100% arial; 
-    border: 1px solid #E5E5DB; 
-    background: #FFF; 
+    padding: 5px;
+    width: 299px;
+    font: 100% arial;
+    border: 1px solid #E5E5DB;
+    background: #FFF;
     color: #47433F;
 }
-  
+
 .form_settings .submit {
-    font: 100% arial; 
-    border: 1px solid; 
-    width: 99px; 
-    margin: 0 0 0 212px; 
+    font: 100% arial;
+    border: 1px solid;
+    width: 99px;
+    margin: 0 0 0 212px;
     height: 33px;
     padding: 2px 0 3px 0;
-    cursor: pointer; 
-    background: #3B3B3B; 
+    cursor: pointer;
+    background: #3B3B3B;
     color: #FFF;
 }
 
-.form_settings textarea, .form_settings select { 
-    font: 100% arial; 
+.form_settings textarea, .form_settings select {
+    font: 100% arial;
     width: 299px;
 }
 
@@ -351,8 +351,8 @@ ol li {
 }
 
 .form_settings .checkbox {
-    margin: 4px 0; 
-    padding: 0; 
+    margin: 4px 0;
+    padding: 0;
     width: 14px;
     border: 0;
     background: none;
@@ -368,17 +368,17 @@ ol li {
 
 table {
     margin: 10px 0 30px 0;
-    width: 100%; 
+    width: 100%;
     border-spacing: 0;
 }
 
-table tr th, table tr td { 
+table tr th, table tr td {
     background: #3B3B3B;
     color: #FFF;
     padding: 7px 4px;
     text-align: left;
 }
-  
+
 table tr td {
     background: #F4F4EE;
     color: #47433F;

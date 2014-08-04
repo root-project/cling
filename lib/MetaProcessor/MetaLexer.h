@@ -78,7 +78,7 @@ namespace cling {
     const char* bufferEnd;
     const char* curPos;
   public:
-    MetaLexer(const char* bufStart) 
+    MetaLexer(const char* bufStart)
       : bufferStart(bufStart), curPos(bufStart)
     { }
     MetaLexer(llvm::StringRef input);
@@ -96,7 +96,7 @@ namespace cling {
     void LexWhitespace(char C, Token& Tok);
     void SkipWhitespace();
     inline char getAndAdvanceChar(const char *&Ptr) {
-      return *Ptr++; 
+      return *Ptr++;
     }
   };
 } //end namespace cling

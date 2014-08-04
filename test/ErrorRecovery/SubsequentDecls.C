@@ -8,7 +8,7 @@
 
 // RUN: cat %s | %cling -I%p -Xclang -verify 2>&1 | FileCheck %s
 
-// Test the removal of decls which are stored in vector of redeclarables 
+// Test the removal of decls which are stored in vector of redeclarables
 .rawInput 1
 extern int __my_i;
 template<typename T> T TemplatedF(T t);
@@ -31,14 +31,14 @@ template<> int TemplatedF(int i) { return i + 100; }
 int OverloadedF(int i) { return i + 100;}
 .rawInput 0
 
-int __my_i = 10 
+int __my_i = 10
 // CHECK: (int) 10
-OverloadedF(__my_i) 
+OverloadedF(__my_i)
 // CHECK: (int) 110
-TemplatedF(__my_i) 
+TemplatedF(__my_i)
 // CHECK: (int) 110
 
-TemplatedF((double)3.14) 
-// CHECK: IncrementalExecutor::executeFunction: symbol '_Z10TemplatedFIdET_S0_' unresolved while linking function 
+TemplatedF((double)3.14)
+// CHECK: IncrementalExecutor::executeFunction: symbol '_Z10TemplatedFIdET_S0_' unresolved while linking function
 
 .q

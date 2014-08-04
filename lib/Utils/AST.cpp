@@ -1067,7 +1067,7 @@ namespace utils {
 
           template<class T> using ptr = T*;
           ptr<Double32_t> p2;
-        
+
         // as the target is not a template.
         */
         // So for now just return move on with the least lose we can do

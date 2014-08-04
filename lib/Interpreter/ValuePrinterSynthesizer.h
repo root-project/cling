@@ -46,7 +46,7 @@ public:
     ///\param[in] Stream - The output stream where the value printer will write
     ///                    to. Defaults to std::cout. Owns the stream.
     ValuePrinterSynthesizer(clang::Sema* S, llvm::raw_ostream* Stream);
-    
+
     virtual ~ValuePrinterSynthesizer();
 
     virtual void Transform();
@@ -58,7 +58,7 @@ public:
     ///\param[in] FD - wrapper function that the value printer will attached to.
     ///
     ///\returns true if the attachment was considered as success. I.e. even if
-    /// even if the value printer wasn't attached because of the compilation 
+    /// even if the value printer wasn't attached because of the compilation
     /// options disallowint it - it will return still true. Returns false on
     /// critical error.
     bool tryAttachVP(clang::FunctionDecl* FD);

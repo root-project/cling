@@ -27,7 +27,7 @@ namespace cling {
     ///\brief Needed for the AST transformations, owned by Sema.
     ///
     clang::ASTContext* m_Context;
-    
+
     ///\brief cling::runtime::gCling variable cache.
     ///
     clang::VarDecl* m_gClingVD;
@@ -83,7 +83,7 @@ public:
     ///
     clang::Expr* SynthesizeSVRInit(clang::Expr* E);
 
-    // Find and cache cling::runtime::gCling, setValueNoAlloc, 
+    // Find and cache cling::runtime::gCling, setValueNoAlloc,
     // setValueWithAlloc on first request.
     void FindAndCacheRuntimeDecls();
   };

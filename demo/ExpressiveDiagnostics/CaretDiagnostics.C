@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// The demo shows that cling (clang) can report even the column number of the 
+// The demo shows that cling (clang) can report even the column number of the
 // error and emit caret
 // Author: Vassil Vassilev <vvasilev@cern.ch>
 

@@ -66,14 +66,14 @@ namespace {
 
 namespace cling {
 
-  DeclExtractor::DeclExtractor(Sema* S) 
-    : TransactionTransformer(S), m_Context(&S->getASTContext()), 
+  DeclExtractor::DeclExtractor(Sema* S)
+    : TransactionTransformer(S), m_Context(&S->getASTContext()),
       m_UniqueNameCounter(0)
   { }
 
   // pin the vtable here
-  DeclExtractor::~DeclExtractor() 
-  { } 
+  DeclExtractor::~DeclExtractor()
+  { }
 
   void DeclExtractor::Transform() {
     if (!getTransaction()->getCompilationOpts().DeclarationExtraction)
@@ -99,7 +99,7 @@ namespace cling {
         Stmts.push_back(*I);
         continue;
       }
-      
+
       for (DeclStmt::decl_iterator J = DS->decl_begin();
            J != DS->decl_end(); ++J) {
         NamedDecl* ND = dyn_cast<NamedDecl>(*J);
@@ -134,7 +134,7 @@ namespace cling {
           if (ND->getDeclContext() == ND->getLexicalDeclContext()
               || isa<FunctionDecl>(ND))
             ND->setLexicalDeclContext(DC);
-          else 
+          else
             assert(0 && "Not implemented: Decl with different lexical context");
           ND->setDeclContext(DC);
 
@@ -160,7 +160,7 @@ namespace cling {
                                   m_Sema->getScopeForContext(DC),
                     /*AddCurContext*/!isa<UsingDirectiveDecl>(TouchedDecls[i]));
 
-        // The transparent DeclContexts (eg. scopeless enum) doesn't have 
+        // The transparent DeclContexts (eg. scopeless enum) doesn't have
         // scopes. While extracting their contents we need to update the
         // lookup tables and telling them to pick up the new possitions
         // in the AST.
@@ -169,7 +169,7 @@ namespace cling {
             // We can't PushDeclContext, because we don't have scope.
             Sema::ContextRAII pushedDC(*m_Sema, InnerDC);
 
-            for(DeclContext::decl_iterator DI = InnerDC->decls_begin(), 
+            for(DeclContext::decl_iterator DI = InnerDC->decls_begin(),
                   DE = InnerDC->decls_end(); DI != DE ; ++DI) {
               if (NamedDecl* ND = dyn_cast<NamedDecl>(*DI))
                 InnerDC->makeDeclVisibleInContext(ND);
@@ -235,7 +235,7 @@ namespace cling {
         IntegerLiteral* ZeroLit
           = IntegerLiteral::Create(*m_Context, ZeroInt, m_Context->IntTy,
                                    SourceLocation());
-        Stmts.push_back(m_Sema->ActOnReturnStmt(ZeroLit->getExprLoc(), 
+        Stmts.push_back(m_Sema->ActOnReturnStmt(ZeroLit->getExprLoc(),
                                                 ZeroLit).take());
       }
 
@@ -247,7 +247,7 @@ namespace cling {
       // We know the transaction is closed, but it is safe.
       getTransaction()->forceAppend(FD);
 
-      // Create the VarDecl with the init      
+      // Create the VarDecl with the init
       std::string VarName = "__vd";
       createUniqueName(VarName);
       IdentifierInfo& IIVD = m_Context->Idents.get(VarName);
@@ -259,7 +259,7 @@ namespace cling {
       CXXScopeSpec CSS;
       Expr* UnresolvedLookup
         = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
-      Expr* TheCall = m_Sema->ActOnCallExpr(TUScope, UnresolvedLookup, Loc, 
+      Expr* TheCall = m_Sema->ActOnCallExpr(TUScope, UnresolvedLookup, Loc,
                                             MultiExprArg(), Loc).take();
       assert(VD && TheCall && "Missing VD or its init!");
       VD->setInit(TheCall);

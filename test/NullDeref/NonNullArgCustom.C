@@ -8,15 +8,15 @@
 
 // RUN: cat %s | %cling -Xclang -verify
 
-// We must be able to handle cases where, there is a custom function that has 
-// attributes non-null arguments and we should be able to add a non-null arg 
+// We must be able to handle cases where, there is a custom function that has
+// attributes non-null arguments and we should be able to add a non-null arg
 // attribute to a say library function.
 
 // Qualified functions.
 extern "C" int printf(const char* fmt, ...);
 namespace custom_namespace {
   void standaloneFunc(void* p, int q, float* s) __attribute__((nonnull(1,3))) { // expected-warning {{GCC does not allow 'nonnull' attribute in this position on a function definition}}
-    if (!p || !s) 
+    if (!p || !s)
       printf("Must not be called with 0 args.\n");
   }
   void standaloneFunc2(void* p, int q, float* s) __attribute__((nonnull(3)));

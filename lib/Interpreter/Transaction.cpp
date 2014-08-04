@@ -40,7 +40,7 @@ namespace cling {
     m_State = kCollecting;
     m_IssuedDiags = kNone;
     m_Opts = CompilationOptions();
-    m_Module = 0; 
+    m_Module = 0;
     m_WrapperFD = 0;
     m_Next = 0;
     //m_Sema = S;
@@ -50,7 +50,7 @@ namespace cling {
   Transaction::~Transaction() {
     if (hasNestedTransactions())
       for (size_t i = 0; i < m_NestedTransactions->size(); ++i) {
-        assert(((*m_NestedTransactions)[i]->getState() == kCommitted 
+        assert(((*m_NestedTransactions)[i]->getState() == kCommitted
                 || (*m_NestedTransactions)[i]->getState() == kRolledBack)
                && "All nested transactions must be committed!");
         delete (*m_NestedTransactions)[i];
@@ -96,7 +96,7 @@ namespace cling {
   }
 
   void Transaction::reset() {
-    assert((empty() || getState() == kRolledBack) 
+    assert((empty() || getState() == kRolledBack)
            && "The transaction must be empty.");
     // When we unload we want to clear the containers.
     if (!empty()) {
@@ -115,7 +115,7 @@ namespace cling {
     m_WrapperFD = 0;
     m_Next = 0;
   }
- 
+
   void Transaction::append(DelayCallInfo DCI) {
     assert(!DCI.m_DGR.isNull() && "Appending null DGR?!");
     assert(getState() == kCollecting
@@ -134,9 +134,9 @@ namespace cling {
     // Check for duplicates
     for (size_t i = 0, e = m_DeclQueue.size(); i < e; ++i) {
       DelayCallInfo &oldDCI (m_DeclQueue[i]);
-      // FIXME: This is possible bug in clang, which will instantiate one and 
+      // FIXME: This is possible bug in clang, which will instantiate one and
       // the same CXXStaticMemberVar several times. This happens when there are
-      // two dependent expressions and the first uses another declaration from 
+      // two dependent expressions and the first uses another declaration from
       // the redeclaration chain. This will force Sema in to instantiate the
       // definition (usually the most recent decl in the chain) and then the
       // second expression might referece the definition (which was already)
@@ -149,7 +149,7 @@ namespace cling {
         continue;
       // It is possible to have duplicate calls to HandleVTable with the same
       // declaration, because each time Sema believes a vtable is used it emits
-      // that callback. 
+      // that callback.
       // For reference (clang::CodeGen::CodeGenModule::EmitVTable).
       if (oldDCI.m_Call != kCCIHandleVTable)
         assert(oldDCI != DCI && "Duplicates?!");
@@ -157,7 +157,7 @@ namespace cling {
     // We want to assert there is only one wrapper per transaction.
     checkForWrapper = true;
 #endif
-    
+
     // register the wrapper if any.
     if (checkForWrapper && !DCI.m_DGR.isNull() && DCI.m_DGR.isSingleDecl()) {
       if (FunctionDecl* FD = dyn_cast<FunctionDecl>(DCI.m_DGR.getSingleDecl())){
@@ -167,7 +167,7 @@ namespace cling {
         }
       }
     }
-    
+
     if (comesFromASTReader(DCI.m_DGR))
       m_DeserializedDeclQueue.push_back(DCI);
     else
@@ -218,10 +218,10 @@ namespace cling {
     print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
-  void Transaction::DelayCallInfo::print(llvm::raw_ostream& Out, 
+  void Transaction::DelayCallInfo::print(llvm::raw_ostream& Out,
                                          const PrintingPolicy& Policy,
-                                         unsigned Indent, 
-                                         bool PrintInstantiation, 
+                                         unsigned Indent,
+                                         bool PrintInstantiation,
                                     llvm::StringRef prependInfo /*=""*/) const {
     static const char* const stateNames[Transaction::kCCINumStates] = {
       "kCCINone",
@@ -233,7 +233,7 @@ namespace cling {
       "kCCIHandleCXXStaticMemberVarInstantiation",
       "kCCICompleteTentativeDefinition",
     };
-    assert((sizeof(stateNames) /sizeof(void*)) == Transaction::kCCINumStates 
+    assert((sizeof(stateNames) /sizeof(void*)) == Transaction::kCCINumStates
            && "Missing states?");
     if (!prependInfo.empty()) {
       Out.changeColor(llvm::raw_ostream::RED);
@@ -242,11 +242,11 @@ namespace cling {
       Out << ", ";
     }
     Out.changeColor(llvm::raw_ostream::BLUE);
-    Out << stateNames[m_Call]; 
+    Out << stateNames[m_Call];
     Out.changeColor(llvm::raw_ostream::GREEN);
     Out << " <- ";
     Out.resetColor();
-    for (DeclGroupRef::const_iterator I = m_DGR.begin(), E = m_DGR.end(); 
+    for (DeclGroupRef::const_iterator I = m_DGR.begin(), E = m_DGR.end();
          I != E; ++I) {
         if (*I)
           (*I)->print(Out, Policy, Indent, PrintInstantiation);
@@ -319,11 +319,11 @@ namespace cling {
       "RolledBackWithErrors",
       "Committed"
     };
-    assert((sizeof(stateNames) / sizeof(void*)) == kNumStates 
+    assert((sizeof(stateNames) / sizeof(void*)) == kNumStates
            && "Missing a state to print.");
     std::string indent(nindent, ' ');
     llvm::errs() << indent << "Transaction @" << this << ": \n";
-    for (const_nested_iterator I = nested_begin(), E = nested_end(); 
+    for (const_nested_iterator I = nested_begin(), E = nested_end();
          I != E; ++I) {
       (*I)->printStructure(nindent + 3);
     }
@@ -342,12 +342,12 @@ namespace cling {
 
   void Transaction::printStructureBrief(size_t nindent /*=0*/) const {
     std::string indent(nindent, ' ');
-    llvm::errs() << indent << "<cling::Transaction* " << this 
+    llvm::errs() << indent << "<cling::Transaction* " << this
                  << " isEmpty=" << empty();
     llvm::errs() << " isCommitted=" << (getState() == kCommitted);
     llvm::errs() <<"> \n";
 
-    for (const_nested_iterator I = nested_begin(), E = nested_end(); 
+    for (const_nested_iterator I = nested_begin(), E = nested_end();
          I != E; ++I) {
       llvm::errs() << indent << "`";
       (*I)->printStructureBrief(nindent + 3);

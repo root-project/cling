@@ -329,7 +329,7 @@ namespace clang {
     ///
     bool VisitTagDecl(TagDecl* TD);
 
-    ///\brief Removes a RecordDecl. We shouldn't remove the implicit class 
+    ///\brief Removes a RecordDecl. We shouldn't remove the implicit class
     /// declaration.
     ///\param[in] RD - The declaration to be removed.
     ///
@@ -348,7 +348,7 @@ namespace clang {
     ///@name Templates
     ///@{
 
-    ///\brief Removes template from the redecl chain. Templates are 
+    ///\brief Removes template from the redecl chain. Templates are
     /// redeclarables also.
     /// @param[in] R - The declaration to be removed.
     ///
@@ -396,7 +396,7 @@ namespace clang {
     ///                MacroDirective to forward.
     ///\returns true on success.
     ///
-    bool UnloadMacro(Transaction::MacroDirectiveInfo MD) { 
+    bool UnloadMacro(Transaction::MacroDirectiveInfo MD) {
       return VisitMacro(MD);
     }
 
@@ -436,7 +436,7 @@ namespace clang {
                 // in the lookup table. My assumption is that the DeclUnloader
                 // adds it here. This needs to be investigated mode. For now
                 // std::find gets promoted from assert to condition :)
-                if (*I == ND && std::find(decls.begin(), decls.end(), 
+                if (*I == ND && std::find(decls.begin(), decls.end(),
                                           PrevDecls[0]) == decls.end()) {
                   // The decl was registered in the lookup, update it.
                   *I = PrevDecls[0];
@@ -488,7 +488,7 @@ namespace clang {
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
     if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID()
-        && !m_FilesToUncache.count(FID)) 
+        && !m_FilesToUncache.count(FID))
       m_FilesToUncache.insert(FID);
   }
 
@@ -544,7 +544,7 @@ namespace clang {
             if (*I == ND)
               Pos->second.remove(ND);
         }
-        if (Pos->second.isNull() || 
+        if (Pos->second.isNull() ||
             (Pos->second.getAsVector() && !Pos->second.getAsVector()->size()))
           Map->erase(Pos);
       }
@@ -614,7 +614,7 @@ namespace clang {
     // * mangled names for parameters;
     if (!isa<ParmVarDecl>(VD) && !VD->getDeclContext()->isDependentContext()) {
       // Cleanup the module if the transaction was committed and code was
-      // generated. This has to go first, because it may need the AST 
+      // generated. This has to go first, because it may need the AST
       // information which we will remove soon. (Eg. mangleDeclName iterates the
       // redecls)
       GlobalDecl GD(VD);
@@ -848,17 +848,17 @@ namespace clang {
     /// C::C c; // same as "C c;"
     /// \endcode
     // It is another question why it is on the redecl chain.
-    // The test show it can be either: 
+    // The test show it can be either:
     // ... <- InjectedC <- C <- ..., i.e previous decl or
     // ... <- C <- InjectedC <- ...
     RecordDecl* InjectedRD = RD->getPreviousDecl();
     if (!(InjectedRD && InjectedRD->isInjectedClassName())) {
       InjectedRD = RD->getMostRecentDecl();
       while (InjectedRD) {
-        if (InjectedRD->isInjectedClassName() 
+        if (InjectedRD->isInjectedClassName()
             && InjectedRD->getPreviousDecl() == RD)
           break;
-        InjectedRD = InjectedRD->getPreviousDecl(); 
+        InjectedRD = InjectedRD->getPreviousDecl();
       }
     }
 
@@ -973,7 +973,7 @@ namespace clang {
     bool Successful = true;
 
     // Remove specializations:
-    for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(), 
+    for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(),
            E = FTD->spec_end(); I != E; ++I)
       Successful &= Visit(*I);
 
@@ -986,7 +986,7 @@ namespace clang {
     // ClassTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = true;
     // Remove specializations:
-    for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(), 
+    for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(),
            E = CTD->spec_end(); I != E; ++I)
       Successful &= Visit(*I);
 
@@ -1157,7 +1157,7 @@ namespace cling {
       const DeclGroupRef& DGR = (*I).m_DGR;
       for (DeclGroupRef::const_iterator
              Di = DGR.end() - 1, E = DGR.begin() - 1; Di != E; --Di) {
-        // We only want to revert all that came through parseForModule, and 
+        // We only want to revert all that came through parseForModule, and
         // not the PCH.
         if (!(*Di)->isFromASTFile())
           Successful = DeclU.UnloadDecl(*Di) && Successful;

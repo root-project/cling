@@ -44,7 +44,7 @@ namespace cling {
 
   ///\brief Responsible for the incremental parsing and compilation of input.
   ///
-  /// The class manages the entire process of compilation line-by-line by 
+  /// The class manages the entire process of compilation line-by-line by
   /// appending the compiled delta to clang'a AST. It provides basic operations
   /// on the already compiled code. See cling::Transaction class.
   ///
@@ -121,7 +121,7 @@ namespace cling {
     ///
     Transaction* endTransaction(Transaction* T);
 
-    ///\brief Commits a transaction if it was complete. I.e pipes it 
+    ///\brief Commits a transaction if it was complete. I.e pipes it
     /// through the consumer chain, including codegen.
     ///
     ///\param[in] T - the transaction to be committed
@@ -188,10 +188,10 @@ namespace cling {
     ///
     Transaction* Compile(llvm::StringRef input, const CompilationOptions& Opts);
 
-    ///\brief Parses the given input without calling the custom consumers and 
+    ///\brief Parses the given input without calling the custom consumers and
     /// code generation.
     ///
-    /// I.e changes to the decls in the transaction commiting it will cause 
+    /// I.e changes to the decls in the transaction commiting it will cause
     /// different executable code.
     ///
     ///\param[in] input - The code to parse.
@@ -239,7 +239,7 @@ namespace cling {
     EParseResult ParseInternal(llvm::StringRef input);
 
     ///\brief Return true if this decl (which comes from an AST file) should
-    /// not be sent to CodeGen. The module is assumed to describe the contents 
+    /// not be sent to CodeGen. The module is assumed to describe the contents
     /// of a library; symbols inside the library must thus not be reemitted /
     /// duplicated by CodeGen.
     ///

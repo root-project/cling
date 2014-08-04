@@ -15,8 +15,8 @@ private:
   double member;
 public:
   MyClass() : member(42){}
-  static int get12(){ return 12; } 
-  double getMember(){ return member; } 
+  static int get12(){ return 12; }
+  double getMember(){ return member; }
 }; MyClass m; m.getMember(); MyClass::get12();
 .undo
 .compareState "preUnload"

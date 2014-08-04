@@ -525,7 +525,7 @@ namespace cling {
     }
     return false;
   }
-  
+
   bool MetaParser::isNamespaceCommand() {
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident)) {

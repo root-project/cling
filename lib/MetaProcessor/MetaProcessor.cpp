@@ -104,7 +104,7 @@ namespace cling {
     }
   }
 
-  MetaProcessor::MetaProcessor(Interpreter& interp, raw_ostream& outs) 
+  MetaProcessor::MetaProcessor(Interpreter& interp, raw_ostream& outs)
     : m_Interp(interp), m_Outs(&outs) {
     m_InputValidator.reset(new InputValidator());
     m_MetaParser.reset(new MetaParser(new MetaSema(interp, *this)));
@@ -121,7 +121,7 @@ namespace cling {
       *result = Value();
     compRes = Interpreter::kSuccess;
     int expectedIndent = m_InputValidator->getExpectedIndent();
-    
+
     if (expectedIndent)
       compRes = Interpreter::kMoreInputExpected;
     if (!input_text || !input_text[0]) {
@@ -210,7 +210,7 @@ namespace cling {
     size_t size = in.tellg();
     std::string content(size, ' ');
     in.seekg(0);
-    in.read(&content[0], size); 
+    in.read(&content[0], size);
 
     if (ignoreOutmostBlock && !content.empty()) {
       static const char whitespace[] = " \t\r\n";

@@ -72,7 +72,7 @@ namespace cling {
   public:
 
     ///\brief Pushes a new transaction, which will collect the decls that came
-    /// within the scope of the RAII object. Calls commit transaction at 
+    /// within the scope of the RAII object. Calls commit transaction at
     /// destruction.
     class PushTransactionRAII {
     private:
@@ -209,7 +209,7 @@ namespace cling {
     ///\param [in] input - The input being compiled.
     ///\param [in] CompilationOptions - The option set driving the compilation.
     ///\param [in,out] V - The result of the evaluation of the input. Must be
-    ///       initialized to point to the return value's location if the 
+    ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
     ///\param [out] T - The cling::Transaction of the compiled input.
     ///
@@ -365,14 +365,14 @@ namespace cling {
     ///
     void storeInterpreterState(const std::string& name) const;
 
-    ///\brief Compare the actual interpreter state with the one stored 
+    ///\brief Compare the actual interpreter state with the one stored
     /// previously.
     ///
     ///\param[in] name - The name of the previously stored file
     ///
     void compareInterpreterState(const std::string& name) const;
 
-    ///\brief Print the included files in a temporary file 
+    ///\brief Print the included files in a temporary file
     ///
     ///\param[in] out - The output stream to be printed into.
     ///
@@ -389,7 +389,7 @@ namespace cling {
     ///
     ///\param[in] input - The input to be compiled.
     ///\param[in,out] V - The result of the evaluation of the input. Must be
-    ///       initialized to point to the return value's location if the 
+    ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
     ///\param[out] T - The cling::Transaction of the compiled input.
     ///
@@ -398,7 +398,7 @@ namespace cling {
     CompilationResult process(const std::string& input, Value* V = 0,
                               Transaction** T = 0);
 
-    ///\brief Parses input line, which doesn't contain statements. No code 
+    ///\brief Parses input line, which doesn't contain statements. No code
     /// generation is done.
     ///
     /// Same as declare without codegening. Useful when a library is loaded and
@@ -409,24 +409,24 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult parse(const std::string& input, 
+    CompilationResult parse(const std::string& input,
                             Transaction** T = 0) const;
 
-    ///\brief Looks for a already generated PCM for the given header file and 
+    ///\brief Looks for a already generated PCM for the given header file and
     /// loads it.
     ///
-    ///\param[in] headerFile - The header file for which a module should be 
+    ///\param[in] headerFile - The header file for which a module should be
     ///                        loaded.
     ///
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult loadModuleForHeader(const std::string& headerFile);
 
-    ///\brief Parses input line, which doesn't contain statements. Code 
+    ///\brief Parses input line, which doesn't contain statements. Code
     /// generation needed to make the module functional.
     ///
-    /// Same as declare without most of the codegening.  Only a few 
-    /// things, like inline function are codegened.  Useful when a 
+    /// Same as declare without most of the codegening.  Only a few
+    /// things, like inline function are codegened.  Useful when a
     /// library is loaded and the header files need to be imported.
     ///
     ///\param[in] input - The input containing the declarations.
@@ -455,7 +455,7 @@ namespace cling {
     ///
     /// @param[in] input - The input containing only expressions
     /// @param[in,out] V - The value of the executed input. Must be
-    ///       initialized to point to the return value's location if the 
+    ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
     ///
     ///\returns Whether the operation was fully successful.
@@ -470,11 +470,11 @@ namespace cling {
     ///
     /// @param[in] input - The input containing only expressions.
     /// @param[in,out] V - The value of the executed input. Must be
-    ///       initialized to point to the return value's location if the 
+    ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
     ///
     ///\returns Whether the operation was fully successful.
-    /// 
+    ///
     CompilationResult echo(const std::string& input, Value* V = 0);
 
     ///\brief Compiles input line and runs.

@@ -1,10 +1,10 @@
 namespace test { //implicit instantiation
   template<bool B, class T, class F>
   struct conditional { typedef T type; };
- 
+
   template<class T, class F>
   struct conditional<false, T, F> { typedef F type; };
-  
+
   template <typename _Tp> using example = typename conditional<true,int,float>::type;
 }//end namespace test
 
@@ -15,7 +15,7 @@ namespace test { //nested name specifier
   };
   HasSubType::SubType FunctionUsingSubtype(HasSubType::SubType s){return s;}
   extern HasSubType::SubType variable;//locale::id id
-  
+
 }//end namespace test
 
 namespace test { //restrict keyword: try include/mmprivate.h and strlcpy.h when fixed

@@ -22,7 +22,7 @@ namespace cling {
       MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
       int kind = (int)Tok.getKind();
 
-      // If there is " or ' we don't need to look for balancing until we 
+      // If there is " or ' we don't need to look for balancing until we
       // enounter matching " or '
       if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe) {
         MetaLexer::LexQuotedStringAndAdvance(curPos, Tok);
@@ -49,7 +49,7 @@ namespace cling {
             break;
           }
           m_ParenStack.pop();
-        } 
+        }
         else
           m_ParenStack.push(kind);
       }
@@ -60,10 +60,10 @@ namespace cling {
       Res = kIncomplete;
 
     if (!m_Input.empty()) {
-      if (!m_ParenStack.empty() && (m_ParenStack.top() == tok::quote 
+      if (!m_ParenStack.empty() && (m_ParenStack.top() == tok::quote
                                     || m_ParenStack.top() == tok::apostrophe))
         m_Input.append("\\n");
-      else 
+      else
         m_Input.append("\n");
     }
     else

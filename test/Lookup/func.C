@@ -131,7 +131,7 @@ public:
    void operator delete(void* vp, void* arena) {}
    void operator delete[](void* vp) { ::operator delete[](vp); }
    void operator delete[](void* vp, void* arena) {}
-   
+
    void A_n(B& b) { b.B_f(); }
    void A_n(const char *msg, int ndim = 0) { if (ndim) ++msg; }
 };
@@ -684,7 +684,7 @@ printf("func_A_n2_args: 0x%lx\n", (unsigned long) func_A_n2_args);
 //CHECK: func_A_n2_args: 0x{{[1-9a-f][0-9a-f]*$}}
 func_A_n2_args->print(llvm::errs());
 //CHECK-NEXT: void A_n(const char *msg, int ndim = 0) {
-//CHECK-NEXT:    if (ndim) 
+//CHECK-NEXT:    if (ndim)
 //CHECK-NEXT:       ++msg;
 //CHECK-NEXT: }
 
@@ -692,7 +692,7 @@ printf("func_A_n2_proto: 0x%lx\n", (unsigned long) func_A_n2_proto);
 //CHECK: func_A_n2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 func_A_n2_proto->print(llvm::errs());
 //CHECK-NEXT: void A_n(const char *msg, int ndim = 0) {
-//CHECK-NEXT:    if (ndim) 
+//CHECK-NEXT:    if (ndim)
 //CHECK-NEXT:       ++msg;
 //CHECK-NEXT: }
 
@@ -947,7 +947,7 @@ printf("func_const_B_o_proto: 0x%lx\n", (unsigned long) func_const_B_o_proto);
 //CHECK: func_const_B_o_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_o_proto->print(llvm::errs());
 //CHECK-NEXT: const long &B_o() const {
-//CHECK-NEXT:     return this->m_B_i; 
+//CHECK-NEXT:     return this->m_B_i;
 //CHECK-NEXT: }
 
 // Test exact matches
@@ -956,7 +956,7 @@ printf("func_const_B_p_proto 1: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 1: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_p_proto->print(llvm::errs());
 //CHECK-NEXT: long B_p(float) const {
-//CHECK-NEXT:     return 0; 
+//CHECK-NEXT:     return 0;
 //CHECK-NEXT: }
 
 func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "double", diags, true);
@@ -968,7 +968,7 @@ printf("func_const_B_p_proto 3: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 3: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_p_proto->print(llvm::errs());
 //CHECK-NEXT: long B_p(float) const {
-//CHECK-NEXT:     return 0; 
+//CHECK-NEXT:     return 0;
 //CHECK-NEXT: }
 
 func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "float", diags, false);
@@ -980,7 +980,7 @@ printf("func_const_B_p_proto 5: 0x%lx\n", (unsigned long) func_const_B_p_proto);
 //CHECK: func_const_B_p_proto 5: 0x{{[1-9a-f][0-9a-f]*$}}
 func_const_B_p_proto->print(llvm::errs());
 //CHECK-NEXT: int B_p(int) {
-//CHECK-NEXT:     return 0; 
+//CHECK-NEXT:     return 0;
 //CHECK-NEXT: }
 
 func_const_B_p_proto = lookup.matchFunctionProto(class_A, "B_p", "int", diags, true);
@@ -1041,14 +1041,14 @@ dumpDecl("func_B_ctr3_args", func_B_ctr3_args);
 //CHECK: func_B_ctr3_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_ctr3_args name: B::B<char>
 //CHECK-NEXT:  {
-//CHECK-NEXT:     this->m_B_i = (char)v; 
+//CHECK-NEXT:     this->m_B_i = (char)v;
 //CHECK-NEXT: }
 
 dumpDecl("func_B_ctr3_proto", func_B_ctr3_proto);
 //CHECK: func_B_ctr3_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_ctr3_proto name: B::B<char>
 //CHECK-NEXT:  {
-//CHECK-NEXT:     this->m_B_i = (char)v; 
+//CHECK-NEXT:     this->m_B_i = (char)v;
 //CHECK-NEXT: }
 
 B* force_B_char_ptr_ctr = new B((char*)0);

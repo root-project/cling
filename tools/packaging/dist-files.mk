@@ -18,16 +18,16 @@
 ###############################################################################
 
 BIN_FILES := \
-  bin/cling@EXEEXT@ 
+  bin/cling@EXEEXT@
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 DOCS_FILES := \
   docs/llvm/html/cling/cling.html \
   docs/llvm/html/cling/manpage.css \
   \
-  docs/llvm/ps/cling.ps 
+  docs/llvm/ps/cling.ps
 # CAUTION: The trailing space above is needed. DO NOT delete.
-  
+
 INCLUDE_CLANG_FILES := \
   include/Analysis/Analyses/CFGReachabilityAnalysis.h \
   include/Analysis/Analyses/Consumed.h \
@@ -464,7 +464,7 @@ INCLUDE_CLANG_FILES := \
   include/clang/Tooling/RefactoringCallbacks.h \
   include/clang/Tooling/Refactoring.h \
   include/clang/Tooling/ReplacementsYaml.h \
-  include/clang/Tooling/Tooling.h 
+  include/clang/Tooling/Tooling.h
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 INCLUDE_CLANG_C_FILES := \
@@ -473,7 +473,7 @@ INCLUDE_CLANG_C_FILES := \
   include/clang-c/CXErrorCode.h \
   include/clang-c/CXString.h \
   include/clang-c/Index.h \
-  include/clang-c/Platform.h 
+  include/clang-c/Platform.h
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 INCLUDE_CLING_FILES := \
@@ -501,7 +501,7 @@ INCLUDE_CLING_FILES := \
   include/cling/UserInterface/CompilationException.h \
   include/cling/UserInterface/UserInterface.h \
   \
-  include/cling/Utils/AST.h 
+  include/cling/Utils/AST.h
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 INCLUDE_LLVM_FILES := \
@@ -1088,7 +1088,7 @@ INCLUDE_LLVM_FILES := \
   include/llvm/Transforms/Utils/UnifyFunctionExitNodes.h \
   include/llvm/Transforms/Utils/UnrollLoop.h \
   include/llvm/Transforms/Utils/ValueMapper.h \
-  include/llvm/Transforms/Vectorize.h 
+  include/llvm/Transforms/Vectorize.h
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 INCLUDE_LLVM_C_FILES := \
@@ -1111,7 +1111,7 @@ INCLUDE_LLVM_C_FILES := \
   include/llvm-c/Transforms/IPO.h \
   include/llvm-c/Transforms/PassManagerBuilder.h \
   include/llvm-c/Transforms/Scalar.h \
-  include/llvm-c/Transforms/Vectorize.h 
+  include/llvm-c/Transforms/Vectorize.h
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 LIB_CLANG_HEADERS := \
@@ -1161,11 +1161,11 @@ LIB_CLANG_HEADERS := \
   lib/clang/3.5/include/__wmmintrin_pclmul.h \
   lib/clang/3.5/include/x86intrin.h \
   lib/clang/3.5/include/xmmintrin.h \
-  lib/clang/3.5/include/xopintrin.h 
+  lib/clang/3.5/include/xopintrin.h
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 SHARE_FILES := \
-  share/man/man1/cling.1 
+  share/man/man1/cling.1
 # CAUTION: The trailing space above is needed. DO NOT delete.
 
 INCLUDE_FILES := \

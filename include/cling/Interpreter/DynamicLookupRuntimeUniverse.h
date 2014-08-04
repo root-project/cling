@@ -27,7 +27,7 @@ namespace runtime {
   /// \brief Provides builtins, which are neccessary for the dynamic scopes
   /// and runtime bindings. These builtins should be used for other purposes.
   namespace internal {
-    
+
     /// \brief EvaluateT is used to replace all invalid source code that
     /// occurs, when cling's dynamic extensions are enabled.
     ///
