@@ -1178,6 +1178,38 @@ def build_nsis():
 #                          Mac OS X specific functions                        #
 ###############################################################################
 
+def check_mac(pkg):
+    if pkg == "python":
+        if platform.python_version()[0] == '3':
+            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+        elif float(platform.python_version()[:3]) < 2.7:
+            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+    elif pkg == "SSL":
+        import socket
+        import httplib
+        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
+            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
+    elif exec_subprocess_check_output("type -p %s"%(pkg), '/').strip() == '':
+        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+    else:
+        if pkg == "g++":
+            if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
+                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+        elif pkg == "gcc":
+            if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
+                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+            else:
+                print pkg.ljust(20) + '[OK]'.ljust(30)
+        else:
+            print pkg.ljust(20) + '[OK]'.ljust(30)
+
+
 def make_dmg():
     box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
@@ -1394,6 +1426,43 @@ Do you want to continue? [yes/no]: ''').lower()
                 print '''
 Install/update the required packages by:
   sudo yum install git gcc gcc-c++ rpm-build python
+'''
+                break
+            else:
+                choice = raw_input("Please respond with 'yes' or 'no': ")
+                continue
+
+    if DIST == 'MacOSX':
+        check_mac('git')
+        check_mac('gcc')
+        check_mac('g++')
+        check_mac('python')
+        check_mac('SSL')
+        yes = set(['yes','y', 'ye', ''])
+        no = set(['no','n'])
+
+        choice = raw_input('''
+CPT will now attempt to update/install the requisite packages automatically. Make sure you have MacPorts installed.
+Do you want to continue? [yes/no]: ''').lower()
+        while True:
+            if choice in yes:
+                # Need to communicate values to the shell. Do not use exec_subprocess_call()
+                subprocess.Popen(['sudo port update'],
+                                 shell=True,
+                                 stdin=subprocess.PIPE,
+                                 stdout=None,
+                                 stderr=subprocess.STDOUT).communicate('yes')
+                subprocess.Popen(['sudo port install git g++ python'],
+                                  shell=True,
+                                  stdin=subprocess.PIPE,
+                                  stdout=None,
+                                  stderr=subprocess.STDOUT).communicate('yes')
+                break
+            elif choice in no:
+                print '''
+Install/update the required packages by:
+  sudo port update
+  sudo port install git g++ python
 '''
                 break
             else:
