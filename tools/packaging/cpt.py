@@ -1447,7 +1447,7 @@ Do you want to continue? [yes/no]: ''').lower()
         while True:
             if choice in yes:
                 # Need to communicate values to the shell. Do not use exec_subprocess_call()
-                subprocess.Popen(['sudo port update'],
+                subprocess.Popen(['sudo port -v selfupdate'],
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
@@ -1461,7 +1461,7 @@ Do you want to continue? [yes/no]: ''').lower()
             elif choice in no:
                 print '''
 Install/update the required packages by:
-  sudo port update
+  sudo port -v selfupdate
   sudo port install git g++ python
 '''
                 break
