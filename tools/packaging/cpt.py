@@ -459,6 +459,16 @@ def cleanup():
         if not os.listdir(os.path.join(workdir, 'cling-%s-1'%(VERSION))):
             os.rmdir(os.path.join(workdir, 'cling-%s-1'%(VERSION)))
 
+    if args['current_dev'] == 'dmg' or args['last_stable'] == 'dmg' or args['dmg_tag']:
+        if os.path.isfile(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))):
+            print "Remove file: " + os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))
+            os.remove(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION)))
+
+        if os.path.isdir(os.path.join(workdir, 'Cling.app')):
+            print "Remove directory: " + Cling.app
+            shutil.rmtree(os.path.join(workdir, 'Cling.app'))
+
+
 ###############################################################################
 #            Debian specific functions (ported from debianize.sh)             #
 ###############################################################################
@@ -1517,7 +1527,9 @@ if args['current_dev']:
     elif args['current_dev'] == 'dmg':
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
+        test_cling()
         make_dmg()
+        cleanup()
 
 if args['last_stable']:
     fetch_llvm()
