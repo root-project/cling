@@ -3,6 +3,7 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/AST/AST.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/CompilerInstance.h"
 
@@ -36,28 +37,30 @@ namespace cling {
     return false;
   }
 
-  void removeDefaultArg(ClassTemplateDecl* D) {
-    TemplateParameterList *Params = D->getTemplateParameters();
-    for (unsigned i = 0, e = Params->size(); i != e; ++i) {
-      Decl *Param = Params->getParam(i);
-      if (TemplateTypeParmDecl *TTP = dyn_cast<TemplateTypeParmDecl>(Param)) {
-              if(TTP->hasDefaultArgument())
-                TTP->removeDefaultArgument();
-      }
-      else if(NonTypeTemplateParmDecl *NTTP =
-                dyn_cast<NonTypeTemplateParmDecl>(Param)) {
-                  if(NTTP->hasDefaultArgument())
-                    NTTP->removeDefaultArgument();
-      }
+  class DefaultArgRemover: public RecursiveASTVisitor<DefaultArgRemover> {
+  public:
+    void Remove(Decl* D) {
+      TraverseDecl(D);
     }
-  }
-  void removeDefaultArg(FunctionDecl* fd) {
-    for (unsigned i = 0, e = fd->getNumParams(); i != e; ++i) {
-      if(fd->getParamDecl(i)->hasDefaultArg()) {
-        fd->getParamDecl(i)->setDefaultArg(nullptr);
-      }
+
+    bool VisitTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
+      if (D->hasDefaultArgument())
+        D->removeDefaultArgument();
+      return true;
     }
-  }
+
+    bool VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
+      if (D->hasDefaultArgument())
+        D->removeDefaultArgument();
+      return true;
+    }
+
+    bool VisitParmVarDecl(ParmVarDecl* D) {
+      if (D->hasDefaultArg())
+        D->setDefaultArg(nullptr);
+      return true;
+    }
+  };
 
   void AutoloadCallback::InclusionDirective(clang::SourceLocation HashLoc,
                           const clang::Token &IncludeTok,
@@ -78,22 +81,11 @@ namespace cling {
 
     iterator->second.Included = true;
 
-    for(clang::Decl* decl : iterator->second.Decls) {
-//      llvm::outs() <<"CB:"<<llvm::cast<NamedDecl>(decl)->getName() <<"\n";
-      decl->dropAttrs();
-      if(llvm::isa<clang::EnumDecl>(decl)) {
-        //do something (remove fixed type..how?)
-      }
-      if(llvm::isa<clang::ClassTemplateDecl>(decl)) {
-        clang::ClassTemplateDecl* ct = llvm::cast<clang::ClassTemplateDecl>(decl);
-//        llvm::outs() << ct->getName() <<"\n";
-        removeDefaultArg(ct);
-      }
-      if(llvm::isa<clang::FunctionDecl>(decl)) {
-        clang::FunctionDecl* fd = llvm::cast<clang::FunctionDecl>(decl);
-        removeDefaultArg(fd);
-      }
+    DefaultArgRemover defaultArgsCleaner;
 
+    for(clang::Decl* decl : iterator->second.Decls) {
+      decl->dropAttrs();
+      defaultArgsCleaner.Remove(decl);
     }
 
   }
