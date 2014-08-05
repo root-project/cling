@@ -637,7 +637,7 @@ namespace cling {
       m_Out << "__module_private__ ";
     m_Out << D->getKindName();
 
-    if (D->isCompleteDefinition())
+//    if (D->isCompleteDefinition())
       prettyPrintAttributes(D);
     if (D->getIdentifier())
       m_Out << ' ' << *D ;
