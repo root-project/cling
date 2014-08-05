@@ -30,23 +30,24 @@ namespace cling {
 
   }
 
-//  bool AutoloadCallback::LookupObject (TagDecl *t) {
-//    if (t->hasAttr<AnnotateAttr>())
-//      report(t->getLocation(),t->getNameAsString(),t->getAttr<AnnotateAttr>()->getAnnotation());
-//    return false;
-//  }
+  bool AutoloadCallback::LookupObject (TagDecl *t) {
+    if (t->hasAttr<AnnotateAttr>())
+      report(t->getLocation(),t->getNameAsString(),t->getAttr<AnnotateAttr>()->getAnnotation());
+    return false;
+  }
 
-  void removeDefaultArg(TemplateParameterList *Params) {
+  void removeDefaultArg(ClassTemplateDecl* D) {
+    TemplateParameterList *Params = D->getTemplateParameters();
     for (unsigned i = 0, e = Params->size(); i != e; ++i) {
       Decl *Param = Params->getParam(i);
       if (TemplateTypeParmDecl *TTP = dyn_cast<TemplateTypeParmDecl>(Param)) {
               if(TTP->hasDefaultArgument())
-                TTP->setDefaultArgument(nullptr,false);
+                TTP->removeDefaultArgument();
       }
       else if(NonTypeTemplateParmDecl *NTTP =
                 dyn_cast<NonTypeTemplateParmDecl>(Param)) {
                   if(NTTP->hasDefaultArgument())
-                    NTTP->setDefaultArgument(nullptr,false);
+                    NTTP->removeDefaultArgument();
       }
     }
   }
@@ -86,7 +87,7 @@ namespace cling {
       if(llvm::isa<clang::ClassTemplateDecl>(decl)) {
         clang::ClassTemplateDecl* ct = llvm::cast<clang::ClassTemplateDecl>(decl);
 //        llvm::outs() << ct->getName() <<"\n";
-        removeDefaultArg(ct->getTemplateParameters());
+        removeDefaultArg(ct);
       }
       if(llvm::isa<clang::FunctionDecl>(decl)) {
         clang::FunctionDecl* fd = llvm::cast<clang::FunctionDecl>(decl);
@@ -170,7 +171,6 @@ namespace cling {
         std::vector<clang::Decl*> decls;
         for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
                JE = DCI.m_DGR.end(); J != JE; ++J) {
-
           decls.push_back(*J);
         }
         HandleDeclVector(decls);

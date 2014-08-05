@@ -33,12 +33,12 @@ namespace cling {
   public:
       AutoloadCallback(cling::Interpreter* interp);
       ~AutoloadCallback();
-//    using cling::InterpreterCallbacks::LookupObject;
+    using cling::InterpreterCallbacks::LookupObject;
       //^to get rid of bogus warning : "-Woverloaded-virtual"
       //virtual functions ARE meant to be overriden!
 
 //    bool LookupObject (clang::LookupResult &R, clang::Scope *);
-//    bool LookupObject (clang::TagDecl* t);
+    bool LookupObject (clang::TagDecl* t);
 
     void InclusionDirective(clang::SourceLocation HashLoc,
                             const clang::Token &IncludeTok,

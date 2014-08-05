@@ -1232,6 +1232,7 @@ namespace cling {
 
 
     ForwardDeclPrinter visitor(out,fwdGen.getSema().getSourceManager(), *T);
+    visitor.printStats();
 
     // Avoid assertion in the ~IncrementalParser.
     T->setState(Transaction::kCommitted);

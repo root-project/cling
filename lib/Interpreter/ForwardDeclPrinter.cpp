@@ -30,6 +30,9 @@ namespace cling {
 
     m_Policy.Bool = true; // Avoid printing _Bool instead of bool
 
+    m_SkipCounter = 0;
+    m_TotalDecls = 0;
+
     // Suppress some unfixable warnings.
     // TODO: Find proper fix for these issues
     m_Out << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
@@ -133,7 +136,7 @@ namespace cling {
   void ForwardDeclPrinter::VisitTypedefDecl(TypedefDecl *D) {
 
     if (shouldSkip(D)) {
-      m_SkipFlag = true;
+      skipCurrentDecl();
       return;
     }
 
@@ -146,6 +149,7 @@ namespace cling {
     D->getTypeSourceInfo()->getType().print(m_Out, m_Policy, D->getName());
     prettyPrintAttributes(D);
 //      Indent() << ";\n";
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitTypeAliasDecl(TypeAliasDecl *D) {
@@ -157,11 +161,12 @@ namespace cling {
     prettyPrintAttributes(D);
     m_Out << " = " << D->getTypeSourceInfo()->getType().getAsString(m_Policy);
 //      Indent() << ";\n";
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitEnumDecl(EnumDecl *D) {
     if (shouldSkip(D)) {
-      m_SkipFlag = true;
+      skipCurrentDecl();
       return;
     }
 
@@ -185,6 +190,7 @@ namespace cling {
 //        VisitDeclContext(D);
 //        Indent() << "};\n";
 //      }
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitRecordDecl(RecordDecl *D) {
@@ -200,6 +206,7 @@ namespace cling {
 //      VisitDeclContext(D);
 //      Indent() << "}";
 //    }
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitEnumConstantDecl(EnumConstantDecl *D) {
@@ -208,11 +215,12 @@ namespace cling {
       m_Out << " = ";
       Init->printPretty(m_Out, 0, m_Policy, m_Indentation);
     }
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitFunctionDecl(FunctionDecl *D) {
     if (shouldSkip(D)) {
-      m_SkipFlag = true;
+      skipCurrentDecl();
       return;
     }
 
@@ -435,10 +443,11 @@ namespace cling {
       //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
 
     }
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitFriendDecl(FriendDecl *D) {
-      m_SkipFlag = true;
+     skipCurrentDecl();
   }
 
   void ForwardDeclPrinter::VisitFieldDecl(FieldDecl *D) {
@@ -463,16 +472,18 @@ namespace cling {
       Init->printPretty(m_Out, 0, m_Policy, m_Indentation);
     }
     prettyPrintAttributes(D);
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitLabelDecl(LabelDecl *D) {
     m_Out << *D << ":";
+    skipCurrentDecl(false);
   }
 
 
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
     if(shouldSkip(D)) {
-      m_SkipFlag = true;
+      skipCurrentDecl();
       return;
     }
 
@@ -542,21 +553,25 @@ namespace cling {
 
     if(D->isDefinedOutsideFunctionOrMethod())
       prettyPrintAttributes(D);
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitParmVarDecl(ParmVarDecl *D) {
     VisitVarDecl(D);
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitFileScopeAsmDecl(FileScopeAsmDecl *D) {
     m_Out << "__asm (";
     D->getAsmString()->printPretty(m_Out, 0, m_Policy, m_Indentation);
     m_Out << ")";
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitImportDecl(ImportDecl *D) {
     m_Out << "@import " << D->getImportedModule()->getFullModuleName()
           << ";\n";
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitStaticAssertDecl(StaticAssertDecl *D) {
@@ -565,6 +580,7 @@ namespace cling {
     m_Out << ", ";
     D->getMessage()->printPretty(m_Out, 0, m_Policy, m_Indentation);
     m_Out << ")";
+    skipCurrentDecl(false);
   }
 
   //----------------------------------------------------------------------------
@@ -588,13 +604,14 @@ namespace cling {
     if (D->getQualifier())
       D->getQualifier()->print(m_Out, m_Policy);
     m_Out << *D->getNominatedNamespaceAsWritten();
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitUsingDecl(UsingDecl *D) {
-    m_SkipFlag = true;
+    skipCurrentDecl();
   }
   void ForwardDeclPrinter::VisitUsingShadowDecl(UsingShadowDecl *D) {
-    m_SkipFlag = true;
+    skipCurrentDecl();
   }
 
   void ForwardDeclPrinter::VisitNamespaceAliasDecl(NamespaceAliasDecl *D) {
@@ -602,16 +619,17 @@ namespace cling {
     if (D->getQualifier())
       D->getQualifier()->print(m_Out, m_Policy);
     m_Out << *D->getAliasedNamespace();
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitEmptyDecl(EmptyDecl *D) {
 //    prettyPrintAttributes(D);
-      m_SkipFlag = true;
+      skipCurrentDecl();
   }
 
   void ForwardDeclPrinter::VisitCXXRecordDecl(CXXRecordDecl *D) {
     if (shouldSkip(D)) {
-        m_SkipFlag = true;
+        skipCurrentDecl();
         return;
     }
 
@@ -623,6 +641,7 @@ namespace cling {
       prettyPrintAttributes(D);
     if (D->getIdentifier())
       m_Out << ' ' << *D ;
+    skipCurrentDecl(false);
 
   }
 
@@ -729,11 +748,12 @@ namespace cling {
     else {
       Visit(D->getTemplatedDecl());
     }
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
     if (shouldSkip(D->getAsFunction())) {
-      m_SkipFlag = true;
+      skipCurrentDecl();
       return;
     }
 
@@ -746,12 +766,14 @@ namespace cling {
       }
     }
 
+    skipCurrentDecl(false);
     return VisitRedeclarableTemplateDecl(D);
+
   }
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
     if (shouldSkip(D->getTemplatedDecl()) ) {
-      m_SkipFlag = true;
+      skipCurrentDecl();
       return;
     }
 
@@ -764,13 +786,33 @@ namespace cling {
         m_Out << '\n';
       }
     }
-
+    skipCurrentDecl(false);
     return VisitRedeclarableTemplateDecl(D);
   }
 
   void ForwardDeclPrinter::
   VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* D) {
-    m_SkipFlag = true;
+    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
+
+    if (llvm::isa<ClassTemplatePartialSpecializationDecl>(D)) {
+      skipCurrentDecl();
+      //TODO: How to print partial specializations?
+      return;
+    }
+
+    m_Out << "template <> ";
+    VisitCXXRecordDecl(D->getCanonicalDecl());
+
+    m_Out << "<";
+    for (uint i=0; i < iargs.size(); ++i){
+      if (iargs[i].getKind() == TemplateArgument::Pack)
+        continue;
+      if (i != 0 )
+        m_Out << ", ";
+      iargs[i].print(m_Policy,m_Out);
+    }
+    m_Out << ">";
+    skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::printSemiColon(bool flag) {
@@ -840,5 +882,15 @@ namespace cling {
   }
   bool ForwardDeclPrinter::shouldSkip(EnumDecl *D) {
     return D->getName().size() == 0;
+  }
+  void ForwardDeclPrinter::skipCurrentDecl(bool skip) {
+    if (skip) {
+      m_SkipFlag = true;
+      m_SkipCounter++;
+    }
+    m_TotalDecls++;
+  }
+  void ForwardDeclPrinter::printStats() {
+    llvm::outs() << m_SkipCounter << " decls skipped out of " << m_TotalDecls << "\n";
   }
 }//end namespace cling

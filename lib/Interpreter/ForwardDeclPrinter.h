@@ -60,7 +60,8 @@ namespace cling {
     //False by default, true if current item is not to be printed
 
     std::set<llvm::StringRef> m_IncompatibleTypes;
-
+    int m_SkipCounter;
+    int m_TotalDecls;
   public:
     ForwardDeclPrinter(llvm::raw_ostream& Out, clang::SourceManager& SM,
                        const Transaction& T,
@@ -123,6 +124,10 @@ namespace cling {
     bool shouldSkip(clang::ClassTemplateSpecializationDecl* D){return true;}
     bool shouldSkip(clang::UsingDecl* D){return true;}
     bool shouldSkip(clang::UsingShadowDecl* D){return true;}
+
+    void skipCurrentDecl(bool skip = true);
+
+    void printStats();
   private:
     llvm::raw_ostream& Indent() { return Indent(m_Indentation); }
     llvm::raw_ostream& Indent(unsigned Indentation);
