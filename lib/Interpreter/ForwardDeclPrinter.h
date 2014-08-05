@@ -6,6 +6,7 @@
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/Basic/Specifiers.h"
 #include <set>
+#include <stack>
 
 namespace clang {
   class ClassTemplateDecl;
@@ -50,7 +51,6 @@ namespace cling {
 
   class ForwardDeclPrinter : public clang::DeclVisitor<ForwardDeclPrinter> {
   private:
-    llvm::raw_ostream &m_Out;
     clang::PrintingPolicy m_Policy; // intentional copy
     unsigned m_Indentation;
     bool m_PrintInstantiation;
@@ -63,12 +63,12 @@ namespace cling {
     int m_SkipCounter;
     int m_TotalDecls;
   public:
-    ForwardDeclPrinter(llvm::raw_ostream& Out, clang::SourceManager& SM,
+    ForwardDeclPrinter(llvm::raw_ostream& OutS, clang::SourceManager& SM,
                        const Transaction& T,
                        unsigned Indentation = 0,
                        bool printMacros = false);
 
-    ForwardDeclPrinter(llvm::raw_ostream &Out, clang::SourceManager& SM,
+    ForwardDeclPrinter(llvm::raw_ostream &OutS, clang::SourceManager& SM,
                        const clang::PrintingPolicy& P,
                        unsigned Indentation = 0);
 
@@ -124,6 +124,7 @@ namespace cling {
     bool shouldSkip(clang::ClassTemplateSpecializationDecl* D);
     bool shouldSkip(clang::UsingDecl* D){return true;}
     bool shouldSkip(clang::UsingShadowDecl* D){return true;}
+    bool shouldSkip(clang::UsingDirectiveDecl* D);
 
     void skipCurrentDecl(bool skip = true);
 
@@ -135,6 +136,10 @@ namespace cling {
 //    void ProcessDeclGroup(llvm::SmallVectorImpl<clang::Decl*>& Decls);
 
     void Print(clang::AccessSpecifier AS);
+
+    llvm::raw_ostream& Out();
+
+    std::stack<llvm::raw_ostream*> m_StreamStack;
   };
 }
 #endif

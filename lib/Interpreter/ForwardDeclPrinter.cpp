@@ -18,26 +18,28 @@ namespace cling {
   using namespace clang;
 
 
-  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream& Out,
+  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream& OutS,
                                          SourceManager& SM,
                                          const Transaction& T,
                                          unsigned Indentation,
                                          bool printMacros)
-    : m_Out(Out), m_Policy(clang::PrintingPolicy(clang::LangOptions())),
+    : m_Policy(clang::PrintingPolicy(clang::LangOptions())),
       m_Indentation(Indentation), m_SMgr(SM), m_SkipFlag(false) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
 
     m_Policy.Bool = true; // Avoid printing _Bool instead of bool
 
+    m_StreamStack.push(&OutS);
+
     m_SkipCounter = 0;
     m_TotalDecls = 0;
 
     // Suppress some unfixable warnings.
     // TODO: Find proper fix for these issues
-    m_Out << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
-    m_Out << "#pragma clang diagnostic ignored \"-Wignored-attributes\"" <<"\n";
-    m_Out << "#pragma clang diagnostic ignored \"-Wreturn-type-c-linkage\"" <<"\n";
+    Out() << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
+    Out() << "#pragma clang diagnostic ignored \"-Wignored-attributes\"" <<"\n";
+    Out() << "#pragma clang diagnostic ignored \"-Wreturn-type-c-linkage\"" <<"\n";
     
     std::vector<std::string> macrodefs;
     if (printMacros) {
@@ -48,13 +50,13 @@ namespace cling {
           if (MI ->getNumTokens() > 1)
             //FIXME: We can not display function like macros yet
             continue;
-          m_Out << "#define " << macro.m_II->getName() << ' ';
+          Out() << "#define " << macro.m_II->getName() << ' ';
           for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
             const Token &Tok = MI->getReplacementToken(i);
-            m_Out << Tok.getName() << ' ';
+            Out() << Tok.getName() << ' ';
             macrodefs.push_back(macro.m_II->getName());
           }
-          m_Out << '\n';
+          Out() << '\n';
         }
       }
     }
@@ -73,20 +75,25 @@ namespace cling {
     }
     if (printMacros) {
       for (auto m : macrodefs) {
-        m_Out << "#undef " << m << "\n";
+        Out() << "#undef " << m << "\n";
       }
     }
 
   }
 
-  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream &Out,
+  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream &OutS,
                                          clang::SourceManager& SM,
                                          const clang::PrintingPolicy& P,
                                          unsigned Indentation)
-    : m_Out(Out), m_Policy(clang::PrintingPolicy(clang::LangOptions())),
+    : m_Policy(clang::PrintingPolicy(clang::LangOptions())),
       m_Indentation(Indentation), m_SMgr(SM), m_SkipFlag(false) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
+    m_StreamStack.push(&OutS);
+  }
+
+  llvm::raw_ostream& ForwardDeclPrinter::Out() {
+    return *m_StreamStack.top();
   }
 
   void ForwardDeclPrinter::printDeclType(QualType T, StringRef DeclName, bool Pack) {
@@ -97,13 +104,13 @@ namespace cling {
       Pack = true;
       T = PET->getPattern();
     }
-    T.print(m_Out, m_Policy, (Pack ? "..." : "") + DeclName);
+    T.print(Out(), m_Policy, (Pack ? "..." : "") + DeclName);
   }
 
   llvm::raw_ostream& ForwardDeclPrinter::Indent(unsigned Indentation) {
     for (unsigned i = 0; i != Indentation; ++i)
-      m_Out << "  ";
-    return m_Out;
+      Out() << "  ";
+    return Out();
   }
 
   void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
@@ -111,11 +118,11 @@ namespace cling {
       return;
     std::string file = m_SMgr.getFilename(m_SMgr.getSpellingLoc(D->getLocStart()));
 //    assert ( file.length() != 0 && "Filename Should not be blank");
-    m_Out << " __attribute__((annotate(\""
+    Out() << " __attribute__((annotate(\""
           << file;
     if (!extra.empty())
-      m_Out << " " << extra;
-    m_Out << "\"))) ";
+      Out() << " " << extra;
+    Out() << "\"))) ";
   }
 
 
@@ -140,12 +147,12 @@ namespace cling {
     }
 
     if (!m_Policy.SuppressSpecifiers) {
-      m_Out << "typedef ";
+      Out() << "typedef ";
 
     if (D->isModulePrivate())
-      m_Out << "__module_private__ ";
+      Out() << "__module_private__ ";
     }
-    D->getTypeSourceInfo()->getType().print(m_Out, m_Policy, D->getName());
+    D->getTypeSourceInfo()->getType().print(Out(), m_Policy, D->getName());
     prettyPrintAttributes(D);
 //      Indent() << ";\n";
     skipCurrentDecl(false);
@@ -156,9 +163,9 @@ namespace cling {
 //      if(!D->getLexicalDeclContext()->isNamespace()
 //              && !D->getLexicalDeclContext()->isFileContext())
 //          return;
-    m_Out << "using " << *D;
+    Out() << "using " << *D;
     prettyPrintAttributes(D);
-    m_Out << " = " << D->getTypeSourceInfo()->getType().getAsString(m_Policy);
+    Out() << " = " << D->getTypeSourceInfo()->getType().getAsString(m_Policy);
 //      Indent() << ";\n";
     skipCurrentDecl(false);
   }
@@ -170,19 +177,19 @@ namespace cling {
     }
 
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
-      m_Out << "__module_private__ ";
-    m_Out << "enum ";
+      Out() << "__module_private__ ";
+    Out() << "enum ";
     prettyPrintAttributes(D,std::to_string(D->isFixed()));
     if (D->isScoped()) {
       if (D->isScopedUsingClassTag())
-        m_Out << "class ";
+        Out() << "class ";
       else
-        m_Out << "struct ";
+        Out() << "struct ";
     }
-    m_Out << *D;
+    Out() << *D;
 
 //      if (D->isFixed())
-    m_Out << " : " << D->getIntegerType().stream(m_Policy);
+    Out() << " : " << D->getIntegerType().stream(m_Policy);
 
 //      if (D->isCompleteDefinition()) {
 //        Out << " {\n";
@@ -194,11 +201,11 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitRecordDecl(RecordDecl *D) {
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
-      m_Out << "__module_private__ ";
-    m_Out << D->getKindName();
+      Out() << "__module_private__ ";
+    Out() << D->getKindName();
     prettyPrintAttributes(D);
     if (D->getIdentifier())
-      m_Out << ' ' << *D;
+      Out() << ' ' << *D;
 
 //    if (D->isCompleteDefinition()) {
 //      Out << " {\n";
@@ -209,10 +216,10 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitEnumConstantDecl(EnumConstantDecl *D) {
-    m_Out << *D;
+    Out() << *D;
     if (Expr *Init = D->getInitExpr()) {
-      m_Out << " = ";
-      Init->printPretty(m_Out, 0, m_Policy, m_Indentation);
+      Out() << " = ";
+      Init->printPretty(Out(), 0, m_Policy, m_Indentation);
     }
     skipCurrentDecl(false);
   }
@@ -231,21 +238,21 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers) {
       switch (D->getStorageClass()) {
       case SC_None: break;
-      case SC_Extern: m_Out << "extern "; break;
-      case SC_Static: m_Out << "static "; break;
-      case SC_PrivateExtern: m_Out << "__private_extern__ "; break;
+      case SC_Extern: Out() << "extern "; break;
+      case SC_Static: Out() << "static "; break;
+      case SC_PrivateExtern: Out() << "__private_extern__ "; break;
       case SC_Auto: case SC_Register: case SC_OpenCLWorkGroupLocal:
         llvm_unreachable("invalid for functions");
       }
 
-      if (D->isInlineSpecified())  m_Out << "inline ";
-      if (D->isVirtualAsWritten()) m_Out << "virtual ";
-      if (D->isModulePrivate())    m_Out << "__module_private__ ";
+      if (D->isInlineSpecified())  Out() << "inline ";
+      if (D->isVirtualAsWritten()) Out() << "virtual ";
+      if (D->isModulePrivate())    Out() << "__module_private__ ";
       if (D->isConstexpr() && !D->isExplicitlyDefaulted())
-        m_Out << "constexpr ";
+        Out() << "constexpr ";
       if ((CDecl && CDecl->isExplicitSpecified()) ||
           (ConversionDecl && ConversionDecl->isExplicit()))
-        m_Out << "explicit ";
+        Out() << "explicit ";
     }
 
     PrintingPolicy SubPolicy(m_Policy);
@@ -344,20 +351,20 @@ namespace cling {
 
           if (!HasInitializerList) {
             Proto += " : ";
-            m_Out << Proto;
+            Out() << Proto;
             Proto.clear();
             HasInitializerList = true;
           } else
-            m_Out << ", ";
+            Out() << ", ";
 
           if (BMInitializer->isAnyMemberInitializer()) {
             FieldDecl *FD = BMInitializer->getAnyMember();
-            m_Out << *FD;
+            Out() << *FD;
           } else {
-            m_Out << QualType(BMInitializer->getBaseClass(), 0).getAsString(m_Policy);
+            Out() << QualType(BMInitializer->getBaseClass(), 0).getAsString(m_Policy);
           }
 
-          m_Out << "(";
+          Out() << "(";
           if (!BMInitializer->getInit()) {
             // Nothing to print
           }
@@ -382,62 +389,62 @@ namespace cling {
               SimpleInit = Init;
 
             if (SimpleInit)
-              SimpleInit->printPretty(m_Out, 0, m_Policy, m_Indentation);
+              SimpleInit->printPretty(Out(), 0, m_Policy, m_Indentation);
             else {
               for (unsigned I = 0; I != NumArgs; ++I) {
                 if (isa<CXXDefaultArgExpr>(Args[I]))
                   break;
 
                 if (I)
-                  m_Out << ", ";
-                Args[I]->printPretty(m_Out, 0, m_Policy, m_Indentation);
+                  Out() << ", ";
+                Args[I]->printPretty(Out(), 0, m_Policy, m_Indentation);
               }
             }
           }
-          m_Out << ")";
+          Out() << ")";
           if (BMInitializer->isPackExpansion())
-            m_Out << "...";
+            Out() << "...";
         }
       }
       else if (!ConversionDecl && !isa<CXXDestructorDecl>(D)) {
         if (FT && FT->hasTrailingReturn()) {
-          m_Out << "auto " << Proto << " -> ";
+          Out() << "auto " << Proto << " -> ";
           Proto.clear();
           hasTrailingReturn = true;
         }
-        AFT->getReturnType().print(m_Out, m_Policy, Proto);
+        AFT->getReturnType().print(Out(), m_Policy, Proto);
         Proto.clear();
       }
-      m_Out << Proto;
+      Out() << Proto;
     }
     else {
-      Ty.print(m_Out, m_Policy, Proto);
+      Ty.print(Out(), m_Policy, Proto);
     }
     if (!hasTrailingReturn)
       prettyPrintAttributes(D);
 
     if (D->isPure())
-      m_Out << " = 0";
+      Out() << " = 0";
     else if (D->isDeletedAsWritten())
-      m_Out << " = delete";
+      Out() << " = delete";
     else if (D->isExplicitlyDefaulted())
-      m_Out << " = default";
+      Out() << " = default";
     else if (D->doesThisDeclarationHaveABody() && !m_Policy.TerseOutput) {
       if (!D->hasPrototype() && D->getNumParams()) {
         // This is a K&R function definition, so we need to print the
         // parameters.
-        m_Out << '\n';
-        ForwardDeclPrinter ParamPrinter(m_Out, m_SMgr, SubPolicy,
+        Out() << '\n';
+        ForwardDeclPrinter ParamPrinter(Out(), m_SMgr, SubPolicy,
                                         m_Indentation);
         m_Indentation += m_Policy.Indentation;
         for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
           Indent();
           ParamPrinter.VisitParmVarDecl(D->getParamDecl(i));
-          m_Out << ";\n";
+          Out() << ";\n";
         }
         m_Indentation -= m_Policy.Indentation;
       } else
-        m_Out << ' ';
+        Out() << ' ';
 
       //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
 
@@ -451,31 +458,31 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitFieldDecl(FieldDecl *D) {
     if (!m_Policy.SuppressSpecifiers && D->isMutable())
-      m_Out << "mutable ";
+      Out() << "mutable ";
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
-      m_Out << "__module_private__ ";
-    m_Out << D->getASTContext().getUnqualifiedObjCPointerType(D->getType()).
+      Out() << "__module_private__ ";
+    Out() << D->getASTContext().getUnqualifiedObjCPointerType(D->getType()).
       stream(m_Policy, D->getName());
 
     if (D->isBitField()) {
-      m_Out << " : ";
-      D->getBitWidth()->printPretty(m_Out, 0, m_Policy, m_Indentation);
+      Out() << " : ";
+      D->getBitWidth()->printPretty(Out(), 0, m_Policy, m_Indentation);
     }
 
     Expr *Init = D->getInClassInitializer();
     if (!m_Policy.SuppressInitializers && Init) {
       if (D->getInClassInitStyle() == ICIS_ListInit)
-        m_Out << " ";
+        Out() << " ";
       else
-        m_Out << " = ";
-      Init->printPretty(m_Out, 0, m_Policy, m_Indentation);
+        Out() << " = ";
+      Init->printPretty(Out(), 0, m_Policy, m_Indentation);
     }
     prettyPrintAttributes(D);
     skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitLabelDecl(LabelDecl *D) {
-    m_Out << *D << ":";
+    Out() << *D << ":";
     skipCurrentDecl(false);
   }
 
@@ -489,24 +496,24 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers) {
       StorageClass SC = D->getStorageClass();
       if (SC != SC_None)
-        m_Out << VarDecl::getStorageClassSpecifierString(SC) << " ";
+        Out() << VarDecl::getStorageClassSpecifierString(SC) << " ";
 
       switch (D->getTSCSpec()) {
       case TSCS_unspecified:
         break;
       case TSCS___thread:
-        m_Out << "__thread ";
+        Out() << "__thread ";
         break;
       case TSCS__Thread_local:
-        m_Out << "_Thread_local ";
+        Out() << "_Thread_local ";
         break;
       case TSCS_thread_local:
-        m_Out << "thread_local ";
+        Out() << "thread_local ";
         break;
       }
 
       if (D->isModulePrivate())
-        m_Out << "__module_private__ ";
+        Out() << "__module_private__ ";
     }
 
     QualType T = D->getTypeSourceInfo()
@@ -518,7 +525,7 @@ namespace cling {
     //Should be __restrict
     //So, we ignore restrict here
     T.removeLocalRestrict();
-//    T.print(m_Out, m_Policy, D->getName());
+//    T.print(Out(), m_Policy, D->getName());
     printDeclType(T,D->getName());
     //    llvm::outs()<<D->getName()<<"\n";
     T.addRestrict();
@@ -537,16 +544,16 @@ namespace cling {
       if (!ImplicitInit) {
         if ((D->getInitStyle() == VarDecl::CallInit)
             && !isa<ParenListExpr>(Init))
-          m_Out << "(";
+          Out() << "(";
         else if (D->getInitStyle() == VarDecl::CInit) {
           if(!D->isDefinedOutsideFunctionOrMethod())
-            m_Out << " = "; //Comment for skipping default function args
+            Out() << " = "; //Comment for skipping default function args
         }
         if (!D->isDefinedOutsideFunctionOrMethod())
           //Comment for skipping default function args
-          Init->printPretty(m_Out, 0, m_Policy, m_Indentation);
+          Init->printPretty(Out(), 0, m_Policy, m_Indentation);
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
-        m_Out << ")";
+        Out() << ")";
       }
     }
 
@@ -561,24 +568,24 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFileScopeAsmDecl(FileScopeAsmDecl *D) {
-    m_Out << "__asm (";
-    D->getAsmString()->printPretty(m_Out, 0, m_Policy, m_Indentation);
-    m_Out << ")";
+    Out() << "__asm (";
+    D->getAsmString()->printPretty(Out(), 0, m_Policy, m_Indentation);
+    Out() << ")";
     skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitImportDecl(ImportDecl *D) {
-    m_Out << "@import " << D->getImportedModule()->getFullModuleName()
+    Out() << "@import " << D->getImportedModule()->getFullModuleName()
           << ";\n";
     skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::VisitStaticAssertDecl(StaticAssertDecl *D) {
-    m_Out << "static_assert(";
-    D->getAssertExpr()->printPretty(m_Out, 0, m_Policy, m_Indentation);
-    m_Out << ", ";
-    D->getMessage()->printPretty(m_Out, 0, m_Policy, m_Indentation);
-    m_Out << ")";
+    Out() << "static_assert(";
+    D->getAssertExpr()->printPretty(Out(), 0, m_Policy, m_Indentation);
+    Out() << ", ";
+    D->getMessage()->printPretty(Out(), 0, m_Policy, m_Indentation);
+    Out() << ")";
     skipCurrentDecl(false);
   }
 
@@ -586,23 +593,39 @@ namespace cling {
   // C++ declarations
   //----------------------------------------------------------------------------
   void ForwardDeclPrinter::VisitNamespaceDecl(NamespaceDecl *D) {
-    if (D->isInline())
-      m_Out << "inline ";
-    m_Out << "namespace " << *D << " {\n";
+
 //      VisitDeclContext(D);
+
+    std::string output;
+    llvm::raw_string_ostream stream(output);
+    m_StreamStack.push(&stream);
     for (auto dit=D->decls_begin();dit!=D->decls_end();++dit) {
       Visit(*dit);
       printSemiColon();
     }
-    Indent() << "}\n";
+    m_StreamStack.pop();
+    stream.flush();
+    if ( output.length() == 0 ) {
+      m_SkipFlag = true;
+      return;
+    }
+    if (D->isInline())
+      Out() << "inline ";
+    Out() << "namespace " << *D << " {\n" << output << "}\n";
     m_SkipFlag = true; //Don't print a semi after a namespace
   }
 
   void ForwardDeclPrinter::VisitUsingDirectiveDecl(UsingDirectiveDecl *D) {
-    m_Out << "using namespace ";
+
+    if (shouldSkip(D)) {
+      skipCurrentDecl();
+      return;
+    }
+
+    Out() << "using namespace ";
     if (D->getQualifier())
-      D->getQualifier()->print(m_Out, m_Policy);
-    m_Out << *D->getNominatedNamespaceAsWritten();
+      D->getQualifier()->print(Out(), m_Policy);
+    Out() << *D->getNominatedNamespaceAsWritten();
     skipCurrentDecl(false);
   }
 
@@ -614,10 +637,10 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitNamespaceAliasDecl(NamespaceAliasDecl *D) {
-    m_Out << "namespace " << *D << " = ";
+    Out() << "namespace " << *D << " = ";
     if (D->getQualifier())
-      D->getQualifier()->print(m_Out, m_Policy);
-    m_Out << *D->getAliasedNamespace();
+      D->getQualifier()->print(Out(), m_Policy);
+    Out() << *D->getAliasedNamespace();
     skipCurrentDecl(false);
   }
 
@@ -633,13 +656,13 @@ namespace cling {
     }
 
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
-      m_Out << "__module_private__ ";
-    m_Out << D->getKindName();
+      Out() << "__module_private__ ";
+    Out() << D->getKindName();
 
 //    if (D->isCompleteDefinition())
       prettyPrintAttributes(D);
     if (D->getIdentifier())
-      m_Out << ' ' << *D ;
+      Out() << ' ' << *D ;
     skipCurrentDecl(false);
 
   }
@@ -654,19 +677,19 @@ namespace cling {
       l = "C++";
     }
 
-    m_Out << "extern \"" << l << "\" ";
+    Out() << "extern \"" << l << "\" ";
     if (D->hasBraces()) {
-      m_Out << "{\n";
+      Out() << "{\n";
 //      VisitDeclContext(D); //To skip weird typedefs and struct definitions
       for (auto it = D->decls_begin(); it != D->decls_end(); ++it) {
         Visit(*it);
         printSemiColon();
       }
-      Indent() << "}";
+      Out() << "}";
     } else {
-      m_Out << "{\n"; // print braces anyway, as the decl may end up getting skipped
+      Out() << "{\n"; // print braces anyway, as the decl may end up getting skipped
       Visit(*D->decls_begin());
-      m_Out << ";}\n";
+      Out() << ";}\n";
     }
   }
 
@@ -675,34 +698,34 @@ namespace cling {
     assert(Params);
     assert(!Args || Params->size() == Args->size());
 
-    m_Out << "template <";
+    Out() << "template <";
 
     for (unsigned i = 0, e = Params->size(); i != e; ++i) {
       if (i != 0)
-        m_Out << ", ";
+        Out() << ", ";
 
       const Decl *Param = Params->getParam(i);
       if (const TemplateTypeParmDecl *TTP =
           dyn_cast<TemplateTypeParmDecl>(Param)) {
 
         if (TTP->wasDeclaredWithTypename())
-          m_Out << "typename ";
+          Out() << "typename ";
         else
-          m_Out << "class ";
+          Out() << "class ";
 
         if (TTP->isParameterPack())
-          m_Out << "...";
+          Out() << "...";
 
-        m_Out << *TTP;
+        Out() << *TTP;
 
         if (Args) {
-          m_Out << " = ";
-          Args->get(i).print(m_Policy, m_Out);
+          Out() << " = ";
+          Args->get(i).print(m_Policy, Out());
         }
         else if (TTP->hasDefaultArgument() &&
                  !TTP->defaultArgumentWasInherited()) {
-          m_Out << " = ";
-          m_Out << TTP->getDefaultArgument().getAsString(m_Policy);
+          Out() << " = ";
+          Out() << TTP->getDefaultArgument().getAsString(m_Policy);
         }
       }
       else if (const NonTypeTemplateParmDecl *NTTP =
@@ -713,13 +736,13 @@ namespace cling {
           printDeclType(NTTP->getType(), Name, NTTP->isParameterPack());
 
         if (Args) {
-          m_Out << " = ";
-          Args->get(i).print(m_Policy, m_Out);
+          Out() << " = ";
+          Args->get(i).print(m_Policy, Out());
         }
         else if (NTTP->hasDefaultArgument() &&
                  !NTTP->defaultArgumentWasInherited()) {
-          m_Out << " = ";
-          NTTP->getDefaultArgument()->printPretty(m_Out, 0, m_Policy,
+          Out() << " = ";
+          NTTP->getDefaultArgument()->printPretty(Out(), 0, m_Policy,
                                                   m_Indentation);
         }
       }
@@ -730,7 +753,7 @@ namespace cling {
       }
     }
 
-    m_Out << "> ";
+    Out() << "> ";
   }
 
   void ForwardDeclPrinter::VisitTemplateDecl(const TemplateDecl *D) {
@@ -739,10 +762,10 @@ namespace cling {
 
     if (const TemplateTemplateParmDecl *TTP =
           dyn_cast<TemplateTemplateParmDecl>(D)) {
-      m_Out << "class ";
+      Out() << "class ";
     if (TTP->isParameterPack())
-      m_Out << "...";
-    m_Out << D->getName();
+      Out() << "...";
+    Out() << D->getName();
     }
     else {
       Visit(D->getTemplatedDecl());
@@ -782,7 +805,7 @@ namespace cling {
              E = D->spec_end(); I != E; ++I) {
         PrintTemplateParameters(Params, &(*I)->getTemplateArgs());
         Visit(*I);
-        m_Out << '\n';
+        Out() << '\n';
       }
     }
     skipCurrentDecl(false);
@@ -799,29 +822,29 @@ namespace cling {
 
     const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
 
-    m_Out << "template <> ";
+    Out() << "template <> ";
     VisitCXXRecordDecl(D->getCanonicalDecl());
 
-    m_Out << "<";
+    Out() << "<";
     for (uint i=0; i < iargs.size(); ++i){
       if (iargs[i].getKind() == TemplateArgument::Pack)
         continue;
       if (i != 0 )
-        m_Out << ", ";
-      iargs[i].print(m_Policy,m_Out);
+        Out() << ", ";
+      iargs[i].print(m_Policy,Out());
     }
-    m_Out << ">";
+    Out() << ">";
     skipCurrentDecl(false);
   }
 
   void ForwardDeclPrinter::printSemiColon(bool flag) {
     if (flag) {
       if (!m_SkipFlag)
-        m_Out << ";\n";
+        Out() << ";\n";
       else
         m_SkipFlag = false;
     }
-    else m_Out << ";\n";
+    else Out() << ";\n";
   }
 
   bool ForwardDeclPrinter::isIncompatibleType(QualType q) {
@@ -924,7 +947,9 @@ namespace cling {
     }
     return false;
   }
-
+  bool ForwardDeclPrinter::shouldSkip(UsingDirectiveDecl *D) {
+    return D->getNameAsString().find("::") != std::string::npos;
+  }
 
 
   void ForwardDeclPrinter::printStats() {
