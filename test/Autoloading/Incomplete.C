@@ -8,8 +8,7 @@
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
 // Test incompleteType
-//XFAIL: *
-//Becasue functionality is disabled now
+
 
 #include "cling/Interpreter/Interpreter.h"
 gCling->EnableAutoloading();

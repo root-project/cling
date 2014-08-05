@@ -791,13 +791,13 @@ namespace cling {
 
   void ForwardDeclPrinter::
   VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* D) {
-    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
 
-    if (llvm::isa<ClassTemplatePartialSpecializationDecl>(D)) {
+    if (shouldSkip(D)) {
       skipCurrentDecl();
-      //TODO: How to print partial specializations?
       return;
     }
+
+    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
 
     m_Out << "template <> ";
     VisitCXXRecordDecl(D->getCanonicalDecl());
@@ -826,8 +826,13 @@ namespace cling {
 
   bool ForwardDeclPrinter::isIncompatibleType(QualType q) {
     //FIXME: This is a workaround and filters out many acceptable cases
+    if (q.getTypePtr()->isAnyPointerType())
+        q = q.getTypePtr()->getPointeeType();
+    q.removeLocalConst();
+    q.removeLocalRestrict();
+    q.removeLocalVolatile();
     llvm::StringRef str = q.getAsString();
-
+//    llvm::outs() << "Q:"<<str<<"\n";
     return m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end()
            || str.find("::") != llvm::StringRef::npos;
 
@@ -867,9 +872,24 @@ namespace cling {
         m_IncompatibleTypes.insert(D->getName());
         return true;
       }
+      if (isa<RecordType>(ET->getNamedType())) {
+        m_IncompatibleTypes.insert(D->getName());
+        return true;
+      }
     }
 
+    if (const TemplateSpecializationType* tst
+            = dyn_cast<TemplateSpecializationType>(D->getTypeSourceInfo()->getType().getTypePtr())){
+      for (uint i = 0; i < tst->getNumArgs(); ++i ) {
+        const TemplateArgument& arg = tst->getArg(i);
+        if (arg.getKind() == TemplateArgument::ArgKind::Type)
+          if (m_IncompatibleTypes.find(arg.getAsType().getAsString())!=m_IncompatibleTypes.end())
+            return true;
+      }
+    }
     if (isIncompatibleType(D->getTypeSourceInfo()->getType())) {
+      m_IncompatibleTypes.insert(D->getName());
+//      llvm::outs() << "I: "<<D->getName()<<"\n";
       return true;
     }
     return false;
@@ -889,6 +909,24 @@ namespace cling {
     }
     m_TotalDecls++;
   }
+  bool ForwardDeclPrinter::shouldSkip(ClassTemplateSpecializationDecl *D) {
+    if (llvm::isa<ClassTemplatePartialSpecializationDecl>(D)) {
+        //TODO: How to print partial specializations?
+        return true;
+
+    }
+    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
+    for (uint i = 0; i < iargs.size(); ++i) {
+      const TemplateArgument& arg = iargs[i];
+      if (arg.getKind() == TemplateArgument::ArgKind::Type)
+        if (m_IncompatibleTypes.find(arg.getAsType().getAsString())!=m_IncompatibleTypes.end())
+          return true;
+    }
+    return false;
+  }
+
+
+
   void ForwardDeclPrinter::printStats() {
     llvm::outs() << m_SkipCounter << " decls skipped out of " << m_TotalDecls << "\n";
   }

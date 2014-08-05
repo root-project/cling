@@ -121,7 +121,7 @@ namespace cling {
     bool shouldSkip(clang::TypedefDecl* D);
     bool shouldSkip(clang::VarDecl* D);
     bool shouldSkip(clang::EnumDecl* D);
-    bool shouldSkip(clang::ClassTemplateSpecializationDecl* D){return true;}
+    bool shouldSkip(clang::ClassTemplateSpecializationDecl* D);
     bool shouldSkip(clang::UsingDecl* D){return true;}
     bool shouldSkip(clang::UsingShadowDecl* D){return true;}
 
