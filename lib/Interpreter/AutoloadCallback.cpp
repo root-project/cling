@@ -94,6 +94,7 @@ namespace cling {
     InterpreterCallbacks(interp,true,false,true), m_Interpreter(interp){
 
   }
+
   AutoloadCallback::~AutoloadCallback() {
   }
 
@@ -102,30 +103,27 @@ namespace cling {
 
     assert(annotation != "" && "Empty annotation!");
 
-      clang::Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
-      const FileEntry* FE = 0;
-      SourceLocation fileNameLoc;
-      bool isAngled = false;
-      const DirectoryLookup* LookupFrom = 0;
-      const DirectoryLookup* CurDir = 0;
+    clang::Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
+    const FileEntry* FE = 0;
+    SourceLocation fileNameLoc;
+    bool isAngled = false;
+    const DirectoryLookup* LookupFrom = 0;
+    const DirectoryLookup* CurDir = 0;
 
+    FE = PP.LookupFile(fileNameLoc, annotation, isAngled, LookupFrom, CurDir,
+                       /*SearchPath*/0, /*RelativePath*/ 0,
+                       /*suggestedModule*/0, /*SkipCache*/false,
+                       /*OpenFile*/ false, /*CacheFail*/ false);
 
+    assert(FE && "Must have a valid FileEntry");
 
-      FE = PP.LookupFile(fileNameLoc, annotation, isAngled, LookupFrom, CurDir,
-                        /*SearchPath*/0, /*RelativePath*/ 0,
-                        /*suggestedModule*/0, /*SkipCache*/false,
-                        /*OpenFile*/ false, /*CacheFail*/ false);
+    auto& stateMap = m_Map;
+    auto iterator = stateMap.find(FE->getUID());
 
-      assert(FE && "Must have a valid FileEntry");
+    if(iterator == stateMap.end())
+      stateMap[FE->getUID()] = FileInfo();
 
-      auto& stateMap = m_Map;
-      auto iterator = stateMap.find(FE->getUID());
-
-      if(iterator == stateMap.end())
-        stateMap[FE->getUID()] = FileInfo();
-
-      stateMap[FE->getUID()].Decls.push_back(decl);
-
+    stateMap[FE->getUID()].Decls.push_back(decl);
   }
 
   void AutoloadCallback::HandleNamespace(NamespaceDecl* NS) {
