@@ -135,12 +135,10 @@ namespace cling {
 
   void AutoloadCallback::HandleClassTemplate(ClassTemplateDecl* CT) {
     CXXRecordDecl* cxxr = CT->getTemplatedDecl();
-    if(cxxr->hasAttr<AnnotateAttr>())
-      InsertIntoAutoloadingState(CT,cxxr->getAttr<AnnotateAttr>()->getAnnotation());
+    InsertIntoAutoloadingState(CT,cxxr->getAttr<AnnotateAttr>()->getAnnotation());
   }
   void AutoloadCallback::HandleFunction(FunctionDecl *F) {
-    if(F->hasAttr<AnnotateAttr>())
-      InsertIntoAutoloadingState(F,F->getAttr<AnnotateAttr>()->getAnnotation());
+    InsertIntoAutoloadingState(F,F->getAttr<AnnotateAttr>()->getAnnotation());
   }
 
   void AutoloadCallback::HandleDeclVector(std::vector<clang::Decl*> Decls) {
@@ -159,6 +157,8 @@ namespace cling {
       Transaction::DelayCallInfo DCI = *I;
 
       if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
+        continue;
+      if (DCI.m_DGR.isNull() || (*DCI.m_DGR.begin())->hasAttr<AnnotateAttr>())
         continue;
 
       std::vector<clang::Decl*> decls;
