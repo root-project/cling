@@ -154,21 +154,20 @@ namespace cling {
     }
   }
   void AutoloadCallback::TransactionCommitted(const Transaction &T) {
-      for (Transaction::const_iterator I = T.decls_begin(), E = T.decls_end();
-           I != E; ++I) {
-        Transaction::DelayCallInfo DCI = *I;
+    for (Transaction::const_iterator I = T.decls_begin(), E = T.decls_end();
+         I != E; ++I) {
+      Transaction::DelayCallInfo DCI = *I;
 
-        if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
-          continue;
+      if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
+        continue;
 
-        std::vector<clang::Decl*> decls;
-        for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
-               JE = DCI.m_DGR.end(); J != JE; ++J) {
-          decls.push_back(*J);
-        }
-        HandleDeclVector(decls);
+      std::vector<clang::Decl*> decls;
+      for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
+             JE = DCI.m_DGR.end(); J != JE; ++J) {
+        decls.push_back(*J);
       }
+      HandleDeclVector(decls);
+    }
   }
 
-
-}//end namespace cling
+} //end namespace cling
