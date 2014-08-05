@@ -100,8 +100,7 @@ namespace cling {
   void AutoloadCallback::InsertIntoAutoloadingState (clang::Decl* decl,
                                                      std::string annotation) {
 
-      if (annotation == "")
-        return;
+    assert(annotation != "" && "Empty annotation!");
 
       clang::Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
       const FileEntry* FE = 0;
