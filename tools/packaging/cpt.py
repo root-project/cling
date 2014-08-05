@@ -38,82 +38,6 @@ import fileinput
 import stat
 
 ###############################################################################
-#                           Platform initialization                           #
-###############################################################################
-
-OS=platform.system()
-FAMILY=os.name.upper()
-
-if OS == 'Windows':
-    DIST = 'N/A'
-    RELEASE = OS + ' ' + platform.release()
-    REV = platform.version()
-
-    EXEEXT = '.exe'
-    SHLIBEXT = '.dll'
-
-    TMP_PREFIX='C:\\Windows\\Temp\\cling-obj\\'
-    workdir = 'C:\\ec\\build\\'
-
-elif OS == 'Linux':
-    DIST = platform.linux_distribution()[0]
-    RELEASE = platform.linux_distribution()[2]
-    REV = platform.linux_distribution()[1]
-
-    EXEEXT = ''
-    SHLIBEXT = '.so'
-
-    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
-    workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
-
-elif OS == 'Darwin':
-    DIST = 'MacOSX'
-    RELEASE = platform.release()
-    REV = platform.mac_ver()[0]
-
-    EXEEXT = ''
-    SHLIBEXT = '.dylib'
-
-    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
-    workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
-
-else:
-    # Extensions will be detected anyway by set_ext()
-    EXEEXT = ''
-    SHLIBEXT = ''
-
-    #TODO: Need to test this in other platforms
-    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
-    workdir = os.path.expanduser(os.path.join('~', 'ec', 'build'))
-
-
-###############################################################################
-#                               Global variables                              #
-###############################################################################
-
-# This is needed in Windows
-if not os.path.isdir(workdir):
-    os.makedirs(workdir)
-
-if os.path.isdir(TMP_PREFIX):
-    shutil.rmtree(TMP_PREFIX)
-
-os.makedirs(TMP_PREFIX)
-
-
-srcdir = os.path.join(workdir, 'cling-src')
-CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
-LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
-prefix = ''
-LLVM_GIT_URL = 'http://root.cern.ch/git/llvm.git'
-CLANG_GIT_URL = 'http://root.cern.ch/git/clang.git'
-CLING_GIT_URL = 'http://root.cern.ch/git/cling.git'
-LLVMRevision = urllib2.urlopen("https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip()
-VERSION = ''
-REVISION = ''
-
-
-###############################################################################
 #              Platform independent functions (formerly indep.py)             #
 ###############################################################################
 
@@ -229,7 +153,8 @@ def wget(url, out_dir):
 
 def fetch_llvm():
     box_draw("Fetch source files")
-    print 'Last known good LLVM revision is: ' + LLVMRevision + '\n'
+    print 'Last known good LLVM revision is: ' + LLVMRevision
+    print 'Current working directory is: ' + workdir + '\n'
     def get_fresh_llvm():
         exec_subprocess_call('git clone %s %s'%(LLVM_GIT_URL, srcdir), workdir)
 
@@ -1337,12 +1262,86 @@ parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in a
 parser.add_argument('--with-llvm-url', help='Specify an alternate URL of LLVM repo', default='http://root.cern.ch/git/llvm.git')
 parser.add_argument('--with-clang-url', help='Specify an alternate URL of Clang repo', default='http://root.cern.ch/git/clang.git')
 parser.add_argument('--with-cling-url', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
-parser.add_argument('--with-workdir', help='Specify an alternate working directory for CPT', default=os.path.expanduser(workdir))
+
+if platform.system() != 'Windows':
+    parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT', default=os.path.expanduser(os.path.join('~', 'ec', 'build')))
+else:
+    parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT', default='C:\\ec\\build\\')
 
 parser.add_argument('--make-proper', help='Internal option to support calls from build system')
 
 args = vars(parser.parse_args())
 
+###############################################################################
+#                           Platform initialization                           #
+###############################################################################
+
+OS=platform.system()
+FAMILY=os.name.upper()
+
+if OS == 'Windows':
+    DIST = 'N/A'
+    RELEASE = OS + ' ' + platform.release()
+    REV = platform.version()
+
+    EXEEXT = '.exe'
+    SHLIBEXT = '.dll'
+
+    TMP_PREFIX='C:\\Windows\\Temp\\cling-obj\\'
+
+elif OS == 'Linux':
+    DIST = platform.linux_distribution()[0]
+    RELEASE = platform.linux_distribution()[2]
+    REV = platform.linux_distribution()[1]
+
+    EXEEXT = ''
+    SHLIBEXT = '.so'
+
+    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
+
+elif OS == 'Darwin':
+    DIST = 'MacOSX'
+    RELEASE = platform.release()
+    REV = platform.mac_ver()[0]
+
+    EXEEXT = ''
+    SHLIBEXT = '.dylib'
+
+    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
+
+else:
+    # Extensions will be detected anyway by set_ext()
+    EXEEXT = ''
+    SHLIBEXT = ''
+
+    #TODO: Need to test this in other platforms
+    TMP_PREFIX=os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
+
+###############################################################################
+#                               Global variables                              #
+###############################################################################
+
+workdir = os.path.expanduser(args['with_workdir'])
+
+# This is needed in Windows
+if not os.path.isdir(workdir):
+    os.makedirs(workdir)
+
+if os.path.isdir(TMP_PREFIX):
+    shutil.rmtree(TMP_PREFIX)
+
+os.makedirs(TMP_PREFIX)
+
+srcdir = os.path.join(workdir, 'cling-src')
+CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
+LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
+prefix = ''
+LLVM_GIT_URL = 'http://root.cern.ch/git/llvm.git'
+CLANG_GIT_URL = 'http://root.cern.ch/git/clang.git'
+CLING_GIT_URL = 'http://root.cern.ch/git/cling.git'
+LLVMRevision = urllib2.urlopen("https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip()
+VERSION = ''
+REVISION = ''
 
 print 'Cling Packaging Tool (CPT)'
 print 'Arguments vector: ' + str(sys.argv)
@@ -1352,7 +1351,7 @@ print 'Operating System: ' + OS
 print 'Distribution: ' + DIST
 print 'Release: ' + RELEASE
 print 'Revision: ' + REV
-print 'Architecture: ' + platform.machine() + '\n'
+print 'Architecture: ' + platform.machine()
 
 if len(sys.argv) == 1:
     print "Error: no options passed"
@@ -1484,7 +1483,6 @@ if args['current_dev']:
     fetch_clang()
     fetch_cling('master')
     set_version()
-
     if args['current_dev'] == 'tar':
         if OS == 'Windows':
             get_win_dep()
