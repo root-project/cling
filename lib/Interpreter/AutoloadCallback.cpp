@@ -61,7 +61,7 @@ namespace cling {
 
       assert(FE && "Must have a valid FileEntry");
 
-      if(m_Map->find(FE) == m_Map->end())
+      if (m_Map->find(FE) == m_Map->end())
         (*m_Map)[FE] = std::vector<Decl*>();
 
       (*m_Map)[FE].push_back(decl);
@@ -69,9 +69,11 @@ namespace cling {
 
   public:
     DefaultArgVisitor() : m_IsStoringState(false), m_Map(0) {}
-
     void RemoveDefaultArgsOf(Decl* D) {
+      //D = D->getMostRecentDecl();
       TraverseDecl(D);
+      //while ((D = D->getPreviousDecl()))
+      //  TraverseDecl(D);
     }
 
     void TrackDefaultArgStateOf(Decl* D, AutoloadCallback::FwdDeclsMap& map,
@@ -85,34 +87,34 @@ namespace cling {
       m_IsStoringState = false;
     }
 
+    bool shouldVisitTemplateInstantiations() { return true; }
     bool VisitTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
-      if (m_IsStoringState) {
-        Decl* parent = cast<Decl>(D->getDeclContext());
-        if (AnnotateAttr* attr = parent->getAttr<AnnotateAttr>())
-          InsertIntoAutoloadingState(D, attr->getAnnotation());
-      }
-      else if (D->hasDefaultArgument())
+      if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
-    bool VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
+    bool VisitDecl(Decl* D) {
       if (m_IsStoringState) {
-        Decl* parent = cast<Decl>(D->getDeclContext());
-        if (AnnotateAttr* attr = parent->getAttr<AnnotateAttr>())
+        if (AnnotateAttr* attr = D->getAttr<AnnotateAttr>())
           InsertIntoAutoloadingState(D, attr->getAnnotation());
       }
+      return true;
+    }
+
+    bool VisitDeclContext(DeclContext* DC) {
+      for (auto D : DC->decls())
+        TraverseDecl(D);
+      return true;
+    }
+
+    bool VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
       if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
     bool VisitParmVarDecl(ParmVarDecl* D) {
-      if (m_IsStoringState) {
-        Decl* parent = cast<Decl>(D->getDeclContext());
-        if (AnnotateAttr* attr = parent->getAttr<AnnotateAttr>())
-          InsertIntoAutoloadingState(D, attr->getAnnotation());
-      }
       if (D->hasDefaultArg())
         D->setDefaultArg(nullptr);
       return true;
@@ -130,20 +132,20 @@ namespace cling {
                           const clang::Module *Imported) {
     assert(File && "Must have a valid File");
 
-    auto found = m_Map.find(File);
-    if (found == m_Map.end())
-      return; // nothing to do, file not referred in any annotation
+    // auto found = m_Map.find(File);
+    // if (found == m_Map.end())
+    //  return; // nothing to do, file not referred in any annotation
     // if(iterator->second.Included)
     //   return; // nothing to do, file already included once
 
     DefaultArgVisitor defaultArgsCleaner;
-
-    for (auto D : found->second) {
-      D->dropAttrs();
+    for (auto I : m_Map)
+    for (auto D : I.second) {
+      //D->dropAttrs();
       defaultArgsCleaner.RemoveDefaultArgsOf(D);
     }
     // Don't need to keep track of cleaned up decls from file.
-    m_Map.erase(found);
+    //m_Map.erase(found);
   }
 
   AutoloadCallback::AutoloadCallback(Interpreter* interp) :
@@ -157,20 +159,19 @@ namespace cling {
   void AutoloadCallback::TransactionCommitted(const Transaction &T) {
 
     DefaultArgVisitor defaultArgsStateCollector;
-
+    Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
     for (Transaction::const_iterator I = T.decls_begin(), E = T.decls_end();
          I != E; ++I) {
       Transaction::DelayCallInfo DCI = *I;
 
-      if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
-        continue;
-      if (DCI.m_DGR.isNull() || (*DCI.m_DGR.begin())->hasAttr<AnnotateAttr>())
-        continue;
+      // if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
+      //   continue;
+      // if (DCI.m_DGR.isNull() || !(*DCI.m_DGR.begin())->hasAttr<AnnotateAttr>())
+      //   continue;
 
       for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
              JE = DCI.m_DGR.end(); J != JE; ++J) {
-        defaultArgsStateCollector.TrackDefaultArgStateOf(*J, m_Map,
-                                                         m_Interpreter->getCI()->getPreprocessor());
+        defaultArgsStateCollector.TrackDefaultArgStateOf(*J, m_Map, PP);
       }
     }
   }
