@@ -157,6 +157,10 @@ namespace cling {
       for (Transaction::const_iterator I = T.decls_begin(), E = T.decls_end();
            I != E; ++I) {
         Transaction::DelayCallInfo DCI = *I;
+
+        if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
+          continue;
+
         std::vector<clang::Decl*> decls;
         for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
                JE = DCI.m_DGR.end(); J != JE; ++J) {
