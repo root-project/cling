@@ -37,25 +37,82 @@ namespace cling {
     return false;
   }
 
-  class DefaultArgRemover: public RecursiveASTVisitor<DefaultArgRemover> {
+  class DefaultArgVisitor: public RecursiveASTVisitor<DefaultArgVisitor> {
+  private:
+    bool m_IsStoringState;
+    AutoloadCallback::FwdDeclsMap* m_Map;
+    clang::Preprocessor* m_PP;
+  private:
+    void InsertIntoAutoloadingState (Decl* decl, std::string annotation) {
+
+      assert(annotation != "" && "Empty annotation!");
+      assert(m_PP);
+
+      const FileEntry* FE = 0;
+      SourceLocation fileNameLoc;
+      bool isAngled = false;
+      const DirectoryLookup* LookupFrom = 0;
+      const DirectoryLookup* CurDir = 0;
+
+      FE = m_PP->LookupFile(fileNameLoc, annotation, isAngled, LookupFrom,
+                            CurDir, /*SearchPath*/0, /*RelativePath*/ 0,
+                            /*suggestedModule*/0, /*SkipCache*/false,
+                            /*OpenFile*/ false, /*CacheFail*/ false);
+
+      assert(FE && "Must have a valid FileEntry");
+
+      if(m_Map->find(FE) == m_Map->end())
+        (*m_Map)[FE] = std::vector<Decl*>();
+
+      (*m_Map)[FE].push_back(decl);
+    }
+
   public:
-    void Remove(Decl* D) {
+    DefaultArgVisitor() : m_IsStoringState(false), m_Map(0) {}
+
+    void RemoveDefaultArgsOf(Decl* D) {
       TraverseDecl(D);
     }
 
+    void TrackDefaultArgStateOf(Decl* D, AutoloadCallback::FwdDeclsMap& map,
+                                Preprocessor& PP) {
+      m_IsStoringState = true;
+      m_Map = &map;
+      m_PP = &PP;
+      TraverseDecl(D);
+      m_PP = 0;
+      m_Map = 0;
+      m_IsStoringState = false;
+    }
+
     bool VisitTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
-      if (D->hasDefaultArgument())
+      if (m_IsStoringState) {
+        Decl* parent = cast<Decl>(D->getDeclContext());
+        if (AnnotateAttr* attr = parent->getAttr<AnnotateAttr>())
+          InsertIntoAutoloadingState(D, attr->getAnnotation());
+      }
+      else if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
     bool VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
+      if (m_IsStoringState) {
+        Decl* parent = cast<Decl>(D->getDeclContext());
+        if (AnnotateAttr* attr = parent->getAttr<AnnotateAttr>())
+          InsertIntoAutoloadingState(D, attr->getAnnotation());
+      }
       if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
     bool VisitParmVarDecl(ParmVarDecl* D) {
+      if (m_IsStoringState) {
+        Decl* parent = cast<Decl>(D->getDeclContext());
+        if (AnnotateAttr* attr = parent->getAttr<AnnotateAttr>())
+          InsertIntoAutoloadingState(D, attr->getAnnotation());
+      }
       if (D->hasDefaultArg())
         D->setDefaultArg(nullptr);
       return true;
@@ -73,21 +130,20 @@ namespace cling {
                           const clang::Module *Imported) {
     assert(File && "Must have a valid File");
 
-    auto iterator = m_Map.find(File->getUID());
-    if (iterator == m_Map.end())
+    auto found = m_Map.find(File);
+    if (found == m_Map.end())
       return; // nothing to do, file not referred in any annotation
-    if(iterator->second.Included)
-      return; // nothing to do, file already included once
+    // if(iterator->second.Included)
+    //   return; // nothing to do, file already included once
 
-    iterator->second.Included = true;
+    DefaultArgVisitor defaultArgsCleaner;
 
-    DefaultArgRemover defaultArgsCleaner;
-
-    for(clang::Decl* decl : iterator->second.Decls) {
-      decl->dropAttrs();
-      defaultArgsCleaner.Remove(decl);
+    for (auto D : found->second) {
+      D->dropAttrs();
+      defaultArgsCleaner.RemoveDefaultArgsOf(D);
     }
-
+    // Don't need to keep track of cleaned up decls from file.
+    m_Map.erase(found);
   }
 
   AutoloadCallback::AutoloadCallback(Interpreter* interp) :
@@ -98,60 +154,10 @@ namespace cling {
   AutoloadCallback::~AutoloadCallback() {
   }
 
-  void AutoloadCallback::InsertIntoAutoloadingState (clang::Decl* decl,
-                                                     std::string annotation) {
-
-    assert(annotation != "" && "Empty annotation!");
-
-    clang::Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
-    const FileEntry* FE = 0;
-    SourceLocation fileNameLoc;
-    bool isAngled = false;
-    const DirectoryLookup* LookupFrom = 0;
-    const DirectoryLookup* CurDir = 0;
-
-    FE = PP.LookupFile(fileNameLoc, annotation, isAngled, LookupFrom, CurDir,
-                       /*SearchPath*/0, /*RelativePath*/ 0,
-                       /*suggestedModule*/0, /*SkipCache*/false,
-                       /*OpenFile*/ false, /*CacheFail*/ false);
-
-    assert(FE && "Must have a valid FileEntry");
-
-    auto& stateMap = m_Map;
-    auto iterator = stateMap.find(FE->getUID());
-
-    if(iterator == stateMap.end())
-      stateMap[FE->getUID()] = FileInfo();
-
-    stateMap[FE->getUID()].Decls.push_back(decl);
-  }
-
-  void AutoloadCallback::HandleNamespace(NamespaceDecl* NS) {
-    std::vector<clang::Decl*> decls;
-    for(auto dit = NS->decls_begin(); dit != NS->decls_end(); ++dit)
-      decls.push_back(*dit);
-    HandleDeclVector(decls);
-  }
-
-  void AutoloadCallback::HandleClassTemplate(ClassTemplateDecl* CT) {
-    CXXRecordDecl* cxxr = CT->getTemplatedDecl();
-    InsertIntoAutoloadingState(CT,cxxr->getAttr<AnnotateAttr>()->getAnnotation());
-  }
-  void AutoloadCallback::HandleFunction(FunctionDecl *F) {
-    InsertIntoAutoloadingState(F,F->getAttr<AnnotateAttr>()->getAnnotation());
-  }
-
-  void AutoloadCallback::HandleDeclVector(std::vector<clang::Decl*> Decls) {
-    for(auto decl : Decls ) {
-      if(auto ct = llvm::dyn_cast<ClassTemplateDecl>(decl))
-        HandleClassTemplate(ct);
-      if(auto ns = llvm::dyn_cast<NamespaceDecl>(decl))
-        HandleNamespace(ns);
-      if(auto f = llvm::dyn_cast<FunctionDecl>(decl))
-        HandleFunction(f);
-    }
-  }
   void AutoloadCallback::TransactionCommitted(const Transaction &T) {
+
+    DefaultArgVisitor defaultArgsStateCollector;
+
     for (Transaction::const_iterator I = T.decls_begin(), E = T.decls_end();
          I != E; ++I) {
       Transaction::DelayCallInfo DCI = *I;
@@ -161,12 +167,11 @@ namespace cling {
       if (DCI.m_DGR.isNull() || (*DCI.m_DGR.begin())->hasAttr<AnnotateAttr>())
         continue;
 
-      std::vector<clang::Decl*> decls;
       for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
              JE = DCI.m_DGR.end(); J != JE; ++J) {
-        decls.push_back(*J);
+        defaultArgsStateCollector.TrackDefaultArgStateOf(*J, m_Map,
+                                                         m_Interpreter->getCI()->getPreprocessor());
       }
-      HandleDeclVector(decls);
     }
   }
 
