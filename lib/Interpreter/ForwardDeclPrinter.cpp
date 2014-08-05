@@ -107,10 +107,9 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
-
     if (D->getSourceRange().isInvalid())
       return;
-    std::string file = m_SMgr.getFilename(D->getLocStart());
+    std::string file = m_SMgr.getFilename(m_SMgr.getSpellingLoc(D->getLocStart()));
 //    assert ( file.length() != 0 && "Filename Should not be blank");
     m_Out << " __attribute__((annotate(\""
           << file;
