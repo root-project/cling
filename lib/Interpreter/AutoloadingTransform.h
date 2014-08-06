@@ -1,14 +1,12 @@
 #ifndef CLING_AUTOLOADING_TRANSFORM_H
 #define CLING_AUTOLOADING_TRANSFORM_H
 
-#include "cling/Interpreter/Interpreter.h"
 #include "TransactionTransformer.h"
-#include "llvm/ADT/OwningPtr.h"
-
 
 namespace clang {
   class Sema;
 }
+
 namespace cling {
 
   class AutoloadingTransform : public TransactionTransformer {
