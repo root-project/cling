@@ -12,7 +12,7 @@ using namespace clang;
 
 namespace cling {
 
-  class DeclFixer : public DeclVisitor<Visitor> {
+  class DeclFixer : public DeclVisitor<DeclFixer> {
   public:
     void VisitEnumDecl(EnumDecl* ED) {
       if (ED->isFixed()) {
