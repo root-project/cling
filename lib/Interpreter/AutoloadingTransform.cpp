@@ -2,7 +2,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/AST/AST.h"
-#include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/AST/DeclVisitor.h"
 
 #include "AutoloadingTransform.h"
 #include "cling/Interpreter/Transaction.h"
@@ -11,16 +11,10 @@
 using namespace clang;
 
 namespace cling {
-  AutoloadingTransform::AutoloadingTransform(clang::Sema* S, Interpreter*)
-    : TransactionTransformer(S) {
-  }
 
-  AutoloadingTransform::~AutoloadingTransform()
-  {}
-
-  class DeclVisitor : public RecursiveASTVisitor<DeclVisitor> {
+  class DeclFixer : public DeclVisitor<Visitor> {
   public:
-    bool TraverseEnumDecl(EnumDecl* ED) {
+    void VisitEnumDecl(EnumDecl* ED) {
       if (ED->isFixed()) {
         StringRef str = ED->getAttr<AnnotateAttr>()->getAnnotation();
         char ch = str.back();
@@ -35,13 +29,12 @@ namespace cling {
         if (ch != '1')
           EnumDeclDerived::setFixed(ED, false);
       }
-      return true;
     }
   };
 
   void AutoloadingTransform::Transform() {
     const Transaction* T = getTransaction();
-    DeclVisitor visitor;
+    DeclFixer visitor;
     for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
          I != E; ++I) {
       Transaction::DelayCallInfo DCI = *I;
@@ -49,7 +42,7 @@ namespace cling {
              JE = DCI.m_DGR.end(); J != JE; ++J) {
         if (!(*J)->hasAttr<AnnotateAttr>())
           continue;
-        visitor.TraverseDecl(*J);
+        visitor.Visit(*J);
 //FIXME: Enable when safe !
 //        if ( (*J)->hasAttr<AnnotateAttr>() /*FIXME: && CorrectCallbackLoaded() how ? */  )
 //          clang::Decl::castToDeclContext(*J)->setHasExternalLexicalStorage();
