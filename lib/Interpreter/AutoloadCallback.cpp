@@ -140,20 +140,16 @@ namespace cling {
                           const clang::Module *Imported) {
     assert(File && "Must have a valid File");
 
-    // auto found = m_Map.find(File);
-    // if (found == m_Map.end())
-    //  return; // nothing to do, file not referred in any annotation
-    // if(iterator->second.Included)
-    //   return; // nothing to do, file already included once
+    auto found = m_Map.find(File);
+    if (found == m_Map.end())
+     return; // nothing to do, file not referred in any annotation
 
     DefaultArgVisitor defaultArgsCleaner;
-    for (auto I : m_Map)
-    for (auto D : I.second) {
-      //D->dropAttrs();
+    for (auto D : found->second) {
       defaultArgsCleaner.RemoveDefaultArgsOf(D);
     }
     // Don't need to keep track of cleaned up decls from file.
-    //m_Map.erase(found);
+    m_Map.erase(found);
   }
 
   AutoloadCallback::AutoloadCallback(Interpreter* interp) :
