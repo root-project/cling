@@ -2,6 +2,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/AST/AST.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 
 #include "AutoloadingTransform.h"
 #include "cling/Interpreter/Transaction.h"
@@ -17,31 +18,38 @@ namespace cling {
   AutoloadingTransform::~AutoloadingTransform()
   {}
 
+  class DeclVisitor : public RecursiveASTVisitor<DeclVisitor> {
+  public:
+    bool VisitEnumDecl(EnumDecl* ED) {
+      if (ED->isFixed()) {
+        auto str = ED->getAttr<AnnotateAttr>()->getAnnotation();
+        char ch = str.back();
+        str.drop_back();
+        ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(),str);
+        struct EnumDeclDerived: public EnumDecl {
+          static void setFixed(EnumDecl* ED, bool value = true) {
+            ((EnumDeclDerived*)ED)->IsFixed = value;
+          }
+        };
+
+        if (ch != '1')
+          EnumDeclDerived::setFixed(ED, false);
+      }
+      return true;
+    }
+  };
+
   void AutoloadingTransform::Transform() {
     const Transaction* T = getTransaction();
+    DeclVisitor visitor;
     for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
          I != E; ++I) {
       Transaction::DelayCallInfo DCI = *I;
-      std::vector<clang::Decl*> decls;
       for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
              JE = DCI.m_DGR.end(); J != JE; ++J) {
         if (!(*J)->hasAttr<AnnotateAttr>())
           continue;
-
-        if (EnumDecl* ED = dyn_cast<EnumDecl>(*J))
-          if (ED->isFixed()) {
-            auto str = ED->getAttr<AnnotateAttr>()->getAnnotation();
-            char ch = str.back();
-            str.drop_back();
-            ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(),str);
-            struct EnumDeclDerived: public EnumDecl {
-              static void setFixed(EnumDecl* ED, bool value = true) {
-                ((EnumDeclDerived*)ED)->IsFixed = value;
-              }
-            };
-            if(ch != '1')
-              EnumDeclDerived::setFixed(ED, false);
-          }
+        visitor.TraverseDecl(*J);
 //FIXME: Enable when safe !
 //        if ( (*J)->hasAttr<AnnotateAttr>() /*FIXME: && CorrectCallbackLoaded() how ? */  )
 //          clang::Decl::castToDeclContext(*J)->setHasExternalLexicalStorage();
