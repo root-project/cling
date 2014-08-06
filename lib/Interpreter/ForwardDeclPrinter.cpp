@@ -607,6 +607,7 @@ namespace cling {
     stream.flush();
     if ( output.length() == 0 ) {
       m_SkipFlag = true;
+      m_IncompatibleTypes.insert(D->getName());
       return;
     }
     if (D->isInline())
@@ -948,7 +949,8 @@ namespace cling {
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(UsingDirectiveDecl *D) {
-    return D->getNameAsString().find("::") != std::string::npos;
+    llvm::StringRef str = D->getNominatedNamespace()->getNameAsString();
+    return m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end();
   }
 
 
