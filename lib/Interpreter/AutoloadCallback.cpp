@@ -88,33 +88,41 @@ namespace cling {
     }
 
     bool shouldVisitTemplateInstantiations() { return true; }
-    bool VisitTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
+    bool TraverseTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
       if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
     bool VisitDecl(Decl* D) {
-      if (m_IsStoringState) {
-        if (AnnotateAttr* attr = D->getAttr<AnnotateAttr>())
-          InsertIntoAutoloadingState(D, attr->getAnnotation());
+      if (m_IsStoringState)
+        return true;
+
+      AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
+      if (!attr)
+        return true;
+
+      switch (D->getKind()) {
+      default:
+        InsertIntoAutoloadingState(D, attr->getAnnotation());
+        break;
+      case Decl::Enum:
+        // EnumDecls have extra information 2 chars after the filename used
+        // for extra fixups.
+        InsertIntoAutoloadingState(D, attr->getAnnotation().drop_back(2));
+        break;
       }
+
       return true;
     }
 
-    bool VisitDeclContext(DeclContext* DC) {
-      for (auto D : DC->decls())
-        TraverseDecl(D);
-      return true;
-    }
-
-    bool VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
+    bool TraverseNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
       if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
-    bool VisitParmVarDecl(ParmVarDecl* D) {
+    bool TraverseParmVarDecl(ParmVarDecl* D) {
       if (D->hasDefaultArg())
         D->setDefaultArg(nullptr);
       return true;

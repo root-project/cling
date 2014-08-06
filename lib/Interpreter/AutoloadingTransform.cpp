@@ -20,12 +20,12 @@ namespace cling {
 
   class DeclVisitor : public RecursiveASTVisitor<DeclVisitor> {
   public:
-    bool VisitEnumDecl(EnumDecl* ED) {
+    bool TraverseEnumDecl(EnumDecl* ED) {
       if (ED->isFixed()) {
-        auto str = ED->getAttr<AnnotateAttr>()->getAnnotation();
+        StringRef str = ED->getAttr<AnnotateAttr>()->getAnnotation();
         char ch = str.back();
-        str.drop_back();
-        ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(),str);
+        str.drop_back(2);
+        ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(), str);
         struct EnumDeclDerived: public EnumDecl {
           static void setFixed(EnumDecl* ED, bool value = true) {
             ((EnumDeclDerived*)ED)->IsFixed = value;
