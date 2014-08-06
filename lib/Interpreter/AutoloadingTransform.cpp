@@ -1,12 +1,7 @@
-#include "clang/Sema/Sema.h"
-#include "clang/Lex/Preprocessor.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/AST/AST.h"
-#include "clang/AST/DeclVisitor.h"
-
 #include "AutoloadingTransform.h"
 #include "cling/Interpreter/Transaction.h"
-#include "cling/Interpreter/DynamicLibraryManager.h"
+
+#include "clang/AST/DeclVisitor.h"
 
 using namespace clang;
 
