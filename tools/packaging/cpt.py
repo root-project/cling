@@ -1259,9 +1259,9 @@ parser.add_argument('--rpm-tag', help='Package the snapshot of a given tag in an
 parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in an NSIS installer (.exe)')
 
 # Variable overrides
-parser.add_argument('--with-llvm-url', help='Specify an alternate URL of LLVM repo', default='http://root.cern.ch/git/llvm.git')
-parser.add_argument('--with-clang-url', help='Specify an alternate URL of Clang repo', default='http://root.cern.ch/git/clang.git')
-parser.add_argument('--with-cling-url', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
+parser.add_argument('--with-llvm-url', action='store', help='Specify an alternate URL of LLVM repo', default='http://root.cern.ch/git/llvm.git')
+parser.add_argument('--with-clang-url', action='store', help='Specify an alternate URL of Clang repo', default='http://root.cern.ch/git/clang.git')
+parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
 
 if platform.system() != 'Windows':
     parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT', default=os.path.expanduser(os.path.join('~', 'ec', 'build')))
@@ -1336,9 +1336,9 @@ srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
-LLVM_GIT_URL = 'http://root.cern.ch/git/llvm.git'
-CLANG_GIT_URL = 'http://root.cern.ch/git/clang.git'
-CLING_GIT_URL = 'http://root.cern.ch/git/cling.git'
+LLVM_GIT_URL = args['with_llvm_url']
+CLANG_GIT_URL = args['with_clang_url']
+CLING_GIT_URL = args['with_cling_url']
 LLVMRevision = urllib2.urlopen("https://raw.githubusercontent.com/ani07nov/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip()
 VERSION = ''
 REVISION = ''
