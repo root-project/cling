@@ -1180,12 +1180,12 @@ def make_dmg():
     print 'Copy APP Bundle to staging area: ' + STAGING_DIR
     shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), STAGING_DIR)
 
-    print 'Stripping file: ' + APP_EXE
-    exec_subprocess_call('strip -u -r %s'%(APP_EXE), workdir)
+    print 'Stripping file: ' + APP_EXE.lower()
+    exec_subprocess_call('strip -u -r %s'%(APP_EXE.lower()), workdir)
 
     DU = exec_subprocess_check_output("du -sh %s"%(STAGING_DIR), workdir)
     SIZE = str(float(DU[:DU.find('M')].strip()) + 1.0)
-    print 'Estimated size of application bundle: ' + SIZE
+    print 'Estimated size of application bundle: ' + SIZE + 'MB'
 
     print 'Building temporary Apple Disk Image'
     exec_subprocess_call('hdiutil create -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s'%(STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
