@@ -390,9 +390,16 @@ def cleanup():
             os.remove(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION)))
 
         if os.path.isdir(os.path.join(workdir, 'Cling.app')):
-            print "Remove directory: " + Cling.app
+            print 'Remove directory: ' + 'Cling.app'
             shutil.rmtree(os.path.join(workdir, 'Cling.app'))
 
+        if os.path.isdir(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))):
+            print 'Remove directory: ' + os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))
+            shutil.rmtree(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION)))
+
+        if os.path.isdir(os.path.join(workdir, 'Install')):
+            print 'Remove directory: ' + os.path.join(workdir, 'Install')
+            shutil.rmtree(os.path.join(workdir, 'Install'))
 
 ###############################################################################
 #            Debian specific functions (ported from debianize.sh)             #
@@ -1234,14 +1241,6 @@ end tell
 
     print "Creating compressed Apple Disk Image..."
     exec_subprocess_call('hdiutil convert %s -format UDZO -imagekey zlib-level=9 -o %s'%(DMG_TMP, DMG_FINAL), workdir)
-
-    if os.path.isdir(os.path.join(workdir, DMG_TMP)):
-        print "Remove directory: " + os.path.join(workdir, DMG_TMP)
-        shutil.rmtree(os.path.join(workdir, DMG_TMP))
-
-    if os.path.isdir(os.path.join(workdir, STAGING_DIR)):
-        print "Remove directory: " + os.path.join(workdir, STAGING_DIR)
-        shutil.rmtree(os.path.join(workdir, STAGING_DIR))
 
     print 'Done'
 
