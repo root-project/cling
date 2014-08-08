@@ -129,6 +129,14 @@ namespace cling {
       return true;
     }
 
+    bool TraverseTemplateDecl(TemplateDecl* D) {
+      if (!D->getTemplatedDecl()->hasAttr<AnnotateAttr>())
+        return false;
+      for(auto P: D->getTemplateParameters()->asArray())
+        TraverseDecl(P);
+      return true;
+    }
+
     bool TraverseNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
       if (D->hasDefaultArgument())
         D->removeDefaultArgument();
