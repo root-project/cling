@@ -1256,6 +1256,7 @@ parser.add_argument('--tarball-tag', help='Package the snapshot of a given tag i
 parser.add_argument('--deb-tag', help='Package the snapshot of a given tag in a Debian package (.deb)')
 parser.add_argument('--rpm-tag', help='Package the snapshot of a given tag in an RPM package (.rpm)')
 parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in an NSIS installer (.exe)')
+parser.add_argument('--dmg-tag', help='Package the snapshot of a given tag in a DMG package (.dmg)')
 
 # Variable overrides
 parser.add_argument('--with-llvm-url', action='store', help='Specify an alternate URL of LLVM repo', default='http://root.cern.ch/git/llvm.git')
