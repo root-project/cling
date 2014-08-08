@@ -19,6 +19,12 @@ namespace cling {
 
   class DeclFixer : public DeclVisitor<DeclFixer> {
   public:
+    void VisitDecl(Decl* D) {
+      if (DeclContext* DC = dyn_cast<DeclContext>(D))
+        for (auto Child : DC->decls())
+          Visit(Child);
+    }
+
     void VisitEnumDecl(EnumDecl* ED) {
       if (ED->isFixed()) {
         StringRef str = ED->getAttr<AnnotateAttr>()->getAnnotation();
