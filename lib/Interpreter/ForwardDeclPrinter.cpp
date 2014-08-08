@@ -881,11 +881,7 @@ namespace cling {
     while (temp.getTypePtr()->isReferenceType())//For move references
         temp = temp.getNonReferenceType();
 
-
-    temp.removeLocalConst();
-    temp.removeLocalRestrict();
-    temp.removeLocalVolatile();
-    llvm::StringRef str = temp.getAsString();
+    llvm::StringRef str = QualType(temp.getTypePtr(),0).getAsString();
 //    llvm::outs() << "Q:"<<str<<"\n";
     bool result =  m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end();
     if (includeNNS)
