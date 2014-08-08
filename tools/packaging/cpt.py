@@ -1576,6 +1576,14 @@ if args['last_stable']:
         build_nsis()
         cleanup()
 
+    elif args['last_stable'] == 'dmg':
+        set_version()
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+        install_prefix()
+        test_cling()
+        make_dmg()
+        cleanup()
+
 if args['tarball_tag']:
     fetch_llvm()
     fetch_clang()
@@ -1631,6 +1639,17 @@ if args['nsis_tag']:
     test_cling()
     make_nsi
     build_nsis()
+    cleanup()
+
+if args['dmg_tag']:
+    fetch_llvm()
+    fetch_clang()
+    fetch_cling(args['dmg_tag'])
+    set_version()
+    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+    install_prefix()
+    test_cling()
+    make_dmg()
     cleanup()
 
 if args['make_proper']:
