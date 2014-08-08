@@ -41,15 +41,28 @@ namespace cling {
                                     llvm::StringRef SearchPath,
                                     llvm::StringRef RelativePath,
                                     const clang::Module *Imported) {
-      if (m_Callbacks)
+      if (m_Callbacks) {
         m_Callbacks->InclusionDirective(HashLoc, IncludeTok, FileName,
                                         IsAngled, FilenameRange, File,
                                         SearchPath, RelativePath, Imported);
+        InterpreterCallbacks* current = m_Callbacks;
+        while (current = current->getNext())
+          current->InclusionDirective(HashLoc, IncludeTok, FileName,
+                                      IsAngled, FilenameRange, File,
+                                      SearchPath, RelativePath, Imported);;
+
+      }
     }
+
     virtual bool FileNotFound(llvm::StringRef FileName,
                               llvm::SmallVectorImpl<char>& RecoveryPath) {
-      if (m_Callbacks)
-        return m_Callbacks->FileNotFound(FileName, RecoveryPath);
+      if (m_Callbacks) {
+        bool result = m_Callbacks->FileNotFound(FileName, RecoveryPath);
+        InterpreterCallbacks* current = m_Callbacks;
+        while (current = current->getNext())
+          result = current->FileNotFound(FileName, RecoveryPath) || result;
+        return result;
+      }
       // Returning true would mean that the preprocessor should try to recover.
       return false;
     }
@@ -66,12 +79,21 @@ namespace cling {
       : m_Callbacks(C) {}
 
     virtual void DeclRead(serialization::DeclID, const Decl *D) {
-      if (m_Callbacks)
+      if (m_Callbacks) {
         m_Callbacks->DeclDeserialized(D);
+        InterpreterCallbacks* current = m_Callbacks;
+        while (current = current->getNext())
+          current->DeclDeserialized(D);
+      }
     }
+
     virtual void TypeRead(serialization::TypeIdx, QualType T) {
-      if (m_Callbacks)
+      if (m_Callbacks) {
         m_Callbacks->TypeDeserialized(T.getTypePtr());
+        InterpreterCallbacks* current = m_Callbacks;
+        while (current = current->getNext())
+          current->TypeDeserialized(T.getTypePtr());
+      }
     }
   };
 
@@ -125,24 +147,39 @@ namespace cling {
     ///\returns true if a suitable declaration is found.
     ///
     virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S) {
-      if (m_Callbacks)
-        return m_Callbacks->LookupObject(R, S);
+      if (m_Callbacks) {
+        bool result = m_Callbacks->LookupObject(R, S);
+        InterpreterCallbacks* current = m_Callbacks;
+        while (current = current->getNext())
+          result = current->LookupObject(R, S) || result;
+        return result;
+      }
 
       return false;
     }
 
     virtual bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
                                                 clang::DeclarationName Name) {
-      if (m_Callbacks)
-        return m_Callbacks->LookupObject(DC, Name);
+      if (m_Callbacks) {
+        bool result = m_Callbacks->LookupObject(DC, Name);
+        InterpreterCallbacks* current = m_Callbacks;
+        while (current = current->getNext())
+          result = current->LookupObject(DC, Name) || result;
+        return result;
+      }
 
       return false;
     }
+
     // Silence warning virtual function was hidden.
     using ExternalASTSource::CompleteType;
     virtual void CompleteType(TagDecl* Tag) {
-      if (m_Callbacks)
+      if (m_Callbacks) {
         m_Callbacks->LookupObject(Tag);
+        InterpreterCallbacks* current = m_Callbacks;
+        while (current = current->getNext())
+          current->LookupObject(Tag);
+      }
     }
 
     void UpdateWithNewDeclsFwd(const DeclContext *DC, DeclarationName Name,
@@ -157,7 +194,7 @@ namespace cling {
                                         InterpreterDeserializationListener* IDL,
                                              InterpreterPPCallbacks* IPPC)
     : m_Interpreter(interp),  m_ExternalSemaSource(IESS),
-      m_DeserializationListener(IDL), m_IsRuntime(false) {
+      m_DeserializationListener(IDL), m_IsRuntime(false), m_Next(0) {
     if (IESS)
       m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
     ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
@@ -171,8 +208,7 @@ namespace cling {
                              bool enableExternalSemaSourceCallbacks/* = false*/,
                         bool enableDeserializationListenerCallbacks/* = false*/,
                                              bool enablePPCallbacks/* = false*/)
-    : m_Interpreter(interp), m_IsRuntime(false) {
-
+    : m_Interpreter(interp), m_IsRuntime(false), m_Next(0) {
     if (enableExternalSemaSourceCallbacks) {
       m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
       m_ExternalSemaSource->InitializeSema(interp->getSema());
@@ -200,6 +236,13 @@ namespace cling {
     // FIXME: we have to remove the external source at destruction time. Needs
     // further tweaks of the patch in clang. This will be done later once the
     // patch is in clang's mainline.
+  }
+
+  void InterpreterCallbacks::SetIsRuntime(bool val) {
+    m_IsRuntime = val;
+    InterpreterCallbacks* current = this;
+    while (current = current->getNext())
+      current->m_IsRuntime = val;
   }
 
   ExternalSemaSource*

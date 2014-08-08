@@ -1110,7 +1110,10 @@ namespace cling {
       return;
 
     // We need it to enable LookupObject callback.
-    m_Callbacks.reset(C);
+    if (!m_Callbacks)
+      m_Callbacks.reset(C);
+    else
+      m_Callbacks->setNext(C);
 
     // FIXME: We should add a multiplexer in the ASTContext, too.
     llvm::IntrusiveRefCntPtr<ExternalASTSource>

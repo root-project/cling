@@ -69,6 +69,11 @@ namespace cling {
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///
     bool m_IsRuntime;
+
+    ///\brief The next callback in the chain.
+    ///
+    InterpreterCallbacks* m_Next;
+
   protected:
     void UpdateWithNewDecls(const clang::DeclContext *DC,
                             clang::DeclarationName Name,
@@ -109,6 +114,19 @@ namespace cling {
 
     clang::ASTDeserializationListener*
     getInterpreterDeserializationListener() const;
+
+    InterpreterCallbacks* getNext() { return m_Next; }
+    void setNext(InterpreterCallbacks* C) {
+      InterpreterCallbacks* current = this;
+      while (true) {
+        assert(current != C);
+        if (!current->m_Next) {
+          current->m_Next = C;
+          break;
+        }
+        current = current->getNext();
+      }
+    }
 
    virtual void InclusionDirective(clang::SourceLocation /*HashLoc*/,
                                    const clang::Token& /*IncludeTok*/,
@@ -164,7 +182,7 @@ namespace cling {
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
     ///
-    void SetIsRuntime(bool val) { m_IsRuntime = val; }
+    void SetIsRuntime(bool val);
   };
 } // end namespace cling
 
