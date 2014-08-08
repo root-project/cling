@@ -12,8 +12,9 @@
 
 #include "clang/AST/DeclarationName.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/ArrayRef.h"
+
+#include <memory>
 
 namespace clang {
   class ASTDeserializationListener;
@@ -52,13 +53,13 @@ namespace cling {
     ///\brief Our custom SemaExternalSource, translating interesting events into
     /// callbacks.
     ///
-    llvm::OwningPtr<InterpreterExternalSemaSource> m_ExternalSemaSource;
+    std::unique_ptr<InterpreterExternalSemaSource> m_ExternalSemaSource;
 
     ///\brief Our custom ASTDeserializationListener, translating interesting
     /// events into callbacks.
     ///
-    llvm::
-    OwningPtr<InterpreterDeserializationListener> m_DeserializationListener;
+    std::unique_ptr
+    <InterpreterDeserializationListener> m_DeserializationListener;
 
     ///\brief Our custom PPCallbacks, translating interesting
     /// events into interpreter callbacks.
