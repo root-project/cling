@@ -40,7 +40,9 @@ namespace cling {
     Out() << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
     Out() << "#pragma clang diagnostic ignored \"-Wignored-attributes\"" <<"\n";
     Out() << "#pragma clang diagnostic ignored \"-Wreturn-type-c-linkage\"" <<"\n";
-    
+    // Inject a special marker:
+    Out() << "extern int __Cling_Autoloading_Map;\n";
+
     std::vector<std::string> macrodefs;
     if (printMacros) {
       for (auto mit = T.macros_begin(); mit != T.macros_end(); ++mit) {

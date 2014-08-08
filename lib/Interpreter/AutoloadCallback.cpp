@@ -182,23 +182,30 @@ namespace cling {
   }
 
   void AutoloadCallback::TransactionCommitted(const Transaction &T) {
+    if (T.decls_begin() == T.decls_end())
+      return;
+    if (T.decls_begin()->m_DGR.isNull())
+      return;
 
-    DefaultArgVisitor defaultArgsStateCollector;
-    Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
-    for (Transaction::const_iterator I = T.decls_begin(), E = T.decls_end();
-         I != E; ++I) {
-      Transaction::DelayCallInfo DCI = *I;
+    if (const NamedDecl* ND = dyn_cast<NamedDecl>(*T.decls_begin()->m_DGR.begin()))
+      if (ND->getIdentifier() && ND->getName().equals("__Cling_Autoloading_Map")) {
+        DefaultArgVisitor defaultArgsStateCollector;
+        Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
+        for (Transaction::const_iterator I = T.decls_begin(), E = T.decls_end();
+             I != E; ++I) {
+          Transaction::DelayCallInfo DCI = *I;
 
-      // if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
-      //   continue;
-      // if (DCI.m_DGR.isNull() || !(*DCI.m_DGR.begin())->hasAttr<AnnotateAttr>())
-      //   continue;
+          // if (DCI.m_Call != Transaction::kCCIHandleTopLevelDecl)
+          //   continue;
+          if (DCI.m_DGR.isNull())
+            continue;
 
-      for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
-             JE = DCI.m_DGR.end(); J != JE; ++J) {
-        defaultArgsStateCollector.TrackDefaultArgStateOf(*J, m_Map, PP);
+          for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
+                 JE = DCI.m_DGR.end(); J != JE; ++J) {
+            defaultArgsStateCollector.TrackDefaultArgStateOf(*J, m_Map, PP);
+          }
+        }
       }
-    }
   }
 
 } //end namespace cling
