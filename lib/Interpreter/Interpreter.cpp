@@ -1106,6 +1106,9 @@ namespace cling {
   }
 
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
+    if (m_Callbacks.get() == C)
+      return;
+
     // We need it to enable LookupObject callback.
     m_Callbacks.reset(C);
 
