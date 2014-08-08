@@ -108,6 +108,9 @@ namespace cling {
       if (m_IsStoringState)
         return true;
 
+      if (!D->hasAttr<AnnotateAttr>())
+        return false;
+
       AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
       if (!attr)
         return true;
