@@ -496,8 +496,8 @@ namespace cling {
       return;
     }
 
-    if (D->isDefinedOutsideFunctionOrMethod())
-      D->setStorageClass(SC_Extern);
+    if (D->isDefinedOutsideFunctionOrMethod() && !D->getStorageClass() == SC_Extern)
+      Out() << "extern ";
 
     m_Policy.Bool = true;
     //^This should not have been needed (already set in constructor)
@@ -559,8 +559,10 @@ namespace cling {
             && !isa<ParenListExpr>(Init))
           Out() << "(";
         else if (D->getInitStyle() == VarDecl::CInit) {
+          if (!D->isDefinedOutsideFunctionOrMethod())
             Out() << " = "; //Comment for skipping default function args
         }
+        if (!D->isDefinedOutsideFunctionOrMethod())
           //Comment for skipping default function args
           Init->printPretty(Out(), 0, m_Policy, m_Indentation);
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
