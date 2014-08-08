@@ -122,7 +122,7 @@ namespace cling {
     void printSemiColon(bool flag = true);
     //if flag is true , m_SkipFlag is obeyed and reset.
 
-    bool isIncompatibleType(clang::QualType q);
+    bool isIncompatibleType(clang::QualType q, bool includeNNS = true);
     bool isOperator(clang::FunctionDecl* D);
 
     template<typename DeclT>

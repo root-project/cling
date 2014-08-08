@@ -871,23 +871,26 @@ namespace cling {
     else Out() << ";\n";
   }
 
-  bool ForwardDeclPrinter::isIncompatibleType(QualType q) {
+  bool ForwardDeclPrinter::isIncompatibleType(QualType q, bool includeNNS) {
     //FIXME: This is a workaround and filters out many acceptable cases
     //Refer to Point#1
-    if (q.getTypePtr()->isAnyPointerType())
-        q = q.getTypePtr()->getPointeeType();
-    else if (q.getTypePtr()->isReferenceType())
-        q = q.getNonReferenceType();
+    QualType temp = q;
+    while (temp.getTypePtr()->isAnyPointerType())//For 3 star programmers
+      temp = temp.getTypePtr()->getPointeeType();
+
+    while (temp.getTypePtr()->isReferenceType())//For move references
+        temp = temp.getNonReferenceType();
 
 
-    q.removeLocalConst();
-    q.removeLocalRestrict();
-    q.removeLocalVolatile();
-    llvm::StringRef str = q.getAsString();
+    temp.removeLocalConst();
+    temp.removeLocalRestrict();
+    temp.removeLocalVolatile();
+    llvm::StringRef str = temp.getAsString();
 //    llvm::outs() << "Q:"<<str<<"\n";
-    return m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end()
-           || str.find("::") != llvm::StringRef::npos;
-
+    bool result =  m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end();
+    if (includeNNS)
+      result = result || str.find("::") != llvm::StringRef::npos;
+    return result;
   }
 
   bool ForwardDeclPrinter::isOperator(FunctionDecl *D) {
@@ -959,7 +962,8 @@ namespace cling {
     } 
 
     if (const TemplateSpecializationType* tst
-            = dyn_cast<TemplateSpecializationType>(D->getTypeSourceInfo()->getType().getTypePtr())){
+            = dyn_cast<TemplateSpecializationType>
+            (D->getTypeSourceInfo()->getType().getTypePtr())){
       for (uint i = 0; i < tst->getNumArgs(); ++i ) {
         const TemplateArgument& arg = tst->getArg(i);
         if (arg.getKind() == TemplateArgument::ArgKind::Type)
@@ -972,12 +976,38 @@ namespace cling {
       m_IncompatibleTypes.insert(D->getName());
       return true;
     }
-    if (D->getTypeSourceInfo()->getType().getTypePtr()->isFunctionPointerType()) {
-      if (D->getTypeSourceInfo()->getType().getAsString().find("::") != std::string::npos ){
-        m_IncompatibleTypes.insert(D->getName());
-        return true;
+    if (D->getUnderlyingType().getTypePtr()->isFunctionPointerType()) {
+      const FunctionType* ft =
+              D->getUnderlyingType().getTypePtr()
+              ->getPointeeType().getTypePtr()->castAs<clang::FunctionType>();
+      bool result = isIncompatibleType(ft->getReturnType(),false);
+      if (const FunctionProtoType* fpt = dyn_cast<FunctionProtoType>(ft)){
+        for (uint i = 0; i < fpt->getNumParams(); ++i){
+          result = result || isIncompatibleType(fpt->getParamType(i),false);
+          if (result){
+            m_IncompatibleTypes.insert(D->getName());
+            return true;
+          }
+
+        }
       }
+      return false;
     }
+    if (D->getUnderlyingType().getTypePtr()->isFunctionType()){
+        const FunctionType* ft =D->getUnderlyingType().getTypePtr()
+                                 ->castAs<clang::FunctionType>();
+        bool result = isIncompatibleType(ft->getReturnType(),false);
+        if (const FunctionProtoType* fpt = dyn_cast<FunctionProtoType>(ft)){
+          for (uint i = 0; i < fpt->getNumParams(); ++i){
+            result = result || isIncompatibleType(fpt->getParamType(i),false);
+            if (result){
+              m_IncompatibleTypes.insert(D->getName());
+              return true;
+            }
+          }
+        }
+    }
+    //TODO: Lot of logic overlap with above block, make an abstraction
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(VarDecl *D) {
@@ -1008,7 +1038,8 @@ namespace cling {
     for (uint i = 0; i < iargs.size(); ++i) {
       const TemplateArgument& arg = iargs[i];
       if (arg.getKind() == TemplateArgument::ArgKind::Type)
-        if (m_IncompatibleTypes.find(arg.getAsType().getAsString())!=m_IncompatibleTypes.end())
+        if (m_IncompatibleTypes.find(arg.getAsType().getAsString())
+            !=m_IncompatibleTypes.end())
           return true;
     }
     return false;
