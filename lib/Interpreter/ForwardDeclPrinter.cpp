@@ -645,7 +645,15 @@ namespace cling {
     }
   }
   void ForwardDeclPrinter::VisitUsingShadowDecl(UsingShadowDecl *D) {
-    skipCurrentDecl();
+    if(shouldSkip(D)){
+      skipCurrentDecl();
+    }
+  }
+
+  void ForwardDeclPrinter::VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl *D) {
+    if (shouldSkip(D)){
+      skipCurrentDecl();
+    }
   }
 
   void ForwardDeclPrinter::VisitNamespaceAliasDecl(NamespaceAliasDecl *D) {
@@ -1015,7 +1023,8 @@ namespace cling {
       if (const TemplateTypeParmDecl *TTP =
         dyn_cast<TemplateTypeParmDecl>(Param)) {
           if (TTP->hasDefaultArgument() ) {
-            if (isIncompatibleType(TTP->getDefaultArgument())){
+            if (m_IncompatibleTypes.find(TTP->getName())
+                    !=m_IncompatibleTypes.end()){
               return true;
             }
           }
@@ -1048,6 +1057,10 @@ namespace cling {
   }
 
   bool ForwardDeclPrinter::shouldSkip(UsingDecl *D) {
+    m_IncompatibleTypes.insert(D->getName());
+    return true;
+  }
+  bool ForwardDeclPrinter::shouldSkip(TypeAliasTemplateDecl *D) {
     m_IncompatibleTypes.insert(D->getName());
     return true;
   }

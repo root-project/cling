@@ -112,6 +112,7 @@ namespace cling {
     void VisitFunctionTemplateDecl(clang::FunctionTemplateDecl *D);
     void VisitClassTemplateDecl(clang::ClassTemplateDecl *D);
     void VisitClassTemplateSpecializationDecl(clang::ClassTemplateSpecializationDecl* D);
+    void VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* D);
     void printDeclType(clang::QualType T, llvm::StringRef DeclName, bool Pack = false);
 
     void PrintTemplateParameters(const clang::TemplateParameterList *Params,
@@ -138,6 +139,7 @@ namespace cling {
     bool shouldSkip(clang::UsingDirectiveDecl* D);
     bool shouldSkip(clang::ClassTemplateDecl* D);
     bool shouldSkip(clang::FunctionTemplateDecl* D);
+    bool shouldSkip(clang::TypeAliasTemplateDecl* D);
 
     bool ContainsIncompatibleName(clang::TemplateParameterList* Params);
 
