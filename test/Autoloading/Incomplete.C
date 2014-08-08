@@ -10,9 +10,6 @@
 // Test incompleteType
 
 
-#include "cling/Interpreter/Interpreter.h"
-gCling->EnableAutoloading();
-
 .rawInput 1
 class __attribute__((annotate("Def.h"))) C;
 //expected-warning + {{}}
