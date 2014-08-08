@@ -8,6 +8,17 @@
 #include <set>
 #include <stack>
 
+///\brief Generates forward declarations for a Decl or Transaction by implementing a DeclVisitor
+///
+///\Cases which do not work:
+///\1. Nested name specifiers: Since there doesn't seem to be a way to forward declare B in the following example:
+///    class A { class B{};};
+///    We have chosen to skip all declarations using B.
+///    This filters out many acceptable types, like when B is defined within a namespace.
+///    The fix for this issue dhould go in isIncompatibleType, which currently just searches for "::" in the type name.
+///
+///
+
 namespace clang {
   class ClassTemplateDecl;
   class ClassTemplateSpecializationDecl;
@@ -122,9 +133,13 @@ namespace cling {
     bool shouldSkip(clang::VarDecl* D);
     bool shouldSkip(clang::EnumDecl* D);
     bool shouldSkip(clang::ClassTemplateSpecializationDecl* D);
-    bool shouldSkip(clang::UsingDecl* D){return true;}
+    bool shouldSkip(clang::UsingDecl* D);
     bool shouldSkip(clang::UsingShadowDecl* D){return true;}
     bool shouldSkip(clang::UsingDirectiveDecl* D);
+    bool shouldSkip(clang::ClassTemplateDecl* D);
+    bool shouldSkip(clang::FunctionTemplateDecl* D);
+
+    bool ContainsIncompatibleName(clang::TemplateParameterList* Params);
 
     void skipCurrentDecl(bool skip = true);
 

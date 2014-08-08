@@ -152,7 +152,10 @@ namespace cling {
     if (D->isModulePrivate())
       Out() << "__module_private__ ";
     }
-    D->getTypeSourceInfo()->getType().print(Out(), m_Policy, D->getName());
+    QualType q = D->getTypeSourceInfo()->getType();
+    q.removeLocalRestrict();
+    q.print(Out(), m_Policy, D->getName());
+    q.addRestrict();
     prettyPrintAttributes(D);
 //      Indent() << ";\n";
     skipCurrentDecl(false);
@@ -493,6 +496,14 @@ namespace cling {
       return;
     }
 
+    if (D->isDefinedOutsideFunctionOrMethod())
+      D->setStorageClass(SC_Extern);
+
+    m_Policy.Bool = true;
+    //^This should not have been needed (already set in constructor)
+    //But for some reason,without this _Bool is still printed in this path (eg: <iomanip>)
+
+
     if (!m_Policy.SuppressSpecifiers) {
       StorageClass SC = D->getStorageClass();
       if (SC != SC_None)
@@ -541,15 +552,15 @@ namespace cling {
             Construct->getArg(0)->isDefaultArgument();
         }
       }
+      if (D->isDefinedOutsideFunctionOrMethod())
+        prettyPrintAttributes(D);
       if (!ImplicitInit) {
         if ((D->getInitStyle() == VarDecl::CallInit)
             && !isa<ParenListExpr>(Init))
           Out() << "(";
         else if (D->getInitStyle() == VarDecl::CInit) {
-          if(!D->isDefinedOutsideFunctionOrMethod())
             Out() << " = "; //Comment for skipping default function args
         }
-        if (!D->isDefinedOutsideFunctionOrMethod())
           //Comment for skipping default function args
           Init->printPretty(Out(), 0, m_Policy, m_Indentation);
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
@@ -557,8 +568,6 @@ namespace cling {
       }
     }
 
-    if(D->isDefinedOutsideFunctionOrMethod())
-      prettyPrintAttributes(D);
     skipCurrentDecl(false);
   }
 
@@ -631,7 +640,9 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitUsingDecl(UsingDecl *D) {
-    skipCurrentDecl();
+    if(shouldSkip(D)){
+      skipCurrentDecl();
+    }
   }
   void ForwardDeclPrinter::VisitUsingShadowDecl(UsingShadowDecl *D) {
     skipCurrentDecl();
@@ -775,7 +786,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
-    if (shouldSkip(D->getAsFunction())) {
+    if (shouldSkip(D)) {
       skipCurrentDecl();
       return;
     }
@@ -795,7 +806,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
-    if (shouldSkip(D->getTemplatedDecl()) ) {
+    if (shouldSkip(D) ) {
       skipCurrentDecl();
       return;
     }
@@ -816,26 +827,30 @@ namespace cling {
   void ForwardDeclPrinter::
   VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* D) {
 
-    if (shouldSkip(D)) {
+//    if (shouldSkip(D)) {
+//      skipCurrentDecl();
+//      return;
+//    }
+
+//    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
+
+//    Out() << "template <> ";
+//    VisitCXXRecordDecl(D->getCanonicalDecl());
+
+//    Out() << "<";
+//    for (uint i=0; i < iargs.size(); ++i){
+//      if (iargs[i].getKind() == TemplateArgument::Pack)
+//        continue;
+//      if (i != 0 )
+//        Out() << ", ";
+//      iargs[i].print(m_Policy,Out());
+//    }
+//    Out() << ">";
+//    skipCurrentDecl(false);
+
       skipCurrentDecl();
-      return;
-    }
-
-    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
-
-    Out() << "template <> ";
-    VisitCXXRecordDecl(D->getCanonicalDecl());
-
-    Out() << "<";
-    for (uint i=0; i < iargs.size(); ++i){
-      if (iargs[i].getKind() == TemplateArgument::Pack)
-        continue;
-      if (i != 0 )
-        Out() << ", ";
-      iargs[i].print(m_Policy,Out());
-    }
-    Out() << ">";
-    skipCurrentDecl(false);
+      //Above code doesn't work properly
+      //Must find better and more general way to print specializations
   }
 
   void ForwardDeclPrinter::printSemiColon(bool flag) {
@@ -850,8 +865,13 @@ namespace cling {
 
   bool ForwardDeclPrinter::isIncompatibleType(QualType q) {
     //FIXME: This is a workaround and filters out many acceptable cases
+    //Refer to Point#1
     if (q.getTypePtr()->isAnyPointerType())
         q = q.getTypePtr()->getPointeeType();
+    else if (q.getTypePtr()->isReferenceType())
+        q = q.getNonReferenceType();
+
+
     q.removeLocalConst();
     q.removeLocalRestrict();
     q.removeLocalVolatile();
@@ -872,6 +892,33 @@ namespace cling {
     //will be true if any of the params turn out to have incompatible types
 
     for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
+      const Type* type = D->getParamDecl(i)->getType().getTypePtr();
+      if (type->isReferenceType())
+        type = D->getParamDecl(i)->getType().getNonReferenceType().getTypePtr();
+
+      if (const TemplateSpecializationType* tst
+        = dyn_cast<TemplateSpecializationType>(type)){
+          if (m_IncompatibleTypes.find
+                  (tst->getTemplateName().getAsTemplateDecl()->getName())
+                  != m_IncompatibleTypes.end()) {
+            return true;
+          }
+          for (uint i = 0; i < tst->getNumArgs(); ++i ) {
+            const TemplateArgument& arg = tst->getArg(i);
+            TemplateArgument::ArgKind kind = arg.getKind();
+            if (kind == TemplateArgument::ArgKind::Type){
+              if (m_IncompatibleTypes.find(arg.getAsType().getAsString())
+                      != m_IncompatibleTypes.end())
+                return true;
+            }
+            if (kind == TemplateArgument::ArgKind::Expression) {
+              Expr* expr = arg.getAsExpr();
+              //TODO: Traverse this expr
+
+            }
+         }
+
+      }
       if (isIncompatibleType(D->getParamDecl(i)->getType()))
         param = true;
     }
@@ -889,6 +936,7 @@ namespace cling {
   bool ForwardDeclPrinter::shouldSkip(CXXRecordDecl *D) {
     return D->getNameAsString().size() == 0;
   }
+
   bool ForwardDeclPrinter::shouldSkip(TypedefDecl *D) {
     if (const ElaboratedType* ET =
             dyn_cast<ElaboratedType>(D->getTypeSourceInfo()->getType().getTypePtr())) {
@@ -900,28 +948,37 @@ namespace cling {
         m_IncompatibleTypes.insert(D->getName());
         return true;
       }
-    }
+    } 
 
     if (const TemplateSpecializationType* tst
             = dyn_cast<TemplateSpecializationType>(D->getTypeSourceInfo()->getType().getTypePtr())){
       for (uint i = 0; i < tst->getNumArgs(); ++i ) {
         const TemplateArgument& arg = tst->getArg(i);
         if (arg.getKind() == TemplateArgument::ArgKind::Type)
-          if (m_IncompatibleTypes.find(arg.getAsType().getAsString())!=m_IncompatibleTypes.end())
+          if (m_IncompatibleTypes.find(arg.getAsType().getAsString())
+                  != m_IncompatibleTypes.end())
             return true;
       }
     }
     if (isIncompatibleType(D->getTypeSourceInfo()->getType())) {
       m_IncompatibleTypes.insert(D->getName());
-//      llvm::outs() << "I: "<<D->getName()<<"\n";
       return true;
+    }
+    if (D->getTypeSourceInfo()->getType().getTypePtr()->isFunctionPointerType()) {
+      if (D->getTypeSourceInfo()->getType().getAsString().find("::") != std::string::npos ){
+        m_IncompatibleTypes.insert(D->getName());
+        return true;
+      }
     }
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(VarDecl *D) {
+    if (D->isDefinedOutsideFunctionOrMethod()){
+      if (D->isCXXClassMember())
+        return true ;
+    }
     return D->getStorageClass() == SC_Static
-            || isIncompatibleType(D->getType())
-            || D->isDefinedOutsideFunctionOrMethod();
+            || isIncompatibleType(D->getType());
   }
   bool ForwardDeclPrinter::shouldSkip(EnumDecl *D) {
     return D->getName().size() == 0;
@@ -952,7 +1009,48 @@ namespace cling {
     llvm::StringRef str = D->getNominatedNamespace()->getNameAsString();
     return m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end();
   }
+  bool ForwardDeclPrinter::ContainsIncompatibleName(TemplateParameterList* Params){
+    for (unsigned i = 0, e = Params->size(); i != e; ++i) {
+      const Decl *Param = Params->getParam(i);
+      if (const TemplateTypeParmDecl *TTP =
+        dyn_cast<TemplateTypeParmDecl>(Param)) {
+          if (TTP->hasDefaultArgument() ) {
+            if (isIncompatibleType(TTP->getDefaultArgument())){
+              return true;
+            }
+          }
+      }
+      if (const NonTypeTemplateParmDecl *NTTP =
+        dyn_cast<NonTypeTemplateParmDecl>(Param)) {
+          if (NTTP->hasDefaultArgument() ) {
+            QualType type = NTTP->getType();
+            Expr* expr = NTTP->getDefaultArgument();
+            if (isIncompatibleType(type) /*||also check expr*/){
+              return true;
+            }
+          }
+      }
+    }
+    return false;
+  }
 
+  bool ForwardDeclPrinter::shouldSkip(ClassTemplateDecl *D) {
+    if (ContainsIncompatibleName(D->getTemplateParameters())
+            || shouldSkip(D->getTemplatedDecl())){
+      m_IncompatibleTypes.insert(D->getName());
+      return true;
+    }
+    return false;
+  }
+  bool ForwardDeclPrinter::shouldSkip(FunctionTemplateDecl* D){
+    return ContainsIncompatibleName(D->getTemplateParameters())
+            || shouldSkip(D->getAsFunction());
+  }
+
+  bool ForwardDeclPrinter::shouldSkip(UsingDecl *D) {
+    m_IncompatibleTypes.insert(D->getName());
+    return true;
+  }
 
   void ForwardDeclPrinter::printStats() {
     llvm::outs() << m_SkipCounter << " decls skipped out of " << m_TotalDecls << "\n";
