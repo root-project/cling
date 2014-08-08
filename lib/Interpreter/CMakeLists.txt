@@ -79,10 +79,12 @@ endif()
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
 #                 ClangDriverOptions ClangCC1Options ClangCC1AsOptions)
 
-add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
-add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/Interpreter.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in 
+                                                                 ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
+
+add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
+add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/Interpreter.cpp ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
 
 # Remove all -I from CMAKE_CXX_FLAGS
 string(REPLACE ";" " " __flags "${CMAKE_CXX_FLAGS}")
@@ -97,7 +99,7 @@ else()
   set(CMAKE_CXX_COMPILER_RELATIVE ${CMAKE_CXX_COMPILER})
 endif()
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
   "#define LLVM_CXX \"${CMAKE_CXX_COMPILER_RELATIVE} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
 "
 )
