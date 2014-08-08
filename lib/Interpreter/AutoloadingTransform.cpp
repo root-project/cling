@@ -45,19 +45,28 @@ namespace cling {
 
   void AutoloadingTransform::Transform() {
     const Transaction* T = getTransaction();
-    DeclFixer visitor;
-    for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
-         I != E; ++I) {
-      Transaction::DelayCallInfo DCI = *I;
-      for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
-             JE = DCI.m_DGR.end(); J != JE; ++J) {
-        if (!(*J)->hasAttr<AnnotateAttr>())
-          continue;
-        visitor.Visit(*J);
+    if (T->decls_begin() == T->decls_end())
+      return;
+    DeclGroupRef DGR = T->decls_begin()->m_DGR;
+    if (DGR.isNull())
+      return;
+
+    if (const NamedDecl* ND = dyn_cast<NamedDecl>(*DGR.begin()))
+      if (ND->getIdentifier()
+          && ND->getName().equals("__Cling_Autoloading_Map")) {
+
+        DeclFixer visitor;
+        for (Transaction::const_iterator I = T->decls_begin(),
+               E = T->decls_end(); I != E; ++I) {
+          Transaction::DelayCallInfo DCI = *I;
+          for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
+                 JE = DCI.m_DGR.end(); J != JE; ++J) {
+            visitor.Visit(*J);
 //FIXME: Enable when safe !
 //        if ( (*J)->hasAttr<AnnotateAttr>() /*FIXME: && CorrectCallbackLoaded() how ? */  )
 //          clang::Decl::castToDeclContext(*J)->setHasExternalLexicalStorage();
+          }
+        }
       }
-    }
   }
 } // end namespace cling
