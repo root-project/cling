@@ -294,15 +294,15 @@ def compile(arg):
         CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
 
         box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
-        exec_subprocess_call('cmake -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s'%(TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
+        exec_subprocess_call('%s -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s'%(CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
         box_draw("Building Cling (using %s cores)"%(cores))
-        exec_subprocess_call('cmake --build . --target clang --config Release', LLVM_OBJ_ROOT)
+        exec_subprocess_call('%s --build . --target clang --config Release'%(CMAKE), LLVM_OBJ_ROOT)
 
-        exec_subprocess_call('cmake --build . --target cling --config Release', LLVM_OBJ_ROOT)
+        exec_subprocess_call('%s --build . --target cling --config Release'%(CMAKE), LLVM_OBJ_ROOT)
 
         box_draw("Install compiled binaries to prefix (using %s cores)"%(cores))
-        exec_subprocess_call('cmake --build . --target INSTALL --config Release', LLVM_OBJ_ROOT)
+        exec_subprocess_call('%s --build . --target INSTALL --config Release'%(CMAKE), LLVM_OBJ_ROOT)
 
     else:
         box_draw("Configure Cling with GNU Make")
