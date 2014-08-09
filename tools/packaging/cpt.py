@@ -1263,6 +1263,8 @@ parser.add_argument('--with-llvm-url', action='store', help='Specify an alternat
 parser.add_argument('--with-clang-url', action='store', help='Specify an alternate URL of Clang repo', default='http://root.cern.ch/git/clang.git')
 parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
 
+parser.add_argument('--no-test', help='Do not run test suite of Cling', action='store_true')
+
 if platform.system() != 'Windows':
     parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT', default=os.path.expanduser(os.path.join('~', 'ec', 'build')))
 else:
@@ -1493,14 +1495,16 @@ if args['current_dev']:
             else:
                 compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         tarball()
         cleanup()
 
     elif args['current_dev'] == 'deb':
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         tarball_deb()
         debianize()
         cleanup()
@@ -1508,7 +1512,8 @@ if args['current_dev']:
     elif args['current_dev'] == 'rpm':
         compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         tarball()
         rpm_build()
         cleanup()
@@ -1517,7 +1522,8 @@ if args['current_dev']:
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + RELEASE + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         make_nsi()
         build_nsis()
         cleanup()
@@ -1525,7 +1531,8 @@ if args['current_dev']:
     elif args['current_dev'] == 'dmg':
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         make_dmg()
         cleanup()
 
@@ -1545,7 +1552,8 @@ if args['last_stable']:
             else:
                 compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         tarball()
         cleanup()
 
@@ -1553,7 +1561,8 @@ if args['last_stable']:
         set_version()
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         tarball_deb()
         debianize()
         cleanup()
@@ -1562,7 +1571,8 @@ if args['last_stable']:
         set_version()
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         tarball()
         rpm_build()
         cleanup()
@@ -1572,7 +1582,8 @@ if args['last_stable']:
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         make_nsi
         build_nsis()
         cleanup()
@@ -1581,7 +1592,8 @@ if args['last_stable']:
         set_version()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
-        test_cling()
+        if args['no_test'] != True:
+            test_cling()
         make_dmg()
         cleanup()
 
@@ -1601,7 +1613,8 @@ if args['tarball_tag']:
             compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
 
     install_prefix()
-    test_cling()
+    if args['no_test'] != True:
+        test_cling()
     tarball()
     cleanup()
 
@@ -1612,7 +1625,8 @@ if args['deb_tag']:
     set_version()
     compile(os.path.join(workdir, 'cling-' + VERSION))
     install_prefix()
-    test_cling()
+    if args['no_test'] != True:
+        test_cling()
     tarball_deb
     debianize
     cleanup()
@@ -1624,7 +1638,8 @@ if args['rpm_tag']:
     set_version()
     compile(os.path.join(workdir, 'cling-' + VERSION))
     install_prefix()
-    test_cling()
+    if args['no_test'] != True:
+        test_cling()
     tarball()
     rpm_build()
     cleanup()
@@ -1637,7 +1652,8 @@ if args['nsis_tag']:
     get_win_dep()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
     install_prefix()
-    test_cling()
+    if args['no_test'] != True:
+        test_cling()
     make_nsi
     build_nsis()
     cleanup()
@@ -1649,7 +1665,8 @@ if args['dmg_tag']:
     set_version()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
     install_prefix()
-    test_cling()
+    if args['no_test'] != True:
+        test_cling()
     make_dmg()
     cleanup()
 
