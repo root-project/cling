@@ -837,7 +837,7 @@ def check_win(pkg):
 
   # Check for other tools
     else:
-        if exec_subprocess_check_output('where %s'%(pkg), 'C:\\').find('ERROR') != -1:
+        if exec_subprocess_check_output('where %s'%(pkg), 'C:\\').find('INFO: Could not find files for the given pattern') != -1:
             print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
         else:
             print pkg.ljust(20) + '[OK]'.ljust(30)
