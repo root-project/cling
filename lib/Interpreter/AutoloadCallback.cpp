@@ -175,7 +175,10 @@ namespace cling {
 
   AutoloadCallback::AutoloadCallback(Interpreter* interp) :
     InterpreterCallbacks(interp,true,false,true), m_Interpreter(interp){
-
+#ifdef _POSIX_C_SOURCE
+      //Workaround for differnt expansion of macros to typedefs
+      m_Interpreter->parse("#include <sys/types.h>");
+#endif
   }
 
   AutoloadCallback::~AutoloadCallback() {

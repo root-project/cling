@@ -70,6 +70,13 @@ namespace cling {
       }
       if (dci.m_Call == Transaction::kCCIHandleTopLevelDecl) {
         for (auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
+          llvm::StringRef filename = m_SMgr.getFilename
+                            ((*dit)->getSourceRange().getBegin());
+#ifdef _POSIX_C_SOURCE
+          //Workaround for differnt expansion of macros to typedefs
+          if (filename.endswith("sys/types.h"))
+            continue;
+#endif
           Visit(*dit);
           printSemiColon();
         }
@@ -564,9 +571,22 @@ namespace cling {
           if (!D->isDefinedOutsideFunctionOrMethod())
             Out() << " = "; //Comment for skipping default function args
         }
-        if (!D->isDefinedOutsideFunctionOrMethod())
+        if (!D->isDefinedOutsideFunctionOrMethod()) {
           //Comment for skipping default function args
-          Init->printPretty(Out(), 0, m_Policy, m_Indentation);
+          bool isEnumConst = false;
+          if (DeclRefExpr* dre = dyn_cast<DeclRefExpr>(Init)){
+            if (EnumConstantDecl* decl = dyn_cast<EnumConstantDecl>(dre->getDecl())){
+              printDeclType(D->getType(),"");
+              Out() << "(";
+              decl->getInitVal().print(Out(),true);
+              Out() << ")";
+              isEnumConst = true;
+            }
+          }
+          if (! isEnumConst)
+            Init->printPretty(Out(), 0, m_Policy, m_Indentation);
+
+        }
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
         Out() << ")";
       }
@@ -968,8 +988,10 @@ namespace cling {
         const TemplateArgument& arg = tst->getArg(i);
         if (arg.getKind() == TemplateArgument::ArgKind::Type)
           if (m_IncompatibleTypes.find(arg.getAsType().getAsString())
-                  != m_IncompatibleTypes.end())
+                  != m_IncompatibleTypes.end()){
+            m_IncompatibleTypes.insert(D->getName());
             return true;
+          }
       }
     }
     if (isIncompatibleType(D->getTypeSourceInfo()->getType())) {
