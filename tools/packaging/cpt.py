@@ -1323,7 +1323,7 @@ else:
 #                               Global variables                              #
 ###############################################################################
 
-workdir = os.path.expanduser(args['with_workdir'])
+workdir = os.path.abspath(os.path.expanduser(args['with_workdir']))
 
 # This is needed in Windows
 if not os.path.isdir(workdir):
