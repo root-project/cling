@@ -209,11 +209,13 @@ namespace cling {
 //      if (D->isFixed())
     Out() << " : " << D->getIntegerType().stream(m_Policy);
 
-//      if (D->isCompleteDefinition()) {
-//        Out << " {\n";
-//        VisitDeclContext(D);
-//        Indent() << "};\n";
-//      }
+      if (D->isCompleteDefinition()) {
+        for (auto eit = D->decls_begin(); eit != D->decls_end(); ++ eit ){
+          if (EnumConstantDecl* ecd = dyn_cast<EnumConstantDecl>(*eit)){
+            VisitEnumConstantDecl(ecd);
+          }
+        }
+      }
     skipCurrentDecl(false);
   }
 
@@ -234,12 +236,8 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitEnumConstantDecl(EnumConstantDecl *D) {
-    Out() << *D;
-    if (Expr *Init = D->getInitExpr()) {
-      Out() << " = ";
-      Init->printPretty(Out(), 0, m_Policy, m_Indentation);
-    }
-    skipCurrentDecl(false);
+    m_IncompatibleNames.insert(D->getName());
+    //Because enums are forward declared.
   }
 
   void ForwardDeclPrinter::VisitFunctionDecl(FunctionDecl *D) {
@@ -1074,7 +1072,11 @@ namespace cling {
     bool inctype = isIncompatibleType(D->getType());
     if (stc) Log() << D->getName() <<" Var : Static\n";
     if (inctype) Log() << D->getName() <<" Var : Incompatible Type\n";
-    return stc || inctype;
+    if (stc || inctype) {
+      m_IncompatibleNames.insert(D->getName());
+      return true;
+    }
+    return false;
   }
   bool ForwardDeclPrinter::shouldSkip(EnumDecl *D) {
     return D->getName().size() == 0;
