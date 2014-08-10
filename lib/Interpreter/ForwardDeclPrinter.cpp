@@ -210,7 +210,8 @@ namespace cling {
     Out() << " : " << D->getIntegerType().stream(m_Policy);
 
       if (D->isCompleteDefinition()) {
-        for (auto eit = D->decls_begin(); eit != D->decls_end(); ++ eit ){
+        for (auto eit = D->decls_begin(), end = D->decls_end() ;
+                eit != end; ++ eit ){
           if (EnumConstantDecl* ecd = dyn_cast<EnumConstantDecl>(*eit)){
             VisitEnumConstantDecl(ecd);
           }
@@ -913,11 +914,11 @@ namespace cling {
     while (temp.getTypePtr()->isReferenceType())//For move references
         temp = temp.getNonReferenceType();
 
-    llvm::StringRef str = QualType(temp.getTypePtr(),0).getAsString();
+    std::string str = QualType(temp.getTypePtr(),0).getAsString();
 //    llvm::outs() << "Q:"<<str<<"\n";
     bool result =  m_IncompatibleNames.find(str) != m_IncompatibleNames.end();
     if (includeNNS)
-      result = result || str.find("::") != llvm::StringRef::npos;
+      result = result || str.find("::") != std::string::npos;
     return result;
   }
 
@@ -1105,7 +1106,7 @@ namespace cling {
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(UsingDirectiveDecl *D) {
-    llvm::StringRef str = D->getNominatedNamespace()->getNameAsString();
+    std::string str = D->getNominatedNamespace()->getNameAsString();
     bool inctype = m_IncompatibleNames.find(str) != m_IncompatibleNames.end();
     if (inctype) Log() << str <<" Using Directive : Incompatible Type\n";
     return inctype;
@@ -1133,8 +1134,8 @@ namespace cling {
             Expr* expr = NTTP->getDefaultArgument();
             expr = expr->IgnoreImpCasts();
             if (DeclRefExpr* dre = dyn_cast<DeclRefExpr>(expr)){
-              llvm::StringRef str = dre->getDecl()->getQualifiedNameAsString();
-              if (str.find("::") != llvm::StringRef::npos)
+              std::string str = dre->getDecl()->getQualifiedNameAsString();
+              if (str.find("::") != std::string::npos)
                 return true; // TODO: Find proper solution
             }
           }
