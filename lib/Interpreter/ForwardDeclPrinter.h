@@ -8,15 +8,26 @@
 #include <set>
 #include <stack>
 
-///\brief Generates forward declarations for a Decl or Transaction by implementing a DeclVisitor
+///\brief Generates forward declarations for a Decl or Transaction
+///       by implementing a DeclVisitor
 ///
-///\Cases which do not work:
-///\1. Nested name specifiers: Since there doesn't seem to be a way to forward declare B in the following example:
+///\Important Points:
+///\1. Nested name specifiers: Since there doesn't seem to be a way
+///    to forward declare B in the following example:
 ///    class A { class B{};};
 ///    We have chosen to skip all declarations using B.
-///    This filters out many acceptable types, like when B is defined within a namespace.
-///    The fix for this issue dhould go in isIncompatibleType, which currently just searches for "::" in the type name.
-///
+///    This filters out many acceptable types,
+///    like when B is defined within a namespace.
+///    The fix for this issue dhould go in isIncompatibleType,
+///    which currently just searches for "::" in the type name.
+///\2. Function arguments having an EnumConstant as a default value
+///    are printed in the following way:
+///    enum E {E_a, E_b};
+///    void foo(E e = E_b){}
+///    Generates:
+///    enum E : unsigned int;
+///    void foo(E e = E(1));
+///    1 is the integral value of E_b.
 ///
 
 namespace clang {

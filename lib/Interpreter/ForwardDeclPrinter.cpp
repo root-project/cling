@@ -585,8 +585,9 @@ namespace cling {
           if (DeclRefExpr* dre = dyn_cast<DeclRefExpr>(Init)){
             if (EnumConstantDecl* decl = dyn_cast<EnumConstantDecl>(dre->getDecl())){
               printDeclType(D->getType(),"");
+              // "" because we want only the type name, not the argument name.
               Out() << "(";
-              decl->getInitVal().print(Out(),true);
+              decl->getInitVal().print(Out(),/*isSigned*/true);
               Out() << ")";
               isEnumConst = true;
             }
@@ -978,6 +979,11 @@ namespace cling {
         || isOperator(D)
         || D->isDeleted()
         || D->isDeletedAsWritten()){
+        //FIXME: setDeletedAsWritten can be called from the
+        //InclusionDiretctive callback.
+        //Implement that if important functions are marked so.
+        //Not important, as users do not need hints
+        //about using Deleted functions
 //      Log() <<"Function : Other\n";
       return true;
     }
