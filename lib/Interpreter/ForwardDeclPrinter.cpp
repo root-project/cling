@@ -78,9 +78,17 @@ namespace cling {
           if (filename.endswith("sys/types.h"))
             continue;
 #endif
+          //This may indicate a bug in cling.
+          //This condition should ideally never be triggered
+          //But is needed in case of generating fwd decls for
+          // c++ <future> header.
+          if (!(*dit)->getDeclContext()->isTranslationUnit())
+            continue;
+
           Visit(*dit);
           printSemiColon();
         }
+
       }
     }
     if (printMacros) {

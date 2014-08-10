@@ -28,7 +28,7 @@ filesToIgnore += "__wmmintrin_pclmul.h;rtmintrin.h;fma4intrin.h;avx2intrin.h;";
 // Wrong setups, i.e not self-contained header files:
 filesToIgnore += "dlg_colors.h;dialog.h;plugin-api.h;regexp.h;etip.h;dlg_keys.h;";
 filesToIgnore += "cursesw.h;cursesm.h;cursesf.h;cursslk.h;cursesapp.h;term_entry.h;";
-filesToIgnore += "cursesp.h;ft2build.h;shared_mutex;ciso646;cxxabi.h;future";
+filesToIgnore += "cursesp.h;ft2build.h;shared_mutex;ciso646;cxxabi.h;";
 
 // AUX:
 filesToIgnore += "Makefile;CMakeLists.txt;";
@@ -62,13 +62,14 @@ for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
         sourceCode += std::string(" '#include \"") + ent->d_name + "\"'";
 
         if (system((nestedCling + sourceCode).c_str()))
-          printf("%s\n", (nestedCling + sourceCode).c_str());
+          printf("fail: %s\n", (nestedCling + sourceCode).c_str());
         //printf("%s\n", ent->d_name);
+        else puts("pass\n");
       }
     }
     closedir(dir);
   }
  }
-//CHECK-NOT: {{.*}}
+//CHECK-NOT: {{fail}}
 //expected-no-diagnostics
 .q
