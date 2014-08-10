@@ -975,7 +975,9 @@ namespace cling {
         || D->isCXXClassMember()
         || isIncompatibleType(D->getReturnType())
         || param
-        || isOperator(D) ){
+        || isOperator(D)
+        || D->isDeleted()
+        || D->isDeletedAsWritten()){
 //      Log() <<"Function : Other\n";
       return true;
     }
