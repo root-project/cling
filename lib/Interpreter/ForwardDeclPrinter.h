@@ -63,23 +63,27 @@ namespace cling {
   class ForwardDeclPrinter : public clang::DeclVisitor<ForwardDeclPrinter> {
   private:
     clang::PrintingPolicy m_Policy; // intentional copy
+    llvm::raw_ostream& m_Log;
     unsigned m_Indentation;
     bool m_PrintInstantiation;
-
     clang::SourceManager& m_SMgr;
     bool m_SkipFlag;
     //False by default, true if current item is not to be printed
 
-    std::set<llvm::StringRef> m_IncompatibleTypes;
+    std::set<llvm::StringRef> m_IncompatibleNames;
     int m_SkipCounter;
     int m_TotalDecls;
   public:
-    ForwardDeclPrinter(llvm::raw_ostream& OutS, clang::SourceManager& SM,
+    ForwardDeclPrinter(llvm::raw_ostream& OutS,
+                       llvm::raw_ostream& LogS,
+                       clang::SourceManager& SM,
                        const Transaction& T,
                        unsigned Indentation = 0,
                        bool printMacros = false);
 
-    ForwardDeclPrinter(llvm::raw_ostream &OutS, clang::SourceManager& SM,
+    ForwardDeclPrinter(llvm::raw_ostream& OutS,
+                       llvm::raw_ostream& LogS,
+                       clang::SourceManager& SM,
                        const clang::PrintingPolicy& P,
                        unsigned Indentation = 0);
 
@@ -155,6 +159,7 @@ namespace cling {
     void Print(clang::AccessSpecifier AS);
 
     llvm::raw_ostream& Out();
+    llvm::raw_ostream& Log();
 
     std::stack<llvm::raw_ostream*> m_StreamStack;
   };

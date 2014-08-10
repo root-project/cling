@@ -19,11 +19,12 @@ namespace cling {
 
 
   ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream& OutS,
+                                         llvm::raw_ostream& LogS,
                                          SourceManager& SM,
                                          const Transaction& T,
                                          unsigned Indentation,
                                          bool printMacros)
-    : m_Policy(clang::PrintingPolicy(clang::LangOptions())),
+    : m_Policy(clang::PrintingPolicy(clang::LangOptions())), m_Log(LogS),
       m_Indentation(Indentation), m_SMgr(SM), m_SkipFlag(false) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
@@ -90,11 +91,12 @@ namespace cling {
 
   }
 
-  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream &OutS,
+  ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream& OutS,
+                                         llvm::raw_ostream& LogS,
                                          clang::SourceManager& SM,
                                          const clang::PrintingPolicy& P,
                                          unsigned Indentation)
-    : m_Policy(clang::PrintingPolicy(clang::LangOptions())),
+    : m_Policy(clang::PrintingPolicy(clang::LangOptions())), m_Log(LogS),
       m_Indentation(Indentation), m_SMgr(SM), m_SkipFlag(false) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
@@ -104,6 +106,10 @@ namespace cling {
   llvm::raw_ostream& ForwardDeclPrinter::Out() {
     return *m_StreamStack.top();
   }
+  llvm::raw_ostream& ForwardDeclPrinter::Log() {
+    return m_Log;
+  }
+
 
   void ForwardDeclPrinter::printDeclType(QualType T, StringRef DeclName, bool Pack) {
     // Normally, a PackExpansionType is written as T[3]... (for instance, as a
@@ -238,6 +244,8 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitFunctionDecl(FunctionDecl *D) {
     if (shouldSkip(D)) {
+      if (D->getDeclName().isIdentifier())
+        m_IncompatibleNames.insert(D->getName());
       skipCurrentDecl();
       return;
     }
@@ -284,7 +292,7 @@ namespace cling {
       Proto += "(";
       if (FT) {
         llvm::raw_string_ostream POut(Proto);
-        ForwardDeclPrinter ParamPrinter(POut, m_SMgr, SubPolicy, m_Indentation);
+        ForwardDeclPrinter ParamPrinter(POut, m_Log ,m_SMgr, SubPolicy, m_Indentation);
         for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
           if (i) POut << ", ";
           ParamPrinter.VisitParmVarDecl(D->getParamDecl(i));
@@ -446,7 +454,7 @@ namespace cling {
         // This is a K&R function definition, so we need to print the
         // parameters.
         Out() << '\n';
-        ForwardDeclPrinter ParamPrinter(Out(), m_SMgr, SubPolicy,
+        ForwardDeclPrinter ParamPrinter(Out(), m_Log,m_SMgr, SubPolicy,
                                         m_Indentation);
         m_Indentation += m_Policy.Indentation;
         for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
@@ -640,7 +648,7 @@ namespace cling {
     stream.flush();
     if ( output.length() == 0 ) {
       m_SkipFlag = true;
-      m_IncompatibleTypes.insert(D->getName());
+      m_IncompatibleNames.insert(D->getName());
       return;
     }
     if (D->isInline())
@@ -666,12 +674,13 @@ namespace cling {
   void ForwardDeclPrinter::VisitUsingDecl(UsingDecl *D) {
     if(shouldSkip(D)){
       skipCurrentDecl();
+      return;
     }
+    D->print(Out(),m_Policy);
+    skipCurrentDecl(false);
   }
   void ForwardDeclPrinter::VisitUsingShadowDecl(UsingShadowDecl *D) {
-    if(shouldSkip(D)){
-      skipCurrentDecl();
-    }
+    skipCurrentDecl();
   }
 
   void ForwardDeclPrinter::VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl *D) {
@@ -907,7 +916,7 @@ namespace cling {
 
     llvm::StringRef str = QualType(temp.getTypePtr(),0).getAsString();
 //    llvm::outs() << "Q:"<<str<<"\n";
-    bool result =  m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end();
+    bool result =  m_IncompatibleNames.find(str) != m_IncompatibleNames.end();
     if (includeNNS)
       result = result || str.find("::") != llvm::StringRef::npos;
     return result;
@@ -924,34 +933,40 @@ namespace cling {
 
     for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
       const Type* type = D->getParamDecl(i)->getType().getTypePtr();
-      if (type->isReferenceType())
+      while (type->isReferenceType())
         type = D->getParamDecl(i)->getType().getNonReferenceType().getTypePtr();
+      while (type->isPointerType())
+        type = type->getPointeeType().getTypePtr();
 
       if (const TemplateSpecializationType* tst
         = dyn_cast<TemplateSpecializationType>(type)){
-          if (m_IncompatibleTypes.find
+          if (m_IncompatibleNames.find
                   (tst->getTemplateName().getAsTemplateDecl()->getName())
-                  != m_IncompatibleTypes.end()) {
+                  != m_IncompatibleNames.end()) {
+//            Log() << "Function : Incompatible Type\n";
             return true;
           }
           for (uint i = 0; i < tst->getNumArgs(); ++i ) {
             const TemplateArgument& arg = tst->getArg(i);
             TemplateArgument::ArgKind kind = arg.getKind();
             if (kind == TemplateArgument::ArgKind::Type){
-              if (m_IncompatibleTypes.find(arg.getAsType().getAsString())
-                      != m_IncompatibleTypes.end())
+              if (m_IncompatibleNames.find(arg.getAsType().getAsString())
+                      != m_IncompatibleNames.end()){
+//                Log() << D->getName() << " Function : Incompatible Type\n";
                 return true;
+              }
             }
             if (kind == TemplateArgument::ArgKind::Expression) {
               Expr* expr = arg.getAsExpr();
               //TODO: Traverse this expr
-
             }
          }
 
       }
-      if (isIncompatibleType(D->getParamDecl(i)->getType()))
+      if (isIncompatibleType(D->getParamDecl(i)->getType())){
+//        Log() << "Function : Incompatible Type\n";
         param = true;
+      }
     }
 
     if (D->getNameAsString().size() == 0
@@ -960,8 +975,10 @@ namespace cling {
         || D->isCXXClassMember()
         || isIncompatibleType(D->getReturnType())
         || param
-        || isOperator(D) )
+        || isOperator(D) ){
+//      Log() <<"Function : Other\n";
       return true;
+    }
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(CXXRecordDecl *D) {
@@ -972,11 +989,13 @@ namespace cling {
     if (const ElaboratedType* ET =
             dyn_cast<ElaboratedType>(D->getTypeSourceInfo()->getType().getTypePtr())) {
       if (isa<EnumType>(ET->getNamedType())) {
-        m_IncompatibleTypes.insert(D->getName());
+        m_IncompatibleNames.insert(D->getName());
+        Log() << D->getName() << " Typedef : enum\n";
         return true;
       }
       if (isa<RecordType>(ET->getNamedType())) {
-        m_IncompatibleTypes.insert(D->getName());
+        m_IncompatibleNames.insert(D->getName());
+        Log() << D->getName() << " Typedef : struct\n";
         return true;
       }
     } 
@@ -987,15 +1006,17 @@ namespace cling {
       for (uint i = 0; i < tst->getNumArgs(); ++i ) {
         const TemplateArgument& arg = tst->getArg(i);
         if (arg.getKind() == TemplateArgument::ArgKind::Type)
-          if (m_IncompatibleTypes.find(arg.getAsType().getAsString())
-                  != m_IncompatibleTypes.end()){
-            m_IncompatibleTypes.insert(D->getName());
+          if (m_IncompatibleNames.find(arg.getAsType().getAsString())
+                  != m_IncompatibleNames.end()){
+            m_IncompatibleNames.insert(D->getName());
+            Log() << D->getName() << " Typedef : Incompatible Type\n";
             return true;
           }
       }
     }
     if (isIncompatibleType(D->getTypeSourceInfo()->getType())) {
-      m_IncompatibleTypes.insert(D->getName());
+      m_IncompatibleNames.insert(D->getName());
+      Log() << D->getName() << " Typedef : Incompatible Type\n";
       return true;
     }
     if (D->getUnderlyingType().getTypePtr()->isFunctionPointerType()) {
@@ -1007,7 +1028,8 @@ namespace cling {
         for (uint i = 0; i < fpt->getNumParams(); ++i){
           result = result || isIncompatibleType(fpt->getParamType(i),false);
           if (result){
-            m_IncompatibleTypes.insert(D->getName());
+            m_IncompatibleNames.insert(D->getName());
+            Log() << D->getName() << " Typedef : Function Pointer\n";
             return true;
           }
 
@@ -1023,7 +1045,8 @@ namespace cling {
           for (uint i = 0; i < fpt->getNumParams(); ++i){
             result = result || isIncompatibleType(fpt->getParamType(i),false);
             if (result){
-              m_IncompatibleTypes.insert(D->getName());
+              m_IncompatibleNames.insert(D->getName());
+              Log() << " Typedef : Function Pointer\n";
               return true;
             }
           }
@@ -1034,11 +1057,16 @@ namespace cling {
   }
   bool ForwardDeclPrinter::shouldSkip(VarDecl *D) {
     if (D->isDefinedOutsideFunctionOrMethod()){
-      if (D->isCXXClassMember())
+      if (D->isCXXClassMember()){
+        Log() << D->getName() <<" Var : Class Member\n";
         return true ;
+      }
     }
-    return D->getStorageClass() == SC_Static
-            || isIncompatibleType(D->getType());
+    bool stc =  D->getStorageClass() == SC_Static;
+    bool inctype = isIncompatibleType(D->getType());
+    if (stc) Log() << D->getName() <<" Var : Static\n";
+    if (inctype) Log() << D->getName() <<" Var : Incompatible Type\n";
+    return stc || inctype;
   }
   bool ForwardDeclPrinter::shouldSkip(EnumDecl *D) {
     return D->getName().size() == 0;
@@ -1060,15 +1088,17 @@ namespace cling {
     for (uint i = 0; i < iargs.size(); ++i) {
       const TemplateArgument& arg = iargs[i];
       if (arg.getKind() == TemplateArgument::ArgKind::Type)
-        if (m_IncompatibleTypes.find(arg.getAsType().getAsString())
-            !=m_IncompatibleTypes.end())
+        if (m_IncompatibleNames.find(arg.getAsType().getAsString())
+            !=m_IncompatibleNames.end())
           return true;
     }
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(UsingDirectiveDecl *D) {
     llvm::StringRef str = D->getNominatedNamespace()->getNameAsString();
-    return m_IncompatibleTypes.find(str) != m_IncompatibleTypes.end();
+    bool inctype = m_IncompatibleNames.find(str) != m_IncompatibleNames.end();
+    if (inctype) Log() << str <<" Using Directive : Incompatible Type\n";
+    return inctype;
   }
   bool ForwardDeclPrinter::ContainsIncompatibleName(TemplateParameterList* Params){
     for (unsigned i = 0, e = Params->size(); i != e; ++i) {
@@ -1076,19 +1106,26 @@ namespace cling {
       if (const TemplateTypeParmDecl *TTP =
         dyn_cast<TemplateTypeParmDecl>(Param)) {
           if (TTP->hasDefaultArgument() ) {
-            if (m_IncompatibleTypes.find(TTP->getName())
-                    !=m_IncompatibleTypes.end()){
+            if (m_IncompatibleNames.find(TTP->getName())
+                    !=m_IncompatibleNames.end()){
               return true;
             }
           }
       }
       if (const NonTypeTemplateParmDecl *NTTP =
         dyn_cast<NonTypeTemplateParmDecl>(Param)) {
+
           if (NTTP->hasDefaultArgument() ) {
             QualType type = NTTP->getType();
-            Expr* expr = NTTP->getDefaultArgument();
-            if (isIncompatibleType(type) /*||also check expr*/){
+            if (isIncompatibleType(type)){
               return true;
+            }
+            Expr* expr = NTTP->getDefaultArgument();
+            expr = expr->IgnoreImpCasts();
+            if (DeclRefExpr* dre = dyn_cast<DeclRefExpr>(expr)){
+              llvm::StringRef str = dre->getDecl()->getQualifiedNameAsString();
+              if (str.find("::") != llvm::StringRef::npos)
+                return true; // TODO: Find proper solution
             }
           }
       }
@@ -1099,7 +1136,8 @@ namespace cling {
   bool ForwardDeclPrinter::shouldSkip(ClassTemplateDecl *D) {
     if (ContainsIncompatibleName(D->getTemplateParameters())
             || shouldSkip(D->getTemplatedDecl())){
-      m_IncompatibleTypes.insert(D->getName());
+      Log() << D->getName() <<" Class Template : Incompatible Type\n";
+      m_IncompatibleNames.insert(D->getName());
       return true;
     }
     return false;
@@ -1110,11 +1148,15 @@ namespace cling {
   }
 
   bool ForwardDeclPrinter::shouldSkip(UsingDecl *D) {
-    m_IncompatibleTypes.insert(D->getName());
-    return true;
+    if (m_IncompatibleNames.find(D->getName())
+            != m_IncompatibleNames.end()) {
+      Log() << D->getName() <<" Using Decl : Incompatible Type\n";
+      return true;
+    }
+    return false;
   }
   bool ForwardDeclPrinter::shouldSkip(TypeAliasTemplateDecl *D) {
-    m_IncompatibleTypes.insert(D->getName());
+    m_IncompatibleNames.insert(D->getName());
     return true;
   }
 

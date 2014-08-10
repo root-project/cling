@@ -1236,9 +1236,11 @@ namespace cling {
     std::string err;
     llvm::raw_fd_ostream out(outFile.data(), err,
                              llvm::sys::fs::OpenFlags::F_None);
+    llvm::raw_fd_ostream log("skiplog", err,
+                             llvm::sys::fs::OpenFlags::F_None);
 
 
-    ForwardDeclPrinter visitor(out,fwdGen.getSema().getSourceManager(), *T);
+    ForwardDeclPrinter visitor(out, log, fwdGen.getSema().getSourceManager(), *T);
     visitor.printStats();
 
     // Avoid assertion in the ~IncrementalParser.
