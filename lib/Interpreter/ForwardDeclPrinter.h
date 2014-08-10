@@ -139,6 +139,7 @@ namespace cling {
 
     bool isIncompatibleType(clang::QualType q, bool includeNNS = true);
     bool isOperator(clang::FunctionDecl* D);
+    bool hasDefaultArgument(clang::FunctionDecl* D);
 
     template<typename DeclT>
     bool shouldSkip(DeclT* D){return false;}
@@ -155,6 +156,7 @@ namespace cling {
     bool shouldSkip(clang::ClassTemplateDecl* D);
     bool shouldSkip(clang::FunctionTemplateDecl* D);
     bool shouldSkip(clang::TypeAliasTemplateDecl* D);
+
 
     bool ContainsIncompatibleName(clang::TemplateParameterList* Params);
 

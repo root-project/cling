@@ -11,14 +11,11 @@
 //XFAIL: *
 //All the currently failing stuff
 
-#include "cling/Interpreter/Interpreter.h"
-// #include "cling/Interpreter/AutoloadCallback.h"
-gCling->GenerateAutoloadingMap("Fail.h","test.h");
+.T Fail.h fwd_fail.h
+#include "fwd_fail.h"
+#include "Fail.h"
+#include "FakeFwd.h" //Because we skip function templates having default function arguments
+#include "FunctionTemplate.h"
 
-gCling->process("const char * const argV = \"cling\";");
-gCling->process("cling::Interpreter *DefaultInterp;");
-
-gCling->process("DefaultInterp = new cling::Interpreter(1, &argV);");
-gCling->process("DefaultInterp->process(\"#include \\\"test.h\\\"\");");
-
+//expected-no-diagnostics
 .q

@@ -28,13 +28,10 @@ filesToIgnore += "__wmmintrin_pclmul.h;rtmintrin.h;fma4intrin.h;avx2intrin.h;";
 // Wrong setups, i.e not self-contained header files:
 filesToIgnore += "dlg_colors.h;dialog.h;plugin-api.h;regexp.h;etip.h;dlg_keys.h;";
 filesToIgnore += "cursesw.h;cursesm.h;cursesf.h;cursslk.h;cursesapp.h;term_entry.h;";
-filesToIgnore += "cursesp.h;ft2build.h;";
+filesToIgnore += "cursesp.h;ft2build.h;shared_mutex;ciso646;cxxabi.h;future";
 
 // AUX:
 filesToIgnore += "Makefile;CMakeLists.txt;";
-
-// Temporary
-filesToIgnore += "map;";
 
 .rawInput 1
 bool has_suffix(const std::string &str, const std::string &suffix) {

@@ -1204,7 +1204,8 @@ namespace cling {
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
                                            llvm::StringRef outFile,
-                                           bool enableMacros) {
+                                           bool enableMacros,
+                                           bool enableLogs) {
 
     const char *const dummy="cling";
     // Create an interpreter without any runtime, producing the fwd decls.
@@ -1236,13 +1237,17 @@ namespace cling {
     std::string err;
     llvm::raw_fd_ostream out(outFile.data(), err,
                              llvm::sys::fs::OpenFlags::F_None);
-    llvm::raw_fd_ostream log("skiplog", err,
-                             llvm::sys::fs::OpenFlags::F_None);
-
-
-    ForwardDeclPrinter visitor(out, log, fwdGen.getSema().getSourceManager(), *T);
-    visitor.printStats();
-
+    if (enableLogs){
+      llvm::raw_fd_ostream log(llvm::Twine(outFile).concat(llvm::Twine(".skipped")).str().c_str(),
+                             err, llvm::sys::fs::OpenFlags::F_None);
+      log << "Generated for :" << inFile << "\n";
+      ForwardDeclPrinter visitor(out, log, fwdGen.getSema().getSourceManager(), *T);
+      visitor.printStats();
+    }
+    else {
+      llvm::raw_null_ostream sink;
+      ForwardDeclPrinter visitor(out, sink, fwdGen.getSema().getSourceManager(), *T);
+    }
     // Avoid assertion in the ~IncrementalParser.
     T->setState(Transaction::kCommitted);
     // unload(1);

@@ -927,6 +927,15 @@ namespace cling {
     return D->getNameAsString().find("operator") == 0;
   }
 
+  bool ForwardDeclPrinter::hasDefaultArgument(FunctionDecl *D) {
+    auto N = D->getNumParams();
+    for (uint i=0; i < N; ++i) {
+      if (D->getParamDecl(i)->hasDefaultArg())
+        return true;
+    }
+    return false;
+  }
+
   bool ForwardDeclPrinter::shouldSkip(FunctionDecl *D) {
     bool param = false;
     //will be true if any of the params turn out to have incompatible types
@@ -1154,8 +1163,17 @@ namespace cling {
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(FunctionTemplateDecl* D){
-    return ContainsIncompatibleName(D->getTemplateParameters())
-            || shouldSkip(D->getAsFunction());
+    bool inctype = ContainsIncompatibleName(D->getTemplateParameters());
+    bool func =  shouldSkip(D->getTemplatedDecl());
+    bool hasdef = hasDefaultArgument(D->getTemplatedDecl());
+    if (inctype || func || hasdef ) {
+      if (D->getDeclName().isIdentifier()){
+        m_IncompatibleNames.insert(D->getName());
+        if (hasdef) Log() << D->getName() << " Function Template : Has default argument\n";
+      }
+      return true;
+    }
+    return false;
   }
 
   bool ForwardDeclPrinter::shouldSkip(UsingDecl *D) {
@@ -1172,6 +1190,6 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::printStats() {
-    llvm::outs() << m_SkipCounter << " decls skipped out of " << m_TotalDecls << "\n";
+    Log() << m_SkipCounter << " decls skipped out of " << m_TotalDecls << "\n";
   }
 }//end namespace cling

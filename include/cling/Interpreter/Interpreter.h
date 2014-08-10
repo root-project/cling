@@ -627,7 +627,7 @@ namespace cling {
 
 
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
-                                bool enableMacros = false);
+                                bool enableMacros = false, bool enableLogs = true);
 
     friend class runtime::internal::LifetimeHandler;
     // FIXME: workaround until JIT supports exceptions
