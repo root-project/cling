@@ -46,7 +46,7 @@ namespace cling {
                                         IsAngled, FilenameRange, File,
                                         SearchPath, RelativePath, Imported);
         InterpreterCallbacks* current = m_Callbacks;
-        while (current = current->getNext())
+        while ((current = current->getNext()))
           current->InclusionDirective(HashLoc, IncludeTok, FileName,
                                       IsAngled, FilenameRange, File,
                                       SearchPath, RelativePath, Imported);;
@@ -59,7 +59,7 @@ namespace cling {
       if (m_Callbacks) {
         bool result = m_Callbacks->FileNotFound(FileName, RecoveryPath);
         InterpreterCallbacks* current = m_Callbacks;
-        while (current = current->getNext())
+        while ((current = current->getNext()))
           result = current->FileNotFound(FileName, RecoveryPath) || result;
         return result;
       }
@@ -82,7 +82,7 @@ namespace cling {
       if (m_Callbacks) {
         m_Callbacks->DeclDeserialized(D);
         InterpreterCallbacks* current = m_Callbacks;
-        while (current = current->getNext())
+        while ((current = current->getNext()))
           current->DeclDeserialized(D);
       }
     }
@@ -91,7 +91,7 @@ namespace cling {
       if (m_Callbacks) {
         m_Callbacks->TypeDeserialized(T.getTypePtr());
         InterpreterCallbacks* current = m_Callbacks;
-        while (current = current->getNext())
+        while ((current = current->getNext()))
           current->TypeDeserialized(T.getTypePtr());
       }
     }
@@ -150,7 +150,7 @@ namespace cling {
       if (m_Callbacks) {
         bool result = m_Callbacks->LookupObject(R, S);
         InterpreterCallbacks* current = m_Callbacks;
-        while (current = current->getNext())
+        while ((current = current->getNext()))
           result = current->LookupObject(R, S) || result;
         return result;
       }
@@ -163,7 +163,7 @@ namespace cling {
       if (m_Callbacks) {
         bool result = m_Callbacks->LookupObject(DC, Name);
         InterpreterCallbacks* current = m_Callbacks;
-        while (current = current->getNext())
+        while ((current = current->getNext()))
           result = current->LookupObject(DC, Name) || result;
         return result;
       }
@@ -177,7 +177,7 @@ namespace cling {
       if (m_Callbacks) {
         m_Callbacks->LookupObject(Tag);
         InterpreterCallbacks* current = m_Callbacks;
-        while (current = current->getNext())
+        while ((current = current->getNext()))
           current->LookupObject(Tag);
       }
     }
@@ -241,7 +241,7 @@ namespace cling {
   void InterpreterCallbacks::SetIsRuntime(bool val) {
     m_IsRuntime = val;
     InterpreterCallbacks* current = this;
-    while (current = current->getNext())
+    while ((current = current->getNext()))
       current->m_IsRuntime = val;
   }
 
