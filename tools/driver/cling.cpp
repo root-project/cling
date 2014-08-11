@@ -19,6 +19,7 @@
 #include "llvm/Support/ManagedStatic.h"
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 
@@ -52,13 +53,23 @@ int main( int argc, char **argv ) {
   // If we are not interactive we're supposed to parse files
   if (!Interactive) {
     for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
-      std::string line;
-      if (!interp.lookupFileOrLibrary(Inputs[I]).empty())
-        line += ".x ";
-
-      line += Inputs[I];
+      std::string cmd;
       cling::Interpreter::CompilationResult compRes;
-      ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
+      if (!interp.lookupFileOrLibrary(Inputs[I]).empty()) {
+        std::ifstream infile(interp.lookupFileOrLibrary(Inputs[I]));
+        std::string line;
+        std::getline(infile, line);
+        if (line[0] == '#' && line[1] == '!') {
+          while(std::getline(infile, line)) {
+            ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
+          }
+          continue;
+        }
+        else
+          cmd += ".x ";
+      }
+      cmd += Inputs[I];
+      ui.getMetaProcessor()->process(cmd.c_str(), compRes, 0);
     }
   }
   else {
