@@ -60,6 +60,8 @@ int main( int argc, char **argv ) {
         std::string line;
         std::getline(infile, line);
         if (line[0] == '#' && line[1] == '!') {
+          // TODO: Check whether the filename specified after #! is the current
+          // executable.
           while(std::getline(infile, line)) {
             ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
           }
