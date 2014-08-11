@@ -112,14 +112,14 @@ namespace cling {
       using namespace clang;
       NamedDecl* ND = T->containsNamedDecl(pairFuncExt.first);
       DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
-      SourceLocation fakeLoc; // = m_Interpreter.getNextAvailableLoc().getLocWithOffset(+3);
+      SourceLocation noLoc;
       if (!ND) {
         unsigned diagID
           = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
                                    "'%0' missing falling back to .L");
         //FIXME: Figure out how to pass in proper source locations, which we can
         // use with -verify.
-        Diags.Report(fakeLoc, diagID)
+        Diags.Report(noLoc, diagID)
           << pairFuncExt.first;
         return AR_Success;
       }
@@ -138,7 +138,7 @@ namespace cling {
                                      "function '%0' cannot be called with no arguments.");
           //FIXME: Figure out how to pass in proper source locations, which we
           // can use with -verify.
-          Diags.Report(fakeLoc, diagID)
+          Diags.Report(noLoc, diagID)
             << FD->getNameAsString();
           return AR_Success;
         }
