@@ -71,13 +71,13 @@ namespace cling {
       }
       if (dci.m_Call == Transaction::kCCIHandleTopLevelDecl) {
         for (auto dit = dci.m_DGR.begin(); dit != dci.m_DGR.end(); ++dit) {
-          llvm::StringRef filename = m_SMgr.getFilename
-                            ((*dit)->getSourceRange().getBegin());
-#ifdef _POSIX_C_SOURCE
-          //Workaround for differnt expansion of macros to typedefs
-          if (filename.endswith("sys/types.h"))
-            continue;
-#endif
+//          llvm::StringRef filename = m_SMgr.getFilename
+//                            ((*dit)->getSourceRange().getBegin());
+//#ifdef _POSIX_C_SOURCE
+//          //Workaround for differnt expansion of macros to typedefs
+//          if (filename.endswith("sys/types.h"))
+//            continue;
+//#endif
           //This may indicate a bug in cling.
           //This condition should ideally never be triggered
           //But is needed in case of generating fwd decls for
@@ -139,6 +139,17 @@ namespace cling {
   void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
     if (D->getSourceRange().isInvalid())
       return;
+
+    if (D->hasAttrs() && ! isa<FunctionDecl>(D)) {
+      AttrVec &Attrs = D->getAttrs();
+      for (AttrVec::const_iterator i=Attrs.begin(), e=Attrs.end(); i != e; ++i) {
+        Attr *A = *i;
+        if (!A->isImplicit() && !A->isInherited() && A->getKind() != attr::Kind::Final){
+          A->printPretty(Out(), m_Policy);
+        }
+      }
+    }
+
     std::string file = m_SMgr.getFilename(m_SMgr.getSpellingLoc(D->getLocStart()));
 //    assert ( file.length() != 0 && "Filename Should not be blank");
     Out() << " __attribute__((annotate(\""
