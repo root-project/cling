@@ -108,16 +108,40 @@ namespace cling {
 
       // Check if there is a function named after the file.
       const cling::Transaction* T = m_Interpreter.getLastTransaction();
-      if (T && !T->containsNamedDecl(pairFuncExt.first)) {
-        clang::DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
+      assert(T);
+      using namespace clang;
+      NamedDecl* ND = T->containsNamedDecl(pairFuncExt.first);
+      DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
+      SourceLocation fakeLoc; // = m_Interpreter.getNextAvailableLoc().getLocWithOffset(+3);
+      if (!ND) {
         unsigned diagID
-          = Diags.getCustomDiagID (clang::DiagnosticsEngine::Level::Warning,
+          = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
                                    "'%0' missing falling back to .L");
         //FIXME: Figure out how to pass in proper source locations, which we can
         // use with -verify.
-        Diags.Report(clang::SourceLocation(), diagID)
+        Diags.Report(fakeLoc, diagID)
           << pairFuncExt.first;
         return AR_Success;
+      }
+      else if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
+        // Check whether we can call it with no arguments.
+        bool canCall = true;
+        for (auto Param: FD->params())
+          if (!Param->hasDefaultArg()) {
+            canCall = false;
+            break;
+          }
+        if (!canCall) {
+          // FIXME: Produce clang diagnostics no viable function to call.
+          unsigned diagID
+            = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
+                                     "function '%0' cannot be called with no arguments.");
+          //FIXME: Figure out how to pass in proper source locations, which we
+          // can use with -verify.
+          Diags.Report(fakeLoc, diagID)
+            << FD->getNameAsString();
+          return AR_Success;
+        }
       }
 
       if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
