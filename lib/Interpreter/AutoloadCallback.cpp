@@ -105,7 +105,7 @@ namespace cling {
     }
 
     bool VisitDecl(Decl* D) {
-      if (m_IsStoringState)
+      if (!m_IsStoringState)
         return true;
 
       if (!D->hasAttr<AnnotateAttr>())
