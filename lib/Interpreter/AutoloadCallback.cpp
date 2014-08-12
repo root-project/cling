@@ -99,13 +99,16 @@ namespace cling {
 
     bool shouldVisitTemplateInstantiations() { return true; }
     bool TraverseTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
+      if (m_IsStoringState)
+        return true;
+
       if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
     bool VisitDecl(Decl* D) {
-      if (!m_IsStoringState)
+      if (m_IsStoringState)
         return true;
 
       if (!D->hasAttr<AnnotateAttr>())
@@ -131,19 +134,25 @@ namespace cling {
 
     bool TraverseTemplateDecl(TemplateDecl* D) {
       if (!D->getTemplatedDecl()->hasAttr<AnnotateAttr>())
-        return false;
+        return true;
       for(auto P: D->getTemplateParameters()->asArray())
         TraverseDecl(P);
       return true;
     }
 
     bool TraverseNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
+      if (m_IsStoringState)
+        return true;
+
       if (D->hasDefaultArgument())
         D->removeDefaultArgument();
       return true;
     }
 
     bool TraverseParmVarDecl(ParmVarDecl* D) {
+      if (m_IsStoringState)
+        return true;
+
       if (D->hasDefaultArg())
         D->setDefaultArg(nullptr);
       return true;
