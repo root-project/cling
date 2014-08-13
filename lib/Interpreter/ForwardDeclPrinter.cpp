@@ -150,7 +150,17 @@ namespace cling {
       }
     }
 
-    std::string file = m_SMgr.getFilename(m_SMgr.getSpellingLoc(D->getLocStart()));
+    SourceLocation spellingLoc = m_SMgr.getSpellingLoc(D->getLocStart());
+    // Walk up the include chain.
+    PresumedLoc PLoc = m_SMgr.getPresumedLoc(spellingLoc);
+    llvm::SmallVector<PresumedLoc, 16> PLocs;
+    while (true) {
+      if (!m_SMgr.getPresumedLoc(PLoc.getIncludeLoc()).isValid())
+        break;
+      PLocs.push_back(PLoc);
+      PLoc = m_SMgr.getPresumedLoc(PLoc.getIncludeLoc());
+    }
+    std::string file = PLocs[PLocs.size() -1].getFilename();
 //    assert ( file.length() != 0 && "Filename Should not be blank");
     Out() << " __attribute__((annotate(\""
           << file;
