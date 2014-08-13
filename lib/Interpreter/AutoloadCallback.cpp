@@ -147,13 +147,25 @@ namespace cling {
     }
 
     bool VisitTemplateDecl(TemplateDecl* D) {
-      if (!D->getTemplatedDecl()->hasAttr<AnnotateAttr>())
+      if (D->getTemplatedDecl() &&
+          !D->getTemplatedDecl()->hasAttr<AnnotateAttr>())
         return true;
 
       VisitDecl(D);
 
       for(auto P: D->getTemplateParameters()->asArray())
         TraverseDecl(P);
+      return true;
+    }
+
+    bool VisitTemplateTemplateParmDecl(TemplateTemplateParmDecl* D) {
+      VisitDecl(D);
+
+      if (m_IsStoringState)
+        return true;
+
+      if (D->hasDefaultArgument())
+        D->removeDefaultArgument();
       return true;
     }
 
