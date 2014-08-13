@@ -112,7 +112,7 @@ namespace cling {
         return true;
 
       if (!D->hasAttr<AnnotateAttr>())
-        return false;
+        return true;
 
       AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
       if (!attr)
