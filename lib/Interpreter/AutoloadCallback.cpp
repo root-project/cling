@@ -98,14 +98,6 @@ namespace cling {
     }
 
     bool shouldVisitTemplateInstantiations() { return true; }
-    bool TraverseTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
-      if (m_IsStoringState)
-        return true;
-
-      if (D->hasDefaultArgument())
-        D->removeDefaultArgument();
-      return true;
-    }
 
     bool VisitDecl(Decl* D) {
       if (!m_IsStoringState)
@@ -132,15 +124,20 @@ namespace cling {
       return true;
     }
 
-    bool TraverseTemplateDecl(TemplateDecl* D) {
-      if (!D->getTemplatedDecl()->hasAttr<AnnotateAttr>())
+    bool VisitCXXRecordDecl(CXXRecordDecl* D) {
+      if (!D->hasAttr<AnnotateAttr>())
         return true;
-      for(auto P: D->getTemplateParameters()->asArray())
-        TraverseDecl(P);
+
+      VisitDecl(D);
+
+      if (ClassTemplateDecl* TmplD = D->getDescribedClassTemplate())
+        return VisitTemplateDecl(TmplD);
       return true;
     }
 
-    bool TraverseNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
+    bool VisitTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
+      VisitDecl(D);
+
       if (m_IsStoringState)
         return true;
 
@@ -149,7 +146,31 @@ namespace cling {
       return true;
     }
 
-    bool TraverseParmVarDecl(ParmVarDecl* D) {
+    bool VisitTemplateDecl(TemplateDecl* D) {
+      if (!D->getTemplatedDecl()->hasAttr<AnnotateAttr>())
+        return true;
+
+      VisitDecl(D);
+
+      for(auto P: D->getTemplateParameters()->asArray())
+        TraverseDecl(P);
+      return true;
+    }
+
+    bool VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
+      VisitDecl(D);
+
+      if (m_IsStoringState)
+        return true;
+
+      if (D->hasDefaultArgument())
+        D->removeDefaultArgument();
+      return true;
+    }
+
+    bool VisitParmVarDecl(ParmVarDecl* D) {
+      VisitDecl(D);
+
       if (m_IsStoringState)
         return true;
 
