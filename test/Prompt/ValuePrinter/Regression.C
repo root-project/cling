@@ -22,12 +22,18 @@ public:
 };
 
 const A& foo(const A& arg) { return arg; }
+A foo2(const A& arg) { return A(42); }
 .rawInput 0
 
 foo(A(12)).Var
 // CHECK: (const int) 12
 // CHECK: A d'tor
 // End PR #93006
+
+// myvector.end() failed to print (roottest/cling/stl/default/VectorSort.C)
+foo2(A(42))
+// CHECK: (A) @0x{{[0-9a-f]+}}
+// CHECK: A d'tor
 
  // Savannah #96523
 int *p = (int*)0x123;

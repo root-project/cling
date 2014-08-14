@@ -404,8 +404,8 @@ namespace valuePrinterInternal {
               || Ty->isArrayType())
       StreamValue(o, V.getPtr(), Ty, Interp);
     else {
-      assert(0 && "I don't know what I am printing.");
-      StreamValue(o, &V, Ty, Interp);
+      // struct case.
+      StreamValue(o, V.getPtr(), Ty, Interp);
     }
   }
 
