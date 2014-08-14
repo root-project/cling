@@ -16,9 +16,11 @@
 #include "textinput/History.h"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #ifdef WIN32
 # include <stdio.h>
+extern "C" unsigned int GetCurrentProcessId();
 #else
 # include <unistd.h>
 #endif
@@ -96,8 +98,14 @@ namespace textinput {
       // added their own.
       std::string line;
       std::ifstream in(fHistFileName.c_str());
-      std::string pruneFileName = fHistFileName + "_prune";
-      std::ofstream out(pruneFileName.c_str());
+      std::stringstream pruneFileNameStream;
+      pruneFileNameStream << fHistFileName + "_prune"
+#if _WIN32
+                          << ::GetCurrentProcessId();
+#else
+                          << ::getpid();
+#endif
+      std::ofstream out(pruneFileNameStream.str().c_str());
       if (out) {
         if (in) {
           while (numLines >= nPrune && std::getline(in, line)) {
@@ -116,9 +124,9 @@ namespace textinput {
 #else
         ::unlink(fHistFileName.c_str());
 #endif
-        if (::rename(pruneFileName.c_str(), fHistFileName.c_str()) == -1) {
+        if (::rename(pruneFileNameStream.str().c_str(), fHistFileName.c_str()) == -1){
            std::cerr << "ERROR in textinput::History::AppendToFile(): "
-              "cannot rename " << pruneFileName << " to " << fHistFileName;
+              "cannot rename " << pruneFileNameStream.str() << " to " << fHistFileName;
         }
         fNumHistFileLines = nPrune;
       }
