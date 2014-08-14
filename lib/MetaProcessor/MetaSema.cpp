@@ -117,7 +117,7 @@ namespace cling {
       if (!ND) {
         unsigned diagID
           = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
-                                   "'%0' missing falling back to .L");
+                                   "cannot find function '%0()'; falling back to .L");
         //FIXME: Figure out how to pass in proper source locations, which we can
         // use with -verify.
         Diags.Report(noLoc, diagID)
