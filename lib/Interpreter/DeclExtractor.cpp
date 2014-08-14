@@ -267,6 +267,7 @@ namespace cling {
 
       // We know the transaction is closed, but it is safe.
       getTransaction()->forceAppend(VD); // Add it to the transaction for codegenning
+      VD->setHidden(true);
       TUDC->addHiddenDecl(VD);
       Stmts.clear();
       return;
