@@ -106,6 +106,7 @@ namespace cling {
       StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
       std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
 
+#if 0 // see roottest/root/io/evolution/libint.log
       // Check if there is a function named after the file.
       const cling::Transaction* T = m_Interpreter.getLastTransaction();
       assert(T);
@@ -148,6 +149,7 @@ namespace cling {
           }
         } // FIXME: else no function to call!
       }
+#endif
 
       if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
         actionResult = AR_Failure;
