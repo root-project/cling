@@ -531,7 +531,7 @@ namespace cling {
       return;
     }
 
-    if (D->isDefinedOutsideFunctionOrMethod() && !D->getStorageClass() == SC_Extern)
+    if (D->isDefinedOutsideFunctionOrMethod() && D->getStorageClass() != SC_Extern)
       Out() << "extern ";
 
     m_Policy.Bool = true;
