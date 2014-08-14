@@ -30,7 +30,8 @@ namespace cling {
         StringRef str = ED->getAttr<AnnotateAttr>()->getAnnotation();
         char ch = str.back();
         str.drop_back(2);
-        ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(), str);
+        // Missing new[](...) - see clang bug # {yet to come}.
+        // ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(), str);
         struct EnumDeclDerived: public EnumDecl {
           static void setFixed(EnumDecl* ED, bool value = true) {
             ((EnumDeclDerived*)ED)->IsFixed = value;
