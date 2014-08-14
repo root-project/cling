@@ -10,13 +10,13 @@
 #ifndef CLING_INCREMENTAL_EXECUTOR_H
 #define CLING_INCREMENTAL_EXECUTOR_H
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include <vector>
 #include <set>
 #include <map>
+#include <memory>
 
 namespace clang {
   class DiagnosticsEngine;
@@ -48,7 +48,7 @@ namespace cling {
 
     ///\brief The llvm ExecutionEngine.
     ///
-    llvm::OwningPtr<llvm::ExecutionEngine> m_engine;
+    std::unique_ptr<llvm::ExecutionEngine> m_engine;
 
     ///\brief Symbols to be replaced by special Interpreter implementations.
     ///

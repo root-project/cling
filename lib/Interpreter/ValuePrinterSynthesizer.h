@@ -12,7 +12,7 @@
 
 #include "TransactionTransformer.h"
 
-#include "llvm/ADT/OwningPtr.h"
+#include <memory>
 
 namespace clang {
   class ASTContext;
@@ -37,7 +37,7 @@ namespace cling {
 
     ///\brief Stream to dump values into.
     ///
-    llvm::OwningPtr<llvm::raw_ostream> m_ValuePrinterStream;
+    std::unique_ptr<llvm::raw_ostream> m_ValuePrinterStream;
 
 public:
     ///\ brief Constructs the value printer synthesizer.

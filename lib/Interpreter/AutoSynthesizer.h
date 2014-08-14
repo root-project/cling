@@ -12,7 +12,7 @@
 
 #include "TransactionTransformer.h"
 
-#include "llvm/ADT/OwningPtr.h"
+#include <memory>
 
 namespace clang {
   class Sema;
@@ -27,7 +27,7 @@ namespace cling {
 
   class AutoSynthesizer : public TransactionTransformer {
   private:
-    llvm::OwningPtr<AutoFixer> m_AutoFixer;
+    std::unique_ptr<AutoFixer> m_AutoFixer;
 
   public:
     ///\ brief Constructs the auto synthesizer.

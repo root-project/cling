@@ -12,12 +12,13 @@
 
 #include "clang/Driver/Options.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Option/Option.h"
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include <memory>
 
 using namespace clang;
 using namespace cling::driver::clingoptions;
@@ -85,9 +86,9 @@ namespace {
                           int argc, const char* const argv[]) {
     if (argc <= 1) { return; }
     unsigned MissingArgIndex, MissingArgCount;
-    llvm::OwningPtr<OptTable> OptsC1(clang::driver::createDriverOptTable());
+    std::unique_ptr<OptTable> OptsC1(clang::driver::createDriverOptTable());
     Opts.Inputs.clear();
-    llvm::OwningPtr<InputArgList> Args(
+    std::unique_ptr<InputArgList> Args(
         OptsC1->ParseArgs(argv+1, argv + argc, MissingArgIndex, MissingArgCount));
     for (ArgList::const_iterator it = Args->begin(),
            ie = Args->end(); it != ie; ++it) {
@@ -103,9 +104,9 @@ cling::InvocationOptions::CreateFromArgs(int argc, const char* const argv[],
                                          std::vector<unsigned>& leftoverArgs
                                          /* , Diagnostic &Diags */) {
   InvocationOptions ClingOpts;
-  llvm::OwningPtr<OptTable> Opts(CreateClingOptTable());
+  std::unique_ptr<OptTable> Opts(CreateClingOptTable());
   unsigned MissingArgIndex, MissingArgCount;
-  llvm::OwningPtr<InputArgList> Args(
+  std::unique_ptr<InputArgList> Args(
     Opts->ParseArgs(argv, argv + argc, MissingArgIndex, MissingArgCount));
 
   //if (MissingArgCount)
@@ -127,14 +128,14 @@ cling::InvocationOptions::CreateFromArgs(int argc, const char* const argv[],
 }
 
 void cling::InvocationOptions::PrintHelp() {
-  llvm::OwningPtr<OptTable> Opts(CreateClingOptTable());
+  std::unique_ptr<OptTable> Opts(CreateClingOptTable());
 
   Opts->PrintHelp(llvm::outs(), "cling",
                   "cling: LLVM/clang C++ Interpreter: http://cern.ch/cling");
 
   llvm::outs() << "\n\n";
 
-  llvm::OwningPtr<OptTable> OptsC1(clang::driver::createDriverOptTable());
+  std::unique_ptr<OptTable> OptsC1(clang::driver::createDriverOptTable());
   OptsC1->PrintHelp(llvm::outs(), "clang -cc1",
                     "LLVM 'Clang' Compiler: http://clang.llvm.org");
 

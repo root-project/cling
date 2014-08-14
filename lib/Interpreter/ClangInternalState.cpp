@@ -41,7 +41,7 @@ namespace cling {
                                          llvm::Module* M, CodeGenerator* CG,
                                          const std::string& name)
     : m_ASTContext(AC), m_Preprocessor(PP), m_CodeGen(CG), m_Module(M),
-      m_DiffCommand("diff -u --text "), m_Name(name), m_DiffPair(0) {
+      m_DiffCommand("diff -u --text "), m_Name(name), m_DiffPair(nullptr) {
     store();
   }
 
@@ -56,11 +56,11 @@ namespace cling {
 
   void ClangInternalState::store() {
     // Cannot use the stack (private copy ctor)
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_LookupTablesOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_IncludedFilesOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_ASTOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_LLVMModuleOS;
-    llvm::OwningPtr<llvm::raw_fd_ostream> m_MacrosOS;
+    std::unique_ptr<llvm::raw_fd_ostream> m_LookupTablesOS;
+    std::unique_ptr<llvm::raw_fd_ostream> m_IncludedFilesOS;
+    std::unique_ptr<llvm::raw_fd_ostream> m_ASTOS;
+    std::unique_ptr<llvm::raw_fd_ostream> m_LLVMModuleOS;
+    std::unique_ptr<llvm::raw_fd_ostream> m_MacrosOS;
 
     m_LookupTablesOS.reset(createOutputFile("lookup",
                                             &m_LookupTablesFile));
@@ -97,7 +97,7 @@ namespace cling {
   ClangInternalState::createOutputFile(llvm::StringRef OutFile,
                                        std::string *TempPathName/*=0*/,
                                        bool RemoveFileOnSignal/*=true*/) {
-    llvm::OwningPtr<llvm::raw_fd_ostream> OS;
+    std::unique_ptr<llvm::raw_fd_ostream> OS;
     std::string OSFile;
     llvm::SmallString<256> OutputPath;
     llvm::sys::path::system_temp_directory(/*erasedOnReboot*/false, OutputPath);
@@ -126,7 +126,7 @@ namespace cling {
     if (TempPathName)
       *TempPathName = OSFile;
 
-    return OS.take();
+    return OS.release();
   }
 
   void ClangInternalState::compare(const std::string& name) {

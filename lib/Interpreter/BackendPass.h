@@ -10,9 +10,9 @@
 #ifndef CLING_TRANSACTION_BACKENDPASS_H
 #define CLING_TRANSACTION_BACKENDPASS_H
 
-#include "llvm/ADT/OwningPtr.h"
-
 #include "TransactionTransformer.h"
+
+#include <memory>
 
 namespace clang {
   class CodeGenOptions;
@@ -39,9 +39,9 @@ namespace cling {
   /// no PerModulePasses.
   class BackendPass: public TransactionTransformer {
     llvm::Module* m_Module;
-    llvm::OwningPtr<llvm::FunctionPassManager> m_PerFunctionPasses;
-    llvm::OwningPtr<llvm::PassManager> m_PerModulePasses;
-    llvm::OwningPtr<llvm::TargetMachine> m_TM;
+    std::unique_ptr<llvm::FunctionPassManager> m_PerFunctionPasses;
+    std::unique_ptr<llvm::PassManager> m_PerModulePasses;
+    std::unique_ptr<llvm::TargetMachine> m_TM;
 
   public:
     ///\brief Initializes the backend pass adaptor.

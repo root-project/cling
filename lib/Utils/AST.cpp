@@ -17,10 +17,10 @@
 #include "clang/AST/DeclTemplate.h"
 
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include "clang/AST/Mangle.h"
 
+#include <memory>
 #include <stdio.h>
 
 using namespace clang;
@@ -54,7 +54,7 @@ namespace utils {
 
     NamedDecl* D
       = cast<NamedDecl>(const_cast<Decl*>(GD.getDecl()));
-    llvm::OwningPtr<MangleContext> mangleCtx;
+    std::unique_ptr<MangleContext> mangleCtx;
     mangleCtx.reset(D->getASTContext().createMangleContext());
     if (!mangleCtx->shouldMangleDeclName(D)) {
       IdentifierInfo *II = D->getIdentifier();

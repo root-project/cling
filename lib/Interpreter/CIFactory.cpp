@@ -25,7 +25,6 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/Config/config.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Option/ArgList.h"
@@ -38,6 +37,8 @@
 
 #include <ctime>
 #include <cstdio>
+
+#include <memory>
 
 // Include the necessary headers to interface with the Windows registry and
 // environment.
@@ -588,7 +589,7 @@ namespace cling {
     //Driver.setWarnMissingInput(false);
     Driver.setCheckInputsExist(false); // think foo.C(12)
     llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());
-    llvm::OwningPtr<clang::driver::Compilation>
+    std::unique_ptr<clang::driver::Compilation>
       Compilation(Driver.BuildCompilation(RF));
     const clang::driver::ArgStringList* CC1Args
       = GetCC1Arguments(Diags.get(), Compilation.get());
@@ -631,7 +632,7 @@ namespace cling {
     }
 
     // Create and setup a compiler instance.
-    llvm::OwningPtr<CompilerInstance> CI(new CompilerInstance());
+    std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
     CI->setInvocation(Invocation);
     CI->setDiagnostics(Diags.get());
     {
@@ -739,7 +740,7 @@ namespace cling {
                                                  // the JIT to crash
     CI->getCodeGenOpts().VerifyModule = 0; // takes too long
 
-    return CI.take(); // Passes over the ownership to the caller.
+    return CI.release(); // Passes over the ownership to the caller.
   }
 
   void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {

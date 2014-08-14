@@ -15,7 +15,6 @@
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Sema/Ownership.h"
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/Casting.h"
 
 

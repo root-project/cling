@@ -10,10 +10,10 @@
 #ifndef CLING_CLANG_INTERNAL_STATE_H
 #define CLING_CLANG_INTERNAL_STATE_H
 
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
+#include <memory>
 #include <string>
 
 namespace clang {
@@ -49,7 +49,7 @@ namespace cling {
     std::string m_Name;
     ///\brief Takes the ownership after compare was made.
     ///
-    llvm::OwningPtr<ClangInternalState> m_DiffPair;
+    std::unique_ptr<ClangInternalState> m_DiffPair;
   public:
     ClangInternalState(clang::ASTContext& AC, clang::Preprocessor& PP,
                        llvm::Module* M, clang::CodeGenerator* CG,
