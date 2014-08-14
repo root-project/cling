@@ -109,6 +109,7 @@ namespace cling {
       // Check if there is a function named after the file.
       const cling::Transaction* T = m_Interpreter.getLastTransaction();
       assert(T);
+
       using namespace clang;
       NamedDecl* ND = T->containsNamedDecl(pairFuncExt.first);
       DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
@@ -123,25 +124,29 @@ namespace cling {
           << pairFuncExt.first;
         return AR_Success;
       }
-      else if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
-        // Check whether we can call it with no arguments.
-        bool canCall = true;
-        for (auto Param: FD->params())
-          if (!Param->hasDefaultArg()) {
-            canCall = false;
-            break;
+      else if (args.empty()) {
+        // No arguments passed - can we call it?
+        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(ND)) {
+          // Check whether we can call it with no arguments.
+          bool canCall = true;
+          for (auto Param: FD->params()) {
+            if (!Param->hasDefaultArg()) {
+              canCall = false;
+              break;
+            }
           }
-        if (!canCall) {
-          // FIXME: Produce clang diagnostics no viable function to call.
-          unsigned diagID
-            = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
-                                     "function '%0' cannot be called with no arguments.");
-          //FIXME: Figure out how to pass in proper source locations, which we
-          // can use with -verify.
-          Diags.Report(noLoc, diagID)
-            << FD->getNameAsString();
-          return AR_Success;
-        }
+          if (!canCall) {
+            // FIXME: Produce clang diagnostics no viable function to call.
+            unsigned diagID
+              = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
+                           "function '%0' cannot be called with no arguments.");
+            //FIXME: Figure out how to pass in proper source locations, which we
+            // can use with -verify.
+            Diags.Report(noLoc, diagID)
+              << FD->getNameAsString();
+            return AR_Success;
+          }
+        } // FIXME: else no function to call!
       }
 
       if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
