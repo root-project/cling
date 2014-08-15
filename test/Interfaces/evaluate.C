@@ -10,11 +10,7 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
-
-.rawInput 1
-#ifdef MACOS
-#endif // MACOS
-.rawInput 0
+#include <cmath>
 
 cling::Value V;
 V // CHECK: (cling::Value &) <<<invalid>>> @0x{{.*}}
