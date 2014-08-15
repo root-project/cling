@@ -158,7 +158,7 @@ def fetch_llvm():
     def get_fresh_llvm():
         exec_subprocess_call('git clone %s %s'%(LLVM_GIT_URL, srcdir), workdir)
 
-        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), srcdir)
+        exec_subprocess_call('git checkout cling-patches-r%s'%(LLVMRevision), srcdir)
 
     def update_old_llvm():
         exec_subprocess_call('git stash', srcdir)
@@ -167,9 +167,9 @@ def fetch_llvm():
 
         exec_subprocess_call('git fetch --tags', srcdir)
 
-        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), srcdir)
+        exec_subprocess_call('git checkout cling-patches-r%s'%(LLVMRevision), srcdir)
 
-        exec_subprocess_call('git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision), srcdir)
+        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s'%(LLVMRevision), srcdir)
 
     if os.path.isdir(srcdir):
         update_old_llvm()
@@ -181,7 +181,7 @@ def fetch_clang():
     def get_fresh_clang():
         exec_subprocess_call('git clone %s'%(CLANG_GIT_URL), os.path.join(srcdir, 'tools'))
 
-        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
+        exec_subprocess_call('git checkout cling-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
     def update_old_clang():
         exec_subprocess_call('git stash', os.path.join(srcdir, 'tools', 'clang'))
@@ -190,9 +190,9 @@ def fetch_clang():
 
         exec_subprocess_call('git fetch --tags', os.path.join(srcdir, 'tools', 'clang'))
 
-        exec_subprocess_call('git checkout ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
+        exec_subprocess_call('git checkout cling-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
-        exec_subprocess_call('git pull origin refs/tags/ROOT-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
+        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s'%(LLVMRevision), os.path.join(srcdir, 'tools', 'clang'))
 
     if os.path.isdir(os.path.join(srcdir, 'tools', 'clang')):
         update_old_clang()
