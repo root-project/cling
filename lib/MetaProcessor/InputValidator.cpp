@@ -22,10 +22,28 @@ namespace cling {
       MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
       int kind = (int)Tok.getKind();
 
-      // If there is " or ' we don't need to look for balancing until we
-      // enounter matching " or '
+      if (kind == tok::hash) {
+        // Handle #ifdef ...
+        //          ...
+        //        #endif
+        MetaLexer Lexer(curPos);
+        Lexer.Lex(Tok);
+        if (Tok.getKind() == tok::ident) {
+          if (Tok.getIdent().startswith("if")) {
+            Res = kIncomplete;
+            m_ParenStack.push(kind);
+          }
+          else if (Tok.getIdent().startswith("end")) {
+            assert(m_ParenStack.top() == kind && "No coresponding # to pop?");
+            m_ParenStack.pop();
+          }
+          break;
+        }
+      }
+
       if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe) {
-        MetaLexer::LexQuotedStringAndAdvance(curPos, Tok);
+        // If there is " or ' we don't need to look for balancing until we
+        // enounter matching " or '
         if (kind != (int)Tok.getKind()) {
            Res = kIncomplete;
            m_ParenStack.push(kind);

@@ -34,6 +34,7 @@ namespace cling {
       backslash,  // "\"
       greater,    // ">"
       ampersand,  // "&"
+      hash,       // "#"
       ident,      // (a-zA-Z)[(0-9a-zA-Z)*]
       raw_ident,  // .*^(' '|'\t')
       comment,    // //
