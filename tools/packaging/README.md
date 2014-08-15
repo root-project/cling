@@ -118,9 +118,10 @@ cd tools/packaging/
 usage: cpt.py [-h] [-c] [--current-dev CURRENT_DEV]
               [--last-stable LAST_STABLE] [--tarball-tag TARBALL_TAG]
               [--deb-tag DEB_TAG] [--rpm-tag RPM_TAG] [--nsis-tag NSIS_TAG]
-              [--with-llvm-url WITH_LLVM_URL]
+              [--dmg-tag DMG_TAG] [--with-llvm-url WITH_LLVM_URL]
               [--with-clang-url WITH_CLANG_URL]
-              [--with-cling-url WITH_CLING_URL] [--with-workdir WITH_WORKDIR]
+              [--with-cling-url WITH_CLING_URL] [--no-test]
+              [--with-workdir WITH_WORKDIR] [--make-proper MAKE_PROPER]
 
 Cling Packaging Tool
 
@@ -143,12 +144,15 @@ optional arguments:
                         (.rpm)
   --nsis-tag NSIS_TAG   Package the snapshot of a given tag in an NSIS
                         installer (.exe)
+  --dmg-tag DMG_TAG     Package the snapshot of a given tag in a DMG package
+                        (.dmg)
   --with-llvm-url WITH_LLVM_URL
                         Specify an alternate URL of LLVM repo
   --with-clang-url WITH_CLANG_URL
                         Specify an alternate URL of Clang repo
   --with-cling-url WITH_CLING_URL
                         Specify an alternate URL of Cling repo
+  --no-test             Do not run test suite of Cling
   --with-workdir WITH_WORKDIR
                         Specify an alternate working directory for CPT
   --make-proper MAKE_PROPER
