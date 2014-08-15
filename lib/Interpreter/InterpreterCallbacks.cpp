@@ -337,7 +337,7 @@ namespace test {
   }
 
   SymbolResolverCallback::SymbolResolverCallback(Interpreter* interp)
-    : InterpreterCallbacks(interp),
+    : InterpreterCallbacks(interp, /*EnableSemaCB*/true),
       m_TesterDecl(0) {
     m_Interpreter->process("cling::test::Tester = new cling::test::TestProxy();");
   }
