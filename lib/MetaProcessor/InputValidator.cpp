@@ -32,12 +32,13 @@ namespace cling {
           if (Tok.getIdent().startswith("if")) {
             Res = kIncomplete;
             m_ParenStack.push(kind);
+            break;
           }
           else if (Tok.getIdent().startswith("end")) {
             assert(m_ParenStack.top() == kind && "No coresponding # to pop?");
             m_ParenStack.pop();
+            break;
           }
-          break;
         }
       }
 
