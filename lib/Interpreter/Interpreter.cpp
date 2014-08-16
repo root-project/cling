@@ -223,7 +223,7 @@ namespace cling {
          I != E; ++I)
       m_IncrParser->commitTransaction(*I);
 
-    //setCallbacks(new AutoloadCallback(this));
+    setCallbacks(new AutoloadCallback(this));
   }
 
   Interpreter::~Interpreter() {
