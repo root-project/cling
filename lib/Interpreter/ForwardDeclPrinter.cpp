@@ -197,9 +197,14 @@ namespace cling {
       Out() << "__module_private__ ";
     }
     QualType q = D->getTypeSourceInfo()->getType();
-    q.removeLocalRestrict();
-    q.print(Out(), m_Policy, D->getName());
-    q.addRestrict();
+    if (q.isRestrictQualified()){
+      q.removeLocalRestrict();
+      q.print(Out(), m_Policy, "");
+      Out() << " __restrict " << D->getName(); //TODO: Find some policy that does this automatically
+    }
+    else {
+      q.print(Out(), m_Policy, D->getName());
+    }
     prettyPrintAttributes(D);
 //      Indent() << ";\n";
     skipCurrentDecl(false);
@@ -896,7 +901,8 @@ namespace cling {
 
   void ForwardDeclPrinter::
   VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* D) {
-
+    D->printName(Log());
+    Log() << " ClassTemplateSpecialization : Skipped by default\n";
 //    if (shouldSkip(D)) {
 //      skipCurrentDecl();
 //      return;
@@ -981,7 +987,8 @@ namespace cling {
           if (m_IncompatibleNames.find
                   (tst->getTemplateName().getAsTemplateDecl()->getName())
                   != m_IncompatibleNames.end()) {
-//            Log() << "Function : Incompatible Type\n";
+              D->printName(Log());
+            Log() << " Function : Incompatible Type\n";
             return true;
           }
           for (unsigned int i = 0; i < tst->getNumArgs(); ++i ) {
@@ -990,7 +997,8 @@ namespace cling {
             if (kind == TemplateArgument::ArgKind::Type){
               if (m_IncompatibleNames.find(arg.getAsType().getAsString())
                       != m_IncompatibleNames.end()){
-//                Log() << D->getName() << " Function : Incompatible Type\n";
+                  D->printName(Log());
+                Log() << D->getName() << " Function : Incompatible Type in template argument list\n";
                 return true;
               }
             }
@@ -1002,7 +1010,8 @@ namespace cling {
 
       }
       if (isIncompatibleType(D->getParamDecl(i)->getType())){
-//        Log() << "Function : Incompatible Type\n";
+        D->printName(Log());
+        Log() << " Function : Incompatible Type in argument list\n";
         param = true;
       }
     }
@@ -1021,7 +1030,8 @@ namespace cling {
         //Implement that if important functions are marked so.
         //Not important, as users do not need hints
         //about using Deleted functions
-//      Log() <<"Function : Other\n";
+      D->printName(Log());
+      Log() << " Function : Other\n";
       return true;
     }
     return false;
@@ -1118,7 +1128,12 @@ namespace cling {
     return false;
   }
   bool ForwardDeclPrinter::shouldSkip(EnumDecl *D) {
-    return D->getName().size() == 0;
+    if (D->getName().size() == 0){
+      D->printName(Log());
+      Log() << "Enum: Empty name\n";
+      return true;
+    }
+    return false;
   }
   void ForwardDeclPrinter::skipCurrentDecl(bool skip) {
     if (skip) {
@@ -1215,6 +1230,8 @@ namespace cling {
   }
   bool ForwardDeclPrinter::shouldSkip(TypeAliasTemplateDecl *D) {
     m_IncompatibleNames.insert(D->getName());
+    D->printName(Log());
+    Log() << " TypeAliasTemplateDecl: Always Skipped\n";
     return true;
   }
 
