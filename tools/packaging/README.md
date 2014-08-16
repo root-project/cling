@@ -14,10 +14,11 @@ installer. If you want to manually compile Cling from source, go through the
 [README]:https://github.com/vgvassilev/cling/blob/master/README.md
 [here]:http://root.cern.ch/drupal/content/cling-build-instructions
 
-Below is a list of platforms currently supported by this tool:
+Below is a list of platforms currently supported by CPT:
   * Ubuntu and distros based on Debian - *DEB packages*
   * Windows - *NSIS installers*
   * Distros based on Red Hat Linux (Fedora/Scientific Linux CERN) - *RPM packages*
+  * Mac OS X - *Apple Disk Images*
   * Virtually any UNIX-like platform which supports Bash - *Tarballs*.
 
 ###Requirements
@@ -30,45 +31,50 @@ specific to your platform.
 cd tools/packaging/
 ./cpt.py --check-requirements
 ```
+or
+```sh
+cd tools/packaging/
+./cpt.py -c
+```
 Regardless of the platform and operating system, make sure your system has the
 latest and greatest version of Python 2 installed, v2.7 being the absolute minimum.
 CPT uses some features and modules which are not a part of older versions of Python.
+The same holds true for the versions of GCC/Clang you have on your machine. Older
+compilers do not support c++11 features and thus you can expect a build error if you
+choose not to update them.
 
 All pre-complied binaries of Python ship with built-in support for SSL. However if
 the Python on your system was compiled by you manually, chances are that it doesn't
 have SSL support. This is very likely if you had performed a minimal installation
 of Scientific Linux CERN which doesn't include OpenSSL development package. In such
-a case, you should install openssl-devel, re-compile Python and configure will
-automatically link against the required libraries and produce a binary with SSL
+a case, you should install ```openssl-devel```, re-compile Python and ```configure```
+will automatically link against the required libraries and produce a binary with SSL
 support.
 
 ####Ubuntu/Debian
-On Debian, Ubuntu or any other distro based on Debian which supports APT
-package manager, you can install all the required packages by:
+On Debian, Ubuntu, Linux Mint, CrunchBang, or any other distro based on Debian
+which supports APT package manager, you can install all the required packages by:
 ```sh
 sudo apt-get update
 sudo apt-get install git g++ debhelper devscripts gnupg python
 ```
+You are not required to do this manually since CPT can do this for you automatically.
 
 ######Setting up:
 Make sure GnuPG is properly set up with your correct fingerprint. These
 credentials are needed to sign the Debian package and create Debian changelogs.
 On a build machine (Electric Commander), make sure the fingerprint is of the
-person who is supposed to sign the official uploads. You might also want to
+user who is supposed to sign the official uploads. You might also want to
 configure GnuPG to not ask for the passphrase while signing the Debian package.
 
-The [Ubuntu Packaging Guide] contains documentation about creating a GPG key
-on an Ubuntu system.
+The [Ubuntu Packaging Guide] contains a quick guide on creating a GPG key on an
+Ubuntu system.
 
 To test if you have successfully set up your GnuPG key, use the following command:
 ```sh
 gpg --fingerprint
 ```
-
-Again, all these checks are performed by default when you launch CPT with -c option.
-```sh
-./cpt.py -c
-```
+Again, all these checks are performed by default when you launch CPT with ```-c``` option.
 [Ubuntu Packaging Guide]:http://packaging.ubuntu.com/html/getting-set-up.html#create-your-gpg-key
 
 ####Windows
@@ -77,8 +83,11 @@ environment properly before continuing.
 Below is a list of required packages for Windows (Win32-x86):
 
 [MSYS Git] for Windows
+
 [Python] for Windows
+
 Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012
+
 [MSYS Git]:http://msysgit.github.io/
 [Python]:https://www.python.org/
 
@@ -109,6 +118,39 @@ run the following command:
 cd tools/packaging/
 ./cpt.py --check-requirements
 ```
+
+####Red Hat Linux (Fedora/Scientific Linux CERN)
+This section applies to all distros based on Red Hat Linux like Fedora, and
+Scientific Linux CERN (SLC). Apparently, you can build RPM packages in any
+distro regardless of the package manager it uses. This has been tested on
+Fedora, SLC, Ubuntu, and CrunchBang. If you are interested, you can test it
+on your favourite platform and email me the results.
+
+Depending on the package manager of your distro, you can install the
+packages required by CPT to build RPM bundles. For a Red Hat based distro
+(which uses ```yum``` package manager), you can use the following command
+(also performed automatically by CPT):
+```sh
+sudo yum update
+sudo yum install git gcc gcc-c++ rpm-build python
+```
+
+####Mac OS X
+Mac OS X provides a sane environement for CPT to build Apple Disk Images
+(DMG Installers). On older versions of Mac OS, you need to update XCode to
+get the latest version of Clang supporting c++11 features. A great package
+manager for Mac OS X is [Macports]. It is recommended that you use the
+packages provided by Macports for running CPT (or any other tool if that
+is the case) rather than the ones which come pre-installed with Mac OS.
+Assuming that you have Macports installed on your Mac, you can use the
+following command to install the requisite packages (also done automatically
+by CPT):
+[Macports]:http://www.macports.org/
+```sh
+sudo port -v selfupdate
+sudo port install git g++ python
+```
+
 ###Usage
 ```sh
 cd tools/packaging/
@@ -185,7 +227,16 @@ List of variables in CPT which can be overridden:
   * Specify the working directory of CPT. All sources will be cloned, built
     and installed here. The produced packages will also be found here.
   * **Default value:** "~/ec/build"
-  * **Usage:** ```./cpt.py --with-workdir="/ec/build/cling" --current-dev=deb```
+  * **Usage:** ```./cpt.py --with-workdir="/ec/build" --current-dev=deb```
+
+Authors
+=======
+Cling Packaging Tool was developed during Google Summer of Code 2014,
+by Anirudha Bose under the mentorship of Vassil Vassilev.
+
+Please post all bug reports and feature requests in the Github issue tracker
+of this repository. Alternatively you can directly email me in this address:
+ani07nov@gmail.com
 
 License
 =======
