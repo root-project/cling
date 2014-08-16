@@ -71,6 +71,21 @@ packages and subversion[4] and git[5] to get the source code.
     make
     make install
 ```
+#####Cling Packaging Tool
+Cling's tree has a user-friendly, command-line utility written in Python called
+Cling Packaging Tool (CPT) which can build Cling from source and generate
+installer bundles for a wide range of platforms.
+
+If you have Cling's source cloned locally, you can find the tool in
+```tools/packaging``` directory. Alternatively, you can download the script
+manually, or by using ```wget```:
+```sh
+wget https://github.com/vgvassilev/cling/raw/cpt/tools/packaging/cpt.py
+chmod +x cpt.py
+```
+
+Full documentation of CPT can be found in [tools/packaging].
+[tools/packaging]:https://github.com/vgvassilev/cling/tree/cpt/tools/packaging
 
 ##USAGE
    To get started run: `/some/install/dir/bin/cling --help`
