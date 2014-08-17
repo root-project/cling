@@ -293,21 +293,33 @@ def compile(arg):
     if platform.system() == 'Windows':
         CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
 
-        box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
-        exec_subprocess_call('%s -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s'%(CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
+        if args['create_dev_env'] == 'debug':
+            box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
+            exec_subprocess_call('%s -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=%s ..\%s'%(CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
-        box_draw("Building Cling (using %s cores)"%(cores))
-        exec_subprocess_call('%s --build . --target clang --config Release'%(CMAKE), LLVM_OBJ_ROOT)
+            box_draw("Building Cling (using %s cores)"%(cores))
+            exec_subprocess_call('%s --build . --target clang --config Debug'%(CMAKE), LLVM_OBJ_ROOT)
 
-        exec_subprocess_call('%s --build . --target cling --config Release'%(CMAKE), LLVM_OBJ_ROOT)
+            exec_subprocess_call('%s --build . --target cling --config Debug'%(CMAKE), LLVM_OBJ_ROOT)
 
-        box_draw("Install compiled binaries to prefix (using %s cores)"%(cores))
-        exec_subprocess_call('%s --build . --target INSTALL --config Release'%(CMAKE), LLVM_OBJ_ROOT)
+        else:
+            box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
+            exec_subprocess_call('%s -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s'%(CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
+
+            box_draw("Building Cling (using %s cores)"%(cores))
+            exec_subprocess_call('%s --build . --target clang --config Release'%(CMAKE), LLVM_OBJ_ROOT)
+
+            exec_subprocess_call('%s --build . --target cling --config Release'%(CMAKE), LLVM_OBJ_ROOT)
+
+            box_draw("Install compiled binaries to prefix (using %s cores)"%(cores))
+            exec_subprocess_call('%s --build . --target INSTALL --config Release'%(CMAKE), LLVM_OBJ_ROOT)
 
     else:
         box_draw("Configure Cling with GNU Make")
-        if OS == 'Darwin' and REV.startswith('10.8'):
-            exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes'%(srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
+
+        if args['create_dev_env'] == 'debug':
+            exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-cxx11'%(srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
+
         else:
             exec_subprocess_call('%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11'%(srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
 
@@ -1264,6 +1276,7 @@ parser.add_argument('--with-clang-url', action='store', help='Specify an alterna
 parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
 
 parser.add_argument('--no-test', help='Do not run test suite of Cling', action='store_true')
+parser.add_argument('--create-dev-env', help='Set up a release/debug environment')
 
 if platform.system() != 'Windows':
     parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT', default=os.path.expanduser(os.path.join('~', 'ec', 'build')))
@@ -1669,6 +1682,23 @@ if args['dmg_tag']:
         test_cling()
     make_dmg()
     cleanup()
+
+if args['create_dev_env']:
+    fetch_llvm()
+    fetch_clang()
+    fetch_cling('master')
+    set_version()
+    if OS == 'Windows':
+        get_win_dep()
+        compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
+    else:
+        if DIST == 'Scientific Linux CERN SLC':
+            compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+        else:
+            compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+    install_prefix()
+    if args['no_test'] != True:
+        test_cling()
 
 if args['make_proper']:
     # This is an internal option in CPT, meant to be integrated into Cling's build system.

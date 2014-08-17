@@ -163,7 +163,8 @@ usage: cpt.py [-h] [-c] [--current-dev CURRENT_DEV]
               [--dmg-tag DMG_TAG] [--with-llvm-url WITH_LLVM_URL]
               [--with-clang-url WITH_CLANG_URL]
               [--with-cling-url WITH_CLING_URL] [--no-test]
-              [--with-workdir WITH_WORKDIR] [--make-proper MAKE_PROPER]
+              [--create-dev-env CREATE_DEV_ENV] [--with-workdir WITH_WORKDIR]
+              [--make-proper MAKE_PROPER]
 
 Cling Packaging Tool
 
@@ -195,10 +196,13 @@ optional arguments:
   --with-cling-url WITH_CLING_URL
                         Specify an alternate URL of Cling repo
   --no-test             Do not run test suite of Cling
+  --create-dev-env CREATE_DEV_ENV
+                        Set up a release/debug environment
   --with-workdir WITH_WORKDIR
                         Specify an alternate working directory for CPT
   --make-proper MAKE_PROPER
                         Internal option to support calls from build system
+
 ```
 If you want CPT to build a package by detecting your platform automatically,
 use the value 'pkg'.
