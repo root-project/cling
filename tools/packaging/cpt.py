@@ -1250,8 +1250,8 @@ end tell
 
 parser = argparse.ArgumentParser(description='Cling Packaging Tool')
 parser.add_argument('-c', '--check-requirements', help='Check if packages required by the script are installed', action='store_true')
-parser.add_argument('--current-dev', help='Package the latest development snapshot in one of these formats: tar | deb | nsis')
-parser.add_argument('--last-stable', help='Package the last stable snapshot in one of these formats: tar | deb | nsis')
+parser.add_argument('--current-dev', help='Package the latest development snapshot in one of these formats: tar | deb | nsis | rpm | dmg | pkg')
+parser.add_argument('--last-stable', help='Package the last stable snapshot in one of these formats: tar | deb | nsis | rpm | dmg | pkg')
 parser.add_argument('--tarball-tag', help='Package the snapshot of a given tag in a tarball (.tar.bz2)')
 parser.add_argument('--deb-tag', help='Package the snapshot of a given tag in a Debian package (.deb)')
 parser.add_argument('--rpm-tag', help='Package the snapshot of a given tag in an RPM package (.rpm)')
@@ -1500,7 +1500,7 @@ if args['current_dev']:
         tarball()
         cleanup()
 
-    elif args['current_dev'] == 'deb':
+    elif args['current_dev'] == 'deb' or (args['current_dev'] == 'pkg' and DIST == 'Ubuntu'):
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
         if args['no_test'] != True:
@@ -1509,7 +1509,7 @@ if args['current_dev']:
         debianize()
         cleanup()
 
-    elif args['current_dev'] == 'rpm':
+    elif args['current_dev'] == 'rpm' or (args['current_dev'] == 'pkg' and platform.dist()[0] == 'redhat'):
         compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')))
         install_prefix()
         if args['no_test'] != True:
@@ -1518,7 +1518,7 @@ if args['current_dev']:
         rpm_build()
         cleanup()
 
-    elif args['current_dev'] == 'nsis':
+    elif args['current_dev'] == 'nsis' or (args['current_dev'] == 'pkg' and OS == 'Windows'):
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + RELEASE + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
@@ -1528,7 +1528,7 @@ if args['current_dev']:
         build_nsis()
         cleanup()
 
-    elif args['current_dev'] == 'dmg':
+    elif args['current_dev'] == 'dmg' or (args['current_dev'] == 'pkg' and OS == 'Darwin'):
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         if args['no_test'] != True:
@@ -1557,7 +1557,7 @@ if args['last_stable']:
         tarball()
         cleanup()
 
-    elif args['last_stable'] == 'deb':
+    elif args['last_stable'] == 'deb' or (args['last_stable'] == 'pkg' and DIST == 'Ubuntu'):
         set_version()
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
@@ -1567,7 +1567,7 @@ if args['last_stable']:
         debianize()
         cleanup()
 
-    elif args['last_stable'] == 'rpm':
+    elif args['last_stable'] == 'rpm' or (args['last_stable'] == 'pkg' and platform.dist()[0] == 'redhat'):
         set_version()
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
@@ -1577,7 +1577,7 @@ if args['last_stable']:
         rpm_build()
         cleanup()
 
-    elif args['last_stable'] == 'nsis':
+    elif args['last_stable'] == 'nsis' or (args['last_stable'] == 'pkg' and OS == 'Windows'):
         set_version()
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
@@ -1588,7 +1588,7 @@ if args['last_stable']:
         build_nsis()
         cleanup()
 
-    elif args['last_stable'] == 'dmg':
+    elif args['last_stable'] == 'dmg' or (args['last_stable'] == 'pkg' and OS == 'Darwin'):
         set_version()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()

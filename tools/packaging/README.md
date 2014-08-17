@@ -173,10 +173,10 @@ optional arguments:
                         Check if packages required by the script are installed
   --current-dev CURRENT_DEV
                         Package the latest development snapshot in one of
-                        these formats: tar | deb | nsis
+                        these formats: tar | deb | nsis | rpm | dmg | pkg
   --last-stable LAST_STABLE
                         Package the last stable snapshot in one of these
-                        formats: tar | deb | nsis
+                        formats: tar | deb | nsis | rpm | dmg | pkg
   --tarball-tag TARBALL_TAG
                         Package the snapshot of a given tag in a tarball
                         (.tar.bz2)
@@ -200,7 +200,15 @@ optional arguments:
   --make-proper MAKE_PROPER
                         Internal option to support calls from build system
 ```
-
+If you want CPT to build a package by detecting your platform automatically,
+use the value 'pkg'.
+```sh
+./cpt.sh --current-dev=pkg
+```
+or
+```sh
+./cpt.sh --last-stable=pkg
+```
 ###Overriding Default Variables
 There are a select number of variables which can be set to make CPT work
 differently. This eliminates the need to manually edit the script.
