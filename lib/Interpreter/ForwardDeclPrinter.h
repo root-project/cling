@@ -11,8 +11,8 @@
 ///\brief Generates forward declarations for a Decl or Transaction
 ///       by implementing a DeclVisitor
 ///
-///\Important Points:
-///\1. Nested name specifiers: Since there doesn't seem to be a way
+/// Important Points:
+/// 1. Nested name specifiers: Since there doesn't seem to be a way
 ///    to forward declare B in the following example:
 ///    class A { class B{};};
 ///    We have chosen to skip all declarations using B.
@@ -21,7 +21,7 @@
 ///    The fix for this issue dhould go in isIncompatibleType,
 ///    which currently just searches for "::" in the type name.
 ///
-///\2. Function arguments having an EnumConstant as a default value
+/// 2. Function arguments having an EnumConstant as a default value
 ///    are printed in the following way:
 ///    enum E {E_a, E_b};
 ///    void foo(E e = E_b){}
@@ -30,13 +30,13 @@
 ///    void foo(E e = E(1));
 ///    1 is the integral value of E_b.
 ///
-///\3. Decls, in general, are skipped when they depend on things
+/// 3. Decls, in general, are skipped when they depend on things
 ///    that were previously skipped.
 ///    The set of strings, m_IncompatibleNames facilitate this.
 ///    Examine the shouldSkip functions to see why specific types
 ///    are skipped.
 ///
-///\4. Log file:
+/// 4. Log file:
 ///    The name of the file depends on the name of the file where
 ///    the forward declarations are written.
 ///    So, fwd.h produces a corresponding fwd.h.skipped, when
