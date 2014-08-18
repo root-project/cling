@@ -14,6 +14,7 @@
 #include "clang/Basic/Diagnostic.h"
 #include "clang/AST/AST.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/AST/DeclVisitor.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/CompilerInstance.h"
 
@@ -46,6 +47,31 @@ namespace cling {
       report(t->getLocation(),t->getNameAsString(),t->getAttr<AnnotateAttr>()->getAnnotation());
     return false;
   }
+  class DeclFixer : public DeclVisitor<DeclFixer> {
+  public:
+    void VisitDecl(Decl* D) {
+      if (DeclContext* DC = dyn_cast<DeclContext>(D))
+        for (auto Child : DC->decls())
+          Visit(Child);
+    }
+
+    void VisitEnumDecl(EnumDecl* ED) {
+      if (ED->isFixed()) {
+        StringRef str = ED->getAttr<AnnotateAttr>()->getAnnotation();
+        char ch = str.back();
+        str.drop_back(2);
+        ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(), str);
+        struct EnumDeclDerived: public EnumDecl {
+          static void setFixed(EnumDecl* ED, bool value = true) {
+            ((EnumDeclDerived*)ED)->IsFixed = value;
+          }
+        };
+
+        if (ch != '1')
+          EnumDeclDerived::setFixed(ED, false);
+      }
+    }
+  };
 
   class DefaultArgVisitor: public RecursiveASTVisitor<DefaultArgVisitor> {
   private:
@@ -244,6 +270,22 @@ namespace cling {
           //   continue;
           if (DCI.m_DGR.isNull())
             continue;
+
+          if (const NamedDecl* ND = dyn_cast<NamedDecl>(*T.decls_begin()->m_DGR.begin()))
+            if (ND->getIdentifier()
+                && ND->getName().equals("__Cling_Autoloading_Map")) {
+
+              DeclFixer visitor;
+              for (Transaction::const_iterator I = T.decls_begin(),
+                     E = T.decls_end(); I != E; ++I) {
+                Transaction::DelayCallInfo DCI = *I;
+                for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
+                       JE = DCI.m_DGR.end(); J != JE; ++J) {
+                  visitor.Visit(*J);
+                }
+              }
+            }
+
 
           for (DeclGroupRef::iterator J = DCI.m_DGR.begin(),
                  JE = DCI.m_DGR.end(); J != JE; ++J) {

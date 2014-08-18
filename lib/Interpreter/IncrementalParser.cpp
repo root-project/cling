@@ -10,7 +10,6 @@
 #include "IncrementalParser.h"
 
 #include "AutoSynthesizer.h"
-#include "AutoloadingTransform.h"
 #include "BackendPass.h"
 #include "CheckEmptyTransactionTransformer.h"
 #include "DeclCollector.h"
@@ -78,7 +77,6 @@ namespace cling {
     Sema* TheSema = &CI->getSema();
     // Register the AST Transformers
     m_ASTTransformers.push_back(new AutoSynthesizer(TheSema));
-    m_ASTTransformers.push_back(new AutoloadingTransform(TheSema));
     m_ASTTransformers.push_back(new EvaluateTSynthesizer(TheSema));
     m_ASTTransformers.push_back(new ValuePrinterSynthesizer(TheSema, 0));
     m_ASTTransformers.push_back(new DeclExtractor(TheSema));
