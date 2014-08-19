@@ -966,15 +966,14 @@ namespace cling {
     Diags.pushMappings(Loc);
     // The source locations of #pragma warning ignore must be greater than
     // the ones from #pragma push
-    //Loc = Loc.getLocWithOffset(1);
     Diags.setSeverity(clang::diag::warn_unused_expr,
-                      clang::diag::Severity::Ignored, Loc);
+                      clang::diag::Severity::Ignored, SourceLocation());
     Diags.setSeverity(clang::diag::warn_unused_call,
-                      clang::diag::Severity::Ignored, Loc);
+                      clang::diag::Severity::Ignored, SourceLocation());
     Diags.setSeverity(clang::diag::warn_unused_comparison,
-                      clang::diag::Severity::Ignored, Loc);
+                      clang::diag::Severity::Ignored, SourceLocation());
     Diags.setSeverity(clang::diag::ext_return_has_expr,
-                      clang::diag::Severity::Ignored, Loc);
+                      clang::diag::Severity::Ignored, SourceLocation());
     if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
       Loc = m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
       // if the location was the same we are in recursive calls and to avoid an
