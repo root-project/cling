@@ -1236,21 +1236,24 @@ namespace cling {
     std::string err;
     llvm::raw_fd_ostream out(outFile.data(), err,
                              llvm::sys::fs::OpenFlags::F_None);
-    if (enableLogs){
-      llvm::raw_fd_ostream log(llvm::Twine(outFile).concat(llvm::Twine(".skipped")).str().c_str(),
+    llvm::raw_fd_ostream log((outFile + ".skipped").str().c_str(),
                              err, llvm::sys::fs::OpenFlags::F_None);
-      log << "Generated for :" << inFile << "\n";
-      ForwardDeclPrinter visitor(out, log, fwdGen.getSema().getSourceManager(), *T);
-      visitor.printStats();
-    }
-    else {
-      llvm::raw_null_ostream sink;
-      ForwardDeclPrinter visitor(out, sink, fwdGen.getSema().getSourceManager(), *T);
-    }
+    log << "Generated for :" << inFile << "\n";
+    forwardDeclare(*T, out, enableMacros, &log);
+  }
+
+  void Interpreter::forwardDeclare(Transaction& T, llvm::raw_ostream& out,
+                                   bool enableMacros /*=false*/,
+                                   llvm::raw_ostream* logs /*=0*/) {
+    // Maybe logs should be defaulted to llvm::raw_null_ostream sink;
+    if (!logs)
+      logs = &llvm::errs();
+
+    ForwardDeclPrinter visitor(out, *logs, getSema().getSourceManager(), T);
+    visitor.printStats();
+
     // Avoid assertion in the ~IncrementalParser.
-    T->setState(Transaction::kCommitted);
-    // unload(1);
-    return;
+    T.setState(Transaction::kCommitted);
   }
 
 } //end namespace cling

@@ -629,6 +629,10 @@ namespace cling {
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);
 
+    void forwardDeclare(Transaction& T, llvm::raw_ostream& out,
+                        bool enableMacros = false,
+                        llvm::raw_ostream* logs = 0);
+
     friend class runtime::internal::LifetimeHandler;
     // FIXME: workaround until JIT supports exceptions
     static jmp_buf*& getNullDerefJump() { return m_JumpBuf; }
