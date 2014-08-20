@@ -29,28 +29,28 @@ namespace cling {
                                llvm::SmallVectorImpl<char>& RecoveryPath) {
       bool result = false;
       for(InterpreterCallbacks* cb : m_Callbacks)
-        result = result || cb->FileNotFound(FileName, RecoveryPath);
+        result = cb->FileNotFound(FileName, RecoveryPath) || result;
       return result;
     }
 
      bool LookupObject(clang::LookupResult& LR, clang::Scope* S) {
        bool result = false;
        for(InterpreterCallbacks* cb : m_Callbacks)
-         result = result || cb->LookupObject(LR, S);
+         result = cb->LookupObject(LR, S) || result;
        return result;
      }
 
      bool LookupObject(const clang::DeclContext* DC,  clang::DeclarationName DN) {
        bool result = false;
        for(InterpreterCallbacks* cb : m_Callbacks)
-         result = result || cb->LookupObject(DC, DN);
+         result = cb->LookupObject(DC, DN) || result;
        return result;
      }
 
      bool LookupObject(clang::TagDecl* T) {
        bool result = false;
        for(InterpreterCallbacks* cb : m_Callbacks)
-         result = result || cb->LookupObject(T);
+         result = cb->LookupObject(T) || result;
        return result;
      }
 
