@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
+// XFAIL:*
 // Test incompleteType
 
 

@@ -1,5 +1,6 @@
 //RUN: cat %s | %cling -Xclang -verify -DCLING='" %cling "' | FileCheck %s
 //RUN: rm -f /tmp/__cling_fwd_*
+// XFAIL:*
 #include "cling/Interpreter/Interpreter.h"
 
 #include "llvm/ADT/SmallVector.h"
