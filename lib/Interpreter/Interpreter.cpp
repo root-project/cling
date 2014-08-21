@@ -11,15 +11,15 @@
 
 #include "cling-compiledata.h"
 #include "DynamicLookup.h"
+#include "ForwardDeclPrinter.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
-#include "ForwardDeclPrinter.h"
+#include "MultiplexInterpreterCallbacks.h"
 
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/ClangInternalState.h"
 #include "cling/Interpreter/CompilationOptions.h"
 #include "cling/Interpreter/DynamicLibraryManager.h"
-#include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
@@ -223,7 +223,7 @@ namespace cling {
          I != E; ++I)
       m_IncrParser->commitTransaction(*I);
 
-    setCallbacks(new AutoloadCallback(this));
+    //setCallbacks(new AutoloadCallback(this));
   }
 
   Interpreter::~Interpreter() {
@@ -1105,25 +1105,24 @@ namespace cling {
   }
 
   void Interpreter::setCallbacks(InterpreterCallbacks* C) {
-    if (m_Callbacks.get() == C)
-      return;
-
     // We need it to enable LookupObject callback.
-    if (!m_Callbacks)
-      m_Callbacks.reset(C);
-    else
-      m_Callbacks->setNext(C);
+    if (!m_Callbacks) {
+      m_Callbacks.reset(new MultiplexInterpreterCallbacks(this));
+      // FIXME: Move to the InterpreterCallbacks.cpp;
+      if (DynamicLibraryManager* DLM = getDynamicLibraryManager())
+        DLM->setCallbacks(m_Callbacks.get());
+    }
+
+    static_cast<MultiplexInterpreterCallbacks*>(m_Callbacks.get())->addCallback(C);
 
     // FIXME: We should add a multiplexer in the ASTContext, too.
-    llvm::IntrusiveRefCntPtr<ExternalASTSource>
-      astContextExternalSource(getSema().getExternalSource());
-    clang::ASTContext& Ctx = getSema().getASTContext();
-    // FIXME: This is a gross hack. We must make multiplexer in the astcontext,
-    // or a derived class that extends what we need.
-    Ctx.ExternalSource.resetWithoutRelease(); // FIXME: make sure we delete it.
-    Ctx.setExternalSource(astContextExternalSource);
-    if (DynamicLibraryManager* DLM = getDynamicLibraryManager())
-      DLM->setCallbacks(C);
+    // llvm::IntrusiveRefCntPtr<ExternalASTSource>
+    //   astContextExternalSource(getSema().getExternalSource());
+    // clang::ASTContext& Ctx = getSema().getASTContext();
+    // // FIXME: This is a gross hack. We must make multiplexer in the astcontext,
+    // // or a derived class that extends what we need.
+    // Ctx.ExternalSource.resetWithoutRelease(); // FIXME: make sure we delete it.
+    // Ctx.setExternalSource(astContextExternalSource);
   }
 
   const Transaction* Interpreter::getFirstTransaction() const {
