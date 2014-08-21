@@ -34,7 +34,7 @@ namespace cling {
                             const clang::FileEntry* File,
                             llvm::StringRef SearchPath,
                             llvm::StringRef RelativePath,
-                            const clang::Module* Imported) {
+                            const clang::Module* Imported) override {
       for (InterpreterCallbacks* cb : m_Callbacks)
         cb->InclusionDirective(HashLoc, IncludeTok, FileName, IsAngled,
                                FilenameRange, File, SearchPath, RelativePath,
@@ -42,7 +42,7 @@ namespace cling {
     }
 
     bool FileNotFound(llvm::StringRef FileName,
-                               llvm::SmallVectorImpl<char>& RecoveryPath) {
+                      llvm::SmallVectorImpl<char>& RecoveryPath) override {
       bool result = false;
       for (InterpreterCallbacks* cb : m_Callbacks)
         result = cb->FileNotFound(FileName, RecoveryPath) || result;
@@ -56,51 +56,52 @@ namespace cling {
        return result;
      }
 
-     bool LookupObject(const clang::DeclContext* DC,  clang::DeclarationName DN) {
+     bool LookupObject(const clang::DeclContext* DC,
+                       clang::DeclarationName DN) override {
        bool result = false;
        for (InterpreterCallbacks* cb : m_Callbacks)
          result = cb->LookupObject(DC, DN) || result;
        return result;
      }
 
-     bool LookupObject(clang::TagDecl* T) {
+     bool LookupObject(clang::TagDecl* T) override {
        bool result = false;
        for (InterpreterCallbacks* cb : m_Callbacks)
          result = cb->LookupObject(T) || result;
        return result;
      }
 
-     void TransactionCommitted(const Transaction& T) {
+     void TransactionCommitted(const Transaction& T) override {
        for (InterpreterCallbacks* cb : m_Callbacks) {
          cb->TransactionCommitted(T);
        }
      }
 
-     void TransactionUnloaded(const Transaction& T) {
+     void TransactionUnloaded(const Transaction& T) override {
        for (InterpreterCallbacks* cb : m_Callbacks) {
          cb->TransactionUnloaded(T);
        }
      }
 
-     void DeclDeserialized(const clang::Decl* D) {
+     void DeclDeserialized(const clang::Decl* D) override {
        for (InterpreterCallbacks* cb : m_Callbacks) {
          cb->DeclDeserialized(D);
        }
      }
 
-     void TypeDeserialized(const clang::Type* Ty) {
+     void TypeDeserialized(const clang::Type* Ty) override {
        for (InterpreterCallbacks* cb : m_Callbacks) {
          cb->TypeDeserialized(Ty);
        }
      }
 
-     void LibraryLoaded(const void* Lib, llvm::StringRef Name) {
+     void LibraryLoaded(const void* Lib, llvm::StringRef Name) override {
        for (InterpreterCallbacks* cb : m_Callbacks) {
          cb->LibraryLoaded(Lib,Name);
        }
      }
 
-     void LibraryUnloaded(const void* Lib, llvm::StringRef Name) {
+     void LibraryUnloaded(const void* Lib, llvm::StringRef Name) override {
        for (InterpreterCallbacks* cb : m_Callbacks) {
          cb->LibraryUnloaded(Lib,Name);
        }
