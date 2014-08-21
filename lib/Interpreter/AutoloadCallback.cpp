@@ -13,6 +13,7 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/AST/AST.h"
+#include "clang/AST/ASTContext.h" // for operator new[](unsigned long, ASTCtx..)
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/DeclVisitor.h"
 #include "clang/Lex/Preprocessor.h"
