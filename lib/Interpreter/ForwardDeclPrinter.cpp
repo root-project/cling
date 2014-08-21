@@ -908,7 +908,7 @@ namespace cling {
 //    VisitCXXRecordDecl(D->getCanonicalDecl());
 
 //    Out() << "<";
-//    for (uint i=0; i < iargs.size(); ++i){
+//    for (unsigned int i=0; i < iargs.size(); ++i){
 //      if (iargs[i].getKind() == TemplateArgument::Pack)
 //        continue;
 //      if (i != 0 )
@@ -958,7 +958,7 @@ namespace cling {
 
   bool ForwardDeclPrinter::hasDefaultArgument(FunctionDecl *D) {
     auto N = D->getNumParams();
-    for (uint i=0; i < N; ++i) {
+    for (unsigned int i=0; i < N; ++i) {
       if (D->getParamDecl(i)->hasDefaultArg())
         return true;
     }
@@ -984,7 +984,7 @@ namespace cling {
 //            Log() << "Function : Incompatible Type\n";
             return true;
           }
-          for (uint i = 0; i < tst->getNumArgs(); ++i ) {
+          for (unsigned int i = 0; i < tst->getNumArgs(); ++i ) {
             const TemplateArgument& arg = tst->getArg(i);
             TemplateArgument::ArgKind kind = arg.getKind();
             if (kind == TemplateArgument::ArgKind::Type){
@@ -1048,7 +1048,7 @@ namespace cling {
     if (const TemplateSpecializationType* tst
             = dyn_cast<TemplateSpecializationType>
             (D->getTypeSourceInfo()->getType().getTypePtr())){
-      for (uint i = 0; i < tst->getNumArgs(); ++i ) {
+      for (unsigned int i = 0; i < tst->getNumArgs(); ++i ) {
         const TemplateArgument& arg = tst->getArg(i);
         if (arg.getKind() == TemplateArgument::ArgKind::Type)
           if (m_IncompatibleNames.find(arg.getAsType().getAsString())
@@ -1070,7 +1070,7 @@ namespace cling {
               ->getPointeeType().getTypePtr()->castAs<clang::FunctionType>();
       bool result = isIncompatibleType(ft->getReturnType(),false);
       if (const FunctionProtoType* fpt = dyn_cast<FunctionProtoType>(ft)){
-        for (uint i = 0; i < fpt->getNumParams(); ++i){
+        for (unsigned int i = 0; i < fpt->getNumParams(); ++i){
           result = result || isIncompatibleType(fpt->getParamType(i),false);
           if (result){
             m_IncompatibleNames.insert(D->getName());
@@ -1087,7 +1087,7 @@ namespace cling {
                                  ->castAs<clang::FunctionType>();
         bool result = isIncompatibleType(ft->getReturnType(),false);
         if (const FunctionProtoType* fpt = dyn_cast<FunctionProtoType>(ft)){
-          for (uint i = 0; i < fpt->getNumParams(); ++i){
+          for (unsigned int i = 0; i < fpt->getNumParams(); ++i){
             result = result || isIncompatibleType(fpt->getParamType(i),false);
             if (result){
               m_IncompatibleNames.insert(D->getName());
@@ -1134,7 +1134,7 @@ namespace cling {
 
     }
     const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
-    for (uint i = 0; i < iargs.size(); ++i) {
+    for (unsigned int i = 0; i < iargs.size(); ++i) {
       const TemplateArgument& arg = iargs[i];
       if (arg.getKind() == TemplateArgument::ArgKind::Type)
         if (m_IncompatibleNames.find(arg.getAsType().getAsString())
