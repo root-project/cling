@@ -218,7 +218,9 @@ namespace cling {
                           llvm::StringRef SearchPath,
                           llvm::StringRef RelativePath,
                           const clang::Module *Imported) {
-    assert(File && "Must have a valid File");
+    // If File is 0 this means that the #included file doesn't exist.
+    if (!File)
+      return;
 
     auto found = m_Map.find(File);
     if (found == m_Map.end())
