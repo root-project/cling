@@ -70,26 +70,11 @@ namespace cling {
     ///
     bool m_IsRuntime;
 
-    ///\brief The next callback in the chain.
-    ///
-    InterpreterCallbacks* m_Next;
-
   protected:
     void UpdateWithNewDecls(const clang::DeclContext *DC,
                             clang::DeclarationName Name,
                             llvm::ArrayRef<clang::NamedDecl*> Decls);
   public:
-    ///\brief Constructs the callbacks.
-    ///
-    ///\param[in] interp - an interpreter.
-    ///\param[in] IESS - an InterpreterExternalSemaSource (takes the ownership)
-    ///\param[in] IDL - an InterpreterDeserializationListener (owned)
-    ///\param[in] IPPC - an InterpreterPPCallbacks (owned)
-    ///
-    InterpreterCallbacks(Interpreter* interp,
-                         InterpreterExternalSemaSource* IESS,
-                         InterpreterDeserializationListener* IDL,
-                         InterpreterPPCallbacks* IPPC);
 
     ///\brief Constructs the callbacks with default callback adaptors.
     ///
@@ -114,19 +99,6 @@ namespace cling {
 
     clang::ASTDeserializationListener*
     getInterpreterDeserializationListener() const;
-
-    InterpreterCallbacks* getNext() { return m_Next; }
-    void setNext(InterpreterCallbacks* C) {
-      InterpreterCallbacks* current = this;
-      while (true) {
-        assert(current != C);
-        if (!current->m_Next) {
-          current->m_Next = C;
-          break;
-        }
-        current = current->getNext();
-      }
-    }
 
    virtual void InclusionDirective(clang::SourceLocation /*HashLoc*/,
                                    const clang::Token& /*IncludeTok*/,

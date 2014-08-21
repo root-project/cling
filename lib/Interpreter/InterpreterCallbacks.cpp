@@ -41,28 +41,16 @@ namespace cling {
                                     llvm::StringRef SearchPath,
                                     llvm::StringRef RelativePath,
                                     const clang::Module *Imported) {
-      if (m_Callbacks) {
-        m_Callbacks->InclusionDirective(HashLoc, IncludeTok, FileName,
-                                        IsAngled, FilenameRange, File,
-                                        SearchPath, RelativePath, Imported);
-        InterpreterCallbacks* current = m_Callbacks;
-        while ((current = current->getNext()))
-          current->InclusionDirective(HashLoc, IncludeTok, FileName,
+      m_Callbacks->InclusionDirective(HashLoc, IncludeTok, FileName,
                                       IsAngled, FilenameRange, File,
-                                      SearchPath, RelativePath, Imported);;
-
-      }
+                                      SearchPath, RelativePath, Imported);
     }
 
     virtual bool FileNotFound(llvm::StringRef FileName,
                               llvm::SmallVectorImpl<char>& RecoveryPath) {
-      if (m_Callbacks) {
-        bool result = m_Callbacks->FileNotFound(FileName, RecoveryPath);
-        InterpreterCallbacks* current = m_Callbacks;
-        while ((current = current->getNext()))
-          result = current->FileNotFound(FileName, RecoveryPath) || result;
-        return result;
-      }
+      if (m_Callbacks)
+        return m_Callbacks->FileNotFound(FileName, RecoveryPath);
+
       // Returning true would mean that the preprocessor should try to recover.
       return false;
     }
@@ -79,21 +67,13 @@ namespace cling {
       : m_Callbacks(C) {}
 
     virtual void DeclRead(serialization::DeclID, const Decl *D) {
-      if (m_Callbacks) {
+      if (m_Callbacks)
         m_Callbacks->DeclDeserialized(D);
-        InterpreterCallbacks* current = m_Callbacks;
-        while ((current = current->getNext()))
-          current->DeclDeserialized(D);
-      }
     }
 
     virtual void TypeRead(serialization::TypeIdx, QualType T) {
-      if (m_Callbacks) {
+      if (m_Callbacks)
         m_Callbacks->TypeDeserialized(T.getTypePtr());
-        InterpreterCallbacks* current = m_Callbacks;
-        while ((current = current->getNext()))
-          current->TypeDeserialized(T.getTypePtr());
-      }
     }
   };
 
@@ -148,11 +128,7 @@ namespace cling {
     ///
     virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S) {
       if (m_Callbacks) {
-        bool result = m_Callbacks->LookupObject(R, S);
-        InterpreterCallbacks* current = m_Callbacks;
-        while ((current = current->getNext()))
-          result = current->LookupObject(R, S) || result;
-        return result;
+        return m_Callbacks->LookupObject(R, S);
       }
 
       return false;
@@ -160,13 +136,8 @@ namespace cling {
 
     virtual bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
                                                 clang::DeclarationName Name) {
-      if (m_Callbacks) {
-        bool result = m_Callbacks->LookupObject(DC, Name);
-        InterpreterCallbacks* current = m_Callbacks;
-        while ((current = current->getNext()))
-          result = current->LookupObject(DC, Name) || result;
-        return result;
-      }
+      if (m_Callbacks)
+        return m_Callbacks->LookupObject(DC, Name);
 
       return false;
     }
@@ -174,12 +145,8 @@ namespace cling {
     // Silence warning virtual function was hidden.
     using ExternalASTSource::CompleteType;
     virtual void CompleteType(TagDecl* Tag) {
-      if (m_Callbacks) {
+      if (m_Callbacks)
         m_Callbacks->LookupObject(Tag);
-        InterpreterCallbacks* current = m_Callbacks;
-        while ((current = current->getNext()))
-          current->LookupObject(Tag);
-      }
     }
 
     void UpdateWithNewDeclsFwd(const DeclContext *DC, DeclarationName Name,
