@@ -631,7 +631,7 @@ namespace cling {
 
     void forwardDeclare(Transaction& T, llvm::raw_ostream& out,
                         bool enableMacros = false,
-                        llvm::raw_ostream* logs = 0);
+                        llvm::raw_ostream* logs = 0) const;
 
     friend class runtime::internal::LifetimeHandler;
     // FIXME: workaround until JIT supports exceptions

@@ -1244,7 +1244,7 @@ namespace cling {
 
   void Interpreter::forwardDeclare(Transaction& T, llvm::raw_ostream& out,
                                    bool enableMacros /*=false*/,
-                                   llvm::raw_ostream* logs /*=0*/) {
+                                   llvm::raw_ostream* logs /*=0*/) const {
     // Maybe logs should be defaulted to llvm::raw_null_ostream sink;
     if (!logs)
       logs = &llvm::errs();
