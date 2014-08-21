@@ -7,16 +7,12 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
-// XFAIL:*
 // Test incompleteType
-
 
 .rawInput 1
 class __attribute__((annotate("Def.h"))) C;
-//expected-warning + {{}}
 //expected-note + {{}}
 .rawInput 0
 
-C c;
-//expected-error {{}}
-
+C c; //expected-error {{variable has incomplete type 'C'}}
+.q
