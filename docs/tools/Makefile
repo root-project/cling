@@ -81,7 +81,7 @@ man: $(MAN)
 ps: $(PS)
 
 podgen:
-	@python $(SRC_DOC_DIR)/in2pod.py $(PROJ_OBJ_ROOT)/Release+Asserts/bin/cling
+	@$(PYTHON) $(SRC_DOC_DIR)/in2pod.py $(PROJ_OBJ_ROOT)/Release+Asserts/bin/cling
 
 EXTRA_DIST := $(POD)
 
