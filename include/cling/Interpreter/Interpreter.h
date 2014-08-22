@@ -45,6 +45,7 @@ namespace clang {
   class QualType;
   class Sema;
   class SourceLocation;
+  class SourceManager;
 }
 
 namespace cling {
@@ -629,7 +630,8 @@ namespace cling {
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);
 
-    void forwardDeclare(Transaction& T, llvm::raw_ostream& out,
+    void forwardDeclare(Transaction& T, clang::SourceManager& SM,
+                        llvm::raw_ostream& out,
                         bool enableMacros = false,
                         llvm::raw_ostream* logs = 0) const;
 
