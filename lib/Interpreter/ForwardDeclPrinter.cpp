@@ -1003,7 +1003,7 @@ namespace cling {
               }
             }
             if (kind == TemplateArgument::ArgKind::Expression) {
-              Expr* expr = arg.getAsExpr();
+              //Expr* expr = arg.getAsExpr();
               //TODO: Traverse this expr
             }
          }
