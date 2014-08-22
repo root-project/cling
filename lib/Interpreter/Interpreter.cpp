@@ -1239,8 +1239,9 @@ namespace cling {
                                    bool enableMacros /*=false*/,
                                    llvm::raw_ostream* logs /*=0*/) const {
     // Maybe logs should be defaulted to llvm::raw_null_ostream sink;
+    llvm::raw_null_ostream null;
     if (!logs)
-      logs = &llvm::errs();
+      logs = &null;
 
     ForwardDeclPrinter visitor(out, *logs, SM, T);
     visitor.printStats();
