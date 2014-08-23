@@ -547,7 +547,6 @@ namespace cling {
                                        (void*)(intptr_t) locate_cling_executable
                                                );
     }
-#ifndef NDEBUG
     // FIXME: Handle cases, where the cling is part of a library/framework.
     // There we can't rely on the find executable logic.
     if (!llvm::sys::fs::is_directory(resource_path.str())) {
@@ -556,7 +555,6 @@ namespace cling {
         << resource_path.str() << " not found!\n";
       resource_path = "";
     }
-#endif
 
     std::vector<const char*> argvCompile(argv, argv + argc);
     // We do C++ by default; append right after argv[0] name

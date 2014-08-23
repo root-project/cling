@@ -1197,9 +1197,12 @@ namespace cling {
                                            bool enableMacros,
                                            bool enableLogs) {
 
-    const char *const dummy="cling";
+    const char *const dummy="cling_fwd_declarator";
     // Create an interpreter without any runtime, producing the fwd decls.
-    cling::Interpreter fwdGen(1, &dummy, nullptr, true);
+    // FIXME: CIFactory appends extra 3 folders to the llvmdir.
+    std::string llvmdir
+      = getCI()->getHeaderSearchOpts().ResourceDir + "/../../../";
+    cling::Interpreter fwdGen(1, &dummy, llvmdir.c_str(), true);
 
     // Copy the same header search options to the new instance.
     Preprocessor& fwdGenPP = fwdGen.getCI()->getPreprocessor();
