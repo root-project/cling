@@ -7,10 +7,8 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -I%S -Xclang -verify
-// XFAIL:*
 // Test FwdPrinterTest
 
-#include "cling/Interpreter/Interpreter.h"
 .T Def2.h fwd_Def2.h
 #include "fwd_Def2.h"
 #include "Def2.h"
