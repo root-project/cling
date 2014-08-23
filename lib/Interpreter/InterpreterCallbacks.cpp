@@ -161,22 +161,26 @@ namespace cling {
                                              bool enablePPCallbacks/* = false*/)
     : m_Interpreter(interp), m_IsRuntime(false) {
     Sema& SemaRef = interp->getSema();
-    if (enableExternalSemaSourceCallbacks && !SemaRef.getExternalSource()) {
-      m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
-      m_ExternalSemaSource->InitializeSema(SemaRef);
-      m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
+    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
+    ExternalSemaSource* externalSemaSrc = SemaRef.getExternalSource();
+    if (enableExternalSemaSourceCallbacks)
+      if (!externalSemaSrc || externalSemaSrc == Reader) {
+        // If the ExternalSemaSource is the PCH reader we still need to insert
+        // our listener.
+        m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
+        m_ExternalSemaSource->InitializeSema(SemaRef);
+        m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
 
-      // FIXME: We should add a multiplexer in the ASTContext, too.
-      llvm::IntrusiveRefCntPtr<ExternalASTSource>
-        astContextExternalSource(SemaRef.getExternalSource());
-      clang::ASTContext& Ctx = SemaRef.getASTContext();
-      // FIXME: This is a gross hack. We must make multiplexer in the astcontext
-      // or a derived class that extends what we need.
-      Ctx.ExternalSource.resetWithoutRelease(); //FIXME: make sure we delete it.
-      Ctx.setExternalSource(astContextExternalSource);
+        // FIXME: We should add a multiplexer in the ASTContext, too.
+        llvm::IntrusiveRefCntPtr<ExternalASTSource>
+          astContextExternalSource(SemaRef.getExternalSource());
+        clang::ASTContext& Ctx = SemaRef.getASTContext();
+        // FIXME: This is a gross hack. We must make multiplexer in the
+        // astcontext or a derived class that extends what we need.
+        Ctx.ExternalSource.resetWithoutRelease();//FIXME: make sure we delete it.
+        Ctx.setExternalSource(astContextExternalSource);
     }
 
-    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
     if (enableDeserializationListenerCallbacks && Reader) {
       // FIXME: need to create a multiplexer if a DeserializationListener is
       // alreday present.
