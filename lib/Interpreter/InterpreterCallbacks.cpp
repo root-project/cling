@@ -161,7 +161,7 @@ namespace cling {
                                              bool enablePPCallbacks/* = false*/)
     : m_Interpreter(interp), m_IsRuntime(false) {
     Sema& SemaRef = interp->getSema();
-    if (enableExternalSemaSourceCallbacks && SemaRef.getExternalSource()) {
+    if (enableExternalSemaSourceCallbacks && !SemaRef.getExternalSource()) {
       m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
       m_ExternalSemaSource->InitializeSema(SemaRef);
       m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
