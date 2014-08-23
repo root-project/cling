@@ -154,7 +154,7 @@ namespace cling {
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
     ///
-    void SetIsRuntime(bool val);
+    virtual void SetIsRuntime(bool val);
   };
 } // end namespace cling
 

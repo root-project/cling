@@ -106,6 +106,12 @@ namespace cling {
          cb->LibraryUnloaded(Lib,Name);
        }
      }
+
+    void SetIsRuntime(bool val) override {
+      InterpreterCallbacks::SetIsRuntime(val);
+      for (InterpreterCallbacks* cb : m_Callbacks)
+        cb->SetIsRuntime(val);
+    }
   };
 } // end namespace cling
 
