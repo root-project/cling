@@ -126,8 +126,6 @@ static void addBoundsCheckingPass(const PassManagerBuilder &Builder,
 
 static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
                                       PassManagerBase &PM) {
-  const PassManagerBuilderWithOpts &BuilderWrapper =
-      static_cast<const PassManagerBuilderWithOpts&>(Builder);
   PM.add(createAddressSanitizerFunctionPass());
   PM.add(createAddressSanitizerModulePass());
 }
@@ -154,9 +152,6 @@ static void addMemorySanitizerPass(const PassManagerBuilder &Builder,
 
 static void addThreadSanitizerPass(const PassManagerBuilder &Builder,
                                    PassManagerBase &PM) {
-  const PassManagerBuilderWithOpts &BuilderWrapper =
-      static_cast<const PassManagerBuilderWithOpts&>(Builder);
-  const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
   PM.add(createThreadSanitizerPass());
 }
 
