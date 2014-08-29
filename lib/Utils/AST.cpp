@@ -986,7 +986,7 @@ namespace utils {
            = dyn_cast_or_null<NamespaceDecl>(decl->getDeclContext());
         if (outer
             && !(outer_ns && outer_ns->isAnonymousNamespace())
-            && outer->getName().size() ) {
+            && !outer->getNameAsString().empty() ) {
           if (original_prefix) {
             const Type *oldtype = original_prefix->getAsType();
             if (oldtype) {
