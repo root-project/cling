@@ -1116,11 +1116,11 @@ namespace utils {
             || isa<TemplateSpecializationType>(SubTy)
             || isa<ElaboratedType>(SubTy)
             || fullyQualifyTmpltArg) {
-          mightHaveChanged = true;
           QualType PDQT
             = GetPartiallyDesugaredTypeImpl(Ctx, SubTy, TypeConfig,
                                             fullyQualifyType,
                                             fullyQualifyTmpltArg);
+          mightHaveChanged |= (SubTy != PDQT);
           desArgs.push_back(TemplateArgument(PDQT));
         } else {
           desArgs.push_back(*I);
@@ -1189,13 +1189,15 @@ namespace utils {
         }
       }
     }
+    // TODO: Find a way to avoid creating new types, if the input is already
+    // fully qualified.
     if (prefix) {
       // We intentionally always use ETK_None, we never want
       // the keyword (humm ... what about anonymous types?)
       QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
     } else if (original_prefix) {
-       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
+      QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
     }
     return QT;
   }
