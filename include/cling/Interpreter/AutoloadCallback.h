@@ -56,7 +56,6 @@ namespace cling {
     // The key is the Unique File ID obtained from the source manager.
     FwdDeclsMap m_Map;
 
-    Interpreter* m_Interpreter;
 //    AutoloadingStateInfo m_State;
 
     void report(clang::SourceLocation l, std::string name,std::string header);
