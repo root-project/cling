@@ -30,8 +30,9 @@ namespace cling {
 namespace cling {
   class AutoloadCallback : public cling::InterpreterCallbacks {
   public:
-      AutoloadCallback(cling::Interpreter* interp);
-      ~AutoloadCallback();
+    AutoloadCallback(cling::Interpreter* interp)
+      : InterpreterCallbacks(interp) { }
+    ~AutoloadCallback();
     using cling::InterpreterCallbacks::LookupObject;
       //^to get rid of bogus warning : "-Woverloaded-virtual"
       //virtual functions ARE meant to be overriden!

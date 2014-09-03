@@ -234,14 +234,6 @@ namespace cling {
     m_Map.erase(found);
   }
 
-  AutoloadCallback::AutoloadCallback(Interpreter* interp) :
-    InterpreterCallbacks(interp) {
-//#ifdef _POSIX_C_SOURCE
-//      //Workaround for differnt expansion of macros to typedefs
-//      m_Interpreter->parse("#include <sys/types.h>");
-//#endif
-  }
-
   AutoloadCallback::~AutoloadCallback() {
   }
 
