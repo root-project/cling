@@ -111,25 +111,25 @@ namespace cling {
     if (!PP.isIncrementalProcessingEnabled()) {
       PP.enableIncrementalProcessing();
     }
-    if (!code.empty()) {
-      //
-      //  Create a fake file to parse the type name.
-      //
-      llvm::MemoryBuffer* SB
+    assert(!code.empty()&&"prepareForParsing should only be called when needd");
+
+    //
+    //  Create a fake file to parse the type name.
+    //
+    llvm::MemoryBuffer* SB
       = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
                                              bufferName.str());
-      SourceLocation NewLoc = Interp->getNextAvailableLoc();
-      FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
-                                                     /*LoadedID*/0,
-                                                     /*LoadedOffset*/0, NewLoc);
-      //
-      //  Switch to the new file the way #include does.
-      //
-      //  Note: To switch back to the main file we must consume an eof token.
-      //
-      PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
-      PP.Lex(const_cast<Token&>(P.getCurToken()));
-    }
+    SourceLocation NewLoc = Interp->getNextAvailableLoc();
+    FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+                                                   /*LoadedID*/0,
+                                                   /*LoadedOffset*/0, NewLoc);
+    //
+    //  Switch to the new file the way #include does.
+    //
+    //  Note: To switch back to the main file we must consume an eof token.
+    //
+    PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
+    PP.Lex(const_cast<Token&>(P.getCurToken()));
   }
 
   QualType LookupHelper::findType(llvm::StringRef typeName,
