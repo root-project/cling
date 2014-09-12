@@ -907,6 +907,52 @@ namespace cling {
                             Context, P, S);
   }
 
+  template <typename T>
+  T execFindFunction(Parser &P,
+                     Interpreter* Interp,
+                     const clang::Decl* scopeDecl,
+                     llvm::StringRef funcName,
+                     bool objectIsConst,
+                     T (*functionSelector)(DeclContext* foundDC,
+                                           bool objectIsConst,
+                                           const llvm::SmallVectorImpl<Expr*> &GivenArgs,
+                                           LookupResult &Result,
+                                           DeclarationNameInfo &FuncNameInfo,
+                                           const TemplateArgumentListInfo* FuncTemplateArgs,
+                                           ASTContext& Context, Parser &P, Sema &S),
+                     LookupHelper::DiagSetting diagOnOff
+                     )
+  {
+
+    assert(scopeDecl && "Decl cannot be null");
+    //
+    //  Some utilities.
+    //
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
+
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    //  Do this 'early' to save on the expansive parser setup,
+    //  in case of failure.
+    //
+    CXXScopeSpec SS;
+    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    if (!foundDC) return 0;
+
+    llvm::SmallVector<Expr*, 4> GivenArgs;
+
+    ParserStateRAII ResetParserState(P);
+
+    Interpreter::PushTransactionRAII pushedT(Interp);
+    return findFunction(foundDC, SS,
+                        funcName, GivenArgs, objectIsConst,
+                        Context, Interp, functionSelector,
+                        diagOnOff);
+  }
+
   static
   bool getExprProto(llvm::SmallVectorImpl<ExprAlloc> &ExprMemory,
                     llvm::SmallVectorImpl<Expr*> &GivenArgs,
@@ -1026,35 +1072,12 @@ namespace cling {
                                      bool objectIsConst) const {
     // Lookup a function template based on its Decl(Context), name.
 
-    //FIXME: remove code duplication with findFunctionArgs() and friends.
-
-    assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
-
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-    ParserStateRAII ResetParserState(P);
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        templateName, GivenArgs, objectIsConst,
-                        Context, m_Interpreter, findFunctionTemplateSelector,
-                        diagOnOff);
+    return execFindFunction(*m_Parser, m_Interpreter,
+                            scopeDecl,
+                            templateName,
+                            objectIsConst,
+                            findFunctionTemplateSelector,
+                            diagOnOff);
   }
 
   static
@@ -1120,35 +1143,12 @@ namespace cling {
                                                     DiagSetting diagOnOff,
                                                     bool objectIsConst) const {
 
-    //FIXME: remove code duplication with findFunctionArgs() and friends.
-
-    assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
-
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-    ParserStateRAII ResetParserState(P);
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        funcName, GivenArgs, objectIsConst,
-                        Context, m_Interpreter, findAnyFunctionSelector,
-                        diagOnOff);
+    return execFindFunction(*m_Parser, m_Interpreter,
+                            scopeDecl,
+                            funcName,
+                            objectIsConst,
+                            findAnyFunctionSelector,
+                            diagOnOff);
   }
 
   const FunctionDecl*
@@ -1176,8 +1176,10 @@ namespace cling {
     DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
     if (!foundDC) return 0;
 
-    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
+
+    // Specific Part.
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     if (!funcProto.empty()) {
       if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
         return 0;
@@ -1189,6 +1191,7 @@ namespace cling {
     //
     ParserStateRAII ResetParserState(P);
     prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
+
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
@@ -1228,6 +1231,7 @@ namespace cling {
     ParserStateRAII ResetParserState(P);
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
 
+    // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
@@ -1276,6 +1280,7 @@ namespace cling {
     ParserStateRAII ResetParserState(P);
     prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
 
+    // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
@@ -1318,9 +1323,10 @@ namespace cling {
     DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
     if (!foundDC) return 0;
 
-
-    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
+
+    // Specific Part.
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     if (!funcProto.empty()) {
       if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
         return 0;
@@ -1332,6 +1338,7 @@ namespace cling {
     //
     ParserStateRAII ResetParserState(P);
     prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
+
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
@@ -1426,6 +1433,7 @@ namespace cling {
     ParserStateRAII ResetParserState(P);
     prepareForParsing(funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
 
+    // Specific Part.
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcArgs.empty()) {
       if (!ParseArgs(GivenArgs,Context,P,S) ) {
@@ -1544,34 +1552,11 @@ namespace cling {
                                  llvm::StringRef funcName,
                                  DiagSetting diagOnOff) const {
 
-    //FIXME: remove code duplication with findFunctionArgs() and friends.
-
-    assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
-
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-    ParserStateRAII ResetParserState(P);
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        funcName, GivenArgs, false /* objectIsConst */,
-                        Context, m_Interpreter, hasFunctionSelector,
-                        diagOnOff);
+    return execFindFunction(*m_Parser, m_Interpreter,
+                            scopeDecl,
+                            funcName,
+                            false /* objectIsConst */,
+                            hasFunctionSelector,
+                            diagOnOff);
   }
 } // end namespace cling
