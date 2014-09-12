@@ -1178,6 +1178,9 @@ namespace cling {
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
 
+    //
+    //  Parse the prototype now.
+    //
     // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     if (!funcProto.empty()) {
@@ -1186,9 +1189,6 @@ namespace cling {
       }
     }
 
-    //
-    //  Parse the prototype now.
-    //
     ParserStateRAII ResetParserState(P);
     prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
 
@@ -1325,6 +1325,9 @@ namespace cling {
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
 
+    //
+    //  Parse the prototype now.
+    //
     // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     if (!funcProto.empty()) {
@@ -1333,9 +1336,6 @@ namespace cling {
       }
     }
 
-    //
-    //  Parse the prototype now.
-    //
     ParserStateRAII ResetParserState(P);
     prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
 
