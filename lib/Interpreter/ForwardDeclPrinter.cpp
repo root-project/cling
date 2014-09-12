@@ -160,7 +160,22 @@ namespace cling {
       PLocs.push_back(PLoc);
       PLoc = m_SMgr.getPresumedLoc(PLoc.getIncludeLoc());
     }
-    std::string file = PLocs[PLocs.size() -1].getFilename();
+
+    clang::SourceLocation includeLoc = m_SMgr.getSpellingLoc(PLocs[PLocs.size() - 1].getIncludeLoc());
+    bool invalid = true;
+    const char* includeText = m_SMgr.getCharacterData(includeLoc, &invalid);
+    assert(!invalid && "Invalid source data");
+    assert(includeText && "Cannot find #include location");
+    assert((includeText[0] == '<' || includeText[0] == '"')
+           && "Unexpected #include delimiter");
+    char endMarker = includeText[0] == '<' ? '>' : '"';
+    ++includeText;
+    const char* includeEnd = includeText;
+    while (*includeEnd != endMarker && *includeEnd) {
+      ++includeEnd;
+    }
+    assert(includeEnd && "Cannot find end of #include file name");
+
 //    assert ( file.length() != 0 && "Filename Should not be blank");
     Out() << " __attribute__((annotate(\"$clingAutoload$"
           << llvm::StringRef(includeText, includeEnd - includeText);
