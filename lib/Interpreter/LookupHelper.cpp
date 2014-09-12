@@ -856,7 +856,6 @@ namespace cling {
     return true;
   }
 
-
   template <typename T>
   T findFunction(DeclContext* foundDC, CXXScopeSpec &SS,
                  llvm::StringRef funcName,
@@ -957,21 +956,22 @@ namespace cling {
                             Context, P, S);
   }
 
-  template <typename T>
-  T execFindFunction(Parser &P,
-                     Interpreter* Interp,
-                     const clang::Decl* scopeDecl,
-                     llvm::StringRef funcName,
-                     bool objectIsConst,
-                     T (*functionSelector)(DeclContext* foundDC,
-                                           bool objectIsConst,
-                                           const llvm::SmallVectorImpl<Expr*> &GivenArgs,
-                                           LookupResult &Result,
-                                           DeclarationNameInfo &FuncNameInfo,
-                                           const TemplateArgumentListInfo* FuncTemplateArgs,
-                                           ASTContext& Context, Parser &P, Sema &S),
-                     LookupHelper::DiagSetting diagOnOff
-                     )
+  template <typename DigestArgsInput, typename returnType>
+  returnType execFindFunction(Parser &P,
+                              Interpreter* Interp,
+                              const clang::Decl* scopeDecl,
+                              llvm::StringRef funcName,
+                              const typename DigestArgsInput::ArgsInput &funcArgs,
+                              bool objectIsConst,
+                            returnType (*functionSelector)(DeclContext* foundDC,
+                                                             bool objectIsConst,
+                                  const llvm::SmallVectorImpl<Expr*> &GivenArgs,
+                                                           LookupResult &Result,
+                                              DeclarationNameInfo &FuncNameInfo,
+                               const TemplateArgumentListInfo* FuncTemplateArgs,
+                                       ASTContext& Context, Parser &P, Sema &S),
+                              LookupHelper::DiagSetting diagOnOff
+                              )
   {
 
     assert(scopeDecl && "Decl cannot be null");
@@ -992,7 +992,9 @@ namespace cling {
     DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
     if (!foundDC) return 0;
 
+    DigestArgsInput inputEval;
     llvm::SmallVector<Expr*, 4> GivenArgs;
+    if (!inputEval(GivenArgs,funcArgs,diagOnOff,P,Interp)) return 0;
 
     Interpreter::PushTransactionRAII pushedT(Interp);
     return findFunction(foundDC, SS,
@@ -1001,95 +1003,137 @@ namespace cling {
                         diagOnOff);
   }
 
-  static
-  bool getExprProto(llvm::SmallVectorImpl<ExprAlloc> &ExprMemory,
-                    llvm::SmallVectorImpl<Expr*> &GivenArgs,
-                    const llvm::SmallVectorImpl<QualType> &GivenTypes) {
-    //
-    //  Create the array of Expr from the array of Types.
-    //
+  struct NoParse {
 
-    typedef llvm::SmallVectorImpl<QualType>::const_iterator iterator;
-    for(iterator iter = GivenTypes.begin(), end = GivenTypes.end();
-        iter != end;
-        ++iter) {
-      const clang::QualType QT = iter->getCanonicalType();
-      {
-        ExprValueKind VK = VK_RValue;
-        if (QT->getAs<LValueReferenceType>()) {
-          VK = VK_LValue;
+    typedef const char* ArgsInput;
+
+    bool operator()(llvm::SmallVectorImpl<Expr*> & /* GivenArgs */,
+                    const ArgsInput &/* funcArgs */,
+                    LookupHelper::DiagSetting /* diagOnOff */,
+                    Parser & /* P */, const Interpreter* /* Interp */)
+    {
+      return true;
+    }
+  };
+
+  struct ExprFromTypes {
+
+    typedef llvm::SmallVectorImpl<QualType> ArgsInput;
+
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
+
+    bool operator()(llvm::SmallVectorImpl<Expr*> &GivenArgs,
+                    const ArgsInput &GivenTypes,
+                    LookupHelper::DiagSetting /* diagOnOff */,
+                    Parser & /* P */, const Interpreter* /* Interp */) {
+
+      if (GivenTypes.empty()) return true;
+      else return getExprProto(GivenArgs,GivenTypes);
+    }
+
+    bool getExprProto(llvm::SmallVectorImpl<Expr*> &GivenArgs,
+                      const llvm::SmallVectorImpl<QualType> &GivenTypes) {
+      //
+      //  Create the array of Expr from the array of Types.
+      //
+
+      typedef llvm::SmallVectorImpl<QualType>::const_iterator iterator;
+      for(iterator iter = GivenTypes.begin(), end = GivenTypes.end();
+          iter != end;
+          ++iter) {
+        const clang::QualType QT = iter->getCanonicalType();
+        {
+          ExprValueKind VK = VK_RValue;
+          if (QT->getAs<LValueReferenceType>()) {
+            VK = VK_LValue;
+          }
+          clang::QualType NonRefQT(QT.getNonReferenceType());
+          unsigned int slot = ExprMemory.size();
+          ExprMemory.resize(slot+1);
+          Expr* val = new (&ExprMemory[slot]) OpaqueValueExpr(SourceLocation(),
+                                                              NonRefQT, VK);
+          GivenArgs.push_back(val);
         }
-        clang::QualType NonRefQT(QT.getNonReferenceType());
-        unsigned int slot = ExprMemory.size();
-        ExprMemory.resize(slot+1);
-        Expr* val = new (&ExprMemory[slot]) OpaqueValueExpr(SourceLocation(),
-                                                            NonRefQT, VK);
+      }
+      return true;
+    }
+  };
+
+  struct ParseProto {
+
+    typedef llvm::StringRef ArgsInput;
+
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
+
+    bool operator()(llvm::SmallVectorImpl<Expr*> &GivenArgs,
+                    const ArgsInput &funcProto,
+                    LookupHelper::DiagSetting diagOnOff,
+                    Parser &P, const Interpreter* Interp) {
+
+      if (funcProto.empty()) return true;
+      else return Parse(GivenArgs,funcProto,diagOnOff,P,Interp);
+    }
+
+    bool Parse(llvm::SmallVectorImpl<Expr*> &GivenArgs,
+               const ArgsInput &funcProto,
+               LookupHelper::DiagSetting diagOnOff,
+               Parser &P, const Interpreter* Interp) {
+
+      //
+      //  Parse the prototype now.
+      //
+
+      ParserStateRAII ResetParserState(P);
+      prepareForParsing(P,Interp,
+                        funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
+
+      unsigned int nargs = 0;
+      while (P.getCurToken().isNot(tok::eof)) {
+        TypeResult Res(P.ParseTypeName());
+        if (!Res.isUsable()) {
+          // Bad parse, done.
+          return false;
+        }
+        TypeSourceInfo *TSI = 0;
+        clang::QualType QT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
+        QT = QT.getCanonicalType();
+        {
+          ExprValueKind VK = VK_RValue;
+          if (QT->getAs<LValueReferenceType>()) {
+            VK = VK_LValue;
+          }
+          clang::QualType NonRefQT(QT.getNonReferenceType());
+          ExprMemory.resize(++nargs);
+          new (&ExprMemory[nargs-1]) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
+                                                     NonRefQT, VK);
+        }
+        // Type names should be comma separated.
+        // FIXME: Here if we have type followed by name won't work. Eg int f, ...
+        if (!P.getCurToken().is(clang::tok::comma)) {
+          break;
+        }
+        // Eat the comma.
+        P.ConsumeToken();
+      }
+      for(unsigned int slot = 0; slot < nargs; ++slot) {
+        Expr* val = (OpaqueValueExpr*)( &ExprMemory[slot] );
         GivenArgs.push_back(val);
       }
-    }
-    return true;
-  }
-
-  static
-  bool ParseProto(llvm::SmallVectorImpl<ExprAlloc> &ExprMemory,
-                  llvm::SmallVectorImpl<Expr*> &GivenArgs,
-                  llvm::StringRef funcProto,
-                  LookupHelper::DiagSetting diagOnOff,
-                  Parser &P, const Interpreter* Interp) {
-    //
-    //  Parse the prototype now.
-    //
-
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(P,Interp,
-                      funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
-
-    unsigned int nargs = 0;
-    while (P.getCurToken().isNot(tok::eof)) {
-      TypeResult Res(P.ParseTypeName());
-      if (!Res.isUsable()) {
-        // Bad parse, done.
+      if (P.getCurToken().isNot(tok::eof)) {
+        // We did not consume all of the prototype, bad parse.
         return false;
       }
-      TypeSourceInfo *TSI = 0;
-      clang::QualType QT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
-      QT = QT.getCanonicalType();
-      {
-        ExprValueKind VK = VK_RValue;
-        if (QT->getAs<LValueReferenceType>()) {
-          VK = VK_LValue;
-        }
-        clang::QualType NonRefQT(QT.getNonReferenceType());
-        ExprMemory.resize(++nargs);
-        new (&ExprMemory[nargs-1]) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
-                                                   NonRefQT, VK);
-      }
-      // Type names should be comma separated.
-      // FIXME: Here if we have type followed by name won't work. Eg int f, ...
-      if (!P.getCurToken().is(clang::tok::comma)) {
-        break;
-      }
-      // Eat the comma.
-      P.ConsumeToken();
-    }
-    for(unsigned int slot = 0; slot < nargs; ++slot) {
-       Expr* val = (OpaqueValueExpr*)( &ExprMemory[slot] );
-       GivenArgs.push_back(val);
-    }
-    if (P.getCurToken().isNot(tok::eof)) {
-      // We did not consume all of the prototype, bad parse.
-      return false;
-    }
-    //
-    //  Cleanup after prototype parse.
-    //
-    P.SkipUntil(clang::tok::eof);
-    // Doesn't reset the diagnostic mappings
-    Sema& S = P.getActions();
-    S.getDiagnostics().Reset(/*soft=*/true);
+      //
+      //  Cleanup after prototype parse.
+      //
+      P.SkipUntil(clang::tok::eof);
+      // Doesn't reset the diagnostic mappings
+      Sema& S = P.getActions();
+      S.getDiagnostics().Reset(/*soft=*/true);
 
-    return true;
-  }
+      return true;
+    }
+  };
 
   static
   const FunctionTemplateDecl* findFunctionTemplateSelector(DeclContext* ,
@@ -1127,12 +1171,12 @@ namespace cling {
                                      bool objectIsConst) const {
     // Lookup a function template based on its Decl(Context), name.
 
-    return execFindFunction(*m_Parser, m_Interpreter,
-                            scopeDecl,
-                            templateName,
-                            objectIsConst,
-                            findFunctionTemplateSelector,
-                            diagOnOff);
+    return execFindFunction<NoParse>(*m_Parser, m_Interpreter,
+                                     scopeDecl,
+                                     templateName, "",
+                                     objectIsConst,
+                                     findFunctionTemplateSelector,
+                                     diagOnOff);
   }
 
   static
@@ -1198,12 +1242,12 @@ namespace cling {
                                                     DiagSetting diagOnOff,
                                                     bool objectIsConst) const {
 
-    return execFindFunction(*m_Parser, m_Interpreter,
-                            scopeDecl,
-                            funcName,
-                            objectIsConst,
-                            findAnyFunctionSelector,
-                            diagOnOff);
+    return execFindFunction<NoParse>(*m_Parser, m_Interpreter,
+                                     scopeDecl,
+                                     funcName, "",
+                                     objectIsConst,
+                                     findAnyFunctionSelector,
+                                     diagOnOff);
   }
 
   const FunctionDecl*
@@ -1212,44 +1256,14 @@ namespace cling {
                                  const llvm::SmallVectorImpl<QualType>& funcProto,
                                   DiagSetting diagOnOff, bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    // Use P for shortness
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
 
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-
-    //
-    //  Parse the prototype now.
-    //
-    // Specific Part.
-    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!funcProto.empty()) {
-      if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
-        return 0;
-      }
-    }
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        funcName, GivenArgs, objectIsConst,
-                        Context, m_Interpreter,
-                        overloadFunctionSelector,
-                        diagOnOff);
+    return execFindFunction<ExprFromTypes>(*m_Parser, m_Interpreter,
+                                           scopeDecl,
+                                           funcName,
+                                           funcProto,
+                                           objectIsConst,
+                                           overloadFunctionSelector,
+                                           diagOnOff);
   }
 
   const FunctionDecl* LookupHelper::findFunctionProto(const Decl* scopeDecl,
@@ -1258,44 +1272,14 @@ namespace cling {
                                                       DiagSetting diagOnOff,
                                                       bool objectIsConst) const{
     assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    // Use P for shortness
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
 
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-    //
-    //  Parse the prototype now.
-    //
-    // Specific Part.
-    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!funcProto.empty()) {
-      if (!ParseProto(ExprMemory, GivenArgs, funcProto, diagOnOff,
-                      P, m_Interpreter) ) {
-        return 0;
-      }
-    }
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        funcName, GivenArgs, objectIsConst,
-                        Context, m_Interpreter,
-                        overloadFunctionSelector,
-                        diagOnOff);
+    return execFindFunction<ParseProto>(*m_Parser, m_Interpreter,
+                                        scopeDecl,
+                                        funcName,
+                                        funcProto,
+                                        objectIsConst,
+                                        overloadFunctionSelector,
+                                        diagOnOff);
   }
 
   const FunctionDecl*
@@ -1305,44 +1289,14 @@ namespace cling {
                                    DiagSetting diagOnOff,
                                    bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    // Use P for shortness
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
 
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-    //
-    //  Parse the prototype now.
-    //
-    // Specific Part.
-    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!funcProto.empty()) {
-      if (!ParseProto(ExprMemory,GivenArgs,funcProto,diagOnOff,
-                      P, m_Interpreter) ) {
-        return 0;
-      }
-    }
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        funcName, GivenArgs, objectIsConst,
-                        Context, m_Interpreter,
-                        matchFunctionSelector,
-                        diagOnOff);
+    return execFindFunction<ParseProto>(*m_Parser, m_Interpreter,
+                                        scopeDecl,
+                                        funcName,
+                                        funcProto,
+                                        objectIsConst,
+                                        matchFunctionSelector,
+                                        diagOnOff);
   }
 
   const FunctionDecl*
@@ -1352,108 +1306,93 @@ namespace cling {
                                    DiagSetting diagOnOff,
                                    bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    // Use P for shortness
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
 
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-
-    //
-    //  Parse the prototype now.
-    //
-    // Specific Part.
-    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!funcProto.empty()) {
-      if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
-        return 0;
-      }
-    }
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        funcName, GivenArgs, objectIsConst,
-                        Context, m_Interpreter,
-                        matchFunctionSelector,
-                        diagOnOff);
+    return execFindFunction<ExprFromTypes>(*m_Parser, m_Interpreter,
+                                           scopeDecl,
+                                           funcName,
+                                           funcProto,
+                                           objectIsConst,
+                                           matchFunctionSelector,
+                                           diagOnOff);
   }
 
-  static
-  bool ParseArgs(llvm::SmallVectorImpl<Expr*> &GivenArgs,
+  struct ParseArgs {
+
+    typedef llvm::StringRef ArgsInput;
+
+    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
+
+    bool operator()(llvm::SmallVectorImpl<Expr*> &GivenArgs,
+                    const ArgsInput &funcArgs,
+                    LookupHelper::DiagSetting diagOnOff,
+                    Parser &P, const Interpreter* Interp) {
+
+      if (funcArgs.empty()) return true;
+      else return Parse(GivenArgs,funcArgs,diagOnOff,P,Interp);
+    }
+
+    bool Parse(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                  llvm::StringRef funcArgs,
                  LookupHelper::DiagSetting diagOnOff,
                  Parser &P, const Interpreter* Interp) {
 
-    //
-    //  Parse the arguments now.
-    //
+      //
+      //  Parse the arguments now.
+      //
 
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(P,Interp,
-                      funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
+      ParserStateRAII ResetParserState(P);
+      prepareForParsing(P,Interp,
+                        funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
 
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
+      Sema& S = P.getActions();
+      ASTContext& Context = S.getASTContext();
 
-    PrintingPolicy Policy(Context.getPrintingPolicy());
-    Policy.SuppressTagKeyword = true;
-    Policy.SuppressUnwrittenScope = true;
-    Policy.SuppressInitializers = true;
-    Policy.AnonymousTagLocations = false;
-    std::string proto;
-    {
-      bool first_time = true;
-      while (P.getCurToken().isNot(tok::eof)) {
-        ExprResult Res = P.ParseAssignmentExpression();
-        if (Res.isUsable()) {
-          Expr* expr = Res.get();
-          GivenArgs.push_back(expr);
-          if (first_time) {
-            first_time = false;
+      PrintingPolicy Policy(Context.getPrintingPolicy());
+      Policy.SuppressTagKeyword = true;
+      Policy.SuppressUnwrittenScope = true;
+      Policy.SuppressInitializers = true;
+      Policy.AnonymousTagLocations = false;
+      std::string proto;
+      {
+        bool first_time = true;
+        while (P.getCurToken().isNot(tok::eof)) {
+          ExprResult Res = P.ParseAssignmentExpression();
+          if (Res.isUsable()) {
+            Expr* expr = Res.get();
+            GivenArgs.push_back(expr);
+            if (first_time) {
+              first_time = false;
+            }
+            else {
+              proto += ',';
+            }
+            std::string empty;
+            llvm::raw_string_ostream tmp(empty);
+            expr->printPretty(tmp, /*PrinterHelper=*/0, Policy,
+                              /*Indentation=*/0);
+            proto += tmp.str();
           }
-          else {
-            proto += ',';
+          if (!P.getCurToken().is(tok::comma)) {
+            break;
           }
-          std::string empty;
-          llvm::raw_string_ostream tmp(empty);
-          expr->printPretty(tmp, /*PrinterHelper=*/0, Policy,
-                            /*Indentation=*/0);
-          proto += tmp.str();
+          P.ConsumeToken();
         }
-        if (!P.getCurToken().is(tok::comma)) {
-          break;
-        }
-        P.ConsumeToken();
       }
+      // For backward compatibility with CINT accept (for now?) a trailing close
+      // parenthesis.
+      if (P.getCurToken().isNot(tok::eof) && P.getCurToken().isNot(tok::r_paren) ) {
+        // We did not consume all of the arg list, bad parse.
+        return false;
+      }
+      //
+      //  Cleanup after the arg list parse.
+      //
+      P.SkipUntil(clang::tok::eof);
+      // Doesn't reset the diagnostic mappings
+      S.getDiagnostics().Reset(/*soft=*/true);
+      return true;
     }
-    // For backward compatibility with CINT accept (for now?) a trailing close
-    // parenthesis.
-    if (P.getCurToken().isNot(tok::eof) && P.getCurToken().isNot(tok::r_paren) ) {
-      // We did not consume all of the arg list, bad parse.
-      return false;
-    }
-    //
-    //  Cleanup after the arg list parse.
-    //
-    P.SkipUntil(clang::tok::eof);
-    // Doesn't reset the diagnostic mappings
-    S.getDiagnostics().Reset(/*soft=*/true);
-    return true;
-  }
+  };
 
   const FunctionDecl*
   LookupHelper::findFunctionArgs(const Decl* scopeDecl,
@@ -1462,42 +1401,14 @@ namespace cling {
                                  DiagSetting diagOnOff,
                                  bool objectIsConst) const {
     assert(scopeDecl && "Decl cannot be null");
-    //
-    //  Some utilities.
-    //
-    // Use P for shortness
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    ASTContext& Context = S.getASTContext();
 
-    //
-    //  Convert the passed decl into a nested name specifier,
-    //  a scope spec, and a decl context.
-    //
-    //  Do this 'early' to save on the expansive parser setup,
-    //  in case of failure.
-    //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
-    if (!foundDC) return 0;
-
-    //
-    //  Parse the arguments now.
-    //
-
-    // Specific Part.
-    llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!funcArgs.empty()) {
-      if (!ParseArgs(GivenArgs,funcArgs,diagOnOff,P,m_Interpreter) ) {
-        return 0;
-      }
-    }
-
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
-    return findFunction(foundDC, SS,
-                        funcName, GivenArgs, objectIsConst,
-                        Context, m_Interpreter, overloadFunctionSelector,
-                        diagOnOff);
+    return execFindFunction<ParseArgs>(*m_Parser, m_Interpreter,
+                                       scopeDecl,
+                                       funcName,
+                                       funcArgs,
+                                       objectIsConst,
+                                       overloadFunctionSelector,
+                                       diagOnOff);
   }
 
   void LookupHelper::findArgList(llvm::StringRef argList,
@@ -1561,11 +1472,11 @@ namespace cling {
                                  llvm::StringRef funcName,
                                  DiagSetting diagOnOff) const {
 
-    return execFindFunction(*m_Parser, m_Interpreter,
-                            scopeDecl,
-                            funcName,
-                            false /* objectIsConst */,
-                            hasFunctionSelector,
-                            diagOnOff);
+    return execFindFunction<NoParse>(*m_Parser, m_Interpreter,
+                                     scopeDecl,
+                                     funcName, "",
+                                     false /* objectIsConst */,
+                                     hasFunctionSelector,
+                                     diagOnOff);
   }
 } // end namespace cling
