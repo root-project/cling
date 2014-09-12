@@ -2,6 +2,7 @@
 
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
@@ -820,14 +821,20 @@ namespace cling {
 
         Out() << *TTP;
 
+        QualType ArgQT;
         if (Args) {
-          Out() << " = ";
-          Args->get(i).print(m_Policy, Out());
+           ArgQT = Args->get(i).getAsType();
         }
         else if (TTP->hasDefaultArgument() &&
                  !TTP->defaultArgumentWasInherited()) {
+           ArgQT = TTP->getDefaultArgument();
+        }
+        if (!ArgQT.isNull()) {
+          QualType ArgFQQT
+             = utils::TypeName::GetFullyQualifiedType(ArgQT,
+                                                      TTP->getASTContext());
           Out() << " = ";
-          Out() << TTP->getDefaultArgument().getAsString(m_Policy);
+          ArgFQQT.print(Out(), m_Policy);
         }
       }
       else if (const NonTypeTemplateParmDecl *NTTP =
