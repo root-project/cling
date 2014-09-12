@@ -29,7 +29,8 @@ using namespace clang;
 
 namespace cling {
 
-  void AutoloadCallback::report(clang::SourceLocation l,std::string name,std::string header) {
+  void AutoloadCallback::report(clang::SourceLocation l, llvm::StringRef name,
+                                llvm::StringRef header) {
     Sema& sema= m_Interpreter->getSema();
 
     unsigned id

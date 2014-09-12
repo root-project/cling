@@ -58,7 +58,8 @@ namespace cling {
 
 //    AutoloadingStateInfo m_State;
 
-    void report(clang::SourceLocation l, std::string name,std::string header);
+    void report(clang::SourceLocation l, llvm::StringRef name,
+                llvm::StringRef header);
   };
 } // end namespace cling
 
