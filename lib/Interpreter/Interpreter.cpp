@@ -471,11 +471,7 @@ namespace cling {
     return m_IncrParser->getCI();
   }
 
-  const Sema& Interpreter::getSema() const {
-    return getCI()->getSema();
-  }
-
-  Sema& Interpreter::getSema() {
+  Sema& Interpreter::getSema() const {
     return getCI()->getSema();
   }
 

@@ -546,8 +546,7 @@ namespace cling {
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
 
     clang::CompilerInstance* getCI() const;
-    const clang::Sema& getSema() const;
-    clang::Sema& getSema();
+    clang::Sema& getSema() const;
     llvm::ExecutionEngine* getExecutionEngine() const;
 
     //FIXME: This must be in InterpreterCallbacks.
