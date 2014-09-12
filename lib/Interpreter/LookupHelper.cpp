@@ -944,8 +944,6 @@ namespace cling {
 
     llvm::SmallVector<Expr*, 4> GivenArgs;
 
-    ParserStateRAII ResetParserState(P);
-
     Interpreter::PushTransactionRAII pushedT(Interp);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
@@ -1189,9 +1187,6 @@ namespace cling {
       }
     }
 
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
-
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
                         funcName, GivenArgs, objectIsConst,
@@ -1335,9 +1330,6 @@ namespace cling {
         return 0;
       }
     }
-
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing("", llvm::StringRef("func.prototype.file"), diagOnOff);
 
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     return findFunction(foundDC, SS,
