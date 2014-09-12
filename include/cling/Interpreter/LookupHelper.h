@@ -221,9 +221,6 @@ namespace cling {
     bool hasFunction(const clang::Decl* scopeDecl, llvm::StringRef funcName,
                      DiagSetting diagOnOff) const;
 
-  private:
-    void prepareForParsing(llvm::StringRef code, llvm::StringRef bufferName,
-                           DiagSetting diagOnOff) const;
   };
 
 } // end namespace

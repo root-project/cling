@@ -85,6 +85,53 @@ namespace cling {
 
   LookupHelper::~LookupHelper() {}
 
+  static void prepareForParsing(Parser& P,
+                                const Interpreter* Interp,
+                                llvm::StringRef code,
+                                llvm::StringRef bufferName,
+                                LookupHelper::DiagSetting diagOnOff) {
+    //Parser& P = *m_Parser;
+    Sema& S = P.getActions();
+    Preprocessor& PP = P.getPreprocessor();
+    //
+    //  Tell the diagnostic engine to ignore all diagnostics.
+    //
+    PP.getDiagnostics().setSuppressAllDiagnostics(
+                                                  diagOnOff == LookupHelper::NoDiagnostics);
+    //
+    //  Tell the parser to not attempt spelling correction.
+    //
+    const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = 0;
+    //
+    //  Turn on ignoring of the main file eof token.
+    //
+    //  Note: We need this because token readahead in the following
+    //        routine calls ends up parsing it multiple times.
+    //
+    if (!PP.isIncrementalProcessingEnabled()) {
+      PP.enableIncrementalProcessing();
+    }
+    if (!code.empty()) {
+      //
+      //  Create a fake file to parse the type name.
+      //
+      llvm::MemoryBuffer* SB
+      = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
+                                             bufferName.str());
+      SourceLocation NewLoc = Interp->getNextAvailableLoc();
+      FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+                                                     /*LoadedID*/0,
+                                                     /*LoadedOffset*/0, NewLoc);
+      //
+      //  Switch to the new file the way #include does.
+      //
+      //  Note: To switch back to the main file we must consume an eof token.
+      //
+      PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
+      PP.Lex(const_cast<Token&>(P.getCurToken()));
+    }
+  }
+
   QualType LookupHelper::findType(llvm::StringRef typeName,
                                   DiagSetting diagOnOff) const {
     //
@@ -100,7 +147,8 @@ namespace cling {
     // Use P for shortness
     Parser& P = *m_Parser;
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(typeName, llvm::StringRef("lookup.type.by.name.file"),
+    prepareForParsing(P,m_Interpreter,
+                      typeName, llvm::StringRef("lookup.type.by.name.file"),
                       diagOnOff);
     //
     //  Try parsing the type name.
@@ -138,7 +186,8 @@ namespace cling {
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
 
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(className.str() + "::",
+    prepareForParsing(P,m_Interpreter,
+                      className.str() + "::",
                       llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
     //
     //  Our return values.
@@ -318,7 +367,8 @@ namespace cling {
     Sema& S = P.getActions();
     ASTContext& Context = S.getASTContext();
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(Name.str(),
+    prepareForParsing(P,m_Interpreter,
+                      Name.str(),
                       llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
 
     //
@@ -983,10 +1033,16 @@ namespace cling {
   static
   bool ParseProto(llvm::SmallVectorImpl<ExprAlloc> &ExprMemory,
                   llvm::SmallVectorImpl<Expr*> &GivenArgs,
-                  ASTContext& Context, Parser &P,Sema &S) {
+                  llvm::StringRef funcProto,
+                  LookupHelper::DiagSetting diagOnOff,
+                  Parser &P, const Interpreter* Interp) {
     //
     //  Parse the prototype now.
     //
+
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing(P,Interp,
+                      funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
 
     unsigned int nargs = 0;
     while (P.getCurToken().isNot(tok::eof)) {
@@ -1029,6 +1085,7 @@ namespace cling {
     //
     P.SkipUntil(clang::tok::eof);
     // Doesn't reset the diagnostic mappings
+    Sema& S = P.getActions();
     S.getDiagnostics().Reset(/*soft=*/true);
 
     return true;
@@ -1174,13 +1231,13 @@ namespace cling {
     DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
     if (!foundDC) return 0;
 
-    llvm::SmallVector<Expr*, 4> GivenArgs;
 
     //
     //  Parse the prototype now.
     //
     // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
+    llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
       if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
         return 0;
@@ -1223,14 +1280,12 @@ namespace cling {
     //
     //  Parse the prototype now.
     //
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
-
     // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
-      if (!ParseProto(ExprMemory, GivenArgs,Context,P,S) ) {
+      if (!ParseProto(ExprMemory, GivenArgs, funcProto, diagOnOff,
+                      P, m_Interpreter) ) {
         return 0;
       }
     }
@@ -1272,14 +1327,12 @@ namespace cling {
     //
     //  Parse the prototype now.
     //
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
-
     // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
-      if (!ParseProto(ExprMemory,GivenArgs,Context,P,S) ) {
+      if (!ParseProto(ExprMemory,GivenArgs,funcProto,diagOnOff,
+                      P, m_Interpreter) ) {
         return 0;
       }
     }
@@ -1318,13 +1371,13 @@ namespace cling {
     DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
     if (!foundDC) return 0;
 
-    llvm::SmallVector<Expr*, 4> GivenArgs;
 
     //
     //  Parse the prototype now.
     //
     // Specific Part.
     llvm::SmallVector<ExprAlloc, 4> ExprMemory;
+    llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcProto.empty()) {
       if (!getExprProto(ExprMemory, GivenArgs, funcProto) ) {
         return 0;
@@ -1341,11 +1394,20 @@ namespace cling {
 
   static
   bool ParseArgs(llvm::SmallVectorImpl<Expr*> &GivenArgs,
-                 ASTContext& Context, Parser &P, Sema &S) {
+                 llvm::StringRef funcArgs,
+                 LookupHelper::DiagSetting diagOnOff,
+                 Parser &P, const Interpreter* Interp) {
 
     //
     //  Parse the arguments now.
     //
+
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing(P,Interp,
+                      funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
+
+    Sema& S = P.getActions();
+    ASTContext& Context = S.getASTContext();
 
     PrintingPolicy Policy(Context.getPrintingPolicy());
     Policy.SuppressTagKeyword = true;
@@ -1422,13 +1484,11 @@ namespace cling {
     //
     //  Parse the arguments now.
     //
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
 
     // Specific Part.
     llvm::SmallVector<Expr*, 4> GivenArgs;
     if (!funcArgs.empty()) {
-      if (!ParseArgs(GivenArgs,Context,P,S) ) {
+      if (!ParseArgs(GivenArgs,funcArgs,diagOnOff,P,m_Interpreter) ) {
         return 0;
       }
     }
@@ -1451,7 +1511,8 @@ namespace cling {
     // Use P for shortness
     Parser& P = *m_Parser;
     ParserStateRAII ResetParserState(P);
-    prepareForParsing(argList, llvm::StringRef("arg.list.file"), diagOnOff);
+    prepareForParsing(P,m_Interpreter,
+                      argList, llvm::StringRef("arg.list.file"), diagOnOff);
     //
     //  Parse the arguments now.
     //
@@ -1474,50 +1535,6 @@ namespace cling {
       if (hasUnusableResult)
         // if one of the arguments is not usable return empty.
         argExprs.clear();
-    }
-  }
-
-  void LookupHelper::prepareForParsing(llvm::StringRef code,
-                                       llvm::StringRef bufferName,
-                                       DiagSetting diagOnOff) const {
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    Preprocessor& PP = P.getPreprocessor();
-    //
-    //  Tell the diagnostic engine to ignore all diagnostics.
-    //
-    PP.getDiagnostics().setSuppressAllDiagnostics(diagOnOff == NoDiagnostics);
-    //
-    //  Tell the parser to not attempt spelling correction.
-    //
-    const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = 0;
-    //
-    //  Turn on ignoring of the main file eof token.
-    //
-    //  Note: We need this because token readahead in the following
-    //        routine calls ends up parsing it multiple times.
-    //
-    if (!PP.isIncrementalProcessingEnabled()) {
-      PP.enableIncrementalProcessing();
-    }
-    if (!code.empty()) {
-      //
-      //  Create a fake file to parse the type name.
-      //
-      llvm::MemoryBuffer* SB
-         = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
-                                                bufferName.str());
-      SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
-      FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
-                                                     /*LoadedID*/0,
-                                                     /*LoadedOffset*/0, NewLoc);
-      //
-      //  Switch to the new file the way #include does.
-      //
-      //  Note: To switch back to the main file we must consume an eof token.
-      //
-      PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
-      PP.Lex(const_cast<Token&>(P.getCurToken()));
     }
   }
 
