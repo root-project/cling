@@ -40,7 +40,7 @@ namespace cling {
       = sema.getDiagnostics().getCustomDiagID(DiagnosticsEngine::Level::Note,
                                                 "Type : %0 , Full Path: %1")*/;
 
-    sema.Diags.Report(l, id) << name << header;
+    sema.Diags.Report(l, id) << name << header.drop_front(15);
 
   }
 
@@ -58,9 +58,14 @@ namespace cling {
     AutoloadCallback::FwdDeclsMap* m_Map;
     clang::Preprocessor* m_PP;
   private:
-    void InsertIntoAutoloadingState (Decl* decl, std::string annotation) {
+    void InsertIntoAutoloadingState (Decl* decl, llvm::StringRef annotation) {
 
-      assert(annotation != "" && "Empty annotation!");
+      assert(!annotation.empty() && "Empty annotation!");
+      if (annotation != llvm::StringRef("$clingAutoload$", 15)) {
+        // not an autoload annotation.
+        return;
+      }
+
       assert(m_PP);
 
       const FileEntry* FE = 0;
@@ -69,10 +74,11 @@ namespace cling {
       const DirectoryLookup* LookupFrom = 0;
       const DirectoryLookup* CurDir = 0;
 
-      FE = m_PP->LookupFile(fileNameLoc, annotation, isAngled, LookupFrom,
-                            CurDir, /*SearchPath*/0, /*RelativePath*/ 0,
-                            /*suggestedModule*/0, /*SkipCache*/false,
-                            /*OpenFile*/ false, /*CacheFail*/ false);
+      FE = m_PP->LookupFile(fileNameLoc, annotation.data() + 15, isAngled,
+                            LookupFrom, CurDir, /*SearchPath*/0,
+                            /*RelativePath*/ 0, /*suggestedModule*/0,
+                            /*SkipCache*/false, /*OpenFile*/ false,
+                            /*CacheFail*/ false);
 
       assert(FE && "Must have a valid FileEntry");
 

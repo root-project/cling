@@ -162,8 +162,8 @@ namespace cling {
     }
     std::string file = PLocs[PLocs.size() -1].getFilename();
 //    assert ( file.length() != 0 && "Filename Should not be blank");
-    Out() << " __attribute__((annotate(\""
-          << file;
+    Out() << " __attribute__((annotate(\"$clingAutoload$"
+          << llvm::StringRef(includeText, includeEnd - includeText);
     if (!extra.empty())
       Out() << " " << extra;
     Out() << "\"))) ";
