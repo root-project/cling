@@ -1237,6 +1237,12 @@ namespace utils {
     return dyn_cast<NamespaceDecl>(R.getFoundDecl());
   }
 
+  NamedDecl* Lookup::Named(Sema* S, llvm::StringRef Name,
+                           const DeclContext* Within) {
+    DeclarationName DName = &S->Context.Idents.get(Name);
+    return Lookup::Named(S, DName, Within);
+  }
+
   NamedDecl* Lookup::Named(Sema* S, const char* Name,
                            const DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);

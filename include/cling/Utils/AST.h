@@ -12,6 +12,7 @@
 
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace clang {
   class ASTContext;
@@ -194,6 +195,19 @@ namespace utils {
     clang::NamespaceDecl* Namespace(clang::Sema* S,
                                     const char* Name,
                                     const clang::DeclContext* Within = 0);
+
+    ///\brief Quick lookup for a single named declaration in a given
+    /// declaration context.
+    ///
+    ///\param[in] S - Semantic Analysis object doing the lookup.
+    ///\param[in] Name - The name we are looking up.
+    ///\param[in] Within - The context within the lookup is done. If 0 the
+    ///                    TranslationUnitDecl is used.
+    ///\returns the found result if single, -1 if multiple or 0 if not found.
+    ///
+    clang::NamedDecl* Named(clang::Sema* S,
+                            llvm::StringRef Name,
+                            const clang::DeclContext* Within = 0);
 
     ///\brief Quick lookup for a single named declaration in a given
     /// declaration context.
