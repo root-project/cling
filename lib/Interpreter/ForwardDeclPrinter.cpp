@@ -137,7 +137,7 @@ namespace cling {
     return Out();
   }
 
-  void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
+ void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
     if (D->getSourceRange().isInvalid())
       return;
 
@@ -145,9 +145,13 @@ namespace cling {
       AttrVec &Attrs = D->getAttrs();
       for (AttrVec::const_iterator i=Attrs.begin(), e=Attrs.end(); i != e; ++i) {
         Attr *A = *i;
-        if (!A->isImplicit() && !A->isInherited() && A->getKind() != attr::Kind::Final){
-          A->printPretty(Out(), m_Policy);
-        }
+        if (A->isImplicit() || A->isInherited()
+            || A->getKind() == attr::Kind::Final)
+          continue;
+        //FIXME: Remove when the printing of type_visibility attribute is fixed.
+        if (!isa<AnnotateAttr>(A))
+          continue;
+        A->printPretty(Out(), m_Policy);
       }
     }
 

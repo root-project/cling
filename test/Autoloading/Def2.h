@@ -2,7 +2,7 @@
 // NonTemplateParmDecls should only print one default fwd decl, i.e it should
 // omit the inheritant default arguments.
 template<typename, unsigned = 0>
-struct extent;
+struct __attribute__((type_visibility("default"))) extent;
 template<typename, unsigned _Uint>
 struct extent{ };
 
