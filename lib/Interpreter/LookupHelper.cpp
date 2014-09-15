@@ -11,7 +11,7 @@
 
 #include "TransactionUnloader.h"
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/utils/AST.h"
+#include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
