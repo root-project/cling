@@ -968,18 +968,30 @@ namespace cling {
   bool ForwardDeclPrinter::isIncompatibleType(QualType q, bool includeNNS) {
     //FIXME: This is a workaround and filters out many acceptable cases
     //Refer to Point#1
-    QualType temp = q;
-    while (temp.getTypePtr()->isAnyPointerType())//For 3 star programmers
-      temp = temp.getTypePtr()->getPointeeType();
+    while (q->isAnyPointerType())//For 3 star programmers
+      q = q->getPointeeType();
 
-    while (temp.getTypePtr()->isReferenceType())//For move references
-        temp = temp.getNonReferenceType();
+    while (q->isReferenceType())//For move references
+        q = q.getNonReferenceType();
 
-    std::string str = QualType(temp.getTypePtr(),0).getAsString();
+    // FIXME: Arrays? everything else? ref to pointer (i.e. combinations)?
+
+    std::string str = QualType(q.getTypePtr(),0).getAsString();
 //    llvm::outs() << "Q:"<<str<<"\n";
     bool result =  m_IncompatibleNames.find(str) != m_IncompatibleNames.end();
-    if (includeNNS)
-      result = result || str.find("::") != std::string::npos;
+    if (!result && includeNNS) {
+      if (const ElaboratedType* ET = dyn_cast<ElaboratedType>(q.getTypePtr())) {
+        NestedNameSpecifier* NNS = ET->getQualifier();
+        if (!NNS) {
+          // suppress TD in typedef struct {...} TD;
+          result = true;
+        } else {
+          if (NNS->getKind() != NestedNameSpecifier::Namespace
+              && NNS->getKind() != NestedNameSpecifier::Global)
+            result = true;
+        }
+      }
+    }
     return result;
   }
 
