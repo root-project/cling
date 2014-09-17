@@ -186,26 +186,31 @@ namespace utils {
   static bool
   GetFullyQualifiedTemplateName(const ASTContext& Ctx, TemplateName &tname) {
 
-     bool changed = false;
-     TemplateDecl *argtdecl = tname.getAsTemplateDecl();
-     QualifiedTemplateName *qtname = tname.getAsQualifiedTemplateName();
-     if (qtname && !qtname->hasTemplateKeyword()) {
-        NestedNameSpecifier *NNS = qtname->getQualifier();
-        NestedNameSpecifier *qNNS
-           = GetFullyQualifiedNameSpecifier(Ctx,NNS);
-        if (qNNS != NNS) {
-           changed = true;
-           NNS = qNNS;
-        }
-     } else {
-        NestedNameSpecifier *NNS =
-           CreateNestedNameSpecifierForScopeOf(Ctx, argtdecl, true);
-        tname = Ctx.getQualifiedTemplateName(NNS,
-                                             /*TemplateKeyword=*/ false,
-                                             argtdecl);
+    bool changed = false;
+    NestedNameSpecifier *NNS = 0;
+
+    TemplateDecl *argtdecl = tname.getAsTemplateDecl();
+    QualifiedTemplateName *qtname = tname.getAsQualifiedTemplateName();
+
+    if (qtname && !qtname->hasTemplateKeyword()) {
+      NNS = qtname->getQualifier();
+      NestedNameSpecifier *qNNS = GetFullyQualifiedNameSpecifier(Ctx,NNS);
+      if (qNNS != NNS) {
         changed = true;
-     }
-     return changed;
+        NNS = qNNS;
+      } else {
+        NNS = 0;
+      }
+    } else {
+      NNS = CreateNestedNameSpecifierForScopeOf(Ctx, argtdecl, true);
+    }
+    if (NNS) {
+      tname = Ctx.getQualifiedTemplateName(NNS,
+                                           /*TemplateKeyword=*/ false,
+                                           argtdecl);
+      changed = true;
+    }
+    return changed;
   }
 
   static bool
