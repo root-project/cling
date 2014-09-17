@@ -40,6 +40,15 @@ namespace utils {
                                                 NestedNameSpecifier* scope,
                                            const Transform::Config& TypeConfig);
 
+  static NestedNameSpecifier*
+  CreateNestedNameSpecifierForScopeOf(const ASTContext& Ctx,
+                                      const Decl *decl,
+                                      bool FullyQualified);
+
+  static
+  NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
+                                                      NestedNameSpecifier* scope);
+
   bool Analyze::IsWrapper(const NamedDecl* ND) {
     if (!ND)
       return false;
@@ -174,6 +183,58 @@ namespace utils {
     return IntegerLiteral::Create(C, Addr, C.UnsignedLongTy, SourceLocation());
   }
 
+  static bool
+  GetFullyQualifiedTemplateName(const ASTContext& Ctx, TemplateName &tname) {
+
+     bool changed = false;
+     TemplateDecl *argtdecl = tname.getAsTemplateDecl();
+     QualifiedTemplateName *qtname = tname.getAsQualifiedTemplateName();
+     if (qtname && !qtname->hasTemplateKeyword()) {
+        NestedNameSpecifier *NNS = qtname->getQualifier();
+        NestedNameSpecifier *qNNS
+           = GetFullyQualifiedNameSpecifier(Ctx,NNS);
+        if (qNNS != NNS) {
+           changed = true;
+           NNS = qNNS;
+        }
+     } else {
+        NestedNameSpecifier *NNS =
+           CreateNestedNameSpecifierForScopeOf(Ctx, argtdecl, true);
+        tname = Ctx.getQualifiedTemplateName(NNS,
+                                             /*TemplateKeyword=*/ false,
+                                             argtdecl);
+        changed = true;
+     }
+     return changed;
+  }
+
+  static bool
+  GetFullyQualifiedTemplateArgument(const ASTContext& Ctx, TemplateArgument &arg)
+  {
+     bool changed = false;
+
+     // Note: we do not handle TemplateArgument::Expression, to replace it
+     // we need the information for the template instance decl.
+     // See GetPartiallyDesugaredTypeImpl
+
+     if (arg.getKind() == TemplateArgument::Template) {
+        TemplateName tname = arg.getAsTemplate();
+        changed = GetFullyQualifiedTemplateName(Ctx, tname);
+        if (changed) {
+           arg = TemplateArgument(tname);
+        }
+     } else if (arg.getKind() == TemplateArgument::Type) {
+        QualType SubTy = arg.getAsType();
+        // Check if the type needs more desugaring and recurse.
+        QualType QTFQ = TypeName::GetFullyQualifiedType(SubTy, Ctx);
+        if (QTFQ != SubTy) {
+           arg = TemplateArgument(QTFQ);
+           changed = true;
+        }
+     }
+     return changed;
+  }
+
   static const Type*
   GetFullyQualifiedLocalType(const ASTContext& Ctx,
                              const Type *typeptr) {
@@ -188,16 +249,12 @@ namespace utils {
       for (TemplateSpecializationType::iterator
              I = TST->begin(), E = TST->end();
           I != E; ++I) {
-        if (I->getKind() != TemplateArgument::Type) {
-          desArgs.push_back(*I);
-          continue;
-        }
 
-        QualType SubTy = I->getAsType();
-        // Check if the type needs more desugaring and recurse.
-        mightHaveChanged = true;
-        QualType QTFQ = TypeName::GetFullyQualifiedType(SubTy, Ctx);
-        desArgs.push_back(TemplateArgument(QTFQ));
+        // cheap to copy and potentially modified by
+        // GetFullyQualifedTemplateArgument
+        TemplateArgument arg(*I);
+        mightHaveChanged |= GetFullyQualifiedTemplateArgument(Ctx,arg);
+        desArgs.push_back(arg);
       }
 
       // If desugaring happened allocate new type in the AST.
@@ -224,17 +281,15 @@ namespace utils {
           llvm::SmallVector<TemplateArgument, 4> desArgs;
           for(unsigned int I = 0, E = templateArgs.size();
               I != E; ++I) {
-            if (templateArgs[I].getKind() != TemplateArgument::Type) {
-              desArgs.push_back(templateArgs[I]);
-              continue;
-            }
 
-            QualType SubTy = templateArgs[I].getAsType();
-            // Check if the type needs more desugaring and recurse.
-            mightHaveChanged = true;
-            QualType QTFQ = TypeName::GetFullyQualifiedType(SubTy, Ctx);
-            desArgs.push_back(TemplateArgument(QTFQ));
+            // cheap to copy and potentially modified by
+            // GetFullyQualifedTemplateArgument
+            TemplateArgument arg(templateArgs[I]);
+            mightHaveChanged |= GetFullyQualifiedTemplateArgument(Ctx,arg);
+            desArgs.push_back(arg);
+
           }
+
           // If desugaring happened allocate new type in the AST.
           if (mightHaveChanged) {
             TemplateName TN(TSTdecl->getSpecializedTemplate());
@@ -1083,27 +1138,39 @@ namespace utils {
       for(TemplateSpecializationType::iterator I = TST->begin(), E = TST->end();
           I != E; ++I, ++argi) {
 
-         if (I->getKind() == TemplateArgument::Expression) {
-           // If we have an expression, we need to replace it / desugar it
-           // as it could contain unqualifed (or partially qualified or
-           // private) parts.
+        if (I->getKind() == TemplateArgument::Expression) {
+          // If we have an expression, we need to replace it / desugar it
+          // as it could contain unqualifed (or partially qualified or
+          // private) parts.
 
-           QualType canon = QT->getCanonicalTypeInternal();
-           const RecordType *TSTRecord
-              = dyn_cast<const RecordType>(canon.getTypePtr());
-           if (TSTRecord) {
-             if (const ClassTemplateSpecializationDecl* TSTdecl =
-                dyn_cast<ClassTemplateSpecializationDecl>(TSTRecord->getDecl()))
-             {
-               const TemplateArgumentList& templateArgs
-                 = TSTdecl->getTemplateArgs();
+          QualType canon = QT->getCanonicalTypeInternal();
+          const RecordType *TSTRecord
+            = dyn_cast<const RecordType>(canon.getTypePtr());
+          if (TSTRecord) {
+            if (const ClassTemplateSpecializationDecl* TSTdecl =
+               dyn_cast<ClassTemplateSpecializationDecl>(TSTRecord->getDecl()))
+            {
+              const TemplateArgumentList& templateArgs
+                = TSTdecl->getTemplateArgs();
 
-                mightHaveChanged = true;
-                desArgs.push_back(templateArgs[argi]);
-                continue;
-             }
-           }
-         }
+              mightHaveChanged = true;
+              desArgs.push_back(templateArgs[argi]);
+              continue;
+            }
+          }
+        }
+
+        if (I->getKind() == TemplateArgument::Template) {
+          TemplateName tname = I->getAsTemplate();
+          // Note: should we not also desugar?
+          bool changed = GetFullyQualifiedTemplateName(Ctx, tname);
+          if (changed) {
+            desArgs.push_back(TemplateArgument(tname));
+            mightHaveChanged = true;
+          } else
+            desArgs.push_back(*I);
+          continue;
+        }
 
         if (I->getKind() != TemplateArgument::Type) {
           desArgs.push_back(*I);
@@ -1154,6 +1221,28 @@ namespace utils {
           llvm::SmallVector<TemplateArgument, 4> desArgs;
           for(unsigned int I = 0, E = templateArgs.size();
               I != E; ++I) {
+
+#if 0
+            // This alternative code is not quite right as it would
+            // not call GetPartiallyDesugaredTypeImpl on Types.
+
+            // cheap to copy and potentially modified by
+            // GetFullyQualifedTemplateArgument
+            TemplateArgument arg(*I);
+            mightHaveChanged | = GetFullyQualifiedTemplateArgument(Ctx,arg);
+            desArgs.push_back(arg);
+#endif
+            if (templateArgs[I].getKind() == TemplateArgument::Template) {
+               TemplateName tname = templateArgs[I].getAsTemplate();
+               // Note: should we not also desugar?
+               bool changed = GetFullyQualifiedTemplateName(Ctx, tname);
+               if (changed) {
+                  desArgs.push_back(TemplateArgument(tname));
+                  mightHaveChanged = true;
+               } else
+                  desArgs.push_back(templateArgs[I]);
+               continue;
+            }
 
             if (templateArgs[I].getKind() != TemplateArgument::Type) {
               desArgs.push_back(templateArgs[I]);
@@ -1278,35 +1367,20 @@ namespace utils {
 
   static NestedNameSpecifier*
   CreateNestedNameSpecifierForScopeOf(const ASTContext& Ctx,
-                                      const Type *TypePtr,
+                                      const Decl *decl,
                                       bool FullyQualified)
   {
     // Create a nested name specifier for the declaring context of the type.
 
-    if (!TypePtr)
-      return 0;
+    assert(decl);
 
-    Decl *decl = 0;
-    if (const TypedefType* typedeftype = llvm::dyn_cast<TypedefType>(TypePtr)) {
-      decl = typedeftype->getDecl();
-    } else {
-      // There are probably other cases ...
-      if (const TagType* tagdecltype = llvm::dyn_cast_or_null<TagType>(TypePtr))
-        decl = tagdecltype->getDecl();
-      else
-        decl = TypePtr->getAsCXXRecordDecl();
-    }
-
-    if (!decl)
-      return 0;
-
-    NamedDecl* outer
+    const NamedDecl* outer
       = llvm::dyn_cast_or_null<NamedDecl>(decl->getDeclContext());
-    NamespaceDecl* outer_ns
+    const NamespaceDecl* outer_ns
       = llvm::dyn_cast_or_null<NamespaceDecl>(decl->getDeclContext());
     if (outer && !(outer_ns && outer_ns->isAnonymousNamespace())) {
 
-      if (CXXRecordDecl *cxxdecl
+      if (const CXXRecordDecl *cxxdecl
           = llvm::dyn_cast<CXXRecordDecl>(decl->getDeclContext())) {
 
         if (ClassTemplateDecl *clTempl = cxxdecl->getDescribedClassTemplate()) {
@@ -1333,6 +1407,33 @@ namespace utils {
       }
     }
     return 0;
+  }
+
+  static NestedNameSpecifier*
+  CreateNestedNameSpecifierForScopeOf(const ASTContext& Ctx,
+                                      const Type *TypePtr,
+                                      bool FullyQualified)
+  {
+    // Create a nested name specifier for the declaring context of the type.
+
+    if (!TypePtr)
+      return 0;
+
+    Decl *decl = 0;
+    if (const TypedefType* typedeftype = llvm::dyn_cast<TypedefType>(TypePtr)) {
+      decl = typedeftype->getDecl();
+    } else {
+      // There are probably other cases ...
+      if (const TagType* tagdecltype = llvm::dyn_cast_or_null<TagType>(TypePtr))
+        decl = tagdecltype->getDecl();
+      else
+        decl = TypePtr->getAsCXXRecordDecl();
+    }
+
+    if (!decl)
+      return 0;
+
+    return CreateNestedNameSpecifierForScopeOf(Ctx, decl, FullyQualified);
   }
 
   NestedNameSpecifier*
