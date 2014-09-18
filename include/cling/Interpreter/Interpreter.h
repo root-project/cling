@@ -629,7 +629,7 @@ namespace cling {
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);
 
-    void forwardDeclare(Transaction& T, clang::SourceManager& SM,
+    void forwardDeclare(Transaction& T, clang::Sema& S,
                         llvm::raw_ostream& out,
                         bool enableMacros = false,
                         llvm::raw_ostream* logs = 0) const;

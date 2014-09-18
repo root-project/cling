@@ -14,23 +14,15 @@
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/Basic/Specifiers.h"
-#include <set>
+#include "llvm/ADT/DenseMap.h"
 #include <stack>
+#include <set>
 
 ///\brief Generates forward declarations for a Decl or Transaction
 ///       by implementing a DeclVisitor
 ///
 /// Important Points:
-/// 1. Nested name specifiers: Since there doesn't seem to be a way
-///    to forward declare B in the following example:
-///    class A { class B{};};
-///    We have chosen to skip all declarations using B.
-///    This filters out many acceptable types,
-///    like when B is defined within a namespace.
-///    The fix for this issue dhould go in isIncompatibleType,
-///    which currently just searches for "::" in the type name.
-///
-/// 2. Function arguments having an EnumConstant as a default value
+/// 1. Function arguments having an EnumConstant as a default value
 ///    are printed in the following way:
 ///    enum E {E_a, E_b};
 ///    void foo(E e = E_b){}
@@ -39,13 +31,13 @@
 ///    void foo(E e = E(1));
 ///    1 is the integral value of E_b.
 ///
-/// 3. Decls, in general, are skipped when they depend on things
+/// 2. Decls, in general, are skipped when they depend on things
 ///    that were previously skipped.
 ///    The set of strings, m_IncompatibleNames facilitate this.
 ///    Examine the shouldSkip functions to see why specific types
 ///    are skipped.
 ///
-/// 4. Log file:
+/// 3. Log file:
 ///    The name of the file depends on the name of the file where
 ///    the forward declarations are written.
 ///    So, fwd.h produces a corresponding fwd.h.skipped, when
@@ -77,7 +69,7 @@ namespace clang {
   class ParmVarDecl;
   class QualType;
   class RecordDecl;
-  class SourceManager;
+  class Sema;
   class StaticAssertDecl;
   class TemplateArgumentList;
   class TemplateDecl;
@@ -106,31 +98,28 @@ namespace cling {
     bool m_SkipFlag;
     //False by default, true if current item is not to be printed
 
-    std::set<llvm::StringRef> m_IncompatibleNames;
+    llvm::DenseMap<const clang::Decl*, bool> m_Visited; // fwd decl success
     int m_SkipCounter;
     int m_TotalDecls;
+    std::stack<llvm::raw_ostream*> m_StreamStack;
+    std::set<const char*> m_BuiltinNames;
+
   public:
     ForwardDeclPrinter(llvm::raw_ostream& OutS,
                        llvm::raw_ostream& LogS,
-                       clang::SourceManager& SM,
+                       clang::Sema& S,
                        const Transaction& T,
                        unsigned Indentation = 0,
                        bool printMacros = false);
 
-    ForwardDeclPrinter(llvm::raw_ostream& OutS,
-                       llvm::raw_ostream& LogS,
-                       clang::SourceManager& SM,
-                       const clang::PrintingPolicy& P,
-                       unsigned Indentation = 0);
-
 //    void VisitDeclContext(clang::DeclContext *DC, bool shouldIndent = true);
 
+    void Visit(clang::Decl *D);
     void VisitTranslationUnitDecl(clang::TranslationUnitDecl *D);
     void VisitTypedefDecl(clang::TypedefDecl *D);
     void VisitTypeAliasDecl(clang::TypeAliasDecl *D);
     void VisitEnumDecl(clang::EnumDecl *D);
     void VisitRecordDecl(clang::RecordDecl *D);
-    void VisitEnumConstantDecl(clang::EnumConstantDecl *D);
     void VisitEmptyDecl(clang::EmptyDecl *D);
     void VisitFunctionDecl(clang::FunctionDecl *D);
     void VisitFriendDecl(clang::FriendDecl *D);
@@ -146,42 +135,72 @@ namespace cling {
     void VisitUsingDecl(clang::UsingDecl* D);
     void VisitUsingShadowDecl(clang::UsingShadowDecl* D);
     void VisitNamespaceAliasDecl(clang::NamespaceAliasDecl *D);
-    void VisitCXXRecordDecl(clang::CXXRecordDecl *D);
+    void VisitTagDecl(clang::CXXRecordDecl *D);
     void VisitLinkageSpecDecl(clang::LinkageSpecDecl *D);
-    void VisitTemplateDecl(const clang::TemplateDecl *D);
+    void VisitRedeclarableTemplateDecl(const clang::RedeclarableTemplateDecl *D);
     void VisitFunctionTemplateDecl(clang::FunctionTemplateDecl *D);
     void VisitClassTemplateDecl(clang::ClassTemplateDecl *D);
     void VisitClassTemplateSpecializationDecl(clang::ClassTemplateSpecializationDecl* D);
     void VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* D);
+
+    // Not coming from the RecursiveASTVisitor
+    void Visit(clang::QualType QT) { Visit(QT.getTypePtr()); }
+    void Visit(const clang::Type* T);
+    void VisitNestedNameSpecifier(const clang::NestedNameSpecifier* NNS);
+    void VisitTemplateArgument(const clang::TemplateArgument& TA);
+    void VisitTemplateName(const clang::TemplateName& TN);
+
     void printDeclType(clang::QualType T, llvm::StringRef DeclName, bool Pack = false);
 
-    void PrintTemplateParameters(const clang::TemplateParameterList *Params,
+    void PrintTemplateParameters(clang::TemplateParameterList *Params,
                                const clang::TemplateArgumentList *Args = 0);
     void prettyPrintAttributes(clang::Decl *D, std::string extra = "");
 
-    void printSemiColon(bool flag = true);
-    //if flag is true , m_SkipFlag is obeyed and reset.
-
-    bool isIncompatibleType(clang::QualType q, bool includeNNS = true);
     bool isOperator(clang::FunctionDecl* D);
     bool hasDefaultArgument(clang::FunctionDecl* D);
 
-    template<typename DeclT>
-    bool shouldSkip(DeclT* D){return false;}
+    bool shouldSkip(clang::Decl* D) {
+      switch (D->getKind()) {
+#define DECL(TYPE, BASE) \
+        case clang::Decl::TYPE: return shouldSkip((clang::TYPE##Decl*)D); break;
+#define ABSTRACT_DECL(DECL)
+#include "clang/AST/DeclNodes.inc"
+#undef DECL
+#undef ABSTRACT_DECL
+      }
+    }
 
-    bool shouldSkip(clang::FunctionDecl* D);
-    bool shouldSkip(clang::CXXRecordDecl* D);
-    bool shouldSkip(clang::TypedefDecl* D);
-    bool shouldSkip(clang::VarDecl* D);
-    bool shouldSkip(clang::EnumDecl* D);
-    bool shouldSkip(clang::ClassTemplateSpecializationDecl* D);
-    bool shouldSkip(clang::UsingDecl* D);
-    bool shouldSkip(clang::UsingShadowDecl* D){return true;}
-    bool shouldSkip(clang::UsingDirectiveDecl* D);
-    bool shouldSkip(clang::ClassTemplateDecl* D);
-    bool shouldSkip(clang::FunctionTemplateDecl* D);
-    bool shouldSkip(clang::TypeAliasTemplateDecl* D);
+    std::string getNameIfPossible(clang::Decl* D) { return "<not named>"; }
+    std::string getNameIfPossible(clang::NamedDecl* D) {
+      return D->getNameAsString();
+    }
 
+    template <typename T> bool shouldSkip(T* D) {
+      // Anything inside DCs except those bwloe cannot be fwd declared.
+      clang::Decl::Kind DCKind = D->getDeclContext()->getDeclKind();
+      if (DCKind != clang::Decl::Namespace
+          && DCKind != clang::Decl::TranslationUnit
+          && DCKind != clang::Decl::LinkageSpec) {
+        Log() << getNameIfPossible(D) <<" Incompatible DeclContext\n";
+        skipCurrentDecl(true);
+      } else {
+        if (clang::NamedDecl* ND = clang::dyn_cast<clang::NamedDecl>(D)) {
+          if (clang::IdentifierInfo* II = ND->getIdentifier()) {
+            if (m_BuiltinNames.find(II->getNameStart()) != m_BuiltinNames.end()
+                || !strncmp(II->getNameStart(), "__builtin_", 10))
+              skipCurrentDecl(true);
+          }
+        }
+        if (!m_SkipFlag)
+          skipCurrentDecl(shouldSkipImpl(D));
+      }
+      if (m_SkipFlag) {
+        // Remember that we have tried to fwd declare this already.
+        m_Visited.insert(std::pair<const clang::Decl*, bool>(
+          getCanonicalOrNamespace(D), false));
+      }
+      return m_SkipFlag;
+    }
 
     bool ContainsIncompatibleName(clang::TemplateParameterList* Params);
 
@@ -196,10 +215,62 @@ namespace cling {
 
     void Print(clang::AccessSpecifier AS);
 
-    llvm::raw_ostream& Out();
-    llvm::raw_ostream& Log();
+    llvm::raw_ostream& Out() { return *m_StreamStack.top(); }
+    llvm::raw_ostream& Log() { return m_Log; }
 
-    std::stack<llvm::raw_ostream*> m_StreamStack;
+    bool shouldSkipImpl(clang::Decl*){return false;}
+
+    bool shouldSkipImpl(clang::FunctionDecl* D);
+    bool shouldSkipImpl(clang::FunctionTemplateDecl* D);
+    bool shouldSkipImpl(clang::TagDecl* D);
+    bool shouldSkipImpl(clang::VarDecl* D);
+    bool shouldSkipImpl(clang::EnumDecl* D);
+    bool shouldSkipImpl(clang::ClassTemplateSpecializationDecl* D);
+    bool shouldSkipImpl(clang::UsingDirectiveDecl* D);
+    bool shouldSkipImpl(clang::TypeAliasTemplateDecl* D);
+    bool shouldSkipImpl(clang::EnumConstantDecl* D) { return false; };
+    bool haveSkippedBefore(const clang::Decl* D) const {
+      auto Found = m_Visited.find(getCanonicalOrNamespace(D));
+      return (Found != m_Visited.end() && !Found->second);
+    }
+    const clang::Decl* getCanonicalOrNamespace(const clang::Decl* D) const {
+      if (D->getKind() == clang::Decl::Namespace)
+        return D;
+      return D->getCanonicalDecl();
+    }
+    const clang::Decl* getCanonicalOrNamespace(const clang::NamespaceDecl* D) const {
+      return D;
+    }
+
+    class StreamRAII {
+      ForwardDeclPrinter& m_pr;
+      clang::PrintingPolicy m_oldPol;
+      std::string m_Output;
+      llvm::raw_string_ostream m_Stream;
+      bool m_HavePopped;
+    public:
+      StreamRAII(ForwardDeclPrinter& pr, clang::PrintingPolicy* pol = 0):
+        m_pr(pr), m_oldPol(pr.m_Policy), m_Stream(m_Output),
+        m_HavePopped(false) {
+        m_pr.m_StreamStack.push(&m_Stream);
+        if (pol)
+          m_pr.m_Policy = *pol;
+      }
+      ~StreamRAII() {
+        if (!m_HavePopped)
+          m_pr.m_StreamStack.pop();
+        m_pr.m_Policy = m_oldPol;
+      }
+      std::string take(bool pop = false) {
+        m_Stream.flush();
+        if (pop) {
+          assert(!m_HavePopped && "No popping twice");
+          m_HavePopped = true;
+          m_pr.m_StreamStack.pop();
+        }
+        return m_Output;
+      }
+    };
   };
 }
 #endif
