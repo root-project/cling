@@ -168,6 +168,7 @@ namespace cling {
 #undef DECL
 #undef ABSTRACT_DECL
       }
+      return false;
     }
 
     std::string getNameIfPossible(clang::Decl* D) { return "<not named>"; }
