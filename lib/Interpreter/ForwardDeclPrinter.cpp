@@ -684,9 +684,9 @@ namespace cling {
         haveAnyDecl = true;
     }
     if (haveAnyDecl) {
+      std::string output = stream.take(true);
       if (D->isInline())
         Out() << "inline ";
-      std::string output = stream.take(true);
       Out() << "namespace " << *D << " {\n" << output << "}\n";
     }
   }
