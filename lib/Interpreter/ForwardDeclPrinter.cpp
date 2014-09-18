@@ -119,13 +119,13 @@ namespace cling {
     }
     if (shouldSkip(D)) {
       skipCurrentDecl(true);
-      Insert.first->second = false;
+      m_Visited[getCanonicalOrNamespace(D)] = false;
     } else {
       clang::DeclVisitor<ForwardDeclPrinter>::Visit(D);
       if (m_SkipFlag) {
         // D was not good, flag it.
         skipCurrentDecl(true);
-        Insert.first->second = false;
+        m_Visited[getCanonicalOrNamespace(D)] = false;
       }
     }
   }
