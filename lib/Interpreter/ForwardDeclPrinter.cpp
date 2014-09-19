@@ -831,9 +831,16 @@ namespace cling {
           Args->get(i).print(m_Policy, Out());
         }
         else if (NTTP->hasDefaultArgument()) {
+          Expr* DefArg = NTTP->getDefaultArgument()->IgnoreImpCasts();
+          if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(DefArg)) {
+            Visit(DRE->getFoundDecl());
+            if (m_SkipFlag) {
+              return;
+            }
+          }
+
           Out() << " = ";
-          NTTP->getDefaultArgument()->printPretty(Out(), 0, m_Policy,
-                                                  m_Indentation);
+          DefArg->printPretty(Out(), 0, m_Policy, m_Indentation);
         }
       }
       else if (TemplateTemplateParmDecl *TTPD =
