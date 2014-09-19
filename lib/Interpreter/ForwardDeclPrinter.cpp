@@ -513,7 +513,8 @@ namespace cling {
       //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
 
     }
-    Out() << ";\n";
+    std::string output = stream.take(true);
+    Out() << output << ";\n";
   }
 
   void ForwardDeclPrinter::VisitFriendDecl(FriendDecl *D) {
@@ -550,6 +551,16 @@ namespace cling {
 
 
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
+    QualType T = D->getTypeSourceInfo()
+      ? D->getTypeSourceInfo()->getType()
+      : D->getASTContext().getUnqualifiedObjCPointerType(D->getType());
+
+    Visit(T);
+    if (m_SkipFlag) {
+      skipCurrentDecl();
+      return;
+    }
+
     if (D->isDefinedOutsideFunctionOrMethod() && D->getStorageClass() != SC_Extern)
       Out() << "extern ";
 
@@ -580,10 +591,6 @@ namespace cling {
       if (D->isModulePrivate())
         Out() << "__module_private__ ";
     }
-
-    QualType T = D->getTypeSourceInfo()
-      ? D->getTypeSourceInfo()->getType()
-      : D->getASTContext().getUnqualifiedObjCPointerType(D->getType());
 
     //FIXME: It prints restrict as restrict
     //which is not valid C++
@@ -1018,7 +1025,12 @@ namespace cling {
       VisitTemplateName(TA.getAsTemplateOrTemplatePattern());
       break;
     case clang::TemplateArgument::Expression:
-      // Nothing to fwd declare, hopefully...
+      if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(TA.getAsExpr())) {
+        Visit(DRE->getFoundDecl());
+        if (m_SkipFlag) {
+          return;
+        }
+      }
       break;
     default:
       Log() << "Visit(Type*): Unexpected TemplateSpecializationType "
