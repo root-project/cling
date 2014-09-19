@@ -867,6 +867,10 @@ namespace cling {
     StreamRAII Stream(*this);
 
     PrintTemplateParameters(D->getTemplateParameters());
+    if (m_SkipFlag) {
+      skipCurrentDecl(true);
+      return;
+    }
 
     if (const TemplateTemplateParmDecl *TTP =
           dyn_cast<TemplateTemplateParmDecl>(D)) {
@@ -886,12 +890,24 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {
     if (m_PrintInstantiation) {
+      StreamRAII stream(*this);
       TemplateParameterList *Params = D->getTemplateParameters();
       for (FunctionTemplateDecl::spec_iterator I = D->spec_begin(),
              E = D->spec_end(); I != E; ++I) {
         PrintTemplateParameters(Params, (*I)->getTemplateSpecializationArgs());
+        if (m_SkipFlag) {
+          skipCurrentDecl(true);
+          return;
+        }
+
         Visit(*I);
       }
+      if (m_SkipFlag) {
+        skipCurrentDecl(true);
+        return;
+      }
+      std::string output = stream.take(true);
+      Out() << output;
     }
 
     return VisitRedeclarableTemplateDecl(D);
@@ -900,11 +916,22 @@ namespace cling {
 
   void ForwardDeclPrinter::VisitClassTemplateDecl(ClassTemplateDecl *D) {
     if (m_PrintInstantiation) {
+      StreamRAII stream(*this);
       TemplateParameterList *Params = D->getTemplateParameters();
       for (ClassTemplateDecl::spec_iterator I = D->spec_begin(),
              E = D->spec_end(); I != E; ++I) {
         PrintTemplateParameters(Params, &(*I)->getTemplateArgs());
+        if (m_SkipFlag) {
+          skipCurrentDecl(true);
+          return;
+        }
         Visit(*I);
+        if (m_SkipFlag) {
+          skipCurrentDecl(true);
+          return;
+        }
+        std::string output = stream.take(true);
+        Out() << output;
         Out() << '\n';
       }
     }
