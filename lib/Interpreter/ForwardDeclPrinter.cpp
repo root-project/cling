@@ -561,7 +561,8 @@ namespace cling {
       return;
     }
 
-    if (D->isDefinedOutsideFunctionOrMethod() && D->getStorageClass() != SC_Extern)
+    if (D->isDefinedOutsideFunctionOrMethod() && D->getStorageClass() != SC_Extern
+        && D->getStorageClass() != SC_Static)
       Out() << "extern ";
 
     m_Policy.Bool = true;
@@ -1132,8 +1133,8 @@ namespace cling {
   }
 
   bool ForwardDeclPrinter::shouldSkipImpl(VarDecl *D) {
-    if (D->getStorageClass() == SC_Static) {
-      Log() << D->getName() <<" Var : Static\n";
+    if (D->getType().isConstQualified()) {
+      Log() << D->getName() <<" Var : Const\n";
       m_Visited[D->getCanonicalDecl()] = false; 
       return true;
     }
