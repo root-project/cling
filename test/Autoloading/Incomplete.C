@@ -14,5 +14,5 @@ class __attribute__((annotate("Def.h"))) C;
 //expected-note + {{}}
 .rawInput 0
 
-C c; //expected-error {{variable has incomplete type 'C'}} expected-warning@1 {{Note: 'C' can be found in Def.h}}
+C c; //expected-error {{variable has incomplete type 'C'}} expected-warning@1 0+ {{Note: 'C' can be found in Def.h}}
 .q

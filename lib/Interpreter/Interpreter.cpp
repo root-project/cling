@@ -222,8 +222,9 @@ namespace cling {
            I = IncrParserTransactions.begin(), E = IncrParserTransactions.end();
          I != E; ++I)
       m_IncrParser->commitTransaction(*I);
-
-    setCallbacks(new AutoloadCallback(this));
+    // Disable suggestions for ROOT
+    bool showSuggestions = !llvm::StringRef(CLING_VERSION).startswith("ROOT");
+    setCallbacks(new AutoloadCallback(this, showSuggestions));
   }
 
   Interpreter::~Interpreter() {

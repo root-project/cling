@@ -45,10 +45,8 @@ namespace cling {
   }
 
   bool AutoloadCallback::LookupObject (TagDecl *t) {
-#if 0
-    if (t->hasAttr<AnnotateAttr>())
+    if (m_ShowSuggestions && t->hasAttr<AnnotateAttr>())
       report(t->getLocation(),t->getNameAsString(),t->getAttr<AnnotateAttr>()->getAnnotation());
-#endif
     return false;
   }
 

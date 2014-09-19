@@ -30,12 +30,19 @@ namespace cling {
 namespace cling {
   class AutoloadCallback : public cling::InterpreterCallbacks {
   public:
-    AutoloadCallback(cling::Interpreter* interp)
-      : InterpreterCallbacks(interp) { }
+    typedef llvm::DenseMap<const clang::FileEntry*, std::vector<clang::Decl*> >
+    FwdDeclsMap;
+  private:
+    // The key is the Unique File ID obtained from the source manager.
+    FwdDeclsMap m_Map;
+    bool m_ShowSuggestions;
+  public:
+    AutoloadCallback(cling::Interpreter* interp, bool showSuggestions = true)
+      : InterpreterCallbacks(interp), m_ShowSuggestions(showSuggestions) { }
     ~AutoloadCallback();
     using cling::InterpreterCallbacks::LookupObject;
-      //^to get rid of bogus warning : "-Woverloaded-virtual"
-      //virtual functions ARE meant to be overriden!
+    //^to get rid of bogus warning : "-Woverloaded-virtual"
+    //virtual functions ARE meant to be overriden!
 
 //    bool LookupObject (clang::LookupResult &R, clang::Scope *);
     bool LookupObject (clang::TagDecl* t);
@@ -51,13 +58,7 @@ namespace cling {
                             const clang::Module *Imported);
     void TransactionCommitted(const Transaction& T);
 
-    typedef llvm::DenseMap<const clang::FileEntry*, std::vector<clang::Decl*> > FwdDeclsMap;
   private:
-    // The key is the Unique File ID obtained from the source manager.
-    FwdDeclsMap m_Map;
-
-//    AutoloadingStateInfo m_State;
-
     void report(clang::SourceLocation l, llvm::StringRef name,
                 llvm::StringRef header);
   };
