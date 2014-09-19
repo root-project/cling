@@ -40,7 +40,8 @@ namespace cling {
       = sema.getDiagnostics().getCustomDiagID(DiagnosticsEngine::Level::Note,
                                                 "Type : %0 , Full Path: %1")*/;
 
-    sema.Diags.Report(l, id) << name << header.drop_front(15);
+    if (header.startswith(llvm::StringRef("$clingAutoload$", 15)))
+      sema.Diags.Report(l, id) << name << header.drop_front(15);
 
   }
 
@@ -59,7 +60,7 @@ namespace cling {
     void InsertIntoAutoloadingState (Decl* decl, llvm::StringRef annotation) {
 
       assert(!annotation.empty() && "Empty annotation!");
-      if (annotation != llvm::StringRef("$clingAutoload$", 15)) {
+      if (!annotation.startswith(llvm::StringRef("$clingAutoload$", 15))) {
         // not an autoload annotation.
         return;
       }
