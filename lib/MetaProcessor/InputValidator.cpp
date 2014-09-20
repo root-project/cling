@@ -21,16 +21,16 @@ namespace cling {
     do {
       // If the input is "some//string" or '//some/string' we need to disable
       // the comment checks.
-      bool hasQuoteOrAnterisk = false;
+      bool hasQuoteOrApostrophe = false;
       for (unsigned i = 0, e = m_ParenStack.size(); i < e; ++i) {
         int entry = m_ParenStack[i];
         if (entry == (int)tok::quote || entry == (int)tok::apostrophe) {
-          hasQuoteOrAnterisk = true;
+          hasQuoteOrApostrophe = true;
           break;
         }
       }
       MetaLexer::LexPunctuatorAndAdvance(curPos, Tok,
-                                         /*skipComments*/hasQuoteOrAnterisk);
+                                         /*skipComments*/hasQuoteOrApostrophe);
       int kind = (int)Tok.getKind();
 
       // if (kind == tok::hash) {
