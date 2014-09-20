@@ -186,6 +186,7 @@ add_definitions( -D_GNU_SOURCE
 
 # Determine cling's version:
 file (STRINGS "VERSION" CLING_VERSION)
+set(CLING_VERSION ROOT_${CLING_VERSION})
 
 add_subdirectory(lib)
 add_subdirectory(tools)
