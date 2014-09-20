@@ -27,18 +27,13 @@ namespace cling {
   ///
   class InputValidator {
   private:
-    enum {
-      kTick = clang::tok::r_brace + 1,
-      kQuote
-    };
-
     ///\brief The input being collected.
     ///
     std::string m_Input;
 
     ///\brief Stack used for checking the brace balance.
     ///
-    std::stack<int> m_ParenStack;
+    std::deque<int> m_ParenStack;
 
   public:
     InputValidator() {}

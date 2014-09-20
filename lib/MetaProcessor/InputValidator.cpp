@@ -19,7 +19,18 @@ namespace cling {
     Token Tok;
     const char* curPos = line.data();
     do {
-      MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
+      // If the input is "some//string" or '//some/string' we need to disable
+      // the comment checks.
+      bool hasQuoteOrAnterisk = false;
+      for (unsigned i = 0, e = m_ParenStack.size(); i < e; ++i) {
+        int entry = m_ParenStack[i];
+        if (entry == (int)tok::quote || entry == (int)tok::apostrophe) {
+          hasQuoteOrAnterisk = true;
+          break;
+        }
+      }
+      MetaLexer::LexPunctuatorAndAdvance(curPos, Tok,
+                                         /*skipComments*/hasQuoteOrAnterisk);
       int kind = (int)Tok.getKind();
 
       // if (kind == tok::hash) {
@@ -31,11 +42,11 @@ namespace cling {
       //   if (Tok.getKind() == tok::ident) {
       //     if (Tok.getIdent().startswith("if")) {
       //       Res = kIncomplete;
-      //       m_ParenStack.push(kind);
+      //       m_ParenStack.push_back(kind);
       //     }
       //     else if (Tok.getIdent().startswith("end")) {
-      //       assert(m_ParenStack.top() == kind && "No coresponding # to pop?");
-      //       m_ParenStack.pop();
+      //       assert(m_ParenStack.back() == kind && "No coresponding # to pop?");
+      //       m_ParenStack.pop_back();
       //     }
       //   }
       // }
@@ -45,7 +56,7 @@ namespace cling {
         // enounter matching " or '
         if (kind != (int)Tok.getKind()) {
            Res = kIncomplete;
-           m_ParenStack.push(kind);
+           m_ParenStack.push_back(kind);
            break;
         }
         continue;
@@ -60,15 +71,15 @@ namespace cling {
             Res = kMismatch;
             break;
           }
-          int prev = m_ParenStack.top();
+          int prev = m_ParenStack.back();
           if (prev != kind - 1) {
             Res = kMismatch;
             break;
           }
-          m_ParenStack.pop();
+          m_ParenStack.pop_back();
         }
         else
-          m_ParenStack.push(kind);
+          m_ParenStack.push_back(kind);
       }
     }
     while (Tok.isNot(tok::eof));
@@ -77,8 +88,8 @@ namespace cling {
       Res = kIncomplete;
 
     if (!m_Input.empty()) {
-      if (!m_ParenStack.empty() && (m_ParenStack.top() == tok::quote
-                                    || m_ParenStack.top() == tok::apostrophe))
+      if (!m_ParenStack.empty() && (m_ParenStack.back() == tok::quote
+                                    || m_ParenStack.back() == tok::apostrophe))
         m_Input.append("\\n");
       else
         m_Input.append("\n");
@@ -93,7 +104,6 @@ namespace cling {
 
   void InputValidator::reset() {
     m_Input = "";
-    while (!m_ParenStack.empty())
-      m_ParenStack.pop();
+    m_ParenStack.clear();
   }
 } // end namespace cling
