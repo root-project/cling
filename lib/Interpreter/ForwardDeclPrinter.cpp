@@ -28,7 +28,7 @@ namespace cling {
                                          bool printMacros)
     : m_Policy(clang::PrintingPolicy(clang::LangOptions())), m_Log(LogS),
       m_Indentation(Indentation), m_SMgr(S.getSourceManager()),
-      m_SkipFlag(false) {
+      m_Ctx(S.getASTContext()), m_SkipFlag(false) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
 
@@ -40,7 +40,7 @@ namespace cling {
     m_TotalDecls = 0;
 
     llvm::SmallVector<const char*, 1024> builtinNames;
-    S.getASTContext().BuiltinInfo.GetBuiltinNames(builtinNames);
+    m_Ctx.BuiltinInfo.GetBuiltinNames(builtinNames);
 
     m_BuiltinNames.insert(builtinNames.begin(), builtinNames.end());
 
@@ -106,6 +106,10 @@ namespace cling {
     }
   }
 
+  void ForwardDeclPrinter::Visit(clang::QualType QT) {
+    QT = utils::TypeName::GetFullyQualifiedType(QT, m_Ctx);
+    Visit(QT.getTypePtr());
+  }
   void ForwardDeclPrinter::Visit(clang::Decl *D) {
     auto Insert = m_Visited.insert(std::pair<const clang::Decl*, bool>(
                                              getCanonicalOrNamespace(D), true));
@@ -525,7 +529,7 @@ namespace cling {
       Out() << "mutable ";
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       Out() << "__module_private__ ";
-    Out() << D->getASTContext().getUnqualifiedObjCPointerType(D->getType()).
+    Out() << m_Ctx.getUnqualifiedObjCPointerType(D->getType()).
       stream(m_Policy, D->getName());
 
     if (D->isBitField()) {
@@ -553,7 +557,7 @@ namespace cling {
   void ForwardDeclPrinter::VisitVarDecl(VarDecl *D) {
     QualType T = D->getTypeSourceInfo()
       ? D->getTypeSourceInfo()->getType()
-      : D->getASTContext().getUnqualifiedObjCPointerType(D->getType());
+      : m_Ctx.getUnqualifiedObjCPointerType(D->getType());
 
     Visit(T);
     if (m_SkipFlag) {
@@ -814,8 +818,7 @@ namespace cling {
         }
         if (!ArgQT.isNull()) {
           QualType ArgFQQT
-             = utils::TypeName::GetFullyQualifiedType(ArgQT,
-                                                      TTP->getASTContext());
+            = utils::TypeName::GetFullyQualifiedType(ArgQT, m_Ctx);
           Out() << " = ";
           ArgFQQT.print(Out(), m_Policy);
         }
@@ -1108,13 +1111,14 @@ namespace cling {
       break;
     case clang::NestedNameSpecifier::TypeSpec: // fall-through:
     case clang::NestedNameSpecifier::TypeSpecWithTemplate:
-      Visit(NNS->getAsType());
+      // We cannot fwd declare nested types.
+      skipCurrentDecl(true);
       break;
     default:
       Log() << "VisitNestedNameSpecifier: Unexpected kind "
             << NNS->getKind() << '\n';
+      skipCurrentDecl(true);
       break;
-
    };
   }
 

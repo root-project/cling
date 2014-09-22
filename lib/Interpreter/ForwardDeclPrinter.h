@@ -95,6 +95,7 @@ namespace cling {
     unsigned m_Indentation;
     bool m_PrintInstantiation;
     clang::SourceManager& m_SMgr;
+    clang::ASTContext& m_Ctx;
     bool m_SkipFlag;
     //False by default, true if current item is not to be printed
 
@@ -144,11 +145,7 @@ namespace cling {
     void VisitTypeAliasTemplateDecl(clang::TypeAliasTemplateDecl* D);
 
     // Not coming from the RecursiveASTVisitor
-    void Visit(clang::QualType QT) {
-      QT = utils::TypeName::GetFullyQualifiedType(QT);
-      QT = utils::Transform::GetPartiallyDesugaredType(QT);
-      Visit(.getTypePtr());
-    }
+    void Visit(clang::QualType QT);
     void Visit(const clang::Type* T);
     void VisitNestedNameSpecifier(const clang::NestedNameSpecifier* NNS);
     void VisitTemplateArgument(const clang::TemplateArgument& TA);
@@ -181,7 +178,7 @@ namespace cling {
     }
 
     template <typename T> bool shouldSkip(T* D) {
-      // Anything inside DCs except those bwloe cannot be fwd declared.
+      // Anything inside DCs except those below cannot be fwd declared.
       clang::Decl::Kind DCKind = D->getDeclContext()->getDeclKind();
       if (DCKind != clang::Decl::Namespace
           && DCKind != clang::Decl::TranslationUnit
