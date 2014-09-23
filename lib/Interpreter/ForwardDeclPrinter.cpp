@@ -791,25 +791,27 @@ namespace cling {
     assert(Params);
     assert(!Args || Params->size() == Args->size());
 
-    Out() << "template <";
+    std::string Output;
+    llvm::raw_string_ostream Stream(Output);
+    Stream << "template <";
 
     for (unsigned i = 0, e = Params->size(); i != e; ++i) {
       if (i != 0)
-        Out() << ", ";
+        Stream << ", ";
 
       Decl *Param = Params->getParam(i);
       if (const TemplateTypeParmDecl *TTP =
           dyn_cast<TemplateTypeParmDecl>(Param)) {
 
         if (TTP->wasDeclaredWithTypename())
-          Out() << "typename ";
+          Stream << "typename ";
         else
-          Out() << "class ";
+          Stream << "class ";
 
         if (TTP->isParameterPack())
-          Out() << "...";
+          Stream << "...";
 
-        Out() << *TTP;
+        Stream << *TTP;
 
         QualType ArgQT;
         if (Args) {
@@ -826,8 +828,8 @@ namespace cling {
             skipCurrentDecl(true);
             return;
           }
-          Out() << " = ";
-          ArgFQQT.print(Out(), m_Policy);
+          Stream << " = ";
+          ArgFQQT.print(Stream, m_Policy);
         }
       }
       else if (const NonTypeTemplateParmDecl *NTTP =
@@ -838,8 +840,8 @@ namespace cling {
           printDeclType(NTTP->getType(), Name, NTTP->isParameterPack());
 
         if (Args) {
-          Out() << " = ";
-          Args->get(i).print(m_Policy, Out());
+          Stream << " = ";
+          Args->get(i).print(m_Policy, Stream);
         }
         else if (NTTP->hasDefaultArgument()) {
           Expr* DefArg = NTTP->getDefaultArgument()->IgnoreImpCasts();
@@ -851,8 +853,8 @@ namespace cling {
             }
           }
 
-          Out() << " = ";
-          DefArg->printPretty(Out(), 0, m_Policy, m_Indentation);
+          Stream << " = ";
+          DefArg->printPretty(Stream, 0, m_Policy, m_Indentation);
         }
       }
       else if (TemplateTemplateParmDecl *TTPD =
@@ -862,7 +864,9 @@ namespace cling {
       }
     }
 
-    Out() << "> ";
+    Stream << "> ";
+    Stream.flush();
+    Out() << Output;
   }
 
   void ForwardDeclPrinter::VisitRedeclarableTemplateDecl(const RedeclarableTemplateDecl *D) {
