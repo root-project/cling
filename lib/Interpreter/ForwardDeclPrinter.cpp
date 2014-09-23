@@ -339,9 +339,10 @@ namespace cling {
         for (unsigned i = 0, e = D->getNumParams(); i != e; ++i) {
           if (i) Out() << ", ";
           Visit(D->getParamDecl(i));
-          if (m_SkipFlag)
+          if (m_SkipFlag) {
             skipCurrentDecl(true);
             return;
+          }
         }
 
         if (FT->isVariadic()) {
