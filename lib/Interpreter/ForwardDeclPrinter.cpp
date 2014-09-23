@@ -758,18 +758,9 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitLinkageSpecDecl(LinkageSpecDecl *D) {
-    PrintLinkageOpen(D);
-    if (D->hasBraces()) {
-//      VisitDeclContext(D); //To skip weird typedefs and struct definitions
-      for (auto it = D->decls_begin(); it != D->decls_end(); ++it) {
-        Visit(*it);
-        skipCurrentDecl(false);
-      }
-      Out() << "}";
-    } else {
-      Out() << "{\n"; // print braces anyway, as the decl may end up getting skipped
-      Visit(*D->decls_begin());
-      Out() << ";}\n";
+    for (auto it = D->decls_begin(); it != D->decls_end(); ++it) {
+      Visit(*it);
+      skipCurrentDecl(false);
     }
   }
 
