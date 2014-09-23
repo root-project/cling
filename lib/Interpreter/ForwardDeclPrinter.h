@@ -134,7 +134,7 @@ namespace cling {
     void VisitUsingDecl(clang::UsingDecl* D);
     void VisitUsingShadowDecl(clang::UsingShadowDecl* D);
     void VisitNamespaceAliasDecl(clang::NamespaceAliasDecl *D);
-    void VisitTagDecl(clang::CXXRecordDecl *D);
+    void VisitTagDecl(clang::TagDecl *D);
     void VisitLinkageSpecDecl(clang::LinkageSpecDecl *D);
     void VisitRedeclarableTemplateDecl(const clang::RedeclarableTemplateDecl *D);
     void VisitFunctionTemplateDecl(clang::FunctionTemplateDecl *D);
@@ -151,8 +151,9 @@ namespace cling {
 
     void printDeclType(clang::QualType T, llvm::StringRef DeclName, bool Pack = false);
 
-    void PrintTemplateParameters(clang::TemplateParameterList *Params,
-                               const clang::TemplateArgumentList *Args = 0);
+    void PrintTemplateParameters(llvm::raw_ostream& Stream,
+                                 clang::TemplateParameterList *Params,
+                                 const clang::TemplateArgumentList *Args = 0);
     void prettyPrintAttributes(clang::Decl *D, std::string extra = "");
 
     bool isOperator(clang::FunctionDecl* D);
@@ -243,9 +244,12 @@ namespace cling {
     const clang::Decl* getCanonicalOrNamespace(const clang::NamespaceDecl* D) const {
       return D;
     }
-    std::string PrintEnclosingDeclContexts(clang::DeclContext* DC);
-    void PrintNamespaceOpen(clang::NamespaceDecl* ND);
-    void PrintLinkageOpen(clang::LinkageSpecDecl* LSD);
+    std::string PrintEnclosingDeclContexts(llvm::raw_ostream& Stream,
+                                           const clang::DeclContext* DC);
+    void PrintNamespaceOpen(llvm::raw_ostream& Stream,
+                            const clang::NamespaceDecl* ND);
+    void PrintLinkageOpen(llvm::raw_ostream& Stream,
+                          const clang::LinkageSpecDecl* LSD);
 
     class StreamRAII {
       ForwardDeclPrinter& m_pr;
