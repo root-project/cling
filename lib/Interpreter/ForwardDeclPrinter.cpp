@@ -687,7 +687,6 @@ namespace cling {
 //      VisitDeclContext(D);
 
     bool haveAnyDecl = false;
-    StreamRAII stream(*this);
     for (auto dit=D->decls_begin();dit!=D->decls_end();++dit) {
       Visit(*dit);
       haveAnyDecl |= !m_SkipFlag;
