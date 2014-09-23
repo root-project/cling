@@ -243,6 +243,9 @@ namespace cling {
     const clang::Decl* getCanonicalOrNamespace(const clang::NamespaceDecl* D) const {
       return D;
     }
+    std::string PrintEnclosingDeclContexts(clang::DeclContext* DC);
+    void PrintNamespaceOpen(clang::NamespaceDecl* ND);
+    void PrintLinkageOpen(clang::LinkageSpecDecl* LSD);
 
     class StreamRAII {
       ForwardDeclPrinter& m_pr;

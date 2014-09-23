@@ -694,14 +694,10 @@ namespace cling {
     }
     if (!haveAnyDecl) {
       // make sure at least one redecl of this namespace is fwd declared.
-      if (D == D->getCanonicalDecl())
-        haveAnyDecl = true;
-    }
-    if (haveAnyDecl) {
-      std::string output = stream.take(true);
-      if (D->isInline())
-        Out() << "inline ";
-      Out() << "namespace " << *D << " {\n" << output << "}\n";
+      if (D == D->getCanonicalDecl()) {
+        PrintNamespaceOpen(D);
+        Out() << "}\n";
+      }
     }
   }
 
@@ -762,21 +758,12 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::VisitLinkageSpecDecl(LinkageSpecDecl *D) {
-    const char *l;
-    if (D->getLanguage() == LinkageSpecDecl::lang_c)
-      l = "C";
-    else {
-      assert(D->getLanguage() == LinkageSpecDecl::lang_cxx &&
-             "unknown language in linkage specification");
-      l = "C++";
-    }
-
-    Out() << "extern \"" << l << "\" ";
+    PrintLinkageOpen(D);
     if (D->hasBraces()) {
-      Out() << "{\n";
 //      VisitDeclContext(D); //To skip weird typedefs and struct definitions
       for (auto it = D->decls_begin(); it != D->decls_end(); ++it) {
         Visit(*it);
+        skipCurrentDecl(false);
       }
       Out() << "}";
     } else {
@@ -1225,5 +1212,42 @@ namespace cling {
         ++bad;
                        
     Log() << bad << " decls skipped out of " << m_Visited.size() << "\n";
+  }
+
+  void ForwardDeclPrinter::PrintNamespaceOpen(NamespaceDecl* ND) {
+    if (ND->isInline())
+      Out() << "inline ";
+    Out() << "namespace " << *ND << '{';
+  }
+
+  void ForwardDeclPrinter::PrintLinkageOpen(LinkageSpecDecl* LSD) {
+    assert((LSD->getLanguage() == LinkageSpecDecl::lang_cxx ||
+            LSD->getLanguage() == LinkageSpecDecl::lang_c) &&
+           "Unknown linkage spec!");
+    Out() << "extern \"C";
+    if (LSD->getLanguage() == LinkageSpecDecl::lang_cxx) {
+      Out() << "++";
+    }
+    Out() << "\" {";
+  }
+
+
+  std::string ForwardDeclPrinter::PrintEnclosingDeclContexts(DeclContext* DC) {
+    // Return closing "} } } }"...
+    size_t numClose = 0;
+    for(; DC && !DC->isTranslationUnit(); DC = DC->getParent()) {
+      if (NamespaceDecl* ND = dyn_cast<NamespaceDecl>(DC)) {
+        PrintNamespaceOpen(ND);
+        ++numClose;
+      } else if (LinkageSpecDecl* LSD = dyn_cast<LinkageSpecDecl>(DC)) {
+        PrintLinkageOpen(LSD);
+        ++numClose;
+      } else {
+        Log() << "Skipping unhandled " << DC->getDeclKindName() << '\n';
+        skipCurrentDecl(false);
+        return "";
+      }
+    }
+    return std::string(numClose, '}');
   }
 }//end namespace cling
