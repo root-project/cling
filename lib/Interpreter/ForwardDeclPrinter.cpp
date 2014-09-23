@@ -90,8 +90,8 @@ namespace cling {
           //This condition should ideally never be triggered
           //But is needed in case of generating fwd decls for
           // c++ <future> header.
-          if (!(*dit)->getDeclContext()->isTranslationUnit())
-            continue;
+          //if (!(*dit)->getDeclContext()->isTranslationUnit())
+          //  continue;
 
           Visit(*dit);
           skipCurrentDecl(false);
@@ -819,6 +819,11 @@ namespace cling {
         if (!ArgQT.isNull()) {
           QualType ArgFQQT
             = utils::TypeName::GetFullyQualifiedType(ArgQT, m_Ctx);
+          Visit(ArgFQQT);
+          if (m_SkipFlag) {
+            skipCurrentDecl(true);
+            return;
+          }
           Out() << " = ";
           ArgFQQT.print(Out(), m_Policy);
         }
@@ -839,6 +844,7 @@ namespace cling {
           if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(DefArg)) {
             Visit(DRE->getFoundDecl());
             if (m_SkipFlag) {
+              skipCurrentDecl(true);
               return;
             }
           }
@@ -1164,7 +1170,7 @@ namespace cling {
   }
 
   bool ForwardDeclPrinter::shouldSkipImpl(VarDecl *D) {
-    if (D->getType().isConstQualified()) {
+    if (D->getType().isConstant(m_Ctx)) {
       Log() << D->getName() <<" Var : Const\n";
       m_Visited[D->getCanonicalDecl()] = false; 
       return true;
