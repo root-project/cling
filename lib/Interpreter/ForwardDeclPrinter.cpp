@@ -131,7 +131,8 @@ namespace cling {
     }
   }
 
-  void ForwardDeclPrinter::printDeclType(QualType T, StringRef DeclName, bool Pack) {
+  void ForwardDeclPrinter::printDeclType(llvm::raw_ostream& Stream, QualType T,
+                                         StringRef DeclName, bool Pack) {
     // Normally, a PackExpansionType is written as T[3]... (for instance, as a
     // template argument), but if it is the type of a declaration, the ellipsis
     // is placed before the name being declared.
@@ -139,7 +140,7 @@ namespace cling {
       Pack = true;
       T = PET->getPattern();
     }
-    T.print(Out(), m_Policy, (Pack ? "..." : "") + DeclName);
+    T.print(Stream, m_Policy, (Pack ? "..." : "") + DeclName);
   }
 
   llvm::raw_ostream& ForwardDeclPrinter::Indent(unsigned Indentation) {
@@ -619,7 +620,7 @@ namespace cling {
     //So, we ignore restrict here
     T.removeLocalRestrict();
 //    T.print(Out(), m_Policy, D->getName());
-    printDeclType(T,D->getName());
+    printDeclType(Out(), T,D->getName());
     //    llvm::outs()<<D->getName()<<"\n";
     T.addRestrict();
 
@@ -649,7 +650,7 @@ namespace cling {
           bool isEnumConst = false;
           if (DeclRefExpr* dre = dyn_cast<DeclRefExpr>(Init)){
             if (EnumConstantDecl* decl = dyn_cast<EnumConstantDecl>(dre->getDecl())){
-              printDeclType(D->getType(),"");
+              printDeclType(Out(), D->getType(),"");
               // "" because we want only the type name, not the argument name.
               Out() << "(";
               decl->getInitVal().print(Out(),/*isSigned*/true);
@@ -839,7 +840,7 @@ namespace cling {
         StringRef Name;
         if (IdentifierInfo *II = NTTP->getIdentifier())
           Name = II->getName();
-          printDeclType(NTTP->getType(), Name, NTTP->isParameterPack());
+        printDeclType(Stream, NTTP->getType(), Name, NTTP->isParameterPack());
 
         if (Args) {
           Stream << " = ";

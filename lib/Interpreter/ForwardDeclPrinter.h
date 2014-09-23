@@ -149,7 +149,8 @@ namespace cling {
     void VisitTemplateArgument(const clang::TemplateArgument& TA);
     void VisitTemplateName(const clang::TemplateName& TN);
 
-    void printDeclType(clang::QualType T, llvm::StringRef DeclName, bool Pack = false);
+    void printDeclType(llvm::raw_ostream& Stream, clang::QualType T,
+                       llvm::StringRef DeclName, bool Pack = false);
 
     void PrintTemplateParameters(llvm::raw_ostream& Stream,
                                  clang::TemplateParameterList *Params,
