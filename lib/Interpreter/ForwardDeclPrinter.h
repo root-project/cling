@@ -100,8 +100,6 @@ namespace cling {
     //False by default, true if current item is not to be printed
 
     llvm::DenseMap<const clang::Decl*, bool> m_Visited; // fwd decl success
-    int m_SkipCounter;
-    int m_TotalDecls;
     std::stack<llvm::raw_ostream*> m_StreamStack;
     std::set<const char*> m_BuiltinNames;
 
@@ -183,18 +181,19 @@ namespace cling {
       if (DCKind != clang::Decl::Namespace
           && DCKind != clang::Decl::TranslationUnit
           && DCKind != clang::Decl::LinkageSpec) {
-        Log() << getNameIfPossible(D) <<" Incompatible DeclContext\n";
-        skipCurrentDecl(true);
+        Log() << getNameIfPossible(D) <<" \n";
+        skipDecl(D, "Incompatible DeclContext");
       } else {
         if (clang::NamedDecl* ND = clang::dyn_cast<clang::NamedDecl>(D)) {
           if (clang::IdentifierInfo* II = ND->getIdentifier()) {
             if (m_BuiltinNames.find(II->getNameStart()) != m_BuiltinNames.end()
                 || !strncmp(II->getNameStart(), "__builtin_", 10))
-              skipCurrentDecl(true);
+              skipDecl(D, "builtin");
           }
         }
         if (!m_SkipFlag)
-          skipCurrentDecl(shouldSkipImpl(D));
+          if (shouldSkipImpl(D))
+            skipDecl(D, "shouldSkip");
       }
       if (m_SkipFlag) {
         // Remember that we have tried to fwd declare this already.
@@ -206,7 +205,8 @@ namespace cling {
 
     bool ContainsIncompatibleName(clang::TemplateParameterList* Params);
 
-    void skipCurrentDecl(bool skip = true);
+    void skipDecl(clang::Decl* D, const char* Reason);
+    void resetSkip() { m_SkipFlag = false; }
 
     void printStats();
   private:

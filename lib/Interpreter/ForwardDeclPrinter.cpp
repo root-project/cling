@@ -36,9 +36,6 @@ namespace cling {
 
     m_StreamStack.push(&OutS);
 
-    m_SkipCounter = 0;
-    m_TotalDecls = 0;
-
     llvm::SmallVector<const char*, 1024> builtinNames;
     m_Ctx.BuiltinInfo.GetBuiltinNames(builtinNames);
 
@@ -94,7 +91,7 @@ namespace cling {
           //  continue;
 
           Visit(*dit);
-          skipCurrentDecl(false);
+          resetSkip();
         }
 
       }
@@ -117,12 +114,12 @@ namespace cling {
       // Already fwd declared or skipped.
       if (!Insert.first->second) {
         // Already skipped before; notify callers.
-        skipCurrentDecl(true);
+        skipDecl(D, 0);
       }
       return;
     }
     if (shouldSkip(D)) {
-      skipCurrentDecl(true);
+      // shouldSkip() called skipDecl()
       m_Visited[getCanonicalOrNamespace(D)] = false;
     } else {
       StreamRAII Stream(*this);
@@ -130,7 +127,7 @@ namespace cling {
       clang::DeclVisitor<ForwardDeclPrinter>::Visit(D);
       if (m_SkipFlag) {
         // D was not good, flag it.
-        skipCurrentDecl(true);
+        skipDecl(D, "Dependency skipped");
         m_Visited[getCanonicalOrNamespace(D)] = false;
       } else {
         Out() << closeBraces;
@@ -225,7 +222,7 @@ namespace cling {
     QualType q = D->getTypeSourceInfo()->getType();
     Visit(q);
     if (m_SkipFlag) {
-      skipCurrentDecl(true);
+      skipDecl(D, "Underlying type failed");
       return;
     }
 
@@ -297,7 +294,7 @@ namespace cling {
 
     Visit(D->getReturnType());
     if (m_SkipFlag) {
-      skipCurrentDecl(true);
+      skipDecl(D, "Return type failed");
       return;
     }
 
@@ -344,7 +341,7 @@ namespace cling {
           if (i) Out() << ", ";
           Visit(D->getParamDecl(i));
           if (m_SkipFlag) {
-            skipCurrentDecl(true);
+            skipDecl(D, "Parameter failed");
             return;
           }
         }
@@ -523,9 +520,6 @@ namespace cling {
       //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
 
     }
-    if (m_SkipFlag) {
-      return;
-    }
   }
 
   void ForwardDeclPrinter::VisitFriendDecl(FriendDecl *D) {
@@ -568,7 +562,7 @@ namespace cling {
 
     Visit(T);
     if (m_SkipFlag) {
-      skipCurrentDecl();
+      skipDecl(D, "Variable type failed.");
       return;
     }
 
@@ -694,7 +688,7 @@ namespace cling {
     for (auto dit=D->decls_begin();dit!=D->decls_end();++dit) {
       Visit(*dit);
       haveAnyDecl |= !m_SkipFlag;
-      skipCurrentDecl(false);
+      m_SkipFlag = false;
     }
     if (!haveAnyDecl) {
       // make sure at least one redecl of this namespace is fwd declared.
@@ -708,7 +702,7 @@ namespace cling {
   void ForwardDeclPrinter::VisitUsingDirectiveDecl(UsingDirectiveDecl *D) {
     Visit(D->getNominatedNamespace());
     if (m_SkipFlag) {
-      skipCurrentDecl(true);
+      skipDecl(D, "Using directive's underlying namespace failed");
       return;
     }
 
@@ -724,7 +718,7 @@ namespace cling {
       Visit(Shadow);
 
     if (m_SkipFlag) {
-      skipCurrentDecl(true);
+      skipDecl(D, "shadow decl failed");
       return;
     }
     D->print(Out(),m_Policy);
@@ -733,7 +727,7 @@ namespace cling {
   void ForwardDeclPrinter::VisitUsingShadowDecl(UsingShadowDecl *D) {
     Visit(D->getTargetDecl());
     if (m_SkipFlag)
-      skipCurrentDecl(true);
+      skipDecl(D, "target decl failed.");
   }
 
   void ForwardDeclPrinter::VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl *D) {
@@ -764,7 +758,7 @@ namespace cling {
   void ForwardDeclPrinter::VisitLinkageSpecDecl(LinkageSpecDecl *D) {
     for (auto it = D->decls_begin(); it != D->decls_end(); ++it) {
       Visit(*it);
-      skipCurrentDecl(false);
+      resetSkip();
     }
   }
 
@@ -807,7 +801,7 @@ namespace cling {
             = utils::TypeName::GetFullyQualifiedType(ArgQT, m_Ctx);
           Visit(ArgFQQT);
           if (m_SkipFlag) {
-            skipCurrentDecl(true);
+            skipDecl(0, "type template param default failed");
             return;
           }
           Stream << " = ";
@@ -830,7 +824,7 @@ namespace cling {
           if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(DefArg)) {
             Visit(DRE->getFoundDecl());
             if (m_SkipFlag) {
-              skipCurrentDecl(true);
+              skipDecl(0, "expression template param default failed");
               return;
             }
           }
@@ -865,7 +859,7 @@ namespace cling {
 
     PrintTemplateParameters(D->getTemplateParameters());
     if (m_SkipFlag) {
-      skipCurrentDecl(true);
+      skipDecl(0, "Template parameters failed");
       return;
     }
 
@@ -889,14 +883,14 @@ namespace cling {
              E = D->spec_end(); I != E; ++I) {
         PrintTemplateParameters(Params, (*I)->getTemplateSpecializationArgs());
         if (m_SkipFlag) {
-          skipCurrentDecl(true);
+          skipDecl(D, "Template parameters failed");
           return;
         }
 
         Visit(*I);
       }
       if (m_SkipFlag) {
-        skipCurrentDecl(true);
+        skipDecl(D, "specialization failed");
         return;
       }
       std::string output = stream.take(true);
@@ -915,12 +909,12 @@ namespace cling {
              E = D->spec_end(); I != E; ++I) {
         PrintTemplateParameters(Params, &(*I)->getTemplateArgs());
         if (m_SkipFlag) {
-          skipCurrentDecl(true);
+          skipDecl(D, "template parameters failed");
           return;
         }
         Visit(*I);
         if (m_SkipFlag) {
-          skipCurrentDecl(true);
+          skipDecl(D, "template instance failed");
           return;
         }
         std::string output = stream.take(true);
@@ -936,7 +930,7 @@ namespace cling {
     D->printName(Log());
     Log() << " ClassTemplateSpecialization : Skipped by default\n";
 //    if (shouldSkip(D)) {
-//      skipCurrentDecl();
+//      skipDecl();
 //      return;
 //    }
 
@@ -954,7 +948,7 @@ namespace cling {
 //      iargs[i].print(m_Policy,Out());
 //    }
 //    Out() << ">";
-//    skipCurrentDecl(false);
+//    skipDecl(false);
 
     Visit(D->getSpecializedTemplate());
     //Above code doesn't work properly
@@ -1102,12 +1096,12 @@ namespace cling {
     case clang::NestedNameSpecifier::TypeSpec: // fall-through:
     case clang::NestedNameSpecifier::TypeSpecWithTemplate:
       // We cannot fwd declare nested types.
-      skipCurrentDecl(true);
+      skipDecl(0, "NestedNameSpec TypeSpec/TypeSpecWithTemplate");
       break;
     default:
       Log() << "VisitNestedNameSpecifier: Unexpected kind "
             << NNS->getKind() << '\n';
-      skipCurrentDecl(true);
+      skipDecl(0, 0);
       break;
    };
   }
@@ -1171,11 +1165,13 @@ namespace cling {
     return false;
   }
 
-  void ForwardDeclPrinter::skipCurrentDecl(bool skip) {
-    m_SkipFlag = skip;
-    if (skip)
-      m_SkipCounter++;
-    m_TotalDecls++;
+  void ForwardDeclPrinter::skipDecl(Decl* D, const char* Reason) {
+    m_SkipFlag = true;
+    if (Reason) {
+      if (D)
+        Log() << D->getDeclKindName() << " " << getNameIfPossible(D) << " ";
+      Log() << Reason << '\n';
+    }
   }
 
   bool ForwardDeclPrinter::shouldSkipImpl(ClassTemplateSpecializationDecl *D) {
@@ -1239,7 +1235,7 @@ namespace cling {
         ++numClose;
       } else {
         Log() << "Skipping unhandled " << DC->getDeclKindName() << '\n';
-        skipCurrentDecl(false);
+        skipDecl(0, 0);
         return "";
       }
     }
