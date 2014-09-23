@@ -125,11 +125,15 @@ namespace cling {
       skipCurrentDecl(true);
       m_Visited[getCanonicalOrNamespace(D)] = false;
     } else {
+      StreamRAII Stream(*this);
+      std::string closeBraces = PrintEnclosingDeclContexts(D->getDeclContext());
       clang::DeclVisitor<ForwardDeclPrinter>::Visit(D);
       if (m_SkipFlag) {
         // D was not good, flag it.
         skipCurrentDecl(true);
         m_Visited[getCanonicalOrNamespace(D)] = false;
+      } else {
+        Out() << closeBraces;
       }
     }
   }
