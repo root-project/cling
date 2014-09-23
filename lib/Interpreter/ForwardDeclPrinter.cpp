@@ -510,16 +510,18 @@ namespace cling {
           Out() << ";\n";
         }
         m_Indentation -= m_Policy.Indentation;
-        std::string output = subStream.take(true);
-        Out() << output;
+        if (m_SkipFlag) {
+          return;
+        }
       } else
         Out() << ' ';
 
       //    D->getBody()->printPretty(Out, 0, SubPolicy, Indentation);
 
     }
-    std::string output = stream.take(true);
-    Out() << output << ";\n";
+    if (m_SkipFlag) {
+      return;
+    }
   }
 
   void ForwardDeclPrinter::VisitFriendDecl(FriendDecl *D) {
@@ -891,10 +893,6 @@ namespace cling {
     }
     else {
       Visit(D->getTemplatedDecl());
-    }
-    if (!m_SkipFlag) {
-      std::string output = Stream.take(true);
-      Out() << output;
     }
   }
 

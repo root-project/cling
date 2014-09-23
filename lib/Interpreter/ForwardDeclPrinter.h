@@ -259,8 +259,13 @@ namespace cling {
           m_pr.m_Policy = *pol;
       }
       ~StreamRAII() {
-        if (!m_HavePopped)
+        if (!m_HavePopped) {
           m_pr.m_StreamStack.pop();
+          m_Stream.flush();
+          if (!m_pr.m_SkipFlag) {
+            m_pr.Log() << m_Output;
+          }
+        }
         m_pr.m_Policy = m_oldPol;
       }
       std::string take(bool pop = false) {
