@@ -1263,20 +1263,22 @@ namespace cling {
   std::string ForwardDeclPrinter::PrintEnclosingDeclContexts(llvm::raw_ostream& Stream,
                                                              const DeclContext* DC) {
     // Return closing "} } } }"...
-    size_t numClose = 0;
+    SmallVector<const DeclContext*, 16> DeclCtxs;
     for(; DC && !DC->isTranslationUnit(); DC = DC->getParent()) {
-      if (const NamespaceDecl* ND = dyn_cast<NamespaceDecl>(DC)) {
-        PrintNamespaceOpen(Stream, ND);
-        ++numClose;
-      } else if (const LinkageSpecDecl* LSD = dyn_cast<LinkageSpecDecl>(DC)) {
-        PrintLinkageOpen(Stream, LSD);
-        ++numClose;
-      } else {
+      if (!isa<NamespaceDecl>(DC) && !isa<LinkageSpecDecl>(DC)) {
         Log() << "Skipping unhandled " << DC->getDeclKindName() << '\n';
         skipDecl(0, 0);
         return "";
       }
+      DeclCtxs.push_back(DC);
     }
-    return std::string(numClose, '}');
+
+    for (auto I = DeclCtxs.rbegin(), E = DeclCtxs.rend(); I != E; ++I) {
+      if (const NamespaceDecl* ND = dyn_cast<NamespaceDecl>(*I))
+        PrintNamespaceOpen(Stream, ND);
+      else if (const LinkageSpecDecl* LSD = dyn_cast<LinkageSpecDecl>(*I))
+        PrintLinkageOpen(Stream, LSD);
+    }
+    return std::string(DeclCtxs.size(), '}');
   }
 }//end namespace cling
