@@ -266,7 +266,7 @@ namespace cling {
           m_pr.m_StreamStack.pop();
           m_Stream.flush();
           if (!m_pr.m_SkipFlag) {
-            m_pr.Log() << m_Output;
+            m_pr.Out() << m_Output;
           }
         }
         m_pr.m_Policy = m_oldPol;
