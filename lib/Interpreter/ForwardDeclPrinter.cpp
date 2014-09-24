@@ -962,14 +962,15 @@ namespace cling {
 
   void ForwardDeclPrinter::
   VisitClassTemplateSpecializationDecl(ClassTemplateSpecializationDecl* D) {
-    D->printName(Log());
-    Log() << " ClassTemplateSpecialization : Skipped by default\n";
 //    if (shouldSkip(D)) {
 //      skipDecl();
 //      return;
 //    }
 
-//    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
+    const TemplateArgumentList& iargs = D->getTemplateInstantiationArgs();
+    for (const TemplateArgument& TA: iargs.asArray()) {
+       VisitTemplateArgument(TA);
+    }
 
 //    Out() << "template <> ";
 //    VisitCXXRecordDecl(D->getCanonicalDecl());
