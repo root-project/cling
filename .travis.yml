@@ -18,7 +18,9 @@ before_install:
 before_script:
   - mkdir src inst obj
   - git clone https://github.com/vgvassilev/llvm.git src
+  - (cd src && git checkout cling-patches)
   - git clone https://github.com/vgvassilev/clang.git src/tools/clang
+  - (cd src/tools/clang && git checkout cling-patches)
   - git clone https://github.com/vgvassilev/cling.git src/tools/cling
   - cd src
   - cd ../obj
