@@ -25,15 +25,15 @@ Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler
   We offer binary snapshots for download at https://ecsft.cern.ch/dist/cling
 
 ###Source
-  CLING source depends on the LLVM[1] and CLANG[2] headers and libraries.
-You will also need CMake[3] >= 2.6.1 or GNU Make to build all of those
-packages and subversion[4] and git[5] to get the source code.
+  CLING source depends on the [LLVM][1] and [CLANG][2] headers and libraries.
+You will also need [CMake][3] >= 2.6.1 or GNU Make to build all of those
+packages and [subversion][4] and [git][5] to get the source code.
 
-   [1] http://llvm.org
-   [2] http://clang.llvm.org
-   [3] http://cmake.org
-   [4] http://subversion.tigris.org
-   [5] http://git-scm.com
+   [1]: http://llvm.org
+   [2]: http://clang.llvm.org
+   [3]: http://cmake.org
+   [4]: http://subversion.tigris.org
+   [5]: http://git-scm.com
 
 ####Building
   Building LLVM and CLANG you must:
@@ -80,12 +80,11 @@ If you have Cling's source cloned locally, you can find the tool in
 ```tools/packaging``` directory. Alternatively, you can download the script
 manually, or by using ```wget```:
 ```sh
-wget https://github.com/vgvassilev/cling/raw/cpt/tools/packaging/cpt.py
+wget https://raw.githubusercontent.com/vgvassilev/cling/master/tools/packaging/cpt.py
 chmod +x cpt.py
 ```
 
-Full documentation of CPT can be found in [tools/packaging].
-[tools/packaging]:https://github.com/vgvassilev/cling/tree/cpt/tools/packaging
+Full documentation of CPT can be found in [tools/packaging](https://github.com/vgvassilev/cling/tree/master/tools/packaging).
 
 ##USAGE
    `/some/install/dir/bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'`
@@ -95,11 +94,10 @@ Full documentation of CPT can be found in [tools/packaging].
    `[cling]$ .help`
 
 ##DEVELOPERS' CORNER:
-   We have doxygen documentation of cling's code at:
-http://cling.web.cern.ch/cling/doxygen/
+   We have doxygen documentation of cling's code at: http://cling.web.cern.ch/cling/doxygen/
 ###CONTRIBUTIONS
   Every contribution is very welcome. It is considered as a donation and its copyright and any other related
-rights become exclusive ownership of the person merged the code or in any other case the main developers.
+rights become exclusive ownership of the person who merged the code or in any other case the main developers.
   In order for a contribution to be accepted it has to obey the previously
 established rules for contribution acceptance in cling's work flow and rules.
 
