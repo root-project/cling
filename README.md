@@ -11,7 +11,7 @@ Linux: [![Linux Status](http://img.shields.io/travis/vgvassilev/cling.svg?style=
 
 
 ##DESCRIPTION
-Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler infrastructure. Cling realizes the read-print-evaluate-loop concept, in order to leverage rapid application development. Implemented as a small extension to LLVM and Clang, the interpreter reuses their strengths such as the praised concise and expressive compiler diagnostics.
+Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler infrastructure. Cling realizes the [read-eval-print loop (REPL)](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) concept, in order to leverage rapid application development. Implemented as a small extension to LLVM and Clang, the interpreter reuses their strengths such as the praised concise and expressive compiler diagnostics.
 
 ### Further information & demos
   Please note that some of the resources are rather old and most of the stated limitations are outdated.
