@@ -28,6 +28,7 @@ before_script:
 
 script:
   - travis_retry make -j4 -k
+  - travis_retry make -j4 -k
   - cd tools/cling
   - make test LIT_ARGS=--no-progress-bar
 
@@ -38,7 +39,7 @@ branches:
 notifications:
   recipients:
     - vvasilev@cern.ch
-    - cling-dev@cern.ch
+    #- cling-dev@cern.ch
 
   email:
     on_success: change
