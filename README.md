@@ -88,7 +88,7 @@ Full documentation of CPT can be found in [tools/packaging].
 [tools/packaging]:https://github.com/vgvassilev/cling/tree/cpt/tools/packaging
 
 ##USAGE
-   /some/install/dir/bin/cling '#include <iostream>' 'printf("Hello World!\n")'
+   /some/install/dir/bin/cling '#include <iostream>' 'printf("Hello World!\n")'  
    To get started run: `/some/install/dir/bin/cling --help`
    or type
    `/some/install/dir/bin/cling`
