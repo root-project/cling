@@ -18,6 +18,7 @@ class A {
 public:
   int Var;
   A(int arg) { Var = arg; }
+  int someFunc(float) { return 42; }
   ~A() { printf("A d'tor\n"); }
 };
 
@@ -42,3 +43,6 @@ const int *q = (int*)0x123;
 q // CHECK: (const int *) 0x123
 
 0.00001234L // CHECK: (long double) 1.234e-05L
+
+// PR ROOT-5467
+&A::someFunc // CHECK: (int (class A::*)(float)) @0x{{[0-9a-f]+}}
