@@ -266,10 +266,12 @@ namespace {
         Call = m_Sema->CreateBuiltinBinOp(locStart, BO_Comma, Call.get(), E);
 
     }
-    else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()){
+    else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()
+             || desugaredTy->isMemberPointerType()) {
       // 2) object types :
       // check existance of copy constructor before call
-      if (!availableCopyConstructor(desugaredTy, m_Sema))
+      if (!desugaredTy->isMemberPointerType()
+          && !availableCopyConstructor(desugaredTy, m_Sema))
         return E;
       // call new (setValueWithAlloc(gCling, &SVR, ETy)) (E)
       Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedWithAlloc,
