@@ -339,6 +339,7 @@ namespace cling {
     QualType ValueTy = this->getType().getNonReferenceType();
     if (!ValueTy->isPointerType())
       ValueTy = C.getPointerType(ValueTy);
+    ValueTy = utils::TypeName::GetFullyQualifiedType(ValueTy, getASTContext());
     PrintingPolicy Policy(m_Interpreter->getCI()->getLangOpts());
     std::string ValueTyStr = ValueTy.getAsString(Policy);
     std::string typeStr;
