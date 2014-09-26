@@ -903,6 +903,10 @@ namespace cling {
     else {
       StreamRAII SubStream(*this);
       Visit(D->getTemplatedDecl());
+      if (m_SkipFlag) {
+         skipDecl(D->getTemplatedDecl(), "Template pattern failed");
+         return;
+      }
       Stream << SubStream.take(true);
     }
     Stream.flush();
