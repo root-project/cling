@@ -26,6 +26,7 @@ import sys
 import platform
 import subprocess
 import shutil
+import shlex
 import glob
 import re
 import tarfile
@@ -41,54 +42,26 @@ import stat
 #              Platform independent functions (formerly indep.py)             #
 ###############################################################################
 
-def exec_subprocess_call(cmd, cwd):
+def _convert_subprocess_cmd(cmd):
     if OS == 'Windows':
-        if '"' not in cmd:
-            subprocess.Popen(cmd.split(),
-                             cwd=cwd,
-                             shell=True,
-                             stdin=subprocess.PIPE,
-                             stdout=None,
-                             stderr=subprocess.STDOUT).communicate()
+        if '"' in cmd:
+            # Assume there's only one quoted argument.
+            bits = cmd.split('"')
+            return bits[0].split() + [bits[1]] + bits[2].split()
         else:
-            subprocess.Popen(cmd.split('"')[0].split() + [cmd.split('"')[1]] + cmd.split('"')[2].split(),
-                             cwd=cwd,
-                             shell=True,
-                             stdin=subprocess.PIPE,
-                             stdout=None,
-                             stderr=subprocess.STDOUT).communicate()
+            return cmd.split()
     else:
-        subprocess.Popen([cmd],
-                         cwd=cwd,
-                         shell=True,
-                         stdin=subprocess.PIPE,
-                         stdout=None,
-                         stderr=subprocess.STDOUT).communicate()
+        return [cmd]
+    
+def exec_subprocess_call(cmd, cwd):
+    cmd = _convert_subprocess_cmd(cmd)
+    subprocess.check_call(cmd, cwd=cwd, shell=True,
+                          stdin=subprocess.PIPE, stdout=None, stderr=subprocess.STDOUT)
 
 def exec_subprocess_check_output(cmd, cwd):
-    if OS == 'Windows':
-        if '"' not in cmd:
-            return subprocess.Popen(cmd.split(),
-                                    cwd=cwd,
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT).communicate()[0]
-        else:
-            return subprocess.Popen(cmd.split('"')[0].split() + [cmd.split('"')[1]] + cmd.split('"')[2].split(),
-                                    cwd=cwd,
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT).communicate()[0]
-
-    else:
-        return subprocess.Popen([cmd],
-                     cwd=cwd,
-                     shell=True,
-                     stdin=subprocess.PIPE,
-                     stdout=subprocess.PIPE,
-                     stderr=subprocess.STDOUT).communicate()[0]
+    cmd = _convert_subprocess_cmd(cmd)
+    return subprocess.check_output(cmd, cwd=cwd, shell=True,
+                                    stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
 def box_draw_header():
