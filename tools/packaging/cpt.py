@@ -52,7 +52,7 @@ def _convert_subprocess_cmd(cmd):
             return cmd.split()
     else:
         return [cmd]
-    
+
 def exec_subprocess_call(cmd, cwd):
     cmd = _convert_subprocess_cmd(cmd)
     subprocess.check_call(cmd, cwd=cwd, shell=True,
