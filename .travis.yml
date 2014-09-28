@@ -30,6 +30,7 @@ script:
   - travis_retry make -j4 -k
   - travis_retry make -j4 -k
   - cd tools/cling
+  - travis_retry make install
   - make test LIT_ARGS=--no-progress-bar
 
 branches:
