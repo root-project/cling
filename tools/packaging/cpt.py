@@ -19,10 +19,20 @@
 #
 ###############################################################################
 
-import argparse
-import urllib2
-import os
+# Python 2 and Python 3 compatibility
+from __future__ import print_function
+
 import sys
+if sys.version_info < (3,0):
+    # Python 2.x
+    from urllib2 import urlopen
+    input = raw_input
+else:
+    # Python 3.x
+    from urllib.request import urlopen
+
+import argparse
+import os
 import platform
 import subprocess
 import shutil
@@ -61,7 +71,7 @@ def exec_subprocess_call(cmd, cwd):
 def exec_subprocess_check_output(cmd, cwd):
     cmd = _convert_subprocess_cmd(cmd)
     return subprocess.check_output(cmd, cwd=cwd, shell=True,
-                                    stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                    stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode()
 
 
 def box_draw_header():
@@ -71,15 +81,15 @@ def box_draw_header():
     msg='cling (' + platform.machine() + ')' + spacer + formatdate(time.time(),tzinfo())
 
     if OS != 'Windows':
-        print '''
+        print('''
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║ %s ║
-╚══════════════════════════════════════════════════════════════════════════════╝'''%(msg)
+╚══════════════════════════════════════════════════════════════════════════════╝'''%(msg))
     else:
-        print '''
+        print('''
 +=============================================================================+
 | %s|
-+=============================================================================+'''%(msg)
++=============================================================================+'''%(msg))
 
 
 def box_draw(msg):
@@ -87,28 +97,28 @@ def box_draw(msg):
     spacer = ' ' * spaces_no
 
     if OS != 'Windows':
-        print '''
+        print('''
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ %s%s │
-└──────────────────────────────────────────────────────────────────────────────┘'''%(msg, spacer)
+└──────────────────────────────────────────────────────────────────────────────┘'''%(msg, spacer))
     else:
-        print '''
+        print('''
 +-----------------------------------------------------------------------------+
 | %s%s|
-+-----------------------------------------------------------------------------+'''%(msg, spacer)
++-----------------------------------------------------------------------------+'''%(msg, spacer))
 
 def wget(url, out_dir):
     file_name = url.split('/')[-1]
-    print "HTTP request sent, awaiting response... "
-    u = urllib2.urlopen(url)
+    print("HTTP request sent, awaiting response... ")
+    u = urlopen(url)
     if u.code == 200:
-        print "Connected to %s [200 OK]"%(url)
+        print("Connected to %s [200 OK]"%(url))
     else:
         exit()
     f = open(os.path.join(out_dir, file_name), 'wb')
     meta = u.info()
     file_size = int(meta.getheaders("Content-Length")[0])
-    print "Downloading: %s Bytes: %s" % (file_name, file_size)
+    print("Downloading: %s Bytes: %s" % (file_name, file_size))
 
     file_size_dl = 0
     block_sz = 8192
@@ -121,13 +131,13 @@ def wget(url, out_dir):
         f.write(buffer)
         status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
         status = status + chr(8)*(len(status)+1)
-        print status,
+        print(status, end=' ')
     f.close()
 
 def fetch_llvm():
     box_draw("Fetch source files")
-    print 'Last known good LLVM revision is: ' + LLVMRevision
-    print 'Current working directory is: ' + workdir + '\n'
+    print('Last known good LLVM revision is: ' + LLVMRevision)
+    print('Current working directory is: ' + workdir + '\n')
     def get_fresh_llvm():
         exec_subprocess_call('git clone %s %s'%(LLVM_GIT_URL, srcdir), workdir)
 
@@ -223,8 +233,8 @@ def set_version():
     if '~dev' in VERSION:
         VERSION = VERSION + '-' + REVISION[:7]
 
-    print 'Version: ' + VERSION
-    print 'Revision: ' + REVISION
+    print('Version: ' + VERSION)
+    print('Revision: ' + REVISION)
 
 
 def set_ext():
@@ -241,8 +251,8 @@ def set_ext():
             elif re.match('^config.llvm_exe_ext = ', line):
                 EXEEXT = re.sub('^config.llvm_exe_ext = ', '', line).replace('"', '').strip()
 
-    print 'EXEEXT: ' + EXEEXT
-    print 'SHLIBEXT: ' + SHLIBEXT
+    print('EXEEXT: ' + EXEEXT)
+    print('SHLIBEXT: ' + SHLIBEXT)
 
 
 def compile(arg):
@@ -253,12 +263,12 @@ def compile(arg):
 
     # Cleanup previous installation directory if any
     if os.path.isdir(prefix):
-        print "Remove directory: " + prefix
+        print("Remove directory: " + prefix)
         shutil.rmtree(prefix)
 
     # Cleanup previous build directory if exists
     if os.path.isdir(os.path.join(workdir, 'builddir')):
-        print "Remove directory: " + os.path.join(workdir, 'builddir')
+        print("Remove directory: " + os.path.join(workdir, 'builddir'))
         shutil.rmtree(os.path.join(workdir, 'builddir'))
 
     os.makedirs(os.path.join(workdir, 'builddir'))
@@ -309,18 +319,18 @@ def install_prefix():
 
     for line in fileinput.input(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.mk'), inplace=True):
         if '@EXEEXT@' in line:
-            print line.replace('@EXEEXT@', EXEEXT),
+            print(line.replace('@EXEEXT@', EXEEXT), end=' ')
         elif '@SHLIBEXT@' in line:
-            print line.replace('@SHLIBEXT@', SHLIBEXT),
+            print(line.replace('@SHLIBEXT@', SHLIBEXT), end=' ')
         else:
-            print line,
+            print(line, end=' ')
 
     dist_files = open(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.mk'), 'r').read()
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
             f=os.path.join(root, file).replace(TMP_PREFIX, '')
             if f.lstrip(os.sep).replace(os.sep, '/')+' ' in dist_files:
-                print "Filter: " + f
+                print("Filter: " + f)
                 if not os.path.isdir(os.path.join(prefix,os.path.dirname(f))):
                     os.makedirs(os.path.join(prefix,os.path.dirname(f)))
                 shutil.copy(os.path.join(TMP_PREFIX,f), os.path.join(prefix,f))
@@ -334,36 +344,36 @@ def test_cling():
 def tarball():
     box_draw("Compress binaries into a bzip2 tarball")
     tar = tarfile.open(prefix+'.tar.bz2', 'w:bz2')
-    print 'Creating archive: ' + os.path.basename(prefix) + '.tar.bz2'
+    print('Creating archive: ' + os.path.basename(prefix) + '.tar.bz2')
     tar.add(prefix, arcname=os.path.basename(prefix))
     tar.close()
 
 
 def cleanup():
-    print "\n"
+    print("\n")
     box_draw("Clean up")
     if os.path.isdir(os.path.join(workdir, 'builddir')):
-        print "Remove directory: " + os.path.join(workdir, 'builddir')
+        print("Remove directory: " + os.path.join(workdir, 'builddir'))
         shutil.rmtree(os.path.join(workdir, 'builddir'))
 
     if os.path.isdir(prefix):
-        print "Remove directory: " + prefix
+        print("Remove directory: " + prefix)
         shutil.rmtree(prefix)
 
     if os.path.isdir(TMP_PREFIX):
-        print "Remove directory: " + TMP_PREFIX
+        print("Remove directory: " + TMP_PREFIX)
         shutil.rmtree(TMP_PREFIX)
 
     if os.path.isfile(os.path.join(workdir,'cling.nsi')):
-        print "Remove file: " + os.path.join(workdir,'cling.nsi')
+        print("Remove file: " + os.path.join(workdir,'cling.nsi'))
         os.remove(os.path.join(workdir,'cling.nsi'))
 
     if args['current_dev'] == 'deb' or args['last_stable'] == 'deb' or args['deb_tag']:
-        print 'Create output directory: ' + os.path.join(workdir, 'cling-%s-1'%(VERSION))
+        print('Create output directory: ' + os.path.join(workdir, 'cling-%s-1'%(VERSION)))
         os.makedirs(os.path.join(workdir, 'cling-%s-1'%(VERSION)))
 
         for file in glob.glob(os.path.join(workdir, 'cling_%s*'%(VERSION))):
-            print file + '->' + os.path.join(workdir, 'cling-%s-1'%(VERSION), os.path.basename(file))
+            print(file + '->' + os.path.join(workdir, 'cling-%s-1'%(VERSION), os.path.basename(file)))
             shutil.move(file, os.path.join(workdir, 'cling-%s-1'%(VERSION)))
 
         if not os.listdir(os.path.join(workdir, 'cling-%s-1'%(VERSION))):
@@ -371,19 +381,19 @@ def cleanup():
 
     if args['current_dev'] == 'dmg' or args['last_stable'] == 'dmg' or args['dmg_tag']:
         if os.path.isfile(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))):
-            print "Remove file: " + os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))
+            print("Remove file: " + os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION)))
             os.remove(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION)))
 
         if os.path.isdir(os.path.join(workdir, 'Cling.app')):
-            print 'Remove directory: ' + 'Cling.app'
+            print('Remove directory: ' + 'Cling.app')
             shutil.rmtree(os.path.join(workdir, 'Cling.app'))
 
         if os.path.isdir(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))):
-            print 'Remove directory: ' + os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION))
+            print('Remove directory: ' + os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION)))
             shutil.rmtree(os.path.join(workdir,'cling-%s-temp.dmg'%(VERSION)))
 
         if os.path.isdir(os.path.join(workdir, 'Install')):
-            print 'Remove directory: ' + os.path.join(workdir, 'Install')
+            print('Remove directory: ' + os.path.join(workdir, 'Install'))
             shutil.rmtree(os.path.join(workdir, 'Install'))
 
 ###############################################################################
@@ -394,38 +404,37 @@ def check_ubuntu(pkg):
     if pkg == "gnupg":
         SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', '/').strip()
         if SIGNING_USER == '':
-            print pkg.ljust(20) + '[INSTALLED - NOT SETUP]'.ljust(30)
+            print(pkg.ljust(20) + '[INSTALLED - NOT SETUP]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "python":
         if platform.python_version()[0] == '3':
-            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+            print(pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30))
         elif float(platform.python_version()[:3]) < 2.7:
-            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+            print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
         import socket
-        import httplib
-        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
-            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        if hasattr(socket, 'ssl'):
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
+            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
     elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'"%(pkg), '/').strip() == '0':
-        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+        print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
     else:
         if pkg == "gcc":
             if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
-                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
             else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
+                print(pkg.ljust(20) + '[OK]'.ljust(30))
         elif pkg == "g++":
             if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
-                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
             else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
+                print(pkg.ljust(20) + '[OK]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
 
 
 def tarball_deb():
@@ -438,18 +447,18 @@ def debianize():
     SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', CLING_SRC_DIR).strip()
 
     box_draw("Set up the debian directory")
-    print "Create directory: debian"
+    print("Create directory: debian")
     os.makedirs(os.path.join(prefix, 'debian'))
 
-    print "Create directory: " + os.path.join(prefix, 'debian', 'source')
+    print("Create directory: " + os.path.join(prefix, 'debian', 'source'))
     os.makedirs(os.path.join(prefix, 'debian', 'source'))
 
-    print "Create file: " + os.path.join(prefix, 'debian', 'source', 'format')
+    print("Create file: " + os.path.join(prefix, 'debian', 'source', 'format'))
     f=open(os.path.join(prefix, 'debian', 'source', 'format'), 'w')
     f.write('3.0 (quilt)')
     f.close()
 
-    print "Create file: " + os.path.join(prefix, 'debian', 'source', 'lintian-overrides')
+    print("Create file: " + os.path.join(prefix, 'debian', 'source', 'lintian-overrides'))
     f=open(os.path.join(prefix, 'debian', 'source', 'lintian-overrides'), 'w')
     f.write('cling source: source-is-missing')
     f.close()
@@ -457,7 +466,7 @@ def debianize():
     # This section is no longer valid. I have kept it as a reference if we plan to
     # distribute libcling.so or any other library with the package.
     if False:
-        print 'Create file: ' + os.path.join(prefix, 'debian', 'postinst')
+        print('Create file: ' + os.path.join(prefix, 'debian', 'postinst'))
         template = '''
 #! /bin/sh -e
 # postinst script for cling
@@ -480,7 +489,7 @@ exit 0
         f.write(template)
         f.close()
 
-    print 'Create file: ' + os.path.join(prefix, 'debian', 'cling.install')
+    print('Create file: ' + os.path.join(prefix, 'debian', 'cling.install'))
     f=open(os.path.join(prefix, 'debian', 'cling.install'), 'w')
     template ='''
 bin/* /usr/bin
@@ -492,18 +501,18 @@ share/* /usr/share
     f.write(template.strip())
     f.close()
 
-    print 'Create file: ' + os.path.join(prefix, 'debian', 'compact')
+    print('Create file: ' + os.path.join(prefix, 'debian', 'compact'))
     # Optimize binary compression
     f = open(os.path.join(prefix, 'debian', 'compact'), 'w')
     f.write("7")
     f.close()
 
-    print 'Create file: ' + os.path.join(prefix, 'debian', 'compat')
+    print('Create file: ' + os.path.join(prefix, 'debian', 'compat'))
     f = open(os.path.join(prefix, 'debian', 'compat'), 'w')
     f.write("9")
     f.close()
 
-    print 'Create file: ' + os.path.join(prefix, 'debian', 'control')
+    print('Create file: ' + os.path.join(prefix, 'debian', 'control'))
     f = open(os.path.join(prefix, 'debian', 'control'), 'w')
     template = '''
 Source: cling
@@ -538,7 +547,7 @@ Description: interactive C++ interpreter
     f.write(template.strip())
     f.close()
 
-    print 'Create file: ' + os.path.join(prefix, 'debian', 'copyright')
+    print('Create file: ' + os.path.join(prefix, 'debian', 'copyright'))
     f = open(os.path.join(prefix, 'debian', 'copyright'), 'w')
     template = '''
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
@@ -578,7 +587,7 @@ Comment: Cling can also be licensed under University of Illinois/NCSA
     f.write(template.strip())
     f.close()
 
-    print 'Create file: ' + os.path.join(prefix, 'debian', 'rules')
+    print('Create file: ' + os.path.join(prefix, 'debian', 'rules'))
     f = open(os.path.join(prefix, 'debian', 'rules'), 'w')
     template = '''
 #!/usr/bin/make -f
@@ -594,7 +603,7 @@ override_dh_auto_install:
     f.write(template.strip())
     f.close()
 
-    print 'Create file: ' + os.path.join(prefix, 'debian', 'changelog')
+    print('Create file: ' + os.path.join(prefix, 'debian', 'changelog'))
     f = open(os.path.join(prefix, 'debian', 'changelog'), 'w')
 
     template = '''
@@ -663,34 +672,33 @@ cling (%s-1) unstable; urgency=low
 def check_redhat(pkg):
     if pkg == "python":
         if platform.python_version()[0] == '3':
-            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+            print(pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30))
         elif float(platform.python_version()[:3]) < 2.7:
-            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+            print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
         import socket
-        import httplib
-        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
-            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        if hasattr(socket, 'ssl'):
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
+            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
     elif exec_subprocess_check_output("rpm -qa | grep -w %s"%(pkg), '/').strip() == '':
-        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+        print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
     else:
         if pkg == "gcc-c++":
             if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
-                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
             else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
+                print(pkg.ljust(20) + '[OK]'.ljust(30))
         elif pkg == "gcc":
             if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
-                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
             else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
+                print(pkg.ljust(20) + '[OK]'.ljust(30))
 
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
 
 
 def rpm_build():
@@ -708,7 +716,7 @@ def rpm_build():
 
 
     box_draw("Generate RPM SPEC file")
-    print 'Create file: ' + os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION))
+    print('Create file: ' + os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION)))
     f = open(os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec'%(VERSION)), 'w')
 
     if REVISION == '':
@@ -801,63 +809,62 @@ def check_win(pkg):
     # Check for Microsoft Visual Studio 11.0
     if pkg == "msvc":
         if exec_subprocess_check_output('REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.11.0', 'C:\\').find('ERROR') == -1:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
 
     elif pkg == "python":
         if platform.python_version()[0] == '3':
-            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+            print(pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30))
         elif float(platform.python_version()[:3]) < 2.7:
-            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+            print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == 'SSL':
         import socket
-        import httplib
-        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
-            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        if hasattr(socket, 'ssl'):
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
+            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
 
   # Check for other tools
     else:
         if exec_subprocess_check_output('where %s'%(pkg), 'C:\\').find('INFO: Could not find files for the given pattern') != -1:
-            print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
 
 def get_win_dep():
     box_draw("Download NSIS compiler")
-    html = urllib2.urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read()
+    html = urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read()
     NSIS_VERSION = html[html.rfind('<a href="v'):html.find('>', html.rfind('<a href="v'))].strip('<a href="v').strip('"')
     NSIS_VERSION = NSIS_VERSION[:1] + '.' + NSIS_VERSION[1:]
-    print 'Latest version of NSIS is: ' + NSIS_VERSION
+    print('Latest version of NSIS is: ' + NSIS_VERSION)
     wget(url="http://sourceforge.net/projects/nsis/files/NSIS%%203%%20Pre-release/%s/nsis-%s.zip"%(NSIS_VERSION, NSIS_VERSION),
          out_dir=TMP_PREFIX)
-    print 'Extracting: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION))
+    print('Extracting: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
     zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
     zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
-    print 'Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION))
+    print('Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip'%(NSIS_VERSION)))
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s'%(NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
     box_draw("Download CMake for Windows")
-    html = urllib2.urlopen('http://www.cmake.org/cmake/resources/software.html').read()
+    html = urlopen('http://www.cmake.org/cmake/resources/software.html').read()
     CMAKE_VERSION = html[html.find('Latest Release ('): html.find(')', html.find('Latest Release ('))].strip('Latest Release (')
-    print 'Latest stable version of CMake is: ' + CMAKE_VERSION
+    print('Latest stable version of CMake is: ' + CMAKE_VERSION)
     wget(url='http://www.cmake.org/files/v%s/cmake-%s-win32-x86.zip'%(CMAKE_VERSION[:3], CMAKE_VERSION),
          out_dir=TMP_PREFIX)
-    print 'Extracting: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION))
+    print('Extracting: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
-    print 'Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION))
+    print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip'%(CMAKE_VERSION)))
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'cmake-%s-win32-x86'%(CMAKE_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'cmake'))
 
 def make_nsi():
     box_draw("Generating cling.nsi")
     NSIS = os.path.join(TMP_PREFIX, 'bin', 'nsis')
     VIProductVersion = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags', CLING_SRC_DIR).strip().splitlines()[0]
-    print 'Create file: ' + os.path.join(workdir, 'cling.nsi')
+    print('Create file: ' + os.path.join(workdir, 'cling.nsi'))
     f = open(os.path.join(workdir, 'cling.nsi'), 'w')
     template = '''
 ; Cling setup script %s
@@ -962,7 +969,7 @@ Section make_uninstaller
  ; Write the uninstall keys for Windows
  SetOutPath "$INSTDIR"
  WriteRegStr HKLM "Software\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "DisplayName" "Cling"
- WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "UninstallString" "$INSTDIR\uninstall.exe"
+ WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "UninstallString" "$INSTDIR\\uninstall.exe"
  WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoModify" 1
  WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoRepair" 1
  WriteUninstaller "uninstall.exe"
@@ -983,7 +990,7 @@ SectionEnd
 
 Section "Uninstall"
 
- DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Cling"
+ DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\\Uninstall\Cling"
  DeleteRegKey HKLM "Software\Cling"
 
  ; Remove shortcuts
@@ -1108,33 +1115,32 @@ def build_nsis():
 def check_mac(pkg):
     if pkg == "python":
         if platform.python_version()[0] == '3':
-            print pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30)
+            print(pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30))
         elif float(platform.python_version()[:3]) < 2.7:
-            print pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30)
+            print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
         import socket
-        import httplib
-        if hasattr(httplib, 'HTTPS') == True and hasattr(socket, 'ssl') == True:
-            print pkg.ljust(20) + '[SUPPORTED]'.ljust(30)
+        if hasattr(socket, 'ssl'):
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30)
+            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
     elif exec_subprocess_check_output("type -p %s"%(pkg), '/').strip() == '':
-        print pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30)
+        print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
     else:
         if pkg == "g++":
             if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
-                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
             else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
+                print(pkg.ljust(20) + '[OK]'.ljust(30))
         elif pkg == "gcc":
             if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
-                print pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30)
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
             else:
-                print pkg.ljust(20) + '[OK]'.ljust(30)
+                print(pkg.ljust(20) + '[OK]'.ljust(30))
         else:
-            print pkg.ljust(20) + '[OK]'.ljust(30)
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
 
 
 def make_dmg():
@@ -1148,44 +1154,44 @@ def make_dmg():
     STAGING_DIR = os.path.join(workdir, 'Install')
 
     if os.path.isdir(STAGING_DIR):
-        print "Remove directory: " + STAGING_DIR
+        print("Remove directory: " + STAGING_DIR)
         shutil.rmtree(STAGING_DIR)
 
     if os.path.isdir(os.path.join(workdir, '%s.app'%(APP_NAME))):
-        print "Remove directory: " + os.path.join(workdir, '%s.app'%(APP_NAME))
+        print("Remove directory: " + os.path.join(workdir, '%s.app'%(APP_NAME)))
         shutil.rmtree(os.path.join(workdir, '%s.app'%(APP_NAME)))
 
     if os.path.isdir(os.path.join(workdir, DMG_TMP)):
-        print "Remove directory: " + os.path.join(workdir, DMG_TMP)
+        print("Remove directory: " + os.path.join(workdir, DMG_TMP))
         shutil.rmtree(os.path.join(workdir, DMG_TMP))
 
     if os.path.isdir(os.path.join(workdir, DMG_FINAL)):
-        print "Remove directory: " + os.path.join(workdir, DMG_FINAL)
+        print("Remove directory: " + os.path.join(workdir, DMG_FINAL))
         shutil.rmtree(os.path.join(workdir, DMG_FINAL))
 
-    print 'Create directory: ' + os.path.join(workdir, '%s.app'%(APP_NAME))
+    print('Create directory: ' + os.path.join(workdir, '%s.app'%(APP_NAME)))
     os.makedirs(os.path.join(workdir, '%s.app'%(APP_NAME)))
 
-    print 'Populate directory: ' + os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME))
+    print('Populate directory: ' + os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME)))
     shutil.copytree(prefix, os.path.join(workdir, '%s.app/Contents/Resources'%(APP_NAME)))
 
-    print 'Copy APP Bundle to staging area: ' + STAGING_DIR
+    print('Copy APP Bundle to staging area: ' + STAGING_DIR)
     shutil.copytree(os.path.join(workdir,'%s.app'%(APP_NAME)), STAGING_DIR)
 
-    print 'Stripping file: ' + APP_EXE.lower()
+    print('Stripping file: ' + APP_EXE.lower())
     exec_subprocess_call('strip -u -r %s'%(APP_EXE.lower()), workdir)
 
     DU = exec_subprocess_check_output("du -sh %s"%(STAGING_DIR), workdir)
     SIZE = str(float(DU[:DU.find('M')].strip()) + 1.0)
-    print 'Estimated size of application bundle: ' + SIZE + 'MB'
+    print('Estimated size of application bundle: ' + SIZE + 'MB')
 
-    print 'Building temporary Apple Disk Image'
+    print('Building temporary Apple Disk Image')
     exec_subprocess_call('hdiutil create -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s'%(STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
 
-    print 'Created Apple Disk Image: ' + DMG_TMP
+    print('Created Apple Disk Image: ' + DMG_TMP)
     DEVICE = exec_subprocess_check_output("hdiutil attach -readwrite -noverify -noautoopen %s | egrep '^/dev/' | sed 1q | awk '{print $1}'"%(DMG_TMP), workdir)
 
-    print 'Wating for device to unmount...'
+    print('Wating for device to unmount...')
     time.sleep(5)
 
     #print 'Create directory: ' + '/Volumes/%s/.background'%(VOL_NAME)
@@ -1215,19 +1221,19 @@ end tell
 '''%(VOL_NAME, DMG_BACKGROUND_IMG, APP_NAME)
     ascript = ascript.strip()
 
-    print 'Executing AppleScript...'
+    print('Executing AppleScript...')
     exec_subprocess_call("echo %s | osascript"%(ascript), workdir)
 
-    print 'Performing sync...'
+    print('Performing sync...')
     exec_subprocess_call("sync", workdir)
 
-    print 'Detach device: ' + DEVICE
+    print('Detach device: ' + DEVICE)
     exec_subprocess_call('hdiutil detach %s'%(DEVICE), CLING_SRC_DIR)
 
-    print "Creating compressed Apple Disk Image..."
+    print("Creating compressed Apple Disk Image...")
     exec_subprocess_call('hdiutil convert %s -format UDZO -imagekey zlib-level=9 -o %s'%(DMG_TMP, DMG_FINAL), workdir)
 
-    print 'Done'
+    print('Done')
 
 ###############################################################################
 #                           argparse configuration                            #
@@ -1327,22 +1333,22 @@ prefix = ''
 LLVM_GIT_URL = args['with_llvm_url']
 CLANG_GIT_URL = args['with_clang_url']
 CLING_GIT_URL = args['with_cling_url']
-LLVMRevision = urllib2.urlopen("https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip()
+LLVMRevision = urlopen("https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip()
 VERSION = ''
 REVISION = ''
 
-print 'Cling Packaging Tool (CPT)'
-print 'Arguments vector: ' + str(sys.argv)
+print('Cling Packaging Tool (CPT)')
+print('Arguments vector: ' + str(sys.argv))
 box_draw_header()
-print 'Thread Model: ' + FAMILY
-print 'Operating System: ' + OS
-print 'Distribution: ' + DIST
-print 'Release: ' + RELEASE
-print 'Revision: ' + REV
-print 'Architecture: ' + platform.machine()
+print('Thread Model: ' + FAMILY)
+print('Operating System: ' + OS)
+print('Distribution: ' + DIST)
+print('Release: ' + RELEASE)
+print('Revision: ' + REV)
+print('Architecture: ' + platform.machine())
 
 if len(sys.argv) == 1:
-    print "Error: no options passed"
+    print("Error: no options passed")
     parser.print_help()
 
 if args['check_requirements'] == True:
@@ -1359,7 +1365,7 @@ if args['check_requirements'] == True:
         yes = set(['yes','y', 'ye', ''])
         no = set(['no','n'])
 
-        choice = raw_input('''
+        choice = input('''
 CPT will now attempt to update/install the requisite packages automatically.
 Do you want to continue? [yes/no]: ''').lower()
         while True:
@@ -1377,14 +1383,14 @@ Do you want to continue? [yes/no]: ''').lower()
                                   stderr=subprocess.STDOUT).communicate('yes')
                 break
             elif choice in no:
-                print '''
+                print('''
 Install/update the required packages by:
   sudo apt-get update
   sudo apt-get install git g++ debhelper devscripts gnupg python
-'''
+''')
                 break
             else:
-                choice = raw_input("Please respond with 'yes' or 'no': ")
+                choice = input("Please respond with 'yes' or 'no': ")
                 continue
 
     elif OS == 'Windows':
@@ -1393,10 +1399,10 @@ Install/update the required packages by:
         check_win('SSL')
         # Check Windows registry for keys that prove an MS Visual Studio 11.0 installation
         check_win('msvc')
-        print '''
+        print('''
 Refer to the documentation of CPT for information on setting up your Windows environment.
 [tools/packaging/README.md]
-'''
+''')
     elif DIST == 'Fedora' or DIST == 'Scientific Linux CERN SLC':
         check_redhat('git')
         check_redhat('gcc')
@@ -1407,7 +1413,7 @@ Refer to the documentation of CPT for information on setting up your Windows env
         yes = set(['yes','y', 'ye', ''])
         no = set(['no','n'])
 
-        choice = raw_input('''
+        choice = input('''
 CPT will now attempt to update/install the requisite packages automatically.
 Do you want to continue? [yes/no]: ''').lower()
         while True:
@@ -1420,13 +1426,13 @@ Do you want to continue? [yes/no]: ''').lower()
                                   stderr=subprocess.STDOUT).communicate('yes')
                 break
             elif choice in no:
-                print '''
+                print('''
 Install/update the required packages by:
   sudo yum install git gcc gcc-c++ rpm-build python
-'''
+''')
                 break
             else:
-                choice = raw_input("Please respond with 'yes' or 'no': ")
+                choice = input("Please respond with 'yes' or 'no': ")
                 continue
 
     if DIST == 'MacOSX':
@@ -1438,7 +1444,7 @@ Install/update the required packages by:
         yes = set(['yes','y', 'ye', ''])
         no = set(['no','n'])
 
-        choice = raw_input('''
+        choice = input('''
 CPT will now attempt to update/install the requisite packages automatically. Make sure you have MacPorts installed.
 Do you want to continue? [yes/no]: ''').lower()
         while True:
@@ -1456,14 +1462,14 @@ Do you want to continue? [yes/no]: ''').lower()
                                   stderr=subprocess.STDOUT).communicate('yes')
                 break
             elif choice in no:
-                print '''
+                print('''
 Install/update the required packages by:
   sudo port -v selfupdate
   sudo port install git g++ python
-'''
+''')
                 break
             else:
-                choice = raw_input("Please respond with 'yes' or 'no': ")
+                choice = input("Please respond with 'yes' or 'no': ")
                 continue
 
 if args['current_dev']:
