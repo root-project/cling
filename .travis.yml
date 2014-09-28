@@ -24,7 +24,7 @@ before_script:
   - git clone https://github.com/vgvassilev/cling.git src/tools/cling
   - cd src
   - cd ../obj
-  - travis_retry ../src/configure --prefix=`pwd`/../inst --disable-docs --disable-bindings --disable-visibility-inlines-hidden --disable-clang-rewriter --disable-clang-static-analyzer --disable-clang-arcmt --disable-compiler-version-checks
+  - travis_retry ../src/configure --prefix=`pwd`/../inst --disable-docs --disable-bindings --disable-visibility-inlines-hidden --disable-clang-rewriter --disable-clang-static-analyzer --disable-clang-arcmt --disable-compiler-version-checks --enable-targets=host
 
 script:
   - travis_retry make -j4 -k
