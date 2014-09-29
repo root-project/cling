@@ -27,8 +27,8 @@ before_script:
   - travis_retry ../src/configure --prefix=`pwd`/../inst --disable-docs --disable-bindings --disable-visibility-inlines-hidden --disable-clang-rewriter --disable-clang-static-analyzer --disable-clang-arcmt --disable-compiler-version-checks --enable-targets=host
 
 script:
-  - travis_retry make -j4 -k
-  - travis_retry make -j4 -k
+  - travis_retry make -j4 -k BUILD_CLANG_ONLY=YES
+  - travis_retry make -j4 -k BUILD_CLANG_ONLY=YES
   - travis_retry make install
   - cd tools/cling
   - make test LIT_ARGS=--no-progress-bar
