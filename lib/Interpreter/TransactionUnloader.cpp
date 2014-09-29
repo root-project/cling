@@ -835,8 +835,8 @@ namespace clang {
     typedef llvm::SmallVector<Decl*, 64> Decls;
     Decls declsToErase;
     // Removing from single-linked list invalidates the iterators.
-    for (DeclContext::decl_iterator I = DC->decls_begin();
-         I != DC->decls_end(); ++I) {
+    for (DeclContext::decl_iterator I = DC->noload_decls_begin();
+         I != DC->noload_decls_end(); ++I) {
       declsToErase.push_back(*I);
     }
 
