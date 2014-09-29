@@ -64,6 +64,7 @@ namespace clang {
       Changed |= RemoveUnusedGlobalValue(*GV);
       // Collect all uses of globals by GV
       CollectAllUsesOfGlobals(GV);
+      FindUsedValues(*GV->getParent());
 
       // The first pass is to drop initializers of global vars which are dead.
       for (Globals::iterator I = VisitedGlobals.begin(),
@@ -108,6 +109,24 @@ namespace clang {
     }
 
   private:
+
+    /// Find values that are marked as llvm.used.
+    void FindUsedValues(const llvm::Module& m) {
+      for (const llvm::GlobalVariable& GV : m.globals()) {
+        if (!GV.getName().startswith("llvm.used"))
+          continue;
+
+        const llvm::ConstantArray* Inits
+          = cast<llvm::ConstantArray>(GV.getInitializer());
+
+        for (unsigned i = 0, e = Inits->getNumOperands(); i != e; ++i) {
+          llvm::Value *Operand
+            = Inits->getOperand(i)->stripPointerCastsNoFollowAliases();
+          VisitedGlobals.erase(cast<llvm::GlobalValue>(Operand));
+        }
+
+      }
+    }
     /// CollectAllUsesOfGlobals - collects recursively all referenced globals by
     /// GV.
     void CollectAllUsesOfGlobals(llvm::GlobalValue *G) {

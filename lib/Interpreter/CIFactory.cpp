@@ -726,6 +726,7 @@ namespace cling {
       stateCollector = new DeclCollector();
     // Set up the ASTConsumers
     CI->setASTConsumer(stateCollector);
+    CI->getASTContext().setASTMutationListener(stateCollector);
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;

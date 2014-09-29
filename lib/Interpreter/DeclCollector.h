@@ -11,6 +11,7 @@
 #define CLING_DECL_COLLECTOR_H
 
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/ASTMutationListener.h"
 #include "clang/Lex/PPCallbacks.h"
 
 namespace clang {
@@ -32,7 +33,9 @@ namespace cling {
   /// cling::DeclCollector is responsible for appending all the declarations
   /// seen by clang.
   ///
-  class DeclCollector: public clang::PPCallbacks, public clang::ASTConsumer  {
+  class DeclCollector: public clang::PPCallbacks,
+                       public clang::ASTMutationListener,
+                       public clang::ASTConsumer  {
   private:
     Transaction* m_CurTransaction;
 
@@ -40,10 +43,22 @@ namespace cling {
     /// file.
     ///
     bool comesFromASTReader(clang::DeclGroupRef DGR) const;
+    bool comesFromASTReader(const clang::Decl* D) const;
 
   public:
     DeclCollector() : m_CurTransaction(0){}
     virtual ~DeclCollector();
+
+    /// \name PPCallbacks overrides
+    /// Macro support
+    virtual void MacroDefined(const clang::Token &MacroNameTok,
+                              const clang::MacroDirective *MD);
+    /// \}
+
+    /// \name ASTMutationListeners overrides
+    virtual void AddedCXXImplicitMember(const clang::CXXRecordDecl *RD,
+                                        const clang::Decl *D);
+    /// \}
 
     /// \{
     /// \name ASTConsumer overrides
@@ -71,9 +86,6 @@ namespace cling {
 
     /// \}
 
-    /// Macro support
-    virtual void MacroDefined (const clang::Token &MacroNameTok,
-                               const clang::MacroDirective *MD);
     // dyn_cast/isa support
     static bool classof(const clang::ASTConsumer*) { return true; }
   };
