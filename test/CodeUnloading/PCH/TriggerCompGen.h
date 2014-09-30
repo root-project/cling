@@ -1,4 +1,4 @@
-#include "CompGen.h"
+#include "Inputs/CompGen.h"
 
 int CompGen::foo() { return 42; }
 CompGen CompGen::Make() { return CompGen(); }
