@@ -563,7 +563,7 @@ namespace cling {
     for (const char* const* iarg = argv; iarg < argv + argc;
          ++iarg) {
       if (!hasMinusX)
-        hasMinusX = !strcmp(*iarg, "-x");
+        hasMinusX = !strncmp(*iarg, "-x", 2);
       if (hasMinusX)
         break;
     }
