@@ -53,8 +53,7 @@ namespace cling {
     ///\brief Our custom SemaExternalSource, translating interesting events into
     /// callbacks.
     ///
-    ///This must be a RefCntPtr has internally the ASTContext is using one too.
-    llvm::IntrusiveRefCntPtr<InterpreterExternalSemaSource> m_ExternalSemaSource;
+    std::unique_ptr<InterpreterExternalSemaSource> m_ExternalSemaSource;
 
     ///\brief Our custom ASTDeserializationListener, translating interesting
     /// events into callbacks.

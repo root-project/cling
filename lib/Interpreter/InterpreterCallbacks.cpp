@@ -167,10 +167,7 @@ namespace cling {
       if (!externalSemaSrc || externalSemaSrc == Reader) {
         // If the ExternalSemaSource is the PCH reader we still need to insert
         // our listener.
-        llvm::IntrusiveRefCntPtr<InterpreterExternalSemaSource>
-           tmpptr(new InterpreterExternalSemaSource(this));
-        m_ExternalSemaSource.swap(tmpptr);
-
+        m_ExternalSemaSource.reset(new InterpreterExternalSemaSource(this));
         m_ExternalSemaSource->InitializeSema(SemaRef);
         m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource.get());
 
