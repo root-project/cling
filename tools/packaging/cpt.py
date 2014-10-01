@@ -116,8 +116,14 @@ def wget(url, out_dir):
     else:
         exit()
     f = open(os.path.join(out_dir, file_name), 'wb')
-    meta = u.info()
-    file_size = int(meta.getheaders("Content-Length")[0])
+    if sys.version_info < (3,0):
+        # Python 2.x
+        meta = u.info()
+        file_size = int(meta.getheaders("Content-Length")[0])
+    else:
+        # Python 3.x
+        file_size = int(u.getheader("Content-Length"))
+
     print("Downloading: %s Bytes: %s" % (file_name, file_size))
 
     file_size_dl = 0
@@ -836,7 +842,7 @@ def check_win(pkg):
 
 def get_win_dep():
     box_draw("Download NSIS compiler")
-    html = urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read()
+    html = urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read().decode()
     NSIS_VERSION = html[html.rfind('<a href="v'):html.find('>', html.rfind('<a href="v'))].strip('<a href="v').strip('"')
     NSIS_VERSION = NSIS_VERSION[:1] + '.' + NSIS_VERSION[1:]
     print('Latest version of NSIS is: ' + NSIS_VERSION)
@@ -849,7 +855,7 @@ def get_win_dep():
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s'%(NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
     box_draw("Download CMake for Windows")
-    html = urlopen('http://www.cmake.org/cmake/resources/software.html').read()
+    html = urlopen('http://www.cmake.org/cmake/resources/software.html').read().decode()
     CMAKE_VERSION = html[html.find('Latest Release ('): html.find(')', html.find('Latest Release ('))].strip('Latest Release (')
     print('Latest stable version of CMake is: ' + CMAKE_VERSION)
     wget(url='http://www.cmake.org/files/v%s/cmake-%s-win32-x86.zip'%(CMAKE_VERSION[:3], CMAKE_VERSION),
