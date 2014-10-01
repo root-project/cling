@@ -207,11 +207,11 @@ optional arguments:
 If you want CPT to build a package by detecting your platform automatically,
 use the value 'pkg'.
 ```sh
-./cpt.sh --current-dev=pkg
+./cpt.py --current-dev=pkg
 ```
 or
 ```sh
-./cpt.sh --last-stable=pkg
+./cpt.py --last-stable=pkg
 ```
 ###Overriding Default Variables
 There are a select number of variables which can be set to make CPT work
