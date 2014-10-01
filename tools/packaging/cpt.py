@@ -71,7 +71,7 @@ def exec_subprocess_call(cmd, cwd):
 def exec_subprocess_check_output(cmd, cwd):
     cmd = _convert_subprocess_cmd(cmd)
     return subprocess.check_output(cmd, cwd=cwd, shell=True,
-                                    stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode()
+                                    stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('utf-8')
 
 
 def box_draw_header():
@@ -842,7 +842,7 @@ def check_win(pkg):
 
 def get_win_dep():
     box_draw("Download NSIS compiler")
-    html = urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read().decode()
+    html = urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read().decode('utf-8')
     NSIS_VERSION = html[html.rfind('<a href="v'):html.find('>', html.rfind('<a href="v'))].strip('<a href="v').strip('"')
     NSIS_VERSION = NSIS_VERSION[:1] + '.' + NSIS_VERSION[1:]
     print('Latest version of NSIS is: ' + NSIS_VERSION)
@@ -855,7 +855,7 @@ def get_win_dep():
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s'%(NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
     box_draw("Download CMake for Windows")
-    html = urlopen('http://www.cmake.org/cmake/resources/software.html').read().decode()
+    html = urlopen('http://www.cmake.org/cmake/resources/software.html').read().decode('utf-8')
     CMAKE_VERSION = html[html.find('Latest Release ('): html.find(')', html.find('Latest Release ('))].strip('Latest Release (')
     print('Latest stable version of CMake is: ' + CMAKE_VERSION)
     wget(url='http://www.cmake.org/files/v%s/cmake-%s-win32-x86.zip'%(CMAKE_VERSION[:3], CMAKE_VERSION),
@@ -1339,7 +1339,7 @@ prefix = ''
 LLVM_GIT_URL = args['with_llvm_url']
 CLANG_GIT_URL = args['with_clang_url']
 CLING_GIT_URL = args['with_cling_url']
-LLVMRevision = urlopen("https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode()
+LLVMRevision = urlopen("https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode('utf-8')
 VERSION = ''
 REVISION = ''
 
