@@ -51,9 +51,9 @@ namespace cling {
     Interpreter* m_Interpreter; // we don't own
 
     ///\brief Our custom SemaExternalSource, translating interesting events into
-    /// callbacks.
+    /// callbacks. RefOwned by Sema & ASTContext.
     ///
-    std::unique_ptr<InterpreterExternalSemaSource> m_ExternalSemaSource;
+    InterpreterExternalSemaSource* m_ExternalSemaSource;
 
     ///\brief Our custom ASTDeserializationListener, translating interesting
     /// events into callbacks.
