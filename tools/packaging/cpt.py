@@ -414,9 +414,7 @@ def check_ubuntu(pkg):
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "python":
-        if platform.python_version()[0] == '3':
-            print(pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30))
-        elif float(platform.python_version()[:3]) < 2.7:
+        if float(platform.python_version()[:3]) < 2.7:
             print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
