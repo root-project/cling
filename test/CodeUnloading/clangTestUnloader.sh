@@ -1,7 +1,19 @@
 #!/bin/bash
 
-#cling_binary=/home/vvassilev/workspace/llvm/obj/Debug+Asserts/bin/cling
-cling_binary=/home/vvassilev/workspace/root/interpreter/llvm/obj/Debug+Asserts/bin/cling
+# Find cling and clang.
+# Support cling and ROOT builds:
+# ROOT  - interpreter/cling/test/CodeUnloading/clangTestUnloader.sh versus
+#         interpreter/llvm/obj/Debug+Asserts/bin/{cling,clang}
+# cling - build/tools/cling/test/CodeUnloading/clangTestUnloader.sh
+#         build/Debug+Asserts/bin/{cling,clang}
+
+TESTDIR=`pwd | sed 's,/tools/clang/test.*$,,'`
+cling_binary=$TESTDIR/Debug+Asserts/bin/cling
+if ! [ -x $cling_binary ]; then
+    echo 'Cannot find cling binary!' >& 2
+    exit 1
+fi
+
 invocation="$@"
 file=""
 cling_args="--nologo"
