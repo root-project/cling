@@ -156,9 +156,16 @@ macro(add_cling_executable name)
   set_target_properties(${name} PROPERTIES FOLDER "Cling executables")
 endmacro(add_cling_executable)
 
+# this is needed when building Cling as part of ROOT:
 include_directories(BEFORE
   ${CMAKE_CURRENT_BINARY_DIR}/../llvm/src/tools/clang/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include
+  )
+
+# and this when building Cling standalone:
+include_directories(BEFORE
+  ${CMAKE_CURRENT_BINARY_DIR}/../clang/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include
   )
 
 include_directories(BEFORE
