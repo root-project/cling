@@ -25,8 +25,8 @@
 #include "cling/Interpreter/Transaction.h"
 
 namespace {
-  constexpr const char annoTag[] = "$clingAutoload$";
-  constexpr const size_t lenAnnoTag = sizeof(annoTag) - 1;
+  static const char annoTag[] = "$clingAutoload$";
+  static const size_t lenAnnoTag = sizeof(annoTag) - 1;
 }
 
 using namespace clang;
