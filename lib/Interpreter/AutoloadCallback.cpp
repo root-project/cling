@@ -60,7 +60,7 @@ namespace cling {
     bool m_IsStoringState;
     AutoloadCallback::FwdDeclsMap* m_Map;
     clang::Preprocessor* m_PP;
-    clang::FileEntry* m_PrevFE;
+    const clang::FileEntry* m_PrevFE;
     std::string m_PrevFileName;
   private:
     void InsertIntoAutoloadingState (Decl* decl, llvm::StringRef annotation) {
@@ -78,20 +78,24 @@ namespace cling {
       bool isAngled = false;
       const DirectoryLookup* LookupFrom = 0;
       const DirectoryLookup* CurDir = 0;
-      if (m_PrevFE && m_PrevFileName == annotation.drop_front(lenAnnoTag))
+      llvm::StringRef FileName = annotation.drop_front(lenAnnoTag);
+      if (FileName.equals(m_PrevFileName))
         FE = m_PrevFE;
-      else
-        FE = m_PP->LookupFile(fileNameLoc,
-                              annotation.drop_front(lenAnnoTag), isAngled,
+      else {
+        FE = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
                               LookupFrom, CurDir, /*SearchPath*/0,
                               /*RelativePath*/ 0, /*suggestedModule*/0,
                               /*SkipCache*/false, /*OpenFile*/ false,
                               /*CacheFail*/ false);
+        m_PrevFE = FE;
+        m_PrevFileName = FileName;
+      }
 
       assert(FE && "Must have a valid FileEntry");
-
-      auto& Vec = (*m_Map)[FE];
-      Vec.push_back(decl);
+      if (FE) {
+        auto& Vec = (*m_Map)[FE];
+        Vec.push_back(decl);
+      }
     }
 
   public:
