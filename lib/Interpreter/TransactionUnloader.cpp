@@ -421,21 +421,57 @@ namespace clang {
 
     // Copied and adapted from: ASTReaderDecl.cpp
     template<typename DeclT>
-    void setLatestDeclImpl(DeclT* Latest) {
+    void removeRedeclFromChain(DeclT* R) {
       //RedeclLink is a protected member.
       struct RedeclDerived : public Redeclarable<DeclT> {
+        typedef typename Redeclarable<DeclT>::DeclLink DeclLink;
+        static DeclLink& getLink(DeclT* R) {
+          Redeclarable<DeclT>* D = R;
+          return ((RedeclDerived*)D)->RedeclLink;
+        }
         static void setLatest(DeclT* Latest) {
-          Redeclarable<DeclT>* D = Latest->getFirstDecl();
-          ((RedeclDerived*)D)->RedeclLink.setLatest(Latest);
+          // Convert A -> Latest -> B into A -> Latest
+          getLink(Latest->getFirstDecl()).setLatest(Latest);
+        }
+        static void skipPrev(DeclT* Next) {
+          // Convert A -> B -> Next into A -> Next
+          DeclT* Skip = Next->getPreviousDecl();
+          getLink(Next).setPrevious(Skip->getPreviousDecl());
+        }
+        static void setFirst(DeclT* First) {
+          // Convert A -> First -> B into First -> B
+          DeclT* Latest = First->getMostRecentDecl();
+          getLink(First)
+            = DeclLink(DeclLink::LatestLink, First->getASTContext());
+          getLink(First).setLatest(Latest);
         }
       };
-      // Lets allow for now just removal of the last decl in the chain
-      assert(Latest->getMostRecentDecl()->getPreviousDecl() == Latest
-             && "Removing not the one to the last.");
-      RedeclDerived::setLatest(Latest);
+
+      assert(R != R->getFirstDecl() && "Cannot remove only redecl from chain");
+      // In the following cases, A marks the first, Z the most recent and
+      // R the decl to be removed from the chain.
+      DeclT* Prev = R->getPreviousDecl();
+      if (R == R->getMostRecentDecl()) {
+        // A -> .. -> R
+        RedeclDerived::setLatest(Prev);
+      } else {
+        // Find the next redecl, starting at the end
+        DeclT* Next = R->getMostRecentDecl();
+        while (Next->getPreviousDecl() != R)
+          Next = Next->getPreviousDecl();
+
+        if (R->getPreviousDecl()) {
+          // A -> .. -> R -> .. -> Z
+          RedeclDerived::skipPrev(Next);
+        } else {
+          assert(R->getFirstDecl() == R && "Logic error");
+          // R -> .. -> Z
+          RedeclDerived::setFirst(Next);
+        }
+      }
     }
-    void setLatestDeclImpl(...) {
-      llvm_unreachable("attachPreviousDecl on non-redeclarable declaration");
+    void removeRedeclFromChain(...) {
+      llvm_unreachable("setLatestDeclImpl on non-redeclarable declaration");
     }
 
     ///\brief Removes given declaration from the chain of redeclarations.
@@ -447,47 +483,55 @@ namespace clang {
     ///
     template <typename T>
     bool VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC) {
-      llvm::SmallVector<T*, 4> PrevDecls;
-      T* PrevDecl = R->getMostRecentDecl();
-      // [0]=>C [1]=>B [2]=>A ...
-      while (PrevDecl) { // Collect the redeclarations, except the one we remove
-        if (PrevDecl != R)
-          PrevDecls.push_back(PrevDecl);
-        PrevDecl = PrevDecl->getPreviousDecl();
+      if (R->getFirstDecl() == R) {
+        // This is the only element in the chain.
+        return true;
       }
 
-      if (!PrevDecls.empty()) {
+      T* MostRecent = R->getMostRecentDecl();
+      T* MostRecentNotThis = MostRecent;
+      if (MostRecentNotThis == R)
+        MostRecentNotThis = R->getPreviousDecl();
+
+      if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
         // Make sure we update the lookup maps, because the removed decl might
         // be registered in the lookup and again findable.
-        StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr();
-        if (Map) {
-          NamedDecl* ND = (NamedDecl*)((T*)R);
-          assert(ND == R->getMostRecentDecl() && "Not the most recent decl");
-          DeclarationName Name = ND->getDeclName();
-          if (!Name.isEmpty()) {
-            StoredDeclsMap::iterator Pos = Map->find(Name);
-            if (Pos != Map->end() && !Pos->second.isNull()) {
-              DeclContext::lookup_result decls = Pos->second.getLookupResult();
+        NamedDecl* ND = (T*)R;
+        DeclarationName Name = ND->getDeclName();
+        if (!Name.isEmpty()) {
+          StoredDeclsMap::iterator Pos = Map->find(Name);
+          if (Pos != Map->end() && !Pos->second.isNull()) {
+            DeclContext::lookup_result decls = Pos->second.getLookupResult();
 
-              for(DeclContext::lookup_result::iterator I = decls.begin(),
+            for (DeclContext::lookup_result::iterator I = decls.begin(),
                     E = decls.end(); I != E; ++I) {
-                // FIXME: A decl meant to be added in the lookup already exists
-                // in the lookup table. My assumption is that the DeclUnloader
-                // adds it here. This needs to be investigated mode. For now
-                // std::find gets promoted from assert to condition :)
-                if (*I == ND && std::find(decls.begin(), decls.end(),
-                                          PrevDecls[0]) == decls.end()) {
-                  // The decl was registered in the lookup, update it.
-                  *I = PrevDecls[0];
-                  break;
-                }
+              // FIXME: A decl meant to be added in the lookup already exists
+              // in the lookup table. My assumption is that the DeclUnloader
+              // adds it here. This needs to be investigated mode. For now
+              // std::find gets promoted from assert to condition :)
+              if (*I == ND && std::find(decls.begin(), decls.end(),
+                                        MostRecentNotThis)
+                  == decls.end()) {
+                // The decl was registered in the lookup, update it.
+                *I = MostRecentNotThis;
+                break;
               }
             }
           }
         }
-        // Set a new latest redecl.
-        setLatestDeclImpl(R->getPreviousDecl());
       }
+
+      // Set a new latest redecl.
+      removeRedeclFromChain((T*)R);
+#ifndef NDEBUG
+      // Validate redecl chain by iterating through it.
+      std::set<clang::Redeclarable<T>*> CheckUnique;
+      (void)CheckUnique;
+      for (auto&& RD: MostRecentNotThis->redecls()) {
+        assert(CheckUnique.insert(RD).second && "Dupe redecl chain element");
+        (void)RD;
+      }
+#endif
       return true;
     }
 
