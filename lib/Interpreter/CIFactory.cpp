@@ -560,20 +560,31 @@ namespace cling {
     // We do C++ by default; append right after argv[0] name
     // Only insert it if there is no other "-x":
     bool hasMinusX = false;
-    for (const char* const* iarg = argv; iarg < argv + argc;
-         ++iarg) {
-      if (!hasMinusX)
-        hasMinusX = !strncmp(*iarg, "-x", 2);
+    const char* lang = "c++";
+    for (const char* const* iarg = argv; iarg < argv + argc; ++iarg) {
+      if (!strcmp(*iarg, "-Xclang")) {
+        ++iarg; // skip subsequent arg.
+        if (!strcmp(*iarg, "-x")) {
+          assert(iarg+2 < argv + argc && "Expected language after -Xclang -x");
+          lang = iarg[2]; // iarg[0]: -x, iarg[1]: -Xclang, iarg[2]: objc++
+        } else if (!strncmp(*iarg, "-x", 2)) {
+           lang = (*iarg) + 2;
+        }
+        continue;
+      }
+      hasMinusX = !strncmp(*iarg, "-x", 2);
       if (hasMinusX)
         break;
     }
     if (!hasMinusX) {
       argvCompile.insert(argvCompile.begin() + 1,"-x");
-      argvCompile.insert(argvCompile.begin() + 2, "c++");
+      argvCompile.insert(argvCompile.begin() + 2, lang);
     }
-    argvCompile.insert(argvCompile.begin() + 3,"-c");
-    argvCompile.insert(argvCompile.begin() + 4,"-");
+
     AddHostCXXIncludes(argvCompile);
+
+    argvCompile.insert(argvCompile.end(),"-c");
+    argvCompile.insert(argvCompile.end(),"-");
 
     clang::CompilerInvocation*
       Invocation = new clang::CompilerInvocation;
