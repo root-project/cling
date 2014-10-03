@@ -85,8 +85,8 @@ namespace cling {
         FE = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
                               LookupFrom, CurDir, /*SearchPath*/0,
                               /*RelativePath*/ 0, /*suggestedModule*/0,
-                              /*SkipCache*/false, /*OpenFile*/ false,
-                              /*CacheFail*/ false);
+                              /*SkipCache*/ false, /*OpenFile*/ false,
+                              /*CacheFail*/ true);
         m_PrevFE = FE;
         m_PrevFileName = FileName;
       }
