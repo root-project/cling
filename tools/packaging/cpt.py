@@ -257,10 +257,11 @@ def set_version():
     print('Revision: ' + REVISION)
 
 
-def set_ext():
+def set_vars():
     global EXEEXT
     global SHLIBEXT
-    box_draw("Set binary/library extensions")
+    global CLANG_VERSION
+    box_draw("Set variables")
     if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT, 'test', 'lit.site.cfg')):
         exec_subprocess_call('make lit.site.cfg', os.path.join(LLVM_OBJ_ROOT, 'test'))
 
@@ -271,9 +272,17 @@ def set_ext():
             elif re.match('^config.llvm_exe_ext = ', line):
                 EXEEXT = re.sub('^config.llvm_exe_ext = ', '', line).replace('"', '').strip()
 
+    if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang', 'include', 'clang', 'Basic', 'Version.inc')):
+        exec_subprocess_call('make Version.inc', os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang', 'include', 'clang', 'Basic'))
+
+    with open(os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang', 'include', 'clang', 'Basic', 'Version.inc'), 'r') as Version_inc:
+        for line in Version_inc:
+            if re.match('^#define CLANG_VERSION ', line):
+                CLANG_VERSION = re.sub('^#define CLANG_VERSION ', '', line).strip()
+
     print('EXEEXT: ' + EXEEXT)
     print('SHLIBEXT: ' + SHLIBEXT)
-
+    print('CLANG_VERSION: ' + CLANG_VERSION)
 
 def compile(arg):
     global prefix
@@ -334,7 +343,7 @@ def compile(arg):
 
 
 def install_prefix():
-    set_ext()
+    set_vars()
     box_draw("Filtering Cling's libraries and binaries")
 
     for line in fileinput.input(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.mk'), inplace=True):
@@ -342,6 +351,8 @@ def install_prefix():
             print(line.replace('@EXEEXT@', EXEEXT), end=' ')
         elif '@SHLIBEXT@' in line:
             print(line.replace('@SHLIBEXT@', SHLIBEXT), end=' ')
+        elif '@CLANG_VERSION@' in line:
+            print(line.replace('@CLANG_VERSION@', CLANG_VERSION), end=' ')
         else:
             print(line, end=' ')
 
