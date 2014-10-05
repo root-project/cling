@@ -688,7 +688,7 @@ cling (%s-1) unstable; urgency=low
     template = exec_subprocess_check_output('git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n"', CLING_SRC_DIR)
 
     f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
-    f.write(template)
+    f.write(template.encode('utf-8'))
     f.close()
 
     box_draw("Run debuild to create Debian package")
