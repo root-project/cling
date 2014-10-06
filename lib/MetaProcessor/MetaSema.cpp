@@ -42,7 +42,8 @@ namespace cling {
   MetaSema::MetaSema(Interpreter& interp, MetaProcessor& meta)
     : m_Interpreter(interp), m_MetaProcessor(meta), m_IsQuitRequested(false) { }
 
-  MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file) {
+  MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file,
+                                             Transaction** transaction /*= 0*/){
     ActionResult result = actOnUCommand(file);
     if (result != AR_Success)
       return result;
@@ -56,7 +57,8 @@ namespace cling {
     std::string canFile = m_Interpreter.lookupFileOrLibrary(file);
     if (canFile.empty())
       canFile = file;
-    if (m_Interpreter.loadFile(canFile) == Interpreter::kSuccess) {
+    if (m_Interpreter.loadFile(canFile, true /*allowSharedLib*/, transaction)
+        == Interpreter::kSuccess) {
       clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
       clang::FileManager& FM = SM.getFileManager();
       const clang::FileEntry* Entry
@@ -93,7 +95,10 @@ namespace cling {
   MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file,
                                                  llvm::StringRef args,
                                                  Value* result) {
-    MetaSema::ActionResult actionResult = actOnLCommand(file);
+
+    // Check if there is a function named after the file.
+    cling::Transaction* T = 0;
+    MetaSema::ActionResult actionResult = actOnLCommand(file, &T);
     if (actionResult == AR_Success) {
       // Look for start of parameters:
       typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
@@ -106,8 +111,6 @@ namespace cling {
       StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
       std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
 
-      // Check if there is a function named after the file.
-      const cling::Transaction* T = m_Interpreter.getLastTransaction();
       assert(T);
 
       using namespace clang;

@@ -527,7 +527,8 @@ namespace cling {
     ///\returns result of the compilation.
     ///
     CompilationResult loadFile(const std::string& filename,
-                               bool allowSharedLib = true);
+                               bool allowSharedLib = true,
+                               Transaction** T = 0);
 
     ///\brief Unloads (forgets) given number of transactions.
     ///
