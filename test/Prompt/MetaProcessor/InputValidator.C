@@ -8,7 +8,7 @@
 
 // RUN: cat %s | %cling | FileCheck %s
 "simple"
-//CHECK: (const char [7])
+//CHECK: (const char [7]) "simple"
 "It's me"
 //CHECK: (const char [8]) "It's me"
 "Luke, I'm your (father({}{["
