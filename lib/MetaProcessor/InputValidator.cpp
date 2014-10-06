@@ -55,7 +55,7 @@ namespace cling {
         // If there is " or ' we don't need to look for balancing until we
         // enounter matching " or '
         Res = kIncomplete;
-        if (m_ParenStack.back() == kind) {
+        if (m_ParenStack.size() && m_ParenStack.back() == kind) {
           // We know that the top of the stack will have the leading quote or
           // apostophe because nobody is pushing onto it until we find a balance
           m_ParenStack.pop_back();
