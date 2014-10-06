@@ -54,13 +54,20 @@ namespace cling {
       if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe) {
         // If there is " or ' we don't need to look for balancing until we
         // enounter matching " or '
-        if (kind != (int)Tok.getKind()) {
-           Res = kIncomplete;
-           m_ParenStack.push_back(kind);
-           break;
+        Res = kIncomplete;
+        if (m_ParenStack.back() == kind) {
+          // We know that the top of the stack will have the leading quote or
+          // apostophe because nobody is pushing onto it until we find a balance
+          m_ParenStack.pop_back();
+          Res = kComplete;
         }
+        if (!hasQuoteOrApostrophe)
+          m_ParenStack.push_back(kind); // Register the first " or '
         continue;
       }
+      // All the rest is irrelevant in QuoteOrApostrophe mode.
+      if (hasQuoteOrApostrophe)
+        continue;
 
       // In case when we need closing brace.
       if (kind >= (int)tok::l_square && kind <= (int)tok::r_brace) {
