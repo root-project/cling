@@ -689,12 +689,12 @@ namespace utils {
     return 0;
   }
 
-  static bool ShouldKeepTypedef(QualType QT,
-                           const llvm::SmallSet<const Type*, 4>& TypesToSkip)
+  static bool ShouldKeepTypedef(const TypedefType* TT,
+                                const llvm::SmallSet<const Decl*, 4>& ToSkip)
   {
     // Return true, if we should keep this typedef rather than desugaring it.
 
-    return 0 != TypesToSkip.count(QT.getTypePtr());
+    return 0 != ToSkip.count(TT->getDecl()->getCanonicalDecl());
   }
 
   static bool SingleStepPartiallyDesugarTypeImpl(QualType& QT)
@@ -974,14 +974,15 @@ namespace utils {
     // Desugar QT until we cannot desugar any more, or
     // we hit one of the special typedefs.
     while (1) {
-      if (llvm::isa<TypedefType>(QT.getTypePtr()) &&
-          ShouldKeepTypedef(QT, TypeConfig.m_toSkip)) {
-        if (!fullyQualifyType && !fullyQualifyTmpltArg) {
-          return QT;
+      if (const TypedefType* TT = llvm::dyn_cast<TypedefType>(QT.getTypePtr())){
+        if (ShouldKeepTypedef(TT, TypeConfig.m_toSkip)) {
+          if (!fullyQualifyType && !fullyQualifyTmpltArg) {
+            return QT;
+          }
+          // We might have stripped the namespace/scope part,
+          // so we must go on to add it back.
+          break;
         }
-        // We might have stripped the namespace/scope part,
-        // so we must go on to add it back.
-        break;
       }
       bool wasDesugared = Transform::SingleStepPartiallyDesugarType(QT,Ctx);
 

@@ -17,6 +17,7 @@
 namespace clang {
   class ASTContext;
   class Expr;
+  class Decl;
   class DeclContext;
   class DeclarationName;
   class GlobalDecl;
@@ -140,8 +141,8 @@ namespace utils {
     /// transformation
     ///
     struct Config {
+      typedef llvm::SmallSet<const clang::Decl*, 4> SkipCollection;
       typedef const clang::Type cType;
-      typedef llvm::SmallSet<cType*, 4> SkipCollection;
       typedef llvm::DenseMap<cType*, cType*> ReplaceCollection;
 
       SkipCollection    m_toSkip;
