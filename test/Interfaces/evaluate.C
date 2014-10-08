@@ -32,6 +32,9 @@ V // CHECK-NEXT: (cling::Value &) boxes [(void) ]
 gCling->evaluate("cond = false; if (cond) return \"true\"; else return 0;", V);
 V // CHECK-NEXT: (cling::Value &) boxes [(int) 0]
 
+gCling->evaluate("bool a = [](){return true;};", V);
+V // CHECK-NEXT: (cling::Value &) boxes [(bool) 1]
+
 gCling->evaluate("auto a = 12.3; a;", V);
 V // CHECK: (cling::Value &) boxes [(double) 1.230000e+01]
 

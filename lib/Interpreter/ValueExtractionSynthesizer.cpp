@@ -45,6 +45,8 @@ namespace cling {
             I != E; ++I) {
           if (!*I)
             continue;
+          if (isa<LambdaExpr>(*I))
+            continue;
           Visit(*I);
           if (isa<ReturnStmt>(*I))
             m_Stmts.push_back(&*I);
