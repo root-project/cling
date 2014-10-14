@@ -57,6 +57,7 @@ using namespace llvm;
 namespace cling {
 
 std::set<std::string> IncrementalExecutor::m_unresolvedSymbols;
+
 std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   IncrementalExecutor::m_lazyFuncCreator;
 
@@ -261,29 +262,8 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
   p2f.address = m_engine->getPointerToFunction(f);
 
   // check if there is any unresolved symbol in the list
-  if (!m_unresolvedSymbols.empty()) {
-    llvm::SmallVector<llvm::Function*, 128> funcsToFree;
-    for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
-           e = m_unresolvedSymbols.end(); i != e; ++i) {
-      // FIXME: This causes a lot of test failures, for some reason it causes
-      // the call to HandleMissingFunction to be elided.
-      unsigned diagID = m_Diags.getCustomDiagID(clang::DiagnosticsEngine::Error,
-                                                "%0 unresolved while jitting %1");
-      (void)diagID;
-      //m_Diags.Report(diagID) << *i << funcname; // TODO: demangle the names.
-
-      llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
-                   << "' unresolved while linking function '" << funcname
-                   << "'!\n";
-      llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
-      // i could also reference a global variable, in which case ff == 0.
-      if (ff)
-        funcsToFree.push_back(ff);
-    }
-    freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
-    m_unresolvedSymbols.clear();
+  if (diagnoseUnresolvedSymbols(funcname))
     return kExeUnresolvedSymbols;
-  }
 
   // Run the function
   (*p2f.wrapperFunction)(returnValue);
@@ -342,21 +322,9 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
       remapSymbols();
       m_engine->getPointerToFunction(F);
       // check if there is any unresolved symbol in the list
-      if (!m_unresolvedSymbols.empty()) {
-        llvm::SmallVector<llvm::Function*, 100> funcsToFree;
-        for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
-               e = m_unresolvedSymbols.end(); i != e; ++i) {
-          llvm::errs() << "IncrementalExecutor::runStaticInitializersOnce: symbol '" << *i
-                       << "' unresolved while linking static initializer '"
-                       << F->getName() << "'!\n";
-          llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
-          assert(ff && "cannot find function to free");
-          funcsToFree.push_back(ff);
-        }
-        freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
-        m_unresolvedSymbols.clear();
+      if (diagnoseUnresolvedSymbols("static initializers"))
         return kExeUnresolvedSymbols;
-      }
+
       //executeFunction(F->getName());
       m_engine->runFunction(F, std::vector<llvm::GenericValue>());
       initFuncs.push_back(F);
@@ -453,11 +421,47 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::Module* m,
 
 void*
 IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
+  // Get the function / variable pointer referenced by GV.
+
+  // We don't care whether something was unresolved before.
+  m_unresolvedSymbols.clear();
+
   remapSymbols();
   if (void* addr = m_engine->getPointerToGlobalIfAvailable(&GV))
     return addr;
 
   //  Function not yet codegened by the JIT, force this to happen now.
-  return m_engine->getPointerToGlobal(&GV);
+  void* Ptr = m_engine->getPointerToGlobal(&GV);
+  diagnoseUnresolvedSymbols(GV.getName());
+  return Ptr;
 }
+
+bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger) {
+  if (m_unresolvedSymbols.empty())
+    return false;
+
+  llvm::SmallVector<llvm::Function*, 128> funcsToFree;
+  for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
+         e = m_unresolvedSymbols.end(); i != e; ++i) {
+#if 0
+    // FIXME: This causes a lot of test failures, for some reason it causes
+    // the call to HandleMissingFunction to be elided.
+    unsigned diagID = m_Diags.getCustomDiagID(clang::DiagnosticsEngine::Error,
+                                              "%0 unresolved while jitting %1");
+    (void)diagID;
+    //m_Diags.Report(diagID) << *i << funcname; // TODO: demangle the names.
+#endif
+
+    llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
+                 << "' unresolved while linking " << trigger << "!\n";
+    llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
+    // i could also reference a global variable, in which case ff == 0.
+    if (ff)
+      funcsToFree.push_back(ff);
+  }
+  freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
+  m_unresolvedSymbols.clear();
+  return true;
+}
+
 }// end namespace cling
