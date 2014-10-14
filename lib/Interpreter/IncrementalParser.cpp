@@ -47,7 +47,110 @@
 #include <stdio.h>
 #include <sstream>
 
+// Include the necessary headers to interface with the Windows registry and
+// environment.
+#ifdef _MSC_VER
+  #define WIN32_LEAN_AND_MEAN
+  #define NOGDI
+  #define NOMINMAX
+  #include <Windows.h>
+  #include <sstream>
+  #define popen _popen
+  #define pclose _pclose
+  #pragma comment(lib, "Advapi32.lib")
+#endif
+
 using namespace clang;
+
+namespace {
+  ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
+  /// a mismatch could cause havoc. Reports if ABI versions differ.
+  static void CheckABICompatibility(clang::CompilerInstance* CI) {
+#ifdef __GLIBCXX__
+# define CLING_CXXABIV __GLIBCXX__
+# define CLING_CXXABIS "__GLIBCXX__"
+#elif _LIBCPP_VERSION
+# define CLING_CXXABIV _LIBCPP_VERSION
+# define CLING_CXXABIS "_LIBCPP_VERSION"
+#elif defined (_MSC_VER)
+    // For MSVC we do not use CLING_CXXABI*
+#else
+# define CLING_CXXABIV -1 // intentionally invalid macro name
+# define CLING_CXXABIS "-1" // intentionally invalid macro name
+    llvm::errs()
+      << "Warning in cling::CIFactory::createCI():\n  "
+      "C++ ABI check not implemented for this standard library\n";
+    return;
+#endif
+#ifdef _MSC_VER
+    HKEY regVS;
+    int VSVersion = (_MSC_VER / 100) - 6;
+    std::stringstream subKey;
+    subKey << "VisualStudio.DTE." << VSVersion << ".0";
+    if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey.str().c_str(), 0, KEY_READ, &regVS) == ERROR_SUCCESS) {
+      RegCloseKey(regVS);
+    }
+    else {
+      llvm::errs()
+        << "Warning in cling::CIFactory::createCI():\n  "
+        "Possible C++ standard library mismatch, compiled with Visual Studio v"
+        << VSVersion << ".0,\n"
+        "but this version of Visual Studio was not found in your system's registry.\n";
+    }
+#else
+
+  struct EarlyReturnWarn {
+    bool shouldWarn = true;
+    ~EarlyReturnWarn() {
+      if (shouldWarn) {
+        llvm::errs()
+          << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
+             "Possible C++ standard library mismatch, compiled with "
+             CLING_CXXABIS " v" << CLING_CXXABIV
+          << " but extraction of runtime standard library version failed.\n";
+      }
+    }
+  } warnAtReturn;
+  clang::Preprocessor& PP = CI->getPreprocessor();
+  clang::IdentifierInfo* II = PP.getIdentifierInfo(CLING_CXXABIS);
+  if (!II)
+    return;
+  const clang::DefMacroDirective* MD
+    = llvm::dyn_cast<clang::DefMacroDirective>(PP.getMacroDirective(II));
+  if (!MD)
+    return;
+  const clang::MacroInfo* MI = MD->getMacroInfo();
+  if (!MI || MI->getNumTokens() != 1)
+    return;
+  const clang::Token& Tok = *MI->tokens_begin();
+  if (!Tok.isLiteral())
+    return;
+  if (!Tok.getLength())
+    return;
+
+  std::string cxxabivStr;
+  {
+     llvm::raw_string_ostream cxxabivStrStrm(cxxabivStr);
+     cxxabivStrStrm << CLING_CXXABIV;
+  }
+  bool Invalid = false;
+  llvm::StringRef tokStr = PP.getSpelling(Tok, &Invalid);
+  if (Invalid)
+    return;
+
+  warnAtReturn.shouldWarn = false;
+  if (!tokStr.equals(cxxabivStr)) {
+    llvm::errs()
+      << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
+        "C++ ABI mismatch, compiled with "
+        CLING_CXXABIS " v" << CLING_CXXABIV
+      << " running with v" << tokStr << "\n";
+  }
+#endif
+#undef CLING_CXXABIV
+#undef CLING_CXXABIS
+  }
+} // unnamed namespace
 
 namespace cling {
   IncrementalParser::IncrementalParser(Interpreter* interp,
@@ -145,12 +248,17 @@ namespace cling {
     if (External)
       External->StartTranslationUnit(m_Consumer);
 
+    // <new> is needed by the ValuePrinter so it's a good thing to include it.
+    // We need to include it to determine the version number of the standard
+    // library implementation.
+    ParseInternal("#include <new>");
+    CheckABICompatibility(m_CI.get());
+
     // DO NOT commit the transactions here: static initialization in these
     // transactions requires gCling through local_cxa_atexit(), but that has not
     // been defined yet!
     if (Transaction* EndedT = endTransaction(CurT))
       result.push_back(EndedT);
-
   }
 
   const Transaction* IncrementalParser::getCurrentTransaction() const {

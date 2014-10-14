@@ -284,44 +284,40 @@ static bool getVisualStudioDir(std::string &path) {
 
 #endif // _MSC_VER
 
-namespace cling {
-  //
-  //  Dummy function so we can use dladdr to find the executable path.
-  //
-  void locate_cling_executable()
-  {
+namespace {
+  static void SetClingCustomLangOpts(LangOptions& Opts) {
+    Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
+    Opts.Exceptions = 1;
+    if (Opts.CPlusPlus) {
+      Opts.CXXExceptions = 1;
+    }
+    Opts.Deprecated = 1;
+    //Opts.Modules = 1;
+
+    // C++11 is turned on if cling is built with C++11: it's an interperter;
+    // cross-language compilation doesn't make sense.
+    // Extracted from Boost/config/compiler.
+    // SunProCC has no C++11.
+    // VisualC's support is not obvious to extract from Boost...
+#if /*GCC*/ (defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__))   \
+  || /*clang*/ (defined(__has_feature) && __has_feature(cxx_decltype))   \
+  || /*ICC*/ ((!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && defined(__INTEL_COMPILER) && (__STDC_HOSTED__ && (__INTEL_COMPILER <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__))
+    if (Opts.CPlusPlus)
+      Opts.CPlusPlus11 = 1;
+#endif
+
   }
 
-  /// \brief Retrieves the clang CC1 specific flags out of the compilation's
-  /// jobs. Returns NULL on error.
-  static const llvm::opt::ArgStringList
-  *GetCC1Arguments(clang::DiagnosticsEngine *Diagnostics,
-                   clang::driver::Compilation *Compilation) {
-    // We expect to get back exactly one Command job, if we didn't something
-    // failed. Extract that job from the Compilation.
-    const clang::driver::JobList &Jobs = Compilation->getJobs();
-    if (!Jobs.size() || !isa<clang::driver::Command>(*Jobs.begin())) {
-      // diagnose this...
-      return NULL;
+  static void SetClingTargetLangOpts(LangOptions& Opts,
+                                     const TargetInfo& Target) {
+    if (Target.getTriple().getOS() == llvm::Triple::Win32) {
+      Opts.MicrosoftExt = 1;
+      Opts.MSCompatibilityVersion = 1300;
+      // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
+      Opts.DelayedTemplateParsing = 1;
+    } else {
+      Opts.MicrosoftExt = 0;
     }
-
-    // The one job we find should be to invoke clang again.
-    const clang::driver::Command *Cmd
-      = cast<clang::driver::Command>(*Jobs.begin());
-    if (llvm::StringRef(Cmd->getCreator().getName()) != "clang") {
-      // diagnose this...
-      return NULL;
-    }
-
-    return &Cmd->getArguments();
-  }
-
-  CompilerInstance* CIFactory::createCI(llvm::StringRef code,
-                                        int argc,
-                                        const char* const *argv,
-                                        const char* llvmdir) {
-    return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv,
-                    llvmdir, new DeclCollector());
   }
 
   // This must be a copy of clang::getClangToolFullVersion(). Luckily
@@ -353,81 +349,6 @@ namespace cling {
         "Using incompatible clang library! "
         "Please use the one provided by cling!\n";
     return;
-  }
-
-  ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
-  /// a mismatch could cause havoc. Reports if ABI versions differ.
-  static void CheckABICompatibility() {
-#ifdef __GLIBCXX__
-# define CLING_CXXABIV __GLIBCXX__
-# define CLING_CXXABIS "__GLIBCXX__"
-#elif _LIBCPP_VERSION
-# define CLING_CXXABIV _LIBCPP_VERSION
-# define CLING_CXXABIS "_LIBCPP_VERSION"
-#elif defined (_MSC_VER)
-    // For MSVC we do not use CLING_CXXABI*
-#else
-# define CLING_CXXABIV -1 // intentionally invalid macro name
-# define CLING_CXXABIS "-1" // intentionally invalid macro name
-    llvm::errs()
-      << "Warning in cling::CIFactory::createCI():\n  "
-      "C++ ABI check not implemented for this standard library\n";
-    return;
-#endif
-#ifdef _MSC_VER
-    HKEY regVS;
-    int VSVersion = (_MSC_VER / 100) - 6;
-    std::stringstream subKey;
-    subKey << "VisualStudio.DTE." << VSVersion << ".0";
-    if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey.str().c_str(), 0, KEY_READ, &regVS) == ERROR_SUCCESS) {
-      RegCloseKey(regVS);
-    }
-    else {
-      llvm::errs()
-        << "Warning in cling::CIFactory::createCI():\n  "
-        "Possible C++ standard library mismatch, compiled with Visual Studio v"
-        << VSVersion << ".0,\n"
-        "but this version of Visual Studio was not found in your system's registry.\n";
-    }
-#else
-    static const char* runABIQuery
-      = "echo '#include <vector>' | " LLVM_CXX " -xc++ -dM -E - "
-      "| grep 'define " CLING_CXXABIS "' | awk '{print $3}'";
-    bool ABIReadError = true;
-    if (FILE *pf = ::popen(runABIQuery, "r")) {
-      char buf[2048];
-      if (fgets(buf, 2048, pf)) {
-        size_t lenbuf = strlen(buf);
-        if (lenbuf) {
-          ABIReadError = false;
-          buf[lenbuf - 1] = 0;   // remove trailing \n
-          int runABIVersion = ::atoi(buf);
-          if (runABIVersion != CLING_CXXABIV) {
-            llvm::errs()
-              << "Warning in cling::CIFactory::createCI():\n  "
-              "C++ ABI mismatch, compiled with "
-              CLING_CXXABIS " v" << CLING_CXXABIV
-              << " running with v" << runABIVersion << "\n";
-          }
-        }
-      }
-      ::pclose(pf);
-    }
-    if (ABIReadError) {
-      llvm::errs()
-        << "Warning in cling::CIFactory::createCI():\n  "
-        "Possible C++ standard library mismatch, compiled with "
-        CLING_CXXABIS " v" << CLING_CXXABIV
-        << " but extraction of runtime standard library version failed.\n"
-        "Invoking:\n"
-        "    " << runABIQuery << "\n"
-        "results in\n";
-      int ExitCode = system(runABIQuery);
-      llvm::errs() << "with exit code " << ExitCode << "\n";
-    }
-#endif
-#undef CLING_CXXABIV
-#undef CLING_CXXABIS
   }
 
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
@@ -502,12 +423,52 @@ namespace cling {
         llvm::errs() << "with exit code " << ExitCode << "\n";
       }
 #endif // _MSC_VER
-      CheckABICompatibility();
     }
 
     for (std::vector<std::string>::const_iterator
            I = HostCXXI.begin(), E = HostCXXI.end(); I != E; ++I)
       args.push_back(I->c_str());
+  }
+} // unnamed namespace
+
+namespace cling {
+  //
+  //  Dummy function so we can use dladdr to find the executable path.
+  //
+  void locate_cling_executable()
+  {
+  }
+
+  /// \brief Retrieves the clang CC1 specific flags out of the compilation's
+  /// jobs. Returns NULL on error.
+  static const llvm::opt::ArgStringList
+  *GetCC1Arguments(clang::DiagnosticsEngine *Diagnostics,
+                   clang::driver::Compilation *Compilation) {
+    // We expect to get back exactly one Command job, if we didn't something
+    // failed. Extract that job from the Compilation.
+    const clang::driver::JobList &Jobs = Compilation->getJobs();
+    if (!Jobs.size() || !isa<clang::driver::Command>(*Jobs.begin())) {
+      // diagnose this...
+      return NULL;
+    }
+
+    // The one job we find should be to invoke clang again.
+    const clang::driver::Command *Cmd
+      = cast<clang::driver::Command>(*Jobs.begin());
+    if (llvm::StringRef(Cmd->getCreator().getName()) != "clang") {
+      // diagnose this...
+      return NULL;
+    }
+
+    return &Cmd->getArguments();
+  }
+
+  CompilerInstance* CIFactory::createCI(llvm::StringRef code,
+                                        int argc,
+                                        const char* const *argv,
+                                        const char* llvmdir) {
+    return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv,
+                    llvmdir, new DeclCollector());
   }
 
   CompilerInstance* CIFactory::createCI(llvm::MemoryBuffer* buffer,
@@ -755,40 +716,5 @@ namespace cling {
     CI->getCodeGenOpts().VerifyModule = 0; // takes too long
 
     return CI.release(); // Passes over the ownership to the caller.
-  }
-
-  void CIFactory::SetClingCustomLangOpts(LangOptions& Opts) {
-    Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
-    Opts.Exceptions = 1;
-    if (Opts.CPlusPlus) {
-      Opts.CXXExceptions = 1;
-    }
-    Opts.Deprecated = 1;
-    //Opts.Modules = 1;
-
-    // C++11 is turned on if cling is built with C++11: it's an interperter;
-    // cross-language compilation doesn't make sense.
-    // Extracted from Boost/config/compiler.
-    // SunProCC has no C++11.
-    // VisualC's support is not obvious to extract from Boost...
-#if /*GCC*/ (defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__))   \
-  || /*clang*/ (defined(__has_feature) && __has_feature(cxx_decltype))   \
-  || /*ICC*/ ((!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && defined(__INTEL_COMPILER) && (__STDC_HOSTED__ && (__INTEL_COMPILER <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__))
-    if (Opts.CPlusPlus)
-      Opts.CPlusPlus11 = 1;
-#endif
-
-  }
-
-  void CIFactory::SetClingTargetLangOpts(LangOptions& Opts,
-                                         const TargetInfo& Target) {
-    if (Target.getTriple().getOS() == llvm::Triple::Win32) {
-      Opts.MicrosoftExt = 1;
-      Opts.MSCompatibilityVersion = 1300;
-      // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
-      Opts.DelayedTemplateParsing = 1;
-    } else {
-      Opts.MicrosoftExt = 0;
-    }
   }
 } // end namespace
