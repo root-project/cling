@@ -106,9 +106,11 @@ namespace cling {
     ///
     AtExitFunctions m_AtExitFuncs;
 
+#if 0 // See FIXME in IncrementalExecutor.cpp
     ///\brief The diagnostics engine, printing out issues coming from the
     /// incremental executor.
     clang::DiagnosticsEngine& m_Diags;
+#endif
 
   public:
     enum ExecutionResult {

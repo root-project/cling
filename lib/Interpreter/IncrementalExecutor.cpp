@@ -63,8 +63,11 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
 
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
   IncrementalExecutor::IncrementalExecutor(llvm::Module* m,
-                                           clang::DiagnosticsEngine& diags)
-    : m_Diags(diags) {
+                                           clang::DiagnosticsEngine& /*diags*/)
+#if 0
+    : m_Diags(diags)
+#endif
+{
   assert(m && "llvm::Module must not be null!");
   m_AtExitFuncs.reserve(256);
 
