@@ -688,6 +688,9 @@ namespace cling {
                                                            m_NoELoc,
                                                            ILE).get();
     assert (ExprAddresses && "Could not build the void* array");
+    if (!ExprAddresses)
+       return SubTree;
+
     m_Sema->ImpCastExprToType(ExprAddresses,
                               m_Context->getPointerType(m_Context->VoidPtrTy),
                               CK_ArrayToPointerDecay);
