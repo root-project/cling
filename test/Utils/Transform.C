@@ -179,13 +179,15 @@ namespace NS1 {
 
 const cling::LookupHelper& lookup = gCling->getLookupHelper();
 cling::LookupHelper::DiagSetting diags = cling::LookupHelper::WithDiagnostics;
+clang::Sema* Sema = &gCling->getSema();
 const clang::ASTContext& Ctx = gCling->getSema().getASTContext();
 cling::utils::Transform::Config transConfig;
+using namespace cling::utils;
 
-transConfig.m_toSkip.insert(lookup.findType("Double32_t", diags).getTypePtr());
+transConfig.m_toSkip.insert(Lookup::Named(Sema, "Double32_t"));
 using namespace std;
-transConfig.m_toSkip.insert(lookup.findType("string", diags).getTypePtr());
-transConfig.m_toSkip.insert(lookup.findType("std::string", diags).getTypePtr());
+transConfig.m_toSkip.insert(Lookup::Named(Sema, "string"));
+transConfig.m_toSkip.insert(Lookup::Named(Sema, "string", Lookup::Namespace(Sema, "std")));
 
 const clang::Type* t = 0;
 clang::QualType QT;
