@@ -262,7 +262,7 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
   p2f.address = m_engine->getPointerToFunction(f);
 
   // check if there is any unresolved symbol in the list
-  if (diagnoseUnresolvedSymbols(funcname))
+  if (diagnoseUnresolvedSymbols(funcname, "function"))
     return kExeUnresolvedSymbols;
 
   // Run the function
@@ -432,11 +432,12 @@ IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
 
   //  Function not yet codegened by the JIT, force this to happen now.
   void* Ptr = m_engine->getPointerToGlobal(&GV);
-  diagnoseUnresolvedSymbols(GV.getName());
+  diagnoseUnresolvedSymbols(GV.getName(), "symbol");
   return Ptr;
 }
 
-bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger) {
+bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
+                                                    llvm::StringRef title) {
   if (m_unresolvedSymbols.empty())
     return false;
 
@@ -453,7 +454,13 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger) {
 #endif
 
     llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
-                 << "' unresolved while linking " << trigger << "!\n";
+                 << "' unresolved while linking ";
+    if (!title.empty())
+      llvm::errs() << title << "'";
+    llvm::errs() << trigger;
+    if (!title.empty())
+      llvm::errs() << "'";
+    llvm::errs() << "!\n";
     llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
     // i could also reference a global variable, in which case ff == 0.
     if (ff)

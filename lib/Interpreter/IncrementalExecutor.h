@@ -192,7 +192,8 @@ namespace cling {
 
     ///\brief Report and empty m_unresolvedSymbols.
     ///\return true if m_unresolvedSymbols was non-empty.
-    bool diagnoseUnresolvedSymbols(llvm::StringRef trigger);
+    bool diagnoseUnresolvedSymbols(llvm::StringRef trigger,
+                                   llvm::StringRef title = llvm::StringRef());
 
     static void* HandleMissingFunction(const std::string&);
     static void* NotifyLazyFunctionCreators(const std::string&);
