@@ -246,6 +246,7 @@ namespace cling {
 
   void ClangInternalState::printIncludedFiles(llvm::raw_ostream& Out,
                                               SourceManager& SM) {
+    Out << "Legend: [p] parsed; [P] parsed and open; [r] from AST file\n\n";
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
       const clang::FileEntry *FE = I->first;
@@ -257,7 +258,17 @@ namespace cling {
         continue;
       std::string fileName(FE->getName());
       if (!(fileName.compare(0, 5, "/usr/") == 0 &&
-            fileName.find("/bits/") != std::string::npos)) {
+            fileName.find("/bits/") != std::string::npos) &&
+          fileName.compare("-")) {
+        if (I->second->getRawBuffer()) {
+          // There is content - a memory buffer or a file.
+          // We know it's a file because we started off the FileEntry.
+          if (FE->isOpen())
+            Out << "[P] ";
+          else
+            Out << "[p] ";
+        } else
+          Out << "[r] ";
         Out << fileName << '\n';
       }
     }
