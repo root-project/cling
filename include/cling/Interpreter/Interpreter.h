@@ -524,6 +524,7 @@ namespace cling {
     ///\param [in] filename - The file to loaded.
     ///\param [in] allowSharedLib - Whether to try to load the file as shared
     ///                             library.
+    ///\param [out] T -  Transaction containing the loaded file.
     ///\returns result of the compilation.
     ///
     CompilationResult loadFile(const std::string& filename,

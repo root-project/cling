@@ -62,6 +62,7 @@ namespace cling {
     ///\brief L command includes the given file or loads the given library.
     ///
     ///\param[in] file - The file/library to be loaded.
+    ///\param[out] T - Transaction containing the loaded file.
     ///
     ActionResult actOnLCommand(llvm::StringRef file,
                                Transaction** transaction = 0);
