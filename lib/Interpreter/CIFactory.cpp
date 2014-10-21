@@ -294,6 +294,20 @@ namespace {
     Opts.Deprecated = 1;
     //Opts.Modules = 1;
 
+    // See test/CodeUnloading/PCH/VTables.cpp which implicitly compares clang
+    // to cling lang options. They should be the same, we should not have to
+    // give extra lang options to their invocations on any platform.
+    // Except -fexceptions -fcxx-exceptions.
+
+    Opts.Deprecated = 1;
+    Opts.MathErrno = 0;
+    Opts.GNUKeywords = 0;
+    Opts.Trigraphs = 1; // o no??! but clang has it on by default...
+
+#ifdef __APPLE__
+    Opts.Blocks = 1;
+#endif
+
     // C++11 is turned on if cling is built with C++11: it's an interperter;
     // cross-language compilation doesn't make sense.
     // Extracted from Boost/config/compiler.
