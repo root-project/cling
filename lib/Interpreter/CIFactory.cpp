@@ -300,12 +300,12 @@ namespace {
     // Except -fexceptions -fcxx-exceptions.
 
     Opts.Deprecated = 1;
-    Opts.MathErrno = 0;
     Opts.GNUKeywords = 0;
     Opts.Trigraphs = 1; // o no??! but clang has it on by default...
 
 #ifdef __APPLE__
     Opts.Blocks = 1;
+    Opts.MathErrno = 0;
 #endif
 
     // C++11 is turned on if cling is built with C++11: it's an interperter;
