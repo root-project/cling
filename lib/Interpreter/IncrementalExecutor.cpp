@@ -435,7 +435,8 @@ IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
 
   //  Function not yet codegened by the JIT, force this to happen now.
   void* Ptr = m_engine->getPointerToGlobal(&GV);
-  diagnoseUnresolvedSymbols(GV.getName(), "symbol");
+  if (diagnoseUnresolvedSymbols(GV.getName(), "symbol"))
+    return 0;
   return Ptr;
 }
 
