@@ -134,12 +134,12 @@ namespace {
      cxxabivStrStrm << CLING_CXXABIV;
   }
   bool Invalid = false;
-  llvm::StringRef tokStr = PP.getSpelling(Tok, &Invalid);
+  std::string tokStr = PP.getSpelling(Tok, &Invalid);
   if (Invalid)
     return;
 
   warnAtReturn.shouldWarn = false;
-  if (!tokStr.equals(cxxabivStr)) {
+  if (tokStr != cxxabivStr) {
     llvm::errs()
       << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
         "C++ ABI mismatch, compiled with "
