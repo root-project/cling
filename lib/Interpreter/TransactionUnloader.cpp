@@ -457,8 +457,12 @@ namespace clang {
       } else {
         // Find the next redecl, starting at the end
         DeclT* Next = R->getMostRecentDecl();
-        while (Next->getPreviousDecl() != R)
+        while (Next && Next->getPreviousDecl() != R)
           Next = Next->getPreviousDecl();
+        if (!Next) {
+          // R is not (yet?) wired up.
+          return;
+        }
 
         if (R->getPreviousDecl()) {
           // A -> .. -> R -> .. -> Z
