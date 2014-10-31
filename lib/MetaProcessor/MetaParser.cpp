@@ -295,7 +295,6 @@ namespace cling {
   }
 
   bool MetaParser::isUCommand(MetaSema::ActionResult& actionResult) {
-    actionResult = MetaSema::AR_Failure;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("U")) {
       consumeAnyStringToken(tok::eof);
       llvm::StringRef path;
@@ -575,7 +574,6 @@ namespace cling {
                                   Value* resultValue) {
     if (resultValue)
       *resultValue = Value();
-    actionResult = MetaSema::AR_Failure;
     const Token& Tok = getCurTok();
     if (Tok.is(tok::excl_mark)) {
       consumeAnyStringToken(tok::eof);
