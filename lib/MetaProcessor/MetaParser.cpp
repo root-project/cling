@@ -115,6 +115,8 @@ namespace cling {
                              Value* resultValue) {
     if (resultValue)
       *resultValue = Value();
+    // Assume success; some actions don't set it.
+    actionResult = MetaSema::AR_Success;
     return isLCommand(actionResult)
       || isXCommand(actionResult, resultValue) ||isTCommand(actionResult)
       || isAtCommand()
