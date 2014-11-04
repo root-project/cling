@@ -43,7 +43,7 @@ The same holds true for the versions of GCC/Clang you have on your machine. Olde
 compilers do not support c++11 features and thus you can expect a build error if you
 choose not to update them.
 
-All pre-complied binaries of Python ship with built-in support for SSL. However if
+All pre-compiled binaries of Python ship with built-in support for SSL. However if
 the Python on your system was compiled by you manually, chances are that it doesn't
 have SSL support. This is very likely if you had performed a minimal installation
 of Scientific Linux CERN which doesn't include OpenSSL development package. In such
