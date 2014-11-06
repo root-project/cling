@@ -49,7 +49,7 @@ namespace cling {
       return result;
     }
 
-     bool LookupObject(clang::LookupResult& LR, clang::Scope* S) {
+     bool LookupObject(clang::LookupResult& LR, clang::Scope* S) override {
        bool result = false;
        for (InterpreterCallbacks* cb : m_Callbacks)
          result = cb->LookupObject(LR, S) || result;
