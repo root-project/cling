@@ -58,16 +58,16 @@ namespace {
     InlineCost getInlineCost(CallSite CS) {
       return m_Inliner->getInlineCost(CS);
     }
-    void getAnalysisUsage(AnalysisUsage &AU) const {
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
       m_Inliner->getAnalysisUsage(AU);
     }
-    bool runOnSCC(CallGraphSCC &SCC) {
+    bool runOnSCC(CallGraphSCC &SCC) override {
       return m_Inliner->runOnSCC(SCC);
     }
 
     using llvm::Pass::doFinalization;
     // No-op: we need to keep the inlined functions for later use.
-    bool doFinalization(CallGraph& /*CG*/) {
+    bool doFinalization(CallGraph& /*CG*/) override {
       // Module is unchanged
       return false;
     }
