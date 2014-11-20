@@ -1511,6 +1511,7 @@ namespace cling {
       //  Parse the arguments now.
       //
 
+      Interpreter::PushTransactionRAII TforDeser(Interp);
       ParserStateRAII ResetParserState(P);
       prepareForParsing(P,Interp,
                         funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
