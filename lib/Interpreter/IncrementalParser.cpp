@@ -35,6 +35,7 @@
 #include "clang/Parse/Parser.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/Sema.h"
 #include "clang/Serialization/ASTWriter.h"
 
 #include "llvm/IR/LLVMContext.h"
@@ -754,6 +755,8 @@ namespace cling {
 
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
     m_Consumer->getTransaction()->setBufferFID(FID);
+
+    Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
     Parser::DeclGroupPtrTy ADecl;
 
