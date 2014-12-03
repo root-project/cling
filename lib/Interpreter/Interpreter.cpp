@@ -940,7 +940,9 @@ namespace cling {
       return Interpreter::kFailure;
     }
 
-    // Even if the transaction was empty it is still success.
+    // Even if the transaction was empty it can still be a success.
+    if (getCI()->getDiagnostics().hasErrorOccurred())
+      return Interpreter::kFailure;
     return Interpreter::kSuccess;
   }
 
