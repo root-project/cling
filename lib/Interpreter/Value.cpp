@@ -248,8 +248,12 @@ namespace cling {
       namestr << "__cling_StoredValue_Destruct_" << RD;
     }
 
-    std::string code("extern \"C\" void ");
-    {
+    // Check whether the function exists before calling
+    // utils::TypeName::GetFullyQualifiedName which is expensive
+    // (memory-wise). See ROOT-6909.
+    std::string code;
+    if (!m_Interpreter->getAddressOfGlobal(funcname)) {
+      code = "extern \"C\" void ";
       clang::QualType RDQT(RD->getTypeForDecl(), 0);
       std::string typeName
         = utils::TypeName::GetFullyQualifiedName(RDQT, RD->getASTContext());
@@ -257,6 +261,8 @@ namespace cling {
       code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
         + dtorName + "();}";
     }
+    // else we have an empty code string - but the function alreday exists
+    // so we'll be fine and take the existing one (ifUniq = true).
 
     return m_Interpreter->compileFunction(funcname, code, true /*ifUniq*/,
                                           false /*withAccessControl*/);
