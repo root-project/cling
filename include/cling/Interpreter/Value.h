@@ -10,6 +10,8 @@
 #ifndef CLING_VALUE_H
 #define CLING_VALUE_H
 
+#include <stddef.h>
+
 namespace llvm {
   class raw_ostream;
 }
@@ -101,7 +103,7 @@ namespace cling {
         case kLongDoubleType:
           return (T) V.getAs<long double>();
         case kPointerType:
-          return (T) (unsigned long) V.getAs<void*>();
+          return (T) (size_t) V.getAs<void*>();
         case kUnsupportedType:
           V.AssertOnUnsupportedTypeCast();
         }
@@ -115,7 +117,7 @@ namespace cling {
         EStorageType storageType = V.getStorageType();
         switch (storageType) {
         case kPointerType:
-          return (T*) (unsigned long) V.getAs<void*>();
+          return (T*) (size_t) V.getAs<void*>();
         default:
           V.AssertOnUnsupportedTypeCast(); break;
         }
