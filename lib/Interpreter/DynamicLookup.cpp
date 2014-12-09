@@ -60,6 +60,7 @@ namespace {
             Qualifier->print(OS, m_Policy);
           m_Addresses.push_back(Node);
 
+          OS << '(';
           QualType T = Node->getType();
           if (!T->isArrayType())
             OS << '*';
@@ -100,6 +101,8 @@ namespace {
           if (Node->hasExplicitTemplateArgs())
             assert((Node->getTemplateArgs() || Node->getNumTemplateArgs()) && \
                    "There shouldn't be template paramlist");
+
+          OS << ')';
 
           return true;
         }
