@@ -530,12 +530,12 @@ namespace cling {
           // This will be fixed with the clang::Modules. Make sure we remember.
           assert(!getCI()->getLangOpts().Modules && "Please revisit!");
           if (NamespaceDecl* ND = dyn_cast<NamespaceDecl>(*DI)) {
-            for (NamespaceDecl::decl_iterator IN = ND->decls_begin(),
-                   EN = ND->decls_end(); IN != EN; ++IN) {
+            for (NamespaceDecl::decl_iterator NDI = ND->decls_begin(),
+                   EN = ND->decls_end(); NDI != EN; ++NDI) {
               // Recurse over decls inside the namespace, like
               // CodeGenModule::EmitNamespace() does.
-              if (!shouldIgnore(*IN))
-                getCodeGenerator()->HandleTopLevelDecl(DeclGroupRef(*IN));
+              if (!shouldIgnore(*NDI))
+                getCodeGenerator()->HandleTopLevelDecl(DeclGroupRef(*NDI));
             }
           } else if (!shouldIgnore(*DI)) {
             getCodeGenerator()->HandleTopLevelDecl(SplitDGR);
