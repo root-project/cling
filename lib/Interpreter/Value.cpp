@@ -22,6 +22,8 @@
 #include "clang/Sema/Overload.h"
 #include "clang/Sema/Sema.h"
 
+#include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -252,7 +254,11 @@ namespace cling {
     // utils::TypeName::GetFullyQualifiedName which is expensive
     // (memory-wise). See ROOT-6909.
     std::string code;
-    if (!m_Interpreter->getAddressOfGlobal(funcname)) {
+    const llvm::GlobalValue* GV = 0;
+    if (const Transaction* T = m_Interpreter->getLastTransaction())
+      if (const llvm::Module* M = T->getModule())
+        GV = M->getNamedValue(funcname);
+    if (!GV) {
       code = "extern \"C\" void ";
       clang::QualType RDQT(RD->getTypeForDecl(), 0);
       std::string typeName
