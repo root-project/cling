@@ -126,7 +126,7 @@ namespace {
   const clang::Token& Tok = *MI->tokens_begin();
   if (!Tok.isLiteral())
     return;
-  if (!Tok.getLength())
+  if (!Tok.getLength() || !Tok.getLiteralData())
     return;
 
   std::string cxxabivStr;
@@ -135,12 +135,10 @@ namespace {
      cxxabivStrStrm << CLING_CXXABIV;
   }
   bool Invalid = false;
-  std::string tokStr = PP.getSpelling(Tok, &Invalid);
-  if (Invalid)
-    return;
+  llvm::StringRef tokStr(Tok.getLiteralData(), Tok.getLength());
 
   warnAtReturn.shouldWarn = false;
-  if (tokStr != cxxabivStr) {
+  if (!tokStr.equals(cxxabivStr)) {
     llvm::errs()
       << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
         "C++ ABI mismatch, compiled with "
