@@ -134,7 +134,6 @@ namespace {
      llvm::raw_string_ostream cxxabivStrStrm(cxxabivStr);
      cxxabivStrStrm << CLING_CXXABIV;
   }
-  bool Invalid = false;
   llvm::StringRef tokStr(Tok.getLiteralData(), Tok.getLength());
 
   warnAtReturn.shouldWarn = false;
