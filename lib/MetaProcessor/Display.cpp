@@ -91,31 +91,55 @@ int NumberOfElements(const ArrayType* type)
 }
 
 //______________________________________________________________________________
-void AppendClassDeclLocation(const CompilerInstance* compiler, const CXXRecordDecl* classDecl,
-                             std::string& textLine, bool verbose)
+static void AppendAnyDeclLocation(const CompilerInstance* compiler,
+                                  SourceLocation loc,
+                                  std::string& textLine,
+                                  const char* format,
+                                  const char* formatNull,
+                                  const char* filenameNull)
 {
-  //Location has a fixed format - from G__display_class.
+  assert(compiler != 0 && "AppendAnyDeclLocation, 'compiler' parameter is null");
 
-  assert(compiler != 0 && "AppendClassDeclLocation, 'compiler' parameter is null");
-  assert(classDecl != 0 && "AppendClassDeclLocation, 'classDecl' parameter is null");
-
-  const char* const emptyName = "";
   llvm::raw_string_ostream rss(textLine);
   llvm::formatted_raw_ostream frss(rss);
+  std::string baseName;
+  int lineNo = -2;
+
 
   if (compiler->hasSourceManager()) {
     const SourceManager &sourceManager = compiler->getSourceManager();
-    PresumedLoc loc(sourceManager.getPresumedLoc(classDecl->getLocation()));
-    if (loc.isValid()) {
-      const std::string baseName(llvm::sys::path::filename(loc.getFilename()).str());
-      if (!verbose)
-        frss<<llvm::format("%-25s%5d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
-      else
-        frss<<llvm::format("FILE: %s LINE: %d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
-    } else
-      frss<<llvm::format("%-30s", emptyName);
-  } else
-    frss<<llvm::format("%-30s", emptyName);
+    if (loc.isValid() && sourceManager.isLoadedSourceLocation(loc)) {
+      // No line numbers as they would touich disk.
+      baseName = llvm::sys::path::filename(sourceManager.getFilename(loc));
+      lineNo = -1;
+    } else {
+      PresumedLoc ploc(sourceManager.getPresumedLoc(loc));
+      if (ploc.isValid()) {
+        baseName = llvm::sys::path::filename(ploc.getFilename()).str();
+        lineNo = (int)ploc.getLine();
+      }
+    }
+  }
+  if (lineNo == -2)
+    frss<<llvm::format(formatNull, filenameNull);
+  else
+    frss<<llvm::format(format, baseName.c_str(), lineNo);
+}
+
+//______________________________________________________________________________
+void AppendClassDeclLocation(const CompilerInstance* compiler, const CXXRecordDecl* classDecl,
+                             std::string& textLine, bool verbose)
+{
+  assert(classDecl != 0 && "AppendClassDeclLocation, 'classDecl' parameter is null");
+
+  //Location has a fixed format - from G__display_class.
+  static const char* formatShort = "%-25s%5d";
+  static const char* formatVerbose = "FILE: %s LINE: %d";
+  const char* format = formatShort;
+  if (verbose)
+    format = formatVerbose;
+  AppendAnyDeclLocation(compiler, classDecl->getLocation(), textLine,
+                        format, "%-30s", "");
 }
 
 //______________________________________________________________________________
@@ -138,51 +162,23 @@ void AppendMemberFunctionLocation(const CompilerInstance* compiler, const Decl* 
 void AppendDeclLocation(const CompilerInstance* compiler, const Decl* decl,
                         std::string& textLine)
 {
-  assert(compiler != 0 && "AppendDeclLocation, 'compiler' parameter is null");
-  assert(decl != 0 && "AppendDeclLocation, 'decl' parameter is null");
 
-  static const char* const unknownLocation = "compiled";
-  llvm::raw_string_ostream rss(textLine);
-  llvm::formatted_raw_ostream frss(rss);
-
-  if (compiler->hasSourceManager()) {
-    const SourceManager& sourceManager = compiler->getSourceManager();
-    PresumedLoc loc(sourceManager.getPresumedLoc(decl->getLocation()));
-    if (loc.isValid()) {  //The format is from CINT.
-      const std::string baseName(llvm::sys::path::filename(loc.getFilename()).str());
-      frss<<llvm::format("%-15s%4d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
-    } else
-      frss<<llvm::format("%-15s    ", unknownLocation);
-  } else {
-    frss<<llvm::format("%-15s    ", unknownLocation);
-  }
+  AppendAnyDeclLocation(compiler, decl->getLocation(), textLine,
+                        "%-15s%4d", "%-15s    ", "compiled");
 }
 
 //______________________________________________________________________________
 void AppendMacroLocation(const CompilerInstance* compiler, const MacroInfo* macroInfo,
                          std::string& textLine)
 {
-  assert(compiler != 0 && "AppendMacroLocation, 'compiler' parameter is null");
   assert(macroInfo != 0 && "AppendMacroLocation, 'macroInfo' parameter is null");
 
   //TODO: check what does location for macro definition really means -
   //macro can be defined many times, what do we have in a TranslationUnit in this case?
   //At the moment this function is similar to AppendDeclLocation.
 
-  const char* const unknownLocation = "(unknown)";
-  llvm::raw_string_ostream rss(textLine);
-  llvm::formatted_raw_ostream frss(rss);
-
-  if (compiler->hasSourceManager()) {
-    const SourceManager &sourceManager = compiler->getSourceManager();
-    PresumedLoc loc(sourceManager.getPresumedLoc(macroInfo->getDefinitionLoc()));
-    if (loc.isValid()) {  //The format is from CINT.
-      const std::string baseName(llvm::sys::path::filename(loc.getFilename()).str());
-      frss<<llvm::format("%-15s%4d", baseName.size() ? baseName.c_str() : "", int(loc.getLine()));
-    } else
-      frss<<llvm::format("%-15s    ", unknownLocation);
-  } else
-    frss<<llvm::format("%-15s    ", unknownLocation);
+  AppendAnyDeclLocation(compiler, macroInfo->getDefinitionLoc(), textLine,
+                        "%-15s%4d", "%-15s    ", "(unknown)");
 }
 
 //______________________________________________________________________________
