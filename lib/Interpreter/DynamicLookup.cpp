@@ -879,7 +879,8 @@ namespace cling {
   }
 
   bool EvaluateTSynthesizer::IsArtificiallyDependent(Expr* Node) {
-    if (!Node->isValueDependent() || !Node->isTypeDependent())
+    if (!Node->isValueDependent() && !Node->isTypeDependent()
+        && !Node->isInstantiationDependent())
       return false;
     DeclContext* DC = m_CurDeclContext;
     while (DC) {
