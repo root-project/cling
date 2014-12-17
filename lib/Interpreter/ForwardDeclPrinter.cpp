@@ -150,6 +150,7 @@ namespace cling {
   }
 
   void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
+
     if (D->getSourceRange().isInvalid())
       return;
 
@@ -177,6 +178,9 @@ namespace cling {
       PLocs.push_back(PLoc);
       PLoc = m_SMgr.getPresumedLoc(PLoc.getIncludeLoc());
     }
+
+    if (PLocs.empty() /* declared in dictionary payload*/)
+       return;
 
     clang::SourceLocation includeLoc = m_SMgr.getSpellingLoc(PLocs[PLocs.size() - 1].getIncludeLoc());
     bool invalid = true;
