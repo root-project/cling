@@ -287,10 +287,17 @@ static bool getVisualStudioDir(std::string &path) {
 namespace {
   static void SetClingCustomLangOpts(LangOptions& Opts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
+#ifdef _MSC_VER
+    Opts.Exceptions = 0;
+    if (Opts.CPlusPlus) {
+      Opts.CXXExceptions = 0;
+    }
+#else
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 1;
     }
+#endif // _MSC_VER
     Opts.Deprecated = 1;
     //Opts.Modules = 1;
 
@@ -632,6 +639,9 @@ namespace cling {
       // Set the language options, which cling needs
       SetClingCustomLangOpts(CI->getLangOpts());
 
+#ifdef _MSC_VER
+      CI->getInvocation().getPreprocessorOpts().addMacroDef("_HAS_EXCEPTIONS=0");
+#endif
       CI->getInvocation().getPreprocessorOpts().addMacroDef("__CLING__");
       if (CI->getLangOpts().CPlusPlus11 == 1) {
         // http://llvm.org/bugs/show_bug.cgi?id=13530
