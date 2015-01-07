@@ -15,6 +15,7 @@
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
+#include "IncrementalExecutor.h"
 #include "NullDerefProtectionTransformer.h"
 #include "ValueExtractionSynthesizer.h"
 #include "TransactionPool.h"
@@ -155,7 +156,7 @@ namespace cling {
   IncrementalParser::IncrementalParser(Interpreter* interp,
                                        int argc, const char* const *argv,
                                        const char* llvmdir):
-    m_Interpreter(interp), m_Consumer(0) {
+    m_Interpreter(interp), m_Consumer(0), m_ModuleNo(0) {
 
     CompilerInstance* CI = CIFactory::createCI("", argc, argv, llvmdir);
     assert(CI && "CompilerInstance is (null)!");
@@ -166,7 +167,7 @@ namespace cling {
     m_CI.reset(CI);
 
     if (CI->getFrontendOpts().ProgramAction != clang::frontend::ParseSyntaxOnly){
-      m_CodeGen.reset(CreateLLVMCodeGen(CI->getDiagnostics(), "cling input",
+      m_CodeGen.reset(CreateLLVMCodeGen(CI->getDiagnostics(), "cling-module-0",
                                         CI->getCodeGenOpts(),
                                         CI->getTargetOpts(),
                                         *m_Interpreter->getLLVMContext()
@@ -271,9 +272,6 @@ namespace cling {
   }
 
   IncrementalParser::~IncrementalParser() {
-    if (hasCodeGenerator()) {
-      getCodeGenerator()->ReleaseModule();
-    }
     const Transaction* T = getFirstTransaction();
     const Transaction* nextT = 0;
     while (T) {
@@ -579,6 +577,25 @@ namespace cling {
     } // for deserialized DGRs
 
     getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+
+    // This llvm::Module is done; finalize it and pass it to the execution
+    // engine.
+    if (!T->isNestedTransaction() && hasCodeGenerator()) {
+      if (llvm::Module* M = getCodeGenerator()->ReleaseModule()) {
+        assert(M == T->getModule() && "Transaction has inconsistent module");
+        m_Interpreter->addModule(M);
+      }
+
+      // Create a new module.
+      std::string ModuleName;
+      {
+        llvm::raw_string_ostream strm(ModuleName);
+        strm << "cling-module-" << ++m_ModuleNo;
+      }
+      getCodeGenerator()->StartModule(ModuleName,
+                                      *m_Interpreter->getLLVMContext());
+    }
+
     if ((deserT = endTransaction(deserT)))
       commitTransaction(deserT);
   }

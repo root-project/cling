@@ -148,6 +148,12 @@ namespace cling {
     ///
     bool addSymbol(const char* symbolName,  void* symbolAddress);
 
+    ///\brief Add a llvm::Module to the ExecutionEngine, see
+    /// ExecutionEngine::addModule()
+    ///
+    /// @param[in] module - The module to pass to the execution engine.
+    void addModule(llvm::Module* module);
+
     ///\brief Tells the execution context that we are shutting down the system.
     ///
     /// This that notification is needed because the execution context needs to

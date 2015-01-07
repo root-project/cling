@@ -77,6 +77,9 @@ namespace cling {
     ///
     std::deque<Transaction*> m_Transactions;
 
+    ///\brief Number of created modules.
+    unsigned m_ModuleNo;
+
     ///\brief Code generator
     ///
     std::unique_ptr<clang::CodeGenerator> m_CodeGen;
