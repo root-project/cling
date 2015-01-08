@@ -26,7 +26,7 @@
 
 using namespace clang;
 
-namespace cling {
+namespace clang {
 
   ///\brief Cleanup Parser state after a failed lookup.
   ///
@@ -43,6 +43,10 @@ namespace cling {
     bool OldSuppressAllDiagnostics;
     bool OldSpellChecking;
     DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds;
+    SourceLocation OldPrevTokLocation;
+    unsigned short OldParenCount, OldBracketCount, OldBraceCount;
+    unsigned OldTemplateParameterDepth;
+
 
   public:
     ParserStateRAII(Parser& p)
@@ -52,7 +56,10 @@ namespace cling {
         OldSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
                                   .getSuppressAllDiagnostics()),
         OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
-        CleanupTemplateIds(p)
+        CleanupTemplateIds(p), OldPrevTokLocation(p.PrevTokLocation),
+        OldParenCount(p.ParenCount), OldBracketCount(p.BracketCount),
+        OldBraceCount(p.BraceCount),
+        OldTemplateParameterDepth(p.TemplateParameterDepth)
     {
     }
 
@@ -70,9 +77,17 @@ namespace cling {
       PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
       const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking =
          OldSpellChecking;
+
+      P->PrevTokLocation = OldPrevTokLocation;
+      P->ParenCount = OldParenCount;
+      P->BracketCount = OldBracketCount;
+      P->BraceCount = OldBraceCount;
+      P->TemplateParameterDepth = OldTemplateParameterDepth;
     }
   };
+}
 
+namespace cling {
   ///\brief Class to help with the custom allocation of clang::Expr
   ///
   struct ExprAlloc {
