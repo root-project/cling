@@ -83,8 +83,8 @@ namespace cling {
       ///                    atexit function.
       ///
       CXAAtExitElement(void (*func) (void*), void* arg,
-                       const Transaction* fromT):
-        m_Func(func), m_Arg(arg), m_FromT(fromT) {}
+                       const llvm::Module* fromM):
+        m_Func(func), m_Arg(arg), m_FromM(fromM) {}
 
       ///\brief The function to be called.
       ///
@@ -94,10 +94,10 @@ namespace cling {
       ///
       void* m_Arg;
 
-      ///\brief Clang's top level declaration, whose unloading will trigger the
-      /// call this atexit function.
+      ///\brief The module whose unloading will trigger the call to this atexit
+      /// function.
       ///
-      const Transaction* m_FromT; //FIXME: Should be bound to the llvm symbol.
+      const llvm::Module* m_FromM;
     };
 
     typedef llvm::SmallVector<CXAAtExitElement, 128> AtExitFunctions;
@@ -105,6 +105,11 @@ namespace cling {
     /// to be destructed.
     ///
     AtExitFunctions m_AtExitFuncs;
+
+    ///\brief Module for which registration of static destructors currently
+    /// takes place.
+    llvm::Module* m_CurrentAtExitModule;
+
 
 #if 0 // See FIXME in IncrementalExecutor.cpp
     ///\brief The diagnostics engine, printing out issues coming from the
@@ -189,8 +194,11 @@ namespace cling {
 
     ///\brief Keep track of the entities whose dtor we need to call.
     ///
-     void AddAtExitFunc(void (*func) (void*), void* arg,
-                        const cling::Transaction* clingT);
+    void AddAtExitFunc(void (*func) (void*), void* arg);
+
+    ///\brief Try to resolve a symbol through our LazyFunctionCreators;
+    /// print an error message if that fails.
+    void* NotifyLazyFunctionCreators(const std::string&);
 
   private:
     ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, such
@@ -204,7 +212,6 @@ namespace cling {
                                    llvm::StringRef title = llvm::StringRef());
 
     static void* HandleMissingFunction(const std::string&);
-    static void* NotifyLazyFunctionCreators(const std::string&);
 
   };
 } // end cling

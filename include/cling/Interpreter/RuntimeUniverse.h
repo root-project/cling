@@ -41,13 +41,6 @@ namespace cling {
     extern Interpreter* gCling;
 
     namespace internal {
-      ///\brief Manually provided by cling missing function resolution using
-      /// addSymbol()
-      ///
-      /// Implemented in Interpreter.cpp
-      ///
-      int local_cxa_atexit(void (*func) (void*), void* arg, void* interp);
-
       /// \brief Some of clang's routines rely on valid source locations and
       /// source ranges. This member can be looked up and source locations and
       /// ranges can be passed in as parameters to these routines.
@@ -179,27 +172,7 @@ namespace cling {
 
 using namespace cling::runtime;
 
-// Global d'tors only for C++:
-#if _WIN32
 extern "C" {
-
-  ///\brief Fake definition to avoid compilation missing function in windows
-  /// environment it wont ever be called
-  void __dso_handle(){}
-  //Fake definition to avoid compilation missing function in windows environment
-  //it wont ever be called
-  int __cxa_atexit(void (* /*func*/) (), void* /*arg*/, void* /*dso*/) {
-    return 0;
-  }
-}
-#endif
-
-extern "C" {
-  int cling_cxa_atexit(void (*func) (void*), void* arg, void* /*dso*/) {
-    return cling::runtime::internal::local_cxa_atexit(func, arg,
-                                                 (void*)cling::runtime::gCling);
-  }
-
   ///\brief a function that throws NullDerefException. This allows to 'hide' the
   /// definition of the exceptions from the RuntimeUniverse and allows us to
   /// run cling in -no-rtti mode.

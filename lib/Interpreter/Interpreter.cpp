@@ -67,16 +67,6 @@ namespace {
 } // unnamed namespace
 
 namespace cling {
-  namespace runtime {
-    namespace internal {
-      // "Declared" to the JIT in RuntimeUniverse.h
-      void local_cxa_atexit(void (*func) (void*), void* arg, void* interp) {
-        Interpreter* cling = (cling::Interpreter*)interp;
-        cling->AddAtExitFunc(func, arg);
-      }
-    } // end namespace internal
-  } // end namespace runtime
-
   // FIXME: workaround until JIT supports exceptions
   jmp_buf* Interpreter::m_JumpBuf;
 
@@ -1184,7 +1174,7 @@ namespace cling {
   }
 
   void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {
-    m_Executor->AddAtExitFunc(Func, Arg, getLastTransaction());
+    m_Executor->AddAtExitFunc(Func, Arg);
   }
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,

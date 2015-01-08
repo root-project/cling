@@ -10,6 +10,7 @@
 #include "IncrementalExecutor.h"
 
 #include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/Transaction.h"
 
 #include "clang/Basic/Diagnostic.h"
 
@@ -20,11 +21,56 @@
 #include "llvm/PassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
-#include "llvm/ExecutionEngine/JIT.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
+#include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/DynamicLibrary.h"
 
 using namespace llvm;
+
+namespace {
+class ClingMemoryManager: public SectionMemoryManager {
+  cling::IncrementalExecutor* m_exe;
+  struct {
+    uint64_t __cxa_at_exit;
+  } m_addr {};
+
+  static void local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
+    cling::IncrementalExecutor* exe = (cling::IncrementalExecutor*)dso;
+    exe->AddAtExitFunc(func, arg);
+  }
+
+
+public:
+  ClingMemoryManager(cling::IncrementalExecutor* Exe):
+    m_exe(Exe) {}
+
+  ///\brief Return the address of a symbol, use callbacks if needed.
+  uint64_t getSymbolAddress (const std::string &Name) override;
+  ///\brief Simply wraps the base class's function setting AbortOnFailure
+  /// to false and instead using the error handling mechanism to report it.
+  void* getPointerToNamedFunction(const std::string &Name,
+                                  bool /*AbortOnFailure*/ =true) override {
+    return SectionMemoryManager::getPointerToNamedFunction(Name, false);
+  }
+};
+
+uint64_t ClingMemoryManager::getSymbolAddress(const std::string &Name) {
+  if (Name == "__cxa_atexit") {
+    // Rewrire __cxa_atexit to ~Interpreter(), thus also global destruction
+    // coming from the JIT.
+    return (uint64_t)&local_cxa_atexit;
+  } else if (Name == "__dso_handle") {
+    // Provide IncrementalExecutor as the third argument to __cxa_atexit.
+    return (uint64_t)m_exe;
+  }
+  if (uint64_t Addr = SectionMemoryManager::getSymbolAddress(Name))
+    return Addr;
+  return (uint64_t) m_exe->NotifyLazyFunctionCreators(Name);
+}
+
+}
+
 namespace cling {
 
 std::set<std::string> IncrementalExecutor::m_unresolvedSymbols;
@@ -34,18 +80,14 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
 
 // Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
   IncrementalExecutor::IncrementalExecutor(llvm::Module* m,
-                                           clang::DiagnosticsEngine& /*diags*/)
+                                           clang::DiagnosticsEngine& /*diags*/):
+    m_CurrentAtExitModule(0)
 #if 0
     : m_Diags(diags)
 #endif
 {
   assert(m && "llvm::Module must not be null!");
   m_AtExitFuncs.reserve(256);
-
-  // Rewrire __cxa_atexit to ~Interpreter(), thus also global destruction
-  // coming from the JIT.
-  m_SymbolsToRemap["__cxa_atexit"]
-    = std::make_pair((void*)0, std::string("cling_cxa_atexit"));
 
   //
   //  Create an execution engine to use.
@@ -59,7 +101,8 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   builder.setErrorStr(&errMsg);
   builder.setOptLevel(llvm::CodeGenOpt::Less);
   builder.setEngineKind(llvm::EngineKind::JIT);
-  builder.setAllocateGVsWithCode(false);
+  builder.setUseMCJIT(true);
+  builder.setMCJITMemoryManager(new ClingMemoryManager(this));
 
   // EngineBuilder uses default c'ted TargetOptions, too:
   llvm::TargetOptions TargetOpts;
@@ -72,7 +115,7 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   assert(m_engine && "Cannot create module!");
 
   // install lazy function creators
-  m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
+  //m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
 }
 
 // Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
@@ -124,10 +167,9 @@ void IncrementalExecutor::remapSymbols() {
   }
 }
 
-void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
-                                        const cling::Transaction* T) {
+void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg) {
   // Register a CXAAtExit function
-  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, T));
+  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, m_CurrentAtExitModule));
 }
 
 void unresolvedSymbol()
@@ -237,6 +279,14 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
   assert(m && "Module must not be null");
   assert(m_engine && "Code generation did not create an engine!");
 
+  // Set m_CurrentAtExitModule to the Module, unset to 0 once done.
+  struct AtExitModuleSetterRAII {
+    llvm::Module*& m_AEM;
+    AtExitModuleSetterRAII(llvm::Module* M, llvm::Module*& AEM): m_AEM(AEM)
+    { AEM = M; }
+    ~AtExitModuleSetterRAII() { m_AEM = 0; }
+  } DSOHandleSetter(m, m_CurrentAtExitModule);
+
   m_engine->finalizeObject();
 
   llvm::GlobalVariable* GV
@@ -330,7 +380,7 @@ void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
   AtExitFunctions boundToT;
   for (AtExitFunctions::iterator I = m_AtExitFuncs.begin();
        I != m_AtExitFuncs.end();)
-    if (I->m_FromT == T) {
+    if (I->m_FromM == T->getModule()) {
       boundToT.push_back(*I);
       I = m_AtExitFuncs.erase(I);
     }
