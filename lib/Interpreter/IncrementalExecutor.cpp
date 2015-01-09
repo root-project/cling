@@ -31,15 +31,11 @@ using namespace llvm;
 namespace {
 class ClingMemoryManager: public SectionMemoryManager {
   cling::IncrementalExecutor* m_exe;
-  struct {
-    uint64_t __cxa_at_exit;
-  } m_addr {};
 
   static void local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
     cling::IncrementalExecutor* exe = (cling::IncrementalExecutor*)dso;
     exe->AddAtExitFunc(func, arg);
   }
-
 
 public:
   ClingMemoryManager(cling::IncrementalExecutor* Exe):
