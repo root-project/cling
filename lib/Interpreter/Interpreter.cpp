@@ -960,30 +960,35 @@ namespace cling {
     CO.IgnorePromptDiags = 1;
 
     if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
-      assert((lastT->getState() == Transaction::kCommitted
-              || lastT->getState() == Transaction::kRolledBack)
-             && "Not committed?");
-      if (lastT->getIssuedDiags() != Transaction::kErrors) {
-        Value resultV;
-        if (!V)
-          V = &resultV;
-        if (!lastT->getWrapperFD()) // no wrapper to run
-          return Interpreter::kSuccess;
-        else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError){
-          if (lastT->getCompilationOpts().ValuePrinting
-              != CompilationOptions::VPDisabled
-              && V->isValid()
-              // the !V->needsManagedAllocation() case is handled by
-              // dumpIfNoStorage.
-              && V->needsManagedAllocation())
-            V->dump();
-          return Interpreter::kSuccess;
-        }
-      }
-      if (V)
-        *V = Value();
 
-      return Interpreter::kFailure;
+      assert((lastT->getState() == Transaction::kCommitted
+              || lastT->getState() == Transaction::kRolledBack
+              || lastT->getState() == Transaction::kRolledBackWithErrors)
+             && "Not committed?");
+
+      if (lastT->getIssuedDiags() == Transaction::kErrors
+          || lastT->getState() != Transaction::kCommitted) {
+         if (V)
+            *V = Value();
+
+         return Interpreter::kFailure;
+      }
+
+      Value resultV;
+      if (!V)
+         V = &resultV;
+      if (!lastT->getWrapperFD()) // no wrapper to run
+         return Interpreter::kSuccess;
+      else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError){
+         if (lastT->getCompilationOpts().ValuePrinting
+             != CompilationOptions::VPDisabled
+             && V->isValid()
+             // the !V->needsManagedAllocation() case is handled by
+             // dumpIfNoStorage.
+             && V->needsManagedAllocation())
+            V->dump();
+         return Interpreter::kSuccess;
+      }
     }
     return Interpreter::kSuccess;
   }
