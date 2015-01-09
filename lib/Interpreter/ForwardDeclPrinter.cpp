@@ -858,10 +858,18 @@ namespace cling {
               skipDecl(0, "expression template param default failed");
               return;
             }
+          } else if (isa<IntegerLiteral>(DefArg)
+                     || isa<CharacterLiteral>(DefArg)
+                     || isa<CXXBoolLiteralExpr>(DefArg)
+                     || isa<CXXNullPtrLiteralExpr>(DefArg)
+                     || isa<FloatingLiteral>(DefArg)
+                     || isa<StringLiteral>(DefArg)) {
+            Stream << " = ";
+            DefArg->printPretty(Stream, 0, m_Policy, m_Indentation);
+          } else {
+            skipDecl(0, "expression template param default not a literal");
+            return;
           }
-
-          Stream << " = ";
-          DefArg->printPretty(Stream, 0, m_Policy, m_Indentation);
         }
       }
       else if (TemplateTemplateParmDecl *TTPD =
