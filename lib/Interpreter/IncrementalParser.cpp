@@ -419,9 +419,10 @@ namespace cling {
       if (!T->getParent()) {
         if (m_Interpreter->runStaticInitializersOnce(*T)
             >= Interpreter::kExeFirstError) {
-          // Roll back on error in a transformer
-          assert(0 && "Error on inits.");
-          //rollbackTransaction(nestedT);
+          // Roll back on error in initializers
+          //assert(0 && "Error on inits.");
+          rollbackTransaction(T);
+          T->setState(Transaction::kRolledBackWithErrors);
           return;
         }
       }
