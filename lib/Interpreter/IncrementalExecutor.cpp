@@ -283,7 +283,14 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
     ~AtExitModuleSetterRAII() { m_AEM = 0; }
   } DSOHandleSetter(m, m_CurrentAtExitModule);
 
+  // We don't care whether something was unresolved before.
+  m_unresolvedSymbols.clear();
+
   m_engine->finalizeObject();
+
+  // check if there is any unresolved symbol in the list
+  if (diagnoseUnresolvedSymbols("static initializers"))
+    return kExeUnresolvedSymbols;
 
   llvm::GlobalVariable* GV
      = m->getGlobalVariable("llvm.global_ctors", true);
@@ -306,9 +313,6 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
 
   if (InitList == 0)
     return kExeSuccess;
-
-  // We don't care whether something was unresolved before.
-  m_unresolvedSymbols.clear();
 
   SmallVector<Function*, 2> initFuncs;
 
