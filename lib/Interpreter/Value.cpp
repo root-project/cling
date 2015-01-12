@@ -254,11 +254,7 @@ namespace cling {
     // utils::TypeName::GetFullyQualifiedName which is expensive
     // (memory-wise). See ROOT-6909.
     std::string code;
-    const llvm::GlobalValue* GV = 0;
-    if (const Transaction* T = m_Interpreter->getLastTransaction())
-      if (const llvm::Module* M = T->getModule())
-        GV = M->getNamedValue(funcname);
-    if (!GV) {
+    if (!m_Interpreter->getAddressOfGlobal(funcname)) {
       code = "extern \"C\" void ";
       clang::QualType RDQT(RD->getTypeForDecl(), 0);
       std::string typeName

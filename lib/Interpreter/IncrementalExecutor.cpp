@@ -423,17 +423,14 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::Module* m,
   // Return a symbol's address, and whether it was jitted.
   void* address
     = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
-  if (address) {
-    if (fromJIT) *fromJIT = false;
-  } else {
-    if (fromJIT) *fromJIT = true;
-    llvm::GlobalVariable* gvar = m->getGlobalVariable(symbolName, true);
-    if (!gvar)
-      return 0;
 
-    remapSymbols();
-    address = m_engine->getPointerToGlobal(gvar);
-  }
+  // It's not from the JIT if it's in a dylib.
+  if (fromJIT)
+    *fromJIT = !address;
+
+  if (!address)
+    return (void*)m_engine->getGlobalValueAddress(symbolName);
+
   return address;
 }
 
