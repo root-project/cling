@@ -1136,12 +1136,6 @@ namespace cling {
     IncrementalExecutor::ExecutionResult ExeRes
        = m_Executor->runStaticInitializersOnce(module);
 
-    // Avoid eternal additions to llvm.ident; see
-    // CodeGenModule::EmitVersionIdentMetadata().
-    llvm::NamedMDNode *IdentMetadata = module->getNamedMetadata("llvm.ident");
-    if (IdentMetadata)
-      module->eraseNamedMetadata(IdentMetadata);
-
     // Reset the module builder to clean up global initializers, c'tors, d'tors
     ASTContext& C = getCI()->getASTContext();
     m_IncrParser->getCodeGenerator()->HandleTranslationUnit(C);
