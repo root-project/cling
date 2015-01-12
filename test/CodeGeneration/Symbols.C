@@ -19,13 +19,13 @@ struct StaticStuff {
 template <class T>
 T StaticStuff<T>::s_data = 42;
 
-int compareAddr(int* there);
+int compareAddr(int* interp);
 #ifdef BUILD_SHARED
-int compareAddr(int* there) {
-  if (there != &StaticStuff<int>::s_data) {
-    printf("Wrong address, %ld here, %ld there!",
+int compareAddr(int* interp) {
+  if (interp != &StaticStuff<int>::s_data) {
+    printf("Wrong address, %ld in shared lib, %ld in interpreter!\n",
            (long)&StaticStuff<int>::s_data,
-           (long)there);
+           (long)interp);
     // CHECK-NOT: Wrong address
     return 1;
   }
