@@ -1175,8 +1175,7 @@ namespace cling {
     // Return a symbol's address, and whether it was jitted.
     if (isInSyntaxOnlyMode())
       return 0;
-    llvm::Module* module = getLastTransaction()->getModule();
-    return m_Executor->getAddressOfGlobal(module, SymName, fromJIT);
+    return m_Executor->getAddressOfGlobal(SymName, fromJIT);
   }
 
   void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {

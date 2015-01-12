@@ -176,8 +176,7 @@ namespace cling {
     ///\param[in]  mangledName - the globa's name
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
-    void* getAddressOfGlobal(llvm::Module* m, llvm::StringRef mangledName,
-                             bool* fromJIT = 0);
+    void* getAddressOfGlobal(llvm::StringRef mangledName, bool* fromJIT = 0);
 
     ///\brief Return the address of a global from the ExecutionEngine (as
     /// opposed to dynamic libraries). Forces the emission of the symbol if

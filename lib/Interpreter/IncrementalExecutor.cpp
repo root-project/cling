@@ -417,8 +417,7 @@ void IncrementalExecutor::addModule(llvm::Module* module) {
 }
 
 
-void* IncrementalExecutor::getAddressOfGlobal(llvm::Module* m,
-                                              llvm::StringRef symbolName,
+void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) {
   // Return a symbol's address, and whether it was jitted.
   void* address
