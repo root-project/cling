@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -fno-rtti 2>&1 | FileCheck %s
 // XFAIL:*
 
 // This test assures that varidiac funcions can be found by our string-based

@@ -7,7 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: clang -shared %S/address_lib.c -olibaddress_lib%shlibext
-// RUN: cat %s | %cling -L. | FileCheck %s
+// RUN: cat %s | %cling -L. -fno-rtti | FileCheck %s
 extern "C" int printf(const char*,...);
 
 #include "cling/Interpreter/Interpreter.h"
