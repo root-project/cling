@@ -877,27 +877,28 @@ namespace cling {
     //
     //  Compile the wrapper code.
     //
-    const llvm::GlobalValue* GV = 0;
+
     if (isInSyntaxOnlyMode())
       return 0;
 
-    if (ifUnique)
-      GV = getLastTransaction()->getModule()->getNamedValue(name);
-
-    if (!GV) {
-      const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl);
-      if (!FD) return 0;
-      //
-      //  Get the wrapper function pointer
-      //  from the ExecutionEngine (the JIT).
-      //
-      GV = getLastTransaction()->getModule()->getNamedValue(name);
+    if (ifUnique) {
+      if (void* Addr = (void*)getAddressOfGlobal(name)) {
+        return Addr;
+      }
     }
 
-    if (!GV)
+    const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl);
+    if (!FD)
       return 0;
+    //
+    //  Get the wrapper function pointer
+    //  from the ExecutionEngine (the JIT).
+    //
+    if (const llvm::GlobalValue* GV
+        = getLastTransaction()->getModule()->getNamedValue(name))
+      return m_Executor->getPointerToGlobalFromJIT(*GV);
 
-    return m_Executor->getPointerToGlobalFromJIT(*GV);
+    return 0;
   }
 
   void Interpreter::createUniqueName(std::string& out) {
