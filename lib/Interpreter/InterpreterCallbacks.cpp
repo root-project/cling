@@ -190,9 +190,9 @@ namespace cling {
     }
 
     if (enablePPCallbacks) {
-      m_PPCallbacks = new InterpreterPPCallbacks(this);
       Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
-      PP.addPPCallbacks(m_PPCallbacks);
+      m_PPCallbacks = new InterpreterPPCallbacks(this);
+      PP.addPPCallbacks(std::unique_ptr<InterpreterPPCallbacks>(m_PPCallbacks));
     }
   }
 

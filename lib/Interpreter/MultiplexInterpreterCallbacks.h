@@ -17,14 +17,14 @@ namespace cling {
 
   class MultiplexInterpreterCallbacks : public InterpreterCallbacks {
   private:
-    std::vector<InterpreterCallbacks*> m_Callbacks;
+    std::vector<std::unique_ptr<InterpreterCallbacks>> m_Callbacks;
 
   public:
     MultiplexInterpreterCallbacks(Interpreter* interp)
       : InterpreterCallbacks(interp, true, true, true) {}
 
-    void addCallback(InterpreterCallbacks* newCb) {
-      m_Callbacks.push_back(newCb);
+    void addCallback(std::unique_ptr<InterpreterCallbacks> newCb) {
+      m_Callbacks.push_back(std::move(newCb));
     }
 
     void InclusionDirective(clang::SourceLocation HashLoc,
@@ -35,7 +35,7 @@ namespace cling {
                             llvm::StringRef SearchPath,
                             llvm::StringRef RelativePath,
                             const clang::Module* Imported) override {
-      for (InterpreterCallbacks* cb : m_Callbacks)
+      for (auto&& cb : m_Callbacks)
         cb->InclusionDirective(HashLoc, IncludeTok, FileName, IsAngled,
                                FilenameRange, File, SearchPath, RelativePath,
                                Imported);
@@ -44,14 +44,14 @@ namespace cling {
     bool FileNotFound(llvm::StringRef FileName,
                       llvm::SmallVectorImpl<char>& RecoveryPath) override {
       bool result = false;
-      for (InterpreterCallbacks* cb : m_Callbacks)
+      for (auto&& cb : m_Callbacks)
         result = cb->FileNotFound(FileName, RecoveryPath) || result;
       return result;
     }
 
      bool LookupObject(clang::LookupResult& LR, clang::Scope* S) override {
        bool result = false;
-       for (InterpreterCallbacks* cb : m_Callbacks)
+       for (auto&& cb : m_Callbacks)
          result = cb->LookupObject(LR, S) || result;
        return result;
      }
@@ -59,57 +59,57 @@ namespace cling {
      bool LookupObject(const clang::DeclContext* DC,
                        clang::DeclarationName DN) override {
        bool result = false;
-       for (InterpreterCallbacks* cb : m_Callbacks)
+       for (auto&& cb : m_Callbacks)
          result = cb->LookupObject(DC, DN) || result;
        return result;
      }
 
      bool LookupObject(clang::TagDecl* T) override {
        bool result = false;
-       for (InterpreterCallbacks* cb : m_Callbacks)
+       for (auto&& cb : m_Callbacks)
          result = cb->LookupObject(T) || result;
        return result;
      }
 
      void TransactionCommitted(const Transaction& T) override {
-       for (InterpreterCallbacks* cb : m_Callbacks) {
+       for (auto&& cb : m_Callbacks) {
          cb->TransactionCommitted(T);
        }
      }
 
      void TransactionUnloaded(const Transaction& T) override {
-       for (InterpreterCallbacks* cb : m_Callbacks) {
+       for (auto&& cb : m_Callbacks) {
          cb->TransactionUnloaded(T);
        }
      }
 
      void DeclDeserialized(const clang::Decl* D) override {
-       for (InterpreterCallbacks* cb : m_Callbacks) {
+       for (auto&& cb : m_Callbacks) {
          cb->DeclDeserialized(D);
        }
      }
 
      void TypeDeserialized(const clang::Type* Ty) override {
-       for (InterpreterCallbacks* cb : m_Callbacks) {
+       for (auto&& cb : m_Callbacks) {
          cb->TypeDeserialized(Ty);
        }
      }
 
      void LibraryLoaded(const void* Lib, llvm::StringRef Name) override {
-       for (InterpreterCallbacks* cb : m_Callbacks) {
+       for (auto&& cb : m_Callbacks) {
          cb->LibraryLoaded(Lib,Name);
        }
      }
 
      void LibraryUnloaded(const void* Lib, llvm::StringRef Name) override {
-       for (InterpreterCallbacks* cb : m_Callbacks) {
+       for (auto&& cb : m_Callbacks) {
          cb->LibraryUnloaded(Lib,Name);
        }
      }
 
     void SetIsRuntime(bool val) override {
       InterpreterCallbacks::SetIsRuntime(val);
-      for (InterpreterCallbacks* cb : m_Callbacks)
+      for (auto&& cb : m_Callbacks)
         cb->SetIsRuntime(val);
     }
   };

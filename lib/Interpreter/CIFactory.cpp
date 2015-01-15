@@ -475,7 +475,7 @@ namespace cling {
 
     // The one job we find should be to invoke clang again.
     const clang::driver::Command *Cmd
-      = cast<clang::driver::Command>(*Jobs.begin());
+      = cast<clang::driver::Command>(&(*Jobs.begin()));
     if (llvm::StringRef(Cmd->getCreator().getName()) != "clang") {
       // diagnose this...
       return NULL;
@@ -488,15 +488,16 @@ namespace cling {
                                         int argc,
                                         const char* const *argv,
                                         const char* llvmdir) {
-    return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv,
-                    llvmdir, new DeclCollector());
+    return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv, llvmdir,
+                    std::unique_ptr<DeclCollector>(new DeclCollector()));
   }
 
-  CompilerInstance* CIFactory::createCI(llvm::MemoryBuffer* buffer,
+  CompilerInstance* CIFactory::createCI(
+                                     std::unique_ptr<llvm::MemoryBuffer> buffer,
                                         int argc,
                                         const char* const *argv,
                                         const char* llvmdir,
-                                        DeclCollector* stateCollector) {
+                                std::unique_ptr<DeclCollector> stateCollector) {
     // Create an instance builder, passing the llvmdir and arguments.
     //
 
@@ -659,7 +660,7 @@ namespace cling {
     }
     CI->getTarget().adjust(CI->getLangOpts());
     SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
-    if (CI->getTarget().getTriple().getOS() == llvm::Triple::Cygwin) {
+    if (CI->getTarget().getTriple().getEnvironment() == llvm::Triple::Cygnus) {
       // clang "forgets" the basic arch part needed by winnt.h:
       if (CI->getTarget().getTriple().getArch() == llvm::Triple::x86) {
         CI->getInvocation().getPreprocessorOpts().addMacroDef("_X86_=1");
@@ -700,7 +701,7 @@ namespace cling {
       = MainFileSLocE.getFile().getContentCache();
     if (!buffer)
       buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/\n");
-    const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(buffer);
+    const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(std::move(buffer));
 
     // Set up the preprocessor
     CI->createPreprocessor(TU_Complete);
@@ -716,19 +717,17 @@ namespace cling {
     // state collector thus detach from whatever possible.
     if (stateCollector) {
       // Add the callback keeping track of the macro definitions
-      PP.addPPCallbacks(stateCollector);
+      PP.addPPCallbacks(std::move(stateCollector->MakePPAdapter()));
     }
     else
-      stateCollector = new DeclCollector();
+      stateCollector.reset(new DeclCollector());
     // Set up the ASTConsumers
-    CI->setASTConsumer(stateCollector);
-    CI->getASTContext().setASTMutationListener(stateCollector);
+    CI->getASTContext().setASTMutationListener(stateCollector.get());
+    CI->setASTConsumer(std::move(stateCollector));
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;
     CI->createSema(TU_Complete, CCC);
-
-    CI->takeASTConsumer(); // Transfer to ownership to the PP only
 
     // Set CodeGen options
     // CI->getCodeGenOpts().DebugInfo = 1; // want debug info

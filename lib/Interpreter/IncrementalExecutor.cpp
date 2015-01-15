@@ -74,31 +74,24 @@ std::set<std::string> IncrementalExecutor::m_unresolvedSymbols;
 std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   IncrementalExecutor::m_lazyFuncCreator;
 
-// Keep in source: OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-  IncrementalExecutor::IncrementalExecutor(llvm::Module* m,
-                                           clang::DiagnosticsEngine& /*diags*/):
-    m_CurrentAtExitModule(0)
-#if 0
-    : m_Diags(diags)
-#endif
-{
-  assert(m && "llvm::Module must not be null!");
-  m_AtExitFuncs.reserve(256);
+// Keep in source: ~unique_ptr<ExecutionEngine> needs #include ExecutionEngine
+IncrementalExecutor::~IncrementalExecutor() {}
 
+void IncrementalExecutor::BuildEngine(std::unique_ptr<llvm::Module> m) {
   //
   //  Create an execution engine to use.
   //
   assert(m && "Module cannot be null");
-
   // Note: Engine takes ownership of the module.
-  llvm::EngineBuilder builder(m);
+  llvm::EngineBuilder builder(std::move(m));
 
   std::string errMsg;
   builder.setErrorStr(&errMsg);
   builder.setOptLevel(llvm::CodeGenOpt::Less);
   builder.setEngineKind(llvm::EngineKind::JIT);
-  builder.setUseMCJIT(true);
-  builder.setMCJITMemoryManager(new ClingMemoryManager(this));
+  std::unique_ptr<llvm::RTDyldMemoryManager>
+    MemMan(new ClingMemoryManager(this));
+  builder.setMCJITMemoryManager(std::move(MemMan));
 
   // EngineBuilder uses default c'ted TargetOptions, too:
   llvm::TargetOptions TargetOpts;
@@ -113,9 +106,6 @@ std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
   // install lazy function creators
   //m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
 }
-
-// Keep in source: ~OwningPtr<ExecutionEngine> needs #include ExecutionEngine
-IncrementalExecutor::~IncrementalExecutor() {}
 
 void IncrementalExecutor::shuttingDown() {
   for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
@@ -209,7 +199,7 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
   for (size_t i = 0; i < funcsToFree.size(); ++i) {
     llvm::Function* func = funcsToFree[i];
     assert(func && "Cannot free NULL function");
-    if (funcsToFreeUnique.insert(func)) {
+    if (funcsToFreeUnique.insert(func).second) {
       for (llvm::Value::use_iterator IU = func->use_begin(),
              EU = func->use_end(); IU != EU; ++IU) {
         llvm::Instruction* instUser = llvm::dyn_cast<llvm::Instruction>(*IU);
@@ -412,8 +402,11 @@ IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
   return true;
 }
 
-void IncrementalExecutor::addModule(llvm::Module* module) {
-  m_engine->addModule(module);
+void IncrementalExecutor::addModule(std::unique_ptr<Module> module) {
+  if (!m_engine)
+    BuildEngine(std::move(module));
+  else
+    m_engine->addModule(std::move(module));
 }
 
 

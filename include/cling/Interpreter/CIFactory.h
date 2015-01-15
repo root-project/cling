@@ -33,11 +33,12 @@ namespace cling {
                                              const char* const *argv,
                                              const char* llvmdir);
 
-    static clang::CompilerInstance* createCI(llvm::MemoryBuffer* buffer,
+    static clang::CompilerInstance* createCI(
+                                     std::unique_ptr<llvm::MemoryBuffer> buffer,
                                              int argc,
                                              const char* const *argv,
                                              const char* llvmdir,
-                                             DeclCollector* stateCollector);
+                                 std::unique_ptr<DeclCollector> stateCollector);
   private:
     //---------------------------------------------------------------------
     //! Constructor

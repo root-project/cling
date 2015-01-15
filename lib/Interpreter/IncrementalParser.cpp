@@ -562,9 +562,11 @@ namespace cling {
     // This llvm::Module is done; finalize it and pass it to the execution
     // engine.
     if (!T->isNestedTransaction() && hasCodeGenerator()) {
-      if (llvm::Module* M = getCodeGenerator()->ReleaseModule()) {
-        assert(M == T->getModule() && "Transaction has inconsistent module");
-        m_Interpreter->addModule(M);
+      std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
+      if (M) {
+        assert(M.get() == T->getModule()
+               && "Transaction has inconsistent module");
+        m_Interpreter->addModule(std::move(M));
       }
 
       // Create a new module.
@@ -731,13 +733,14 @@ namespace cling {
     // Create an uninitialized memory buffer, copy code in and append "\n"
     size_t InputSize = input.size(); // don't include trailing 0
     // MemBuffer size should *not* include terminating zero
-    llvm::MemoryBuffer* MB
-      = llvm::MemoryBuffer::getNewUninitMemBuffer(InputSize + 1,
-                                                  source_name.str());
+    std::unique_ptr<llvm::MemoryBuffer>
+      MB(llvm::MemoryBuffer::getNewUninitMemBuffer(InputSize + 1,
+                                                   source_name.str()));
     char* MBStart = const_cast<char*>(MB->getBufferStart());
     memcpy(MBStart, input.data(), InputSize);
     memcpy(MBStart + InputSize, "\n", 2);
 
+    m_MemoryBuffers.push_back(MB.get());
     SourceManager& SM = getCI()->getSourceManager();
 
     // Create SourceLocation, which will allow clang to order the overload
@@ -745,7 +748,8 @@ namespace cling {
     SourceLocation NewLoc = getLastMemoryBufferEndLoc().getLocWithOffset(1);
 
     // Create FileID for the current buffer
-    FileID FID = SM.createFileID(MB, SrcMgr::C_User, /*LoadedID*/0,
+    FileID FID = SM.createFileID(std::move(MB), SrcMgr::C_User,
+                                 /*LoadedID*/0,
                                  /*LoadedOffset*/0, NewLoc);
 
     m_MemoryBuffers.push_back(std::make_pair(MB, FID));

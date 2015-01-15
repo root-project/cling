@@ -12,6 +12,7 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
 
 #include <vector>
 #include <set>
@@ -125,7 +126,15 @@ namespace cling {
       kNumExeResults
     };
 
-    IncrementalExecutor(llvm::Module* m, clang::DiagnosticsEngine& diags);
+    IncrementalExecutor(clang::DiagnosticsEngine& diags):
+    m_CurrentAtExitModule(0)
+#if 0
+    : m_Diags(diags)
+#endif
+{
+  m_AtExitFuncs.reserve(256);
+}
+
     ~IncrementalExecutor();
 
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
@@ -157,7 +166,7 @@ namespace cling {
     /// ExecutionEngine::addModule()
     ///
     /// @param[in] module - The module to pass to the execution engine.
-    void addModule(llvm::Module* module);
+    void addModule(std::unique_ptr<llvm::Module> module);
 
     ///\brief Tells the execution context that we are shutting down the system.
     ///
@@ -200,6 +209,10 @@ namespace cling {
     void* NotifyLazyFunctionCreators(const std::string&);
 
   private:
+    ///\brief Build the llvm::ExecutionEngine given a readymade llvm::Module
+    /// that can be passed to it.
+    void BuildEngine(std::unique_ptr<llvm::Module> m);
+
     ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, such
     /// that the interpreter can call the object destructors at the right time.
     ///

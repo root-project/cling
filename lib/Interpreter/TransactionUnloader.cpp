@@ -26,7 +26,6 @@
 #include "clang/Lex/Preprocessor.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
-#include "llvm/ExecutionEngine/JIT.h" // For debugging the EE in gdb
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
@@ -132,7 +131,7 @@ namespace clang {
     void CollectAllUsesOfGlobals(llvm::GlobalValue *G) {
       using namespace llvm;
       // If the global is already in the set, no need to reprocess it.
-      if (!VisitedGlobals.insert(G))
+      if (!VisitedGlobals.insert(G).second)
         return;
 
       if (GlobalVariable *GV = dyn_cast<GlobalVariable>(G)) {
@@ -173,7 +172,7 @@ namespace clang {
       for (User::op_iterator I = C->op_begin(), E = C->op_end(); I != E; ++I) {
         Constant *Op = dyn_cast<Constant>(*I);
         // We already processed this constant there's no need to do it again.
-        if (Op && SeenConstants.insert(Op))
+        if (Op && SeenConstants.insert(Op).second)
           MarkConstant(Op);
       }
     }
@@ -846,12 +845,12 @@ namespace clang {
     // Brute-force all possibly generated ctors.
     // Ctor_Complete            Complete object ctor.
     // Ctor_Base                Base object ctor.
-    // Ctor_CompleteAllocating  Complete object allocating ctor.
+    // Ctor_Comdat              The COMDAT used for ctors.
     GlobalDecl GD(CXXCtor, Ctor_Complete);
     MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXCtor, Ctor_Base);
     MaybeRemoveDeclFromModule(GD);
-    GD = GlobalDecl(CXXCtor, Ctor_CompleteAllocating);
+    GD = GlobalDecl(CXXCtor, Ctor_Comdat);
     MaybeRemoveDeclFromModule(GD);
 
     bool Successful = VisitCXXMethodDecl(CXXCtor);
@@ -865,13 +864,16 @@ namespace clang {
 
     // Brute-force all possibly generated dtors.
     // Dtor_Deleting            Deleting dtor.
-    // Dtor_Base                Base object dtor.
     // Dtor_Complete            Complete object dtor.
+    // Dtor_Base                Base object dtor.
+    // Dtor_Comdat              The COMDAT used for dtors.
     GlobalDecl GD(CXXDtor, Dtor_Deleting);
     MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXDtor, Dtor_Complete);
     MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXDtor, Dtor_Base);
+    MaybeRemoveDeclFromModule(GD);
+    GD = GlobalDecl(CXXDtor, Dtor_Comdat);
     MaybeRemoveDeclFromModule(GD);
 
     bool Successful = VisitCXXMethodDecl(CXXDtor);

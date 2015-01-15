@@ -570,7 +570,7 @@ namespace cling {
     ///\brief Interpreter callbacks accessors.
     /// Note that this class takes ownership of any callback object given to it.
     ///
-    void setCallbacks(InterpreterCallbacks* C);
+    void setCallbacks(std::unique_ptr<InterpreterCallbacks> C);
     const InterpreterCallbacks* getCallbacks() const {return m_Callbacks.get();}
     InterpreterCallbacks* getCallbacks() { return m_Callbacks.get(); }
 
@@ -626,7 +626,7 @@ namespace cling {
 
     ///\brief Forwards to cling::IncrementalExecutor::addModule.
     ///
-    void addModule(llvm::Module* module);
+    void addModule(std::unique_ptr<llvm::Module> module);
 
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);

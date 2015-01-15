@@ -137,11 +137,12 @@ namespace cling {
     //
     //  Create a fake file to parse the type name.
     //
-    llvm::MemoryBuffer* SB
-      = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
-                                             bufferName.str());
+    std::unique_ptr<llvm::MemoryBuffer>
+      SB = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
+                                                bufferName.str());
     SourceLocation NewLoc = Interp->getNextAvailableLoc();
-    FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+    FileID FID = S.getSourceManager().createFileID(std::move(SB),
+                                                   SrcMgr::C_User,
                                                    /*LoadedID*/0,
                                                    /*LoadedOffset*/0, NewLoc);
     //
@@ -489,6 +490,9 @@ namespace cling {
                 TheDecl = Context.getTranslationUnitDecl();
               }
               break;
+          case NestedNameSpecifier::Super:
+            // Microsoft's __super::
+            return 0;
           }
           return TheDecl;
         }
@@ -504,11 +508,12 @@ namespace cling {
     //  Setup to reparse as a type.
     //
 
-    llvm::MemoryBuffer* SB =
-      llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
-                                           "lookup.type.file");
+    std::unique_ptr<llvm::MemoryBuffer>
+      SB(llvm::MemoryBuffer::getMemBufferCopy(className.str() + "\n",
+                                              "lookup.type.file"));
     SourceLocation NewLoc = m_Interpreter->getNextAvailableLoc();
-    FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+    FileID FID = S.getSourceManager().createFileID(std::move(SB),
+                                                   SrcMgr::C_User,
                                                    /*LoadedID*/0,
                                                    /*LoadedOffset*/0, NewLoc);
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
@@ -606,6 +611,9 @@ namespace cling {
             if (!where) return 0;
             break;
           }
+        case NestedNameSpecifier::Super:
+          // Microsoft's __super::
+          return 0;
         };
       }
     } else if (P.getCurToken().is(clang::tok::identifier)) {
@@ -1015,11 +1023,12 @@ namespace cling {
     {
       PP.getDiagnostics().setSuppressAllDiagnostics(diagOnOff ==
                                                    LookupHelper::NoDiagnostics);
-      llvm::MemoryBuffer* SB
-           = llvm::MemoryBuffer::getMemBufferCopy(funcName.str()
-                                                + "\n", "lookup.funcname.file");
+      std::unique_ptr<llvm::MemoryBuffer>
+        SB(llvm::MemoryBuffer::getMemBufferCopy(funcName.str() + "\n",
+                                                "lookup.funcname.file"));
       SourceLocation NewLoc = Interp->getNextAvailableLoc();
-      FileID FID = S.getSourceManager().createFileID(SB, SrcMgr::C_User,
+      FileID FID = S.getSourceManager().createFileID(std::move(SB),
+                                                     SrcMgr::C_User,
                                                      /*LoadedID*/0,
                                                      /*LoadedOffset*/0, NewLoc);
       PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);

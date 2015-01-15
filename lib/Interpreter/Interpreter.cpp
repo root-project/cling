@@ -184,10 +184,9 @@ namespace cling {
                                                      /*SkipFunctionBodies*/false,
                                                      /*isTemp*/true), this));
 
-    if (!isInSyntaxOnlyMode()) {
-      llvm::Module* theModule = m_IncrParser->getCodeGenerator()->GetModule();
-      m_Executor.reset(new IncrementalExecutor(theModule, SemaRef.Diags));
-    }
+    if (!isInSyntaxOnlyMode())
+      m_Executor.reset(new IncrementalExecutor(SemaRef.Diags));
+
     // Tell the diagnostic client that we are entering file parsing mode.
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
@@ -213,7 +212,9 @@ namespace cling {
       m_IncrParser->commitTransaction(*I);
     // Disable suggestions for ROOT
     bool showSuggestions = !llvm::StringRef(CLING_VERSION).startswith("ROOT");
-    setCallbacks(new AutoloadCallback(this, showSuggestions));
+    std::unique_ptr<InterpreterCallbacks>
+       AutoLoadCB(new AutoloadCallback(this, showSuggestions));
+    setCallbacks(std::move(AutoLoadCB));
   }
 
   Interpreter::~Interpreter() {
@@ -520,13 +521,14 @@ namespace cling {
     // Clang doc says:
     // "LookupFrom is set when this is a \#include_next directive, it specifies
     // the file to start searching from."
-    const DirectoryLookup* LookupFrom = 0;
+    const DirectoryLookup* FromDir = 0;
+    const FileEntry* FromFile = 0;
     const DirectoryLookup* CurDir = 0;
 
     ModuleMap::KnownHeader suggestedModule;
     // PP::LookupFile uses it to issue 'nice' diagnostic
     SourceLocation fileNameLoc;
-    PP.LookupFile(fileNameLoc, headerFile, isAngled, LookupFrom, CurDir,
+    PP.LookupFile(fileNameLoc, headerFile, isAngled, FromDir, FromFile, CurDir,
                   /*SearchPath*/0, /*RelativePath*/ 0, &suggestedModule,
                   /*SkipCache*/false, /*OpenFile*/ false, /*CacheFail*/ false);
     if (!suggestedModule)
@@ -1005,13 +1007,14 @@ namespace cling {
     // Clang doc says:
     // "LookupFrom is set when this is a \#include_next directive, it
     // specifies the file to start searching from."
-    const DirectoryLookup* LookupFrom = 0;
+    const DirectoryLookup* FromDir = 0;
+    const FileEntry* FromFile = 0;
     const DirectoryLookup* CurDir = 0;
     Preprocessor& PP = getCI()->getPreprocessor();
     // PP::LookupFile uses it to issue 'nice' diagnostic
     SourceLocation fileNameLoc;
-    FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, LookupFrom, CurDir,
-                       /*SearchPath*/0, /*RelativePath*/ 0,
+    FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, FromDir, FromFile,
+                       CurDir, /*SearchPath*/0, /*RelativePath*/ 0,
                        /*suggestedModule*/0, /*SkipCache*/false,
                        /*OpenFile*/ false, /*CacheFail*/ false);
     if (FE)
@@ -1089,7 +1092,7 @@ namespace cling {
     return Result;
   }
 
-  void Interpreter::setCallbacks(InterpreterCallbacks* C) {
+  void Interpreter::setCallbacks(std::unique_ptr<InterpreterCallbacks> C) {
     // We need it to enable LookupObject callback.
     if (!m_Callbacks) {
       m_Callbacks.reset(new MultiplexInterpreterCallbacks(this));
@@ -1099,7 +1102,7 @@ namespace cling {
     }
 
     static_cast<MultiplexInterpreterCallbacks*>(m_Callbacks.get())
-      ->addCallback(C);
+      ->addCallback(std::move(C));
   }
 
   const Transaction* Interpreter::getFirstTransaction() const {
@@ -1151,8 +1154,8 @@ namespace cling {
     return m_Executor->addSymbol(symbolName, symbolAddress);
   }
 
-  void Interpreter::addModule(llvm::Module* module) {
-    m_Executor->addModule(module);
+  void Interpreter::addModule(std::unique_ptr<llvm::Module> module) {
+     m_Executor->addModule(std::move(module));
   }
 
 
@@ -1211,11 +1214,11 @@ namespace cling {
     if (!T)
       return;
 
-    std::string err;
-    llvm::raw_fd_ostream out(outFile.data(), err,
+    std::error_code EC;
+    llvm::raw_fd_ostream out(outFile.data(), EC,
                              llvm::sys::fs::OpenFlags::F_None);
     llvm::raw_fd_ostream log((outFile + ".skipped").str().c_str(),
-                             err, llvm::sys::fs::OpenFlags::F_None);
+                             EC, llvm::sys::fs::OpenFlags::F_None);
     log << "Generated for :" << inFile << "\n";
     forwardDeclare(*T, fwdGen.getCI()->getSema(), out, enableMacros,
                    &log);
