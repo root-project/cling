@@ -83,14 +83,15 @@ namespace cling {
       const FileEntry* FE = 0;
       SourceLocation fileNameLoc;
       bool isAngled = false;
-      const DirectoryLookup* LookupFrom = 0;
+      const DirectoryLookup* FromDir = 0;
+      const FileEntry* FromFile = 0;
       const DirectoryLookup* CurDir = 0;
       llvm::StringRef FileName = annotation.drop_front(lenAnnoTag);
       if (FileName.equals(m_PrevFileName))
         FE = m_PrevFE;
       else {
         FE = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
-                              LookupFrom, CurDir, /*SearchPath*/0,
+                              FromDir, FromFile, CurDir, /*SearchPath*/0,
                               /*RelativePath*/ 0, /*suggestedModule*/0,
                               /*SkipCache*/ false, /*OpenFile*/ false,
                               /*CacheFail*/ true);
