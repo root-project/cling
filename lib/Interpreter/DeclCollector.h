@@ -24,8 +24,25 @@ namespace clang {
 
 namespace cling {
 
+  class DeclCollector;
   class Interpreter;
   class Transaction;
+
+  ///\brief Serves as DeclCollector's connector to the PPCallbacks interface.
+  ///
+  class DeclCollectorPPAdapter: public clang::PPCallbacks {
+    DeclCollector* m_parent;
+  public:
+    DeclCollectorPPAdapter(DeclCollector* parent):
+      m_parent(parent)
+    {}
+
+    /// \name PPCallbacks overrides
+    /// Macro support
+    void MacroDefined(const clang::Token &MacroNameTok,
+                      const clang::MacroDirective *MD) override;
+    /// \}
+  };
 
   ///\brief Collects declarations and fills them in cling::Transaction.
   ///
@@ -33,8 +50,7 @@ namespace cling {
   /// cling::DeclCollector is responsible for appending all the declarations
   /// seen by clang.
   ///
-  class DeclCollector: public clang::PPCallbacks,
-                       public clang::ASTMutationListener,
+  class DeclCollector: public clang::ASTMutationListener,
                        public clang::ASTConsumer  {
   private:
     Transaction* m_CurTransaction;
@@ -49,12 +65,16 @@ namespace cling {
     DeclCollector() : m_CurTransaction(0){}
     virtual ~DeclCollector();
 
+    std::unique_ptr<DeclCollectorPPAdapter> MakePPAdapter() {
+      return std::unique_ptr<DeclCollectorPPAdapter>
+        (new DeclCollectorPPAdapter(this));
+    }
+
     /// \name PPCallbacks overrides
     /// Macro support
-    virtual void MacroDefined(const clang::Token &MacroNameTok,
+    void MacroDefined(const clang::Token &MacroNameTok,
                               const clang::MacroDirective *MD);
     /// \}
-
     /// \name ASTMutationListeners overrides
     virtual void AddedCXXImplicitMember(const clang::CXXRecordDecl *RD,
                                         const clang::Decl *D);
@@ -89,6 +109,13 @@ namespace cling {
     // dyn_cast/isa support
     static bool classof(const clang::ASTConsumer*) { return true; }
   };
+
+  inline void
+  DeclCollectorPPAdapter::MacroDefined(const clang::Token &MacroNameTok,
+                                       const clang::MacroDirective *MD) {
+    m_parent->MacroDefined(MacroNameTok, MD);
+  }
+
 } // namespace cling
 
 #endif // CLING_DECL_COLLECTOR_H
