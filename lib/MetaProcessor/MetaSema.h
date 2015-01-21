@@ -220,6 +220,15 @@ namespace cling {
     ///
     ActionResult actOnShellCommand(llvm::StringRef commandLine,
                                    Value* result) const;
+
+    ///\brief Register the file as an upload point for the current
+    ///  Transaction: when unloading that file, all transactions after
+    ///  the current one will be reverted.
+    ///
+    ///\param [in] filename - The name of the file to be used as unload
+    ///  point.
+    void registerUnloadPoint(const Transaction* T, llvm::StringRef filename);
+
   };
 
 } // end namespace cling

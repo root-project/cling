@@ -59,16 +59,8 @@ namespace cling {
       canFile = file;
     if (m_Interpreter.loadFile(canFile, true /*allowSharedLib*/, transaction)
         == Interpreter::kSuccess) {
-      clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
-      clang::FileManager& FM = SM.getFileManager();
-      const clang::FileEntry* Entry
-        = FM.getFile(canFile, /*OpenFile*/false, /*CacheFailure*/false);
-       if (Entry && !m_Watermarks[Entry]) { // register as a watermark
-          m_Watermarks[Entry] = unloadPoint;
-          m_ReverseWatermarks[unloadPoint] = Entry;
-          //fprintf(stderr,"DEBUG: Load for %s recorded unloadPoint %p\n",file.str().c_str(),unloadPoint);
-       }
-       return AR_Success;
+      registerUnloadPoint(unloadPoint, canFile);
+      return AR_Success;
     }
     return AR_Failure;
   }
@@ -433,5 +425,21 @@ namespace cling {
       *result = Value();
     // nothing to run - should this be success or failure?
     return AR_Failure;
+  }
+
+  void MetaSema::registerUnloadPoint(const Transaction* unloadPoint,
+                                     llvm::StringRef filename) {
+    std::string canFile = m_Interpreter.lookupFileOrLibrary(filename);
+    if (canFile.empty())
+      canFile = filename;
+    clang::SourceManager& SM = m_Interpreter.getSema().getSourceManager();
+    clang::FileManager& FM = SM.getFileManager();
+    const clang::FileEntry* Entry
+      = FM.getFile(canFile, /*OpenFile*/false, /*CacheFailure*/false);
+    if (Entry && !m_Watermarks[Entry]) { // register as a watermark
+      m_Watermarks[Entry] = unloadPoint;
+      m_ReverseWatermarks[unloadPoint] = Entry;
+      //fprintf(stderr,"DEBUG: Load for %s recorded unloadPoint %p\n",file.str().c_str(),unloadPoint);
+    }
   }
 } // end namespace cling

@@ -336,4 +336,9 @@ namespace cling {
     return backupFD;
   }
 
+  void MetaProcessor::registerUnloadPoint(const Transaction* T,
+                                          llvm::StringRef filename) {
+    m_MetaParser->getActions().registerUnloadPoint(T, filename);
+  }
+
 } // end namespace cling
