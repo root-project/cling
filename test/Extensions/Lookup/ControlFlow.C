@@ -30,7 +30,9 @@
 extern "C" int printf(const char*,...);
 
 .dynamicExtensions
-gCling->setCallbacks(new cling::test::SymbolResolverCallback(gCling));
+std::unique_ptr<cling::test::SymbolResolverCallback> SRC;
+SRC.reset(new cling::test::SymbolResolverCallback(gCling))
+gCling->setCallbacks(std::move(SRC));
 
 int a[5] = {1,2,3,4,5};
 if (h->PrintArray(a, 5)) { // runtime result type bool

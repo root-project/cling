@@ -16,8 +16,9 @@
 
 .dynamicExtensions 1
 
-cling::test::SymbolResolverCallback* SRC = new cling::test::SymbolResolverCallback(gCling);
-gCling->setCallbacks(SRC);
+std::unique_ptr<cling::test::SymbolResolverCallback> SRC;
+SRC.reset(new cling::test::SymbolResolverCallback(gCling))
+gCling->setCallbacks(std::move(SRC));
 
 .x LifetimeHandler.h
 // CHECK: Alpha's single arg ctor called {{.*Interpreter.*}}
