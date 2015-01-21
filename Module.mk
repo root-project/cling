@@ -128,12 +128,12 @@ etc/cling/%.h: $(CLINGDIR)/include/cling/%.h
 
 $(CLINGDIR)/%.o: $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) -D__cplusplus -- $<
-	$(CXX) $(OPT) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
+	$(CXX) $(OPT) $(CXXMKDEPFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
 
 $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDIR)
 	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS))  -D__cplusplus -- $<
-	$(CXX) $(OPT) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
+	$(CXX) $(OPT) $(CXXMKDEPFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
 
 $(CLINGCOMPDH): FORCE $(LLVMDEP)
 	@mkdir -p $(dir $@)
