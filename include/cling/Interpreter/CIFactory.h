@@ -24,21 +24,21 @@ namespace clang {
 }
 
 namespace cling {
-  class DeclCollector;
   class CIFactory {
   public:
+    typedef std::unique_ptr<llvm::MemoryBuffer> MemBufPtr_t;
     // TODO: Add overload that takes file not MemoryBuffer
     static clang::CompilerInstance* createCI(llvm::StringRef code,
                                              int argc,
                                              const char* const *argv,
                                              const char* llvmdir);
 
-    static clang::CompilerInstance* createCI(
-                                     std::unique_ptr<llvm::MemoryBuffer> buffer,
+    static clang::CompilerInstance* createCI(MemBufPtr_t buffer,
                                              int argc,
                                              const char* const *argv,
                                              const char* llvmdir,
-                                 std::unique_ptr<DeclCollector> stateCollector);
+                                             bool OnlyLex = false);
+
   private:
     //---------------------------------------------------------------------
     //! Constructor

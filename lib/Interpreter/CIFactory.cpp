@@ -450,9 +450,8 @@ namespace {
            I = HostCXXI.begin(), E = HostCXXI.end(); I != E; ++I)
       args.push_back(I->c_str());
   }
-} // unnamed namespace
 
-namespace cling {
+
   //
   //  Dummy function so we can use dladdr to find the executable path.
   //
@@ -484,20 +483,12 @@ namespace cling {
     return &Cmd->getArguments();
   }
 
-  CompilerInstance* CIFactory::createCI(llvm::StringRef code,
-                                        int argc,
-                                        const char* const *argv,
-                                        const char* llvmdir) {
-    return createCI(llvm::MemoryBuffer::getMemBuffer(code), argc, argv, llvmdir,
-                    std::unique_ptr<DeclCollector>(new DeclCollector()));
-  }
-
-  CompilerInstance* CIFactory::createCI(
+  static CompilerInstance* createCIImpl(
                                      std::unique_ptr<llvm::MemoryBuffer> buffer,
                                         int argc,
                                         const char* const *argv,
                                         const char* llvmdir,
-                                std::unique_ptr<DeclCollector> stateCollector) {
+                                        bool OnlyLex) {
     // Create an instance builder, passing the llvmdir and arguments.
     //
 
@@ -712,18 +703,21 @@ namespace cling {
     // Set up the ASTContext
     CI->createASTContext();
 
-    //FIXME: This is bad workaround for use-cases which need only a CI to parse
-    //things, like pragmas. In that case we cannot controll the interpreter's
-    // state collector thus detach from whatever possible.
-    if (stateCollector) {
+    if (OnlyLex) {
+      class IgnoreConsumer: public clang::ASTConsumer {
+      };
+      std::unique_ptr<clang::ASTConsumer> ignoreConsumer(new IgnoreConsumer());
+      CI->setASTConsumer(std::move(ignoreConsumer));
+    } else {
+      std::unique_ptr<cling::DeclCollector>
+        stateCollector(new cling::DeclCollector());
+
+      // Set up the ASTConsumers
+      CI->getASTContext().setASTMutationListener(stateCollector.get());
       // Add the callback keeping track of the macro definitions
       PP.addPPCallbacks(std::move(stateCollector->MakePPAdapter()));
+      CI->setASTConsumer(std::move(stateCollector));
     }
-    else
-      stateCollector.reset(new DeclCollector());
-    // Set up the ASTConsumers
-    CI->getASTContext().setASTMutationListener(stateCollector.get());
-    CI->setASTConsumer(std::move(stateCollector));
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;
@@ -740,4 +734,23 @@ namespace cling {
 
     return CI.release(); // Passes over the ownership to the caller.
   }
+
+} // unnamed namespace
+
+namespace cling {
+  CompilerInstance* CIFactory::createCI(llvm::StringRef code,
+                                        int argc,
+                                        const char* const *argv,
+                                        const char* llvmdir) {
+    return createCIImpl(llvm::MemoryBuffer::getMemBuffer(code), argc, argv, llvmdir, false /*OnlyLex*/);
+  }
+
+  CompilerInstance* CIFactory::createCI(MemBufPtr_t buffer,
+                                        int argc,
+                                        const char* const *argv,
+                                        const char* llvmdir,
+                                        bool OnlyLex) {
+    return createCIImpl(std::move(buffer), argc, argv, llvmdir, OnlyLex);
+  }
+
 } // end namespace
