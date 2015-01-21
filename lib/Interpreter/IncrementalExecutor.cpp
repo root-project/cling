@@ -30,7 +30,7 @@ using namespace llvm;
 
 namespace {
 class ClingMemoryManager: public SectionMemoryManager {
-  cling::IncrementalExecutor* m_exe;
+  cling::IncrementalExecutor& m_exe;
 
   static void local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
     cling::IncrementalExecutor* exe = (cling::IncrementalExecutor*)dso;
@@ -38,11 +38,20 @@ class ClingMemoryManager: public SectionMemoryManager {
   }
 
 public:
-  ClingMemoryManager(cling::IncrementalExecutor* Exe):
+  ClingMemoryManager(cling::IncrementalExecutor& Exe):
     m_exe(Exe) {}
 
   ///\brief Return the address of a symbol, use callbacks if needed.
   uint64_t getSymbolAddress (const std::string &Name) override;
+
+  /// This method returns the address of the specified function or variable
+  /// that could not be resolved by getSymbolAddress() or by resolving
+  /// possible weak symbols by the ExecutionEngine.
+  /// It is used to resolve symbols during module linking.
+  uint64_t getMissingSymbolAddress(const std::string &Name) override {
+    return (uint64_t) m_exe.NotifyLazyFunctionCreators(Name);
+  }
+
   ///\brief Simply wraps the base class's function setting AbortOnFailure
   /// to false and instead using the error handling mechanism to report it.
   void* getPointerToNamedFunction(const std::string &Name,
@@ -58,11 +67,10 @@ uint64_t ClingMemoryManager::getSymbolAddress(const std::string &Name) {
     return (uint64_t)&local_cxa_atexit;
   } else if (Name == "__dso_handle") {
     // Provide IncrementalExecutor as the third argument to __cxa_atexit.
-    return (uint64_t)m_exe;
+    return (uint64_t)&m_exe;
   }
-  if (uint64_t Addr = SectionMemoryManager::getSymbolAddress(Name))
-    return Addr;
-  return (uint64_t) m_exe->NotifyLazyFunctionCreators(Name);
+  uint64_t Addr = SectionMemoryManager::getSymbolAddress(Name);
+  return Addr;
 }
 
 }
@@ -90,7 +98,7 @@ void IncrementalExecutor::BuildEngine(std::unique_ptr<llvm::Module> m) {
   builder.setOptLevel(llvm::CodeGenOpt::Less);
   builder.setEngineKind(llvm::EngineKind::JIT);
   std::unique_ptr<llvm::RTDyldMemoryManager>
-    MemMan(new ClingMemoryManager(this));
+    MemMan(new ClingMemoryManager(*this));
   builder.setMCJITMemoryManager(std::move(MemMan));
 
   // EngineBuilder uses default c'ted TargetOptions, too:
