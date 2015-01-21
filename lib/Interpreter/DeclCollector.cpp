@@ -68,7 +68,7 @@ namespace cling {
     m_CurTransaction->append(DCI);
   }
 
-  void DeclCollector::HandleVTable(CXXRecordDecl* RD, bool DefinitionRequired) {
+  void DeclCollector::HandleVTable(CXXRecordDecl* RD) {
     Transaction::DelayCallInfo DCI(DeclGroupRef(RD),
                                    Transaction::kCCIHandleVTable);
     m_CurTransaction->append(DCI);

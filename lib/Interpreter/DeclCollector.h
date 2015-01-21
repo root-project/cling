@@ -86,8 +86,7 @@ namespace cling {
     virtual bool HandleTopLevelDecl(clang::DeclGroupRef DGR);
     virtual void HandleInterestingDecl(clang::DeclGroupRef DGR);
     virtual void HandleTagDeclDefinition(clang::TagDecl* TD);
-    virtual void HandleVTable(clang::CXXRecordDecl* RD,
-                              bool DefinitionRequired);
+    virtual void HandleVTable(clang::CXXRecordDecl* RD);
     virtual void CompleteTentativeDefinition(clang::VarDecl* VD);
     virtual void HandleTranslationUnit(clang::ASTContext& Ctx);
     virtual void HandleCXXImplicitFunctionInstantiation(clang::FunctionDecl *D);
