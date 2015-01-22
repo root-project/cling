@@ -287,21 +287,23 @@ namespace cling {
     // only at runtime
     // Make sure that the universe won't be included to compile time by using
     // -D __CLING__ as CompilerInstance's arguments
+
+    std::stringstream initializer;
 #ifdef _WIN32
     // We have to use the #defined __CLING__ on windows first.
     //FIXME: Find proper fix.
-    declare("#ifdef __CLING__ \n#endif");
+    initializer << "#ifdef __CLING__ \n#endif\n";
 #endif
-    declare("#include \"cling/Interpreter/RuntimeUniverse.h\"");
+
+    initializer << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
 
     if (!isInSyntaxOnlyMode()) {
       // Set up the gCling variable if it can be used
-      std::stringstream initializer;
       initializer << "namespace cling {namespace runtime { "
         "cling::Interpreter *gCling=(cling::Interpreter*)"
                   << (uintptr_t)this << ";} }";
-      declare(initializer.str());
     }
+    declare(initializer.str());
   }
 
   void Interpreter::IncludeCRuntime() {
