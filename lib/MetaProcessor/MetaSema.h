@@ -225,6 +225,8 @@ namespace cling {
     ///  Transaction: when unloading that file, all transactions after
     ///  the current one will be reverted.
     ///
+    ///\param [in] T - The unload point - any later Transaction will be
+    /// reverted when filename is unloaded.
     ///\param [in] filename - The name of the file to be used as unload
     ///  point.
     void registerUnloadPoint(const Transaction* T, llvm::StringRef filename);
