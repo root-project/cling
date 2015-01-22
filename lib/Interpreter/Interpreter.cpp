@@ -166,7 +166,7 @@ namespace cling {
 
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
-    m_UniqueCounter(0), m_PrintDebug(false),
+    m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
     m_LastCustomPragmaDiagPopPoint(){
 
@@ -1140,11 +1140,12 @@ namespace cling {
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {
     m_DynamicLookupEnabled = value;
 
-    if (isDynamicLookupEnabled()) {
+    if (!m_DynamicLookupDeclared && isDynamicLookupEnabled()) {
      if (loadModuleForHeader("cling/Interpreter/DynamicLookupRuntimeUniverse.h")
          != kSuccess)
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
     }
+    m_DynamicLookupDeclared = true;
   }
 
   Interpreter::ExecutionResult

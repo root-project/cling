@@ -158,6 +158,10 @@ namespace cling {
     ///
     bool m_PrintDebug;
 
+    ///\brief Whether DynamicLookupRuntimeUniverse.h has been parsed.
+    ///
+    bool m_DynamicLookupDeclared;
+
     ///\brief Flag toggling the dynamic scopes on or off.
     ///
     bool m_DynamicLookupEnabled;
