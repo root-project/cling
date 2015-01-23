@@ -52,6 +52,12 @@ namespace cling {
     /// describing code coming from an existing library.
     unsigned CodeGenerationForModule : 1;
 
+    ///\brief Prompt input can look weird for the compiler, e.g.
+    /// void __cling_prompt() { sin(0.1); } // warning: unused function call
+    /// This flag suppresses these warnings; it should be set whenever input
+    /// is wrapped.
+    unsigned IgnorePromptDiags : 1;
+
     CompilationOptions() {
       DeclarationExtraction = 0;
       ValuePrinting = VPDisabled;
@@ -60,6 +66,7 @@ namespace cling {
       Debug = 0;
       CodeGeneration = 1;
       CodeGenerationForModule = 0;
+      IgnorePromptDiags = 0;
     }
 
     bool operator==(CompilationOptions Other) const {
@@ -70,8 +77,10 @@ namespace cling {
         DynamicScoping        == Other.DynamicScoping &&
         Debug                 == Other.Debug &&
         CodeGeneration        == Other.CodeGeneration &&
-        CodeGenerationForModule == Other.CodeGenerationForModule;
+        CodeGenerationForModule == Other.CodeGenerationForModule &&
+        IgnorePromptDiags     == Other.IgnorePromptDiags;
     }
+
     bool operator!=(CompilationOptions Other) const {
       return
         DeclarationExtraction != Other.DeclarationExtraction ||
@@ -80,7 +89,8 @@ namespace cling {
         DynamicScoping        != Other.DynamicScoping ||
         Debug                 != Other.Debug ||
         CodeGeneration        != Other.CodeGeneration ||
-        CodeGenerationForModule != Other.CodeGenerationForModule;
+        CodeGenerationForModule != Other.CodeGenerationForModule ||
+        IgnorePromptDiags     != Other.IgnorePromptDiags;
     }
   };
 } // end namespace cling
