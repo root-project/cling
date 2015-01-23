@@ -167,8 +167,7 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
     m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
-    m_LastCustomPragmaDiagPopPoint(){
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -956,7 +955,7 @@ namespace cling {
 
   Interpreter::CompilationResult
   Interpreter::EvaluateInternal(const std::string& input,
-                                const CompilationOptions& CO,
+                                CompilationOptions CO,
                                 Value* V, /* = 0 */
                                 Transaction** T /* = 0 */) {
     StateDebuggerRAII stateDebugger(this);
@@ -966,37 +965,11 @@ namespace cling {
     std::string Wrapper = input;
     WrapInput(Wrapper, WrapperName);
 
-    // Disable warnings which doesn't make sense when using the prompt
-    // This gets reset with the clang::Diagnostics().Reset(/*soft*/=false)
-    // using clang's API we simulate:
-    // #pragma warning push
-    // #pragma warning ignore ...
-    // #pragma warning ignore ...
-    // #pragma warning pop
-    SourceLocation Loc = getNextAvailableLoc();
-    DiagnosticsEngine& Diags = getCI()->getDiagnostics();
-    Diags.pushMappings(Loc);
-    // The source locations of #pragma warning ignore must be greater than
-    // the ones from #pragma push
-    Diags.setSeverity(clang::diag::warn_unused_expr,
-                      clang::diag::Severity::Ignored, SourceLocation());
-    Diags.setSeverity(clang::diag::warn_unused_call,
-                      clang::diag::Severity::Ignored, SourceLocation());
-    Diags.setSeverity(clang::diag::warn_unused_comparison,
-                      clang::diag::Severity::Ignored, SourceLocation());
-    Diags.setSeverity(clang::diag::ext_return_has_expr,
-                      clang::diag::Severity::Ignored, SourceLocation());
-    if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
-      Loc = m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
-      // if the location was the same we are in recursive calls and to avoid an
-      // assert in clang we should increment by a value.
-      if (SourceLocation::getFromRawEncoding(m_LastCustomPragmaDiagPopPoint)
-          == Loc)
-        // Nested #pragma pop-s must be on different source locations.
-        Loc = Loc.getLocWithOffset(1);
-      m_LastCustomPragmaDiagPopPoint = Loc.getRawEncoding();
+    // We have wrapped and need to disable warnings that are caused by
+    // non-default C++ at the prompt:
+    CO.IgnorePromptDiags = 1;
 
-      Diags.popMappings(Loc);
+    if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
       assert((lastT->getState() == Transaction::kCommitted
               || lastT->getState() == Transaction::kRolledBack)
              && "Not committed?");
@@ -1022,7 +995,6 @@ namespace cling {
 
       return Interpreter::kFailure;
     }
-    Diags.popMappings(Loc.getLocWithOffset(1));
     return Interpreter::kSuccess;
   }
 
