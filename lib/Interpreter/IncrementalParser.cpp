@@ -740,7 +740,6 @@ namespace cling {
     memcpy(MBStart, input.data(), InputSize);
     memcpy(MBStart + InputSize, "\n", 2);
 
-    m_MemoryBuffers.push_back(MB);
     SourceManager& SM = getCI()->getSourceManager();
 
     // Create SourceLocation, which will allow clang to order the overload
@@ -748,10 +747,10 @@ namespace cling {
     SourceLocation NewLoc = getLastMemoryBufferEndLoc().getLocWithOffset(1);
 
     // Create FileID for the current buffer
-    FileID FID = SM.createFileID(m_MemoryBuffers.back(),
-                                 SrcMgr::C_User,
-                                 /*LoadedID*/0,
+    FileID FID = SM.createFileID(MB, SrcMgr::C_User, /*LoadedID*/0,
                                  /*LoadedOffset*/0, NewLoc);
+
+    m_MemoryBuffers.push_back(std::make_pair(MB, FID));
 
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
     m_Consumer->getTransaction()->setBufferFID(FID);
@@ -795,7 +794,7 @@ namespace cling {
     };
 
     if (IgnorePromptDiags) {
-      SourceLocation Loc = SM.getLocForEndOfFile(FID);
+      SourceLocation Loc = SM.getLocForEndOfFile(m_MemoryBuffers.back().second);
       Diags.popMappings(Loc);
     }
 

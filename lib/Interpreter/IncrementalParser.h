@@ -61,7 +61,7 @@ namespace cling {
     std::unique_ptr<clang::Parser> m_Parser;
 
     // One buffer for each command line, owner by the source file manager
-    std::deque<llvm::MemoryBuffer*> m_MemoryBuffers;
+    std::deque<std::pair<llvm::MemoryBuffer*, clang::FileID>> m_MemoryBuffers;
 
     // file ID of the memory buffer
     clang::FileID m_VirtualFileID;
