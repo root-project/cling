@@ -585,7 +585,10 @@ namespace cling {
     DiagnosticsEngine& Diag = getCI()->getDiagnostics();
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Ignored, SourceLocation());
-    return DeclareInternal(input, CO);
+    CompilationResult Result = DeclareInternal(input, CO);
+    Diag.setSeverity(clang::diag::warn_field_is_uninit,
+                     clang::diag::Severity::Warning, SourceLocation());
+    return Result;
   }
 
   Interpreter::CompilationResult
@@ -853,6 +856,9 @@ namespace cling {
     cling::Transaction* T = 0;
     cling::Interpreter::CompilationResult CR = declare(code, &T);
     LO.AccessControl = savedAccessControl;
+
+    Diag.setSeverity(clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
+                     clang::diag::Severity::Warning, SourceLocation());
 
     if (CR != cling::Interpreter::kSuccess)
       return 0;
