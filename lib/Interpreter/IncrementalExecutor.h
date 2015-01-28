@@ -51,15 +51,7 @@ namespace cling {
     ///
     std::unique_ptr<llvm::ExecutionEngine> m_engine;
 
-    ///\brief Symbols to be replaced by special Interpreter implementations.
-    ///
-    /// Replaces the exectution engine's symbol "first" by second.first, or
-    /// if it is NULL, but the symbol second.second which must exist at the time
-    /// the symbol is replaced. The replacement is tried again until first us
-    /// found.
-    std::map<std::string,std::pair<void*,std::string>> m_SymbolsToRemap;
-
-    ///\breif Helper that manages when the destructor of an object to be called.
+    ///\brief Helper that manages when the destructor of an object to be called.
     ///
     /// The object is registered first as an CXAAtExitElement and then cling
     /// takes the control of it's destruction.
@@ -212,11 +204,6 @@ namespace cling {
     ///\brief Build the llvm::ExecutionEngine given a readymade llvm::Module
     /// that can be passed to it.
     void BuildEngine(std::unique_ptr<llvm::Module> m);
-
-    ///\brief Remaps the __cxa_at_exit with a interpreter-controlled one, such
-    /// that the interpreter can call the object destructors at the right time.
-    ///
-    void remapSymbols();
 
     ///\brief Report and empty m_unresolvedSymbols.
     ///\return true if m_unresolvedSymbols was non-empty.

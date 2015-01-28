@@ -122,45 +122,6 @@ void IncrementalExecutor::shuttingDown() {
   }
 }
 
-void IncrementalExecutor::remapSymbols() {
-  // Note: iteration of ++remapI happens in the body due to invalidation
-  // of the erased iterator!
-  for (auto remapI = std::begin(m_SymbolsToRemap),
-         remapE = std::end(m_SymbolsToRemap);
-       remapI != remapE;) {
-    // The function for which the symbol address will be replaced
-    llvm::Function* origFunc
-      = m_engine->FindFunctionNamed(remapI->first.c_str());
-    if (!origFunc) {
-      // Go to next element.
-      ++remapI;
-      continue;
-    }
-
-    // The new symbol address, which might be NULL to signal a symbol
-    // lookup is required
-    void* replaceAddr = remapI->second.first;
-    if (!replaceAddr) {
-      // A symbol lookup is required to find the replacement address.
-      llvm::Function* interpFunc
-        = m_engine->FindFunctionNamed(remapI->second.second.c_str());
-      assert(interpFunc && "replacement function must exist.");
-      // Generate the symbol and get its address
-      replaceAddr = m_engine->getPointerToFunction(interpFunc);
-    }
-    assert(replaceAddr && "cannot find replacement symbol");
-    // Replace the mapping of function symbol to new address
-    m_engine->updateGlobalMapping(origFunc, replaceAddr);
-
-    // Note that the current entry was successfully remapped.
-    // Save the current so we can erase it *after* the iterator increment
-    // or we would increment an invalid iterator.
-    auto remapErase = remapI;
-    ++remapI;
-    m_SymbolsToRemap.erase(remapErase);
-  }
-}
-
 void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg) {
   // Register a CXAAtExit function
   m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, m_CurrentAtExitModule));
@@ -240,7 +201,6 @@ IncrementalExecutor::executeFunction(llvm::StringRef funcname,
   if (returnValue) {
     *returnValue = Value();
   }
-  remapSymbols();
 
   llvm::Function* f = m_engine->FindFunctionNamed(funcname.str().c_str());
   if (!f) {
@@ -330,7 +290,6 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
 
     // Execute the ctor/dtor function!
     if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
-      remapSymbols();
       m_engine->getPointerToFunction(F);
       // check if there is any unresolved symbol in the list
       if (diagnoseUnresolvedSymbols("static initializers"))
@@ -441,7 +400,6 @@ IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
-  remapSymbols();
   if (void* addr = m_engine->getPointerToGlobalIfAvailable(&GV))
     return addr;
 
