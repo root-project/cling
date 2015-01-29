@@ -23,7 +23,14 @@ void symbol_requester() {
    const char* const argv[] = {"libcling__symbol_requester", 0};
    Interpreter I(1, argv);
    //cling_PrintValue(0);
-   LookupHelper h(0,0);
+   // sharedPtr is needed for SLC6 with devtoolset2:
+   // Redhat re-uses libstdc++ from GCC 4.4 and patches missing symbols into
+   // the binary through an archive. We need to pull more symbols from the
+   // archive to make them available to cling. This list will possibly need to
+   // grow...
+   std::shared_ptr<int> sp;
+   Interpreter* SLC6DevToolSet = (Interpreter*)(void*)&sp;
+   LookupHelper h(0,SLC6DevToolSet);
    h.findType("", LookupHelper::NoDiagnostics);
    h.findScope("", LookupHelper::NoDiagnostics);
    h.findFunctionProto(0, "", "", LookupHelper::NoDiagnostics);
