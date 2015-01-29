@@ -1052,6 +1052,10 @@ namespace cling {
   void Interpreter::unload(unsigned numberOfTransactions) {
     while(true) {
       cling::Transaction* T = m_IncrParser->getLastTransaction();
+      if (!T) {
+         llvm::errs() << "cling: invalid last transaction; unload failed!\n";
+         return;
+      }
       if (InterpreterCallbacks* callbacks = getCallbacks())
         callbacks->TransactionUnloaded(*T);
       if (m_Executor) // we also might be in fsyntax-only mode.
