@@ -18,6 +18,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 
+#include "llvm/IR/Module.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
@@ -41,6 +42,7 @@ namespace cling {
     m_IssuedDiags = kNone;
     m_Opts = CompilationOptions();
     m_Module = 0;
+    m_ExeUnload = {0};
     m_WrapperFD = 0;
     m_Next = 0;
     //m_Sema = S;

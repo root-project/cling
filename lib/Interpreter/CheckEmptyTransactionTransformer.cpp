@@ -36,7 +36,7 @@ namespace cling {
           T->erase(found);
         }
         // We know that it didn't end up in the EE by design.
-        TransactionUnloader U(m_Sema, /*CodeGenerator*/0, /*ExecutionEngine*/0);
+        TransactionUnloader U(m_Sema, /*CodeGenerator*/0);
         U.UnloadDecl(FD);
       }
     }

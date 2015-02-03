@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "IncrementalExecutor.h"
+#include "IncrementalJIT.h"
 
 #include "cling/Interpreter/Value.h"
 #include "cling/Interpreter/Transaction.h"
@@ -20,99 +21,60 @@
 #include "llvm/IR/Module.h"
 #include "llvm/PassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
-#include "llvm/ExecutionEngine/GenericValue.h"
-#include "llvm/ExecutionEngine/MCJIT.h"
-#include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "llvm/ADT/Triple.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Target/TargetMachine.h"
 
 using namespace llvm;
 
-namespace {
-class ClingMemoryManager: public SectionMemoryManager {
-  cling::IncrementalExecutor& m_exe;
-
-  static void local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
-    cling::IncrementalExecutor* exe = (cling::IncrementalExecutor*)dso;
-    exe->AddAtExitFunc(func, arg);
-  }
-
-public:
-  ClingMemoryManager(cling::IncrementalExecutor& Exe):
-    m_exe(Exe) {}
-
-  ///\brief Return the address of a symbol, use callbacks if needed.
-  uint64_t getSymbolAddress (const std::string &Name) override;
-
-  /// This method returns the address of the specified function or variable
-  /// that could not be resolved by getSymbolAddress() or by resolving
-  /// possible weak symbols by the ExecutionEngine.
-  /// It is used to resolve symbols during module linking.
-  uint64_t getMissingSymbolAddress(const std::string &Name) override {
-    return (uint64_t) m_exe.NotifyLazyFunctionCreators(Name);
-  }
-
-  ///\brief Simply wraps the base class's function setting AbortOnFailure
-  /// to false and instead using the error handling mechanism to report it.
-  void* getPointerToNamedFunction(const std::string &Name,
-                                  bool /*AbortOnFailure*/ =true) override {
-    return SectionMemoryManager::getPointerToNamedFunction(Name, false);
-  }
-};
-
-uint64_t ClingMemoryManager::getSymbolAddress(const std::string &Name) {
-  if (Name == "__cxa_atexit") {
-    // Rewrire __cxa_atexit to ~Interpreter(), thus also global destruction
-    // coming from the JIT.
-    return (uint64_t)&local_cxa_atexit;
-  } else if (Name == "__dso_handle") {
-    // Provide IncrementalExecutor as the third argument to __cxa_atexit.
-    return (uint64_t)&m_exe;
-  }
-  uint64_t Addr = SectionMemoryManager::getSymbolAddress(Name);
-  return Addr;
-}
-
-}
-
 namespace cling {
 
-std::set<std::string> IncrementalExecutor::m_unresolvedSymbols;
+IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags):
+  m_CurrentAtExitModule(0)
+#if 0
+  : m_Diags(diags)
+#endif
+{
+  m_AtExitFuncs.reserve(256);
 
-std::vector<IncrementalExecutor::LazyFunctionCreatorFunc_t>
-  IncrementalExecutor::m_lazyFuncCreator;
+  m_JIT.reset(new IncrementalJIT(*this, std::move(CreateHostTargetMachine())));
+}
 
-// Keep in source: ~unique_ptr<ExecutionEngine> needs #include ExecutionEngine
+// Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
 IncrementalExecutor::~IncrementalExecutor() {}
 
-void IncrementalExecutor::BuildEngine(std::unique_ptr<llvm::Module> m) {
-  //
-  //  Create an execution engine to use.
-  //
-  assert(m && "Module cannot be null");
-  // Note: Engine takes ownership of the module.
-  llvm::EngineBuilder builder(std::move(m));
+std::unique_ptr<TargetMachine>
+  IncrementalExecutor::CreateHostTargetMachine() const {
+  // TODO: make this configurable.
+  Triple TheTriple(sys::getProcessTriple());
+  std::string Error;
+  const Target *TheTarget
+    = TargetRegistry::lookupTarget(TheTriple.getTriple(), Error);
+  if (!TheTarget) {
+    llvm::errs() << "cling::IncrementalExecutor: unable to find target:\n"
+                 << Error;
+  }
 
-  std::string errMsg;
-  builder.setErrorStr(&errMsg);
-  builder.setOptLevel(llvm::CodeGenOpt::Less);
-  builder.setEngineKind(llvm::EngineKind::JIT);
-  std::unique_ptr<llvm::RTDyldMemoryManager>
-    MemMan(new ClingMemoryManager(*this));
-  builder.setMCJITMemoryManager(std::move(MemMan));
+  std::string MCPU;
+  std::string FeaturesStr;
 
-  // EngineBuilder uses default c'ted TargetOptions, too:
-  llvm::TargetOptions TargetOpts;
-  TargetOpts.NoFramePointerElim = 1;
-  TargetOpts.JITEmitDebugInfo = 1;
+  TargetOptions Options = TargetOptions();
+  Options.NoFramePointerElim = 1;
+  Options.JITEmitDebugInfo = 1;
+  Reloc::Model RelocModel = Reloc::Default;
+  CodeModel::Model CMModel = CodeModel::JITDefault;
+  CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
 
-  builder.setTargetOptions(TargetOpts);
-
-  m_engine.reset(builder.create());
-  assert(m_engine && "Cannot create module!");
-
-  // install lazy function creators
-  //m_engine->InstallLazyFunctionCreator(NotifyLazyFunctionCreators);
+  std::unique_ptr<TargetMachine> TM;
+  TM.reset(TheTarget->createTargetMachine(TheTriple.getTriple(),
+                                          MCPU, FeaturesStr,
+                                          Options,
+                                          RelocModel, CMModel,
+                                          OptLevel));
+  return std::move(TM);
 }
 
 void IncrementalExecutor::shuttingDown() {
@@ -190,48 +152,11 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
   }
 }
 
-IncrementalExecutor::ExecutionResult
-IncrementalExecutor::executeFunction(llvm::StringRef funcname,
-                                     Value* returnValue) {
-  // Call a function without arguments, or with an SRet argument, see SRet below
-  // We don't care whether something was unresolved before.
-  m_unresolvedSymbols.clear();
-
-  // Set the value to cling::invalid.
-  if (returnValue) {
-    *returnValue = Value();
-  }
-
-  llvm::Function* f = m_engine->FindFunctionNamed(funcname.str().c_str());
-  if (!f) {
-    llvm::errs() << "IncrementalExecutor::executeFunction: "
-      "could not find function named " << funcname << '\n';
-    return kExeFunctionNotCompiled;
-  }
-  assert (f->getFunctionType()->getNumParams() == 1
-          && (*f->getFunctionType()->param_begin())->isPtrOrPtrVectorTy() &&
-          "Wrong signature");
-  typedef void (*PromptWrapper_t)(void*);
-  union {
-    PromptWrapper_t wrapperFunction;
-    void* address;
-  } p2f;
-  p2f.address = (void*)m_engine->getFunctionAddress(funcname);
-
-  // check if there is any unresolved symbol in the list
-  if (diagnoseUnresolvedSymbols(funcname, "function"))
-    return kExeUnresolvedSymbols;
-
-  // Run the function
-  (*p2f.wrapperFunction)(returnValue);
-
-  return kExeSuccess;
-}
 
 IncrementalExecutor::ExecutionResult
-IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
+IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
+  llvm::Module* m = T.getModule();
   assert(m && "Module must not be null");
-  assert(m_engine && "Code generation did not create an engine!");
 
   // Set m_CurrentAtExitModule to the Module, unset to 0 once done.
   struct AtExitModuleSetterRAII {
@@ -243,8 +168,6 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
-
-  m_engine->finalizeObject();
 
   // check if there is any unresolved symbol in the list
   if (diagnoseUnresolvedSymbols("static initializers"))
@@ -290,13 +213,8 @@ IncrementalExecutor::runStaticInitializersOnce(llvm::Module* m) {
 
     // Execute the ctor/dtor function!
     if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
-      m_engine->getPointerToFunction(F);
-      // check if there is any unresolved symbol in the list
-      if (diagnoseUnresolvedSymbols("static initializers"))
-        return kExeUnresolvedSymbols;
+      executeInit(F->getName());
 
-      //executeFunction(F->getName());
-      m_engine->runFunction(F, std::vector<llvm::GenericValue>());
       initFuncs.push_back(F);
       if (F->getName().startswith("_GLOBAL__sub_I__")) {
         BasicBlock& BB = F->getEntryBlock();
@@ -369,14 +287,6 @@ IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
   return true;
 }
 
-void IncrementalExecutor::addModule(std::unique_ptr<Module> module) {
-  if (!m_engine)
-    BuildEngine(std::move(module));
-  else
-    m_engine->addModule(std::move(module));
-}
-
-
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) {
   // Return a symbol's address, and whether it was jitted.
@@ -388,7 +298,7 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
     *fromJIT = !address;
 
   if (!address)
-    return (void*)m_engine->getGlobalValueAddress(symbolName);
+    return (void*)m_JIT->getSymbolAddress(symbolName);
 
   return address;
 }
@@ -400,14 +310,11 @@ IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
-  if (void* addr = m_engine->getPointerToGlobalIfAvailable(&GV))
-    return addr;
+  void* addr = (void*)m_JIT->getSymbolAddress(GV.getName());
 
-  //  Function not yet codegened by the JIT, force this to happen now.
-  void* Ptr = m_engine->getPointerToGlobal(&GV);
   if (diagnoseUnresolvedSymbols(GV.getName(), "symbol"))
     return 0;
-  return Ptr;
+  return addr;
 }
 
 bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
@@ -435,12 +342,12 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
     if (!title.empty())
       llvm::errs() << "'";
     llvm::errs() << "!\n";
-    llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
+    //llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
     // i could also reference a global variable, in which case ff == 0.
-    if (ff)
-      funcsToFree.push_back(ff);
+    //if (ff)
+    //  funcsToFree.push_back(ff);
   }
-  freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
+  //freeCallersOfUnresolvedSymbols(funcsToFree, m_engine.get());
   m_unresolvedSymbols.clear();
   return true;
 }

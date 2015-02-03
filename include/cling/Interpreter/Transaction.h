@@ -61,6 +61,11 @@ namespace cling {
       kCCINumStates
     };
 
+    ///\brief Sort of opaque handle for unloading a transaction from the JIT.
+    struct ExeUnloadHandle {
+      void* m_Opaque;
+    };
+
     ///\brief Each declaration group came through different interface at
     /// different time. We are being conservative and we want to keep all the
     /// call sequence that originally occurred in clang.
@@ -141,7 +146,12 @@ namespace cling {
 
     ///\brief The llvm Module containing the information that we will revert
     ///
-    llvm::Module* m_Module;
+    std::unique_ptr<llvm::Module> m_Module;
+
+    ///\brief The ExecutionEngine handle allowing an removal of the
+    /// Transaction's symbols.
+    ///
+    ExeUnloadHandle m_ExeUnload;
 
     ///\brief The wrapper function produced by the intepreter if any.
     ///
@@ -426,8 +436,11 @@ namespace cling {
         m_NestedTransactions->clear();
     }
 
-    llvm::Module* getModule() const { return m_Module; }
-    void setModule(llvm::Module* M) { m_Module = M ; }
+    llvm::Module* getModule() const { return m_Module.get(); }
+    void setModule(std::unique_ptr<llvm::Module> M) { m_Module.swap(M); }
+
+    ExeUnloadHandle getExeUnloadHandle() { return m_ExeUnload; }
+    void setExeUnloadHandle(ExeUnloadHandle H) { m_ExeUnload = H; }
 
     clang::FunctionDecl* getWrapperFD() const { return m_WrapperFD; }
 

@@ -396,7 +396,7 @@ namespace cling {
       transformTransactionIR(T);
       T->setState(Transaction::kCommitted);
       if (!T->getParent()) {
-        if (m_Interpreter->runStaticInitializersOnce(*T)
+        if (m_Interpreter->executeTransaction(*T)
             >= Interpreter::kExeFirstError) {
           // Roll back on error in initializers
           //assert(0 && "Error on inits.");
@@ -444,8 +444,6 @@ namespace cling {
     assert(T->getCompilationOpts().CodeGeneration && "CodeGen turned off");
     assert(T->getState() == Transaction::kCompleted && "Must be completed");
     assert(hasCodeGenerator() && "No CodeGen");
-
-    T->setModule(getCodeGenerator()->GetModule());
 
     // Could trigger derserialization of decls.
     Transaction* deserT = beginTransaction(CompilationOptions());
@@ -556,16 +554,30 @@ namespace cling {
       } // for decls in DGR
     } // for deserialized DGRs
 
-    getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
+    // The initializers are emitted to the symbol "_GLOBAL__sub_I_" + filename.
+    // Make that unique!
+    ASTContext& Context = getCI()->getASTContext();
+    SourceManager &SM = Context.getSourceManager();
+    const FileEntry *MainFile = SM.getFileEntryForID(SM.getMainFileID());
+    FileEntry* NcMainFile = const_cast<FileEntry*>(MainFile);
+    // Hack to temporarily set the file entry's name to a unique name.
+    assert(MainFile->getName() == *(const char**)MainFile
+           && "FileEntry does not start with the name");
+    const char* &FileName = *(const char**)NcMainFile;
+    const char* OldName = FileName;
+    std::string ModName = getCodeGenerator()->GetModule()->getName().str();
+    FileName = ModName.c_str();
+    getCodeGenerator()->HandleTranslationUnit(Context);
+    FileName = OldName;
 
     // This llvm::Module is done; finalize it and pass it to the execution
     // engine.
     if (!T->isNestedTransaction() && hasCodeGenerator()) {
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
+
       if (M) {
-        assert(M.get() == T->getModule()
-               && "Transaction has inconsistent module");
-        m_Interpreter->addModule(std::move(M));
+         m_Interpreter->addModule(M.get());
+        T->setModule(std::move(M));
       }
 
       // Create a new module.
@@ -617,8 +629,7 @@ namespace cling {
     if (m_Interpreter->getOptions().ErrorOut)
       return;
 
-    TransactionUnloader U(&getCI()->getSema(), m_CodeGen.get(),
-                          m_Interpreter->getExecutionEngine());
+    TransactionUnloader U(&getCI()->getSema(), m_CodeGen.get());
 
     if (U.RevertTransaction(T))
       T->setState(Transaction::kRolledBack);

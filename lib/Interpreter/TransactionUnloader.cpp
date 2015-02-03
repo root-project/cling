@@ -25,7 +25,6 @@
 #include "clang/Lex/MacroInfo.h"
 #include "clang/Lex/Preprocessor.h"
 
-#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
@@ -45,10 +44,9 @@ namespace clang {
     Globals VisitedGlobals;
     llvm::SmallPtrSet<llvm::Constant *, 8> SeenConstants;
     clang::CodeGenerator* m_CodeGen;
-    llvm::ExecutionEngine* m_EEngine;
   public:
-    GlobalValueEraser(clang::CodeGenerator* CG, llvm::ExecutionEngine* EE)
-      : m_CodeGen(CG), m_EEngine(EE) { }
+    GlobalValueEraser(clang::CodeGenerator* CG)
+      : m_CodeGen(CG) { }
 
     ///\brief Erases the given global value and all unused leftovers
     ///
@@ -93,7 +91,6 @@ namespace clang {
           if ((*I)->getName().equals("_Unwind_Resume"))
             continue;
 
-          m_EEngine->updateGlobalMapping(*I, 0);
           m_CodeGen->forgetGlobal(*I);
           (*I)->eraseFromParent();
         }
@@ -207,10 +204,6 @@ namespace clang {
     ///
     clang::CodeGenerator* m_CodeGen;
 
-    ///\brief The execution engine, either JIT or MCJIT, being recovered.
-    ///
-    llvm::ExecutionEngine* m_EEngine;
-
     ///\brief The current transaction being unloaded.
     ///
     const Transaction* m_CurTransaction;
@@ -224,9 +217,8 @@ namespace clang {
     FileIDs m_FilesToUncache;
 
   public:
-    DeclUnloader(Sema* S, clang::CodeGenerator* CG, llvm::ExecutionEngine* EE,
-                 const Transaction* T)
-      : m_Sema(S), m_CodeGen(CG), m_EEngine(EE), m_CurTransaction(T) { }
+    DeclUnloader(Sema* S, clang::CodeGenerator* CG, const Transaction* T)
+      : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T) { }
     ~DeclUnloader();
 
     ///\brief Interface with nice name, forwarding to Visit.
@@ -1001,7 +993,7 @@ namespace clang {
       llvm::Module* M = m_CurTransaction->getModule();
       GlobalValue* GV = M->getNamedValue(mangledName);
       if (GV) { // May be deferred decl and thus 0
-        GlobalValueEraser GVEraser(m_CodeGen, m_EEngine);
+        GlobalValueEraser GVEraser(m_CodeGen);
         GVEraser.EraseGlobalValue(GV);
       }
     }
@@ -1177,16 +1169,15 @@ namespace clang {
 } // end namespace clang
 
 namespace cling {
-  TransactionUnloader::TransactionUnloader(Sema* S, clang::CodeGenerator* CG,
-                                           llvm::ExecutionEngine* EE)
-    : m_Sema(S), m_CodeGen(CG), m_EEngine(EE) {
+  TransactionUnloader::TransactionUnloader(Sema* S, clang::CodeGenerator* CG)
+    : m_Sema(S), m_CodeGen(CG) {
   }
 
   TransactionUnloader::~TransactionUnloader() {
   }
 
   bool TransactionUnloader::RevertTransaction(Transaction* T) {
-    DeclUnloader DeclU(m_Sema, m_CodeGen, m_EEngine, T);
+    DeclUnloader DeclU(m_Sema, m_CodeGen, T);
     bool Successful = true;
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),

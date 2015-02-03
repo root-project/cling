@@ -355,7 +355,7 @@ namespace cling {
     ClangInternalState* state
       = new ClangInternalState(getCI()->getASTContext(),
                                getCI()->getPreprocessor(),
-                               CG ? CG->GetModule() : 0,
+                               getLastTransaction()->getModule(),
                                CG, name);
     m_StoredStates.push_back(state);
   }
@@ -471,11 +471,6 @@ namespace cling {
 
   Sema& Interpreter::getSema() const {
     return getCI()->getSema();
-  }
-
-  llvm::ExecutionEngine* Interpreter::getExecutionEngine() const {
-    if (!m_Executor) return 0;
-    return m_Executor->getExecutionEngine();
   }
 
   ///\brief Maybe transform the input line to implement cint command line
@@ -638,7 +633,7 @@ namespace cling {
     // decls that need to end up in a transaction. But this one is done
     // with CodeGen...
     T->setState(Transaction::kCommitted);
-    if (runStaticInitializersOnce(*T))
+    if (executeTransaction(*T))
       return Interpreter::kSuccess;
 
     return Interpreter::kFailure;
@@ -749,7 +744,7 @@ namespace cling {
     std::string mangledNameIfNeeded;
     utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
     IncrementalExecutor::ExecutionResult ExeRes =
-       m_Executor->executeFunction(mangledNameIfNeeded.c_str(), res);
+       m_Executor->executeWrapper(mangledNameIfNeeded.c_str(), res);
     return ConvertExecutionResult(ExeRes);
   }
 
@@ -1130,14 +1125,16 @@ namespace cling {
   }
 
   Interpreter::ExecutionResult
-  Interpreter::runStaticInitializersOnce(const Transaction& T) const {
+  Interpreter::executeTransaction(Transaction& T) const {
     assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
+
+    T.setExeUnloadHandle(m_Executor->emitToJIT());
+
     // Forward to IncrementalExecutor; should not be called by
     // anyone except for IncrementalParser.
-    llvm::Module* module = T.getModule();
     IncrementalExecutor::ExecutionResult ExeRes
-       = m_Executor->runStaticInitializersOnce(module);
+       = m_Executor->runStaticInitializersOnce(T);
 
     // Reset the module builder to clean up global initializers, c'tors, d'tors
     ASTContext& C = getCI()->getASTContext();
@@ -1154,8 +1151,8 @@ namespace cling {
     return m_Executor->addSymbol(symbolName, symbolAddress);
   }
 
-  void Interpreter::addModule(std::unique_ptr<llvm::Module> module) {
-     m_Executor->addModule(std::move(module));
+  void Interpreter::addModule(llvm::Module* module) {
+     m_Executor->addModule(module);
   }
 
 

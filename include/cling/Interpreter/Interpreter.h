@@ -239,7 +239,7 @@ namespace cling {
     ///
     void WrapInput(std::string& input, std::string& fname);
 
-    ///\brief Runs given function.
+    ///\brief Runs given wrapper function void(*)(Value*).
     ///
     ///\param [in] fname - The function name.
     ///\param [in,out] res - The return result of the run function. Must be
@@ -546,14 +546,13 @@ namespace cling {
 
     clang::CompilerInstance* getCI() const;
     clang::Sema& getSema() const;
-    llvm::ExecutionEngine* getExecutionEngine() const;
 
     //FIXME: This must be in InterpreterCallbacks.
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
 
     //FIXME: Terrible hack to let the IncrementalParser run static inits on
     // transaction completed.
-    ExecutionResult runStaticInitializersOnce(const Transaction& T) const;
+    ExecutionResult executeTransaction(Transaction& T) const;
 
     ///\brief Evaluates given expression within given declaration context.
     ///
@@ -626,7 +625,7 @@ namespace cling {
 
     ///\brief Forwards to cling::IncrementalExecutor::addModule.
     ///
-    void addModule(std::unique_ptr<llvm::Module> module);
+    void addModule(llvm::Module* module);
 
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);

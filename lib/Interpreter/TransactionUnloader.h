@@ -10,10 +10,6 @@
 #ifndef CLING_TRANSACTION_UNLOADER
 #define CLING_TRANSACTION_UNLOADER
 
-namespace llvm {
-  class ExecutionEngine;
-}
-
 namespace clang {
   class CodeGenerator;
   class CompilerInstance;
@@ -31,11 +27,9 @@ namespace cling {
   private:
     clang::Sema* m_Sema;
     clang::CodeGenerator* m_CodeGen;
-    llvm::ExecutionEngine* m_EEngine;
 
   public:
-    TransactionUnloader(clang::Sema* S, clang::CodeGenerator* CG,
-                        llvm::ExecutionEngine* EE);
+    TransactionUnloader(clang::Sema* S, clang::CodeGenerator* CG);
     ~TransactionUnloader();
 
     ///\brief Rolls back given transaction from the AST.
