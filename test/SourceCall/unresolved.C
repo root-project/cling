@@ -13,7 +13,6 @@
 .rawInput
 int foo(); // extern C++
 void bar() { foo(); }
-// CHECK: IncrementalExecutor::executeFunction: symbol '{{.*}}foo{{.*}}' unresolved while linking
 .rawInput
 extern "C" int functionWithoutDefinition();
 
