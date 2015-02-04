@@ -570,6 +570,11 @@ namespace cling {
     getCodeGenerator()->HandleTranslationUnit(Context);
     FileName = OldName;
 
+    // Commit this transaction first - T might need symbols from it, so
+    // trigger emission of weak symbols by providing use.
+    if ((deserT = endTransaction(deserT)))
+      commitTransaction(deserT);
+
     // This llvm::Module is done; finalize it and pass it to the execution
     // engine.
     if (!T->isNestedTransaction() && hasCodeGenerator()) {
@@ -589,9 +594,6 @@ namespace cling {
       getCodeGenerator()->StartModule(ModuleName,
                                       *m_Interpreter->getLLVMContext());
     }
-
-    if ((deserT = endTransaction(deserT)))
-      commitTransaction(deserT);
   }
 
   void IncrementalParser::transformTransactionAST(Transaction* T) {
