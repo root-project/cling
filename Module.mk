@@ -87,7 +87,7 @@ CLINGEXCCXXFLAGS := -fno-exceptions
 CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 	$(addprefix -lclang,\
 		Frontend Serialization Driver CodeGen Parse Sema Analysis AST Edit Lex Basic) \
-	$(shell $(LLVMCONFIG) --libs bitwriter mcjit native option ipo instrumentation objcarcopts profiledata)\
+	$(shell $(LLVMCONFIG) --libs bitwriter orcjit mcjit native option ipo instrumentation objcarcopts profiledata)\
 	$(shell $(LLVMCONFIG) --ldflags) $(shell $(LLVMCONFIG) --system-libs)
 
 ifneq (,$(filter $(ARCH),win32gcc win64gcc))
