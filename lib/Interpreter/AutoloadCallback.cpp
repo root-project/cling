@@ -57,8 +57,8 @@ namespace cling {
 
   class AutoloadingVisitor: public RecursiveASTVisitor<AutoloadingVisitor> {
   private:
-    ///\brief Flag determining the visitor's actions. If tru, register autoload
-    /// entries, i.e. remember the connection between filename to declaration
+    ///\brief Flag determining the visitor's actions. If true, register autoload
+    /// entries, i.e. remember the connection between filename and the declaration
     /// that needs to be updated on #include of the filename.
     /// If false, react on an #include by adjusting the forward decls, e.g. by
     /// removing the default tremplate arguments (that will now be provided by
