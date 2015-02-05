@@ -197,6 +197,16 @@ namespace cling {
 
       VisitDecl(D);
 
+      // If we have a definition we might be about to re-#include the
+      // same header containing definition that was #included previously,
+      // i.e. we might have multiple fwd decls for the same template.
+      // DO NOT remove the defaults here; the definition needs to keep it.
+      // (ROOT-7037)
+      if (ClassTemplateDecl* CTD = dyn_cast<ClassTemplateDecl>(D))
+        if (CXXRecordDecl* TemplatedD = CTD->getTemplatedDecl())
+          if (TemplatedD->getDefinition())
+            return true;
+
       for(auto P: D->getTemplateParameters()->asArray())
         TraverseDecl(P);
       return true;
