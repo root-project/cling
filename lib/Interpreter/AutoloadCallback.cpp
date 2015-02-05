@@ -57,6 +57,13 @@ namespace cling {
 
   class AutoloadingVisitor: public RecursiveASTVisitor<AutoloadingVisitor> {
   private:
+    ///\brief Flag determining the visitor's actions. If tru, register autoload
+    /// entries, i.e. remember the connection between filename to declaration
+    /// that needs to be updated on #include of the filename.
+    /// If false, react on an #include by adjusting the forward decls, e.g. by
+    /// removing the default tremplate arguments (that will now be provided by
+    /// the definition read from the include) and by removing enum declarations
+    /// that would otherwise be duplicates.
     bool m_IsStoringState;
     AutoloadCallback::FwdDeclsMap* m_Map;
     clang::Preprocessor* m_PP;
