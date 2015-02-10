@@ -752,19 +752,19 @@ namespace cling {
     memcpy(MBStart, input.data(), InputSize);
     memcpy(MBStart + InputSize, "\n", 2);
 
-    m_MemoryBuffers.push_back(MB.get());
     SourceManager& SM = getCI()->getSourceManager();
 
     // Create SourceLocation, which will allow clang to order the overload
     // candidates for example
     SourceLocation NewLoc = getLastMemoryBufferEndLoc().getLocWithOffset(1);
 
+    llvm::MemoryBuffer* MBNonOwn = MB.get();
     // Create FileID for the current buffer
     FileID FID = SM.createFileID(std::move(MB), SrcMgr::C_User,
                                  /*LoadedID*/0,
                                  /*LoadedOffset*/0, NewLoc);
 
-    m_MemoryBuffers.push_back(std::make_pair(MB, FID));
+    m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
 
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
     m_Consumer->getTransaction()->setBufferFID(FID);
