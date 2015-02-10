@@ -175,6 +175,12 @@ namespace cling {
     ///
     const Transaction* getCurrentTransaction() const;
 
+
+    ///\brief Add a user-generated transaction.
+    void addTransaction(Transaction* T) {
+      m_Transactions.push_back(T);
+    }
+
     ///\brief Returns the list of transactions seen by the interpreter.
     /// Intentionally makes a copy - that function is meant to be use for debug
     /// purposes.

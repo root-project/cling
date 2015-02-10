@@ -626,8 +626,9 @@ namespace cling {
 
   Interpreter::CompilationResult Interpreter::emitAllDecls(Transaction* T) {
     assert(!isInSyntaxOnlyMode() && "No CodeGenerator?");
+    m_IncrParser->addTransaction(T);
     m_IncrParser->markWholeTransactionAsUsed(T);
-    m_IncrParser->codeGenTransaction(T);
+    m_IncrParser->commitTransaction(T);
 
     // The static initializers might run anything and can thus cause more
     // decls that need to end up in a transaction. But this one is done

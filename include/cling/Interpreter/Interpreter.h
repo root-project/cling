@@ -501,7 +501,7 @@ namespace cling {
     ///\brief Generates code for all Decls of a transaction.
     ///
     /// @param[in] T - The cling::Transaction that contains the declarations and
-    ///                the compilation/generation options.
+    ///                the compilation/generation options. Takes ownership!
     ///
     ///\returns Whether the operation was fully successful.
     ///
