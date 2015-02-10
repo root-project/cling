@@ -10,6 +10,7 @@
 #include "cling/Interpreter/Transaction.h"
 
 #include "cling/Utils/AST.h"
+#include "IncrementalExecutor.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclBase.h"
@@ -47,6 +48,7 @@ namespace cling {
     m_Next = 0;
     //m_Sema = S;
     m_BufferFID = FileID(); // sets it to invalid.
+    m_Exe = 0;
   }
 
   Transaction::~Transaction() {
@@ -57,6 +59,8 @@ namespace cling {
                && "All nested transactions must be committed!");
         delete (*m_NestedTransactions)[i];
       }
+    if (getExecutor())
+      getExecutor()->unloadFromJIT(getExeUnloadHandle());
   }
 
   NamedDecl* Transaction::containsNamedDecl(llvm::StringRef name) const {

@@ -552,7 +552,7 @@ namespace cling {
 
     //FIXME: Terrible hack to let the IncrementalParser run static inits on
     // transaction completed.
-    ExecutionResult executeTransaction(Transaction& T) const;
+    ExecutionResult executeTransaction(Transaction& T);
 
     ///\brief Evaluates given expression within given declaration context.
     ///

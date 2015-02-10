@@ -1125,11 +1125,11 @@ namespace cling {
   }
 
   Interpreter::ExecutionResult
-  Interpreter::executeTransaction(Transaction& T) const {
+  Interpreter::executeTransaction(Transaction& T) {
     assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
 
-    T.setExeUnloadHandle(m_Executor->emitToJIT());
+    T.setExeUnloadHandle(m_Executor.get(), m_Executor->emitToJIT());
 
     // Forward to IncrementalExecutor; should not be called by
     // anyone except for IncrementalParser.
