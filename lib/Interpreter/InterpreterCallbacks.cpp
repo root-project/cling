@@ -159,7 +159,8 @@ namespace cling {
                              bool enableExternalSemaSourceCallbacks/* = false*/,
                         bool enableDeserializationListenerCallbacks/* = false*/,
                                              bool enablePPCallbacks/* = false*/)
-    : m_Interpreter(interp), m_IsRuntime(false) {
+    : m_Interpreter(interp), m_ExternalSemaSource(0), m_PPCallbacks(0),
+      m_IsRuntime(false) {
     Sema& SemaRef = interp->getSema();
     ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
     ExternalSemaSource* externalSemaSrc = SemaRef.getExternalSource();
