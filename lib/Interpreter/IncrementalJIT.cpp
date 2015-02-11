@@ -13,6 +13,13 @@
 
 #include "llvm/Support/DynamicLibrary.h"
 
+#ifdef __APPLE__
+// Apple adds an extra '_'
+# define MANGLE_PREFIX "_"
+#else
+# define MANGLE_PREFIX ""
+#endif
+
 using namespace llvm;
 
 namespace {
@@ -136,7 +143,13 @@ public:
   /// possible weak symbols by the ExecutionEngine.
   /// It is used to resolve symbols during module linking.
   uint64_t getMissingSymbolAddress(const std::string &Name) override {
-    return (uint64_t) m_jit.getParent().NotifyLazyFunctionCreators(Name);
+    std::string NameNoPrefix;
+    if (MANGLE_PREFIX[0]
+        && !Name.compare(0, strlen(MANGLE_PREFIX), MANGLE_PREFIX))
+      NameNoPrefix = Name.substr(strlen(MANGLE_PREFIX), -1);
+    else
+      NameNoPrefix = std::move(Name);
+    return (uint64_t) m_jit.getParent().NotifyLazyFunctionCreators(NameNoPrefix);
   }
 
 
@@ -182,12 +195,6 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 
 
 uint64_t IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name) {
-#ifdef __APPLE__
-  // Apple adds an extra '_'
-# define MANGLE_PREFIX "_"
-#else
-# define MANGLE_PREFIX ""
-#endif
   if (Name == MANGLE_PREFIX "__cxa_atexit") {
     // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
     // coming from the JIT.
@@ -196,7 +203,6 @@ uint64_t IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name) {
     // Provide IncrementalExecutor as the third argument to __cxa_atexit.
     return (uint64_t)&m_Parent;
   }
-#undef MANGLE_PREFIX
   if (uint64_t Addr = m_ExeMM->getSymbolAddress(Name))
     return Addr;
   if (uint64_t Addr = m_LazyEmitLayer.getSymbolAddress(Name, false))
