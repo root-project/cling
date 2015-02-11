@@ -10,6 +10,7 @@
 #include "IncrementalParser.h"
 
 #include "AutoSynthesizer.h"
+#include "BackendPasses.h"
 #include "CheckEmptyTransactionTransformer.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
@@ -189,8 +190,12 @@ namespace cling {
   void
   IncrementalParser::Initialize(llvm::SmallVectorImpl<Transaction*> &result) {
     m_TransactionPool.reset(new TransactionPool(getCI()->getSema()));
-    if (hasCodeGenerator())
+    if (hasCodeGenerator()) {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
+      m_BackendPasses.reset(new BackendPasses(getCI()->getCodeGenOpts(),
+                                              getCI()->getTargetOpts(),
+                                              getCI()->getLangOpts()));
+    }
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -619,6 +624,8 @@ namespace cling {
       success = m_IRTransformers[i]->TransformTransaction(*T);
     if (!success)
       rollbackTransaction(T);
+    if (m_BackendPasses && T->getModule())
+      m_BackendPasses->runOnModule(*T->getModule());
     return success;
   }
 

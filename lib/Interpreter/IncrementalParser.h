@@ -33,6 +33,7 @@ namespace clang {
 }
 
 namespace cling {
+  class BackendPasses;
   class CompilationOptions;
   class CIFactory;
   class DeclCollector;
@@ -59,6 +60,9 @@ namespace cling {
 
     // parser (incremental)
     std::unique_ptr<clang::Parser> m_Parser;
+
+    // optimizer etc passes
+    std::unique_ptr<BackendPasses> m_BackendPasses;
 
     // One buffer for each command line, owner by the source file manager
     std::deque<std::pair<llvm::MemoryBuffer*, clang::FileID>> m_MemoryBuffers;
