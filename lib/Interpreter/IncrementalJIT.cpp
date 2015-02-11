@@ -182,14 +182,21 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 
 
 uint64_t IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name) {
-  if (Name == "__cxa_atexit") {
+#ifdef __APPLE__
+  // Apple adds an extra '_'
+# define MANGLE_PREFIX "_"
+#else
+# define MANGLE_PREFIX ""
+#endif
+  if (Name == MANGLE_PREFIX "__cxa_atexit") {
     // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
     // coming from the JIT.
     return (uint64_t)&local_cxa_atexit;
-  } else if (Name == "__dso_handle") {
+  } else if (Name == MANGLE_PREFIX "__dso_handle") {
     // Provide IncrementalExecutor as the third argument to __cxa_atexit.
     return (uint64_t)&m_Parent;
   }
+#undef MANGLE_PREFIX
   if (uint64_t Addr = m_ExeMM->getSymbolAddress(Name))
     return Addr;
   if (uint64_t Addr = m_LazyEmitLayer.getSymbolAddress(Name, false))
