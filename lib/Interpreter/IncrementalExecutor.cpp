@@ -123,6 +123,8 @@ IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
   return HandleMissingFunction(mangled_name);
 }
 
+#if 0
+// FIXME: employ to empty module dependencies *within* the *current* module.
 static void
 freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
                                funcsToFree, llvm::ExecutionEngine* engine) {
@@ -151,7 +153,7 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
     engine->updateGlobalMapping(*I, 0);
   }
 }
-
+#endif
 
 IncrementalExecutor::ExecutionResult
 IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
