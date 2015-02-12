@@ -9,10 +9,12 @@
 
 #include "BackendPasses.h"
 
+#include "llvm/Analysis/InlineCost.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/InlinerPass.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/PassManager.h"
 
@@ -23,6 +25,49 @@
 using namespace cling;
 using namespace clang;
 using namespace llvm;
+
+namespace {
+
+  class InlinerKeepDeadFunc: public Inliner {
+    Inliner* m_Inliner; // the actual inliner
+    static char ID; // Pass identification, replacement for typeid
+  public:
+    InlinerKeepDeadFunc():
+    Inliner(ID), m_Inliner(0) { }
+    InlinerKeepDeadFunc(Pass* I):
+    Inliner(ID), m_Inliner((Inliner*)I) { }
+
+    using llvm::Pass::doInitialization;
+    bool doInitialization(CallGraph &CG) override {
+      // Forward out Resolver now that we are registered.
+      if (!m_Inliner->getResolver())
+        m_Inliner->setResolver(getResolver());
+      return m_Inliner->doInitialization(CG); // no Module modification
+    }
+
+    InlineCost getInlineCost(CallSite CS) override {
+      return m_Inliner->getInlineCost(CS);
+    }
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
+      m_Inliner->getAnalysisUsage(AU);
+    }
+    bool runOnSCC(CallGraphSCC &SCC) override {
+      return m_Inliner->runOnSCC(SCC);
+    }
+
+    using llvm::Pass::doFinalization;
+    // No-op: we need to keep the inlined functions for later use.
+    bool doFinalization(CallGraph& /*CG*/) override {
+      // Module is unchanged
+      return false;
+    }
+  };
+} // end anonymous namespace
+
+// Pass registration. Luckily all known inliners depend on the same set
+// of passes.
+char InlinerKeepDeadFunc::ID = 0;
+
 
 BackendPasses::BackendPasses(const CodeGenOptions &CGOpts,
                              const TargetOptions &TOpts,
@@ -73,16 +118,19 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
     }
     case CodeGenOptions::NormalInlining: {
       m_PMBuilder->Inliner =
-        createFunctionInliningPass(OptLevel, CGOpts.OptimizeSize);
+        new InlinerKeepDeadFunc(createFunctionInliningPass(OptLevel,
+                                                          CGOpts.OptimizeSize));
       break;
     }
     case CodeGenOptions::OnlyAlwaysInlining:
       // Respect always_inline.
       if (OptLevel == 0)
         // Do not insert lifetime intrinsics at -O0.
-        m_PMBuilder->Inliner = createAlwaysInlinerPass(false);
+        m_PMBuilder->Inliner
+          = new InlinerKeepDeadFunc(createAlwaysInlinerPass(false));
       else
-        m_PMBuilder->Inliner = createAlwaysInlinerPass();
+        m_PMBuilder->Inliner
+          = new InlinerKeepDeadFunc(createAlwaysInlinerPass());
       break;
   }
 
