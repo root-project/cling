@@ -12,6 +12,7 @@
 
 #include "cling/Interpreter/Value.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/AST.h"
 
 #include "clang/Basic/Diagnostic.h"
 
@@ -27,6 +28,15 @@
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
+
+#ifdef LLVM_ON_WIN32
+extern "C"
+char *__unDName(char *demangled, const char *mangled, int out_len,
+                void * (* pAlloc )(size_t), void (* pFree )(void *),
+                unsigned short int flags);
+#else
+#include <cxxabi.h>
+#endif
 
 using namespace llvm;
 
@@ -338,12 +348,40 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
 
     llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
                  << "' unresolved while linking ";
-    if (!title.empty())
-      llvm::errs() << title << "'";
-    llvm::errs() << trigger;
-    if (!title.empty())
-      llvm::errs() << "'";
+    if (trigger.find(utils::Synthesize::UniquePrefix) != llvm::StringRef::npos)
+      llvm::errs() << "[cling interface function]";
+    else {
+      if (!title.empty())
+        llvm::errs() << title << " '";
+      llvm::errs() << trigger;
+      if (!title.empty())
+        llvm::errs() << "'";
+    }
     llvm::errs() << "!\n";
+
+    // Be helpful, demangle!
+    std::string demangledName;
+    {
+#ifndef LLVM_ON_WIN32
+      int status = 0;
+      char *demang = abi::__cxa_demangle(i->c_str(), 0, 0, &status);
+      if (status == 0)
+        demangledName = demang;
+      free(demang);
+#else
+      if (char* demang = __unDName(0, i->c_str(), 0, malloc, free, 0)) {
+        demangledName = demang;
+        free(demang);
+      }
+#endif
+    }
+    if (!demangledName.empty()) {
+       llvm::errs()
+          << "You are probably missing the definition of "
+          << demangledName << "\n"
+          << "Maybe you need to load the corresponding shared library?\n";
+    }
+
     //llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
     // i could also reference a global variable, in which case ff == 0.
     //if (ff)
