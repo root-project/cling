@@ -566,7 +566,7 @@ namespace cling {
     const FileEntry *MainFile = SM.getFileEntryForID(SM.getMainFileID());
     FileEntry* NcMainFile = const_cast<FileEntry*>(MainFile);
     // Hack to temporarily set the file entry's name to a unique name.
-    assert(MainFile->getName() == *(const char**)MainFile
+    assert(MainFile->getName() == *(const char**)NcMainFile
            && "FileEntry does not start with the name");
     const char* &FileName = *(const char**)NcMainFile;
     const char* OldName = FileName;
