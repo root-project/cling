@@ -814,6 +814,15 @@ namespace cling {
         m_Consumer->HandleTopLevelDecl(ADecl.get());
     };
 
+    // Microsoft-specific:
+    // Late parsed templates can leave unswallowed "macro"-like tokens.
+    // They will seriously confuse the Parser when entering the next
+    // source file. So lex until we are EOF.
+    Token Tok;
+    do {
+      PP.Lex(Tok);
+    } while (Tok.isNot(tok::eof));
+
     if (IgnorePromptDiags) {
       SourceLocation Loc = SM.getLocForEndOfFile(m_MemoryBuffers.back().second);
       Diags.popMappings(Loc);
