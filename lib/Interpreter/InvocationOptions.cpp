@@ -88,8 +88,12 @@ namespace {
     unsigned MissingArgIndex, MissingArgCount;
     std::unique_ptr<OptTable> OptsC1(clang::driver::createDriverOptTable());
     Opts.Inputs.clear();
+    // see Driver::getIncludeExcludeOptionFlagMasks()
+    unsigned ExcludeOptionFlagMasks
+      = clang::driver::options::NoDriverOption | clang::driver::options::CLOption;
     std::unique_ptr<InputArgList> Args(
-        OptsC1->ParseArgs(argv+1, argv + argc, MissingArgIndex, MissingArgCount));
+        OptsC1->ParseArgs(argv+1, argv + argc, MissingArgIndex, MissingArgCount,
+                          0, ExcludeOptionFlagMasks));
     for (ArgList::const_iterator it = Args->begin(),
            ie = Args->end(); it != ie; ++it) {
       if ( (*it)->getOption().getKind() == Option::InputClass ) {
@@ -106,8 +110,12 @@ cling::InvocationOptions::CreateFromArgs(int argc, const char* const argv[],
   InvocationOptions ClingOpts;
   std::unique_ptr<OptTable> Opts(CreateClingOptTable());
   unsigned MissingArgIndex, MissingArgCount;
+  // see Driver::getIncludeExcludeOptionFlagMasks()
+  unsigned ExcludeOptionFlagMasks
+    = clang::driver::options::NoDriverOption | clang::driver::options::CLOption;
   std::unique_ptr<InputArgList> Args(
-    Opts->ParseArgs(argv, argv + argc, MissingArgIndex, MissingArgCount));
+    Opts->ParseArgs(argv, argv + argc, MissingArgIndex, MissingArgCount,
+                    0, ExcludeOptionFlagMasks));
 
   //if (MissingArgCount)
   //  Diags.Report(diag::err_drv_missing_argument)
