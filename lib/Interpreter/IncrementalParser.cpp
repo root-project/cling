@@ -814,6 +814,7 @@ namespace cling {
         m_Consumer->HandleTopLevelDecl(ADecl.get());
     };
 
+#ifdef LLVM_ON_WIN32
     // Microsoft-specific:
     // Late parsed templates can leave unswallowed "macro"-like tokens.
     // They will seriously confuse the Parser when entering the next
@@ -822,6 +823,13 @@ namespace cling {
     do {
       PP.Lex(Tok);
     } while (Tok.isNot(tok::eof));
+#endif
+
+#ifndef NDEBUG
+    Token AssertTok;
+    PP.Lex(AssertTok);
+    assert(AssertTok.is(tok::eof) && "Lexer must be EOF when starting incremental parse!");
+#endif
 
     if (IgnorePromptDiags) {
       SourceLocation Loc = SM.getLocForEndOfFile(m_MemoryBuffers.back().second);
