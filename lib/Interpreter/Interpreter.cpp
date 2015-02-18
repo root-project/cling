@@ -144,6 +144,10 @@ namespace cling {
     return *m_IncrParser->getParser();
   }
 
+  Parser& Interpreter::getParser() {
+    return *m_IncrParser->getParser();
+  }
+
   clang::SourceLocation Interpreter::getNextAvailableLoc() const {
     return m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
   }

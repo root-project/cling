@@ -298,6 +298,7 @@ namespace cling {
     const LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
 
     const clang::Parser& getParser() const;
+    clang::Parser& getParser();
 
     ///\brief Returns the next available valid free source location.
     ///
