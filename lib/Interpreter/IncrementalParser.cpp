@@ -639,7 +639,19 @@ namespace cling {
 
   void IncrementalParser::rollbackTransaction(Transaction* T) {
     assert(T && "Must have value");
-    assert(T == getLastTransaction() && "We always must revert the last T");
+#ifndef NDEBUG
+    {
+      bool canRevertTransaction = T == getLastTransaction();
+      Transaction* ChkT = T;
+      while (!canRevertTransaction && ChkT->getParent())
+        canRevertTransaction |=
+          ChkT->getState() == Transaction::kCollecting
+          || ChkT->getState() == Transaction::kCompleted;
+      assert(canRevertTransaction &&
+             "Can only revert most recent transaction or uncommitted nested "
+             "transaction");
+    }
+#endif
     assert((T->getState() != Transaction::kRolledBack ||
             T->getState() != Transaction::kRolledBackWithErrors) &&
            "Transaction already rolled back.");
@@ -653,8 +665,12 @@ namespace cling {
     else
       T->setState(Transaction::kRolledBackWithErrors);
 
-    // Remove from the queue
-    m_Transactions.pop_back();
+    if (Transaction* Parent = T->getParent()) {
+      Parent->removeNestedTransaction(T);
+    } else {
+      // Remove from the queue
+      m_Transactions.pop_back();
+    }
     //m_TransactionPool->releaseTransaction(T);
   }
 
