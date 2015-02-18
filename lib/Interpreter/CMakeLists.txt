@@ -24,6 +24,7 @@ add_cling_library(clingInterpreter
   CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
   ClangInternalState.cpp
+  ClingPragmas.cpp
   DeclCollector.cpp
   DeclExtractor.cpp
   DynamicLibraryManager.cpp
