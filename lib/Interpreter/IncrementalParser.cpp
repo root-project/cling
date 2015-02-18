@@ -279,6 +279,15 @@ namespace cling {
       delete m_IRTransformers[i];
   }
 
+  void IncrementalParser::addTransaction(Transaction* T) {
+    if (!T->isNestedTransaction() && T != getLastTransaction()) {
+      if (getLastTransaction())
+        m_Transactions.back()->setNext(T);
+      m_Transactions.push_back(T);
+    }
+  }
+
+
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions&
                                                    Opts) {
     Transaction* OldCurT = m_Consumer->getTransaction();
@@ -340,11 +349,7 @@ namespace cling {
     if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
       T->setIssuedDiags(Transaction::kErrors);
 
-    if (!T->isNestedTransaction() && T != getLastTransaction()) {
-      if (getLastTransaction())
-        m_Transactions.back()->setNext(T);
-      m_Transactions.push_back(T);
-    }
+    addTransaction(T);
     return T;
   }
 

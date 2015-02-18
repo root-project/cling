@@ -181,9 +181,7 @@ namespace cling {
 
 
     ///\brief Add a user-generated transaction.
-    void addTransaction(Transaction* T) {
-      m_Transactions.push_back(T);
-    }
+    void addTransaction(Transaction* T);
 
     ///\brief Returns the list of transactions seen by the interpreter.
     /// Intentionally makes a copy - that function is meant to be use for debug
