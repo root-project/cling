@@ -16,3 +16,5 @@ extern "C" int printf(const char* fmt, ...);
 void cppmacros() {
    MYMACRO("PARAM"); // CHECK: string:PARAM
 }
+
+#pragma clang diagnostic ignored "-Wkeyword-compat" // ROOT-6531
