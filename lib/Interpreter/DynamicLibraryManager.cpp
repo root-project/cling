@@ -165,7 +165,8 @@ namespace cling {
 #ifdef __APPLE__
       (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
        || Magic == file_magic::macho_dynamically_linked_shared_lib
-       || Magic == file_magic::macho_dynamically_linked_shared_lib_stub)
+       || Magic == file_magic::macho_dynamically_linked_shared_lib_stub
+       || Magic == file_magic::macho_universal_binary)
 #elif defined(LLVM_ON_UNIX)
 #ifdef __CYGWIN__
       (Magic == file_magic::pecoff_executable)
