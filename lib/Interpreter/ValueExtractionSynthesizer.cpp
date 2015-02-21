@@ -318,6 +318,7 @@ namespace {
     else if (desugaredTy->isIntegralOrEnumerationType()
              || desugaredTy->isReferenceType()
              || desugaredTy->isPointerType()
+             || desugaredTy->isNullPtrType()
              || desugaredTy->isFloatingType()) {
       if (desugaredTy->isIntegralOrEnumerationType()) {
         // 1)  enum, integral, float, double, referece, pointer types :
@@ -348,6 +349,10 @@ namespace {
         Expr* castedE
           = m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).get();
         CallArgs.push_back(castedE);
+      }
+      else if (desugaredTy->isNullPtrType()) {
+        // nullptr should decay to void* just fine.
+        CallArgs.push_back(E);
       }
       else if (desugaredTy->isFloatingType()) {
         // floats and double will fall naturally in the correct

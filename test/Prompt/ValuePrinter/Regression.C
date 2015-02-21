@@ -46,3 +46,5 @@ q // CHECK: (const int *) 0x123
 
 // PR ROOT-5467
 &A::someFunc // CHECK: (int (class A::*)(float)) @0x{{[0-9a-f]+}}
+
+nullptr // CHECK: (nullptr_t) @0x0
