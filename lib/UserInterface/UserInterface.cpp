@@ -22,6 +22,9 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Config/config.h"
 
+#include "clang/Basic/LangOptions.h"
+#include "clang/Frontend/CompilerInstance.h"
+
 // Fragment copied from LLVM's raw_ostream.cpp
 #if defined(HAVE_UNISTD_H)
 # include <unistd.h>
@@ -173,10 +176,33 @@ namespace cling {
 
   void UserInterface::PrintLogo() {
     llvm::raw_ostream& outs = m_MetaProcessor->getOuts();
-    outs << "\n";
-    outs << "****************** CLING ******************" << "\n";
-    outs << "* Type C++ code and press enter to run it *" << "\n";
-    outs << "*             Type .q to exit             *" << "\n";
-    outs << "*******************************************" << "\n";
+    const clang::LangOptions& LangOpts
+      = m_MetaProcessor->getInterpreter().getCI()->getLangOpts();
+    if (LangOpts.CPlusPlus) {
+      outs << "\n"
+        "****************** CLING ******************\n"
+        "* Type C++ code and press enter to run it *\n"
+        "*             Type .q to exit             *\n"
+        "*******************************************\n";
+    } else {
+      outs << "\n"
+        "***************** CLING *****************\n"
+        "* Type C code and press enter to run it *\n"
+        "*            Type .q to exit            *\n"
+        "*****************************************\n";
+    }
   }
 } // end namespace cling
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -64,6 +64,10 @@ namespace {
     }
     return cling::Interpreter::kExeSuccess;
   }
+
+  static bool isPracticallyEmptyModule(const llvm::Module* M) {
+    return M->empty() && M->global_empty() && M->alias_empty();
+  }
 } // unnamed namespace
 
 namespace cling {
@@ -1134,12 +1138,15 @@ namespace cling {
     assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
 
-    T.setExeUnloadHandle(m_Executor.get(), m_Executor->emitToJIT());
-
-    // Forward to IncrementalExecutor; should not be called by
-    // anyone except for IncrementalParser.
     IncrementalExecutor::ExecutionResult ExeRes
-       = m_Executor->runStaticInitializersOnce(T);
+       = IncrementalExecutor::kExeSuccess;
+    if (!isPracticallyEmptyModule(T.getModule())) {
+      T.setExeUnloadHandle(m_Executor.get(), m_Executor->emitToJIT());
+
+      // Forward to IncrementalExecutor; should not be called by
+      // anyone except for IncrementalParser.
+      ExeRes = m_Executor->runStaticInitializersOnce(T);
+    }
 
     // Reset the module builder to clean up global initializers, c'tors, d'tors
     ASTContext& C = getCI()->getASTContext();
