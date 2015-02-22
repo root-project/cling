@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#ifdef WIN32
+#ifdef LLVM_ON_WIN32
 #include <Windows.h>
 #include <shlobj.h>
 #else
