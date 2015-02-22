@@ -26,7 +26,7 @@ namespace textinput {
 
   void
   SignalHandler::EmitCtrlZ() {
-#ifndef WIN32
+#ifndef _WIN32
     raise(SIGTSTP);
 #endif
   }

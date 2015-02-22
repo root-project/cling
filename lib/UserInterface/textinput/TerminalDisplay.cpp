@@ -14,7 +14,7 @@
 
 #include "textinput/TerminalDisplay.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "textinput/TerminalDisplayWin.h"
 #else
 #include "textinput/TerminalDisplayUnix.h"
@@ -30,7 +30,7 @@ namespace textinput {
 
   TerminalDisplay*
   TerminalDisplay::Create() {
-#ifdef WIN32
+#ifdef _WIN32
     return new TerminalDisplayWin();
 #else
     return new TerminalDisplayUnix();

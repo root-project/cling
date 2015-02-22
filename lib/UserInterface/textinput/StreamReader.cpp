@@ -14,7 +14,7 @@
 
 #include "textinput/StreamReader.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 # include "textinput/StreamReaderWin.h"
 #else
 # include "textinput/StreamReaderUnix.h"
@@ -25,7 +25,7 @@ namespace textinput {
 
   StreamReader*
   StreamReader::Create() {
-#ifdef WIN32
+#ifdef _WIN32
      return new StreamReaderWin();
 #else
      return new StreamReaderUnix();

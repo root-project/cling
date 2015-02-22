@@ -1,4 +1,4 @@
-#ifndef WIN32
+#ifndef _WIN32
 
 //===--- TerminalConfigUnix.cpp - termios storage -------------*- C++ -*-===//
 //
@@ -143,4 +143,4 @@ bool TerminalConfigUnix::IsInteractive() const {
 
 
 
-#endif // ndef WIN32
+#endif // ifndef _WIN32

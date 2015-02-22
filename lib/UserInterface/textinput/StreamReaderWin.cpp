@@ -12,7 +12,7 @@
 //  Axel Naumann <axel@cern.ch>, 2011-05-12
 //===----------------------------------------------------------------------===//
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #include "textinput/StreamReaderWin.h"
 
@@ -211,4 +211,4 @@ namespace textinput {
     }
   }
 }
-#endif // WIN32
+#endif // _WIN32

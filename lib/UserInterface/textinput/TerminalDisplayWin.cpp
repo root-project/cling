@@ -13,7 +13,7 @@
 //  Axel Naumann <axel@cern.ch>, 2011-05-12
 //===----------------------------------------------------------------------===//
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "textinput/TerminalDisplayWin.h"
 
 #include "textinput/Color.h"
@@ -218,4 +218,4 @@ namespace textinput {
 
 }
 
-#endif // WIN32
+#endif // ifdef _WIN32
