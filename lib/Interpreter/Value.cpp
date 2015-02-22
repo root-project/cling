@@ -30,7 +30,42 @@
 #include <iostream>
 #include <sstream>
 
+// For address validation
+#ifdef LLVM_ON_WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
 namespace {
+  static bool isAddressValid(void* P) {
+    if (!P || P == (void*)-1)
+      return false;
+
+#ifdef LLVM_ON_WIN32
+    MEMORY_BASIC_INFORMATION MBI;
+    if (!VirtualQuery(P, &MBI, sizeof(MBI)))
+      return false;
+    if (MBI.State != MEM_COMMIT)
+      return false;
+    return true;
+#else
+    // There is a POSIX way of finding whether an address can be accessed for
+    // reading: write() will return EFAULT if not.
+    int FD[2];
+    if (pipe(FD))
+      return false; // error in pipe()? Be conservative...
+    int NBytes = write(FD[1], P, 1/*byte*/);
+    close(FD[0]);
+    close(FD[1]);
+    if (NBytes != 1) {
+      assert(errno == EFAULT && "unexpected pipe write error");
+      return false;
+    }
+    return true;
+#endif
+  }
+
   ///\brief The allocation starts with this layout; it is followed by the
   ///  value's object at m_Payload. This class does not inherit from
   ///  llvm::RefCountedBase because deallocation cannot use this type but must
@@ -345,16 +380,19 @@ namespace cling {
       // will be needed by evaluate.
     }
     QualType ValueTy = this->getType().getNonReferenceType();
+    bool ValidAddress = true;
     if (!ValueTy->isPointerType())
       ValueTy = C.getPointerType(ValueTy);
+    else
+       ValidAddress = isAddressValid(this->getPtr());
     ValueTy = utils::TypeName::GetFullyQualifiedType(ValueTy, getASTContext());
     PrintingPolicy Policy(m_Interpreter->getCI()->getLangOpts());
     std::string ValueTyStr = ValueTy.getAsString(Policy);
     std::string typeStr;
     std::string valueStr;
 
-    if (hasViableCandidateToCall(R, *this)) {
-      // There is such a routine call it:
+    if (ValidAddress && hasViableCandidateToCall(R, *this)) {
+      // There is such a routine call, it:
       std::stringstream printTypeSS;
       printTypeSS << "cling::printType(";
       printTypeSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
@@ -407,7 +445,7 @@ namespace cling {
       // will be needed by evaluate.
     }
 
-    if (hasViableCandidateToCall(R, *this)) {
+    if (ValidAddress && hasViableCandidateToCall(R, *this)) {
       // There is such a routine call it:
       std::stringstream printValueSS;
       printValueSS << "cling::printValue(";
