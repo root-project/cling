@@ -496,6 +496,7 @@ namespace {
 
     //  Initialize the llvm library.
     llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmParser();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::SmallString<512> resource_path;
     if (llvmdir) {
