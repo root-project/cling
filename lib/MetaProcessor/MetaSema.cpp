@@ -102,6 +102,8 @@ namespace cling {
 
       StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
       std::string expression = pairFuncExt.first.str() + "(" + args.str() + ")";
+      // Give the user some context in case we have a problem in an invocation.
+      expression += " /* invoking function corresponding to '.x' */";
 
       assert(T);
 
