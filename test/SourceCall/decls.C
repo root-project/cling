@@ -24,8 +24,8 @@ float f = sin(12);
 int j = i;
 
 void decls() {
-#ifdef __linux__
    int arg1 = 17, arg2 = 42, add = -1;
+#ifdef __linux__
    __asm__ ( "addl %%ebx, %%eax;" : "=a" (add) : "a" (arg1) , "b" (arg2) );
 #else
    add = arg1 + arg2;
