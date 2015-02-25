@@ -18,11 +18,12 @@
 
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/GlobalValue.h"
-#include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
+#include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/LazyEmittingLayer.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
+#include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
@@ -39,6 +40,7 @@ class IncrementalJIT {
 
   ///\brief The IncrementalExecutor who owns us.
   IncrementalExecutor& m_Parent;
+  std::unique_ptr<llvm::JITEventListener> m_GDBListener;
 
   class NotifyObjectLoadedT {
   public:
@@ -56,9 +58,8 @@ class IncrementalJIT {
       m_JIT.m_SectionsAllocatedSinceLastLoad = SectionAddrSet();
       assert(Objects.size() == Infos.size() &&
              "Incorrect number of Infos for Objects.");
-      // We are no ExecutionEngine.
-      //for (unsigned I = 0; I < Objects.size(); ++I)
-      //  m_JIT.m_ExeMM->notifyObjectLoaded(&m_JIT, *Objects[I]);
+      for (size_t I = 0, N = Objects.size(); I < N; ++I)
+        m_JIT.m_GDBListener->NotifyObjectEmitted(*Objects[I], *Infos[I]);
     };
 
   private:
