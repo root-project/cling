@@ -82,9 +82,15 @@ namespace cling {
       // Copy DCI; it might get relocated below.
       Transaction::DelayCallInfo DCI = *I;
       for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(),
-             JE = DCI.m_DGR.end(); J != JE; ++J)
-        if ((*J)->hasBody())
-          m_AutoFixer->Fix(cast<CompoundStmt>((*J)->getBody()));
+             JE = DCI.m_DGR.end(); J != JE; ++J) {
+        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*J)) {
+          // getBody() might return nullptr even though hasBody() is true for
+          // late template parsed functions. We simply don't do auto auto on
+          // those.
+          if (CompoundStmt* CS = cast_or_null<CompoundStmt>(FD->getBody()))
+            m_AutoFixer->Fix(CS);
+        }
+      }
     }
   }
 } // end namespace cling
