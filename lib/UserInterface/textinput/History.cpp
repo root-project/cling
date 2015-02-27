@@ -20,7 +20,7 @@
 
 #ifdef WIN32
 # include <stdio.h>
-extern "C" unsigned int GetCurrentProcessId();
+extern "C" unsigned long __stdcall GetCurrentProcessId(void);
 #else
 # include <unistd.h>
 #endif
