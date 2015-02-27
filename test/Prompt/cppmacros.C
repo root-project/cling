@@ -18,3 +18,5 @@ void cppmacros() {
 }
 
 #pragma clang diagnostic ignored "-Wkeyword-compat" // ROOT-6531
+
+#pragma once // ROOT-7113
