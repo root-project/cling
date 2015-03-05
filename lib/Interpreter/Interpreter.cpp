@@ -47,6 +47,8 @@
 #include <string>
 #include <vector>
 
+#define stringify(s) #s
+
 using namespace clang;
 
 namespace {
@@ -219,7 +221,7 @@ namespace cling {
          I != E; ++I)
       m_IncrParser->commitTransaction(*I);
     // Disable suggestions for ROOT
-    bool showSuggestions = !llvm::StringRef(CLING_VERSION).startswith("ROOT");
+       bool showSuggestions = !llvm::StringRef(stringify(CLING_VERSION)).startswith("ROOT");
     std::unique_ptr<InterpreterCallbacks>
        AutoLoadCB(new AutoloadCallback(this, showSuggestions));
     setCallbacks(std::move(AutoLoadCB));
@@ -239,7 +241,7 @@ namespace cling {
   }
 
   const char* Interpreter::getVersion() const {
-    return CLING_VERSION;
+     return stringify(CLING_VERSION);
   }
 
   void Interpreter::handleFrontendOptions() {
