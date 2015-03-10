@@ -1126,14 +1126,17 @@ namespace cling {
 
 
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {
-    m_DynamicLookupEnabled = value;
-
-    if (!m_DynamicLookupDeclared && isDynamicLookupEnabled()) {
-     if (loadModuleForHeader("cling/Interpreter/DynamicLookupRuntimeUniverse.h")
-         != kSuccess)
+    if (!m_DynamicLookupDeclared && value) {
+      // No dynlookup for the dynlookup header!
+      m_DynamicLookupEnabled = false;
+      if (loadModuleForHeader("cling/Interpreter/DynamicLookupRuntimeUniverse.h")
+          != kSuccess)
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
     }
     m_DynamicLookupDeclared = true;
+
+    // Enable it *after* parsing the headers.
+    m_DynamicLookupEnabled = value;
   }
 
   Interpreter::ExecutionResult
