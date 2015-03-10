@@ -622,6 +622,7 @@ namespace cling {
     }
     if (where) {
       // Great we now have a scope and something to search for,let's go ahead.
+      Interpreter::PushTransactionRAII pushedT(m_Interpreter);
       DeclContext::lookup_result R
         = where->lookup(P.getCurToken().getIdentifierInfo());
       for (DeclContext::lookup_iterator I = R.begin(), E = R.end();
@@ -648,6 +649,7 @@ namespace cling {
 
     const clang::DeclContext *dc = llvm::cast<clang::DeclContext>(scopeDecl);
 
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
     DeclContext::lookup_result lookup = const_cast<clang::DeclContext*>(dc)->lookup(decl_name);
     for (DeclContext::lookup_iterator I = lookup.begin(), E = lookup.end();
          I != E; ++I) {
