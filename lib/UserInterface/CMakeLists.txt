@@ -8,22 +8,27 @@
 
 set(LLVM_REQUIRES_EH true)
 
+if(NOT EXISTS textinput)
+  set(TEXTINPUTSRC ${CMAKE_SOURCE_DIR}/core/textinput/src/)
+  include_directories(${TEXTINPUTSRC})
+endif()
+
 add_cling_library(clingUserInterface
   UserInterface.cpp
-  textinput/Editor.cpp
-  textinput/History.cpp
-  textinput/KeyBinding.cpp
-  textinput/Range.cpp
-  textinput/SignalHandler.cpp
-  textinput/StreamReader.cpp
-  textinput/StreamReaderUnix.cpp
-  textinput/StreamReaderWin.cpp
-  textinput/TerminalConfigUnix.cpp
-  textinput/TerminalDisplay.cpp
-  textinput/TerminalDisplayUnix.cpp
-  textinput/TerminalDisplayWin.cpp
-  textinput/TextInput.cpp
-  textinput/TextInputContext.cpp
+  ${TEXTINPUTSRC}textinput/Editor.cpp
+  ${TEXTINPUTSRC}textinput/History.cpp
+  ${TEXTINPUTSRC}textinput/KeyBinding.cpp
+  ${TEXTINPUTSRC}textinput/Range.cpp
+  ${TEXTINPUTSRC}textinput/SignalHandler.cpp
+  ${TEXTINPUTSRC}textinput/StreamReader.cpp
+  ${TEXTINPUTSRC}textinput/StreamReaderUnix.cpp
+  ${TEXTINPUTSRC}textinput/StreamReaderWin.cpp
+  ${TEXTINPUTSRC}textinput/TerminalConfigUnix.cpp
+  ${TEXTINPUTSRC}textinput/TerminalDisplay.cpp
+  ${TEXTINPUTSRC}textinput/TerminalDisplayUnix.cpp
+  ${TEXTINPUTSRC}textinput/TerminalDisplayWin.cpp
+  ${TEXTINPUTSRC}textinput/TextInput.cpp
+  ${TEXTINPUTSRC}textinput/TextInputContext.cpp
 )
 #Look for textinput in current ROOT source tree
 

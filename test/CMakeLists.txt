@@ -75,6 +75,19 @@ if(PYTHONINTERP_FOUND)
                 ${CMAKE_CURRENT_BINARY_DIR}
                 COMMENT "Running Cling regression tests")
 
+add_custom_command(OUTPUT cling-headers.stamp
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/include/llvm
+                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/llvm
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/tools/clang/include/clang
+                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/clang
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/tools/clang/include/clang
+                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/clang
+                   COMMAND ${CMAKE_COMMAND} -E touch cling-headers.stamp)
+add_custom_target(cling-headers DEPENDS cling-headers.stamp)
+
 #  if( NOT CLING_BUILT_STANDALONE )
 #    add_custom_target(check-all
 #      COMMAND ${PYTHON_EXECUTABLE}
@@ -98,7 +111,5 @@ if(PYTHONINTERP_FOUND)
 
   add_dependencies(cling-test cling-test.deps)
   add_dependencies(cling-test.deps
-                 cling cling-headers c-index-test diagtool arcmt-test c-arcmt-test
-                 )
-
+                   cling cling-headers clang FileCheck c-index-test diagtool arcmt-test c-arcmt-test)
 endif()
