@@ -9,6 +9,7 @@
 
 #include "IncrementalExecutor.h"
 #include "IncrementalJIT.h"
+#include "Threading.h"
 
 #include "cling/Interpreter/Value.h"
 #include "cling/Interpreter/Transaction.h"
@@ -48,6 +49,9 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags):
   : m_Diags(diags)
 #endif
 {
+
+  // No need to protect this access of m_AtExitFuncs, since nobody
+  // can use this object yet.
   m_AtExitFuncs.reserve(256);
 
   m_JIT.reset(new IncrementalJIT(*this, std::move(CreateHostTargetMachine())));
@@ -88,6 +92,8 @@ std::unique_ptr<TargetMachine>
 }
 
 void IncrementalExecutor::shuttingDown() {
+  // No need to protect this access, since hopefully there is no concurrent
+  // shutdown request.
   for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
     const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
     (*AEE.m_Func)(AEE.m_Arg);
@@ -96,6 +102,7 @@ void IncrementalExecutor::shuttingDown() {
 
 void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg) {
   // Register a CXAAtExit function
+  cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
   m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, m_CurrentAtExitModule));
 }
 
@@ -265,14 +272,18 @@ void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
   assert(T && "Must be set");
   // Collect all the dtors bound to this transaction.
   AtExitFunctions boundToT;
-  for (AtExitFunctions::iterator I = m_AtExitFuncs.begin();
-       I != m_AtExitFuncs.end();)
-    if (I->m_FromM == T->getModule()) {
-      boundToT.push_back(*I);
-      I = m_AtExitFuncs.erase(I);
-    }
-    else
-      ++I;
+
+  {
+    cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
+    for (AtExitFunctions::iterator I = m_AtExitFuncs.begin();
+         I != m_AtExitFuncs.end();)
+      if (I->m_FromM == T->getModule()) {
+        boundToT.push_back(*I);
+        I = m_AtExitFuncs.erase(I);
+      }
+      else
+        ++I;
+  } // end of spin lock lifetime block.
 
   // 'Unload' the cxa_atexit entities.
   for (AtExitFunctions::reverse_iterator I = boundToT.rbegin(),

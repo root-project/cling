@@ -23,6 +23,7 @@
 #include <set>
 #include <map>
 #include <memory>
+#include <atomic>
 
 namespace clang {
   class DiagnosticsEngine;
@@ -88,6 +89,14 @@ namespace cling {
       ///
       const llvm::Module* m_FromM;
     };
+
+    ///\brief Atomic used as a spin lock to protect the access to m_AtExitFuncs
+    ///
+    /// AddAtExitFunc is used at the end of the 'interpreted' user code
+    /// and before the calling framework has any change of taking back/again
+    /// its lock protecting the access to cling, so we need to explicit protect
+    /// again multiple conccurent access.
+    std::atomic_flag m_AtExitFuncsSpinLock = ATOMIC_FLAG_INIT;
 
     typedef llvm::SmallVector<CXAAtExitElement, 128> AtExitFunctions;
     ///\brief Static object, which are bound to unloading of certain declaration
