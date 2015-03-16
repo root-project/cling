@@ -370,7 +370,8 @@ namespace cling {
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
-    assert(!T->empty() && "Valid Transactions must not be empty;");
+    assert((T->getIssuedDiags() == Transaction::kErrors || !T->empty())
+           && "Valid Transactions must not be empty;");
 
     // If committing a nested transaction the active one should be its parent
     // from now on.
@@ -426,7 +427,7 @@ namespace cling {
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
       ParseResultTransaction PRT = endTransaction(nestedT);
-      if (PRT.getInt() != kFailed && PRT.getPointer())
+      if (PRT.getPointer())
         commitTransaction(PRT.getPointer());
       m_Consumer->setTransaction(prevConsumerT);
     }
@@ -519,7 +520,7 @@ namespace cling {
     // Commit this transaction first - T might need symbols from it, so
     // trigger emission of weak symbols by providing use.
     ParseResultTransaction PRT = endTransaction(deserT);
-    if (PRT.getInt() != kFailed && PRT.getPointer())
+    if (PRT.getPointer())
       commitTransaction(PRT.getPointer());
 
     // This llvm::Module is done; finalize it and pass it to the execution
@@ -646,7 +647,7 @@ namespace cling {
       CurT->setIssuedDiags(Transaction::kErrors);
 
     ParseResultTransaction PRT = endTransaction(CurT);
-    if (PRT.getInt() != kFailed && PRT.getPointer()) {
+    if (PRT.getPointer()) {
       commitTransaction(PRT.getPointer());
     }
 
