@@ -1158,10 +1158,6 @@ namespace cling {
       ExeRes = m_Executor->runStaticInitializersOnce(T);
     }
 
-    // Reset the module builder to clean up global initializers, c'tors, d'tors
-    ASTContext& C = getCI()->getASTContext();
-    m_IncrParser->getCodeGenerator()->HandleTranslationUnit(C);
-
     return ConvertExecutionResult(ExeRes);
   }
 
