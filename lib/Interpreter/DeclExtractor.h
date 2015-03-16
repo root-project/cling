@@ -18,6 +18,7 @@
 namespace clang {
   class ASTContext;
   class DeclContext;
+  class DeclGroupRef;
   class FunctionDecl;
   class LookupResult;
   class NamedDecl;
@@ -28,7 +29,7 @@ namespace clang {
 }
 
 namespace cling {
-  class DeclExtractor : public TransactionTransformer {
+  class DeclExtractor : public WrapperTransformer {
   private:
     clang::ASTContext* m_Context;
 
@@ -40,11 +41,10 @@ namespace cling {
 
     virtual ~DeclExtractor();
 
-    ///\brief Iterates over the transaction and finds cling specific wrappers.
-    /// Scans the wrappers for declarations and extracts them onto the global
-    /// scope.
+    ///\brief Scans the wrapper for declarations and extracts them onto the
+    /// global scope.
     ///
-    virtual void Transform();
+    Result Transform(clang::Decl* D) override;
 
   private:
 

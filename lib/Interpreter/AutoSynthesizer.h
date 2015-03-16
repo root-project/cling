@@ -15,17 +15,14 @@
 #include <memory>
 
 namespace clang {
+  class Decl;
   class Sema;
-}
-
-namespace llvm {
-  class raw_ostream;
 }
 
 namespace cling {
   class AutoFixer;
 
-  class AutoSynthesizer : public TransactionTransformer {
+  class AutoSynthesizer : public ASTTransformer {
   private:
     std::unique_ptr<AutoFixer> m_AutoFixer;
 
@@ -38,7 +35,7 @@ namespace cling {
 
     virtual ~AutoSynthesizer();
 
-    virtual void Transform();
+    Result Transform(clang::Decl*) override;
   };
 
 } // namespace cling

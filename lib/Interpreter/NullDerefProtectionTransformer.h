@@ -14,23 +14,22 @@
 #include "TransactionTransformer.h"
 
 namespace clang {
+  class Decl;
   class Sema;
 }
 
 namespace cling {
 
-  class NullDerefProtectionTransformer : public TransactionTransformer {
+  class NullDerefProtectionTransformer : public WrapperTransformer {
+  public:
+    ///\ brief Constructs the NullDeref AST Transformer.
+    ///
+    ///\param[in] S - The semantic analysis object.
+    ///
+    NullDerefProtectionTransformer(clang::Sema* S);
 
-
-    public:
-      ///\ brief Constructs the NullDeref AST Transformer.
-      ///
-      ///\param[in] S - The semantic analysis object.
-      ///
-      NullDerefProtectionTransformer(clang::Sema* S);
-
-      virtual ~NullDerefProtectionTransformer();
-      virtual void Transform();
+    virtual ~NullDerefProtectionTransformer();
+    Result Transform(clang::Decl* D) override;
   };
 
 } // namespace cling

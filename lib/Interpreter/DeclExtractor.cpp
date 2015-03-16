@@ -9,7 +9,6 @@
 
 #include "DeclExtractor.h"
 
-#include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
@@ -67,7 +66,7 @@ namespace {
 namespace cling {
 
   DeclExtractor::DeclExtractor(Sema* S)
-    : TransactionTransformer(S), m_Context(&S->getASTContext()),
+    : WrapperTransformer(S), m_Context(&S->getASTContext()),
       m_UniqueNameCounter(0)
   { }
 
@@ -75,12 +74,15 @@ namespace cling {
   DeclExtractor::~DeclExtractor()
   { }
 
-  void DeclExtractor::Transform() {
-    if (!getTransaction()->getCompilationOpts().DeclarationExtraction)
-      return;
+  WrapperTransformer::Result DeclExtractor::Transform(Decl* D) {
+    if (!getCompilationOpts().DeclarationExtraction)
+      return Result(D, true);
+    FunctionDecl* FD = cast<FunctionDecl>(D);
+    assert(utils::Analyze::IsWrapper(FD) && "Expected wrapper");
 
-    if(!ExtractDecl(getTransaction()->getWrapperFD()))
-      setTransaction(0); // On error set to NULL.
+    if (!ExtractDecl(FD))
+      return Result(nullptr, false);
+    return Result(FD, true);
   }
 
   bool DeclExtractor::ExtractDecl(FunctionDecl* FD) {
@@ -112,9 +114,6 @@ namespace cling {
             assert(!Stmts.size() && "Stmt list must be flushed.");
           }
 
-          // We know the transaction is closed, but it is safe.
-          getTransaction()->forceAppend(ND);
-
           DeclContext* OldDC = ND->getDeclContext();
 
           // Make sure the decl is not found at its old possition
@@ -145,6 +144,8 @@ namespace cling {
           clearLinkage(ND);
 
           TouchedDecls.push_back(ND);
+
+          Emit(DeclGroupRef(ND));
         }
       }
     }
@@ -181,24 +182,13 @@ namespace cling {
 
     CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
 
-    // The order matters, because when we extract decls from the wrapper we
-    // append them to the transaction. If the transaction gets unloaded it will
-    // introduce a fake dependency, so put the move last.
-    Transaction* T = getTransaction();
-    for (Transaction::iterator I = T->decls_begin(), E = T->decls_end();
-         I != E; ++I)
-      if (!I->m_DGR.isNull() && I->m_DGR.isSingleDecl()
-          && I->m_DGR.getSingleDecl() == T->getWrapperFD()) {
-        T->erase(I);
-        break;
-      }
-    T->forceAppend(FD);
+    if (hasNoErrors && !TouchedDecls.empty()) {
+      // Put the wrapper after its declarations. (Nice when AST dumping)
+      DC->removeDecl(FD);
+      DC->addDecl(FD);
+    }
 
-    // Put the wrapper after its declarations. (Nice when AST dumping)
-    DC->removeDecl(FD);
-    DC->addDecl(FD);
-
-    return hasNoErrors;
+    return hasNoErrors ? FD : 0;
   }
 
   void DeclExtractor::createUniqueName(std::string& out) {
@@ -245,8 +235,7 @@ namespace cling {
       CompoundStmt* CS = new (*m_Context)CompoundStmt(*m_Context, StmtsRef,
                                                       Loc, Loc);
       FD->setBody(CS);
-      // We know the transaction is closed, but it is safe.
-      getTransaction()->forceAppend(FD);
+      Emit(FD);
 
       // Create the VarDecl with the init
       std::string VarName = "__vd";
@@ -265,8 +254,7 @@ namespace cling {
       assert(VD && TheCall && "Missing VD or its init!");
       VD->setInit(TheCall);
 
-      // We know the transaction is closed, but it is safe.
-      getTransaction()->forceAppend(VD); // Add it to the transaction for codegenning
+      Emit(VD); // Add it to the transaction for codegenning
       VD->setHidden(true);
       TUDC->addHiddenDecl(VD);
       Stmts.clear();

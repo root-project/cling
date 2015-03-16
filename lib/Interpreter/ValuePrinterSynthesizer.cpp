@@ -10,7 +10,6 @@
 #include "ValuePrinterSynthesizer.h"
 
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
@@ -32,7 +31,7 @@ namespace cling {
 
   ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S,
                                                    llvm::raw_ostream* Stream)
-    : TransactionTransformer(S), m_Context(&S->getASTContext()) {
+    : WrapperTransformer(S), m_Context(&S->getASTContext()) {
     if (Stream)
       m_ValuePrinterStream.reset(Stream);
     else
@@ -44,13 +43,15 @@ namespace cling {
   ValuePrinterSynthesizer::~ValuePrinterSynthesizer()
   { }
 
-  void ValuePrinterSynthesizer::Transform() {
-    if (getTransaction()->getCompilationOpts().ValuePrinting
-        == CompilationOptions::VPDisabled)
-      return;
+  ASTTransformer::Result ValuePrinterSynthesizer::Transform(clang::Decl* D) {
+    if (getCompilationOpts().ValuePrinting == CompilationOptions::VPDisabled)
+      return Result(D, true);
 
-    if (!tryAttachVP(getTransaction()->getWrapperFD()))
-      return setTransaction(0); // On error set to NULL.
+    FunctionDecl* FD = cast<FunctionDecl>(D);
+    assert(utils::Analyze::IsWrapper(FD) && "Expected wrapper");
+    if (tryAttachVP(FD))
+      return Result(FD, true);
+    return Result(0, false);
   }
 
   bool ValuePrinterSynthesizer::tryAttachVP(FunctionDecl* FD) {
@@ -69,26 +70,25 @@ namespace cling {
       CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
       assert(CS && "Missing body?");
 
-      const CompilationOptions& CO(getTransaction()->getCompilationOpts());
-      switch (CO.ValuePrinting) {
+      switch (getCompilationOpts().ValuePrinting) {
       case CompilationOptions::VPDisabled:
         assert(0 && "Don't wait that long. Exit early!");
         break;
       case CompilationOptions::VPEnabled:
         break;
       case CompilationOptions::VPAuto: {
-        CompilationOptions& CO = getTransaction()->getCompilationOpts();
         // FIXME: Propagate the flag to the nested transactions also, they
         // must have the same CO as their parents.
-        CO.ValuePrinting = CompilationOptions::VPEnabled;
+        getCompilationOpts().ValuePrinting = CompilationOptions::VPEnabled;
         if ((int)CS->size() > indexOfLastExpr+1
             && (*(CS->body_begin() + indexOfLastExpr + 1))
             && isa<NullStmt>(*(CS->body_begin() + indexOfLastExpr + 1))) {
           // If next is NullStmt disable VP is disabled - exit. Signal this in
           // the CO of the transaction.
-          CO.ValuePrinting = CompilationOptions::VPDisabled;
+          getCompilationOpts().ValuePrinting = CompilationOptions::VPDisabled;
         }
-        if (CO.ValuePrinting == CompilationOptions::VPDisabled)
+        if (getCompilationOpts().ValuePrinting
+            == CompilationOptions::VPDisabled)
           return true;
       }
         break;
@@ -121,8 +121,7 @@ namespace cling {
       }
     }
     else // if nothing to attach to set the CO's ValuePrinting to disabled.
-      getTransaction()->getCompilationOpts().ValuePrinting
-        = CompilationOptions::VPDisabled;
+      getCompilationOpts().ValuePrinting = CompilationOptions::VPDisabled;
     return true;
   }
 

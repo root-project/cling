@@ -9,8 +9,6 @@
 
 #include "AutoSynthesizer.h"
 
-#include "cling/Interpreter/Transaction.h"
-
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Sema/Sema.h"
@@ -62,7 +60,7 @@ namespace cling {
 
 namespace cling {
   AutoSynthesizer::AutoSynthesizer(clang::Sema* S)
-    : TransactionTransformer(S) {
+    : ASTTransformer(S) {
     // TODO: We would like to keep that local without keeping track of all
     // decls that were handled in the AutoFixer. This can be done by removing
     // the __Auto attribute, but for now I am still hesitant to do it. Having
@@ -75,22 +73,14 @@ namespace cling {
   AutoSynthesizer::~AutoSynthesizer()
   { }
 
-  void AutoSynthesizer::Transform() {
-    const Transaction* T = getTransaction();
-    for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
-         I != E; ++I) {
-      // Copy DCI; it might get relocated below.
-      Transaction::DelayCallInfo DCI = *I;
-      for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(),
-             JE = DCI.m_DGR.end(); J != JE; ++J) {
-        if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*J)) {
-          // getBody() might return nullptr even though hasBody() is true for
-          // late template parsed functions. We simply don't do auto auto on
-          // those.
-          if (CompoundStmt* CS = cast_or_null<CompoundStmt>(FD->getBody()))
-            m_AutoFixer->Fix(CS);
-        }
-      }
+  ASTTransformer::Result AutoSynthesizer::Transform(Decl* D) {
+    if (FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {
+      // getBody() might return nullptr even though hasBody() is true for
+      // late template parsed functions. We simply don't do auto auto on
+      // those.
+      if (CompoundStmt* CS = cast_or_null<CompoundStmt>(FD->getBody()))
+        m_AutoFixer->Fix(CS);
     }
+    return Result(D, true);
   }
 } // end namespace cling

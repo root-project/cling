@@ -56,7 +56,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT);
+      void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn);
 
       ///\brief Set the value of the GenericValue for the expression
       /// evaluated at the prompt.
@@ -67,7 +67,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            float value);
 
       ///\brief Set the value of the GenericValue for the expression
@@ -79,7 +79,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            double value);
 
       ///\brief Set the value of the GenericValue for the expression
@@ -92,7 +92,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            long double value);
 
       ///\brief Set the value of the GenericValue for the expression
@@ -106,7 +106,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            unsigned long long value);
 
       ///\brief Set the value of the GenericValue for the expression
@@ -118,7 +118,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpV - The Value that is created.
       ///
-      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, void* vpT,
+      void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            const void* value);
 
       ///\brief Set the value of the Generic value and return the address
@@ -130,7 +130,7 @@ namespace cling {
       ///
       ///\returns the address where the value should be put.
       ///
-      void* setValueWithAlloc(void* vpI, void* vpV, void* vpQT, void* vpT);
+      void* setValueWithAlloc(void* vpI, void* vpV, void* vpQT, char vpOn);
 
       ///\brief Placement new doesn't work for arrays. It needs to be called on
       /// each element. For non-PODs we also need to call the *structors. This

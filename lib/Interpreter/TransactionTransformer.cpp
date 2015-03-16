@@ -9,21 +9,17 @@
 
 #include "TransactionTransformer.h"
 
-#include "clang/Sema/Sema.h"
+#include "clang/AST/ASTConsumer.h"
+#include "clang/AST/DeclGroup.h"
 
 namespace cling {
 
   // pin the vtable here since there is no point to create dedicated to that
   // cpp file.
-  TransactionTransformer::~TransactionTransformer() {}
+  ASTTransformer::~ASTTransformer() {}
 
-  bool TransactionTransformer::TransformTransaction(Transaction& T) {
-    m_Transaction = &T;
-    Transform();
-
-    if (!m_Sema)
-      return true;
-
-    return !m_Sema->getDiagnostics().hasErrorOccurred();
+  void ASTTransformer::Emit(clang::DeclGroupRef DGR) {
+    m_Consumer->HandleTopLevelDecl(DGR);
   }
+
 } // end namespace cling

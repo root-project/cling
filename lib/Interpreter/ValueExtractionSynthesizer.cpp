@@ -25,7 +25,7 @@ using namespace clang;
 
 namespace cling {
   ValueExtractionSynthesizer::ValueExtractionSynthesizer(clang::Sema* S)
-    : TransactionTransformer(S), m_Context(&S->getASTContext()), m_gClingVD(0),
+    : WrapperTransformer(S), m_Context(&S->getASTContext()), m_gClingVD(0),
       m_UnresolvedNoAlloc(0), m_UnresolvedWithAlloc(0),
       m_UnresolvedCopyArray(0) { }
 
@@ -55,20 +55,21 @@ namespace cling {
     };
   }
 
-  void ValueExtractionSynthesizer::Transform() {
-    const CompilationOptions& CO = getTransaction()->getCompilationOpts();
+  ASTTransformer::Result ValueExtractionSynthesizer::Transform(clang::Decl* D) {
+    const CompilationOptions& CO = getCompilationOpts();
     // If we do not evaluate the result, or printing out the result return.
     if (!(CO.ResultEvaluation || CO.ValuePrinting))
-      return;
+      return Result(D, true);
 
-    FunctionDecl* FD = getTransaction()->getWrapperFD();
+    FunctionDecl* FD = cast<FunctionDecl>(D);
+    assert(utils::Analyze::IsWrapper(FD) && "Expected wrapper");
 
     int foundAtPos = -1;
     Expr* lastExpr = utils::Analyze::GetOrCreateLastExpr(FD, &foundAtPos,
                                                          /*omitDS*/false,
                                                          m_Sema);
     if (foundAtPos < 0)
-      return;
+      return Result(D, true);
 
     typedef llvm::SmallVector<Stmt**, 4> StmtIters;
     StmtIters returnStmts;
@@ -173,6 +174,7 @@ namespace cling {
           **I = SVRInit;
       }
     }
+    return Result(D, true);
   }
 
 // Helper function for the SynthesizeSVRInit
@@ -234,15 +236,19 @@ namespace {
     Expr* ETyVP
       = utils::Synthesize::CStyleCastPtrExpr(m_Sema, m_Context->VoidPtrTy,
                                              (uint64_t)ETy.getAsOpaquePtr());
-    Expr* ETransaction
-      = utils::Synthesize::CStyleCastPtrExpr(m_Sema, m_Context->VoidPtrTy,
-                                             (uint64_t)getTransaction());
+
+    // Pass whether to Value::dump() or not:
+    Expr* EVPOn
+      = new (*m_Context) CharacterLiteral(getCompilationOpts().ValuePrinting,
+                                          CharacterLiteral::Ascii,
+                                          m_Context->CharTy,
+                                          SourceLocation());
 
     llvm::SmallVector<Expr*, 6> CallArgs;
     CallArgs.push_back(gClingDRE.get());
     CallArgs.push_back(wrapperSVRDRE.get());
     CallArgs.push_back(ETyVP);
-    CallArgs.push_back(ETransaction);
+    CallArgs.push_back(EVPOn);
 
     ExprResult Call;
     SourceLocation noLoc;
@@ -419,9 +425,8 @@ namespace {
 // Provide implementation of the functions that ValueExtractionSynthesizer calls
 namespace {
 
-  static void dumpIfNoStorage(void* vpV, void* vpT) {
+  static void dumpIfNoStorage(void* vpV, char vpOn) {
     const cling::Value& V = *(cling::Value*)vpV;
-    //const cling::Transaction& T = *(cling::Transaction*)vpT);
     // If the value copies over the temporary we must delay the printing until
     // the temporary gets copied over. For the rest of the temporaries we *must*
     // dump here because their lifetime will be gone otherwise. Eg.
@@ -429,12 +434,10 @@ namespace {
     // std::string f(); f().c_str() // have to dump during the same stmt.
     //
     assert(!V.needsManagedAllocation() && "Must contain non managed temporary");
-    cling::Transaction* T = ((cling::Transaction*)vpT);
-    const cling::CompilationOptions& CO = T->getCompilationOpts();
-    if (CO.ValuePrinting == cling::CompilationOptions::VPEnabled)
-      V.dump();
-    assert(CO.ValuePrinting != cling::CompilationOptions::VPAuto
+    assert(vpOn != (char)cling::CompilationOptions::VPAuto
            && "VPAuto must have been expanded earlier.");
+    if (vpOn == (char)cling::CompilationOptions::VPEnabled)
+      V.dump();
   }
 
   ///\brief Allocate the Value and return the Value
@@ -456,39 +459,39 @@ namespace {
 namespace cling {
 namespace runtime {
   namespace internal {
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT) {
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn) {
       // In cases of void we 'just' need to change the type of the value.
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT);
     }
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT,
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          float value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<float>() = value;
-      dumpIfNoStorage(vpSVR, vpT);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT,
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<double>() = value;
-      dumpIfNoStorage(vpSVR, vpT);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT,
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          long double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<long double>()
         = value;
-      dumpIfNoStorage(vpSVR, vpT);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT,
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          unsigned long long value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT)
         .getAs<unsigned long long>() = value;
-      dumpIfNoStorage(vpSVR, vpT);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
-    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT,
+    void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          const void* value){
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>()
         = const_cast<void*>(value);
-      dumpIfNoStorage(vpSVR, vpT);
+      dumpIfNoStorage(vpSVR, vpOn);
     }
-    void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT, void* vpT) {
+    void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn) {
       return allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>();
     }
   } // end namespace internal

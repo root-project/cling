@@ -116,7 +116,7 @@ namespace cling {
 
   // Constructors
   EvaluateTSynthesizer::EvaluateTSynthesizer(Sema* S)
-    : TransactionTransformer(S), m_EvalDecl(0), m_LifetimeHandlerDecl(0),
+    : ASTTransformer(S), m_EvalDecl(0), m_LifetimeHandlerDecl(0),
       m_LHgetMemoryDecl(0), m_DynamicExprInfoDecl(0), m_DeclContextDecl(0),
       m_gCling(0), m_CurDeclContext(0), m_Context(&S->getASTContext()),
       m_UniqueNameCounter(0), m_NestedCompoundStmts(0)
@@ -204,44 +204,37 @@ namespace cling {
     m_NoELoc = m_NoRange.getEnd();
   }
 
-  void EvaluateTSynthesizer::Transform() {
-    if (!getTransaction()->getCompilationOpts().DynamicScoping)
-      return;
+  ASTTransformer::Result EvaluateTSynthesizer::Transform(Decl* D) {
+    if (!getCompilationOpts().DynamicScoping)
+      return Result(D, true);
 
     // Find DynamicLookup specific builtins
     if (!m_EvalDecl) {
       Initialize();
     }
 
-    const Transaction* T = getTransaction();
-    for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
-         I != E; ++I) {
-      // Copy DCI; it might get relocated below.
-      Transaction::DelayCallInfo DCI = *I;
-      for (DeclGroupRef::const_iterator J = DCI.m_DGR.begin(),
-             JE = DCI.m_DGR.end(); J != JE; ++J)
-        if (ShouldVisit(*J) && (*J)->hasBody()) {
-          if (FunctionDecl* FD = dyn_cast<FunctionDecl>(*J)) {
-            // Set the decl context, which is needed by Evaluate.
-            m_CurDeclContext = FD;
-            ASTNodeInfo NewBody = Visit((*J)->getBody());
-            if (NewBody.hasErrorOccurred()) {
-              // Report unsupported feature.
-              DiagnosticsEngine& Diags = m_Sema->getDiagnostics();
-              unsigned diagID
-                = Diags.getCustomDiagID(DiagnosticsEngine::Error,
-                                        "Feature not supported yet");
-              Diags.Report(NewBody.getAsSingleNode()->getLocStart(), diagID);
-              return; // Signal a fatal error.
-            }
-            FD->setBody(NewBody.getAsSingleNode());
-          }
-          assert ((!isa<BlockDecl>(*J) || !isa<ObjCMethodDecl>(*J))
-                  && "Not implemented yet!");
+    if (FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {
+      if (FD->hasBody() && ShouldVisit(FD)) {
+        // Set the decl context, which is needed by Evaluate.
+        m_CurDeclContext = FD;
+        ASTNodeInfo NewBody = Visit(D->getBody());
+        if (NewBody.hasErrorOccurred()) {
+          // Report unsupported feature.
+          DiagnosticsEngine& Diags = m_Sema->getDiagnostics();
+          unsigned diagID
+          = Diags.getCustomDiagID(DiagnosticsEngine::Error,
+                                  "Feature not supported yet");
+          Diags.Report(NewBody.getAsSingleNode()->getLocStart(), diagID);
+          return Result(0, false); // Signal a fatal error.
         }
+        FD->setBody(NewBody.getAsSingleNode());
+      }
+      assert ((!isa<BlockDecl>(D) || !isa<ObjCMethodDecl>(D))
+              && "Not implemented yet!");
     }
 
     //TODO: Check for error before returning.
+    return Result(D, true);
   }
 
   // StmtVisitor
@@ -786,10 +779,14 @@ namespace cling {
 
     FunctionDecl* Fn = dyn_cast<FunctionDecl>(D);
 
+    // IncrementalParser is opening a Transaction for the transformations which
+    // will happily capture these decls.
+#if 0
     // We expect incoming declarations (instantiations) and we
     // need to open the transaction to collect them.
     Transaction::State oldState = getTransaction()->getState();
     getTransaction()->setState(Transaction::kCollecting);
+#endif
 
     // Creates new body of the substituted declaration
     m_Sema->InstantiateFunctionDefinition(Fn->getLocation(), Fn, true, true);
@@ -808,8 +805,9 @@ namespace cling {
                                                 VK_RValue,
                                                 m_NoSLoc
                                                 ).getAs<DeclRefExpr>();
-
+#if 0
     getTransaction()->setState(oldState);
+#endif
 
     // TODO: Figure out a way to avoid passing in wrong source locations
     // of the symbol being replaced. This is important when we calculate the

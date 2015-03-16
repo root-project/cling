@@ -19,6 +19,7 @@
 
 
 namespace clang {
+  class Decl;
   class Sema;
 }
 
@@ -114,7 +115,7 @@ namespace cling {
   /// which does the delayed evaluation. It uses a callback function, which
   /// should be reimplemented in the subsystem that provides the runtime types
   /// and addresses of the expressions.
-  class EvaluateTSynthesizer : public TransactionTransformer,
+  class EvaluateTSynthesizer : public ASTTransformer,
                                public clang::StmtVisitor<EvaluateTSynthesizer,
                                                          ASTNodeInfo> {
 
@@ -178,7 +179,7 @@ namespace cling {
 
     ~EvaluateTSynthesizer();
 
-    virtual void Transform();
+    Result Transform(clang::Decl* D) override;
 
     MapTy& getSubstSymbolMap() { return m_SubstSymbolMap; }
 

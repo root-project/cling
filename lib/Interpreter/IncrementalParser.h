@@ -41,7 +41,7 @@ namespace cling {
   class Interpreter;
   class Transaction;
   class TransactionPool;
-  class TransactionTransformer;
+  class ASTTransformer;
 
   ///\brief Responsible for the incremental parsing and compilation of input.
   ///
@@ -87,14 +87,6 @@ namespace cling {
     ///\brief Code generator
     ///
     std::unique_ptr<clang::CodeGenerator> m_CodeGen;
-
-    ///\brief Contains the transaction AST transformers.
-    ///
-    llvm::SmallVector<TransactionTransformer*, 6> m_ASTTransformers;
-
-    ///\brief Contains the transaction IR transformers.
-    ///
-    llvm::SmallVector<TransactionTransformer*, 2> m_IRTransformers;
 
     ///\brief Pool of reusable block-allocated transactions.
     ///
@@ -226,12 +218,6 @@ namespace cling {
     bool runStaticInitOnTransaction(Transaction* T) const;
 
   private:
-    ///\brief Runs AST transformers on a transaction.
-    ///
-    ///\param[in] T - the transaction to be transformed.
-    ///
-    void transformTransactionAST(Transaction* T);
-
     ///\brief Runs IR transformers on a transaction.
     ///
     ///\param[in] T - the transaction to be transformed.

@@ -27,7 +27,7 @@ using namespace clang;
 
 namespace cling {
   NullDerefProtectionTransformer::NullDerefProtectionTransformer(clang::Sema* S)
-    : TransactionTransformer(S) {
+    : WrapperTransformer(S) {
   }
 
   NullDerefProtectionTransformer::~NullDerefProtectionTransformer()
@@ -279,15 +279,19 @@ namespace cling {
     }
   };
 
-  void NullDerefProtectionTransformer::Transform() {
-    FunctionDecl* FD = getTransaction()->getWrapperFD();
-    if (!FD)
-      return;
+  ASTTransformer::Result
+  NullDerefProtectionTransformer::Transform(clang::Decl* D) {
+    FunctionDecl* FD = dyn_cast<FunctionDecl>(D);
+    if (!FD || FD->isFromASTFile())
+      return Result(D, true);
 
-    CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
-    assert(CS && "Function body not a CompundStmt?");
-    IfStmtInjector injector((*m_Sema));
+    CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
+    if (!CS)
+      return Result(D, true);
+
+    IfStmtInjector injector(*m_Sema);
     CompoundStmt* newCS = injector.Inject(CS);
     FD->setBody(newCS);
+    return Result(FD, true);
   }
 } // end namespace cling
