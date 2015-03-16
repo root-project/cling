@@ -96,10 +96,11 @@ namespace cling {
   }
 
   void Interpreter::PushTransactionRAII::pop() const {
-    if (Transaction* T
-        = m_Interpreter->m_IncrParser->endTransaction(m_Transaction)) {
-      assert(T == m_Transaction && "Ended different transaction?");
-      m_Interpreter->m_IncrParser->commitTransaction(T);
+    IncrementalParser::ParseResultTransaction PRT
+      = m_Interpreter->m_IncrParser->endTransaction(m_Transaction);
+    if (PRT.getInt() != IncrementalParser::kFailed && PRT.getPointer()) {
+      assert(PRT.getPointer()==m_Transaction && "Ended different transaction?");
+      m_Interpreter->m_IncrParser->commitTransaction(PRT.getPointer());
     }
   }
 
@@ -939,18 +940,13 @@ namespace cling {
                                Transaction** T /* = 0 */) const {
     StateDebuggerRAII stateDebugger(this);
 
-    if (Transaction* lastT = m_IncrParser->Compile(input, CO)) {
-      if (lastT->getIssuedDiags() != Transaction::kErrors) {
-        if (T)
-          *T = lastT;
-        return Interpreter::kSuccess;
-      }
+    IncrementalParser::ParseResultTransaction PRT
+      = m_IncrParser->Compile(input, CO);
+    if (PRT.getInt() == IncrementalParser::kFailed)
       return Interpreter::kFailure;
-    }
 
-    // Even if the transaction was empty it can still be a success.
-    if (getCI()->getDiagnostics().hasErrorOccurred())
-      return Interpreter::kFailure;
+    if (T)
+      *T = PRT.getPointer();
     return Interpreter::kSuccess;
   }
 
@@ -970,36 +966,42 @@ namespace cling {
     // non-default C++ at the prompt:
     CO.IgnorePromptDiags = 1;
 
-    if (Transaction* lastT = m_IncrParser->Compile(Wrapper, CO)) {
-
+    IncrementalParser::ParseResultTransaction PRT
+      = m_IncrParser->Compile(Wrapper, CO);
+    Transaction* lastT = PRT.getPointer();
+    if (lastT && lastT->getState() != Transaction::kCommitted) {
       assert((lastT->getState() == Transaction::kCommitted
               || lastT->getState() == Transaction::kRolledBack
               || lastT->getState() == Transaction::kRolledBackWithErrors)
              && "Not committed?");
+      if (V)
+        *V = Value();
+      return kFailure;
+    }
 
-      if (lastT->getIssuedDiags() == Transaction::kErrors
-          || lastT->getState() != Transaction::kCommitted) {
-         if (V)
-            *V = Value();
+    // Might not have a Transaction
+    if (PRT.getInt() == IncrementalParser::kFailed) {
+      if (V)
+        *V = Value();
+      return kFailure;
+    }
 
-         return Interpreter::kFailure;
-      }
+    assert(lastT && "Expected a transaction");
 
-      Value resultV;
-      if (!V)
-         V = &resultV;
-      if (!lastT->getWrapperFD()) // no wrapper to run
-         return Interpreter::kSuccess;
-      else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError){
-         if (lastT->getCompilationOpts().ValuePrinting
-             != CompilationOptions::VPDisabled
-             && V->isValid()
-             // the !V->needsManagedAllocation() case is handled by
-             // dumpIfNoStorage.
-             && V->needsManagedAllocation())
-            V->dump();
-         return Interpreter::kSuccess;
-      }
+    Value resultV;
+    if (!V)
+      V = &resultV;
+    if (!lastT->getWrapperFD()) // no wrapper to run
+      return Interpreter::kSuccess;
+    else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError){
+      if (lastT->getCompilationOpts().ValuePrinting
+          != CompilationOptions::VPDisabled
+          && V->isValid()
+          // the !V->needsManagedAllocation() case is handled by
+          // dumpIfNoStorage.
+          && V->needsManagedAllocation())
+        V->dump();
+      return Interpreter::kSuccess;
     }
     return Interpreter::kSuccess;
   }
@@ -1224,10 +1226,12 @@ namespace cling {
 
 
     std::string includeFile = std::string("#include \"") + inFile.str() + "\"";
-    cling::Transaction* T = fwdGen.m_IncrParser->Parse(includeFile , CO);
+    IncrementalParser::ParseResultTransaction PRT
+      = fwdGen.m_IncrParser->Parse(includeFile, CO);
+    cling::Transaction* T = PRT.getPointer();
 
     // If this was already #included we will get a T == 0.
-    if (!T)
+    if (PRT.getInt() == IncrementalParser::kFailed || !T)
       return;
 
     std::error_code EC;

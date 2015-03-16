@@ -121,9 +121,12 @@ namespace cling {
         m_Transaction = IP->beginTransaction(CO);
       }
       ~CommitTransactionRAII_t() {
-        if (Transaction* T = m_IncrParser->endTransaction(m_Transaction)) {
-          assert(T == m_Transaction && "Ended different transaction?");
-          m_IncrParser->commitTransaction(T);
+        IncrementalParser::ParseResultTransaction PRT = m_IncrParser->endTransaction(m_Transaction);
+        if (PRT.getInt() != IncrementalParser::kFailed) {
+          if (Transaction* T = PRT.getPointer()) {
+            assert(T == m_Transaction && "Ended different transaction?");
+            m_IncrParser->commitTransaction(T);
+          }
         }
       }
     } CommitTransactionRAII(m_IncrParser,

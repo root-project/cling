@@ -225,8 +225,9 @@ namespace cling {
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/,
                                        true /*OwnsDeserializationListener*/);
-      if (Transaction* EndedT = endTransaction(CurT))
-        result.push_back(EndedT);
+      ParseResultTransaction EndedT = endTransaction(CurT);
+      if (EndedT.getInt() != kFailed && EndedT.getPointer())
+        result.push_back(EndedT.getPointer());
     }
 
     Transaction* CurT = beginTransaction(CO);
@@ -259,8 +260,9 @@ namespace cling {
     // DO NOT commit the transactions here: static initialization in these
     // transactions requires gCling through local_cxa_atexit(), but that has not
     // been defined yet!
-    if (Transaction* EndedT = endTransaction(CurT))
-      result.push_back(EndedT);
+    ParseResultTransaction PRT = endTransaction(CurT);
+    if (PRT.getInt() != kFailed && PRT.getPointer())
+      result.push_back(PRT.getPointer());
   }
 
   const Transaction* IncrementalParser::getCurrentTransaction() const {
@@ -314,7 +316,8 @@ namespace cling {
     return NewCurT;
   }
 
-  Transaction* IncrementalParser::endTransaction(Transaction* T) {
+  IncrementalParser::ParseResultTransaction
+  IncrementalParser::endTransaction(Transaction* T) {
     assert(T && "Null transaction!?");
     assert(T->getState() == Transaction::kCollecting);
 
@@ -327,6 +330,21 @@ namespace cling {
 #endif
 
     T->setState(Transaction::kCompleted);
+
+    const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+
+    //TODO: Make the enum orable.
+    EParseResult ParseResult = kSuccess;
+    if (Diags.getNumWarnings() > 0) {
+      T->setIssuedDiags(Transaction::kWarnings);
+      ParseResult = kSuccessWithWarnings;
+    }
+
+    if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred()) {
+      T->setIssuedDiags(Transaction::kErrors);
+      ParseResult = kFailed;
+    }
+
     // Empty transaction send it back to the pool.
     if (T->empty()) {
       assert((!m_Consumer->getTransaction()
@@ -340,25 +358,11 @@ namespace cling {
         m_Consumer->setTransaction((Transaction*)0);
 
       m_TransactionPool->releaseTransaction(T);
-      return 0;
+      return ParseResultTransaction(nullptr, ParseResult);
     }
-
-    if (T->empty()) {
-      m_TransactionPool->releaseTransaction(T);
-      return 0;
-    }
-
-    const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
-
-    //TODO: Make the enum orable.
-    if (Diags.getNumWarnings() > 0)
-      T->setIssuedDiags(Transaction::kWarnings);
-
-    if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
-      T->setIssuedDiags(Transaction::kErrors);
 
     addTransaction(T);
-    return T;
+    return ParseResultTransaction(T, ParseResult);
   }
 
   void IncrementalParser::commitTransaction(Transaction* T) {
@@ -366,7 +370,7 @@ namespace cling {
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
-    assert(!T->empty() && "Transactions must not be empty;");
+    assert(!T->empty() && "Valid Transactions must not be empty;");
 
     // If committing a nested transaction the active one should be its parent
     // from now on.
@@ -421,8 +425,9 @@ namespace cling {
       Transaction* nestedT = beginTransaction(CompilationOptions());
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
-      if (Transaction* T = endTransaction(nestedT))
-        commitTransaction(T);
+      ParseResultTransaction PRT = endTransaction(nestedT);
+      if (PRT.getInt() != kFailed && PRT.getPointer())
+        commitTransaction(PRT.getPointer());
       m_Consumer->setTransaction(prevConsumerT);
     }
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
@@ -513,8 +518,9 @@ namespace cling {
 
     // Commit this transaction first - T might need symbols from it, so
     // trigger emission of weak symbols by providing use.
-    if ((deserT = endTransaction(deserT)))
-      commitTransaction(deserT);
+    ParseResultTransaction PRT = endTransaction(deserT);
+    if (PRT.getInt() != kFailed && PRT.getPointer())
+      commitTransaction(PRT.getPointer());
 
     // This llvm::Module is done; finalize it and pass it to the execution
     // engine.
@@ -628,8 +634,9 @@ namespace cling {
     assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
   }
 
-  Transaction* IncrementalParser::Compile(llvm::StringRef input,
-                                          const CompilationOptions& Opts) {
+  IncrementalParser::ParseResultTransaction
+  IncrementalParser::Compile(llvm::StringRef input,
+                             const CompilationOptions& Opts) {
     Transaction* CurT = beginTransaction(Opts);
     EParseResult ParseRes = ParseInternal(input);
 
@@ -638,19 +645,20 @@ namespace cling {
     else if (ParseRes == kFailed)
       CurT->setIssuedDiags(Transaction::kErrors);
 
-    if ((CurT = endTransaction(CurT))) {
-      commitTransaction(CurT);
+    ParseResultTransaction PRT = endTransaction(CurT);
+    if (PRT.getInt() != kFailed && PRT.getPointer()) {
+      commitTransaction(PRT.getPointer());
     }
 
-    return CurT;
+    return PRT;
   }
 
-  Transaction* IncrementalParser::Parse(llvm::StringRef input,
-                                        const CompilationOptions& Opts) {
+  IncrementalParser::ParseResultTransaction
+  IncrementalParser::Parse(llvm::StringRef input,
+                           const CompilationOptions& Opts) {
     Transaction* CurT = beginTransaction(Opts);
     ParseInternal(input);
-    Transaction* EndedT = endTransaction(CurT);
-    return EndedT;
+    return endTransaction(CurT);
   }
 
   // Add the input to the memory buffer, parse it, and add it to the AST.
@@ -742,7 +750,7 @@ namespace cling {
       // If we got a null return and something *was* parsed, ignore it.  This
       // is due to a top-level semicolon, an action override, or a parse error
       // skipping something.
-      if (ADecl)
+      if (ADecl && !Diags.hasErrorOccurred())
         m_Consumer->HandleTopLevelDecl(ADecl.get());
     };
 
@@ -768,10 +776,12 @@ namespace cling {
       Diags.popMappings(Loc);
     }
 
-    // Process any TopLevelDecls generated by #pragma weak.
-    for (llvm::SmallVector<Decl*,2>::iterator I = S.WeakTopLevelDecls().begin(),
+    if (!Diags.hasErrorOccurred()) {
+      // Process any TopLevelDecls generated by #pragma weak.
+      for (llvm::SmallVector<Decl*,2>::iterator I = S.WeakTopLevelDecls().begin(),
            E = S.WeakTopLevelDecls().end(); I != E; ++I) {
-      m_Consumer->HandleTopLevelDecl(DeclGroupRef(*I));
+        m_Consumer->HandleTopLevelDecl(DeclGroupRef(*I));
+      }
     }
 
 

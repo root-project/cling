@@ -12,6 +12,7 @@
 
 #include "clang/Basic/SourceLocation.h"
 
+#include "llvm/ADT/PointerIntPair.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -98,6 +99,8 @@ namespace cling {
       kSuccessWithWarnings,
       kFailed
     };
+    typedef llvm::PointerIntPair<Transaction*, 2, EParseResult>
+      ParseResultTransaction;
     IncrementalParser(Interpreter* interp, int argc, const char* const *argv,
                       const char* llvmdir);
     ~IncrementalParser();
@@ -118,7 +121,7 @@ namespace cling {
 
     ///\brief Finishes a transaction.
     ///
-    Transaction* endTransaction(Transaction* T);
+    ParseResultTransaction endTransaction(Transaction* T);
 
     ///\brief Commits a transaction if it was complete. I.e pipes it
     /// through the consumer chain, including codegen.
@@ -189,7 +192,7 @@ namespace cling {
     ///\param[in] Opts - The compilation options to use.
     ///\returns the declarations that were compiled.
     ///
-    Transaction* Compile(llvm::StringRef input, const CompilationOptions& Opts);
+    ParseResultTransaction Compile(llvm::StringRef input, const CompilationOptions& Opts);
 
     ///\brief Parses the given input without calling the custom consumers and
     /// code generation.
@@ -201,7 +204,7 @@ namespace cling {
     ///\param[in] Opts - The compilation options to use.
     ///\returns The transaction corresponding to the input.
     ///
-    Transaction* Parse(llvm::StringRef input, const CompilationOptions& Opts);
+    ParseResultTransaction Parse(llvm::StringRef input, const CompilationOptions& Opts);
 
     void printTransactionStructure() const;
 
