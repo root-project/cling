@@ -10,7 +10,7 @@
 #ifndef CLING_DYNAMIC_LOOKUP_H
 #define CLING_DYNAMIC_LOOKUP_H
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Sema/Ownership.h"

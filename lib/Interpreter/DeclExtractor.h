@@ -10,7 +10,7 @@
 #ifndef CLING_DECL_EXTRACTOR_H
 #define CLING_DECL_EXTRACTOR_H
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 #include "llvm/ADT/SmallVector.h"
 
 #include <string>

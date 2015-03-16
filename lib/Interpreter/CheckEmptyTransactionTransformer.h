@@ -10,7 +10,7 @@
 #ifndef CLING_CHECK_EMPTY_TRANSACTION_TRANSFORMER
 #define CLING_CHECK_EMPTY_TRANSACTION_TRANSFORMER
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 
 namespace clang {
   class Decl;

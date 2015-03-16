@@ -11,7 +11,7 @@
 #ifndef CLING_AST_NULL_DEREF_PROTECTION_H
 #define CLING_AST_NULL_DEREF_PROTECTION_H
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 
 namespace clang {
   class Decl;

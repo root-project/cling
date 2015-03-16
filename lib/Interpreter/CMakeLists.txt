@@ -43,7 +43,7 @@ add_cling_library(clingInterpreter
   ValueExtractionSynthesizer.cpp
   RuntimeException.cpp
   Transaction.cpp
-  TransactionTransformer.cpp
+  ASTTransformer.cpp
   TransactionUnloader.cpp
   Value.cpp
   ValuePrinter.cpp

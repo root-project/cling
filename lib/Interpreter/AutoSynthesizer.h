@@ -10,7 +10,7 @@
 #ifndef CLING_AUTO_SYNTHESIZER_H
 #define CLING_AUTO_SYNTHESIZER_H
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 
 #include <memory>
 

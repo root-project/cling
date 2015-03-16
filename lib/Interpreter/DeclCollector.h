@@ -14,7 +14,7 @@
 #include "clang/AST/ASTMutationListener.h"
 #include "clang/Lex/PPCallbacks.h"
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 
 #include <vector>
 #include <memory>

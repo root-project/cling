@@ -7,7 +7,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/DeclGroup.h"

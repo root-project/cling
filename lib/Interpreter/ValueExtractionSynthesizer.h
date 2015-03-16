@@ -10,7 +10,7 @@
 #ifndef CLING_VALUE_EXTRACTION_SYNTHESIZER_H
 #define CLING_VALUE_EXTRACTION_SYNTHESIZER_H
 
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 
 namespace clang {
   class ASTContext;

@@ -20,7 +20,7 @@
 #include "NullDerefProtectionTransformer.h"
 #include "ValueExtractionSynthesizer.h"
 #include "TransactionPool.h"
-#include "TransactionTransformer.h"
+#include "ASTTransformer.h"
 #include "TransactionUnloader.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
