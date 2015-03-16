@@ -986,7 +986,12 @@ namespace cling {
       return kFailure;
     }
 
-    assert(lastT && "Expected a transaction");
+    if (!lastT) {
+      // Empty transactions are good, too!
+      if (V)
+        *V = Value();
+      return kSuccess;
+    }
 
     Value resultV;
     if (!V)
