@@ -784,13 +784,20 @@ namespace cling {
       }
     }
 
+    EParseResult Result = kSuccess;
 
     if (Diags.hasErrorOccurred())
-      return IncrementalParser::kFailed;
+      Result = kFailed;
     else if (Diags.getNumWarnings())
-      return IncrementalParser::kSuccessWithWarnings;
+      Result = kSuccessWithWarnings;
 
-    return IncrementalParser::kSuccess;
+    if (Result != kSuccess) {
+      // Now that we have captured the error, reset the Diags.
+      Diags.Reset(/*soft=*/true);
+      Diags.getClient()->clear();
+    }
+
+    return Result;
   }
 
   void IncrementalParser::printTransactionStructure() const {
