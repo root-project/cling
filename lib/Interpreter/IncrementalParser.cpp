@@ -331,7 +331,7 @@ namespace cling {
 
     T->setState(Transaction::kCompleted);
 
-    const DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+    DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
 
     //TODO: Make the enum orable.
     EParseResult ParseResult = kSuccess;
@@ -343,6 +343,12 @@ namespace cling {
     if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred()) {
       T->setIssuedDiags(Transaction::kErrors);
       ParseResult = kFailed;
+    }
+
+    if (ParseResult != kSuccess) {
+      // Now that we have captured the error, reset the Diags.
+      Diags.Reset(/*soft=*/true);
+      Diags.getClient()->clear();
     }
 
     // Empty transaction send it back to the pool.
@@ -785,20 +791,12 @@ namespace cling {
       }
     }
 
-    EParseResult Result = kSuccess;
-
     if (Diags.hasErrorOccurred())
-      Result = kFailed;
+      return kFailed;
     else if (Diags.getNumWarnings())
-      Result = kSuccessWithWarnings;
+      return kSuccessWithWarnings;
 
-    if (Result != kSuccess) {
-      // Now that we have captured the error, reset the Diags.
-      Diags.Reset(/*soft=*/true);
-      Diags.getClient()->clear();
-    }
-
-    return Result;
+    return kSuccess;
   }
 
   void IncrementalParser::printTransactionStructure() const {
