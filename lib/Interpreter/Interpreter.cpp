@@ -637,6 +637,7 @@ namespace cling {
 
   Interpreter::CompilationResult Interpreter::emitAllDecls(Transaction* T) {
     assert(!isInSyntaxOnlyMode() && "No CodeGenerator?");
+    m_IncrParser->emitTransaction(T);
     m_IncrParser->addTransaction(T);
     m_IncrParser->markWholeTransactionAsUsed(T);
     m_IncrParser->commitTransaction(T);

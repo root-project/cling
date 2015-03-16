@@ -127,11 +127,11 @@ namespace cling {
     ///
     void commitTransaction(Transaction* T);
 
-    ///\brief Runs the consumers (e.g. CodeGen) on a transaction.
+    ///\brief Runs the consumers (e.g. CodeGen) on a non-parsed transaction.
     ///
     ///\param[in] T - the transaction to be consumed
     ///
-    void codeGenTransaction(Transaction* T);
+    void emitTransaction(Transaction* T);
 
     ///\brief Reverts the interpreter into its previous state.
     ///
@@ -218,6 +218,12 @@ namespace cling {
     bool runStaticInitOnTransaction(Transaction* T) const;
 
   private:
+    ///\brief Finalizes the consumers (e.g. CodeGen) on a transaction.
+    ///
+    ///\param[in] T - the transaction to be finalized
+    ///
+    void codeGenTransaction(Transaction* T);
+
     ///\brief Runs IR transformers on a transaction.
     ///
     ///\param[in] T - the transaction to be transformed.

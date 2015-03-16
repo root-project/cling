@@ -481,6 +481,11 @@ namespace cling {
     }
   }
 
+  void IncrementalParser::emitTransaction(Transaction* T) {
+    for (auto DI = T->decls_begin(), DE = T->decls_end(); DI != DE; ++DI)
+      m_Consumer->HandleTopLevelDecl(DI->m_DGR);
+  }
+
   void IncrementalParser::codeGenTransaction(Transaction* T) {
     // codegen the transaction
     assert(T->getCompilationOpts().CodeGeneration && "CodeGen turned off");
