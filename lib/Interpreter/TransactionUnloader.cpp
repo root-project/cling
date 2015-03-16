@@ -1251,9 +1251,6 @@ namespace cling {
       }
     }
 
-    m_Sema->getDiagnostics().Reset(/*soft=*/true);
-    m_Sema->getDiagnostics().getClient()->clear();
-
     // Cleanup the module from unused global values.
     // if (T->getModule()) {
     //   llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
