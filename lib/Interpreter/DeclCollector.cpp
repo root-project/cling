@@ -157,7 +157,8 @@ namespace cling {
 
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
     m_CurTransaction->append(DCI);
-    if (!m_Consumer)
+    if (!m_Consumer
+        || getTransaction()->getIssuedDiags() == Transaction::kErrors)
       return true;
 
     if (comesFromASTReader(DGR)) {
