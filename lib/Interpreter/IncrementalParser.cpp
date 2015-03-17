@@ -407,7 +407,8 @@ namespace cling {
           strm << "cling-module-" << ++m_ModuleNo;
         }
         getCodeGenerator()->StartModule(ModuleName,
-                                        *m_Interpreter->getLLVMContext());
+                                        *m_Interpreter->getLLVMContext(),
+                                        getCI()->getCodeGenOpts());
       }
       return;
     }
@@ -541,8 +542,9 @@ namespace cling {
       // Reset the module builder to clean up global initializers, c'tors, d'tors
       getCodeGenerator()->HandleTranslationUnit(Context);
       FileName = OldName;
-      if ((deserT = endTransaction(deserT)))
-        commitTransaction(deserT);
+      ParseResultTransaction PRTDeser = endTransaction(deserT);
+      if (PRTDeser.getInt() != kFailed && PRTDeser.getPointer())
+        commitTransaction(PRTDeser.getPointer());
 
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
 
@@ -558,7 +560,8 @@ namespace cling {
         strm << "cling-module-" << ++m_ModuleNo;
       }
       getCodeGenerator()->StartModule(ModuleName,
-                                      *m_Interpreter->getLLVMContext());
+                                      *m_Interpreter->getLLVMContext(),
+                                      getCI()->getCodeGenOpts());
     }
   }
 
