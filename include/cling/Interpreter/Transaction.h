@@ -310,9 +310,11 @@ namespace cling {
     }
 
     IssuedDiags getIssuedDiags() const {
-      return static_cast<IssuedDiags>(m_IssuedDiags);
+      return static_cast<IssuedDiags>(getTopmostParent()->m_IssuedDiags);
     }
-    void setIssuedDiags(IssuedDiags val) { m_IssuedDiags = val; }
+    void setIssuedDiags(IssuedDiags val) {
+      getTopmostParent()->m_IssuedDiags = val;
+    }
 
     const CompilationOptions& getCompilationOpts() const { return m_Opts; }
     CompilationOptions& getCompilationOpts() { return m_Opts; }
@@ -366,6 +368,24 @@ namespace cling {
     /// the parent.
     ///
     const Transaction* getParent() const { return m_Parent; }
+
+    ///\brief If the transaction was nested into another transaction returns
+    /// the topmost transaction, else this.
+    ///
+    Transaction* getTopmostParent() {
+      const Transaction* ConstThis = const_cast<const Transaction*>(this);
+      return const_cast<Transaction*>(ConstThis->getTopmostParent());
+    }
+
+    ///\brief If the transaction was nested into another transaction returns
+    /// the topmost transaction, else this.
+    ///
+    const Transaction* getTopmostParent() const {
+      const Transaction* ret = this;
+      while (ret->getParent())
+        ret = ret->getParent();
+      return ret;
+    }
 
     ///\brief Sets the nesting transaction of a nested transaction.
     ///
