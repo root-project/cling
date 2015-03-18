@@ -98,9 +98,9 @@ namespace cling {
   void Interpreter::PushTransactionRAII::pop() const {
     IncrementalParser::ParseResultTransaction PRT
       = m_Interpreter->m_IncrParser->endTransaction(m_Transaction);
-    if (PRT.getInt() != IncrementalParser::kFailed && PRT.getPointer()) {
+    if (PRT.getPointer()) {
       assert(PRT.getPointer()==m_Transaction && "Ended different transaction?");
-      m_Interpreter->m_IncrParser->commitTransaction(PRT.getPointer());
+      m_Interpreter->m_IncrParser->commitTransaction(PRT);
     }
   }
 
@@ -203,7 +203,8 @@ namespace cling {
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
-    llvm::SmallVector<Transaction*, 2> IncrParserTransactions;
+    llvm::SmallVector<IncrementalParser::ParseResultTransaction, 2>
+      IncrParserTransactions;
     m_IncrParser->Initialize(IncrParserTransactions);
 
     handleFrontendOptions();
@@ -218,10 +219,8 @@ namespace cling {
     }
     // Commit the transactions, now that gCling is set up. It is needed for
     // static initialization in these transactions through local_cxa_atexit().
-    for (llvm::SmallVectorImpl<Transaction*>::const_iterator
-           I = IncrParserTransactions.begin(), E = IncrParserTransactions.end();
-         I != E; ++I)
-      m_IncrParser->commitTransaction(*I);
+    for (auto&& I: IncrParserTransactions)
+      m_IncrParser->commitTransaction(I);
     // Disable suggestions for ROOT
     bool showSuggestions = !llvm::StringRef(stringify(CLING_VERSION)).startswith("ROOT");
     std::unique_ptr<InterpreterCallbacks>
@@ -641,12 +640,9 @@ namespace cling {
     m_IncrParser->emitTransaction(T);
     m_IncrParser->addTransaction(T);
     m_IncrParser->markWholeTransactionAsUsed(T);
-    m_IncrParser->commitTransaction(T);
+    T->setState(Transaction::kCollecting);
+    m_IncrParser->commitTransaction(m_IncrParser->endTransaction(T));
 
-    // The static initializers might run anything and can thus cause more
-    // decls that need to end up in a transaction. But this one is done
-    // with CodeGen...
-    T->setState(Transaction::kCommitted);
     if (executeTransaction(*T))
       return Interpreter::kSuccess;
 

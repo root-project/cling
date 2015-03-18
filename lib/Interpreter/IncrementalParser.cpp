@@ -201,7 +201,8 @@ namespace cling {
   }
 
   void
-  IncrementalParser::Initialize(llvm::SmallVectorImpl<Transaction*> &result) {
+  IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
+                                result) {
     m_TransactionPool.reset(new TransactionPool(getCI()->getSema()));
     if (hasCodeGenerator()) {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
@@ -225,9 +226,7 @@ namespace cling {
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/,
                                        true /*OwnsDeserializationListener*/);
-      ParseResultTransaction EndedT = endTransaction(CurT);
-      if (EndedT.getInt() != kFailed && EndedT.getPointer())
-        result.push_back(EndedT.getPointer());
+      result.push_back(endTransaction(CurT));
     }
 
     Transaction* CurT = beginTransaction(CO);
@@ -261,8 +260,7 @@ namespace cling {
     // transactions requires gCling through local_cxa_atexit(), but that has not
     // been defined yet!
     ParseResultTransaction PRT = endTransaction(CurT);
-    if (PRT.getInt() != kFailed && PRT.getPointer())
-      result.push_back(PRT.getPointer());
+    result.push_back(PRT);
   }
 
   const Transaction* IncrementalParser::getCurrentTransaction() const {
@@ -371,8 +369,11 @@ namespace cling {
     return ParseResultTransaction(T, ParseResult);
   }
 
-  void IncrementalParser::commitTransaction(Transaction* T) {
-    //Transaction* CurT = m_Consumer->getTransaction();
+  void IncrementalParser::commitTransaction(ParseResultTransaction PRT) {
+    Transaction* T = PRT.getPointer();
+    if (!T)
+      return;
+
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
            && "Committing an already committed transaction.");
@@ -412,10 +413,17 @@ namespace cling {
     }
 
     if (T->hasNestedTransactions()) {
+      Transaction* TopmostParent = T->getTopmostParent();
+      EParseResult PR = kSuccess;
+      if (TopmostParent->getIssuedDiags() == Transaction::kErrors)
+        PR = kFailed;
+      else if (TopmostParent->getIssuedDiags() == Transaction::kWarnings)
+        PR = kSuccessWithWarnings;
+
       for (Transaction::const_nested_iterator I = T->nested_begin(),
             E = T->nested_end(); I != E; ++I)
         if ((*I)->getState() != Transaction::kCommitted)
-          commitTransaction(*I);
+          commitTransaction(ParseResultTransaction(*I, PR));
     }
 
     // If there was an error coming from the transformers.
@@ -433,8 +441,7 @@ namespace cling {
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
       ParseResultTransaction PRT = endTransaction(nestedT);
-      if (PRT.getPointer())
-        commitTransaction(PRT.getPointer());
+      commitTransaction(PRT);
       m_Consumer->setTransaction(prevConsumerT);
     }
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
@@ -526,8 +533,7 @@ namespace cling {
     // Commit this transaction first - T might need symbols from it, so
     // trigger emission of weak symbols by providing use.
     ParseResultTransaction PRT = endTransaction(deserT);
-    if (PRT.getPointer())
-      commitTransaction(PRT.getPointer());
+    commitTransaction(PRT);
 
     // This llvm::Module is done; finalize it and pass it to the execution
     // engine.
@@ -653,9 +659,7 @@ namespace cling {
       CurT->setIssuedDiags(Transaction::kErrors);
 
     ParseResultTransaction PRT = endTransaction(CurT);
-    if (PRT.getPointer()) {
-      commitTransaction(PRT.getPointer());
-    }
+    commitTransaction(PRT);
 
     return PRT;
   }

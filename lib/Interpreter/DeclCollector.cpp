@@ -122,12 +122,10 @@ namespace cling {
       }
       ~CommitTransactionRAII_t() {
         IncrementalParser::ParseResultTransaction PRT = m_IncrParser->endTransaction(m_Transaction);
-        if (PRT.getInt() != IncrementalParser::kFailed) {
-          if (Transaction* T = PRT.getPointer()) {
-            assert(T == m_Transaction && "Ended different transaction?");
-            m_IncrParser->commitTransaction(T);
-          }
+        if (Transaction* T = PRT.getPointer()) {
+          assert(T == m_Transaction && "Ended different transaction?");
         }
+        m_IncrParser->commitTransaction(PRT);
       }
     } CommitTransactionRAII(m_IncrParser,
                             m_CurTransaction->getCompilationOpts());

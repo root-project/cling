@@ -105,7 +105,7 @@ namespace cling {
                       const char* llvmdir);
     ~IncrementalParser();
 
-    void Initialize(llvm::SmallVectorImpl<Transaction*>& result);
+    void Initialize(llvm::SmallVectorImpl<ParseResultTransaction>& result);
     clang::CompilerInstance* getCI() const { return m_CI.get(); }
     clang::Parser* getParser() const { return m_Parser.get(); }
     clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen.get(); }
@@ -128,7 +128,7 @@ namespace cling {
     ///
     ///\param[in] T - the transaction to be committed
     ///
-    void commitTransaction(Transaction* T);
+    void commitTransaction(ParseResultTransaction PRT);
 
     ///\brief Runs the consumers (e.g. CodeGen) on a non-parsed transaction.
     ///
