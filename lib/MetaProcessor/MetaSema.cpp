@@ -105,10 +105,9 @@ namespace cling {
       // Give the user some context in case we have a problem in an invocation.
       expression += " /* invoking function corresponding to '.x' */";
 
-      assert(T);
-
       using namespace clang;
-      NamedDecl* ND = T->containsNamedDecl(pairFuncExt.first);
+      // T can be nullptr if there is no code (but comments)
+      NamedDecl* ND = T ? T->containsNamedDecl(pairFuncExt.first) : 0;
       DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
       SourceLocation noLoc;
       if (!ND) {
