@@ -40,7 +40,7 @@ class IncrementalJIT {
 
   ///\brief The IncrementalExecutor who owns us.
   IncrementalExecutor& m_Parent;
-  std::unique_ptr<llvm::JITEventListener> m_GDBListener;
+  llvm::JITEventListener* m_GDBListener; // owned by llvm::ManagedStaticBase
 
   class NotifyObjectLoadedT {
   public:
