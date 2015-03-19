@@ -7,6 +7,7 @@
 #------------------------------------------------------------------------------
 
 set(LLVM_REQUIRES_EH true)
+set(LLVM_REQUIRES_RTTI true)
 
 if(NOT EXISTS textinput)
   set(TEXTINPUTSRC ${CMAKE_SOURCE_DIR}/core/textinput/src/)
