@@ -542,9 +542,7 @@ namespace cling {
       // Reset the module builder to clean up global initializers, c'tors, d'tors
       getCodeGenerator()->HandleTranslationUnit(Context);
       FileName = OldName;
-      ParseResultTransaction PRTDeser = endTransaction(deserT);
-      if (PRTDeser.getInt() != kFailed && PRTDeser.getPointer())
-        commitTransaction(PRTDeser.getPointer());
+      commitTransaction(endTransaction(deserT));
 
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
 

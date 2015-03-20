@@ -16,6 +16,7 @@
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/Value.h"
 
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
@@ -121,7 +122,8 @@ namespace cling {
       || isXCommand(actionResult, resultValue) ||isTCommand(actionResult)
       || isAtCommand()
       || isqCommand() || isUCommand(actionResult) || isICommand()
-      || isOCommand() || israwInputCommand() || isprintDebugCommand()
+      || isOCommand() || israwInputCommand()
+      || isdebugCommand() || isprintDebugCommand()
       || isdynamicExtensionsCommand() || ishelpCommand() || isfileExCommand()
       || isfilesCommand() || isClassCommand() || isNamespaceCommand() || isgCommand()
       || isTypedefCommand()
@@ -376,6 +378,20 @@ namespace cling {
       if (getCurTok().is(tok::constant))
         mode = (MetaSema::SwitchMode)getCurTok().getConstantAsBool();
       m_Actions->actOnrawInputCommand(mode);
+      return true;
+    }
+    return false;
+  }
+
+  bool MetaParser::isdebugCommand() {
+    if (getCurTok().is(tok::ident) &&
+        getCurTok().getIdent().equals("debug")) {
+      llvm::Optional<int> mode;
+      consumeToken();
+      skipWhitespace();
+      if (getCurTok().is(tok::constant))
+        mode = getCurTok().getConstant();
+      m_Actions->actOndebugCommand(mode);
       return true;
     }
     return false;

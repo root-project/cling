@@ -238,6 +238,40 @@ namespace cling {
       m_Interpreter.enableRawInput(mode);
   }
 
+  void MetaSema::actOndebugCommand(llvm::Optional<int> mode) const {
+    clang::CodeGenOptions& CGO = m_Interpreter.getCI()->getCodeGenOpts();
+    if (!mode) {
+      bool flag = CGO.getDebugInfo() == clang::CodeGenOptions::NoDebugInfo;
+      if (flag)
+        CGO.setDebugInfo(clang::CodeGenOptions::LimitedDebugInfo);
+      else
+        CGO.setDebugInfo(clang::CodeGenOptions::NoDebugInfo);
+      // FIXME:
+      m_MetaProcessor.getOuts() << (flag ? "G" : "Not g")
+                                << "enerating debug symbols\n";
+    }
+    else {
+      clang::CodeGenOptions::DebugInfoKind DebInfos[] = {
+        clang::CodeGenOptions::NoDebugInfo,
+        clang::CodeGenOptions::LocTrackingOnly,
+        clang::CodeGenOptions::DebugLineTablesOnly,
+        clang::CodeGenOptions::LimitedDebugInfo,
+        clang::CodeGenOptions::FullDebugInfo
+      };
+      if (*mode > sizeof(DebInfos))
+        mode = sizeof(DebInfos);
+      else if (*mode < 0)
+        mode = 0;
+      CGO.setDebugInfo(DebInfos[*mode]);
+      if (!*mode) {
+        m_MetaProcessor.getOuts() << "Not generating debug symbols\n";
+      } else {
+        m_MetaProcessor.getOuts() << "Generating debug symbols level "
+                                  << *mode << '\n';
+      }
+    }
+  }
+
   void MetaSema::actOnprintDebugCommand(SwitchMode mode/* = kToggle*/) const {
     if (mode == kToggle) {
       bool flag = !m_Interpreter.isPrintingDebug();

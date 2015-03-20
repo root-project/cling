@@ -13,6 +13,7 @@
 #include "cling/MetaProcessor/MetaProcessor.h"
 
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/Optional.h"
 
 namespace llvm {
   class StringRef;
@@ -141,6 +142,12 @@ namespace cling {
     ///\param[in] mode - either on/off or toggle.
     ///
     void actOnrawInputCommand(SwitchMode mode = kToggle) const;
+
+    ///\brief Generates debug info for the JIT.
+    ///
+    ///\param[in] mode - either on/off or toggle.
+    ///
+    void actOndebugCommand(llvm::Optional<int> mode) const;
 
     ///\brief Prints out the the Debug information of the state changes.
     ///

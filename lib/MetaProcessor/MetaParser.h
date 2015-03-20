@@ -43,6 +43,7 @@ namespace cling {
   //                 OCommand := 'O'[' ']Constant
   //                 RawInputCommand := 'rawInput' [Constant]
   //                 PrintDebugCommand := 'printDebug' [Constant]
+  //                 DebugCommand := 'debug' [Constant]
   //                 StoreStateCommand := 'storeState' "Ident"
   //                 CompareStateCommand := 'compareState' "Ident"
   //                 StatsCommand := 'stats' ['ast']
@@ -93,6 +94,7 @@ namespace cling {
     bool isICommand();
     bool isOCommand();
     bool israwInputCommand();
+    bool isdebugCommand();
     bool isprintDebugCommand();
     bool isstoreStateCommand();
     bool iscompareStateCommand();
