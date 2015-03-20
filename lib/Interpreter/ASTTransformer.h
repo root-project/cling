@@ -43,7 +43,6 @@ namespace cling {
     ///\brief Initializes a new transaction transformer.
     ///
     ///\param[in] S - The semantic analysis object.
-    ///\param[in] Consumer - The consumer that can receive generated Decls.
     ///
     ASTTransformer(clang::Sema* S):
       m_Sema(S), m_Consumer(0), m_Transaction(nullptr) {}

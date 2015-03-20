@@ -126,7 +126,8 @@ namespace cling {
     ///\brief Commits a transaction if it was complete. I.e pipes it
     /// through the consumer chain, including codegen.
     ///
-    ///\param[in] T - the transaction to be committed
+    ///\param[in] PRT - the transaction (ParseResultTransaction, really) to be
+    /// committed
     ///
     void commitTransaction(ParseResultTransaction PRT);
 
