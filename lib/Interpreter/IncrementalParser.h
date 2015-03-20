@@ -149,7 +149,7 @@ namespace cling {
     ///\brief Returns the first transaction the incremental parser saw.
     ///
     const Transaction* getFirstTransaction() const {
-      if (!m_Transactions.size())
+      if (m_Transactions.empty())
         return 0;
       return m_Transactions.front();
     }
@@ -157,7 +157,7 @@ namespace cling {
     ///\brief Returns the last transaction the incremental parser saw.
     ///
     Transaction* getLastTransaction() {
-      if (!m_Transactions.size())
+      if (m_Transactions.empty())
         return 0;
       return m_Transactions.back();
     }
@@ -165,7 +165,7 @@ namespace cling {
     ///\brief Returns the last transaction the incremental parser saw.
     ///
     const Transaction* getLastTransaction() const {
-      if (!m_Transactions.size())
+      if (m_Transactions.empty())
         return 0;
       return m_Transactions.back();
     }
