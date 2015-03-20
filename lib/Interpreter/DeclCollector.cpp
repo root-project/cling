@@ -112,24 +112,6 @@ namespace cling {
   }
 
   bool DeclCollector::Transform(DeclGroupRef& DGR) const {
-    struct CommitTransactionRAII_t {
-      IncrementalParser* m_IncrParser;
-      Transaction* m_Transaction;
-
-      CommitTransactionRAII_t(IncrementalParser* IP, CompilationOptions CO):
-      m_IncrParser(IP) {
-        m_Transaction = IP->beginTransaction(CO);
-      }
-      ~CommitTransactionRAII_t() {
-        IncrementalParser::ParseResultTransaction PRT = m_IncrParser->endTransaction(m_Transaction);
-        if (Transaction* T = PRT.getPointer()) {
-          assert(T == m_Transaction && "Ended different transaction?");
-        }
-        m_IncrParser->commitTransaction(PRT);
-      }
-    } CommitTransactionRAII(m_IncrParser,
-                            m_CurTransaction->getCompilationOpts());
-
     llvm::SmallVector<Decl*, 4> ReplacedDecls;
     bool HaveReplacement = false;
     for (Decl* D: DGR) {
