@@ -79,6 +79,13 @@ endif()
 # Add appropriate flags for GCC
 if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings")
+  if(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
+    string(COMPARE GREATER ${CLANG_MAJOR} "3" IS_CLANG_GREATER_THAN_3_X)
+    string(COMPARE GREATER ${CLANG_MINOR} "5" IS_CLANG_GREATER_THAN_3_5)
+    if (IS_CLANG_GREATER_THAN_3_X OR IS_CLANG_GREATER_THAN_3_5)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs" )
+    endif()
+  endif()
 endif ()
 
 # The package needs to be compiler without RTTI information
