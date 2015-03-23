@@ -258,7 +258,7 @@ namespace cling {
         clang::CodeGenOptions::LimitedDebugInfo,
         clang::CodeGenOptions::FullDebugInfo
       };
-      if (*mode >= sizeof(DebInfos))
+      if (*mode >= (int)sizeof(DebInfos))
         mode = sizeof(DebInfos) - 1;
       else if (*mode < 0)
         mode = 0;
