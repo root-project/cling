@@ -34,6 +34,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Basic/SourceManager.h"
 
+#include <array>
 #include <cstdlib>
 #include <iostream>
 
@@ -251,15 +252,15 @@ namespace cling {
                                 << "enerating debug symbols\n";
     }
     else {
-      clang::CodeGenOptions::DebugInfoKind DebInfos[] = {
+      std::array<clang::CodeGenOptions::DebugInfoKind, 5> DebInfos = {
         clang::CodeGenOptions::NoDebugInfo,
         clang::CodeGenOptions::LocTrackingOnly,
         clang::CodeGenOptions::DebugLineTablesOnly,
         clang::CodeGenOptions::LimitedDebugInfo,
         clang::CodeGenOptions::FullDebugInfo
       };
-      if (*mode >= (int)sizeof(DebInfos))
-        mode = sizeof(DebInfos) - 1;
+      if (*mode >= (int)DebInfos.size())
+        mode = DebInfos.size() - 1;
       else if (*mode < 0)
         mode = 0;
       CGO.setDebugInfo(DebInfos[*mode]);
