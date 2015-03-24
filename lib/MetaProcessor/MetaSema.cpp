@@ -252,7 +252,7 @@ namespace cling {
                                 << "enerating debug symbols\n";
     }
     else {
-      std::array<clang::CodeGenOptions::DebugInfoKind, 5> DebInfos = {
+      std::array<clang::CodeGenOptions::DebugInfoKind, 5> DebInfos {
         clang::CodeGenOptions::NoDebugInfo,
         clang::CodeGenOptions::LocTrackingOnly,
         clang::CodeGenOptions::DebugLineTablesOnly,
