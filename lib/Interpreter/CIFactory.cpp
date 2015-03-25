@@ -50,7 +50,11 @@
   #include <sstream>
   #define popen _popen
   #define pclose _pclose
+  #define getcwd_func _getcwd
   #pragma comment(lib, "Advapi32.lib")
+#else
+#include <unistd.h>
+  #define getcwd_func getcwd
 #endif
 
 using namespace clang;
@@ -678,6 +682,16 @@ namespace {
     // * a virtual file that is claiming to be huge
     // * with an empty memory buffer attached (to bring the content)
     FileManager& FM = SM->getFileManager();
+
+    // When asking for the input file below (which does not have a directory
+    // name), clang will call $PWD "." which is terrible if we ever change
+    // directories (see ROOT-7114). By asking for $PWD (and not ".") it will
+    // be registered as $PWD instead, which is stable even after chdirs.
+    char cwdbuf[2048];
+    const clang::DirectoryEntry* DE
+      = FM.getDirectory(getcwd_func(cwdbuf, sizeof(cwdbuf)));
+    (void)DE;
+    assert(!strcmp(DE->getName(), cwdbuf) && "Unexpected name for $PWD");
     // Build the virtual file
     const char* Filename = "InteractiveInputLineIncluder.h";
     const std::string& CGOptsMainFileName
