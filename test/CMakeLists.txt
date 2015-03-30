@@ -67,12 +67,12 @@ if(PYTHONINTERP_FOUND)
   add_custom_target(cling-test
     COMMAND ${PYTHON_EXECUTABLE}
                 ${LIT}
-                --param claig_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
+                --param cling_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
                 --param cling_unit_site_config=${CMAKE_CURRENT_BINARY_DIR}/Unit/lit.site.cfg
                 --param build_config=${CMAKE_CFG_INTDIR}
                 --param build_mode=${RUNTIME_BUILD_MODE}
                 ${LIT_ARGS}
-                ${CMAKE_CURRENT_BINARY_DIR}
+                \$\(if $(TESTDIRS),$(TESTDIRS),.\)
                 COMMENT "Running Cling regression tests")
 
 add_custom_command(OUTPUT cling-headers.stamp
