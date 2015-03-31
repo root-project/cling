@@ -6,12 +6,17 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: %cling %s "args(42)" 2>&1 | FileCheck %s
-
+// RUN: %cling %s 'args(42,"")' 2>&1 | FileCheck %s
 //CHECK-NOT: {{.*error|note:.*}}
 //CHECK: warning: function 'args' cannot be called with no arguments.
+
 extern "C" int printf(const char* fmt, ...);
-void args(int I, const char* S = "ArgString") {
+
+void args(int I, const char* R, const char* S = "ArgString") {
+
+
    printf("I=%d\n", I); // CHECK: I=42
    printf("S=%s\n", S); // CHECK: S=ArgString
+   printf("R=%s\n", R);
+
 }

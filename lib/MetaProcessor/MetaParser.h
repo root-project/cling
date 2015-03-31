@@ -75,6 +75,7 @@ namespace cling {
     ///\brief Consume the current 'peek' token.
     ///
     void consumeToken();
+    void consumeToken_string(Token &tok);
     void consumeAnyStringToken(tok::TokenKind stopAt = tok::space);
     const Token& lookAhead(unsigned Num);
     void skipWhitespace();

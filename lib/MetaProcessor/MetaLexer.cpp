@@ -44,8 +44,10 @@ namespace cling {
     Tok.startToken(curPos);
     char C = *curPos++;
     switch (C) {
-    case '[': case ']': case '(': case ')': case '{': case '}': case '"':
-    case '\'': case '\\': case ',': case '.': case '!': case '?': case '>':
+    case '"': case '\'':
+      return LexQuotedStringAndAdvance(--curPos, Tok);
+    case '[': case ']': case '(': case ')': case '{': case '}':
+    case '\\': case ',': case '.': case '!': case '?': case '>':
     case '&': case '#': case '@':
       // INTENTIONAL FALL THROUGHs
       return LexPunctuator(C, Tok);
@@ -146,20 +148,21 @@ namespace cling {
     // Tok must be the starting quote (single or double), and we will
     // lex until the next one or the end of the line.
 
+    const char* const start = curPos;
+    LexPunctuator(*curPos++, Tok); // '"' or "'"
     assert( (Tok.getKind() >= tok::quote && Tok.getKind() <= tok::apostrophe) );
+    tok::TokenKind EndTokKind = Tok.getKind();
+    Tok.setKind(tok::raw_ident);
 
-    char start = '\0';
-    if (Tok.is(tok::quote)) start = '"';
-    else if (Tok.is(tok::apostrophe)) start = '\'';
-
-    Tok.startToken(curPos);
+    //consuming the string
     while (true) {
-      bool escape = false;
-      while ( (escape || *curPos != start)
-              && *curPos != '\0' && *curPos != '\r' && *curPos != '\n') {
+
+      // "AB\"foo \0x12 \012 \n"
+      /*  bool escape = false;
+      while ( (escape || *curPos != *start) && *curPos != '\0' && *curPos != '\r' && *curPos != '\n') {
         escape = ( (*curPos) == '\\' );
         ++curPos;
-      }
+      }*/
       if (*curPos == '\0') {
         Tok.setBufStart(curPos);
         Tok.setKind(tok::eof);
@@ -167,8 +170,10 @@ namespace cling {
         return;
       }
       MetaLexer::LexPunctuator(*curPos++, Tok);
-      if (Tok.isNot(tok::unknown))
+      if (Tok.is(EndTokKind)) {
+        Tok.setLength(curPos - start + 1);
         return;
+      }
     }
   }
 
