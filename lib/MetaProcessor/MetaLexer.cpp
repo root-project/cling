@@ -156,21 +156,32 @@ namespace cling {
 
     //consuming the string
     while (true) {
+      const char* prevPos = curPos;
 
-      // "AB\"foo \0x12 \012 \n"
-      /*  bool escape = false;
-      while ( (escape || *curPos != *start) && *curPos != '\0' && *curPos != '\r' && *curPos != '\n') {
-        escape = ( (*curPos) == '\\' );
-        ++curPos;
-      }*/
+      if (*curPos == '\\'){
+
+        MetaLexer::LexPunctuator(*curPos++, Tok);
+        Token temp_tok;
+        MetaLexer::LexPunctuator(*curPos, temp_tok);
+
+        switch (temp_tok.getKind()) {
+          case tok::quote:
+          case tok::backslash:
+            curPos++;
+        }
+      }
+
       if (*curPos == '\0') {
         Tok.setBufStart(curPos);
         Tok.setKind(tok::eof);
         Tok.setLength(0);
         return;
       }
-      MetaLexer::LexPunctuator(*curPos++, Tok);
-      if (Tok.is(EndTokKind)) {
+
+      if (*prevPos != '\\')
+        MetaLexer::LexPunctuator(*curPos++, Tok);
+
+      if (Tok.is(EndTokKind)){
         Tok.setLength(curPos - start + 1);
         return;
       }

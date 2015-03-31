@@ -281,18 +281,13 @@ namespace cling {
       // There might be ArgList
       consumeAnyStringToken(tok::l_paren);
       llvm::StringRef file(getCurTok().getIdent());
-      llvm::StringRef args;
       consumeToken();
-      if (getCurTok().is(tok::l_paren) && isExtraArgList()) {
-        args = getCurTok().getIdent();
-        consumeToken(); // consume the closing paren
-      }
-      actionResult = m_Actions->actOnxCommand(file, args, resultValue);
+      // '(' to end of string:
 
-      if (getCurTok().is(tok::comment)) {
-        consumeAnyStringToken();
-        m_Actions->actOnComment(getCurTok().getIdent());
-      }
+      std::string args = getCurTok().getBufStart();
+      if (args.empty())
+        args = "()";
+      actionResult = m_Actions->actOnxCommand(file, args, resultValue);
       return true;
     }
 
