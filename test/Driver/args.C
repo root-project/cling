@@ -10,7 +10,6 @@
 //RUN: %cling '.x %s(42,"AAA)BBB")' 2>&1 | FileCheck -check-prefix=CHECK-DOTX %s
 //CHECK-NOT: {{.*error|note:.*}}
 //CHECK-DOTX-NOT: {{.*error|note:.*}}
-//CHECK: warning: function 'args' cannot be called with no arguments.
 
 extern "C" int printf(const char* fmt, ...);
 
