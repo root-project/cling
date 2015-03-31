@@ -167,11 +167,9 @@ namespace cling {
         Token temp_tok;
         MetaLexer::LexPunctuator(*curPos, temp_tok);
 
-        switch (temp_tok.getKind()) {
-          case tok::quote:
-          case tok::backslash:
-            curPos++;
-        }
+        if (temp_tok.getKind() == tok::quote
+            || temp_tok.getKind() == tok::backslash)
+          curPos++;
       }
 
       if (*curPos == '\0') {
