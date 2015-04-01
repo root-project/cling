@@ -9,7 +9,7 @@
 set(LLVM_REQUIRES_EH true)
 set(LLVM_REQUIRES_RTTI true)
 
-if(NOT EXISTS textinput)
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/textinput)
   set(TEXTINPUTSRC ${CMAKE_SOURCE_DIR}/core/textinput/src/)
   include_directories(${TEXTINPUTSRC})
 endif()
