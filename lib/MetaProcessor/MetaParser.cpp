@@ -49,25 +49,7 @@ namespace cling {
     lookAhead(0);
   }
 
-  void MetaParser::consumeToken_string(Token &tok) {
-    if (m_TokenCache.size())
-      m_TokenCache.erase(m_TokenCache.begin());
-
-    tok = lookAhead(0);
-  }
-
   void MetaParser::consumeAnyStringToken(tok::TokenKind stopAt/*=tok::space*/) {
-
-    //this token is needed in order to check if we have reached the end of the string
-    //Token tok_is_quote;
-    //consumeToken_string(tok_is_quote);
-
-    //if the token tok_is_quote is of kind "quote"
-    //tok_is_quote.is(tok::quote){
-      //it means we have reached the end of the string
-
-    //}
-
     consumeToken();
     // we have to merge the tokens from the queue until we reach eof token or
     // space token
