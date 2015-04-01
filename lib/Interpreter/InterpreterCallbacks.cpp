@@ -299,8 +299,9 @@ namespace test {
     printf("%s", "\n");
   }
 
-  SymbolResolverCallback::SymbolResolverCallback(Interpreter* interp)
-    : InterpreterCallbacks(interp), m_TesterDecl(0) {
+  SymbolResolverCallback::SymbolResolverCallback(Interpreter* interp,
+                                                 bool resolve)
+    : InterpreterCallbacks(interp), m_Resolve(resolve), m_TesterDecl(0) {
     m_Interpreter->process("cling::test::Tester = new cling::test::TestProxy();");
   }
 
@@ -308,6 +309,9 @@ namespace test {
 
   bool SymbolResolverCallback::LookupObject(LookupResult& R, Scope* S) {
     if (m_IsRuntime) {
+      if (!m_Resolve)
+        return false;
+
       // Only for demo resolve all unknown objects to cling::test::Tester
       if (!m_TesterDecl) {
         clang::Sema& SemaR = m_Interpreter->getSema();
@@ -350,7 +354,6 @@ namespace test {
 
   bool SymbolResolverCallback::ShouldResolveAtRuntime(LookupResult& R,
                                                       Scope* S) {
-
     if (R.getLookupKind() != Sema::LookupOrdinaryName)
       return false;
 

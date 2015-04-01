@@ -182,9 +182,10 @@ namespace cling {
 
     class SymbolResolverCallback: public cling::InterpreterCallbacks {
     private:
+      bool m_Resolve;
       clang::NamedDecl* m_TesterDecl;
     public:
-      SymbolResolverCallback(Interpreter* interp);
+      SymbolResolverCallback(Interpreter* interp, bool resolve = true);
       ~SymbolResolverCallback();
 
       bool LookupObject(clang::LookupResult& R, clang::Scope* S);
