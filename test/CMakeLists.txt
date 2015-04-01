@@ -80,6 +80,9 @@ add_custom_command(OUTPUT cling-headers.stamp
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/include/llvm
                            ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/llvm
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/include/llvm-c
+                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/llvm-c
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/tools/clang/include/clang
                            ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/clang
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
