@@ -216,6 +216,11 @@ namespace cling {
     ///
     ASTNodeInfo VisitCXXDeleteExpr(clang::CXXDeleteExpr* Node);
 
+    ///\brief Surrounds member accesses into dependent types; remove on
+    /// subsitution of its child expression.
+    ///
+    ASTNodeInfo VisitCXXDependentScopeMemberExpr(
+                                      clang::CXXDependentScopeMemberExpr* Node);
     ASTNodeInfo VisitExpr(clang::Expr* Node);
     ASTNodeInfo VisitBinaryOperator(clang::BinaryOperator* Node);
     ASTNodeInfo VisitCallExpr(clang::CallExpr* E);
