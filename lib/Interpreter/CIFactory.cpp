@@ -48,6 +48,7 @@
   #define NOMINMAX
   #include <Windows.h>
   #include <sstream>
+  #include <direct.h>
   #define popen _popen
   #define pclose _pclose
   #define getcwd_func _getcwd
