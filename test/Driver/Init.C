@@ -10,4 +10,4 @@
 
 #include <initializer_list>
 auto l {'a', 'b', '\''};
-l // CHECK: (class std::initializer_list<char> &) @0x{{.*}}
+*(l.begin() + 2) // CHECK: (const char) '''
