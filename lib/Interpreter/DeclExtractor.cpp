@@ -89,7 +89,7 @@ namespace cling {
     llvm::SmallVector<NamedDecl*, 4> TouchedDecls;
     CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
     assert(CS && "Function body not a CompoundStmt?");
-    DeclContext* DC = FD->getTranslationUnitDecl();
+    DeclContext* DC = m_Context->getTranslationUnitDecl();
     Scope* TUScope = m_Sema->TUScope;
     assert(TUScope == m_Sema->getScopeForContext(DC) && "TU scope from DC?");
     llvm::SmallVector<Stmt*, 4> Stmts;
