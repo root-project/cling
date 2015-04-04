@@ -51,16 +51,6 @@ namespace cling {
     /// \brief The actual value.
     Storage m_Storage;
 
-    /// \brief The value's type, stored as opaque void* to reduce
-    /// dependencies.
-    void* m_Type;
-
-    ///\brief Interpreter, produced the value.
-    ///
-    ///(Size without this is 24, this member makes it 32)
-    ///
-    Interpreter* m_Interpreter;
-
     enum EStorageType {
       kSignedIntegerOrEnumerationType,
       kUnsignedIntegerOrEnumerationType,
@@ -68,11 +58,27 @@ namespace cling {
       kFloatType,
       kLongDoubleType,
       kPointerType,
+      kManagedAllocation,
       kUnsupportedType
     };
 
+    /// \brief Which part in m_Storage is active.
+    EStorageType m_StorageType;
+
+    /// \brief The value's type, stored as opaque void* to reduce
+    /// dependencies.
+    void* m_Type;
+
+    ///\brief Interpreter that produced the value.
+    ///
+    Interpreter* m_Interpreter;
+
     /// \brief Retrieve the underlying, canonical, desugared, unqualified type.
-    EStorageType getStorageType() const;
+    EStorageType getStorageType() const { return m_StorageType; }
+
+    /// \brief Determine the underlying, canonical, desugared, unqualified type:
+    /// the element of Storage to be used.
+    EStorageType determineStorageType(clang::QualType QT) const;
 
     /// \brief Allocate storage as needed by the type.
     void ManagedAllocate();
@@ -103,6 +109,7 @@ namespace cling {
         case kLongDoubleType:
           return (T) V.getAs<long double>();
         case kPointerType:
+        case kManagedAllocation:
           return (T) (size_t) V.getAs<void*>();
         case kUnsupportedType:
           V.AssertOnUnsupportedTypeCast();
@@ -115,19 +122,19 @@ namespace cling {
     struct CastFwd<T*> {
       static T* cast(const Value& V) {
         EStorageType storageType = V.getStorageType();
-        switch (storageType) {
-        case kPointerType:
+        if (storageType == kPointerType
+            || storageType == kManagedAllocation)
           return (T*) (size_t) V.getAs<void*>();
-        default:
-          V.AssertOnUnsupportedTypeCast(); break;
-        }
+        V.AssertOnUnsupportedTypeCast();
         return 0;
       }
     };
 
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
-    Value(): m_Type(0), m_Interpreter(0) {}
+    Value():
+      m_StorageType(kUnsupportedType), m_Type(nullptr),
+      m_Interpreter(nullptr) {}
     /// \brief Copy a value.
     Value(const Value& other);
     /// \brief Move a value.
@@ -144,13 +151,14 @@ namespace cling {
 
     clang::QualType getType() const;
     clang::ASTContext& getASTContext() const;
-    Interpreter* getInterpreter() { return m_Interpreter; }
-    const Interpreter* getInterpreter() const { return m_Interpreter; }
+    Interpreter* getInterpreter() const { return m_Interpreter; }
 
     /// \brief Whether this type needs managed heap, i.e. the storage provided
     /// by the m_Storage member is insufficient, or a non-trivial destructor
     /// must be called.
-    bool needsManagedAllocation() const;
+    bool needsManagedAllocation() const {
+      return getStorageType() == kManagedAllocation;
+    }
 
     /// \brief Determine whether the Value has been set.
     //
@@ -165,8 +173,7 @@ namespace cling {
     //
     /// Determine whether the Value is set and not void.
     /// Only in this case can getAs() or simplisticCastAs() be called.
-    bool hasValue() const {
-      return isValid() && !isVoid(); }
+    bool hasValue() const { return isValid() && !isVoid(); }
 
     /// \brief Get a reference to the value without type checking.
     /// T *must* correspond to type. Else use simplisticCastAs()!

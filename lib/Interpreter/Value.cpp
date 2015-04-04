@@ -143,21 +143,23 @@ namespace {
 namespace cling {
 
   Value::Value(const Value& other):
-    m_Storage(other.m_Storage), m_Type(other.m_Type),
-    m_Interpreter(other.m_Interpreter) {
-    if (needsManagedAllocation())
+    m_Storage(other.m_Storage), m_StorageType(other.m_StorageType),
+    m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
+    if (other.needsManagedAllocation())
       AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
   }
 
   Value::Value(Value&& other):
-    m_Storage(other.m_Storage), m_Type(other.m_Type),
-    m_Interpreter(other.m_Interpreter) {
+    m_Storage(other.m_Storage), m_StorageType(other.m_StorageType),
+    m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
     // Invalidate other so it will not release.
-    other.m_Type = 0;
+    other.m_StorageType = kUnsupportedType;
   }
 
   Value::Value(clang::QualType clangTy, Interpreter& Interp):
-    m_Type(clangTy.getAsOpaquePtr()), m_Interpreter(&Interp) {
+    m_Type(clangTy.getAsOpaquePtr()),
+    m_StorageType(determineStorageType(clangTy)),
+    m_Interpreter(&Interp) {
     if (needsManagedAllocation())
       ManagedAllocate();
   }
@@ -170,6 +172,7 @@ namespace cling {
     // Retain new one.
     m_Type = other.m_Type;
     m_Storage = other.m_Storage;
+    m_StorageType = other.m_StorageType;
     m_Interpreter = other.m_Interpreter;
     if (needsManagedAllocation())
       AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
@@ -184,9 +187,10 @@ namespace cling {
     // Move new one.
     m_Type = other.m_Type;
     m_Storage = other.m_Storage;
+    m_StorageType = other.m_StorageType;
     m_Interpreter = other.m_Interpreter;
     // Invalidate other so it will not release.
-    other.m_Type = 0;
+    other.m_StorageType = kUnsupportedType;
 
     return *this;
   }
@@ -225,8 +229,8 @@ namespace cling {
     return 1;
   }
 
-  Value::EStorageType Value::getStorageType() const {
-    const clang::Type* desugCanon = getType()->getUnqualifiedDesugaredType();
+  Value::EStorageType Value::determineStorageType(clang::QualType QT) const {
+    const clang::Type* desugCanon = QT->getUnqualifiedDesugaredType();
     desugCanon = desugCanon->getCanonicalTypeUnqualified()->getTypePtr()
       ->getUnqualifiedDesugaredType();
     if (desugCanon->isSignedIntegerOrEnumerationType())
@@ -242,19 +246,17 @@ namespace cling {
       else if (BT->getKind() == clang::BuiltinType::LongDouble)
         return kLongDoubleType;
     } else if (desugCanon->isPointerType() || desugCanon->isObjectType()
-               || desugCanon->isReferenceType())
+               || desugCanon->isReferenceType()) {
+      if (desugCanon->isRecordType() || desugCanon->isConstantArrayType()
+          || desugCanon->isMemberPointerType())
+        return kManagedAllocation;
       return kPointerType;
+    }
     return kUnsupportedType;
   }
 
-  bool Value::needsManagedAllocation() const {
-    if (!isValid()) return false;
-    const clang::Type* UnqDes = getType()->getUnqualifiedDesugaredType();
-    return UnqDes->isRecordType() || UnqDes->isConstantArrayType()
-      || UnqDes->isMemberPointerType();
-  }
-
   void Value::ManagedAllocate() {
+    assert(needsManagedAllocation() && "Does not need managed allocation");
     void* dtorFunc = 0;
     clang::QualType DtorType = getType();
     // For arrays we destruct the elements.
