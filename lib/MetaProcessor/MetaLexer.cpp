@@ -14,7 +14,9 @@
 namespace cling {
 
   llvm::StringRef Token::getIdent() const {
-    assert((is(tok::ident) || is(tok::raw_ident)) && "Token not an ident.");
+    assert((is(tok::ident) || is(tok::raw_ident)
+            || is(tok::stringlit) || is(tok::charlit))
+           && "Token not an ident or literal.");
     return llvm::StringRef(bufStart, getLength());
   }
 
@@ -50,11 +52,11 @@ namespace cling {
     case '\\': case ',': case '.': case '!': case '?': case '>':
     case '&': case '#': case '@':
       // INTENTIONAL FALL THROUGHs
-      return LexPunctuator(C, Tok);
+      return LexPunctuator(curPos - 1, Tok);
 
     case '/':
       if (*curPos != '/')
-        return LexPunctuator(C, Tok);
+        return LexPunctuator(curPos - 1, Tok);
       else {
         ++curPos;
         Tok.setKind(tok::comment);
@@ -97,17 +99,18 @@ namespace cling {
     Tok.setLength(curPos - Tok.getBufStart());
   }
 
-  void MetaLexer::LexPunctuator(char C, Token& Tok) {
+  void MetaLexer::LexPunctuator(const char* C, Token& Tok) {
+    Tok.startToken(C);
     Tok.setLength(1);
-    switch (C) {
+    switch (*C) {
     case '['  : Tok.setKind(tok::l_square); break;
     case ']'  : Tok.setKind(tok::r_square); break;
     case '('  : Tok.setKind(tok::l_paren); break;
     case ')'  : Tok.setKind(tok::r_paren); break;
     case '{'  : Tok.setKind(tok::l_brace); break;
     case '}'  : Tok.setKind(tok::r_brace); break;
-    case '"'  : Tok.setKind(tok::quote); break;
-    case '\'' : Tok.setKind(tok::apostrophe); break;
+    case '"'  : Tok.setKind(tok::stringlit); break;
+    case '\'' : Tok.setKind(tok::charlit); break;
     case ','  : Tok.setKind(tok::comma); break;
     case '.'  : Tok.setKind(tok::dot); break;
     case '!'  : Tok.setKind(tok::excl_mark); break;
@@ -123,15 +126,14 @@ namespace cling {
     }
   }
 
-  void MetaLexer::LexPunctuatorAndAdvance(const char*& curPos, Token& Tok,
-                                          bool skipComments /*false*/) {
+  void MetaLexer::LexPunctuatorAndAdvance(const char*& curPos, Token& Tok) {
     Tok.startToken(curPos);
     while (true) {
 
       if(*curPos == '\\')
         curPos += 2;
       // On comment skip until the eof token.
-      if (!skipComments && curPos[0] == '/' && curPos[1] == '/') {
+      if (curPos[0] == '/' && curPos[1] == '/') {
         while (*curPos != '\0' && *curPos != '\r' && *curPos != '\n')
           ++curPos;
         if (*curPos == '\0') {
@@ -141,35 +143,29 @@ namespace cling {
           return;
         }
       }
-      MetaLexer::LexPunctuator(*curPos++, Tok);
+      MetaLexer::LexPunctuator(curPos++, Tok);
       if (Tok.isNot(tok::unknown))
         return;
     }
   }
 
  void MetaLexer::LexQuotedStringAndAdvance(const char*& curPos, Token& Tok) {
-    // Tok must be the starting quote (single or double), and we will
+    // curPos must be the starting quote (single or double), and we will
     // lex until the next one or the end of the line.
 
     const char* const start = curPos;
-    LexPunctuator(*curPos++, Tok); // '"' or "'"
-    assert( (Tok.getKind() >= tok::quote && Tok.getKind() <= tok::apostrophe) );
+    LexPunctuator(curPos++, Tok); // '"' or "'"
+    assert( (Tok.getKind() >= tok::stringlit && Tok.getKind() <= tok::charlit));
     tok::TokenKind EndTokKind = Tok.getKind();
     Tok.setKind(tok::raw_ident);
 
     //consuming the string
     while (true) {
-      const char* prevPos = curPos;
-
       if (*curPos == '\\'){
-
-        MetaLexer::LexPunctuator(*curPos++, Tok);
-        Token temp_tok;
-        MetaLexer::LexPunctuator(*curPos, temp_tok);
-
-        if (temp_tok.getKind() == tok::quote
-            || temp_tok.getKind() == tok::backslash)
-          curPos++;
+        // We don't care what it is. If it's \" or \' it would signal a fake
+        // end of string - so skip.
+        curPos += 2;
+        continue;
       }
 
       if (*curPos == '\0') {
@@ -179,11 +175,12 @@ namespace cling {
         return;
       }
 
-      if (*prevPos != '\\')
-        MetaLexer::LexPunctuator(*curPos++, Tok);
+      MetaLexer::LexPunctuator(curPos++, Tok);
 
       if (Tok.is(EndTokKind)){
-        Tok.setLength(curPos - start + 1);
+        Tok.startToken(start);
+        // curPos points to char after trailing quote.
+        Tok.setLength(curPos - start);
         return;
       }
     }

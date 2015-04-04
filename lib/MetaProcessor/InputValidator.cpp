@@ -19,18 +19,7 @@ namespace cling {
     Token Tok;
     const char* curPos = line.data();
     do {
-      // If the input is "some//string" or '//some/string' we need to disable
-      // the comment checks.
-      bool hasQuoteOrApostrophe = false;
-      for (unsigned i = 0, e = m_ParenStack.size(); i < e; ++i) {
-        int entry = m_ParenStack[i];
-        if (entry == (int)tok::quote || entry == (int)tok::apostrophe) {
-          hasQuoteOrApostrophe = true;
-          break;
-        }
-      }
-      MetaLexer::LexPunctuatorAndAdvance(curPos, Tok,
-                                         /*skipComments*/hasQuoteOrApostrophe);
+      MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
       int kind = (int)Tok.getKind();
 
       // if (kind == tok::hash) {
@@ -51,23 +40,9 @@ namespace cling {
       //   }
       // }
 
-      if (kind >= (int)tok::quote && kind <= (int)tok::apostrophe) {
-        // If there is " or ' we don't need to look for balancing until we
-        // enounter matching " or '
-        Res = kIncomplete;
-        if (m_ParenStack.size() && m_ParenStack.back() == kind) {
-          // We know that the top of the stack will have the leading quote or
-          // apostophe because nobody is pushing onto it until we find a balance
-          m_ParenStack.pop_back();
-          Res = kComplete;
-        }
-        if (!hasQuoteOrApostrophe)
-          m_ParenStack.push_back(kind); // Register the first " or '
-        continue;
-      }
-      // All the rest is irrelevant in QuoteOrApostrophe mode.
-      if (hasQuoteOrApostrophe)
-        continue;
+      if (kind >= (int)tok::stringlit && kind <= (int)tok::charlit) {
+        MetaLexer::LexQuotedStringAndAdvance(--curPos, Tok);
+      } else
 
       // In case when we need closing brace.
       if (kind >= (int)tok::l_square && kind <= (int)tok::r_brace) {
@@ -95,8 +70,8 @@ namespace cling {
       Res = kIncomplete;
 
     if (!m_Input.empty()) {
-      if (!m_ParenStack.empty() && (m_ParenStack.back() == tok::quote
-                                    || m_ParenStack.back() == tok::apostrophe))
+      if (!m_ParenStack.empty() && (m_ParenStack.back() == tok::stringlit
+                                    || m_ParenStack.back() == tok::charlit))
         m_Input.append("\\n");
       else
         m_Input.append("\n");

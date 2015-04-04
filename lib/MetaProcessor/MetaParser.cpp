@@ -414,15 +414,10 @@ namespace cling {
        //MetaSema::SwitchMode mode = MetaSema::kToggle;
       consumeToken();
       skipWhitespace();
-      if (!getCurTok().is(tok::quote))
+      if (!getCurTok().is(tok::stringlit))
         return false; // FIXME: Issue proper diagnostics
+      std::string ident = getCurTok().getIdentNoQuotes();
       consumeToken();
-      if (!getCurTok().is(tok::ident))
-        return false; // FIXME: Issue proper diagnostics
-      std::string ident = getCurTok().getIdent();
-      consumeToken();
-      if (!getCurTok().is(tok::quote))
-        return false; // FIXME: Issue proper diagnostics
       m_Actions->actOnstoreStateCommand(ident);
       return true;
     }
@@ -435,15 +430,10 @@ namespace cling {
       //MetaSema::SwitchMode mode = MetaSema::kToggle;
       consumeToken();
       skipWhitespace();
-      if (!getCurTok().is(tok::quote))
+      if (!getCurTok().is(tok::stringlit))
         return false; // FIXME: Issue proper diagnostics
+      std::string ident = getCurTok().getIdentNoQuotes();
       consumeToken();
-      if (!getCurTok().is(tok::ident))
-        return false; // FIXME: Issue proper diagnostics
-      std::string ident = getCurTok().getIdent();
-      consumeToken();
-      if (!getCurTok().is(tok::quote))
-        return false; // FIXME: Issue proper diagnostics
       m_Actions->actOncompareStateCommand(ident);
       return true;
     }

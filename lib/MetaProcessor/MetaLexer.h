@@ -10,9 +10,7 @@
 #ifndef CLING_META_LEXER_H
 #define CLING_META_LEXER_H
 
-namespace llvm {
-  class StringRef;
-}
+#include "llvm/ADT/StringRef.h"
 
 namespace cling {
 
@@ -24,8 +22,8 @@ namespace cling {
       r_paren,    // ")"
       l_brace,    // "{"
       r_brace,    // "}"
-      quote,      // """
-      apostrophe, // "'"
+      stringlit,  // ""...""
+      charlit,    // "'.'"
       comma,      // ","
       dot,        // "."
       excl_mark,  // "!"
@@ -69,6 +67,15 @@ namespace cling {
     bool is(tok::TokenKind K) const { return kind == K; }
 
     llvm::StringRef getIdent() const;
+    llvm::StringRef getIdentNoQuotes() const {
+      assert((getIdent().front() == '"' || getIdent().front() == '\'')
+             && "Not a string literal");
+      assert((getIdent().back() == '"' || getIdent().back() == '\'')
+             && "Missing string literal end quote");
+      assert((getIdent().front() == getIdent().back())
+             && "Inconsistent string literal quotes");
+      return getIdent().drop_back().drop_front();
+    }
     bool getConstantAsBool() const;
     unsigned getConstant() const;
   };
@@ -87,10 +94,9 @@ namespace cling {
     void Lex(Token& Tok);
     void LexAnyString(Token& Tok);
 
-    static void LexPunctuator(char C, Token& Tok);
+    static void LexPunctuator(const char* C, Token& Tok);
     // TODO: Revise. We might not need that.
-    static void LexPunctuatorAndAdvance(const char*& curPos, Token& Tok,
-                                        bool skipComments = false);
+    static void LexPunctuatorAndAdvance(const char*& curPos, Token& Tok);
     static void LexQuotedStringAndAdvance(const char*& curPos, Token& Tok);
     void LexConstant(char C, Token& Tok);
     void LexIdentifier(char C, Token& Tok);
