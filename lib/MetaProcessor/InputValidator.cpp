@@ -41,7 +41,7 @@ namespace cling {
       // }
 
       if (kind >= (int)tok::stringlit && kind <= (int)tok::charlit) {
-        MetaLexer::LexQuotedStringAndAdvance(--curPos, Tok);
+        MetaLexer::LexQuotedStringAndAdvance(curPos, Tok);
       } else
 
       // In case when we need closing brace.

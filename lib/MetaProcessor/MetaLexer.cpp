@@ -47,7 +47,7 @@ namespace cling {
     char C = *curPos++;
     switch (C) {
     case '"': case '\'':
-      return LexQuotedStringAndAdvance(--curPos, Tok);
+      return LexQuotedStringAndAdvance(curPos, Tok);
     case '[': case ']': case '(': case ')': case '{': case '}':
     case '\\': case ',': case '.': case '!': case '?': case '>':
     case '&': case '#': case '@':
@@ -149,18 +149,20 @@ namespace cling {
     }
   }
 
- void MetaLexer::LexQuotedStringAndAdvance(const char*& curPos, Token& Tok) {
-    // curPos must be the starting quote (single or double), and we will
-    // lex until the next one or the end of the line.
+  void MetaLexer::LexQuotedStringAndAdvance(const char*& curPos, Token& Tok) {
+    // curPos must be right after the starting quote (single or double),
+    // and we will lex until the next one or the end of the line.
 
-    const char* const start = curPos;
-    LexPunctuator(curPos++, Tok); // '"' or "'"
-    assert( (Tok.getKind() >= tok::stringlit && Tok.getKind() <= tok::charlit));
-    tok::TokenKind EndTokKind = Tok.getKind();
-    Tok.setKind(tok::raw_ident);
+    assert((curPos[-1] == '"' || curPos[-1] == '\'')
+           && "Not a string / character literal!");
+    if (curPos[-1] == '"')
+      Tok.setKind(tok::stringlit);
+    else
+      Tok.setKind(tok::charlit);
+   Tok.setBufStart(curPos - 1);
 
-    //consuming the string
-    while (true) {
+   //consuming the string
+   while (true) {
       if (*curPos == '\\'){
         // We don't care what it is. If it's \" or \' it would signal a fake
         // end of string - so skip.
@@ -175,12 +177,15 @@ namespace cling {
         return;
       }
 
-      MetaLexer::LexPunctuator(curPos++, Tok);
-
-      if (Tok.is(EndTokKind)){
-        Tok.startToken(start);
+      if (*curPos++ == *Tok.getBufStart()) {
         // curPos points to char after trailing quote.
-        Tok.setLength(curPos - start);
+        Tok.setLength(curPos - Tok.getBufStart());
+        assert((Tok.getIdent().front() == '"' || Tok.getIdent().front() == '\'')
+               && "Not a string literal");
+        assert((Tok.getIdent().back() == '"' || Tok.getIdent().back() == '\'')
+               && "Missing string literal end quote");
+        assert((Tok.getIdent().front() == Tok.getIdent().back())
+               && "Inconsistent string literal quotes");
         return;
       }
     }

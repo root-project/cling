@@ -68,13 +68,9 @@ namespace cling {
 
     llvm::StringRef getIdent() const;
     llvm::StringRef getIdentNoQuotes() const {
-      assert((getIdent().front() == '"' || getIdent().front() == '\'')
-             && "Not a string literal");
-      assert((getIdent().back() == '"' || getIdent().back() == '\'')
-             && "Missing string literal end quote");
-      assert((getIdent().front() == getIdent().back())
-             && "Inconsistent string literal quotes");
-      return getIdent().drop_back().drop_front();
+      if (getKind() >= tok::stringlit && getKind() <= tok::charlit)
+        return getIdent().drop_back().drop_front();
+      return getIdent();
     }
     bool getConstantAsBool() const;
     unsigned getConstant() const;
