@@ -157,8 +157,8 @@ namespace cling {
   }
 
   Value::Value(clang::QualType clangTy, Interpreter& Interp):
-    m_Type(clangTy.getAsOpaquePtr()),
     m_StorageType(determineStorageType(clangTy)),
+    m_Type(clangTy.getAsOpaquePtr()),
     m_Interpreter(&Interp) {
     if (needsManagedAllocation())
       ManagedAllocate();
@@ -229,7 +229,7 @@ namespace cling {
     return 1;
   }
 
-  Value::EStorageType Value::determineStorageType(clang::QualType QT) const {
+  Value::EStorageType Value::determineStorageType(clang::QualType QT) {
     const clang::Type* desugCanon = QT->getUnqualifiedDesugaredType();
     desugCanon = desugCanon->getCanonicalTypeUnqualified()->getTypePtr()
       ->getUnqualifiedDesugaredType();

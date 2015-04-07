@@ -78,7 +78,7 @@ namespace cling {
 
     /// \brief Determine the underlying, canonical, desugared, unqualified type:
     /// the element of Storage to be used.
-    EStorageType determineStorageType(clang::QualType QT) const;
+    static EStorageType determineStorageType(clang::QualType QT);
 
     /// \brief Allocate storage as needed by the type.
     void ManagedAllocate();
