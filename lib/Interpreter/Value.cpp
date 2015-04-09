@@ -230,9 +230,7 @@ namespace cling {
   }
 
   Value::EStorageType Value::determineStorageType(clang::QualType QT) {
-    const clang::Type* desugCanon = QT->getUnqualifiedDesugaredType();
-    desugCanon = desugCanon->getCanonicalTypeUnqualified()->getTypePtr()
-      ->getUnqualifiedDesugaredType();
+    const clang::Type* desugCanon = QT.getCanonicalType().getTypePtr();
     if (desugCanon->isSignedIntegerOrEnumerationType())
       return kSignedIntegerOrEnumerationType;
     else if (desugCanon->isUnsignedIntegerOrEnumerationType())
