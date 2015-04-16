@@ -646,6 +646,20 @@ namespace {
         CI->getInvocation().getPreprocessorOpts()
           .addMacroDef("__CLING__CXX11");
       }
+// Since cling, uses clang instead, macros always sees __CLANG__ defined
+// In addition, clang also defined __GNUC__, we add the following two macros
+// to allow scripts, and more important, dictionary generation to know which
+// of the two is the underlying compiler.
+#define stringify(s) stringifyx(s)
+#define stringifyx(s) #s
+
+#ifdef __clang__
+      CI->getInvocation().getPreprocessorOpts()
+        .addMacroDef("__CLING__clang__=" stringify(__clang__));
+#elif defined(__GNUC__)
+      CI->getInvocation().getPreprocessorOpts()
+        .addMacroDef("__CLING__GNUC__=" stringify(__GNUC__));
+#endif
 
       if (CI->getDiagnostics().hasErrorOccurred())
         return 0;
