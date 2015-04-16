@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/Interpreter.h"
+#include "ClingUtils.h"
 
 #include "cling-compiledata.h"
 #include "DynamicLookup.h"
@@ -46,9 +47,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-#define stringify(s) stringifyx(s)
-#define stringifyx(s) #s
 
 using namespace clang;
 
@@ -222,7 +220,7 @@ namespace cling {
     for (auto&& I: IncrParserTransactions)
       m_IncrParser->commitTransaction(I);
     // Disable suggestions for ROOT
-    bool showSuggestions = !llvm::StringRef(stringify(CLING_VERSION)).startswith("ROOT");
+    bool showSuggestions = !llvm::StringRef(ClingStringify(CLING_VERSION)).startswith("ROOT");
     std::unique_ptr<InterpreterCallbacks>
        AutoLoadCB(new AutoloadCallback(this, showSuggestions));
     setCallbacks(std::move(AutoLoadCB));
@@ -242,7 +240,7 @@ namespace cling {
   }
 
   const char* Interpreter::getVersion() const {
-    return stringify(CLING_VERSION);
+    return ClingStringify(CLING_VERSION);
   }
 
   void Interpreter::handleFrontendOptions() {

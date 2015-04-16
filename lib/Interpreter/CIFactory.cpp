@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/CIFactory.h"
+#include "ClingUtils.h"
 
 #include "DeclCollector.h"
 #include "cling-compiledata.h"
@@ -650,15 +651,13 @@ namespace {
 // In addition, clang also defined __GNUC__, we add the following two macros
 // to allow scripts, and more important, dictionary generation to know which
 // of the two is the underlying compiler.
-#define stringify(s) stringifyx(s)
-#define stringifyx(s) #s
 
 #ifdef __clang__
       CI->getInvocation().getPreprocessorOpts()
-        .addMacroDef("__CLING__clang__=" stringify(__clang__));
+        .addMacroDef("__CLING__clang__=" ClingStringify(__clang__));
 #elif defined(__GNUC__)
       CI->getInvocation().getPreprocessorOpts()
-        .addMacroDef("__CLING__GNUC__=" stringify(__GNUC__));
+        .addMacroDef("__CLING__GNUC__=" ClingStringify(__GNUC__));
 #endif
 
       if (CI->getDiagnostics().hasErrorOccurred())
