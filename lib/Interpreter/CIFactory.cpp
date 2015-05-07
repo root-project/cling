@@ -489,6 +489,41 @@ namespace {
     return &Cmd->getArguments();
   }
 
+  /// Set cling's preprocessor defines to match the cling binary.
+  static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {
+#ifdef _MSC_VER
+    PPOpts.addMacroDef("_HAS_EXCEPTIONS=0");
+#endif
+
+    // Since cling, uses clang instead, macros always sees __CLANG__ defined
+    // In addition, clang also defined __GNUC__, we add the following two macros
+    // to allow scripts, and more important, dictionary generation to know which
+    // of the two is the underlying compiler.
+
+#ifdef __clang__
+    PPOpts.addMacroDef("__CLING__clang__=" ClingStringify(__clang__));
+#elif defined(__GNUC__)
+    PPOpts.addMacroDef("__CLING__GNUC__=" ClingStringify(__GNUC__));
+#endif
+  }
+
+  /// Set target-specific preprocessor defines.
+  static void SetPreprocessorFromTarget(PreprocessorOptions& PPOpts,
+                                        const llvm::Triple& TTriple) {
+    if (TTriple.getEnvironment() == llvm::Triple::Cygnus) {
+      // clang "forgets" the basic arch part needed by winnt.h:
+      if (TTriple.getArch() == llvm::Triple::x86) {
+        PPOpts.addMacroDef("_X86_=1");
+      } else if (TTriple.getArch() == llvm::Triple::x86_64) {
+        PPOpts.addMacroDef("__x86_64=1");
+      } else {
+        llvm::errs() << "Warning in cling::CIFactory::createCI():\n"
+          "unhandled target architecture "
+        << TTriple.getArchName() << '\n';
+      }
+    }
+  }
+
   static CompilerInstance* createCIImpl(
                                      std::unique_ptr<llvm::MemoryBuffer> buffer,
                                         int argc,
@@ -629,40 +664,28 @@ namespace {
     std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
     CI->setInvocation(Invocation);
     CI->setDiagnostics(Diags.get());
-    {
-      //
-      //  Buffer the error messages while we process
-      //  the compiler options.
-      //
 
-      // Set the language options, which cling needs
-      SetClingCustomLangOpts(CI->getLangOpts());
+    PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
 
-#ifdef _MSC_VER
-      CI->getInvocation().getPreprocessorOpts().addMacroDef("_HAS_EXCEPTIONS=0");
-#endif
-      CI->getInvocation().getPreprocessorOpts().addMacroDef("__CLING__");
-      if (CI->getLangOpts().CPlusPlus11 == 1) {
-        // http://llvm.org/bugs/show_bug.cgi?id=13530
-        CI->getInvocation().getPreprocessorOpts()
-          .addMacroDef("__CLING__CXX11");
-      }
-// Since cling, uses clang instead, macros always sees __CLANG__ defined
-// In addition, clang also defined __GNUC__, we add the following two macros
-// to allow scripts, and more important, dictionary generation to know which
-// of the two is the underlying compiler.
+    //
+    //  Buffer the error messages while we process
+    //  the compiler options.
+    //
 
-#ifdef __clang__
-      CI->getInvocation().getPreprocessorOpts()
-        .addMacroDef("__CLING__clang__=" ClingStringify(__clang__));
-#elif defined(__GNUC__)
-      CI->getInvocation().getPreprocessorOpts()
-        .addMacroDef("__CLING__GNUC__=" ClingStringify(__GNUC__));
-#endif
+    // Set the language options, which cling needs
+    SetClingCustomLangOpts(CI->getLangOpts());
 
-      if (CI->getDiagnostics().hasErrorOccurred())
-        return 0;
+    SetPreprocessorFromBinary(PPOpts);
+
+    PPOpts.addMacroDef("__CLING__");
+    if (CI->getLangOpts().CPlusPlus11 == 1) {
+      // http://llvm.org/bugs/show_bug.cgi?id=13530
+      PPOpts.addMacroDef("__CLING__CXX11");
     }
+
+    if (CI->getDiagnostics().hasErrorOccurred())
+      return 0;
+
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
                                                Invocation->TargetOpts));
     if (!CI->hasTarget()) {
@@ -670,20 +693,7 @@ namespace {
     }
     CI->getTarget().adjust(CI->getLangOpts());
     SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
-    if (CI->getTarget().getTriple().getEnvironment() == llvm::Triple::Cygnus) {
-      // clang "forgets" the basic arch part needed by winnt.h:
-      if (CI->getTarget().getTriple().getArch() == llvm::Triple::x86) {
-        CI->getInvocation().getPreprocessorOpts().addMacroDef("_X86_=1");
-      } else if (CI->getTarget().getTriple().getArch()
-                 == llvm::Triple::x86_64) {
-        CI->getInvocation().getPreprocessorOpts().addMacroDef("__x86_64=1");
-      } else {
-        llvm::errs()
-          << "Warning in cling::CIFactory::createCI():\n  "
-          "unhandled target architecture "
-          << CI->getTarget().getTriple().getArchName() << '\n';
-      }
-    }
+    SetPreprocessorFromTarget(PPOpts, CI->getTarget().getTriple());
 
     // Set up source and file managers
     CI->createFileManager();
