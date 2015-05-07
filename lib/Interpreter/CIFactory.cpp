@@ -505,6 +505,12 @@ namespace {
 #elif defined(__GNUC__)
     PPOpts.addMacroDef("__CLING__GNUC__=" ClingStringify(__GNUC__));
 #endif
+
+// https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
+#ifdef _GLIBCXX_USE_CXX11_ABI
+    PPOpts.addMacroDef("_GLIBCXX_USE_CXX11_ABI="
+                       ClingStringify(_GLIBCXX_USE_CXX11_ABI));
+#endif
   }
 
   /// Set target-specific preprocessor defines.
