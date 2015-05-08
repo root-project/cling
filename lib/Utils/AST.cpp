@@ -988,7 +988,7 @@ namespace utils {
 
       // Did we get to a basic_string, let's get back to std::string
       Transform::Config::ReplaceCollection::const_iterator
-      iter = TypeConfig.m_toReplace.find(QT.getTypePtr());
+      iter = TypeConfig.m_toReplace.find(QT->getCanonicalTypeInternal().getTypePtr());
       if (iter != TypeConfig.m_toReplace.end()) {
         Qualifiers quals = QT.getQualifiers();
         QT = QualType( iter->second, 0);
