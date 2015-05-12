@@ -303,6 +303,11 @@ namespace {
 
       }
       else {
+        if (!E->getSourceRange().isValid()) {
+          // We cannot do CXXNewExpr::CallInit (see Sema::BuildCXXNew) but
+          // that's what we want. Fail...
+          return E;
+        }
         TypeSourceInfo* ETSI
           = m_Context->getTrivialTypeSourceInfo(ETy, noLoc);
 
