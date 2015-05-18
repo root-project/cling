@@ -96,7 +96,7 @@ namespace cling {
     /// and before the calling framework has any change of taking back/again
     /// its lock protecting the access to cling, so we need to explicit protect
     /// again multiple conccurent access.
-    std::atomic_flag m_AtExitFuncsSpinLock = ATOMIC_FLAG_INIT;
+    std::atomic_flag m_AtExitFuncsSpinLock; // MSVC doesn't support = ATOMIC_FLAG_INIT;
 
     typedef llvm::SmallVector<CXAAtExitElement, 128> AtExitFunctions;
     ///\brief Static object, which are bound to unloading of certain declaration

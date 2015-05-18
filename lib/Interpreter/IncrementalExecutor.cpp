@@ -50,6 +50,9 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags):
 #endif
 {
 
+  // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
+  std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
+
   // No need to protect this access of m_AtExitFuncs, since nobody
   // can use this object yet.
   m_AtExitFuncs.reserve(256);
