@@ -7,6 +7,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/Type.h"
 #include "clang/Lex/Preprocessor.h"
@@ -1099,10 +1100,15 @@ namespace cling {
       VisitTemplateName(TA.getAsTemplateOrTemplatePattern());
       break;
     case clang::TemplateArgument::Expression:
-      if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(TA.getAsExpr())) {
-        Visit(DRE->getFoundDecl());
-        if (m_SkipFlag) {
-          return;
+      {
+        Expr* TAExpr = TA.getAsExpr();
+        if (CastExpr* CastExpr = dyn_cast<clang::CastExpr>(TAExpr))
+          TAExpr = CastExpr->getSubExpr();
+        if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(TAExpr)) {
+          Visit(DRE->getFoundDecl());
+          if (m_SkipFlag) {
+            return;
+          }
         }
       }
       break;
