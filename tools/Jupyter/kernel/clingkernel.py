@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import os
 from pipes import quote
 import re
 import signal
@@ -87,9 +88,12 @@ class ClingKernel(Kernel):
                      'mimetype': ' text/x-c++src',
                      'file_extension': '.c++'}
     
-    cling = Unicode('cling', config=True,
+    cling = Unicode(config=True,
         help="Path to cling if not on your PATH."
     )
+    def _cling_default(self):
+        return os.environ.get('CLING_EXE') or 'cling'
+    
     def __init__(self, **kwargs):
         
         Kernel.__init__(self, **kwargs)
