@@ -1,0 +1,10 @@
+{
+  "display_name": "C++",
+  "argv": [
+      "python",
+      "-m",
+      "clingkernel",
+      "-f",
+      "{connection_file}"
+  ]
+}
