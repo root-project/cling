@@ -753,6 +753,10 @@ namespace cling {
       setIgnore(clang::diag::warn_unused_comparison);
       setIgnore(clang::diag::ext_return_has_expr);
     }
+    auto setError = [&](clang::diag::kind Diag) {
+      Diags.setSeverity(Diag, diag::Severity::Error, SourceLocation());
+    };
+    setError(clang::diag::warn_falloff_nonvoid_function);
 
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
