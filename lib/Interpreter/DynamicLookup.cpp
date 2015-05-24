@@ -60,7 +60,7 @@ namespace {
             Qualifier->print(OS, m_Policy);
           m_Addresses.push_back(Node);
 
-          OS << '(';
+          OS << "((";
           QualType T = Node->getType();
           if (!T->isArrayType())
             OS << '*';
@@ -91,7 +91,7 @@ namespace {
 
           // end
 
-          OS <<")@";
+          OS << ")@)";
 
           if (Node->hasExplicitTemplateArgs())
             TemplateSpecializationType::PrintTemplateArgumentList(OS,
