@@ -78,7 +78,9 @@ BackendPasses::BackendPasses(const CodeGenOptions &CGOpts,
 }
 
 
-BackendPasses::~BackendPasses() {}
+BackendPasses::~BackendPasses() {
+  delete m_PMBuilder->Inliner;
+}
 
 void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
                                  const TargetOptions &TOpts,
