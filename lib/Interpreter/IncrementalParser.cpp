@@ -343,12 +343,6 @@ namespace cling {
       ParseResult = kSuccessWithWarnings;
     }
 
-    if (ParseResult != kSuccess) {
-      // Now that we have captured the error, reset the Diags.
-      Diags.Reset(/*soft=*/true);
-      Diags.getClient()->clear();
-    }
-
     // Empty transaction send it back to the pool.
     if (T->empty()) {
       assert((!m_Consumer->getTransaction()
@@ -371,8 +365,15 @@ namespace cling {
 
   void IncrementalParser::commitTransaction(ParseResultTransaction PRT) {
     Transaction* T = PRT.getPointer();
-    if (!T)
+    if (!T) {
+      if (PRT.getInt() != kSuccess) {
+        // Nothing has been emitted to Codegen, reset the Diags.
+        DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+        Diags.Reset(/*soft=*/true);
+        Diags.getClient()->clear();
+      }
       return;
+    }
 
     assert(T->isCompleted() && "Transaction not ended!?");
     assert(T->getState() != Transaction::kCommitted
@@ -397,6 +398,11 @@ namespace cling {
           T->setModule(std::move(M));
         }
       }
+      // Module has been released from Codegen, reset the Diags now.
+      DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+      Diags.Reset(/*soft=*/true);
+      Diags.getClient()->clear();
+
       rollbackTransaction(T);
 
       if (MustStartNewModule) {
@@ -549,6 +555,13 @@ namespace cling {
       if (M) {
         m_Interpreter->addModule(M.get());
         T->setModule(std::move(M));
+      }
+
+      if (T->getIssuedDiags() != Transaction::kNone) {
+        // Module has been released from Codegen, reset the Diags now.
+        DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+        Diags.Reset(/*soft=*/true);
+        Diags.getClient()->clear();
       }
 
       // Create a new module.
