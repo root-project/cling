@@ -629,6 +629,7 @@ namespace {
     const clang::driver::ArgStringList* CC1Args
       = GetCC1Arguments(Diags.get(), Compilation.get());
     if (CC1Args == NULL) {
+      delete Invocation;
       return 0;
     }
     clang::CompilerInvocation::CreateFromArgs(*Invocation, CC1Args->data() + 1,
