@@ -1279,9 +1279,9 @@ parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in a
 parser.add_argument('--dmg-tag', help='Package the snapshot of a given tag in a DMG package (.dmg)')
 
 # Variable overrides
-parser.add_argument('--with-llvm-url', action='store', help='Specify an alternate URL of LLVM repo', default='http://root.cern.ch/git/llvm.git')
-parser.add_argument('--with-clang-url', action='store', help='Specify an alternate URL of Clang repo', default='http://root.cern.ch/git/clang.git')
-parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo', default='http://root.cern.ch/git/cling.git')
+parser.add_argument('--with-llvm-url', action='store', help='Specify an alternate URL of LLVM repo', default='https://github.com/vgvassilev/llvm.git')
+parser.add_argument('--with-clang-url', action='store', help='Specify an alternate URL of Clang repo', default='https://github.com/vgvassilev/clang.git')
+parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo', default='https://github.com/vgvassilev/cling.git')
 
 parser.add_argument('--no-test', help='Do not run test suite of Cling', action='store_true')
 parser.add_argument('--create-dev-env', help='Set up a release/debug environment')
