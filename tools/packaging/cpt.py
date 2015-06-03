@@ -123,41 +123,71 @@ def box_draw(msg):
 
 def wget(url, out_dir):
     file_name = url.split('/')[-1]
-    print("HTTP request sent, awaiting response... ")
+    print("  HTTP request sent, awaiting response ... ")
     u = urlopen(url)
     if u.code == 200:
-        print("Connected to %s [200 OK]"%(url))
+        print("  Connected to %s [200 OK]"%(url))
     else:
         exit()
-    f = open(os.path.join(out_dir, file_name), 'wb')
-    if sys.version_info < (3,0):
-        # Python 2.x
-        meta = u.info()
-        file_size = int(meta.getheaders("Content-Length")[0])
+
+    try:
+        if sys.version_info < (3,0):
+            # Python 2.x
+            meta = u.info()
+            file_size = int(meta.getheaders("Content-Length")[0])
+        else:
+            # Python 3.x
+            file_size = int(u.getheader("Content-Length"))
+    except IndexError, e:
+        print(e)
+        print('  Error due to broken pipe. Retrying ...')
+        wget(url, out_dir)
+
     else:
-        # Python 3.x
-        file_size = int(u.getheader("Content-Length"))
+        print("  Downloading: %s Bytes: %s" % (file_name, file_size))
 
-    print("Downloading: %s Bytes: %s" % (file_name, file_size))
+        file_size_dl = 0
+        block_sz = 8192
 
-    file_size_dl = 0
-    block_sz = 8192
-    while True:
-        buffer = u.read(block_sz)
-        if not buffer:
-            break
+        f = open(os.path.join(out_dir, file_name), 'wb')
 
-        file_size_dl += len(buffer)
-        f.write(buffer)
-        status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
-        status = status + chr(8)*(len(status)+1)
-        print(status, end=' ')
-    f.close()
+        while True:
+            buffer = u.read(block_sz)
+            if not buffer:
+                break
+
+            file_size_dl += len(buffer)
+            f.write(buffer)
+            status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+            status = status + chr(8)*(len(status)+1)
+            print(status, end=' ')
+        f.close()
+        print()
 
 def fetch_llvm():
     box_draw("Fetch source files")
     print('Last known good LLVM revision is: ' + LLVMRevision)
     print('Current working directory is: ' + workdir + '\n')
+
+    if "github.com" in LLVM_GIT_URL and args['create_dev_env'] == None:
+        _, _, _, user, repo = LLVM_GIT_URL.split('/')
+        print('Fetching LLVM ...')
+        wget(url='https://github.com/%s/%s'%(user, repo.replace('.git', '')) + '/archive/cling-patches.tar.gz', out_dir=workdir)
+
+        print('Extracting: ' + os.path.join(workdir, 'cling-patches.tar.gz'))
+        tar = tarfile.open(os.path.join(workdir, 'cling-patches.tar.gz'))
+        tar.extractall(path=workdir)
+        tar.close()
+
+        os.rename(os.path.join(workdir, 'llvm-cling-patches'), srcdir)
+
+        if os.path.isfile(os.path.join(workdir, 'cling-patches.tar.gz')):
+            print("Remove file: " + os.path.join(workdir, 'cling-patches.tar.gz'))
+            os.remove(os.path.join(workdir, 'cling-patches.tar.gz'))
+
+        print()
+        return
+
     def get_fresh_llvm():
         exec_subprocess_call('git clone %s %s'%(LLVM_GIT_URL, srcdir), workdir)
 
@@ -181,6 +211,25 @@ def fetch_llvm():
 
 
 def fetch_clang():
+    if "github.com" in CLANG_GIT_URL and args['create_dev_env'] == None:
+        _, _, _, user, repo = CLANG_GIT_URL.split('/')
+        print('Fetching Clang ...')
+        wget(url='https://github.com/%s/%s'%(user, repo.replace('.git', '')) + '/archive/cling-patches.tar.gz', out_dir=workdir)
+
+        print('Extracting: ' + os.path.join(workdir, 'cling-patches.tar.gz'))
+        tar = tarfile.open(os.path.join(workdir, 'cling-patches.tar.gz'))
+        tar.extractall(path=os.path.join(srcdir, 'tools'))
+        tar.close()
+
+        os.rename(os.path.join(srcdir, 'tools', 'clang-cling-patches'), os.path.join(srcdir, 'tools', 'clang'))
+
+        if os.path.isfile(os.path.join(workdir, 'cling-patches.tar.gz')):
+            print("Remove file: " + os.path.join(workdir, 'cling-patches.tar.gz'))
+            os.remove(os.path.join(workdir, 'cling-patches.tar.gz'))
+
+        print()
+        return
+
     def get_fresh_clang():
         exec_subprocess_call('git clone %s'%(CLANG_GIT_URL), os.path.join(srcdir, 'tools'))
 
