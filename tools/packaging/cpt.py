@@ -138,9 +138,11 @@ def wget(url, out_dir):
         else:
             # Python 3.x
             file_size = int(u.getheader("Content-Length"))
-    except IndexError, e:
-        print(e)
-        print('  Error due to broken pipe. Retrying ...')
+    except (IndexError, TypeError) as e:
+        # IndexError is generated in Python 2
+        # TypeError is generated in Python 3
+        print('  Error due to broken pipe: ', e)
+        print('  Retrying ...')
         wget(url, out_dir)
 
     else:
