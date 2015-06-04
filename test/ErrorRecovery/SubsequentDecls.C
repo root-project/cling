@@ -41,4 +41,9 @@ TemplatedF(__my_i)
 TemplatedF((double)3.14)
 // CHECK: IncrementalExecutor::executeFunction: symbol '_Z10TemplatedFIdET_S0_' unresolved while linking
 
+// ROOT-7295
+#include <vector>
+std::vector<float> a; // expected-note {{previous definition is here}}
+std::vector<float> a; // expected-error {{redefinition of 'a'}}
+
 .q
