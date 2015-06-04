@@ -667,6 +667,11 @@ namespace cling {
     Transaction* CurT = beginTransaction(Opts);
     EParseResult ParseRes = ParseInternal(input);
 
+    if (ParseRes == kSuccessWithWarnings)
+      CurT->setIssuedDiags(Transaction::kWarnings);
+    else if (ParseRes == kFailed)
+      CurT->setIssuedDiags(Transaction::kErrors);
+
     ParseResultTransaction PRT = endTransaction(CurT);
     commitTransaction(PRT);
 
