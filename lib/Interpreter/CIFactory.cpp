@@ -333,6 +333,9 @@ namespace {
       Opts.CPlusPlus11 = 1;
 #endif
 
+#ifdef _REENTRANT
+    Opts.POSIXThreads = 1;
+#endif
   }
 
   static void SetClingTargetLangOpts(LangOptions& Opts,
