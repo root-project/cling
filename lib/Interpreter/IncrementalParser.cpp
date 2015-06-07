@@ -447,8 +447,8 @@ namespace cling {
       Transaction* nestedT = beginTransaction(CompilationOptions());
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
-      ParseResultTransaction PRT = endTransaction(nestedT);
-      commitTransaction(PRT);
+      ParseResultTransaction nestedPRT = endTransaction(nestedT);
+      commitTransaction(nestedPRT);
       m_Consumer->setTransaction(prevConsumerT);
     }
     m_Consumer->HandleTranslationUnit(getCI()->getASTContext());
