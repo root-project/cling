@@ -50,7 +50,7 @@ namespace {
                                           const std::string &pragmaInst) {
     struct SkipToEOD_t {
       Preprocessor& m_PP;
-      SkipToEOD_t(Preprocessor& PP): m_PP(PP) {}
+      SkipToEOD_t(Preprocessor& PParg): m_PP(PParg) {}
       ~SkipToEOD_t() { m_PP.DiscardUntilEndOfDirective(); }
     } SkipToEOD(PP);
 
