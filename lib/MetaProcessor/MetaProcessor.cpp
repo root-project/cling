@@ -216,7 +216,8 @@ namespace cling {
       static const char whitespace[] = " \t\r\n";
       std::string::size_type posNonWS = content.find_first_not_of(whitespace);
       // Handle comments before leading {
-      while (content[posNonWS] == '/' && content[posNonWS+1] == '/') {
+      while (posNonWS != std::string::npos
+             && content[posNonWS] == '/' && content[posNonWS+1] == '/') {
         // Remove the comment line
         posNonWS = content.find_first_of('\n', posNonWS+2)+1;
       }
