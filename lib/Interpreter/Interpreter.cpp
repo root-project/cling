@@ -377,7 +377,11 @@ namespace cling {
         break;
       }
     }
-    assert(foundAtPos>-1 && "The name doesnt exist. Unbalanced store/compare");
+    if (foundAtPos < 0) {
+      llvm::errs() << "The store point name " << name << " does not exist."
+      "Unbalanced store / compare\n";
+      return;
+    }
 
     // This may induce deserialization
     PushTransactionRAII RAII(this);
