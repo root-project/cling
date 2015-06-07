@@ -240,25 +240,27 @@ namespace cling {
               }
               std::string::size_type posComment
                 = content.find_first_not_of(whitespace, posComment);
-              if (content[posComment] == '/' && content[posComment+1] == '/') {
-              // More text (comments) are okay after the last '}', but
-              // we can not easily find it to remove it (so we need to upgrade
-              // this code to better handle the case with comments or
-              // preprocessor code before and after the leading { and
-              // trailing })
-                while (posComment <= posNonWS) {
-                  content[posComment++] = ' '; // replace '}' and comment
-                }
-              } else {
-                content[replaced] = '{';
-                // By putting the '{' back, we keep the code as consistent as
-                // the user wrote it ... but we should still warn that we not
-                // goint to treat this file an unamed macro.
-                llvm::errs()
-                << "Warning in cling::MetaProcessor: can not find the closing '}', "
-                << llvm::sys::path::filename(filename)
-                << " is not handled as an unamed script!\n";
-              } // did not find '}''
+              if (posComment != std::string::npos) {
+                if (content[posComment] == '/' && content[posComment+1] == '/') {
+                  // More text (comments) are okay after the last '}', but
+                  // we can not easily find it to remove it (so we need to upgrade
+                  // this code to better handle the case with comments or
+                  // preprocessor code before and after the leading { and
+                  // trailing })
+                  while (posComment <= posNonWS) {
+                    content[posComment++] = ' '; // replace '}' and comment
+                  }
+                } else {
+                  content[replaced] = '{';
+                  // By putting the '{' back, we keep the code as consistent as
+                  // the user wrote it ... but we should still warn that we not
+                  // goint to treat this file an unamed macro.
+                  llvm::errs()
+                  << "Warning in cling::MetaProcessor: can not find the closing '}', "
+                  << llvm::sys::path::filename(filename)
+                  << " is not handled as an unamed script!\n";
+                } // did not find '}''
+              } // no whitespace
             } // remove comments after the trailing '}'
           } // find '}'
         } // have '{'
