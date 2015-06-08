@@ -222,50 +222,47 @@ namespace cling {
         posNonWS = content.find_first_of('\n', posNonWS+2)+1;
       }
       std::string::size_type replaced = posNonWS;
-      if (posNonWS != std::string::npos) {
-        if (content[posNonWS] == '{') {
-          // hide the curly brace:
-          content[posNonWS] = ' ';
-          // and the matching closing '}'
-          posNonWS = content.find_last_not_of(whitespace);
-          if (posNonWS != std::string::npos) {
-            if (content[posNonWS] == ';' && content[posNonWS-1] == '}') {
-              content[posNonWS--] = ' '; // replace ';' and enter next if
+      if (posNonWS != std::string::npos && content[posNonWS] == '{') {
+        // hide the curly brace:
+        content[posNonWS] = ' ';
+        // and the matching closing '}'
+        posNonWS = content.find_last_not_of(whitespace);
+        if (posNonWS != std::string::npos) {
+          if (content[posNonWS] == ';' && content[posNonWS-1] == '}') {
+            content[posNonWS--] = ' '; // replace ';' and enter next if
+          }
+          if (content[posNonWS] == '}') {
+            content[posNonWS] = ' '; // replace '}'
+          } else {
+            std::string::size_type posBlockClose = content.find_last_of('}');
+            if (posBlockClose != std::string::npos) {
+              content[posBlockClose] = ' '; // replace '}'
             }
-            if (content[posNonWS] == '}') {
-              content[posNonWS] = ' '; // replace '}'
-            } else {
-              std::string::size_type posBlockClose = content.find_last_of('}');
-              if (posBlockClose != std::string::npos) {
-                content[posBlockClose] = ' '; // replace '}'
+            std::string::size_type posComment
+              = content.find_first_not_of(whitespace, posBlockClose);
+            if (posComment != std::string::npos
+                && content[posComment] == '/' && content[posComment+1] == '/') {
+              // More text (comments) are okay after the last '}', but
+              // we can not easily find it to remove it (so we need to upgrade
+              // this code to better handle the case with comments or
+              // preprocessor code before and after the leading { and
+              // trailing })
+              while (posComment <= posNonWS) {
+                content[posComment++] = ' '; // replace '}' and comment
               }
-              std::string::size_type posComment
-                = content.find_first_not_of(whitespace, posComment);
-              if (posComment != std::string::npos) {
-                if (content[posComment] == '/' && content[posComment+1] == '/') {
-                  // More text (comments) are okay after the last '}', but
-                  // we can not easily find it to remove it (so we need to upgrade
-                  // this code to better handle the case with comments or
-                  // preprocessor code before and after the leading { and
-                  // trailing })
-                  while (posComment <= posNonWS) {
-                    content[posComment++] = ' '; // replace '}' and comment
-                  }
-                } else {
-                  content[replaced] = '{';
-                  // By putting the '{' back, we keep the code as consistent as
-                  // the user wrote it ... but we should still warn that we not
-                  // goint to treat this file an unamed macro.
-                  llvm::errs()
-                  << "Warning in cling::MetaProcessor: can not find the closing '}', "
-                  << llvm::sys::path::filename(filename)
-                  << " is not handled as an unamed script!\n";
-                } // did not find '}''
-              } // no whitespace
-            } // remove comments after the trailing '}'
-          } // find '}'
-        } // have '{'
-      } // have non-whitespace
+            } else {
+              content[replaced] = '{';
+              // By putting the '{' back, we keep the code as consistent as
+              // the user wrote it ... but we should still warn that we not
+              // goint to treat this file an unamed macro.
+              llvm::errs()
+                << "Warning in cling::MetaProcessor: can not find the closing '}', "
+                << llvm::sys::path::filename(filename)
+                << " is not handled as an unamed script!\n";
+            } // did not find "//"
+          } // remove comments after the trailing '}'
+        } // find '}'
+      } // have '{'
     } // ignore outmost block
 
     std::string strFilename(filename.str());
