@@ -343,7 +343,7 @@ namespace cling {
       ParseResult = kSuccessWithWarnings;
     }
 
-    // Empty transaction send it back to the pool.
+    // Empty transaction, send it back to the pool.
     if (T->empty()) {
       assert((!m_Consumer->getTransaction()
               || (m_Consumer->getTransaction() == T))
@@ -608,6 +608,7 @@ namespace cling {
 
     if (!T->getParent()) {
       // Remove from the queue
+      assert(T == m_Transactions.back() && "Out of order transaction removal");
       m_Transactions.pop_back();
       if (!m_Transactions.empty())
         m_Transactions.back()->setNext(0);
