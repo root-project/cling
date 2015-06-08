@@ -60,7 +60,7 @@ namespace cling {
         delete (*m_NestedTransactions)[i];
       }
     if (getExecutor())
-      getExecutor()->unloadFromJIT(getExeUnloadHandle());
+      getExecutor()->unloadFromJIT(m_Module.get(), getExeUnloadHandle());
   }
 
   NamedDecl* Transaction::containsNamedDecl(llvm::StringRef name) const {
