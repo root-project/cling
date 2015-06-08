@@ -237,6 +237,8 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
 
 
 void IncrementalJIT::removeModules(size_t handle) {
+  if (handle == (size_t)-1)
+    return;
   m_LazyEmitLayer.removeModuleSet(m_UnloadPoints[handle]);
 }
 
