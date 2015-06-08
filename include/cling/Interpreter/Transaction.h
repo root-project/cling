@@ -491,10 +491,6 @@ namespace cling {
     ///
     void erase(iterator pos);
 
-    ///\brief Resets empty transaction so that it could be reused.
-    ///
-    void reset();
-
     ///\brief Prints out all the declarations in the transaction.
     ///
     void dump() const;

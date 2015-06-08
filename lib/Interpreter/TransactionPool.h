@@ -42,20 +42,11 @@ namespace cling {
 #endif
 
   private:
-    void RefillPool() {
-      // Allocate them in one block, containing 8 transactions.
-      //Transaction* arrayStart = new Transaction[TRANSACTIONS_IN_BLOCK]();
-      for (size_t i = 0; i < TRANSACTIONS_IN_BLOCK; ++i)
-        m_Transactions.push_back(new Transaction(m_Sema));
-      //m_TransactionBlocks.push_back(arrayStart);
-    }
-
   public:
     TransactionPool(clang::Sema& S) : m_Sema(S) {
 #ifndef NDEBUG
       m_Debug = false;
 #endif
-      RefillPool();
     }
 
     ~TransactionPool() {
@@ -64,9 +55,9 @@ namespace cling {
     }
 
     Transaction* takeTransaction() {
-      if (m_Transactions.size() == 0)
-        RefillPool();
-      Transaction* T = m_Transactions.pop_back_val();
+      if (m_Transactions.empty())
+        return new Transaction(m_Sema);
+      Transaction* T = new (m_Transactions.pop_back_val()) Transaction(m_Sema);
 #ifndef NDEBUG
       // *Very useful for debugging purposes and setting breakpoints in gdb.
       if (m_Debug)
@@ -82,17 +73,17 @@ namespace cling {
               T->getState() == Transaction::kRolledBack)
              && "Transaction must completed!");
 
-      if (m_Transactions.size() == POOL_SIZE) {
-        // Tell the parent that T is gone.
-        if (T->getParent())
-          T->getParent()->removeNestedTransaction(T);
+      // Tell the parent that T is gone.
+      if (T->getParent())
+        T->getParent()->removeNestedTransaction(T);
 
+      if (m_Transactions.size() == POOL_SIZE) {
         // don't overflow the pool
         delete T;
         return;
       }
-      T->reset();
       T->m_State = Transaction::kNumStates;
+      T->~Transaction();
       m_Transactions.push_back(T);
     }
 #undef POOL_SIZE
