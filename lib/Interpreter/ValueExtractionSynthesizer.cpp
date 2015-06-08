@@ -251,7 +251,7 @@ namespace {
     CallArgs.push_back(EVPOn);
 
     ExprResult Call;
-    SourceLocation noLoc;
+    SourceLocation noLoc = locStart;
     if (desugaredTy->isVoidType()) {
       // In cases where the cling::Value gets reused we need to reset the
       // previous settings to void.
