@@ -138,6 +138,21 @@ namespace {
     }
     Paths.push_back(buff);
   }
+
+  static bool is_dll(const char *filename) {
+    bool is_dll = false;
+    HANDLE hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    HANDLE hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    LPVOID lpFileBase = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
+    PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)lpFileBase;
+    PIMAGE_NT_HEADERS pNTHeader = (PIMAGE_NT_HEADERS)((DWORD)pDosHeader + (DWORD)pDosHeader->e_lfanew);
+    if ((pNTHeader->FileHeader.Characteristics & IMAGE_FILE_DLL))
+      is_dll = true;
+    UnmapViewOfFile(lpFileBase);
+    CloseHandle(hFileMapping);
+    CloseHandle(hFile);
+    return is_dll;
+  }
 #else
 # error "Unsupported platform."
 #endif
@@ -174,7 +189,7 @@ namespace cling {
       (Magic == file_magic::elf_shared_object)
 #endif
 #elif defined(LLVM_ON_WIN32)
-      (Magic == file_magic::pecoff_executable)
+      (Magic == file_magic::pecoff_executable || is_dll(LibName.str().c_str()))
 #else
 # error "Unsupported platform."
 #endif
