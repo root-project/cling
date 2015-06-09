@@ -601,11 +601,6 @@ namespace cling {
 
     TransactionUnloader U(&getCI()->getSema(), m_CodeGen.get());
 
-    if (U.RevertTransaction(T))
-      T->setState(Transaction::kRolledBack);
-    else
-      T->setState(Transaction::kRolledBackWithErrors);
-
     if (!T->getParent()) {
       // Remove from the queue
       assert(T == m_Transactions.back() && "Out of order transaction removal");
@@ -613,6 +608,14 @@ namespace cling {
       if (!m_Transactions.empty())
         m_Transactions.back()->setNext(0);
     }
+
+    if (U.RevertTransaction(T))
+      T->setState(Transaction::kRolledBack);
+    else
+      T->setState(Transaction::kRolledBackWithErrors);
+
+    // Keep T alive: someone else might have grabbed that T and needs to detect
+    // that it's bad.
     //m_TransactionPool->releaseTransaction(T);
   }
 
