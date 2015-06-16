@@ -10,12 +10,19 @@ import sys
 
 from tornado.ioloop import IOLoop
 
-from ipykernel.kernelbase import Kernel
+try:
+    from ipykernel.kernelbase import Kernel
+except ImportError:
+    from IPython.kernel.zmq.kernelbase import Kernel
+    
 from pexpect import replwrap, EOF
 
 __version__ = '0.0.1'
 
-from traitlets import Unicode
+try:
+    from traitlets import Unicode
+except ImportError:
+    from IPython.utils.traitlets import Unicode
 
 class ClingError(Exception):
     def __init__(self, buf):
@@ -187,7 +194,10 @@ class ClingKernel(Kernel):
 
 def main():
     """launch a cling kernel"""
-    from ipykernel.kernelapp import IPKernelApp
+    try:
+        from ipykernel.kernelapp import IPKernelApp
+    except ImportError:
+        from IPython.kernel.zmq.kernelapp import IPKernelApp
     IPKernelApp.launch_instance(kernel_class=ClingKernel)
 
 
