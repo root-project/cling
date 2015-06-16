@@ -65,7 +65,10 @@ if 'develop' in sys.argv or any(a.startswith('bdist') for a in sys.argv):
 
 setuptools_args = {}
 install_requires = setuptools_args['install_requires'] = [
-    'ipython[kernel]',
+    'ipython',
+    'pyzmq',
+    'tornado',
+    'pexpect',
 ]
 
 if 'setuptools' in sys.modules:
