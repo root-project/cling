@@ -28,6 +28,8 @@ class ClingError(Exception):
     def __init__(self, buf):
         self.buf = buf
 
+PY2 = sys.version_info[0] < 3
+
 class ClingInterpreter(replwrap.REPLWrapper):
     
     prompt_pat = re.compile(r'\[cling\][\$\!\?]\s+')
@@ -35,6 +37,8 @@ class ClingInterpreter(replwrap.REPLWrapper):
     def __init__(self, cmd, **kw):
         self.buffer = []
         self.output = ''
+        if PY2 and isinstance(cmd, unicode):
+            cmd = cmd.encode('utf8')
         
         super(ClingInterpreter, self).__init__(
             cmd, '[cling]', None, **kw)
