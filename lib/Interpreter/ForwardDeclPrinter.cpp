@@ -170,20 +170,14 @@ namespace cling {
     }
 
     SourceLocation spellingLoc = m_SMgr.getSpellingLoc(D->getLocStart());
-    // Walk up the include chain.
+    // Get the include location.
     PresumedLoc PLoc = m_SMgr.getPresumedLoc(spellingLoc);
-    llvm::SmallVector<PresumedLoc, 16> PLocs;
-    while (true) {
-      if (!m_SMgr.getPresumedLoc(PLoc.getIncludeLoc()).isValid())
-        break;
-      PLocs.push_back(PLoc);
-      PLoc = m_SMgr.getPresumedLoc(PLoc.getIncludeLoc());
-    }
+    SourceLocation InclLoc = PLoc.getIncludeLoc();
 
-    if (PLocs.empty() /* declared in dictionary payload*/)
+    if (!m_SMgr.getPresumedLoc(InclLoc).isValid() /* declared in dictionary payload*/)
        return;
 
-    clang::SourceLocation includeLoc = m_SMgr.getSpellingLoc(PLocs[PLocs.size() - 1].getIncludeLoc());
+    clang::SourceLocation includeLoc = m_SMgr.getSpellingLoc(InclLoc);
     bool invalid = true;
     const char* includeText = m_SMgr.getCharacterData(includeLoc, &invalid);
     assert(!invalid && "Invalid source data");
