@@ -143,11 +143,23 @@ namespace {
     bool is_dll = false;
     HANDLE hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     HANDLE hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (hFileMapping == INVALID_HANDLE_VALUE) {
+      CloseHandle(hFile);
+      return false;
+    }
     LPVOID lpFileBase = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
-    PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)lpFileBase;
-    PIMAGE_NT_HEADERS pNTHeader = (PIMAGE_NT_HEADERS)((DWORD)pDosHeader + (DWORD)pDosHeader->e_lfanew);
-    if ((pNTHeader->FileHeader.Characteristics & IMAGE_FILE_DLL))
-      is_dll = true;
+    if (lpFileBase == NULL) {
+      CloseHandle(hFileMapping);
+      CloseHandle(hFile);
+      return false;
+    }
+    PIMAGE_DOS_HEADER pDOSHeader = static_cast<PIMAGE_DOS_HEADER>(lpFileBase);
+    if (pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE) {
+      PIMAGE_NT_HEADERS pNTHeader = reinterpret_cast<PIMAGE_NT_HEADERS>((PBYTE)lpFileBase + pDOSHeader->e_lfanew);
+      if ((pNTHeader->Signature == IMAGE_NT_SIGNATURE) &&
+          ((pNTHeader->FileHeader.Characteristics & IMAGE_FILE_DLL)))
+        is_dll = true;
+    }
     UnmapViewOfFile(lpFileBase);
     CloseHandle(hFileMapping);
     CloseHandle(hFile);
