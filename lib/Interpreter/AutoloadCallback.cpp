@@ -23,6 +23,7 @@
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/AutoloadCallback.h"
 #include "cling/Interpreter/Transaction.h"
+#include "TransactionUnloader.h"
 
 namespace {
   static const char annoTag[] = "$clingAutoload$";
@@ -67,6 +68,7 @@ namespace cling {
     bool m_IsStoringState;
     AutoloadCallback::FwdDeclsMap* m_Map;
     clang::Preprocessor* m_PP;
+    clang::Sema* m_Sema;
     const clang::FileEntry* m_PrevFE;
     std::string m_PrevFileName;
   private:
@@ -108,9 +110,10 @@ namespace cling {
 
   public:
     AutoloadingVisitor():
-      m_IsStoringState(false), m_Map(0), m_PP(0), m_PrevFE(0) {}
-    void RemoveDefaultArgsOf(Decl* D) {
+      m_IsStoringState(false), m_Map(0), m_PP(0), m_Sema(0), m_PrevFE(0) {}
+    void RemoveDefaultArgsOf(Decl* D, Sema* S) {
       //D = D->getMostRecentDecl();
+      m_Sema = S;
       TraverseDecl(D);
       //while ((D = D->getPreviousDecl()))
       //  TraverseDecl(D);
@@ -136,35 +139,8 @@ namespace cling {
       if (!D->hasAttr<AnnotateAttr>())
         return true;
 
-      AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
-      if (!attr)
-        return true;
-
-      switch (D->getKind()) {
-      default:
+      if (AnnotateAttr* attr = D->getAttr<AnnotateAttr>())
         InsertIntoAutoloadingState(D, attr->getAnnotation());
-        break;
-      case Decl::Enum:
-        // EnumDecls have extra information 2 chars after the filename used
-        // for extra fixups.
-          EnumDecl* ED = cast<EnumDecl>(D);
-          if (ED->isFixed()) {
-            StringRef str = ED->getAttr<AnnotateAttr>()->getAnnotation();
-            char ch = str.back();
-//            str.drop_back(2);
-            ED->getAttr<AnnotateAttr>()->setAnnotation(ED->getASTContext(), str);
-            struct EnumDeclDerived: public EnumDecl {
-              static void setFixed(EnumDecl* ED, bool value = true) {
-                ((EnumDeclDerived*)ED)->IsFixed = value;
-              }
-            };
-
-            if (ch != '1')
-              EnumDeclDerived::setFixed(ED, false);
-          }
-        InsertIntoAutoloadingState(D, attr->getAnnotation().drop_back(2));
-        break;
-      }
 
       return true;
     }
@@ -245,6 +221,18 @@ namespace cling {
         D->setDefaultArg(nullptr);
       return true;
     }
+
+    bool VisitEnumDecl(EnumDecl* D) {
+      VisitDecl(D);
+
+      if (m_IsStoringState)
+        return true;
+
+      // Now that we will read the full enum, unload the forward decl.
+      TransactionUnloader Unloader(m_Sema, 0);
+      Unloader.UnloadDecl(D);
+      return true;
+    }
   };
 
   void AutoloadCallback::InclusionDirective(clang::SourceLocation HashLoc,
@@ -266,7 +254,7 @@ namespace cling {
 
     AutoloadingVisitor defaultArgsCleaner;
     for (auto D : found->second) {
-      defaultArgsCleaner.RemoveDefaultArgsOf(D);
+      defaultArgsCleaner.RemoveDefaultArgsOf(D, &getInterpreter()->getSema());
     }
     // Don't need to keep track of cleaned up decls from file.
     m_Map.erase(found);

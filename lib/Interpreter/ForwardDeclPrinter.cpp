@@ -150,7 +150,7 @@ namespace cling {
     return Out();
   }
 
-  void ForwardDeclPrinter::prettyPrintAttributes(Decl *D, std::string extra) {
+  void ForwardDeclPrinter::prettyPrintAttributes(Decl *D) {
 
     if (D->getSourceRange().isInvalid())
       return;
@@ -195,8 +195,6 @@ namespace cling {
 //    assert ( file.length() != 0 && "Filename Should not be blank");
     Out() << " __attribute__((annotate(\"$clingAutoload$"
           << llvm::StringRef(includeText, includeEnd - includeText);
-    if (!extra.empty())
-      Out() << " " << extra;
     Out() << "\"))) ";
   }
 
@@ -260,7 +258,7 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       Out() << "__module_private__ ";
     Out() << "enum ";
-    prettyPrintAttributes(D,std::to_string(D->isFixed()));
+    prettyPrintAttributes(D);
     if (D->isScoped()) {
       if (D->isScopedUsingClassTag())
         Out() << "class ";

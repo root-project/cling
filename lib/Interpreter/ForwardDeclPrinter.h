@@ -155,7 +155,7 @@ namespace cling {
     void PrintTemplateParameters(llvm::raw_ostream& Stream,
                                  clang::TemplateParameterList *Params,
                                  const clang::TemplateArgumentList *Args = 0);
-    void prettyPrintAttributes(clang::Decl *D, std::string extra = "");
+    void prettyPrintAttributes(clang::Decl *D);
 
     bool isOperator(clang::FunctionDecl* D);
     bool hasDefaultArgument(clang::FunctionDecl* D);
