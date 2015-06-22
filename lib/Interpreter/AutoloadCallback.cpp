@@ -149,16 +149,12 @@ namespace cling {
       if (!D->hasAttr<AnnotateAttr>())
         return true;
 
-      VisitDecl(D);
-
       if (ClassTemplateDecl* TmplD = D->getDescribedClassTemplate())
         return VisitTemplateDecl(TmplD);
       return true;
     }
 
     bool VisitTemplateTypeParmDecl(TemplateTypeParmDecl* D) {
-      VisitDecl(D);
-
       if (m_IsStoringState)
         return true;
 
@@ -171,8 +167,6 @@ namespace cling {
       if (D->getTemplatedDecl() &&
           !D->getTemplatedDecl()->hasAttr<AnnotateAttr>())
         return true;
-
-      VisitDecl(D);
 
       // If we have a definition we might be about to re-#include the
       // same header containing definition that was #included previously,
@@ -190,8 +184,6 @@ namespace cling {
     }
 
     bool VisitTemplateTemplateParmDecl(TemplateTemplateParmDecl* D) {
-      VisitDecl(D);
-
       if (m_IsStoringState)
         return true;
 
@@ -201,8 +193,6 @@ namespace cling {
     }
 
     bool VisitNonTypeTemplateParmDecl(NonTypeTemplateParmDecl* D) {
-      VisitDecl(D);
-
       if (m_IsStoringState)
         return true;
 
@@ -212,8 +202,6 @@ namespace cling {
     }
 
     bool VisitParmVarDecl(ParmVarDecl* D) {
-      VisitDecl(D);
-
       if (m_IsStoringState)
         return true;
 
@@ -223,8 +211,6 @@ namespace cling {
     }
 
     bool VisitEnumDecl(EnumDecl* D) {
-      VisitDecl(D);
-
       if (m_IsStoringState)
         return true;
 
