@@ -117,9 +117,13 @@ void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg) {
 
 void unresolvedSymbol()
 {
-  // throw exception?
-  llvm::errs() << "IncrementalExecutor: calling unresolved symbol, "
-    "see previous error message!\n";
+  // This might get called recursively, or a billion of times. Do not generate
+  // useless output; unresolvedSymbol() is always handed out with an error
+  // message - that's enough.
+  //llvm::errs() << "IncrementalExecutor: calling unresolved symbol, "
+  //  "see previous error message!\n";
+
+  // throw exception instead?
 }
 
 void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name)
