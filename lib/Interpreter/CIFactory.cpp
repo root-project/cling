@@ -25,6 +25,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
+#include "clang/Serialization/ASTReader.h"
 
 #include "llvm/Config/config.h"
 #include "llvm/IR/LLVMContext.h"
@@ -638,6 +639,45 @@ namespace {
     clang::CompilerInvocation::CreateFromArgs(*Invocation, CC1Args->data() + 1,
                                               CC1Args->data() + CC1Args->size(),
                                               *Diags);
+
+    // Create and setup a compiler instance.
+    std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
+    CI->createFileManager();
+
+    llvm::StringRef PCHFileName
+      = Invocation->getPreprocessorOpts().ImplicitPCHInclude;
+    if (!PCHFileName.empty()) {
+      // Load target options etc from PCH.
+      struct PCHListener: public ASTReaderListener {
+        CompilerInvocation& m_Invocation;
+
+        PCHListener(CompilerInvocation& I): m_Invocation(I) {}
+
+        bool ReadLanguageOptions(const LangOptions &LangOpts,
+                                 bool /*Complain*/,
+                                 bool /*AllowCompatibleDifferences*/) override {
+          *m_Invocation.getLangOpts() = LangOpts;
+          return true;
+        }
+        bool ReadTargetOptions(const TargetOptions &TargetOpts,
+                               bool /*AllowCompatibleDifferences*/) override {
+          m_Invocation.getTargetOpts() = TargetOpts;
+          return true;
+        }
+        bool ReadPreprocessorOptions(const PreprocessorOptions &PPOpts,
+                                     bool /*Complain*/,
+                                std::string &/*SuggestedPredefines*/) override {
+          m_Invocation.getPreprocessorOpts() = PPOpts;
+          return true;
+        }
+      };
+      PCHListener listener(*Invocation);
+      ASTReader::readASTFileControlBlock(PCHFileName,
+                                         CI->getFileManager(),
+                                         /* FUTURE: *CI->getPCHContainerOperations(),*/
+                                         listener);
+    }
+
     Invocation->getFrontendOpts().DisableFree = true;
     // Copied from CompilerInstance::createDiagnostics:
     // Chain in -verify checker, if requested.
@@ -670,8 +710,6 @@ namespace {
       Opts.ResourceDir = resource_path.str();
     }
 
-    // Create and setup a compiler instance.
-    std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
     CI->setInvocation(Invocation);
     CI->setDiagnostics(Diags.get());
 
@@ -682,8 +720,10 @@ namespace {
     //  the compiler options.
     //
 
-    // Set the language options, which cling needs
-    SetClingCustomLangOpts(CI->getLangOpts());
+    if (PCHFileName.empty()) {
+      // Set the language options, which cling needs
+      SetClingCustomLangOpts(CI->getLangOpts());
+    }
 
     SetPreprocessorFromBinary(PPOpts);
 
@@ -698,15 +738,17 @@ namespace {
 
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
                                                Invocation->TargetOpts));
-    if (!CI->hasTarget()) {
+    if (!CI->hasTarget())
       return 0;
-    }
+
     CI->getTarget().adjust(CI->getLangOpts());
-    SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
+
+    if (PCHFileName.empty())
+      SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
+
     SetPreprocessorFromTarget(PPOpts, CI->getTarget().getTriple());
 
-    // Set up source and file managers
-    CI->createFileManager();
+    // Set up source managers
     SourceManager* SM = new SourceManager(CI->getDiagnostics(),
                                           CI->getFileManager(),
                                           /*UserFilesAreVolatile*/ true);
