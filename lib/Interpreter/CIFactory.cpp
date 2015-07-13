@@ -332,6 +332,10 @@ namespace {
   || /*ICC*/ ((!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && defined(__INTEL_COMPILER) && (__STDC_HOSTED__ && (__INTEL_COMPILER <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__))
     if (Opts.CPlusPlus)
       Opts.CPlusPlus11 = 1;
+#elif /*GCC*/ (defined(__GNUC__) && (__cpp_decltype_auto >= 201304))   \
+  || /*clang*/ (defined(__has_feature) && __has_feature(cxx_generic_lambdas))
+    if (Opts.CPlusPlus)
+      Opts.CPlusPlus14 = 1;
 #endif
 
 #ifdef _REENTRANT
