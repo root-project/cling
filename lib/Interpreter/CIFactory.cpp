@@ -327,15 +327,12 @@ namespace {
     // Extracted from Boost/config/compiler.
     // SunProCC has no C++11.
     // VisualC's support is not obvious to extract from Boost...
-#if /*GCC*/ (defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__))   \
-  || /*clang*/ (defined(__has_feature) && __has_feature(cxx_decltype))   \
-  || /*ICC*/ ((!(defined(_WIN32) || defined(_WIN64)) && defined(__STDC_HOSTED__) && defined(__INTEL_COMPILER) && (__STDC_HOSTED__ && (__INTEL_COMPILER <= 1200))) || defined(__GXX_EXPERIMENTAL_CPP0X__))
-    if (Opts.CPlusPlus)
-      Opts.CPlusPlus11 = 1;
-#elif /*GCC*/ (defined(__GNUC__) && (__cpp_decltype_auto >= 201304))   \
-  || /*clang*/ (defined(__has_feature) && __has_feature(cxx_generic_lambdas))
-    if (Opts.CPlusPlus)
-      Opts.CPlusPlus14 = 1;
+
+#if __cplusplus >= 201402L
+     if (Opts.CPlusPlus) Opts.CPlusPlus14 = 1;
+#endif
+#if __cplusplus >= 201103L
+     if (Opts.CPlusPlus) Opts.CPlusPlus11 = 1;
 #endif
 
 #ifdef _REENTRANT
