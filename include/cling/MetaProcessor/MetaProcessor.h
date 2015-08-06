@@ -68,6 +68,9 @@ namespace cling {
     ///\brief Stores the stack for the redirect file paths for err.
     llvm::SmallVector<llvm::SmallString<128>, 2> m_PrevStderrFileName;
 
+    //Counter to handle more than one redirection RAAI's
+    int m_RedirectionRAIILevel = 0;
+
   public:
     enum RedirectionScope {
       kSTDOUT = 1,
@@ -85,7 +88,14 @@ namespace cling {
 
     public:
       MaybeRedirectOutputRAII(MetaProcessor* p);
-      ~MaybeRedirectOutputRAII() { pop(); }
+      ~MaybeRedirectOutputRAII();
+
+      // Don't mess with m_RedirectionRAIILevel
+      MaybeRedirectOutputRAII(const MaybeRedirectOutputRAII&) = delete;
+      MaybeRedirectOutputRAII(MaybeRedirectOutputRAII&&) = delete;
+      MaybeRedirectOutputRAII& operator=(const MaybeRedirectOutputRAII&) = delete;
+      MaybeRedirectOutputRAII& operator=(MaybeRedirectOutputRAII&&) = delete;
+
     private:
       void pop();
       void redirect(FILE* file, const std::string& fileName,
@@ -114,6 +124,11 @@ namespace cling {
       m_Outs = &outs;
       return prev;
     }
+    void increaseRedirectionRAIILevel() { m_RedirectionRAIILevel++; }
+
+    void decreaseRedirectionRAIILevel() { m_RedirectionRAIILevel--; }
+
+    int getRedirectionRAIILevel() { return m_RedirectionRAIILevel; }
 
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement

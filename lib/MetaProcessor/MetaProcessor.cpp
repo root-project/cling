@@ -44,6 +44,7 @@ namespace cling {
                                           MetaProcessor* p)
   :m_MetaProcessor(p), m_isCurrentlyRedirecting(0) {
     StringRef redirectionFile;
+    m_MetaProcessor->increaseRedirectionRAIILevel();
     if (!m_MetaProcessor->m_PrevStdoutFileName.empty()) {
       redirectionFile = m_MetaProcessor->m_PrevStdoutFileName.back();
       redirect(stdout, redirectionFile.str(), kSTDOUT);
@@ -63,6 +64,11 @@ namespace cling {
     }
   }
 
+  MetaProcessor::MaybeRedirectOutputRAII::~MaybeRedirectOutputRAII() {
+    pop();
+    m_MetaProcessor->decreaseRedirectionRAIILevel();
+  }
+
   void MetaProcessor::MaybeRedirectOutputRAII::redirect(FILE* file,
                                         const std::string& fileName,
                                         MetaProcessor::RedirectionScope scope) {
@@ -79,6 +85,11 @@ namespace cling {
   }
 
   void MetaProcessor::MaybeRedirectOutputRAII::pop() {
+    //If we have only one redirection RAII
+    //only then do the unredirection.
+    if (m_MetaProcessor->getRedirectionRAIILevel() != 1)
+      return;
+
     if (m_isCurrentlyRedirecting & kSTDOUT) {
       unredirect(m_MetaProcessor->m_backupFDStdout, STDOUT_FILENO, stdout);
     }
