@@ -461,6 +461,13 @@ namespace cling {
                   TagDecl* TD = TagTy->getDecl();
                   if (TD) {
                     TheDecl = TD->getDefinition();
+                    // NOTE: if (TheDecl) ... check for theDecl->isInvalidDecl()
+                    if (TD && TD->isInvalidDecl()) {
+                      printf("Warning: FindScope got an invalid tag decl\n");
+                    }
+                    if (TheDecl && TheDecl->isInvalidDecl()) {
+                      printf("ERROR: FindScope about to return an invalid decl\n");
+                    }
                     if (!TheDecl && instantiateTemplate) {
 
                       // Make sure it is not just forward declared, and
@@ -473,10 +480,15 @@ namespace cling {
                           // if the decl is invalid try to clean up
                           TransactionUnloader U(&S, /*CodeGenerator*/0);
                           U.UnloadDecl(TheDecl);
+                          *setResultType = nullptr;
                           return 0;
                         }
                       } else {
-                        // We cannot instantiate the scope: not a valid decl.
+                        // NOTE: We cannot instantiate the scope: not a valid decl.
+                        // Need to rollback transaction.
+                        TransactionUnloader U(&S, /*CodeGenerator*/0);
+                        U.UnloadDecl(TD);
+                        *setResultType = nullptr;
                         return 0;
                       }
                     }
