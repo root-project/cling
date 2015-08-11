@@ -10,6 +10,8 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/raw_ostream.h"
+
 #include "clang/Sema/Sema.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/AST/AST.h"
@@ -101,10 +103,20 @@ namespace cling {
         m_PrevFileName = FileName;
       }
 
-      assert(FE && "Must have a valid FileEntry");
       if (FE) {
         auto& Vec = (*m_Map)[FE];
         Vec.push_back(decl);
+      } else {
+        llvm::errs()
+          << "Error in cling::AutoloadingVisitor::InsertIntoAutoloadingState:\n"
+          "   Missing FileEntry for " << FileName << "\n";
+        if (NamedDecl* ND = dyn_cast<NamedDecl>(decl)) {
+          llvm::errs() << "   requested to autoload type ";
+          ND->getNameForDiagnostic(llvm::errs(),
+                                   ND->getASTContext().getPrintingPolicy(),
+                                   true /*qualified*/);
+          llvm::errs() << "\n";
+        }
       }
     }
 
