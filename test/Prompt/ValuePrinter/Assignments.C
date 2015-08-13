@@ -19,8 +19,7 @@ E.d // CHECK: (int) 22
 
 #include <string>
 std::string s("xyz")
-// CHECK: (std::string &) @0x{{[0-9A-Fa-f]{6,12}.}}
-// CHECK: c_str: "xyz"
+// CHECK: (std::string &) "xyz"
 
 #include <limits.h>
 class Outer {
@@ -48,8 +47,8 @@ e2
 
 
 // Arrays:
-float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0.000000e+00, 1.000000e+00, 2.000000e+00, 3.000000e+00, 4.000000e+00... }
-std::string sarr[3] = {"A", "B", "C"} // CHECK: (std::string [3]) { @0x{{[0-9A-Fa-f]{6,12}.}} c_str: "A", @0x{{[0-9A-Fa-f]{6,12}.}} c_str: "B", @0x{{[0-9A-Fa-f]{6,12}.}} c_str: "C" }
+float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0, 1, 2, 3, 4, 5 }
+std::string sarr[3] = {"A", "B", "C"} // CHECK: (std::string [3]) { "A", "B", "C" }
 
 .rawInput
 typedef void (*F_t)(int);

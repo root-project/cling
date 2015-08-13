@@ -10,11 +10,9 @@
 // RUN: %cling %s 2>&1 | FileCheck %s
 
 //CHECK-NOT: {{.*error|warning|note:.*}}
-float shebang = 1.0
-//CHECK: (float) 1.0
+float shebang = 1.0 //CHECK: (float) 1
 extern "C" int printf(const char* fmt, ...);
 if(shebang == 1.0) {
   printf("I am executed\n"); // CHECK: I am executed
 }
 .q
-

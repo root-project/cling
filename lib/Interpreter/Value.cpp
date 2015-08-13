@@ -354,115 +354,18 @@ namespace cling {
   }
 
   namespace valuePrinterInternal {
-    void printValue_Default(llvm::raw_ostream& o, const Value& V);
-    void printType_Default(llvm::raw_ostream& o, const Value& V);
+    std::string printType_New(const Value& V);
+    std::string printValue_New(const Value& V);
   } // end namespace valuePrinterInternal
 
   void Value::print(llvm::raw_ostream& Out) const {
-    // Try to find user defined printing functions:
-    // cling::printType(const void* const p, TY* const u, const Value& V) and
-    // cling::printValue(const void* const p, TY* const u, const Value& V)
 
-    using namespace clang;
-    Sema& SemaR = m_Interpreter->getSema();
-    ASTContext& C = SemaR.getASTContext();
-    NamespaceDecl* ClingNSD = utils::Lookup::Namespace(&SemaR, "cling");
-    SourceLocation noLoc;
-    LookupResult R(SemaR, &C.Idents.get("printType"), noLoc,
-                   Sema::LookupOrdinaryName, Sema::ForRedeclaration);
-    assert(ClingNSD && "There must be a valid namespace.");
+    // Get the default type string representation
+    std::string typeStr = cling::valuePrinterInternal::printType_New(*this);
+    // Get the value string representation, by printValue() method overloading
+    std::string valueStr = cling::valuePrinterInternal::printValue_New(*this);
 
-    {
-      // Could trigger deserialization of decls.
-      cling::Interpreter::PushTransactionRAII RAII(m_Interpreter);
-      SemaR.LookupQualifiedName(R, ClingNSD);
-      // We commit here because the possibly deserialized decls from the lookup
-      // will be needed by evaluate.
-    }
-    QualType ValueTy = this->getType().getNonReferenceType();
-    bool ValidAddress = true;
-    if (!ValueTy->isPointerType())
-      ValueTy = C.getPointerType(ValueTy);
-    else
-       ValidAddress = isAddressValid(this->getPtr());
-    ValueTy = utils::TypeName::GetFullyQualifiedType(ValueTy, getASTContext());
-    PrintingPolicy Policy(m_Interpreter->getCI()->getLangOpts());
-    std::string ValueTyStr = ValueTy.getAsString(Policy);
-    std::string typeStr;
-    std::string valueStr;
-
-    if (ValidAddress && hasViableCandidateToCall(R, *this)) {
-      // There is such a routine call, it:
-      std::stringstream printTypeSS;
-      printTypeSS << "cling::printType(";
-      printTypeSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
-      printTypeSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
-      printTypeSS <<"(*(cling::Value*)" << this << "));";
-      Value printTypeV;
-      m_Interpreter->evaluate(printTypeSS.str(), printTypeV);
-      assert(printTypeV.isValid() && "Must return valid value.");
-      typeStr = *(std::string*)printTypeV.getPtr();
-      // CXXScopeSpec CSS;
-      // Expr* UnresolvedLookup
-      //   = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).take();
-      // // Build Arg1: const void* const p
-      // QualType ConstVoidPtrTy = C.VoidPtrTy.withConst();
-      // Expr* Arg1
-      //   = utils::Synthesize::CStyleCastPtrExpr(SemaR, ConstVoidPtrTy,
-      //                                          (uint64_t)this->getPtr());
-
-      // // Build Arg2: TY* const u
-      // Expr* Arg2
-      //   = utils::Synthesize::CStyleCastPtrExpr(SemaR, ValueTy,
-      //                                          (uint64_t)this->getPtr());
-
-      // // Build Arg3: const Value&
-      // RecordDecl* ClingValueDecl
-      //   = dyn_cast<RecordDecl>(utils::Lookup::Named(SemaR, "Value",ClingNSD));
-      // assert(ClingValueDecl && "Declaration must be found!");
-      // QualType ClingValueTy = m_Context->getTypeDeclType(ClingValueDecl);
-      // Expr* Arg3
-      //   = utils::Synthesize::CStyleCastPtrExpr(m_Sema, ClingValueTy,
-      //                                          (uint64_t)this);
-      // llvm::SmallVector<Expr*, 4> CallArgs;
-      // CallArgs.push_back(Arg1);
-      // CallArgs.push_back(Arg2);
-      // CallArgs.push_back(Arg3);
-      // Expr* Call = m_Sema->ActOnCallExpr(/*Scope*/0, UnresolvedLookup, noLoc,
-      //                                    CallArgs, noLoc).take();
-    }
-    else {
-      llvm::raw_string_ostream o(typeStr);
-      cling::valuePrinterInternal::printType_Default(o, *this);
-    }
-    R.clear();
-    R.setLookupName(&C.Idents.get("printValue"));
-    {
-      // Could trigger deserialization of decls.
-      cling::Interpreter::PushTransactionRAII RAII(m_Interpreter);
-      SemaR.LookupQualifiedName(R, ClingNSD);
-      // We commit here because the possibly deserialized decls from the lookup
-      // will be needed by evaluate.
-    }
-
-    if (ValidAddress && hasViableCandidateToCall(R, *this)) {
-      // There is such a routine call it:
-      std::stringstream printValueSS;
-      printValueSS << "cling::printValue(";
-      printValueSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
-      printValueSS << '(' << ValueTyStr << ')' << this->getPtr() << ',';
-      printValueSS <<"(*(cling::Value*)" << this << "));";
-      Value printValueV;
-      m_Interpreter->evaluate(printValueSS.str(), printValueV);
-      assert(printValueV.isValid() && "Must return valid value.");
-      valueStr = *(std::string*)printValueV.getPtr();
-    }
-    else {
-      llvm::raw_string_ostream o(valueStr);
-      cling::valuePrinterInternal::printValue_Default(o, *this);
-    }
-
-    // print the type and the value:
+    // Print the type and the value:
     Out << typeStr + valueStr << "\n";
   }
 
