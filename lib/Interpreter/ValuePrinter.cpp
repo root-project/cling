@@ -760,7 +760,7 @@ namespace valuePrinterInternal {
     strm << ValueTyStr;
     if (V.getType()->isReferenceType())
       strm << " &";
-    strm << ") ";
+    strm << ")";
     return strm.str();
   }
 
