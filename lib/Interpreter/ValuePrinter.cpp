@@ -433,8 +433,10 @@ static std::string getCastValueString(const Value &V) {
     typeWithOptDeref << "(" << type << ")";
   } else if (Ty->isPointerType()) {
     if (Ty->getPointeeType()->isCharType()) {
+      // Print char pointers as strings.
       typeWithOptDeref << "(" << type << ")";
     } else {
+      // Fallback to void pointer for other pointers and print the address.
       typeWithOptDeref << "(void*)";
     }
   } else if (Ty->isArrayType()) {
@@ -445,18 +447,21 @@ static std::string getCastValueString(const Value &V) {
       const llvm::APInt& APSize = CArrTy->getSize();
       size_t size = (size_t)APSize.getZExtValue();
 
+      // typeWithOptDeref example for int[40] array: "((int(&)[40])*(void*)0x5c8f260)"
       typeWithOptDeref << "(" << ElementTy.getAsString() << "(&)[" << size << "])*(void*)";
     } else {
       typeWithOptDeref << "(void*)";
     }
   } else {
+    // In other cases, dereference the address of the object.
+    // If no overload or specific template matches,
+    // the general template will be used which only prints the address.
     typeWithOptDeref << "*(" << type << "*)";
   }
 
   strm << typeWithOptDeref.str() << getValueString(V) << suffix.str();
   return strm.str();
 }
-
 
 static std::string printEnumValue(const Value &V){
   std::stringstream enumString;
@@ -766,6 +771,8 @@ namespace valuePrinterInternal {
 
   std::string printValue_New(const Value& V) {
     static bool includedRuntimePrintValue = false; // initialized only once as a static function variable
+    // Include "RuntimePrintValue.h" only on the first printing.
+    // This keeps the interpreter lightweight and reduces the startup time.
     if(!includedRuntimePrintValue) {
       V.getInterpreter()->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
       includedRuntimePrintValue = true;
@@ -774,6 +781,7 @@ namespace valuePrinterInternal {
     clang::QualType Ty = V.getType().getDesugaredType(C);
 
     if(Ty-> isNullPtrType()) {
+      // special case nullptr_t
       return "@0x0";
     } else if (Ty->isEnumeralType()) {
       // special case enum printing, using compiled information
