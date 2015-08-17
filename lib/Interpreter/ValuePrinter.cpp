@@ -259,7 +259,7 @@ static void StreamClingValue(llvm::raw_ostream& o, const Value* value) {
     clang::QualType QT = value->getType();
     o << "boxes [";
     o << "("
-      << QT.getAsString(C.getPrintingPolicy())
+      << cling::utils::TypeName::GetFullyQualifiedName(QT, C)
       << ") ";
     clang::QualType valType = QT.getDesugaredType(C).getNonReferenceType();
     if (C.hasSameType(valType, C.LongDoubleTy))
@@ -339,7 +339,7 @@ static void StreamValue(llvm::raw_ostream& o, const void* V,
       StreamObj(o, V, Ty);
     }
   }
-  else if (Ty.getAsString().compare("std::string") == 0) {
+  else if (cling::utils::TypeName::GetFullyQualifiedName(Ty, C).compare("std::string") == 0) {
     StreamObj(o, V, Ty);
     o << " "; // force a space
     o <<"c_str: ";
@@ -485,7 +485,7 @@ static std::string getCastValueString(const Value &V) {
       size_t size = (size_t)APSize.getZExtValue();
 
       // typeWithOptDeref example for int[40] array: "((int(&)[40])*(void*)0x5c8f260)"
-      typeWithOptDeref << "(" << ElementTy.getAsString() << "(&)[" << size << "])*(void*)";
+      typeWithOptDeref << "(" << cling::utils::TypeName::GetFullyQualifiedName(ElementTy, C) << "(&)[" << size << "])*(void*)";
     } else {
       typeWithOptDeref << "(void*)";
     }
@@ -789,7 +789,7 @@ namespace cling {
       clang::QualType QT = value.getType();
       strm << "boxes [";
       strm << "("
-      << QT.getAsString(C.getPrintingPolicy())
+      << cling::utils::TypeName::GetFullyQualifiedName(QT, C)
       << ") ";
       strm << printUnpackedClingValue(value);
       strm << "]";
