@@ -64,8 +64,8 @@ extern "C" void cling_PrintValue(void* /*cling::Value**/ V) {
   // the results in pipes (Savannah #99234).
   //llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
 
-  //std::string typeStr = printType(value->getPtr(), value->getPtr(), *value);
-  //std::string valueStr = printValue(value->getPtr(), value->getPtr(), *value);
+  //std::string typeStr = printType_New(*value);
+  //std::string valueStr = printValue_New(*value);
 }
 
 // Checking whether the pointer points to a valid memory location
@@ -612,6 +612,33 @@ static std::string invokePrintValueOverload(const Value& V) {
   return *(std::string*)printValueV.getPtr();
 }
 
+static std::string printUnpackedClingValue(const Value& V) {
+  std::stringstream strm;
+
+  clang::ASTContext& C = V.getASTContext();
+  clang::QualType QT = V.getType();
+  clang::QualType Ty = QT.getDesugaredType(C).getNonReferenceType();
+
+  if(Ty-> isNullPtrType()) {
+    // special case nullptr_t
+    strm << "<<<NULL>>>";
+  } else if (Ty->isEnumeralType()) {
+    // special case enum printing, using compiled information
+    strm << printEnumValue(V);
+  } else if (Ty->isFunctionType()) {
+    // special case function printing, using compiled information
+    strm << printFunctionValue(V, &V, Ty);
+  } else if ((Ty->isPointerType() || Ty->isMemberPointerType()) && Ty->getPointeeType()->isFunctionProtoType()) {
+    // special case function printing, using compiled information
+    strm << printFunctionValue(V, V.getPtr(), Ty->getPointeeType());
+  } else {
+    // normal case, modular printing using cling::printValue
+    strm << invokePrintValueOverload(V);
+  }
+
+  return strm.str();
+}
+
 namespace cling {
 
   std::string printValue(void* ptr) {
@@ -764,21 +791,7 @@ namespace cling {
       strm << "("
       << QT.getAsString(C.getPrintingPolicy())
       << ") ";
-      clang::QualType valType = QT.getDesugaredType(C).getNonReferenceType();
-      if (C.hasSameType(valType, C.LongDoubleTy))
-        strm << value.simplisticCastAs<long double>() << "L";
-      else if (valType->isFloatingType())
-        strm << value.simplisticCastAs<double>();
-      else if (valType->isIntegerType()) {
-        if (valType->hasSignedIntegerRepresentation())
-          strm << value.simplisticCastAs<long long>();
-        else
-        strm << value.simplisticCastAs<unsigned long long>();
-      } else if (valType->isBooleanType())
-        strm << (value.simplisticCastAs<bool>() ? "true" : "false");
-      else if (!valType->isVoidType()) {
-        strm << invokePrintValueOverload(value);
-      }
+      strm << printUnpackedClingValue(value);
       strm << "]";
     }
 
@@ -819,25 +832,7 @@ namespace valuePrinterInternal {
       V.getInterpreter()->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
       includedRuntimePrintValue = true;
     }
-    clang::ASTContext& C = V.getASTContext();
-    clang::QualType Ty = V.getType().getDesugaredType(C);
-
-    if(Ty-> isNullPtrType()) {
-      // special case nullptr_t
-      return "@0x0";
-    } else if (Ty->isEnumeralType()) {
-      // special case enum printing, using compiled information
-      return printEnumValue(V);
-    } else if (Ty->isFunctionType()) {
-      // special case function printing, using compiled information
-      return printFunctionValue(V, &V, Ty);
-    } else if ((Ty->isPointerType() || Ty->isMemberPointerType()) && Ty->getPointeeType()->isFunctionProtoType()) {
-      // special case function printing, using compiled information
-      return printFunctionValue(V, V.getPtr(), Ty->getPointeeType());
-    } else {
-      // normal case, modular printing using cling::printValue
-      return invokePrintValueOverload(V);
-    }
+    return printUnpackedClingValue(V);
   }
 } // end namespace valuePrinterInternal
 } // end namespace cling
