@@ -30,41 +30,7 @@
 #include <iostream>
 #include <sstream>
 
-// For address validation
-#ifdef LLVM_ON_WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
-
 namespace {
-  static bool isAddressValid(void* P) {
-    if (!P || P == (void*)-1)
-      return false;
-
-#ifdef LLVM_ON_WIN32
-    MEMORY_BASIC_INFORMATION MBI;
-    if (!VirtualQuery(P, &MBI, sizeof(MBI)))
-      return false;
-    if (MBI.State != MEM_COMMIT)
-      return false;
-    return true;
-#else
-    // There is a POSIX way of finding whether an address can be accessed for
-    // reading: write() will return EFAULT if not.
-    int FD[2];
-    if (pipe(FD))
-      return false; // error in pipe()? Be conservative...
-    int NBytes = write(FD[1], P, 1/*byte*/);
-    close(FD[0]);
-    close(FD[1]);
-    if (NBytes != 1) {
-      assert(errno == EFAULT && "unexpected pipe write error");
-      return false;
-    }
-    return true;
-#endif
-  }
 
   ///\brief The allocation starts with this layout; it is followed by the
   ///  value's object at m_Payload. This class does not inherit from
@@ -303,54 +269,6 @@ namespace cling {
 
     return m_Interpreter->compileFunction(funcname, code, true /*ifUniq*/,
                                           false /*withAccessControl*/);
-  }
-
-  static bool hasViableCandidateToCall(clang::LookupResult& R,
-                                       const cling::Value& V) {
-    if (R.empty())
-      return false;
-    using namespace clang;
-    ASTContext& C = V.getASTContext();
-    Sema& SemaR = R.getSema();
-    OverloadCandidateSet overloads(SourceLocation(),
-                                    OverloadCandidateSet::CSK_Normal);
-    QualType Ty = V.getType().getNonReferenceType();
-    if (!Ty->isPointerType())
-      Ty = C.getPointerType(Ty);
-
-    NamespaceDecl* ClingNSD = utils::Lookup::Namespace(&SemaR, "cling");
-    RecordDecl* ClingValueDecl
-      = dyn_cast<RecordDecl>(utils::Lookup::Named(&SemaR, "Value",
-                                                  ClingNSD));
-    assert(ClingValueDecl && "Declaration must be found!");
-    QualType ClingValueTy = C.getTypeDeclType(ClingValueDecl);
-
-    // The OverloadCandidateSet requires a QualType to be passed in through an
-    // Expr* as part of Args. We know that we won't be using any node generated.
-    // We need only an answer whether there is an overload taking these argument
-    // types. We cannot afford to create useless Expr* on the AST for this
-    // utility function which may be called thousands of times. Instead, we
-    // create them on the stack and pretend they are on the heap. We get our
-    // answer and forget about doing anything wrong.
-    llvm::SmallVector<Expr, 4> exprsOnStack;
-    SourceLocation noLoc;
-    exprsOnStack.push_back(CXXNullPtrLiteralExpr(Ty, noLoc));
-    exprsOnStack.push_back(CXXNullPtrLiteralExpr(Ty, noLoc));
-    exprsOnStack.push_back(CXXNullPtrLiteralExpr(ClingValueTy, noLoc));
-    llvm::SmallVector<Expr*, 4> exprsFakedOnHeap;
-    exprsFakedOnHeap.push_back(&exprsOnStack[0]);
-    exprsFakedOnHeap.push_back(&exprsOnStack[1]);
-    exprsFakedOnHeap.push_back(&exprsOnStack[2]);
-    llvm::ArrayRef<Expr*> Args = llvm::makeArrayRef(exprsFakedOnHeap.data(),
-                                                    exprsFakedOnHeap.size());
-    // Could trigger deserialization of decls.
-    cling::Interpreter::PushTransactionRAII RAII(V.getInterpreter());
-    SemaR.AddFunctionCandidates(R.asUnresolvedSet(), Args, overloads);
-
-    OverloadCandidateSet::iterator Best;
-    OverloadingResult OR = overloads.BestViableFunction(SemaR,
-                                                        SourceLocation(), Best);
-    return OR == OR_Success;
   }
 
   namespace valuePrinterInternal {

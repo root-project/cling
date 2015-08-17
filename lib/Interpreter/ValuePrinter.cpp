@@ -46,6 +46,13 @@
 //#endif
 #endif
 
+// For address validation
+#ifdef LLVM_ON_WIN32
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
 using namespace cling;
 
 // Implements the CValuePrinter interface.
@@ -61,6 +68,36 @@ extern "C" void cling_PrintValue(void* /*cling::Value**/ V) {
   //std::string valueStr = printValue(value->getPtr(), value->getPtr(), *value);
 }
 
+// Checking whether the pointer points to a valid memory location
+// Used for checking of void* output
+// Should be moved to earlier stages (ex. IR) in the future
+static bool isAddressValid(void* P) {
+  if (!P || P == (void*)-1)
+    return false;
+
+#ifdef LLVM_ON_WIN32
+    MEMORY_BASIC_INFORMATION MBI;
+    if (!VirtualQuery(P, &MBI, sizeof(MBI)))
+      return false;
+    if (MBI.State != MEM_COMMIT)
+      return false;
+    return true;
+#else
+  // There is a POSIX way of finding whether an address can be accessed for
+  // reading: write() will return EFAULT if not.
+  int FD[2];
+  if (pipe(FD))
+    return false; // error in pipe()? Be conservative...
+  int NBytes = write(FD[1], P, 1/*byte*/);
+  close(FD[0]);
+  close(FD[1]);
+  if (NBytes != 1) {
+    assert(errno == EFAULT && "unexpected pipe write error");
+    return false;
+  }
+  return true;
+#endif
+}
 
 static void StreamValue(llvm::raw_ostream& o, const void* V, clang::QualType QT,
                         cling::Interpreter& interp);
@@ -583,6 +620,10 @@ namespace cling {
       strm << "<<<NULL>>>";
     } else {
       strm << ptr;
+      if (isAddressValid(ptr))
+        strm << " VALID";
+      else
+        strm << " INVALID";
     }
     return strm.str();
   }
