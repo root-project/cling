@@ -87,9 +87,9 @@ namespace cling {
   // Collections and general fallback entry function
   template<typename CollectionType>
   auto printValue(const CollectionType &obj)
-  -> decltype(printValue_impl(obj, 0), std::string())
+  -> decltype(internal::printValue_impl(obj, 0), std::string())
   {
-    return printValue_impl(obj, (short)0);  // short -> int -> long = priority order
+    return internal::printValue_impl(obj, (short)0);  // short -> int -> long = priority order
   }
 
   // Arrays
