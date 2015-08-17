@@ -225,21 +225,27 @@ static std::string printEnumValue(const Value &V){
   std::stringstream enumString;
   clang::ASTContext& C = V.getASTContext();
   clang::QualType Ty = V.getType().getDesugaredType(C);
-  clang::EnumDecl* ED = Ty.getNonReferenceType()->getAs<clang::EnumType>()->getDecl();
-  uint64_t value = *(const uint64_t*)&V;
-  bool IsFirst = true;
-  llvm::APSInt ValAsAPSInt = C.MakeIntValue(value, Ty);
-  for (clang::EnumDecl::enumerator_iterator I = ED->enumerator_begin(),
-           E = ED->enumerator_end(); I != E; ++I) {
-    if (I->getInitVal() == ValAsAPSInt) {
-      if (!IsFirst) {
-        enumString << " ? ";
+  const clang::EnumType *EnumTy = Ty.getNonReferenceType()->getAs<clang::EnumType>();
+  if(EnumTy != 0) {
+    clang::EnumDecl *ED = EnumTy->getDecl();
+    uint64_t value = *(const uint64_t *) &V;
+    bool IsFirst = true;
+    llvm::APSInt ValAsAPSInt = C.MakeIntValue(value, Ty);
+    for (clang::EnumDecl::enumerator_iterator I = ED->enumerator_begin(),
+             E = ED->enumerator_end(); I != E; ++I) {
+      if (I->getInitVal() == ValAsAPSInt) {
+        if (!IsFirst) {
+          enumString << " ? ";
+        }
+        enumString << "(" << I->getQualifiedNameAsString() << ")";
+        IsFirst = false;
       }
-      enumString << "(" << I->getQualifiedNameAsString() << ")";
-      IsFirst = false;
     }
+    enumString << " : (int) " << ValAsAPSInt.toString(/*Radix = */10);
+  } else {
+    // Should not happen, we check for isEnumeralType before invoking this func
+    enumString << "ERROR: Value is not of enum type!";
   }
-  enumString << " : (int) " << ValAsAPSInt.toString(/*Radix = */10);
   return enumString.str();
 }
 
