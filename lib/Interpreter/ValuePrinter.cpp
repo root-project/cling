@@ -749,7 +749,8 @@ namespace valuePrinterInternal {
   std::string printType_New(const Value& V) {
     using namespace clang;
     std::ostringstream strm;
-    QualType QT = V.getType().getNonReferenceType();
+    clang::ASTContext& C = V.getASTContext();
+    QualType QT = V.getType().getDesugaredType(C).getNonReferenceType();
     std::string ValueTyStr;
     if (const TypedefType* TDTy = dyn_cast<TypedefType>(QT))
       ValueTyStr = TDTy->getDecl()->getQualifiedNameAsString();
@@ -757,7 +758,7 @@ namespace valuePrinterInternal {
       ValueTyStr = TTy->getDecl()->getQualifiedNameAsString();
 
     if (ValueTyStr.empty())
-      ValueTyStr = QT.getAsString();
+      ValueTyStr = cling::utils::TypeName::GetFullyQualifiedName(QT, C);
     else if (QT.hasQualifiers())
       ValueTyStr = QT.getQualifiers().getAsString() + " " + ValueTyStr;
 
@@ -796,90 +797,6 @@ namespace valuePrinterInternal {
       // normal case, modular printing using cling::printValue
       return invokePrintValueOverload(V);
     }
-  }
-
-  void printValue_Default(llvm::raw_ostream& o, const Value& V) {
-    clang::ASTContext& C = V.getASTContext();
-    clang::QualType Ty = V.getType().getDesugaredType(C);
-    Interpreter& Interp = *const_cast<Interpreter*>(V.getInterpreter());
-    if (const clang::BuiltinType *BT
-        = llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
-      switch (BT->getKind()) {
-      case clang::BuiltinType::Bool: // intentional fall through
-      case clang::BuiltinType::Char_U: // intentional fall through
-      case clang::BuiltinType::Char_S: // intentional fall through
-      case clang::BuiltinType::SChar: // intentional fall through
-      case clang::BuiltinType::Short: // intentional fall through
-      case clang::BuiltinType::Int: // intentional fall through
-      case clang::BuiltinType::Long: // intentional fall through
-      case clang::BuiltinType::LongLong: {
-        long long res = V.getLL();
-        StreamValue(o, (const void*)&res, Ty, Interp);
-      }
-        break;
-      case clang::BuiltinType::UChar: // intentional fall through
-      case clang::BuiltinType::UShort: // intentional fall through
-      case clang::BuiltinType::UInt: // intentional fall through
-      case clang::BuiltinType::ULong: // intentional fall through
-      case clang::BuiltinType::ULongLong: {
-        unsigned long long res = V.getULL();
-        StreamValue(o, (const void*)&res, Ty, Interp);
-      }
-        break;
-      case clang::BuiltinType::Float: {
-        float res = V.getFloat();
-        StreamValue(o, (const void*)&res, Ty, Interp);
-      }
-        break;
-      case clang::BuiltinType::Double: {
-        double res = V.getDouble();
-        StreamValue(o, (const void*)&res, Ty, Interp);
-      }
-        break;
-      case clang::BuiltinType::LongDouble: {
-        long double res = V.getLongDouble();
-        StreamValue(o, (const void*)&res, Ty, Interp);
-      }
-        break;
-      default:
-        StreamValue(o, V.getPtr(), Ty, Interp);
-        break;
-      }
-    }
-    else if (Ty->isIntegralOrEnumerationType()) {
-      long long res = V.getLL();
-      StreamValue(o, &res, Ty, Interp);
-    }
-    else if (Ty->isFunctionType())
-      StreamValue(o, &V, Ty, Interp);
-    else if (Ty->isPointerType() || Ty->isReferenceType()
-              || Ty->isArrayType())
-      StreamValue(o, V.getPtr(), Ty, Interp);
-    else {
-      // struct case.
-      StreamValue(o, V.getPtr(), Ty, Interp);
-    }
-  }
-
-  void printType_Default(llvm::raw_ostream& o, const Value& V) {
-    using namespace clang;
-    QualType QT = V.getType().getNonReferenceType();
-    std::string ValueTyStr;
-    if (const TypedefType* TDTy = dyn_cast<TypedefType>(QT))
-      ValueTyStr = TDTy->getDecl()->getQualifiedNameAsString();
-    else if (const TagType* TTy = dyn_cast<TagType>(QT))
-      ValueTyStr = TTy->getDecl()->getQualifiedNameAsString();
-
-    if (ValueTyStr.empty())
-      ValueTyStr = QT.getAsString();
-    else if (QT.hasQualifiers())
-      ValueTyStr = QT.getQualifiers().getAsString() + " " + ValueTyStr;
-
-    o << "(";
-    o << ValueTyStr;
-    if (V.getType()->isReferenceType())
-      o << " &";
-    o << ") ";
   }
 } // end namespace valuePrinterInternal
 } // end namespace cling
