@@ -753,13 +753,9 @@ namespace cling {
     if (!val) {
       strm << "<<<NULL>>>";
     } else {
-      const char *cobj = val;
-      int i = 0;
       strm << "\"";
-      while (*cobj != 0) {
+      for (const char *cobj = val; *cobj != 0; ++cobj) {
         strm << *cobj;
-        cobj++;
-        i++;
       }
       strm << "\"";
     }
