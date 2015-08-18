@@ -45,9 +45,9 @@ q // CHECK: (const int *) 0x123
 0.00001234L // CHECK: (long double) 1.234e-05L
 
 // PR ROOT-5467
-&A::someFunc // CHECK: (int (class A::*)(float)) Function @0x{{[0-9a-f]+}}
+&A::someFunc // CHECK: (int (A::*)(float)) Function @0x{{[0-9a-f]+}}
 
-nullptr // CHECK: (nullptr_t) @0x0
+nullptr // CHECK: (nullptr_t) <<<NULL>>>
 
 #include <unordered_set>
 std::unordered_multiset<float> {1} // ROOT-7310

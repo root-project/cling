@@ -514,7 +514,9 @@ namespace cling {
       strm << "("
       << cling::utils::TypeName::GetFullyQualifiedName(QT, C)
       << ") ";
-      strm << printUnpackedClingValue(value);
+      if (!QT->isVoidType()) {
+        strm << printUnpackedClingValue(value);
+      }
       strm << "]";
     }
 
@@ -527,7 +529,7 @@ namespace valuePrinterInternal {
     using namespace clang;
     std::ostringstream strm;
     clang::ASTContext& C = V.getASTContext();
-    QualType QT = V.getType().getDesugaredType(C).getNonReferenceType();
+    QualType QT = V.getType().getNonReferenceType();
     std::string ValueTyStr;
     if (const TypedefType* TDTy = dyn_cast<TypedefType>(QT))
       ValueTyStr = TDTy->getDecl()->getQualifiedNameAsString();
