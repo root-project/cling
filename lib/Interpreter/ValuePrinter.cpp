@@ -348,7 +348,7 @@ static std::string printUnpackedClingValue(const Value& V) {
 
   if(Ty-> isNullPtrType()) {
     // special case nullptr_t
-    strm << "nullptr";
+    strm << "nullptr_t";
   } else if (Ty->isEnumeralType()) {
     // special case enum printing, using compiled information
     strm << printEnumValue(V);
@@ -382,11 +382,7 @@ namespace cling {
 
   // Bool
   std::string printValue(bool val) {
-    if (val) {
-      return "true";
-    } else {
-      return "false";
-    }
+    return val ? "true" : "false";
   }
 
   // Chars

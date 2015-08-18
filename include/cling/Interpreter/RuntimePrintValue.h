@@ -13,6 +13,8 @@
 
 namespace cling {
 
+  class Value;
+
   // void pointer
   std::string printValue(void *ptr);
 
@@ -58,7 +60,6 @@ namespace cling {
   // std::string
   std::string printValue(const std::string &val);
 
-  class Value;
   // cling::Value
   std::string printValue(const Value &value);
 
