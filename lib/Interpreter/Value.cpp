@@ -272,16 +272,16 @@ namespace cling {
   }
 
   namespace valuePrinterInternal {
-    std::string printType_New(const Value& V);
-    std::string printValue_New(const Value& V);
+    std::string printTypeInternal(const Value& V);
+    std::string printValueInternal(const Value& V);
   } // end namespace valuePrinterInternal
 
   void Value::print(llvm::raw_ostream& Out) const {
 
     // Get the default type string representation
-    std::string typeStr = cling::valuePrinterInternal::printType_New(*this);
+    std::string typeStr = cling::valuePrinterInternal::printTypeInternal(*this);
     // Get the value string representation, by printValue() method overloading
-    std::string valueStr = cling::valuePrinterInternal::printValue_New(*this);
+    std::string valueStr = cling::valuePrinterInternal::printValueInternal(*this);
 
     // Print the type and the value:
     Out << typeStr + " " + valueStr << "\n";

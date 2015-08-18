@@ -10,7 +10,6 @@
 #define CLING_RUNTIME_PRINT_VALUE_H
 
 #include <string>
-#include "Value.h"
 
 namespace cling {
 
@@ -59,6 +58,7 @@ namespace cling {
   // std::string
   std::string printValue(const std::string &val);
 
+  class Value;
   // cling::Value
   std::string printValue(const Value &value);
 
@@ -99,7 +99,7 @@ namespace cling {
 
     for (int i = 0; i < N; ++i) {
       str = str + printValue(obj[i]);
-      if (i < N-1) str = str + ", ";
+      if (i < N-1) str += ", ";
     }
 
     return str + " }";

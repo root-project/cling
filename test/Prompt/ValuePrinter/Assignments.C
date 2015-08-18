@@ -11,7 +11,7 @@ int a = 12;
 a // CHECK: (int) 12
 
 const char* b = "b" // CHECK: (const char *) "b"
-   const char* n = 0 // CHECK: (const char *) <<<NULL>>
+   const char* n = 0 // CHECK: (const char *) nullptr
 
 struct C {int d;} E = {22};
 E // CHECK: (struct C &) @0x{{[0-9A-Fa-f]{6,12}.}}
@@ -47,7 +47,7 @@ e2
 
 
 // Arrays:
-float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0, 1, 2, 3, 4, 5 }
+float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0.00000f, 1.00000f, 2.00000f, 3.00000f, 4.00000f, 5.00000f }
 std::string sarr[3] = {"A", "B", "C"} // CHECK: (std::string [3]) { "A", "B", "C" }
 
 .rawInput

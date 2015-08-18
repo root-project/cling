@@ -64,8 +64,8 @@ extern "C" void cling_PrintValue(void* /*cling::Value**/ V) {
   // the results in pipes (Savannah #99234).
   //llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
 
-  //std::string typeStr = printType_New(*value);
-  //std::string valueStr = printValue_New(*value);
+  //std::string typeStr = printTypeInternal(*value);
+  //std::string valueStr = printValueInternal(*value);
 }
 
 // Checking whether the pointer points to a valid memory location
@@ -348,7 +348,7 @@ static std::string printUnpackedClingValue(const Value& V) {
 
   if(Ty-> isNullPtrType()) {
     // special case nullptr_t
-    strm << "<<<NULL>>>";
+    strm << "nullptr";
   } else if (Ty->isEnumeralType()) {
     // special case enum printing, using compiled information
     strm << printEnumValue(V);
@@ -369,42 +369,52 @@ static std::string printUnpackedClingValue(const Value& V) {
 namespace cling {
 
   std::string printValue(void* ptr) {
-    std::ostringstream strm;
     if (!ptr) {
-      strm << "<<<NULL>>>";
+      return "nullptr";
     } else {
+      std::ostringstream strm;
       strm << ptr;
-      if (isAddressValid(ptr))
-        strm << " VALID";
-      else
-        strm << " INVALID";
+      if (!isAddressValid(ptr))
+        strm << " <invalid memory address>";
+      return strm.str();
     }
-    return strm.str();
   }
 
   // Bool
   std::string printValue(bool val) {
-    std::ostringstream strm;
-    strm << std::boolalpha;
-    strm << val;
-    strm << std::noboolalpha;
-    return strm.str();
+    if (val) {
+      return "true";
+    } else {
+      return "false";
+    }
   }
 
   // Chars
-  std::string printValue(char val) {
+
+  static std::string printChar(signed char val, bool apostrophe){
     std::ostringstream strm;
-    if (val > 0x1F && val < 0x7F) strm << "'" << val << "'";
-    else strm << "0x" << std::hex << (int) val << std::dec;
+    if (val > 0x1F && val < 0x7F) {
+      if (apostrophe)
+        strm << "'";
+      strm << val;
+      if (apostrophe)
+        strm << "'";
+    } else {
+      strm << "0x" << std::hex << (int) val;
+    }
     return strm.str();
   }
 
-  std::string printValue(signed char val) {
-    return printValue((char) val);
+  std::string printValue(char val) {
+    return printChar(val, true);
   }
 
-  std::string printValue(const unsigned char val) {
-    return printValue((char) val);
+  std::string printValue(signed char val) {
+    return printChar(val, true);
+  }
+
+  std::string printValue(unsigned char val) {
+    return printChar(val, true);
   }
 
   // Ints
@@ -458,13 +468,13 @@ namespace cling {
 
   std::string printValue(float val) {
     std::ostringstream strm;
-    strm << val;
+    strm << std::showpoint << val << "f";
     return strm.str();
   }
 
   std::string printValue(double val) {
     std::ostringstream strm;
-    strm << val;
+    strm << std::showpoint << val;
     return strm.str();
   }
 
@@ -476,17 +486,18 @@ namespace cling {
 
   // Char pointers
   std::string printValue(const char *const val) {
-    std::ostringstream strm;
     if (!val) {
-      strm << "<<<NULL>>>";
+      return "nullptr";
     } else {
+      std::ostringstream strm;
       strm << "\"";
-      for (const char *cobj = val; *cobj != 0; ++cobj) {
-        strm << *cobj;
+      // 10000 limit to prevent potential printing of the whole RAM / inf loop
+      for (const char *cobj = val; *cobj != 0 && cobj-val < 10000; ++cobj) {
+        strm << printChar(*cobj, false);
       }
       strm << "\"";
+      return strm.str();
     }
-    return strm.str();
   }
 
   std::string printValue(char *val) {
@@ -495,11 +506,7 @@ namespace cling {
 
   // std::string
   std::string printValue(const std::string & val) {
-    std::ostringstream strm;
-    strm << "\"";
-    strm << val;
-    strm << "\"";
-    return strm.str();
+    return "\"" + val + "\"";
   }
 
   std::string printValue(const Value &value) {
@@ -525,7 +532,7 @@ namespace cling {
 
 namespace valuePrinterInternal {
 
-  std::string printType_New(const Value& V) {
+  std::string printTypeInternal(const Value& V) {
     using namespace clang;
     std::ostringstream strm;
     clang::ASTContext& C = V.getASTContext();
@@ -549,7 +556,7 @@ namespace valuePrinterInternal {
     return strm.str();
   }
 
-  std::string printValue_New(const Value& V) {
+  std::string printValueInternal(const Value& V) {
     static bool includedRuntimePrintValue = false; // initialized only once as a static function variable
     // Include "RuntimePrintValue.h" only on the first printing.
     // This keeps the interpreter lightweight and reduces the startup time.

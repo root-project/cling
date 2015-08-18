@@ -59,7 +59,7 @@ class A {};
 
 const clang::Decl* cl_A_in_NMP = lookup.findScope("N::M::P::A", diags);
 cl_A_in_NMP
-//CHECK: (const clang::Decl *) 0x{{[1-9a-f][0-9a-f]*}} VALID
+//CHECK: (const clang::Decl *) 0x{{[1-9a-f][0-9a-f]*$}}
 cast<clang::NamedDecl>(cl_A_in_NMP)->getQualifiedNameAsString().c_str()
 //CHECK-NEXT: ({{[^)]+}}) "N::M::P::A"
 
