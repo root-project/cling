@@ -62,6 +62,8 @@ int T(){
 
 // Make sure we have exactly one symbol of ~X(), i.e. that the unloading does
 // not remove it and CodeGen re-emits in upon seeing a new use in X c;
+12  // This is a temporary fix, not to allow .undo to try to unload RuntimePrintvalue.h
+    // If this is not here, the test hangs on first .undo 3 below. Should be investigated further.
 .storeState "preUnload2"
 .rawInput 1
 extern "C" int printf(const char*, ...);
