@@ -15,150 +15,147 @@ namespace cling {
 
   class Value;
 
+  // General fallback - prints the address
+  std::string printValue(const void *ptr);
+
   // void pointer
-  std::string printValue(void *ptr);
+  std::string printValue(const void **ptr);
 
   // Bool
-  std::string printValue(bool val);
+  std::string printValue(const bool *val);
 
   // Chars
-  std::string printValue(char val);
+  std::string printValue(const char *val);
 
-  std::string printValue(signed char val);
+  std::string printValue(const signed char *val);
 
-  std::string printValue(unsigned char val);
+  std::string printValue(const unsigned char *val);
 
   // Ints
-  std::string printValue(short val);
+  std::string printValue(const short *val);
 
-  std::string printValue(unsigned short val);
+  std::string printValue(const unsigned short *val);
 
-  std::string printValue(int val);
+  std::string printValue(const int *val);
 
-  std::string printValue(unsigned int val);
+  std::string printValue(const unsigned int *val);
 
-  std::string printValue(long val);
+  std::string printValue(const long *val);
 
-  std::string printValue(unsigned long val);
+  std::string printValue(const unsigned long *val);
 
-  std::string printValue(long long val);
+  std::string printValue(const long long *val);
 
-  std::string printValue(unsigned long long val);
+  std::string printValue(const unsigned long long *val);
 
   // Reals
-  std::string printValue(float val);
+  std::string printValue(const float *val);
 
-  std::string printValue(double val);
+  std::string printValue(const double *val);
 
-  std::string printValue(long double val);
+  std::string printValue(const long double *val);
 
   // Char pointers
-  std::string printValue(const char *const val);
+  std::string printValue(const char *const *val);
 
-  std::string printValue(char *val);
+  std::string printValue(const char **val);
 
   // std::string
-  std::string printValue(const std::string &val);
+  std::string printValue(const std::string *val);
 
   // cling::Value
-  std::string printValue(const Value &value);
+  std::string printValue(const Value *value);
 
-  namespace internal {
+  // Collections internal declaration
+  namespace collectionPrinterInternal {
     // Maps declaration
     template<typename CollectionType>
-    auto printValue_impl(const CollectionType &obj, short)
+    auto printValue_impl(const CollectionType *obj, short)
       -> decltype(
-      ++(obj.begin()), obj.end(),
-        obj.begin()->first, obj.begin()->second,
+      ++(obj->begin()), obj->end(),
+        obj->begin()->first, obj->begin()->second,
         std::string());
 
-    // Collections like vector, set, deque etc. declaration
+    // Vector, set, deque etc. declaration
     template<typename CollectionType>
-    auto printValue_impl(const CollectionType &obj, int)
+    auto printValue_impl(const CollectionType *obj, int)
       -> decltype(
-      ++(obj.begin()), obj.end(),
-        *(obj.begin()),
+      ++(obj->begin()), obj->end(),
+        *(obj->begin()),
         std::string());
 
-    // General fallback - print object address declaration
-    template<typename T>
-    std::string printValue_impl(const T &obj, long);
+    // No general fallback anymore here, void* overload used for that now
   }
 
-  // Collections and general fallback entry function
+  // Collections
   template<typename CollectionType>
-  auto printValue(const CollectionType &obj)
-  -> decltype(internal::printValue_impl(obj, 0), std::string())
+  auto printValue(const CollectionType *obj)
+  -> decltype(collectionPrinterInternal::printValue_impl(obj, 0), std::string())
   {
-    return internal::printValue_impl(obj, (short)0);  // short -> int -> long = priority order
+    return collectionPrinterInternal::printValue_impl(obj, (short)0);  // short -> int -> long = priority order
   }
 
   // Arrays
   template<typename T, size_t N>
-  std::string printValue(const T (&obj)[N]) {
+  std::string printValue(const T (*obj)[N]) {
     std::string str = "{ ";
 
     for (int i = 0; i < N; ++i) {
-      str = str + printValue(obj[i]);
-      if (i < N-1) str += ", ";
+      str += printValue(*obj + i);
+      if (i < N - 1) str += ", ";
     }
 
     return str + " }";
   }
 
-  namespace internal {
+  // Collections internal
+  namespace collectionPrinterInternal {
     // Maps
     template<typename CollectionType>
-    auto printValue_impl(const CollectionType &obj, short)
-      -> decltype(
-        ++(obj.begin()), obj.end(),
-        obj.begin()->first, obj.begin()->second,
+    auto printValue_impl(const CollectionType *obj, short)
+    -> decltype(
+    ++(obj->begin()), obj->end(),
+        obj->begin()->first, obj->begin()->second,
         std::string())
     {
       std::string str = "{ ";
 
-      auto iter = obj.begin();
-      auto iterEnd = obj.end();
+      auto iter = obj->begin();
+      auto iterEnd = obj->end();
       while (iter != iterEnd) {
-        str = str + printValue(iter->first);
-        str = str + " => ";
-        str = str + printValue(iter->second);
+        str += printValue(&iter->first);
+        str += " => ";
+        str += printValue(&iter->second);
         ++iter;
         if (iter != iterEnd) {
-          str = str + ", ";
+          str += ", ";
         }
       }
 
       return str + " }";
     }
 
-    // Collections like vector, set, deque etc.
+    // Vector, set, deque etc.
     template<typename CollectionType>
-    auto printValue_impl(const CollectionType &obj, int)
-      -> decltype(
-        ++(obj.begin()), obj.end(),
-        *(obj.begin()),
+    auto printValue_impl(const CollectionType *obj, int)
+    -> decltype(
+    ++(obj->begin()), obj->end(),
+        *(obj->begin()),
         std::string())
     {
       std::string str = "{ ";
 
-      auto iter = obj.begin();
-      auto iterEnd = obj.end();
+      auto iter = obj->begin();
+      auto iterEnd = obj->end();
       while (iter != iterEnd) {
-        str = str + printValue(*iter);
+        str += printValue(&(*iter));
         ++iter;
         if (iter != iterEnd) {
-          str = str + ", ";
+          str += ", ";
         }
       }
 
       return str + " }";
-    }
-
-    // General fallback - print object address
-    template<typename T>
-    std::string printValue_impl(const T &obj, long) {
-      return "@" + printValue((void *) &obj);
     }
   }
 
