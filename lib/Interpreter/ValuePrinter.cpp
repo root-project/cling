@@ -389,7 +389,7 @@ namespace cling {
 
   // Bool
   std::string printValue(const bool *val) {
-    return val ? "true" : "false";
+    return *val ? "true" : "false";
   }
 
   // Chars

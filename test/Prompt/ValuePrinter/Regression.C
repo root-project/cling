@@ -49,5 +49,8 @@ q // CHECK: (const int *) 0x123
 
 nullptr // CHECK: (nullptr_t) nullptr
 
+true // CHECK: (bool) true
+false // CHECK: (bool) false
+
 #include <unordered_set>
 std::unordered_multiset<float> {1} // ROOT-7310
