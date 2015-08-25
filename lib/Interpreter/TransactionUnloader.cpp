@@ -549,13 +549,11 @@ namespace clang {
       // We need to reset the cache
       SM.invalidateCache(*I);
     }
-
-    // Clean up the pending instantiations
-    m_Sema->PendingInstantiations.clear();
-    m_Sema->PendingLocalImplicitInstantiations.clear();
   }
 
   void DeclUnloader::CollectFilesToUncache(SourceLocation Loc) {
+    if (!m_CurTransaction)
+      return;
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
     if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID()
@@ -949,7 +947,8 @@ namespace clang {
   }
 
   void DeclUnloader::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
-    if (!m_CurTransaction->getModule()) // syntax-only mode exit
+    if (!m_CurTransaction
+        || !m_CurTransaction->getModule()) // syntax-only mode exit
       return;
     using namespace llvm;
     // if it was successfully removed from the AST we have to check whether
@@ -1251,6 +1250,10 @@ namespace cling {
       }
     }
 
+    // Clean up the pending instantiations
+    m_Sema->PendingInstantiations.clear();
+    m_Sema->PendingLocalImplicitInstantiations.clear();
+
     // Cleanup the module from unused global values.
     // if (T->getModule()) {
     //   llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
@@ -1265,9 +1268,8 @@ namespace cling {
   }
 
   bool TransactionUnloader::UnloadDecl(Decl* D) {
-    Transaction T(*m_Sema);
-    T.append(D);
-    return RevertTransaction(&T);
+    DeclUnloader DeclU(m_Sema, m_CodeGen, 0);
+    return DeclU.UnloadDecl(D);
   }
 } // end namespace cling
 
