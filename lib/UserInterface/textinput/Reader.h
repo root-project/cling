@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-//  This file defines the abtract input interface.
+//  This file defines the abstract input interface.
 //
 //  Axel Naumann <axel@cern.ch>, 2011-05-12
 //===----------------------------------------------------------------------===//

@@ -31,7 +31,7 @@
 namespace textinput {
   TextInput::TextInput(Reader& reader, Display& display,
                        const char* HistFile /* = 0 */):
-  fHidden(false),
+  fMasked(false),
   fAutoHistAdd(true),
   fLastKey(0),
   fMaxChars(0),

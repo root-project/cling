@@ -131,11 +131,19 @@ namespace textinput {
   StreamReaderUnix::StreamReaderUnix():
     fHaveInputFocus(false), fIsTTY(isatty(fileno(stdin))) {
 #ifdef TCSANOW
+    // ~ISTRIP - do not strip 8th char bit
+    // ~IXOFF - software flow ctrl disabled for input queue
     TerminalConfigUnix::Get().TIOS()->c_iflag &= ~(ISTRIP|IXOFF);
+    // BRKINT - flush i/o and send SIGINT
+    // INLCR - translate NL to CR
     TerminalConfigUnix::Get().TIOS()->c_iflag |= BRKINT | INLCR;
+    // ~ICANON - non-canonical = input available immediately, no EOL needed, no processing, line editing disabled
+    // ~ISIG - don't sent signals on input chars
+    // ~TOSTOP - don't send SIGTTOU
+    // ~IEXTEN - disable implementation-defined input processing, don't process spec chars (EOL2, LNEXT...)
     TerminalConfigUnix::Get().TIOS()->c_lflag &= ~(ICANON|ISIG|TOSTOP|IEXTEN);
-    TerminalConfigUnix::Get().TIOS()->c_cc[VMIN] = 1;
-    TerminalConfigUnix::Get().TIOS()->c_cc[VTIME] = 0;
+    TerminalConfigUnix::Get().TIOS()->c_cc[VMIN] = 1; // minimum chars to read in non-canonical mode
+    TerminalConfigUnix::Get().TIOS()->c_cc[VTIME] = 0; // waits indefinitely for VMIN chars (blocking)
 #endif
   }
 
@@ -143,6 +151,8 @@ namespace textinput {
     ReleaseInputFocus();
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Attach to terminal, set the proper configuration.
   void
   StreamReaderUnix::GrabInputFocus() {
     // set to raw i.e. unbuffered
@@ -151,6 +161,8 @@ namespace textinput {
     fHaveInputFocus = true;
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Detach from terminal, set the old configuration.
   void
   StreamReaderUnix::ReleaseInputFocus() {
     // set to buffered
@@ -159,6 +171,12 @@ namespace textinput {
     fHaveInputFocus = false;
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Test or wait for available input
+  ///
+  /// \param[in] wait blocking wait on input
+  ///
+  /// Wait true - block, wait false - poll
   bool
   StreamReaderUnix::HavePendingInput(bool wait) {
     if (!fReadAheadBuffer.empty())
@@ -172,6 +190,10 @@ namespace textinput {
     return (avail == 1);
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Process Control Sequence Introducer commands (equivalent to ESC [)
+  ///
+  /// \param[in] in input char / data
   bool
   StreamReaderUnix::ProcessCSI(InputData& in) {
     static ExtKeyMap gExtKeyMap;
@@ -231,25 +253,30 @@ namespace textinput {
     return ret != InputData::kEIUninitialized;
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Read one char from stdin. Converts the read char to InputData
+  ///
+  /// \param[in] nRead number of already read characters. Increment after reading
+  /// \param[in] in input char / data to be filled out
   bool
   StreamReaderUnix::ReadInput(size_t& nRead, InputData& in) {
     int c = ReadRawCharacter();
     in.SetModifier(InputData::kModNone);
-    if (c == -1) {
+    if (c == -1) { // non-character value, EOF negative
       in.SetExtended(InputData::kEIEOF);
-    } else if (c == 0x1b) {
-      // Only try to process CSI if Esc does not have a meaning
+    } else if (c == 0x1b) { // ESC
+      // Only try to process CSI if Esc does not have a meaning by itself.
       // by itself.
       if (GetContext()->GetKeyBinding()->IsEscCommandEnabled()
           || !ProcessCSI(in)) {
         in.SetExtended(InputData::kEIEsc);
       }
-    } else if (isprint(c)) {
+    } else if (isprint(c)) { // c >= 0x20(32) && c < 0x7f(127)
       in.SetRaw(c);
-    } else if (c < 32 || c == (char)127 /* ^?, DEL on MacOS */) {
-      if (c == 13) {
+    } else if (c < 32 || c == (char)127 /* ^?, DEL on MacOS */) { // non-printable
+      if (c == 13) { // 0x0d CR (INLCR - NL converted to CR)
         in.SetExtended(InputData::kEIEnter);
-      } else {
+      } else { // mark CTRL pressed if other non-print char
         in.SetRaw(c);
         in.SetModifier(InputData::kModCtrl);
       }
@@ -260,6 +287,9 @@ namespace textinput {
     ++nRead;
     return true;
   }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Read one character from stdin. Block if not available.
   int
   StreamReaderUnix::ReadRawCharacter() {
     char buf;

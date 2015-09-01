@@ -56,7 +56,8 @@ namespace textinput {
     Pos IndexToPos(size_t idx) const { return Pos(idx % fWidth, idx / fWidth); }
     size_t PosToIndex(const Pos& pos) const {
       // Convert a x|y position to an index.
-      return pos.fCol + pos.fLine * fWidth; }
+      return pos.fCol + pos.fLine * fWidth;
+    }
     size_t GetWidth() const { return fWidth; }
     void SetWidth(size_t width) { fWidth = width; }
 
@@ -66,10 +67,10 @@ namespace textinput {
     virtual void MoveLeft(size_t nCols = 1) = 0;
     virtual void MoveRight(size_t nCols = 1) = 0;
     virtual void MoveFront() = 0;
-    size_t WriteWrapped(Range::EPromptUpdate PromptUpdate, bool hidden,
+    size_t WriteWrapped(Range::EPromptUpdate PromptUpdate, bool masked,
                         size_t offset, size_t len = (size_t)-1);
-    size_t WriteWrappedElement(const Text& what, size_t TextOffset,
-                               size_t WriteOffset, size_t Requested);
+    size_t WriteWrappedTextPart(const Text &text, size_t TextOffset,
+                                size_t WriteOffset, size_t Requested);
     virtual void SetColor(char CIdx, const Color& C) = 0;
     virtual void WriteRawString(const char* text, size_t len) = 0;
     virtual void ActOnEOL() {}
@@ -79,7 +80,7 @@ namespace textinput {
   protected:
     bool fIsTTY; // whether this is a terminal or redirected
     size_t fWidth; // Width of the terminal in character columns
-    size_t fWriteLen; // Last char of output written.
+    size_t fWriteLen; // Length of output written.
     Pos fWritePos; // Current position of writing (temporarily != cursor)
     char fPrevColor; // currently configured color
   };

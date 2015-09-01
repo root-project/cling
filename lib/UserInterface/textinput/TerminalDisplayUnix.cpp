@@ -229,13 +229,20 @@ namespace textinput {
     MoveInternal('D', nCols);
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Erases the input to the right of the cursor.
   void
   TerminalDisplayUnix::EraseToRight() {
-    static const char text[] = {(char)0x1b, '[', 'K'};
+    static const char text[] = {(char)0x1b, '[', 'K'}; // ESC[K
     if (!IsTTY()) return;
     WriteRawString(text, sizeof(text));
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Writes out a raw string to stdout.
+  ///
+  /// \param[in] text raw string to be written out
+  /// \param[in] len length of the raw string
   void
   TerminalDisplayUnix::WriteRawString(const char *text, size_t len) {
     if (write(fileno(stdout), text, len) == -1) {
@@ -243,6 +250,9 @@ namespace textinput {
     }
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Invoke this on EOL. Writes out space backspace, to wrap to the next line.
+  /// Otherwise, we stay on the same line and the input gets pushed upwards.
   void
   TerminalDisplayUnix::ActOnEOL() {
     if (!IsTTY()) return;

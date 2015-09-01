@@ -47,7 +47,7 @@ namespace textinput {
 
     // Getters
     const TextInputContext* GetContext() const { return fContext; }
-    bool IsInputHidden() const { return fHidden; }
+    bool IsInputMasked() const { return fMasked; }
 
     size_t GetMaxPendingCharsToRead() const { return fMaxChars; }
     bool IsReadingAllPendingChars() const { return fMaxChars == (size_t) -1; }
@@ -55,7 +55,7 @@ namespace textinput {
 
     // Setters
     void SetPrompt(const char* p);
-    void HideInput(bool hidden = true) { fHidden = hidden; }
+    void MaskInput(bool masked = true) { fMasked = masked; }
     void SetColorizer(Colorizer* c);
     void SetCompletion(TabCompletion* tc);
     void SetFunctionKeyHandler(FunKey* fc);
@@ -93,7 +93,7 @@ namespace textinput {
     void ProcessNewInput(const InputData& in, EditorRange& r);
     void DisplayNewInput(EditorRange& r, size_t& oldCursorPos);
 
-    bool fHidden; // whether input should be shown
+    bool fMasked; // whether input should be shown
     bool fAutoHistAdd; // whether input should be added to history
     char fLastKey; // most recently read key
     size_t fMaxChars; // Num chars to read; 0 for blocking, -1 for all available

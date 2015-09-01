@@ -37,21 +37,31 @@ namespace textinput {
 #endif
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Notify the display that the text has been changed in range r.
+  /// Rewrite the display in range r and move back to the cursor.
+  ///
+  /// \param[in] r Range to write out the text for.
   void
   TerminalDisplay::NotifyTextChange(Range r) {
     if (!IsTTY()) return;
     Attach();
-    WriteWrapped(r.fPromptUpdate,GetContext()->GetTextInput()->IsInputHidden(),
+    WriteWrapped(r.fPromptUpdate, GetContext()->GetTextInput()->IsInputMasked(),
       r.fStart, r.fLength);
     Move(GetCursor());
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Notify the display that the cursor has been changed. Move to the cursor.
   void
   TerminalDisplay::NotifyCursorChange() {
     Attach();
     Move(GetCursor());
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Notify the display that the input has been taken.
+  /// Move to the next line, reset written length and position.
   void
   TerminalDisplay::NotifyResetInput() {
     Attach();
@@ -62,12 +72,20 @@ namespace textinput {
     fWritePos = Pos();
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Notify the display that there has been an error.
+  /// Write out the BEL character.
   void
   TerminalDisplay::NotifyError() {
     Attach();
     WriteRawString("\x07", 1);
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Display an informational message at the prompt.
+  /// Acts like a pop-up. Used e.g. for tab-completion.
+  ///
+  /// \param[in] Options options to write out
   void
   TerminalDisplay::DisplayInfo(const std::vector<std::string>& Options) {
     char infoColIdx = 0;
@@ -77,7 +95,7 @@ namespace textinput {
     WriteRawString("\n", 1);
     for (size_t i = 0, n = Options.size(); i < n; ++i) {
       Text t(Options[i], infoColIdx);
-      WriteWrappedElement(t, 0, 0, (size_t) -1);
+      WriteWrappedTextPart(t, 0, 0, (size_t) -1);
       WriteRawString("\n", 1);
     }
     // Reset position
@@ -85,6 +103,9 @@ namespace textinput {
     Attach();
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Detach from the abstract display by resetting the position
+  /// and written text length. If Colorizer is present, reset the color too.
   void
   TerminalDisplay::Detach() {
     fWritePos = Pos();
@@ -98,41 +119,54 @@ namespace textinput {
     }
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Write out wrapped text to the display. Used in WriteWrapped and DisplayInfo
+  ///
+  /// \param[in] text text to write out
+  /// \param[in] TextOffset where to begin writing out text from
+  /// \param[in] WriteOffset where to begin writing out text at the display
+  /// \param[in] Requested number of text characters requested for output
   size_t
-  TerminalDisplay::WriteWrappedElement(const Text& Element, size_t TextOffset,
-                                       size_t WriteOffset, size_t Requested) {
+  TerminalDisplay::WriteWrappedTextPart(const Text &text, size_t TextOffset,
+                                        size_t WriteOffset, size_t NumRequested) {
     size_t Start = TextOffset;
-    size_t Remaining = Requested;
+    size_t NumRemaining = NumRequested; // optimistic
 
-    size_t Available = Element.length() - Start;
-    if (Requested == (size_t) -1) {
-      Requested = Available;
+    size_t NumAvailable = text.length() - Start;
+    if (NumRequested == (size_t) -1) { // requested max available
+      NumRequested = NumAvailable;
     }
 
-    if (Available > 0) {
-      if (Available < Remaining) {
-        Remaining = Available;
+    // If we have some text available for output
+    if (NumAvailable > 0) {
+      // If we don't have enough to output NumRemaining, output only what's available
+      if (NumAvailable < NumRemaining) {
+        NumRemaining = NumAvailable;
       }
 
-      while (Remaining > 0) {
-        size_t numThisLine = Remaining;
-
+      while (NumRemaining > 0) {
         // How much can this line hold?
         size_t numToEOL = GetWidth() - ((Start + WriteOffset) % GetWidth());
-        if (!numToEOL) {
+        if (numToEOL == 0) { // we are at EOL, move down
           MoveDown();
           ++fWritePos.fLine;
           MoveFront();
           fWritePos.fCol = 0;
           numToEOL = GetWidth();
         }
-        if (numThisLine > numToEOL) {
+
+        // How much of our text can we fit in this line?
+        size_t numThisLine;
+        if (NumRemaining > numToEOL) {
           numThisLine = numToEOL;
+        } else {
+          numThisLine = NumRemaining;
         }
 
+        // If there is a Colorizer, we only write same-colored chunks.
+        // How long is the current chunk? Adjust numThisLine.
         if (GetContext()->GetColorizer()) {
-          // We only write same-color chunks; how long is it?
-          const std::vector<char>& Colors = Element.GetColors();
+          const std::vector<char>& Colors = text.GetColors();
           char ThisColor = Colors[Start];
           size_t numSameColor = 1;
           while (numSameColor < numThisLine
@@ -148,31 +182,36 @@ namespace textinput {
           }
         }
 
-        WriteRawString(Element.GetText().c_str() + Start, numThisLine);
+        // Write out the line and update the write position
+        WriteRawString(text.GetText().c_str() + Start, numThisLine);
         fWritePos = IndexToPos(PosToIndex(fWritePos) + numThisLine);
-        if (numThisLine == numToEOL) {
+        if (numThisLine == numToEOL) { // If we hit EOL, wrap around
           ActOnEOL();
         }
 
         Start += numThisLine;
-        Remaining -= numThisLine;
+        NumRemaining -= numThisLine;
       }
     }
 
-    if (Requested == Available) {
-      size_t VisL = fWriteLen / GetWidth();
-      size_t Wrote = WriteOffset + TextOffset + Requested;
-      size_t WroteL = Wrote / GetWidth();
-      size_t NumToEOL = GetWidth() - (Wrote % GetWidth());
-      if (fWriteLen > Wrote && NumToEOL > 0) {
-        // Wrote less and not at EOL
+    // If we have processed the characters we have requested
+    if (NumRequested == NumAvailable) {
+      size_t NumPrevLines = fWriteLen / GetWidth();
+      size_t LenWrote = WriteOffset + TextOffset + NumRequested;
+      size_t NumWroteLines = LenWrote / GetWidth();
+      size_t NumToEOL = GetWidth() - (LenWrote % GetWidth());
+      if (LenWrote < fWriteLen && NumToEOL > 0) {
+        // If we wrote less than previously and not at EOL
+        // Erase the rest of the current line
         EraseToRight();
       }
-      if (WroteL < VisL) {
+      if (NumWroteLines < NumPrevLines) {
+        // If we wrote less lines than previously,
+        // erase the surplus previous lines
         Pos prevWC = GetCursor();
         MoveFront();
         fWritePos.fCol = 0;
-        for (size_t l = WroteL + 1; l <= VisL; ++l) {
+        for (size_t l = NumWroteLines + 1; l <= NumPrevLines; ++l) {
           MoveDown();
           ++fWritePos.fLine;
           EraseToRight();
@@ -180,11 +219,11 @@ namespace textinput {
         Move(prevWC);
       }
     }
-    return Remaining;
+    return NumRemaining;
   }
 
   size_t
-  TerminalDisplay::WriteWrapped(Range::EPromptUpdate PromptUpdate, bool hidden,
+  TerminalDisplay::WriteWrapped(Range::EPromptUpdate PromptUpdate, bool masked,
                                 size_t Offset, size_t Requested /* = -1*/) {
     Attach();
 
@@ -199,16 +238,18 @@ namespace textinput {
        PromptUpdate = Range::kNoPromptUpdate;
     }
 
+    // If updating prompt, write the main prompt first (e.g. [cling]$)
     if (PromptUpdate & Range::kUpdatePrompt) {
       // Writing from front means we write the prompt, too
       Move(Pos());
-      WriteWrappedElement(Prompt, 0, 0, PromptLen);
+      WriteWrappedTextPart(Prompt, 0, 0, PromptLen);
     }
+    // If updating any prompt
     if (PromptUpdate != Range::kNoPromptUpdate) {
       // Any prompt update means we'll have to re-write the editor prompt
       Move(IndexToPos(PromptLen));
       if (EditorPromptLen) {
-        WriteWrappedElement(EditPrompt, 0, PromptLen, EditorPromptLen);
+        WriteWrappedTextPart(EditPrompt, 0, PromptLen, EditorPromptLen);
       }
       // Any prompt update means we'll have to re-write the text
       Offset = 0;
@@ -217,18 +258,22 @@ namespace textinput {
     Move(IndexToPos(PromptLen + EditorPromptLen + Offset));
 
     size_t avail = 0;
-    if (hidden) {
-      Text hide(std::string(GetContext()->GetLine().length(), '*'), 0);
-      avail = WriteWrappedElement(hide, Offset,
-                                  PromptLen + EditorPromptLen, Requested);
+    if (masked) {
+      Text mask(std::string(GetContext()->GetLine().length(), '*'), 0);
+      avail = WriteWrappedTextPart(mask, Offset,
+                                   PromptLen + EditorPromptLen, Requested);
     } else {
-      avail = WriteWrappedElement(GetContext()->GetLine(), Offset,
-                                       PromptLen + EditorPromptLen, Requested);
+      avail = WriteWrappedTextPart(GetContext()->GetLine(), Offset,
+                                   PromptLen + EditorPromptLen, Requested);
     }
     fWriteLen = PromptLen + EditorPromptLen + GetContext()->GetLine().length();
     return avail;
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Move the cursor to the required position.
+  ///
+  /// \param[in] p position to move to
   void
   TerminalDisplay::Move(Pos p) {
     Attach();

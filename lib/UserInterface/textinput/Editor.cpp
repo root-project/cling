@@ -72,7 +72,7 @@ namespace textinput {
   Range
   Editor::ResetText() {
     bool addToHist = !fContext->GetLine().empty()
-      && !fContext->GetTextInput()->IsInputHidden()
+      && !fContext->GetTextInput()->IsInputMasked()
       && fContext->GetTextInput()->IsAutoHistAddEnabled();
     if (addToHist) {
       fContext->GetHistory()->AddLine(fContext->GetLine().GetText());
