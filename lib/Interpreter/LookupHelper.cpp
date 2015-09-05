@@ -43,16 +43,15 @@ namespace clang {
   private:
     Parser* P;
     Preprocessor& PP;
+    decltype(Parser::TemplateIds) OldTemplateIds;
     bool ResetIncrementalProcessing;
     bool OldSuppressAllDiagnostics;
     bool OldSpellChecking;
-    DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds;
     SourceLocation OldPrevTokLocation;
     unsigned short OldParenCount, OldBracketCount, OldBraceCount;
     unsigned OldTemplateParameterDepth;
     decltype(P->getActions().InNonInstantiationSFINAEContext)
        OldInNonInstantiationSFINAEContext;
-
 
   public:
     ParserStateRAII(Parser& p)
@@ -62,13 +61,14 @@ namespace clang {
         OldSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
                                   .getSuppressAllDiagnostics()),
         OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
-        CleanupTemplateIds(p), OldPrevTokLocation(p.PrevTokLocation),
+        OldPrevTokLocation(p.PrevTokLocation),
         OldParenCount(p.ParenCount), OldBracketCount(p.BracketCount),
         OldBraceCount(p.BraceCount),
         OldTemplateParameterDepth(p.TemplateParameterDepth),
         OldInNonInstantiationSFINAEContext(P->getActions()
                                            .InNonInstantiationSFINAEContext)
     {
+       OldTemplateIds.swap(P->TemplateIds);
     }
 
     ~ParserStateRAII()
@@ -78,6 +78,11 @@ namespace clang {
       //
       // Note: Consuming the EOF token will pop the include stack.
       //
+      {
+         // Cleanup the TemplateIds before swapping the previous set back.
+         DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds(*P);
+      }
+      P->TemplateIds.swap(OldTemplateIds);
       P->SkipUntil(tok::eof);
       PP.enableIncrementalProcessing(ResetIncrementalProcessing);
       // Doesn't reset the diagnostic mappings
