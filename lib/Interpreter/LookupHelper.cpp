@@ -46,6 +46,7 @@ namespace clang {
     decltype(Parser::TemplateIds) OldTemplateIds;
     bool ResetIncrementalProcessing;
     bool OldSuppressAllDiagnostics;
+    bool OldPPSuppressAllDiagnostics;
     bool OldSpellChecking;
     SourceLocation OldPrevTokLocation;
     unsigned short OldParenCount, OldBracketCount, OldBraceCount;
@@ -58,7 +59,9 @@ namespace clang {
       : P(&p), PP(p.getPreprocessor()),
         ResetIncrementalProcessing(p.getPreprocessor()
                                    .isIncrementalProcessingEnabled()),
-        OldSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
+        OldSuppressAllDiagnostics(P->getActions().getDiagnostics()
+                                  .getSuppressAllDiagnostics()),
+        OldPPSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
                                   .getSuppressAllDiagnostics()),
         OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
         OldPrevTokLocation(p.PrevTokLocation),
@@ -87,7 +90,9 @@ namespace clang {
       PP.enableIncrementalProcessing(ResetIncrementalProcessing);
       // Doesn't reset the diagnostic mappings
       P->getActions().getDiagnostics().Reset(/*soft=*/true);
-      PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
+      P->getActions().getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
+      PP.getDiagnostics().Reset(/*soft=*/true);
+      PP.getDiagnostics().setSuppressAllDiagnostics(OldPPSuppressAllDiagnostics);
       const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking =
          OldSpellChecking;
 
@@ -132,6 +137,8 @@ namespace cling {
     //
     //  Tell the diagnostic engine to ignore all diagnostics.
     //
+    P.getActions().getDiagnostics().setSuppressAllDiagnostics(
+                                      diagOnOff == LookupHelper::NoDiagnostics);
     PP.getDiagnostics().setSuppressAllDiagnostics(
                                       diagOnOff == LookupHelper::NoDiagnostics);
     //
