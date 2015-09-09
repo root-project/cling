@@ -50,6 +50,8 @@ namespace clang {
     SourceLocation OldPrevTokLocation;
     unsigned short OldParenCount, OldBracketCount, OldBraceCount;
     unsigned OldTemplateParameterDepth;
+    decltype(P->getActions().InNonInstantiationSFINAEContext)
+       OldInNonInstantiationSFINAEContext;
 
 
   public:
@@ -63,7 +65,9 @@ namespace clang {
         CleanupTemplateIds(p), OldPrevTokLocation(p.PrevTokLocation),
         OldParenCount(p.ParenCount), OldBracketCount(p.BracketCount),
         OldBraceCount(p.BraceCount),
-        OldTemplateParameterDepth(p.TemplateParameterDepth)
+        OldTemplateParameterDepth(p.TemplateParameterDepth),
+        OldInNonInstantiationSFINAEContext(P->getActions()
+                                           .InNonInstantiationSFINAEContext)
     {
     }
 
@@ -87,6 +91,8 @@ namespace clang {
       P->BracketCount = OldBracketCount;
       P->BraceCount = OldBraceCount;
       P->TemplateParameterDepth = OldTemplateParameterDepth;
+      P->getActions().InNonInstantiationSFINAEContext =
+         OldInNonInstantiationSFINAEContext;
     }
   };
 }
@@ -122,7 +128,11 @@ namespace cling {
     //  Tell the diagnostic engine to ignore all diagnostics.
     //
     PP.getDiagnostics().setSuppressAllDiagnostics(
-                                                  diagOnOff == LookupHelper::NoDiagnostics);
+                                      diagOnOff == LookupHelper::NoDiagnostics);
+    //
+    //  Tell Sema we are not in the process of doing an instantiation.
+    //
+    P.getActions().InNonInstantiationSFINAEContext = true;
     //
     //  Tell the parser to not attempt spelling correction.
     //
