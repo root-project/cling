@@ -233,7 +233,7 @@ namespace cling {
       if (className[c] == ':') {
         if (c + 2 >= className.size() || className[c + 1] != ':') {
           // Looks like an invalid name, we won't find anything.
-          return false;
+          return true;
         }
         next = utils::Lookup::Named(&S, className.substr(last, c - last), sofar);
         if (next && next != (void *) -1) {
@@ -280,7 +280,7 @@ namespace cling {
               //    line 1520.
               // Which can happen here because the simple name maybe a
               // typedef to a template (for example std::string).
-              break;
+              return false;
             }
             next = RequireCompleteDeclContext(S, PP, tdecl, diagOnOff);
             // } else {
@@ -294,7 +294,7 @@ namespace cling {
         if (!sofar) {
           // We are looking into something that is not a decl context,
           // we won't find anything.
-          return false;
+          return true;
         }
         last = c + 2;
         ++c; // Consume the second ':'
@@ -304,10 +304,8 @@ namespace cling {
         if (next == (void *) -1) next = 0;
         if (next) {
           resultDecl = next;
-          return true;
-        } else {
-          return false;
         }
+        return true;
       }
     } // for each characters
     // Should be unreacheable.
@@ -373,8 +371,9 @@ namespace cling {
               } else {
                 return nullptr;
               }
+            } else {
+              return defdecl; // now pointing to the definition.
             }
-            return defdecl; // now pointing to the definition.
           } else if (isa<NamespaceDecl>(quickResult)) {
             return quickResult->getCanonicalDecl();
           } else if (auto alias = dyn_cast<NamespaceAliasDecl>(quickResult)) {
