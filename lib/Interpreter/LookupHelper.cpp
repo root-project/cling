@@ -214,6 +214,106 @@ namespace cling {
     } else return 0;
   }
 
+  static bool quickFindDecl(llvm::StringRef className,
+                            const Decl *& resultDecl,
+                            Parser &P,
+                            LookupHelper::DiagSetting diagOnOff) {
+
+    Sema &S = P.getActions();
+    Preprocessor &PP = P.getPreprocessor();
+    resultDecl = nullptr;
+    const clang::DeclContext *sofar = nullptr;
+    const clang::Decl *next = nullptr;
+    for (size_t c = 0, last = 0; c < className.size(); ++c) {
+      if (className[c] == '<' || className[c] == '>') {
+        // For now we do not know how to deal with
+        // template instances.
+        return false;
+      }
+      if (className[c] == ':') {
+        if (c + 2 >= className.size() || className[c + 1] != ':') {
+          // Looks like an invalid name, we won't find anything.
+          return false;
+        }
+        next = utils::Lookup::Named(&S, className.substr(last, c - last), sofar);
+        if (next && next != (void *) -1) {
+          // Need to handle typedef here too.
+          const TypedefNameDecl *typedefDecl = dyn_cast<TypedefNameDecl>(next);
+          if (typedefDecl) {
+            // We are stripping the typedef, this is technically incorrect,
+            // as the result (if resultType has been specified) will not be
+            // an accurate representation of the input string.
+            // As we strip the typedef we ought to rebuild the nested name
+            // specifier.
+            // Since we do not use this path for template handling, this
+            // is not relevant for ROOT itself ....
+            ASTContext &Context = S.getASTContext();
+            QualType T = Context.getTypedefType(typedefDecl);
+            const TagType *TagTy = T->getAs<TagType>();
+            if (TagTy) next = TagTy->getDecl();
+          }
+
+          // To use Lookup::Named we need to fit the assertion:
+          //    ((!isa<TagDecl>(LookupCtx) || LookupCtx->isDependentContext()
+          //     || cast<TagDecl>(LookupCtx)->isCompleteDefinition()
+          //     || cast<TagDecl>(LookupCtx)->isBeingDefined()) &&
+          //      "Declaration context must already be complete!"),
+          //      function LookupQualifiedName, file SemaLookup.cpp, line 1614.
+          const clang::TagDecl *tdecl = dyn_cast<TagDecl>(next);
+          if (tdecl && !(next = tdecl->getDefinition())) {
+            //fprintf(stderr,"Incomplete (inner) type for %s (part %s).\n",
+            //        className.str().c_str(),
+            //        className.substr(last,c-last).str().c_str());
+            // Incomplete type we will not be able to go on.
+
+            // We always require completeness of the scope, if the caller
+            // want piece-meal instantiation, the calling code will need to
+            // split the call to findScope.
+
+            // if (instantiateTemplate) {
+            if (dyn_cast<ClassTemplateSpecializationDecl>(tdecl)) {
+              // Go back to the normal schedule since we need a valid point
+              // of instantiation:
+              // Assertion failed: (Loc.isValid() &&
+              //    "point of instantiation must be valid!"),
+              //    function setPointOfInstantiation, file DeclTemplate.h,
+              //    line 1520.
+              // Which can happen here because the simple name maybe a
+              // typedef to a template (for example std::string).
+              break;
+            }
+            next = RequireCompleteDeclContext(S, PP, tdecl, diagOnOff);
+            // } else {
+            //   return false;
+            // }
+          }
+          sofar = dyn_cast_or_null<DeclContext>(next);
+        } else {
+          sofar = 0;
+        }
+        if (!sofar) {
+          // We are looking into something that is not a decl context,
+          // we won't find anything.
+          return false;
+        }
+        last = c + 2;
+        ++c; // Consume the second ':'
+      } else if (c + 1 == className.size()) {
+        // End of the line.
+        next = utils::Lookup::Named(&S, className.substr(last, c + 1 - last), sofar);
+        if (next == (void *) -1) next = 0;
+        if (next) {
+          resultDecl = next;
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } // for each characters
+    // Should be unreacheable.
+    return false;
+  }
+
   const Decl* LookupHelper::findScope(llvm::StringRef className,
                                       DiagSetting diagOnOff,
                                       const Type** resultType /* = 0 */,
@@ -223,143 +323,66 @@ namespace cling {
     //  Some utilities.
     //
     // Use P for shortness
-    Parser& P = *m_Parser;
-    Sema& S = P.getActions();
-    Preprocessor& PP = P.getPreprocessor();
-    ASTContext& Context = S.getASTContext();
+    Parser &P = *m_Parser;
+    Sema &S = P.getActions();
+    Preprocessor &PP = P.getPreprocessor();
+    ASTContext &Context = S.getASTContext();
 
     // See if we can find it without a buffer and any clang parsing,
     // We need to go scope by scope.
-    if (1) {
-      const clang::DeclContext *sofar = 0;
-      const clang::Decl *next = 0;
-      for(size_t c = 0, last = 0; c < className.size(); ++c) {
-        if ( className[c] == '<' || className[c] == '>') {
-          // For now we do not know how to deal with
-          // template instances.
-          break;
-        }
-        if ( className[c] == ':' ) {
-          if ( c+2 >= className.size() || className[c+1] != ':' ) {
-            // Looks like an invalid name, we won't find anything.
-            return 0;
+    {
+      const Decl *quickResult = nullptr;
+      if (quickFindDecl(className, quickResult, *m_Parser, diagOnOff)) {
+        // The result of quickFindDecl was definitive, we don't need
+        // to check any further.
+        if (!quickResult) {
+          return nullptr;
+        } else {
+          const TagDecl *tagdecl = dyn_cast<TagDecl>(quickResult);
+          const TypedefNameDecl *typedefDecl = dyn_cast<TypedefNameDecl>(quickResult);
+          if (typedefDecl) {
+            QualType T = Context.getTypedefType(typedefDecl);
+            const TagType *TagTy = T->getAs<TagType>();
+            if (TagTy) tagdecl = TagTy->getDecl();
+            // NOTE: Should we instantiate here? ... maybe ...
+            if (tagdecl && resultType) *resultType = T.getTypePtr();
+
+          } else if (tagdecl && resultType) {
+            *resultType = tagdecl->getTypeForDecl();
           }
-          next = utils::Lookup::Named(&S,className.substr(last,c-last),sofar);
-          if (next && next != (void*)-1) {
-            // Need to handle typedef here too.
-            const TypedefNameDecl *typedefDecl=dyn_cast<TypedefNameDecl>(next);
-            if (typedefDecl) {
-              // We are stripping the typedef, this is technically incorrect,
-              // as the result (if resultType has been specified) will not be
-              // an accurate representation of the input string.
-              // As we strip the typedef we ought to rebuild the nested name
-              // specifier.
-              // Since we do not use this path for template handling, this
-              // is not relevant for ROOT itself ....
-              QualType T = Context.getTypedefType(typedefDecl);
-              const TagType* TagTy = T->getAs<TagType>();
-              if (TagTy) next = TagTy->getDecl();
-            }
+          // fprintf(stderr,"Short cut taken for %s.\n",className.str().c_str());
+          if (tagdecl) {
+            const TagDecl *defdecl = tagdecl->getDefinition();
+            if (!defdecl || !defdecl->isCompleteDefinition()) {
+              // fprintf(stderr,"Incomplete type for %s.\n",className.str().c_str());
+              if (instantiateTemplate) {
+                if (dyn_cast<ClassTemplateSpecializationDecl>(tagdecl)) {
+                  // Go back to the normal schedule since we need a valid point
+                  // of instantiation:
+                  // Assertion failed: (Loc.isValid() &&
+                  //    "point of instantiation must be valid!"),
+                  //    function setPointOfInstantiation, file DeclTemplate.h,
+                  //    line 1520.
+                  // Which can happen here because the simple name maybe a
+                  // typedef to a template (for example std::string).
 
-            // To use Lookup::Named we need to fit the assertion:
-            //    ((!isa<TagDecl>(LookupCtx) || LookupCtx->isDependentContext()
-            //     || cast<TagDecl>(LookupCtx)->isCompleteDefinition()
-            //     || cast<TagDecl>(LookupCtx)->isBeingDefined()) &&
-            //      "Declaration context must already be complete!"),
-            //      function LookupQualifiedName, file SemaLookup.cpp, line 1614.
-
-            const clang::TagDecl *tdecl = dyn_cast<TagDecl>(next);
-            if (tdecl && !(next = tdecl->getDefinition())) {
-              //fprintf(stderr,"Incomplete (inner) type for %s (part %s).\n",
-              //        className.str().c_str(),
-              //        className.substr(last,c-last).str().c_str());
-              // Incomplete type we will not be able to go on.
-
-              // We always require completeness of the scope, if the caller
-              // want piece-meal instantiation, the calling code will need to
-              // split the call to findScope.
-
-              // if (instantiateTemplate) {
-              if (dyn_cast<ClassTemplateSpecializationDecl>(tdecl)) {
-                // Go back to the normal schedule since we need a valid point
-                // of instantiation:
-                // Assertion failed: (Loc.isValid() &&
-                //    "point of instantiation must be valid!"),
-                //    function setPointOfInstantiation, file DeclTemplate.h,
-                //    line 1520.
-                // Which can happen here because the simple name maybe a
-                // typedef to a template (for example std::string).
-                break;
+                  // break;
+                  // the next code executed must be the TransactionRAII below
+                } else
+                  return RequireCompleteDeclContext(S, PP, tagdecl, diagOnOff);
+              } else {
+                return nullptr;
               }
-              next = RequireCompleteDeclContext(S,PP,tdecl,diagOnOff);
-              // } else {
-              //   return 0;
-              // }
             }
-            sofar = dyn_cast_or_null<DeclContext>(next);
+            return defdecl; // now pointing to the definition.
+          } else if (isa<NamespaceDecl>(quickResult)) {
+            return quickResult->getCanonicalDecl();
+          } else if (auto alias = dyn_cast<NamespaceAliasDecl>(quickResult)) {
+            return alias->getNamespace()->getCanonicalDecl();
           } else {
-            sofar = 0;
-          }
-          if (!sofar) {
-            // We are looking into something that is not a decl context,
-            // we won't find anything.
-            return 0;
-          }
-          last = c+2;
-          ++c; // Consume the second ':'
-        } else if ( c+1 == className.size() ) {
-          // End of the line.
-          next = utils::Lookup::Named(&S,className.substr(last,c+1-last),sofar);
-          if (next == (void*)-1) next = 0;
-          if (next) {
-
-            const TagDecl *tagdecl = dyn_cast<TagDecl>(next);
-            const TypedefNameDecl *typedefDecl=dyn_cast<TypedefNameDecl>(next);
-            if (typedefDecl) {
-              QualType T = Context.getTypedefType(typedefDecl);
-              const TagType* TagTy = T->getAs<TagType>();
-              if (TagTy) tagdecl = TagTy->getDecl();
-              // NOTE: Should we instantiate here? ... maybe ...
-              if (tagdecl && resultType) *resultType = T.getTypePtr();
-
-            } else if (tagdecl && resultType) {
-              *resultType = tagdecl->getTypeForDecl();
-            }
-
-            // fprintf(stderr,"Short cut taken for %s.\n",className.str().c_str());
-            if (tagdecl) {
-              const TagDecl *defdecl = tagdecl->getDefinition();
-              if (!defdecl || !defdecl->isCompleteDefinition()) {
-                // fprintf(stderr,"Incomplete type for %s.\n",className.str().c_str());
-                if (instantiateTemplate) {
-                  if (dyn_cast<ClassTemplateSpecializationDecl>(tagdecl)) {
-                    // Go back to the normal schedule since we need a valid point
-                    // of instantiation:
-                    // Assertion failed: (Loc.isValid() &&
-                    //    "point of instantiation must be valid!"),
-                    //    function setPointOfInstantiation, file DeclTemplate.h,
-                    //    line 1520.
-                    // Which can happen here because the simple name maybe a
-                    // typedef to a template (for example std::string).
-                    break;
-                  }
-                  return RequireCompleteDeclContext(S,PP,tagdecl,diagOnOff);
-                } else {
-                  return 0;
-                }
-              }
-              return defdecl; // now pointing to the definition.
-            } else if (isa<NamespaceDecl>(next)) {
-              return next->getCanonicalDecl();
-            } else if (auto alias = dyn_cast<NamespaceAliasDecl>(next) ) {
-              return alias->getNamespace()->getCanonicalDecl();
-            } else {
-              //fprintf(stderr,"Not a scope decl for %s.\n",className.str().c_str());
-              // The name exist and does not point to a 'scope' decl.
-              return 0;
-            }
-          } else {
-            return 0;
+            //fprintf(stderr,"Not a scope decl for %s.\n",className.str().c_str());
+            // The name exist and does not point to a 'scope' decl.
+            return nullptr;
           }
         }
       }
