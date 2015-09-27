@@ -216,7 +216,7 @@ namespace cling {
 
   ///\brief Look for a tag decl based on its name
   ///
-  ///\param className name of the class, enum, uniorn or namespace being
+  ///\param declName name of the class, enum, uniorn or namespace being
   ///       looked for
   ///\param resultDecl pointer that will be updated with the answer
   ///\param Parse to use for the search
@@ -225,7 +225,7 @@ namespace cling {
   ///        detailed search is needed (usually this is for class template
   ///        instances).
   ///
-  static bool quickFindDecl(llvm::StringRef className,
+  static bool quickFindDecl(llvm::StringRef declName,
                             const Decl *& resultDecl,
                             Parser &P,
                             LookupHelper::DiagSetting diagOnOff) {
@@ -235,18 +235,18 @@ namespace cling {
     resultDecl = nullptr;
     const clang::DeclContext *sofar = nullptr;
     const clang::Decl *next = nullptr;
-    for (size_t c = 0, last = 0; c < className.size(); ++c) {
-      if (className[c] == '<' || className[c] == '>') {
+    for (size_t c = 0, last = 0; c < declName.size(); ++c) {
+      if (declName[c] == '<' || declName[c] == '>') {
         // For now we do not know how to deal with
         // template instances.
         return false;
       }
-      if (className[c] == ':') {
-        if (c + 2 >= className.size() || className[c + 1] != ':') {
+      if (declName[c] == ':') {
+        if (c + 2 >= declName.size() || declName[c + 1] != ':') {
           // Looks like an invalid name, we won't find anything.
           return true;
         }
-        next = utils::Lookup::Named(&S, className.substr(last, c - last), sofar);
+        next = utils::Lookup::Named(&S, declName.substr(last, c - last), sofar);
         if (next && next != (void *) -1) {
           // Need to handle typedef here too.
           const TypedefNameDecl *typedefDecl = dyn_cast<TypedefNameDecl>(next);
@@ -273,8 +273,8 @@ namespace cling {
           const clang::TagDecl *tdecl = dyn_cast<TagDecl>(next);
           if (tdecl && !(next = tdecl->getDefinition())) {
             //fprintf(stderr,"Incomplete (inner) type for %s (part %s).\n",
-            //        className.str().c_str(),
-            //        className.substr(last,c-last).str().c_str());
+            //        declName.str().c_str(),
+            //        declName.substr(last,c-last).str().c_str());
             // Incomplete type we will not be able to go on.
 
             // We always require completeness of the scope, if the caller
@@ -309,9 +309,9 @@ namespace cling {
         }
         last = c + 2;
         ++c; // Consume the second ':'
-      } else if (c + 1 == className.size()) {
+      } else if (c + 1 == declName.size()) {
         // End of the line.
-        next = utils::Lookup::Named(&S, className.substr(last, c + 1 - last), sofar);
+        next = utils::Lookup::Named(&S, declName.substr(last, c + 1 - last), sofar);
         if (next == (void *) -1) next = 0;
         if (next) {
           resultDecl = next;
