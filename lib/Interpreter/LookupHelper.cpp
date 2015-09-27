@@ -154,41 +154,6 @@ namespace cling {
     PP.Lex(const_cast<Token&>(P.getCurToken()));
   }
 
-  QualType LookupHelper::findType(llvm::StringRef typeName,
-                                  DiagSetting diagOnOff) const {
-    //
-    //  Our return value.
-    //
-    QualType TheQT;
-
-    if (typeName.empty()) return TheQT;
-
-    // Could trigger deserialization of decls.
-    Interpreter::PushTransactionRAII RAII(m_Interpreter);
-
-    // Use P for shortness
-    Parser& P = *m_Parser;
-    ParserStateRAII ResetParserState(P);
-    prepareForParsing(P,m_Interpreter,
-                      typeName, llvm::StringRef("lookup.type.by.name.file"),
-                      diagOnOff);
-    //
-    //  Try parsing the type name.
-    //
-    clang::ParsedAttributes Attrs(P.getAttrFactory());
-
-    TypeResult Res(P.ParseTypeName(0,Declarator::TypeNameContext,clang::AS_none,
-                                   0,&Attrs));
-    if (Res.isUsable()) {
-      // Accept it only if the whole name was parsed.
-      if (P.NextToken().getKind() == clang::tok::eof) {
-        TypeSourceInfo* TSI = 0;
-        TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
-      }
-    }
-    return TheQT;
-  }
-
   static const TagDecl* RequireCompleteDeclContext(Sema& S,
                                                    Preprocessor& PP,
                                                    const TagDecl *tobeCompleted,
@@ -323,7 +288,42 @@ namespace cling {
     return false;
   }
 
-  const Decl* LookupHelper::findScope(llvm::StringRef className,
+   QualType LookupHelper::findType(llvm::StringRef typeName,
+                                   DiagSetting diagOnOff) const {
+     //
+     //  Our return value.
+     //
+     QualType TheQT;
+
+     if (typeName.empty()) return TheQT;
+
+     // Could trigger deserialization of decls.
+     Interpreter::PushTransactionRAII RAII(m_Interpreter);
+
+     // Use P for shortness
+     Parser& P = *m_Parser;
+     ParserStateRAII ResetParserState(P);
+     prepareForParsing(P,m_Interpreter,
+                       typeName, llvm::StringRef("lookup.type.by.name.file"),
+                       diagOnOff);
+     //
+     //  Try parsing the type name.
+     //
+     clang::ParsedAttributes Attrs(P.getAttrFactory());
+
+     TypeResult Res(P.ParseTypeName(0,Declarator::TypeNameContext,clang::AS_none,
+                                    0,&Attrs));
+     if (Res.isUsable()) {
+       // Accept it only if the whole name was parsed.
+       if (P.NextToken().getKind() == clang::tok::eof) {
+         TypeSourceInfo* TSI = 0;
+         TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
+       }
+     }
+     return TheQT;
+   }
+
+   const Decl* LookupHelper::findScope(llvm::StringRef className,
                                       DiagSetting diagOnOff,
                                       const Type** resultType /* = 0 */,
                                       bool instantiateTemplate/*=true*/) const {
