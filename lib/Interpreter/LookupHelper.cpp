@@ -204,6 +204,7 @@ namespace cling {
       if (declName[c] == '<' || declName[c] == '>') {
         // For now we do not know how to deal with
         // template instances.
+        // TODO: Should we quit on more cases (&,*,[]) in case we are called by findType.
         return false;
       }
       if (declName[c] == ':') {
@@ -214,6 +215,7 @@ namespace cling {
         next = utils::Lookup::Named(&S, declName.substr(last, c - last), sofar);
         if (next && next != (void *) -1) {
           // Need to handle typedef here too.
+          // TODO: Should we keep the typedef in case we are called by findType.
           const TypedefNameDecl *typedefDecl = dyn_cast<TypedefNameDecl>(next);
           if (typedefDecl) {
             // We are stripping the typedef, this is technically incorrect,
@@ -296,6 +298,20 @@ namespace cling {
      QualType TheQT;
 
      if (typeName.empty()) return TheQT;
+
+     if (1) {
+       const Decl *quickResult = nullptr;
+       if (quickFindDecl(typeName, quickResult, *m_Parser, diagOnOff)) {
+         // The result of quickFindDecl was definitive, we don't need
+
+         // to check any further.
+         Parser &P = *m_Parser;
+         Sema &S = P.getActions();
+         const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickResult);
+         if (typedecl) return S.getASTContext().getTypeDeclType(typedecl);
+         return QualType();
+       }
+     }
 
      // Could trigger deserialization of decls.
      Interpreter::PushTransactionRAII RAII(m_Interpreter);
