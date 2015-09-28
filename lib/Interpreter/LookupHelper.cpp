@@ -341,6 +341,106 @@ namespace cling {
     return QualType();
   }
 
+  ///\brief Look for a tag decl based on its name
+  ///
+  ///\param declName name of the class, enum, uniorn or namespace being
+  ///       looked for
+  ///\param resultType reference to QualType that will be updated with the answer
+  ///\param Parse to use for the search
+  ///\param diagOnOff whether the error diagnostics are printed or not.
+  ///\return returns true if the answer is authoritative or false if a more
+  ///        detailed search is needed (usually this is for class template
+  ///        instances).
+  ///
+  static bool quickFindType(llvm::StringRef typeName,
+                            QualType &resultType,
+                            Parser &P,
+                            LookupHelper::DiagSetting diagOnOff) {
+
+    resultType = QualType();
+
+    llvm::StringRef quickTypeName = typeName.trim();
+    bool innerConst = false;
+    bool outerConst = false;
+    if (quickTypeName.startswith("const ")) {
+      // Use this syntax to avoid the redudant tests in substr.
+      quickTypeName = StringRef(quickTypeName.data()+6,
+                                quickTypeName.size()-6);
+      innerConst = true;
+    }
+    constexpr int pointerType = 0;
+    constexpr int lrefType = 1;
+    constexpr int rrefType = 2;
+    if (quickTypeName.endswith("const")) {
+      if (quickTypeName.size() < 6) return true;
+      auto c = quickTypeName[quickTypeName.size()-6];
+      if (c==' ' || c=='&' || c=='*') {
+        outerConst = true;
+        if (c == ' ')
+          quickTypeName = StringRef(quickTypeName.data(),
+                                    quickTypeName.size() - 6);
+        else quickTypeName = StringRef(quickTypeName.data(),
+                                       quickTypeName.size() - 5);
+      }
+    }
+    std::vector<int> ptrref;
+    for(auto c = quickTypeName.end()-1; c != quickTypeName.begin(); --c) {
+      if (*c == '*')  ptrref.push_back(pointerType);
+      else if (*c == '&') {
+        if (*(c-1)== '&') {
+          --c;
+          ptrref.push_back(rrefType);
+
+        } else
+          ptrref.push_back(lrefType);
+      }
+      else break;
+    }
+    if (!ptrref.empty()) quickTypeName = StringRef(quickTypeName.data(),quickTypeName.size()-ptrref.size());
+
+    Sema &S = P.getActions();
+    ASTContext &Context = S.getASTContext();
+    QualType quickFind = findBuiltinType(quickTypeName, Context);
+    const Decl *quickDecl = nullptr;
+    if (quickFind.isNull() &&
+        quickFindDecl(quickTypeName, quickDecl, P, diagOnOff)) {
+      // The result of quickFindDecl was definitive, we don't need
+      // to check any further.
+      //const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickDecl);
+      if (quickDecl) {
+        const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickDecl);
+        if (typedecl) {
+          quickFind = Context.getTypeDeclType(typedecl);
+        } else {
+          return true;
+        }
+      } else {
+        return true;
+      }
+    }
+    if (!quickFind.isNull()) {
+      if (innerConst) quickFind.addConst();
+
+      for(auto t : ptrref) {
+        switch (t) {
+          case pointerType :
+            quickFind = Context.getPointerType(quickFind);
+            break;
+          case rrefType :
+            quickFind = Context.getRValueReferenceType(quickFind);
+            break;
+          case lrefType :
+            quickFind = Context.getLValueReferenceType(quickFind);
+            break;
+        }
+      }
+      if (outerConst) quickFind.addConst();
+      resultType = quickFind;
+      return true;
+    }
+    return false;
+  }
+
   QualType LookupHelper::findType(llvm::StringRef typeName,
                                   DiagSetting diagOnOff) const {
     //
@@ -350,89 +450,12 @@ namespace cling {
 
     if (typeName.empty()) return TheQT;
 
+    // Deal with the most common case.
     QualType quickFind;
-    bool quickFindReturns = false;
-    if (1) {
-      // Deal with the most common case.
-      llvm::StringRef quickTypeName = typeName.trim();
-      bool innerConst = false;
-      bool outerConst = false;
-      if (quickTypeName.startswith("const ")) {
-        // Use this syntax to avoid the redudant tests in substr.
-        quickTypeName = StringRef(quickTypeName.data()+6,
-                                  quickTypeName.size()-6);
-        innerConst = true;
-      }
-      constexpr int pointerType = 0;
-      constexpr int lrefType = 1;
-      constexpr int rrefType = 2;
-      if (quickTypeName.endswith("const")) {
-        if (quickTypeName.size() < 6) return QualType();
-        auto c = quickTypeName[quickTypeName.size()-6];
-        if (c==' ' || c=='&' || c=='*') {
-          outerConst = true;
-          if (c == ' ')
-            quickTypeName = StringRef(quickTypeName.data(),
-                                      quickTypeName.size() - 6);
-          else quickTypeName = StringRef(quickTypeName.data(),
-                                         quickTypeName.size() - 5);
-        }
-      }
-      std::vector<int> ptrref;
-      for(auto c = quickTypeName.end()-1; c != quickTypeName.begin(); --c) {
-        if (*c == '*')  ptrref.push_back(pointerType);
-        else if (*c == '&') {
-          if (*(c-1)== '&') {
-            --c;
-            ptrref.push_back(rrefType);
-
-          } else
-            ptrref.push_back(lrefType);
-        }
-        else break;
-      }
-      if (!ptrref.empty()) quickTypeName = StringRef(quickTypeName.data(),quickTypeName.size()-ptrref.size());
-      const Decl *quickResult = nullptr;
-      Parser &P = *m_Parser;
-      Sema &S = P.getActions();
-      ASTContext &Context = S.getASTContext();
-      quickFind = findBuiltinType(quickTypeName, Context);
-      if (quickFind.isNull() &&
-          quickFindDecl(quickTypeName, quickResult, *m_Parser, diagOnOff)) {
-        // The result of quickFindDecl was definitive, we don't need
-        // to check any further.
-        //const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickResult);
-        if (quickResult) {
-          const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickResult);
-          if (typedecl) {
-            quickFind = Context.getTypeDeclType(typedecl);
-          } else {
-            return QualType();
-          }
-        } else {
-          return QualType();
-        }
-      }
-      if (!quickFind.isNull()) {
-        if (innerConst) quickFind.addConst();
-
-        for(auto t : ptrref) {
-          switch (t) {
-            case pointerType :
-              quickFind = Context.getPointerType(quickFind);
-              break;
-            case rrefType :
-              quickFind = Context.getRValueReferenceType(quickFind);
-              break;
-            case lrefType :
-              quickFind = Context.getLValueReferenceType(quickFind);
-              break;
-          }
-        }
-        if (outerConst) quickFind.addConst();
-        quickFindReturns = true;
-        return quickFind;
-      }
+    if (quickFindType(typeName,quickFind, *m_Parser, diagOnOff)) {
+      // The result of quickFindDecl was definitive, we don't need
+      // to check any further.
+      return quickFind;
     }
 
     // Could trigger deserialization of decls.
