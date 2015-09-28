@@ -292,56 +292,186 @@ namespace cling {
     return false;
   }
 
-   QualType LookupHelper::findType(llvm::StringRef typeName,
-                                   DiagSetting diagOnOff) const {
-     //
-     //  Our return value.
-     //
-     QualType TheQT;
+  static QualType findBuiltinType(llvm::StringRef typeName, ASTContext &Context)
+  {
+    bool issigned = false;
+    bool isunsigned = false;
+    if (typeName.startswith("signed ")) {
+      issigned = true;
+      typeName = StringRef(typeName.data()+7, typeName.size()-7);
+    }
+    if (!issigned && typeName.startswith("unsigned ")) {
+      isunsigned = true;
+      typeName = StringRef(typeName.data()+9, typeName.size()-9);
+    }
+    if (typeName.equals("char")) {
+      if (isunsigned) return Context.UnsignedCharTy;
+      return Context.SignedCharTy;
+    }
+    if (typeName.equals("short")) {
+      if (isunsigned) return Context.UnsignedShortTy;
+      return Context.ShortTy;
+    }
+    if (typeName.equals("int")) {
+      if (isunsigned) return Context.UnsignedIntTy;
+      return Context.IntTy;
+    }
+    if (typeName.equals("long")) {
+      if (isunsigned) return Context.UnsignedLongTy;
+      return Context.LongTy;
+    }
+    if (typeName.equals("long long")) {
+      if (isunsigned) return Context.LongLongTy;
+      return Context.UnsignedLongLongTy;
+    }
+    if (!issigned && !isunsigned) {
+      if (typeName.equals("bool")) return Context.BoolTy;
+      if (typeName.equals("float")) return Context.FloatTy;
+      if (typeName.equals("double")) return Context.DoubleTy;
+      if (typeName.equals("long double")) return Context.LongDoubleTy;
 
-     if (typeName.empty()) return TheQT;
+      if (typeName.equals("wchar_t")) return Context.WCharTy;
+      if (typeName.equals("char16_t")) return Context.Char16Ty;
+      if (typeName.equals("char32_t")) return Context.Char32Ty;
+    }
+    /* Missing
+   CanQualType WideCharTy; // Same as WCharTy in C++, integer type in C99.
+   CanQualType WIntTy;   // [C99 7.24.1], integer type unchanged by default promotions.
+     */
+    return QualType();
+  }
 
-     if (1) {
-       const Decl *quickResult = nullptr;
-       if (quickFindDecl(typeName, quickResult, *m_Parser, diagOnOff)) {
-         // The result of quickFindDecl was definitive, we don't need
+  QualType LookupHelper::findType(llvm::StringRef typeName,
+                                  DiagSetting diagOnOff) const {
+    //
+    //  Our return value.
+    //
+    QualType TheQT;
 
-         // to check any further.
-         Parser &P = *m_Parser;
-         Sema &S = P.getActions();
-         const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickResult);
-         if (typedecl) return S.getASTContext().getTypeDeclType(typedecl);
-         return QualType();
-       }
-     }
+    if (typeName.empty()) return TheQT;
 
-     // Could trigger deserialization of decls.
-     Interpreter::PushTransactionRAII RAII(m_Interpreter);
+    QualType quickFind;
+    bool quickFindReturns = false;
+    if (1) {
+      // Deal with the most common case.
+      llvm::StringRef quickTypeName = typeName.trim();
+      bool innerConst = false;
+      bool outerConst = false;
+      if (quickTypeName.startswith("const ")) {
+        // Use this syntax to avoid the redudant tests in substr.
+        quickTypeName = StringRef(quickTypeName.data()+6,
+                                  quickTypeName.size()-6);
+        innerConst = true;
+      }
+      constexpr int pointerType = 0;
+      constexpr int lrefType = 1;
+      constexpr int rrefType = 2;
+      if (quickTypeName.endswith("const")) {
+        if (quickTypeName.size() < 6) return QualType();
+        auto c = quickTypeName[quickTypeName.size()-6];
+        if (c==' ' || c=='&' || c=='*') {
+          outerConst = true;
+          if (c == ' ')
+            quickTypeName = StringRef(quickTypeName.data(),
+                                      quickTypeName.size() - 6);
+          else quickTypeName = StringRef(quickTypeName.data(),
+                                         quickTypeName.size() - 5);
+        }
+      }
+      std::vector<int> ptrref;
+      for(auto c = quickTypeName.end()-1; c != quickTypeName.begin(); --c) {
+        if (*c == '*')  ptrref.push_back(pointerType);
+        else if (*c == '&') {
+          if (*(c-1)== '&') {
+            --c;
+            ptrref.push_back(rrefType);
 
-     // Use P for shortness
-     Parser& P = *m_Parser;
-     ParserStateRAII ResetParserState(P);
-     prepareForParsing(P,m_Interpreter,
-                       typeName, llvm::StringRef("lookup.type.by.name.file"),
-                       diagOnOff);
-     //
-     //  Try parsing the type name.
-     //
-     clang::ParsedAttributes Attrs(P.getAttrFactory());
+          } else
+            ptrref.push_back(lrefType);
+        }
+        else break;
+      }
+      if (!ptrref.empty()) quickTypeName = StringRef(quickTypeName.data(),quickTypeName.size()-ptrref.size());
+      const Decl *quickResult = nullptr;
+      Parser &P = *m_Parser;
+      Sema &S = P.getActions();
+      ASTContext &Context = S.getASTContext();
+      quickFind = findBuiltinType(quickTypeName, Context);
+      if (quickFind.isNull() &&
+          quickFindDecl(quickTypeName, quickResult, *m_Parser, diagOnOff)) {
+        // The result of quickFindDecl was definitive, we don't need
+        // to check any further.
+        //const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickResult);
+        if (quickResult) {
+          const TypeDecl *typedecl = dyn_cast<TypeDecl>(quickResult);
+          if (typedecl) {
+            quickFind = Context.getTypeDeclType(typedecl);
+          } else {
+            return QualType();
+          }
+        } else {
+          return QualType();
+        }
+      }
+      if (!quickFind.isNull()) {
+        if (innerConst) quickFind.addConst();
 
-     TypeResult Res(P.ParseTypeName(0,Declarator::TypeNameContext,clang::AS_none,
-                                    0,&Attrs));
-     if (Res.isUsable()) {
-       // Accept it only if the whole name was parsed.
-       if (P.NextToken().getKind() == clang::tok::eof) {
-         TypeSourceInfo* TSI = 0;
-         TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
-       }
-     }
-     return TheQT;
-   }
+        for(auto t : ptrref) {
+          switch (t) {
+            case pointerType :
+              quickFind = Context.getPointerType(quickFind);
+              break;
+            case rrefType :
+              quickFind = Context.getRValueReferenceType(quickFind);
+              break;
+            case lrefType :
+              quickFind = Context.getLValueReferenceType(quickFind);
+              break;
+          }
+        }
+        if (outerConst) quickFind.addConst();
+        quickFindReturns = true;
+        return quickFind;
+      }
+    }
 
-   const Decl* LookupHelper::findScope(llvm::StringRef className,
+    // Could trigger deserialization of decls.
+    Interpreter::PushTransactionRAII RAII(m_Interpreter);
+
+    // Use P for shortness
+    Parser& P = *m_Parser;
+    ParserStateRAII ResetParserState(P);
+    prepareForParsing(P,m_Interpreter,
+                      typeName, llvm::StringRef("lookup.type.by.name.file"),
+                      diagOnOff);
+    //
+    //  Try parsing the type name.
+    //
+    clang::ParsedAttributes Attrs(P.getAttrFactory());
+
+    TypeResult Res(P.ParseTypeName(0,Declarator::TypeNameContext,clang::AS_none,
+                                   0,&Attrs));
+    if (Res.isUsable()) {
+      // Accept it only if the whole name was parsed.
+      if (P.NextToken().getKind() == clang::tok::eof) {
+        TypeSourceInfo* TSI = 0;
+        TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
+      }
+    }
+    if (0 && quickFindReturns && TheQT != quickFind) {
+      fprintf(stderr,"findType: results differs:\n");
+      fprintf(stderr,"findType: quickFind:\n");
+      if (!quickFind.isNull()) quickFind.dump();
+      else fprintf(stderr,"\tno type\n");
+      fprintf(stderr,"findType: slow find:\n");
+      if (!TheQT.isNull()) TheQT.dump();
+      else fprintf(stderr,"\tno type\n");
+      //TheQT->dump();
+    }
+    return TheQT;
+  }
+
+  const Decl* LookupHelper::findScope(llvm::StringRef className,
                                       DiagSetting diagOnOff,
                                       const Type** resultType /* = 0 */,
                                       bool instantiateTemplate/*=true*/) const {
