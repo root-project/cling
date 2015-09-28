@@ -458,16 +458,6 @@ namespace cling {
         TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
       }
     }
-    if (0 && quickFindReturns && TheQT != quickFind) {
-      fprintf(stderr,"findType: results differs:\n");
-      fprintf(stderr,"findType: quickFind:\n");
-      if (!quickFind.isNull()) quickFind.dump();
-      else fprintf(stderr,"\tno type\n");
-      fprintf(stderr,"findType: slow find:\n");
-      if (!TheQT.isNull()) TheQT.dump();
-      else fprintf(stderr,"\tno type\n");
-      //TheQT->dump();
-    }
     return TheQT;
   }
 
