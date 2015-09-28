@@ -201,13 +201,16 @@ namespace cling {
     const clang::DeclContext *sofar = nullptr;
     const clang::Decl *next = nullptr;
     for (size_t c = 0, last = 0; c < declName.size(); ++c) {
-      if (declName[c] == '<' || declName[c] == '>') {
+      const char current = declName[c];
+      if (current == '<' || current == '>' ||
+          current == ' ' || current == '&' ||
+          current == '*' || current == '[' ||
+          current == ']') {
         // For now we do not know how to deal with
         // template instances.
-        // TODO: Should we quit on more cases (&,*,[]) in case we are called by findType.
         return false;
       }
-      if (declName[c] == ':') {
+      if (current == ':') {
         if (c + 2 >= declName.size() || declName[c + 1] != ':') {
           // Looks like an invalid name, we won't find anything.
           return true;
@@ -215,7 +218,6 @@ namespace cling {
         next = utils::Lookup::Named(&S, declName.substr(last, c - last), sofar);
         if (next && next != (void *) -1) {
           // Need to handle typedef here too.
-          // TODO: Should we keep the typedef in case we are called by findType.
           const TypedefNameDecl *typedefDecl = dyn_cast<TypedefNameDecl>(next);
           if (typedefDecl) {
             // We are stripping the typedef, this is technically incorrect,
