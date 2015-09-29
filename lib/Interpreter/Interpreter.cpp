@@ -1065,8 +1065,8 @@ namespace cling {
     while(true) {
       cling::Transaction* T = m_IncrParser->getLastTransaction();
       if (!T) {
-         llvm::errs() << "cling: invalid last transaction; unload failed!\n";
-         return;
+        llvm::errs() << "cling: invalid last transaction; unload failed!\n";
+        return;
       }
       if (InterpreterCallbacks* callbacks = getCallbacks())
         callbacks->TransactionUnloaded(*T);
@@ -1078,6 +1078,32 @@ namespace cling {
         break;
     }
 
+  }
+
+  static void runAndRemoveStaticDestructorsImpl(
+      IncrementalExecutor &executor,
+      std::vector<const Transaction*> &transactions,
+      unsigned int begin, unsigned int end) {
+
+    for(auto i = begin; i != end; --i) {
+      executor.runAndRemoveStaticDestructors((Transaction*)transactions[i-1]);
+    }
+  }
+
+  void Interpreter::runAndRemoveStaticDestructors(unsigned numberOfTransactions) {
+    if (!m_Executor) return;
+    auto transactions( m_IncrParser->getAllTransactions() );
+    unsigned int min = 0;
+    if (transactions.size() > numberOfTransactions) {
+      min = transactions.size() - numberOfTransactions;
+    }
+    runAndRemoveStaticDestructorsImpl(*m_Executor,transactions,transactions.size(),min);
+  }
+
+  void Interpreter::runAndRemoveStaticDestructors() {
+    if (!m_Executor) return;
+    auto transactions( m_IncrParser->getAllTransactions() );
+    runAndRemoveStaticDestructorsImpl(*m_Executor,transactions,transactions.size(),0);
   }
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
