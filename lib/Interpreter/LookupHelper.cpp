@@ -419,7 +419,7 @@ namespace cling {
       }
     }
     if (!quickFind.isNull()) {
-      if (innerConst) quickFind.addConst();
+      if (innerConst && !quickFind->isReferenceType()) quickFind.addConst();
 
       for(auto t : ptrref) {
         switch (t) {
@@ -434,7 +434,7 @@ namespace cling {
             break;
         }
       }
-      if (outerConst) quickFind.addConst();
+      if (outerConst && !quickFind->isReferenceType()) quickFind.addConst();
       resultType = quickFind;
       return true;
     }
@@ -484,6 +484,12 @@ namespace cling {
         TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
       }
     }
+//    if (!quickFind.isNull() && !TheQT.isNull() && TheQT != quickFind) {
+//      fprintf(stderr,"Different result\n");
+//      fprintf(stderr,"quickFindType:"); quickFind.dump();
+//      fprintf(stderr,"TheQT        :"); TheQT.dump();
+//
+//    }
     return TheQT;
   }
 
