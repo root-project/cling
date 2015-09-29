@@ -451,6 +451,9 @@ namespace cling {
     if (typeName.empty()) return TheQT;
 
     // Deal with the most common case.
+    // Going through this custom finder is both much faster
+    // (6 times faster, 10.6s to 57.5s for 1 000 000 calls) and consumes
+    // infinite less memory (0B vs 181 B per call for 'Float_t*').
     QualType quickFind;
     if (quickFindType(typeName,quickFind, *m_Parser, diagOnOff)) {
       // The result of quickFindDecl was definitive, we don't need
