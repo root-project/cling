@@ -450,6 +450,9 @@ namespace cling {
 
     if (typeName.empty()) return TheQT;
 
+    // Could trigger deserialization of decls.
+    Interpreter::PushTransactionRAII RAII(m_Interpreter);
+
     // Deal with the most common case.
     // Going through this custom finder is both much faster
     // (6 times faster, 10.6s to 57.5s for 1 000 000 calls) and consumes
@@ -460,9 +463,6 @@ namespace cling {
       // to check any further.
       return quickFind;
     }
-
-    // Could trigger deserialization of decls.
-    Interpreter::PushTransactionRAII RAII(m_Interpreter);
 
     // Use P for shortness
     Parser& P = *m_Parser;
