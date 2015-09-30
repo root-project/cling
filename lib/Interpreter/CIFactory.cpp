@@ -322,17 +322,22 @@ namespace {
     Opts.MathErrno = 0;
 #endif
 
-    // C++11 is turned on if cling is built with C++11: it's an interperter;
+    // C++11 is turned on if cling is built with C++11: it's an interpreter;
     // cross-language compilation doesn't make sense.
     // Extracted from Boost/config/compiler.
     // SunProCC has no C++11.
     // VisualC's support is not obvious to extract from Boost...
 
-#if __cplusplus >= 201402L
-     if (Opts.CPlusPlus) Opts.CPlusPlus14 = 1;
+    // The value of __cplusplus in GCC < 5.0 (e.g. 4.9.3) when
+    // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
+    // the test for C++14 or more (201402L) as previously specified.
+    // I would claim that the check should be relaxed to:
+
+#if __cplusplus > 201103L
+    if (Opts.CPlusPlus) Opts.CPlusPlus14 = 1;
 #endif
 #if __cplusplus >= 201103L
-     if (Opts.CPlusPlus) Opts.CPlusPlus11 = 1;
+    if (Opts.CPlusPlus) Opts.CPlusPlus11 = 1;
 #endif
 
 #ifdef _REENTRANT
