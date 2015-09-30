@@ -184,7 +184,7 @@ namespace cling {
   ///\param declName name of the class, enum, uniorn or namespace being
   ///       looked for
   ///\param resultDecl pointer that will be updated with the answer
-  ///\param Parse to use for the search
+  ///\param P Parse to use for the search
   ///\param diagOnOff whether the error diagnostics are printed or not.
   ///\return returns true if the answer is authoritative or false if a more
   ///        detailed search is needed (usually this is for class template
@@ -343,10 +343,10 @@ namespace cling {
 
   ///\brief Look for a tag decl based on its name
   ///
-  ///\param declName name of the class, enum, uniorn or namespace being
+  ///\param typeName name of the class, enum, uniorn or namespace being
   ///       looked for
   ///\param resultType reference to QualType that will be updated with the answer
-  ///\param Parse to use for the search
+  ///\param P Parse to use for the search
   ///\param diagOnOff whether the error diagnostics are printed or not.
   ///\return returns true if the answer is authoritative or false if a more
   ///        detailed search is needed (usually this is for class template
