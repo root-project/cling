@@ -1086,7 +1086,8 @@ namespace cling {
       unsigned int begin, unsigned int end) {
 
     for(auto i = begin; i != end; --i) {
-      executor.runAndRemoveStaticDestructors(const_cast<Transaction*>(transactions[i-1]));
+      if (transactions[i-1] != nullptr)
+        executor.runAndRemoveStaticDestructors(const_cast<Transaction*>(transactions[i-1]));
     }
   }
 
