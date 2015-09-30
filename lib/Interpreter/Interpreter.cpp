@@ -1080,10 +1080,9 @@ namespace cling {
 
   }
 
-  static void runAndRemoveStaticDestructorsImpl(
-      IncrementalExecutor &executor,
-      std::vector<const Transaction*> &transactions,
-      unsigned int begin, unsigned int end) {
+  static void runAndRemoveStaticDestructorsImpl(IncrementalExecutor &executor,
+                                std::vector<const Transaction*> &transactions,
+                                         unsigned int begin, unsigned int end) {
 
     for(auto i = begin; i != end; --i) {
       if (transactions[i-1] != nullptr)
@@ -1092,19 +1091,23 @@ namespace cling {
   }
 
   void Interpreter::runAndRemoveStaticDestructors(unsigned numberOfTransactions) {
-    if (!m_Executor) return;
+    if (!m_Executor)
+      return;
     auto transactions( m_IncrParser->getAllTransactions() );
     unsigned int min = 0;
     if (transactions.size() > numberOfTransactions) {
       min = transactions.size() - numberOfTransactions;
     }
-    runAndRemoveStaticDestructorsImpl(*m_Executor,transactions,transactions.size(),min);
+    runAndRemoveStaticDestructorsImpl(*m_Executor, transactions,
+                                      transactions.size(), min);
   }
 
   void Interpreter::runAndRemoveStaticDestructors() {
-    if (!m_Executor) return;
+    if (!m_Executor)
+      return;
     auto transactions( m_IncrParser->getAllTransactions() );
-    runAndRemoveStaticDestructorsImpl(*m_Executor,transactions,transactions.size(),0);
+    runAndRemoveStaticDestructorsImpl(*m_Executor, transactions,
+                                      transactions.size(), 0);
   }
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
