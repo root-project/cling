@@ -24,6 +24,10 @@
 #include "clang/Sema/Template.h"
 #include "clang/Sema/TemplateDeduction.h"
 
+#if defined(_MSC_VER) && (_MSC_VER <= 1800)
+#define constexpr const
+#endif
+
 using namespace clang;
 
 namespace clang {
