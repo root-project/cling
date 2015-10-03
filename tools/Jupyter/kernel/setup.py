@@ -68,7 +68,7 @@ install_requires = setuptools_args['install_requires'] = [
     'ipython',
     'pyzmq',
     'tornado',
-    'pexpect',
+    'pexpect>=3.3',
 ]
 
 if 'setuptools' in sys.modules:
