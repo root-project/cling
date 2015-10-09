@@ -157,7 +157,10 @@ static std::string executePrintValue(const Value &V, const T &val) {
   Value printValueV;
   Interp->evaluate(printValueSS.str(), printValueV);
   assert(printValueV.isValid() && "Must return valid value.");
-  return *(std::string *) printValueV.getPtr();
+  if (!printValueV.isValid() || printValueV.getPtr() == nullptr)
+    return "Error in ValuePrinter: missing output string.";
+  else
+    return *(std::string *) printValueV.getPtr();
 }
 
 static std::string invokePrintValueOverload(const Value &V) {
