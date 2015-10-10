@@ -140,7 +140,7 @@ namespace cling {
     auto printValue_impl(const CollectionType *obj, int)
     -> decltype(
     ++(obj->begin()), obj->end(),
-        *(obj->begin()),
+        *(obj->begin()),  &(*(obj->begin())),
         std::string())
     {
       std::string str = "{ ";
@@ -157,6 +157,31 @@ namespace cling {
 
       return str + " }";
     }
+
+    // Vector, set, deque etc.
+    template<typename CollectionType>
+    auto printValue_impl(const CollectionType *obj, int)
+    -> decltype(
+    ++(obj->begin()), obj->end(),
+        *(obj->begin()),
+        std::string())
+     {
+        std::string str = "--{ ";
+
+        auto iter = obj->begin();
+        auto iterEnd = obj->end();
+        while (iter != iterEnd) {
+           const auto value = (*iter);
+           str += printValue(&value);
+           ++iter;
+           if (iter != iterEnd) {
+              str += ", ";
+           }
+        }
+
+        return str + " }";
+     }
+
   }
 
 }
