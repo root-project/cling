@@ -358,7 +358,9 @@ def compile(arg):
     global prefix
     prefix = arg
     PYTHON = sys.executable
-    cores = multiprocessing.cpu_count()
+
+    # GCC crashes if more than 4 cores are used. Temporary fix for Travis CI.
+    cores = 4 if multiprocessing.cpu_count() > 4 else multiprocessing.cpu_count()
 
     # Cleanup previous installation directory if any
     if os.path.isdir(prefix):
