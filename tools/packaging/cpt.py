@@ -1517,12 +1517,12 @@ Do you want to continue? [yes/no]: ''').lower()
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
-                                 stderr=subprocess.STDOUT).communicate('yes')
+                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                 subprocess.Popen(['sudo apt-get install git g++ debhelper devscripts gnupg python'],
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
-                                 stderr=subprocess.STDOUT).communicate('yes')
+                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                 break
             elif choice in no:
                 print('''
@@ -1565,7 +1565,7 @@ Do you want to continue? [yes/no]: ''').lower()
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
-                                 stderr=subprocess.STDOUT).communicate('yes')
+                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                 break
             elif choice in no:
                 print('''
@@ -1596,12 +1596,12 @@ Do you want to continue? [yes/no]: ''').lower()
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
-                                 stderr=subprocess.STDOUT).communicate('yes')
+                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                 subprocess.Popen(['sudo port install git g++ python'],
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
-                                 stderr=subprocess.STDOUT).communicate('yes')
+                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                 break
             elif choice in no:
                 print('''
