@@ -49,6 +49,7 @@ import time
 import multiprocessing
 import fileinput
 import stat
+import json
 
 
 ###############################################################################
@@ -176,28 +177,28 @@ def wget(url, out_dir):
         print()
 
 
-def fetch_llvm(LLVMRevision):
+def fetch_llvm(llvm_revision):
     box_draw("Fetch source files")
-    print('Last known good LLVM revision is: ' + LLVMRevision)
+    print('Last known good LLVM revision is: ' + llvm_revision)
     print('Current working directory is: ' + workdir + '\n')
 
     if "github.com" in LLVM_GIT_URL and args['create_dev_env'] is None:
         _, _, _, user, repo = LLVM_GIT_URL.split('/')
         print('Fetching LLVM ...')
         wget(url='https://github.com/%s/%s' % (user, repo.replace('.git', '')) +
-                 '/archive/cling-patches-r%s.tar.gz' % LLVMRevision,
+                 '/archive/cling-patches-r%s.tar.gz' % llvm_revision,
              out_dir=workdir)
 
-        print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
-        tar = tarfile.open(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
+        print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+        tar = tarfile.open(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
         tar.extractall(path=workdir)
         tar.close()
 
-        os.rename(os.path.join(workdir, 'llvm-cling-patches-r%s' % LLVMRevision), srcdir)
+        os.rename(os.path.join(workdir, 'llvm-cling-patches-r%s' % llvm_revision), srcdir)
 
-        if os.path.isfile(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision)):
-            print("Remove file: " + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
-            os.remove(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
+        if os.path.isfile(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision)):
+            print("Remove file: " + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+            os.remove(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
 
         print()
         return
@@ -205,7 +206,7 @@ def fetch_llvm(LLVMRevision):
     def get_fresh_llvm():
         exec_subprocess_call('git clone %s %s' % (LLVM_GIT_URL, srcdir), workdir)
 
-        exec_subprocess_call('git checkout cling-patches-r%s' % LLVMRevision, srcdir)
+        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, srcdir)
 
     def update_old_llvm():
         exec_subprocess_call('git stash', srcdir)
@@ -214,9 +215,9 @@ def fetch_llvm(LLVMRevision):
 
         exec_subprocess_call('git fetch --tags', srcdir)
 
-        exec_subprocess_call('git checkout cling-patches-r%s' % LLVMRevision, srcdir)
+        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, srcdir)
 
-        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s' % (LLVMRevision), srcdir)
+        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s' % (llvm_revision), srcdir)
 
     if os.path.isdir(srcdir):
         update_old_llvm()
@@ -224,25 +225,25 @@ def fetch_llvm(LLVMRevision):
         get_fresh_llvm()
 
 
-def fetch_clang(LLVMRevision):
+def fetch_clang(llvm_revision):
     if "github.com" in CLANG_GIT_URL and args['create_dev_env'] is None:
         _, _, _, user, repo = CLANG_GIT_URL.split('/')
         print('Fetching Clang ...')
         wget(url='https://github.com/%s/%s' % (user, repo.replace('.git', '')) +
-                 '/archive/cling-patches-r%s.tar.gz' % LLVMRevision,
+                 '/archive/cling-patches-r%s.tar.gz' % llvm_revision,
              out_dir=workdir)
 
-        print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
-        tar = tarfile.open(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
+        print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+        tar = tarfile.open(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
         tar.extractall(path=os.path.join(srcdir, 'tools'))
         tar.close()
 
-        os.rename(os.path.join(srcdir, 'tools', 'clang-cling-patches-r%s' % LLVMRevision),
+        os.rename(os.path.join(srcdir, 'tools', 'clang-cling-patches-r%s' % llvm_revision),
                   os.path.join(srcdir, 'tools', 'clang'))
 
-        if os.path.isfile(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision)):
-            print("Remove file: " + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
-            os.remove(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % LLVMRevision))
+        if os.path.isfile(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision)):
+            print("Remove file: " + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+            os.remove(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
 
         print()
         return
@@ -250,7 +251,7 @@ def fetch_clang(LLVMRevision):
     def get_fresh_clang():
         exec_subprocess_call('git clone %s' % CLANG_GIT_URL, os.path.join(srcdir, 'tools'))
 
-        exec_subprocess_call('git checkout cling-patches-r%s' % LLVMRevision, os.path.join(srcdir, 'tools', 'clang'))
+        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, os.path.join(srcdir, 'tools', 'clang'))
 
     def update_old_clang():
         exec_subprocess_call('git stash', os.path.join(srcdir, 'tools', 'clang'))
@@ -259,9 +260,9 @@ def fetch_clang(LLVMRevision):
 
         exec_subprocess_call('git fetch --tags', os.path.join(srcdir, 'tools', 'clang'))
 
-        exec_subprocess_call('git checkout cling-patches-r%s' % LLVMRevision, os.path.join(srcdir, 'tools', 'clang'))
+        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, os.path.join(srcdir, 'tools', 'clang'))
 
-        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s' % LLVMRevision,
+        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s' % llvm_revision,
                              os.path.join(srcdir, 'tools', 'clang'))
 
     if os.path.isdir(os.path.join(srcdir, 'tools', 'clang')):
@@ -274,11 +275,11 @@ def fetch_cling(arg):
     def get_fresh_cling():
         exec_subprocess_call('git clone %s' % CLING_GIT_URL, os.path.join(srcdir, 'tools'))
 
-        if arg == 'last-stable':
-            checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1',
-                                                           CLING_SRC_DIR)
+        # if arg == 'last-stable':
+        #    checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1',
+        #                                                   CLING_SRC_DIR)
 
-        elif arg == 'master':
+        if arg == 'master':
             checkout_branch = 'master'
         else:
             checkout_branch = arg
@@ -292,11 +293,11 @@ def fetch_cling(arg):
 
         exec_subprocess_call('git fetch --tags', CLING_SRC_DIR)
 
-        if arg == 'last-stable':
-            checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1',
-                                                           CLING_SRC_DIR)
+        # if arg == 'last-stable':
+        #    checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1',
+        #                                                   CLING_SRC_DIR)
 
-        elif arg == 'master':
+        if arg == 'master':
             checkout_branch = 'master'
         else:
             checkout_branch = arg
@@ -1501,7 +1502,7 @@ prefix = ''
 LLVM_GIT_URL = args['with_llvm_url']
 CLANG_GIT_URL = args['with_clang_url']
 CLING_GIT_URL = args['with_cling_url']
-# LLVMRevision = urlopen(
+# llvm_revision = urlopen(
 #    "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
 #   'utf-8')
 VERSION = ''
@@ -1643,11 +1644,11 @@ Install/update the required packages by:
                 continue
 
 if args['current_dev']:
-    LLVMRevision = urlopen(
+    llvm_revision = urlopen(
         "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
         'utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
     fetch_cling('master')
     set_version()
     if args['current_dev'] == 'tar':
@@ -1703,13 +1704,24 @@ if args['current_dev']:
         cleanup()
 
 if args['last_stable']:
-    # TODO: Hard coded until CPT has migrated to GitHub API
-    LLVMRevision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/v0.1/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
-        'utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
-    fetch_cling('last-stable')
+    tag = json.loads(urlopen("https://api.github.com/repos/vgvassilev/cling/tags")
+                     .read().decode('utf-8'))[0]['name'].encode('ascii', 'ignore').decode("utf-8")
+
+    # For Python 3 compatibility
+    tag = str(tag)
+
+    # FIXME
+    assert tag[0] is "v"
+
+    llvm_revision = urlopen(
+        'https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt' % tag
+    ).readline().strip().decode('utf-8')
+
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
+
+    print("Last stable Cling release detected: ", tag)
+    fetch_cling(tag)
 
     if args['last_stable'] == 'tar':
         set_version()
@@ -1769,12 +1781,12 @@ if args['last_stable']:
         cleanup()
 
 if args['tarball_tag']:
-    LLVMRevision = urlopen(
+    llvm_revision = urlopen(
         "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'tarball_tag']).readline().strip().decode(
         'utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
     fetch_cling(args['tarball_tag'])
     set_version()
 
@@ -1795,12 +1807,12 @@ if args['tarball_tag']:
     cleanup()
 
 if args['deb_tag']:
-    LLVMRevision = urlopen(
+    llvm_revision = urlopen(
         "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'deb_tag']).readline().strip().decode(
         'utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
     fetch_cling(args['deb_tag'])
     set_version()
     compile(os.path.join(workdir, 'cling-' + VERSION))
@@ -1812,12 +1824,12 @@ if args['deb_tag']:
     cleanup()
 
 if args['rpm_tag']:
-    LLVMRevision = urlopen(
+    llvm_revision = urlopen(
         "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'rpm_tag']).readline().strip().decode(
         'utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
     fetch_cling(args['rpm_tag'])
     set_version()
     compile(os.path.join(workdir, 'cling-' + VERSION))
@@ -1829,12 +1841,12 @@ if args['rpm_tag']:
     cleanup()
 
 if args['nsis_tag']:
-    LLVMRevision = urlopen(
+    llvm_revision = urlopen(
         "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'nsis_tag']).readline().strip().decode(
         'utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
     fetch_cling(args['nsis_tag'])
     set_version()
     get_win_dep()
@@ -1847,12 +1859,12 @@ if args['nsis_tag']:
     cleanup()
 
 if args['dmg_tag']:
-    LLVMRevision = urlopen(
+    llvm_revision = urlopen(
         "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'dmg_tag']).readline().strip().decode(
         'utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
     fetch_cling(args['dmg_tag'])
     set_version()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
@@ -1863,11 +1875,11 @@ if args['dmg_tag']:
     cleanup()
 
 if args['create_dev_env']:
-    LLVMRevision = urlopen(
+    llvm_revision = urlopen(
         "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt"
     ).readline().strip().decode('utf-8')
-    fetch_llvm(LLVMRevision)
-    fetch_clang(LLVMRevision)
+    fetch_llvm(llvm_revision)
+    fetch_clang(llvm_revision)
     fetch_cling('master')
     set_version()
     if OS == 'Windows':
