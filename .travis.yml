@@ -6,32 +6,22 @@ compiler:
 before_install:
   - echo $LANG
   - echo $LC_ALL
-  - sudo apt-get install python-software-properties
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
   - sudo apt-get update
-  - sudo apt-get install gcc-4.8
-  - sudo apt-get install g++-4.8
-  - sudo apt-get install binutils-gold
+  - sudo apt-get install git gcc-4.8 g++-4.8 debhelper devscripts gnupg python binutils-gold python-software-properties
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+  - wget https://raw.githubusercontent.com/vgvassilev/cling/master/tools/packaging/cpt.py
+  - chmod +x cpt.py
 
 before_script:
-  - mkdir src inst obj
-  - git clone https://github.com/vgvassilev/llvm.git src
-  - (cd src && git checkout cling-patches)
-  - git clone https://github.com/vgvassilev/clang.git src/tools/clang
-  - (cd src/tools/clang && git checkout cling-patches)
-  - git clone https://github.com/vgvassilev/cling.git src/tools/cling
-  - cd src
-  - cd ../obj
-  - travis_retry ../src/configure --prefix=`pwd`/../inst --disable-docs --disable-bindings --disable-visibility-inlines-hidden --disable-clang-rewriter --disable-clang-static-analyzer --disable-clang-arcmt --disable-compiler-version-checks --enable-targets=host
+  # Perform a sanity check before proceeding
+  - echo "no" | ./cpt.py -c
 
 script:
-  - travis_retry make -j4 -k
-  - travis_retry make -j4 -k
-  - travis_retry make install
-  - cd tools/cling
-  - make test LIT_ARGS=--no-progress-bar
+  # FIXME: Change URLs to the repo of @vgvassilev after repositories have been updated.
+  # Remove --no-test option when appropriate.
+  - ./cpt.py --create-dev-env=release --no-test --with-llvm-url=https://github.com/onyb/llvm --with-clang-url=https://github.com/onyb/clang --with-cling-url=http://root.cern.ch/git/cling.git
 
 branches:
   only:
@@ -40,17 +30,14 @@ branches:
 notifications:
   recipients:
     - vvasilev@cern.ch
+    - ani07nov@gmail.com
     #- cling-dev@cern.ch
-
   email:
     on_success: change
     on_failure: always
-  #irc:
-  #channels:
-    #- "chat.freenode.net#rubinius"
+
   template:
     - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"
 
 os:
   - linux
-#  - osx
