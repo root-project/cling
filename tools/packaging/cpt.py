@@ -523,11 +523,17 @@ def check_ubuntu(pkg):
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
-        import socket
-        if hasattr(socket, 'ssl'):
-            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+        if sys.version_info < (3, 0):
+            # Python 2.x
+            import socket
+            if hasattr(socket, 'ssl'):
+                print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+            else:
+                print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
         else:
-            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
+            # Python 3.x
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+
     elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'" % (pkg),
                                       '/').strip() == '0':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
@@ -791,11 +797,17 @@ def check_redhat(pkg):
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
-        import socket
-        if hasattr(socket, 'ssl'):
-            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+        if sys.version_info < (3, 0):
+            # Python 2.x
+            import socket
+            if hasattr(socket, 'ssl'):
+                print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+            else:
+                print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
         else:
-            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
+            # Python 3.x
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+
     elif exec_subprocess_check_output("rpm -qa | grep -w %s" % (pkg), '/').strip() == '':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
     else:
@@ -937,11 +949,16 @@ def check_win(pkg):
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == 'SSL':
-        import socket
-        if hasattr(socket, 'ssl'):
-            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+        if sys.version_info < (3, 0):
+            # Python 2.x
+            import socket
+            if hasattr(socket, 'ssl'):
+                print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+            else:
+                print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
         else:
-            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
+            # Python 3.x
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
 
             # Check for other tools
     else:
@@ -1248,11 +1265,17 @@ def check_mac(pkg):
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
-        import socket
-        if hasattr(socket, 'ssl'):
-            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+        if sys.version_info < (3, 0):
+            # Python 2.x
+            import socket
+            if hasattr(socket, 'ssl'):
+                print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+            else:
+                print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
         else:
-            print(pkg.ljust(20) + '[NOT SUPPORTED]'.ljust(30))
+            # Python 3.x
+            print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
+
     elif exec_subprocess_check_output("type -p %s" % (pkg), '/').strip() == '':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
     else:
