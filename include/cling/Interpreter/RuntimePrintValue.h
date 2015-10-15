@@ -166,7 +166,7 @@ namespace cling {
         *(obj->begin()),
         std::string())
      {
-        std::string str = "--{ ";
+        std::string str = "{ ";
 
         auto iter = obj->begin();
         auto iterEnd = obj->end();
