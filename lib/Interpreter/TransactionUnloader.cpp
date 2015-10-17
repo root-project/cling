@@ -923,8 +923,8 @@ namespace clang {
 
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
-    bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
-    Successful &= VisitDeclContext(NSD);
+    bool Successful = VisitDeclContext(NSD);
+    Successful &= VisitRedeclarable(NSD, NSD->getDeclContext());
     Successful &= VisitNamedDecl(NSD);
 
     return Successful;
