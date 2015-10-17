@@ -410,6 +410,28 @@ namespace clang {
       return VisitMacro(MD);
     }
 
+    template <typename T>
+    constexpr static bool isDefinition(T*) {
+      return false;
+    }
+    static bool isDefinition(TagDecl* R) {
+      return R->isCompleteDefinition() && dyn_cast<CXXRecordDecl>(R);
+    }
+    template <typename T>
+    static void resetDefinitionData(T*) {
+      llvm_unreachable("resetDefinitionData on non-cxx record declaration");
+    }
+    static void resetDefinitionData(TagDecl *decl) {
+      auto canon = dyn_cast<CXXRecordDecl>(decl->getCanonicalDecl());
+      assert(canon && "Only CXXRecordDecl have DefinitionData");
+      for (auto iter = canon->getMostRecentDecl(); iter;
+           iter = iter->getPreviousDecl()) {
+        auto declcxx = dyn_cast<CXXRecordDecl>(iter);
+        assert(declcxx && "Only CXXRecordDecl have DefinitionData");
+        declcxx->DefinitionData = canon;
+      }
+    }
+
     // Copied and adapted from: ASTReaderDecl.cpp
     template<typename DeclT>
     void removeRedeclFromChain(DeclT* R) {
@@ -439,6 +461,9 @@ namespace clang {
       };
 
       assert(R != R->getFirstDecl() && "Cannot remove only redecl from chain");
+
+      const bool isdef = isDefinition(R);
+
       // In the following cases, A marks the first, Z the most recent and
       // R the decl to be removed from the chain.
       DeclT* Prev = R->getPreviousDecl();
@@ -463,6 +488,12 @@ namespace clang {
           // R -> .. -> Z
           RedeclDerived::setFirst(Next);
         }
+      }
+      // If the decl was the definition, the other decl might have their
+      // DefinitionData pointing to it.
+      // This is really need only if DeclT is a TagDecl or derived.
+      if (isdef) {
+        resetDefinitionData(Prev);
       }
     }
     void removeRedeclFromChain(...) {
