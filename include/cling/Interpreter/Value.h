@@ -138,7 +138,13 @@ namespace cling {
     /// \brief Copy a value.
     Value(const Value& other);
     /// \brief Move a value.
-    Value(Value&& other);
+    Value(Value&& other):
+      m_Storage(other.m_Storage), m_StorageType(other.m_StorageType),
+      m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
+      // Invalidate other so it will not release.
+      other.m_StorageType = kUnsupportedType;
+    }
+
     /// \brief Construct a valid but ininitialized Value. After this call the
     ///   value's storage can be accessed; i.e. calls ManagedAllocate() if
     ///   needed.
