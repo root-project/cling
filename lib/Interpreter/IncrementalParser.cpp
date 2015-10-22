@@ -599,6 +599,9 @@ namespace cling {
     if (m_Interpreter->getOptions().ErrorOut)
       return;
 
+    if (InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks())
+      callbacks->TransactionRollback(*T);
+
     TransactionUnloader U(&getCI()->getSema(), m_CodeGen.get());
 
     if (!T->getParent()) {

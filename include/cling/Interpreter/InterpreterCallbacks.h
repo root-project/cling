@@ -132,11 +132,17 @@ namespace cling {
     virtual void TransactionCommitted(const Transaction&) {}
 
     ///\brief This callback is invoked whenever interpreter has reverted a
-    /// portion of declarations.
+    /// transaction that has been fully committed.
     ///
     ///\param[in] - The transaction that was reverted.
     ///
     virtual void TransactionUnloaded(const Transaction&) {}
+
+    ///\brief This callback is invoked whenever a transaction is rolled back.
+    ///
+    ///\param[in] - The transaction that was reverted.
+    ///
+    virtual void TransactionRollback(const Transaction&) {}
 
     /// \brief Used to inform client about a new decl read by the ASTReader.
     ///
