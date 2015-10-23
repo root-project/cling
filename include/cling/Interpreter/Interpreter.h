@@ -219,13 +219,12 @@ namespace cling {
                                        Value* V = 0,
                                        Transaction** T = 0);
 
-    ///\brief Decides whether the input line should be wrapped or not by using
-    /// simple lexing to determine whether it is known that it should be on the
-    /// global scope or not.
+    ///\brief Decides whether the input line should be wrapped into a function
+    /// declaration that can later be executed.
     ///
     ///\param[in] input - The input being scanned.
     ///
-    ///\returns true if the input should be wrapped.
+    ///\returns true if the input should be wrapped into a function declaration.
     ///
     bool ShouldWrapInput(const std::string& input);
 
@@ -239,7 +238,7 @@ namespace cling {
     ///
     void WrapInput(std::string& input, std::string& fname);
 
-    ///\brief Runs given wrapper function void(*)(Value*).
+    ///\brief Runs given wrapper function.
     ///
     ///\param [in] fname - The function name.
     ///\param [in,out] res - The return result of the run function. Must be
@@ -490,8 +489,8 @@ namespace cling {
     ///\brief Compiles input line and runs.
     ///
     /// The interface is the fastest way to compile and run a statement or
-    /// expression. It just wraps the input and runs the wrapper, without any
-    /// other "magic"
+    /// expression. It just wraps the input into a function definition and runs
+    /// that function, without any other "magic".
     ///
     /// @param[in] input - The input containing only expressions.
     ///
