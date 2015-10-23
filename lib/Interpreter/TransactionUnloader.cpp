@@ -415,7 +415,7 @@ namespace clang {
       return false;
     }
     static bool isDefinition(TagDecl* R) {
-      return R->isCompleteDefinition() && dyn_cast<CXXRecordDecl>(R);
+      return R->isCompleteDefinition() && isa<CXXRecordDecl>(R);
     }
     template <typename T>
     static void resetDefinitionData(T*) {
