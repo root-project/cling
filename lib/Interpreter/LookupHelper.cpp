@@ -1757,8 +1757,6 @@ namespace cling {
 
     typedef llvm::StringRef ArgsInput;
 
-    llvm::SmallVector<ExprAlloc, 4> ExprMemory;
-
     bool operator()(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                     const ArgsInput &funcArgs,
                     LookupHelper::DiagSetting diagOnOff,
