@@ -214,30 +214,30 @@ namespace utils {
   }
 
   static bool
-  GetFullyQualifiedTemplateArgument(const ASTContext& Ctx, TemplateArgument &arg)
-  {
-     bool changed = false;
+  GetFullyQualifiedTemplateArgument(const ASTContext& Ctx,
+                                    TemplateArgument &arg) {
+    bool changed = false;
 
-     // Note: we do not handle TemplateArgument::Expression, to replace it
-     // we need the information for the template instance decl.
-     // See GetPartiallyDesugaredTypeImpl
+    // Note: we do not handle TemplateArgument::Expression, to replace it
+    // we need the information for the template instance decl.
+    // See GetPartiallyDesugaredTypeImpl
 
-     if (arg.getKind() == TemplateArgument::Template) {
-        TemplateName tname = arg.getAsTemplate();
-        changed = GetFullyQualifiedTemplateName(Ctx, tname);
-        if (changed) {
-           arg = TemplateArgument(tname);
-        }
-     } else if (arg.getKind() == TemplateArgument::Type) {
-        QualType SubTy = arg.getAsType();
-        // Check if the type needs more desugaring and recurse.
-        QualType QTFQ = TypeName::GetFullyQualifiedType(SubTy, Ctx);
-        if (QTFQ != SubTy) {
-           arg = TemplateArgument(QTFQ);
-           changed = true;
-        }
-     }
-     return changed;
+    if (arg.getKind() == TemplateArgument::Template) {
+      TemplateName tname = arg.getAsTemplate();
+      changed = GetFullyQualifiedTemplateName(Ctx, tname);
+      if (changed) {
+        arg = TemplateArgument(tname);
+      }
+    } else if (arg.getKind() == TemplateArgument::Type) {
+      QualType SubTy = arg.getAsType();
+      // Check if the type needs more desugaring and recurse.
+      QualType QTFQ = TypeName::GetFullyQualifiedType(SubTy, Ctx);
+      if (QTFQ != SubTy) {
+        arg = TemplateArgument(QTFQ);
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   static const Type*
