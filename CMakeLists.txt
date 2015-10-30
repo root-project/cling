@@ -85,6 +85,8 @@ if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   endif()
 endif ()
 
+string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
 # The package needs to be compiler without RTTI information
 if(MSVC)
   add_definitions(/GR-)
