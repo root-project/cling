@@ -642,9 +642,14 @@ namespace {
       delete Invocation;
       return 0;
     }
+
     clang::CompilerInvocation::CreateFromArgs(*Invocation, CC1Args->data() + 1,
                                               CC1Args->data() + CC1Args->size(),
                                               *Diags);
+    // We appreciate the error message about an unknown flag (or do we? if not
+    // we should switch to a different DiagEngine for parsing the flags).
+    // But in general we'll happily go on.
+    Diags->Reset();
 
     // Create and setup a compiler instance.
     std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
