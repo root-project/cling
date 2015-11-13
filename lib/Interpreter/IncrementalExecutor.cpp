@@ -248,7 +248,7 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
       executeInit(F->getName());
 
       initFuncs.push_back(F);
-      if (F->getName().startswith("_GLOBAL__sub_I__")) {
+      if (F->getName().startswith("_GLOBAL__sub_I_")) {
         BasicBlock& BB = F->getEntryBlock();
         for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
           if (CallInst* call = dyn_cast<CallInst>(I))
