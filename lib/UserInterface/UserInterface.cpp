@@ -193,16 +193,3 @@ namespace cling {
     }
   }
 } // end namespace cling
-
-
-
-
-
-
-
-
-
-
-
-
-
