@@ -18,9 +18,6 @@
 #include <memory>
 #include <string>
 
-// FIXME: workaround until JIT supports exceptions
-#include <setjmp.h>
-
 namespace llvm {
   class raw_ostream;
   struct GenericValue;
@@ -181,9 +178,6 @@ namespace cling {
     ///\brief Information about the last stored states through .storeState
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
-
-    ///\brief: FIXME: workaround until JIT supports exceptions
-    static jmp_buf* m_JumpBuf;
 
     ///\brief Processes the invocation options.
     ///
@@ -638,8 +632,6 @@ namespace cling {
                         llvm::raw_ostream* logs = 0) const;
 
     friend class runtime::internal::LifetimeHandler;
-    // FIXME: workaround until JIT supports exceptions
-    static jmp_buf*& getNullDerefJump() { return m_JumpBuf; }
   };
 
   namespace internal {

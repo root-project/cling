@@ -72,8 +72,6 @@ namespace {
 } // unnamed namespace
 
 namespace cling {
-  // FIXME: workaround until JIT supports exceptions
-  jmp_buf* Interpreter::m_JumpBuf;
 
   Interpreter::PushTransactionRAII::PushTransactionRAII(const Interpreter* i)
     : m_Interpreter(i) {

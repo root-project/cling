@@ -192,8 +192,8 @@ namespace cling {
     std::vector<WTPtr_t> WrapperTransformers;
     WrapperTransformers.emplace_back(new ValuePrinterSynthesizer(TheSema, 0));
     WrapperTransformers.emplace_back(new DeclExtractor(TheSema));
-    WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema));
     WrapperTransformers.emplace_back(new NullDerefProtectionTransformer(TheSema));
+    WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema));
     WrapperTransformers.emplace_back(new CheckEmptyTransactionTransformer(TheSema));
 
     m_Consumer->SetTransformers(std::move(ASTTransformers),

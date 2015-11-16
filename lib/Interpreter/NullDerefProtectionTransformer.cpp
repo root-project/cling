@@ -191,27 +191,26 @@ namespace cling {
       return result;
     }
 
+    NodeContext VisitCXXMemberCallExpr(CXXMemberCallExpr* CME) {
+       NodeContext result(CME);
+       Expr* Callee = CME->getCallee();
+       if (isa<MemberExpr>(Callee)) {
+         NodeContext ME = Visit(Callee);
+         if (!ME.isSingleStmt())
+           result.prepend(ME.getStmts()[0]);
+       }
+       return result;
+    }
+
   private:
     Stmt* SynthesizeCheck(SourceLocation Loc, Expr* Arg) {
       assert(Arg && "Cannot call with Arg=0");
       ASTContext& Context = m_Sema.getASTContext();
-      //copied from DynamicLookup.cpp
-      // Lookup Sema type
-      CXXRecordDecl* SemaRD
-        = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(&m_Sema, "Sema",
-                                   utils::Lookup::Namespace(&m_Sema, "clang")));
 
-      QualType SemaRDTy = Context.getTypeDeclType(SemaRD);
-      Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,SemaRDTy,
+      Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,Context.VoidPtrTy,
                                                              (uint64_t)&m_Sema);
 
-      // Lookup Expr type
-      CXXRecordDecl* ExprRD
-        = dyn_cast<CXXRecordDecl>(utils::Lookup::Named(&m_Sema, "Expr",
-                                   utils::Lookup::Namespace(&m_Sema, "clang")));
-
-      QualType ExprRDTy = Context.getTypeDeclType(ExprRD);
-      Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,ExprRDTy,
+      Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,Context.VoidPtrTy,
                                                                (uint64_t)Arg);
 
       Expr *args[] = {VoidSemaArg, VoidExprArg};
@@ -224,7 +223,8 @@ namespace cling {
       LookupResult R(m_Sema, Name, noLoc, Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
       m_Sema.LookupQualifiedName(R, Context.getTranslationUnitDecl());
-      assert(!R.empty() && "Cannot find valuePrinterInternal::Select(...)");
+      assert(!R.empty() &&
+              "Cannot find cling__runtime__internal__throwNullDerefException");
 
       CXXScopeSpec CSS;
       Expr* UnresolvedLookup
