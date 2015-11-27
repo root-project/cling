@@ -12,7 +12,7 @@
 
 #include <stdexcept>
 #include <string>
-#include "cling/Interpreter/RuntimeException.h"
+#include "cling/Interpreter/Exception.h"
 
 namespace cling {
   class Interpreter;

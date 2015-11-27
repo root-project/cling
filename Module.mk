@@ -14,14 +14,14 @@ CLINGS       := $(wildcard $(MODDIR)/lib/Interpreter/*.cpp) \
                 $(wildcard $(MODDIR)/lib/TagsExtension/*.cpp) \
                 $(wildcard $(MODDIR)/lib/Utils/*.cpp)
 CLINGO       := $(call stripsrc,$(CLINGS:.cpp=.o))
-CLINGEXCEPO  := $(call stripsrc,$(MODDIR)/lib/Interpreter/RuntimeException.o)
+CLINGEXCEPO  := $(call stripsrc,$(MODDIR)/lib/Interpreter/Exception.o)
 CLINGCOMPDH  := $(call stripsrc,$(MODDIR)/lib/Interpreter/cling-compiledata.h)
 
 CLINGDEP     := $(CLINGO:.o=.d)
 
 CLINGETC_CLING := DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
         DynamicLookupLifetimeHandler.h Interpreter.h InvocationOptions.h \
-        RuntimeException.h RuntimePrintValue.h RuntimeUniverse.h Value.h
+        Exception.h RuntimePrintValue.h RuntimeUniverse.h Value.h
 
 CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
         llvm/ADT/StringRef.h \

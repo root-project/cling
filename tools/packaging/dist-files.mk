@@ -491,7 +491,7 @@ INCLUDE_CLING_FILES := \
   include/cling/Interpreter/Interpreter.h \
   include/cling/Interpreter/InvocationOptions.h \
   include/cling/Interpreter/LookupHelper.h \
-  include/cling/Interpreter/RuntimeException.h \
+  include/cling/Interpreter/Exception.h \
   include/cling/Interpreter/RuntimeUniverse.h \
   include/cling/Interpreter/Transaction.h \
   include/cling/Interpreter/Value.h \

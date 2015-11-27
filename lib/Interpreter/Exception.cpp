@@ -8,7 +8,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "cling/Interpreter/RuntimeException.h"
+#include "cling/Interpreter/Exception.h"
 
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Sema.h"
@@ -18,32 +18,30 @@ extern "C" {
 void cling__runtime__internal__throwNullDerefException(void* Sema, void* Expr) {
   clang::Sema* S = (clang::Sema*)Sema;
   clang::Expr* E = (clang::Expr*)Expr;
-  throw cling::runtime::NullDerefException(S, E);
+  throw cling::NullDerefException(S, E);
 }
 }
 
 namespace cling {
-  namespace runtime {
-    // Pin vtable
-    InterpreterException::~InterpreterException() {}
+  // Pin vtable
+  InterpreterException::~InterpreterException() {}
 
-    const char* InterpreterException::what() const throw() {
-      return "runtime_exception\n";
-    }
+  const char* InterpreterException::what() const throw() {
+    return "runtime_exception\n";
+  }
 
 
-    NullDerefException::NullDerefException(clang::Sema* S, clang::Expr* E)
-      : m_Sema(S), m_Arg(E) {}
+  NullDerefException::NullDerefException(clang::Sema* S, clang::Expr* E)
+    : m_Sema(S), m_Arg(E) {}
 
-    NullDerefException::~NullDerefException() {}
+  NullDerefException::~NullDerefException() {}
 
-    const char* NullDerefException::what() const throw() {
-      return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
-    }
+  const char* NullDerefException::what() const throw() {
+    return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
+  }
 
-    void NullDerefException::diagnose() const throw() {
-      m_Sema->Diag(m_Arg->getLocStart(), clang::diag::warn_null_arg)
-        << m_Arg->getSourceRange();
-    }
-  } // end namespace runtime
+  void NullDerefException::diagnose() const throw() {
+    m_Sema->Diag(m_Arg->getLocStart(), clang::diag::warn_null_arg)
+      << m_Arg->getSourceRange();
+  }
 } // end namespace cling

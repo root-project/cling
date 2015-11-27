@@ -34,7 +34,7 @@ $(ObjRootDir)/cling-compiledata.h: FORCE
 	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
 	@rm -f $@_tmp
 
-$(ObjRootDir)/RuntimeException.o: CXX.Flags := $(subst -fno-exceptions,,$(CXX.Flags))
+$(ObjRootDir)/Exception.o: CXX.Flags := $(subst -fno-exceptions,,$(CXX.Flags))
 $(ObjRootDir)/CIFactory.o: $(ObjRootDir)/cling-compiledata.h
 $(ObjRootDir)/CIFactory.o: CXX.Flags += -I$(ObjRootDir) -pthread
 $(ObjRootDir)/Interpreter.o: $(ObjRootDir)/cling-compiledata.h

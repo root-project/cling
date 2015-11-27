@@ -10,7 +10,7 @@
 #include "cling/UserInterface/UserInterface.h"
 
 #include "cling/UserInterface/CompilationException.h"
-#include "cling/Interpreter/RuntimeException.h"
+#include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "textinput/TextInput.h"
 #include "textinput/StreamReader.h"
