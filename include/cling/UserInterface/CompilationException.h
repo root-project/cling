@@ -27,7 +27,7 @@ namespace cling {
   /// Note that this exception is *not* thrown during the execution of the
   /// user's code but during its compilation (at runtime).
   class CompilationException:
-    public virtual runtime::InterpreterException,
+    public virtual InterpreterException,
     public virtual std::runtime_error {
   public:
     CompilationException(const std::string& reason):

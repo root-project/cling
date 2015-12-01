@@ -149,10 +149,10 @@ namespace cling {
         TI.SetPrompt(Prompt.c_str());
 
       }
-      catch(runtime::NullDerefException& e) {
+      catch(NullDerefException& e) {
         e.diagnose();
       }
-      catch(runtime::InterpreterException& e) {
+      catch(InterpreterException& e) {
         llvm::errs() << ">>> Caught an interpreter exception!\n"
                      << ">>> " << e.what() << '\n';
       }
