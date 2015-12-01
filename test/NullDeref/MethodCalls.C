@@ -9,7 +9,7 @@
 // RUN: cat %s | %cling -Xclang -verify
 // This test verifies that we get nice warning if a method on null ptr object is
 // called.
-// XFAIL:*
+
 extern "C" int printf(const char* fmt, ...);
 class MyClass {
 private:
@@ -19,7 +19,7 @@ public:
   int getA(){return a;}
 };
 MyClass* my = 0;
-my->getA() // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+my->getA() // expected-warning {{null passed to a callee that requires a non-null argument}}
 
 struct AggregatedNull {
   MyClass* m;
@@ -27,6 +27,6 @@ struct AggregatedNull {
 }
 
 AggregatedNull agrNull;
-agrNull.m->getA(); // expected-warning {{you are about to dereference null ptr, which probably will lead to seg violation. Do you want to proceed?[y/n]}}
+agrNull.m->getA(); // expected-warning {{null passed to a callee that requires a non-null argument}}
 
 .q
