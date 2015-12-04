@@ -49,7 +49,6 @@
   #define NOGDI
   #define NOMINMAX
   #include <Windows.h>
-  #include <sstream>
   #include <direct.h>
   #define popen _popen
   #define pclose _pclose
@@ -426,6 +425,13 @@ namespace {
         }
       }
 #else // _MSC_VER
+      // Skip LLVM_CXX execution if -nostdinc++ was provided.
+      for (const auto arg : args) {
+        if (!strcmp(arg, "-nostdinc++")) {
+          return;
+        }
+      }
+
       static const char *CppInclQuery =
         "echo | LC_ALL=C " LLVM_CXX " -xc++ -E -v - 2>&1 >/dev/null "
         "| awk '/^#include </,/^End of search"
