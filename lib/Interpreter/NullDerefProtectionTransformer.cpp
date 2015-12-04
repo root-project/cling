@@ -213,18 +213,18 @@ namespace cling {
       Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,Context.VoidPtrTy,
                                                                (uint64_t)Arg);
 
-      Expr *args[] = {VoidSemaArg, VoidExprArg};
+      Expr *args[] = {VoidSemaArg, VoidExprArg, Arg};
 
       Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
       DeclarationName Name
-        = &Context.Idents.get("cling__runtime__internal__throwNullDerefException");
+        = &Context.Idents.get("cling_runtime_internal_throwIfInvalidPointer");
 
       SourceLocation noLoc;
       LookupResult R(m_Sema, Name, noLoc, Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
       m_Sema.LookupQualifiedName(R, Context.getTranslationUnitDecl());
       assert(!R.empty() &&
-              "Cannot find cling__runtime__internal__throwNullDerefException");
+              "cling_runtime_internal_throwIfInvalidPointer");
 
       CXXScopeSpec CSS;
       Expr* UnresolvedLookup
@@ -232,27 +232,7 @@ namespace cling {
 
       Expr* call = m_Sema.ActOnCallExpr(S, UnresolvedLookup, noLoc,
                                         args, noLoc).get();
-      // Check whether we can get the argument'value. If the argument is
-      // null, throw an exception direclty. If the argument is not null
-      // then ignore this argument and continue to deal with the next
-      // argument with the nonnull attribute.
-      bool Result = false;
-      if (Arg->EvaluateAsBooleanCondition(Result, Context)) {
-        if(!Result) {
-          return call;
-        }
-        return Arg;
-      }
-      // The argument's value cannot be decided, so we add a UnaryOp
-      // operation to check its value at runtime.
-      ExprResult ER = m_Sema.ActOnUnaryOp(S, Loc, tok::exclaim, Arg);
-
-      Decl* varDecl = 0;
-      Stmt* varStmt = 0;
-      Sema::FullExprArg FullCond(m_Sema.MakeFullExpr(ER.get()));
-      StmtResult IfStmt = m_Sema.ActOnIfStmt(Loc, FullCond, varDecl,
-                                             call, Loc, varStmt);
-      return IfStmt.get();
+      return call;
     }
 
     bool isDeclCandidate(FunctionDecl * FDecl) {

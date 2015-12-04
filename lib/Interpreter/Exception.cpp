@@ -13,9 +13,13 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
+#include "clang/AST/ASTContext.h"
+
 
 extern "C" {
-void cling__runtime__internal__throwNullDerefException(void* Sema, void* Expr) {
+void cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr, const void* Arg) {
+  if (Arg)
+    return;
   clang::Sema* S = (clang::Sema*)Sema;
   clang::Expr* E = (clang::Expr*)Expr;
   throw cling::NullDerefException(S, E);

@@ -36,7 +36,6 @@ void symbol_requester() {
    h.findFunctionProto(0, "", "", LookupHelper::NoDiagnostics);
    h.findFunctionArgs(0, "", "", LookupHelper::NoDiagnostics);
    runtime::internal::DynamicExprInfo DEI(0,0,false);
-   cling__runtime__internal__throwNullDerefException(0, 0);
    DEI.getExpr();
 }
 }
