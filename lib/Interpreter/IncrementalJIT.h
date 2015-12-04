@@ -133,13 +133,18 @@ public:
   ///\brief Get the address of a symbol from the JIT or the memory manager,
   /// mangling the name as needed. Use this to resolve symbols as coming
   /// from clang's mangler.
-  uint64_t getSymbolAddress(llvm::StringRef Name) {
-    return getSymbolAddressWithoutMangling(Mangle(Name));
+  /// \param Name - name to look for. This name might still get mangled
+  ///   (prefixed by '_') to make IR versus symbol names.
+  /// \param AlsoInProcess - Sometimes you only care about JITed symbols. If so,
+  ///   pass `false` here to not resolve the symbol through dlsym().
+  uint64_t getSymbolAddress(llvm::StringRef Name, bool AlsoInProcess) {
+    return getSymbolAddressWithoutMangling(Mangle(Name), AlsoInProcess);
   }
 
   ///\brief Get the address of a symbol from the JIT or the memory manager.
   /// Use this to resolve symbols of known, target-specific names.
-  uint64_t getSymbolAddressWithoutMangling(llvm::StringRef Name);
+  uint64_t getSymbolAddressWithoutMangling(llvm::StringRef Name,
+                                           bool AlsoInProcess);
 
   size_t addModules(std::vector<llvm::Module*>&& modules);
   void removeModules(size_t handle);

@@ -908,6 +908,32 @@ namespace cling {
     return 0;
   }
 
+  void*
+  Interpreter::compileDtorCallFor(const clang::RecordDecl* RD) {
+    void* &addr = m_DtorWrappers[RD];
+    if (addr)
+      return addr;
+
+    std::string funcname;
+    {
+      llvm::raw_string_ostream namestr(funcname);
+      namestr << "__cling_Destruct_" << RD;
+    }
+
+    std::string code = "extern \"C\" void ";
+    clang::QualType RDQT(RD->getTypeForDecl(), 0);
+    std::string typeName
+      = utils::TypeName::GetFullyQualifiedName(RDQT, RD->getASTContext());
+    std::string dtorName = RD->getNameAsString();
+    code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
+      + dtorName + "();}";
+
+    // ifUniq = false: we know it's unique, no need to check.
+    addr = compileFunction(funcname, code, false /*ifUniq*/,
+                           false /*withAccessControl*/);
+    return addr;
+  }
+
   void Interpreter::createUniqueName(std::string& out) {
     out += utils::Synthesize::UniquePrefix;
     llvm::raw_string_ostream(out) << m_UniqueCounter++;

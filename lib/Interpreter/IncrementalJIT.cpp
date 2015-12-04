@@ -106,7 +106,8 @@ public:
   }
 
   uint64_t getSymbolAddress(const std::string &Name) override {
-    return m_jit.getSymbolAddressWithoutMangling(Name);
+    return m_jit.getSymbolAddressWithoutMangling(Name,
+                                                 true /*also use dlsym*/);
   }
 
   void *getPointerToNamedFunction(const std::string &Name,
@@ -197,7 +198,8 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 }
 
 
-uint64_t IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name) {
+uint64_t IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
+                                                         bool AlsoInProcess) {
   if (Name == MANGLE_PREFIX "__cxa_atexit") {
     // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
     // coming from the JIT.
@@ -206,8 +208,10 @@ uint64_t IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name) {
     // Provide IncrementalExecutor as the third argument to __cxa_atexit.
     return (uint64_t)&m_Parent;
   }
-  if (uint64_t Addr = m_ExeMM->getSymbolAddress(Name))
-    return Addr;
+  if (AlsoInProcess) {
+    if (uint64_t Addr = m_ExeMM->getSymbolAddress(Name))
+      return Addr;
+  }
   if (uint64_t Addr = m_LazyEmitLayer.getSymbolAddress(Name, false))
     return Addr;
 

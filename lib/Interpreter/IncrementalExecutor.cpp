@@ -334,7 +334,7 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
     *fromJIT = !address;
 
   if (!address)
-    return (void*)m_JIT->getSymbolAddress(symbolName);
+    return (void*)m_JIT->getSymbolAddress(symbolName, false /*no dlsym*/);
 
   return address;
 }
@@ -346,7 +346,8 @@ IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
-  void* addr = (void*)m_JIT->getSymbolAddress(GV.getName());
+  void* addr = (void*)m_JIT->getSymbolAddress(GV.getName(),
+                                              false /*no dlsym*/);
 
   if (diagnoseUnresolvedSymbols(GV.getName(), "symbol"))
     return 0;

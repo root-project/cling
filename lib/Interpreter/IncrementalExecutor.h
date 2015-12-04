@@ -263,7 +263,8 @@ namespace cling {
         T fun;
         void* address;
       } p2f;
-      p2f.address = (void*)m_JIT->getSymbolAddress(funcname);
+      p2f.address = (void*)m_JIT->getSymbolAddress(funcname,
+                                                   false /*no dlsym*/);
 
       // check if there is any unresolved symbol in the list
       if (diagnoseUnresolvedSymbols(funcname, "function") || !p2f.address) {

@@ -87,9 +87,6 @@ namespace cling {
     ///   dependencies.
     void AssertOnUnsupportedTypeCast() const;
 
-    /// \brief Get the function address of the wrapper of the destructor.
-    void* GetDtorWrapperPtr(const clang::RecordDecl* RD) const;
-
     unsigned long GetNumberOfElements() const;
 
     // Allow simplisticCastAs to be partially specialized.
