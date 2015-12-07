@@ -90,8 +90,17 @@ namespace cling {
     typedef std::map<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
     std::map<clang::FunctionDecl*, std::bitset<32> > m_NonNullArgIndexs;
 
+    ///\brief Needed for the AST transformations, owned by Sema.
+    ///
+    ASTContext& m_Context;
+
+    ///\brief cling_runtime_internal_throwIfInvalidPointer cache.
+    ///
+    LookupResult* m_LookupResult;
+
   public:
-    IfStmtInjector(Sema& S) : m_Sema(S) {}
+    IfStmtInjector(Sema& S) : m_Sema(S), m_Context(S.getASTContext()),
+    m_LookupResult(0) {}
     CompoundStmt* Inject(CompoundStmt* CS) {
       NodeContext result = VisitCompoundStmt(CS);
       return cast<CompoundStmt>(result.getStmt());
@@ -205,32 +214,26 @@ namespace cling {
   private:
     Stmt* SynthesizeCheck(SourceLocation Loc, Expr* Arg) {
       assert(Arg && "Cannot call with Arg=0");
-      ASTContext& Context = m_Sema.getASTContext();
 
-      Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,Context.VoidPtrTy,
+      if(!m_LookupResult)
+        FindAndCacheRuntimeLookupResult();
+
+      Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema, m_Context.VoidPtrTy,
                                                              (uint64_t)&m_Sema);
 
-      Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,Context.VoidPtrTy,
+      Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema, m_Context.VoidPtrTy,
                                                                (uint64_t)Arg);
 
       Expr *args[] = {VoidSemaArg, VoidExprArg, Arg};
 
       Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
-      DeclarationName Name
-        = &Context.Idents.get("cling_runtime_internal_throwIfInvalidPointer");
-
       SourceLocation noLoc;
-      LookupResult R(m_Sema, Name, noLoc, Sema::LookupOrdinaryName,
-                   Sema::ForRedeclaration);
-      m_Sema.LookupQualifiedName(R, Context.getTranslationUnitDecl());
-      assert(!R.empty() &&
-              "cling_runtime_internal_throwIfInvalidPointer");
-
       CXXScopeSpec CSS;
-      Expr* UnresolvedLookup
-        = m_Sema.BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
 
-      Expr* call = m_Sema.ActOnCallExpr(S, UnresolvedLookup, noLoc,
+      Expr* unresolvedLookup
+        = m_Sema.BuildDeclarationNameExpr(CSS, *m_LookupResult, /*ADL*/ false).get();
+
+      Expr* call = m_Sema.ActOnCallExpr(S, unresolvedLookup, noLoc,
                                         args, noLoc).get();
       return call;
     }
@@ -256,6 +259,20 @@ namespace cling {
         return true;
       }
       return false;
+    }
+
+    void FindAndCacheRuntimeLookupResult() {
+      assert(!m_LookupResult && "Called multiple times!?");
+
+      DeclarationName Name
+        = &m_Context.Idents.get("cling_runtime_internal_throwIfInvalidPointer");
+
+      SourceLocation noLoc;
+      m_LookupResult = new LookupResult(m_Sema, Name, noLoc, Sema::LookupOrdinaryName,
+                   Sema::ForRedeclaration);
+      m_Sema.LookupQualifiedName(*m_LookupResult, m_Context.getTranslationUnitDecl());
+      assert(!m_LookupResult->empty() &&
+              "cling_runtime_internal_throwIfInvalidPointer");
     }
   };
 

@@ -21,6 +21,7 @@ namespace clang {
   class FunctionDecl;
   class Expr;
   class Sema;
+  class LookupResult;
 }
 
 namespace llvm {
@@ -39,6 +40,10 @@ namespace cling {
     ///\brief Stream to dump values into.
     ///
     std::unique_ptr<llvm::raw_ostream> m_ValuePrinterStream;
+
+    ///\brief cling runtime "Cannot find cling_PrintValue(...)" cache.
+    ///
+    clang::LookupResult* m_LookupResult;
 
 public:
     ///\ brief Constructs the value printer synthesizer.
@@ -65,6 +70,9 @@ public:
     bool tryAttachVP(clang::FunctionDecl* FD);
     clang::Expr* SynthesizeVP(clang::Expr* E);
     unsigned ClearNullStmts(clang::CompoundStmt* CS);
+
+    // Find and cache cling::runtime on first request.
+    void FindAndCacheRuntimeLookupResult(clang::SourceLocation SourceLoc);
   };
 
 } // namespace cling
