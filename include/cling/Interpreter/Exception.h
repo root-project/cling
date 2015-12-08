@@ -13,6 +13,7 @@
 namespace clang {
   class Sema;
   class Expr;
+  class DiagnosticsEngine;
 }
 
 namespace cling {
@@ -24,16 +25,20 @@ namespace cling {
     virtual ~InterpreterException();
   };
 
-  ///\brief Exception that is thrown when a null pointer dereference is found
+  ///\brief Exception that is thrown when a invalid pointer dereference is found
   /// or a method taking non-null arguments is called with NULL argument.
   ///
-  class NullDerefException : public InterpreterException {
+  class InvalidDerefException : public InterpreterException {
+  public:
+    enum DerefType {INVALID_MEM, NULL_DEREF};
   private:
     clang::Sema* m_Sema;
     clang::Expr* m_Arg;
+    clang::DiagnosticsEngine* m_Diags;
+    DerefType m_Type;
   public:
-    NullDerefException(clang::Sema* S, clang::Expr* E);
-    virtual ~NullDerefException();
+    InvalidDerefException(clang::Sema* S, clang::Expr* E, DerefType type);
+    virtual ~InvalidDerefException();
 
     virtual const char* what() const throw();
     void diagnose() const throw();

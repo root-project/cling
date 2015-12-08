@@ -15,7 +15,7 @@
 #include "clang/AST/Type.h"
 #include "llvm/Support/raw_ostream.h"
 
-extern "C" void cling__runtime__internal__throwNullDerefException(void*, void*);
+extern "C" void cling_runtime_internal_throwIfInvalidPointer(void*, void*);
 
 namespace cling {
 namespace internal {

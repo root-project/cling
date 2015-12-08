@@ -149,7 +149,7 @@ namespace cling {
         TI.SetPrompt(Prompt.c_str());
 
       }
-      catch(NullDerefException& e) {
+      catch(InvalidDerefException& e) {
         e.diagnose();
       }
       catch(InterpreterException& e) {
