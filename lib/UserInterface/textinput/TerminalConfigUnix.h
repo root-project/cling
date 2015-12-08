@@ -20,6 +20,7 @@
 #define TEXTINPUT_UNIXTERMINALSETTINGS_H
 
 #include <csignal>
+#include <cstdlib>
 
 struct termios;
 
