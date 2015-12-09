@@ -1,93 +1,51 @@
 #!/usr/bin/env python
+"""
+Cling Kernel for Jupyter
+
+Talks to Cling via ctypes
+"""
 
 from __future__ import print_function
 
+__version__ = '0.0.2'
+
+import ctypes
+from contextlib import contextmanager
+from fcntl import fcntl, F_GETFL, F_SETFL
 import os
-from pipes import quote
-import re
-import signal
+import select
 import sys
+import threading
 
-from tornado.ioloop import IOLoop
-
+try:
+    from ipykernel.kernelapp import IPKernelApp
+except ImportError:
+    from IPython.kernel.zmq.kernelapp import IPKernelApp
 try:
     from ipykernel.kernelbase import Kernel
 except ImportError:
     from IPython.kernel.zmq.kernelbase import Kernel
-    
-from pexpect import replwrap, EOF
 
-__version__ = '0.0.1'
+
+libc = ctypes.CDLL(None)
+try:
+    c_stdout_p = ctypes.c_void_p.in_dll(libc, 'stdout')
+except ValueError:
+    # libc.stdout is has a funny name on OS X
+    c_stdout_p = ctypes.c_void_p.in_dll(libc, '__stdoutp')
 
 try:
-    from traitlets import Unicode
+    from traitlets import Unicode, Float
 except ImportError:
-    from IPython.utils.traitlets import Unicode
+    from IPython.utils.traitlets import Unicode, Float
 
-class ClingError(Exception):
-    def __init__(self, buf):
-        self.buf = buf
-
-PY2 = sys.version_info[0] < 3
-
-class ClingInterpreter(replwrap.REPLWrapper):
-    
-    prompt_pat = re.compile(r'\[cling\][\$\!\?]\s+')
-    
-    def __init__(self, cmd, **kw):
-        self.buffer = []
-        self.output = ''
-        if PY2 and isinstance(cmd, unicode):
-            cmd = cmd.encode('utf8')
-        
-        super(ClingInterpreter, self).__init__(
-            cmd, '[cling]', None, **kw)
-    
-    def run_command(self, command, timeout=-1):
-        self.buffer = []
-        self.output = ''
-        try:
-            super(ClingInterpreter, self).run_command(command, timeout)
-        finally:
-            self.output = ''.join(self._squash_raw_input(self.buffer))
-            self.buffer = []
-        return self.output
-    
-    def _squash_raw_input(self, buf):
-        """kill raw input toggle output"""
-        in_raw = False
-        for line in buf:
-            if in_raw:
-                if line.strip() == 'Not using raw input':
-                    in_raw = False
-            elif line.strip() == 'Using raw input':
-                in_raw = True
-            else:
-                yield line
-    
-    def _no_echo(self, buf):
-        """Filter out cling's input-echo"""
-        lines = [ line for line in buf.splitlines(True) if '\x1b[D' not in line ]
-        return ''.join(lines)
-
-    def _expect_prompt(self, timeout=-1):
-        try:
-            self.child.expect(self.prompt_pat, timeout)
-        finally:
-            if self.child.match and self.child.match.group() == '[cling]! ' and self.child.buffer.startswith('? '):
-                self.child.buffer = self.child.buffer[2:].lstrip()
-            
-            buf = self._no_echo(self.child.before)
-            
-            if '\x1b[0m\x1b[0;1;31merror:' in buf:
-                raise ClingError(buf)
-            elif buf:
-                self.buffer.append(buf)
 
 
 class ClingKernel(Kernel):
+    """Cling Kernel for Jupyter"""
     implementation = 'cling_kernel'
     implementation_version = __version__
+    language_version = 'X'
 
     banner = Unicode()
     def _banner_default(self):
@@ -103,28 +61,63 @@ class ClingKernel(Kernel):
     cling = Unicode(config=True,
         help="Path to cling if not on your PATH."
     )
-    def _cling_default(self):
-        return os.environ.get('CLING_EXE') or 'cling'
+    flush_interval = Float(0.25, config=True)
     
-    def __init__(self, **kwargs):
+    @contextmanager
+    def forward_stdout(self):
+        """Capture stdout and forward it as stream messages"""
+        # create pipe for stdout
+        stdout_fd = sys.__stdout__.fileno()
+        save_stdout = os.dup(stdout_fd)
+        pipe_out, pipe_in = os.pipe()
+        os.dup2(pipe_in, stdout_fd)
+        os.close(pipe_in)
         
-        Kernel.__init__(self, **kwargs)
-        self._start_interpreter()
+        # make pipe_out non-blocking
+        flags = fcntl(pipe_out, F_GETFL)
+        fcntl(pipe_out, F_SETFL, flags|os.O_NONBLOCK)
 
-    def _start_interpreter(self):
-        # Signal handlers are inherited by forked processes, and we can't easily
-        # reset it from the subprocess. Since kernelapp ignores SIGINT except in
-        # message handlers, we need to temporarily reset the SIGINT handler here
-        # so that bash and its children are interruptible.
-        sig = signal.signal(signal.SIGINT, signal.SIG_DFL)
+        def forwarder(pipe, name='stdout'):
+            """Forward bytes on a pipe to stream messages"""
+            while True:
+                r, w, x = select.select([pipe], [], [], self.flush_interval)
+                if not r:
+                    # nothing to read, flush libc's stdout and check again
+                    libc.fflush(c_stdout_p)
+                    continue
+                data = os.read(pipe, 1024)
+                if not data:
+                    # pipe closed, we are done
+                    break
+                # send output
+                self.session.send(self.iopub_socket, 'stream', {
+                    'name': name,
+                    'text': data.decode('utf8', 'replace'),
+                }, parent=self._parent_header)
+
+        t = threading.Thread(target=forwarder, args=(pipe_out,))
+        t.start()
         try:
-            self.interpreter = ClingInterpreter(
-                '%s --nologo --version' % quote(self.cling)
-            )
+            yield
         finally:
-            signal.signal(signal.SIGINT, sig)
-        self.language_version = self.interpreter.child.before.strip()
+            # flush the pipe
+            libc.fflush(c_stdout_p)
+            os.close(stdout_fd)
+            t.join()
+            
+            # and restore original stdout
+            os.close(pipe_out)
+            os.dup2(save_stdout, stdout_fd)
+            os.close(save_stdout)
 
+    def run_cell(self, code, silent=False):
+        """Dummy run cell while waiting for cling ctypes API"""
+        import time
+        
+        for i in range(5):
+            libc.printf((code + '\n').encode('utf8'))
+            time.sleep(0.2 * i)
+    
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         if not code.strip():
@@ -134,56 +127,21 @@ class ClingKernel(Kernel):
                 'payload': [],
                 'user_expressions': {},
             }
-        
         status = 'ok'
-        traceback = None
-        try:
-            # if not clingy:
-            #     self.interpreter.run_command('.rawInput')
-            output = self.interpreter.run_command(code, timeout=None)
-            # if not clingy:
-            #     self.interpreter.run_command('.rawInput')
-        except KeyboardInterrupt:
-            self.interpreter.child.sendintr()
-            status = 'interrupted'
-            self.interpreter._expect_prompt()
-            output = self.interpreter.output
-        except EOF:
-            # output = self.interpreter._filter_buf(self.interpr)
-            output = self.interpreter.output + ' Restarting Cling'
-            self._start_interpreter()
-        except EOF:
-            status = 'error'
-            traceback = []
-        except ClingError as e:
-            status = 'error'
-            traceback = e.buf.splitlines()
-            output = self.interpreter.output
-        if not self.interpreter.child.isalive():
-            self.log.error("Cling interpreter died")
-            loop = IOLoop.current()
-            loop.add_callback(loop.stop)
         
-        # print('out: %r' % output, file=sys.__stderr__)
-        # print('tb: %r' % traceback, file=sys.__stderr__)
-        
-        if not silent:
-            # Send output on stdout
-            stream_content = {'name': 'stdout', 'text': output}
-            self.send_response(self.iopub_socket, 'stream', stream_content)
+        with self.forward_stdout():
+            self.run_cell(code, silent)
 
         reply = {
             'status': status,
             'execution_count': self.execution_count,
         }
 
-        if status == 'interrupted':
-            pass
-        elif status == 'error':
+        if status == 'error':
             err = {
                 'ename': 'ename',
                 'evalue': 'evalue',
-                'traceback': traceback,
+                'traceback': [],
             }
             self.send_response(self.iopub_socket, 'error', err)
             reply.update(err)
@@ -197,13 +155,17 @@ class ClingKernel(Kernel):
         
         return reply
 
+
+class ClingKernelApp(IPKernelApp):
+    kernel_class = ClingKernel
+    def init_io(self):
+        # disable io forwarding
+        pass
+
+
 def main():
     """launch a cling kernel"""
-    try:
-        from ipykernel.kernelapp import IPKernelApp
-    except ImportError:
-        from IPython.kernel.zmq.kernelapp import IPKernelApp
-    IPKernelApp.launch_instance(kernel_class=ClingKernel)
+    ClingKernelApp.launch_instance()
 
 
 if __name__ == '__main__':
