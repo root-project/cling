@@ -114,5 +114,5 @@ add_custom_target(cling-headers DEPENDS cling-headers.stamp)
 
   add_dependencies(cling-test cling-test.deps)
   add_dependencies(cling-test.deps
-                   cling cling-headers clang FileCheck c-index-test diagtool arcmt-test c-arcmt-test)
+                   cling clang FileCheck c-index-test diagtool arcmt-test c-arcmt-test)
 endif()
