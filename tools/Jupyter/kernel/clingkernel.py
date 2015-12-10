@@ -50,9 +50,6 @@ class ClingKernel(Kernel):
                      'mimetype': ' text/x-c++src',
                      'file_extension': '.c++'}
     
-    cling = Unicode(config=True,
-        help="Path to cling if not on your PATH."
-    )
     flush_interval = Float(0.25, config=True)
 
     def __init__(self, **kwargs):
