@@ -44,7 +44,7 @@ class ClingKernel(Kernel):
         return 'cling-%s' % self.language_version
         return self._banner
 
-        # codemirror_mode='clike' *should* work but doesn't, using the mimetype instead
+    # codemirror_mode='clike' *should* work but doesn't, using the mimetype instead
     language_info = {'name': 'c++',
                      'codemirror_mode': 'text/x-c++src',
                      'mimetype': ' text/x-c++src',
@@ -54,12 +54,11 @@ class ClingKernel(Kernel):
 
     def __init__(self, **kwargs):
         super(ClingKernel, self).__init__(**kwargs)
-        #clingInstDir = '/Users/axel/build/cling/cling-all-in-one/clion-inst'
-        #clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug'
         whichCling = shutil.which('cling')
         if whichCling:
             clingInstDir = os.path.dirname(os.path.dirname(whichCling))
         else:
+            #clingInstDir = '/Users/axel/build/cling/cling-all-in-one/clion-inst'
             clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug'
         self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter.dylib", mode = ctypes.RTLD_GLOBAL)
         self.libclingJupyter.cling_create.restype = ctypes.c_void_p
