@@ -17,14 +17,9 @@ import select
 import sys
 import threading
 
-try:
-    from ipykernel.kernelapp import IPKernelApp
-except ImportError:
-    from IPython.kernel.zmq.kernelapp import IPKernelApp
-try:
-    from ipykernel.kernelbase import Kernel
-except ImportError:
-    from IPython.kernel.zmq.kernelbase import Kernel
+from traitlets import Unicode, Float
+from ipykernel.kernelapp import IPKernelApp
+from ipykernel.kernelbase import Kernel
 
 
 libc = ctypes.CDLL(None)
@@ -33,12 +28,6 @@ try:
 except ValueError:
     # libc.stdout is has a funny name on OS X
     c_stdout_p = ctypes.c_void_p.in_dll(libc, '__stdoutp')
-
-try:
-    from traitlets import Unicode, Float
-except ImportError:
-    from IPython.utils.traitlets import Unicode, Float
-
 
 
 class ClingKernel(Kernel):
