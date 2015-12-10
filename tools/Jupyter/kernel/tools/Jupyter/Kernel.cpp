@@ -37,6 +37,7 @@ namespace cling {
       // - num bytes in a long (sent as a single unsigned char!)
       // - num elements of the MIME dictionary; Jupyter selects one to display.
       // For each MIME dictionary element:
+      //   - size of MIME type string  (including the terminating 0)
       //   - MIME type as 0-terminated string
       //   - size of MIME data buffer (including the terminating 0 for
       //     0-terminated strings)
@@ -51,6 +52,8 @@ namespace cling {
 
       for (auto iContent: contentDict) {
         const std::string& mimeType = iContent.first;
+        long mimeTypeSize = (long)mimeType.size();
+        write(pipeToJupyterFD, &mimeTypeSize, sizeof(long));
         write(pipeToJupyterFD, mimeType.c_str(), mimeType.size() + 1);
         const MIMEDataRef& mimeData = iContent.second;
         write(pipeToJupyterFD, &mimeData.m_Size, sizeof(long));
