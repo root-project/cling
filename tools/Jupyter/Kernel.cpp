@@ -20,6 +20,14 @@ TheInterpreter *cling_create(int argc, const char *argv[], const char* llvmdir) 
   return interp;
 }
 
+
+/// Destroy the interpreter.
+void cling_destroy(TheInterpreter *interpVP) {
+  cling::Interpreter *interp = (cling::Interpreter *) interpVP;
+  delete interp;
+}
+
+
 /// Evaluate a string of code. Returns 0 on success.
 int cling_eval(TheInterpreter *interpVP, const char *code) {
   cling::Interpreter *interp = (cling::Interpreter *) interpVP;
