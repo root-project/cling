@@ -13,6 +13,7 @@ import ctypes
 from contextlib import contextmanager
 from fcntl import fcntl, F_GETFL, F_SETFL
 import os
+import shutil
 import select
 import sys
 import threading
@@ -53,7 +54,22 @@ class ClingKernel(Kernel):
         help="Path to cling if not on your PATH."
     )
     flush_interval = Float(0.25, config=True)
-    
+
+    def __init__(self, **kwargs):
+        super(ClingKernel, self).__init__(**kwargs)
+        #clingInstDir = '/Users/axel/build/cling/cling-all-in-one/clion-inst'
+        #clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug'
+        whichCling = shutil.which('cling')
+        if whichCling:
+            clingInstDir = os.path.dirname(os.path.dirname(whichCling))
+        else:
+            clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug'
+        self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter.dylib", mode = ctypes.RTLD_GLOBAL)
+        self.libclingJupyter.cling_create.restype = ctypes.c_void_p
+        strarr = ctypes.c_char_p*4
+        argv = strarr(b"clingJupyter",b"",b"",b"")
+        self.interp = ctypes.c_void_p(self.libclingJupyter.cling_create(4, argv, ctypes.c_char_p(clingInstDir.encode('utf8'))))
+
     @contextmanager
     def forward_stream(self, name):
         """Capture stdout and forward it as stream messages"""
@@ -110,12 +126,8 @@ class ClingKernel(Kernel):
 
     def run_cell(self, code, silent=False):
         """Dummy run cell while waiting for cling ctypes API"""
-        import time
-        
-        for i in range(5):
-            libc.printf((code + '\n').encode('utf8'))
-            time.sleep(0.2 * i)
-    
+        self.libclingJupyter.cling_eval(self.interp, ctypes.c_char_p(code.encode('utf8')))
+
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         if not code.strip():
