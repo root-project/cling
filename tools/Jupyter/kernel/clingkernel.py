@@ -67,6 +67,9 @@ class ClingKernel(Kernel):
         llvmresourcedir = ctypes.c_char_p(clingInstDir.encode('utf8'))
         self.interp = ctypes.c_void_p(self.libclingJupyter.cling_create(4, argv, llvmresourcedir))
 
+        self.libclingJupyter.cling_complete_start.restype = ctypes.c_void_p
+        self.libclingJupyter.cling_complete_next.restype = ctypes.c_char_p
+
     @contextmanager
     def forward_stream(self, name):
         """Capture stdout and forward it as stream messages"""
