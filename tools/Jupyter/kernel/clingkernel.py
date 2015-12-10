@@ -65,7 +65,8 @@ class ClingKernel(Kernel):
         self.libclingJupyter.cling_create.restype = ctypes.c_void_p
         strarr = ctypes.c_char_p*4
         argv = strarr(b"clingJupyter",b"",b"",b"")
-        self.interp = ctypes.c_void_p(self.libclingJupyter.cling_create(4, argv, ctypes.c_char_p(clingInstDir.encode('utf8'))))
+        llvmresourcedir = ctypes.c_char_p(clingInstDir.encode('utf8'))
+        self.interp = ctypes.c_void_p(self.libclingJupyter.cling_create(4, argv, llvmresourcedir))
 
     @contextmanager
     def forward_stream(self, name):
