@@ -10,6 +10,10 @@
 #include <map>
 #include <string>
 
+// FIXME: should be moved into a Jupyter interp struct that then gets returned
+// from create.
+int pipeToJupyterFD = -1;
+
 namespace cling {
   namespace Jupyter {
     struct MIMEDataRef {
@@ -28,7 +32,6 @@ namespace cling {
     ///\param contentDict - dictionary of MIME type versus content. E.g.
     /// {{"text/html", {"<div></div>", }}
     void pushOutput(const std::map<std::string, MIMEDataRef> contentDict) {
-      FILE* outpipe = popen("???", "w");
 
       // Pipe sees (all numbers are longs, except for the first:
       // - num bytes in a long (sent as a single unsigned char!)
@@ -42,19 +45,17 @@ namespace cling {
       // Write number of dictionary elements (and the size of that number in a
       // char)
       unsigned char sizeLong = sizeof(long);
-      fwrite(&sizeLong, 1, 1, outpipe);
+      write(pipeToJupyterFD, &sizeLong, 1);
       long dictSize = contentDict.size();
-      fwrite(&dictSize, sizeof(long), 1, outpipe);
+      write(pipeToJupyterFD, &dictSize, sizeof(long));
 
       for (auto iContent: contentDict) {
         const std::string& mimeType = iContent.first;
-        fwrite(mimeType.c_str(), mimeType.size() + 1, 1, outpipe);
+        write(pipeToJupyterFD, mimeType.c_str(), mimeType.size() + 1);
         const MIMEDataRef& mimeData = iContent.second;
-        fwrite(&mimeData.m_Size, sizeof(long), 1, outpipe);
-        fwrite(mimeData.m_Data, mimeData.m_Size, 1, outpipe);
+        write(pipeToJupyterFD, &mimeData.m_Size, sizeof(long));
+        write(pipeToJupyterFD, mimeData.m_Data, mimeData.m_Size);
       }
-
-      pclose(outpipe);
     }
   } // namespace Jupyter
 } // namespace cling
@@ -69,8 +70,9 @@ using TheInterpreter = void ;
 
 /// Create an interpreter object.
 TheInterpreter*
-cling_create(int argc, const char *argv[], const char* llvmdir) {
+cling_create(int argc, const char *argv[], const char* llvmdir, int pipefd) {
   auto interp = new cling::Interpreter(argc, argv, llvmdir);
+  pipeToJupyterFD = pipefd;
   return interp;
 }
 
@@ -81,16 +83,33 @@ void cling_destroy(TheInterpreter *interpVP) {
   delete interp;
 }
 
+/// Stringify a cling::Value
+static std::string ValueToString(const cling::Value& V) {
+  std::string valueString;
+  {
+    llvm::raw_ostringstream os(valueString);
+    V.print(os);
+  }
+  return valueString;
+}
 
-/// Evaluate a string of code. Returns 0 on success.
-int cling_eval(TheInterpreter *interpVP, const char *code) {
+/// Evaluate a string of code. Returns nullptr on failure.
+/// Returns a string representation of the expression (can be "") on success.
+char* cling_eval(TheInterpreter *interpVP, const char *code) {
   cling::Interpreter *interp = (cling::Interpreter *) interpVP;
-  //cling::Value V;
-  cling::Interpreter::CompilationResult Res = interp->process(code /*, V*/);
+  cling::Value V;
+  cling::Interpreter::CompilationResult Res = interp->process(code, &V);
   if (Res != cling::Interpreter::kSuccess)
-    return 1;
+    return nullptr;
+
   cling::Jupyter::pushOutput({{"text/html", "You just executed C++ code!"}});
-  return 0;
+  if (!V.isValid())
+    return strdup("");
+  return strdup(valueString(V));
+}
+
+void cling_eval_free(char* str) {
+  free(str);
 }
 
 /// Code completion interfaces.
