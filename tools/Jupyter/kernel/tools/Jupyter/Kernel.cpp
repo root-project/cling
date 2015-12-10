@@ -93,6 +93,25 @@ int cling_eval(TheInterpreter *interpVP, const char *code) {
   return 0;
 }
 
+/// Code completion interfaces.
+
+/// Start completion of code. Returns a handle to be passed to
+/// cling_complete_next() to iterate over the completion options. Returns nulptr
+/// if no completions are known.
+void* cling_complete_start(const char* code) {
+  return new int(42);
+}
+
+/// Grab the next completion of some code. Returns nullptr if none is left.
+const char* cling_complete_next(void* completionHandle) {
+  int* counter = *(int*) completionHandle;
+  if (++(*counter) > 43) {
+    delete counter;
+    return nullptr;
+  }
+  return "COMPLETE!";
+}
+
 ///\}
 
 } // extern "C"
