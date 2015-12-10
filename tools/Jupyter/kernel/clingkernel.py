@@ -173,7 +173,11 @@ class ClingKernel(Kernel):
             reply.update(err)
         elif status == 'ok':
             reply.update({
-                'payload': [],
+                'payload': [{
+                  'source': 'set_next_input',
+                  'replace': True,
+                  'text':'//THIS IS MAGIC\n' + code
+                }],
                 'user_expressions': {},
             })
         else:
