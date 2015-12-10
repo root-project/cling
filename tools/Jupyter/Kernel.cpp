@@ -21,15 +21,10 @@ TheInterpreter *cling_create(int argc, const char *argv[], const char* llvmdir) 
 }
 
 /// Evaluate a string of code. Returns 0 on success.
-int cling_eval_dummy(TheInterpreter *interpVP, const char *code) {
-  printf("Called cling_eval_dummy\n");
-}
-/// Evaluate a string of code. Returns 0 on success.
 int cling_eval(TheInterpreter *interpVP, const char *code) {
   cling::Interpreter *interp = (cling::Interpreter *) interpVP;
-  printf("Interpreter @%p about to run \"%s\"\n", interp, code);
-  cling::Value V;
-  cling::Interpreter::CompilationResult Res = interp->evaluate(code, V);
+  //cling::Value V;
+  cling::Interpreter::CompilationResult Res = interp->process(code /*, V*/);
   if (Res != cling::Interpreter::kSuccess)
     return 1;
   return 0;
