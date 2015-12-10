@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+from clingkernel import main
+main()
