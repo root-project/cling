@@ -145,6 +145,17 @@ class ClingKernel(Kernel):
         if stringResult == 0:
             status = 'error'
         else:
+            self.session.send(
+                self.iopub_socket,
+                'execute_result', 
+                content={
+                    'data': {
+                        'text/plain': stringResult.decode('utf8', replace),
+                    },
+                },
+                parent=self.parent_header
+            )
+            self.libclingJupyter.cling_eval_free(stringResult)
 
 
         reply = {
