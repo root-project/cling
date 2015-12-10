@@ -25,9 +25,11 @@ from ipykernel.kernelbase import Kernel
 libc = ctypes.CDLL(None)
 try:
     c_stdout_p = ctypes.c_void_p.in_dll(libc, 'stdout')
+    c_stderr_p = ctypes.c_void_p.in_dll(libc, 'stderr')
 except ValueError:
     # libc.stdout is has a funny name on OS X
     c_stdout_p = ctypes.c_void_p.in_dll(libc, '__stdoutp')
+    c_stderr_p = ctypes.c_void_p.in_dll(libc, '__stderrp')
 
 
 class ClingKernel(Kernel):
@@ -53,26 +55,33 @@ class ClingKernel(Kernel):
     flush_interval = Float(0.25, config=True)
     
     @contextmanager
-    def forward_stdout(self):
+    def forward_stream(self, name):
         """Capture stdout and forward it as stream messages"""
         # create pipe for stdout
-        stdout_fd = sys.__stdout__.fileno()
-        save_stdout = os.dup(stdout_fd)
+        if name == 'stdout':
+            c_flush_p = c_stdout_p
+        elif name == 'stderr':
+            c_flush_p = c_stderr_p
+        else:
+            raise ValueError("Name must be stdout or stderr, not %r" % name)
+        
+        real_fd = getattr(sys, '__%s__' % name).fileno()
+        save_fd = os.dup(real_fd)
         pipe_out, pipe_in = os.pipe()
-        os.dup2(pipe_in, stdout_fd)
+        os.dup2(pipe_in, real_fd)
         os.close(pipe_in)
         
         # make pipe_out non-blocking
         flags = fcntl(pipe_out, F_GETFL)
         fcntl(pipe_out, F_SETFL, flags|os.O_NONBLOCK)
 
-        def forwarder(pipe, name='stdout'):
+        def forwarder(pipe):
             """Forward bytes on a pipe to stream messages"""
             while True:
                 r, w, x = select.select([pipe], [], [], self.flush_interval)
                 if not r:
                     # nothing to read, flush libc's stdout and check again
-                    libc.fflush(c_stdout_p)
+                    libc.fflush(c_flush_p)
                     continue
                 data = os.read(pipe, 1024)
                 if not data:
@@ -90,14 +99,14 @@ class ClingKernel(Kernel):
             yield
         finally:
             # flush the pipe
-            libc.fflush(c_stdout_p)
-            os.close(stdout_fd)
+            libc.fflush(c_flush_p)
+            os.close(real_fd)
             t.join()
             
             # and restore original stdout
             os.close(pipe_out)
-            os.dup2(save_stdout, stdout_fd)
-            os.close(save_stdout)
+            os.dup2(save_fd, real_fd)
+            os.close(save_fd)
 
     def run_cell(self, code, silent=False):
         """Dummy run cell while waiting for cling ctypes API"""
@@ -118,7 +127,7 @@ class ClingKernel(Kernel):
             }
         status = 'ok'
         
-        with self.forward_stdout():
+        with self.forward_stream('stdout'), self.forward_stream('stderr'):
             self.run_cell(code, silent)
 
         reply = {
