@@ -15,6 +15,7 @@ from fcntl import fcntl, F_GETFL, F_SETFL
 import os
 import shutil
 import select
+import struct
 import sys
 import threading
 
@@ -66,10 +67,65 @@ class ClingKernel(Kernel):
         strarr = ctypes.c_char_p*4
         argv = strarr(b"clingJupyter",b"",b"",b"")
         llvmresourcedir = ctypes.c_char_p(clingInstDir.encode('utf8'))
-        self.interp = ctypes.c_void_p(self.libclingJupyter.cling_create(4, argv, llvmresourcedir))
+        self.output_pipe, pipe_in = os.pipe()
+        self.interp = ctypes.c_void_p(self.libclingJupyter.cling_create(4, argv, llvmresourcedir, pipe_in))
 
         self.libclingJupyter.cling_complete_start.restype = ctypes.c_void_p
         self.libclingJupyter.cling_complete_next.restype = ctypes.c_char_p
+        self.output_thread = threading.Thread(target=self.publish_pipe_output)
+        self.output_thread.daemon = True
+        self.output_thread.start()
+    
+    def _recv_dict(self, pipe):
+        """Receive a serialized dict on a pipe
+        
+        Returns the dictionary.
+        """
+        # Wire format:
+        #   // Pipe sees (all numbers are longs, except for the first):
+        #   // - num bytes in a long (sent as a single unsigned char!)
+        #   // - num elements of the MIME dictionary; Jupyter selects one to display.
+        #   // For each MIME dictionary element:
+        #   //   - length of MIME type key
+        #   //   - MIME type key
+        #   //   - size of MIME data buffer (including the terminating 0 for
+        #   //     0-terminated strings)
+        #   //   - MIME data buffer
+        data = {}
+        b1 = pipe.read(1)
+        sizeof_long = struct.unpack('B', b1)[0]
+        if sizeof_long == 8:
+            fmt = 'Q'
+        else:
+            fmt = 'L'
+        buf = pipe.read(sizeof_long)
+        num_elements = struct.unpack(fmt, buf)[0]
+        for i in range(num_elements):
+            buf = pipe.read(sizeof_long)
+            len_key = struct.unpack(fmt, buf)[0]
+            key = pipe.read(len_key).decode('utf8')
+            buf = pipe.read(sizeof_long)
+            len_value = struct.unpack(fmt, buf)[0]
+            value = pipe.read(len_value).decode('utf8')
+            data[key] = value
+        return data
+        
+    def publish_pipe_output(self):
+        """Watch output_pipe for display-data messages
+        
+        and publish them on IOPub when they arrive
+        """
+        
+        while True:
+            select.select([self.output_pipe], [], [])
+            data = self._recv_dict(self.output_pipe)
+            self.session.send(self.iopub_socket, 'display_data',
+                content={
+                    'data': data,
+                    'metadata': {},
+                },
+                parent=self._parent_header,
+            )
 
     @contextmanager
     def forward_stream(self, name):
@@ -150,10 +206,11 @@ class ClingKernel(Kernel):
                 'execute_result', 
                 content={
                     'data': {
-                        'text/plain': stringResult.decode('utf8', replace),
+                        'text/plain': stringResult.decode('utf8', 'replace'),
                     },
+                    'metadata': {},
                 },
-                parent=self.parent_header
+                parent=self._parent_header
             )
             self.libclingJupyter.cling_eval_free(stringResult)
 
@@ -185,6 +242,15 @@ class ClingKernel(Kernel):
         
         return reply
 
+    def do_complete(self, code, cursor_pos):
+        """Provide completions here"""
+        # if cursor_pos = cursor_start = cursor_end,
+        # matches should be a list of strings to be appended after the cursor
+        return {'matches' : [],
+                'cursor_end' : cursor_pos,
+                'cursor_start' : cursor_pos,
+                'metadata' : {},
+                'status' : 'ok'}
 
 class ClingKernelApp(IPKernelApp):
     kernel_class = ClingKernel
