@@ -16,7 +16,6 @@ using TheInterpreter = void ;
 /// Create an interpreter object.
 TheInterpreter *cling_create(int argc, const char *argv[], const char* llvmdir) {
   auto interp = new cling::Interpreter(argc, argv, llvmdir);
-  printf("Interpreter @%p\n", interp);
   return interp;
 }
 
