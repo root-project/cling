@@ -62,6 +62,7 @@ class ClingKernel(Kernel):
             clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug'
         self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter.dylib", mode = ctypes.RTLD_GLOBAL)
         self.libclingJupyter.cling_create.restype = ctypes.c_void_p
+        self.libclingJupyter.cling_eval.restype = ctypes.c_char_p
         strarr = ctypes.c_char_p*4
         argv = strarr(b"clingJupyter",b"",b"",b"")
         llvmresourcedir = ctypes.c_char_p(clingInstDir.encode('utf8'))
@@ -125,8 +126,7 @@ class ClingKernel(Kernel):
             os.close(save_fd)
 
     def run_cell(self, code, silent=False):
-        """Dummy run cell while waiting for cling ctypes API"""
-        self.libclingJupyter.cling_eval(self.interp, ctypes.c_char_p(code.encode('utf8')))
+        return self.libclingJupyter.cling_eval(self.interp, ctypes.c_char_p(code.encode('utf8')))
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
@@ -140,7 +140,12 @@ class ClingKernel(Kernel):
         status = 'ok'
         
         with self.forward_stream('stdout'), self.forward_stream('stderr'):
-            self.run_cell(code, silent)
+            stringResult = self.run_cell(code, silent)
+
+        if stringResult == 0:
+            status = 'error'
+        else:
+
 
         reply = {
             'status': status,
