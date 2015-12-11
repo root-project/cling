@@ -218,11 +218,13 @@ namespace cling {
       if(!m_LookupResult)
         FindAndCacheRuntimeLookupResult();
 
-      Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema, m_Context.VoidPtrTy,
-                                                             (uint64_t)&m_Sema);
+      Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
+                                                            m_Context.VoidPtrTy,
+                                                            (uint64_t)&m_Sema);
 
-      Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema, m_Context.VoidPtrTy,
-                                                               (uint64_t)Arg);
+      Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
+                                                          m_Context.VoidPtrTy,
+                                                          (uint64_t)Arg);
 
       Expr *args[] = {VoidSemaArg, VoidExprArg, Arg};
 
@@ -231,7 +233,8 @@ namespace cling {
       CXXScopeSpec CSS;
 
       Expr* unresolvedLookup
-        = m_Sema.BuildDeclarationNameExpr(CSS, *m_LookupResult, /*ADL*/ false).get();
+        = m_Sema.BuildDeclarationNameExpr(CSS, *m_LookupResult,
+                                         /*ADL*/ false).get();
 
       Expr* call = m_Sema.ActOnCallExpr(S, unresolvedLookup, noLoc,
                                         args, noLoc).get();
@@ -268,9 +271,11 @@ namespace cling {
         = &m_Context.Idents.get("cling_runtime_internal_throwIfInvalidPointer");
 
       SourceLocation noLoc;
-      m_LookupResult = new LookupResult(m_Sema, Name, noLoc, Sema::LookupOrdinaryName,
-                   Sema::ForRedeclaration);
-      m_Sema.LookupQualifiedName(*m_LookupResult, m_Context.getTranslationUnitDecl());
+      m_LookupResult = new LookupResult(m_Sema, Name, noLoc,
+                                        Sema::LookupOrdinaryName,
+                                        Sema::ForRedeclaration);
+      m_Sema.LookupQualifiedName(*m_LookupResult,
+                                 m_Context.getTranslationUnitDecl());
       assert(!m_LookupResult->empty() &&
               "cling_runtime_internal_throwIfInvalidPointer");
     }

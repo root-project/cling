@@ -160,7 +160,8 @@ namespace cling {
 
     CXXScopeSpec CSS;
     Expr* unresolvedLookup
-      = m_Sema->BuildDeclarationNameExpr(CSS, *m_LookupResult, /*ADL*/ false).get();
+      = m_Sema->BuildDeclarationNameExpr(CSS, *m_LookupResult,
+                                         /*ADL*/ false).get();
 
     Expr* Result = m_Sema->ActOnCallExpr(S, unresolvedLookup, E->getLocStart(),
                                          CallArgs, E->getLocEnd()).get();
@@ -180,12 +181,14 @@ namespace cling {
     return FBody.size();
   }
 
-  void ValuePrinterSynthesizer::FindAndCacheRuntimeLookupResult(SourceLocation sourceLoc) {
+  void ValuePrinterSynthesizer::FindAndCacheRuntimeLookupResult(
+                                                  SourceLocation sourceLoc) {
     assert(!m_LookupResult && "Called multiple times!?");
 
     DeclarationName PVName = &m_Context->Idents.get("cling_PrintValue");
-    m_LookupResult = new LookupResult(*m_Sema, PVName, sourceLoc, Sema::LookupOrdinaryName,
-                   Sema::ForRedeclaration);
+    m_LookupResult = new LookupResult(*m_Sema, PVName, sourceLoc,
+                                      Sema::LookupOrdinaryName,
+                                      Sema::ForRedeclaration);
 
     Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
     m_Sema->LookupName(*m_LookupResult, S);

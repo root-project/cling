@@ -17,18 +17,20 @@
 #include "clang/Sema/SemaDiagnostic.h"
 #include "clang/AST/ASTContext.h"
 
-
 extern "C" {
-void cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr, const void* Arg) {
+void cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
+                                                  const void* Arg) {
   clang::Sema* S = (clang::Sema*)Sema;
   clang::Expr* E = (clang::Expr*)Expr;
-  // FIX ME: The isValidAddress function return true even when the pointer is null,
-  // thus the checks have to be done before returning successfully from the function,
-  // in this specific order.
+  // The isValidAddress function return true even when the pointer is
+  // null thus the checks have to be done before returning successfully from the
+  // function in this specific order.
   if (!Arg)
-    throw cling::InvalidDerefException(S, E, cling::InvalidDerefException::DerefType::NULL_DEREF);
+    throw cling::InvalidDerefException(S, E,
+          cling::InvalidDerefException::DerefType::NULL_DEREF);
   else if (!cling::utils::isAddressValid(Arg))
-    throw cling::InvalidDerefException(S, E, cling::InvalidDerefException::DerefType::INVALID_MEM);
+    throw cling::InvalidDerefException(S, E,
+          cling::InvalidDerefException::DerefType::INVALID_MEM);
   return;
 }
 }
@@ -43,7 +45,7 @@ namespace cling {
 
 
   InvalidDerefException::InvalidDerefException(clang::Sema* S, clang::Expr* E,
-                                              cling::InvalidDerefException::DerefType type)
+                                  cling::InvalidDerefException::DerefType type)
     : m_Sema(S), m_Arg(E), m_Diags(&m_Sema->getDiagnostics()), m_Type(type) {}
 
   InvalidDerefException::~InvalidDerefException() {}
@@ -51,17 +53,19 @@ namespace cling {
   const char* InvalidDerefException::what() const throw() {
     // Invalid memory access.
     if (m_Type == cling::InvalidDerefException::DerefType::INVALID_MEM)
-        return "Trying to access a pointer that points to an invalid memory address.";
+      return "Trying to access a pointer that points to an invalid memory address.";
     // Null deref.
     else
-        return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
+      return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
   }
 
   void InvalidDerefException::diagnose() const throw() {
-    // Construct custom diagnostic: warning for invalid memory address; no equivalent in clang.
+    // Construct custom diagnostic: warning for invalid memory address;
+    // no equivalent in clang.
     if (m_Type == cling::InvalidDerefException::DerefType::INVALID_MEM) {
-      unsigned DiagID = m_Diags->getCustomDiagID(
-        clang::DiagnosticsEngine::Warning, "invalid memory pointer passed to a callee:");
+      unsigned DiagID =
+        m_Diags->getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                 "invalid memory pointer passed to a callee:");
       m_Diags->Report(m_Arg->getLocStart(), DiagID) << m_Arg->getSourceRange();
     }
     else
