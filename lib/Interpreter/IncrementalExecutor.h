@@ -127,7 +127,7 @@ namespace cling {
     clang::DiagnosticsEngine& m_Diags;
 #endif
 
-    std::unique_ptr<llvm::TargetMachine> CreateHostTargetMachine(const int& argc, const char* const *argv) const;
+    std::unique_ptr<llvm::TargetMachine> CreateHostTargetMachine() const;
 
   public:
     enum ExecutionResult {
@@ -137,7 +137,7 @@ namespace cling {
       kNumExeResults
     };
 
-    IncrementalExecutor(clang::DiagnosticsEngine& diags, const int& argc, const char* const *argv);
+    IncrementalExecutor(clang::DiagnosticsEngine& diags);
 
     ~IncrementalExecutor();
 

@@ -43,7 +43,7 @@ using namespace llvm;
 
 namespace cling {
 
-IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags, const int& argc, const char* const *argv):
+IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags):
   m_CurrentAtExitModule(0)
 #if 0
   : m_Diags(diags)
@@ -57,14 +57,14 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags, const 
   // can use this object yet.
   m_AtExitFuncs.reserve(256);
 
-  m_JIT.reset(new IncrementalJIT(*this, std::move(CreateHostTargetMachine(argc, argv))));
+  m_JIT.reset(new IncrementalJIT(*this, std::move(CreateHostTargetMachine())));
 }
 
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
 IncrementalExecutor::~IncrementalExecutor() {}
 
 std::unique_ptr<TargetMachine>
-  IncrementalExecutor::CreateHostTargetMachine(const int& argc, const char* const *argv) const {
+  IncrementalExecutor::CreateHostTargetMachine() const {
   // TODO: make this configurable.
   Triple TheTriple(sys::getProcessTriple());
 #ifdef _WIN32
@@ -90,28 +90,6 @@ std::unique_ptr<TargetMachine>
   Reloc::Model RelocModel = Reloc::Default;
   CodeModel::Model CMModel = CodeModel::JITDefault;
   CodeGenOpt::Level OptLevel = CodeGenOpt::Less;
-
-  for (int i = 0; i < argc; ++i) {
-    const std::string arg(argv[i]);
-    if (arg.length() != 3 || arg.rfind("-O", 0) != 0) {
-      continue;
-    }
-
-    switch (argv[i][2]) {
-      case '0':
-        OptLevel = CodeGenOpt::None;
-        break;
-      case '1':
-        OptLevel = CodeGenOpt::Less;
-        break;
-      case '2':
-        OptLevel = CodeGenOpt::Default;
-        break;
-      case '3':
-        OptLevel = CodeGenOpt::Aggressive;
-        break;
-    }
-  }
 
   std::unique_ptr<TargetMachine> TM;
   TM.reset(TheTarget->createTargetMachine(TheTriple.getTriple(),
