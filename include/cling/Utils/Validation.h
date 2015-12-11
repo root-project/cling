@@ -23,14 +23,14 @@ namespace cling {
       if (!P || P == (void *) -1)
         return false;
 
-    #ifdef LLVM_ON_WIN32
+#ifdef LLVM_ON_WIN32
       MEMORY_BASIC_INFORMATION MBI;
       if (!VirtualQuery(P, &MBI, sizeof(MBI)))
         return false;
       if (MBI.State != MEM_COMMIT)
         return false;
       return true;
-    #else
+#else
       // There is a POSIX way of finding whether an address can be accessed for
       // reading: write() will return EFAULT if not.
       int FD[2];
@@ -44,7 +44,7 @@ namespace cling {
         return false;
       }
       return true;
-    #endif
+#endif
     }
   }
 }
