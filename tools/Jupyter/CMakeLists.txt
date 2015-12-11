@@ -6,16 +6,28 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
+# Keep symbols for JIT resolution
+set(LLVM_NO_DEAD_STRIP 1)
+
 set(SOURCES
     Kernel.cpp
     )
 
 set(LIBS
-    clangBasic
-    clangAST
-    clangFrontend
-    clingInterpreter
-    clingUtils
+        clangAST
+        clangBasic
+        clangCodeGen
+        clangDriver
+        clangFrontend
+        clangLex
+        clangParse
+        clangSema
+        clangSerialization
+
+        clingUserInterface
+        clingMetaProcessor
+        clingInterpreter
+        clingUtils
     )
 
 if( LLVM_ENABLE_PIC )
@@ -28,10 +40,9 @@ else()
     set(output_name "clingJupyter")
 endif()
 
-add_clang_library(libclingJupyter ${ENABLE_SHARED} ${ENABLE_STATIC}
+add_cling_library(libclingJupyter ${ENABLE_SHARED} ${ENABLE_STATIC}
         OUTPUT_NAME ${output_name}
         ${SOURCES}
-#        DEPENDS clang-headers
 
         LINK_LIBS
         ${LIBS}
@@ -40,6 +51,9 @@ add_clang_library(libclingJupyter ${ENABLE_SHARED} ${ENABLE_STATIC}
         Core
         Support
         )
+
+set_target_properties(libclingJupyter
+        PROPERTIES ENABLE_EXPORTS 1)
 
 if(ENABLE_SHARED)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
