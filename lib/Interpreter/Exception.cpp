@@ -44,9 +44,7 @@ namespace cling {
 
   InvalidDerefException::InvalidDerefException(clang::Sema* S, clang::Expr* E,
                                               cling::InvalidDerefException::DerefType type)
-    : m_Sema(S), m_Arg(E), m_Diags(&m_Sema->getDiagnostics()) {
-      m_Type = type;
-    }
+    : m_Sema(S), m_Arg(E), m_Diags(&m_Sema->getDiagnostics()), m_Type(type) {}
 
   InvalidDerefException::~InvalidDerefException() {}
 
