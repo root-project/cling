@@ -8,11 +8,9 @@
 
 add_cling_library(clingUtils
   AST.cpp
-
-  LINK_LIBS
-  clangCodeGen
-  clangBasic
   )
+
+add_dependencies(clingUtils clangBasic clangCodeGen)
 
 if ( MSVC )
   set_target_properties(clingUtils PROPERTIES

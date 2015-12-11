@@ -12,11 +12,9 @@ add_cling_library(clingMetaProcessor
   MetaLexer.cpp
   MetaParser.cpp
   MetaProcessor.cpp
-  MetaSema.cpp
+  MetaSema.cpp)
 
-  LINK_LIBS
-  clangBasic
-  )
+add_dependencies(clingMetaProcessor clangBasic)
 
 if ( MSVC )
   set_target_properties(clingMetaProcessor PROPERTIES
