@@ -7,8 +7,11 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
 
+#include "llvm/Support/raw_ostream.h"
+
 #include <map>
 #include <string>
+#include <cstring>
 
 // FIXME: should be moved into a Jupyter interp struct that then gets returned
 // from create.
@@ -90,7 +93,7 @@ void cling_destroy(TheInterpreter *interpVP) {
 static std::string ValueToString(const cling::Value& V) {
   std::string valueString;
   {
-    llvm::raw_ostringstream os(valueString);
+    llvm::raw_string_ostream os(valueString);
     V.print(os);
   }
   return valueString;
@@ -108,7 +111,7 @@ char* cling_eval(TheInterpreter *interpVP, const char *code) {
   cling::Jupyter::pushOutput({{"text/html", "You just executed C++ code!"}});
   if (!V.isValid())
     return strdup("");
-  return strdup(valueString(V));
+  return strdup(ValueToString(V).c_str());
 }
 
 void cling_eval_free(char* str) {
@@ -126,7 +129,7 @@ void* cling_complete_start(const char* code) {
 
 /// Grab the next completion of some code. Returns nullptr if none is left.
 const char* cling_complete_next(void* completionHandle) {
-  int* counter = *(int*) completionHandle;
+  int* counter = (int*) completionHandle;
   if (++(*counter) > 43) {
     delete counter;
     return nullptr;
