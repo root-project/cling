@@ -92,21 +92,21 @@ class ClingKernel(Kernel):
         #   //     0-terminated strings)
         #   //   - MIME data buffer
         data = {}
-        b1 = pipe.read(1)
+        b1 = os.read(pipe, 1)
         sizeof_long = struct.unpack('B', b1)[0]
         if sizeof_long == 8:
             fmt = 'Q'
         else:
             fmt = 'L'
-        buf = pipe.read(sizeof_long)
+        buf = os.read(pipe, sizeof_long)
         num_elements = struct.unpack(fmt, buf)[0]
         for i in range(num_elements):
-            buf = pipe.read(sizeof_long)
+            buf = os.read(pipe, sizeof_long)
             len_key = struct.unpack(fmt, buf)[0]
-            key = pipe.read(len_key).decode('utf8')
-            buf = pipe.read(sizeof_long)
+            key = os.read(pipe, len_key).decode('utf8')
+            buf = os.read(pipe, sizeof_long)
             len_value = struct.unpack(fmt, buf)[0]
-            value = pipe.read(len_value).decode('utf8')
+            value = os.read(pipe, len_value).decode('utf8')
             data[key] = value
         return data
         
