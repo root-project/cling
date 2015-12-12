@@ -104,7 +104,7 @@ static std::string ValueToString(const cling::Value& V) {
 char* cling_eval(TheInterpreter *interpVP, const char *code) {
   cling::Interpreter *interp = (cling::Interpreter *) interpVP;
   cling::Value V;
-  cling::Interpreter::CompilationResult Res = interp->evaluate(code, V);
+  cling::Interpreter::CompilationResult Res = interp->process(code, &V);
   if (Res != cling::Interpreter::kSuccess)
     return nullptr;
 
