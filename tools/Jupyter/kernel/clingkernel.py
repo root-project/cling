@@ -23,6 +23,8 @@ from traitlets import Unicode, Float
 from ipykernel.kernelapp import IPKernelApp
 from ipykernel.kernelbase import Kernel
 
+class my_void_p(ctypes.c_void_p):
+  pass
 
 libc = ctypes.CDLL(None)
 try:
@@ -63,16 +65,16 @@ class ClingKernel(Kernel):
             clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug0'
             llvmResourceDir = '/Users/axel/build/cling/cling-all-in-one/clion-inst'
         self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter.dylib", mode = ctypes.RTLD_GLOBAL)
-        self.libclingJupyter.cling_create.restype = ctypes.c_void_p
-        self.libclingJupyter.cling_eval.restype = ctypes.c_char_p
+        self.libclingJupyter.cling_create.restype = my_void_p
+        self.libclingJupyter.cling_eval.restype = my_void_p
         strarr = ctypes.c_char_p*4
         argv = strarr(b"clingJupyter",b"",b"",b"")
         llvmResourceDirCP = ctypes.c_char_p(llvmResourceDir.encode('utf8'))
         self.output_pipe, pipe_in = os.pipe()
         self.interp = self.libclingJupyter.cling_create(4, argv, llvmResourceDirCP, pipe_in)
 
-        self.libclingJupyter.cling_complete_start.restype = ctypes.c_void_p
-        self.libclingJupyter.cling_complete_next.restype = ctypes.c_char_p
+        self.libclingJupyter.cling_complete_start.restype = my_void_p
+        self.libclingJupyter.cling_complete_next.restype = my_void_p #c_char_p
         self.output_thread = threading.Thread(target=self.publish_pipe_output)
         self.output_thread.daemon = True
         self.output_thread.start()
@@ -199,17 +201,18 @@ class ClingKernel(Kernel):
         with self.forward_stream('stdout'), self.forward_stream('stderr'):
             stringResult = self.run_cell(code, silent)
 
-        if stringResult == 0:
+        if not stringResult:
             status = 'error'
         else:
             self.session.send(
                 self.iopub_socket,
-                'execute_result', 
+                'execute_result',
                 content={
                     'data': {
-                        'text/plain': stringResult.decode('utf8', 'replace'),
+                        'text/plain': ctypes.cast(stringResult, ctypes.c_char_p).value.decode('utf8', 'replace'),
                     },
                     'metadata': {},
+                    'execution_count': self.execution_count,
                 },
                 parent=self._parent_header
             )
