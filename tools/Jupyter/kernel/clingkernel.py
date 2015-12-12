@@ -58,17 +58,18 @@ class ClingKernel(Kernel):
         whichCling = shutil.which('cling')
         if whichCling:
             clingInstDir = os.path.dirname(os.path.dirname(whichCling))
+            llvmResourceDir = clingInstDir
         else:
-            #clingInstDir = '/Users/axel/build/cling/cling-all-in-one/clion-inst'
-            clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug'
+            clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug0'
+            llvmResourceDir = '/Users/axel/build/cling/cling-all-in-one/clion-inst'
         self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter.dylib", mode = ctypes.RTLD_GLOBAL)
         self.libclingJupyter.cling_create.restype = ctypes.c_void_p
         self.libclingJupyter.cling_eval.restype = ctypes.c_char_p
         strarr = ctypes.c_char_p*4
         argv = strarr(b"clingJupyter",b"",b"",b"")
-        llvmresourcedir = ctypes.c_char_p(clingInstDir.encode('utf8'))
+        llvmResourceDirCP = ctypes.c_char_p(llvmResourceDir.encode('utf8'))
         self.output_pipe, pipe_in = os.pipe()
-        self.interp = ctypes.c_void_p(self.libclingJupyter.cling_create(4, argv, llvmresourcedir, pipe_in))
+        self.interp = self.libclingJupyter.cling_create(4, argv, llvmResourceDirCP, pipe_in)
 
         self.libclingJupyter.cling_complete_start.restype = ctypes.c_void_p
         self.libclingJupyter.cling_complete_next.restype = ctypes.c_char_p
