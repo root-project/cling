@@ -167,8 +167,8 @@ namespace cling {
     NodeContext VisitUnaryOperator(UnaryOperator* UnOp) {
       NodeContext result(UnOp);
       if (UnOp->getOpcode() == UO_Deref) {
-        result.prepend(SynthesizeCheck(UnOp->getLocStart(),
-                                       UnOp->getSubExpr()));
+        result = SynthesizeCheck(UnOp->getLocStart(),
+                                 UnOp->getSubExpr()));
       }
       return result;
     }
