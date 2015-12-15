@@ -27,6 +27,7 @@
 
 namespace clang {
   class DiagnosticsEngine;
+  class CodeGenOptions;
 }
 
 namespace llvm {
@@ -127,7 +128,8 @@ namespace cling {
     clang::DiagnosticsEngine& m_Diags;
 #endif
 
-    std::unique_ptr<llvm::TargetMachine> CreateHostTargetMachine() const;
+    std::unique_ptr<llvm::TargetMachine>
+       CreateHostTargetMachine(const clang::CodeGenOptions& CGOpt) const;
 
   public:
     enum ExecutionResult {
@@ -137,7 +139,8 @@ namespace cling {
       kNumExeResults
     };
 
-    IncrementalExecutor(clang::DiagnosticsEngine& diags);
+    IncrementalExecutor(clang::DiagnosticsEngine& diags,
+                        const clang::CodeGenOptions& CGOpt);
 
     ~IncrementalExecutor();
 

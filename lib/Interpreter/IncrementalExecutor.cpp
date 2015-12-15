@@ -16,6 +16,7 @@
 #include "cling/Utils/AST.h"
 
 #include "clang/Basic/Diagnostic.h"
+#include <clang/Frontend/CodeGenOptions.h>
 
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
@@ -43,7 +44,8 @@ using namespace llvm;
 
 namespace cling {
 
-IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags):
+IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
+                                         const clang::CodeGenOptions& CGOpt):
   m_CurrentAtExitModule(0)
 #if 0
   : m_Diags(diags)
@@ -57,14 +59,16 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags):
   // can use this object yet.
   m_AtExitFuncs.reserve(256);
 
-  m_JIT.reset(new IncrementalJIT(*this, std::move(CreateHostTargetMachine())));
+  m_JIT.reset(new IncrementalJIT(*this,
+                                 std::move(CreateHostTargetMachine(CGOpt))));
 }
 
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
 IncrementalExecutor::~IncrementalExecutor() {}
 
 std::unique_ptr<TargetMachine>
-  IncrementalExecutor::CreateHostTargetMachine() const {
+  IncrementalExecutor::CreateHostTargetMachine(const
+                                           clang::CodeGenOptions& CGOpt) const {
   // TODO: make this configurable.
   Triple TheTriple(sys::getProcessTriple());
 #ifdef _WIN32
@@ -89,7 +93,14 @@ std::unique_ptr<TargetMachine>
   Options.JITEmitDebugInfo = 1;
   Reloc::Model RelocModel = Reloc::Default;
   CodeModel::Model CMModel = CodeModel::JITDefault;
-  CodeGenOpt::Level OptLevel = CodeGenOpt::Less;
+  CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
+  switch (CGOpt.OptimizationLevel) {
+    case 0: OptLevel = CodeGenOpt::None; break;
+    case 1: OptLevel = CodeGenOpt::Less; break;
+    case 2: OptLevel = CodeGenOpt::Default; break;
+    case 3: OptLevel = CodeGenOpt::Aggressive; break;
+    default: OptLevel = CodeGenOpt::Default;
+  }
 
   std::unique_ptr<TargetMachine> TM;
   TM.reset(TheTarget->createTargetMachine(TheTriple.getTriple(),
