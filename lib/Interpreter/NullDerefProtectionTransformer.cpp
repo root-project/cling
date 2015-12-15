@@ -229,16 +229,20 @@ namespace cling {
       Expr *args[] = {VoidSemaArg, VoidExprArg, Arg};
 
       Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
-      SourceLocation noLoc;
-      CXXScopeSpec CSS;
 
+      CXXScopeSpec CSS;
       Expr* unresolvedLookup
         = m_Sema.BuildDeclarationNameExpr(CSS, *m_LookupResult,
                                          /*ADL*/ false).get();
 
-      Expr* call = m_Sema.ActOnCallExpr(S, unresolvedLookup, noLoc,
-                                        args, noLoc).get();
-      return call;
+      Expr* call = m_Sema.ActOnCallExpr(S, unresolvedLookup, Loc,
+                                        args, Loc).get();
+
+      TypeSourceInfo* TSI
+              = m_Context.getTrivialTypeSourceInfo(Arg->getType(), Loc);
+      Expr* castExpr = m_Sema.BuildCStyleCastExpr(Loc, TSI, Loc, call).get();
+
+      return castExpr;
     }
 
     bool isDeclCandidate(FunctionDecl * FDecl) {

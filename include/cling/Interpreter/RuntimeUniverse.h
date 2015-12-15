@@ -176,7 +176,7 @@ extern "C" {
   /// run cling in -no-rtti mode.
   ///
 
-  void cling_runtime_internal_throwIfInvalidPointer(void* Sema,
+  void* cling_runtime_internal_throwIfInvalidPointer(void* Sema,
                                                     void* Expr,
                                                     const void* Arg);
 }

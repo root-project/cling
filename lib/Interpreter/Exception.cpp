@@ -18,7 +18,7 @@
 #include "clang/AST/ASTContext.h"
 
 extern "C" {
-void cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
+void* cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
                                                   const void* Arg) {
   clang::Sema* S = (clang::Sema*)Sema;
   clang::Expr* E = (clang::Expr*)Expr;
@@ -31,7 +31,7 @@ void cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
   else if (!cling::utils::isAddressValid(Arg))
     throw cling::InvalidDerefException(S, E,
           cling::InvalidDerefException::DerefType::INVALID_MEM);
-  return;
+  return const_cast<void*>(Arg);
 }
 }
 
