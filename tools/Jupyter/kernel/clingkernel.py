@@ -72,8 +72,8 @@ class ClingKernel(Kernel):
             clingInstDir = os.path.dirname(os.path.dirname(whichCling))
             llvmResourceDir = clingInstDir
         else:
-            clingInstDir = '/Users/axel/Library/Caches/CLion12/cmake/generated/e0f22745/e0f22745/Debug0'
-            llvmResourceDir = '/Users/axel/build/cling/cling-all-in-one/clion-inst'
+            raise RuntimeError('Cannot find cling in $PATH. No cling, no fun.')
+
         self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter.dylib", mode = ctypes.RTLD_GLOBAL)
         self.libclingJupyter.cling_create.restype = my_void_p
         self.libclingJupyter.cling_eval.restype = my_void_p
