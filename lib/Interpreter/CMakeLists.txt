@@ -47,7 +47,12 @@ add_cling_library(clingInterpreter
   TransactionUnloader.cpp
   Value.cpp
   ValuePrinter.cpp
-  ValuePrinterSynthesizer.cpp)
+  ValuePrinterSynthesizer.cpp
+
+  LINK_LIBS
+  clangBasic
+  clangAST
+  )
 
 add_dependencies(clingInterpreter clangBasic clangAST)
 
