@@ -1,7 +1,14 @@
+//------------------------------------------------------------------------------
+// CLING - the C++ LLVM-based InterpreterG :)
+// author:  Axel Naumann <axel@cern.ch>
 //
-// Created by Axel Naumann on 09/12/15.
-//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
+//------------------------------------------------------------------------------
 
+// FIXME: This file shall contain the decl of cling::Jupyter in a future
+// revision!
 //#include "cling/Interpreter/Jupyter/Kernel.h"
 
 #include "cling/Interpreter/Interpreter.h"
