@@ -31,7 +31,8 @@ add_cling_library(clingUserInterface
   ${TEXTINPUTSRC}textinput/TextInput.cpp
   ${TEXTINPUTSRC}textinput/TextInputContext.cpp
 )
-#Look for textinput in current ROOT source tree
+
+add_dependencies(clingUserInterface clangBasic)
 
 IF(MSVC)
   # windows.h doesn't compile with /Za
