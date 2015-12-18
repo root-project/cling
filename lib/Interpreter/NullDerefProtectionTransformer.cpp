@@ -129,38 +129,8 @@ namespace cling {
       return NodeContext(newCS);
     }
 
-    NodeContext VisitIfStmt(IfStmt* If) {
-      NodeContext result(If);
-      // check the condition
-      NodeContext cond = Visit(If->getCond());
-      if (!cond.isSingleStmt())
-        result.prepend(cond.getStmts()[0]);
-      return result;
-    }
-
     NodeContext VisitCastExpr(CastExpr* CE) {
       NodeContext result = Visit(CE->getSubExpr());
-      return result;
-    }
-
-    NodeContext VisitBinaryOperator(BinaryOperator* BinOp) {
-      NodeContext result(BinOp);
-
-      // Here we might get if(check) throw; binop rhs.
-      NodeContext rhs = Visit(BinOp->getRHS());
-      // Here we might get if(check) throw; binop lhs.
-      NodeContext lhs = Visit(BinOp->getLHS());
-
-      // Prepend those checks. It will become:
-      // if(check_rhs) throw; if (check_lhs) throw; BinOp;
-      if (!rhs.isSingleStmt()) {
-        // FIXME:we need to loop from 0 to n-1
-        result.prepend(rhs.getStmts()[0]);
-      }
-      if (!lhs.isSingleStmt()) {
-        // FIXME:we need to loop from 0 to n-1
-        result.prepend(lhs.getStmts()[0]);
-      }
       return result;
     }
 
@@ -168,7 +138,7 @@ namespace cling {
       NodeContext result(UnOp);
       if (UnOp->getOpcode() == UO_Deref) {
         result = SynthesizeCheck(UnOp->getLocStart(),
-                                 UnOp->getSubExpr()));
+                                 UnOp->getSubExpr());
       }
       return result;
     }
@@ -176,8 +146,8 @@ namespace cling {
     NodeContext VisitMemberExpr(MemberExpr* ME) {
       NodeContext result(ME);
       if (ME->isArrow()) {
-        result.prepend(SynthesizeCheck(ME->getLocStart(),
-                                       ME->getBase()->IgnoreImplicit()));
+        result = SynthesizeCheck(ME->getLocStart(),
+                                       ME->getBase()->IgnoreImplicit());
       }
       return result;
     }
@@ -193,22 +163,11 @@ namespace cling {
           if (ArgIndexs.test(index)) {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
-            result.prepend(SynthesizeCheck(Arg->getLocStart(), Arg));
+            result = SynthesizeCheck(Arg->getLocStart(), Arg);
           }
         }
       }
       return result;
-    }
-
-    NodeContext VisitCXXMemberCallExpr(CXXMemberCallExpr* CME) {
-       NodeContext result(CME);
-       Expr* Callee = CME->getCallee();
-       if (isa<MemberExpr>(Callee)) {
-         NodeContext ME = Visit(Callee);
-         if (!ME.isSingleStmt())
-           result.prepend(ME.getStmts()[0]);
-       }
-       return result;
     }
 
   private:
