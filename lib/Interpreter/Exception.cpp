@@ -18,9 +18,9 @@
 #include "clang/AST/ASTContext.h"
 
 extern "C" {
-// @param Arg: Take const void* and return void* to reduce the complexity in the
-// calling AST nodes, at the expense of possibly doing a
-// T* -> const void* -> const_cast<void*> -> T* round trip.
+///\param Arg: Take const void* and return void* to reduce the complexity in the
+/// calling AST nodes, at the expense of possibly doing a
+/// T* -> const void* -> const_cast<void*> -> T* round trip.
 void* cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
                                                   const void* Arg) {
   clang::Sema* S = (clang::Sema*)Sema;
