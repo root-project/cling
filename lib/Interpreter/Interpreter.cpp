@@ -162,10 +162,9 @@ namespace cling {
       == clang::frontend::ParseSyntaxOnly;
   }
 
-  Interpreter::Interpreter(int argc, const char* const *argv,
-                           const char* llvmdir /*= 0*/, bool noRuntime) :
-    m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
+  void Interpreter::InterpreterPrivateCtor(int argc, const char* const *argv,
+                                           const char* llvmdir /*= 0*/, bool noRuntime,
+                                           bool isChildInterp) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -180,7 +179,7 @@ namespace cling {
 
     m_IncrParser.reset(new IncrementalParser(this, LeftoverArgs.size(),
                                              &LeftoverArgs[0],
-                                             llvmdir));
+                                             llvmdir, isChildInterp));
 
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();
@@ -223,6 +222,27 @@ namespace cling {
     std::unique_ptr<InterpreterCallbacks>
        AutoLoadCB(new AutoloadCallback(this, showSuggestions));
     setCallbacks(std::move(AutoLoadCB));
+
+  }
+
+  Interpreter::Interpreter(int argc, const char* const *argv,
+                           const char* llvmdir /*= 0*/, bool noRuntime) :
+    m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
+
+    InterpreterPrivateCtor(argc, argv, llvmdir, noRuntime);
+  }
+
+  ///\brief Constructor for the child Interpreter.
+  /// Passing the parent Interpreter as an argument.
+  ///
+  Interpreter::Interpreter(Interpreter &parentInterpreter, int argc, const char* const *argv,
+                           const char* llvmdir /*= 0*/, bool noRuntime) {
+
+    InterpreterPrivateCtor(argc, argv, llvmdir, noRuntime, /* isChildInterp = true */ true);
+    // Give my IncrementalExecutor a pointer to the Incremental executor
+    // of the parent Interpreter. 
+    m_Executor->setExternalIncrementalExecutor(parentInterpreter.m_Executor.get());
   }
 
   Interpreter::~Interpreter() {

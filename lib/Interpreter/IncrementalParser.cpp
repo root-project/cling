@@ -157,7 +157,7 @@ namespace {
 namespace cling {
   IncrementalParser::IncrementalParser(Interpreter* interp,
                                        int argc, const char* const *argv,
-                                       const char* llvmdir):
+                                       const char* llvmdir, bool isChildInterpreter):
     m_Interpreter(interp), m_Consumer(0), m_ModuleNo(0) {
 
     CompilerInstance* CI = CIFactory::createCI("", argc, argv, llvmdir);
@@ -193,7 +193,7 @@ namespace cling {
     WrapperTransformers.emplace_back(new ValuePrinterSynthesizer(TheSema, 0));
     WrapperTransformers.emplace_back(new DeclExtractor(TheSema));
     WrapperTransformers.emplace_back(new NullDerefProtectionTransformer(TheSema));
-    WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema));
+    WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema, isChildInterpreter));
     WrapperTransformers.emplace_back(new CheckEmptyTransactionTransformer(TheSema));
 
     m_Consumer->SetTransformers(std::move(ASTTransformers),
@@ -202,7 +202,7 @@ namespace cling {
 
   void
   IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
-                                result) {
+                                result, bool childInterp) {
     m_TransactionPool.reset(new TransactionPool(getCI()->getSema()));
     if (hasCodeGenerator()) {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
@@ -247,7 +247,9 @@ namespace cling {
     if (External)
       External->StartTranslationUnit(m_Consumer);
 
-    if (m_CI->getLangOpts().CPlusPlus) {
+    // If I belong to the parent Interpreter, only then do
+    // the #include <new> 
+    if (!childInterp && m_CI->getLangOpts().CPlusPlus) {
       // <new> is needed by the ValuePrinter so it's a good thing to include it.
       // We need to include it to determine the version number of the standard
       // library implementation.

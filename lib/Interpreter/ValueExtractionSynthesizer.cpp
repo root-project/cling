@@ -24,10 +24,11 @@
 using namespace clang;
 
 namespace cling {
-  ValueExtractionSynthesizer::ValueExtractionSynthesizer(clang::Sema* S)
+  ValueExtractionSynthesizer::ValueExtractionSynthesizer(clang::Sema* S,
+                                                         bool isChildInterpreter)
     : WrapperTransformer(S), m_Context(&S->getASTContext()), m_gClingVD(0),
       m_UnresolvedNoAlloc(0), m_UnresolvedWithAlloc(0),
-      m_UnresolvedCopyArray(0) { }
+      m_UnresolvedCopyArray(0), m_isChildInterpreter(isChildInterpreter) { }
 
   // pin the vtable here.
   ValueExtractionSynthesizer::~ValueExtractionSynthesizer() { }
@@ -277,7 +278,7 @@ namespace {
     else if (desugaredTy->isRecordType() || desugaredTy->isConstantArrayType()
              || desugaredTy->isMemberPointerType()) {
       // 2) object types :
-      // check existance of copy constructor before call
+      // check existence of copy constructor before call
       if (!desugaredTy->isMemberPointerType()
           && !availableCopyConstructor(desugaredTy, m_Sema))
         return E;
@@ -420,7 +421,14 @@ namespace {
     R.clear();
     R.setLookupName(&m_Context->Idents.get("copyArray"));
     m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty() && "Cannot find cling::runtime::internal::copyArray");
+    // FIXME: In the case of the multiple interpreters (parent-child),
+    // the child interpreter doesn't include the runtime universe.
+    // The child interpreter will try to import this function from its
+    // parent interpreter, but it will fail, because this is a template function.
+    // Once the import of template functions becomes supported by clang,
+    // this check can be de-activated.
+    if (!m_isChildInterpreter)
+      assert(!R.empty() && "Cannot find cling::runtime::internal::copyArray");
     m_UnresolvedCopyArray
       = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
   }

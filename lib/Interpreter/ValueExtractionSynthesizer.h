@@ -45,12 +45,16 @@ namespace cling {
     ///
     clang::Expr* m_UnresolvedCopyArray;
 
+    bool m_isChildInterpreter;
+
 public:
     ///\ brief Constructs the return synthesizer.
     ///
     ///\param[in] S - The semantic analysis object.
+    ///\param[in] isChildInterpreter - flag to control if it is called
+    /// from a child or parent Interpreter
     ///
-    ValueExtractionSynthesizer(clang::Sema* S);
+    ValueExtractionSynthesizer(clang::Sema* S, bool isChildInterpreter);
 
     virtual ~ValueExtractionSynthesizer();
 

@@ -8,6 +8,7 @@
 
 add_cling_library(clingUtils
   AST.cpp
+  ASTImportSource.cpp
 
   LINK_LIBS
   clangCodeGen

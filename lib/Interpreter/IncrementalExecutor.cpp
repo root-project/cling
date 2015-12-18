@@ -46,6 +46,7 @@ namespace cling {
 
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
                                          const clang::CodeGenOptions& CGOpt):
+  m_externalIncrementalExecutor(nullptr),
   m_CurrentAtExitModule(0)
 #if 0
   : m_Diags(diags)
@@ -111,6 +112,12 @@ std::unique_ptr<TargetMachine>
   return std::move(TM);
 }
 
+void IncrementalExecutor::setExternalIncrementalExecutor(IncrementalExecutor *extIncr) {
+  m_externalIncrementalExecutor = nullptr;
+  if (extIncr != nullptr)
+    m_externalIncrementalExecutor = extIncr;
+}
+
 void IncrementalExecutor::shuttingDown() {
   // No need to protect this access, since hopefully there is no concurrent
   // shutdown request.
@@ -150,8 +157,7 @@ void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name
   return (void*)reinterpret_cast<size_t>(unresolvedSymbol);
 }
 
-void*
-IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
+void* IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
 {
   for (std::vector<LazyFunctionCreatorFunc_t>::iterator it
          = m_lazyFuncCreator.begin(), et = m_lazyFuncCreator.end();
@@ -160,8 +166,12 @@ IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
     if (ret)
       return ret;
   }
+  llvm::StringRef name(mangled_name);
+  void *address = nullptr;
+  if (m_externalIncrementalExecutor)
+   address = m_externalIncrementalExecutor->getAddressOfGlobal(name);
 
-  return HandleMissingFunction(mangled_name);
+  return (address ? address : HandleMissingFunction(mangled_name));
 }
 
 #if 0
