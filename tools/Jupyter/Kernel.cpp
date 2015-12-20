@@ -19,6 +19,7 @@
 #include <map>
 #include <string>
 #include <cstring>
+#include <unistd.h>
 
 // FIXME: should be moved into a Jupyter interp struct that then gets returned
 // from create.
