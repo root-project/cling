@@ -885,7 +885,43 @@ namespace utils {
     return changed;
   }
 
+  static const TemplateArgument*
+  GetTmpltArgDeepFirstIndexPack(size_t &cur,
+                                const TemplateArgument& arg,
+                                size_t idx) {
+    SmallVector<TemplateArgument, 2> desArgs;
+    for (auto I = arg.pack_begin(), E = arg.pack_end();
+         cur < idx && I != E; ++cur,++I) {
+      if ((*I).getKind() == TemplateArgument::Pack) {
+        auto p_arg = GetTmpltArgDeepFirstIndexPack(cur,(*I),idx);
+        if (cur == idx) return p_arg;
+      } else if (cur == idx) {
+        return I;
+      }
+    }
+    return nullptr;
+  }
 
+  // Return the template argument corresponding to the index (idx)
+  // when the composite list of arguement is seen flattened out deep
+  // first (where depth is provided by template argument packs)
+  static const TemplateArgument*
+  GetTmpltArgDeepFirstIndex(const TemplateArgumentList& templateArgs,
+                            size_t idx) {
+
+    for (size_t cur = 0, I = 0, E = templateArgs.size();
+         cur <= idx && I < E; ++I, ++cur) {
+      auto &arg = templateArgs[I];
+      if (arg.getKind() == TemplateArgument::Pack) {
+        // Need to recurse.
+        auto p_arg = GetTmpltArgDeepFirstIndexPack(cur,arg,idx);
+        if (cur == idx) return p_arg;
+     } else if (cur == idx) {
+        return &arg;
+      }
+    }
+    return nullptr;
+  }
 
   static QualType GetPartiallyDesugaredTypeImpl(const ASTContext& Ctx,
     QualType QT, const Transform::Config& TypeConfig,
@@ -1228,7 +1264,9 @@ namespace utils {
                 = TSTdecl->getTemplateArgs();
 
               mightHaveChanged = true;
-              desArgs.push_back(templateArgs[argi]);
+              const TemplateArgument *match
+                  = GetTmpltArgDeepFirstIndex(templateArgs,argi);
+              if (match) desArgs.push_back(*match);
               continue;
             }
           }
