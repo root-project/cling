@@ -10,4 +10,4 @@
 
 #include <initializer_list>
 auto l {'a', 'b', '\''};
-*(l.begin() + 2) // CHECK: (const char) '''
+*(l.begin() + 2) // CHECK: (const char *) "'"
