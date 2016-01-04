@@ -17,8 +17,7 @@ public:
 };
 
 std::vector<MyClass*> vect(3);
-for (auto it = vect.begin(), end = vect.end(); it != end; ++it)
-	printf("%s\n", *it);
+for (el: vect) void* ptr = *it;
 
 .q
 
