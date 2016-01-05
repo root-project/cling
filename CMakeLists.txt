@@ -205,8 +205,8 @@ add_definitions( -D_GNU_SOURCE
 add_subdirectory(lib)
 add_subdirectory(tools)
 
-# TODO: docs.
-#add_subdirectory(test)
+add_subdirectory(docs)
+
 option(CLING_INCLUDE_TESTS
        "Generate build targets for the Cling unit tests."
        ${LLVM_INCLUDE_TESTS})

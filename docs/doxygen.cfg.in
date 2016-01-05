@@ -38,7 +38,7 @@ PROJECT_NUMBER         = @PACKAGE_VERSION@
 # If a relative path is entered, it will be relative to the location
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = @docs_builddir@/doxygen
+OUTPUT_DIRECTORY       = @abs_builddir@/doxygen
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
 # 4096 sub-directories (in 2 levels) under the output directory of each output
@@ -226,7 +226,7 @@ EXTENSION_MAPPING      =
 # func(std::string) {}). This also make the inheritance and collaboration
 # diagrams that involve STL classes more complete and accurate.
 
-BUILTIN_STL_SUPPORT    = NO
+BUILTIN_STL_SUPPORT    = YES
 
 # If you use Microsoft's C++/CLI language, you should set this option to YES to
 # enable parsing support.
@@ -558,9 +558,9 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @cling_srcdir@/include \
-                         @cling_srcdir@/lib \
-                         @docs_srcdir@/doxygen.intro
+INPUT                  = @abs_srcdir@/../include \
+                         @abs_srcdir@/../lib \
+                         @abs_srcdir@/../doxygen.intro
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -589,7 +589,7 @@ RECURSIVE              = YES
 # excluded from the INPUT source files. This way you can easily exclude a
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                = @cling_srcdir@/lib/UserInterface/textinput
+EXCLUDE                = @abs_srcdir@/../lib/UserInterface/textinput
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or
 # directories that are symbolic links (a Unix filesystem feature) are excluded
@@ -617,7 +617,7 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           =
+EXAMPLE_PATH           = @abs_srcdir@/../examples
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
@@ -767,13 +767,13 @@ HTML_FILE_EXTENSION    = .html
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard header.
 
-HTML_HEADER            = @docs_srcdir@/doxygen.header
+HTML_HEADER            = @abs_srcdir@/doxygen.header
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard footer.
 
-HTML_FOOTER            = @docs_srcdir@/doxygen.footer
+HTML_FOOTER            = @abs_srcdir@/doxygen.footer
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading
 # style sheet that is used by each HTML page. It can be used to
@@ -782,7 +782,7 @@ HTML_FOOTER            = @docs_srcdir@/doxygen.footer
 # the style sheet file to the HTML output directory, so don't put your own
 # stylesheet in the HTML output directory as well, or it will be erased!
 
-HTML_STYLESHEET        = @docs_srcdir@/doxygen.css
+HTML_STYLESHEET        = @abs_srcdir@/doxygen.css
 
 # If the HTML_TIMESTAMP tag is set to YES then the footer of each generated HTML
 # page will contain the date and time when the page was generated. Setting
@@ -977,7 +977,7 @@ FORMULA_FONTSIZE       = 10
 # typically be disabled. For large projects the javascript based search engine
 # can be slow, then enabling SERVER_BASED_SEARCH may provide a better solution.
 
-SEARCHENGINE           = NO
+SEARCHENGINE           = @enable_searchengine@
 
 # When the SERVER_BASED_SEARCH tag is enabled the search engine will be
 # implemented using a PHP enabled web server instead of at the web client
@@ -987,7 +987,16 @@ SEARCHENGINE           = NO
 # full text search. The disadvances is that it is more difficult to setup
 # and does not have live searching capabilities.
 
-SERVER_BASED_SEARCH    = NO
+SERVER_BASED_SEARCH    = @enable_server_based_search@
+
+SEARCHENGINE_URL       = @searchengine_url@
+
+EXTERNAL_SEARCH        = @enable_external_search@
+
+EXTERNAL_SEARCH_ID     = cling
+
+EXTRA_SEARCH_MAPPINGS  = @extra_search_mappings@
+
 
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output
@@ -1473,7 +1482,7 @@ DOT_IMAGE_FORMAT       = png
 # The tag DOT_PATH can be used to specify the path where the dot tool can be
 # found. If left blank, it is assumed the dot tool can be found in the path.
 
-DOT_PATH               =
+DOT_PATH               = @DOT@
 
 # The DOTFILE_DIRS tag can be used to specify one or more directories that
 # contain dot files that are included in the documentation (see the
