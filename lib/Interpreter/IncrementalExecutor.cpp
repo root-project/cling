@@ -112,12 +112,6 @@ std::unique_ptr<TargetMachine>
   return std::move(TM);
 }
 
-void IncrementalExecutor::setExternalIncrementalExecutor(IncrementalExecutor *extIncr) {
-  m_externalIncrementalExecutor = nullptr;
-  if (extIncr != nullptr)
-    m_externalIncrementalExecutor = extIncr;
-}
-
 void IncrementalExecutor::shuttingDown() {
   // No need to protect this access, since hopefully there is no concurrent
   // shutdown request.

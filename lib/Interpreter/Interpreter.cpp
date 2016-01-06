@@ -162,9 +162,11 @@ namespace cling {
       == clang::frontend::ParseSyntaxOnly;
   }
 
-  void Interpreter::InterpreterPrivateCtor(int argc, const char* const *argv,
-                                           const char* llvmdir /*= 0*/, bool noRuntime,
-                                           bool isChildInterp) {
+  Interpreter::Interpreter(int argc, const char* const *argv,
+                           const char* llvmdir /*= 0*/, bool noRuntime,
+                           bool isChildInterp) :
+    m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     std::vector<unsigned> LeftoverArgsIdx;
@@ -225,21 +227,12 @@ namespace cling {
 
   }
 
-  Interpreter::Interpreter(int argc, const char* const *argv,
-                           const char* llvmdir /*= 0*/, bool noRuntime) :
-    m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
-
-    InterpreterPrivateCtor(argc, argv, llvmdir, noRuntime);
-  }
-
   ///\brief Constructor for the child Interpreter.
   /// Passing the parent Interpreter as an argument.
   ///
   Interpreter::Interpreter(Interpreter &parentInterpreter, int argc, const char* const *argv,
-                           const char* llvmdir /*= 0*/, bool noRuntime) {
-
-    InterpreterPrivateCtor(argc, argv, llvmdir, noRuntime, /* isChildInterp = true */ true);
+                           const char* llvmdir /*= 0*/, bool noRuntime) :
+    Interpreter(argc, argv, llvmdir, noRuntime, /* isChildInterp = true */ true) {
     // Give my IncrementalExecutor a pointer to the Incremental executor
     // of the parent Interpreter. 
     m_Executor->setExternalIncrementalExecutor(parentInterpreter.m_Executor.get());

@@ -58,7 +58,7 @@ namespace cling {
         ASTImportSource(cling::Interpreter *parent_interpreter,
                         cling::Interpreter *child_interpreter) :
           m_parent_Interp(parent_interpreter), m_child_Interp(child_interpreter) {
-          
+
           clang::DeclContext *parentTUDeclContext =
             clang::TranslationUnitDecl::castToDeclContext(
               m_parent_Interp->getCI()->getASTContext().getTranslationUnitDecl());

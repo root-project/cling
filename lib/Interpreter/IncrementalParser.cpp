@@ -248,7 +248,7 @@ namespace cling {
       External->StartTranslationUnit(m_Consumer);
 
     // If I belong to the parent Interpreter, only then do
-    // the #include <new> 
+    // the #include <new>
     if (!childInterp && m_CI->getLangOpts().CPlusPlus) {
       // <new> is needed by the ValuePrinter so it's a good thing to include it.
       // We need to include it to determine the version number of the standard

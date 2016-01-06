@@ -148,7 +148,9 @@ namespace cling {
 
     ~IncrementalExecutor();
 
-    void setExternalIncrementalExecutor(IncrementalExecutor* extIncr);
+    void setExternalIncrementalExecutor(IncrementalExecutor *extIncrExec) {
+      m_externalIncrementalExecutor = extIncrExec;
+    }
 
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
