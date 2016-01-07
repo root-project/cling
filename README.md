@@ -7,15 +7,13 @@
 
 ```
 
-Linux: [![Linux Status](http://img.shields.io/travis/vgvassilev/cling.svg?style=flat-square)](https://travis-ci.org/vgvassilev/cling)  
-
 
 ##DESCRIPTION
 Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler infrastructure. Cling realizes the [read-eval-print loop (REPL)](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) concept, in order to leverage rapid application development. Implemented as a small extension to LLVM and Clang, the interpreter reuses their strengths such as the praised concise and expressive compiler diagnostics.
 
 ### Further information & demos
   Please note that some of the resources are rather old and most of the stated limitations are outdated.
-  * https://github.com/vgvassilev/cling/tree/master/www/docs/talks
+  * https://github.com/root-mirror/cling/tree/master/www/docs/talks
   * http://blog.coldflake.com/posts/2012-08-09-On-the-fly-C++.html
   * http://solarianprogrammer.com/2012/08/14/cling-cpp-11-interpreter/
   * https://www.youtube.com/watch?v=f9Xfh8pv3Fs
@@ -25,7 +23,7 @@ Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler
 
 ##INSTALLATION
 ###Binaries
-  We offer binary snapshots for download at https://ecsft.cern.ch/dist/cling
+  We offer binary snapshots for download at https://root.cern.ch/download/cling/
 
 ###Source
   CLING source depends on the [LLVM][1] and [CLANG][2] headers and libraries.
@@ -83,11 +81,11 @@ If you have Cling's source cloned locally, you can find the tool in
 ```tools/packaging``` directory. Alternatively, you can download the script
 manually, or by using ```wget```:
 ```sh
-wget https://raw.githubusercontent.com/vgvassilev/cling/master/tools/packaging/cpt.py
+wget https://raw.githubusercontent.com/root-mirror/cling/master/tools/packaging/cpt.py
 chmod +x cpt.py
 ```
 
-Full documentation of CPT can be found in [tools/packaging](https://github.com/vgvassilev/cling/tree/master/tools/packaging).
+Full documentation of CPT can be found in [tools/packaging](https://github.com/root-mirror/cling/tree/master/tools/packaging).
 
 ##USAGE
    `/some/install/dir/bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'`
@@ -96,8 +94,15 @@ Full documentation of CPT can be found in [tools/packaging](https://github.com/v
    `/some/install/dir/bin/cling`
    `[cling]$ .help`
 
-##DEVELOPERS' CORNER:
+## Jupyter
+
+cling comes with a [Jupyter][6] kernel. After building cling, install Jupyter and run ```jupyter kernelspec install cling```. It requires a fairly new Jupyter. Make sure cling is in your PATH when you start jupyter!
+
+   [6]: http://jupyter.org
+
+##DEVELOPERS' CORNER
    We have doxygen documentation of cling's code at: http://cling.web.cern.ch/cling/doxygen/
+
 ###CONTRIBUTIONS
   Every contribution is very welcome. It is considered as a donation and its copyright and any other related
 rights become exclusive ownership of the person who merged the code or in any other case the main developers.
