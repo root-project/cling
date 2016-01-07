@@ -203,7 +203,7 @@ namespace cling {
 
     llvm::SmallVector<IncrementalParser::ParseResultTransaction, 2>
       IncrParserTransactions;
-    m_IncrParser->Initialize(IncrParserTransactions);
+    m_IncrParser->Initialize(IncrParserTransactions, isChildInterp);
 
     handleFrontendOptions();
 
@@ -232,7 +232,7 @@ namespace cling {
   ///
   Interpreter::Interpreter(Interpreter &parentInterpreter, int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
-    Interpreter(argc, argv, llvmdir, noRuntime, /* isChildInterp = true */ true) {
+    Interpreter(argc, argv, llvmdir, noRuntime, /* isChildInterp */ true) {
     // Give my IncrementalExecutor a pointer to the Incremental executor
     // of the parent Interpreter. 
     m_Executor->setExternalIncrementalExecutor(parentInterpreter.m_Executor.get());

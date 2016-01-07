@@ -102,11 +102,11 @@ namespace cling {
     typedef llvm::PointerIntPair<Transaction*, 2, EParseResult>
       ParseResultTransaction;
     IncrementalParser(Interpreter* interp, int argc, const char* const *argv,
-                      const char* llvmdir, bool isChildInterpreter = false);
+                      const char* llvmdir, bool isChildInterpreter);
     ~IncrementalParser();
 
     void Initialize(llvm::SmallVectorImpl<ParseResultTransaction>& result,
-                    bool childInterp = false);
+                    bool isChildInterpreter);
     clang::CompilerInstance* getCI() const { return m_CI.get(); }
     clang::Parser* getParser() const { return m_Parser.get(); }
     clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen.get(); }

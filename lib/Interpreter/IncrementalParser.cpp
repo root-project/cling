@@ -202,7 +202,7 @@ namespace cling {
 
   void
   IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
-                                result, bool childInterp) {
+                                result, bool isChildInterpreter) {
     m_TransactionPool.reset(new TransactionPool(getCI()->getSema()));
     if (hasCodeGenerator()) {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
@@ -249,7 +249,7 @@ namespace cling {
 
     // If I belong to the parent Interpreter, only then do
     // the #include <new>
-    if (!childInterp && m_CI->getLangOpts().CPlusPlus) {
+    if (!isChildInterpreter && m_CI->getLangOpts().CPlusPlus) {
       // <new> is needed by the ValuePrinter so it's a good thing to include it.
       // We need to include it to determine the version number of the standard
       // library implementation.
