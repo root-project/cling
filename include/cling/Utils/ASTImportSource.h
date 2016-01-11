@@ -9,8 +9,6 @@
 #ifndef CLING_ASTIMPORTSOURCE_H
 #define CLING_ASTIMPORTSOURCE_H
 
-#include "cling/Interpreter/Interpreter.h"
-
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Sema.h"
 #include "clang/AST/ASTContext.h"
@@ -26,6 +24,10 @@ namespace clang {
   class DeclarationName;
   class NamedDecl;
   class Sema;
+}
+
+namespace cling {
+  class Interpreter;
 }
 
 namespace cling {
@@ -56,20 +58,7 @@ namespace cling {
 
       public:
         ASTImportSource(cling::Interpreter *parent_interpreter,
-                        cling::Interpreter *child_interpreter) :
-          m_parent_Interp(parent_interpreter), m_child_Interp(child_interpreter) {
-
-          clang::DeclContext *parentTUDeclContext =
-            clang::TranslationUnitDecl::castToDeclContext(
-              m_parent_Interp->getCI()->getASTContext().getTranslationUnitDecl());
-
-          clang::DeclContext *childTUDeclContext =
-            clang::TranslationUnitDecl::castToDeclContext(
-              m_child_Interp->getCI()->getASTContext().getTranslationUnitDecl());
-
-          // Also keep in the map of Decl Contexts the Translation Unit Decl Context
-          m_DeclContexts_map[childTUDeclContext] = parentTUDeclContext;
-        }
+                        cling::Interpreter *child_interpreter);
 
         ~ASTImportSource() { };
 

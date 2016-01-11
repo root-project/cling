@@ -25,6 +25,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/ASTImportSource.h"
 #include "cling/Interpreter/AutoloadCallback.h"
 
 #include "clang/AST/ASTContext.h"
@@ -233,8 +234,25 @@ namespace cling {
   Interpreter::Interpreter(Interpreter &parentInterpreter, int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
     Interpreter(argc, argv, llvmdir, noRuntime, /* isChildInterp */ true) {
+    // Do the "setup" of the connection between this interpreter and
+    // its parent interpreter.
+
+    // The "bridge" between the interpreters.
+    utils::ASTImportSource *myExternalSource =
+      new utils::ASTImportSource(&parentInterpreter, this);
+
+    llvm::IntrusiveRefCntPtr <ExternalASTSource>
+      astContextExternalSource(myExternalSource);
+
+    this->getCI()->getASTContext().ExternalSource.resetWithoutRelease();
+    this->getCI()->getASTContext().setExternalSource(astContextExternalSource);
+
+    // Inform the Translation Unit Decl of I2 that it has to
+    // search somewhere else to find the declarations.
+    this->getCI()->getASTContext().getTranslationUnitDecl()->setHasExternalVisibleStorage();
+
     // Give my IncrementalExecutor a pointer to the Incremental executor
-    // of the parent Interpreter. 
+    // of the parent Interpreter.
     m_Executor->setExternalIncrementalExecutor(parentInterpreter.m_Executor.get());
   }
 

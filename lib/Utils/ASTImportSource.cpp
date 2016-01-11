@@ -1,9 +1,26 @@
 #include "cling/Utils/ASTImportSource.h"
+#include "cling/Interpreter/Interpreter.h"
 
 using namespace clang;
 
 namespace cling {
   namespace utils {
+
+    ASTImportSource::ASTImportSource(cling::Interpreter *parent_interpreter,
+    cling::Interpreter *child_interpreter) :
+    m_parent_Interp(parent_interpreter), m_child_Interp(child_interpreter) {
+
+      clang::DeclContext *parentTUDeclContext =
+        clang::TranslationUnitDecl::castToDeclContext(
+          m_parent_Interp->getCI()->getASTContext().getTranslationUnitDecl());
+
+      clang::DeclContext *childTUDeclContext =
+        clang::TranslationUnitDecl::castToDeclContext(
+          m_child_Interp->getCI()->getASTContext().getTranslationUnitDecl());
+
+      // Also keep in the map of Decl Contexts the Translation Unit Decl Context
+      m_DeclContexts_map[childTUDeclContext] = parentTUDeclContext;
+    }
 
     void ASTImportSource::ImportDecl(Decl *declToImport,
                                      ASTImporter &importer,
@@ -17,13 +34,6 @@ namespace cling {
       // once clang supports the import of function templates.
       if (!(declToImport->isFunctionOrFunctionTemplate() && declToImport->isTemplateDecl())) {
         if (Decl *importedDecl = importer.Import(declToImport)) {
-          if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
-            std::vector < NamedDecl * > declVector{importedNamedDecl};
-            llvm::ArrayRef < NamedDecl * > FoundDecls(declVector);
-            SetExternalVisibleDeclsForName(childCurrentDeclContext,
-                                           importedNamedDecl->getDeclName(),
-                                           FoundDecls);
-          }
           // Put the name of the Decl imported with the
           // DeclarationName coming from the parent, in  my map.
           m_DeclName_map[childDeclName.getAsString()] = parentDeclName;
@@ -41,16 +51,13 @@ namespace cling {
 
         importedDeclContext->setHasExternalVisibleStorage(true);
 
-        if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDeclContext)) {
-          std::vector < NamedDecl * > declVector{importedNamedDecl};
-          llvm::ArrayRef < NamedDecl * > FoundDecls(declVector);
-          SetExternalVisibleDeclsForName(childCurrentDeclContext,
-                                         importedNamedDecl->getDeclName(),
-                                         FoundDecls);
-        }
         // Put the name of the DeclContext imported with the
         // DeclarationName coming from the parent, in  my map.
-        m_DeclName_map[childDeclName.getAsString()] = parentDeclName;
+        // (Except for the case when it is a function declaration,
+        // because we may want to search again for functions
+        // with the same name (function overloading). )
+        if (!importedDeclContext->isFunctionOrMethod())
+          m_DeclName_map[childDeclName.getAsString()] = parentDeclName;
 
         // And also put the declaration context I found from the parent Interpreter
         // in the map of the child Interpreter to have it for the future.
