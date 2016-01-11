@@ -129,26 +129,66 @@ namespace cling {
       return NodeContext(newCS);
     }
 
+    NodeContext VisitIfStmt(IfStmt* If) {
+      // check the condition
+      NodeContext cond = Visit(If->getCond());
+      if (!cond.isSingleStmt())
+        If->setCond((clang::Expr*)cond.getStmt());
+
+      // No default constructor..
+      NodeContext result(If);
+      return result;
+    }
+
     NodeContext VisitCastExpr(CastExpr* CE) {
-      NodeContext result = Visit(CE->getSubExpr());
+      NodeContext castExpr = Visit(CE->getSubExpr());
+      if (castExpr.isSingleStmt())
+        CE->setSubExpr((clang::Expr*)castExpr.getStmt());
+
+      // No default constructor..
+      NodeContext result(CE);
       return result;
     }
 
     NodeContext VisitUnaryOperator(UnaryOperator* UnOp) {
-      NodeContext result(UnOp);
       if (UnOp->getOpcode() == UO_Deref) {
-        result = SynthesizeCheck(UnOp->getLocStart(),
-                                 UnOp->getSubExpr());
+        UnOp->setSubExpr((clang::Expr*)SynthesizeCheck(UnOp->getLocStart(),
+                                 UnOp->getSubExpr()));
       }
+
+      // No default constructor..
+      NodeContext result(UnOp);
+      return result;
+    }
+
+    NodeContext VisitBinaryOperator(BinaryOperator* BinOp) {
+      // Here we might get if(check) throw; binop rhs.
+      NodeContext rhs = Visit(BinOp->getRHS());
+      // Here we might get if(check) throw; binop lhs.
+      NodeContext lhs = Visit(BinOp->getLHS());
+
+      if (rhs.isSingleStmt()) {
+        // FIXME:we need to loop from 0 to n-1
+        BinOp->setRHS((clang::Expr*)rhs.getStmt());
+      }
+      if (lhs.isSingleStmt()) {
+        // FIXME:we need to loop from 0 to n-1
+        BinOp->setLHS((clang::Expr*)lhs.getStmt());
+      }
+
+      // No default constructor..
+      NodeContext result(BinOp);
       return result;
     }
 
     NodeContext VisitMemberExpr(MemberExpr* ME) {
-      NodeContext result(ME);
       if (ME->isArrow()) {
-        result = SynthesizeCheck(ME->getLocStart(),
-                                       ME->getBase()->IgnoreImplicit());
+        NodeContext newBase = SynthesizeCheck(ME->getLocStart(), ME->getBase());
+        if (newBase.isSingleStmt())
+          ME->setBase((clang::Expr*)newBase.getStmt());
       }
+
+      NodeContext result(ME);
       return result;
     }
 
@@ -163,10 +203,23 @@ namespace cling {
           if (ArgIndexs.test(index)) {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
-            result = SynthesizeCheck(Arg->getLocStart(), Arg);
+            CE->setArg(index,
+                      (clang::Expr*)SynthesizeCheck(Arg->getLocStart(), Arg));
           }
         }
       }
+      return result;
+    }
+
+    NodeContext VisitCXXMemberCallExpr(CXXMemberCallExpr* CME) {
+      Expr* Callee = CME->getCallee();
+      if (isa<MemberExpr>(Callee)) {
+        NodeContext ME = Visit(Callee);
+        if (!ME.isSingleStmt())
+          CME->setCallee((clang::Expr*)ME.getStmt());
+      }
+
+      NodeContext result(CME);
       return result;
     }
 
