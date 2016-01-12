@@ -12,23 +12,25 @@
 // Create a "child" interpreter and use gCling as its "parent".
 
 #include "cling/Interpreter/Interpreter.h"
-#include <iostream>
+
+#include <cstdio>
 
 const char * const argV = "cling";
+cling::Interpreter ChildInterp(*gCling, 1, &argV);
 
-cling::Interpreter *ChildInterp = new cling::Interpreter(*gCling, 1, &argV);
+//Declare something in the parent interpreter
+.rawInput 1
+void foo(){ printf("foo(void)\n"); }
+void foo(int i){ printf("foo(int) = %d\n", i); }
+.rawInput 0
+// OR
+//gCling->declare("void foo(){ llvm::outs() << \"foo(void)\\n\"; }");
 
-//declare something in the parent interpreter
-gCling->declare("void foo(){ std::cout << \"foo(void)\" << std::endl; }");
-
-//then execute it from the child interpreter
-ChildInterp->execute("foo()");
+//Then execute it from the child interpreter
+ChildInterp.execute("foo()");
 //CHECK:foo(void)
 
-//check if function overloading works
-gCling->declare("void foo(int i){ std::cout << \"foo(int)\" << std::endl; }");
-
-ChildInterp->execute("foo(1)");
-//CHECK:foo(int)
-
+//Check if function overloading works
+ChildInterp.execute("foo(1)");
+//CHECK:foo(int) = 1
 .q

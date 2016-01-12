@@ -31,7 +31,6 @@ namespace cling {
 }
 
 namespace cling {
-  namespace utils {
 
     class ASTImportSource : public clang::ExternalASTSource {
 
@@ -54,7 +53,7 @@ namespace cling {
         /// Value: The DeclarationName of this Decl(Context) is the one
         /// that comes from the first Interpreter.
         ///
-        std::map <std::string, clang::DeclarationName> m_DeclName_map;
+        std::map <clang::DeclarationName, clang::DeclarationName > m_DeclName_map;
 
       public:
         ASTImportSource(cling::Interpreter *parent_interpreter,
@@ -88,6 +87,5 @@ namespace cling {
                         clang::DeclarationName &parentDeclName,
                         const clang::DeclContext *childCurrentDeclContext);
     };
-  } // end namespace utils
 } // end namespace cling
 #endif //CLING_ASTIMPORTSOURCE_H

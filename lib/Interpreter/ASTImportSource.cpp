@@ -1,10 +1,9 @@
-#include "cling/Utils/ASTImportSource.h"
+#include "ASTImportSource.h"
 #include "cling/Interpreter/Interpreter.h"
 
 using namespace clang;
 
 namespace cling {
-  namespace utils {
 
     ASTImportSource::ASTImportSource(cling::Interpreter *parent_interpreter,
     cling::Interpreter *child_interpreter) :
@@ -34,9 +33,16 @@ namespace cling {
       // once clang supports the import of function templates.
       if (!(declToImport->isFunctionOrFunctionTemplate() && declToImport->isTemplateDecl())) {
         if (Decl *importedDecl = importer.Import(declToImport)) {
+          if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
+            std::vector < NamedDecl * > declVector{importedNamedDecl};
+            llvm::ArrayRef < NamedDecl * > FoundDecls(declVector);
+            SetExternalVisibleDeclsForName(childCurrentDeclContext,
+                                           importedNamedDecl->getDeclName(),
+                                           FoundDecls);
+          }
           // Put the name of the Decl imported with the
           // DeclarationName coming from the parent, in  my map.
-          m_DeclName_map[childDeclName.getAsString()] = parentDeclName;
+          m_DeclName_map[childDeclName] = parentDeclName;
         }
       }
     }
@@ -51,13 +57,16 @@ namespace cling {
 
         importedDeclContext->setHasExternalVisibleStorage(true);
 
+        if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDeclContext)) {
+          std::vector < NamedDecl * > declVector{importedNamedDecl};
+          llvm::ArrayRef < NamedDecl * > FoundDecls(declVector);
+          SetExternalVisibleDeclsForName(childCurrentDeclContext,
+                                         importedNamedDecl->getDeclName(),
+                                         FoundDecls);
+        }
         // Put the name of the DeclContext imported with the
         // DeclarationName coming from the parent, in  my map.
-        // (Except for the case when it is a function declaration,
-        // because we may want to search again for functions
-        // with the same name (function overloading). )
-        if (!importedDeclContext->isFunctionOrMethod())
-          m_DeclName_map[childDeclName.getAsString()] = parentDeclName;
+        m_DeclName_map[childDeclName] = parentDeclName;
 
         // And also put the declaration context I found from the parent Interpreter
         // in the map of the child Interpreter to have it for the future.
@@ -113,20 +122,21 @@ namespace cling {
       assert(childCurrentDeclContext->hasExternalVisibleStorage() &&
              "DeclContext has no visible decls in storage");
 
-      // Check if we have already imported this Decl (Context).
-      if (m_DeclName_map.find(childDeclName.getAsString()) != m_DeclName_map.end())
-        return true;
-
-      // Clang will call FindExternalVisibleDeclsByName with an
-      // IdentifierInfo valid for the child interpreter. Get the
-      // IdentifierInfo's StringRef representation.
-      // Get the identifier info from the parent interpreter
-      // for this Name.
-      llvm::StringRef name(childDeclName.getAsString());
-      IdentifierTable &parentIdentifierTable =
-        m_parent_Interp->getCI()->getASTContext().Idents;
-      IdentifierInfo &parentIdentifierInfo = parentIdentifierTable.get(name);
-      DeclarationName parentDeclName(&parentIdentifierInfo);
+      //Check if we have already found this declaration Name before
+      DeclarationName parentDeclName;
+      std::map <clang::DeclarationName, clang::DeclarationName>::iterator II;
+      if ((II = m_DeclName_map.find(childDeclName)) != m_DeclName_map.end()) {
+        parentDeclName = II->second;
+      } else {
+        // Get the identifier info from the parent interpreter
+        // for this Name.
+        llvm::StringRef name(childDeclName.getAsString());
+        IdentifierTable &parentIdentifierTable =
+          m_parent_Interp->getCI()->getASTContext().Idents;
+        IdentifierInfo &parentIdentifierInfo = parentIdentifierTable.get(name);
+        DeclarationName parentDeclNameTemp(&parentIdentifierInfo);
+        parentDeclName = parentDeclNameTemp;
+      }
 
       // Search in the map of the stored Decl Contexts for this
       // Decl Context.
@@ -156,5 +166,4 @@ namespace cling {
       }
       return false;
     }
-  } // end namespace utils
 } // end namespace cling
