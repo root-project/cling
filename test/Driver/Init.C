@@ -8,6 +8,6 @@
 
 //RUN: cat %s | %cling 2>&1 | FileCheck %s
 
-#include <initializer_list>
-auto l {'a', 'b', '\''};
-*(l.begin() + 2) // CHECK: (const char *) "'"
+#include <vector>
+std::vector<char> l {'a', 'b', '\''};
+*(l.begin() + 2) // CHECK: (char) '''
