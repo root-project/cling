@@ -107,6 +107,11 @@ namespace cling {
     }
 
     NodeContext VisitStmt(Stmt* S) {
+      for (auto I = S->child_begin(), E = S->child_end(); I != E; ++I) {
+        if (*I)
+          NodeContext nc = Visit(*I);
+      }
+
       return NodeContext(S);
     }
 
@@ -122,79 +127,42 @@ namespace cling {
           stmts.append(nc.getStmts().begin(), nc.getStmts().end());
       }
 
-      llvm::ArrayRef<Stmt*> stmtsRef(stmts.data(), stmts.size());
-      CompoundStmt* newCS = new (C) CompoundStmt(C, stmtsRef,
-                                                 CS->getLBracLoc(),
-                                                 CS->getRBracLoc());
-      return NodeContext(newCS);
-    }
+      if (!stmts.empty()) {
+        llvm::ArrayRef<Stmt*> stmtsRef(stmts.data(), stmts.size());
+        CS->setStmts(C, const_cast<Stmt**>(&stmtsRef.front()), stmts.size());
+      }
 
-    NodeContext VisitIfStmt(IfStmt* If) {
-      // check the condition
-      NodeContext cond = Visit(If->getCond());
-      if (!cond.isSingleStmt())
-        If->setCond((clang::Expr*)cond.getStmt());
-
-      // No default constructor..
-      NodeContext result(If);
-      return result;
-    }
-
-    NodeContext VisitCastExpr(CastExpr* CE) {
-      NodeContext castExpr = Visit(CE->getSubExpr());
-      if (castExpr.isSingleStmt())
-        CE->setSubExpr((clang::Expr*)castExpr.getStmt());
-
-      // No default constructor..
-      NodeContext result(CE);
-      return result;
+      return NodeContext(CS);
     }
 
     NodeContext VisitUnaryOperator(UnaryOperator* UnOp) {
       if (UnOp->getOpcode() == UO_Deref) {
-        UnOp->setSubExpr((clang::Expr*)SynthesizeCheck(UnOp->getLocStart(),
-                                 UnOp->getSubExpr()));
+        NodeContext newSubExpr = SynthesizeCheck(UnOp->getLocStart(),
+                                 UnOp->getSubExpr());
+        if (newSubExpr.isSingleStmt()) {
+          assert ((clang::Expr*)newSubExpr.getStmt()
+                  && "Visiting Stmt which is not an Expr!");
+          UnOp->setSubExpr((clang::Expr*)newSubExpr.getStmt());
+        }
       }
 
-      // No default constructor..
-      NodeContext result(UnOp);
-      return result;
-    }
-
-    NodeContext VisitBinaryOperator(BinaryOperator* BinOp) {
-      // Here we might get if(check) throw; binop rhs.
-      NodeContext rhs = Visit(BinOp->getRHS());
-      // Here we might get if(check) throw; binop lhs.
-      NodeContext lhs = Visit(BinOp->getLHS());
-
-      if (rhs.isSingleStmt()) {
-        // FIXME:we need to loop from 0 to n-1
-        BinOp->setRHS((clang::Expr*)rhs.getStmt());
-      }
-      if (lhs.isSingleStmt()) {
-        // FIXME:we need to loop from 0 to n-1
-        BinOp->setLHS((clang::Expr*)lhs.getStmt());
-      }
-
-      // No default constructor..
-      NodeContext result(BinOp);
-      return result;
+      return NodeContext(UnOp);
     }
 
     NodeContext VisitMemberExpr(MemberExpr* ME) {
       if (ME->isArrow()) {
         NodeContext newBase = SynthesizeCheck(ME->getLocStart(), ME->getBase());
         if (newBase.isSingleStmt())
+          assert ((clang::Expr*)newBase.getStmt()
+                  && "Visiting Stmt which is not an Expr!");
           ME->setBase((clang::Expr*)newBase.getStmt());
       }
 
-      NodeContext result(ME);
-      return result;
+      return NodeContext(ME);
     }
 
     NodeContext VisitCallExpr(CallExpr* CE) {
       FunctionDecl* FDecl = CE->getDirectCallee();
-      NodeContext result(CE);
       if (FDecl && isDeclCandidate(FDecl)) {
         decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
         const std::bitset<32>& ArgIndexs = it->second;
@@ -203,24 +171,31 @@ namespace cling {
           if (ArgIndexs.test(index)) {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
+            NodeContext newArg = SynthesizeCheck(Arg->getLocStart(), Arg);
+            if (newArg.isSingleStmt()) {
+              assert ((clang::Expr*)newArg.getStmt()
+                      && "Visiting Stmt which is NodeContext an Expr!");
             CE->setArg(index,
-                      (clang::Expr*)SynthesizeCheck(Arg->getLocStart(), Arg));
+                      (clang::Expr*)newArg.getStmt());
+            }
           }
         }
       }
-      return result;
+
+      return NodeContext(CE);
     }
 
     NodeContext VisitCXXMemberCallExpr(CXXMemberCallExpr* CME) {
       Expr* Callee = CME->getCallee();
       if (isa<MemberExpr>(Callee)) {
-        NodeContext ME = Visit(Callee);
-        if (!ME.isSingleStmt())
-          CME->setCallee((clang::Expr*)ME.getStmt());
+        NodeContext newME = Visit(Callee);
+        if (newME.isSingleStmt())
+          assert ((clang::Expr*)newME.getStmt()
+                      && "Visiting Stmt which is not an Expr!");
+          CME->setCallee((clang::Expr*)newME.getStmt());
       }
 
-      NodeContext result(CME);
-      return result;
+      return NodeContext(CME);
     }
 
   private:
