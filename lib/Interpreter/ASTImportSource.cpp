@@ -31,19 +31,20 @@ namespace cling {
       // Not supported by clang.
       // FIXME: This is also a temporary check. Will be de-activated
       // once clang supports the import of function templates.
-      if (!(declToImport->isFunctionOrFunctionTemplate() && declToImport->isTemplateDecl())) {
-        if (Decl *importedDecl = importer.Import(declToImport)) {
-          if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
-            std::vector < NamedDecl * > declVector{importedNamedDecl};
-            llvm::ArrayRef < NamedDecl * > FoundDecls(declVector);
-            SetExternalVisibleDeclsForName(childCurrentDeclContext,
-                                           importedNamedDecl->getDeclName(),
-                                           FoundDecls);
-          }
-          // Put the name of the Decl imported with the
-          // DeclarationName coming from the parent, in  my map.
-          m_DeclName_map[childDeclName] = parentDeclName;
+      if (declToImport->isFunctionOrFunctionTemplate() && declToImport->isTemplateDecl())
+        return;
+
+      if (Decl *importedDecl = importer.Import(declToImport)) {
+        if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
+          std::vector < NamedDecl * > declVector{importedNamedDecl};
+          llvm::ArrayRef < NamedDecl * > FoundDecls(declVector);
+          SetExternalVisibleDeclsForName(childCurrentDeclContext,
+                                         importedNamedDecl->getDeclName(),
+                                         FoundDecls);
         }
+        // Put the name of the Decl imported with the
+        // DeclarationName coming from the parent, in  my map.
+        m_DeclName_map[childDeclName] = parentDeclName;
       }
     }
 
