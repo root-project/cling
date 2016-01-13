@@ -17,7 +17,7 @@ public:
 };
 
 std::vector<MyClass*> vect(3);
-for (auto&& el: vect) void* ptr = *it;
+for (auto&& el: vect) void* ptr = el;
 
 .q
 
