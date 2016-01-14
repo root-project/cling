@@ -33,58 +33,7 @@ namespace cling {
   NullDerefProtectionTransformer::~NullDerefProtectionTransformer()
   { }
 
-  // Copied from clad - the clang/opencl autodiff project
-  class NodeContext {
-  public:
-  private:
-    typedef llvm::SmallVector<clang::Stmt*, 2> Statements;
-    Statements m_Stmts;
-  private:
-    NodeContext() {};
-  public:
-    NodeContext(clang::Stmt* s) { m_Stmts.push_back(s); }
-    NodeContext(clang::Stmt* s0, clang::Stmt* s1) {
-      m_Stmts.push_back(s0);
-      m_Stmts.push_back(s1);
-    }
-
-    bool isSingleStmt() const { return m_Stmts.size() == 1; }
-
-    clang::Stmt* getStmt() {
-      assert(isSingleStmt() && "Cannot get multiple stmts.");
-      return m_Stmts.front();
-    }
-    const clang::Stmt* getStmt() const { return getStmt(); }
-    const Statements& getStmts() const {
-      return m_Stmts;
-    }
-
-    CompoundStmt* wrapInCompoundStmt(clang::ASTContext& C) const {
-      assert(!isSingleStmt() && "Must be more than 1");
-      llvm::ArrayRef<Stmt*> stmts
-        = llvm::makeArrayRef(m_Stmts.data(), m_Stmts.size());
-      clang::SourceLocation noLoc;
-      return new (C) clang::CompoundStmt(C, stmts, noLoc, noLoc);
-    }
-
-    clang::Expr* getExpr() {
-      assert(llvm::isa<clang::Expr>(getStmt()) && "Must be an expression.");
-      return llvm::cast<clang::Expr>(getStmt());
-    }
-    const clang::Expr* getExpr() const {
-      return getExpr();
-    }
-
-    void prepend(clang::Stmt* S) {
-      m_Stmts.insert(m_Stmts.begin(), S);
-    }
-
-    void append(clang::Stmt* S) {
-      m_Stmts.push_back(S);
-    }
-  };
-
-  class IfStmtInjector : public StmtVisitor<IfStmtInjector, NodeContext> {
+  class IfStmtInjector : public StmtVisitor<IfStmtInjector, void> {
   private:
     Sema& m_Sema;
     typedef std::map<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
@@ -101,67 +50,36 @@ namespace cling {
   public:
     IfStmtInjector(Sema& S) : m_Sema(S), m_Context(S.getASTContext()),
     m_LookupResult(0) {}
-    CompoundStmt* Inject(CompoundStmt* CS) {
-      NodeContext result = VisitCompoundStmt(CS);
-      return cast<CompoundStmt>(result.getStmt());
+    void Inject(CompoundStmt* CS) {
+      VisitStmt(CS);
     }
 
-    NodeContext VisitStmt(Stmt* S) {
-      for (auto I = S->child_begin(), E = S->child_end(); I != E; ++I) {
-        if (*I)
-          NodeContext nc = Visit(*I);
+    void VisitStmt(Stmt* S) {
+      for (auto child: S->children()) {
+        if (child)
+          Visit(child);
       }
-
-      return NodeContext(S);
     }
 
-    NodeContext VisitCompoundStmt(CompoundStmt* CS) {
-      ASTContext& C = m_Sema.getASTContext();
-      llvm::SmallVector<Stmt*, 16> stmts;
-      for (CompoundStmt::body_iterator I = CS->body_begin(), E = CS->body_end();
-           I != E; ++I) {
-        NodeContext nc = Visit(*I);
-        if (nc.isSingleStmt())
-          stmts.push_back(nc.getStmt());
-        else
-          stmts.append(nc.getStmts().begin(), nc.getStmts().end());
-      }
-
-      if (!stmts.empty()) {
-        llvm::ArrayRef<Stmt*> stmtsRef(stmts.data(), stmts.size());
-        CS->setStmts(C, const_cast<Stmt**>(&stmtsRef.front()), stmts.size());
-      }
-
-      return NodeContext(CS);
-    }
-
-    NodeContext VisitUnaryOperator(UnaryOperator* UnOp) {
+    void VisitUnaryOperator(UnaryOperator* UnOp) {
+      Visit(UnOp->getSubExpr());
       if (UnOp->getOpcode() == UO_Deref) {
-        NodeContext newSubExpr = SynthesizeCheck(UnOp->getLocStart(),
+        Expr* newSubExpr = SynthesizeCheck(UnOp->getLocStart(),
                                  UnOp->getSubExpr());
-        if (newSubExpr.isSingleStmt()) {
-          assert ((clang::Expr*)newSubExpr.getStmt()
-                  && "Visiting Stmt which is not an Expr!");
-          UnOp->setSubExpr((clang::Expr*)newSubExpr.getStmt());
-        }
+        UnOp->setSubExpr(newSubExpr);
       }
-
-      return NodeContext(UnOp);
     }
 
-    NodeContext VisitMemberExpr(MemberExpr* ME) {
+    void VisitMemberExpr(MemberExpr* ME) {
+      Visit(ME->getBase());
       if (ME->isArrow()) {
-        NodeContext newBase = SynthesizeCheck(ME->getLocStart(), ME->getBase());
-        if (newBase.isSingleStmt())
-          assert ((clang::Expr*)newBase.getStmt()
-                  && "Visiting Stmt which is not an Expr!");
-          ME->setBase((clang::Expr*)newBase.getStmt());
+        Expr* newBase = SynthesizeCheck(ME->getLocStart(), ME->getBase());
+        ME->setBase(newBase);
       }
-
-      return NodeContext(ME);
     }
 
-    NodeContext VisitCallExpr(CallExpr* CE) {
+   void VisitCallExpr(CallExpr* CE) {
+      Visit(CE->getCallee());
       FunctionDecl* FDecl = CE->getDirectCallee();
       if (FDecl && isDeclCandidate(FDecl)) {
         decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
@@ -171,35 +89,15 @@ namespace cling {
           if (ArgIndexs.test(index)) {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
-            NodeContext newArg = SynthesizeCheck(Arg->getLocStart(), Arg);
-            if (newArg.isSingleStmt()) {
-              assert ((clang::Expr*)newArg.getStmt()
-                      && "Visiting Stmt which is NodeContext an Expr!");
-            CE->setArg(index,
-                      (clang::Expr*)newArg.getStmt());
-            }
+            Expr* newArg = SynthesizeCheck(Arg->getLocStart(), Arg);
+            CE->setArg(index, newArg);
           }
         }
       }
-
-      return NodeContext(CE);
-    }
-
-    NodeContext VisitCXXMemberCallExpr(CXXMemberCallExpr* CME) {
-      Expr* Callee = CME->getCallee();
-      if (isa<MemberExpr>(Callee)) {
-        NodeContext newME = Visit(Callee);
-        if (newME.isSingleStmt())
-          assert ((clang::Expr*)newME.getStmt()
-                      && "Visiting Stmt which is not an Expr!");
-          CME->setCallee((clang::Expr*)newME.getStmt());
-      }
-
-      return NodeContext(CME);
     }
 
   private:
-    Stmt* SynthesizeCheck(SourceLocation Loc, Expr* Arg) {
+    Expr* SynthesizeCheck(SourceLocation Loc, Expr* Arg) {
       assert(Arg && "Cannot call with Arg=0");
 
       if(!m_LookupResult)
@@ -283,8 +181,8 @@ namespace cling {
       return Result(D, true);
 
     IfStmtInjector injector(*m_Sema);
-    CompoundStmt* newCS = injector.Inject(CS);
-    FD->setBody(newCS);
+    injector.Inject(CS);
+    FD->setBody(CS);
     return Result(FD, true);
   }
 } // end namespace cling
