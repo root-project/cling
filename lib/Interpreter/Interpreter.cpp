@@ -248,7 +248,6 @@ namespace cling {
     llvm::IntrusiveRefCntPtr <ExternalASTSource>
       astContextExternalSource(myExternalSource);
 
-    getCI()->getASTContext().ExternalSource.resetWithoutRelease();
     getCI()->getASTContext().setExternalSource(astContextExternalSource);
 
     // Inform the Translation Unit Decl of I2 that it has to search somewhere

@@ -125,8 +125,9 @@ namespace cling {
 
       //Check if we have already found this declaration Name before
       DeclarationName parentDeclName;
-      std::map <clang::DeclarationName, clang::DeclarationName>::iterator II;
-      if ((II = m_DeclName_map.find(childDeclName)) != m_DeclName_map.end()) {
+      std::map<clang::DeclarationName,
+        clang::DeclarationName>::iterator II = m_DeclName_map.find(childDeclName);
+      if (II != m_DeclName_map.end()) {
         parentDeclName = II->second;
       } else {
         // Get the identifier info from the parent interpreter
