@@ -21,7 +21,6 @@ cling::Interpreter ChildInterp(*gCling, 1, argV);
 //Declare something in the parent interpreter
 .rawInput 1
 void foo(){ printf("foo(void)\n"); }
-//void foo(int i){ printf("foo(int) = %d\n", i); }
 .rawInput 0
 // OR
 //gCling->declare("void foo(){ llvm::outs() << \"foo(void)\\n\"; }");
