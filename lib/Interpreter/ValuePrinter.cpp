@@ -124,7 +124,14 @@ static std::string executePrintValue(const Value &V, const T &val) {
   printValueSS << (const void *) &val;
   printValueSS << ");";
   Value printValueV;
+
+  // We really don'y care about protected types here (ROOT-7426)
+  clang::LangOptions& LO = const_cast<clang::LangOptions&>(Interp->getCI()->getLangOpts());
+  bool savedAccessControl = LO.AccessControl;
+  LO.AccessControl = false;
   Interp->evaluate(printValueSS.str(), printValueV);
+  LO.AccessControl = savedAccessControl;
+
   assert(printValueV.isValid() && "Must return valid value.");
   if (!printValueV.isValid() || printValueV.getPtr() == nullptr)
     return "Error in ValuePrinter: missing output string.";
