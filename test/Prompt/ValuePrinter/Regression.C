@@ -54,3 +54,10 @@ false // CHECK: (bool) false
 
 #include <unordered_set>
 std::unordered_multiset<float> {1} // ROOT-7310
+
+// ROOT-7426
+#include <string>
+#include <vector>
+std::vector<std::string> a = { "a", "b", "c" } // CHECK: (std::vector<std::string> &) { "a", "b", "c" }
+a // CHECK: (std::vector<std::string> &) { "a", "b", "c" }
+a[0] // CHECK: ({{.*}} &) "a"
