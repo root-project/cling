@@ -34,8 +34,8 @@ namespace cling {
   class PointerCheckInjector : public StmtVisitor<PointerCheckInjector, void> {
   private:
     Sema& m_Sema;
-    typedef std::map<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
-    std::map<clang::FunctionDecl*, std::bitset<32> > m_NonNullArgIndexs;
+    typedef llvm::DenseMap<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
+    llvm::DenseMap<clang::FunctionDecl*, std::bitset<32> > m_NonNullArgIndexs;
 
     ///\brief Needed for the AST transformations, owned by Sema.
     ///
