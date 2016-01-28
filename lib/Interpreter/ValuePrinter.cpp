@@ -146,8 +146,9 @@ bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
                       "this typename cannot be spelled.\n";
   return Res == cling::Interpreter::kSuccess;
 }
-}
 #endif
+
+} // anonymous namespace
 
 template<typename T>
 static std::string executePrintValue(const Value &V, const T &val) {
