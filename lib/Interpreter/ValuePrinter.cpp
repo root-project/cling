@@ -115,28 +115,75 @@ static std::string getTypeString(const Value &V) {
   return strm.str();
 }
 
+namespace {
+/// RAII object to disable and then re-enable access control in the LangOptions.
+struct AccessCtrlRAII_t {
+  bool savedAccessControl;
+  clang::LangOptions& LangOpts;
+
+  AccessCtrlRAII_t(cling::Interpreter& Interp):
+    LangOpts(const_cast<clang::LangOptions&>(Interp.getCI()->getLangOpts())) {
+    savedAccessControl = LangOpts.AccessControl;
+  }
+
+  ~AccessCtrlRAII_t() {
+    LangOpts.AccessControl = savedAccessControl;
+  }
+
+};
+
+#ifndef NDEBUG
+/// Is typenam parsable?
+bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
+
+  AccessCtrlRAII_t AccessCtrlRAII(Interp);
+
+  cling::Interpreter::CompilationResult Res
+    = Interp.declare("namespace { void* cling_printValue_Failure_Typename_check"
+                     " = (void*)" + typenam.str() + "nullptr; }");
+  if (Res != cling::Interpreter::kSuccess)
+    llvm::errs() << "ERROR in cling::executePrintValue(): "
+                      "this typename cannot be spelled.\n";
+  return Res == cling::Interpreter::kSuccess;
+}
+}
+#endif
+
 template<typename T>
 static std::string executePrintValue(const Value &V, const T &val) {
-  Interpreter *Interp = V.getInterpreter();
   std::stringstream printValueSS;
   printValueSS << "cling::printValue(";
   printValueSS << getTypeString(V);
   printValueSS << (const void *) &val;
   printValueSS << ");";
+
+  Interpreter *Interp = V.getInterpreter();
   Value printValueV;
 
-  // We really don'y care about protected types here (ROOT-7426)
-  clang::LangOptions& LO = const_cast<clang::LangOptions&>(Interp->getCI()->getLangOpts());
-  bool savedAccessControl = LO.AccessControl;
-  LO.AccessControl = false;
-  Interp->evaluate(printValueSS.str(), printValueV);
-  LO.AccessControl = savedAccessControl;
+  {
+    // We really don'y care about protected types here (ROOT-7426)
+    AccessCtrlRAII_t AccessCtrlRAII(*Interp);
+    clang::DiagnosticsEngine& Diag = Interp->getCI()->getDiagnostics();
+    bool oldSuppDiags = Diag.getSuppressAllDiagnostics();
+    Diag.setSuppressAllDiagnostics(true);
+    Interp->evaluate(printValueSS.str(), printValueV);
+    Diag.setSuppressAllDiagnostics(oldSuppDiags);
+  }
 
-  assert(printValueV.isValid() && "Must return valid value.");
-  if (!printValueV.isValid() || printValueV.getPtr() == nullptr)
-    return "Error in ValuePrinter: missing output string.";
-  else
-    return *(std::string *) printValueV.getPtr();
+  if (!printValueV.isValid() || printValueV.getPtr() == nullptr) {
+    // That didn't work. We probably diagnosed the issue as part of evaluate().
+    llvm::errs() << "ERROR in cling::executePrintValue(): cannot pass value!\n";
+
+    // Check that the issue comes from an unparsable type name: lambdas, unnamed
+    // namespaces, types declared inside functions etc. Assert on everything
+    // else.
+    assert(!canParseTypeName(*Interp, getTypeString(V))
+           && "printValue failed on a valid type name.");
+
+    return "Error in ValuePrinter: missing value string.";
+  }
+
+  return *(std::string *) printValueV.getPtr();
 }
 
 static std::string invokePrintValueOverload(const Value &V) {
