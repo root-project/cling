@@ -148,6 +148,29 @@ bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
 }
 #endif
 
+static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
+  using namespace clang;
+  std::ostringstream strm;
+  QualType QTNonRef = QT.getNonReferenceType();
+  std::string ValueTyStr;
+  if (const TypedefType *TDTy = dyn_cast<TypedefType>(QTNonRef))
+    ValueTyStr = TDTy->getDecl()->getQualifiedNameAsString();
+  else if (const TagType *TTy = dyn_cast<TagType>(QTNonRef))
+    ValueTyStr = TTy->getDecl()->getQualifiedNameAsString();
+
+  if (ValueTyStr.empty())
+    ValueTyStr = cling::utils::TypeName::GetFullyQualifiedName(QTNonRef, Ctx);
+  else if (QTNonRef.hasQualifiers())
+    ValueTyStr = QTNonRef.getQualifiers().getAsString() + " " + ValueTyStr;
+
+  strm << "(";
+  strm << ValueTyStr;
+  if (QT->isReferenceType())
+    strm << " &";
+  strm << ")";
+  return strm.str();
+}
+
 } // anonymous namespace
 
 template<typename T>
@@ -162,7 +185,7 @@ static std::string executePrintValue(const Value &V, const T &val) {
   Value printValueV;
 
   {
-    // We really don'y care about protected types here (ROOT-7426)
+    // We really don't care about protected types here (ROOT-7426)
     AccessCtrlRAII_t AccessCtrlRAII(*Interp);
     clang::DiagnosticsEngine& Diag = Interp->getCI()->getDiagnostics();
     bool oldSuppDiags = Diag.getSuppressAllDiagnostics();
@@ -270,7 +293,8 @@ static std::string printEnumValue(const Value &V) {
       IsFirst = false;
     }
   }
-  enumString << " : (int) " << ValAsAPSInt.toString(/*Radix = */10);
+  enumString << " : " << printQualType(C, ED->getIntegerType()) << " "
+    << ValAsAPSInt.toString(/*Radix = */10);
   return enumString.str();
 }
 
@@ -564,27 +588,7 @@ namespace cling {
   namespace valuePrinterInternal {
 
     std::string printTypeInternal(const Value &V) {
-      using namespace clang;
-      std::ostringstream strm;
-      clang::ASTContext &C = V.getASTContext();
-      QualType QT = V.getType().getNonReferenceType();
-      std::string ValueTyStr;
-      if (const TypedefType *TDTy = dyn_cast<TypedefType>(QT))
-        ValueTyStr = TDTy->getDecl()->getQualifiedNameAsString();
-      else if (const TagType *TTy = dyn_cast<TagType>(QT))
-        ValueTyStr = TTy->getDecl()->getQualifiedNameAsString();
-
-      if (ValueTyStr.empty())
-        ValueTyStr = cling::utils::TypeName::GetFullyQualifiedName(QT, C);
-      else if (QT.hasQualifiers())
-        ValueTyStr = QT.getQualifiers().getAsString() + " " + ValueTyStr;
-
-      strm << "(";
-      strm << ValueTyStr;
-      if (V.getType()->isReferenceType())
-        strm << " &";
-      strm << ")";
-      return strm.str();
+      return printQualType(V.getASTContext(), V.getType());
     }
 
     std::string printValueInternal(const Value &V) {
