@@ -6,9 +6,9 @@ Requires ipykernel ≥ 4.0
 
 ## Install
 
-To install the kernel with sources in cling/src:
+To install the kernel with sources in src/tools/cling:
 
-    cd cling/src/tools/Jupyter/kernel/
+    cd src/tools/cling/tools/Jupyter/kernel/
     pip install -e .
     # register the kernelspec:
     jupyter kernelspec install [--user] cling
