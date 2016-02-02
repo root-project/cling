@@ -10,19 +10,22 @@
 
 // RUN: cat %s | %cling | FileCheck %s
 
-make_pair("s",10)
-// CHECK: (std::pair<std::{{[a-Z_]+}}<char const (&)[2]>::type, std::{{[a-Z_]+}}<int>::type>) { "s", 10 }
+#include <utility>
+#include <tuple>
 
-make_pair(4L,'c')
-//CHECK: (std::pair<std::{{[a-Z_]+}}<long>::type, std::{{[a-Z_]+}}<char>::type>) { 4, 'c' }
+std::make_pair("s",10)
+//CHECK: (std::pair<{{.+char.+\[2\].*,.*int.*}}>) { "s", 10 }
 
-make_tuple(2)
-//CHECK: (std::tuple<std::{{[a-Z_]+}}<int>::type>) { 2 }
+std::make_pair(4L,'c')
+//CHECK: (std::pair<{{.*long.*,char.*}}>) { 4, 'c' }
 
-make_tuple(1.2f)
-//CHECK: (std::tuple<std::{{[a-Z_]+}}<float>::type>) { 1.20000f }
+std::make_tuple(2)
+//CHECK: (std::tuple<{{.*int.*}}>) { 2 }
 
-make_tuple(1,make_tuple(1, 'c'))
-//CHECK: (std::tuple<std::{{[a-Z_]+}}<int>::type, std::{{[a-Z_]+}}<std::tuple<int, char> >::type>) { 1, { 1, 'c' } }
+std::make_tuple(1.2f)
+//CHECK: (std::tuple<{{.*float.*}}>) { 1.20000f }
+
+std::make_tuple(1, std::make_tuple(1, 'c'))
+//CHECK: (std::tuple<{{.*int,.*std::tuple<.*int,.*char.*>.*}}>) { 1, { 1, 'c' } }
 
 .q
