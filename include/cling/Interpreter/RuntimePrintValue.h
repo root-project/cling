@@ -1,6 +1,7 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
 // author:  Boris Perovic <boris.perovic@cern.ch>
+// author:  Danilo Piparo <danilo.piparo@cern.ch>
 //
 // This file is dual-licensed: you can choose to license it under the University
 // of Illinois Open Source License or the GNU Lesser General Public License. See
@@ -184,6 +185,83 @@ namespace cling {
 
   }
 
+  // Tuples
+  template <class... ARGS>
+  std::string printValue(std::tuple<ARGS...> *);
+
+  namespace collectionPrinterInternal {
+
+    template <std::size_t N>
+    const char *GetCommaOrEmpty()
+    {
+      static const auto comma = ", ";
+      return comma;
+    }
+  
+    template <>
+    const char *GetCommaOrEmpty<0>()
+    {
+      static const auto empty = "";
+      return empty;
+    }
+
+    template <class TUPLE, std::size_t N = 0>
+    struct tuplePrinter {
+      static void print(TUPLE *t, std::ostringstream &ost)
+      {
+        using Element_t = decltype(std::get<N>(*t));
+        ost << GetCommaOrEmpty<N>()
+            << cling::printValue(&std::get<N>(*t));
+        // If N+1 is not smaller than the size of the tuple, 
+        // reroute the call to the printing function to the 
+        // no-op specialisation to stop recursion.
+        constexpr std::size_t Np1 = N + 1;
+        constexpr std::size_t tupleSize = std::tuple_size<TUPLE>::value;
+        constexpr bool isLastEl = Np1<tupleSize;
+        using TupleType =
+          typename std::conditional <isLastEl, TUPLE, std::tuple<>>::type;
+      tuplePrinter<TupleType, Np1>::print((TupleType *)t, ost);
+      }
+    };
+
+    // Special case: no op if last element reached
+    template <class TUPLE>
+    struct tuplePrinter<TUPLE, std::numeric_limits<std::size_t>::max()>
+    {
+      static void print(TUPLE *t, std::ostringstream &ost) {}
+    };
+
+    // Special case: no op if empty tuple
+    template <std::size_t N>
+    struct tuplePrinter<std::tuple<>, N>
+    {
+      static void print(std::tuple<> *t, std::ostringstream &ost) {}
+    };
+
+    template <class T>
+    std::string tuplePairPrintValue(T *val)
+    {
+      std::ostringstream ret;
+      ret << "{ ";
+      collectionPrinterInternal::tuplePrinter<T>::print(val, ret);
+      ret << " }";
+      return ret.str();
+    }
+  }
+
+  template <class... ARGS>
+  std::string printValue(std::tuple<ARGS...> *val)
+  {
+    using T = std::tuple<ARGS...>;
+    return collectionPrinterInternal::tuplePairPrintValue<T>(val);
+  }
+
+  template <class... ARGS>
+  std::string printValue(std::pair<ARGS...> *val)
+  {
+    using T = std::pair<ARGS...>;
+    return collectionPrinterInternal::tuplePairPrintValue<T>(val);
+  }
 }
 
 #endif
