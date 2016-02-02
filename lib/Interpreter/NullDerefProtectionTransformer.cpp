@@ -43,11 +43,11 @@ namespace cling {
 
     ///\brief cling_runtime_internal_throwIfInvalidPointer cache.
     ///
-    LookupResult* m_LookupResult;
+    LookupResult* m_clingthrowIfInvalidPointerCache;
 
   public:
     PointerCheckInjector(Sema& S) : m_Sema(S), m_Context(S.getASTContext()),
-    m_LookupResult(0) {}
+    m_clingthrowIfInvalidPointerCache(0) {}
 
     void VisitStmt(Stmt* S) {
       for (auto child: S->children()) {
@@ -91,32 +91,44 @@ namespace cling {
     Expr* SynthesizeCheck(Expr* Arg) {
       assert(Arg && "Cannot call with Arg=0");
 
-      if(!m_LookupResult)
+      if(!m_clingthrowIfInvalidPointerCache)
         FindAndCacheRuntimeLookupResult();
 
       SourceLocation Loc = Arg->getLocStart();
-
       Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
                                                             m_Context.VoidPtrTy,
                                                             (uint64_t)&m_Sema);
       Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
                                                           m_Context.VoidPtrTy,
                                                           (uint64_t)Arg);
-
-      Expr *args[] = {VoidSemaArg, VoidExprArg, Arg};
-
       Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
       CXXScopeSpec CSS;
-      Expr* unresolvedLookup
-        = m_Sema.BuildDeclarationNameExpr(CSS, *m_LookupResult,
-                                         /*ADL*/ false).get();
-      Expr* call = m_Sema.ActOnCallExpr(S, unresolvedLookup, Loc,
-                                        args, Loc).get();
-      TypeSourceInfo* TSI
-              = m_Context.getTrivialTypeSourceInfo(Arg->getType(), Loc);
-      Expr* castExpr = m_Sema.BuildCStyleCastExpr(Loc, TSI, Loc, call).get();
 
-      return castExpr;
+      Expr* checkCall
+        = m_Sema.BuildDeclarationNameExpr(CSS,
+                                          *m_clingthrowIfInvalidPointerCache,
+                                         /*ADL*/ false).get();
+      const clang::FunctionProtoType* checkCallType
+        = llvm::dyn_cast<const clang::FunctionProtoType>(
+            checkCall->getType().getTypePtr());
+
+      TypeSourceInfo* constVoidPtrTSI = m_Context.getTrivialTypeSourceInfo(
+        checkCallType->getParamType(2), Loc);
+
+      Expr* voidPtrArg
+        = m_Sema.BuildCStyleCastExpr(Loc, constVoidPtrTSI, Loc,
+                                     Arg).get();
+
+      Expr *args[] = {VoidSemaArg, VoidExprArg, voidPtrArg};
+
+      if (Expr* call = m_Sema.ActOnCallExpr(S, checkCall,
+                                         Loc, args, Loc).get()) {
+        clang::TypeSourceInfo* argTSI = m_Context.getTrivialTypeSourceInfo(
+                                        Arg->getType(), Loc);
+        Expr* castExpr = m_Sema.BuildCStyleCastExpr(Loc, argTSI, Loc, call).get();
+        return castExpr;
+      }
+      return voidPtrArg;
     }
 
     bool isDeclCandidate(FunctionDecl * FDecl) {
@@ -146,18 +158,18 @@ namespace cling {
     }
 
     void FindAndCacheRuntimeLookupResult() {
-      assert(!m_LookupResult && "Called multiple times!?");
+      assert(!m_clingthrowIfInvalidPointerCache && "Called multiple times!?");
 
       DeclarationName Name
         = &m_Context.Idents.get("cling_runtime_internal_throwIfInvalidPointer");
       SourceLocation noLoc;
-      m_LookupResult = new LookupResult(m_Sema, Name, noLoc,
+      m_clingthrowIfInvalidPointerCache = new LookupResult(m_Sema, Name, noLoc,
                                         Sema::LookupOrdinaryName,
                                         Sema::ForRedeclaration);
-      m_Sema.LookupQualifiedName(*m_LookupResult,
+      m_Sema.LookupQualifiedName(*m_clingthrowIfInvalidPointerCache,
                                  m_Context.getTranslationUnitDecl());
-      assert(!m_LookupResult->empty() &&
-              "cling_runtime_internal_throwIfInvalidPointer");
+      assert(!m_clingthrowIfInvalidPointerCache->empty() &&
+              "Lookup of cling_runtime_internal_throwIfInvalidPointer failed!");
     }
   };
 
