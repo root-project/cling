@@ -11,6 +11,7 @@
 #define CLING_RUNTIME_PRINT_VALUE_H
 
 #include <string>
+#include <tuple>
 
 namespace cling {
 
