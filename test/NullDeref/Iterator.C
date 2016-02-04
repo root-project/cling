@@ -7,7 +7,9 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
-// This test verifies that we do not produce a warning when an iterator is derefed.
+// This test verifies that we do not produce a warning when
+// - an iterator is derefed;
+// - a lambda function is derefed.
 
 #include <vector>
 
@@ -16,4 +18,10 @@ class MyClass;
 std::vector<MyClass*> vect(3);
 for (auto it = vect.begin(); it != vect.end(); ++it) MyClass* ptr = *it;
  // expected-no-diagnostics
+
+auto lamb =[](int x){return x;};
+*lamb;
+ // expected-no-diagnostics
+
 .q
+
