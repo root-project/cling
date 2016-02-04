@@ -19,6 +19,9 @@ std::make_pair("s",10)
 std::make_pair(4L,'c')
 //CHECK: (std::pair<{{.*long.*,char.*}}>) { 4, 'c' }
 
+std::make_tuple()
+//CHECK: (std::tuple<>) {  }
+
 std::make_tuple(2)
 //CHECK: (std::tuple<{{.*int.*}}>) { 2 }
 
