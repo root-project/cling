@@ -10,6 +10,10 @@
 #ifndef CLING_RUNTIME_PRINT_VALUE_H
 #define CLING_RUNTIME_PRINT_VALUE_H
 
+#if !defined(__CLING__)
+#error "This file must not be included by compiled programs."
+#endif
+
 #include <string>
 #include <tuple>
 
