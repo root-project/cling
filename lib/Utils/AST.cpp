@@ -180,7 +180,10 @@ namespace utils {
 
   IntegerLiteral* Synthesize::IntegerLiteralExpr(ASTContext& C, uint64_t Ptr) {
     const llvm::APInt Addr(8 * sizeof(void *), Ptr);
-    return IntegerLiteral::Create(C, Addr, C.UnsignedLongTy, SourceLocation());
+    QualType ulongTyForPtr = C.UnsignedLongTy;
+    if (C.getTypeSize(C.UnsignedLongLongTy) == 8 * sizeof(void*))
+       ulongTyForPtr = C.UnsignedLongLongTy;
+    return IntegerLiteral::Create(C, Addr, ulongTyForPtr, SourceLocation());
   }
 
   static bool
