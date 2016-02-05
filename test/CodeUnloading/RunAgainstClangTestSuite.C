@@ -1,5 +1,6 @@
 //RUN: make -C %testexecdir/../../clang/ test TESTSUITE=Sema CLANG=%p/clangTestUnloader.sh
-//XFAIL: *
+
+// FIXME: this test is a no-op in CMake :-(
 
 // Current SemaCXX failures:
 // Expected Passes    : 392
