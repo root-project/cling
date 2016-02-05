@@ -12,7 +12,11 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <unistd.h>
+#ifdef LLVM_ON_WIN32
+# include <Windows.h>
+#else
+# include <unistd.h>
+#endif
 
 namespace cling {
   namespace utils{
