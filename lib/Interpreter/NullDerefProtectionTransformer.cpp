@@ -17,6 +17,7 @@
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Lookup.h"
+#include "clang/AST/Expr.h"
 
 #include <bitset>
 #include <map>
@@ -50,39 +51,45 @@ namespace cling {
     m_clingthrowIfInvalidPointerCache(0) {}
 
     void VisitStmt(Stmt* S) {
-      for (auto child: S->children()) {
+      for (auto child: S->children())
         if (child)
-          Visit(child);
-      }
+            Visit(child);
     }
 
     void VisitUnaryOperator(UnaryOperator* UnOp) {
-      Visit(UnOp->getSubExpr());
-      if (UnOp->getOpcode() == UO_Deref) {
-        UnOp->setSubExpr(SynthesizeCheck(UnOp->getSubExpr()));
+      if (!UnOp->isCXX11ConstantExpr(m_Context)) {
+        Visit(UnOp->getSubExpr());
+        if (UnOp->getOpcode() == UO_Deref)
+          if (!UnOp->getSubExpr()->isCXX11ConstantExpr(m_Context))
+            UnOp->setSubExpr(SynthesizeCheck(UnOp->getSubExpr()));
       }
     }
 
     void VisitMemberExpr(MemberExpr* ME) {
-      Visit(ME->getBase());
-      if (ME->isArrow()) {
-        ME->setBase(SynthesizeCheck(ME->getBase()));
+      if (!ME->isCXX11ConstantExpr(m_Context)
+          && !ME->getBase()->isCXX11ConstantExpr(m_Context)) {
+        Visit(ME->getBase());
+        if (ME->isArrow())
+          ME->setBase(SynthesizeCheck(ME->getBase()));
       }
     }
 
-   void VisitCallExpr(CallExpr* CE) {
-      Visit(CE->getCallee());
-      FunctionDecl* FDecl = CE->getDirectCallee();
-      if (FDecl && isDeclCandidate(FDecl)) {
-        decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
-        const std::bitset<32>& ArgIndexs = it->second;
-        Sema::ContextRAII pushedDC(m_Sema, FDecl);
-        for (int index = 0; index < 32; ++index) {
-          if (ArgIndexs.test(index)) {
-            // Get the argument with the nonnull attribute.
-            Expr* Arg = CE->getArg(index);
-            CE->setArg(index, SynthesizeCheck(Arg));
-          }
+    void VisitCallExpr(CallExpr* CE) {
+      if (!CE->isCXX11ConstantExpr(m_Context)
+          && !CE->getCallee()->isCXX11ConstantExpr(m_Context)) {
+        Visit(CE->getCallee());
+        FunctionDecl* FDecl = CE->getDirectCallee();
+        if (FDecl && isDeclCandidate(FDecl)) {
+          decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
+          const std::bitset<32>& ArgIndexs = it->second;
+          Sema::ContextRAII pushedDC(m_Sema, FDecl);
+          for (int index = 0; index < 32; ++index)
+            if (ArgIndexs.test(index)) {
+              // Get the argument with the nonnull attribute.
+              Expr* Arg = CE->getArg(index);
+              if (!Arg->isCXX11ConstantExpr(m_Context))
+                CE->setArg(index, SynthesizeCheck(Arg));
+            }
         }
       }
     }
@@ -176,7 +183,7 @@ namespace cling {
   ASTTransformer::Result
   NullDerefProtectionTransformer::Transform(clang::Decl* D) {
     FunctionDecl* FD = dyn_cast<FunctionDecl>(D);
-    if (!FD || FD->isFromASTFile())
+    if (!FD || FD->isFromASTFile() || FD->isConstexpr())
       return Result(D, true);
 
     CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
