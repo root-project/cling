@@ -14,7 +14,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
-#include "clang/AST/StmtVisitor.h"
+#include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/AST/Expr.h"
@@ -32,7 +32,7 @@ namespace cling {
   NullDerefProtectionTransformer::~NullDerefProtectionTransformer()
   { }
 
-  class PointerCheckInjector : public StmtVisitor<PointerCheckInjector, void> {
+  class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
   private:
     Sema& m_Sema;
     typedef llvm::DenseMap<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
@@ -50,48 +50,81 @@ namespace cling {
     PointerCheckInjector(Sema& S) : m_Sema(S), m_Context(S.getASTContext()),
     m_clingthrowIfInvalidPointerCache(0) {}
 
-    void VisitStmt(Stmt* S) {
-      for (auto child: S->children())
+    bool VisitStmt(Stmt* S) {
+      for (auto child: S->children()) {
         if (child)
-            Visit(child);
-    }
-
-    void VisitUnaryOperator(UnaryOperator* UnOp) {
-      if (!UnOp->isCXX11ConstantExpr(m_Context)) {
-        Visit(UnOp->getSubExpr());
-        if (UnOp->getOpcode() == UO_Deref)
-          if (!UnOp->getSubExpr()->isCXX11ConstantExpr(m_Context))
-            UnOp->setSubExpr(SynthesizeCheck(UnOp->getSubExpr()));
+            VisitStmt(child);
       }
+      return true;
     }
 
-    void VisitMemberExpr(MemberExpr* ME) {
-      if (!ME->isCXX11ConstantExpr(m_Context)
-          && !ME->getBase()->isCXX11ConstantExpr(m_Context)) {
-        Visit(ME->getBase());
-        if (ME->isArrow())
-          ME->setBase(SynthesizeCheck(ME->getBase()));
-      }
+    bool VisitUnaryOperator(UnaryOperator* UnOp) {
+      VisitStmt(UnOp->getSubExpr());
+      if (UnOp->getOpcode() == UO_Deref)
+        if (UnOp->getSubExpr()->getType().getTypePtr()->isPointerType())
+          UnOp->setSubExpr(SynthesizeCheck(UnOp->getSubExpr()));
+      return true;
     }
 
-    void VisitCallExpr(CallExpr* CE) {
-      if (!CE->isCXX11ConstantExpr(m_Context)
-          && !CE->getCallee()->isCXX11ConstantExpr(m_Context)) {
-        Visit(CE->getCallee());
-        FunctionDecl* FDecl = CE->getDirectCallee();
-        if (FDecl && isDeclCandidate(FDecl)) {
-          decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
-          const std::bitset<32>& ArgIndexs = it->second;
-          Sema::ContextRAII pushedDC(m_Sema, FDecl);
-          for (int index = 0; index < 32; ++index)
-            if (ArgIndexs.test(index)) {
-              // Get the argument with the nonnull attribute.
-              Expr* Arg = CE->getArg(index);
-              if (!Arg->isCXX11ConstantExpr(m_Context))
-                CE->setArg(index, SynthesizeCheck(Arg));
-            }
+    bool VisitMemberExpr(MemberExpr* ME) {
+      VisitStmt(ME->getBase());
+      if (ME->isArrow())
+        ME->setBase(SynthesizeCheck(ME->getBase()));
+      return true;
+    }
+
+    bool VisitCallExpr(CallExpr* CE) {
+      VisitStmt(CE->getCallee());
+      FunctionDecl* FDecl = CE->getDirectCallee();
+      if (FDecl && isDeclCandidate(FDecl)) {
+        decl_map_t::const_iterator it = m_NonNullArgIndexs.find(FDecl);
+        const std::bitset<32>& ArgIndexs = it->second;
+        Sema::ContextRAII pushedDC(m_Sema, FDecl);
+        for (int index = 0; index < 32; ++index) {
+          if (ArgIndexs.test(index)) {
+            // Get the argument with the nonnull attribute.
+            Expr* Arg = CE->getArg(index);
+              CE->setArg(index, SynthesizeCheck(Arg));
+          }
         }
       }
+      return true;
+    }
+
+    bool VisitFunctionDecl(FunctionDecl* FD) {
+      if (!FD->isConstexpr()) {
+        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
+        if (CS)
+          VisitStmt(CS);
+      }
+      return true;
+    }
+
+    bool VisitCXXMethodDecl(CXXMethodDecl* FD) {
+      if (!FD->isConstexpr()) {
+        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
+        if (CS)
+        VisitStmt(CS);
+    }
+      return true;
+    }
+
+    bool TraverseFunctionDecl(FunctionDecl* FD) {
+      if (!FD->isConstexpr()) {
+        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
+        if (CS)
+          TraverseStmt(CS);
+      }
+      return true;
+    }
+
+    bool TraverseCXXMethodDecl(CXXMethodDecl* CMD) {
+      if (!CMD->isConstexpr()){
+        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(CMD->getBody());
+        if (CS)
+        TraverseStmt(CS);
+    }
+      return true;
     }
 
   private:
@@ -182,17 +215,10 @@ namespace cling {
 
   ASTTransformer::Result
   NullDerefProtectionTransformer::Transform(clang::Decl* D) {
-    FunctionDecl* FD = dyn_cast<FunctionDecl>(D);
-    if (!FD || FD->isFromASTFile() || FD->isConstexpr())
-      return Result(D, true);
-
-    CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
-    if (!CS)
-      return Result(D, true);
 
     PointerCheckInjector injector(*m_Sema);
-    injector.Visit(CS);
+    injector.VisitDecl(D);
 
-    return Result(FD, true);
+    return Result(D, true);
   }
 } // end namespace cling
