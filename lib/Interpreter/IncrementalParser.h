@@ -222,6 +222,10 @@ namespace cling {
     ///
     bool runStaticInitOnTransaction(Transaction* T) const;
 
+    ///\brief Add the trnasformers to the Incremental Parser.
+    ///
+    void setTransformers(bool isChildInterpreter);
+
   private:
     ///\brief Finalizes the consumers (e.g. CodeGen) on a transaction.
     ///
@@ -252,6 +256,7 @@ namespace cling {
     /// duplicated by CodeGen.
     ///
     bool shouldIgnore(const clang::Decl* D) const;
+
   };
 } // end namespace cling
 #endif // CLING_INCREMENTAL_PARSER_H

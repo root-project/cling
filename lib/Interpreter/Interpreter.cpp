@@ -229,6 +229,8 @@ namespace cling {
          AutoLoadCB(new AutoloadCallback(this, showSuggestions));
       setCallbacks(std::move(AutoLoadCB));
     }
+
+    m_IncrParser->setTransformers(isChildInterp);
   }
 
   ///\brief Constructor for the child Interpreter.
