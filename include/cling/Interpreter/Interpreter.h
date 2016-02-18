@@ -45,6 +45,7 @@ namespace clang {
   class Sema;
   class SourceLocation;
   class SourceManager;
+  class PresumedLoc;
 }
 
 namespace cling {
@@ -71,6 +72,9 @@ namespace cling {
   ///
   class Interpreter {
   public:
+     // IgnoreFilesFunc_t takes a const reference to avoid having to
+     // include the actual definition of PresumedLoc.
+     using IgnoreFilesFunc_t = bool (*)(const clang::PresumedLoc&);
 
     ///\brief Pushes a new transaction, which will collect the decls that came
     /// within the scope of the RAII object. Calls commit transaction at
@@ -659,7 +663,9 @@ namespace cling {
     void forwardDeclare(Transaction& T, clang::Sema& S,
                         llvm::raw_ostream& out,
                         bool enableMacros = false,
-                        llvm::raw_ostream* logs = 0) const;
+                        llvm::raw_ostream* logs = 0,
+                        IgnoreFilesFunc_t ignoreFiles =
+                          [](const clang::PresumedLoc&) { return false;}) const;
 
     friend class runtime::internal::LifetimeHandler;
   };

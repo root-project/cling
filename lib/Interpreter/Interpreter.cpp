@@ -1335,12 +1335,13 @@ namespace cling {
   void Interpreter::forwardDeclare(Transaction& T, Sema& S,
                                    llvm::raw_ostream& out,
                                    bool enableMacros /*=false*/,
-                                   llvm::raw_ostream* logs /*=0*/) const {
+                                   llvm::raw_ostream* logs /*=0*/,
+                                   IgnoreFilesFunc_t ignoreFiles /*= return always false*/) const {
     llvm::raw_null_ostream null;
     if (!logs)
       logs = &null;
 
-    ForwardDeclPrinter visitor(out, *logs, S, T);
+    ForwardDeclPrinter visitor(out, *logs, S, T, 0, false, ignoreFiles);
     visitor.printStats();
 
     // Avoid assertion in the ~IncrementalParser.

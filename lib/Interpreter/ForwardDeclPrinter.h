@@ -90,6 +90,8 @@ namespace cling {
 
   class ForwardDeclPrinter : public clang::DeclVisitor<ForwardDeclPrinter> {
   private:
+    using IgnoreFilesFunc_t = bool (*)(const clang::PresumedLoc&);
+
     clang::PrintingPolicy m_Policy; // intentional copy
     llvm::raw_ostream& m_Log;
     unsigned m_Indentation;
@@ -102,6 +104,7 @@ namespace cling {
     llvm::DenseMap<const clang::Decl*, bool> m_Visited; // fwd decl success
     std::stack<llvm::raw_ostream*> m_StreamStack;
     std::set<const char*> m_BuiltinNames;
+    IgnoreFilesFunc_t m_IgnoreFile; // Call back to ignore some top level files.
 
   public:
     ForwardDeclPrinter(llvm::raw_ostream& OutS,
@@ -109,7 +112,9 @@ namespace cling {
                        clang::Sema& S,
                        const Transaction& T,
                        unsigned Indentation = 0,
-                       bool printMacros = false);
+                       bool printMacros = false,
+                       IgnoreFilesFunc_t ignoreFiles =
+                          [](const clang::PresumedLoc&) { return false; } );
 
 //    void VisitDeclContext(clang::DeclContext *DC, bool shouldIndent = true);
 
