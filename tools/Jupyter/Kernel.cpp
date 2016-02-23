@@ -19,7 +19,6 @@
 #include <map>
 #include <string>
 #include <cstring>
-#include <unistd.h>
 #ifndef _MSC_VER
 # include <unistd.h>
 #else
