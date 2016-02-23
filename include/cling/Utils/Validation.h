@@ -12,7 +12,7 @@
 
 #include <assert.h>
 #include <errno.h>
-#ifdef LLVM_ON_WIN32
+#ifdef _MSC_VER
 # define WIN32_LEAN_AND_MEAN
 # define NOGDI
 # include <Windows.h>
@@ -29,7 +29,7 @@ namespace cling {
       if (!P || P == (void *) -1)
         return false;
 
-#ifdef LLVM_ON_WIN32
+#ifdef _MSC_VER
       MEMORY_BASIC_INFORMATION MBI;
       if (!VirtualQuery(P, &MBI, sizeof(MBI)))
         return false;
