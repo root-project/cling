@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+
+<head>
+  <title>Cling Website</title>
+  <meta name="description" content="Official website of Cling" />
+  <meta name="keywords" content="cling, interactive compiler interface, interpreter, clang, LLVM" />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <meta http-equiv="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+  <link rel="stylesheet" type="text/css" href="style/menu.css" />
+</head>
+
+<body>
+  <div id="website">
+    <div id="header">
+      <div id="logo">
+        <div id="logo_text">
+          <!-- class="logo_colour", allows you to change the colour of the text -->
+          <h1><a href="index.html"><span class="logo_colour">Cling</span></a></h1>
+          <h2>Interactive Compiler Interface</h2>
+        </div>
+      </div>
+      <div id="mainmenubar">
+        <ul id="mainmenu">
+          <!-- put class="selected" in the li tag for the selected page - to highlight which page you're on -->
+          <li class="selected"><a class="tab_link" href="newindex.html">Home</a></li>
+          <li><a class="tab_link" href="build.html">Build</a></li>
+          <li><a class="tab_link" href="contribute.html">Contribuite</a></li>
+          <li><a class="tab_link" href="jupyter.html">Jupyter</a></li>
+        </ul>
+      </div>
+    </div>
+    <div id="breadcrumb"></div>
+    <div id="content">
+      <div class="sidebar">
+        <!-- insert your sidebar items here -->
+        <h3>Latest News</h3>
+        <h4>Cling goes public</h4>
+        <h5>July 25th, 2011</h5>
+        <p> Cling was officially announced to the Clang community <br /><a href="news/ClingAnnouncement.html">Read more</a></p>
+        <p></p>
+        <h4>New website launched</h4>
+        <h5>July 1st, 2011</h5>
+        <p> Welcome to the new website of the project. <br /><a href="news/NewWebsiteLaunched.html">Read more</a></p>
+        <h3>Useful Links</h3>
+        <ul>
+          <li><a href="www.cern.ch" target="_blank">CERN</a></li>
+        </ul>
+      </div>
+      <div id="main">
+        <!-- insert the page content here -->
+        <h1>Cling is ..</h1>
+        <p>
+          An interactive C++ interpreter, built on the top of LLVM and Clang libraries. In addition to standard interpreters it has a command line prompt and uses just-in-time (JIT) compiler. This kind of software application is commonly known as an interactive compiler.
+        <br/>
+          Cling started off as a contemporary, high-performance alternative of the current C++ interpreter in the ROOT project - CINT.
+        </p>
+
+        <h2>Interpreting C++ with Cling</h2>
+
+        <ul style="list-style-type:none">
+          <li>Learning C++ 
+
+          <p>
+            One use case of cling is to aid the C++ learning process. Offering imediate feedback the user can easily get familiar with the structures and spelling of the language.  
+          </p>
+          </li>
+          <li>Creating scripts
+          <p>
+            The power of an interpreter lays as well in the compactness and ease of repeatedly running a small snippet of code - aka a script. This can be done in cling by inserting the bash-like style line:  
+            <pre>
+#!/usr/bin/cling
+            </pre>  
+          </p>
+           </li> 
+
+          <li>Rapid Application Development (RAD) 
+
+          <p>
+            Cling can be used successfully for Rapid Application Development allowing for prototyping and proofs of concept taking advantage of dynamicity and feedback during the implementation process.
+          </p>  
+          </li>
+
+          <li>Runtime-Generated Code 
+            <p>
+              
+            </p>
+          </li>
+        </ul>  
+
+        <h2> Embedding Cling </h2>
+<p>
+        The functionality of an application can be neriched by embedding Cling. 
+
+        To embed Cling, the main program has to be provided. One of the things this main program has to do is initialize the Cling interpreter. There are optional calls to pass command line arguments to Cling. Afterwards, you can call the interpreter from any anywhere within the application.
+</p>
+<p>
+        For compilation and linkage the application needs the path to the clang and llvm libraries and the invocation is order dependent since the linker cannot do backward searches. This is done automatically if you system has a make/cmake file.
+
+        <pre>
+g++ embeddcling.cxx -std=c++11 -L/usr/local/lib 
+                    -lclingInterpreter -lclingUtils 
+                    -lclangFrontend -lclangSerialization -lclangParse -lclangSema 
+                    -lclangAnalysis -lclangEdit -lclangLex -lclangDriver -lclangCodeGen 
+                    -lclangBasic  -lclangAST  
+                    `llvm-config 
+                      --libs bitwriter mcjit orcjit native option 
+                        ipo profiledata instrumentation objcarcopts` 
+                      -lz -pthread -ldl -ltinfo 
+                    -o embeddcling
+        </pre>
+</p>
+<p>
+        Embedding cling requires the creation of the interpreter which can swallow the arguments provided to the application and passing the resource directory of llvm. An example is the following:
+            
+        <pre>
+#include "cling/Interpreter/Interpreter.h"
+
+int main(int argc, char** argv) {
+  const char* LLVMRESDIR = "/usr/local/"; //path to llvm resource directory
+  cling::Interpreter interp(argc, argv, LLVMRESDIR);
+
+  interp.declare("int p=0;");
+}
+        </pre>
+</p>
+
+
+
+        <h2> Download </h2>
+<p>
+        We are developing Cling according to the principle of Release early and release often. Binaries are created on a monthly basis and are available for <a href="https://root.cern.ch/download/cling/" target="_blank">download</a>.
+         
+</p>
+        
+        <h2> Support </h2>
+        <p> Support is provided through a fast-response <a href="https://root.cern.ch/phpBB3/viewforum.php?f=21 and cling-dev@cern.ch" target="_blank">forum</a>, where questions of all levels are welcomed.
+</p>
+
+        
+      </div>
+    </div>
+    <div id="footer">
+      <div id="copyright">
+        Copyright &copy; Cling Team
+      </div>
+      <div id="links">
+        <a href="http://root.cern.ch/" target="_blank">The ROOT Framework</a> |
+        <a href="http://llvm.org" target="_blank">LLVM</a> |
+        <a href="http://clang.llvm.org" target="_blank">Clang</a> |
+        <a href="http://www.html5webtemplates.co.uk" target="_blank">Web Design</a>
+      </div>
+      <div id="modified"><i>Page was modified on <b>$Date$</b> in $Rev$ by <b>$Author$</b></i></div>
+    </div>
+  </div>
+</body>
+</html>
