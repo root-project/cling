@@ -20,6 +20,12 @@
 #include <string>
 #include <cstring>
 #include <unistd.h>
+#ifndef _MSC_VER
+# include <unistd.h>
+#else
+# include <io.h>
+# define write _write
+#endif
 
 // FIXME: should be moved into a Jupyter interp struct that then gets returned
 // from create.

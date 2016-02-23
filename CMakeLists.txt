@@ -89,7 +89,7 @@ string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
 # The package needs to be compiler without RTTI information
 if(MSVC)
-  add_definitions(/GR-)
+  add_definitions(/GR- /DNOMINMAX)
 else()
   add_definitions(-fno-rtti)
 endif()

@@ -89,7 +89,11 @@ namespace {
 #endif
 #ifdef _MSC_VER
     HKEY regVS;
+#if (_MSC_VER >= 1900)
+    int VSVersion = (_MSC_VER / 100) - 5;
+#else
     int VSVersion = (_MSC_VER / 100) - 6;
+#endif
     std::stringstream subKey;
     subKey << "VisualStudio.DTE." << VSVersion << ".0";
     if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey.str().c_str(), 0, KEY_READ, &regVS) == ERROR_SUCCESS) {
