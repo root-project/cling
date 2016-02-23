@@ -10,9 +10,11 @@
 #ifndef CLING_UTILS_VALIDATION_H
 #define CLING_UTILS_VALIDATION_H
 
+#include "llvm/Config/config.h" // for LLVM_ON_WIN32
+
 #include <assert.h>
 #include <errno.h>
-#ifdef _MSC_VER
+#ifdef LLVM_ON_WIN32
 # define WIN32_LEAN_AND_MEAN
 # define NOGDI
 # include <Windows.h>
@@ -29,7 +31,7 @@ namespace cling {
       if (!P || P == (void *) -1)
         return false;
 
-#ifdef _MSC_VER
+#ifdef LLVM_ON_WIN32
       MEMORY_BASIC_INFORMATION MBI;
       if (!VirtualQuery(P, &MBI, sizeof(MBI)))
         return false;
