@@ -1,6 +1,10 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/highlight.js/9.2.0/styles/railscasts.min.css">
+<script src="http://cdn.jsdelivr.net/highlight.js/9.2.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
 <head>
   <title>Cling Website</title>
   <meta name="description" content="Official website of Cling" />
@@ -24,10 +28,10 @@
       <div id="mainmenubar">
         <ul id="mainmenu">
           <!-- put class="selected" in the li tag for the selected page - to highlight which page you're on -->
-          <li class="selected"><a class="tab_link" href="newindex.html">Home</a></li>
+          <li><a class="tab_link" href="newindex.html">Home</a></li>
           <li><a class="tab_link" href="build.html">Build</a></li>
           <li><a class="tab_link" href="contribute.html">Contribuite</a></li>
-          <li><a class="tab_link" href="jupyter.html">Jupyter</a></li>
+          <li class="selected"><a class="tab_link" href="jupyter.html">Jupyter</a></li>
         </ul>
       </div>
     </div>
@@ -51,9 +55,12 @@
       <div id="main">
         <!-- insert the page content here -->
 
-      <h2> Jupyter Kernel </h2>
+      <h3> Jupyter Kernel </h3>
       <p>Cling is now integrated with the <a href = "http://jupyter.org/" target = "_blank"> Jupyter</a> technology through the Jupyter kernel. You can take advantage of creating a Jupyter notebook on top of runtime interpretation, you have runtime visualisation!
       </p> 
+
+      <img id = "jupyterscreenshot"
+       src="JupyterScreenshot.png" alt="Cling Jupyter Screenshot" style=""/>
 
 <h3>Prerequisites</h3>
 <ul>
@@ -63,7 +70,7 @@
 </ul>
 <h3>Install </h3>
 To install the kernel with sources in src/tools/cling:
-<pre>
+<pre><code>
     export PATH=/path/to/cling/bin:$PATH
     cd src/tools/cling/tools/Jupyter/kernel/
 
@@ -73,13 +80,15 @@ To install the kernel with sources in src/tools/cling:
     # register the kernelspec:
     jupyter-kernelspec install [--user] cling
     # or: jupyter kernelspec install [--user] cling
-</pre>
+
+</code></pre>
 
 To run it:
-<pre>
+<pre><code>
     jupyter-notebook
     # or: jupyter notebook
-</pre>
+
+</code></pre>
 
       </div>
     </div>
