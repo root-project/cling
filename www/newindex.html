@@ -1,6 +1,11 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 
+
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/highlight.js/9.2.0/styles/railscasts.min.css">
+<script src="http://cdn.jsdelivr.net/highlight.js/9.2.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
 <head>
   <title>Cling Website</title>
   <meta name="description" content="Official website of Cling" />
@@ -50,14 +55,27 @@
       </div>
       <div id="main">
         <!-- insert the page content here -->
-        <h1>Cling is ..</h1>
+        <h1>Cling.. interprets C++</h1>
+<p>
+<pre><code class = "cpp">
+****************** CLING ******************
+* Type C++ code and press enter to run it *
+*             Type .q to exit             *
+*******************************************
+[cling]$ #include <string>
+[cling]$ std::string s("abc");
+[cling]$ s.find('b')
+(std::basic_string<char, std::char_traits<char>, std::allocator<char> >::size_type) 1
+[cling]$
+</code></pre>
+</p>
         <p>
-          An interactive C++ interpreter, built on the top of LLVM and Clang libraries. In addition to standard interpreters it has a command line prompt and uses just-in-time (JIT) compiler. This kind of software application is commonly known as an interactive compiler.
+          Cling is built on the top of LLVM and Clang libraries. In addition to standard interpreters it has a command line prompt and uses just-in-time (JIT) compiler. This kind of software application is commonly known as an interactive compiler.
         <br/>
           Cling started off as a contemporary, high-performance alternative of the current C++ interpreter in the ROOT project - CINT.
         </p>
 
-        <h2>Interpreting C++ with Cling</h2>
+        <h3>Why interpreting C++ with Cling?</h3>
 
         <ul style="list-style-type:none">
           <li>Learning C++ 
@@ -69,9 +87,9 @@
           <li>Creating scripts
           <p>
             The power of an interpreter lays as well in the compactness and ease of repeatedly running a small snippet of code - aka a script. This can be done in cling by inserting the bash-like style line:  
-            <pre>
+            <pre><code>
 #!/usr/bin/cling
-            </pre>  
+            </code></pre>
           </p>
            </li> 
 
@@ -84,22 +102,24 @@
 
           <li>Runtime-Generated Code 
             <p>
-              
+              Sometime it's convenient to create code as a reaction to input
+              (user/network/configuration).
+              Runtime-generated code can interface with C++ libraries.
             </p>
           </li>
         </ul>  
 
-        <h2> Embedding Cling </h2>
+        <h3> Embedding Cling </h3>
 <p>
-        The functionality of an application can be neriched by embedding Cling. 
+        The functionality of an application can be enriched by embedding Cling.
 
         To embed Cling, the main program has to be provided. One of the things this main program has to do is initialize the Cling interpreter. There are optional calls to pass command line arguments to Cling. Afterwards, you can call the interpreter from any anywhere within the application.
 </p>
 <p>
-        For compilation and linkage the application needs the path to the clang and llvm libraries and the invocation is order dependent since the linker cannot do backward searches. This is done automatically if you system has a make/cmake file.
+        For compilation and linkage the application needs the path to the clang and llvm libraries and the invocation is order dependent since the linker cannot do backward searches.
 
-        <pre>
-g++ embeddcling.cxx -std=c++11 -L/usr/local/lib 
+        <pre><code>
+g++ embedcling.cxx -std=c++11 -L/usr/local/lib
                     -lclingInterpreter -lclingUtils 
                     -lclangFrontend -lclangSerialization -lclangParse -lclangSema 
                     -lclangAnalysis -lclangEdit -lclangLex -lclangDriver -lclangCodeGen 
@@ -108,13 +128,13 @@ g++ embeddcling.cxx -std=c++11 -L/usr/local/lib
                       --libs bitwriter mcjit orcjit native option 
                         ipo profiledata instrumentation objcarcopts` 
                       -lz -pthread -ldl -ltinfo 
-                    -o embeddcling
-        </pre>
+                    -o embedcling
+        </code></pre>
 </p>
 <p>
-        Embedding cling requires the creation of the interpreter which can swallow the arguments provided to the application and passing the resource directory of llvm. An example is the following:
+        Embedding cling requires the creation of the interpreter. Optionally compiler arguments and the resource directory of llvm can be passed. An example is the following:
             
-        <pre>
+        <pre><code>
 #include "cling/Interpreter/Interpreter.h"
 
 int main(int argc, char** argv) {
@@ -123,19 +143,19 @@ int main(int argc, char** argv) {
 
   interp.declare("int p=0;");
 }
-        </pre>
+        </code></pre>
 </p>
 
 
 
-        <h2> Download </h2>
+        <h3> Download </h3>
 <p>
-        We are developing Cling according to the principle of Release early and release often. Binaries are created on a monthly basis and are available for <a href="https://root.cern.ch/download/cling/" target="_blank">download</a>.
+        We are developing Cling according to the principle of Release early and release often. Binaries are available for <a href="https://root.cern.ch/download/cling/" target="_blank">download</a>.
          
 </p>
         
-        <h2> Support </h2>
-        <p> Support is provided through a fast-response <a href="https://root.cern.ch/phpBB3/viewforum.php?f=21 and cling-dev@cern.ch" target="_blank">forum</a>, where questions of all levels are welcomed.
+        <h3> Support </h3>
+        <p> Support is provided through a fast-response <a href="https://root.cern.ch/phpBB3/viewforum.php?f=21" target="_blank">forum</a>, where questions of all levels are welcomed. Queries can also be sent to our mailing list: cling-dev@cern.ch.
 </p>
 
         

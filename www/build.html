@@ -1,6 +1,10 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 
+<link rel="stylesheet" href="http://cdn.jsdelivr.net/highlight.js/9.2.0/styles/railscasts.min.css">
+<script src="http://cdn.jsdelivr.net/highlight.js/9.2.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
 <head>
   <title>Cling Website</title>
   <meta name="description" content="Official website of Cling" />
@@ -24,8 +28,8 @@
       <div id="mainmenubar">
         <ul id="mainmenu">
           <!-- put class="selected" in the li tag for the selected page - to highlight which page you're on -->
-          <li class="selected"><a class="tab_link" href="newindex.html">Home</a></li>
-          <li><a class="tab_link" href="build.html">Build</a></li>
+          <li><a class="tab_link" href="newindex.html">Home</a></li>
+          <li class="selected"><a class="tab_link" href="build.html">Build</a></li>
           <li><a class="tab_link" href="contribute.html">Contribuite</a></li>
           <li><a class="tab_link" href="jupyter.html">Jupyter</a></li>
         </ul>
@@ -57,9 +61,7 @@
 
         You can download and run this <a href= "https://raw.githubusercontent.com/karies/cling-all-in-one/master/clone.sh" target="_blank">build script</a>.
 
-        <h3> Manual build </h3>
-
-        Alternatively, you can build manually. 
+        <h3> Building with CMake </h3>
         
         <ul><b>Prerequisites</b>
           <li>See <a href="http://llvm.org/docs/GettingStarted.html#requirements" target="_blank">Getting Started with the LLVM System - Requirements</a>
@@ -67,8 +69,16 @@
           <li>
             Note also that <a href= "http://www.python.org/download" target = "_blank" >Python</a> is needed for running the test suite.
           </li>
+          <br/>
+          <b> And extra for Windows</b>
+          <li><b>cmake</b> - http://www.cmake.org/cmake/resources/software.html</li>
+          <li><b>Python</b> - http://www.python.org/download/</li>
+          <li><b>GnuWin32 Tools</b> - http://getgnuwin32.sourceforge.net/</li>
+          <li><b>Visual Studio</b> - <a href="http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express" target="_blank">VS Express should work as well</a></li>
         </ul>
-<pre>
+
+        <p>Start by checking out llvm, clang and cling: </p>
+<pre><code>
 git clone http://root.cern.ch/git/llvm.git src
 cd src
 git checkout cling-patches
@@ -77,65 +87,23 @@ git clone http://root.cern.ch/git/cling.git
 git clone http://root.cern.ch/git/clang.git
 cd clang
 git checkout cling-patches
-</pre>
 
- <p> 
-Now follow the procedure described at the clang web page (link is external) for ./configure --enable-cxx11; make- or CMake-based build instructions. 
-Don't forget to make install. You will get a binary called cling: that's your interactive C++ interpreter! 
+</code></pre>
+
+ <p>
+Now follow the procedure described at the <a href = "http://clang.llvm.org/get_started.html" target = "_blank">clang web page</a> for ./configure --enable-cxx11; make- or CMake-based build instructions. 
+Don't forget to make install. You will get a binary called cling: that's your interactive C++ interpreter!
 </p>
-<pre>make && make install</pre>
-      
-  <p>The executables could be found in your installation folder.
-        </p>
 
+<p> Then use CMake to configure & build cling:  </p>
 
-
-        <h3>Building with CMake (e.g. on Windows)</h3>
-
-        <ul><b><i>Prerequisites</i></b>
-          <li><b>Subversion client</b> - http://subversion.tigris.org/getting.html</li>
-          <li><b>cmake</b> - http://www.cmake.org/cmake/resources/software.html</li>
-          <li><b>Python</b> - http://www.python.org/download/</li>
-          <li><b>GnuWin32 Tools</b> - http://getgnuwin32.sourceforge.net/</li>
-          <li><b>Visual Studio</b> - <a href="http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express" target="_blank">VS Express should work as well</a></li>
-        </ul>
-
-        <p> As previously described, clone llvm, clang, and cling: </p>
-
-<pre>
-  git clone http://root.cern.ch/git/llvm.git src
-cd src
-git checkout cling-patches
-cd tools
-git clone http://root.cern.ch/git/cling.git
-git clone http://root.cern.ch/git/clang.git
-cd clang
-git checkout cling-patches
-cd ..
-</pre>
-      <p> Then use CMake to configure & build cling:  </p>
-<pre>
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX=[Install Path] ..\src
-cmake --build . --config [Release/Debug] --target clang
-cmake --build . --config [Release/Debug] --target cling
-</pre>
-
-<h3> Building ROOT6: cling as part of ROOT </h3>
-
-Cling, llvm and clang are part of the trunk of ROOT. Simply run 
-<pre>
-git clone https://root.cern.ch/git/root.git src
+<pre><code>
 mkdir obj
 cd obj
-../src/configure
-make -j4
+cmake -DCMAKE_INSTALL_PREFIX=[Install Path] ..\src
+cmake --build . --config [Release/Debug] --target cling
 
-</pre>
-<p> and you will get a preview of ROOT 6: ROOT using cling! </p>
-
-
+</code></pre>
 
       </div>
     </div>
