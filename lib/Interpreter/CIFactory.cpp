@@ -437,7 +437,7 @@ namespace {
         "echo | LC_ALL=C " LLVM_CXX " -xc++ -E -v - 2>&1 >/dev/null "
         "| awk '/^#include </,/^End of search"
         "/{if (!/^#include </ && !/^End of search/){ print }}' "
-        "| grep -E \"(c|g)\\+\\+\"";
+        "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"";
       if (FILE *pf = ::popen(CppInclQuery, "r")) {
 
         HostCXXI.push_back("-nostdinc++");
