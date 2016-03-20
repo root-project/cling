@@ -48,7 +48,6 @@ namespace cling {
     return "runtime_exception\n";
   }
 
-
   InvalidDerefException::InvalidDerefException(clang::Sema* S, clang::Expr* E,
                                   cling::InvalidDerefException::DerefType type)
     : m_Sema(S), m_Arg(E), m_Diags(&m_Sema->getDiagnostics()), m_Type(type) {}
@@ -64,7 +63,7 @@ namespace cling {
       return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
   }
 
-  void InvalidDerefException::diagnose() const throw() {
+  void InvalidDerefException::diagnose() const {
     // Construct custom diagnostic: warning for invalid memory address;
     // no equivalent in clang.
     if (m_Type == cling::InvalidDerefException::DerefType::INVALID_MEM) {

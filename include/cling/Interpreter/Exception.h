@@ -10,6 +10,8 @@
 #ifndef CLING_RUNTIME_EXCEPTION_H
 #define CLING_RUNTIME_EXCEPTION_H
 
+#include <exception>
+
 namespace clang {
   class Sema;
   class Expr;
@@ -19,10 +21,12 @@ namespace clang {
 namespace cling {
   ///\brief Base class for all interpreter exceptions.
   ///
-  class InterpreterException {
+  class InterpreterException : public std::exception {
   public:
-    virtual const char* what() const throw();
     virtual ~InterpreterException();
+
+    virtual const char* what() const throw();
+    virtual void diagnose() const {}
   };
 
   ///\brief Exception that is thrown when a invalid pointer dereference is found
@@ -40,8 +44,8 @@ namespace cling {
     InvalidDerefException(clang::Sema* S, clang::Expr* E, DerefType type);
     virtual ~InvalidDerefException();
 
-    virtual const char* what() const throw();
-    void diagnose() const throw();
+    const char* what() const throw() override;
+    void diagnose() const override;
   };
 } // end namespace cling
 #endif // CLING_RUNTIME_EXCEPTION_H
