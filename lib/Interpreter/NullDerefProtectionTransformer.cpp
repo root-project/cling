@@ -67,9 +67,11 @@ namespace cling {
     }
 
     bool VisitMemberExpr(MemberExpr* ME) {
-      VisitStmt(ME->getBase());
-      if (ME->isArrow())
-        ME->setBase(SynthesizeCheck(ME->getBase()));
+      if (!((VarDecl*)(ME->getMemberDecl()))->isStaticDataMember()) {
+        VisitStmt(ME->getBase());
+        if (ME->isArrow())
+          ME->setBase(SynthesizeCheck(ME->getBase()));
+      }
       return true;
     }
 
