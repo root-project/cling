@@ -160,7 +160,7 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
                                std::unique_ptr<TargetMachine> TM):
   m_Parent(exe),
   m_TM(std::move(TM)),
-  m_ExeMM(std::move(llvm::make_unique<ClingMemoryManager>(m_Parent))),
+  m_ExeMM(llvm::make_unique<ClingMemoryManager>(m_Parent)),
   m_Mang(m_TM->getDataLayout()),
   m_NotifyObjectLoaded(*this), m_NotifyFinalized(*this),
   m_ObjectLayer(ObjectLayerT::CreateRTDyldMMFtor(), m_NotifyObjectLoaded,

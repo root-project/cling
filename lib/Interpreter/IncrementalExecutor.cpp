@@ -60,8 +60,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
   // can use this object yet.
   m_AtExitFuncs.reserve(256);
 
-  m_JIT.reset(new IncrementalJIT(*this,
-                                 std::move(CreateHostTargetMachine(CGOpt))));
+  m_JIT.reset(new IncrementalJIT(*this, CreateHostTargetMachine(CGOpt)));
 }
 
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
@@ -109,7 +108,7 @@ std::unique_ptr<TargetMachine>
                                           Options,
                                           RelocModel, CMModel,
                                           OptLevel));
-  return std::move(TM);
+  return TM;
 }
 
 void IncrementalExecutor::shuttingDown() {

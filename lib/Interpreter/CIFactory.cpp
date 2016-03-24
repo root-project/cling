@@ -830,7 +830,7 @@ namespace {
       // Set up the ASTConsumers
       CI->getASTContext().setASTMutationListener(stateCollector.get());
       // Add the callback keeping track of the macro definitions
-      PP.addPPCallbacks(std::move(stateCollector->MakePPAdapter()));
+      PP.addPPCallbacks(stateCollector->MakePPAdapter());
       CI->setASTConsumer(std::move(stateCollector));
     }
 

@@ -553,7 +553,7 @@ namespace clang {
       // Validate redecl chain by iterating through it.
       std::set<clang::Redeclarable<T>*> CheckUnique;
       (void)CheckUnique;
-      for (auto&& RD: MostRecentNotThis->redecls()) {
+      for (auto RD: MostRecentNotThis->redecls()) {
         assert(CheckUnique.insert(RD).second && "Dupe redecl chain element");
         (void)RD;
       }
