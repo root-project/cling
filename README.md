@@ -52,11 +52,11 @@ packages and [subversion][4] and [git][5] to get the source code.
    * Configure, build and install them, either using CMake:
 
 ```bash
-    cd ..
+    cd ../../../
     mkdir build
     cd build
     cmake -DCMAKE_INSTALL_PREFIX=/some/install/dir \
-          -DLLVM_TARGETS_TO_BUILD=CBackend\;CppBackend\;X86 \
+          -DLLVM_TARGETS_TO_BUILD=host \
           -DCMAKE_BUILD_TYPE=Debug \
           ../src
     make
@@ -65,7 +65,7 @@ packages and [subversion][4] and [git][5] to get the source code.
    * or GNU Make (see ../src/configure --help for all options):
 
 ```bash
-    cd ..
+    cd ../../../
     mkdir build
     cd build
     ../src/configure --prefix=/some/install/dir
