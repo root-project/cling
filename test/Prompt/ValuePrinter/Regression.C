@@ -67,8 +67,10 @@ enum H {  h = (unsigned long long )-1 };
 h // CHECK: (H) (H::h) : (unsigned long{{( long)?}}) 18446744073709551615
 
 // ROOT-7837
-auto bla=[](Double_t *x, Double_t *par, Int_t blub){return x[0]*blub;} // CHECK: ((lambda) &) @0x
+auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lambda) &) @0x
+
+#include <functional>
 using namespace std::placeholders;
-auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling::executePrintValue(): this typename cannot be spelled.
+auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling::executePrintValue(): missing value string.
 // Make sure cling survives
 12 // CHECK: (int) 12
