@@ -204,7 +204,7 @@ static std::string executePrintValue(const Value &V, const T &val) {
     assert(!canParseTypeName(*Interp, getTypeString(V))
            && "printValue failed on a valid type name.");
 
-    return "Error in ValuePrinter: missing value string.";
+    return "ERROR in cling::executePrintValue(): missing value string.";
   }
 
   return *(std::string *) printValueV.getPtr();
