@@ -19,5 +19,6 @@ To install the kernel with sources in src/tools/cling:
     # or: jupyter kernelspec install [--user] cling
 
 To run it:
+
     jupyter-notebook
     # or: jupyter notebook
