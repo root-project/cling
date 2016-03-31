@@ -121,7 +121,7 @@ char* cling_eval(TheInterpreter *interpVP, const char *code) {
   if (Res != cling::Interpreter::kSuccess)
     return nullptr;
 
-  cling::Jupyter::pushOutput({{"text/html", "You just executed C++ code!"}});
+  // cling::Jupyter::pushOutput({{"text/html", "You just executed C++ code!"}});
   if (!V.isValid())
     return strdup("");
   return strdup(ValueToString(V).c_str());
