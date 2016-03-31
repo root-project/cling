@@ -7,7 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
-// XFAIL: darwin,arm
+// XFAIL: darwin,arm64,aarch64
 //This file checks a pointer load operation for null prt dereference.
 int *p;
 int x;
