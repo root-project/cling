@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
+// XFAIL: darwin,arm
 //This file checks an if statement for null prt dereference.
 
 #include <stdlib.h>

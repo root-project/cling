@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
+// XFAIL: darwin,arm
 
 //This file checks a pointer store operation for null ptr dereference.
 int *p;

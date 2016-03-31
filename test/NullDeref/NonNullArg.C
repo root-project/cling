@@ -7,9 +7,9 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify | FileCheck %s
+// XFAIL: darwin,arm
 //This file checks a call instruction. The called function has arguments with nonnull attribute.
 #include <string.h>
-// XFAIL: darwin
 
 char *p = 0;
 strcmp("a", p); // expected-warning {{null passed to a callee that requires a non-null argument}}
