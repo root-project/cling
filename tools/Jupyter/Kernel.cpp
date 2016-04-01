@@ -47,7 +47,8 @@ namespace cling {
     /// Push MIME stuff to Jupyter. To be called from user code.
     ///\param contentDict - dictionary of MIME type versus content. E.g.
     /// {{"text/html", {"<div></div>", }}
-    void pushOutput(const std::map<std::string, MIMEDataRef> contentDict) {
+    ///\returns `false` if the output could not be sent.
+    bool pushOutput(const std::map<std::string, MIMEDataRef> contentDict) {
 
       // Pipe sees (all numbers are longs, except for the first:
       // - num bytes in a long (sent as a single unsigned char!)
@@ -62,19 +63,29 @@ namespace cling {
       // Write number of dictionary elements (and the size of that number in a
       // char)
       unsigned char sizeLong = sizeof(long);
-      write(pipeToJupyterFD, &sizeLong, 1);
+      if (write(pipeToJupyterFD, &sizeLong, 1) != 1)
+        return false;
       long dictSize = contentDict.size();
-      write(pipeToJupyterFD, &dictSize, sizeof(long));
+      if (write(pipeToJupyterFD, &dictSize, sizeof(long)) != sizeof(long))
+        return false;
 
       for (auto iContent: contentDict) {
         const std::string& mimeType = iContent.first;
         long mimeTypeSize = (long)mimeType.size();
-        write(pipeToJupyterFD, &mimeTypeSize, sizeof(long));
-        write(pipeToJupyterFD, mimeType.c_str(), mimeType.size() + 1);
+        if (write(pipeToJupyterFD, &mimeTypeSize, sizeof(long)) != sizeof(long))
+          return false;
+        if (write(pipeToJupyterFD, mimeType.c_str(), mimeType.size() + 1)
+            != mimeType.size() + 1)
+          return false;
         const MIMEDataRef& mimeData = iContent.second;
-        write(pipeToJupyterFD, &mimeData.m_Size, sizeof(long));
-        write(pipeToJupyterFD, mimeData.m_Data, mimeData.m_Size);
+        if (write(pipeToJupyterFD, &mimeData.m_Size, sizeof(long))
+            != sizeof(long))
+          return false;
+        if (write(pipeToJupyterFD, mimeData.m_Data, mimeData.m_Size)
+            != mimeData.m_Size)
+          return false;
       }
+      return true;
     }
   } // namespace Jupyter
 } // namespace cling
