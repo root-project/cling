@@ -75,7 +75,7 @@ namespace cling {
         if (write(pipeToJupyterFD, &mimeTypeSize, sizeof(long)) != sizeof(long))
           return false;
         if (write(pipeToJupyterFD, mimeType.c_str(), mimeType.size() + 1)
-            != mimeType.size() + 1)
+            != (long)(mimeType.size() + 1))
           return false;
         const MIMEDataRef& mimeData = iContent.second;
         if (write(pipeToJupyterFD, &mimeData.m_Size, sizeof(long))
