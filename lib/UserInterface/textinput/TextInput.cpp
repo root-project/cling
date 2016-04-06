@@ -49,8 +49,8 @@ namespace textinput {
   }
 
   void
-  TextInput::TakeInput(std::string &input) {
-    if (fLastReadResult != kRRReadEOLDelimiter
+  TextInput::TakeInput(std::string &input, bool force) {
+    if (!force && fLastReadResult != kRRReadEOLDelimiter
         && fLastReadResult != kRREOF) {
       input.clear();
       return;
@@ -67,12 +67,14 @@ namespace textinput {
 
     ReleaseInputOutput();
 
-    if (fLastReadResult == kRRReadEOLDelimiter) {
+    if (force || fLastReadResult == kRRReadEOLDelimiter) {
       // Input has been taken, we can continue reading.
       fLastReadResult = kRRNone;
       // We will have to redraw the prompt, even if unchanged.
       fNeedPromptRedraw = true;
-    } // else keep EOF.
+    } else {
+      fLastReadResult = kRREOF;
+    }
   }
 
   bool

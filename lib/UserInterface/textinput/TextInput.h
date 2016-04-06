@@ -69,7 +69,7 @@ namespace textinput {
     EReadResult GetReadState() const { return fLastReadResult; }
     char GetLastKey() const { return fLastKey; }
     const std::string& GetInput();
-    void TakeInput(std::string& input); // Take and reset input
+    void TakeInput(std::string& input, bool force = false); // Take and reset input
     bool AtEOL() const { return fLastReadResult == kRRReadEOLDelimiter || AtEOF(); }
     bool AtEOF() const { return fLastReadResult == kRREOF; }
     bool HavePendingInput() const;
