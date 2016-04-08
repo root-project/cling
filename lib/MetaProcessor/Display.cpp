@@ -1122,9 +1122,9 @@ void GlobalsPrinter::DisplayGlobals()const
   //Try to print global macro definitions (object-like only).
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
-    if (macro->second->getMacroInfo()
-        && macro->second->getMacroInfo()->isObjectLike())
-      DisplayObjectLikeMacro(macro->first, macro->second->getMacroInfo());
+    auto MI = macro->second.getLatest()->getMacroInfo();
+    if (MI && MI->isObjectLike())
+      DisplayObjectLikeMacro(macro->first, MI);
   }
 
   //TODO: fSeenDecls - should I check that some declaration is already visited?
@@ -1167,10 +1167,10 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
-    if (macro->second->getMacroInfo()
-        && macro->second->getMacroInfo()->isObjectLike()) {
+    auto MI = macro->second.getLatest()->getMacroInfo();
+    if (MI && MI->isObjectLike()) {
       if (name == macro->first->getName().data()) {
-        DisplayObjectLikeMacro(macro->first, macro->second->getMacroInfo());
+        DisplayObjectLikeMacro(macro->first, MI);
         found = true;
       }
     }
