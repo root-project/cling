@@ -217,8 +217,7 @@ namespace cling {
   NullDerefProtectionTransformer::Transform(clang::Decl* D) {
 
     PointerCheckInjector injector(*m_Sema);
-    injector.VisitDecl(D);
-
+    injector.TraverseDecl(D);
     return Result(D, true);
   }
 } // end namespace cling
