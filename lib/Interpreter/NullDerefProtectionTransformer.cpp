@@ -92,6 +92,12 @@ namespace cling {
       return true;
     }
 
+    bool VisitDecl (Decl* D)
+    {
+      printf("%ld\n", *(long*)D);
+      return true;
+    }
+
     bool VisitFunctionDecl(FunctionDecl* FD) {
       if (!FD->isConstexpr()) {
         CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());

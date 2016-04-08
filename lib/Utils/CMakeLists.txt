@@ -8,6 +8,7 @@
 
 add_cling_library(clingUtils
   AST.cpp
+  Validation.cpp
 
   LINK_LIBS
   clangCodeGen
