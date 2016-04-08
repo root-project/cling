@@ -12,6 +12,8 @@
 
 #include "cling/MetaProcessor/MetaProcessor.h"
 
+#include "cling/Interpreter/Transaction.h"
+
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
 
@@ -27,7 +29,6 @@ namespace clang {
 namespace cling {
   class Interpreter;
   class MetaProcessor;
-  class Transaction;
   class Value;
 
   ///\brief Semantic analysis for our home-grown language. All implementation
