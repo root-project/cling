@@ -84,6 +84,7 @@ namespace cling {
           if (ArgIndexs.test(index)) {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
+            if (Arg->getType().getTypePtr()->isPointerType())
               CE->setArg(index, SynthesizeCheck(Arg));
           }
         }
