@@ -1094,9 +1094,12 @@ namespace cling {
     case clang::TemplateArgument::Declaration:
       Visit(TA.getAsDecl());
       break;
-    case clang::TemplateArgument::Template: // intentional fall-through:
-    case clang::TemplateArgument::Pack:
+    case clang::TemplateArgument::Template:
       VisitTemplateName(TA.getAsTemplateOrTemplatePattern());
+      break;
+    case clang::TemplateArgument::Pack:
+      for (const auto& arg : TA.pack_elements())
+        VisitTemplateArgument(arg);
       break;
     case clang::TemplateArgument::Expression:
       {
