@@ -219,22 +219,6 @@ endif ()
 
 include(CMakeParseArguments)
 
-macro(add_cling_subdirectory name)
-  add_llvm_subdirectory(CLING TOOL ${name})
-endmacro()
-
-file (STRINGS "VERSION" CLING_VERSION)
-string(REGEX REPLACE "([0-9]).[0-9]+~[a-zA-Z]+" "\\1" CLING_VERSION_MAJOR ${CLING_VERSION})
-string(REGEX REPLACE "[0-9].([0-9]+)~[a-zA-Z]+" "\\1" CLING_VERSION_MINOR ${CLING_VERSION})
-
-if(DEFINED ROOT_BINARY_DIR)
-  # Building as part of ROOT.
-  set(CLING_VERSION ROOT_${CLING_VERSION})
-endif()
-message(STATUS "Cling version (from VERSION file): ${CLING_VERSION}")
-
-set(CLING_VERSION_PATCHLEVEL 0)
-
 macro(set_cling_windows_version_resource_properties name)
   if(DEFINED windows_resource_file)
     set_windows_version_resource_properties(${name} ${windows_resource_file}
@@ -244,6 +228,10 @@ macro(set_cling_windows_version_resource_properties name)
       VERSION_STRING "${CLING_VERSION} (${BACKEND_PACKAGE_STRING})"
       PRODUCT_NAME "cling")
   endif()
+endmacro()
+
+macro(add_cling_subdirectory name)
+  add_llvm_subdirectory(CLING TOOL ${name})
 endmacro()
 
 macro(add_cling_library name)
@@ -326,6 +314,12 @@ endmacro(add_cling_executable)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+# this is needed when building Cling as part of ROOT:
+include_directories(BEFORE
+  ${CMAKE_CURRENT_BINARY_DIR}/../llvm/src/tools/clang/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include
+  )
+
 if(DEFINED ROOT_BINARY_DIR)
   # Building as part of ROOT.
   # this is needed when building Cling as part of ROOT:
@@ -370,9 +364,7 @@ if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
     )
 endif()
 
-add_definitions( -D_GNU_SOURCE
-  -DCLING_VERSION=${CLING_VERSION}
-  -DCLING_INCLUDE_PATHS="${CMAKE_INSTALL_PREFIX}/include:${CMAKE_CURRENT_SOURCE_DIR}/include:${CMAKE_CURRENT_SOURCE_DIR}/../clang/include:${CMAKE_CURRENT_SOURCE_DIR}/../../include" )
+add_definitions( -D_GNU_SOURCE )
 
 option(CLING_INCLUDE_TESTS
        "Generate build targets for the Cling unit tests."
