@@ -13,6 +13,7 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/MetaProcessor/MetaProcessor.h"
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -95,22 +96,24 @@ extern "C" {
 ///\name Cling4CTypes
 /// The Python compatible view of cling
 
-/// The Interpreter object cast to void*
-using TheInterpreter = void ;
+/// The MetaProcessor cast to void*
+using TheMetaProcessor = void;
 
 /// Create an interpreter object.
-TheInterpreter*
+TheMetaProcessor*
 cling_create(int argc, const char *argv[], const char* llvmdir, int pipefd) {
-  auto interp = new cling::Interpreter(argc, argv, llvmdir);
   pipeToJupyterFD = pipefd;
-  return interp;
+  auto I = new cling::Interpreter(argc, argv, llvmdir);
+  return new cling::MetaProcessor(*I, llvm::errs());
 }
 
 
 /// Destroy the interpreter.
-void cling_destroy(TheInterpreter *interpVP) {
-  cling::Interpreter *interp = (cling::Interpreter *) interpVP;
-  delete interp;
+void cling_destroy(TheMetaProcessor *metaProc) {
+  cling::MetaProcessor *M = (cling::MetaProcessor*)metaProc;
+  cling::Interpreter *I = const_cast<cling::Interpreter*>(&M->getInterpreter());
+  delete M;
+  delete I;
 }
 
 /// Stringify a cling::Value
@@ -125,14 +128,18 @@ static std::string ValueToString(const cling::Value& V) {
 
 /// Evaluate a string of code. Returns nullptr on failure.
 /// Returns a string representation of the expression (can be "") on success.
-char* cling_eval(TheInterpreter *interpVP, const char *code) {
-  cling::Interpreter *interp = (cling::Interpreter *) interpVP;
+char* cling_eval(TheMetaProcessor *metaProc, const char *code) {
+  cling::MetaProcessor *M = (cling::MetaProcessor*)metaProc;
   cling::Value V;
-  cling::Interpreter::CompilationResult Res = interp->process(code, &V);
+  cling::Interpreter::CompilationResult Res;
+  if (M->process(code, Res, &V)) {
+    cling::Jupyter::pushOutput({{"text/html", "Incomplete input! Ignored."}});
+    M->cancelContinuation();
+    return nullptr;
+  }
   if (Res != cling::Interpreter::kSuccess)
     return nullptr;
 
-  // cling::Jupyter::pushOutput({{"text/html", "You just executed C++ code!"}});
   if (!V.isValid())
     return strdup("");
   return strdup(ValueToString(V).c_str());
