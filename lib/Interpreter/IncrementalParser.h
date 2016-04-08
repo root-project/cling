@@ -224,7 +224,7 @@ namespace cling {
 
     ///\brief Add the trnasformers to the Incremental Parser.
     ///
-    void setTransformers(bool isChildInterpreter);
+    void SetTransformers(bool isChildInterpreter);
 
   private:
     ///\brief Finalizes the consumers (e.g. CodeGen) on a transaction.

@@ -50,28 +50,20 @@ namespace cling {
     PointerCheckInjector(Sema& S) : m_Sema(S), m_Context(S.getASTContext()),
     m_clingthrowIfInvalidPointerCache(0) {}
 
-    bool VisitStmt(Stmt* S) {
-      for (auto child: S->children()) {
-        if (child)
-            VisitStmt(child);
-      }
-      return true;
-    }
-
     bool VisitUnaryOperator(UnaryOperator* UnOp) {
-      VisitStmt(UnOp->getSubExpr());
-      if (UnOp->getOpcode() == UO_Deref)
-        if (UnOp->getSubExpr()->getType().getTypePtr()->isPointerType())
-          UnOp->setSubExpr(SynthesizeCheck(UnOp->getSubExpr()));
+      Expr* SubExpr = UnOp->getSubExpr();
+      VisitStmt(SubExpr);
+      if (UnOp->getOpcode() == UO_Deref
+          && SubExpr->getType().getTypePtr()->isPointerType())
+          UnOp->setSubExpr(SynthesizeCheck(SubExpr));
       return true;
     }
 
     bool VisitMemberExpr(MemberExpr* ME) {
-      if (!((VarDecl*)(ME->getMemberDecl()))->isStaticDataMember()) {
-        VisitStmt(ME->getBase());
-        if (ME->isArrow())
-          ME->setBase(SynthesizeCheck(ME->getBase()));
-      }
+      VisitStmt(ME->getBase());
+      if (ME->isArrow()
+          && ME->getMemberDecl()->isCXXInstanceMember())
+        ME->setBase(SynthesizeCheck(ME->getBase()));
       return true;
     }
 
@@ -94,45 +86,17 @@ namespace cling {
       return true;
     }
 
-    bool VisitDecl (Decl* D)
-    {
-      printf("%ld\n", *(long*)D);
-      return true;
-    }
-
-    bool VisitFunctionDecl(FunctionDecl* FD) {
-      if (!FD->isConstexpr()) {
-        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
-        if (CS)
-          VisitStmt(CS);
-      }
-      return true;
-    }
-
-    bool VisitCXXMethodDecl(CXXMethodDecl* FD) {
-      if (!FD->isConstexpr()) {
-        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
-        if (CS)
-        VisitStmt(CS);
-    }
-      return true;
-    }
-
     bool TraverseFunctionDecl(FunctionDecl* FD) {
-      if (!FD->isConstexpr()) {
-        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(FD->getBody());
-        if (CS)
-          TraverseStmt(CS);
-      }
+      // We cannot synthesize when there is a const expr.
+      if (!FD->isConstexpr())
+        RecursiveASTVisitor::TraverseFunctionDecl(FD);
       return true;
     }
 
-    bool TraverseCXXMethodDecl(CXXMethodDecl* CMD) {
-      if (!CMD->isConstexpr()){
-        CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(CMD->getBody());
-        if (CS)
-        TraverseStmt(CS);
-    }
+    bool TraverseCXXMethodDecl(CXXMethodDecl* CXXMD) {
+      // We cannot synthesize when there is a const expr.
+      if (!CXXMD->isConstexpr())
+        RecursiveASTVisitor::TraverseCXXMethodDecl(CXXMD);
       return true;
     }
 

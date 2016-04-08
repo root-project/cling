@@ -820,7 +820,7 @@ namespace cling {
     }
   }
 
-  void IncrementalParser::setTransformers(bool isChildInterpreter) {
+  void IncrementalParser::SetTransformers(bool isChildInterpreter) {
     // Add transformers to the IncrementalParser, which owns them
     Sema* TheSema = &m_CI->getSema();
     // Register the AST Transformers

@@ -23,10 +23,8 @@
 namespace cling {
   namespace utils {
 
+#ifndef LLVM_ON_WIN32
     static int getNullDevFileDescriptor() {
-#ifdef LLVM_ON_WIN32
-      return 0;
-#else
       struct FileDescriptor {
         int FD;
         const char* file = "/dev/null";
@@ -37,12 +35,10 @@ namespace cling {
       };
       static FileDescriptor nullDev;
       return nullDev.FD;
-#endif
     }
+#endif
 
     // Checking whether the pointer points to a valid memory location
-    // Used for checking of void* output
-    // Should be moved to earlier stages (ex. IR) in the future
     bool isAddressValid(const void *P) {
       if (!P || P == (void *) -1)
         return false;
@@ -55,11 +51,10 @@ namespace cling {
         return false;
       return true;
 #else
-      // There is a POSIX way of finding whether an address can be accessed for
-      // reading: write() will return EFAULT if not.
-      int NBytes = write(getNullDevFileDescriptor(), P, 1/*byte*/);
-      if (NBytes != 1) {
-        assert(errno == EFAULT && "unexpected pipe write error");
+      // There is a POSIX way of finding whether an address
+      // can be accessed for reading.
+      if (write(getNullDevFileDescriptor(), P, 1/*byte*/) != 1) {
+        assert(errno == EFAULT && "unexpected write error at address");
         return false;
       }
       return true;

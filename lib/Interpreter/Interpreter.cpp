@@ -230,7 +230,7 @@ namespace cling {
       setCallbacks(std::move(AutoLoadCB));
     }
 
-    m_IncrParser->setTransformers(isChildInterp);
+    m_IncrParser->SetTransformers(isChildInterp);
   }
 
   ///\brief Constructor for the child Interpreter.
