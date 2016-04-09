@@ -67,7 +67,11 @@ class ClingKernel(Kernel):
 
     def __init__(self, **kwargs):
         super(ClingKernel, self).__init__(**kwargs)
-        whichCling = shutil.which('cling')
+        try:
+            whichCling = shutil.which('cling')
+        except AttributeError:
+            from distutils.spawn import find_executable
+            whichCling = find_executable('cling')
         if whichCling:
             clingInstDir = os.path.dirname(os.path.dirname(whichCling))
             llvmResourceDir = clingInstDir
