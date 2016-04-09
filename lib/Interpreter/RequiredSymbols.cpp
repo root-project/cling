@@ -15,7 +15,9 @@
 #include "clang/AST/Type.h"
 #include "llvm/Support/raw_ostream.h"
 
-extern "C" void cling_runtime_internal_throwIfInvalidPointer(void*, void*);
+extern "C"
+void* cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
+                                                   const void* Arg);
 
 namespace cling {
 namespace internal {
@@ -37,6 +39,7 @@ void symbol_requester() {
    h.findFunctionArgs(0, "", "", LookupHelper::NoDiagnostics);
    runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
+   cling_runtime_internal_throwIfInvalidPointer(nullptr, nullptr, nullptr);
 }
 }
 }
