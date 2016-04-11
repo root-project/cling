@@ -14,7 +14,7 @@ CLINGS       := $(wildcard $(MODDIR)/lib/Interpreter/*.cpp) \
                 $(wildcard $(MODDIR)/lib/TagsExtension/*.cpp) \
                 $(wildcard $(MODDIR)/lib/Utils/*.cpp)
 CLINGO       := $(call stripsrc,$(CLINGS:.cpp=.o))
-CLINGEXCEPO  := $(call stripsrc,$(MODDIR)/lib/Interpreter/Exception.o)
+CLINGEXCEPO  := $(call stripsrc,$(MODDIR)/lib/Interpreter/ExceptionRTTI.o)
 CLINGCOMPDH  := $(call stripsrc,$(MODDIR)/lib/Interpreter/cling-compiledata.h)
 
 CLINGDEP     := $(CLINGO:.o=.d)
@@ -164,7 +164,7 @@ endif
 
 CLING_VERSION=ROOT_$(shell cat "$(CLINGDIR)/VERSION")
 
-$(CLINGEXCEPO): CLINGEXCCXXFLAGS := -fexceptions
+$(CLINGEXCEPO): CLINGCXXFLAGS:= $(subst -fno-rtti,,$(subst -fno-exceptions,,$(CLINGCXXFLAGS)))
 $(CLINGETC) : $(LLVMLIB)
 $(CLINGO)   : $(CLINGETC)
 $(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): $(CLINGCOMPDH)
