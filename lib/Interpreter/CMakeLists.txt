@@ -43,6 +43,7 @@ add_cling_library(clingInterpreter
   RequiredSymbols.cpp
   ValueExtractionSynthesizer.cpp
   Exception.cpp
+  ExceptionRTTI.cpp
   Transaction.cpp
   ASTTransformer.cpp
   TransactionUnloader.cpp
@@ -58,7 +59,7 @@ add_cling_library(clingInterpreter
 add_dependencies(clingInterpreter clangBasic clangAST)
 
 if(NOT WIN32)
-set_source_files_properties(Exception.cpp COMPILE_FLAGS -fexceptions)
+set_source_files_properties(ExceptionRTTI.cpp COMPILE_FLAGS "-fexceptions -frtti")
 endif()
 
 #set_source_files_properties(Exception.cpp COMPILE_FLAGS " /EHsc ")
