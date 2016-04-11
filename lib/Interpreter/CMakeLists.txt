@@ -21,6 +21,7 @@ add_cling_library(clingInterpreter
   AutoSynthesizer.cpp
   AutoloadCallback.cpp
   ASTImportSource.cpp
+  ASTTransformer.cpp
   BackendPasses.cpp
   CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
@@ -31,6 +32,8 @@ add_cling_library(clingInterpreter
   DynamicLibraryManager.cpp
   DynamicLookup.cpp
   DynamicExprInfo.cpp
+  Exception.cpp
+  ExceptionRTTI.cpp
   ForwardDeclPrinter.cpp
   IncrementalExecutor.cpp
   IncrementalJIT.cpp
@@ -41,12 +44,9 @@ add_cling_library(clingInterpreter
   LookupHelper.cpp
   NullDerefProtectionTransformer.cpp
   RequiredSymbols.cpp
-  ValueExtractionSynthesizer.cpp
-  Exception.cpp
-  ExceptionRTTI.cpp
   Transaction.cpp
-  ASTTransformer.cpp
   TransactionUnloader.cpp
+  ValueExtractionSynthesizer.cpp
   Value.cpp
   ValuePrinter.cpp
   ValuePrinterSynthesizer.cpp
