@@ -828,7 +828,7 @@ namespace cling {
     std::vector<ASTTPtr_t> ASTTransformers;
     ASTTransformers.emplace_back(new AutoSynthesizer(TheSema));
     ASTTransformers.emplace_back(new EvaluateTSynthesizer(TheSema));
-    ASTTransformers.emplace_back(new NullDerefProtectionTransformer(TheSema));
+    ASTTransformers.emplace_back(new NullDerefProtectionTransformer(m_Interpreter));
 
     typedef std::unique_ptr<WrapperTransformer> WTPtr_t;
     std::vector<WTPtr_t> WrapperTransformers;

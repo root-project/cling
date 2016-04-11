@@ -15,18 +15,21 @@
 
 namespace clang {
   class Decl;
-  class Sema;
+}
+namespace cling {
+  class Interpreter;
 }
 
 namespace cling {
 
   class NullDerefProtectionTransformer : public ASTTransformer {
+    cling::Interpreter* m_Interp;
   public:
     ///\ brief Constructs the NullDeref AST Transformer.
     ///
     ///\param[in] S - The semantic analysis object.
     ///
-    NullDerefProtectionTransformer(clang::Sema* S);
+    NullDerefProtectionTransformer(cling::Interpreter* I);
 
     virtual ~NullDerefProtectionTransformer();
     Result Transform(clang::Decl* D) override;

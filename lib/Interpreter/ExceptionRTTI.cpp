@@ -10,7 +10,11 @@
 
 #include "cling/Interpreter/Exception.h"
 
+#include "cling/Interpreter/InterpreterCallbacks.h"
+#include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/Validation.h"
+
+#include "clang/Frontend/CompilerInstance.h"
 
 extern "C" {
 ///\param Arg: Take const void* and return void* to reduce the complexity in the
@@ -18,18 +22,24 @@ extern "C" {
 /// T* -> const void* -> const_cast<void*> -> T* round trip.
 ///\param Expr: The Expression to be checked for validity.
 ///\param Sema: The Sema for the context.
-void* cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
+void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
                                                   const void* Arg) {
-  clang::Sema* S = (clang::Sema*)Sema;
+
+  cling::Interpreter* I = (cling::Interpreter*)Interp;
   clang::Expr* E = (clang::Expr*)Expr;
+
+  // Print a nice backtrace.
+  I->getCallbacks()->PrintStackTrace();
+
   // The isValidAddress function return true even when the pointer is
   // null thus the checks have to be done before returning successfully from the
   // function in this specific order.
+  clang::Sema& S = I->getCI()->getSema();
   if (!Arg)
-    throw cling::InvalidDerefException(S, E,
+    throw cling::InvalidDerefException(&S, E,
           cling::InvalidDerefException::DerefType::NULL_DEREF);
   else if (!cling::utils::isAddressValid(Arg))
-    throw cling::InvalidDerefException(S, E,
+    throw cling::InvalidDerefException(&S, E,
           cling::InvalidDerefException::DerefType::INVALID_MEM);
   return const_cast<void*>(Arg);
 }

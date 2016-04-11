@@ -157,6 +157,10 @@ namespace cling {
     virtual void LibraryLoaded(const void*, llvm::StringRef) {}
     virtual void LibraryUnloaded(const void*, llvm::StringRef) {}
 
+    ///\brief Cling calls this is printing a stack trace can be beneficial,
+    /// for instance when throwing interpreter exceptions.
+    virtual void PrintStackTrace() {}
+
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
     ///

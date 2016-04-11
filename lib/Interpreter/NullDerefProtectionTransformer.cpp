@@ -10,14 +10,16 @@
 
 #include "NullDerefProtectionTransformer.h"
 
+#include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Lookup.h"
-#include "clang/AST/Expr.h"
 
 #include <bitset>
 #include <map>
@@ -25,8 +27,8 @@
 using namespace clang;
 
 namespace cling {
-  NullDerefProtectionTransformer::NullDerefProtectionTransformer(clang::Sema* S)
-    : ASTTransformer(S) {
+  NullDerefProtectionTransformer::NullDerefProtectionTransformer(Interpreter* I)
+    : ASTTransformer(&I->getCI()->getSema()), m_Interp(I) {
   }
 
   NullDerefProtectionTransformer::~NullDerefProtectionTransformer()
@@ -34,6 +36,7 @@ namespace cling {
 
   class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
   private:
+    Interpreter& m_Interp;
     Sema& m_Sema;
     typedef llvm::DenseMap<clang::FunctionDecl*, std::bitset<32> > decl_map_t;
     llvm::DenseMap<clang::FunctionDecl*, std::bitset<32> > m_NonNullArgIndexs;
@@ -47,8 +50,10 @@ namespace cling {
     LookupResult* m_clingthrowIfInvalidPointerCache;
 
   public:
-    PointerCheckInjector(Sema& S) : m_Sema(S), m_Context(S.getASTContext()),
-    m_clingthrowIfInvalidPointerCache(0) {}
+    PointerCheckInjector(Interpreter& I)
+      : m_Interp(I), m_Sema(I.getCI()->getSema()),
+        m_Context(I.getCI()->getASTContext()),
+        m_clingthrowIfInvalidPointerCache(0) {}
 
     bool VisitUnaryOperator(UnaryOperator* UnOp) {
       Expr* SubExpr = UnOp->getSubExpr();
@@ -110,7 +115,7 @@ namespace cling {
       SourceLocation Loc = Arg->getLocStart();
       Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
                                                             m_Context.VoidPtrTy,
-                                                            (uint64_t)&m_Sema);
+                                                            (uint64_t)&m_Interp);
       Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
                                                           m_Context.VoidPtrTy,
                                                           (uint64_t)Arg);
@@ -189,7 +194,7 @@ namespace cling {
   ASTTransformer::Result
   NullDerefProtectionTransformer::Transform(clang::Decl* D) {
 
-    PointerCheckInjector injector(*m_Sema);
+    PointerCheckInjector injector(*m_Interp);
     injector.TraverseDecl(D);
     return Result(D, true);
   }
