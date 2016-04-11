@@ -23,7 +23,7 @@ namespace cling {
   ///
   class InterpreterException : public std::exception {
   public:
-    virtual ~InterpreterException();
+    virtual ~InterpreterException() noexcept;
 
     virtual const char* what() const throw();
     virtual void diagnose() const {}
