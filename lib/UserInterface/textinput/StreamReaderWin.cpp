@@ -54,7 +54,7 @@ namespace textinput {
         FILE_ATTRIBUTE_NORMAL, NULL);
       ::GetConsoleMode(fIn, &fOldMode);
       fMyMode = fOldMode | ENABLE_QUICK_EDIT_MODE | ENABLE_EXTENDED_FLAGS;
-      fMyMode = fOldMode & ~(ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT
+      fMyMode &= ~(ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT
         | ENABLE_ECHO_INPUT | ENABLE_INSERT_MODE);
     }
   }
