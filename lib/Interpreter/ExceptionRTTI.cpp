@@ -25,22 +25,26 @@ extern "C" {
 void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
                                                   const void* Arg) {
 
-  cling::Interpreter* I = (cling::Interpreter*)Interp;
   clang::Expr* E = (clang::Expr*)Expr;
-
-  // Print a nice backtrace.
-  I->getCallbacks()->PrintStackTrace();
 
   // The isValidAddress function return true even when the pointer is
   // null thus the checks have to be done before returning successfully from the
   // function in this specific order.
-  clang::Sema& S = I->getCI()->getSema();
-  if (!Arg)
+  if (!Arg) {
+    cling::Interpreter* I = (cling::Interpreter*)Interp;
+    clang::Sema& S = I->getCI()->getSema();
+    // Print a nice backtrace.
+    I->getCallbacks()->PrintStackTrace();
     throw cling::InvalidDerefException(&S, E,
           cling::InvalidDerefException::DerefType::NULL_DEREF);
-  else if (!cling::utils::isAddressValid(Arg))
+  } else if (!cling::utils::isAddressValid(Arg)) {
+    cling::Interpreter* I = (cling::Interpreter*)Interp;
+    clang::Sema& S = I->getCI()->getSema();
+    // Print a nice backtrace.
+    I->getCallbacks()->PrintStackTrace();
     throw cling::InvalidDerefException(&S, E,
           cling::InvalidDerefException::DerefType::INVALID_MEM);
+  }
   return const_cast<void*>(Arg);
 }
 }
