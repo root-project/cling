@@ -118,6 +118,11 @@ namespace cling {
       for (auto&& cb : m_Callbacks)
         cb->SetIsRuntime(val);
     }
+
+    void PrintStackTrace() override {
+      for (auto&& cb : m_Callbacks)
+        cb->PrintStackTrace();
+    }
   };
 } // end namespace cling
 
