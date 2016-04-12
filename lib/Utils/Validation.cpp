@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Utils/Validation.h"
+#include "llvm/Support/ThreadLocal.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -18,12 +19,41 @@
 # include <unistd.h>
 #endif
 
-
+#define CACHESIZE 8
 
 namespace cling {
   namespace utils {
 
 #ifndef LLVM_ON_WIN32
+    struct Cache {
+    private:
+      const void* lines[CACHESIZE];
+      unsigned size, mostRecent;
+    public:
+      Cache(): lines{0,0,0,0,0,0,0,0}, size(CACHESIZE), mostRecent(0) {}
+      bool findInCache(const void* P) {
+        for (unsigned index = 0; index < size; index++) {
+          if (lines[index] == P)
+            return true;
+        }
+        return false;
+      }
+      void pushToCache(const void* P) {
+        mostRecent = (mostRecent+1)%size;
+        lines[mostRecent] = P;
+      }
+    };
+
+    // Trying to be thread-safe.
+    // Each thread creates a new cache when needed.
+    static Cache& getCache() {
+      static llvm::sys::ThreadLocal<Cache> threadCache;
+      if (!threadCache.get()) {
+        threadCache.set(new Cache());
+      }
+      return *threadCache.get();
+    }
+
     static int getNullDevFileDescriptor() {
       struct FileDescriptor {
         int FD;
@@ -51,12 +81,17 @@ namespace cling {
         return false;
       return true;
 #else
+      // Look-up the address in the cache.
+      Cache& currentCache = getCache();
+      if (currentCache.findInCache(P))
+        return true;
       // There is a POSIX way of finding whether an address
       // can be accessed for reading.
       if (write(getNullDevFileDescriptor(), P, 1/*byte*/) != 1) {
         assert(errno == EFAULT && "unexpected write error at address");
         return false;
       }
+      currentCache.pushToCache(P);
       return true;
 #endif
     }
