@@ -55,7 +55,7 @@ namespace cling {
     static int getNullDevFileDescriptor() {
       struct FileDescriptor {
         int FD;
-        const char* file = "/dev/null";
+        const char* file = "/dev/random";
         FileDescriptor() { FD = open(file, O_WRONLY); }
         ~FileDescriptor() {
           close(FD);
