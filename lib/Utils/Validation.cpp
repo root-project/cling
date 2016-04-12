@@ -15,31 +15,28 @@
 #ifdef LLVM_ON_WIN32
 # include <Windows.h>
 #else
+#include <array>
+#include <algorithm>
 #include <fcntl.h>
 # include <unistd.h>
 #endif
-
-#define CACHESIZE 8
 
 namespace cling {
   namespace utils {
 
 #ifndef LLVM_ON_WIN32
+    // A simple round-robin cache: what enters first, leaves first.
+    // MRU cache wasn't worth the extra CPU cycles.
     struct Cache {
     private:
-      const void* lines[CACHESIZE];
-      unsigned size, mostRecent;
+      std::array<const void*, 8> lines;
+      unsigned mostRecent = 0;
     public:
-      Cache(): lines{0,0,0,0,0,0,0,0}, size(CACHESIZE), mostRecent(0) {}
-      bool findInCache(const void* P) {
-        for (unsigned index = 0; index < size; index++) {
-          if (lines[index] == P)
-            return true;
-        }
-        return false;
+      bool contains(const void* P) {
+        return std::find(lines.begin(), lines.end(), P) != lines.end();
       }
-      void pushToCache(const void* P) {
-        mostRecent = (mostRecent+1)%size;
+      void push(const void* P) {
+        mostRecent = (mostRecent + 1) % lines.size();
         lines[mostRecent] = P;
       }
     };
@@ -49,6 +46,7 @@ namespace cling {
     static Cache& getCache() {
       static llvm::sys::ThreadLocal<Cache> threadCache;
       if (!threadCache.get()) {
+        // Leak, 1 Cache/thread.
         threadCache.set(new Cache());
       }
       return *threadCache.get();
@@ -83,7 +81,7 @@ namespace cling {
 #else
       // Look-up the address in the cache.
       Cache& currentCache = getCache();
-      if (currentCache.findInCache(P))
+      if (currentCache.contains(P))
         return true;
       // There is a POSIX way of finding whether an address
       // can be accessed for reading.
@@ -91,7 +89,7 @@ namespace cling {
         assert(errno == EFAULT && "unexpected write error at address");
         return false;
       }
-      currentCache.pushToCache(P);
+      currentCache.push(P);
       return true;
 #endif
     }
