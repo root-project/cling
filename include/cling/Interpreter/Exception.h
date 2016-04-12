@@ -25,7 +25,7 @@ namespace cling {
   public:
     virtual ~InterpreterException() noexcept;
 
-    virtual const char* what() const throw();
+    virtual const char* what() const noexcept;
     virtual void diagnose() const {}
   };
 
@@ -44,7 +44,7 @@ namespace cling {
     InvalidDerefException(clang::Sema* S, clang::Expr* E, DerefType type);
     virtual ~InvalidDerefException();
 
-    const char* what() const throw() override;
+    const char* what() const noexcept override;
     void diagnose() const override;
   };
 } // end namespace cling
