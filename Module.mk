@@ -82,8 +82,6 @@ ifneq (,$(filter $(ARCH),win32gcc win64gcc))
 CLINGLDFLAGSEXTRA += -Wl,--exclude-libs,ALL 
 endif
 
-# used in $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) for not CLINGEXEO
-CLINGEXCCXXFLAGS := -fno-exceptions
 CLINGLIBEXTRA = $(CLINGLDFLAGSEXTRA) -L$(shell $(LLVMCONFIG) --libdir) \
 	$(addprefix -lclang,\
 		Frontend Serialization Driver CodeGen Parse Sema Analysis AST Edit Lex Basic) \
@@ -127,13 +125,13 @@ etc/cling/%.h: $(CLINGDIR)/include/cling/%.h
 	cp $< $@
 
 $(CLINGDIR)/%.o: $(CLINGDIR)/%.cpp $(LLVMDEP)
-	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) -D__cplusplus -- $<
-	$(CXX) $(OPT) $(CXXMKDEPFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
+	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(CLINGCXXFLAGS) $(CLINGRTTI) -D__cplusplus -- $<
+	$(CXX) $(OPT) $(CXXMKDEPFLAGS) $(CLINGCXXFLAGS) $(CXXOUT)$@ -c $<
 
 $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 	$(MAKEDIR)
-	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS))  -D__cplusplus -- $<
-	$(CXX) $(OPT) $(CXXMKDEPFLAGS) $(subst -fno-exceptions,$(CLINGEXCCXXFLAGS),$(CLINGCXXFLAGS)) $(CXXOUT)$@ -c $<
+	$(MAKEDEP) -R -f$(@:.o=.d) -Y -w 1000 -- $(CXXFLAGS) $(CLINGCXXFLAGS) $(CLINGRTTI) -D__cplusplus -- $<
+	$(CXX) $(OPT) $(CXXMKDEPFLAGS) $(CLINGCXXFLAGS) $(CXXOUT)$@ -c $<
 
 $(CLINGCOMPDH): FORCE $(LLVMDEP)
 	@mkdir -p $(dir $@)
@@ -157,14 +155,13 @@ endif
 ##### extra rules ######
 ifneq ($(LLVMDEV),)
 $(CLINGO)   : CLINGCXXFLAGS += '-DCLING_INCLUDE_PATHS="$(CLINGDIR)/include:$(shell pwd)/$(LLVMDIRO)/include:$(shell pwd)/$(LLVMDIRO)/tools/clang/include:$(LLVMDIRS)/include:$(LLVMDIRS)/tools/clang/include"'
-$(CLINGEXEO): CLINGCXXFLAGS += -I$(TEXTINPUTDIRS)
-$(CLINGEXEO): CLINGEXCCXXFLAGS := -fexceptions
+$(CLINGEXEO): CLINGCXXFLAGS += -fexceptions -I$(TEXTINPUTDIRS)
 else
 endif
 
 CLING_VERSION=ROOT_$(shell cat "$(CLINGDIR)/VERSION")
 
-$(CLINGEXCEPO): CLINGCXXFLAGS:= $(subst -fno-rtti,,$(subst -fno-exceptions,,$(CLINGCXXFLAGS)))
+$(CLINGEXCEPO): CLINGCXXFLAGS += -frtti -fexceptions
 $(CLINGETC) : $(LLVMLIB)
 $(CLINGO)   : $(CLINGETC)
 $(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): $(CLINGCOMPDH)
