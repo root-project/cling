@@ -26,7 +26,7 @@ using namespace clang;
 
 namespace cling {
   NullDerefProtectionTransformer::NullDerefProtectionTransformer(clang::Sema* S)
-    : WrapperTransformer(S) {
+    : ASTTransformer(S) {
   }
 
   NullDerefProtectionTransformer::~NullDerefProtectionTransformer()

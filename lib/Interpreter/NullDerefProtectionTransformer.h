@@ -20,7 +20,7 @@ namespace clang {
 
 namespace cling {
 
-  class NullDerefProtectionTransformer : public WrapperTransformer {
+  class NullDerefProtectionTransformer : public ASTTransformer {
   public:
     ///\ brief Constructs the NullDeref AST Transformer.
     ///
