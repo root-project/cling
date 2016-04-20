@@ -55,6 +55,10 @@ namespace cling {
         m_Context(I.getCI()->getASTContext()),
         m_clingthrowIfInvalidPointerCache(0) {}
 
+    ~PointerCheckInjector() {
+      delete m_clingthrowIfInvalidPointerCache;
+    }
+
     bool VisitUnaryOperator(UnaryOperator* UnOp) {
       Expr* SubExpr = UnOp->getSubExpr();
       VisitStmt(SubExpr);
