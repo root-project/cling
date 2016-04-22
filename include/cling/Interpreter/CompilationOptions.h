@@ -58,6 +58,10 @@ namespace cling {
     /// is wrapped.
     unsigned IgnorePromptDiags : 1;
 
+    ///\brief Pointer validity check can be enabled/disabled.
+    ///
+    unsigned CheckPointerValidity : 1;
+
     CompilationOptions() {
       DeclarationExtraction = 0;
       ValuePrinting = VPDisabled;
@@ -67,6 +71,7 @@ namespace cling {
       CodeGeneration = 1;
       CodeGenerationForModule = 0;
       IgnorePromptDiags = 0;
+      CheckPointerValidity = 1;
     }
 
     bool operator==(CompilationOptions Other) const {
@@ -78,7 +83,8 @@ namespace cling {
         Debug                 == Other.Debug &&
         CodeGeneration        == Other.CodeGeneration &&
         CodeGenerationForModule == Other.CodeGenerationForModule &&
-        IgnorePromptDiags     == Other.IgnorePromptDiags;
+        IgnorePromptDiags     == Other.IgnorePromptDiags &&
+        CheckPointerValidity  == Other.CheckPointerValidity;
     }
 
     bool operator!=(CompilationOptions Other) const {
@@ -90,7 +96,8 @@ namespace cling {
         Debug                 != Other.Debug ||
         CodeGeneration        != Other.CodeGeneration ||
         CodeGenerationForModule != Other.CodeGenerationForModule ||
-        IgnorePromptDiags     != Other.IgnorePromptDiags;
+        IgnorePromptDiags     != Other.IgnorePromptDiags ||
+        CheckPointerValidity  != Other.CheckPointerValidity;
     }
   };
 } // end namespace cling
