@@ -527,15 +527,17 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::process(const std::string& input, Value* V /* = 0 */,
                        Transaction** T /* = 0 */) {
-    if (isRawInputEnabled() || !ShouldWrapInput(input))
-      return declare(input, T);
-
     CompilationOptions CO;
     CO.DeclarationExtraction = 1;
     CO.ValuePrinting = CompilationOptions::VPAuto;
     CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
+    CO.CheckPointerValidity = 1;
+
+    if (isRawInputEnabled() || !ShouldWrapInput(input))
+      return DeclareInternal(input, CO, T);
+
     if (EvaluateInternal(input, CO, V, T) == Interpreter::kFailure) {
       return Interpreter::kFailure;
     }
@@ -1119,7 +1121,15 @@ namespace cling {
 
     std::string code;
     code += "#include \"" + filename + "\"";
-    CompilationResult res = declare(code, T);
+
+    CompilationOptions CO;
+    CO.DeclarationExtraction = 0;
+    CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
+    CO.DynamicScoping = isDynamicLookupEnabled();
+    CO.Debug = isPrintingDebug();
+    CO.CheckPointerValidity = 1;
+    CompilationResult res = DeclareInternal(code, CO, T);
     return res;
   }
 
