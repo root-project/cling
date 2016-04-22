@@ -44,13 +44,13 @@ class IncrementalJIT {
 
   class NotifyObjectLoadedT {
   public:
-    typedef std::vector<std::unique_ptr<llvm::object::ObjectFile>> ObjListT;
+    typedef std::vector<std::unique_ptr<llvm::object::OwningBinary<llvm::object::ObjectFile>>> ObjListT;
     typedef std::vector<std::unique_ptr<llvm::RuntimeDyld::LoadedObjectInfo>>
         LoadedObjInfoListT;
 
     NotifyObjectLoadedT(IncrementalJIT &jit) : m_JIT(jit) {}
 
-    void operator()(llvm::ObjectLinkingLayerBase::ObjSetHandleT H,
+    void operator()(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H,
                     const ObjListT &Objects,
                     const LoadedObjInfoListT &Infos) const {
       m_JIT.m_UnfinalizedSections[H]
@@ -59,7 +59,8 @@ class IncrementalJIT {
       assert(Objects.size() == Infos.size() &&
              "Incorrect number of Infos for Objects.");
       for (size_t I = 0, N = Objects.size(); I < N; ++I)
-        m_JIT.m_GDBListener->NotifyObjectEmitted(*Objects[I], *Infos[I]);
+        m_JIT.m_GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(),
+                                                 *Infos[I]);
     };
 
   private:
@@ -69,7 +70,7 @@ class IncrementalJIT {
   class NotifyFinalizedT {
   public:
     NotifyFinalizedT(IncrementalJIT &jit) : m_JIT(jit) {}
-    void operator()(llvm::ObjectLinkingLayerBase::ObjSetHandleT H) {
+    void operator()(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
       m_JIT.m_UnfinalizedSections.erase(H);
     }
 
@@ -78,18 +79,17 @@ class IncrementalJIT {
   };
 
 
-  typedef llvm::ObjectLinkingLayer<NotifyObjectLoadedT> ObjectLayerT;
-  typedef llvm::IRCompileLayer<ObjectLayerT> CompileLayerT;
-  typedef llvm::LazyEmittingLayer<CompileLayerT> LazyEmitLayerT;
+  typedef llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT> ObjectLayerT;
+  typedef llvm::orc::IRCompileLayer<ObjectLayerT> CompileLayerT;
+  typedef llvm::orc::LazyEmittingLayer<CompileLayerT> LazyEmitLayerT;
   typedef LazyEmitLayerT::ModuleSetHandleT ModuleSetHandleT;
 
   std::unique_ptr<llvm::TargetMachine> m_TM;
+  llvm::DataLayout m_TMDataLayout;
+
   ///\brief The RTDyldMemoryManager used to communicate with the
   /// IncrementalExecutor to handle missing or special symbols.
   std::unique_ptr<llvm::RTDyldMemoryManager> m_ExeMM;
-
-  ///\brief Target symbol mangler.
-  llvm::Mangler m_Mang;
 
   NotifyObjectLoadedT m_NotifyObjectLoaded;
   NotifyFinalizedT m_NotifyFinalized;
@@ -121,7 +121,8 @@ class IncrementalJIT {
     std::string MangledName;
     {
       llvm::raw_string_ostream MangledNameStream(MangledName);
-      m_Mang.getNameWithPrefix(MangledNameStream, Name);
+      llvm::Mangler::getNameWithPrefix(MangledNameStream, Name,
+                                       m_TMDataLayout);
     }
     return MangledName;
   }
@@ -138,13 +139,14 @@ public:
   /// \param AlsoInProcess - Sometimes you only care about JITed symbols. If so,
   ///   pass `false` here to not resolve the symbol through dlsym().
   uint64_t getSymbolAddress(llvm::StringRef Name, bool AlsoInProcess) {
-    return getSymbolAddressWithoutMangling(Mangle(Name), AlsoInProcess);
+    return getSymbolAddressWithoutMangling(Mangle(Name), AlsoInProcess)
+      .getAddress();
   }
 
   ///\brief Get the address of a symbol from the JIT or the memory manager.
   /// Use this to resolve symbols of known, target-specific names.
-  uint64_t getSymbolAddressWithoutMangling(llvm::StringRef Name,
-                                           bool AlsoInProcess);
+  llvm::orc::JITSymbol getSymbolAddressWithoutMangling(llvm::StringRef Name,
+                                                       bool AlsoInProcess);
 
   size_t addModules(std::vector<llvm::Module*>&& modules);
   void removeModules(size_t handle);
