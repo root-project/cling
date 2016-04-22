@@ -684,6 +684,7 @@ namespace {
           return true;
         }
         bool ReadTargetOptions(const TargetOptions &TargetOpts,
+                               bool /*Complain*/,
                                bool /*AllowCompatibleDifferences*/) override {
           m_Invocation.getTargetOpts() = TargetOpts;
           return true;
@@ -698,7 +699,8 @@ namespace {
       PCHListener listener(*Invocation);
       ASTReader::readASTFileControlBlock(PCHFileName,
                                          CI->getFileManager(),
-                                         /* FUTURE: *CI->getPCHContainerOperations(),*/
+                                         CI->getPCHContainerReader(),
+                                         false /*FindModuleFileExtensions*/,
                                          listener);
     }
 
@@ -812,7 +814,7 @@ namespace {
     // Set up the preprocessor
     CI->createPreprocessor(TU_Complete);
     Preprocessor& PP = CI->getPreprocessor();
-    PP.getBuiltinInfo().InitializeBuiltins(PP.getIdentifierTable(),
+    PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(),
                                            PP.getLangOpts());
 
     // Set up the ASTContext
