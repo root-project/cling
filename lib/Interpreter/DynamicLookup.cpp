@@ -319,7 +319,7 @@ namespace cling {
           for(unsigned i = 0; i < NewStmts.size(); ++i)
             NewChildren.push_back(NewStmts[i]);
 
-          Node->setStmts(*m_Context, NewChildren.data(), NewChildren.size());
+          Node->setStmts(*m_Context, NewChildren);
           // Resolve all 1:n replacements
           Visit(Node);
         }
@@ -348,7 +348,7 @@ namespace cling {
       }
     }
 
-    Node->setStmts(*m_Context, NewChildren.data(), NewChildren.size());
+    Node->setStmts(*m_Context, NewChildren);
 
     --m_NestedCompoundStmts;
     return ASTNodeInfo(Node, 0);
@@ -480,16 +480,17 @@ namespace cling {
         // TODO: Check whether this is the most appropriate variant
         MemberLookup.addDecl(m_LHgetMemoryDecl, AS_public);
         MemberLookup.resolveKind();
-        Expr* MemberExpr = m_Sema->BuildMemberReferenceExpr(MemberExprBase,
-                                                            HandlerTy,
-                                                            m_NoSLoc,
-                                                            /*IsArrow=*/false,
-                                                            SS,
-                                                            m_NoSLoc,
-                                                     /*FirstQualifierInScope=*/0,
-                                                            MemberLookup,
-                                                            /*TemplateArgs=*/0
-                                                            ).get();
+        Expr* MemberExpr
+           = m_Sema->BuildMemberReferenceExpr(MemberExprBase,
+                                              HandlerTy,
+                                              m_NoSLoc,
+                                              /*IsArrow=*/false,
+                                              SS,
+                                              m_NoSLoc,
+                                              /*FirstQualifierInScope=*/0,
+                                              MemberLookup,
+                                              /*TemplateArgs=*/0,
+                                              /*Scope*/nullptr).get();
         // 3.3 Build the actual call
         Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
         Expr* theCall = m_Sema->ActOnCallExpr(S,
