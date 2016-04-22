@@ -17,13 +17,15 @@
 #include "clang/Frontend/CompilerInstance.h"
 
 extern "C" {
-///\param Arg: Take const void* and return void* to reduce the complexity in the
+/// Throw an InvalidDerefException if the Arg pointer is invalid.
+///\param Interp: The interpreter that has compiled the code.
+///\param Expr: The expression corresponding determining the pointer value.
+///\param Arg: The pointer to be checked.
+///\returns void*, const-cast from Arg, to reduce the complexity in the
 /// calling AST nodes, at the expense of possibly doing a
 /// T* -> const void* -> const_cast<void*> -> T* round trip.
-///\param Expr: The Expression to be checked for validity.
-///\param Sema: The Sema for the context.
 void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
-                                                  const void* Arg) {
+                                                   const void* Arg) {
 
   clang::Expr* E = (clang::Expr*)Expr;
 

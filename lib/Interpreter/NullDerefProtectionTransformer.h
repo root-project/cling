@@ -27,7 +27,7 @@ namespace cling {
   public:
     ///\ brief Constructs the NullDeref AST Transformer.
     ///
-    ///\param[in] S - The semantic analysis object.
+    ///\param[in] I - The interpreter.
     ///
     NullDerefProtectionTransformer(cling::Interpreter* I);
 
