@@ -63,16 +63,19 @@ namespace cling {
       Expr* SubExpr = UnOp->getSubExpr();
       VisitStmt(SubExpr);
       if (UnOp->getOpcode() == UO_Deref
+          && !llvm::isa<clang::CXXThisExpr>(SubExpr)
           && SubExpr->getType().getTypePtr()->isPointerType())
           UnOp->setSubExpr(SynthesizeCheck(SubExpr));
       return true;
     }
 
     bool VisitMemberExpr(MemberExpr* ME) {
-      VisitStmt(ME->getBase());
+      Expr* Base = ME->getBase();
+      VisitStmt(Base);
       if (ME->isArrow()
+          && !llvm::isa<clang::CXXThisExpr>(Base)
           && ME->getMemberDecl()->isCXXInstanceMember())
-        ME->setBase(SynthesizeCheck(ME->getBase()));
+        ME->setBase(SynthesizeCheck(Base));
       return true;
     }
 
@@ -87,7 +90,8 @@ namespace cling {
           if (ArgIndexs.test(index)) {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
-            if (Arg->getType().getTypePtr()->isPointerType())
+            if (Arg->getType().getTypePtr()->isPointerType()
+                && !llvm::isa<clang::CXXThisExpr>(Arg))
               CE->setArg(index, SynthesizeCheck(Arg));
           }
         }
