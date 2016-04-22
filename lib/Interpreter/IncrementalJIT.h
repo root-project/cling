@@ -67,36 +67,26 @@ class IncrementalJIT {
       m_JIT.m_SectionsAllocatedSinceLastLoad = SectionAddrSet();
       assert(Objects.size() == Infos.size() &&
              "Incorrect number of Infos for Objects.");
-      if (auto GDBListener = m_JIT.m_GDBListener) {
-        for (size_t I = 0, N = Objects.size(); I < N; ++I)
-          GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(),
-                                           *Infos[I]);
-      }
-
-      for (const auto& Object: Objects) {
-        for (const auto &Symbol: Object->getBinary()->symbols()) {
-          auto Flags = Symbol.getFlags();
-          if (Flags & llvm::object::BasicSymbolRef::SF_Undefined)
-            continue;
-          // FIXME: this should be uncommented once we serve incremental
-          // modules from a TU module.
-          //if (!(Flags & llvm::object::BasicSymbolRef::SF_Exported))
-          //  continue;
-          auto NameOrError = Symbol.getName();
-          assert(NameOrError);
-          auto Name = NameOrError.get();
-          if (m_JIT.m_SymbolMap.find(Name) == m_JIT.m_SymbolMap.end()) {
-            llvm::orc::JITSymbol Sym = m_JIT.m_CompileLayer.findSymbolIn(H, Name, true);
-            if (Sym.getAddress())
-              m_JIT.m_SymbolMap[Name] = Sym;
-          }
-        }
-      }
+      for (size_t I = 0, N = Objects.size(); I < N; ++I)
+        m_JIT.m_GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(),
+                                                 *Infos[I]);
     };
 
   private:
     IncrementalJIT &m_JIT;
   };
+
+  class NotifyFinalizedT {
+  public:
+    NotifyFinalizedT(IncrementalJIT &jit) : m_JIT(jit) {}
+    void operator()(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
+      m_JIT.m_UnfinalizedSections.erase(H);
+    }
+
+  private:
+    IncrementalJIT &m_JIT;
+  };
+
 
   typedef llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT> ObjectLayerT;
   typedef llvm::orc::IRCompileLayer<ObjectLayerT> CompileLayerT;

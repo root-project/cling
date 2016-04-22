@@ -39,6 +39,16 @@ public:
   ClingMemoryManager(cling::IncrementalExecutor& Exe):
     m_exe(Exe) {}
 
+  /// This method returns the address of the specified function or variable
+  /// that could not be resolved by getSymbolAddress() or by resolving
+  /// possible weak symbols by the ExecutionEngine.
+  /// It is used to resolve symbols during module linking.
+
+  // LLVM MERGE FIXME: update this to use new interfaces.
+  //uint64_t getMissingSymbolAddress(const std::string &Name) override {
+  //  return (uint64_t) m_exe.NotifyLazyFunctionCreators(Name);
+  //}
+
   ///\brief Simply wraps the base class's function setting AbortOnFailure
   /// to false and instead using the error handling mechanism to report it.
   void* getPointerToNamedFunction(const std::string &Name,
@@ -150,6 +160,23 @@ public:
     return false;
   };
 
+  /// This method returns the address of the specified function or variable
+  /// that could not be resolved by getSymbolAddress() or by resolving
+  /// possible weak symbols by the ExecutionEngine.
+  /// It is used to resolve symbols during module linking.
+
+  // LLVM MERGE FIXME: update this to use new interfaces.
+  // uint64_t getMissingSymbolAddress(const std::string &Name) override {
+  //   std::string NameNoPrefix;
+  //   if (MANGLE_PREFIX[0]
+  //       && !Name.compare(0, strlen(MANGLE_PREFIX), MANGLE_PREFIX))
+  //     NameNoPrefix = Name.substr(strlen(MANGLE_PREFIX), -1);
+  //   else
+  //     NameNoPrefix = std::move(Name);
+  //   return (uint64_t) m_jit.getParent().NotifyLazyFunctionCreators(NameNoPrefix);
+  // }
+
+
 }; // class Azog
 
 IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
@@ -158,8 +185,8 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   m_TM(std::move(TM)),
   m_TMDataLayout(m_TM->createDataLayout()),
   m_ExeMM(llvm::make_unique<ClingMemoryManager>(m_Parent)),
-  m_NotifyObjectLoaded(*this),
-  m_ObjectLayer(m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
+  m_NotifyObjectLoaded(*this), m_NotifyFinalized(*this),
+  m_ObjectLayer(m_NotifyObjectLoaded, m_NotifyFinalized),
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
 
@@ -194,7 +221,8 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 
 
 llvm::orc::JITSymbol
-IncrementalJIT::getInjectedSymbols(llvm::StringRef Name) const {
+IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
+                                                bool AlsoInProcess) {
   if (Name == MANGLE_PREFIX "__cxa_atexit") {
     // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
     // coming from the JIT.
@@ -220,11 +248,9 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
     return Sym;
 
   if (AlsoInProcess) {
-    if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(Name))
-      return llvm::orc::JITSymbol(SymInfo.getAddress(),
-                                  llvm::JITSymbolFlags::Exported);
+    if (uint64_t Addr = m_ExeMM->getSymbolAddress(Name))
+      return llvm::orc::JITSymbol(Addr, llvm::JITSymbolFlags::Exported);
   }
-
   if (auto Sym = m_LazyEmitLayer.findSymbol(Name, false))
     return Sym;
 
@@ -240,34 +266,14 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
 
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
-    [&](const std::string &S) {
-      if (auto Sym = getInjectedSymbols(S))
-        return RuntimeDyld::SymbolInfo((uint64_t)Sym.getAddress(),
-                                       Sym.getFlags());
-      return m_ExeMM->findSymbol(S);
-    },
     [&](const std::string &Name) {
       if (auto Sym = getSymbolAddressWithoutMangling(Name, true)
           /*was: findSymbol(Name)*/)
         return RuntimeDyld::SymbolInfo(Sym.getAddress(),
                                        Sym.getFlags());
-
-
-      /// This method returns the address of the specified function or variable
-      /// that could not be resolved by getSymbolAddress() or by resolving
-      /// possible weak symbols by the ExecutionEngine.
-      /// It is used to resolve symbols during module linking.
-
-      std::string NameNoPrefix;
-      if (MANGLE_PREFIX[0]
-          && !Name.compare(0, strlen(MANGLE_PREFIX), MANGLE_PREFIX))
-        NameNoPrefix = Name.substr(strlen(MANGLE_PREFIX), -1);
-      else
-        NameNoPrefix = std::move(Name);
-      uint64_t addr
-        = (uint64_t) getParent().NotifyLazyFunctionCreators(NameNoPrefix);
-      return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
-    });
+      return RuntimeDyld::SymbolInfo(nullptr);
+    },
+    [](const std::string &S) { return nullptr; } );
 
   ModuleSetHandleT MSHandle
     = m_LazyEmitLayer.addModuleSet(std::move(modules),
