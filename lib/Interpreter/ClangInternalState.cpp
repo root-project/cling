@@ -14,6 +14,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/TargetInfo.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 
 #include "llvm/ADT/SmallString.h"
@@ -137,13 +138,17 @@ namespace cling {
     // Ignore the builtins
     typedef llvm::SmallVector<const char*, 1024> Builtins;
     Builtins builtinNames;
-    m_ASTContext.BuiltinInfo.GetBuiltinNames(builtinNames);
-    for (Builtins::iterator I = builtinNames.begin();
-         I != builtinNames.end();) {
-      if (llvm::StringRef(*I).startswith("__builtin"))
-        I = builtinNames.erase(I);
-      else
-        ++I;
+    const clang::Builtin::Context& BuiltinCtx = m_ASTContext.BuiltinInfo;
+    for (unsigned i = clang::Builtin::NotBuiltin+1;
+         i != clang::Builtin::FirstTSBuiltin; ++i) {
+      const char* Name = BuiltinCtx.getName(i);
+      if (!llvm::StringRef(Name).startswith("__builtin"))
+        builtinNames.push_back(Name);
+    }
+
+    for (auto&& BuiltinInfo: m_ASTContext.getTargetInfo().getTargetBuiltins()) {
+      if (!llvm::StringRef(BuiltinInfo.Name).startswith("__builtin"))
+        builtinNames.push_back(BuiltinInfo.Name);
     }
 
     builtinNames.push_back(".*__builtin.*");
