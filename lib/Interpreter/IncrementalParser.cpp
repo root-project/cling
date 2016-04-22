@@ -125,7 +125,7 @@ namespace {
   if (!II)
     return;
   const clang::DefMacroDirective* MD
-    = llvm::dyn_cast<clang::DefMacroDirective>(PP.getMacroDirective(II));
+    = llvm::dyn_cast<clang::DefMacroDirective>(PP.getLocalMacroDirective(II));
   if (!MD)
     return;
   const clang::MacroInfo* MI = MD->getMacroInfo();
@@ -174,6 +174,8 @@ namespace cling {
 
     if (CI->getFrontendOpts().ProgramAction != clang::frontend::ParseSyntaxOnly){
       m_CodeGen.reset(CreateLLVMCodeGen(CI->getDiagnostics(), "cling-module-0",
+                                        CI->getHeaderSearchOpts(),
+                                        CI->getPreprocessorOpts(),
                                         CI->getCodeGenOpts(),
                                         *m_Interpreter->getLLVMContext()
                                         ));
