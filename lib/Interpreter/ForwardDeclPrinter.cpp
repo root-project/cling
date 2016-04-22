@@ -38,10 +38,14 @@ namespace cling {
 
     m_StreamStack.push(&OutS);
 
-    llvm::SmallVector<const char*, 1024> builtinNames;
-    m_Ctx.BuiltinInfo.GetBuiltinNames(builtinNames);
+    const clang::Builtin::Context& BuiltinCtx = m_Ctx.BuiltinInfo;
+    for (unsigned i = clang::Builtin::NotBuiltin+1;
+         i != clang::Builtin::FirstTSBuiltin; ++i)
+      m_BuiltinNames.insert(BuiltinCtx.getName(i));
 
-    m_BuiltinNames.insert(builtinNames.begin(), builtinNames.end());
+    for (auto&& BuiltinInfo: m_Ctx.getTargetInfo().getTargetBuiltins())
+        m_BuiltinNames.insert(BuiltinInfo.Name);
+
 
     // Suppress some unfixable warnings.
     // TODO: Find proper fix for these issues
@@ -323,7 +327,7 @@ namespace cling {
       case SC_Extern: Out() << "extern "; break;
       case SC_Static: Out() << "static "; break;
       case SC_PrivateExtern: Out() << "__private_extern__ "; break;
-      case SC_Auto: case SC_Register: case SC_OpenCLWorkGroupLocal:
+      case SC_Auto: case SC_Register:
         llvm_unreachable("invalid for functions");
       }
 
