@@ -22,7 +22,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-#include "llvm/PassManager.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/raw_ostream.h"
@@ -89,8 +89,6 @@ std::unique_ptr<TargetMachine>
   std::string FeaturesStr;
 
   TargetOptions Options = TargetOptions();
-  Options.NoFramePointerElim = 1;
-  Options.JITEmitDebugInfo = 1;
   Reloc::Model RelocModel = Reloc::Default;
   CodeModel::Model CMModel = CodeModel::JITDefault;
   CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
