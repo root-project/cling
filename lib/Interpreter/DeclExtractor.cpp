@@ -180,7 +180,7 @@ namespace cling {
       }
     }
 
-    CS->setStmts(*m_Context, Stmts.data(), Stmts.size());
+    CS->setStmts(*m_Context, Stmts);
 
     if (hasNoErrors && !TouchedDecls.empty()) {
       // Put the wrapper after its declarations. (Nice when AST dumping)
@@ -514,7 +514,7 @@ namespace cling {
           SourceLocation KWLoc = NewTD->getLocStart();
           if (!m_Sema->isAcceptableTagRedeclaration(PrevTagDecl, Kind,
                                           NewTD->isThisDeclarationADefinition(),
-                                                    KWLoc, *Name)) {
+                                                    KWLoc, Name)) {
             bool SafeToContinue
               = (PrevTagDecl->getTagKind() != TTK_Enum && Kind != TTK_Enum);
 
