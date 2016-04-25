@@ -14,16 +14,14 @@
 
 #include "cling/Interpreter/Transaction.h"
 
+#include "clang/Basic/FileManager.h" // for DenseMap<FileEntry*>
+
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
 
 namespace llvm {
   class StringRef;
   class raw_ostream;
-}
-
-namespace clang {
-  class FileEntry;
 }
 
 namespace cling {
