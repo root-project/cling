@@ -218,23 +218,23 @@ namespace cling {
   void MetaSema::actOndebugCommand(llvm::Optional<int> mode) const {
     clang::CodeGenOptions& CGO = m_Interpreter.getCI()->getCodeGenOpts();
     if (!mode) {
-      bool flag = CGO.getDebugInfo() == clang::CodeGenOptions::NoDebugInfo;
+      bool flag = CGO.getDebugInfo() == clang::codegenoptions::NoDebugInfo;
       if (flag)
-        CGO.setDebugInfo(clang::CodeGenOptions::LimitedDebugInfo);
+        CGO.setDebugInfo(clang::codegenoptions::LimitedDebugInfo);
       else
-        CGO.setDebugInfo(clang::CodeGenOptions::NoDebugInfo);
+        CGO.setDebugInfo(clang::codegenoptions::NoDebugInfo);
       // FIXME:
       m_MetaProcessor.getOuts() << (flag ? "G" : "Not g")
                                 << "enerating debug symbols\n";
     }
     else {
       static const int NumDebInfos = 5;
-      clang::CodeGenOptions::DebugInfoKind DebInfos[NumDebInfos] = {
-        clang::CodeGenOptions::NoDebugInfo,
-        clang::CodeGenOptions::LocTrackingOnly,
-        clang::CodeGenOptions::DebugLineTablesOnly,
-        clang::CodeGenOptions::LimitedDebugInfo,
-        clang::CodeGenOptions::FullDebugInfo
+      clang::codegenoptions::DebugInfoKind DebInfos[NumDebInfos] = {
+        clang::codegenoptions::NoDebugInfo,
+        clang::codegenoptions::LocTrackingOnly,
+        clang::codegenoptions::DebugLineTablesOnly,
+        clang::codegenoptions::LimitedDebugInfo,
+        clang::codegenoptions::FullDebugInfo
       };
       if (*mode >= NumDebInfos)
         mode = NumDebInfos - 1;
