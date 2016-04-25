@@ -145,7 +145,7 @@ namespace utils {
               newBody.insert(newBody.begin() + indexOfLastExpr, DRE);
 
               // Attach the new body (note: it does dealloc/alloc of all nodes)
-              CS->setStmts(S->getASTContext(), &newBody.front(),newBody.size());
+              CS->setStmts(S->getASTContext(), newBody);
               if (FoundAt)
                 *FoundAt = indexOfLastExpr;
               return DRE;
@@ -249,9 +249,7 @@ namespace utils {
         // Keep the argument const to be inline will all the other interfaces
         // like:  NestedNameSpecifier::Create
         ASTContext &mutableCtx( const_cast<ASTContext&>(Ctx) );
-        arg = TemplateArgument::CreatePackCopy(mutableCtx,
-                                               desArgs.data(),
-                                               desArgs.size());
+        arg = TemplateArgument::CreatePackCopy(mutableCtx, desArgs));
       }
     }
     return changed;
@@ -878,9 +876,7 @@ namespace utils {
         // Keep the argument const to be inline will all the other interfaces
         // like:  NestedNameSpecifier::Create
         ASTContext &mutableCtx( const_cast<ASTContext&>(Ctx) );
-        arg = TemplateArgument::CreatePackCopy(mutableCtx,
-                                               desArgs.data(),
-                                               desArgs.size());
+        arg = TemplateArgument::CreatePackCopy(mutableCtx, desArgs));
       }
     }
     return changed;
