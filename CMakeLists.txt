@@ -364,7 +364,9 @@ if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
     )
 endif()
 
-add_definitions( -D_GNU_SOURCE )
+add_definitions( -D_GNU_SOURCE
+  -DCLING_VERSION=${CLING_VERSION}
+  -DCLING_INCLUDE_PATHS="${CMAKE_INSTALL_PREFIX}/include:${CMAKE_CURRENT_SOURCE_DIR}/include:${CMAKE_CURRENT_SOURCE_DIR}/../clang/include:${CMAKE_CURRENT_SOURCE_DIR}/../../include" )
 
 option(CLING_INCLUDE_TESTS
        "Generate build targets for the Cling unit tests."
