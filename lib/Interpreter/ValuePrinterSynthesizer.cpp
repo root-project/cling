@@ -173,11 +173,11 @@ namespace cling {
 
   unsigned ValuePrinterSynthesizer::ClearNullStmts(CompoundStmt* CS) {
     llvm::SmallVector<Stmt*, 8> FBody;
-    for (StmtRange range = CS->children(); range; ++range)
-      if (!isa<NullStmt>(*range))
-        FBody.push_back(*range);
+    for (auto&& child: CS->children())
+      if (!isa<NullStmt>(child))
+        FBody.push_back(child);
 
-    CS->setStmts(*m_Context, FBody.data(), FBody.size());
+    CS->setStmts(*m_Context, FBody);
     return FBody.size();
   }
 
