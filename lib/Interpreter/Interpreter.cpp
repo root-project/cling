@@ -1009,7 +1009,7 @@ namespace cling {
                                Transaction** T /* = 0 */) const {
     assert(CO.DeclarationExtraction == 0
            && CO.ValuePrinting == 0
-           && CO.ResultEvaluation = 0
+           && CO.ResultEvaluation == 0
            && "Compilation Options not compatible with \"declare\" mode.");
 
     StateDebuggerRAII stateDebugger(this);
