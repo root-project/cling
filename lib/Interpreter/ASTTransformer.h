@@ -12,6 +12,7 @@
 
 #include "llvm/ADT/PointerIntPair.h"
 
+#include "clang/AST/Decl.h" // for Result(Decl)
 #include "clang/AST/DeclGroup.h"
 
 #include "cling/Interpreter/Transaction.h"
