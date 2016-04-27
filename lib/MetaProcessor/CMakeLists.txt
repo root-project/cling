@@ -16,9 +16,10 @@ add_cling_library(clingMetaProcessor
 
   LINK_LIBS
   clangBasic
+  LLVMCore
   )
 
-add_dependencies(clingMetaProcessor clangBasic)
+add_dependencies(clingMetaProcessor clangBasic LLVMCore)
 
 if ( MSVC )
   set_target_properties(clingMetaProcessor PROPERTIES
