@@ -267,6 +267,10 @@ namespace cling {
     for (size_t i = 0, e = m_StoredStates.size(); i != e; ++i)
       delete m_StoredStates[i];
     getCI()->getDiagnostics().getClient()->EndSourceFile();
+    // LookupHelper's ~Parser needs the PP from IncrParser's CI, so do this
+    // first:
+    m_LookupHelper.reset();
+
     // We want to keep the callback alive during the shutdown of Sema, CodeGen
     // and the ASTContext. For that to happen we shut down the IncrementalParser
     // explicitly, before the implicit destruction (through the unique_ptr) of
