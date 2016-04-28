@@ -553,6 +553,11 @@ namespace {
     }
   }
 
+  template <class CONTAINER>
+  static void insertBehind(CONTAINER& To, const CONTAINER& From) {
+    To.insert(To.end(), From.begin(), From.end());
+  }
+
   static CompilerInstance* createCIImpl(
                                      std::unique_ptr<llvm::MemoryBuffer> buffer,
                                         int argc,
@@ -692,7 +697,11 @@ namespace {
         bool ReadPreprocessorOptions(const PreprocessorOptions &PPOpts,
                                      bool /*Complain*/,
                                 std::string &/*SuggestedPredefines*/) override {
-          m_Invocation.getPreprocessorOpts() = PPOpts;
+          // Import selected options, e.g. don't overwrite ImplicitPCHInclude.
+          PreprocessorOptions& myPP = m_Invocation.getPreprocessorOpts();
+          insertBehind(myPP.Macros, PPOpts.Macros);
+          insertBehind(myPP.Includes, PPOpts.Includes);
+          insertBehind(myPP.MacroIncludes, PPOpts.MacroIncludes);
           return true;
         }
       };
