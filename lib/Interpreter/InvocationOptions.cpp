@@ -49,8 +49,7 @@ namespace {
   class ClingOptTable : public OptTable {
   public:
     ClingOptTable()
-      : OptTable(ClingInfoTable,
-                 sizeof(ClingInfoTable) / sizeof(ClingInfoTable[0])) {}
+      : OptTable(ClingInfoTable) {}
   };
 
   static OptTable* CreateClingOptTable() {
