@@ -58,9 +58,11 @@ class IncrementalJIT {
       m_JIT.m_SectionsAllocatedSinceLastLoad = SectionAddrSet();
       assert(Objects.size() == Infos.size() &&
              "Incorrect number of Infos for Objects.");
-      for (size_t I = 0, N = Objects.size(); I < N; ++I)
-        m_JIT.m_GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(),
-                                                 *Infos[I]);
+      if (auto GDBListener = m_JIT.m_GDBListener) {
+        for (size_t I = 0, N = Objects.size(); I < N; ++I)
+          GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(),
+                                           *Infos[I]);
+      }
     };
 
   private:
