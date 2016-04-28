@@ -255,7 +255,6 @@ namespace cling {
       VD->setInit(TheCall);
 
       Emit(VD); // Add it to the transaction for codegenning
-      VD->setHidden(true);
       TUDC->addHiddenDecl(VD);
       Stmts.clear();
       return;
