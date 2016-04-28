@@ -122,9 +122,8 @@ namespace cling {
   LookupHelper::~LookupHelper() {}
 
   static
-  DeclContext* getContextAndSpec(CXXScopeSpec &SS,
-                                 const Decl* scopeDecl,
-                                 ASTContext& Context, Sema &S);
+  DeclContext* getCompleteContext(const Decl* scopeDecl,
+                                  ASTContext& Context, Sema &S);
 
   static void prepareForParsing(Parser& P,
                                 const Interpreter* Interp,
@@ -193,9 +192,8 @@ namespace cling {
     PP.getDiagnostics().setSuppressAllDiagnostics(
                                       diagOnOff == LookupHelper::NoDiagnostics);
 
-    CXXScopeSpec SS;
     ASTContext& Context = S.getASTContext();
-    DeclContext* complete = getContextAndSpec(SS,tobeCompleted,Context,S);
+    DeclContext* complete = getCompleteContext(tobeCompleted,Context,S);
 
     PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
 
@@ -904,8 +902,23 @@ namespace cling {
 
   static
   DeclContext* getContextAndSpec(CXXScopeSpec &SS,
-                                 const Decl* scopeDecl,
-                                 ASTContext& Context, Sema &S) {
+                                  const Decl* scopeDecl,
+                                  ASTContext& Context, Sema &S) {
+    //
+    //  Some validity checks on the passed decl.
+    //
+    DeclContext* foundDC = dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
+    if (foundDC->isDependentContext()) {
+      // Passed decl is a template, we cannot use it.
+      return 0;
+    }
+    if (scopeDecl->isInvalidDecl()) {
+      // if the decl is invalid try to clean up
+      TransactionUnloader U(&S, /*CodeGenerator*/0);
+      U.UnloadDecl(const_cast<Decl*>(scopeDecl));
+      return 0;
+    }
+
     //
     //  Convert the passed decl into a nested name specifier,
     //  a scope spec, and a decl context.
@@ -914,36 +927,80 @@ namespace cling {
     if (const NamespaceDecl* NSD = dyn_cast<NamespaceDecl>(scopeDecl)) {
       classNNS = NestedNameSpecifier::Create(Context, 0,
                                              const_cast<NamespaceDecl*>(NSD));
+      SS.MakeTrivial(Context, classNNS, scopeDecl->getSourceRange());
+      return foundDC;
     }
     else if (const RecordDecl* RD = dyn_cast<RecordDecl>(scopeDecl)) {
       const Type* T = Context.getRecordType(RD).getTypePtr();
       classNNS = NestedNameSpecifier::Create(Context, 0, false, T);
+      // We pass a 'random' but valid source range.
+      SS.MakeTrivial(Context, classNNS, scopeDecl->getSourceRange());
+      if (S.RequireCompleteDeclContext(SS, foundDC)) {
+        // Forward decl or instantiation failure, we cannot use it.
+        return 0;
+      }
+      return foundDC;
     }
     else if (llvm::isa<TranslationUnitDecl>(scopeDecl)) {
-      classNNS = NestedNameSpecifier::GlobalSpecifier(Context);
+      // We pass a 'random' but valid source range.
+      SS.MakeGlobal(Context,scopeDecl->getLocation());
+      return foundDC;
     }
-    else {
-      // Not a namespace or class, we cannot use it.
-      return 0;
-    }
-    DeclContext* foundDC = dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
+    // Not a namespace or class, we cannot use it.
+    return 0;
+  }
+
+  static
+  DeclContext* getCompleteContext(const Decl* scopeDecl,
+                                  ASTContext& Context, Sema &S) {
     //
     //  Some validity checks on the passed decl.
     //
+    DeclContext* foundDC = dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
     if (foundDC->isDependentContext()) {
       // Passed decl is a template, we cannot use it.
-      return 0;
-    }
-    // We pass a 'random' but valid source range.
-    SS.MakeTrivial(Context, classNNS, scopeDecl->getSourceRange());
-    if (S.RequireCompleteDeclContext(SS, foundDC)) {
-      // Forward decl or instantiation failure, we cannot use it.
       return 0;
     }
     if (scopeDecl->isInvalidDecl()) {
       // if the decl is invalid try to clean up
       TransactionUnloader U(&S, /*CodeGenerator*/0);
       U.UnloadDecl(const_cast<Decl*>(scopeDecl));
+      return 0;
+    }
+    //
+    //  Convert the passed decl into a nested name specifier,
+    //  a scope spec, and a decl context.
+    //
+    NestedNameSpecifier* classNNS = 0;
+    const TagDecl *tdecl = nullptr;
+    if (const NamespaceDecl* NSD = dyn_cast<NamespaceDecl>(scopeDecl)) {
+      return foundDC;
+    }
+    else if (const RecordDecl* RD = dyn_cast<RecordDecl>(scopeDecl)) {
+      if (RD->getDefinition()) {
+        // We are already complete, we are done.
+        return foundDC;
+      } else {
+        //const Type* T = Context.getRecordType(RD).getTypePtr();
+        const Type* T = Context.getTypeDeclType(RD).getTypePtr();
+        classNNS = NestedNameSpecifier::Create(Context, 0, false, T);
+        tdecl = RD;
+        // We pass a 'random' but valid source range.
+        CXXScopeSpec SS;
+        SS.MakeTrivial(Context, classNNS, scopeDecl->getSourceRange());
+
+        clang::NestedNameSpecifierLoc nnLoc = tdecl->getQualifierLoc();
+        if (S.RequireCompleteDeclContext(SS, foundDC)) {
+          // Forward decl or instantiation failure, we cannot use it.
+          return 0;
+        }
+      }
+    }
+    else if (llvm::isa<TranslationUnitDecl>(scopeDecl)) {
+      return dyn_cast<DeclContext>(const_cast<Decl*>(scopeDecl));
+    }
+    else {
+      // Not a namespace or class, we cannot use it.
       return 0;
     }
 
@@ -1159,7 +1216,7 @@ namespace cling {
     return TheDecl;
   }
 
-  static bool ParseWithShortcuts(DeclContext* foundDC, CXXScopeSpec &SS,
+  static bool ParseWithShortcuts(DeclContext* foundDC, ASTContext& Context,
                                  llvm::StringRef funcName,
                                  Interpreter* Interp,
                                  UnqualifiedId &FuncId,
@@ -1282,6 +1339,11 @@ namespace cling {
     //  Parse the function name.
     //
     SourceLocation TemplateKWLoc;
+    CXXScopeSpec SS;
+    {
+      Decl *decl = llvm::dyn_cast<Decl>(foundDC);
+      getContextAndSpec(SS,decl,Context,S);
+    }
     if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
                              /*AllowDestructorName*/true,
                              /*AllowConstructorName*/true,
@@ -1294,7 +1356,7 @@ namespace cling {
   }
 
   template <typename T>
-  T findFunction(DeclContext* foundDC, CXXScopeSpec &SS,
+  T findFunction(DeclContext* foundDC,
                  llvm::StringRef funcName,
                  const llvm::SmallVectorImpl<Expr*> &GivenArgs,
                  bool objectIsConst,
@@ -1330,7 +1392,8 @@ namespace cling {
 
     UnqualifiedId FuncId;
     ParserStateRAII ResetParserState(P);
-    if (!ParseWithShortcuts(foundDC, SS, funcName, Interp, FuncId, diagOnOff)) {
+    if (!ParseWithShortcuts(foundDC, Context, funcName, Interp,
+                            FuncId, diagOnOff)) {
       // Failed parse, cleanup.
       // Destroy the scope we created first, and
       // restore the original.
@@ -1425,8 +1488,7 @@ namespace cling {
     //  Do this 'early' to save on the expansive parser setup,
     //  in case of failure.
     //
-    CXXScopeSpec SS;
-    DeclContext* foundDC = getContextAndSpec(SS,scopeDecl,Context,S);
+    DeclContext* foundDC = getCompleteContext(scopeDecl,Context,S);
     if (!foundDC) return 0;
 
     DigestArgsInput inputEval;
@@ -1434,7 +1496,7 @@ namespace cling {
     if (!inputEval(GivenArgs,funcArgs,diagOnOff,P,Interp)) return 0;
 
     Interpreter::PushTransactionRAII pushedT(Interp);
-    return findFunction(foundDC, SS,
+    return findFunction(foundDC,
                         funcName, GivenArgs, objectIsConst,
                         Context, Interp, functionSelector,
                         diagOnOff);
