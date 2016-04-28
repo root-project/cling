@@ -36,6 +36,6 @@ typedef enum {k1 = 0, k2} enumName;
 enumName var = k1;
 .rawInput 0
 var
-// CHECK: (enumName) (::k1) : ({{(unsigned )?}}int) 0
+// CHECK: (enumName) (k1) : ({{(unsigned )?}}int) 0
 const enumName constVar = (enumName) 1 // k2 is invisible!
-// CHECK: (const enumName) (::k2) : ({{(unsigned )?}}int) 1
+// CHECK: (const enumName) (k2) : ({{(unsigned )?}}int) 1
