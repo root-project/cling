@@ -989,7 +989,6 @@ namespace cling {
         CXXScopeSpec SS;
         SS.MakeTrivial(Context, classNNS, scopeDecl->getSourceRange());
 
-        clang::NestedNameSpecifierLoc nnLoc = tdecl->getQualifierLoc();
         if (S.RequireCompleteDeclContext(SS, foundDC)) {
           // Forward decl or instantiation failure, we cannot use it.
           return 0;
