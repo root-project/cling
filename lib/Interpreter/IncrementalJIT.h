@@ -69,18 +69,6 @@ class IncrementalJIT {
     IncrementalJIT &m_JIT;
   };
 
-  class NotifyFinalizedT {
-  public:
-    NotifyFinalizedT(IncrementalJIT &jit) : m_JIT(jit) {}
-    void operator()(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
-      m_JIT.m_UnfinalizedSections.erase(H);
-    }
-
-  private:
-    IncrementalJIT &m_JIT;
-  };
-
-
   typedef llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT> ObjectLayerT;
   typedef llvm::orc::IRCompileLayer<ObjectLayerT> CompileLayerT;
   typedef llvm::orc::LazyEmittingLayer<CompileLayerT> LazyEmitLayerT;
@@ -94,7 +82,6 @@ class IncrementalJIT {
   std::unique_ptr<llvm::RTDyldMemoryManager> m_ExeMM;
 
   NotifyObjectLoadedT m_NotifyObjectLoaded;
-  NotifyFinalizedT m_NotifyFinalized;
 
   ObjectLayerT m_ObjectLayer;
   CompileLayerT m_CompileLayer;
@@ -154,7 +141,11 @@ public:
   void removeModules(size_t handle);
 
   IncrementalExecutor& getParent() const { return m_Parent; }
-  //void finalizeMemory();
+
+  void
+  RemoveUnfinalizedSection(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
+    m_UnfinalizedSections.erase(H);
+  }
 };
 } // end cling
 #endif // CLING_INCREMENTAL_EXECUTOR_H
