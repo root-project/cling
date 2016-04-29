@@ -39,16 +39,6 @@ public:
   ClingMemoryManager(cling::IncrementalExecutor& Exe):
     m_exe(Exe) {}
 
-  /// This method returns the address of the specified function or variable
-  /// that could not be resolved by getSymbolAddress() or by resolving
-  /// possible weak symbols by the ExecutionEngine.
-  /// It is used to resolve symbols during module linking.
-
-  // LLVM MERGE FIXME: update this to use new interfaces.
-  //uint64_t getMissingSymbolAddress(const std::string &Name) override {
-  //  return (uint64_t) m_exe.NotifyLazyFunctionCreators(Name);
-  //}
-
   ///\brief Simply wraps the base class's function setting AbortOnFailure
   /// to false and instead using the error handling mechanism to report it.
   void* getPointerToNamedFunction(const std::string &Name,
@@ -160,23 +150,6 @@ public:
     return false;
   };
 
-  /// This method returns the address of the specified function or variable
-  /// that could not be resolved by getSymbolAddress() or by resolving
-  /// possible weak symbols by the ExecutionEngine.
-  /// It is used to resolve symbols during module linking.
-
-  // LLVM MERGE FIXME: update this to use new interfaces.
-  // uint64_t getMissingSymbolAddress(const std::string &Name) override {
-  //   std::string NameNoPrefix;
-  //   if (MANGLE_PREFIX[0]
-  //       && !Name.compare(0, strlen(MANGLE_PREFIX), MANGLE_PREFIX))
-  //     NameNoPrefix = Name.substr(strlen(MANGLE_PREFIX), -1);
-  //   else
-  //     NameNoPrefix = std::move(Name);
-  //   return (uint64_t) m_jit.getParent().NotifyLazyFunctionCreators(NameNoPrefix);
-  // }
-
-
 }; // class Azog
 
 IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
@@ -271,7 +244,22 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
           /*was: findSymbol(Name)*/)
         return RuntimeDyld::SymbolInfo(Sym.getAddress(),
                                        Sym.getFlags());
-      return RuntimeDyld::SymbolInfo(nullptr);
+
+
+      /// This method returns the address of the specified function or variable
+      /// that could not be resolved by getSymbolAddress() or by resolving
+      /// possible weak symbols by the ExecutionEngine.
+      /// It is used to resolve symbols during module linking.
+
+      std::string NameNoPrefix;
+      if (MANGLE_PREFIX[0]
+          && !Name.compare(0, strlen(MANGLE_PREFIX), MANGLE_PREFIX))
+        NameNoPrefix = Name.substr(strlen(MANGLE_PREFIX), -1);
+      else
+        NameNoPrefix = std::move(Name);
+      uint64_t addr
+        = (uint64_t) getParent().NotifyLazyFunctionCreators(NameNoPrefix);
+      return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
     },
     [](const std::string &S) { return nullptr; } );
 
