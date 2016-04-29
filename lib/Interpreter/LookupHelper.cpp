@@ -973,7 +973,7 @@ namespace cling {
     //
     NestedNameSpecifier* classNNS = 0;
     const TagDecl *tdecl = nullptr;
-    if (const NamespaceDecl* NSD = dyn_cast<NamespaceDecl>(scopeDecl)) {
+    if (isa<NamespaceDecl>(scopeDecl)) {
       return foundDC;
     }
     else if (const RecordDecl* RD = dyn_cast<RecordDecl>(scopeDecl)) {
