@@ -29,7 +29,7 @@ int foo(){ return 42; }
 ChildInterp.declare("void foo(int i){ printf(\"foo(int) = %d\\n\", i); }");
 
 //Then execute it from the child interpreter
-ChildInterp.execute("foo()");
+ChildInterp.echo("foo()");
 //CHECK:(int) 42
 
 //Check if function overloading works
