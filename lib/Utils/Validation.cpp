@@ -18,7 +18,8 @@
 #include <array>
 #include <algorithm>
 #include <fcntl.h>
-# include <unistd.h>
+#include <unistd.h>
+#include <atomic>
 #endif
 
 namespace cling {
@@ -30,26 +31,25 @@ namespace cling {
     struct Cache {
     private:
       std::array<const void*, 8> lines;
-      unsigned mostRecent = 0;
+      std::atomic<unsigned> mostRecent = {0};
     public:
       bool contains(const void* P) {
         return std::find(lines.begin(), lines.end(), P) != lines.end();
       }
       void push(const void* P) {
-        mostRecent = (mostRecent + 1) % lines.size();
-        lines[mostRecent] = P;
+        unsigned acquiredVal = mostRecent;
+        while(!mostRecent.compare_exchange_weak(acquiredVal, (acquiredVal+1)%lines.size())) {
+          acquiredVal = mostRecent;
+        }
+        lines[acquiredVal] = P;
       }
     };
 
     // Trying to be thread-safe.
     // Each thread creates a new cache when needed.
     static Cache& getCache() {
-      static llvm::sys::ThreadLocal<Cache> threadCache;
-      if (!threadCache.get()) {
-        // Leak, 1 Cache/thread.
-        threadCache.set(new Cache());
-      }
-      return *threadCache.get();
+      static Cache threadCache;
+      return threadCache;
     }
 
     static int getNullDevFileDescriptor() {
