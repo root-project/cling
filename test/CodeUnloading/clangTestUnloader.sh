@@ -1,14 +1,9 @@
 #!/bin/bash
 
 # Find cling and clang.
-# Support cling and ROOT builds:
-# ROOT  - interpreter/cling/test/CodeUnloading/clangTestUnloader.sh versus
-#         interpreter/llvm/obj/Debug+Asserts/bin/{cling,clang}
-# cling - build/tools/cling/test/CodeUnloading/clangTestUnloader.sh
-#         build/Debug+Asserts/bin/{cling,clang}
 
 TESTDIR=`pwd | sed 's,/tools/clang/test.*$,,'`
-cling_binary=$TESTDIR/Debug+Asserts/bin/cling
+cling_binary=$TESTDIR/bin/cling
 if ! [ -x $cling_binary ]; then
     echo 'Cannot find cling binary!' >& 2
     exit 1
@@ -54,7 +49,7 @@ testcase=".rawInput\n.storeState \"a\"\n";
 testcase+=".L $file\n"
 testcase+=".L $file\n"
 clang_preprocessed=$(`dirname $cling_binary`/clang `echo "$invocation -E -CC" | sed 's,\-verify, ,g'`)
-if echo $cling_args | grep '-verify' > /dev/null && ! echo $clang_preprocessed | grep -q 'expected-error' > /dev/null; then
+if ( echo $cling_args | grep '[-]verify' > /dev/null ) && ! ( echo "$clang_preprocessed" | grep -q 'expected-error' > /dev/null ); then
     testcase+=".U $file\n"
 fi
 testcase+=".compareState \"a\"\n"
@@ -75,6 +70,6 @@ echo -e "\n\e[32mGDB ARGS:\e[0m" >&2
 echo "run $cling_args < /tmp/testcase" >&2
 echo -e "\n" >&2
 
-echo -e $testcase | $cling_binary $cling_args
-
 #Known failures: Sema/warn-unused-function.c < We cannot know whether we need a function or not
+#
+! ( echo -e $testcase | $cling_binary $cling_args  2>& 1 |  tee /dev/stderr  | grep '^Differences in the ' )
