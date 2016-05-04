@@ -248,7 +248,7 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
         = (uint64_t) getParent().NotifyLazyFunctionCreators(NameNoPrefix);
       return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
     },
-    [](const std::string &S) { return nullptr; } );
+    [&](const std::string &S) { return m_ExeMM->findSymbol(S); } );
 
   ModuleSetHandleT MSHandle
     = m_LazyEmitLayer.addModuleSet(std::move(modules),
