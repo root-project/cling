@@ -207,8 +207,9 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
                                 llvm::JITSymbolFlags::Exported);
   }
   if (AlsoInProcess) {
-    if (uint64_t Addr = m_ExeMM->getSymbolAddress(Name))
-      return llvm::orc::JITSymbol(Addr, llvm::JITSymbolFlags::Exported);
+    if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(Name))
+      return llvm::orc::JITSymbol(SymInfo.getAddress(),
+                                  llvm::JITSymbolFlags::Exported);
   }
   if (auto Sym = m_LazyEmitLayer.findSymbol(Name, false))
     return Sym;
