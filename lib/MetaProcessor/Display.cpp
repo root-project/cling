@@ -450,7 +450,6 @@ public:
 
   void SetVerbose(bool verbose);
 
-  void Reset();
 private:
 
   //These are declarations, which can contain nested class declarations,
@@ -556,12 +555,6 @@ void ClassPrinter::DisplayClass(const std::string& className)const
 void ClassPrinter::SetVerbose(bool verbose)
 {
   fVerbose = verbose;
-}
-
-//______________________________________________________________________________
-void ClassPrinter::Reset()
-{
-  fSeenDecls.clear();
 }
 
 //______________________________________________________________________________
@@ -1168,7 +1161,6 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
   const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayGlobal, translation unit is empty");
 
-  //fSeenDecls.clear();
   bool found = false;
 
   // Could trigger deserialization of decls.
@@ -1421,8 +1413,6 @@ void TypedefPrinter::DisplayTypedefs()const
 
   const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayTypedefs, translation unit is empty");
-
-  //fSeenDecls.clear();
 
   fOut.Print("List of typedefs");
   ProcessNestedDeclarations(tuDecl);
