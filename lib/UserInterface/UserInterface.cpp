@@ -24,6 +24,9 @@
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Sema/CodeCompleteOptions.h"
+
+#include "ClingCodeCompleteConsumer.h"
 
 // Fragment copied from LLVM's raw_ostream.cpp
 #if defined(HAVE_UNISTD_H)
@@ -117,6 +120,16 @@ namespace cling {
     std::unique_ptr<StreamReader> R(StreamReader::Create());
     std::unique_ptr<TerminalDisplay> D(TerminalDisplay::Create());
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
+
+    // Inform Sema about our code complete consumer
+    const CodeCompleteOptions& ClingCodeCompleteOpts = m_MetaProcessor->getInterpreter().getCI()->getFrontendOpts().CodeCompleteOpts;
+    ClingCodeCompleteConsumer* ClingConsumer = new ClingCodeCompleteConsumer(ClingCodeCompleteOpts);
+    m_MetaProcessor->getInterpreter().getCI()->setCodeCompletionConsumer(ClingConsumer);
+    // Inform text input about the code complete consumer
+    ClingTabCompletion* CTabCompletion = new ClingTabCompletion();
+    CTabCompletion->SetConsumer(ClingConsumer);
+    TI.SetCompletion(CTabCompletion);
+
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
