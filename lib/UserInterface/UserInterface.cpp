@@ -121,15 +121,11 @@ namespace cling {
     std::unique_ptr<TerminalDisplay> D(TerminalDisplay::Create());
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
-    // Inform Sema about our code complete consumer
-    const CodeCompleteOptions& ClingCodeCompleteOpts = m_MetaProcessor->getInterpreter().getCI()->getFrontendOpts().CodeCompleteOpts;
-    ClingCodeCompleteConsumer* ClingConsumer = new ClingCodeCompleteConsumer(ClingCodeCompleteOpts);
-    m_MetaProcessor->getInterpreter().getCI()->setCodeCompletionConsumer(ClingConsumer);
     // Inform text input about the code complete consumer
-    ClingTabCompletion* CTabCompletion = new ClingTabCompletion();
-    CTabCompletion->SetConsumer(ClingConsumer);
-    TI.SetCompletion(CTabCompletion);
-
+    const char * const argV = "cling";
+    cling::Interpreter* codeCompleteInterp = new cling::Interpreter(1, &argV);;
+    ClingTabCompletion* CompletionConsumer = new ClingTabCompletion(codeCompleteInterp);
+    TI.SetCompletion(CompletionConsumer);
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
