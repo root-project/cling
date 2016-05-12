@@ -20,14 +20,11 @@ namespace textinput{
 class ClingTabCompletion : public textinput::TabCompletion,
                            public clang::CodeCompleteConsumer {
   clang::CodeCompletionTUInfo CCTUInfo;
-  Interpreter* CodeCompletionInterp;
+  
 public:
-  ClingTabCompletion(Interpreter* Interp)
-    : CodeCompleteConsumer(Interp->getCI()->getFrontendOpts().CodeCompleteOpts, false),
-      CCTUInfo(new GlobalCodeCompletionAllocator), CodeCompletionInterp(Interp) {
-      CodeCompletionInterp->getCI()->setCodeCompletionConsumer(this);
-      CodeCompletionInterp->getCI()->getSema().CodeCompleter = this;
-    }
+  ClingTabCompletion(const CodeCompleteOptions& CodeCompleteOpts)
+    : CodeCompleteConsumer(CodeCompleteOpts, false),
+      CCTUInfo(new GlobalCodeCompletionAllocator) {}
   ~ClingTabCompletion() {}
   CodeCompletionAllocator &getAllocator() override { return CCTUInfo.getAllocator();}
   CodeCompletionTUInfo &getCodeCompletionTUInfo() override { return CCTUInfo; }
@@ -44,9 +41,17 @@ public:
                           size_t& Cursor /*in+out*/,
                           EditorRange& R /*out*/,
                           std::vector<std::string>& DisplayCompletions /*out*/) override {
-    CodeCompletionInterp->getCI()->getPreprocessor().SetCodeCompletionPoint()
+    //Create the interpreter
+    const char * const argV = "cling";
+    Interpreter CodeCompletionInterp(1, &argV);;
+    CodeCompletionInterp.getCI()->setCodeCompletionConsumer(this);
+    CodeCompletionInterp.getCI()->getSema().CodeCompleter = this;
+    //Get the results
+    //CodeCompletionInterp->getCI()->getPreprocessor().SetCodeCompletionPoint();
+    CodeCompletionInterp.codeComplete(Line.GetText(), Cursor);
     return true;
   }
 };
 }
+
 #endif

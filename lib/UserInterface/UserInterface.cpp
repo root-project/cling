@@ -122,10 +122,10 @@ namespace cling {
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
     // Inform text input about the code complete consumer
-    const char * const argV = "cling";
-    cling::Interpreter* codeCompleteInterp = new cling::Interpreter(1, &argV);;
-    ClingTabCompletion* CompletionConsumer = new ClingTabCompletion(codeCompleteInterp);
+    ClingTabCompletion* CompletionConsumer = new ClingTabCompletion(
+      m_MetaProcessor->getInterpreter().getCI()->getFrontendOpts().CodeCompleteOpts);
     TI.SetCompletion(CompletionConsumer);
+
 
     TI.SetPrompt("[cling]$ ");
     std::string line;

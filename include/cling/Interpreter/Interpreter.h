@@ -195,6 +195,19 @@ namespace cling {
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.
     ///
+    ///\param [in] input - The input being code completed.
+    ///\param [in] CompilationOptions - The option set driving the compilation.
+    ///\param [out] T - The cling::Transaction of the compiled input.
+    ///
+    ///\returns Whether the operation was fully successful.
+    ///
+    CompilationResult CodeCompleteInternal(const std::string& input,
+                                           const CompilationOptions& CO,
+                                           Transaction** T = 0) const;
+
+    ///\brief Worker function, building block for interpreter's public
+    /// interfaces.
+    ///
     ///\param [in] input - The input being compiled.
     ///\param [in] CompilationOptions - The option set driving the compilation.
     ///\param [out] T - The cling::Transaction of the compiled input.
@@ -467,6 +480,19 @@ namespace cling {
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult parseForModule(const std::string& input);
+
+    ///\brief Code completes user input.
+    ///
+    /// The interface circumvents the most of the extra work necessary to
+    /// code complete code.
+    ///
+    /// @param[in] input - The input containing the string to be completed.
+    /// @param[out] T - The cling::Transaction of the input
+    ///
+    ///\returns Whether the operation was fully successful.
+    ///
+    CompilationResult codeComplete(const std::string& input, unsigned offset,
+                                   Transaction** T = 0);
 
     ///\brief Compiles input line, which doesn't contain statements.
     ///

@@ -62,6 +62,12 @@ namespace cling {
     ///
     unsigned CheckPointerValidity : 1;
 
+    ///\brief Offset into the input line to enable the setting of the
+    /// code completion point.
+    /// -1 diasables code completion.
+    ///
+    int CodeCompletionOffset = -1;
+
     CompilationOptions() {
       DeclarationExtraction = 0;
       ValuePrinting = VPDisabled;
@@ -72,6 +78,7 @@ namespace cling {
       CodeGenerationForModule = 0;
       IgnorePromptDiags = 0;
       CheckPointerValidity = 1;
+      CodeCompletionOffset = -1;
     }
 
     bool operator==(CompilationOptions Other) const {
@@ -84,7 +91,8 @@ namespace cling {
         CodeGeneration        == Other.CodeGeneration &&
         CodeGenerationForModule == Other.CodeGenerationForModule &&
         IgnorePromptDiags     == Other.IgnorePromptDiags &&
-        CheckPointerValidity  == Other.CheckPointerValidity;
+        CheckPointerValidity  == Other.CheckPointerValidity &&
+        CodeCompletionOffset  == Other.CodeCompletionOffset;
     }
 
     bool operator!=(CompilationOptions Other) const {
@@ -97,7 +105,8 @@ namespace cling {
         CodeGeneration        != Other.CodeGeneration ||
         CodeGenerationForModule != Other.CodeGenerationForModule ||
         IgnorePromptDiags     != Other.IgnorePromptDiags ||
-        CheckPointerValidity  != Other.CheckPointerValidity;
+        CheckPointerValidity  != Other.CheckPointerValidity ||
+        CodeCompletionOffset  != Other.CodeCompletionOffset;
     }
   };
 } // end namespace cling
