@@ -728,10 +728,17 @@ namespace cling {
     SourceLocation NewLoc = getLastMemoryBufferEndLoc().getLocWithOffset(1);
 
     llvm::MemoryBuffer* MBNonOwn = MB.get();
-    // Create FileID for the current buffer
-    FileID FID = SM.createFileID(std::move(MB), SrcMgr::C_User,
-                                 /*LoadedID*/0,
-                                 /*LoadedOffset*/0, NewLoc);
+
+    // Create FileEntry and FileID for the current buffer
+    const clang::FileEntry* FE
+       = SM.getFileManager().getVirtualFile("vfile for " + source_name.str(),
+                                            InputSize, 0 /* mod time*/);
+    SM.overrideFileContents(FE, std::move(MB));
+    FileID FID = SM.createFileID(FE, NewLoc, SrcMgr::C_User);
+
+    // Set the code completion point if completion is enabled.
+    if (CO.CodeCompletionOffset != -1)
+      getCI()->getPreprocessor().SetCodeCompletionPoint(FE, 0, CO.CodeCompletionOffset);
 
     m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
 
