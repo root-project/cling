@@ -640,8 +640,7 @@ namespace cling {
 
 
   Interpreter::CompilationResult 
-  Interpreter::codeComplete(const std::string& input, unsigned offset,
-                            Transaction** T/*=0 */) {
+  Interpreter::codeComplete(const std::string& input, unsigned offset) {
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -652,7 +651,13 @@ namespace cling {
     CO.CheckPointerValidity = 0;
     CO.CodeCompletionOffset = offset;
 
-    return CodeCompleteInternal(input, CO, T);
+    StateDebuggerRAII stateDebugger(this);
+
+    // This triggers the FileEntry to be created and the completion
+    // point to be set in clang.
+    m_IncrParser->Parse(input, CO);
+
+    return kSuccess;
   }
 
   Interpreter::CompilationResult
@@ -1023,25 +1028,6 @@ namespace cling {
   bool Interpreter::isUniqueWrapper(llvm::StringRef name) {
     return name.startswith(utils::Synthesize::UniquePrefix);
   }
-
-  Interpreter::CompilationResult
-  Interpreter::CodeCompleteInternal(const std::string& input,
-                                    const CompilationOptions& CO,
-                                    Transaction** T/*=0 */) const {
-    assert(CO.DeclarationExtraction == 0
-           && CO.ValuePrinting == 0
-           && CO.ResultEvaluation == 0
-           && CO.CodeCompletionOffset != -1
-           && "Compilation Options not compatible with \"code complete\" mode.");
-
-    StateDebuggerRAII stateDebugger(this);
-
-    // This triggers the FileEntry to be created
-    IncrementalParser::ParseResultTransaction PRT
-      = m_IncrParser->Parse(input, CO);
-    return Interpreter::kSuccess;      
-  }
-
 
   Interpreter::CompilationResult
   Interpreter::DeclareInternal(const std::string& input,

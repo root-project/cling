@@ -78,7 +78,6 @@ namespace cling {
       CodeGenerationForModule = 0;
       IgnorePromptDiags = 0;
       CheckPointerValidity = 1;
-      CodeCompletionOffset = -1;
     }
 
     bool operator==(CompilationOptions Other) const {

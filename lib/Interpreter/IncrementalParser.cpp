@@ -738,7 +738,7 @@ namespace cling {
 
     // Set the code completion point if completion is enabled.
     if (CO.CodeCompletionOffset != -1)
-      getCI()->getPreprocessor().SetCodeCompletionPoint(FE, 0, CO.CodeCompletionOffset);
+      PP.SetCodeCompletionPoint(FE, 1, CO.CodeCompletionOffset + 1);
 
     m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
 
@@ -778,6 +778,7 @@ namespace cling {
 
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
+
     Parser::DeclGroupPtrTy ADecl;
     while (!m_Parser->ParseTopLevelDecl(ADecl)) {
       // If we got a null return and something *was* parsed, ignore it.  This
@@ -788,6 +789,11 @@ namespace cling {
       if (ADecl)
         m_Consumer->HandleTopLevelDecl(ADecl.get());
     };
+
+    if (CO.CodeCompletionOffset != -1) {
+      assert(PP.isCodeCompletionReached() && "Code completion set but not reached!");
+      return kSuccess;
+    }
 
 #ifdef LLVM_ON_WIN32
     // Microsoft-specific:

@@ -34,7 +34,8 @@ public:
                                             CodeCompletionResult *Results,
                                             unsigned NumResults) {
     std::stable_sort(Results, Results + NumResults);
-    printf("printing..");
+    printf("printing..\n");
+    printf("%d\n", NumResults);
   }
 
   bool Complete(Text& Line /*in+out*/,
