@@ -706,14 +706,11 @@ namespace {
         bool ReadPreprocessorOptions(const PreprocessorOptions &PPOpts,
                                      bool /*Complain*/,
                                 std::string &/*SuggestedPredefines*/) override {
-          // Restore the ref counting part
-          using RCB_t = RefCountedBase<PreprocessorOptions>;
-          RCB_t rcb;
-          // Do NOT invoke copy c'tor, thus separate assignment.
-          rcb = m_Invocation.getPreprocessorOpts();
-          // This also overwrites ref_cnt.
-          m_Invocation.getPreprocessorOpts() = PPOpts;
-          ((RCB_t&)m_Invocation.getPreprocessorOpts()) = rcb;
+          // Import selected options, e.g. don't overwrite ImplicitPCHInclude.
+          PreprocessorOptions& myPP = m_Invocation.getPreprocessorOpts();
+          insertBehind(myPP.Macros, PPOpts.Macros);
+          insertBehind(myPP.Includes, PPOpts.Includes);
+          insertBehind(myPP.MacroIncludes, PPOpts.MacroIncludes);
           return true;
         }
       };
