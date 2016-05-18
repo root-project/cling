@@ -811,6 +811,8 @@ namespace {
       Filename = CGOptsMainFileName.c_str();
     const FileEntry* FE
       = FM.getVirtualFile(Filename, 1U << 15U, time(0));
+    // Tell ASTReader to create a FileID even if this file does not exist:
+    SM->setFileIsTransient(FE);
     FileID MainFileID = SM->createFileID(FE, SourceLocation(), SrcMgr::C_User);
     SM->setMainFileID(MainFileID);
     const SrcMgr::SLocEntry& MainFileSLocE = SM->getSLocEntry(MainFileID);
