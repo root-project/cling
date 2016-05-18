@@ -203,7 +203,10 @@ namespace cling {
     CO.ValuePrinting = CompilationOptions::VPDisabled;
     CO.CodeGeneration = hasCodeGenerator();
 
-    // pull in PCHs
+    Transaction* CurT = beginTransaction(CO);
+    Preprocessor& PP = m_CI->getPreprocessor();
+
+    // Pull in PCH.
     const std::string& PCHFileName
       = m_CI->getInvocation().getPreprocessorOpts().ImplicitPCHInclude;
     if (!PCHFileName.empty()) {
@@ -216,19 +219,17 @@ namespace cling {
       result.push_back(endTransaction(CurT));
     }
 
-    Transaction* CurT = beginTransaction(CO);
-    Sema* TheSema = &m_CI->getSema();
-    Preprocessor& PP = m_CI->getPreprocessor();
     addClingPragmas(*m_Interpreter);
+
+    // Must happen after attaching the PCH, else PCH elements will end up
+    // being lexed.
+    PP.EnterMainSourceFile();
+
+    Sema* TheSema = &m_CI->getSema();
     m_Parser.reset(new Parser(PP, *TheSema,
                               false /*skipFuncBodies*/));
-    PP.EnterMainSourceFile();
-    // Initialize the parser after we have entered the main source file.
+    // Initialize the parser after PP has entered the main source file.
     m_Parser->Initialize();
-    // Perform initialization that occurs after the parser has been initialized
-    // but before it parses anything. Initializes the consumers too.
-    // No - already done by m_Parser->Initialize().
-    // TheSema->Initialize();
 
     ExternalASTSource *External = TheSema->getASTContext().getExternalSource();
     if (External)
@@ -734,6 +735,7 @@ namespace cling {
 
     m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
 
+    // NewLoc only used for diags.
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
     m_Consumer->getTransaction()->setBufferFID(FID);
 
