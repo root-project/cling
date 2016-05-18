@@ -239,6 +239,7 @@ static bool getVisualStudioDir(std::string &path) {
   }
 
   // Try the environment.
+  const char *vs140comntools = getenv("VS140COMNTOOLS");
   const char *vs120comntools = getenv("VS120COMNTOOLS");
   const char *vs110comntools = getenv("VS110COMNTOOLS");
   const char *vs100comntools = getenv("VS100COMNTOOLS");
@@ -248,7 +249,11 @@ static bool getVisualStudioDir(std::string &path) {
 
   // Try to find the version that we were compiled with
   if(false) {}
-  #if (_MSC_VER >= 1800)  // VC120
+  #if (_MSC_VER >= 1900)  // VC140
+  else if (vs140comntools) {
+	  vscomntools = vs140comntools;
+  }
+  #elif (_MSC_VER >= 1800)  // VC120
   else if(vs120comntools) {
     vscomntools = vs120comntools;
   }
@@ -270,6 +275,8 @@ static bool getVisualStudioDir(std::string &path) {
   }
   #endif
   // Otherwise find any version we can
+  else if (vs140comntools)
+	  vscomntools = vs140comntools;
   else if (vs120comntools)
     vscomntools = vs120comntools;
   else if (vs110comntools)
@@ -349,7 +356,9 @@ namespace {
                                      const TargetInfo& Target) {
     if (Target.getTriple().getOS() == llvm::Triple::Win32) {
       Opts.MicrosoftExt = 1;
-      Opts.MSCompatibilityVersion = 1300;
+#ifdef _MSC_VER
+      Opts.MSCompatibilityVersion = (_MSC_VER * 100000);
+#endif
       // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
       Opts.DelayedTemplateParsing = 1;
     } else {
