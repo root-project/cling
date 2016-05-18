@@ -223,6 +223,28 @@ macro(add_cling_subdirectory name)
   add_llvm_subdirectory(CLING TOOL ${name})
 endmacro()
 
+file (STRINGS "VERSION" CLING_VERSION)
+string(REGEX REPLACE "([0-9]).[0-9]+~[a-zA-Z]+" "\\1" CLING_VERSION_MAJOR ${CLING_VERSION})
+string(REGEX REPLACE "[0-9].([0-9]+)~[a-zA-Z]+" "\\1" CLING_VERSION_MINOR ${CLING_VERSION})
+
+if(${PROJECT_NAME} MATCHES "ROOT")
+  set(CLING_VERSION ROOT_${CLING_VERSION})
+endif()
+message(STATUS "Cling version (from VERSION file): ${CLING_VERSION}")
+
+set(CLING_VERSION_PATCHLEVEL 0)
+
+macro(set_cling_windows_version_resource_properties name)
+  if(DEFINED windows_resource_file)
+    set_windows_version_resource_properties(${name} ${windows_resource_file}
+      VERSION_MAJOR ${CLING_VERSION_MAJOR}
+      VERSION_MINOR ${CLING_VERSION_MINOR}
+      VERSION_PATCHLEVEL ${CLING_VERSION_PATCHLEVEL}
+      VERSION_STRING "${CLING_VERSION} (${BACKEND_PACKAGE_STRING})"
+      PRODUCT_NAME "cling")
+  endif()
+endmacro()
+
 macro(add_cling_library name)
   cmake_parse_arguments(ARG
     "SHARED"
