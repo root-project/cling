@@ -221,8 +221,11 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
     return Sym;
 
   if (AlsoInProcess) {
-    if (uint64_t Addr = m_ExeMM->getSymbolAddress(Name))
-      return llvm::orc::JITSymbol(Addr, llvm::JITSymbolFlags::Exported);
+    if (Name == "_ZSt16forward_as_tupleIJSsEESt5tupleIJDpOT_EES3_")
+      return llvm::orc::JITSymbol(nullptr);
+    if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(Name))
+      return llvm::orc::JITSymbol(SymInfo.getAddress(),
+                                  llvm::JITSymbolFlags::Exported);
   }
   if (auto Sym = m_LazyEmitLayer.findSymbol(Name, false))
     return Sym;
