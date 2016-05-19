@@ -356,7 +356,9 @@ namespace {
                                      const TargetInfo& Target) {
     if (Target.getTriple().getOS() == llvm::Triple::Win32) {
       Opts.MicrosoftExt = 1;
+#ifdef _MSC_VER
       Opts.MSCompatibilityVersion = (_MSC_VER * 100000);
+#endif
       // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
       Opts.DelayedTemplateParsing = 1;
     } else {
