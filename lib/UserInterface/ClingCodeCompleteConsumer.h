@@ -18,12 +18,12 @@ using namespace cling;
 
 namespace textinput{
 class ClingTabCompletion : public textinput::TabCompletion,
-                           public clang::CodeCompleteConsumer {
+                           public clang::PrintingCodeCompleteConsumer {
   clang::CodeCompletionTUInfo CCTUInfo;
   
 public:
   ClingTabCompletion(const CodeCompleteOptions& CodeCompleteOpts)
-    : CodeCompleteConsumer(CodeCompleteOpts, false),
+    : PrintingCodeCompleteConsumer(CodeCompleteOpts, llvm::outs()),
       CCTUInfo(new GlobalCodeCompletionAllocator) {}
   ~ClingTabCompletion() {}
   CodeCompletionAllocator &getAllocator() override { return CCTUInfo.getAllocator();}
@@ -33,7 +33,7 @@ public:
                                             CodeCompletionContext Context,
                                             CodeCompletionResult *Results,
                                             unsigned NumResults) {
-    std::stable_sort(Results, Results + NumResults);
+    PrintingCodeCompleteConsumer::ProcessCodeCompleteResults(S, Context, Results, NumResults);
     printf("printing..\n");
     printf("%d\n", NumResults);
   }
