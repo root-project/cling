@@ -651,11 +651,17 @@ namespace cling {
     CO.CheckPointerValidity = 0;
     CO.CodeCompletionOffset = offset;
 
+
+    std::string wrappedInput = input;
+    std::string wrapperName;
+    if (ShouldWrapInput(input))
+      WrapInput(wrappedInput, wrapperName);
+
     StateDebuggerRAII stateDebugger(this);
 
     // This triggers the FileEntry to be created and the completion
     // point to be set in clang.
-    m_IncrParser->Parse(input, CO);
+    m_IncrParser->Parse(wrappedInput, CO);
 
     return kSuccess;
   }

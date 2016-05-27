@@ -737,8 +737,10 @@ namespace cling {
     FileID FID = SM.createFileID(FE, NewLoc, SrcMgr::C_User);
 
     // Set the code completion point if completion is enabled.
-    if (CO.CodeCompletionOffset != -1)
-      PP.SetCodeCompletionPoint(FE, 1, CO.CodeCompletionOffset + 1);
+    if (CO.CodeCompletionOffset != -1) {
+      printf("Is it really the completion point?\n");
+      PP.SetCodeCompletionPoint(FE, 1, 45 + CO.CodeCompletionOffset);
+    }  
 
     m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
 
