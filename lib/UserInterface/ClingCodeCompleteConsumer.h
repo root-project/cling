@@ -19,11 +19,14 @@ using namespace cling;
 namespace textinput{
 class ClingTabCompletion : public textinput::TabCompletion,
                            public clang::PrintingCodeCompleteConsumer {
+  const cling::Interpreter& ParentInterp;
   clang::CodeCompletionTUInfo CCTUInfo;
   
 public:
-  ClingTabCompletion(const CodeCompleteOptions& CodeCompleteOpts)
-    : PrintingCodeCompleteConsumer(CodeCompleteOpts, llvm::outs()),
+  ClingTabCompletion(const cling::Interpreter& Parent)
+    : PrintingCodeCompleteConsumer(Parent.getCI()->getFrontendOpts().CodeCompleteOpts,
+                                   llvm::outs()),
+      ParentInterp(Parent), 
       CCTUInfo(new GlobalCodeCompletionAllocator) {}
   ~ClingTabCompletion() {}
   CodeCompletionAllocator &getAllocator() override { return CCTUInfo.getAllocator();}
@@ -44,12 +47,13 @@ public:
                           std::vector<std::string>& DisplayCompletions /*out*/) override {
     //Create the interpreter
     const char * const argV = "cling";
-    Interpreter CodeCompletionInterp(1, &argV);;
+    Interpreter CodeCompletionInterp(ParentInterp, 1, &argV);
     CodeCompletionInterp.getCI()->setCodeCompletionConsumer(this);
     CodeCompletionInterp.getCI()->getSema().CodeCompleter = this;
     //Get the results
     //CodeCompletionInterp->getCI()->getPreprocessor().SetCodeCompletionPoint();
     CodeCompletionInterp.codeComplete(Line.GetText(), Cursor);
+    CodeCompletionInterp.unload(1);
     return true;
   }
 };
