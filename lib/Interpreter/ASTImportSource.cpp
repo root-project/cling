@@ -5,7 +5,7 @@ using namespace clang;
 
 namespace cling {
 
-    ASTImportSource::ASTImportSource(cling::Interpreter *parent_interpreter,
+    ASTImportSource::ASTImportSource(const cling::Interpreter *parent_interpreter,
     cling::Interpreter *child_interpreter) :
     m_parent_Interp(parent_interpreter), m_child_Interp(child_interpreter) {
 

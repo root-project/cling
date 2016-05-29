@@ -236,7 +236,7 @@ namespace cling {
   ///\brief Constructor for the child Interpreter.
   /// Passing the parent Interpreter as an argument.
   ///
-  Interpreter::Interpreter(Interpreter &parentInterpreter, int argc,
+  Interpreter::Interpreter(const Interpreter &parentInterpreter, int argc,
                            const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
     Interpreter(argc, argv, llvmdir, noRuntime, /* isChildInterp */ true) {

@@ -304,7 +304,7 @@ namespace cling {
     ///\param[in] llvmdir - ???
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
-    Interpreter(Interpreter &parentInterpreter,int argc, const char* const *argv,
+    Interpreter(const Interpreter &parentInterpreter,int argc, const char* const *argv,
                 const char* llvmdir = 0, bool noRuntime = true);
 
     virtual ~Interpreter();

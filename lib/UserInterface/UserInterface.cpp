@@ -122,8 +122,7 @@ namespace cling {
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
     // Inform text input about the code complete consumer
-    ClingTabCompletion* CompletionConsumer = new ClingTabCompletion(
-      m_MetaProcessor->getInterpreter().getCI()->getFrontendOpts().CodeCompleteOpts);
+    ClingTabCompletion* CompletionConsumer = new ClingTabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(CompletionConsumer);
 
 

@@ -35,7 +35,7 @@ namespace cling {
     class ASTImportSource : public clang::ExternalASTSource {
 
       private:
-        cling::Interpreter *m_parent_Interp;
+        const cling::Interpreter *m_parent_Interp;
         cling::Interpreter *m_child_Interp;
 
         clang::Sema *m_Sema;
@@ -56,7 +56,7 @@ namespace cling {
         std::map <clang::DeclarationName, clang::DeclarationName > m_DeclName_map;
 
       public:
-        ASTImportSource(cling::Interpreter *parent_interpreter,
+        ASTImportSource(const cling::Interpreter *parent_interpreter,
                         cling::Interpreter *child_interpreter);
 
         ~ASTImportSource() { };
