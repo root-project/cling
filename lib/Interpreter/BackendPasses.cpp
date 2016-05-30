@@ -89,7 +89,9 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
   // From BackEndUtil's clang::EmitAssemblyHelper::CreatePasses().
 
   unsigned OptLevel = CGOpts.OptimizationLevel;
-  CodeGenOptions::InliningMethod Inlining = CGOpts.getInlining();
+
+  // CodeGenOptions::InliningMethod Inlining = CGOpts.getInlining();
+  CodeGenOptions::InliningMethod Inlining = CodeGenOptions::NormalInlining;
 
   // Handle disabling of LLVM optimization, where we want to preserve the
   // internal module before any optimization.
@@ -98,6 +100,8 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
     // Always keep at least ForceInline - NoInlining is deadly for libc++.
     // Inlining = CGOpts.NoInlining;
   }
+
+  OptLevel = 1;
 
   m_PMBuilder.reset(new PassManagerBuilder());
   m_PMBuilder->OptLevel = OptLevel;
