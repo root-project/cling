@@ -286,8 +286,8 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
     // }
 
     // Erase __cxx_global_var_init(N-1)() first.
-    (*I)->removeDeadConstantUsers();
-    (*I)->eraseFromParent();
+    //(*I)->removeDeadConstantUsers();
+    //(*I)->eraseFromParent();
   }
 
   return kExeSuccess;
