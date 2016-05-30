@@ -211,6 +211,9 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
       return llvm::orc::JITSymbol(SymInfo.getAddress(),
                                   llvm::JITSymbolFlags::Exported);
   }
+  auto SymMapI = m_SymbolMap.find(Name);
+  if (SymMapI != m_SymbolMap.end())
+    return SymMapI->second;
   if (auto Sym = m_LazyEmitLayer.findSymbol(Name, false))
     return Sym;
 
@@ -248,7 +251,15 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
         = (uint64_t) getParent().NotifyLazyFunctionCreators(NameNoPrefix);
       return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
     },
-    [&](const std::string &S) { return m_ExeMM->findSymbol(S); } );
+    [&](const std::string &S) {
+      auto SymMapI = m_SymbolMap.find(S);
+      if (SymMapI != m_SymbolMap.end()) {
+        llvm::orc::JITSymbol &Sym = SymMapI->second;
+        return RuntimeDyld::SymbolInfo((uint64_t)Sym.getAddress(),
+                                       Sym.getFlags());
+      }
+      return m_ExeMM->findSymbol(S);
+    } );
 
   ModuleSetHandleT MSHandle
     = m_LazyEmitLayer.addModuleSet(std::move(modules),

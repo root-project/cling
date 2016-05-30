@@ -42,6 +42,15 @@ class IncrementalJIT {
   IncrementalExecutor& m_Parent;
   llvm::JITEventListener* m_GDBListener; // owned by llvm::ManagedStaticBase
 
+  struct JITSymbol: public llvm::orc::JITSymbol {
+    JITSymbol(): llvm::orc::JITSymbol(nullptr) {}
+    JITSymbol& operator=(const llvm::orc::JITSymbol& RHS) {
+      llvm::orc::JITSymbol::operator=(RHS);
+      return *this;
+    }
+  };
+  llvm::StringMap<JITSymbol> m_SymbolMap;
+
   class NotifyObjectLoadedT {
   public:
     typedef std::vector<std::unique_ptr<llvm::object::OwningBinary<llvm::object::ObjectFile>>> ObjListT;
@@ -62,6 +71,24 @@ class IncrementalJIT {
         for (size_t I = 0, N = Objects.size(); I < N; ++I)
           GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(),
                                            *Infos[I]);
+      }
+
+      for (const auto& Object: Objects) {
+        for (const auto &Symbol: Object->getBinary()->symbols()) {
+          auto Flags = Symbol.getFlags();
+          if (Flags & llvm::object::BasicSymbolRef::SF_Undefined)
+            continue;
+          if (!(Flags & llvm::object::BasicSymbolRef::SF_Exported))
+            continue;
+          auto NameOrError = Symbol.getName();
+          assert(NameOrError);
+          auto Name = NameOrError.get();
+          if (m_JIT.m_SymbolMap.find(Name) == m_JIT.m_SymbolMap.end()) {
+            llvm::orc::JITSymbol Sym = m_JIT.m_CompileLayer.findSymbolIn(H, Name, true);
+            if (Sym.getAddress())
+              m_JIT.m_SymbolMap[Name] = Sym;
+          }
+        }
       }
     };
 
