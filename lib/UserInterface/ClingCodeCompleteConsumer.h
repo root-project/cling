@@ -1,62 +1,51 @@
+//------------------------------------------------------------------------------
+// CLING - the C++ LLVM-based InterpreterG :)
+// author:  Axel Naumann <axel@cern.ch>
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
+//------------------------------------------------------------------------------
+
 #ifndef CLINGCODECOMPLETECONSUMER_H
 #define CLINGCODECOMPLETECONSUMER_H
 
-#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/CodeCompleteConsumer.h"
-#include "clang/Sema/CodeCompleteOptions.h"
-#include "clang/Sema/Sema.h"
 
-#include "cling/Interpreter/Interpreter.h"
+namespace cling {
+  class Interpreter;
+}
 
-#include "textinput/Text.h"
-#include "textinput/Editor.h"
-#include "textinput/Callbacks.h"
+namespace clang {
+  class PrintingCodeCompleteConsumer;
+  class CodeCompletionTUInfo;
+  class CodeCompletionAllocator;
+}
 
-using namespace clang;
-using namespace textinput;
-using namespace cling;
+namespace cling {
+  class ClingCodeCompleteConsumer : public clang::PrintingCodeCompleteConsumer {
+    clang::CodeCompletionTUInfo CCTUInfo;
+    cling::Interpreter* CodeCompletionInterp;
 
-namespace textinput{
-class ClingTabCompletion : public textinput::TabCompletion,
-                           public clang::PrintingCodeCompleteConsumer {
-  const cling::Interpreter& ParentInterp;
-  clang::CodeCompletionTUInfo CCTUInfo;
-  
-public:
-  ClingTabCompletion(const cling::Interpreter& Parent)
-    : PrintingCodeCompleteConsumer(Parent.getCI()->getFrontendOpts().CodeCompleteOpts,
-                                   llvm::outs()),
-      ParentInterp(Parent), 
-      CCTUInfo(new GlobalCodeCompletionAllocator) {}
-  ~ClingTabCompletion() {}
-  CodeCompletionAllocator &getAllocator() override { return CCTUInfo.getAllocator();}
-  CodeCompletionTUInfo &getCodeCompletionTUInfo() override { return CCTUInfo; }
+  public:
+    ClingCodeCompleteConsumer(const cling::Interpreter& Parent);
+    ~ClingCodeCompleteConsumer();
 
-  void ProcessCodeCompleteResults(Sema &S,
-                                            CodeCompletionContext Context,
-                                            CodeCompletionResult *Results,
-                                            unsigned NumResults) {
-    PrintingCodeCompleteConsumer::ProcessCodeCompleteResults(S, Context, Results, NumResults);
-    printf("printing..\n");
-    printf("%d\n", NumResults);
-  }
+    clang::CodeCompletionAllocator &getAllocator() override {
+      return CCTUInfo.getAllocator();
+    }
 
-  bool Complete(Text& Line /*in+out*/,
-                          size_t& Cursor /*in+out*/,
-                          EditorRange& R /*out*/,
-                          std::vector<std::string>& DisplayCompletions /*out*/) override {
-    //Create the interpreter
-    const char * const argV = "cling";
-    Interpreter CodeCompletionInterp(ParentInterp, 1, &argV);
-    CodeCompletionInterp.getCI()->setCodeCompletionConsumer(this);
-    CodeCompletionInterp.getCI()->getSema().CodeCompleter = this;
-    //Get the results
-    //CodeCompletionInterp->getCI()->getPreprocessor().SetCodeCompletionPoint();
-    CodeCompletionInterp.codeComplete(Line.GetText(), Cursor);
-    CodeCompletionInterp.unload(1);
-    return true;
-  }
-};
+    clang::CodeCompletionTUInfo &getCodeCompletionTUInfo() override {
+      return CCTUInfo;
+    }
+
+    cling::Interpreter* getCodeCompletionInterp() { return CodeCompletionInterp; }
+
+    void ProcessCodeCompleteResults(clang::Sema &S,
+                                    clang::CodeCompletionContext Context,
+                                    clang::CodeCompletionResult *Results,
+                                    unsigned NumResults);
+  };
 }
 
 #endif

@@ -24,9 +24,8 @@
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Sema/CodeCompleteOptions.h"
 
-#include "ClingCodeCompleteConsumer.h"
+#include "ClingTabCompletion.h"
 
 // Fragment copied from LLVM's raw_ostream.cpp
 #if defined(HAVE_UNISTD_H)
