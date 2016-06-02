@@ -254,7 +254,7 @@ namespace cling {
 
     // Inform the Translation Unit Decl of I2 that it has to search somewhere
     // else to find the declarations.
-    getCI()->getASTContext().getTranslationUnitDecl()->setHasExternalVisibleStorage();
+    getCI()->getASTContext().getTranslationUnitDecl()->setHasExternalVisibleStorage(true);
 
     // Give my IncrementalExecutor a pointer to the Incremental executor of the
     // parent Interpreter.
@@ -639,7 +639,7 @@ namespace cling {
   }
 
 
-  Interpreter::CompilationResult 
+  Interpreter::CompilationResult
   Interpreter::codeComplete(const std::string& input, unsigned offset) {
 
     CompilationOptions CO;

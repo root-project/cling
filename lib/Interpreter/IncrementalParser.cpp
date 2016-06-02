@@ -264,19 +264,18 @@ namespace cling {
   }
 
   IncrementalParser::~IncrementalParser() {
-      const Transaction* T = getFirstTransaction();
-      const Transaction* nextT = 0;
-      while (T) {
-        assert((T->getState() == Transaction::kCommitted
-                || T->getState() == Transaction::kRolledBackWithErrors
-                || T->getState() == Transaction::kNumStates // reset from the pool
-                || T->getState() == Transaction::kRolledBack)
-               && "Not committed?");
-        nextT = T->getNext();
-        delete T;
-        T = nextT;
-      }
-    
+    const Transaction* T = getFirstTransaction();
+    const Transaction* nextT = 0;
+    while (T) {
+      assert((T->getState() == Transaction::kCommitted
+              || T->getState() == Transaction::kRolledBackWithErrors
+              || T->getState() == Transaction::kNumStates // reset from the pool
+              || T->getState() == Transaction::kRolledBack)
+             && "Not committed?");
+      nextT = T->getNext();
+      delete T;
+      T = nextT;
+    }
   }
 
   void IncrementalParser::addTransaction(Transaction* T) {
@@ -741,7 +740,7 @@ namespace cling {
     if (CO.CodeCompletionOffset != -1) {
       printf("Is it really the completion point?\n");
       PP.SetCodeCompletionPoint(FE, 1, 45 + CO.CodeCompletionOffset);
-    }  
+    }
 
     m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
 
@@ -780,7 +779,6 @@ namespace cling {
     setError(clang::diag::warn_falloff_nonvoid_function);
 
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
-
 
     Parser::DeclGroupPtrTy ADecl;
     while (!m_Parser->ParseTopLevelDecl(ADecl)) {

@@ -487,6 +487,7 @@ namespace cling {
     ///
     /// @param[in] input - The input containing only declarations (aka
     ///                    Top Level Declarations)
+    /// @param[out] T - The cling::Transaction of the input
     ///
     ///\returns Whether the operation was fully successful.
     ///

@@ -61,6 +61,8 @@ namespace cling {
 
         ~ASTImportSource() { };
 
+        void completeVisibleDeclsMap(const clang::DeclContext *DC) override;
+
         bool FindExternalVisibleDeclsByName(const clang::DeclContext *childCurrentDeclContext,
                                          clang::DeclarationName childDeclName) override;
 
