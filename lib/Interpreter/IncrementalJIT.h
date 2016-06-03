@@ -78,8 +78,10 @@ class IncrementalJIT {
           auto Flags = Symbol.getFlags();
           if (Flags & llvm::object::BasicSymbolRef::SF_Undefined)
             continue;
-          if (!(Flags & llvm::object::BasicSymbolRef::SF_Exported))
-            continue;
+          // FIXME: this should be uncommented once we serve incremental
+          // modules from a TU module.
+          //if (!(Flags & llvm::object::BasicSymbolRef::SF_Exported))
+          //  continue;
           auto NameOrError = Symbol.getName();
           assert(NameOrError);
           auto Name = NameOrError.get();
