@@ -20,12 +20,12 @@ namespace clang {
   class PrintingCodeCompleteConsumer;
   class CodeCompletionTUInfo;
   class CodeCompletionAllocator;
+  class DiagnosticConsumer;
 }
 
 namespace cling {
   class ClingCodeCompleteConsumer : public clang::PrintingCodeCompleteConsumer {
     clang::CodeCompletionTUInfo CCTUInfo;
-    cling::Interpreter* CodeCompletionInterp;
 
   public:
     ClingCodeCompleteConsumer(const cling::Interpreter& Parent);
@@ -38,8 +38,6 @@ namespace cling {
     clang::CodeCompletionTUInfo &getCodeCompletionTUInfo() override {
       return CCTUInfo;
     }
-
-    cling::Interpreter* getCodeCompletionInterp() { return CodeCompletionInterp; }
 
     void ProcessCodeCompleteResults(clang::Sema &S,
                                     clang::CodeCompletionContext Context,

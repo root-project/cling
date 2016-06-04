@@ -740,6 +740,7 @@ namespace cling {
     if (CO.CodeCompletionOffset != -1) {
       printf("Is it really the completion point?\n");
       PP.SetCodeCompletionPoint(FE, 1, 45 + CO.CodeCompletionOffset);
+      m_Consumer->getTransaction()->setState(Transaction::kRolledBack);
     }
 
     m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));

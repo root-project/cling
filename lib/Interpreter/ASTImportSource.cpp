@@ -177,10 +177,10 @@ namespace cling {
     ///\brief Make available to child all decls in parent's decl context
     /// that corresponds to child decl context.
     void ASTImportSource::completeVisibleDeclsMap(
-                                          const clang::DeclContext *childDC) {
+                                  const clang::DeclContext *childDeclContext) {
       assert (childDeclContext && "No child decl context!");
 
-      if (!childDC->hasExternalVisibleStorage())
+      if (!childDeclContext->hasExternalVisibleStorage())
         return;
 
       // Search in the map of the stored Decl Contexts for this
@@ -196,7 +196,7 @@ namespace cling {
         Decl *fromDeclContext = Decl::castFromDeclContext(parentDeclContext);
         ASTContext &from_ASTContext = fromDeclContext->getASTContext();
 
-        Decl *toDeclContext = Decl::castFromDeclContext(childDC);
+        Decl *toDeclContext = Decl::castFromDeclContext(childDeclContext);
         ASTContext &to_ASTContext = toDeclContext->getASTContext();
 
         // Prepare to import the Decl(Context)  we found in the
@@ -211,14 +211,16 @@ namespace cling {
                              /*MinimalImport : ON*/ true);
 
         for (DeclContext::decl_iterator I_decl = parentDeclContext->decls_begin(),
-             E_decl = parentDeclContext->decls_end(); I_decl != E_decl; ++I_decl) {
+          E_decl = parentDeclContext->decls_end(); I_decl != E_decl; ++I_decl) {
           if (NamedDecl* parentNamedDecl = llvm::dyn_cast<NamedDecl>(*I_decl)) {
             DeclarationName newDeclName = parentNamedDecl->getDeclName();
-            ImportDecl(parentNamedDecl, importer, newDeclName, newDeclName, childDC);
+            ImportDecl(parentNamedDecl, importer, newDeclName, newDeclName,
+                       childDeclContext);
           }
         }
 
-        const_cast<DeclContext *>(childDC)->setHasExternalVisibleStorage(false);
+        const_cast<DeclContext *>(childDeclContext)->
+                                          setHasExternalVisibleStorage(false);
       }
     }
 
