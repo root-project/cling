@@ -30,6 +30,11 @@ add_cling_library(clingUserInterface
   ${TEXTINPUTSRC}textinput/TerminalDisplayWin.cpp
   ${TEXTINPUTSRC}textinput/TextInput.cpp
   ${TEXTINPUTSRC}textinput/TextInputContext.cpp
+
+  LINK_LIBS
+  LLVMSupport
+  clingMetaProcessor
+  clingInterpreter
 )
 
 add_dependencies(clingUserInterface clangBasic)

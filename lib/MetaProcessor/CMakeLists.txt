@@ -19,13 +19,15 @@ add_cling_library(clingMetaProcessor OBJECT
   MetaSema.cpp
 
   LINK_LIBS
+  LLVMCore
+  LLVMSupport
   clangBasic
+  clangAST
   clangLex
   clingInterpreter
-  LLVMCore
   )
 
-add_dependencies(clingMetaProcessor clangBasic LLVMCore)
+add_dependencies(clingMetaProcessor clangBasic LLVMSupport)
 
 if ( MSVC )
   set_target_properties(clingMetaProcessor PROPERTIES

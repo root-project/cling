@@ -16,15 +16,7 @@ set_target_properties(cling
   PROPERTIES ENABLE_EXPORTS 1)
 
 target_link_libraries(cling
-  clangAST
-  clangBasic
-  clangCodeGen
-  clangDriver
-  clangFrontend
-  clangLex
-  clangParse
-  clangSema
-  clangSerialization
+  LLVMSupport
 
   clingUserInterface
   clingMetaProcessor

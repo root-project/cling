@@ -11,11 +11,14 @@ add_cling_library(clingUtils OBJECT
   Validation.cpp
 
   LINK_LIBS
+  LLVMSupport
   clangCodeGen
   clangBasic
+  clangAST
+  clangSema
   )
 
-add_dependencies(clingUtils clangBasic clangCodeGen)
+add_dependencies(clingUtils LLVMSupport clangBasic clangCodeGen)
 
 if ( MSVC )
   set_target_properties(clingUtils PROPERTIES

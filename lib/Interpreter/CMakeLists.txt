@@ -54,13 +54,26 @@ add_cling_library(clingInterpreter OBJECT
   ValuePrinterSynthesizer.cpp
 
   LINK_LIBS
+  LLVMSupport
+  LLVMMC
+  LLVMObject
+  LLVMAnalysis
+  LLVMExecutionEngine
+  LLVMCodeGen
+  LLVMRuntimeDyld
+  LLVMTarget  # for Target::Target()
+  LLVMCore
   clangBasic
+  clangSerialization
   clangAST
-  clangParse
   clangCodeGen
   clangFrontend
   clangDriver
+  clangParse
+  clangLex
+  clangSema
   clingUtils
+  dl
   )
 
 add_library(clingInterpreter-interface INTERFACE)
