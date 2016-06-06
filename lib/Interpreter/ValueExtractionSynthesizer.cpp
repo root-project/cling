@@ -329,11 +329,9 @@ namespace {
         Call = m_Sema->ActOnFinishFullExpr(Call.get());
       }
     }
-    else if (desugaredTy->isIntegralOrEnumerationType()
-             || desugaredTy->isReferenceType()
-             || desugaredTy->isPointerType()
-             || desugaredTy->isNullPtrType()
-             || desugaredTy->isFloatingType()) {
+    else {
+      // Mark the current number of arguemnts
+      const size_t nArgs = CallArgs.size();
       if (desugaredTy->isIntegralOrEnumerationType()) {
         // 1)  enum, integral, float, double, referece, pointer types :
         //      call to cling::internal::setValueNoAlloc(...);
@@ -355,7 +353,7 @@ namespace {
                                              E).get();
         CallArgs.push_back(AddrOfE);
       }
-      else if (desugaredTy->isPointerType()) {
+      else if (desugaredTy->isAnyPointerType()) {
         // function pointers need explicit void* cast.
         QualType VoidPtrTy = m_Context->VoidPtrTy;
         TypeSourceInfo* TSI
@@ -373,11 +371,17 @@ namespace {
         // case, because of the overload resolution.
         CallArgs.push_back(E);
       }
-      Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
+
+      // Test CallArgs.size to make sure an additional argument (the value)
+      // has been pushed on, if not than we didn't know how to handle the type
+      if (CallArgs.size() > nArgs) {
+        Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
                                    locStart, CallArgs, locEnd);
+      }
+      else
+        assert(0 && "Unhandled code path?");
     }
-    else
-      assert(0 && "Unhandled code path?");
+
 
     assert(!Call.isInvalid() && "Invalid Call");
 
