@@ -12,6 +12,7 @@
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/Sema/CodeCompleteConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
@@ -237,6 +238,17 @@ namespace cling {
   bool InterpreterCallbacks::LookupObject(TagDecl*) {
     // Default implementation is no op.
     return false;
+  }
+
+  void InterpreterCallbacks::CreateCodeCompleteConsumer(Interpreter* child) {
+    PrintingCodeCompleteConsumer* consumer = new PrintingCodeCompleteConsumer(
+                m_Interpreter->getCI()->getFrontendOpts().CodeCompleteOpts,
+                llvm::outs());
+    CompilerInstance* childCI = child->getCI();
+    //codeCompletionCI will own consumer!
+    childCI->setCodeCompletionConsumer(consumer);
+    clang::Sema& childSemaRef = childCI->getSema();
+    childSemaRef.CodeCompleter = consumer;
   }
 
   void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC,
