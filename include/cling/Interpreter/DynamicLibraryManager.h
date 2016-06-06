@@ -87,14 +87,17 @@ namespace cling {
 
     ///\brief Loads a shared library.
     ///
-    ///\param [in] libStem - The file to loaded.
+    ///\param [in] libStem - The file to load.
     ///\param [in] permanent - If false, the file can be unloaded later.
+    ///\param [in] resolved - Whether libStem is an absolute path or resolved
+    ///               from a previous call to DynamicLibraryManager::lookupLibrary
     ///
     ///\returns kLoadLibSuccess on success, kLoadLibAlreadyLoaded if the library
     /// was already loaded, kLoadLibError if the library cannot be found or any
     /// other error was encountered.
     ///
-    LoadLibResult loadLibrary(const std::string& libStem, bool permanent);
+    LoadLibResult loadLibrary(const std::string& libStem, bool permanent,
+                              bool resolved = false );
 
     void unloadLibrary(llvm::StringRef libStem);
 

@@ -1214,7 +1214,7 @@ namespace cling {
     DynamicLibraryManager* DLM = getDynamicLibraryManager();
     std::string canonicalLib = DLM->lookupLibrary(filename);
     if (allowSharedLib && !canonicalLib.empty()) {
-      switch (DLM->loadLibrary(filename, /*permanent*/false)) {
+      switch (DLM->loadLibrary(canonicalLib, /*permanent*/false, /*resolved*/true)) {
       case DynamicLibraryManager::kLoadLibSuccess: // Intentional fall through
       case DynamicLibraryManager::kLoadLibAlreadyLoaded:
         return kSuccess;
