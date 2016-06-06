@@ -104,6 +104,9 @@ static std::string getTypeString(const Value &V) {
       typeWithOptDeref << "(void**)";
     }
   }
+  else if (Ty->isObjCObjectPointerType()) {
+    typeWithOptDeref << "(const void**)";
+  }
   else {
     // In other cases, dereference the address of the object.
     // If no overload or specific template matches,
@@ -274,6 +277,9 @@ static std::string invokePrintValueOverload(const Value &V) {
            || Ty->isArrayType()) {
     if (!V.getPtr())
       return "nullptr";
+    return executePrintValue<void *>(V, V.getPtr());
+  }
+  else if (Ty->isObjCObjectPointerType()) {
     return executePrintValue<void *>(V, V.getPtr());
   }
   else {
