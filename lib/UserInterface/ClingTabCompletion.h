@@ -6,12 +6,13 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "cling/Interpreter/InterpreterCallbacks.h"
 
 #include "textinput/Text.h"
 #include "textinput/Editor.h"
 #include "textinput/Callbacks.h"
 
-namespace textinput{
+namespace cling {
 class ClingTabCompletion : public textinput::TabCompletion {
   const cling::Interpreter& ParentInterp;
   
@@ -20,26 +21,23 @@ public:
 
   ~ClingTabCompletion() {}
 
-  bool Complete(Text& Line /*in+out*/,
+  bool Complete(textinput::Text& Line /*in+out*/,
                 size_t& Cursor /*in+out*/,
-                EditorRange& R /*out*/,
+                textinput::EditorRange& R /*out*/,
                 std::vector<std::string>& DisplayCompletions /*out*/) override {
     //Get the results
     const char * const argV = "cling";
     cling::Interpreter CodeCompletionInterp(ParentInterp, 1, &argV);
 
-    // CreateCodeCompleteConsumer with InterpreterCallbacks
-    //interpretercallbacks -> cerateCodeCompleteConsumer()
-    clang::PrintingCodeCompleteConsumer* consumer = 
-                          new clang::PrintingCodeCompleteConsumer(
-                            ParentInterp.getCI()->getFrontendOpts().CodeCompleteOpts,
-                            llvm::outs());
-    clang::CompilerInstance* codeCompletionCI = CodeCompletionInterp.getCI();
-    // codeCompletionCI will own consumer!
-    codeCompletionCI->setCodeCompletionConsumer(consumer);
-    clang::Sema& codeCompletionSemaRef = codeCompletionCI->getSema();
-    codeCompletionSemaRef.CodeCompleter = consumer;
+    // Create the CodeCompleteConsumer with InterpreterCallbacks
+    // from the parent interpreter and set the consumer for the child
+    // interpreter
+    // Yuck! But I need the const/non-const to be fixed somehow.
+    (const_cast<cling::Interpreter*>
+      (&ParentInterp))->getCallbacks()->CreateCodeCompleteConsumer(&CodeCompletionInterp); 
 
+    clang::CompilerInstance* codeCompletionCI = CodeCompletionInterp.getCI();
+    clang::Sema& codeCompletionSemaRef = codeCompletionCI->getSema();
     // Ignore diagnostics when we tab complete
     clang::IgnoringDiagConsumer* ignoringDiagConsumer = new clang::IgnoringDiagConsumer();
     codeCompletionSemaRef.getDiagnostics().setClient(ignoringDiagConsumer, true);
@@ -49,14 +47,15 @@ public:
     ParentInterp.getCI()->getSema().getDiagnostics().setClient(ignoringDiagConsumer, false);
     CodeCompletionInterp.codeComplete(Line.GetText(), Cursor);
   
-    // // Reset the original diag client for parent interpreter
+    // Restore the original diag client for parent interpreter
     ParentInterp.getCI()->getSema().getDiagnostics().setClient(Client, Owner.release() != nullptr);
     // FIX-ME : Change it in the Incremental Parser
-    //CodeCompletionInterp.unload(1);
+    // It does not work even if I call unload in IncrementalParser, I think
+    // it would be to early.
+    CodeCompletionInterp.unload(1);
     
   return true;
   }
 };
 }
-
 #endif

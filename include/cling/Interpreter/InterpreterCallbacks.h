@@ -30,6 +30,7 @@ namespace clang {
   class Token;
   class FileEntry;
   class Module;
+  class CodeCompleteConsumer;
 }
 
 namespace cling {
@@ -160,6 +161,9 @@ namespace cling {
     ///\brief Cling calls this is printing a stack trace can be beneficial,
     /// for instance when throwing interpreter exceptions.
     virtual void PrintStackTrace() {}
+
+    ///\brief Cling creates the code complete consumer for its child interp.
+    virtual void CreateCodeCompleteConsumer(Interpreter* child);
 
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
