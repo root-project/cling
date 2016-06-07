@@ -16,7 +16,6 @@ endif()
 
 add_cling_library(clingUserInterface
   UserInterface.cpp
-  ClingCodeCompleteConsumer.cpp
   ${TEXTINPUTSRC}textinput/Editor.cpp
   ${TEXTINPUTSRC}textinput/History.cpp
   ${TEXTINPUTSRC}textinput/KeyBinding.cpp
