@@ -2,7 +2,6 @@
 #define CLINGTABCOMPLETION_H
 
 #include "cling/Interpreter/Interpreter.h"
-#include "ClingCodeCompleteConsumer.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -17,7 +16,7 @@ class ClingTabCompletion : public textinput::TabCompletion {
   const cling::Interpreter& ParentInterp;
   
 public:
-  ClingTabCompletion(const cling::Interpreter& Parent) : ParentInterp(Parent) {}
+  ClingTabCompletion(cling::Interpreter& Parent) : ParentInterp(Parent) {}
 
   ~ClingTabCompletion() {}
 
@@ -33,8 +32,9 @@ public:
     // from the parent interpreter and set the consumer for the child
     // interpreter
     // Yuck! But I need the const/non-const to be fixed somehow.
-    (const_cast<cling::Interpreter*>
-      (&ParentInterp))->getCallbacks()->CreateCodeCompleteConsumer(&CodeCompletionInterp); 
+    
+    const InterpreterCallbacks* callbacks = ParentInterp.getCallbacks();
+    callbacks->CreateCodeCompleteConsumer(&CodeCompletionInterp); 
 
     clang::CompilerInstance* codeCompletionCI = CodeCompletionInterp.getCI();
     clang::Sema& codeCompletionSemaRef = codeCompletionCI->getSema();

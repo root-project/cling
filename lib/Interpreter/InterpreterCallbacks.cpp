@@ -240,7 +240,7 @@ namespace cling {
     return false;
   }
 
-  void InterpreterCallbacks::CreateCodeCompleteConsumer(Interpreter* child) {
+  void InterpreterCallbacks::CreateCodeCompleteConsumer(Interpreter* child) const {
     PrintingCodeCompleteConsumer* consumer = new PrintingCodeCompleteConsumer(
                 m_Interpreter->getCI()->getFrontendOpts().CodeCompleteOpts,
                 llvm::outs());

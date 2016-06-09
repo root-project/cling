@@ -163,7 +163,7 @@ namespace cling {
     virtual void PrintStackTrace() {}
 
     ///\brief Cling creates the code complete consumer for its child interp.
-    virtual void CreateCodeCompleteConsumer(Interpreter* child);
+    virtual void CreateCodeCompleteConsumer(Interpreter* child) const;
 
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
