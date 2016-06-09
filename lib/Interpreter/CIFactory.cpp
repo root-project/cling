@@ -427,6 +427,13 @@ namespace {
     return OS.str();
   }
 
+  //
+  //  Dummy function so we can use dladdr to find the executable path.
+  //
+  void locate_cling_executable()
+  {
+  }
+
   ///\brief Check the compile-time clang version vs the run-time clang version,
   /// a mismatch could cause havoc. Reports if clang versions differ.
   static void CheckClangCompatibility() {
@@ -438,6 +445,47 @@ namespace {
         "Please use the one provided by cling!\n";
     return;
   }
+
+#ifndef _MSC_VER
+
+  static void ReadCompilerIncludePaths(const char* Compiler,
+                                       llvm::SmallVectorImpl<char>& Buf,
+                                       std::vector<std::string>& Inc) {
+    std::string CppInclQuery("LC_ALL=C ");
+    CppInclQuery.append(Compiler);
+    CppInclQuery.append(" -xc++ -E -v /dev/null 2>&1 >/dev/null "
+                        "| awk '/^#include </,/^End of search"
+                        "/{if (!/^#include </ && !/^End of search/){ print }}' "
+                        "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"");
+
+    if (FILE *pf = ::popen(CppInclQuery.c_str(), "r")) {
+      Buf.resize(Buf.capacity_in_bytes());
+      while (fgets(&Buf[0], Buf.capacity_in_bytes(), pf) && Buf[0]) {
+        const size_t lenbuf = strlen(&Buf[0]);
+        Buf[lenbuf - 1] = 0; // remove trailing \n
+        // Skip leading whitespace:
+        const char *start = &Buf[0];
+        while (start < (&Buf[0] + lenbuf) && ::isspace(*start))
+          ++start;
+        if (*start) {
+          if (llvm::sys::fs::is_directory(start)) {
+            Inc.push_back("-I");
+            Inc.push_back(start);
+          }
+        }
+      }
+      ::pclose(pf);
+    } else
+      llvm::errs() << "popen failed for '" << CppInclQuery << "'\n";
+
+    // Return the query in Buf on failure
+    if (Inc.empty()) {
+      Buf.resize(0);
+      Buf.insert(Buf.begin(), CppInclQuery.begin(), CppInclQuery.end());
+    }
+  }
+
+#endif
 
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
   static void AddHostCXXIncludes(std::vector<const char*>& args) {
@@ -493,36 +541,33 @@ namespace {
       // Need HostCXXI.empty as a check condition later
       assert(HostCXXI.empty() && "HostCXXI not empty");
 
-      static const char *CppInclQuery =
-        "LC_ALL=C " LLVM_CXX " -xc++ -E -v /dev/null 2>&1 >/dev/null "
-        "| awk '/^#include </,/^End of search"
-        "/{if (!/^#include </ && !/^End of search/){ print }}' "
-        "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"";
-      if (FILE *pf = ::popen(CppInclQuery, "r")) {
+      SmallString<2048> buffer;
 
-        char buf[2048];
-        while (fgets(buf, sizeof(buf), pf) && buf[0]) {
-          size_t lenbuf = strlen(buf);
-          buf[lenbuf - 1] = 0;   // remove trailing \n
-          // Skip leading whitespace:
-          const char* start = buf;
-          while (start < buf + lenbuf && *start == ' ')
-            ++start;
-          if (*start) {
-            HostCXXI.push_back("-I");
-            HostCXXI.push_back(start);
-          }
-        }
-        ::pclose(pf);
-      }
+#ifdef _LIBCPP_VERSION
+      // Try to use a version of clang that is located next to cling
+      // in case cling was built with a new/custom libc++
+      std::string clang = llvm::sys::fs::getMainExecutable("cling",
+                                       (void*)(intptr_t) locate_cling_executable
+                                                          );
+      clang = llvm::sys::path::parent_path(clang);
+      buffer.assign(clang);
+      llvm::sys::path::append(buffer, "clang");
+      clang.assign(&buffer[0], buffer.size());
+    
+      if (llvm::sys::fs::is_regular_file(clang))
+        ReadCompilerIncludePaths(clang.c_str(), buffer, HostCXXI);
+#endif
+      if (HostCXXI.empty())
+        ReadCompilerIncludePaths(LLVM_CXX, buffer, HostCXXI);
 
       if (HostCXXI.empty()) {
+        // buffer is a copy of the query string that failed
         llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract "
           "standard library include paths!\n"
           "Invoking:\n"
-          "    " << CppInclQuery << "\n"
+          "    " << buffer.c_str() << "\n"
           "results in\n";
-        int ExitCode = system(CppInclQuery);
+        int ExitCode = system(buffer.c_str());
         llvm::errs() << "with exit code " << ExitCode << "\n";
       } else
         HostCXXI.push_back("-nostdinc++");
@@ -533,14 +578,6 @@ namespace {
     for (std::vector<std::string>::const_iterator
            I = HostCXXI.begin(), E = HostCXXI.end(); I != E; ++I)
       args.push_back(I->c_str());
-  }
-
-
-  //
-  //  Dummy function so we can use dladdr to find the executable path.
-  //
-  void locate_cling_executable()
-  {
   }
 
   /// \brief Retrieves the clang CC1 specific flags out of the compilation's
