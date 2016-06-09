@@ -569,9 +569,29 @@ namespace cling {
     ///
     std::string lookupFileOrLibrary(llvm::StringRef file);
 
-    ///\brief Loads header file or shared library.
+    ///\brief Loads a shared library.
     ///
     ///\param [in] filename - The file to loaded.
+    ///\param [in] lookup - Whether to try to resolve the filepath
+    ///
+    ///\returns kMoreInputExpected is returned when file could not be found
+    /// otherwise kSuccess or kFailure
+    ///
+    CompilationResult loadLibrary(const std::string& filename,
+                                  bool lookup = true);
+
+    ///\brief Loads header file
+    ///
+    ///\param [in] filename - The file to loaded.
+    ///\param [out] T -  Transaction containing the loaded file.
+    ///\returns result of the compilation.
+    ///
+    CompilationResult loadHeader(const std::string& filename,
+                               Transaction** T = 0);
+
+    ///\brief Loads header file or shared library.
+    ///
+    ///\param [in] filename - The file to be loaded.
     ///\param [in] allowSharedLib - Whether to try to load the file as shared
     ///                             library.
     ///\param [out] T -  Transaction containing the loaded file.
