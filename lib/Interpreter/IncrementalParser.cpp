@@ -124,7 +124,9 @@ namespace {
   if (!II)
     return;
   const clang::DefMacroDirective* MD
-    = llvm::dyn_cast<clang::DefMacroDirective>(PP.getLocalMacroDirective(II));
+    = llvm::dyn_cast_or_null<clang::DefMacroDirective>(
+                                                   PP.getLocalMacroDirective(II)
+                                                      );
   if (!MD)
     return;
   const clang::MacroInfo* MI = MD->getMacroInfo();
