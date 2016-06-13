@@ -362,6 +362,55 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  // Remove a decl and possibly it's parent entry in lookup tables.
+  static void eraseDeclFromMap(StoredDeclsMap* Map, NamedDecl* ND) {
+    assert(Map && ND && "eraseDeclFromMap recieved NULL value(s)");
+    // Make sure we the decl doesn't exist in the lookup tables.
+    StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
+    if (Pos != Map->end()) {
+      // Most decls only have one entry in their list, special case it.
+      if (Pos->second.getAsDecl() == ND) {
+        // This is the only decl, no need to call Pos->second.remove(ND);
+        // as it only sets data to nullptr, just remove the entire entry
+        Map->erase(Pos);
+      }
+      else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
+        // Otherwise iterate over the list with entries with the same name.
+        for (NamedDecl* NDi : *Vec) {
+          if (NDi == ND)
+            Pos->second.remove(ND);
+        }
+        if (Vec->empty())
+          Map->erase(Pos);
+      }
+      else if (Pos->second.isNull()) // least common case
+        Map->erase(Pos);
+    }
+  }
+
+#ifndef NDEBUG
+  // Make sure we the decl doesn't exist in the lookup tables.
+  static void checkDeclIsGone(StoredDeclsMap* Map, NamedDecl* ND) {
+    assert(Map && ND && "checkDeclIsGone recieved NULL value(s)");
+    StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
+    if ( Pos != Map->end()) {
+      // Most decls only have one entry in their list, special case it.
+      if (NamedDecl* OldD = Pos->second.getAsDecl())
+        assert(OldD != ND && "Lookup entry still exists.");
+      else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
+        // Otherwise iterate over the list with entries with the same name.
+        // TODO: Walk the redeclaration chain if the entry was a redeclaration.
+
+        for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
+               E = Vec->end(); I != E; ++I)
+          assert(*I != ND && "Lookup entry still exists.");
+      }
+      else
+        assert(Pos->second.isNull() && "!?");
+    }
+  }
+#endif
+
   bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
     bool Successful = VisitDecl(ND);
 
@@ -383,48 +432,13 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     }
 
     // Cleanup the lookup tables.
-    StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
-    if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
-      // Make sure we the decl doesn't exist in the lookup tables.
-      StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
-      if ( Pos != Map->end()) {
-        // Most decls only have one entry in their list, special case it.
-        if (Pos->second.getAsDecl() == ND)
-          Pos->second.remove(ND);
-        else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
-          // Otherwise iterate over the list with entries with the same name.
-          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
-                 E = Vec->end(); I != E; ++I)
-            if (*I == ND)
-              Pos->second.remove(ND);
-        }
-        if (Pos->second.isNull() ||
-            (Pos->second.getAsVector() && !Pos->second.getAsVector()->size()))
-          Map->erase(Pos);
-      }
-    }
-
+    // DeclContexts like EnumDecls don't have lookup maps.
+    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+      eraseDeclFromMap(Map, ND);
 #ifndef NDEBUG
-    if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
-      // Make sure we the decl doesn't exist in the lookup tables.
-      StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
-      if ( Pos != Map->end()) {
-        // Most decls only have one entry in their list, special case it.
-        if (NamedDecl *OldD = Pos->second.getAsDecl())
-          assert(OldD != ND && "Lookup entry still exists.");
-        else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
-          // Otherwise iterate over the list with entries with the same name.
-          // TODO: Walk the redeclaration chain if the entry was a redeclaration.
-
-          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
-                 E = Vec->end(); I != E; ++I)
-            assert(*I != ND && "Lookup entry still exists.");
-        }
-        else
-          assert(Pos->second.isNull() && "!?");
-      }
-    }
+      checkDeclIsGone(Map, ND);
 #endif
+    }
 
     return Successful;
   }
@@ -681,6 +695,32 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     Successful &= VisitRedeclarable(NSD, NSD->getDeclContext());
     Successful &= VisitNamedDecl(NSD);
 
+    return Successful;
+  }
+
+  bool DeclUnloader::VisitLinkageSpecDecl(LinkageSpecDecl* LSD) {
+    // LinkageSpecDecl: DeclContext
+
+    // If this is an extern "C" context we have to remove any of our decls
+    // from Sema::ASTContext's record. This allows globals declared extern "C"
+    // to be redeclared subsequently
+
+    if (LSD->isExternCContext()) {
+      // Sadly ASTContext::getExternCContextDecl will create if it doesn't exist
+      // Hopefully LSD->isExternCContext() means that it already does exist
+      if (ExternCContextDecl* ECD = m_Sema->Context.getExternCContextDecl()) {
+        if (StoredDeclsMap* Map = ECD->getLookupPtr()) {
+          for (Decl* D: LSD->decls()) {
+            if (NamedDecl *ND = dyn_cast<NamedDecl>(D)) {
+              eraseDeclFromMap(Map, ND);
+            }
+          }
+        }
+      }
+    }
+
+    bool Successful = VisitDeclContext(LSD);
+    Successful &= VisitDecl(LSD);
     return Successful;
   }
 
