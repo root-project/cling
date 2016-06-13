@@ -89,7 +89,6 @@ std::unique_ptr<TargetMachine>
   std::string FeaturesStr;
 
   TargetOptions Options = TargetOptions();
-  Reloc::Model RelocModel = Reloc::Default;
   CodeModel::Model CMModel = CodeModel::JITDefault;
   CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
   switch (CGOpt.OptimizationLevel) {
@@ -104,7 +103,8 @@ std::unique_ptr<TargetMachine>
   TM.reset(TheTarget->createTargetMachine(TheTriple.getTriple(),
                                           MCPU, FeaturesStr,
                                           Options,
-                                          RelocModel, CMModel,
+                                          Optional<Reloc::Model>(),
+                                          CMModel,
                                           OptLevel));
   return TM;
 }
