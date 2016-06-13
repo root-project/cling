@@ -229,6 +229,15 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
 
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
+    [&](const std::string &S) {
+      auto SymMapI = m_SymbolMap.find(S);
+      if (SymMapI != m_SymbolMap.end()) {
+        llvm::orc::JITSymbol &Sym = SymMapI->second;
+        return RuntimeDyld::SymbolInfo((uint64_t)Sym.getAddress(),
+                                       Sym.getFlags());
+      }
+      return m_ExeMM->findSymbol(S);
+    },
     [&](const std::string &Name) {
       if (auto Sym = getSymbolAddressWithoutMangling(Name, true)
           /*was: findSymbol(Name)*/)
@@ -250,16 +259,7 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
       uint64_t addr
         = (uint64_t) getParent().NotifyLazyFunctionCreators(NameNoPrefix);
       return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
-    },
-    [&](const std::string &S) {
-      auto SymMapI = m_SymbolMap.find(S);
-      if (SymMapI != m_SymbolMap.end()) {
-        llvm::orc::JITSymbol &Sym = SymMapI->second;
-        return RuntimeDyld::SymbolInfo((uint64_t)Sym.getAddress(),
-                                       Sym.getFlags());
-      }
-      return m_ExeMM->findSymbol(S);
-    } );
+    });
 
   ModuleSetHandleT MSHandle
     = m_LazyEmitLayer.addModuleSet(std::move(modules),
