@@ -145,6 +145,8 @@ class IncrementalJIT {
     return MangledName;
   }
 
+  llvm::orc::JITSymbol getInjectedSymbols(llvm::StringRef Name) const;
+
 public:
   IncrementalJIT(IncrementalExecutor& exe,
                  std::unique_ptr<llvm::TargetMachine> TM);
