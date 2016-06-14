@@ -101,7 +101,8 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
     // Inlining = CGOpts.NoInlining;
   }
 
-  OptLevel = 1;
+  OptLevel = 0; // we need to keep even "unused" values - until we
+  // feed incremental modules into the JIT.
 
   m_PMBuilder.reset(new PassManagerBuilder());
   m_PMBuilder->OptLevel = OptLevel;
