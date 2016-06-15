@@ -7,7 +7,6 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
-// XFAIL: darwin,arm64,aarch64,powerpc64
 // This test verifies that we get nice warning if a method on null ptr object is
 // called.
 

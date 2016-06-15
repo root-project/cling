@@ -7,7 +7,6 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify | FileCheck %s
-// XFAIL: darwin,arm64,aarch64,powerpc64
 //This file checks a call instruction. The called function has arguments with nonnull attribute.
 #include <string.h>
 

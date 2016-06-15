@@ -7,7 +7,6 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
-// XFAIL: darwin,arm64,aarch64,powerpc64
 //This file checks that the execution ends after a null prt dereference.
 
 #include <stdlib.h>
