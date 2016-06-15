@@ -208,6 +208,11 @@ namespace cling {
     ///
     bool VisitRecordDecl(clang::RecordDecl* RD);
 
+    ///\brief Removes a CXXRecordDecl. This removes a few cached Decls
+    /// in the sema but otherwise calls through to VisitRecordDecl
+    ///
+    bool VisitCXXRecordDecl(clang::CXXRecordDecl* RD);
+
     ///\brief Remove the macro from the Preprocessor.
     /// @param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
     ///                MacroDirective to forward.

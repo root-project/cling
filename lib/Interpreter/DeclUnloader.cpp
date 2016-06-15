@@ -921,6 +921,20 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  bool DeclUnloader::VisitCXXRecordDecl(CXXRecordDecl* RD) {
+    // CXXRecordDecl: RecordDecl
+
+    // clang caches some decls, so we have to remove them there as well
+    if (RD == m_Sema->CXXTypeInfoDecl)
+      m_Sema->CXXTypeInfoDecl = m_Sema->CXXTypeInfoDecl->getPreviousDecl();
+    else if (RD == m_Sema->MSVCGuidDecl)
+      m_Sema->MSVCGuidDecl = m_Sema->MSVCGuidDecl->getPreviousDecl();
+    else if (RD == m_Sema->getStdBadAlloc())
+      m_Sema->StdBadAlloc = m_Sema->getStdBadAlloc()->getPreviousDecl();
+
+    return VisitRecordDecl(RD);
+  }
+
   void DeclUnloader::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
     if (!m_CurTransaction
         || !m_CurTransaction->getModule()) // syntax-only mode exit
@@ -1046,6 +1060,10 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
     // ClassTemplateDecl: TemplateDecl, Redeclarable
+
+    if (CTD == m_Sema->StdInitializerList)
+      m_Sema->StdInitializerList = m_Sema->StdInitializerList->getPreviousDecl();
+
     bool Successful = true;
     // Remove specializations:
     for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(),
