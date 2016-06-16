@@ -670,6 +670,22 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       FunctionTemplateDeclExt::removeSpecialization(FTD, FD);
     }
 
+    // Remove new and delete (all variants) from the cache (m_Sema->IdResolver)
+    // This will still leave the built-in operator new & delete present m_Sema
+    // m_Sema->GlobalNewDeleteDeclared could be reset, but DeclUnloader
+    // seems not to touch any builtin, so not these either
+    if (!FD->getIdentifier() && FD->getDeclContext()->isTranslationUnit()) {
+      const DeclarationName Name = FD->getDeclName();
+      DeclarationNameTable& Table = m_Sema->getASTContext().DeclarationNames;
+      if (Name == Table.getCXXOperatorName(OO_New) ||
+          Name == Table.getCXXOperatorName(OO_Array_New) ||
+          Name == Table.getCXXOperatorName(OO_Delete) ||
+          Name == Table.getCXXOperatorName(OO_Array_Delete)) {
+        if (utils::Analyze::isOnScopeChains(FD, *m_Sema))
+          m_Sema->IdResolver.RemoveDecl(FD);
+      }
+    }
+
     return Successful;
   }
 
