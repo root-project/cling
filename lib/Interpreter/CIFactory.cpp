@@ -534,12 +534,6 @@ namespace {
 
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
 #ifdef _GLIBCXX_USE_CXX11_ABI
-
-# if _GLIBCXX_USE_CXX11_ABI
-#  error "cling does not support the GCC 5 ABI yet."
-#  error "See https://sft.its.cern.ch/jira/browse/ROOT-7947"
-# endif
-
     PPOpts.addMacroDef("_GLIBCXX_USE_CXX11_ABI="
                        ClingStringify(_GLIBCXX_USE_CXX11_ABI));
 #endif
