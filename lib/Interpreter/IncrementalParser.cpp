@@ -607,9 +607,8 @@ namespace cling {
     else
       T->setState(Transaction::kRolledBackWithErrors);
 
-    // Keep T alive: someone else might have grabbed that T and needs to detect
-    // that it's bad.
-    //m_TransactionPool->releaseTransaction(T);
+    // Destruct transaction so it releases its JIT symbols.
+    m_TransactionPool->releaseTransaction(T);
   }
 
   std::vector<const Transaction*> IncrementalParser::getAllTransactions() {
