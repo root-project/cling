@@ -159,7 +159,7 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   m_TMDataLayout(m_TM->createDataLayout()),
   m_ExeMM(llvm::make_unique<ClingMemoryManager>(m_Parent)),
   m_NotifyObjectLoaded(*this),
-  m_ObjectLayer(m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
+  m_ObjectLayer(m_SymbolMap, m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
 
@@ -195,22 +195,23 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 
 llvm::orc::JITSymbol
 IncrementalJIT::getInjectedSymbols(llvm::StringRef Name) const {
+  using JITSymbol = llvm::orc::JITSymbol;
   if (Name == MANGLE_PREFIX "__cxa_atexit") {
     // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
     // coming from the JIT.
-    return llvm::orc::JITSymbol((uint64_t)&local_cxa_atexit,
-                                llvm::JITSymbolFlags::Exported);
+    return JITSymbol((uint64_t)&local_cxa_atexit,
+                     llvm::JITSymbolFlags::Exported);
   } else if (Name == MANGLE_PREFIX "__dso_handle") {
     // Provide IncrementalExecutor as the third argument to __cxa_atexit.
-    return llvm::orc::JITSymbol((uint64_t)&m_Parent,
-                                llvm::JITSymbolFlags::Exported);
+    return JITSymbol((uint64_t)&m_Parent,
+                     llvm::JITSymbolFlags::Exported);
   }
 
   auto SymMapI = m_SymbolMap.find(Name);
   if (SymMapI != m_SymbolMap.end())
-    return SymMapI->second;
+    return JITSymbol(SymMapI->second, llvm::JITSymbolFlags::Exported);
 
-  return llvm::orc::JITSymbol(nullptr);
+  return JITSymbol(nullptr);
 }
 
 llvm::orc::JITSymbol
@@ -287,7 +288,8 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
 void IncrementalJIT::removeModules(size_t handle) {
   if (handle == (size_t)-1)
     return;
-  m_LazyEmitLayer.removeModuleSet(m_UnloadPoints[handle]);
+  auto objSetHandle = m_UnloadPoints[handle];
+  m_LazyEmitLayer.removeModuleSet(objSetHandle);
 }
 
 }// end namespace cling

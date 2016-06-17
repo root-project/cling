@@ -27,8 +27,8 @@
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
-  class Module;
-  class RTDyldMemoryManager;
+class Module;
+class RTDyldMemoryManager;
 }
 
 namespace cling {
@@ -36,32 +36,30 @@ class Azog;
 class IncrementalExecutor;
 
 class IncrementalJIT {
+public:
+  using SymbolMapT = llvm::StringMap<llvm::orc::TargetAddress>;
+
+private:
   friend class Azog;
 
   ///\brief The IncrementalExecutor who owns us.
   IncrementalExecutor& m_Parent;
   llvm::JITEventListener* m_GDBListener; // owned by llvm::ManagedStaticBase
 
-  struct JITSymbol: public llvm::orc::JITSymbol {
-    JITSymbol(): llvm::orc::JITSymbol(nullptr) {}
-    JITSymbol& operator=(const llvm::orc::JITSymbol& RHS) {
-      llvm::orc::JITSymbol::operator=(RHS);
-      return *this;
-    }
-  };
-  llvm::StringMap<JITSymbol> m_SymbolMap;
+  SymbolMapT m_SymbolMap;
 
   class NotifyObjectLoadedT {
   public:
     typedef std::vector<std::unique_ptr<llvm::object::OwningBinary<llvm::object::ObjectFile>>> ObjListT;
     typedef std::vector<std::unique_ptr<llvm::RuntimeDyld::LoadedObjectInfo>>
-        LoadedObjInfoListT;
+      LoadedObjInfoListT;
 
     NotifyObjectLoadedT(IncrementalJIT &jit) : m_JIT(jit) {}
 
     void operator()(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H,
                     const ObjListT &Objects,
-                    const LoadedObjInfoListT &Infos) const {
+                    const LoadedObjInfoListT &Infos) const
+    {
       m_JIT.m_UnfinalizedSections[H]
         = std::move(m_JIT.m_SectionsAllocatedSinceLastLoad);
       m_JIT.m_SectionsAllocatedSinceLastLoad = SectionAddrSet();
@@ -73,7 +71,7 @@ class IncrementalJIT {
                                            *Infos[I]);
       }
 
-      for (const auto& Object: Objects) {
+      for (const auto &Object: Objects) {
         for (const auto &Symbol: Object->getBinary()->symbols()) {
           auto Flags = Symbol.getFlags();
           if (Flags & llvm::object::BasicSymbolRef::SF_Undefined)
@@ -86,19 +84,56 @@ class IncrementalJIT {
           assert(NameOrError);
           auto Name = NameOrError.get();
           if (m_JIT.m_SymbolMap.find(Name) == m_JIT.m_SymbolMap.end()) {
-            llvm::orc::JITSymbol Sym = m_JIT.m_CompileLayer.findSymbolIn(H, Name, true);
-            if (Sym.getAddress())
-              m_JIT.m_SymbolMap[Name] = Sym;
+            llvm::orc::JITSymbol Sym
+              = m_JIT.m_CompileLayer.findSymbolIn(H, Name, true);
+            if (llvm::orc::TargetAddress Addr = Sym.getAddress())
+              m_JIT.m_SymbolMap[Name] = Addr;
           }
         }
       }
-    };
+    }
 
   private:
     IncrementalJIT &m_JIT;
   };
 
-  typedef llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT> ObjectLayerT;
+  class RemovableObjectLinkingLayer:
+    public llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT> {
+  public:
+    using Base_t = llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT>;
+    using NotifyLoadedFtor = NotifyObjectLoadedT;
+    using NotifyFinalizedFtor = typename Base_t::NotifyFinalizedFtor;
+    RemovableObjectLinkingLayer(SymbolMapT &SymMap,
+                                NotifyObjectLoadedT NotifyLoaded,
+                   NotifyFinalizedFtor NotifyFinalized = NotifyFinalizedFtor()):
+      Base_t(NotifyLoaded, NotifyFinalized), m_SymbolMap(SymMap)
+    {}
+
+    void removeObjectSet(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
+      struct AccessSymbolTable: public Base_t::LinkedObjectSet {
+        const llvm::StringMap<llvm::RuntimeDyld::SymbolInfo>&
+        getSymbolTable() const
+        {
+          return SymbolTable;
+        }
+      };
+      const AccessSymbolTable* HSymTable
+        = static_cast<const AccessSymbolTable*>(H->get());
+      for (auto&& NameSym: HSymTable->getSymbolTable()) {
+        auto iterSymMap = m_SymbolMap.find(NameSym.first());
+        if (iterSymMap == m_SymbolMap.end())
+          continue;
+        // Is this this symbol (address)?
+        if (iterSymMap->second == NameSym.second.getAddress())
+          m_SymbolMap.erase(iterSymMap);
+      }
+      llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT>::removeObjectSet(H);
+    }
+  private:
+    SymbolMapT& m_SymbolMap;
+  };
+
+  typedef RemovableObjectLinkingLayer ObjectLayerT;
   typedef llvm::orc::IRCompileLayer<ObjectLayerT> CompileLayerT;
   typedef llvm::orc::LazyEmittingLayer<CompileLayerT> LazyEmitLayerT;
   typedef LazyEmitLayerT::ModuleSetHandleT ModuleSetHandleT;
@@ -128,7 +163,7 @@ class IncrementalJIT {
   };
   SectionAddrSet m_SectionsAllocatedSinceLastLoad;
   std::map<ObjectLayerT::ObjSetHandleT, SectionAddrSet, ObjSetHandleCompare>
-      m_UnfinalizedSections;
+    m_UnfinalizedSections;
 
   ///\brief Vector of ModuleSetHandleT. UnloadHandles index into that
   /// vector.
