@@ -59,11 +59,11 @@ INCLUDEFILES += $(CLINGDEP)
 # include dir for picking up RuntimeUniverse.h etc - need to
 # 1) copy relevant headers to include/
 # 2) rely on TCling to addIncludePath instead of using CLING_..._INCL below
-CLINGLLVMCXXFLAGS := $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags))
 # -fvisibility=hidden renders libCore unusable.
-CLINGLLVMCXXFLAGS := $(filter-out -fvisibility-inlines-hidden,$(filter-out -fvisibility=hidden,$(CLINGLLVMCXXFLAGS)))
 # Filter out warning flags.
-CLINGLLVMCXXFLAGS := $(filter-out -W%,$(CLINGLLVMCXXFLAGS))
+CLINGLLVMCXXFLAGS = $(filter-out -fvisibility-inlines-hidden,$(filter-out -fvisibility=hidden,\
+                    $(filter-out -W%,\
+                    $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags)))))
 # -ffunction-sections breaks the debugger on some platforms ... and does not help libCling at all.
 CLINGCXXFLAGS += -I$(CLINGDIR)/include $(filter-out -ffunction-sections,$(CLINGLLVMCXXFLAGS)) -fno-strict-aliasing
 
