@@ -20,6 +20,7 @@
 #include "clang/AST/StmtVisitor.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Sema.h"
+#include "clang/Sema/SemaDiagnostic.h"
 
 using namespace clang;
 
@@ -171,7 +172,7 @@ namespace cling {
               = dyn_cast<ImplicitCastExpr>(RS->getRetValue()))
             VoidCast->setSubExpr(SVRInit);
         }
-        else
+        else if (SVRInit)
           **I = SVRInit;
       }
     }
@@ -378,8 +379,11 @@ namespace {
         Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedNoAlloc,
                                    locStart, CallArgs, locEnd);
       }
-      else
-        assert(0 && "Unhandled code path?");
+      else {
+        m_Sema->Diag(locStart, diag::err_unsupported_unknown_any_decl) <<
+          utils::TypeName::GetFullyQualifiedName(desugaredTy, *m_Context) <<
+          SourceRange(locStart, locEnd);
+      }
     }
 
 
