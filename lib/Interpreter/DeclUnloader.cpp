@@ -736,9 +736,48 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
+
+    // When unloading a NamedDecl within an inline namespace within std the
+    // NamedDecl needs to be removed from the parent std as well.
+    // Not sure why, but test/CodeUnloading/NameSpaces.C demonstrates
+    // that this only affects the std namespace
+    StoredDeclsMap *removeFromSTD = nullptr;
+    if (NSD->isInline()) {
+      if (NamespaceDecl *parent = dyn_cast<NamespaceDecl>(NSD->getParent())) {
+        if (parent->getNameAsString()=="std") {
+          if ((parent = m_Sema->getStdNamespace()))
+            removeFromSTD = m_Sema->getStdNamespace()->getLookupPtr();
+        }
+      }
+    }
+
     bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
-    Successful &= VisitDeclContext(NSD);
+
+    // Inlined version of VisitDeclContext so we can check against removeFromSTD
+    llvm::SmallVector<Decl*, 64> declsToErase;
+    for (Decl *D : NSD->noload_decls())
+      declsToErase.push_back(D);
+
+    for (auto I = declsToErase.rbegin(), E = declsToErase.rend(); I != E; ++I) {
+      Successful = Visit(*I) & Successful;
+      assert(Successful);
+
+      if (removeFromSTD) {
+        if (NamedDecl *ND = dyn_cast<NamedDecl>(*I)) {
+          eraseDeclFromMap(removeFromSTD, ND);
+#ifndef NDEBUG
+          checkDeclIsGone(removeFromSTD, ND);
+#endif
+        }
+      }
+    }
+
     Successful &= VisitNamedDecl(NSD);
+
+    // Get these out of the caches
+    if (NSD == m_Sema->getStdNamespace())
+      m_Sema->StdNamespace = NSD->getPreviousDecl();
+    m_Sema->KnownNamespaces.erase(NSD);
 
     return Successful;
   }
