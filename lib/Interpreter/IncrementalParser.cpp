@@ -82,7 +82,7 @@ namespace {
 # define CLING_CXXABIV -1 // intentionally invalid macro name
 # define CLING_CXXABIS "-1" // intentionally invalid macro name
     llvm::errs()
-      << "Warning in cling::CIFactory::createCI():\n  "
+      << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
       "C++ ABI check not implemented for this standard library\n";
     return;
 #endif
@@ -100,7 +100,7 @@ namespace {
     }
     else {
       llvm::errs()
-        << "Warning in cling::CIFactory::createCI():\n  "
+        << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
         "Possible C++ standard library mismatch, compiled with Visual Studio v"
         << VSVersion << ".0,\n"
         "but this version of Visual Studio was not found in your system's registry.\n";
