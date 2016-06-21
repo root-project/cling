@@ -710,14 +710,20 @@ namespace {
     // Only insert it if there is no other "-x":
     bool hasMinusX = false;
     const char* lang = "c++";
-    for (const char* const* iarg = argv; iarg < argv + argc; ++iarg) {
-      if (!strcmp(*iarg, "-Xclang")) {
-        ++iarg; // skip subsequent arg.
-        if (!strcmp(*iarg, "-x")) {
-          assert(iarg+2 < argv + argc && "Expected language after -Xclang -x");
-          lang = iarg[2]; // iarg[0]: -x, iarg[1]: -Xclang, iarg[2]: objc++
-        } else if (!strncmp(*iarg, "-x", 2)) {
-           lang = (*iarg) + 2;
+    for (const char* const* iarg = argv, * const* earg = argv + argc;
+         iarg < earg; ++iarg) {
+      if (!strncmp(*iarg, "-Xclang", 7) && (*iarg)[8] == 0) {
+        // goto next arg if there is one
+        if (++iarg < earg) {
+          if (!strncmp(*iarg, "-x", 2)) {
+            if ((*iarg)[2] == 0) {
+              // iarg[0]: -x, iarg[1]: -Xclang, iarg[2]: objc++
+              assert(iarg+2 < earg && "Expected language after -Xclang -x");
+              lang = iarg[2];
+            }
+            else
+              lang = (*iarg) + 2;
+          }
         }
         continue;
       }
