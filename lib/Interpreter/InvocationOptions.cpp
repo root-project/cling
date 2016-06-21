@@ -65,6 +65,7 @@ namespace {
     Opts.NoLogo = Args.hasArg(OPT__nologo);
     Opts.ShowVersion = Args.hasArg(OPT_version);
     Opts.Help = Args.hasArg(OPT_help);
+    Opts.NoRuntime = Args.hasArg(OPT_noruntime);
     if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ)) {
       Opts.MetaString = MetaStringArg->getValue();
       if (Opts.MetaString.empty()) {
@@ -137,7 +138,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
 
 InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
   MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
-  Help(false) {
+  Help(false), NoRuntime(false) {
 
   ArrayRef<const char *> ArgStrings(argv, argv + argc);
   unsigned MissingArgIndex, MissingArgCount;

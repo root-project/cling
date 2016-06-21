@@ -33,6 +33,8 @@ OPTION(prefix_2, "metastr", _metastr, Separate, INVALID, INVALID, 0, 0, 0,
        "Set the meta command tag, default '.'", 0)
 OPTION(prefix_2, "nologo", _nologo, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not show startup-banner", 0)
+OPTION(prefix_3, "noruntime", noruntime, Flag, INVALID, INVALID, 0, 0, 0,
+       "Disable runtime support (no null checking, no value printing)", 0)
 OPTION(prefix_3, "version", version, Flag, INVALID, INVALID, 0, 0, 0,
        "Print the compiler version", 0)
 OPTION(prefix_1, "v", v, Flag, INVALID, INVALID, 0, 0, 0,
