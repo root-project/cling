@@ -1078,6 +1078,14 @@ namespace cling {
     if (addr)
       return addr;
 
+    if (const CXXRecordDecl *CXX = dyn_cast<CXXRecordDecl>(RD)) {
+      // Don't generate a stub for a destructor that does nothing
+      // This also fixes printing of lambdas and C structures as they
+      // have no dtor test/ValuePrinter/Destruction.C
+      if (CXX->hasIrrelevantDestructor())
+        return nullptr;
+    }
+
     smallstream funcname;
     funcname << "__cling_Destruct_" << RD;
 
