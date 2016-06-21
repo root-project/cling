@@ -68,6 +68,7 @@ namespace cling {
     bool NoLogo;
     bool ShowVersion;
     bool Help;
+    bool NoRuntime;
     bool Verbose() const { return CompilerOpts.Verbose; }
 
     static void PrintHelp();

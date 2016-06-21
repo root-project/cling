@@ -235,7 +235,7 @@ namespace cling {
     }
 
     llvm::SmallVector<llvm::StringRef, 6> Syms;
-    Initialize(noRuntime, isInSyntaxOnlyMode(), Syms);
+    Initialize(noRuntime || m_Opts.NoRuntime, isInSyntaxOnlyMode(), Syms);
 
     // Commit the transactions, now that gCling is set up. It is needed for
     // static initialization in these transactions through local_cxa_atexit().
