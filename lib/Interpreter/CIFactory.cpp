@@ -488,7 +488,8 @@ namespace {
 #endif
 
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
-  static void AddHostCXXIncludes(std::vector<const char*>& args) {
+  static void AddHostIncludes(std::vector<const char*>& args,
+                              bool noBuiltinInc, bool noCXXIncludes) {
     static bool IncludesSet = false;
     static std::vector<std::string> HostCXXI;
     if (!IncludesSet) {
@@ -513,15 +514,19 @@ namespace {
       // When built with access to the proper Windows APIs, try to actually find
       // the correct include paths first.
       if (getVisualStudioDir(VSDir)) {
-        HostCXXI.push_back("-I");
-        HostCXXI.push_back(VSDir + "\\VC\\include");
-        if (getWindowsSDKDir(WindowsSDKDir)) {
+        if (!noCXXIncludes) {
           HostCXXI.push_back("-I");
-          HostCXXI.push_back(WindowsSDKDir + "\\include");
+          HostCXXI.push_back(VSDir + "\\VC\\include");
         }
-        else {
-          HostCXXI.push_back("-I");
-          HostCXXI.push_back(VSDir + "\\VC\\PlatformSDK\\Include");
+        if (!noBuiltinInc) {
+          if (getWindowsSDKDir(WindowsSDKDir)) {
+            HostCXXI.push_back("-I");
+            HostCXXI.push_back(WindowsSDKDir + "\\include");
+          }
+          else {
+            HostCXXI.push_back("-I");
+            HostCXXI.push_back(VSDir + "\\VC\\PlatformSDK\\Include");
+          }
         }
       }
       std::string UniversalCRTSdkPath;
@@ -532,45 +537,59 @@ namespace {
         HostCXXI.push_back(UniversalCRTSdkPath + "\\Include\\" + UCRTVersion + "\\ucrt");
       }
 #else // _MSC_VER
+
       // Skip LLVM_CXX execution if -nostdinc++ was provided.
-      for (const auto arg : args) {
-        if (!strcmp(arg, "-nostdinc++")) {
-          return;
-        }
+      if (!noCXXIncludes) {
+        // Need HostCXXI.empty as a check condition later
+        assert(HostCXXI.empty() && "HostCXXI not empty");
+
+        SmallString<2048> buffer;
+
+  #ifdef _LIBCPP_VERSION
+        // Try to use a version of clang that is located next to cling
+        // in case cling was built with a new/custom libc++
+        std::string clang = llvm::sys::fs::getMainExecutable(
+            "cling", (void*)(uintptr_t(locate_cling_executable)));
+
+        clang = llvm::sys::path::parent_path(clang);
+        buffer.assign(clang);
+        llvm::sys::path::append(buffer, "clang");
+        clang.assign(&buffer[0], buffer.size());
+      
+        if (llvm::sys::fs::is_regular_file(clang))
+          ReadCompilerIncludePaths(clang.c_str(), buffer, HostCXXI);
+  #endif
+
+        if (HostCXXI.empty())
+          ReadCompilerIncludePaths(LLVM_CXX, buffer, HostCXXI);
+
+        if (HostCXXI.empty()) {
+          // buffer is a copy of the query string that failed
+          llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract "
+            "standard library include paths!\n"
+            "Invoking:\n"
+            "    " << buffer.c_str() << "\n"
+            "results in\n";
+          int ExitCode = system(buffer.c_str());
+          llvm::errs() << "with exit code " << ExitCode << "\n";
+        } else
+          HostCXXI.push_back("-nostdinc++");
       }
-      // Need HostCXXI.empty as a check condition later
-      assert(HostCXXI.empty() && "HostCXXI not empty");
 
-      SmallString<2048> buffer;
-
-#ifdef _LIBCPP_VERSION
-      // Try to use a version of clang that is located next to cling
-      // in case cling was built with a new/custom libc++
-      std::string clang = llvm::sys::fs::getMainExecutable("cling",
-                                       (void*)(intptr_t) locate_cling_executable
-                                                          );
-      clang = llvm::sys::path::parent_path(clang);
-      buffer.assign(clang);
-      llvm::sys::path::append(buffer, "clang");
-      clang.assign(&buffer[0], buffer.size());
-    
-      if (llvm::sys::fs::is_regular_file(clang))
-        ReadCompilerIncludePaths(clang.c_str(), buffer, HostCXXI);
-#endif
-      if (HostCXXI.empty())
-        ReadCompilerIncludePaths(LLVM_CXX, buffer, HostCXXI);
-
-      if (HostCXXI.empty()) {
-        // buffer is a copy of the query string that failed
-        llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract "
-          "standard library include paths!\n"
-          "Invoking:\n"
-          "    " << buffer.c_str() << "\n"
-          "results in\n";
-        int ExitCode = system(buffer.c_str());
-        llvm::errs() << "with exit code " << ExitCode << "\n";
-      } else
-        HostCXXI.push_back("-nostdinc++");
+  #if defined(__GLIBCXX__) && defined(__APPLE__)
+      // Avoid '__float128 is not supported on this target' errors
+      bool haveCXXVers = false, haveCXXLib = false;
+      for (const auto arg : args) {
+        if (!strncmp(arg, "-std=", 5))
+          haveCXXVers = true;
+        if (!strncmp(arg, "-stdlib=", 8))
+          haveCXXLib = true;
+      }
+      if (!haveCXXVers)
+        HostCXXI.push_back("-std=c++11");
+      if (!haveCXXLib)
+        HostCXXI.push_back("-stdlib=libstdc++");
+  #endif
 
 #endif // _MSC_VER
     }
@@ -709,9 +728,11 @@ namespace {
     // We do C++ by default; append right after argv[0] name
     // Only insert it if there is no other "-x":
     bool hasMinusX = false;
+    bool noBuiltinInc = false;
+    bool noCXXIncludes = false;
     const char* lang = "c++";
     for (const char* const* iarg = argv, * const* earg = argv + argc;
-         iarg < earg; ++iarg) {
+         iarg < earg && (!hasMinusX || !noBuiltinInc || !noCXXIncludes); ++iarg) {
       if (!strncmp(*iarg, "-Xclang", 7) && (*iarg)[8] == 0) {
         // goto next arg if there is one
         if (++iarg < earg) {
@@ -727,16 +748,19 @@ namespace {
         }
         continue;
       }
-      hasMinusX = !strncmp(*iarg, "-x", 2);
-      if (hasMinusX)
-        break;
+      else if (!hasMinusX && !strncmp(*iarg, "-x", 2))
+        hasMinusX = true;
+      else if (!noBuiltinInc && !strncmp(*iarg, "-nobuiltininc", 13))
+        noBuiltinInc = true;
+      else if (!noCXXIncludes && !strncmp(*iarg, "-nostdinc++", 11))
+        noCXXIncludes = true;
     }
     if (!hasMinusX) {
       argvCompile.insert(argvCompile.begin() + 1,"-x");
       argvCompile.insert(argvCompile.begin() + 2, lang);
     }
 
-    AddHostCXXIncludes(argvCompile);
+    AddHostIncludes(argvCompile, noBuiltinInc, noCXXIncludes);
 
     argvCompile.insert(argvCompile.end(),"-c");
     argvCompile.insert(argvCompile.end(),"-");
