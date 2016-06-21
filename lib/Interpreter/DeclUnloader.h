@@ -100,6 +100,18 @@ namespace cling {
     ///
     bool VisitUsingShadowDecl(clang::UsingShadowDecl* USD);
 
+    ///\brief Removes a using declaration
+    /// This method iterates all of the shadows it is holding and calls
+    /// VisitUsingShadowDecl on them.
+    /// It is provided to fix issues where a declaration is removed
+    /// to many times (see test/CodeUnloading/UsingShadows.C)
+    ///
+    ///\param[in] UD - The using declararion to be removed
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitUsingDecl(clang::UsingDecl* UD);
+
     ///\brief Removes a typedef name decls. A base class for TypedefDecls and
     /// TypeAliasDecls.
     ///\param[in] TND - The declaration to be removed.
