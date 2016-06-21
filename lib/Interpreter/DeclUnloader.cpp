@@ -107,6 +107,57 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
   }
 }
 
+///\brief Adds the previous declaration into the lookup map on DC.
+/// @param[in] D - The decl that is being removed.
+/// @param[in] DC - The DeclContext to add the previous declaration of D.
+///\returns the previous declaration.
+///
+static Decl* handleRedelaration(Decl* D, DeclContext* DC) {
+  NamedDecl* ND = dyn_cast<NamedDecl>(D);
+  if (!ND)
+    return nullptr;
+
+  DeclarationName Name = ND->getDeclName();
+  if (Name.isEmpty())
+    return nullptr;
+
+  NamedDecl* MostRecent = ND->getMostRecentDecl();
+  NamedDecl* MostRecentNotThis = MostRecent;
+  if (MostRecentNotThis == ND) {
+    MostRecentNotThis = dyn_cast_or_null<NamedDecl>(ND->getPreviousDecl());
+    if (!MostRecentNotThis || MostRecentNotThis == ND)
+      return MostRecentNotThis;
+  }
+
+  if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+    StoredDeclsMap::iterator Pos = Map->find(Name);
+    if (Pos != Map->end() && !Pos->second.isNull()) {
+      DeclContext::lookup_result decls = Pos->second.getLookupResult();
+      // FIXME: A decl meant to be added in the lookup already exists
+      // in the lookup table. My assumption is that the DeclUnloader
+      // adds it here. This needs to be investigated mode. For now
+      // std::find gets promoted from assert to condition :)
+      // DeclContext::lookup_result::iterator is not an InputIterator
+      // (const member, thus no op=(const iterator&)), thus we cannot use
+      // std::find. MSVC actually cares!
+      auto hasDecl = [](const DeclContext::lookup_result& Result,
+                        const NamedDecl* Needle) -> bool {
+        for (auto IDecl: Result) {
+          if (IDecl == Needle)
+            return true;
+        }
+        return false;
+      };
+      if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
+        // The decl was registered in the lookup, update it.
+        Pos->second.HandleRedeclaration(MostRecentNotThis,
+                                        /*IsKnownNewer*/ true);
+      }
+    }
+  }
+  return MostRecentNotThis;
+}
+
 ///\brief Removes given declaration from the chain of redeclarations.
 /// Rebuilds the chain and sets properly first and last redeclaration.
 /// @param[in] R - The redeclarable, its chain to be rebuilt.
@@ -121,46 +172,13 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return true;
   }
 
-  T* MostRecent = R->getMostRecentDecl();
-  T* MostRecentNotThis = MostRecent;
-  if (MostRecentNotThis == R)
-    MostRecentNotThis = R->getPreviousDecl();
-
-  if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
-    // Make sure we update the lookup maps, because the removed decl might
-    // be registered in the lookup and still findable.
-    NamedDecl* ND = (T*)R;
-    DeclarationName Name = ND->getDeclName();
-    if (!Name.isEmpty()) {
-      StoredDeclsMap::iterator Pos = Map->find(Name);
-      if (Pos != Map->end() && !Pos->second.isNull()) {
-        DeclContext::lookup_result decls = Pos->second.getLookupResult();
-        // FIXME: A decl meant to be added in the lookup already exists
-        // in the lookup table. My assumption is that the DeclUnloader
-        // adds it here. This needs to be investigated mode. For now
-        // std::find gets promoted from assert to condition :)
-        // DeclContext::lookup_result::iterator is not an InputIterator
-        // (const member, thus no op=(const iterator&)), thus we cannot use
-        // std::find. MSVC actually cares!
-        auto hasDecl = [](const DeclContext::lookup_result& Result,
-                          const NamedDecl* Needle) -> bool {
-          for (auto IDecl: Result) {
-            if (IDecl == Needle)
-              return true;
-          }
-          return false;
-        };
-        if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
-          // The decl was registered in the lookup, update it.
-          Pos->second.HandleRedeclaration(MostRecentNotThis,
-            /*IsKnownNewer*/ true);
-        }
-      }
-    }
-  }
+  // Make sure we update the lookup maps, because the removed decl might
+  // be registered in the lookup and still findable.
+  T* MostRecentNotThis = (T*)handleRedelaration((T*)R, DC);
 
   // Set a new latest redecl.
   removeRedeclFromChain((T*)R);
+
 #ifndef NDEBUG
   // Validate redecl chain by iterating through it.
   std::set<clang::Redeclarable<T>*> CheckUnique;
@@ -169,6 +187,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     assert(CheckUnique.insert(RD).second && "Dupe redecl chain element");
     (void)RD;
   }
+#else
+  (void)MostRecentNotThis; // templated function issues a lot -Wunused-variable
 #endif
   return true;
 }
@@ -701,20 +721,24 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitLinkageSpecDecl(LinkageSpecDecl* LSD) {
     // LinkageSpecDecl: DeclContext
 
-    // If this is an extern "C" context we have to remove any of our decls
-    // from Sema::ASTContext's record. This allows globals declared extern "C"
-    // to be redeclared subsequently
+    // Re-add any previous declarations so they are reachable throughout the
+    // translation unit. Also remove any global variables from:
+    // m_Sema->Context.getExternCContextDecl()
 
     if (LSD->isExternCContext()) {
       // Sadly ASTContext::getExternCContextDecl will create if it doesn't exist
       // Hopefully LSD->isExternCContext() means that it already does exist
-      if (ExternCContextDecl* ECD = m_Sema->Context.getExternCContextDecl()) {
-        if (StoredDeclsMap* Map = ECD->getLookupPtr()) {
-          for (Decl* D: LSD->decls()) {
-            if (NamedDecl *ND = dyn_cast<NamedDecl>(D)) {
-              eraseDeclFromMap(Map, ND);
-            }
-          }
+      ExternCContextDecl* ECD = m_Sema->Context.getExternCContextDecl();
+      StoredDeclsMap* Map = ECD ? ECD->getLookupPtr() : nullptr;
+      
+      for (Decl* D : LSD->noload_decls()) {
+        if (NamedDecl* ND = dyn_cast<NamedDecl>(D)) {
+
+          // extern "C" linkage goes in the translation unit
+          DeclContext* DC = m_Sema->getASTContext().getTranslationUnitDecl();
+          handleRedelaration(ND, DC);
+          if (Map)
+            eraseDeclFromMap(Map, ND);
         }
       }
     }
