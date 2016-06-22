@@ -986,7 +986,17 @@ namespace clang {
     if (!m_CurTransaction
         || !m_CurTransaction->getModule()) // syntax-only mode exit
       return;
+
     using namespace llvm;
+
+    if (const auto VD = dyn_cast_or_null<clang::ValueDecl>(GD.getDecl())) {
+      const QualType QT = VD->getType();
+      if (!QT.isNull() && QT->isDependentType()) {
+        // The module cannot contain symbols for dependent decls.
+        return;
+      }
+    }
+
     // if it was successfully removed from the AST we have to check whether
     // code was generated and remove it.
 
