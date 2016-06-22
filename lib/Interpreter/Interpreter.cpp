@@ -1158,8 +1158,14 @@ namespace cling {
       }
       if (InterpreterCallbacks* callbacks = getCallbacks())
         callbacks->TransactionUnloaded(*T);
-      if (m_Executor) // we also might be in fsyntax-only mode.
+      if (m_Executor) { // we also might be in fsyntax-only mode.
         m_Executor->runAndRemoveStaticDestructors(T);
+        if (!T->getExecutor()) {
+          // this transaction might be queued in the executor
+          m_Executor->unloadFromJIT(T->getModule(),
+                            Transaction::ExeUnloadHandle({(void*)(size_t)-1}));
+        }
+      }
       m_IncrParser->rollbackTransaction(T);
 
       if (!--numberOfTransactions)
