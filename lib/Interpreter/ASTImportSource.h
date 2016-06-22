@@ -88,6 +88,11 @@ namespace cling {
                         clang::DeclarationName &childDeclName,
                         clang::DeclarationName &parentDeclName,
                         const clang::DeclContext *childCurrentDeclContext);
+
+        void addToDeclContext(clang::DeclContext *child,
+                              clang::DeclContext *parent) {
+          m_DeclContexts_map[child] = parent;
+        }
     };
 } // end namespace cling
 #endif //CLING_ASTIMPORTSOURCE_H

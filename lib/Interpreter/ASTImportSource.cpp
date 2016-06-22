@@ -3,6 +3,34 @@
 
 using namespace clang;
 
+namespace {
+    class ClingASTImporter : public ASTImporter {
+    private:
+    cling::ASTImportSource& m_source;
+
+    public:
+      ClingASTImporter(ASTContext &ToContext, FileManager &ToFileManager,
+                       ASTContext &FromContext, FileManager &FromFileManager,
+                       bool MinimalImport, cling::ASTImportSource& source) : 
+                    ASTImporter(ToContext, ToFileManager, FromContext,
+                                FromFileManager, MinimalImport), m_source(source) {}
+
+      Decl *Imported(Decl *From, Decl *To) override {
+        ASTImporter::Imported(From, To);
+
+        // Put the name of the Decl imported with the
+        // DeclarationName coming from the parent, in  my map.
+        if (DeclContext *declContextParent = llvm::dyn_cast<DeclContext>(From)) {
+          DeclContext *declContextChild = llvm::dyn_cast<DeclContext>(To);
+          m_source.addToDeclContext(declContextChild, declContextParent); 
+        }
+        
+        return To;
+      }
+
+    };
+}
+
 namespace cling {
 
     ASTImportSource::ASTImportSource(const cling::Interpreter *parent_interpreter,
@@ -88,10 +116,10 @@ namespace cling {
       FileManager &child_FM = m_child_Interp->getCI()->getFileManager();
       FileManager &parent_FM = m_parent_Interp->getCI()->getFileManager();
 
-      // Clang's ASTImporter
-      ASTImporter importer(to_ASTContext, child_FM,
+      // Cling's ASTImporter
+      ClingASTImporter importer(to_ASTContext, child_FM,
                            from_ASTContext, parent_FM,
-                           /*MinimalImport : ON*/ true);
+                           /*MinimalImport : ON*/ true, *this);
 
       for (DeclContext::lookup_iterator I = lookup_result.begin(),
              E = lookup_result.end();
@@ -205,10 +233,10 @@ namespace cling {
         FileManager &child_FM = m_child_Interp->getCI()->getFileManager();
         FileManager &parent_FM = m_parent_Interp->getCI()->getFileManager();
 
-        // Clang's ASTImporter
-        ASTImporter importer(to_ASTContext, child_FM,
+        // Cling's ASTImporter
+        ClingASTImporter importer(to_ASTContext, child_FM,
                              from_ASTContext, parent_FM,
-                             /*MinimalImport : ON*/ true);
+                             /*MinimalImport : ON*/ true, *this);
 
         for (DeclContext::decl_iterator I_decl = parentDeclContext->decls_begin(),
           E_decl = parentDeclContext->decls_end(); I_decl != E_decl; ++I_decl) {
