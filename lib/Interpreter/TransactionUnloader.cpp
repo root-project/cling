@@ -437,8 +437,8 @@ namespace clang {
     void removeRedeclFromChain(DeclT* R) {
       //RedeclLink is a protected member.
       struct RedeclDerived : public Redeclarable<DeclT> {
-        typedef typename Redeclarable<DeclT>::DeclLink DeclLink;
-        static DeclLink& getLink(DeclT* R) {
+        typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
+        static DeclLink_t& getLink(DeclT* R) {
           Redeclarable<DeclT>* D = R;
           return ((RedeclDerived*)D)->RedeclLink;
         }
@@ -455,7 +455,7 @@ namespace clang {
           // Convert A -> First -> B into First -> B
           DeclT* Latest = First->getMostRecentDecl();
           getLink(First)
-            = DeclLink(DeclLink::LatestLink, First->getASTContext());
+            = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
           getLink(First).setLatest(Latest);
         }
       };
