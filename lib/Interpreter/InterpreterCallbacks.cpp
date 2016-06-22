@@ -9,6 +9,7 @@
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
+#include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
@@ -241,7 +242,7 @@ namespace cling {
   }
 
   void InterpreterCallbacks::CreateCodeCompleteConsumer(Interpreter* child) const {
-    PrintingCodeCompleteConsumer* consumer = new PrintingCodeCompleteConsumer(
+    ClingCodeCompleteConsumer* consumer = new ClingCodeCompleteConsumer(
                 m_Interpreter->getCI()->getFrontendOpts().CodeCompleteOpts,
                 llvm::outs());
     CompilerInstance* childCI = child->getCI();
