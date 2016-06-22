@@ -972,7 +972,6 @@ namespace cling {
     //  a scope spec, and a decl context.
     //
     NestedNameSpecifier* classNNS = 0;
-    const TagDecl *tdecl = nullptr;
     if (isa<NamespaceDecl>(scopeDecl)) {
       return foundDC;
     }
@@ -984,7 +983,6 @@ namespace cling {
         //const Type* T = Context.getRecordType(RD).getTypePtr();
         const Type* T = Context.getTypeDeclType(RD).getTypePtr();
         classNNS = NestedNameSpecifier::Create(Context, 0, false, T);
-        tdecl = RD;
         // We pass a 'random' but valid source range.
         CXXScopeSpec SS;
         SS.MakeTrivial(Context, classNNS, scopeDecl->getSourceRange());
