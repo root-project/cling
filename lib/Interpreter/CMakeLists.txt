@@ -56,7 +56,7 @@ add_cling_library(clingInterpreter
   clangAST
   )
 
-add_dependencies(clingInterpreter clangBasic clangAST)
+add_dependencies(clingInterpreter clangBasic clangAST LLVMCore)
 
 if(NOT WIN32)
 set_source_files_properties(ExceptionRTTI.cpp COMPILE_FLAGS "-fexceptions -frtti")
