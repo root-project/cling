@@ -8,6 +8,9 @@
 //------------------------------------------------------------------------------
 
 #include "TransactionUnloader.h"
+
+#include "IncrementalExecutor.h"
+
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
 
@@ -1216,20 +1219,24 @@ namespace clang {
 } // end namespace clang
 
 namespace cling {
-  TransactionUnloader::TransactionUnloader(Sema* S, clang::CodeGenerator* CG)
-    : m_Sema(S), m_CodeGen(CG) {
+  TransactionUnloader::TransactionUnloader(Sema* S, clang::CodeGenerator* CG,
+                                           cling::IncrementalExecutor* Exe)
+    : m_Sema(S), m_CodeGen(CG), m_Exe(Exe) {
   }
 
   TransactionUnloader::~TransactionUnloader() {
   }
 
-  bool TransactionUnloader::RevertTransaction(Transaction* T) {
+
+  void TransactionUnloader::unlinkTransactionFromParent(Transaction* T) {
     if (Transaction* Parent = T->getParent()) {
       Parent->removeNestedTransaction(T);
       T->setParent(0);
     }
+  }
 
-    DeclUnloader DeclU(m_Sema, m_CodeGen, T);
+  bool TransactionUnloader::unloadDeclarations(Transaction* T,
+                                               clang::DeclUnloader& DeclU) {
     bool Successful = true;
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),
@@ -1242,10 +1249,10 @@ namespace cling {
       // The non templated classes come through HandleTopLevelDecl and
       // HandleTagDeclDefinition, this is why we need to filter.
       if (Call == Transaction::kCCIHandleTagDeclDefinition)
-        if (const CXXRecordDecl* D
-            = dyn_cast<CXXRecordDecl>(DGR.getSingleDecl()))
-          if (D->getTemplateSpecializationKind() == TSK_Undeclared)
-            continue;
+      if (const CXXRecordDecl* D
+        = dyn_cast<CXXRecordDecl>(DGR.getSingleDecl()))
+      if (D->getTemplateSpecializationKind() == TSK_Undeclared)
+        continue;
 
       if (Call == Transaction::kCCINone)
         RevertTransaction(*T->rnested_begin());
@@ -1260,8 +1267,14 @@ namespace cling {
 #endif
       }
     }
-    assert(T->rnested_begin() == T->rnested_end() && "nested transactions mismatch");
+    assert(T->rnested_begin() == T->rnested_end()
+           && "nested transactions mismatch");
+    return Successful;
+  }
 
+  bool TransactionUnloader::unloadFromPreprocessor(Transaction* T,
+                                                   clang::DeclUnloader& DeclU) {
+    bool Successful = true;
     for (Transaction::const_reverse_macros_iterator MI = T->rmacros_begin(),
            ME = T->rmacros_end(); MI != ME; ++MI) {
       // Get rid of the macro definition
@@ -1270,17 +1283,14 @@ namespace cling {
       assert(Successful && "Cannot handle that yet!");
 #endif
     }
+    return Successful;
+  }
 
-#ifndef NDEBUG
-    //FIXME: Move the nested transaction marker out of the decl lists and
-    // reenable this assertion.
-    //size_t DeclSize = std::distance(T->decls_begin(), T->decls_end());
-    //if (T->getCompilationOpts().CodeGenerationForModule)
-    //  assert (!DeclSize && "No parsed decls must happen in parse for module");
-#endif
-
+  bool TransactionUnloader::unloadDeserializedDeclarations(Transaction* T,
+                                                   clang::DeclUnloader& DeclU) {
     //FIXME: Terrible hack, we *must* get rid of parseForModule by implementing
     // a header file generator in cling.
+    bool Successful = true;
     for (Transaction::const_reverse_iterator I = T->deserialized_rdecls_begin(),
            E = T->deserialized_rdecls_end(); I != E; ++I) {
       const DeclGroupRef& DGR = (*I).m_DGR;
@@ -1295,6 +1305,24 @@ namespace cling {
 #endif
       }
     }
+    return Successful;
+  }
+
+  bool TransactionUnloader::RevertTransaction(Transaction* T) {
+    clang::DeclUnloader DeclU(m_Sema, m_CodeGen, T);
+
+    unlinkTransactionFromParent(T);
+    bool Successful = unloadDeclarations(T, DeclU);
+    Successful = unloadFromPreprocessor(T, DeclU) && Successful;
+    Successful = unloadDeserializedDeclarations(T, DeclU) && Successful;
+
+#ifndef NDEBUG
+    //FIXME: Move the nested transaction marker out of the decl lists and
+    // reenable this assertion.
+    //size_t DeclSize = std::distance(T->decls_begin(), T->decls_end());
+    //if (T->getCompilationOpts().CodeGenerationForModule)
+    //  assert (!DeclSize && "No parsed decls must happen in parse for module");
+#endif
 
     // Clean up the pending instantiations
     m_Sema->PendingInstantiations.clear();
@@ -1305,6 +1333,12 @@ namespace cling {
     //   llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
     //   globalDCE->runOnModule(*T->getModule());
     // }
+
+    if (getExecutor() && T->getModule())
+      Successful = getExecutor()->unloadFromJIT(T->getModule(),
+                                                T->getExeUnloadHandle())
+        && Successful;
+
     if (Successful)
       T->setState(Transaction::kRolledBack);
     else

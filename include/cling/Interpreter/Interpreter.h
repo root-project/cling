@@ -552,12 +552,23 @@ namespace cling {
                                bool allowSharedLib = true,
                                Transaction** T = 0);
 
+    ///\brief Unloads (forgets) a transaction from AST and JITed symbols.
+    ///
+    /// If one of the declarations caused error in clang it is rolled back from
+    /// the AST. This is essential feature for the error recovery subsystem.
+    /// This is also a key entry point for the code unloading.
+    ///
+    ///\param[in] T - the transaction to unload.
+    ///
+    void unload(Transaction& T);
+
     ///\brief Unloads (forgets) given number of transactions.
     ///
     ///\param[in] numberOfTransactions - how many transactions to revert
     ///                                  starting from the last.
     ///
     void unload(unsigned numberOfTransactions);
+
     void runAndRemoveStaticDestructors();
     void runAndRemoveStaticDestructors(unsigned numberOfTransactions);
 

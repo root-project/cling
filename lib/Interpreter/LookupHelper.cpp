@@ -705,7 +705,8 @@ namespace cling {
                         TheDecl = TD->getDefinition();
                         if (TheDecl->isInvalidDecl()) {
                           // if the decl is invalid try to clean up
-                          TransactionUnloader U(&S, /*CodeGenerator*/0);
+                          TransactionUnloader U(&S, /*CodeGenerator*/0,
+                                                /*IncrementalExecutor*/ 0);
                           U.UnloadDecl(TheDecl);
                           *setResultType = nullptr;
                           return 0;
@@ -713,7 +714,8 @@ namespace cling {
                       } else {
                         // NOTE: We cannot instantiate the scope: not a valid decl.
                         // Need to rollback transaction.
-                        TransactionUnloader U(&S, /*CodeGenerator*/0);
+                        TransactionUnloader U(&S, /*CodeGenerator*/0,
+                                              /*IncrementalExecutor*/ 0);
                         U.UnloadDecl(TD);
                         *setResultType = nullptr;
                         return 0;
@@ -914,7 +916,7 @@ namespace cling {
     }
     if (scopeDecl->isInvalidDecl()) {
       // if the decl is invalid try to clean up
-      TransactionUnloader U(&S, /*CodeGenerator*/0);
+      TransactionUnloader U(&S, /*CodeGenerator*/0, /*IncrementalExecutor*/ 0);
       U.UnloadDecl(const_cast<Decl*>(scopeDecl));
       return 0;
     }
@@ -963,7 +965,7 @@ namespace cling {
     }
     if (scopeDecl->isInvalidDecl()) {
       // if the decl is invalid try to clean up
-      TransactionUnloader U(&S, /*CodeGenerator*/0);
+      TransactionUnloader U(&S, /*CodeGenerator*/0, /*IncrementalExecutor*/ 0);
       U.UnloadDecl(const_cast<Decl*>(scopeDecl));
       return 0;
     }
@@ -1165,7 +1167,8 @@ namespace cling {
                                             true /*recursive instantiation*/);
           if (TheDecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
-            TransactionUnloader U(&S, /*CodeGenerator*/0);
+            TransactionUnloader U(&S, /*CodeGenerator*/0,
+                                  /*IncrementalExecutor*/ 0);
             U.UnloadDecl(const_cast<FunctionDecl*>(TheDecl));
             return 0;
           }
@@ -1722,7 +1725,8 @@ namespace cling {
                                             true /*recursive instantiation*/);
           if (fdecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
-            TransactionUnloader U(&S, /*CodeGenerator*/0);
+            TransactionUnloader U(&S, /*CodeGenerator*/0,
+                                  /*IncrementalExecutor*/ 0);
             U.UnloadDecl(fdecl);
             return 0;
           }

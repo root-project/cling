@@ -21,7 +21,6 @@
 #include "ValueExtractionSynthesizer.h"
 #include "TransactionPool.h"
 #include "ASTTransformer.h"
-#include "TransactionUnloader.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/Interpreter.h"
@@ -393,7 +392,7 @@ namespace cling {
       Diags.Reset(/*soft=*/true);
       Diags.getClient()->clear();
 
-      rollbackTransaction(T);
+      m_Interpreter->unload(*T);
 
       if (MustStartNewModule) {
         // Create a new module.
@@ -425,7 +424,7 @@ namespace cling {
 
     // If there was an error coming from the transformers.
     if (T->getIssuedDiags() == Transaction::kErrors) {
-      rollbackTransaction(T);
+      m_Interpreter->unload(*T);
       return;
     }
 
@@ -458,7 +457,7 @@ namespace cling {
             >= Interpreter::kExeFirstError) {
           // Roll back on error in initializers
           //assert(0 && "Error on inits.");
-          rollbackTransaction(T);
+          m_Interpreter->unload(*T);
           T->setState(Transaction::kRolledBackWithErrors);
           return;
         }
@@ -570,45 +569,21 @@ namespace cling {
     // Transform IR
     bool success = true;
     if (!success)
-      rollbackTransaction(T);
+      m_Interpreter->unload(*T);
     if (m_BackendPasses && T->getModule())
       m_BackendPasses->runOnModule(*T->getModule());
     return success;
   }
 
-  void IncrementalParser::rollbackTransaction(Transaction* T) {
-    assert(T && "Must have value");
-    // We can revert the most recent transaction or a nested transaction of a
-    // transaction that is not in the middle of the transaction collection
-    // (i.e. at the end or not yet added to the collection at all).
-    assert(!T->getTopmostParent()->getNext() &&
-           "Can not revert previous transactions");
-    assert((T->getState() != Transaction::kRolledBack ||
-            T->getState() != Transaction::kRolledBackWithErrors) &&
-           "Transaction already rolled back.");
-    if (m_Interpreter->getOptions().ErrorOut)
-      return;
-
-    if (InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks())
-      callbacks->TransactionRollback(*T);
-
-    TransactionUnloader U(&getCI()->getSema(), m_CodeGen.get());
-
-    if (!T->getParent()) {
+  void IncrementalParser::deregisterTransaction(Transaction& T) {
+    if (!T.getParent()) {
       // Remove from the queue
-      assert(T == m_Transactions.back() && "Out of order transaction removal");
+      assert(&T == m_Transactions.back() && "Out of order transaction removal");
       m_Transactions.pop_back();
       if (!m_Transactions.empty())
         m_Transactions.back()->setNext(0);
     }
-
-    if (U.RevertTransaction(T))
-      T->setState(Transaction::kRolledBack);
-    else
-      T->setState(Transaction::kRolledBackWithErrors);
-
-    // Destruct transaction so it releases its JIT symbols.
-    m_TransactionPool->releaseTransaction(T);
+    m_TransactionPool->releaseTransaction(&T);
   }
 
   std::vector<const Transaction*> IncrementalParser::getAllTransactions() {

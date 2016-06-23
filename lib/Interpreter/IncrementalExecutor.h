@@ -164,13 +164,13 @@ namespace cling {
     }
 
     ///\brief Unload a set of JIT symbols.
-    void unloadFromJIT(llvm::Module* M,
-                       Transaction::ExeUnloadHandle H) {
+    bool unloadFromJIT(llvm::Module* M, Transaction::ExeUnloadHandle H) {
       auto iMod = std::find(m_ModulesToJIT.begin(), m_ModulesToJIT.end(), M);
       if (iMod != m_ModulesToJIT.end())
         m_ModulesToJIT.erase(iMod);
       else
         m_JIT->removeModules((size_t)H.m_Opaque);
+      return true;
     }
 
     ///\brief Run the static initializers of all modules collected to far.

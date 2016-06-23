@@ -59,8 +59,6 @@ namespace cling {
                && "All nested transactions must be committed!");
         delete (*m_NestedTransactions)[i];
       }
-    if (getExecutor())
-      getExecutor()->unloadFromJIT(m_Module.get(), getExeUnloadHandle());
   }
 
   NamedDecl* Transaction::containsNamedDecl(llvm::StringRef name) const {
