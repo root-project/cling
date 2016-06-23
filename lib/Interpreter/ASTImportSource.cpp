@@ -3,9 +3,37 @@
 
 using namespace clang;
 
+namespace {
+    class ClingASTImporter : public ASTImporter {
+    private:
+    cling::ASTImportSource& m_source;
+
+    public:
+      ClingASTImporter(ASTContext &ToContext, FileManager &ToFileManager,
+                       ASTContext &FromContext, FileManager &FromFileManager,
+                       bool MinimalImport, cling::ASTImportSource& source) : 
+                    ASTImporter(ToContext, ToFileManager, FromContext,
+                                FromFileManager, MinimalImport), m_source(source) {}
+
+      Decl *Imported(Decl *From, Decl *To) override {
+        ASTImporter::Imported(From, To);
+
+        // Put the name of the Decl imported with the
+        // DeclarationName coming from the parent, in  my map.
+        if (DeclContext *declContextParent = llvm::dyn_cast<DeclContext>(From)) {
+          DeclContext *declContextChild = llvm::dyn_cast<DeclContext>(To);
+          m_source.addToDeclContext(declContextChild, declContextParent); 
+        }
+        
+        return To;
+      }
+
+    };
+}
+
 namespace cling {
 
-    ASTImportSource::ASTImportSource(cling::Interpreter *parent_interpreter,
+    ASTImportSource::ASTImportSource(const cling::Interpreter *parent_interpreter,
     cling::Interpreter *child_interpreter) :
     m_parent_Interp(parent_interpreter), m_child_Interp(child_interpreter) {
 
@@ -88,10 +116,10 @@ namespace cling {
       FileManager &child_FM = m_child_Interp->getCI()->getFileManager();
       FileManager &parent_FM = m_parent_Interp->getCI()->getFileManager();
 
-      // Clang's ASTImporter
-      ASTImporter importer(to_ASTContext, child_FM,
+      // Cling's ASTImporter
+      ClingASTImporter importer(to_ASTContext, child_FM,
                            from_ASTContext, parent_FM,
-                           /*MinimalImport : ON*/ true);
+                           /*MinimalImport : ON*/ true, *this);
 
       for (DeclContext::lookup_iterator I = lookup_result.begin(),
              E = lookup_result.end();
@@ -120,6 +148,8 @@ namespace cling {
     bool ASTImportSource::FindExternalVisibleDeclsByName(
       const DeclContext *childCurrentDeclContext, DeclarationName childDeclName) {
 
+      assert(childDeclName && "Child Decl name is empty");
+
       assert(childCurrentDeclContext->hasExternalVisibleStorage() &&
              "DeclContext has no visible decls in storage");
 
@@ -132,21 +162,24 @@ namespace cling {
       } else {
         // Get the identifier info from the parent interpreter
         // for this Name.
-        llvm::StringRef name(childDeclName.getAsString());
-        IdentifierTable &parentIdentifierTable =
-          m_parent_Interp->getCI()->getASTContext().Idents;
-        IdentifierInfo &parentIdentifierInfo = parentIdentifierTable.get(name);
-        DeclarationName parentDeclNameTemp(&parentIdentifierInfo);
-        parentDeclName = parentDeclNameTemp;
+        std::string name = childDeclName.getAsString();
+        if (!name.empty()) {
+          llvm::StringRef nameRef(name);
+          IdentifierTable &parentIdentifierTable =
+                              m_parent_Interp->getCI()->getASTContext().Idents;
+          IdentifierInfo &parentIdentifierInfo =
+                              parentIdentifierTable.get(nameRef);
+          parentDeclName = DeclarationName(&parentIdentifierInfo);
+        }
       }
 
       // Search in the map of the stored Decl Contexts for this
       // Decl Context.
       std::map<const clang::DeclContext *, clang::DeclContext *>::iterator I;
+      // If childCurrentDeclContext was found before and is already in the map,
+      // then do the lookup using the stored pointer.
       if ((I = m_DeclContexts_map.find(childCurrentDeclContext))
            != m_DeclContexts_map.end()) {
-        // If childCurrentDeclContext was found before and is already in the map,
-        // then do the lookup using the stored pointer.
         DeclContext *parentDeclContext = I->second;
 
         Decl *fromDeclContext = Decl::castFromDeclContext(parentDeclContext);
@@ -168,4 +201,55 @@ namespace cling {
       }
       return false;
     }
+
+    ///\brief Make available to child all decls in parent's decl context
+    /// that corresponds to child decl context.
+    void ASTImportSource::completeVisibleDeclsMap(
+                                  const clang::DeclContext *childDeclContext) {
+      assert (childDeclContext && "No child decl context!");
+
+      if (!childDeclContext->hasExternalVisibleStorage())
+        return;
+
+      // Search in the map of the stored Decl Contexts for this
+      // Decl Context.
+      std::map<const clang::DeclContext *, clang::DeclContext *>::iterator I;
+      // If childCurrentDeclContext was found before and is already in the map,
+      // then do the lookup using the stored pointer.
+      if ((I = m_DeclContexts_map.find(childDeclContext))
+          != m_DeclContexts_map.end()) {
+
+        DeclContext *parentDeclContext = I->second;
+
+        Decl *fromDeclContext = Decl::castFromDeclContext(parentDeclContext);
+        ASTContext &from_ASTContext = fromDeclContext->getASTContext();
+
+        Decl *toDeclContext = Decl::castFromDeclContext(childDeclContext);
+        ASTContext &to_ASTContext = toDeclContext->getASTContext();
+
+        // Prepare to import the Decl(Context)  we found in the
+        // child interpreter by getting the file managers from
+        // each interpreter.
+        FileManager &child_FM = m_child_Interp->getCI()->getFileManager();
+        FileManager &parent_FM = m_parent_Interp->getCI()->getFileManager();
+
+        // Cling's ASTImporter
+        ClingASTImporter importer(to_ASTContext, child_FM,
+                             from_ASTContext, parent_FM,
+                             /*MinimalImport : ON*/ true, *this);
+
+        for (DeclContext::decl_iterator I_decl = parentDeclContext->decls_begin(),
+          E_decl = parentDeclContext->decls_end(); I_decl != E_decl; ++I_decl) {
+          if (NamedDecl* parentNamedDecl = llvm::dyn_cast<NamedDecl>(*I_decl)) {
+            DeclarationName newDeclName = parentNamedDecl->getDeclName();
+            ImportDecl(parentNamedDecl, importer, newDeclName, newDeclName,
+                       childDeclContext);
+          }
+        }
+
+        const_cast<DeclContext *>(childDeclContext)->
+                                          setHasExternalVisibleStorage(false);
+      }
+    }
+
 } // end namespace cling

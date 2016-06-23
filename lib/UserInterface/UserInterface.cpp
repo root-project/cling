@@ -25,6 +25,8 @@
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
 
+#include "ClingTabCompletion.h"
+
 // Fragment copied from LLVM's raw_ostream.cpp
 #if defined(HAVE_UNISTD_H)
 # include <unistd.h>
@@ -117,6 +119,11 @@ namespace cling {
     std::unique_ptr<StreamReader> R(StreamReader::Create());
     std::unique_ptr<TerminalDisplay> D(TerminalDisplay::Create());
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
+
+    // Inform text input about the code complete consumer
+    ClingTabCompletion* CompletionConsumer = new ClingTabCompletion(m_MetaProcessor->getInterpreter());
+    TI.SetCompletion(CompletionConsumer);
+
 
     TI.SetPrompt("[cling]$ ");
     std::string line;
