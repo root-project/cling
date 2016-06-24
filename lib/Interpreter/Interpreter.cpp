@@ -693,10 +693,12 @@ namespace cling {
     m_IncrParser->addTransaction(T);
     m_IncrParser->markWholeTransactionAsUsed(T);
     T->setState(Transaction::kCollecting);
-    m_IncrParser->commitTransaction(m_IncrParser->endTransaction(T));
+    auto PRT = m_IncrParser->endTransaction(T);
+    m_IncrParser->commitTransaction(PRT);
 
-    if (executeTransaction(*T))
-      return Interpreter::kSuccess;
+    if ((T = PRT.getPointer()))
+      if (executeTransaction(*T))
+        return Interpreter::kSuccess;
 
     return Interpreter::kFailure;
   }

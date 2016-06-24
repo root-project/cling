@@ -352,7 +352,7 @@ namespace cling {
     return ParseResultTransaction(T, ParseResult);
   }
 
-  void IncrementalParser::commitTransaction(ParseResultTransaction PRT) {
+  void IncrementalParser::commitTransaction(ParseResultTransaction& PRT) {
     Transaction* T = PRT.getPointer();
     if (!T) {
       if (PRT.getInt() != kSuccess) {
@@ -392,6 +392,8 @@ namespace cling {
       Diags.Reset(/*soft=*/true);
       Diags.getClient()->clear();
 
+      PRT.setPointer(nullptr);
+      PRT.setInt(kFailed);
       m_Interpreter->unload(*T);
 
       if (MustStartNewModule) {
@@ -418,8 +420,10 @@ namespace cling {
 
       for (Transaction::const_nested_iterator I = T->nested_begin(),
             E = T->nested_end(); I != E; ++I)
-        if ((*I)->getState() != Transaction::kCommitted)
-          commitTransaction(ParseResultTransaction(*I, PR));
+        if ((*I)->getState() != Transaction::kCommitted) {
+          ParseResultTransaction PRT(*I, PR);
+          commitTransaction(PRT);
+        }
     }
 
     // If there was an error coming from the transformers.
@@ -515,6 +519,7 @@ namespace cling {
     // trigger emission of weak symbols by providing use.
     ParseResultTransaction PRT = endTransaction(deserT);
     commitTransaction(PRT);
+    deserT = PRT.getPointer();
 
     // This llvm::Module is done; finalize it and pass it to the execution
     // engine.
@@ -537,7 +542,9 @@ namespace cling {
       // Reset the module builder to clean up global initializers, c'tors, d'tors
       getCodeGenerator()->HandleTranslationUnit(Context);
       FileName = OldName;
-      commitTransaction(endTransaction(deserT));
+      auto PRT = endTransaction(deserT);
+      commitTransaction(PRT);
+      deserT = PRT.getPointer();
 
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
 
@@ -576,13 +583,17 @@ namespace cling {
   }
 
   void IncrementalParser::deregisterTransaction(Transaction& T) {
-    if (!T.getParent()) {
+    if (Transaction* Parent = T.getParent()) {
+      Parent->removeNestedTransaction(&T);
+      T.setParent(0);
+    } else {
       // Remove from the queue
       assert(&T == m_Transactions.back() && "Out of order transaction removal");
       m_Transactions.pop_back();
       if (!m_Transactions.empty())
         m_Transactions.back()->setNext(0);
     }
+
     m_TransactionPool->releaseTransaction(&T);
   }
 

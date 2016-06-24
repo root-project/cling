@@ -1228,13 +1228,6 @@ namespace cling {
   }
 
 
-  void TransactionUnloader::unlinkTransactionFromParent(Transaction* T) {
-    if (Transaction* Parent = T->getParent()) {
-      Parent->removeNestedTransaction(T);
-      T->setParent(0);
-    }
-  }
-
   bool TransactionUnloader::unloadDeclarations(Transaction* T,
                                                clang::DeclUnloader& DeclU) {
     bool Successful = true;
@@ -1311,7 +1304,6 @@ namespace cling {
   bool TransactionUnloader::RevertTransaction(Transaction* T) {
     clang::DeclUnloader DeclU(m_Sema, m_CodeGen, T);
 
-    unlinkTransactionFromParent(T);
     bool Successful = unloadDeclarations(T, DeclU);
     Successful = unloadFromPreprocessor(T, DeclU) && Successful;
     Successful = unloadDeserializedDeclarations(T, DeclU) && Successful;

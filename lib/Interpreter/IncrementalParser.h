@@ -130,7 +130,7 @@ namespace cling {
     ///\param[in] PRT - the transaction (ParseResultTransaction, really) to be
     /// committed
     ///
-    void commitTransaction(ParseResultTransaction PRT);
+    void commitTransaction(ParseResultTransaction& PRT);
 
     ///\brief Runs the consumers (e.g. CodeGen) on a non-parsed transaction.
     ///

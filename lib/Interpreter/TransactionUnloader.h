@@ -31,7 +31,6 @@ namespace cling {
     clang::CodeGenerator* m_CodeGen;
     cling::IncrementalExecutor* m_Exe;
 
-    void unlinkTransactionFromParent(Transaction* T);
     bool unloadDeclarations(Transaction* T, clang::DeclUnloader& DeclU);
     bool unloadDeserializedDeclarations(Transaction* T,
                                         clang::DeclUnloader& DeclU);
