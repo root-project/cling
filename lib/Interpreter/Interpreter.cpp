@@ -236,7 +236,7 @@ namespace cling {
   ///\brief Constructor for the child Interpreter.
   /// Passing the parent Interpreter as an argument.
   ///
-  Interpreter::Interpreter(Interpreter &parentInterpreter, int argc,
+  Interpreter::Interpreter(const Interpreter &parentInterpreter, int argc,
                            const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
     Interpreter(argc, argv, llvmdir, noRuntime, /* isChildInterp */ true) {
@@ -254,7 +254,7 @@ namespace cling {
 
     // Inform the Translation Unit Decl of I2 that it has to search somewhere
     // else to find the declarations.
-    getCI()->getASTContext().getTranslationUnitDecl()->setHasExternalVisibleStorage();
+    getCI()->getASTContext().getTranslationUnitDecl()->setHasExternalVisibleStorage(true);
 
     // Give my IncrementalExecutor a pointer to the Incremental executor of the
     // parent Interpreter.
@@ -636,6 +636,34 @@ namespace cling {
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Warning, SourceLocation());
     return Result;
+  }
+
+
+  Interpreter::CompilationResult
+  Interpreter::codeComplete(const std::string& input, unsigned offset) {
+
+    CompilationOptions CO;
+    CO.DeclarationExtraction = 0;
+    CO.ValuePrinting = 0;
+    CO.ResultEvaluation = 0;
+    CO.DynamicScoping = isDynamicLookupEnabled();
+    CO.Debug = isPrintingDebug();
+    CO.CheckPointerValidity = 0;
+    CO.CodeCompletionOffset = offset;
+
+
+    std::string wrappedInput = input;
+    std::string wrapperName;
+    if (ShouldWrapInput(input))
+      WrapInput(wrappedInput, wrapperName);
+
+    StateDebuggerRAII stateDebugger(this);
+
+    // This triggers the FileEntry to be created and the completion
+    // point to be set in clang.
+    m_IncrParser->Parse(wrappedInput, CO);
+
+    return kSuccess;
   }
 
   Interpreter::CompilationResult

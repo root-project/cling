@@ -304,7 +304,7 @@ namespace cling {
     ///\param[in] llvmdir - ???
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
-    Interpreter(Interpreter &parentInterpreter,int argc, const char* const *argv,
+    Interpreter(const Interpreter &parentInterpreter,int argc, const char* const *argv,
                 const char* llvmdir = 0, bool noRuntime = true);
 
     virtual ~Interpreter();
@@ -467,6 +467,18 @@ namespace cling {
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult parseForModule(const std::string& input);
+
+    ///\brief Code completes user input.
+    ///
+    /// The interface circumvents the most of the extra work necessary to
+    /// code complete code.
+    ///
+    /// @param[in] input - The input containing the string to be completed.
+    /// @param[out] T - The cling::Transaction of the input
+    ///
+    ///\returns Whether the operation was fully successful.
+    ///
+    CompilationResult codeComplete(const std::string& input, unsigned offset);
 
     ///\brief Compiles input line, which doesn't contain statements.
     ///

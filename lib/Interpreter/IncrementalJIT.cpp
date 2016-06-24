@@ -158,8 +158,8 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   m_TM(std::move(TM)),
   m_TMDataLayout(m_TM->createDataLayout()),
   m_ExeMM(llvm::make_unique<ClingMemoryManager>(m_Parent)),
-  m_NotifyObjectLoaded(*this),
-  m_ObjectLayer(m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
+  m_NotifyObjectLoaded(*this), m_NotifyFinalized(*this),
+  m_ObjectLayer(m_NotifyObjectLoaded, m_NotifyFinalized),
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
 
@@ -194,7 +194,8 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 
 
 llvm::orc::JITSymbol
-IncrementalJIT::getInjectedSymbols(llvm::StringRef Name) const {
+IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
+                                                bool AlsoInProcess) {
   if (Name == MANGLE_PREFIX "__cxa_atexit") {
     // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
     // coming from the JIT.
@@ -220,11 +221,12 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
     return Sym;
 
   if (AlsoInProcess) {
+    if (Name == "_ZSt16forward_as_tupleIJSsEESt5tupleIJDpOT_EES3_")
+      return llvm::orc::JITSymbol(nullptr);
     if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(Name))
       return llvm::orc::JITSymbol(SymInfo.getAddress(),
                                   llvm::JITSymbolFlags::Exported);
   }
-
   if (auto Sym = m_LazyEmitLayer.findSymbol(Name, false))
     return Sym;
 
@@ -240,12 +242,6 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
 
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
-    [&](const std::string &S) {
-      if (auto Sym = getInjectedSymbols(S))
-        return RuntimeDyld::SymbolInfo((uint64_t)Sym.getAddress(),
-                                       Sym.getFlags());
-      return m_ExeMM->findSymbol(S);
-    },
     [&](const std::string &Name) {
       if (auto Sym = getSymbolAddressWithoutMangling(Name, true)
           /*was: findSymbol(Name)*/)
@@ -267,7 +263,12 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
       uint64_t addr
         = (uint64_t) getParent().NotifyLazyFunctionCreators(NameNoPrefix);
       return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
-    });
+    },
+    [&](const std::string &S) {
+      if (S == "_ZSt16forward_as_tupleIJSsEESt5tupleIJDpOT_EES3_")
+        return RuntimeDyld::SymbolInfo(nullptr);
+      return m_ExeMM->findSymbol(S);
+    } );
 
   ModuleSetHandleT MSHandle
     = m_LazyEmitLayer.addModuleSet(std::move(modules),

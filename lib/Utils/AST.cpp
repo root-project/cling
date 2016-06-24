@@ -249,7 +249,8 @@ namespace utils {
         // Keep the argument const to be inline will all the other interfaces
         // like:  NestedNameSpecifier::Create
         ASTContext &mutableCtx( const_cast<ASTContext&>(Ctx) );
-        arg = TemplateArgument::CreatePackCopy(mutableCtx, desArgs);
+        arg = TemplateArgument(TemplateArgument::CreatePackCopy(mutableCtx,
+                                                                desArgs));
       }
     }
     return changed;
@@ -876,7 +877,8 @@ namespace utils {
         // Keep the argument const to be inline will all the other interfaces
         // like:  NestedNameSpecifier::Create
         ASTContext &mutableCtx( const_cast<ASTContext&>(Ctx) );
-        arg = TemplateArgument::CreatePackCopy(mutableCtx, desArgs);
+        arg = TemplateArgument(TemplateArgument::CreatePackCopy(mutableCtx,
+                                                                desArgs));
       }
     }
     return changed;
