@@ -15,6 +15,6 @@ macro() // CHECK: version 1
 //CHECK: (int) 1
 
 .U macro1.h
-.L macro2.C
+.L macro2.h
 macro() // CHECK: 2.version 2
 //CHECK: (int) 2
