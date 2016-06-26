@@ -30,62 +30,48 @@ namespace cling {
     //
     llvm::SmallVector<Transaction*, POOL_SIZE>  m_Transactions;
 
-    ///\brief The Sema required by cling::Transactions' ctor.
-    ///
-    clang::Sema& m_Sema;
-
-    // We need to free them in blocks.
-    //
-    //llvm::SmallVector<Transaction*, 64> m_TransactionBlocks;
-#ifndef NDEBUG
-    bool m_Debug;
-#endif
-
-  private:
   public:
-    TransactionPool(clang::Sema& S) : m_Sema(S) {
-#ifndef NDEBUG
-      m_Debug = false;
-#endif
-    }
-
+    TransactionPool() {}
     ~TransactionPool() {
-      for (size_t i = 0, e = m_Transactions.size(); i < e; ++i)
-        delete m_Transactions[i];
+      // Only free the memory as anything put in m_Transactions will have
+      // already been destructed in releaseTransaction
+      for (Transaction* T : m_Transactions)
+        ::operator delete(T);
     }
 
-    Transaction* takeTransaction() {
-      if (m_Transactions.empty())
-        return new Transaction(m_Sema);
-      Transaction* T = new (m_Transactions.pop_back_val()) Transaction(m_Sema);
-#ifndef NDEBUG
-      // *Very useful for debugging purposes and setting breakpoints in gdb.
-      if (m_Debug)
-        T = new Transaction(m_Sema);
-#endif
+    Transaction* takeTransaction(clang::Sema& S) {
+      Transaction *T;
+      if (kDebugMode || m_Transactions.empty()) {
+        T = (Transaction*) ::operator new(sizeof(Transaction));
+        new(T) Transaction(S);
+      } else
+        T = new (m_Transactions.pop_back_val()) Transaction(S);
 
-      T->m_State = Transaction::kCollecting;
       return T;
     }
 
-    void releaseTransaction(Transaction* T) {
-      assert((T->getState() == Transaction::kCompleted ||
-              T->getState() == Transaction::kRolledBack)
-             && "Transaction must completed!");
+    void releaseTransaction(Transaction* T, bool reuse = true) {
+      if (reuse) {
+        assert((T->getState() == Transaction::kCompleted ||
+                T->getState() == Transaction::kRolledBack)
+               && "Transaction must completed!");
+      }
 
       // Tell the parent that T is gone.
       if (T->getParent())
         T->getParent()->removeNestedTransaction(T);
 
-      if (m_Transactions.size() == POOL_SIZE) {
-        // don't overflow the pool
-        delete T;
-        return;
-      }
-      T->m_State = Transaction::kNumStates;
       T->~Transaction();
-      m_Transactions.push_back(T);
+
+      // don't overflow the pool
+      if (reuse && (m_Transactions.size() < POOL_SIZE)) {
+        T->m_State = Transaction::kNumStates;
+        m_Transactions.push_back(T);
+      }
+      else
+       ::operator delete(T);
     }
+
 #undef POOL_SIZE
 #undef TRANSACTIONS_IN_BLOCK
   };
