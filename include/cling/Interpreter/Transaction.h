@@ -39,6 +39,7 @@ namespace llvm {
 
 namespace cling {
   class IncrementalExecutor;
+  class TransactionPool;
 
   ///\brief Contains information about the consumed input at once.
   ///
@@ -184,14 +185,20 @@ namespace cling {
     ///
     clang::FileID m_BufferFID;
 
-  public:
-
+    ///\brief This is all to support allocation via TransactionPool.
+    /// There is currently no way for TransactionPool to mark if a Transaction
+    /// originated there or elsewhere, so if this interface is needed
+    /// then TransactionPool will have to be rewritten (or even removed
+    /// as the performance gains seem negligable)
+    ///
+    friend class TransactionPool;
     Transaction(clang::Sema& S);
     Transaction(const CompilationOptions& Opts, clang::Sema& S);
+    ~Transaction();
 
     void Initialize(clang::Sema& S);
 
-    ~Transaction();
+  public:
 
     enum State {
       kCollecting,
@@ -511,7 +518,6 @@ namespace cling {
 
     void printStructureBrief(size_t nindent = 0) const;
 
-    friend class TransactionPool;
   private:
     bool comesFromASTReader(clang::DeclGroupRef DGR) const;
   };

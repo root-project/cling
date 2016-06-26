@@ -187,7 +187,7 @@ namespace cling {
   void
   IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
                                 result, bool isChildInterpreter) {
-    m_TransactionPool.reset(new TransactionPool(getCI()->getSema()));
+    m_TransactionPool.reset(new TransactionPool);
     if (hasCodeGenerator()) {
       getCodeGenerator()->Initialize(getCI()->getASTContext());
       m_BackendPasses.reset(new BackendPasses(getCI()->getCodeGenOpts(),
@@ -261,17 +261,16 @@ namespace cling {
   }
 
   IncrementalParser::~IncrementalParser() {
-    const Transaction* T = getFirstTransaction();
-    const Transaction* nextT = 0;
+    Transaction* T = const_cast<Transaction*>(getFirstTransaction());
     while (T) {
       assert((T->getState() == Transaction::kCommitted
               || T->getState() == Transaction::kRolledBackWithErrors
               || T->getState() == Transaction::kNumStates // reset from the pool
               || T->getState() == Transaction::kRolledBack)
              && "Not committed?");
-      nextT = T->getNext();
-      delete T;
-      T = nextT;
+      const Transaction* nextT = T->getNext();
+      m_TransactionPool->releaseTransaction(T, false);
+      T = const_cast<Transaction*>(nextT);
     }
   }
 
@@ -287,7 +286,7 @@ namespace cling {
   Transaction* IncrementalParser::beginTransaction(const CompilationOptions&
                                                    Opts) {
     Transaction* OldCurT = m_Consumer->getTransaction();
-    Transaction* NewCurT = m_TransactionPool->takeTransaction();
+    Transaction* NewCurT = m_TransactionPool->takeTransaction(m_CI->getSema());
     NewCurT->setCompilationOpts(Opts);
     // If we are in the middle of transaction and we see another begin
     // transaction - it must be nested transaction.
