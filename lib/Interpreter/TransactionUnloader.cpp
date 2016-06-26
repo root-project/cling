@@ -16,16 +16,8 @@
 #include "cling/Interpreter/Transaction.h"
 
 #include "clang/AST/Decl.h"
-#include "clang/AST/DeclVisitor.h"
 #include "clang/AST/DependentDiagnostic.h"
-#include "clang/Basic/FileManager.h"
-#include "clang/CodeGen/ModuleBuilder.h"
-#include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
-
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Module.h"
-//#include "llvm/Transforms/IPO.h"
 
 using namespace clang;
 
