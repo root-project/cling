@@ -247,7 +247,7 @@ namespace clang {
     ///\brief Function that collects the files which we must reread from disk.
     ///
     /// For example: We must uncache the cached include, which brought a
-    /// declaration or a macro diretive definition in the AST.
+    /// declaration or a macro directive definition in the AST.
     ///\param[in] Loc - The source location of the unloaded declaration.
     ///
     void CollectFilesToUncache(SourceLocation Loc);
