@@ -39,3 +39,7 @@ var
 // CHECK: (enumName) (k1) : ({{(unsigned )?}}int) 0
 const enumName constVar = (enumName) 1 // k2 is invisible!
 // CHECK: (const enumName) (k2) : ({{(unsigned )?}}int) 1
+
+// ROOT-8036: check that library symbols do not override interpreter symbols
+int step = 10 // CHECK: (int) 10
+step // CHECK: (int) 10
