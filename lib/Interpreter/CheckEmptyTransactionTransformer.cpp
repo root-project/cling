@@ -26,8 +26,7 @@ namespace cling {
     if (!CS->size() || (CS->size() == 1 && isa<NullStmt>(CS->body_back()))) {
       // This is an empty wrapper function. Get rid of it.
       // We know that it didn't end up in the EE by design.
-      DeclUnloader U(m_Sema, /*CodeGenerator*/ 0, /*Transaction*/ 0);
-      U.UnloadDecl(FD);
+      UnloadDecl(m_Sema, FD);
 
       return Result(0, true);
     }

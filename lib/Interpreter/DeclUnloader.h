@@ -275,6 +275,18 @@ namespace clang {
 
 namespace cling {
   using clang::DeclUnloader;
+
+  /// \brief Unload a Decl from the AST, but not from CodeGen or Module.
+  inline bool UnloadDecl(clang::Sema* S, clang::Decl* D) {
+    DeclUnloader Unloader(S, nullptr, nullptr);
+    return Unloader.UnloadDecl(D);
+  }
+
+  /// \brief Unload a Decl from the AST and CodeGen, but not from the Module.
+  inline bool UnloadDecl(clang::Sema* S, clang::CodeGenerator* CG, clang::Decl* D) {
+    DeclUnloader Unloader(S, CG, nullptr);
+    return Unloader.UnloadDecl(D);
+  }
 } // namespace cling
 
 #endif // CLING_DECL_UNLOADER

@@ -705,18 +705,14 @@ namespace cling {
                         TheDecl = TD->getDefinition();
                         if (TheDecl->isInvalidDecl()) {
                           // if the decl is invalid try to clean up
-                          DeclUnloader U(&S, /*CodeGenerator*/0,
-                                         /*IncrementalExecutor*/ 0);
-                          U.UnloadDecl(TheDecl);
+                          UnloadDecl(&S, TheDecl);
                           *setResultType = nullptr;
                           return 0;
                         }
                       } else {
                         // NOTE: We cannot instantiate the scope: not a valid decl.
                         // Need to rollback transaction.
-                        DeclUnloader U(&S, /*CodeGenerator*/0,
-                                       /*IncrementalExecutor*/ 0);
-                        U.UnloadDecl(TD);
+                        UnloadDecl(&S, TD);
                         *setResultType = nullptr;
                         return 0;
                       }
@@ -916,8 +912,7 @@ namespace cling {
     }
     if (scopeDecl->isInvalidDecl()) {
       // if the decl is invalid try to clean up
-      DeclUnloader U(&S, /*CodeGenerator*/0, /*IncrementalExecutor*/ 0);
-      U.UnloadDecl(const_cast<Decl*>(scopeDecl));
+      UnloadDecl(&S, const_cast<Decl*>(scopeDecl));
       return 0;
     }
 
@@ -965,8 +960,7 @@ namespace cling {
     }
     if (scopeDecl->isInvalidDecl()) {
       // if the decl is invalid try to clean up
-      DeclUnloader U(&S, /*CodeGenerator*/0, /*IncrementalExecutor*/ 0);
-      U.UnloadDecl(const_cast<Decl*>(scopeDecl));
+      UnloadDecl(&S, const_cast<Decl*>(scopeDecl));
       return 0;
     }
     //
@@ -1167,8 +1161,7 @@ namespace cling {
                                             true /*recursive instantiation*/);
           if (TheDecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
-            DeclUnloader U(&S, /*CodeGenerator*/0, /*IncrementalExecutor*/ 0);
-            U.UnloadDecl(const_cast<FunctionDecl*>(TheDecl));
+            UnloadDecl(&S, const_cast<FunctionDecl*>(TheDecl));
             return 0;
           }
        }
@@ -1724,8 +1717,7 @@ namespace cling {
                                             true /*recursive instantiation*/);
           if (fdecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
-            DeclUnloader U(&S, /*CodeGenerator*/0, /*IncrementalExecutor*/ 0);
-            U.UnloadDecl(fdecl);
+            UnloadDecl(&S, fdecl);
             return 0;
           }
           return fdecl;

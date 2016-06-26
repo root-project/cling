@@ -96,7 +96,7 @@ namespace cling {
   }
 
   bool TransactionUnloader::RevertTransaction(Transaction* T) {
-    clang::DeclUnloader DeclU(m_Sema, m_CodeGen, T);
+    DeclUnloader DeclU(m_Sema, m_CodeGen, T);
 
     bool Successful = unloadDeclarations(T, DeclU);
     Successful = unloadFromPreprocessor(T, DeclU) && Successful;
@@ -134,8 +134,7 @@ namespace cling {
   }
 
   bool TransactionUnloader::UnloadDecl(Decl* D) {
-    DeclUnloader DeclU(m_Sema, m_CodeGen, 0);
-    return DeclU.UnloadDecl(D);
+    return cling::UnloadDecl(m_Sema, m_CodeGen, D);
   }
 } // end namespace cling
 
