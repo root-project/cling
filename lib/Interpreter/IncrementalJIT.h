@@ -110,7 +110,7 @@ private:
     {}
 
     void removeObjectSet(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
-      struct AccessSymbolTable: public Base_t::LinkedObjectSet {
+      struct AccessSymbolTable: public LinkedObjectSet {
         const llvm::StringMap<llvm::RuntimeDyld::SymbolInfo>&
         getSymbolTable() const
         {
