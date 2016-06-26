@@ -243,17 +243,18 @@ namespace clang {
       return VisitMacro(MD);
     }
 
-    template <typename T>
-    constexpr static bool isDefinition(T*) {
+    constexpr static bool isDefinition(void*) {
       return false;
     }
+
     static bool isDefinition(TagDecl* R) {
       return R->isCompleteDefinition() && isa<CXXRecordDecl>(R);
     }
-    template <typename T>
-    static void resetDefinitionData(T*) {
+
+    static void resetDefinitionData(void*) {
       llvm_unreachable("resetDefinitionData on non-cxx record declaration");
     }
+
     static void resetDefinitionData(TagDecl *decl) {
       auto canon = dyn_cast<CXXRecordDecl>(decl->getCanonicalDecl());
       assert(canon && "Only CXXRecordDecl have DefinitionData");
