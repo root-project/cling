@@ -1178,7 +1178,7 @@ namespace cling {
     if (InterpreterCallbacks* callbacks = getCallbacks())
       callbacks->TransactionRollback(T);
 
-    TransactionUnloader U(&getCI()->getSema(),
+    TransactionUnloader U(this, &getCI()->getSema(),
                           m_IncrParser->getCodeGenerator(),
                           m_Executor.get());
     if (U.RevertTransaction(&T))

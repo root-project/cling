@@ -25,7 +25,7 @@
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/AutoloadCallback.h"
 #include "cling/Interpreter/Transaction.h"
-#include "TransactionUnloader.h"
+#include "DeclUnloader.h"
 
 namespace {
   static const char annoTag[] = "$clingAutoload$";
@@ -227,7 +227,7 @@ namespace cling {
         return true;
 
       // Now that we will read the full enum, unload the forward decl.
-      TransactionUnloader Unloader(m_Sema, 0, /*IncrementalExecutor*/ 0);
+      DeclUnloader Unloader(m_Sema, 0, /*IncrementalExecutor*/ 0);
       Unloader.UnloadDecl(D);
       return true;
     }

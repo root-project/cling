@@ -32,7 +32,6 @@ namespace llvm {
 namespace clang {
   class ASTContext;
   class ASTDeserializationListener;
-  class CodeGenerator;
   class CompilerInstance;
   class Decl;
   class DeclContext;
