@@ -12,7 +12,6 @@
 
 #include "cling/Interpreter/Transaction.h"
 
-#include "clang/AST/DeclContextInternals.h"
 #include "clang/AST/DeclVisitor.h"
 
 namespace clang {
