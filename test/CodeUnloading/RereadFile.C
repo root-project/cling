@@ -11,6 +11,9 @@
 
 extern "C" int printf(const char*,...);
 
+// work around ROOT-8240
+42 // CHECK: (int) 42
+
 // ROOT-7858: forget symbols
 .L macro1.h
 macro() // CHECK: version 1
