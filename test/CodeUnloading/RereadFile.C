@@ -9,6 +9,8 @@
 // RUN: cat %s | %cling -I%p 2>&1 | FileCheck %s
 // Test that we re-read file, e.g. that we uncache symbols and file content.
 
+extern "C" int printf(const char*,...);
+
 // ROOT-7858: forget symbols
 .L macro1.h
 macro() // CHECK: version 1
