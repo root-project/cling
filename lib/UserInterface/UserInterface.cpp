@@ -10,6 +10,7 @@
 #include "cling/UserInterface/UserInterface.h"
 
 #include "cling/UserInterface/CompilationException.h"
+#include "cling/UserInterface/TabCompletion.h"
 #include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "textinput/TextInput.h"
@@ -24,8 +25,6 @@
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
-
-#include "ClingTabCompletion.h"
 
 // Fragment copied from LLVM's raw_ostream.cpp
 #if defined(HAVE_UNISTD_H)
@@ -121,8 +120,8 @@ namespace cling {
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
     // Inform text input about the code complete consumer
-    ClingTabCompletion* CompletionConsumer = new ClingTabCompletion(m_MetaProcessor->getInterpreter());
-    TI.SetCompletion(CompletionConsumer);
+    cling::TabCompletion* Completion = new cling::TabCompletion(m_MetaProcessor->getInterpreter());
+    TI.SetCompletion(Completion);
 
 
     TI.SetPrompt("[cling]$ ");

@@ -9,6 +9,7 @@
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
+#include "cling/Interpreter/ClingTabCompletion.h"
 #include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/Interpreter.h"
 
@@ -197,6 +198,7 @@ namespace cling {
       m_PPCallbacks = new InterpreterPPCallbacks(this);
       PP.addPPCallbacks(std::unique_ptr<InterpreterPPCallbacks>(m_PPCallbacks));
     }
+    m_Completer = new ClingTabCompletion(*m_Interpreter);
   }
 
   // pin the vtable here
@@ -260,6 +262,11 @@ namespace cling {
                                   child->getCI()->getSema().CodeCompleter);
     if (consumer)                              
       consumer->getCompletions(completions);
+  }
+
+  void InterpreterCallbacks::CodeComplete(const std::string& line, size_t& cursor,
+                             std::vector<std::string>& displayCompletions) const {
+    m_Completer->Complete(line, cursor, displayCompletions);
   }
 
   void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC,

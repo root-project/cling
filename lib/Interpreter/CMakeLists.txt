@@ -27,6 +27,7 @@ add_cling_library(clingInterpreter
   CIFactory.cpp
   ClangInternalState.cpp
   ClingCodeCompleteConsumer.cpp
+  ClingTabCompletion.cpp
   ClingPragmas.cpp
   DeclCollector.cpp
   DeclExtractor.cpp
