@@ -100,9 +100,11 @@ namespace cling {
     }
 
     bool TraverseFunctionDecl(FunctionDecl* FD) {
-      // We cannot synthesize when there is a const expr.
-      if (!FD->isConstexpr())
-        RecursiveASTVisitor::TraverseFunctionDecl(FD);
+      // We cannot synthesize when there is a const expr
+      // and if it is a function template (we will do the transformation on
+      // the instance).
+      if (!FD->isConstexpr() && !FD->getDescribedFunctionTemplate())
+         RecursiveASTVisitor::TraverseFunctionDecl(FD);
       return true;
     }
 
@@ -141,17 +143,40 @@ namespace cling {
       TypeSourceInfo* constVoidPtrTSI = m_Context.getTrivialTypeSourceInfo(
         checkCallType->getParamType(2), Loc);
 
+      // It is unclear whether this is the correct cast if the type
+      // is dependent.  Hence, For now, we do not expect SynthesizeCheck to
+      // be run on a function template.  It should be run only on function
+      // instances.
+      // When this is actually insert in a function template, it seems that
+      // clang r272382 when instantiating the templates drops one of the part
+      // of the implicit cast chain.
+      // Namely in:
+/*
+`-ImplicitCastExpr 0x1010cea90 <col:4> 'const void *' <BitCast>
+ `-ImplicitCastExpr 0x1026e0bc0 <col:4> 'const class TAttMarker *'
+                    <UncheckedDerivedToBase (TAttMarker)>
+  `-ImplicitCastExpr 0x1026e0b48 <col:4> 'class TGraph *' <LValueToRValue>
+   `-DeclRefExpr 0x1026e0b20 <col:4> 'class TGraph *' lvalue Var 0x1026e09c0
+                   'g5' 'class TGraph *'
+*/
+      // It drops the 2nd lines (ImplicitCastExpr UncheckedDerivedToBase)
+      // clang r227800 seems to actually keep that lines during instantiation.
       Expr* voidPtrArg
-        = m_Sema.BuildCStyleCastExpr(Loc, constVoidPtrTSI, Loc,
-                                     Arg).get();
+        = m_Sema.BuildCStyleCastExpr(Loc, constVoidPtrTSI, Loc, Arg).get();
 
       Expr *args[] = {VoidSemaArg, VoidExprArg, voidPtrArg};
 
       if (Expr* call = m_Sema.ActOnCallExpr(S, checkCall,
-                                         Loc, args, Loc).get()) {
+                                            Loc, args, Loc).get())
+      {
+        // It is unclear whether this is the correct cast if the type
+        // is dependent.  Hence, For now, we do not expect SynthesizeCheck to
+        // be run on a function template.  It should be run only on function
+        // instances.
         clang::TypeSourceInfo* argTSI = m_Context.getTrivialTypeSourceInfo(
-                                        Arg->getType(), Loc);
-        Expr* castExpr = m_Sema.BuildCStyleCastExpr(Loc, argTSI, Loc, call).get();
+                                          Arg->getType(), Loc);
+        Expr* castExpr = m_Sema.BuildCStyleCastExpr(Loc, argTSI,
+                                                    Loc, call).get();
         return castExpr;
       }
       return voidPtrArg;
