@@ -46,10 +46,6 @@ namespace cling {
   /// interpreter as it does its thing.  Clients can define their hooks here to
   /// implement interpreter level tools.
   class InterpreterCallbacks {
-  private:
-    ///\brief Cling Code Completion object.
-    ///
-    ClingTabCompletion* m_Completer;
 
   protected:
 
@@ -76,6 +72,8 @@ namespace cling {
     ///\brief DynamicScopes only! Set to true only when evaluating dynamic expr.
     ///
     bool m_IsRuntime;
+
+
 
   protected:
     void UpdateWithNewDecls(const clang::DeclContext *DC,

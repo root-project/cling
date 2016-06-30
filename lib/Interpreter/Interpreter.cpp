@@ -1440,4 +1440,38 @@ namespace cling {
     T.setState(Transaction::kCommitted);
   }
 
+  void Interpreter::CodeComplete(const std::string& Line, size_t& Cursor,
+                      std::vector<std::string>& DisplayCompletions) const {
+    //Get the results
+    const char * const argV = "cling";
+    cling::Interpreter CodeCompletionInterp(*this, 1, &argV);
+
+    // Create the CodeCompleteConsumer with InterpreterCallbacks
+    // from the parent interpreter and set the consumer for the child
+    // interpreter
+    // Yuck! But I need the const/non-const to be fixed somehow.
+    
+    const InterpreterCallbacks* callbacks = this->getCallbacks();
+    callbacks->CreateCodeCompleteConsumer(&CodeCompletionInterp); 
+
+    clang::CompilerInstance* codeCompletionCI = CodeCompletionInterp.getCI();
+    clang::Sema& codeCompletionSemaRef = codeCompletionCI->getSema();
+    // Ignore diagnostics when we tab complete
+    clang::IgnoringDiagConsumer* ignoringDiagConsumer = new clang::IgnoringDiagConsumer();
+    codeCompletionSemaRef.getDiagnostics().setClient(ignoringDiagConsumer, true);
+
+    auto Owner = this->getCI()->getSema().getDiagnostics().takeClient();
+    auto Client = this->getCI()->getSema().getDiagnostics().getClient();
+    this->getCI()->getSema().getDiagnostics().setClient(ignoringDiagConsumer, false);
+    CodeCompletionInterp.codeComplete(Line, Cursor);
+  
+    callbacks->GetCompletionResults(&CodeCompletionInterp, DisplayCompletions);
+    // Restore the original diag client for parent interpreter
+    this->getCI()->getSema().getDiagnostics().setClient(Client, Owner.release() != nullptr);
+    // FIX-ME : Change it in the Incremental Parser
+    // It does not work even if I call unload in IncrementalParser, I think
+    // it would be to early.
+    CodeCompletionInterp.unload(1);
+  }
+
 } //end namespace cling

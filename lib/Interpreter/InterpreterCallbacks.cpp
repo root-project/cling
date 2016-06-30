@@ -198,7 +198,6 @@ namespace cling {
       m_PPCallbacks = new InterpreterPPCallbacks(this);
       PP.addPPCallbacks(std::unique_ptr<InterpreterPPCallbacks>(m_PPCallbacks));
     }
-    m_Completer = new ClingTabCompletion(*m_Interpreter);
   }
 
   // pin the vtable here
@@ -266,7 +265,7 @@ namespace cling {
 
   void InterpreterCallbacks::CodeComplete(const std::string& line, size_t& cursor,
                              std::vector<std::string>& displayCompletions) const {
-    m_Completer->Complete(line, cursor, displayCompletions);
+    m_Interpreter->CodeComplete(line, cursor, displayCompletions);
   }
 
   void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC,

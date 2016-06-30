@@ -689,6 +689,9 @@ namespace cling {
                         IgnoreFilesFunc_t ignoreFiles =
                           [](const clang::PresumedLoc&) { return false;}) const;
 
+    void CodeComplete(const std::string& line, size_t& cursor,
+                      std::vector<std::string>& displayCompletions) const;
+
     friend class runtime::internal::LifetimeHandler;
   };
 
