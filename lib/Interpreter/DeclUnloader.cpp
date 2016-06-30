@@ -481,11 +481,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       DC = DC->getLookupParent();
 
     // if the decl was anonymous we are done.
-    if (!ND->getIdentifier())
-      return Successful;
-
-     // If the decl was removed make sure that we fix the lookup
-    if (Successful) {
+    if (Successful && ND->getIdentifier()) {
+      // If the decl was removed make sure that we fix the lookup
       if (Scope* S = m_Sema->getScopeForContext(DC))
         S->RemoveDecl(ND);
 
