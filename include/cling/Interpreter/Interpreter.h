@@ -316,6 +316,10 @@ namespace cling {
 
     virtual ~Interpreter();
 
+    ///\brief Whether the Interpreter is setup and ready to be used.
+    ///
+    bool isValid() const;
+
     const InvocationOptions& getOptions() const { return m_Opts; }
     InvocationOptions& getOptions() { return m_Opts; }
 
@@ -615,6 +619,7 @@ namespace cling {
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
 
     clang::CompilerInstance* getCI() const;
+    clang::CompilerInstance* getCIOrNull() const;
     clang::Sema& getSema() const;
 
     //FIXME: This must be in InterpreterCallbacks.

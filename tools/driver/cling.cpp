@@ -52,9 +52,17 @@ int main( int argc, char **argv ) {
 
   // Set up the interpreter
   cling::Interpreter interp(argc, argv);
-  if (interp.getOptions().Help) {
-    return 0;
+
+  if (!interp.isValid()) {
+    // Check if clang already diagnosed the error
+    clang::CompilerInstance* CI = interp.getCIOrNull();
+    if (CI && CI->getDiagnostics().getClient()->getNumErrors() == 0)
+      ::perror("Could not create Interpreter instance");
+    return EXIT_FAILURE;
   }
+  if (interp.getOptions().Help)
+    return EXIT_SUCCESS;
+
 
   clang::CompilerInstance* CI = interp.getCI();
   interp.AddIncludePath(".");
@@ -116,5 +124,6 @@ int main( int argc, char **argv ) {
   // Only for test/OutputRedirect.C, but shouldn't affect performance too much.
   ::fflush(stdout);
   ::fflush(stderr);
-  return ret;
+
+  return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }

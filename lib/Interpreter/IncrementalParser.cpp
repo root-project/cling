@@ -180,11 +180,17 @@ namespace cling {
     m_Interpreter(interp),
     m_CI(CIFactory::createCI("", interp->getOptions(), llvmdir)),
     m_Consumer(nullptr), m_ModuleNo(0) {
-    assert(m_CI.get() && "CompilerInstance is (null)!");
+
+    if (!m_CI) {
+      cling::errs() << "Compiler instance could not be created.\n";
+      return;
+    }
 
     m_Consumer = dyn_cast<DeclCollector>(&m_CI->getSema().getASTConsumer());
-    assert(m_Consumer && "Expected ChainedConsumer!");
-
+    if (!m_Consumer) {
+      cling::errs() << "No AST consumer available.\n";
+      return;
+    }
 
     DiagnosticsEngine& Diag = m_CI->getDiagnostics();
     if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
@@ -204,7 +210,7 @@ namespace cling {
     initializeVirtualFile();
   }
 
-  void
+  bool
   IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
                                 result, bool isChildInterpreter) {
     m_TransactionPool.reset(new TransactionPool);
@@ -218,6 +224,7 @@ namespace cling {
 
     Transaction* CurT = beginTransaction(CO);
     Preprocessor& PP = m_CI->getPreprocessor();
+    DiagnosticsEngine& Diags = m_CI->getSema().getDiagnostics();
 
     // Pull in PCH.
     const std::string& PCHFileName
@@ -239,8 +246,8 @@ namespace cling {
     PP.EnterMainSourceFile();
 
     Sema* TheSema = &m_CI->getSema();
-    m_Parser.reset(new Parser(PP, *TheSema,
-                              false /*skipFuncBodies*/));
+    m_Parser.reset(new Parser(PP, *TheSema, false /*skipFuncBodies*/));
+
     // Initialize the parser after PP has entered the main source file.
     m_Parser->Initialize();
 
@@ -268,6 +275,13 @@ namespace cling {
     // been defined yet!
     ParseResultTransaction PRT = endTransaction(CurT);
     result.push_back(PRT);
+    return true;
+  }
+
+  bool IncrementalParser::isValid(bool initialized) const {
+    return m_CI && m_CI->hasFileManager() && m_Consumer
+           && !m_VirtualFileID.isInvalid()
+           && (!initialized || (m_TransactionPool && m_Parser));
   }
 
   const Transaction* IncrementalParser::getCurrentTransaction() const {
@@ -621,7 +635,8 @@ namespace cling {
   void IncrementalParser::initializeVirtualFile() {
     SourceManager& SM = getCI()->getSourceManager();
     m_VirtualFileID = SM.getMainFileID();
-    assert(!m_VirtualFileID.isInvalid() && "No VirtualFileID created?");
+    if (m_VirtualFileID.isInvalid())
+      cling::errs() << "VirtualFileID could not be created.\n";
   }
 
   IncrementalParser::ParseResultTransaction

@@ -99,7 +99,13 @@ namespace cling {
     IncrementalParser(Interpreter* interp, const char* llvmdir);
     ~IncrementalParser();
 
-    void Initialize(llvm::SmallVectorImpl<ParseResultTransaction>& result,
+    ///\brief Whether the IncrementalParser is valid.
+    ///
+    ///\param[in] initialized - check if IncrementalParser has been initialized.
+    ///
+    bool isValid(bool initialized = true) const;
+
+    bool Initialize(llvm::SmallVectorImpl<ParseResultTransaction>& result,
                     bool isChildInterpreter);
     clang::CompilerInstance* getCI() const { return m_CI.get(); }
     clang::Parser* getParser() const { return m_Parser.get(); }
