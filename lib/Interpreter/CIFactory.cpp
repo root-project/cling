@@ -108,7 +108,7 @@ namespace {
       }
       ::pclose(PF);
     } else {
-      cling::errs() << "popen failed";
+      ::perror("popen failure");
       // Don't be overly verbose, we already printed the command
       if (!Verbose)
         cling::errs() << " for '" << CppInclQuery << "'\n";
@@ -462,23 +462,25 @@ namespace {
 
   /// \brief Retrieves the clang CC1 specific flags out of the compilation's
   /// jobs. Returns NULL on error.
-  static const llvm::opt::ArgStringList
-  *GetCC1Arguments(clang::DiagnosticsEngine *Diagnostics,
-                   clang::driver::Compilation *Compilation) {
+  static const llvm::opt::ArgStringList*
+  GetCC1Arguments(clang::driver::Compilation *Compilation,
+                  clang::DiagnosticsEngine* = nullptr) {
     // We expect to get back exactly one Command job, if we didn't something
     // failed. Extract that job from the Compilation.
     const clang::driver::JobList &Jobs = Compilation->getJobs();
     if (!Jobs.size() || !isa<clang::driver::Command>(*Jobs.begin())) {
-      // diagnose this...
-      return NULL;
+      // diagnose this better...
+      cling::errs() << "No Command jobs were built.\n";
+      return nullptr;
     }
 
     // The one job we find should be to invoke clang again.
     const clang::driver::Command *Cmd
       = cast<clang::driver::Command>(&(*Jobs.begin()));
     if (llvm::StringRef(Cmd->getCreator().getName()) != "clang") {
-      // diagnose this...
-      return NULL;
+      // diagnose this better...
+      cling::errs() << "Clang wasn't the first job.\n";
+      return nullptr;
     }
 
     return &Cmd->getArguments();
@@ -578,6 +580,23 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
   }
 
+  static llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
+  SetupDiagnostics(DiagnosticOptions& DiagOpts) {
+    // The compiler invocation is the owner of the diagnostic options.
+    // Everything else points to them.
+    llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
+
+    std::unique_ptr<TextDiagnosticPrinter>
+      DiagnosticPrinter(new TextDiagnosticPrinter(cling::errs(), &DiagOpts));
+
+    llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
+      Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
+                                  DiagnosticPrinter.get(), /*Owns it*/ true));
+    DiagnosticPrinter.release();
+
+    return Diags;
+  }
+
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
@@ -629,32 +648,38 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     argvCompile.push_back("-c");
     argvCompile.push_back("-");
 
-    clang::CompilerInvocation*
-      Invocation = new clang::CompilerInvocation;
+    std::unique_ptr<clang::CompilerInvocation>
+      InvocationPtr(new clang::CompilerInvocation);
+
     // The compiler invocation is the owner of the diagnostic options.
     // Everything else points to them.
-    DiagnosticOptions& DiagOpts = Invocation->getDiagnosticOpts();
-    TextDiagnosticPrinter* DiagnosticPrinter
-      = new TextDiagnosticPrinter(cling::errs(), &DiagOpts);
-    llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
-    llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
-      Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
-                                  DiagnosticPrinter, /*Owns it*/ true));
-    clang::driver::Driver Driver(argv[0], llvm::sys::getDefaultTargetTriple(),
-                                 *Diags);
-    //Driver.setWarnMissingInput(false);
-    Driver.setCheckInputsExist(false); // think foo.C(12)
-    llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());
-    std::unique_ptr<clang::driver::Compilation>
-      Compilation(Driver.BuildCompilation(RF));
-    const clang::driver::ArgStringList* CC1Args
-      = GetCC1Arguments(Diags.get(), Compilation.get());
-    if (CC1Args == NULL) {
-      delete Invocation;
-      return 0;
+    DiagnosticOptions& DiagOpts = InvocationPtr->getDiagnosticOpts();
+    llvm::IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
+        SetupDiagnostics(DiagOpts);
+    if (!Diags) {
+      cling::errs() << "Could not setup diagnostic engine.\n";
+      return nullptr;
     }
 
-    clang::CompilerInvocation::CreateFromArgs(*Invocation, CC1Args->data() + 1,
+    clang::driver::Driver Drvr(argv[0], llvm::sys::getDefaultTargetTriple(),
+                               *Diags);
+    //Drvr.setWarnMissingInput(false);
+    Drvr.setCheckInputsExist(false); // think foo.C(12)
+    llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());
+    std::unique_ptr<clang::driver::Compilation>
+      Compilation(Drvr.BuildCompilation(RF));
+    if (!Compilation) {
+      cling::errs() << "Couldn't create clang::driver::Compilation.\n";
+      return nullptr;
+    }
+
+    const driver::ArgStringList* CC1Args = GetCC1Arguments(Compilation.get());
+    if (!CC1Args) {
+      cling::errs() << "Could not get cc1 arguments.\n";
+      return nullptr;
+    }
+
+    clang::CompilerInvocation::CreateFromArgs(*InvocationPtr, CC1Args->data() + 1,
                                               CC1Args->data() + CC1Args->size(),
                                               *Diags);
     // We appreciate the error message about an unknown flag (or do we? if not
@@ -664,10 +689,14 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     // Create and setup a compiler instance.
     std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
-    CI->createFileManager();
+    CI->setInvocation(InvocationPtr.get());
+    InvocationPtr.release();
+    CI->setDiagnostics(Diags.get()); // Diags is ref-counted
 
+    CI->createFileManager();
+    clang::CompilerInvocation& Invocation = CI->getInvocation();
     std::string& PCHFileName
-      = Invocation->getPreprocessorOpts().ImplicitPCHInclude;
+      = Invocation.getPreprocessorOpts().ImplicitPCHInclude;
     if (!PCHFileName.empty()) {
       if (cling::utils::LookForFile(argvCompile, PCHFileName,
               &CI->getFileManager(),
@@ -701,7 +730,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
             return false;
           }
         };
-        PCHListener listener(*Invocation);
+        PCHListener listener(Invocation);
         ASTReader::readASTFileControlBlock(PCHFileName,
                                            CI->getFileManager(),
                                            CI->getPCHContainerReader(),
@@ -710,16 +739,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       }
     }
 
-    Invocation->getFrontendOpts().DisableFree = true;
+    Invocation.getFrontendOpts().DisableFree = true;
     // Copied from CompilerInstance::createDiagnostics:
     // Chain in -verify checker, if requested.
     if (DiagOpts.VerifyDiagnostics)
       Diags->setClient(new clang::VerifyDiagnosticConsumer(*Diags));
     // Configure our handling of diagnostics.
     ProcessWarningOptions(*Diags, DiagOpts);
-
-    CI->setInvocation(Invocation);
-    CI->setDiagnostics(Diags.get());
 
     if (PCHFileName.empty()) {
       // Set the language options, which cling needs
@@ -735,13 +761,17 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       PPOpts.addMacroDef("__CLING__CXX11");
     }
 
-    if (CI->getDiagnostics().hasErrorOccurred())
-      return 0;
+    if (CI->getDiagnostics().hasErrorOccurred()) {
+      cling::errs() << "Compiler error to early in initialization.\n";
+      return nullptr;
+    }
 
     CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
-                                               Invocation->TargetOpts));
-    if (!CI->hasTarget())
-      return 0;
+                                               Invocation.TargetOpts));
+    if (!CI->hasTarget()) {
+      cling::errs() << "Could not determine compiler target.\n";
+      return nullptr;
+    }
 
     CI->getTarget().adjust(CI->getLangOpts());
 
@@ -754,7 +784,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     SourceManager* SM = new SourceManager(CI->getDiagnostics(),
                                           CI->getFileManager(),
                                           /*UserFilesAreVolatile*/ true);
-    CI->setSourceManager(SM); // FIXME: SM leaks.
+    CI->setSourceManager(SM); // CI now owns SM
 
     // As main file we want
     // * a virtual file that is claiming to be huge
@@ -793,10 +823,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CI->createASTContext();
 
     if (OnlyLex) {
-      class IgnoreConsumer: public clang::ASTConsumer {
-      };
-      std::unique_ptr<clang::ASTConsumer> ignoreConsumer(new IgnoreConsumer());
-      CI->setASTConsumer(std::move(ignoreConsumer));
+      class IgnoreConsumer: public clang::ASTConsumer {};
+      CI->setASTConsumer(
+          std::unique_ptr<clang::ASTConsumer>(new IgnoreConsumer()));
     } else {
       std::unique_ptr<cling::DeclCollector>
         stateCollector(new cling::DeclCollector());
