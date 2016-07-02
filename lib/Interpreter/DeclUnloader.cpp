@@ -473,24 +473,28 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   }
 #endif
 
-  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
-    bool Successful = VisitDecl(ND);
-
+  DeclContext* DeclUnloader::removeFromScope(NamedDecl* ND, bool Force) {
     DeclContext* DC = ND->getDeclContext();
     while (DC->isTransparentContext())
       DC = DC->getLookupParent();
 
-    // if the decl was anonymous we are done.
-    if (Successful && ND->getIdentifier()) {
-      // If the decl was removed make sure that we fix the lookup
+    if (Force || ND->getIdentifier()) {
       if (Scope* S = m_Sema->getScopeForContext(DC))
         S->RemoveDecl(ND);
 
       if (utils::Analyze::isOnScopeChains(ND, *m_Sema))
         m_Sema->IdResolver.RemoveDecl(ND);
     }
+    return DC;
+  }
 
-    // Cleanup the lookup tables.
+  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
+    if (!VisitDecl(ND))
+      return false;
+
+    DeclContext* DC = removeFromScope(ND);
+
+    // If the decl was removed make sure that we fix the lookup
     // DeclContexts like EnumDecls don't have lookup maps.
     if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
       eraseDeclFromMap(Map, ND);
@@ -499,7 +503,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 #endif
     }
 
-    return Successful;
+    return true;
   }
 
   bool DeclUnloader::VisitDeclaratorDecl(DeclaratorDecl* DD) {
@@ -735,19 +739,17 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
     Successful &= VisitReturnValue(FD->getReturnType(), FD);
 
-    // Remove new and delete (all variants) from the cache (m_Sema->IdResolver)
-    // This will still leave the built-in operator new & delete present m_Sema
-    // m_Sema->GlobalNewDeleteDeclared could be reset, but DeclUnloader
-    // seems not to touch any builtin, so not these either
-    if (!FD->getIdentifier() && FD->getDeclContext()->isTranslationUnit()) {
+    // Remove new and delete (all variants). These are 'anonymous' and not
+    // removed in VisitNamedDecl. Built-in operator new & delete are still
+    // present in m_Sema, so don't touch m_Sema->GlobalNewDeleteDeclared
+    if (!FD->getIdentifier()) {
       const DeclarationName Name = FD->getDeclName();
       DeclarationNameTable& Table = m_Sema->getASTContext().DeclarationNames;
       if (Name == Table.getCXXOperatorName(OO_New) ||
           Name == Table.getCXXOperatorName(OO_Array_New) ||
           Name == Table.getCXXOperatorName(OO_Delete) ||
           Name == Table.getCXXOperatorName(OO_Array_Delete)) {
-        if (utils::Analyze::isOnScopeChains(FD, *m_Sema))
-          m_Sema->IdResolver.RemoveDecl(FD);
+        (void)removeFromScope(FD, true);
       }
     }
 
