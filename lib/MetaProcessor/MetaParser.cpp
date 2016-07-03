@@ -23,8 +23,7 @@
 
 namespace cling {
 
-  MetaParser::MetaParser(MetaSema* Actions) {
-    m_Lexer.reset(0);
+  MetaParser::MetaParser(MetaSema* Actions) : m_Lexer("") {
     m_Actions.reset(Actions);
     const InvocationOptions& Opts = Actions->getInterpreter().getOptions();
     MetaLexer metaSymbolLexer(Opts.MetaString);
@@ -38,7 +37,7 @@ namespace cling {
   }
 
   void MetaParser::enterNewInputLine(llvm::StringRef Line) {
-    m_Lexer.reset(new MetaLexer(Line));
+    m_Lexer.reset(Line);
     m_TokenCache.clear();
   }
 
@@ -86,7 +85,7 @@ namespace cling {
 
     for (unsigned C = N+1 - m_TokenCache.size(); C > 0; --C) {
       m_TokenCache.push_back(Token());
-      m_Lexer->Lex(m_TokenCache.back());
+      m_Lexer.Lex(m_TokenCache.back());
     }
     return m_TokenCache.back();
   }

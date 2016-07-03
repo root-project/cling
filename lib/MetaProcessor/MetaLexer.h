@@ -82,10 +82,8 @@ namespace cling {
     const char* bufferStart;
     const char* curPos;
   public:
-    MetaLexer(const char* bufStart)
-      : bufferStart(bufStart), curPos(bufStart)
-    { }
     MetaLexer(llvm::StringRef input);
+    void reset(llvm::StringRef Line);
 
     void Lex(Token& Tok);
     void LexAnyString(Token& Tok);
