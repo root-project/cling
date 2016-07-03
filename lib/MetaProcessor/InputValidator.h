@@ -68,6 +68,12 @@ namespace cling {
     ///\brief Resets the collected input and its corresponding brace stack.
     ///
     void reset();
+
+    ///\brief Return whether we are inside a mult-line comment
+    ///
+    ///\returns true if currently inside a multi-line comment block
+    ///
+    bool inBlockComment() const;
   };
 }
 #endif // CLING_INPUT_VALIDATOR_H

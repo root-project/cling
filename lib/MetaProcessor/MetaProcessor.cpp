@@ -149,7 +149,8 @@ namespace cling {
     //  Check for and handle meta commands.
     m_MetaParser->enterNewInputLine(input_line);
     MetaSema::ActionResult actionResult = MetaSema::AR_Success;
-    if (m_MetaParser->isMetaCommand(actionResult, result)) {
+    if (!m_InputValidator->inBlockComment() &&
+         m_MetaParser->isMetaCommand(actionResult, result)) {
 
       if (m_MetaParser->isQuitRequested())
         return -1;
