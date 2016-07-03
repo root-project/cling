@@ -63,7 +63,7 @@ namespace cling {
   //
   class MetaParser {
   private:
-    std::unique_ptr<MetaLexer> m_Lexer;
+    MetaLexer m_Lexer;
     std::unique_ptr<MetaSema> m_Actions;
     llvm::SmallVector<Token, 2> m_TokenCache;
     llvm::SmallVector<Token, 4> m_MetaSymbolCache;

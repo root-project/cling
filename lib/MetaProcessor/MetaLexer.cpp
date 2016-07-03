@@ -43,6 +43,11 @@ namespace cling {
     : bufferStart(line.data()), curPos(line.data())
   { }
 
+  void MetaLexer::reset(llvm::StringRef line) {
+    bufferStart = line.data();
+    curPos = line.data();
+  }
+
   void MetaLexer::Lex(Token& Tok) {
     Tok.startToken(curPos);
     char C = *curPos++;
