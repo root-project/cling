@@ -438,6 +438,17 @@ namespace cling {
                             true /*withSystem*/, true /*withFlags*/);
   }
 
+  // FIXME: Add stream argument and move DumpIncludePath path here.
+  void Interpreter::dump(llvm::StringRef what, llvm::StringRef filter) {
+    llvm::raw_ostream &where = cling::log();
+    if (what.equals("ast"))
+      getSema().getASTContext().PrintStats();
+    else if (what.equals("decl"))
+      ClangInternalState::printLookupTables(where, getSema().getASTContext());
+    else if (what.equals("undo"))
+      m_IncrParser->printTransactionStructure();
+  }
+
   void Interpreter::storeInterpreterState(const std::string& name) const {
     // This may induce deserialization
     PushTransactionRAII RAII(this);

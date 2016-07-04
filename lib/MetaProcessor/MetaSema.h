@@ -169,8 +169,10 @@ namespace cling {
     ///\brief Show stats for various internal data structures.
     ///
     ///\param[in] name - Name of the structure.
+    ///\param[in] filter - Optional predicate for filtering displayed stats.
     ///
-    void actOnstatsCommand(llvm::StringRef name) const;
+    void actOnstatsCommand(llvm::StringRef name,
+                           llvm::StringRef filter = llvm::StringRef()) const;
 
     ///\brief Switches on/off the experimental dynamic extensions (dynamic
     /// scopes) and late binding.

@@ -463,9 +463,12 @@ namespace cling {
       skipWhitespace();
       if (!getCurTok().is(tok::ident))
         return false; // FIXME: Issue proper diagnostics
-      std::string ident = getCurTok().getIdent();
+      llvm::StringRef what = getCurTok().getIdent();
       consumeToken();
-      m_Actions->actOnstatsCommand(ident);
+      skipWhitespace();
+      const Token& next = getCurTok();
+      m_Actions->actOnstatsCommand(what, next.is(tok::ident)
+                                         ? next.getIdent() : llvm::StringRef());
       return true;
     }
     return false;
