@@ -409,6 +409,13 @@ namespace cling {
     ///
     void DumpIncludePath(llvm::raw_ostream* S = nullptr);
 
+    ///\brief Dump various internal data.
+    ///
+    ///\param[in] what - which data to dump. 'undo', 'ast', 'asttree'
+    ///\param[in] filter - optional argument to filter data with.
+    ///
+    void dump(llvm::StringRef what, llvm::StringRef filter);
+
     ///\brief Store the interpreter state in files
     /// Store the AST, the included files and the lookup tables
     ///
