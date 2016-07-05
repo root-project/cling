@@ -55,89 +55,68 @@
 using namespace clang;
 
 namespace {
-  ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
-  /// a mismatch could cause havoc. Reports if ABI versions differ.
-  static void CheckABICompatibility(clang::CompilerInstance* CI) {
-#ifdef __GLIBCXX__
-# define CLING_CXXABIV __GLIBCXX__
-# define CLING_CXXABIS "__GLIBCXX__"
-#elif _LIBCPP_VERSION
-# define CLING_CXXABIV _LIBCPP_VERSION
-# define CLING_CXXABIS "_LIBCPP_VERSION"
-#elif defined (_MSC_VER)
-    // For MSVC we do not use CLING_CXXABI*
-#else
-# define CLING_CXXABIV -1 // intentionally invalid macro name
-# define CLING_CXXABIS "-1" // intentionally invalid macro name
-    llvm::errs()
-      << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
-      "C++ ABI check not implemented for this standard library\n";
-    return;
-#endif
-#ifdef _MSC_VER
-    const int VSVersion = cling::platform::GetVisualStudioVersionCompiledWith();
-    std::stringstream subKey;
-    subKey << "VisualStudio.DTE." << VSVersion << ".0";
-    std::string Value;
-    if (!cling::platform::GetSystemRegistryString("HKEY_CLASSES_ROOT",
-                                subKey.str().c_str(), Value) || Value.empty()) {
-      llvm::errs()
-        << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
-        "Possible C++ standard library mismatch, compiled with Visual Studio v"
-        << VSVersion << ".0,\n"
-        "but this version of Visual Studio was not found in your system's registry.\n";
-    }
-#else
 
-  struct EarlyReturnWarn {
-    bool shouldWarn = true;
-    ~EarlyReturnWarn() {
-      if (shouldWarn) {
-        llvm::errs()
-          << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
-             "Possible C++ standard library mismatch, compiled with "
-             CLING_CXXABIS " v" << CLING_CXXABIV
-          << " but extraction of runtime standard library version failed.\n";
+  static const Token* getMacroToken(const Preprocessor& PP, const char* Macro) {
+    if (const IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
+      if (const DefMacroDirective* MD = llvm::dyn_cast_or_null
+          <DefMacroDirective>(PP.getLocalMacroDirective(II))) {
+        if (const clang::MacroInfo* MI = MD->getMacroInfo()) {
+          if (MI->getNumTokens() == 1)
+            return MI->tokens_begin();
+        }
       }
     }
-  } warnAtReturn;
-  clang::Preprocessor& PP = CI->getPreprocessor();
-  clang::IdentifierInfo* II = PP.getIdentifierInfo(CLING_CXXABIS);
-  if (!II)
-    return;
-  const clang::DefMacroDirective* MD
-    = llvm::dyn_cast_or_null<clang::DefMacroDirective>(
-                                                   PP.getLocalMacroDirective(II)
-                                                      );
-  if (!MD)
-    return;
-  const clang::MacroInfo* MI = MD->getMacroInfo();
-  if (!MI || MI->getNumTokens() != 1)
-    return;
-  const clang::Token& Tok = *MI->tokens_begin();
-  if (!Tok.isLiteral())
-    return;
-  if (!Tok.getLength() || !Tok.getLiteralData())
-    return;
-
-  std::string cxxabivStr;
-  {
-     llvm::raw_string_ostream cxxabivStrStrm(cxxabivStr);
-     cxxabivStrStrm << CLING_CXXABIV;
+    return nullptr;
   }
-  llvm::StringRef tokStr(Tok.getLiteralData(), Tok.getLength());
 
-  warnAtReturn.shouldWarn = false;
-  if (!tokStr.equals(cxxabivStr)) {
-    llvm::errs()
-      << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
-        "C++ ABI mismatch, compiled with "
-        CLING_CXXABIS " v" << CLING_CXXABIV
-      << " running with v" << tokStr << "\n";
-  }
+  ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
+  /// a mismatch could cause havoc. Reports if ABI versions differ.
+  static bool CheckABICompatibility(clang::CompilerInstance* CI) {
+#if defined(__GLIBCXX__) || defined(_LIBCPP_VERSION)
+  #ifdef __GLIBCXX__
+    const auto CLING_CXXABIV = __GLIBCXX__;
+    const char* CLING_CXXABIS = "__GLIBCXX__";
+  #elif _LIBCPP_VERSION
+    const auto CLING_CXXABIV = _LIBCPP_VERSION;
+    const char* CLING_CXXABIS = "_LIBCPP_VERSION";
+  #endif
+    llvm::StringRef CurABI;
+    const clang::Preprocessor& PP = CI->getPreprocessor();
+    const clang::Token* Tok = getMacroToken(PP, CLING_CXXABIS);
+    if (Tok && Tok->isLiteral()) {
+      CurABI = llvm::StringRef(Tok->getLiteralData(), Tok->getLength());
+      std::ostringstream AbiVers;
+      AbiVers << CLING_CXXABIV;
+      if (CurABI.equals(AbiVers.str()))
+        return true;
+    }
+#elif defined(_MSC_VER)
+    const int VSVersion = cling::platform::GetVisualStudioVersionCompiledWith();
+    std::ostringstream SubKey;
+    SubKey << "VisualStudio.DTE." << VSVersion << ".0";
+    std::string Value;
+    if (cling::platform::GetSystemRegistryString("HKEY_CLASSES_ROOT",
+                               SubKey.str().c_str(), Value) && !Value.empty()) {
+      return true;
+    }
 #endif
-#undef CLING_CXXABIV
-#undef CLING_CXXABIS
+
+    llvm::errs() <<
+      "Warning in cling::IncrementalParser::CheckABICompatibility():\n"
+      "  Possible C++ standard library mismatch, compiled with ";
+
+#if defined(__GLIBCXX__) || defined(_LIBCPP_VERSION)
+    llvm::errs() << CLING_CXXABIS << " '" << CLING_CXXABIV << "'\n"
+      "  Extraction of runtime standard library version was: '"
+      << CurABI << "'\n";
+#elif defined(_MSC_VER)
+    llvm::errs() << "Visual Studio v" << VSVersion << ".0\n"
+      "  This version of Visual Studio was not found in the system registry\n";
+#else
+    llvm::errs() << "unknown C++ ABI\n";
+#endif
+    
+    return false;
   }
 } // unnamed namespace
 
