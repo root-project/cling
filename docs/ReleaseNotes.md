@@ -26,46 +26,46 @@ Cling to support:
   - ARM and PowerPC architectures;
   - Exceptions. Cling can throw and catch exceptions from interpreted and
   compiled code.
-    ```cpp
-    [cling]$ throw new std::exception();
-    Exception occurred. Recovering...
-    ```
+       ```cpp
+       [cling]$ throw new std::exception();
+       Exception occurred. Recovering...
+       ```
   - Inline assembly. Cling can execute `asm` statements.
-    ```cpp
-    [cling]$ extern "C" int printf(const char*, ...);
-    [cling]$ int arg1=1, arg2=2, add;
-    [cling]$ asm ("addl %%ebx, %%eax;" : "=a" (add) : "a" (arg1) , "b" (arg2));
-    [cling]$ printf( "%d + %d = %d\n", arg1, arg2, add );
-    1 + 2 = 3
-    ```
+       ```cpp
+       [cling]$ extern "C" int printf(const char*, ...);
+       [cling]$ int arg1=1, arg2=2, add;
+       [cling]$ asm ("addl %%ebx, %%eax;" : "=a" (add) : "a" (arg1) , "b" (arg2));
+       [cling]$ printf( "%d + %d = %d\n", arg1, arg2, add );
+       1 + 2 = 3
+       ```
 - Reduce memory usage caused by excessive memory allocations in Cling lookup
 routines.
 - Stabilize error recovery caused by handling of templated declarations.
 - Implement a user-extendable value streaming engine.
 - Implement shebang support.
 - Protect against invalid pointer dereferences.
-  ```cpp
-  [cling]$ struct S{ int a; };
-  [cling]$ ((S*)0x123)->a;
-  input_line_4:2:2: warning: invalid memory pointer passed to a callee:
-  ((S*)0x123)->a;
-  ^~~~~~~~~~~
-  [cling]$ ((S*)0)->a;
-  input_line_5:2:2: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
-  ((S*)0)->a;
-  ^~~~~~~
-  ```
+     ```cpp
+     [cling]$ struct S{ int a; };
+     [cling]$ ((S*)0x123)->a;
+     input_line_4:2:2: warning: invalid memory pointer passed to a callee:
+     ((S*)0x123)->a;
+     ^~~~~~~~~~~
+     [cling]$ ((S*)0)->a;
+     input_line_5:2:2: warning: null passed to a callee that requires a non-null argument [-Wnonnull]
+     ((S*)0)->a;
+     ^~~~~~~
+     ```
 - Redirect stderr and stdout. Cling's users can redirect the output streams.
-  ```cpp
-  [cling]$ // Redirects stdout to /tmp/outfile.txt
-  [cling]$ .> /tmp/outfile.txt
-  [cling]$ // Toggles back to the prompt
-  [cling]$ .>
-  [cling]$ // Redirects stderr to /tmp/errfile.txt
-  [cling]$ .2> /tmp/errfile.txt
-  [cling]$ // Redirects stdout and stderr to /tmp/bothfile.txt
-  [cling]$ .&> /tmp/bothfile.txt
-  ```
+     ```cpp
+     [cling]$ // Redirects stdout to /tmp/outfile.txt
+     [cling]$ .> /tmp/outfile.txt
+     [cling]$ // Toggles back to the prompt
+     [cling]$ .>
+     [cling]$ // Redirects stderr to /tmp/errfile.txt
+     [cling]$ .2> /tmp/errfile.txt
+     [cling]$ // Redirects stdout and stderr to /tmp/bothfile.txt
+     [cling]$ .&> /tmp/bothfile.txt
+     ```
 - Add `#pragma cling` directives:
   - `#pragma cling add_include_path("/include/path/")`
   - `#pragma cling add_library_path("/library/path/")`
@@ -102,8 +102,8 @@ Experimental Features
 
 Fixed Bugs:
 ----------
-[comment]: <> ( Uniquify by sort ReleaseNotes.md | uniq -c | grep -v '1 ' )
-[comment]: <> ( Standard MarkDown doesn't support neither variables nor <base> )
+<!---Uniquify by sort ReleaseNotes.md | uniq -c | grep -v '1 ' --->
+<!---Standard MarkDown doesn't support neither variables nor <base> --->
 
 [ROOT-4760](https://sft.its.cern.ch/jira/browse/ROOT-4760)
 [ROOT-5467](https://sft.its.cern.ch/jira/browse/ROOT-5467)
@@ -161,12 +161,13 @@ Fixed Bugs:
 [ROOT-8111](https://sft.its.cern.ch/jira/browse/ROOT-8111)
 
 
-[comment]: <> (Additional Information)
-[comment]: <> (----------------------)
-[comment]: <> (A wide variety of additional information is available on the
-[Cling web page]\(http://root.cern/cling\). The web page contains versions of
+<!---Additional Information
+----------------------
+A wide variety of additional information is available on the
+[Cling web page](http://root.cern/cling). The web page contains versions of
 the API documentation which are up-to-date with the git version of the source
 code. You can access versions of these documents specific to this release by
-going into the “clang/docs/” directory in the Cling source tree.)
-[comment]: <> (If you have any questions or comments about Cling, please feel
-free to contact us via the mailing list.)
+going into the “clang/docs/” directory in the Cling source tree.
+
+If you have any questions or comments about Cling, please feel free to contact
+us via the mailing list.--->
