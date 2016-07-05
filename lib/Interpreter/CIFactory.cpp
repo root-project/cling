@@ -446,6 +446,43 @@ namespace {
     return;
   }
 
+  static bool strEqual(const char* a, const char* b, size_t n) {
+    return !strncmp(a, b, n) && !a[n];
+  }
+
+  struct CompilerOpts {
+    bool hasMinusX, noBuiltinInc, noCXXIncludes, haveRsrcPath;
+
+    void parse(const char* arg) {
+      if (!hasMinusX && !strncmp(arg, "-x", 2))
+        hasMinusX = true;
+      else if (!noBuiltinInc && strEqual(arg, "-nobuiltininc", 13))
+        noBuiltinInc = true;
+      else if (!noCXXIncludes && strEqual(arg, "-nostdinc++", 11))
+        noCXXIncludes = true;
+      else if (!haveRsrcPath && strEqual(arg, "-resource-dir", 13))
+        haveRsrcPath = true;
+    }
+
+    CompilerOpts(const char* const* iarg, const char* const* earg) :
+      hasMinusX(false), noBuiltinInc(false), noCXXIncludes(false),
+      haveRsrcPath(false) {
+
+      while (iarg < earg &&
+             (!hasMinusX || !noBuiltinInc || !noCXXIncludes || !haveRsrcPath)) {
+        if (strEqual(*iarg, "-Xclang", 7)) {
+          // goto next arg if there is one
+          if (++iarg < earg)
+            parse(*iarg);
+        }
+        else
+          parse(*iarg);
+
+        ++iarg;
+      }
+    }
+  };
+
   class AdditionalArgList {
     typedef std::vector< std::pair<const char*,std::string> > container_t;
     container_t m_Saved;
@@ -500,8 +537,8 @@ namespace {
 #endif
   
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
-  static void AddHostIncludes(std::vector<const char*>& args,
-                              bool noBuiltinInc, bool noCXXIncludes) {
+  static void AddHostArguments(std::vector<const char*>& args,
+                               const char* llvmdir, const CompilerOpts& opts) {
     static AdditionalArgList sArguments;
     if (sArguments.empty()) {
 #ifdef _MSC_VER
@@ -523,10 +560,10 @@ namespace {
       // When built with access to the proper Windows APIs, try to actually find
       // the correct include paths first.
       if (getVisualStudioDir(VSDir)) {
-        if (!noCXXIncludes) {
+        if (!opts.noCXXIncludes) {
           sArguments.addArgument("-I", VSDir + "\\VC\\include");
         }
-        if (!noBuiltinInc) {
+        if (!opts.noBuiltinInc) {
           if (getWindowsSDKDir(WindowsSDKDir)) {
             sArguments.addArgument("-I", WindowsSDKDir + "\\include");
           }
@@ -545,7 +582,7 @@ namespace {
 #else // _MSC_VER
 
       // Skip LLVM_CXX execution if -nostdinc++ was provided.
-      if (!noCXXIncludes) {
+      if (!opts.noCXXIncludes) {
         // Need sArguments.empty as a check condition later
         assert(sArguments.empty() && "Arguments not empty");
 
@@ -598,6 +635,41 @@ namespace {
   #endif
 
 #endif // _MSC_VER
+
+      if (!opts.haveRsrcPath && !opts.noBuiltinInc) {
+        std::string resourcePath;
+        if (!llvmdir) {
+          // FIXME: The first arg really does need to be argv[0] on FreeBSD.
+          //
+          // Note: The second arg is not used for Apple, FreeBSD, Linux,
+          //       or cygwin, and can only be used on systems which support
+          //       the use of dladdr().
+          //
+          // Note: On linux and cygwin this uses /proc/self/exe to find the path
+          // Note: On Apple it uses _NSGetExecutablePath().
+          // Note: On FreeBSD it uses getprogpath().
+          // Note: Otherwise it uses dladdr().
+          //
+          resourcePath
+            = CompilerInvocation::GetResourcesPath("cling",
+                                       (void*)(intptr_t) locate_cling_executable);
+        } else {
+          llvm::SmallString<512> tmp(llvmdir);
+          llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_STRING);
+          resourcePath.assign(&tmp[0], tmp.size());
+        }
+
+        // FIXME: Handle cases, where the cling is part of a library/framework.
+        // There we can't rely on the find executable logic.
+        if (!llvm::sys::fs::is_directory(resourcePath)) {
+          llvm::errs()
+            << "ERROR in cling::CIFactory::createCI():\n  resource directory "
+            << resourcePath << " not found!\n";
+          resourcePath = "";
+        } else {
+          sArguments.addArgument("-resource-dir", std::move(resourcePath));
+        }
+      }
     }
 
     for (auto& arg : sArguments) {
@@ -698,79 +770,24 @@ namespace {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmParser();
     llvm::InitializeNativeTargetAsmPrinter();
-    llvm::SmallString<512> resource_path;
-    if (llvmdir) {
-      resource_path = llvmdir;
-      llvm::sys::path::append(resource_path,"lib", "clang", CLANG_VERSION_STRING);
-    } else {
-      // FIXME: The first arg really does need to be argv[0] on FreeBSD.
-      //
-      // Note: The second arg is not used for Apple, FreeBSD, Linux,
-      //       or cygwin, and can only be used on systems which support
-      //       the use of dladdr().
-      //
-      // Note: On linux and cygwin this uses /proc/self/exe to find the path.
-      //
-      // Note: On Apple it uses _NSGetExecutablePath().
-      //
-      // Note: On FreeBSD it uses getprogpath().
-      //
-      // Note: Otherwise it uses dladdr().
-      //
-      resource_path
-        = CompilerInvocation::GetResourcesPath("cling",
-                                       (void*)(intptr_t) locate_cling_executable
-                                               );
-    }
-    // FIXME: Handle cases, where the cling is part of a library/framework.
-    // There we can't rely on the find executable logic.
-    if (!llvm::sys::fs::is_directory(resource_path.str())) {
-      llvm::errs()
-        << "ERROR in cling::CIFactory::createCI():\n  resource directory "
-        << resource_path.str() << " not found!\n";
-      resource_path = "";
-    }
 
-    std::vector<const char*> argvCompile(argv, argv + argc);
-    // We do C++ by default; append right after argv[0] name
-    // Only insert it if there is no other "-x":
-    bool hasMinusX = false;
-    bool noBuiltinInc = false;
-    bool noCXXIncludes = false;
-    const char* lang = "c++";
-    for (const char* const* iarg = argv, * const* earg = argv + argc;
-         iarg < earg && (!hasMinusX || !noBuiltinInc || !noCXXIncludes); ++iarg) {
-      if (!strncmp(*iarg, "-Xclang", 7) && (*iarg)[8] == 0) {
-        // goto next arg if there is one
-        if (++iarg < earg) {
-          if (!strncmp(*iarg, "-x", 2)) {
-            if ((*iarg)[2] == 0) {
-              // iarg[0]: -x, iarg[1]: -Xclang, iarg[2]: objc++
-              assert(iarg+2 < earg && "Expected language after -Xclang -x");
-              lang = iarg[2];
-            }
-            else
-              lang = (*iarg) + 2;
-          }
-        }
-        continue;
-      }
-      else if (!hasMinusX && !strncmp(*iarg, "-x", 2))
-        hasMinusX = true;
-      else if (!noBuiltinInc && !strncmp(*iarg, "-nobuiltininc", 13))
-        noBuiltinInc = true;
-      else if (!noCXXIncludes && !strncmp(*iarg, "-nostdinc++", 11))
-        noCXXIncludes = true;
-    }
-    if (!hasMinusX) {
-      argvCompile.insert(argvCompile.begin() + 1,"-x");
-      argvCompile.insert(argvCompile.begin() + 2, lang);
-    }
+    CompilerOpts copts(argv, argv + argc);
 
-    AddHostIncludes(argvCompile, noBuiltinInc, noCXXIncludes);
+    std::vector<const char*> argvCompile(argv, argv+1);
+    argvCompile.reserve(argc+5);
+    if (!copts.hasMinusX) {
+      // We do C++ by default; append right after argv[0] if no "-x" given
+      argvCompile.push_back("-x");
+      argvCompile.push_back( "c++");
+    }
+    // argv[0] already inserted, get the rest
+    argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
-    argvCompile.insert(argvCompile.end(),"-c");
-    argvCompile.insert(argvCompile.end(),"-");
+    // Add host specific and -resource-dir if necessary
+    AddHostArguments(argvCompile, llvmdir, copts);
+
+    argvCompile.push_back("-c");
+    argvCompile.push_back("-");
 
     clang::CompilerInvocation*
       Invocation = new clang::CompilerInvocation;
@@ -856,30 +873,6 @@ namespace {
       Diags->setClient(new clang::VerifyDiagnosticConsumer(*Diags));
     // Configure our handling of diagnostics.
     ProcessWarningOptions(*Diags, DiagOpts);
-
-    if (Invocation->getHeaderSearchOpts().UseBuiltinIncludes &&
-        !resource_path.empty()) {
-      // Update ResourceDir
-      // header search opts' entry for resource_path/include isn't
-      // updated by providing a new resource path; update it manually.
-      clang::HeaderSearchOptions& Opts = Invocation->getHeaderSearchOpts();
-      llvm::SmallString<512> oldResInc(Opts.ResourceDir);
-      llvm::sys::path::append(oldResInc, "include");
-      llvm::SmallString<512> newResInc(resource_path);
-      llvm::sys::path::append(newResInc, "include");
-      bool foundOldResInc = false;
-      for (unsigned i = 0, e = Opts.UserEntries.size();
-           !foundOldResInc && i != e; ++i) {
-        HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
-        if (!E.IsFramework && E.Group == clang::frontend::System
-            && E.IgnoreSysRoot && oldResInc.str() == E.Path) {
-          E.Path = newResInc.c_str();
-          foundOldResInc = true;
-        }
-      }
-
-      Opts.ResourceDir = resource_path.str();
-    }
 
     CI->setInvocation(Invocation);
     CI->setDiagnostics(Diags.get());
