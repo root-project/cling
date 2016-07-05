@@ -81,7 +81,8 @@ private:
           //if (!(Flags & llvm::object::BasicSymbolRef::SF_Exported))
           //  continue;
           auto NameOrError = Symbol.getName();
-          assert(NameOrError);
+          if (!NameOrError)
+            continue;
           auto Name = NameOrError.get();
           if (m_JIT.m_SymbolMap.find(Name) == m_JIT.m_SymbolMap.end()) {
             llvm::orc::JITSymbol Sym
