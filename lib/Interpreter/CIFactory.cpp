@@ -42,9 +42,18 @@
 
 #include <memory>
 
+#ifndef _MSC_VER
+# include <unistd.h>
+# define getcwd_func getcwd
+#endif
+
+// FIXME: This code has been taken (copied from) llvm/tools/clang/lib/Driver/WindowsToolChain.cpp
+// and should probably go to some platform utils place.
+// the code for VS 11.0 and 12.0 common tools (vs110comntools and vs120comntools)
+// has been implemented (added) in getVisualStudioDir()
+#ifdef _MSC_VER
 // Include the necessary headers to interface with the Windows registry and
 // environment.
-#ifdef _MSC_VER
 # define WIN32_LEAN_AND_MEAN
 # define NOGDI
 # ifndef NOMINMAX
@@ -57,18 +66,8 @@
 # define pclose _pclose
 # define getcwd_func _getcwd
 # pragma comment(lib, "Advapi32.lib")
-#else
-# include <unistd.h>
-# define getcwd_func getcwd
-#endif
 
 using namespace clang;
-
-// FIXME: This code has been taken (copied from) llvm/tools/clang/lib/Driver/WindowsToolChain.cpp
-// and should probably go to some platform utils place.
-// the code for VS 11.0 and 12.0 common tools (vs110comntools and vs120comntools)
-// has been implemented (added) in getVisualStudioDir()
-#ifdef _MSC_VER
 
 /// \brief Read registry string.
 /// This also supports a means to look for high-versioned keys by use
@@ -338,95 +337,131 @@ static bool getVisualStudioDir(std::string &path) {
   return false;
 }
 
-#endif // _MSC_VER
+#elif defined(__APPLE__)
+
+#include <dlfcn.h> // dlopen to avoid linking with CoreServices
+#include <CoreServices/CoreServices.h>
+#include <sstream>
+
+static bool getISysRootVersion(const std::string& SDKs, int major,
+                               int minor, std::string& sysRoot) {
+  std::ostringstream os;
+  os << SDKs << "MacOSX" << major << "." << minor << ".sdk";
+
+  std::string SDKv = os.str();
+  if (llvm::sys::fs::is_directory(SDKv)) {
+    sysRoot.swap(SDKv);
+    return true;
+  }
+
+  return false;
+}
+
+static bool getISysRoot(std::string& sysRoot) {
+  using namespace llvm::sys;
+
+  // Some versions of OS X and Server have headers installed
+  if (fs::is_regular_file("/usr/include/stdlib.h"))
+    return false;
+
+  std::string SDKs("/Applications/Xcode.app/Contents/Developer");
+
+  // Is XCode installed where it usually is?
+  if (!fs::is_directory(SDKs)) {
+    // Nope, use xcode-select -p to get the path
+    if (FILE *pf = ::popen("xcode-select -p", "r")) {
+      SDKs.clear();
+      char buffer[512];
+      while (fgets(buffer, sizeof(buffer), pf) && buffer[0])
+        SDKs.append(buffer);
+
+      // remove trailing \n
+      while (!SDKs.empty() && SDKs.back() == '\n')
+        SDKs.resize(SDKs.size() - 1);
+      ::pclose(pf);
+    } else // Nothing more we can do
+      return false;
+  }
+
+  SDKs.append("/Platforms/MacOSX.platform/Developer/SDKs/");
+  if (!fs::is_directory(SDKs))
+    return false;
+
+
+  // Seems to make more sense to get the currently running SDK so any loaded
+  // libraries won't cause conflicts
+
+  // Try to get the SDK for whatever version of OS X is currently running
+  if (void *core = dlopen(
+          "/System/Library/Frameworks/CoreServices.framework/CoreServices",
+          RTLD_LAZY)) {
+    SInt32 majorVersion = -1, minorVersion = -1;
+    typedef ::OSErr (*GestaltProc)(::OSType, ::SInt32 *);
+    if (GestaltProc Gestalt = (GestaltProc)dlsym(core, "Gestalt")) {
+      Gestalt(gestaltSystemVersionMajor, &majorVersion);
+      Gestalt(gestaltSystemVersionMinor, &minorVersion);
+    }
+    ::dlclose(core);
+
+    if (majorVersion != -1 && minorVersion != -1) {
+      if (getISysRootVersion(SDKs, majorVersion, minorVersion, sysRoot))
+        return true;
+    }
+  }
+
+#define GET_ISYSROOT_VER(maj, min) \
+  if (getISysRootVersion(SDKs, maj, min, sysRoot)) \
+    return true;
+
+  // Try to get the SDK for whatever cling was compiled with
+  #if defined(MAC_OS_X_VERSION_10_11)
+    GET_ISYSROOT_VER(10, 11);
+  #elif defined(MAC_OS_X_VERSION_10_10)
+    GET_ISYSROOT_VER(10, 10);
+  #elif defined(MAC_OS_X_VERSION_10_9)
+    GET_ISYSROOT_VER(10, 9);
+  #elif defined(MAC_OS_X_VERSION_10_8)
+    GET_ISYSROOT_VER(10, 8);
+  #elif defined(MAC_OS_X_VERSION_10_7)
+    GET_ISYSROOT_VER(10, 7);
+  #elif defined(MAC_OS_X_VERSION_10_6)
+    GET_ISYSROOT_VER(10, 6);
+  #elif defined(MAC_OS_X_VERSION_10_5)
+    GET_ISYSROOT_VER(10, 5);
+  #elif defined(MAC_OS_X_VERSION_10_4)
+    GET_ISYSROOT_VER(10, 4);
+  #elif defined(MAC_OS_X_VERSION_10_3)
+    GET_ISYSROOT_VER(10, 3);
+  #elif defined(MAC_OS_X_VERSION_10_2)
+    GET_ISYSROOT_VER(10, 2);
+  #elif defined(MAC_OS_X_VERSION_10_1)
+    GET_ISYSROOT_VER(10, 1);
+  #else // MAC_OS_X_VERSION_10_0
+    GET_ISYSROOT_VER(10, 0);
+  #endif
+
+#undef GET_ISYSROOT_VER
+
+  // Nothing left to do but iterate the SDKs directory
+  // copy the paths and then sort for the latest
+  std::error_code ec;
+  std::vector<std::string> srtd;
+  for (fs::directory_iterator it(SDKs, ec), e; it != e; it.increment(ec))
+    srtd.push_back(it->path());
+  if (!srtd.empty()) {
+    std::sort(srtd.begin(), srtd.end(), std::greater<std::string>());
+    sysRoot.swap(srtd[0]);
+    return true;
+  }
+
+  return false;
+}
+
+#endif // __APPLE__, _MSC_VER
+
+using namespace clang;
 
 namespace {
-  static void SetClingCustomLangOpts(LangOptions& Opts) {
-    Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
-#ifdef _MSC_VER
-    Opts.Exceptions = 0;
-    if (Opts.CPlusPlus) {
-      Opts.CXXExceptions = 0;
-    }
-#else
-    Opts.Exceptions = 1;
-    if (Opts.CPlusPlus) {
-      Opts.CXXExceptions = 1;
-    }
-#endif // _MSC_VER
-    Opts.Deprecated = 1;
-    //Opts.Modules = 1;
-
-    // See test/CodeUnloading/PCH/VTables.cpp which implicitly compares clang
-    // to cling lang options. They should be the same, we should not have to
-    // give extra lang options to their invocations on any platform.
-    // Except -fexceptions -fcxx-exceptions.
-
-    Opts.Deprecated = 1;
-    Opts.GNUKeywords = 0;
-    Opts.Trigraphs = 1; // o no??! but clang has it on by default...
-
-#ifdef __APPLE__
-    Opts.Blocks = 1;
-    Opts.MathErrno = 0;
-#endif
-
-    // C++11 is turned on if cling is built with C++11: it's an interpreter;
-    // cross-language compilation doesn't make sense.
-    // Extracted from Boost/config/compiler.
-    // SunProCC has no C++11.
-    // VisualC's support is not obvious to extract from Boost...
-
-    // The value of __cplusplus in GCC < 5.0 (e.g. 4.9.3) when
-    // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
-    // the test for C++14 or more (201402L) as previously specified.
-    // I would claim that the check should be relaxed to:
-
-#if __cplusplus > 201103L
-    if (Opts.CPlusPlus) Opts.CPlusPlus14 = 1;
-#endif
-#if __cplusplus >= 201103L
-    if (Opts.CPlusPlus) Opts.CPlusPlus11 = 1;
-#endif
-
-#ifdef _REENTRANT
-    Opts.POSIXThreads = 1;
-#endif
-  }
-
-  static void SetClingTargetLangOpts(LangOptions& Opts,
-                                     const TargetInfo& Target) {
-    if (Target.getTriple().getOS() == llvm::Triple::Win32) {
-      Opts.MicrosoftExt = 1;
-#ifdef _MSC_VER
-      Opts.MSCompatibilityVersion = (_MSC_VER * 100000);
-#endif
-      // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
-      Opts.DelayedTemplateParsing = 1;
-    } else {
-      Opts.MicrosoftExt = 0;
-    }
-  }
-
-  // This must be a copy of clang::getClangToolFullVersion(). Luckily
-  // we'll notice quickly if it ever changes! :-)
-  static std::string CopyOfClanggetClangToolFullVersion(StringRef ToolName) {
-    std::string buf;
-    llvm::raw_string_ostream OS(buf);
-#ifdef CLANG_VENDOR
-    OS << CLANG_VENDOR;
-#endif
-    OS << ToolName << " version " CLANG_VERSION_STRING " "
-       << getClangFullRepositoryVersion();
-
-    // If vendor supplied, include the base LLVM version as well.
-#ifdef CLANG_VENDOR
-    OS << " (based on LLVM " << PACKAGE_VERSION << ")";
-#endif
-
-    return OS.str();
-  }
-
   //
   //  Dummy function so we can use dladdr to find the executable path.
   //
@@ -434,24 +469,12 @@ namespace {
   {
   }
 
-  ///\brief Check the compile-time clang version vs the run-time clang version,
-  /// a mismatch could cause havoc. Reports if clang versions differ.
-  static void CheckClangCompatibility() {
-    if (clang::getClangToolFullVersion("cling")
-        != CopyOfClanggetClangToolFullVersion("cling"))
-      llvm::errs()
-        << "Warning in cling::CIFactory::createCI():\n  "
-        "Using incompatible clang library! "
-        "Please use the one provided by cling!\n";
-    return;
-  }
-
-  static bool strEqual(const char* a, const char* b, size_t n) {
-    return !strncmp(a, b, n) && !a[n];
-  }
-
   struct CompilerOpts {
-    bool hasMinusX, noBuiltinInc, noCXXIncludes, haveRsrcPath;
+    bool hasMinusX, noBuiltinInc, noCXXIncludes, haveRsrcPath, haveSysRoot;
+
+    static bool strEqual(const char* a, const char* b, size_t n) {
+      return !strncmp(a, b, n) && !a[n];
+    }
 
     void parse(const char* arg) {
       if (!hasMinusX && !strncmp(arg, "-x", 2))
@@ -462,14 +485,18 @@ namespace {
         noCXXIncludes = true;
       else if (!haveRsrcPath && strEqual(arg, "-resource-dir", 13))
         haveRsrcPath = true;
+#ifdef __APPLE__
+      else if (!haveSysRoot && strEqual(arg, "-isysroot", 9))
+        haveSysRoot = true;
+#endif
     }
 
     CompilerOpts(const char* const* iarg, const char* const* earg) :
       hasMinusX(false), noBuiltinInc(false), noCXXIncludes(false),
-      haveRsrcPath(false) {
+      haveRsrcPath(false), haveSysRoot(false) {
 
-      while (iarg < earg &&
-             (!hasMinusX || !noBuiltinInc || !noCXXIncludes || !haveRsrcPath)) {
+      while (iarg < earg && (!hasMinusX || !noBuiltinInc || !noCXXIncludes ||
+                            !haveRsrcPath || !haveSysRoot)) {
         if (strEqual(*iarg, "-Xclang", 7)) {
           // goto next arg if there is one
           if (++iarg < earg)
@@ -598,7 +625,7 @@ namespace {
         buffer.assign(clang);
         llvm::sys::path::append(buffer, "clang");
         clang.assign(&buffer[0], buffer.size());
-      
+
         if (llvm::sys::fs::is_regular_file(clang))
           ReadCompilerIncludePaths(clang.c_str(), buffer, sArguments);
   #endif
@@ -619,7 +646,16 @@ namespace {
           sArguments.addArgument("-nostdinc++");
       }
 
-  #if defined(__GLIBCXX__) && defined(__APPLE__)
+  #if defined(__APPLE__)
+
+      if (!opts.noBuiltinInc && !opts.haveSysRoot) {
+        std::string sysRoot;
+        if (getISysRoot(sysRoot))
+          sArguments.addArgument("-isysroot", std::move(sysRoot));
+      }
+
+    #if defined(__GLIBCXX__)
+
       // Avoid '__float128 is not supported on this target' errors
       bool haveCXXVers = false, haveCXXLib = false;
       for (const auto arg : args) {
@@ -632,7 +668,9 @@ namespace {
         sArguments.addArgument("-std=c++11");
       if (!haveCXXLib)
         sArguments.addArgument("-stdlib=libstdc++");
-  #endif
+
+    #endif //__GLIBCXX__
+  #endif // __APPLE__
 
 #endif // _MSC_VER
 
@@ -676,6 +714,104 @@ namespace {
       args.push_back(arg.first);
       args.push_back(arg.second.c_str());
     }
+  }
+
+  static void SetClingCustomLangOpts(LangOptions& Opts) {
+    Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
+#ifdef _MSC_VER
+    Opts.Exceptions = 0;
+    if (Opts.CPlusPlus) {
+      Opts.CXXExceptions = 0;
+    }
+#else
+    Opts.Exceptions = 1;
+    if (Opts.CPlusPlus) {
+      Opts.CXXExceptions = 1;
+    }
+#endif // _MSC_VER
+    Opts.Deprecated = 1;
+    //Opts.Modules = 1;
+
+    // See test/CodeUnloading/PCH/VTables.cpp which implicitly compares clang
+    // to cling lang options. They should be the same, we should not have to
+    // give extra lang options to their invocations on any platform.
+    // Except -fexceptions -fcxx-exceptions.
+
+    Opts.Deprecated = 1;
+    Opts.GNUKeywords = 0;
+    Opts.Trigraphs = 1; // o no??! but clang has it on by default...
+
+#ifdef __APPLE__
+    Opts.Blocks = 1;
+    Opts.MathErrno = 0;
+#endif
+
+    // C++11 is turned on if cling is built with C++11: it's an interpreter;
+    // cross-language compilation doesn't make sense.
+    // Extracted from Boost/config/compiler.
+    // SunProCC has no C++11.
+    // VisualC's support is not obvious to extract from Boost...
+
+    // The value of __cplusplus in GCC < 5.0 (e.g. 4.9.3) when
+    // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
+    // the test for C++14 or more (201402L) as previously specified.
+    // I would claim that the check should be relaxed to:
+
+#if __cplusplus > 201103L
+    if (Opts.CPlusPlus) Opts.CPlusPlus14 = 1;
+#endif
+#if __cplusplus >= 201103L
+    if (Opts.CPlusPlus) Opts.CPlusPlus11 = 1;
+#endif
+
+#ifdef _REENTRANT
+    Opts.POSIXThreads = 1;
+#endif
+  }
+
+  static void SetClingTargetLangOpts(LangOptions& Opts,
+                                     const TargetInfo& Target) {
+    if (Target.getTriple().getOS() == llvm::Triple::Win32) {
+      Opts.MicrosoftExt = 1;
+#ifdef _MSC_VER
+      Opts.MSCompatibilityVersion = (_MSC_VER * 100000);
+#endif
+      // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
+      Opts.DelayedTemplateParsing = 1;
+    } else {
+      Opts.MicrosoftExt = 0;
+    }
+  }
+
+  // This must be a copy of clang::getClangToolFullVersion(). Luckily
+  // we'll notice quickly if it ever changes! :-)
+  static std::string CopyOfClanggetClangToolFullVersion(StringRef ToolName) {
+    std::string buf;
+    llvm::raw_string_ostream OS(buf);
+#ifdef CLANG_VENDOR
+    OS << CLANG_VENDOR;
+#endif
+    OS << ToolName << " version " CLANG_VERSION_STRING " "
+       << getClangFullRepositoryVersion();
+
+    // If vendor supplied, include the base LLVM version as well.
+#ifdef CLANG_VENDOR
+    OS << " (based on LLVM " << PACKAGE_VERSION << ")";
+#endif
+
+    return OS.str();
+  }
+
+  ///\brief Check the compile-time clang version vs the run-time clang version,
+  /// a mismatch could cause havoc. Reports if clang versions differ.
+  static void CheckClangCompatibility() {
+    if (clang::getClangToolFullVersion("cling")
+        != CopyOfClanggetClangToolFullVersion("cling"))
+      llvm::errs()
+        << "Warning in cling::CIFactory::createCI():\n  "
+        "Using incompatible clang library! "
+        "Please use the one provided by cling!\n";
+    return;
   }
 
   /// \brief Retrieves the clang CC1 specific flags out of the compilation's
@@ -783,7 +919,7 @@ namespace {
     // argv[0] already inserted, get the rest
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
-    // Add host specific and -resource-dir if necessary
+    // Add host specific includes, -resource-dir if necessary, and -isysroot
     AddHostArguments(argvCompile, llvmdir, copts);
 
     argvCompile.push_back("-c");
