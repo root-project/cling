@@ -125,6 +125,7 @@ struct AccessCtrlRAII_t {
   AccessCtrlRAII_t(cling::Interpreter& Interp):
     LangOpts(const_cast<clang::LangOptions&>(Interp.getCI()->getLangOpts())) {
     savedAccessControl = LangOpts.AccessControl;
+    LangOpts.AccessControl = false;
   }
 
   ~AccessCtrlRAII_t() {
