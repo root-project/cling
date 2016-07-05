@@ -22,6 +22,8 @@ Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler
   * https://www.youtube.com/watch?v=eoIuqLNvzFs
 
 ##INSTALLATION
+###Release Notes
+  See our [release notes](docs/ReleaseNotes.md) to find what's new.
 ###Binaries
   We offer binary snapshots for download at https://root.cern.ch/download/cling/
 
