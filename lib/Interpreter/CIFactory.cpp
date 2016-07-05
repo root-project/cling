@@ -446,11 +446,25 @@ namespace {
     return;
   }
 
+  class AdditionalArgList {
+    typedef std::vector< std::pair<const char*,std::string> > container_t;
+    container_t m_Saved;
+
+  public:
+    
+    void addArgument(const char* arg, std::string value = std::string()) {
+      m_Saved.push_back(std::make_pair(arg,std::move(value)));
+    }
+    container_t::const_iterator begin() const { return m_Saved.begin(); }
+    container_t::const_iterator end() const { return m_Saved.end(); }
+    bool empty() const { return m_Saved.empty(); }
+  };
+
 #ifndef _MSC_VER
 
   static void ReadCompilerIncludePaths(const char* Compiler,
                                        llvm::SmallVectorImpl<char>& Buf,
-                                       std::vector<std::string>& Inc) {
+                                       AdditionalArgList& Args) {
     std::string CppInclQuery("LC_ALL=C ");
     CppInclQuery.append(Compiler);
     CppInclQuery.append(" -xc++ -E -v /dev/null 2>&1 >/dev/null "
@@ -468,10 +482,8 @@ namespace {
         while (start < (&Buf[0] + lenbuf) && ::isspace(*start))
           ++start;
         if (*start) {
-          if (llvm::sys::fs::is_directory(start)) {
-            Inc.push_back("-I");
-            Inc.push_back(start);
-          }
+          if (llvm::sys::fs::is_directory(start))
+            Args.addArgument("-I", start);
         }
       }
       ::pclose(pf);
@@ -479,21 +491,19 @@ namespace {
       llvm::errs() << "popen failed for '" << CppInclQuery << "'\n";
 
     // Return the query in Buf on failure
-    if (Inc.empty()) {
+    if (Args.empty()) {
       Buf.resize(0);
       Buf.insert(Buf.begin(), CppInclQuery.begin(), CppInclQuery.end());
     }
   }
 
 #endif
-
+  
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
   static void AddHostIncludes(std::vector<const char*>& args,
                               bool noBuiltinInc, bool noCXXIncludes) {
-    static bool IncludesSet = false;
-    static std::vector<std::string> HostCXXI;
-    if (!IncludesSet) {
-      IncludesSet = true;
+    static AdditionalArgList sArguments;
+    if (sArguments.empty()) {
 #ifdef _MSC_VER
       // Honor %INCLUDE%. It should know essential search paths with vcvarsall.bat.
       if (const char *cl_include_dir = getenv("INCLUDE")) {
@@ -504,8 +514,7 @@ namespace {
           StringRef d = *I;
           if (d.size() == 0)
             continue;
-          HostCXXI.push_back("-I");
-          HostCXXI.push_back(d);
+          sArguments.addArgument("-I", d);
         }
       }
       std::string VSDir;
@@ -515,33 +524,30 @@ namespace {
       // the correct include paths first.
       if (getVisualStudioDir(VSDir)) {
         if (!noCXXIncludes) {
-          HostCXXI.push_back("-I");
-          HostCXXI.push_back(VSDir + "\\VC\\include");
+          sArguments.addArgument("-I", VSDir + "\\VC\\include");
         }
         if (!noBuiltinInc) {
           if (getWindowsSDKDir(WindowsSDKDir)) {
-            HostCXXI.push_back("-I");
-            HostCXXI.push_back(WindowsSDKDir + "\\include");
+            sArguments.addArgument("-I", WindowsSDKDir + "\\include");
           }
           else {
-            HostCXXI.push_back("-I");
-            HostCXXI.push_back(VSDir + "\\VC\\PlatformSDK\\Include");
+            sArguments.addArgument("-I", VSDir + "\\VC\\PlatformSDK\\Include");
           }
         }
       }
       std::string UniversalCRTSdkPath;
       std::string UCRTVersion;
 
-      if (getUniversalCRTSdkDir(UniversalCRTSdkPath, UCRTVersion)) {
-        HostCXXI.push_back("-I");
-        HostCXXI.push_back(UniversalCRTSdkPath + "\\Include\\" + UCRTVersion + "\\ucrt");
-      }
+      if (getUniversalCRTSdkDir(UniversalCRTSdkPath, UCRTVersion))
+          sArguments.addArgument("-I",
+                  UniversalCRTSdkPath + "\\Include\\" + UCRTVersion + "\\ucrt");
+
 #else // _MSC_VER
 
       // Skip LLVM_CXX execution if -nostdinc++ was provided.
       if (!noCXXIncludes) {
-        // Need HostCXXI.empty as a check condition later
-        assert(HostCXXI.empty() && "HostCXXI not empty");
+        // Need sArguments.empty as a check condition later
+        assert(sArguments.empty() && "Arguments not empty");
 
         SmallString<2048> buffer;
 
@@ -557,13 +563,13 @@ namespace {
         clang.assign(&buffer[0], buffer.size());
       
         if (llvm::sys::fs::is_regular_file(clang))
-          ReadCompilerIncludePaths(clang.c_str(), buffer, HostCXXI);
+          ReadCompilerIncludePaths(clang.c_str(), buffer, sArguments);
   #endif
 
-        if (HostCXXI.empty())
-          ReadCompilerIncludePaths(LLVM_CXX, buffer, HostCXXI);
+        if (sArguments.empty())
+          ReadCompilerIncludePaths(LLVM_CXX, buffer, sArguments);
 
-        if (HostCXXI.empty()) {
+        if (sArguments.empty()) {
           // buffer is a copy of the query string that failed
           llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract "
             "standard library include paths!\n"
@@ -573,7 +579,7 @@ namespace {
           int ExitCode = system(buffer.c_str());
           llvm::errs() << "with exit code " << ExitCode << "\n";
         } else
-          HostCXXI.push_back("-nostdinc++");
+          sArguments.addArgument("-nostdinc++");
       }
 
   #if defined(__GLIBCXX__) && defined(__APPLE__)
@@ -586,17 +592,18 @@ namespace {
           haveCXXLib = true;
       }
       if (!haveCXXVers)
-        HostCXXI.push_back("-std=c++11");
+        sArguments.addArgument("-std=c++11");
       if (!haveCXXLib)
-        HostCXXI.push_back("-stdlib=libstdc++");
+        sArguments.addArgument("-stdlib=libstdc++");
   #endif
 
 #endif // _MSC_VER
     }
 
-    for (std::vector<std::string>::const_iterator
-           I = HostCXXI.begin(), E = HostCXXI.end(); I != E; ++I)
-      args.push_back(I->c_str());
+    for (auto& arg : sArguments) {
+      args.push_back(arg.first);
+      args.push_back(arg.second.c_str());
+    }
   }
 
   /// \brief Retrieves the clang CC1 specific flags out of the compilation's
