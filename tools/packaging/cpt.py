@@ -131,29 +131,25 @@ def box_draw(msg):
 +-----------------------------------------------------------------------------+''' % (msg, spacer))
 
 
-def wget(url, out_dir):
+def wget(url, out_dir, retries=3):
     file_name = url.split('/')[-1]
     print("  HTTP request sent, awaiting response ... ")
     u = urlopen(url)
-    if u.code == 200:
-        print("  Connected to %s [200 OK]" % (url))
-    else:
+    if u.code != 200 or retries == 0:
         exit()
+    else:
+        print("  Connected to %s [200 OK]" % (url))
 
     try:
-        if sys.version_info < (3, 0):
-            # Python 2.x
-            meta = u.info()
-            file_size = int(meta.getheaders("Content-Length")[0])
+        file_size = u.headers.get('Content-Length')
+        if file_size:
+            file_size = int(file_size)
         else:
-            # Python 3.x
-            file_size = int(u.getheader("Content-Length"))
-    except (IndexError, TypeError) as e:
-        # IndexError is generated in Python 2
-        # TypeError is generated in Python 3
-        print('  Error due to broken pipe: ', e)
+            raise Exception
+    except Exception:
+        print('  Error due to broken pipe')
         print('  Retrying ...')
-        wget(url, out_dir)
+        wget(url, out_dir, retries-1)
 
     else:
         print("  Downloading: %s Bytes: %s" % (file_name, file_size))
@@ -182,7 +178,7 @@ def fetch_llvm(llvm_revision):
     print('Last known good LLVM revision is: ' + llvm_revision)
     print('Current working directory is: ' + workdir + '\n')
 
-    if "github.com" in LLVM_GIT_URL and args['create_dev_env'] is None:
+    if "github.com" in LLVM_GIT_URL and args['create_dev_env'] is None and args['use_wget']:
         _, _, _, user, repo = LLVM_GIT_URL.split('/')
         print('Fetching LLVM ...')
         wget(url='https://github.com/%s/%s' % (user, repo.replace('.git', '')) +
@@ -226,7 +222,7 @@ def fetch_llvm(llvm_revision):
 
 
 def fetch_clang(llvm_revision):
-    if "github.com" in CLANG_GIT_URL and args['create_dev_env'] is None:
+    if "github.com" in CLANG_GIT_URL and args['create_dev_env'] is None and args['use_wget']:
         _, _, _, user, repo = CLANG_GIT_URL.split('/')
         print('Fetching Clang ...')
         wget(url='https://github.com/%s/%s' % (user, repo.replace('.git', '')) +
@@ -363,6 +359,8 @@ def compile(arg):
     prefix = arg
     PYTHON = sys.executable
 
+    CMAKE = os.environ.get('CMAKE', None)
+
     # GCC crashes if more than 4 cores are used. Temporary fix for Travis CI.
     cores = 4 if multiprocessing.cpu_count() > 4 else multiprocessing.cpu_count()
 
@@ -379,7 +377,8 @@ def compile(arg):
     os.makedirs(os.path.join(workdir, 'builddir'))
 
     if platform.system() == 'Windows':
-        CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
+        if not CMAKE:
+            CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
 
         if args['create_dev_env'] == 'debug':
             box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
@@ -394,7 +393,7 @@ def compile(arg):
         else:
             box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
             exec_subprocess_call(
-                '%s -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
+                '%s -G "Visual Studio 11" -DLLVM_ENABLE_LIBCXX=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
                     CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
             box_draw("Building Cling (using %s cores)" % (cores))
@@ -406,23 +405,41 @@ def compile(arg):
             exec_subprocess_call('%s --build . --target INSTALL --config Release' % (CMAKE), LLVM_OBJ_ROOT)
 
     else:
-        box_draw("Configure Cling with GNU Make")
+        box_draw('Configure Cling with CMake')
+        build_type = 'Debug' if args.get('create_dev_env') else 'Release'
 
-        if args['create_dev_env'] == 'debug':
+        exec_subprocess_call(
+            (CMAKE or 'cmake') + ' '
+            '-DLLVM_ENABLE_LIBCXX=ON '
+            '-DCMAKE_BUILD_TYPE={0} '
+            '-DLLVM_TARGETS_TO_BUILD=host '
+            '-DCMAKE_INSTALL_PREFIX={1} '
+            '../{2}'.format(
+                build_type,
+                TMP_PREFIX,
+                os.path.basename(srcdir)
+            ),
+            LLVM_OBJ_ROOT
+        )
+
+        box_draw('Building Cling (using {0} cores)'.format(cores))
+        if args['verbose']:
             exec_subprocess_call(
-                '%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-cxx11' % (
-                    srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
-
+                'make -j{0} VERBOSE=1'.format(cores),
+                LLVM_OBJ_ROOT
+            )
         else:
             exec_subprocess_call(
-                '%s/configure --disable-compiler-version-checks --with-python=%s --enable-targets=host --prefix=%s --enable-optimized=yes --enable-cxx11' % (
-                    srcdir, PYTHON, TMP_PREFIX), LLVM_OBJ_ROOT)
+                'make -j{0}'.format(cores),
+                LLVM_OBJ_ROOT
+            )
 
-        box_draw("Building Cling (using %s cores)" % (cores))
-        exec_subprocess_call('make -j%s' % (cores), LLVM_OBJ_ROOT)
 
-        box_draw("Install compiled binaries to prefix (using %s cores)" % (cores))
-        exec_subprocess_call('make install -j%s prefix=%s' % (cores, TMP_PREFIX), LLVM_OBJ_ROOT)
+        box_draw('Install compiled binaries to prefix (using {0} cores)'.format(cores))
+        exec_subprocess_call(
+            'make install -j{0} prefix={1}'.format(cores, TMP_PREFIX),
+            LLVM_OBJ_ROOT
+        )
 
 
 def install_prefix():
@@ -453,7 +470,7 @@ def install_prefix():
 def test_cling():
     box_draw("Run Cling test suite")
     if platform.system() != 'Windows':
-        exec_subprocess_call('make test', os.path.join(workdir, 'builddir', 'tools', 'cling'))
+        exec_subprocess_call('make cling-test', LLVM_OBJ_ROOT)
 
 
 def tarball():
@@ -465,7 +482,7 @@ def tarball():
 
 
 def cleanup():
-    print("\n")
+    print('\n')
     box_draw("Clean up")
     if os.path.isdir(os.path.join(workdir, 'builddir')):
         print("Remove directory: " + os.path.join(workdir, 'builddir'))
@@ -526,6 +543,12 @@ def check_ubuntu(pkg):
     elif pkg == "python":
         if float(platform.python_version()[:3]) < 2.7:
             print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
+        else:
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+    elif pkg == "cmake":
+        CMAKE = os.environ.get('CMAKE', 'cmake')
+        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+            print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
@@ -800,6 +823,12 @@ def check_redhat(pkg):
             print(pkg.ljust(20) + '[UNSUPPORTED VERSION (Python 3)]'.ljust(30))
         elif float(platform.python_version()[:3]) < 2.7:
             print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
+        else:
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+    elif pkg == "cmake":
+        CMAKE = os.environ.get('CMAKE', 'cmake')
+        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+            print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
@@ -1270,6 +1299,12 @@ def check_mac(pkg):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<2.7)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
+    elif pkg == "cmake":
+        CMAKE = os.environ.get('CMAKE', 'cmake')
+        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+            print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
+        else:
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "SSL":
         if sys.version_info < (3, 0):
             # Python 2.x
@@ -1422,16 +1457,18 @@ parser.add_argument('--with-cling-url', action='store', help='Specify an alterna
                     default='https://github.com/vgvassilev/cling.git')
 
 parser.add_argument('--no-test', help='Do not run test suite of Cling', action='store_true')
+parser.add_argument('--use-wget', help='Do not use Git to fetch sources', action='store_true')
 parser.add_argument('--create-dev-env', help='Set up a release/debug environment')
 
 if platform.system() != 'Windows':
     parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT',
-                        default=os.path.expanduser(os.path.join('~', 'ec', 'build')))
+                        default=os.path.expanduser(os.path.join('~', 'ci', 'build')))
 else:
     parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT',
-                        default='C:\\ec\\build\\')
+                        default='C:\\ci\\build\\')
 
 parser.add_argument('--make-proper', help='Internal option to support calls from build system')
+parser.add_argument('--verbose', help='Tell CMake to build with verbosity', action='store_true')
 
 args = vars(parser.parse_args())
 
@@ -1526,6 +1563,7 @@ if args['check_requirements']:
     box_draw('Check availability of required softwares')
     if DIST == 'Ubuntu':
         check_ubuntu('git')
+        check_ubuntu('cmake')
         check_ubuntu('gcc')
         check_ubuntu('g++')
         check_ubuntu('debhelper')
@@ -1547,7 +1585,7 @@ Do you want to continue? [yes/no]: ''').lower()
                                  stdin=subprocess.PIPE,
                                  stdout=None,
                                  stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
-                subprocess.Popen(['sudo apt-get install git g++ debhelper devscripts gnupg python'],
+                subprocess.Popen(['sudo apt-get install git cmake gcc g++ debhelper devscripts gnupg python'],
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
@@ -1557,7 +1595,7 @@ Do you want to continue? [yes/no]: ''').lower()
                 print('''
 Install/update the required packages by:
   sudo apt-get update
-  sudo apt-get install git g++ debhelper devscripts gnupg python
+  sudo apt-get install git cmake gcc g++ debhelper devscripts gnupg python
 ''')
                 break
             else:
@@ -1576,6 +1614,7 @@ Refer to the documentation of CPT for information on setting up your Windows env
 ''')
     elif DIST == 'Fedora' or DIST == 'Scientific Linux CERN SLC':
         check_redhat('git')
+        check_redhat('cmake')
         check_redhat('gcc')
         check_redhat('gcc-c++')
         check_redhat('rpm-build')
@@ -1590,7 +1629,7 @@ Do you want to continue? [yes/no]: ''').lower()
         while True:
             if choice in yes:
                 # Need to communicate values to the shell. Do not use exec_subprocess_call()
-                subprocess.Popen(['sudo yum install git gcc gcc-c++ rpm-build python'],
+                subprocess.Popen(['sudo yum install git cmake gcc gcc-c++ rpm-build python'],
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
@@ -1599,7 +1638,7 @@ Do you want to continue? [yes/no]: ''').lower()
             elif choice in no:
                 print('''
 Install/update the required packages by:
-  sudo yum install git gcc gcc-c++ rpm-build python
+  sudo yum install git cmake gcc gcc-c++ rpm-build python
 ''')
                 break
             else:
@@ -1608,6 +1647,7 @@ Install/update the required packages by:
 
     if DIST == 'MacOSX':
         check_mac('git')
+        check_mac('cmake')
         check_mac('gcc')
         check_mac('g++')
         check_mac('python')

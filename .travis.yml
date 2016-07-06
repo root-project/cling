@@ -1,43 +1,70 @@
+sudo: false
+
 language: cpp
 
-compiler:
-  - gcc
+matrix:
+  include:
+    - os: linux
 
-before_install:
-  - echo $LANG
-  - echo $LC_ALL
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update
-  - sudo apt-get install git gcc-4.8 g++-4.8 debhelper devscripts gnupg python binutils-gold python-software-properties
-  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
-  - wget https://raw.githubusercontent.com/vgvassilev/cling/master/tools/packaging/cpt.py
-  - chmod +x cpt.py
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - build-essential
+      - binutils-gold
+      - python
+      - gcc-6
+      - g++-6
 
 before_script:
-  # Perform a sanity check before proceeding
-  - echo "no" | ./cpt.py -c
+- git config --global user.email "ani07nov@gmail.com"
+- git config --global user.name "Anirudha Bose"
+
+- |
+  export TMPDIR=/tmp
+  mkdir -pv $TMPDIR/cmake
+
+  if [ $TRAVIS_OS_NAME == 'linux' ]; then
+    export CMAKE=$TMPDIR/cmake/bin/cmake
+    CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz"
+    travis_retry wget --no-check-certificate -O - $CMAKE_URL | tar --strip-components=1 -xz -C $TMPDIR/cmake
+
+    export CC=/usr/bin/gcc-6
+    export CXX=/usr/bin/g++-6
+  fi
+
+- $CMAKE --version
+- $CC --version
+- $CXX --version
 
 script:
-  # FIXME: Change URLs to the repo of @vgvassilev after repositories have been updated.
-  # Remove --no-test option when appropriate.
-  - ./cpt.py --create-dev-env=release --no-test --with-llvm-url=https://github.com/onyb/llvm --with-clang-url=https://github.com/onyb/clang --with-cling-url=http://root.cern.ch/git/cling.git
-
-branches:
-  only:
-    - master
+- |
+  if [ -z $TRAVIS_TAG ]; then
+    tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling
+  else
+    tools/packaging/cpt.py --last-stable=tar --with-cling-url=https://github.com/vgvassilev/cling
+  fi
 
 notifications:
   recipients:
-    - vvasilev@cern.ch
-    - ani07nov@gmail.com
-    #- cling-dev@cern.ch
+  - ani07nov@gmail.com
+  - vvasilev@cern.ch
   email:
     on_success: change
     on_failure: always
-
   template:
-    - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"
+  - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"
 
-os:
-  - linux
+before_deploy:
+- export RELEASE_TARBALL=$(ls $HOME/ci/build/cling*.tar.bz2)
+- echo "Deploying $RELEASE_TARBALL to GitHub releases"
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key: "afcebbd67ee9259667a6fdb414331c29e70000f4"
+  file: '${RELEASE_TARBALL}'
+  on:
+    tags: true
+    repo: vgvassilev/cling
