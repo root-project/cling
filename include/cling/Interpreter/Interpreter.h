@@ -187,10 +187,6 @@ namespace cling {
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
 
-    ///\brief Processes the invocation options.
-    ///
-    void handleFrontendOptions();
-
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.
     ///
@@ -346,7 +342,7 @@ namespace cling {
     ///
     ///\returns The current svn revision (svn Id).
     ///
-    const char* getVersion() const;
+    static const char* getVersion();
 
     ///\brief Creates unique name that can be used for various aims.
     ///
