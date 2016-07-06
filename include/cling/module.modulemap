@@ -1,0 +1,33 @@
+module Cling_Interpreter {
+  requires cplusplus
+  umbrella "Interpreter"
+
+  textual header "Interpreter/ClingOptions.inc"
+
+  // Only included at runtime.
+  exclude header "Interpreter/RuntimeUniverse.h"
+  exclude header "Interpreter/DynamicLookupRuntimeUniverse.h"
+  exclude header "Interpreter/RuntimePrintValue.h"
+
+  module * { export * }
+}
+
+module Cling_MetaProcessor {
+  requires cplusplus
+  umbrella "MetaProcessor"
+  module * { export * }
+
+}
+
+module Cling_UserInterface {
+  requires cplusplus
+  umbrella "UserInterface"
+  module * { export * }
+
+}
+
+module Cling_Utils {
+  requires cplusplus
+  umbrella "Utils"
+  module * { export * }
+}
