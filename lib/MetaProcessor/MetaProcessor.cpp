@@ -231,6 +231,7 @@ namespace cling {
              && content[posNonWS] == '/' && content[posNonWS+1] == '/') {
         // Remove the comment line
         posNonWS = content.find_first_of('\n', posNonWS+2)+1;
+        posNonWS = content.find_first_not_of(whitespace, posNonWS);
       }
       std::string::size_type replaced = posNonWS;
       if (posNonWS != std::string::npos && content[posNonWS] == '{') {
