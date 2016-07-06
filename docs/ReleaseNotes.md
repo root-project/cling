@@ -20,30 +20,39 @@ infrastructure are described first.
 
 Major New Features
 ------------------
-
-- Switch Cling's execution engine to use LLVM's Orc JIT. The new JIT allows
+* Switch Cling's execution engine to use LLVM's Orc JIT. The new JIT allows
 Cling to support:
-  - ARM and PowerPC architectures;
-  - Exceptions. Cling can throw and catch exceptions from interpreted and
-  compiled code.
-       ```cpp
-       [cling]$ throw new std::exception();
-       Exception occurred. Recovering...
-       ```
-  - Inline assembly. Cling can execute `asm` statements.
-       ```cpp
-       [cling]$ extern "C" int printf(const char*, ...);
-       [cling]$ int arg1=1, arg2=2, add;
-       [cling]$ asm ("addl %%ebx, %%eax;" : "=a" (add) : "a" (arg1) , "b" (arg2));
-       [cling]$ printf( "%d + %d = %d\n", arg1, arg2, add );
-       1 + 2 = 3
-       ```
-- Reduce memory usage caused by excessive memory allocations in Cling lookup
+   + ARM and PowerPC architectures.
+
+   + Exceptions. Cling can throw and catch exceptions from interpreted and
+   compiled code.
+
+        ```cpp
+        [cling]$ throw new std::exception();
+        Exception occurred. Recovering...
+        ```
+
+   + Inline assembly. Cling can execute `asm` statements.
+
+        ```cpp
+        [cling]$ extern "C" int printf(const char*, ...);
+        [cling]$ int arg1=1, arg2=2, add;
+        [cling]$ asm ("addl %%ebx, %%eax;" : "=a" (add) : "a" (arg1) , "b" (arg2));
+        [cling]$ printf( "%d + %d = %d\n", arg1, arg2, add );
+        1 + 2 = 3
+        ```
+
+* Reduce memory usage caused by excessive memory allocations in Cling lookup
 routines.
-- Stabilize error recovery caused by handling of templated declarations.
-- Implement a user-extendable value streaming engine.
-- Implement shebang support.
-- Protect against invalid pointer dereferences.
+
+* Stabilize error recovery caused by handling of templated declarations.
+
+* Implement a user-extendable value streaming engine.
+
+* Implement shebang support.
+
+* Protect against invalid pointer dereferences.
+
      ```cpp
      [cling]$ struct S{ int a; };
      [cling]$ ((S*)0x123)->a;
@@ -55,7 +64,9 @@ routines.
      ((S*)0)->a;
      ^~~~~~~
      ```
-- Redirect stderr and stdout. Cling's users can redirect the output streams.
+
+* Redirect stderr and stdout. Cling's users can redirect the output streams.
+
      ```cpp
      [cling]$ // Redirects stdout to /tmp/outfile.txt
      [cling]$ .> /tmp/outfile.txt
@@ -66,39 +77,42 @@ routines.
      [cling]$ // Redirects stdout and stderr to /tmp/bothfile.txt
      [cling]$ .&> /tmp/bothfile.txt
      ```
-- Add `#pragma cling` directives:
-  - `#pragma cling add_include_path("/include/path/")`
-  - `#pragma cling add_library_path("/library/path/")`
-  - `#pragma cling load("libUserLib")`
-- Add `.@` metacommand to cancel multiline user input.
-- Add `.debug [Constant]` metacommand to tune the generated debug information.
+
+* Add `#pragma cling` directives:
+  + `#pragma cling add_include_path("/include/path/")`
+  + `#pragma cling add_library_path("/library/path/")`
+  + `#pragma cling load("libUserLib")`
+
+* Add `.@` metacommand to cancel multiline user input.
+
+* Add `.debug [Constant]` metacommand to tune the generated debug information.
 
 Cling as a Library
 ------------------
-- Implement a generator of forward declarations from a given AST declaration.
-- Improve string-to-decl lookup helper.
-- Support of parent-children (multiple) interpreters.
+* Implement a generator of forward declarations from a given AST declaration.
+* Improve string-to-decl lookup helper.
+* Support of parent-children (multiple) interpreters.
 
 External Dependencies
 ---------------------
-- Upgrade to LLVM r272382.
-- Upgrade to CMake 3.4.3 (following LLVM requirements)
+* Upgrade to LLVM r272382.
+* Upgrade to CMake 3.4.3 (following LLVM requirements)
 
 Misc
 ------
-- Add a package building script [Cling Packaging Tool (CPT)](../tools/packaging)
+* Add a package building script [Cling Packaging Tool (CPT)](../tools/packaging)
 which can build Cling from source and generate installer bundles for a wide
 range of platforms.
-- Add [Jupyter kernel](../tools/Jupyter/kernel).
+* Add [Jupyter kernel](../tools/Jupyter/kernel).
 
 Experimental Features
 ---------------------
-- Code unloading:
-  - Generate one module per transaction, which simplifies unloading of
+* Code unloading:
+  + Generate one module per transaction, which simplifies unloading of
   llvm::Modules and machine code.
-  - Add support for unloading few STL header files.
-- Dynamic Scopes:
-  - Handle of errors occurred when synthesizing AST nodes.
+  + Add support for unloading few STL header files.
+* Dynamic Scopes:
+  + Handle of errors occurred when synthesizing AST nodes.
 
 Fixed Bugs:
 ----------
