@@ -79,12 +79,15 @@ int main( int argc, char **argv ) {
   cling::Interpreter interp(argc, argv);
 
   if (!interp.isValid()) {
+    const cling::InvocationOptions& Opts = interp.getOptions();
+    if (Opts.Help || Opts.ShowVersion)
+      return EXIT_SUCCESS;
+
     unsigned ErrsReported = 0;
     if (clang::CompilerInstance* CI = interp.getCIOrNull()) {
       // If output requested and execution succeeded let the DiagnosticsEngine
       // determine the result code
-      if (interp.getOptions().CompilerOpts.HasOutput &&
-          ExecuteCompilerInvocation(CI))
+      if (Opts.CompilerOpts.HasOutput && ExecuteCompilerInvocation(CI))
         return checkDiagErrors(CI);
 
       checkDiagErrors(CI, &ErrsReported);
@@ -96,10 +99,6 @@ int main( int argc, char **argv ) {
 
     return EXIT_FAILURE;
   }
-
-  if (interp.getOptions().Help || interp.getOptions().ShowVersion)
-    return EXIT_SUCCESS;
-
 
   interp.AddIncludePath(".");
 

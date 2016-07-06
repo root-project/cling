@@ -169,6 +169,20 @@ namespace cling {
   
   namespace internal { void symbol_requester(); }
 
+  const char* Interpreter::getVersion() {
+    return ClingStringify(CLING_VERSION);
+  }
+
+  static bool handleSimpleOptions(const InvocationOptions& Opts) {
+    if (Opts.ShowVersion) {
+      cling::log() << Interpreter::getVersion() << '\n';
+    }
+    if (Opts.Help) {
+      Opts.PrintHelp();
+    }
+    return Opts.ShowVersion || Opts.Help;
+  }
+
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime,
                            const Interpreter* parentInterp) :
@@ -176,6 +190,9 @@ namespace cling {
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
+
+    if (handleSimpleOptions(m_Opts))
+      return;
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     m_DyLibManager.reset(new DynamicLibraryManager(getOptions()));
@@ -215,8 +232,6 @@ namespace cling {
         m_IncrParser->commitTransaction(I, false);
       return;
     }
-
-    handleFrontendOptions();
 
     llvm::SmallVector<llvm::StringRef, 6> Syms;
     Initialize(noRuntime, isInSyntaxOnlyMode(), Syms);
@@ -315,19 +330,6 @@ namespace cling {
     // explicitly, before the implicit destruction (through the unique_ptr) of
     // the callbacks.
     m_IncrParser.reset(0);
-  }
-
-  const char* Interpreter::getVersion() const {
-    return ClingStringify(CLING_VERSION);
-  }
-
-  void Interpreter::handleFrontendOptions() {
-    if (m_Opts.ShowVersion) {
-      cling::log() << getVersion() << '\n';
-    }
-    if (m_Opts.Help) {
-      m_Opts.PrintHelp();
-    }
   }
 
   Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,
