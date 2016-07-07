@@ -1,6 +1,7 @@
 #include "ASTImportSource.h"
 #include "cling/Interpreter/Interpreter.h"
 
+#include "clang/Lex/Preprocessor.h"
 
 using namespace clang;
 
@@ -81,7 +82,7 @@ namespace cling {
       if (declToImport->isFunctionOrFunctionTemplate() && declToImport->isTemplateDecl())
         return;
       
-      //cling::Interpreter::PushTransactionRAII RAII(parent_int);
+      cling::Interpreter::PushTransactionRAII RAII(parent_int);
       if (Decl *importedDecl = importer.Import(declToImport)) {
         if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
           std::vector < NamedDecl * > declVector{importedNamedDecl};
