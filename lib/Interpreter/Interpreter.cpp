@@ -1444,7 +1444,13 @@ namespace cling {
                       std::vector<std::string>& DisplayCompletions) const {
     //Get the results
     const char * const argV = "cling";
-    cling::Interpreter CodeCompletionInterp(*this, 1, &argV);
+    std::string llvmdir = this->getCI()->getHeaderSearchOpts().ResourceDir;
+    std::string extra_part = "/lib/clang/3.9.0";
+    std::string::size_type i = llvmdir.find(extra_part);
+    if (i != std::string::npos)
+      llvmdir.erase(i, extra_part.length());
+
+    cling::Interpreter CodeCompletionInterp(*this, 1, &argV, llvmdir.c_str());
 
     // Create the CodeCompleteConsumer with InterpreterCallbacks
     // from the parent interpreter and set the consumer for the child
@@ -1463,6 +1469,8 @@ namespace cling {
     auto Owner = this->getCI()->getSema().getDiagnostics().takeClient();
     auto Client = this->getCI()->getSema().getDiagnostics().getClient();
     this->getCI()->getSema().getDiagnostics().setClient(ignoringDiagConsumer, false);
+    // The child will desirialize decls from *this, we need a transaction
+    PushTransactionRAII RAII(this);
     CodeCompletionInterp.codeComplete(Line, Cursor);
   
     callbacks->GetCompletionResults(&CodeCompletionInterp, DisplayCompletions);
