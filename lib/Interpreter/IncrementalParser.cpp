@@ -714,18 +714,26 @@ namespace cling {
 
     llvm::MemoryBuffer* MBNonOwn = MB.get();
 
-    // Create FileEntry and FileID for the current buffer
-    const clang::FileEntry* FE
-       = SM.getFileManager().getVirtualFile("vfile for " + source_name.str(),
-                                            InputSize, 0 /* mod time*/);
-    SM.overrideFileContents(FE, std::move(MB));
-    FileID FID = SM.createFileID(FE, NewLoc, SrcMgr::C_User);
+    // Create FileID for the current buffer.
+    FileID FID;
+    if (CO.CodeCompletionOffset == -1)
+    {
+      FID = SM.createFileID(std::move(MB), SrcMgr::C_User,
+                                 /*LoadedID*/0,
+                                 /*LoadedOffset*/0, NewLoc);
+    } else {
+      // Create FileEntry and FileID for the current buffer.
+      // Enabling the completion point only works on FileEntries.
+      const clang::FileEntry* FE
+        = SM.getFileManager().getVirtualFile("vfile for " + source_name.str(),
+                                             InputSize, 0 /* mod time*/);
+      SM.overrideFileContents(FE, std::move(MB));
+      FID = SM.createFileID(FE, NewLoc, SrcMgr::C_User);
 
-    // Set the code completion point if completion is enabled.
-    if (CO.CodeCompletionOffset != -1) {
-      printf("Is it really the completion point?\n");
-      PP.SetCodeCompletionPoint(FE, 1, 45 + CO.CodeCompletionOffset);
-      m_Interpreter->unload(1);
+      // The completion point is set one a 1-based line/column numbering.
+      // It relies on the implementation to account for the wrapper extra line.
+      PP.SetCodeCompletionPoint(FE, 1/* start point 1-based line*/,
+                                CO.CodeCompletionOffset+1/* 1-based column*/);
     }
 
     m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
@@ -778,7 +786,11 @@ namespace cling {
     };
 
     if (CO.CodeCompletionOffset != -1) {
-      assert(PP.isCodeCompletionReached() && "Code completion set but not reached!");
+      SourceLocation completionLoc = PP.getCodeCompletionLoc();
+      assert (SM.getFileOffset(completionLoc) == CO.CodeCompletionOffset
+              && "Completion point wrongly set!");
+      assert(PP.isCodeCompletionReached()
+             && "Code completion set but not reached!");
       return kSuccess;
     }
 

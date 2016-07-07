@@ -86,6 +86,28 @@ namespace {
 #endif
 }
 
+namespace {
+  ///\brief Class that specialises the textinput TabCompletion to allow Cling
+  /// to code complete through its own textinput mechanism which is part of the
+  /// UserInterface.
+  ///
+  class TabCompletion : public textinput::TabCompletion {
+    const Interpreter& m_ParentInterpreter;
+  
+  public:
+    TabCompletion(const Interpreter& Parent) : m_ParentInterpreter(Parent) {}
+    ~TabCompletion() {}
+
+    bool Complete(textinput::Text& Line /*in+out*/,
+                size_t& Cursor /*in+out*/,
+                textinput::EditorRange& R /*out*/,
+                std::vector<std::string>& DisplayCompletions /*out*/) override {
+      m_ParentInterpreter->codeComplete(Line.GetText(), Cursor,
+                                        DisplayCompletions);
+    }
+  };
+}
+
 namespace cling {
   // Declared in CompilationException.h; vtable pinned here.
   CompilationException::~CompilationException() throw() {}
@@ -120,9 +142,9 @@ namespace cling {
     TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
 
     // Inform text input about the code complete consumer
-    cling::TabCompletion* Completion = new cling::TabCompletion(m_MetaProcessor->getInterpreter());
+    // TextInput owns the TabCompletion.
+    TabCompletion* Completion = new cling::TabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(Completion);
-
 
     TI.SetPrompt("[cling]$ ");
     std::string line;

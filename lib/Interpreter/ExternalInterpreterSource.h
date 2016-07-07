@@ -6,8 +6,9 @@
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
-#ifndef CLING_ASTIMPORTSOURCE_H
-#define CLING_ASTIMPORTSOURCE_H
+
+#ifndef CLING_EXTERNAL_INTERPRETER_SOURCE
+#define CLING_EXTERNAL_INTERPRETER_SOURCE
 
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Sema/Sema.h"
@@ -32,11 +33,11 @@ namespace cling {
 
 namespace cling {
 
-    class ASTImportSource : public clang::ExternalASTSource {
+    class ExternalInterpreterSource : public clang::ExternalASTSource {
 
       private:
-        const cling::Interpreter *m_parent_Interp;
-        cling::Interpreter *m_child_Interp;
+        const cling::Interpreter *m_ParentInterpreter;
+        cling::Interpreter *m_ChildInterpreter;
 
         clang::Sema *m_Sema;
 
@@ -45,7 +46,7 @@ namespace cling {
         /// Key: imported DeclContext
         /// Value: original DeclContext
         ///
-        std::map<const clang::DeclContext *, clang::DeclContext *> m_DeclContexts_map;
+        std::map<const clang::DeclContext *, clang::DeclContext *> m_ImportedDeclContexts;
 
         ///\brief A map for all the imported Decls (Contexts)
         /// according to their names.
@@ -53,26 +54,26 @@ namespace cling {
         /// Value: The DeclarationName of this Decl(Context) is the one
         /// that comes from the first Interpreter.
         ///
-        std::map <clang::DeclarationName, clang::DeclarationName > m_DeclName_map;
+        std::map <clang::DeclarationName, clang::DeclarationName > m_ImportedDecls;
 
       public:
-        ASTImportSource(const cling::Interpreter *parent_interpreter,
-                        cling::Interpreter *child_interpreter);
-
-        ~ASTImportSource() { };
+        ExternalInterpreterSource(const cling::Interpreter *parent,
+                                  cling::Interpreter *child);
+        ~ExternalInterpreterSource() { };
 
         void completeVisibleDeclsMap(const clang::DeclContext *DC) override;
 
-        bool FindExternalVisibleDeclsByName(const clang::DeclContext *childCurrentDeclContext,
-                                         clang::DeclarationName childDeclName) override;
+        bool FindExternalVisibleDeclsByName(
+                              const clang::DeclContext *childCurrentDeclContext,
+                              clang::DeclarationName childDeclName) override;
 
         void InitializeSema(clang::Sema &S) { m_Sema = &S; }
 
         void ForgetSema() { m_Sema = nullptr; }
 
-        bool Import(clang::DeclContext::lookup_result lookup_result,
-                    clang::ASTContext &from_ASTContext,
-                    clang::ASTContext &to_ASTContext,
+        bool Import(clang::DeclContext::lookup_result lookupResult,
+                    clang::ASTContext &parentASTContext,
+                    clang::ASTContext &childASTContext,
                     const clang::DeclContext *childCurrentDeclContext,
                     clang::DeclarationName &childDeclName,
                     clang::DeclarationName &parentDeclName);
@@ -89,10 +90,16 @@ namespace cling {
                         clang::DeclarationName &parentDeclName,
                         const clang::DeclContext *childCurrentDeclContext);
 
-        void addToDeclContext(clang::DeclContext *child,
+        void addToImportedDecls(clang::DeclarationName child,
+                                clang::DeclarationName parent) {
+          m_ImportedDecls[child] = parent;
+        }
+
+        void addToImportedDeclContexts(clang::DeclContext *child,
                               clang::DeclContext *parent) {
-          m_DeclContexts_map[child] = parent;
+          m_ImportedDeclContexts[child] = parent;
         }
     };
 } // end namespace cling
+
 #endif //CLING_ASTIMPORTSOURCE_H

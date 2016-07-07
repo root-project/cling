@@ -221,6 +221,17 @@ namespace cling {
                                        Value* V = 0,
                                        Transaction** T = 0);
 
+    ///\brief Worker function to code complete after all the mechanism
+    /// has been set up.
+    ///
+    ///\param [in] input - The input being completed.
+    ///\param [in] offset - The offset for the completion point.
+    ///
+    ///\returns Whether the operation was fully successful.
+    ///
+    CompilationResult CodeCompleteInternal(const std::string& input,
+                                           unsigned offset);
+
     ///\brief Decides whether the input line should be wrapped into a function
     /// declaration that can later be executed.
     ///
@@ -238,7 +249,8 @@ namespace cling {
     ///\param [out] input - The input to wrap.
     ///\param [out] fname - The wrapper function's name.
     ///
-    void WrapInput(std::string& input, std::string& fname);
+    void WrapInput(std::string& input, std::string& fnamem,
+                   CompilationOptions &CO);
 
     ///\brief Runs given wrapper function.
     ///
@@ -473,11 +485,13 @@ namespace cling {
     /// code complete code.
     ///
     /// @param[in] input - The input containing the string to be completed.
-    /// @param[out] T - The cling::Transaction of the input
+    /// @param[in] cursor - The offset for the completion point.
+    /// @param[out] completions - The results for teh completion
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult codeComplete(const std::string& input, unsigned offset);
+    CompilationResult codeComplete(const std::string& line, size_t& cursor,
+                                   std::vector<std::string>& completions) const;
 
     ///\brief Compiles input line, which doesn't contain statements.
     ///
@@ -688,9 +702,6 @@ namespace cling {
                         llvm::raw_ostream* logs = 0,
                         IgnoreFilesFunc_t ignoreFiles =
                           [](const clang::PresumedLoc&) { return false;}) const;
-
-    void CodeComplete(const std::string& line, size_t& cursor,
-                      std::vector<std::string>& displayCompletions) const;
 
     friend class runtime::internal::LifetimeHandler;
   };

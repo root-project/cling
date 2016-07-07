@@ -9,8 +9,6 @@
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
-#include "cling/Interpreter/ClingTabCompletion.h"
-#include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
@@ -240,32 +238,6 @@ namespace cling {
   bool InterpreterCallbacks::LookupObject(TagDecl*) {
     // Default implementation is no op.
     return false;
-  }
-
-  void InterpreterCallbacks::CreateCodeCompleteConsumer(Interpreter* child) const {
-    ClingCodeCompleteConsumer* consumer = new ClingCodeCompleteConsumer(
-                m_Interpreter->getCI()->getFrontendOpts().CodeCompleteOpts,
-                llvm::outs());
-    CompilerInstance* childCI = child->getCI();
-    //codeCompletionCI will own consumer!
-    childCI->setCodeCompletionConsumer(consumer);
-    clang::Sema& childSemaRef = childCI->getSema();
-    childSemaRef.CodeCompleter = consumer;
-  }
-
-  void InterpreterCallbacks::GetCompletionResults(Interpreter* child,
-                                        std::vector<std::string>& completions) const {
-    // Which cast to use , fno-rtti
-    ClingCodeCompleteConsumer* consumer =
-                                  (ClingCodeCompleteConsumer*)(
-                                  child->getCI()->getSema().CodeCompleter);
-    if (consumer)                              
-      consumer->getCompletions(completions);
-  }
-
-  void InterpreterCallbacks::CodeComplete(const std::string& line, size_t& cursor,
-                             std::vector<std::string>& displayCompletions) const {
-    m_Interpreter->CodeComplete(line, cursor, displayCompletions);
   }
 
   void InterpreterCallbacks::UpdateWithNewDecls(const DeclContext *DC,

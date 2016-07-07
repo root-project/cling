@@ -20,14 +20,12 @@ set( LLVM_LINK_COMPONENTS
 add_cling_library(clingInterpreter
   AutoSynthesizer.cpp
   AutoloadCallback.cpp
-  ASTImportSource.cpp
   ASTTransformer.cpp
   BackendPasses.cpp
   CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
   ClangInternalState.cpp
   ClingCodeCompleteConsumer.cpp
-  ClingTabCompletion.cpp
   ClingPragmas.cpp
   DeclCollector.cpp
   DeclExtractor.cpp
@@ -37,6 +35,7 @@ add_cling_library(clingInterpreter
   DynamicExprInfo.cpp
   Exception.cpp
   ExceptionRTTI.cpp
+  ExternalInterpreterSource.cpp
   ForwardDeclPrinter.cpp
   IncrementalExecutor.cpp
   IncrementalJIT.cpp
