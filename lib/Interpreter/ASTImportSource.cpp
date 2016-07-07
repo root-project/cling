@@ -1,6 +1,7 @@
 #include "ASTImportSource.h"
 #include "cling/Interpreter/Interpreter.h"
 
+
 using namespace clang;
 
 namespace {
@@ -18,13 +19,31 @@ namespace {
       Decl *Imported(Decl *From, Decl *To) override {
         ASTImporter::Imported(From, To);
 
+        if (isa<TagDecl>(From)) {
+          clang::TagDecl* toTagDecl = dyn_cast<TagDecl>(To);
+          toTagDecl->setHasExternalVisibleStorage();
+        }
+
+        if (isa<NamespaceDecl>(From))
+        {
+            NamespaceDecl *to_namespace_decl = dyn_cast<NamespaceDecl>(To);
+            to_namespace_decl->setHasExternalVisibleStorage();
+        }
+       
+        if (isa<ObjCContainerDecl>(From))
+        {
+            ObjCContainerDecl *to_container_decl = dyn_cast<ObjCContainerDecl>(To);
+            to_container_decl->setHasExternalLexicalStorage();
+            to_container_decl->setHasExternalVisibleStorage();
+        }
+
         // Put the name of the Decl imported with the
         // DeclarationName coming from the parent, in  my map.
         if (DeclContext *declContextParent = llvm::dyn_cast<DeclContext>(From)) {
           DeclContext *declContextChild = llvm::dyn_cast<DeclContext>(To);
           m_source.addToDeclContext(declContextChild, declContextParent); 
         }
-        
+
         return To;
       }
 
@@ -61,7 +80,8 @@ namespace cling {
       // once clang supports the import of function templates.
       if (declToImport->isFunctionOrFunctionTemplate() && declToImport->isTemplateDecl())
         return;
-
+      
+      //cling::Interpreter::PushTransactionRAII RAII(parent_int);
       if (Decl *importedDecl = importer.Import(declToImport)) {
         if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
           std::vector < NamedDecl * > declVector{importedNamedDecl};
@@ -238,12 +258,18 @@ namespace cling {
                              from_ASTContext, parent_FM,
                              /*MinimalImport : ON*/ true, *this);
 
+        StringRef filter = m_child_Interp->getCI()->getPreprocessor().getCodeCompletionFilter();
         for (DeclContext::decl_iterator I_decl = parentDeclContext->decls_begin(),
           E_decl = parentDeclContext->decls_end(); I_decl != E_decl; ++I_decl) {
           if (NamedDecl* parentNamedDecl = llvm::dyn_cast<NamedDecl>(*I_decl)) {
+            // Filter using the stem from the input line
             DeclarationName newDeclName = parentNamedDecl->getDeclName();
-            ImportDecl(parentNamedDecl, importer, newDeclName, newDeclName,
-                       childDeclContext);
+            if (newDeclName.getAsIdentifierInfo()) {
+              StringRef name = newDeclName.getAsIdentifierInfo()->getName();
+              if (!name.empty() && name.startswith(filter))
+              ImportDecl(parentNamedDecl, importer, newDeclName, newDeclName,
+                         childDeclContext);
+            }
           }
         }
 
