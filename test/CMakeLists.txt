@@ -67,7 +67,7 @@ if(PYTHONINTERP_FOUND)
   add_custom_target(cling-test.deps)
   set_target_properties(cling-test.deps PROPERTIES FOLDER "Cling tests")
 
-  add_custom_target(cling-test
+  add_custom_target(check-cling
     COMMAND ${PYTHON_EXECUTABLE}
                 ${LIT}
                 --param cling_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
@@ -77,6 +77,10 @@ if(PYTHONINTERP_FOUND)
                 ${LIT_ARGS}
                 \$\(if $(TESTDIRS),$(TESTDIRS),.\)
                 COMMENT "Running Cling regression tests")
+
+  # Add a legacy target spelling: cling-test
+  add_custom_target(cling-test)
+  add_dependencies(cling-test check-cling)
 
 add_custom_command(OUTPUT cling-headers.stamp
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
