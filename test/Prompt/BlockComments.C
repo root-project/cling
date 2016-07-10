@@ -66,6 +66,16 @@
 // This is a side effect of wrapping, expression is compiled as */; so 2 errors
 */ // expected-error@2 {{expected expression}} expected-error@3 {{expected expression}}
 
+// Check preprocessor blocked out
+/*
+#if 1
+
+#else er
+#we not gonna terminate this
+  #include "stop messing around.h"
+#finished
+
+*/
 
 // Check meta-commands are blocked out
 /*
