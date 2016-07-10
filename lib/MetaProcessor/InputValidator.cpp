@@ -80,25 +80,6 @@ namespace cling {
       MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
       int kind = (int)Tok.getKind();
 
-
-      // if (kind == tok::hash) {
-      //   // Handle #ifdef ...
-      //   //          ...
-      //   //        #endif
-      //   MetaLexer Lexer(curPos);
-      //   Lexer.Lex(Tok);
-      //   if (Tok.getKind() == tok::ident) {
-      //     if (Tok.getIdent().startswith("if")) {
-      //       Res = kIncomplete;
-      //       m_ParenStack.push_back(kind);
-      //     }
-      //     else if (Tok.getIdent().startswith("end")) {
-      //       assert(m_ParenStack.back() == kind && "No coresponding # to pop?");
-      //       m_ParenStack.pop_back();
-      //     }
-      //   }
-      // }
-
       if (kind == commentTok) {
         if (kind == tok::slash) {
           if (multilineComment) {
@@ -167,6 +148,23 @@ namespace cling {
           }
           else
             m_ParenStack.push_back(kind);
+        }
+        else if (kind == tok::hash) {
+          MetaLexer Lex(curPos);
+          Lex.SkipWhitespace();
+          Lex.LexAnyString(Tok);
+          const llvm::StringRef PPtk = Tok.getIdent();
+          if (PPtk.startswith("endif")
+              && (PPtk.size() > 5 ? PPtk[5]=='/' || isspace(PPtk[5]) : true)) {
+            if (m_ParenStack.empty() || m_ParenStack.back() != tok::hash) {
+              Res = kMismatch;
+              break;
+            }
+            m_ParenStack.pop_back();
+          }
+          else if (PPtk.startswith("if")) {
+            m_ParenStack.push_back(tok::hash);
+          }
         }
         else if (kind >= (int)tok::stringlit && kind <= (int)tok::charlit) {
           MetaLexer::LexQuotedStringAndAdvance(curPos, Tok);
