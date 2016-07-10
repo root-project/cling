@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: clang -shared %S/call_lib.c -o%p/libcall_lib%shlibext && ls %p/libcall_lib%shlibext && cat %s | %cling -L%p | FileCheck %s
+// RUN: clang -shared %S/call_lib.c -o%T/libcall_lib%shlibext && ls %T/libcall_lib%shlibext && cat %s | %cling -L%T | FileCheck %s
 
 .L libcall_lib
 extern "C" int cling_testlibrary_function();
