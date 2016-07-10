@@ -376,8 +376,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       return;
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
-    if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID()
-        && !m_FilesToUncache.count(FID))
+    if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID())
       m_FilesToUncache.insert(FID);
   }
 
