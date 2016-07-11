@@ -20,6 +20,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/Token.h"
 #include "clang/Parse/Parser.h"
+#include "clang/Parse/ParseDiagnostic.h"
 
 #include <cstdlib>
 
@@ -27,185 +28,157 @@ using namespace cling;
 using namespace clang;
 
 namespace {
-  typedef std::pair<bool, std::string> ParseResult_t;
+  class ClingPragmaHandler: public PragmaHandler {
+    Interpreter& m_Interp;
 
-  static ParseResult_t HandlePragmaHelper(Preprocessor &PP,
-                                          const std::string &pragmaInst,
-                                          bool stringLiteralArg = true) {
-    struct SkipToEOD_t {
+    struct SkipToEOD {
       Preprocessor& m_PP;
-      SkipToEOD_t(Preprocessor& PParg): m_PP(PParg) {}
-      ~SkipToEOD_t() { m_PP.DiscardUntilEndOfDirective(); }
-    } SkipToEOD(PP);
-
-    Token Tok;
-    PP.Lex(Tok);
-    if (Tok.isNot(tok::l_paren)) {
-      cling::errs() << "cling::HandlePragmaHelper: expect '(' after #"
-                    << pragmaInst << '\n';
-      return ParseResult_t{false, ""};
-    }
-    std::string Literal;
-    if (stringLiteralArg) {
-      if (!PP.LexStringLiteral(Tok, Literal, pragmaInst.c_str(),
-                               false /*allowMacroExpansion*/)) {
-        // already diagnosed.
-        return ParseResult_t {false, ""};
+      Token& m_Tok;
+      SkipToEOD(Preprocessor& PParg, Token& Tok):
+        m_PP(PParg), m_Tok(Tok) {
       }
-      utils::ExpandEnvVars(Literal);
-    } else {
-      // integer literal
+      ~SkipToEOD() {
+        // Can't use Preprocessor::DiscardUntilEndOfDirective, as we may
+        // already be on an eod token
+        while (!m_Tok.isOneOf(tok::eod, tok::eof))
+          m_PP.LexUnexpandedToken(m_Tok);
+      }
+    };
+
+    void ReportCommandErr(Preprocessor& PP, const Token& Tok) {
+      PP.Diag(Tok.getLocation(), diag::err_expected)
+        << "load, add_library_path, or add_include_path";
+    }
+
+    enum {
+      kLoadFile,
+      kAddLibrary,
+      kAddInclude,
+      // Put all commands that expand environment variables above this
+      kExpandEnvCommands,
+      kOptimize = kExpandEnvCommands,
+      kInvalidCommand,
+    };
+
+    int GetCommand(const StringRef CommandStr) {
+      if (CommandStr == "load")
+        return kLoadFile;
+      else if (CommandStr == "add_library_path")
+        return kAddLibrary;
+      else if (CommandStr == "add_include_path")
+        return kAddInclude;
+      else if (CommandStr == "optimize")
+        return kOptimize;
+      return kInvalidCommand;
+    }
+    
+  public:
+    ClingPragmaHandler(Interpreter& interp):
+      PragmaHandler("cling"), m_Interp(interp) {}
+
+    void HandlePragma(Preprocessor& PP,
+                      PragmaIntroducerKind Introducer,
+                      Token& FirstToken) override {
+
+      Token Tok;
       PP.Lex(Tok);
-      if (!Tok.isLiteral()) {
-        cling::errs()
-          << "cling::HandlePragmaHelper: expect integer literal after #"
-          << pragmaInst << '\n';
-        return ParseResult_t {false, ""};
-      }
-      Literal = std::string(Tok.getLiteralData(), Tok.getLength());
-    }
+      SkipToEOD OnExit(PP, Tok);
 
-    return ParseResult_t {true, Literal};
-  }
-
-  class PHLoad: public PragmaHandler {
-    Interpreter& m_Interp;
-
-  public:
-    PHLoad(Interpreter& interp):
-      PragmaHandler("load"), m_Interp(interp) {}
-
-    void HandlePragma(Preprocessor &PP,
-                      PragmaIntroducerKind Introducer,
-                      Token &FirstToken) override {
-      // TODO: use Diagnostics!
-      ParseResult_t Result = HandlePragmaHelper(PP, "pragma cling load");
-
-      if (!Result.first)
-        return;
-      if (Result.second.empty()) {
-        cling::errs() << "Cannot load unnamed files.\n" ;
-        return;
-      }
-      clang::Parser& P = m_Interp.getParser();
-      Parser::ParserCurTokRestoreRAII savedCurToken(P);
-      // After we have saved the token reset the current one to something which
-      // is safe (semi colon usually means empty decl)
-      Token& CurTok = const_cast<Token&>(P.getCurToken());
-      CurTok.setKind(tok::semi);
-
-      if (!m_Interp.isInSyntaxOnlyMode()) {
-        // No need to load libraries if we're not executing anything.
-
-        Preprocessor::CleanupAndRestoreCacheRAII cleanupRAII(PP);
-        // We can't PushDeclContext, because we go up and the routine that pops
-        // the DeclContext assumes that we drill down always.
-        // We have to be on the global context. At that point we are in a
-        // wrapper function so the parent context must be the global.
-        TranslationUnitDecl* TU =
-          m_Interp.getCI()->getASTContext().getTranslationUnitDecl();
-        Sema::ContextAndScopeRAII pushedDCAndS(m_Interp.getSema(),
-                                               TU, m_Interp.getSema().TUScope);
-        Interpreter::PushTransactionRAII pushedT(&m_Interp);
-
-        m_Interp.loadFile(Result.second, true /*allowSharedLib*/);
-      }
-    }
-  };
-
-  class PHAddIncPath: public PragmaHandler {
-    Interpreter& m_Interp;
-
-  public:
-    PHAddIncPath(Interpreter& interp):
-      PragmaHandler("add_include_path"), m_Interp(interp) {}
-
-    void HandlePragma(Preprocessor &PP,
-                      PragmaIntroducerKind Introducer,
-                      Token &FirstToken) override {
-      // TODO: use Diagnostics!
-      ParseResult_t Result = HandlePragmaHelper(PP,
-                                           "pragma cling add_include_path");
-      //if the function HandlePragmaHelper returned false,
-      if (!Result.first)
-        return;
-      if (!Result.second.empty())
-        m_Interp.AddIncludePath(Result.second);
-    }
-  };
-
-  class PHAddLibraryPath: public PragmaHandler {
-    Interpreter& m_Interp;
-
-  public:
-    PHAddLibraryPath(Interpreter& interp):
-      PragmaHandler("add_library_path"), m_Interp(interp) {}
-
-    void HandlePragma(Preprocessor &PP,
-                      PragmaIntroducerKind Introducer,
-                      Token &FirstToken) override {
-      // TODO: use Diagnostics!
-      ParseResult_t Result = HandlePragmaHelper(PP,
-                                         "pragma cling add_library_path");
-      //if the function HandlePragmaHelper returned false,
-      if (!Result.first)
-        return;
-      if (!Result.second.empty()) {
-      // if HandlePragmaHelper returned success, this means that
-      //it also returned the path to be included
-        InvocationOptions& Opts = m_Interp.getOptions();
-        Opts.LibSearchPath.push_back(Result.second);
-      }
-    }
-  };
-
-  class PHOptLevel: public PragmaHandler {
-    Interpreter& m_Interp;
-
-  public:
-    PHOptLevel(Interpreter& interp):
-      PragmaHandler("optimize"), m_Interp(interp) {}
-
-    void HandlePragma(Preprocessor &PP,
-                      PragmaIntroducerKind Introducer,
-                      Token &FirstToken) override {
-      // TODO: use Diagnostics!
-      ParseResult_t Result = HandlePragmaHelper(PP, "pragma cling optimize",
-                                                false /*string literal*/);
-      //if the function HandlePragmaHelper returned false,
-      if (!Result.first)
-        return;
-      if (Result.second.empty()) {
-        cling::errs() << "Missing optimization level.\n" ;
+      if (Tok.isNot(tok::identifier)) {
+        ReportCommandErr(PP, Tok);
         return;
       }
 
-      char* ConvEnd = nullptr;
-      int OptLevel = std::strtol(Result.second.c_str(), &ConvEnd, 10 /*base*/);
-      if (!ConvEnd || ConvEnd == Result.second.c_str()) {
-        cling::errs() << "cling::PHOptLevel: "
-          "missing or non-numerical optimization level.\n" ;
+      const StringRef CommandStr = Tok.getIdentifierInfo()->getName();
+      const int Command = GetCommand(CommandStr);
+      if (Command == kInvalidCommand) {
+        ReportCommandErr(PP, Tok);
         return;
       }
-      auto T = const_cast<Transaction*>(m_Interp.getCurrentTransaction());
-      assert(T && "Parsing code without transaction!");
-      // The topmost Transaction drives the jitting.
-      T = T->getTopmostParent();
-      CompilationOptions& CO = T->getCompilationOpts();
-      if (CO.OptLevel != m_Interp.getDefaultOptLevel()) {
-        // Another #pragma already changed the opt level. That's a conflict that
-        // we cannot resolve here; mention that and  keep the lower one.
-        cling::errs() << "cling::PHOptLevel: "
-          "conflicting `#pragma cling optimize` directives: "
-          "was already set to " << CO.OptLevel << '\n';
-        if (CO.OptLevel > OptLevel) {
-          CO.OptLevel = OptLevel;
-          cling::errs() << "Setting to lower value of " << OptLevel << '\n';
-        } else {
-          cling::errs() << "Ignoring higher value of " << OptLevel << '\n';
+
+      PP.Lex(Tok);
+      if (Tok.isNot(tok::l_paren)) {
+        PP.Diag(Tok.getLocation(), diag::err_expected_lparen_after)
+                << CommandStr;
+        return;
+      }
+
+      std::string Literal;
+      if (Command < kExpandEnvCommands) {
+        if (!PP.LexStringLiteral(Tok, Literal, CommandStr.str().c_str(),
+                                 false /*allowMacroExpansion*/)) {
+          // already diagnosed.
+          return;
         }
+        utils::ExpandEnvVars(Literal);
       } else {
-        CO.OptLevel = OptLevel;
+        PP.Lex(Tok);
+        llvm::SmallString<64> Buffer;
+        Literal = PP.getSpelling(Tok, Buffer).str();
+      }
+
+      switch (Command) {
+        case kLoadFile:
+          if (!m_Interp.isInSyntaxOnlyMode()) {
+            // No need to load libraries if we're not executing anything.
+
+            clang::Parser& P = m_Interp.getParser();
+            Parser::ParserCurTokRestoreRAII savedCurToken(P);
+            // After we have saved the token reset the current one to something
+            // which is safe (semi colon usually means empty decl)
+            Token& CurTok = const_cast<Token&>(P.getCurToken());
+            CurTok.setKind(tok::semi);
+            
+            Preprocessor::CleanupAndRestoreCacheRAII cleanupRAII(PP);
+            // We can't PushDeclContext, because we go up and the routine that
+            // pops the DeclContext assumes that we drill down always.
+            // We have to be on the global context. At that point we are in a
+            // wrapper function so the parent context must be the global.
+            TranslationUnitDecl* TU =
+            m_Interp.getCI()->getASTContext().getTranslationUnitDecl();
+            Sema::ContextAndScopeRAII pushedDCAndS(m_Interp.getSema(),
+                                                  TU, m_Interp.getSema().TUScope);
+            Interpreter::PushTransactionRAII pushedT(&m_Interp);
+            
+            m_Interp.loadFile(Literal, true /*allowSharedLib*/);
+          }
+          break;
+        case kAddLibrary:
+          m_Interp.getOptions().LibSearchPath.push_back(std::move(Literal));
+          break;
+        case kAddInclude:
+          m_Interp.AddIncludePath(Literal);
+          break;
+
+        case kOptimize: {
+          char* ConvEnd = nullptr;
+          int OptLevel = std::strtol(Literal.c_str(), &ConvEnd, 10 /*base*/);
+          if (!ConvEnd || ConvEnd == Literal.c_str()) {
+            cling::errs() << "cling::PHOptLevel: "
+              "missing or non-numerical optimization level.\n" ;
+            return;
+          }
+          auto T = const_cast<Transaction*>(m_Interp.getCurrentTransaction());
+          assert(T && "Parsing code without transaction!");
+          // The topmost Transaction drives the jitting.
+          T = T->getTopmostParent();
+          CompilationOptions& CO = T->getCompilationOpts();
+          if (CO.OptLevel != m_Interp.getDefaultOptLevel()) {
+            // Another #pragma already changed the opt level, a conflict that
+            // cannot be resolve here.  Mention and keep the lower one.
+            cling::errs() << "cling::PHOptLevel: "
+              "conflicting `#pragma cling optimize` directives: "
+              "was already set to " << CO.OptLevel << '\n';
+            if (CO.OptLevel > OptLevel) {
+              CO.OptLevel = OptLevel;
+              cling::errs() << "Setting to lower value of " << OptLevel << '\n';
+            } else {
+              cling::errs() << "Ignoring higher value of " << OptLevel << '\n';
+            }
+          } else {
+            CO.OptLevel = OptLevel;
+          }
+        }
       }
     }
   };
@@ -214,8 +187,5 @@ namespace {
 void cling::addClingPragmas(Interpreter& interp) {
   Preprocessor& PP = interp.getCI()->getPreprocessor();
   // PragmaNamespace / PP takes ownership of sub-handlers.
-  PP.AddPragmaHandler("cling", new PHLoad(interp));
-  PP.AddPragmaHandler("cling", new PHAddIncPath(interp));
-  PP.AddPragmaHandler("cling", new PHAddLibraryPath(interp));
-  PP.AddPragmaHandler("cling", new PHOptLevel(interp));
+  PP.AddPragmaHandler(StringRef(), new ClingPragmaHandler(interp));
 }
