@@ -169,8 +169,8 @@ namespace cling {
     }
 
     //  We have a complete statement, compile and execute it.
-    std::string input = m_InputValidator->getInput();
-    m_InputValidator->reset();
+    std::string input;
+    m_InputValidator->reset(&input);
     // if (m_Options.RawInput)
     //   compResLocal = m_Interp.declare(input);
     // else
