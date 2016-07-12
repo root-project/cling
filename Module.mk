@@ -159,7 +159,7 @@ endif
 ##### extra rules ######
 ifneq ($(LLVMDEV),)
 $(CLINGO)   : CLINGCXXFLAGS += '-DCLING_INCLUDE_PATHS="$(CLINGDIR)/include:$(shell pwd)/$(LLVMDIRO)/include:$(shell pwd)/$(LLVMDIRO)/tools/clang/include:$(LLVMDIRS)/include:$(LLVMDIRS)/tools/clang/include"'
-$(CLINGEXEO): CLINGCXXFLAGS += -fexceptions -I$(TEXTINPUTDIRS)
+$(CLINGEXEO): CLINGCXXFLAGS += -fexceptions -I$(TEXTINPUTDIRS) -I$(LLVMDIRO)/include
 else
 endif
 
