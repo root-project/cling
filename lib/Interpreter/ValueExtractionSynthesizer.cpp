@@ -325,6 +325,8 @@ namespace {
                                    /*initializer*/E,
                                    /*mayContainAuto*/false
                                    );
+        // Handle possible cleanups:
+        Call = m_Sema->ActOnFinishFullExpr(Call.get());
       }
     }
     else if (desugaredTy->isIntegralOrEnumerationType()
