@@ -213,8 +213,13 @@ namespace cling {
     return Res;
   }
 
-  void InputValidator::reset() {
-    m_Input = "";
-    m_ParenStack.clear();
+  void InputValidator::reset(std::string* input) {
+    if (input) {
+      assert(input->empty() && "InputValidator::reset got non empty argument");
+      input->swap(m_Input);
+    } else
+      std::string().swap(m_Input);
+
+    std::deque<int>().swap(m_ParenStack);
   }
 } // end namespace cling
