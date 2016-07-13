@@ -151,7 +151,7 @@ CLINGLDEXPSYM := -Wl,-E
 endif
 $(CLINGEXE): $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO)
 	$(RSYNC) --exclude '.svn' $(CLINGDIR) $(LLVMDIRO)/tools
-	@cd $(LLVMDIRS)/tools && ln -sf ../../../cling # yikes
+	#@cd $(LLVMDIRS)/tools && ln -sf ../../../cling # yikes
 	@mkdir -p $(dir $@)
 	$(LD) $(CLINGLDEXPSYM) -o $@ $(CLINGO) $(CLINGEXEO) $(LTEXTINPUTO) $(CLINGLIBEXTRA) 
 endif
