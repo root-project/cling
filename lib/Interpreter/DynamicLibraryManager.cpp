@@ -370,8 +370,10 @@ namespace cling {
     DyLibHandle dyLibHandle = 0;
     for (DyLibs::const_iterator I = m_DyLibs.begin(), E = m_DyLibs.end();
          I != E; ++I) {
-      if (I->second == canonicalLoadedLib)
+      if (I->second == canonicalLoadedLib) {
         dyLibHandle = I->first;
+        break;
+      }
     }
 
     std::string errMsg;
