@@ -107,34 +107,30 @@ namespace cling {
 
   Interpreter::StateDebuggerRAII::StateDebuggerRAII(const Interpreter* i)
     : m_Interpreter(i) {
-    if (!i->isPrintingDebug())
-      return;
-    const CompilerInstance& CI = *m_Interpreter->getCI();
-    CodeGenerator* CG = i->m_IncrParser->getCodeGenerator();
+    if (m_Interpreter->isPrintingDebug()) {
+      const CompilerInstance& CI = *m_Interpreter->getCI();
+      CodeGenerator* CG = i->m_IncrParser->getCodeGenerator();
 
-    // The ClangInternalState constructor can provoke deserialization,
-    // we need a transaction.
-    PushTransactionRAII pushedT(i);
+      // The ClangInternalState constructor can provoke deserialization,
+      // we need a transaction.
+      PushTransactionRAII pushedT(i);
 
-    m_State.reset(new ClangInternalState(CI.getASTContext(),
-                                         CI.getPreprocessor(),
-                                         CG ? CG->GetModule() : 0,
-                                         CG,
-                                         "aName"));
+      m_State.reset(new ClangInternalState(CI.getASTContext(),
+                                           CI.getPreprocessor(),
+                                           CG ? CG->GetModule() : 0,
+                                           CG,
+                                           "aName"));
+    }
   }
 
   Interpreter::StateDebuggerRAII::~StateDebuggerRAII() {
-    // The ClangInternalState destructor can provoke deserialization,
-    // we need a transaction.
-    PushTransactionRAII pushedT(m_Interpreter);
-
-    pop();
-  }
-
-  void Interpreter::StateDebuggerRAII::pop() const {
-    if (!m_Interpreter->isPrintingDebug())
-      return;
-    m_State->compare("aName");
+    if (m_State) {
+      // The ClangInternalState destructor can provoke deserialization,
+      // we need a transaction.
+      PushTransactionRAII pushedT(m_Interpreter);
+      m_State->compare("aName");
+      m_State.reset();
+    }
   }
 
   const Parser& Interpreter::getParser() const {

@@ -95,7 +95,6 @@ namespace cling {
     public:
       StateDebuggerRAII(const Interpreter* i);
       ~StateDebuggerRAII();
-      void pop() const;
     };
 
     ///\brief Describes the return result of the different routines that do the
