@@ -313,10 +313,15 @@ endmacro(add_cling_executable)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if(DEFINED ROOT_BINARY_DIR)
-  # Building as part of ROOT.
-  # this is needed when building Cling as part of ROOT:
+  # Building as part of ROOT (CMake)
   include_directories(BEFORE
     ${CMAKE_CURRENT_BINARY_DIR}/../llvm/src/tools/clang/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include
+    )
+elseif(DEFINED ROOT_CLASSIC)
+  # Building as part of ROOT (classic)
+  include_directories(BEFORE
+    ${CMAKE_CURRENT_BINARY_DIR}/../llvm/obj/tools/clang/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include
     )
 else()
