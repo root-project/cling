@@ -586,7 +586,20 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         return true;
       }
     };
+
+    static const TagType* getTagPointedToo(const Type* T) {
+      if ((T = T->getPointeeType().getTypePtrOrNull())) {
+        const Type* Resolved;
+        do {
+          Resolved = T;
+          T = T->getPointeeType().getTypePtrOrNull();
+        } while (T);
+        return Resolved->getAs<TagType>();
+      }
+      return nullptr;
+    }
   }
+
   bool DeclUnloader::VisitFunctionDecl(FunctionDecl* FD) {
     // The Structors need to be handled differently.
     if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
@@ -696,6 +709,30 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       // FIXME: When the misbehavior of clang is fixed we must avoid relying on
       // source locations
       FunctionTemplateDeclExt::removeSpecialization(FTD, FD);
+    }
+
+    // struct FirstDecl* function();
+    // In the example above, FirstDecl* will be declared as the function is
+    // parsed, and if FirstDecl* never gets a definiton, it's declaration
+    // will never be removed, so we have to check for that case.
+
+    const Type* type = FD->getReturnType().getTypePtrOrNull();
+    if (type && !type->isVoidType()) {
+      if (const TagType* TT = getTagPointedToo(type)) {
+        TagDecl* Tag = TT->getDecl();
+        // So we have a TagDecl, was it embedded, and is it still undefined?
+        if (Tag->isEmbeddedInDeclarator() && !Tag->isCompleteDefinition()) {
+          // Possibly overkill, but just to be safe
+          if (Tag->getFirstDecl() == Tag) {
+            // Only unload it the first time it appeared with a function
+            const SourceManager& SM = m_Sema->getSourceManager();
+            if (!SM.isBeforeInTranslationUnit(Tag->getLocStart(),
+                                              FD->getLocStart())) {
+              Visit(Tag);
+            }
+          }
+        }
+      }
     }
 
     // Remove new and delete (all variants) from the cache (m_Sema->IdResolver)
