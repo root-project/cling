@@ -101,9 +101,8 @@ namespace {
     bool Complete(textinput::Text& Line /*in+out*/,
                 size_t& Cursor /*in+out*/,
                 textinput::EditorRange& R /*out*/,
-                std::vector<std::string>& DisplayCompletions /*out*/) override {
-      m_ParentInterpreter->codeComplete(Line.GetText(), Cursor,
-                                        DisplayCompletions);
+                std::vector<std::string>& Completions /*out*/) override {
+      m_ParentInterpreter->codeComplete(Line.GetText(), Cursor, Completions);
     }
   };
 }
@@ -143,7 +142,8 @@ namespace cling {
 
     // Inform text input about the code complete consumer
     // TextInput owns the TabCompletion.
-    TabCompletion* Completion = new cling::TabCompletion(m_MetaProcessor->getInterpreter());
+    TabCompletion* Completion =
+                  new cling::TabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(Completion);
 
     TI.SetPrompt("[cling]$ ");

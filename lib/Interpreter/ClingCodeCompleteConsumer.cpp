@@ -13,66 +13,67 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 
-void ClingCodeCompleteConsumer::ProcessCodeCompleteResults(Sema &SemaRef,
-                                                 CodeCompletionContext Context,
-                                                 CodeCompletionResult *Results,
-                                                         unsigned NumResults) {
-  std::stable_sort(Results, Results + NumResults);
-  
-  StringRef Filter = SemaRef.getPreprocessor().getCodeCompletionFilter();
+namespace cling {
+  void ClingCodeCompleteConsumer::ProcessCodeCompleteResults(Sema &SemaRef,
+                                                   CodeCompletionContext Context,
+                                                   CodeCompletionResult *Results,
+                                                           unsigned NumResults) {
+    std::stable_sort(Results, Results + NumResults);
 
-  for (unsigned I = 0; I != NumResults; ++I) {
-    if (!Filter.empty() && isResultFilteredOut(Filter, Results[I]))
-      continue;
-    switch (Results[I].Kind) {
-      case CodeCompletionResult::RK_Declaration:
-        if (CodeCompletionString *CCS
+    StringRef Filter = SemaRef.getPreprocessor().getCodeCompletionFilter();
+
+    for (unsigned I = 0; I != NumResults; ++I) {
+      if (!Filter.empty() && isResultFilteredOut(Filter, Results[I]))
+        continue;
+      switch (Results[I].Kind) {
+        case CodeCompletionResult::RK_Declaration:
+          if (CodeCompletionString *CCS
               = Results[I].CreateCodeCompletionString(SemaRef, Context,
                                                       getAllocator(),
                                                       m_CCTUInfo,
                                                       includeBriefComments())) {
-          m_Completions.push_back(CCS->getAsString());
-        }
-        break;
-        
-      case CodeCompletionResult::RK_Keyword:
-        m_Completions.push_back(Results[I].Keyword);
-        break;
+            m_Completions.push_back(CCS->getAsString());
+          }
+          break;
 
+        case CodeCompletionResult::RK_Keyword:
+          m_Completions.push_back(Results[I].Keyword);
+          break;
 
-      case CodeCompletionResult::RK_Macro:
-        if (CodeCompletionString *CCS
+        case CodeCompletionResult::RK_Macro:
+          if (CodeCompletionString *CCS
               = Results[I].CreateCodeCompletionString(SemaRef, Context,
                                                       getAllocator(),
                                                       m_CCTUInfo,
                                                       includeBriefComments())) {
-          m_Completions.push_back(CCS->getAsString());
-        }
-        break;
+            m_Completions.push_back(CCS->getAsString());
+          }
+          break;
 
-      case CodeCompletionResult::RK_Pattern:
-        m_Completions.push_back(Results[I].Pattern->getAsString());
-        break;
+        case CodeCompletionResult::RK_Pattern:
+          m_Completions.push_back(Results[I].Pattern->getAsString());
+          break;
+      }
     }
   }
-}
 
-bool ClingCodeCompleteConsumer::isResultFilteredOut(StringRef Filter,
-                                                CodeCompletionResult Result) {
-  switch (Result.Kind) {
-    case CodeCompletionResult::RK_Declaration: {
-      return !(Result.Declaration->getIdentifier() &&
-              Result.Declaration->getIdentifier()->getName().startswith(Filter));
+  bool ClingCodeCompleteConsumer::isResultFilteredOut(StringRef Filter,
+                                                  CodeCompletionResult Result) {
+    switch (Result.Kind) {
+      case CodeCompletionResult::RK_Declaration: {
+        return !(Result.Declaration->getIdentifier() &&
+            Result.Declaration->getIdentifier()->getName().startswith(Filter));
+      }
+      case CodeCompletionResult::RK_Keyword: {
+        return !((StringRef(Result.Keyword)).startswith(Filter));
+      }
+      case CodeCompletionResult::RK_Macro: {
+        return !(Result.Macro->getName().startswith(Filter));
+      }
+      case CodeCompletionResult::RK_Pattern: {
+        return !(StringRef((Result.Pattern->getAsString())).startswith(Filter));
+      }
+      default: llvm_unreachable("Unknown code completion result Kind.");
     }
-    case CodeCompletionResult::RK_Keyword: {
-      return !((StringRef(Result.Keyword)).startswith(Filter));
-    }
-    case CodeCompletionResult::RK_Macro: {
-      return !(Result.Macro->getName().startswith(Filter));
-    }
-    case CodeCompletionResult::RK_Pattern: {
-      return !(StringRef((Result.Pattern->getAsString())).startswith(Filter));
-    }
-    default: llvm_unreachable("Unknown code completion result Kind.");
   }
 }

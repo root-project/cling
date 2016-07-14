@@ -14,38 +14,42 @@
 
 using namespace clang;
 
-/// \brief Create a new printing code-completion consumer that prints its
-/// results to the given raw output stream.
-class ClingCodeCompleteConsumer : public CodeCompleteConsumer {
-  /// \brief The raw output stream.
-  raw_ostream &m_OS;
-  CodeCompletionTUInfo m_CCTUInfo;
-  /// \ brief Results of the completer to be printed by the text interface.
-  std::vector<std::string> &m_Completions;
+namespace cling {
+  /// \brief Create a new printing code-completion consumer that prints its
+  /// results to the given raw output stream.
+  class ClingCodeCompleteConsumer : public CodeCompleteConsumer {
+    CodeCompletionTUInfo m_CCTUInfo;
+    /// \ brief Results of the completer to be printed by the text interface.
+    std::vector<std::string> &m_Completions;
 
-public:
-  ClingCodeCompleteConsumer(const CodeCompleteOptions &CodeCompleteOpts,
-                        raw_ostream &OS, std::vector<std::string> &completions)
-    : CodeCompleteConsumer(CodeCompleteOpts, false), m_OS(OS),
-      m_CCTUInfo(new GlobalCodeCompletionAllocator), m_Completions(completions){}
-  ~ClingCodeCompleteConsumer() {}   
+  public:
+    ClingCodeCompleteConsumer(const CodeCompleteOptions &CodeCompleteOpts,
+                              std::vector<std::string> &completions)
+      : CodeCompleteConsumer(CodeCompleteOpts, false),
+        m_CCTUInfo(new GlobalCodeCompletionAllocator),
+        m_Completions(completions) {}
+    ~ClingCodeCompleteConsumer() {}
 
-  /// \brief Prints the finalized code-completion results.
-  void ProcessCodeCompleteResults(Sema &S, CodeCompletionContext Context,
-                                  CodeCompletionResult *Results,
-                                  unsigned NumResults) override;
+    /// \brief Prints the finalized code-completion results.
+    void ProcessCodeCompleteResults(Sema &S, CodeCompletionContext Context,
+                                    CodeCompletionResult *Results,
+                                    unsigned NumResults) override;
 
-  CodeCompletionAllocator &getAllocator() override {
-    return m_CCTUInfo.getAllocator();
-  }
+    CodeCompletionAllocator &getAllocator() override {
+      return m_CCTUInfo.getAllocator();
+    }
 
-  CodeCompletionTUInfo &getCodeCompletionTUInfo() override { return m_CCTUInfo; }
+    CodeCompletionTUInfo &getCodeCompletionTUInfo() override {
+      return m_CCTUInfo;
+    }
 
-  bool isResultFilteredOut(StringRef Filter, CodeCompletionResult Results) override;
+    bool isResultFilteredOut(StringRef Filter,
+                             CodeCompletionResult Results) override;
 
-  void getCompletions(std::vector<std::string>& completions) {
-    completions = m_Completions;
-  }
-};
+    void getCompletions(std::vector<std::string>& completions) {
+      completions = m_Completions;
+    }
+  };
+}
 
 #endif

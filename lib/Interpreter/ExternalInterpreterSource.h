@@ -10,19 +10,18 @@
 #ifndef CLING_EXTERNAL_INTERPRETER_SOURCE
 #define CLING_EXTERNAL_INTERPRETER_SOURCE
 
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Sema/Sema.h"
-#include "clang/AST/ASTContext.h"
-#include "clang/AST/ASTImporter.h"
+#include "clang/AST/ExternalASTSource.h"
 
 #include <string>
 #include <map>
 
 namespace clang {
   class ASTContext;
+  class ASTImporter;
   class Decl;
   class DeclContext;
   class DeclarationName;
+  class ExternalASTSource;
   class NamedDecl;
   class Sema;
 }
@@ -59,7 +58,7 @@ namespace cling {
       public:
         ExternalInterpreterSource(const cling::Interpreter *parent,
                                   cling::Interpreter *child);
-        ~ExternalInterpreterSource() { };
+        virtual ~ExternalInterpreterSource();
 
         void completeVisibleDeclsMap(const clang::DeclContext *DC) override;
 

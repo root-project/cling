@@ -11,7 +11,6 @@
 #include "ClingUtils.h"
 
 #include "cling-compiledata.h"
-#include "ASTImportSource.h"
 #include "DynamicLookup.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
@@ -701,13 +700,14 @@ namespace cling {
                             std::vector<std::string>& completions) const {
 
     const char * const argV = "cling";
-    std::string llvmDir = this->getCI()->getHeaderSearchOpts().ResourceDir;
+    std::string resourceDir = this->getCI()->getHeaderSearchOpts().ResourceDir;
     // Remove the extra 3 directory names "/lib/clang/3.9.0"
-    StringRef parentDir = llvm::sys::path::parent_path(
-                    llvm::sys::path::parent_path(
-                    llvm::sys::path::parent_path(llvmDir)));
+    StringRef parentResourceDir = llvm::sys::path::parent_path(
+                                  llvm::sys::path::parent_path(
+                                  llvm::sys::path::parent_path(resourceDir)));
+    std::string llvmDir = parentResourceDir.str();
 
-    cling::Interpreter childInterpreter(*this, 1, &argV, parentDir.data());
+    Interpreter childInterpreter(*this, 1, &argV, llvmDir.c_str());
 
     auto childCI = childInterpreter.getCI();
     clang::Sema &childSemaRef = childCI->getSema();
@@ -716,8 +716,7 @@ namespace cling {
     // from the parent interpreter and set the consumer for the child
     // interpreter.
     ClingCodeCompleteConsumer* consumer = new ClingCodeCompleteConsumer(
-              this->getCI()->getFrontendOpts().CodeCompleteOpts, llvm::errs(),
-              completions);
+                getCI()->getFrontendOpts().CodeCompleteOpts, completions);
     // Child interpreter CI will own consumer!
     childCI->setCodeCompletionConsumer(consumer);
     childSemaRef.CodeCompleter = consumer;

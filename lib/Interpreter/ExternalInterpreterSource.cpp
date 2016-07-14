@@ -10,7 +10,11 @@
 #include "ExternalInterpreterSource.h"
 #include "cling/Interpreter/Interpreter.h"
 
+#include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTImporter.h"
+#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Sema/Sema.h"
 
 using namespace clang;
 
@@ -25,6 +29,7 @@ namespace {
                      bool MinimalImport, cling::ExternalInterpreterSource& source):
       ASTImporter(ToContext, ToFileManager, FromContext, FromFileManager,
                   MinimalImport), m_Source(source) {}
+    virtual ~ClingASTImporter() = default;
 
     Decl *Imported(Decl *From, Decl *To) override {
       ASTImporter::Imported(From, To);
@@ -32,31 +37,24 @@ namespace {
       if (clang::TagDecl* toTagDecl = dyn_cast<TagDecl>(To)) {
         toTagDecl->setHasExternalLexicalStorage();
         toTagDecl->setMustBuildLookupTable();
+        toTagDecl->setHasExternalVisibleStorage();
       }
-
-      if (NamespaceDecl *toNamespaceDecl = dyn_cast<NamespaceDecl>(To))
-      {
-          toNamespaceDecl->setHasExternalVisibleStorage();
+      if (NamespaceDecl *toNamespaceDecl = dyn_cast<NamespaceDecl>(To)) {
+        toNamespaceDecl->setHasExternalVisibleStorage();
       }
-     
-      if (ObjCContainerDecl *toContainerDecl = dyn_cast<ObjCContainerDecl>(To))
-      {
-          toContainerDecl->setHasExternalLexicalStorage();
-          toContainerDecl->setHasExternalVisibleStorage();
+      if (ObjCContainerDecl *toContainerDecl = dyn_cast<ObjCContainerDecl>(To)) {
+        toContainerDecl->setHasExternalLexicalStorage();
+        toContainerDecl->setHasExternalVisibleStorage();
       }
-
       // Put the name of the Decl imported with the
       // DeclarationName coming from the parent, in  my map.
-      if (NamedDecl *fromNamedDecl = llvm::dyn_cast<NamedDecl>(From)) {
-        NamedDecl *toNamedDecl = llvm::dyn_cast<NamedDecl>(To);
+      if (NamedDecl *toNamedDecl = llvm::dyn_cast<NamedDecl>(To)) {
         m_Source.addToImportedDecls(toNamedDecl->getDeclName(),
                                     fromNamedDecl->getDeclName());
       }
-      if (DeclContext *fromDeclContext = llvm::dyn_cast<DeclContext>(From)) {
-        DeclContext *toDeclContext = llvm::dyn_cast<DeclContext>(To);
+      if (DeclContext *toDeclContext = llvm::dyn_cast<DeclContext>(To)) {
         m_Source.addToImportedDeclContexts(toDeclContext, fromDeclContext);
       }
-
       return To;
     }
   };
@@ -77,6 +75,8 @@ namespace cling {
     // Also keep in the map of Decl Contexts the Translation Unit Decl Context
     m_ImportedDeclContexts[childTUDeclContext] = parentTUDeclContext;
   }
+
+  ExternalInterpreterSource::~ExternalInterpreterSource() {}
 
   ClingASTImporter CreateClingASTImporter(ASTContext &toContext,
                                           ASTContext &fromContext,
@@ -107,10 +107,9 @@ namespace cling {
 
     if (Decl *importedDecl = importer.Import(declToImport)) {
       if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
-        llvm::ArrayRef <NamedDecl*> FoundDecls(importedNamedDecl);
         SetExternalVisibleDeclsForName(childCurrentDeclContext,
                                        importedNamedDecl->getDeclName(),
-                                       FoundDecls);
+                                       importedNamedDecl);
       }
       // Put the name of the Decl imported with the
       // DeclarationName coming from the parent, in  my map.
@@ -131,10 +130,9 @@ namespace cling {
       importedDeclContext->setHasExternalVisibleStorage(true);
       if (NamedDecl *importedNamedDecl = 
                             llvm::dyn_cast<NamedDecl>(importedDeclContext)) {
-        llvm::ArrayRef <NamedDecl*> FoundDecls(importedNamedDecl);
         SetExternalVisibleDeclsForName(childCurrentDeclContext,
                                        importedNamedDecl->getDeclName(),
-                                       FoundDecls);
+                                       importedNamedDecl);
       }
 
       // Put the name of the DeclContext imported with the
@@ -170,11 +168,9 @@ namespace cling {
         ImportDeclContext(declContextToImport, importer, childDeclName,
                           parentDeclName, childCurrentDeclContext);
 
-      } else if (Decl *declToImport = llvm::dyn_cast<Decl>(*I)) {
-        // else it is a Decl
-        ImportDecl(declToImport, importer, childDeclName,
-                   parentDeclName, childCurrentDeclContext);
       }
+      ImportDecl(*I, importer, childDeclName, parentDeclName,
+                 childCurrentDeclContext);
     }
     return true;
   }
@@ -224,11 +220,10 @@ namespace cling {
 
     // Check if we found this Name in the parent interpreter
     if (!lookup_result.empty()) {
-      // Do the import
       ASTContext &fromASTContext =
-          Decl::castFromDeclContext(parentDeclContext)->getASTContext();
+            Decl::castFromDeclContext(parentDeclContext)->getASTContext();
       ASTContext &toASTContext =
-          Decl::castFromDeclContext(childCurrentDeclContext)->getASTContext();
+            Decl::castFromDeclContext(childCurrentDeclContext)->getASTContext();
       if (Import(lookup_result, fromASTContext, toASTContext,
                  childCurrentDeclContext, childDeclName, parentDeclName))
         return true;
