@@ -750,6 +750,16 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  bool DeclUnloader::wasInstatiatedBefore(SourceLocation Loc) const {
+    if (m_CurTransaction && Loc.isValid()) {
+      SourceManager &SManger = m_Sema->getSourceManager();
+      SourceLocation TLoc = m_CurTransaction->getSourceStart(SManger);
+      if (TLoc.isValid())
+        return SManger.isBeforeInTranslationUnit(Loc, TLoc);
+    }
+    return false;
+  }
+
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
 
@@ -1061,26 +1071,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
-  bool DeclUnloader::wasInstatiatedBefore(Decl* D,
-                                          const SourceLocation& Loc) const {
-    if (m_CurTransaction && Loc.isValid()) {
-      // ##TODO: If this was never instantiated then Loc.isValid() is false
-      // But what does that mean? Should we return false just to get rid of it
-      SourceManager &SManger = m_Sema->getSourceManager();
-      if (SManger.isBeforeInTranslationUnit(Loc,
-                                 m_CurTransaction->getSourceStart(SManger))) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
   template <class DeclT>
   bool DeclUnloader::VisitSpecializations(DeclT *D) {
     llvm::SmallVector<typename DeclT::spec_iterator::pointer, 8> specs;
     for (typename DeclT::spec_iterator I = D->spec_begin(),
            E = D->spec_end(); I != E; ++I) {
-      if (!wasInstatiatedBefore(*I, I->getPointOfInstantiation()))
+      if (!wasInstatiatedBefore(I->getPointOfInstantiation()))
         specs.push_back(*I);
     }
 
@@ -1214,7 +1210,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
     //###FIXME We can get here through DeclUnloader::VisitSpecializations
     // in which case we know the folowing is true
-    if (!wasInstatiatedBefore(CTSD, CTSD->getPointOfInstantiation()))
+    if (!wasInstatiatedBefore(CTSD->getPointOfInstantiation()))
       return VisitCXXRecordDecl(CTSD);
     
     return true;
