@@ -11,6 +11,10 @@
 // This file should be used as regression test for the value printing subsystem
 // Reproducers of fixed bugs should be put here
 
+extern "C" int mustPrintFirst() { return 6; }
+mustPrintFirst
+// CHECK: (int (*)()) Function
+
 // PR #93006
 .rawInput 1
 extern "C" int printf(const char* fmt, ...);

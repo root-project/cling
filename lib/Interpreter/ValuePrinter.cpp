@@ -318,77 +318,82 @@ static std::string printEnumValue(const Value &V) {
 static std::string printFunctionValue(const Value &V, const void *ptr, clang::QualType Ty) {
   std::string functionString;
   llvm::raw_string_ostream o(functionString);
-  o << "Function @" << ptr << '\n';
+  o << "Function @" << ptr;
 
-  clang::ASTContext &C = V.getASTContext();
+  // If a function is the first thing printed in a session,
+  // getLastTransaction() will point to the transaction that loaded the
+  // ValuePrinter, and won't have a wrapper FD.
+  // Even if it did have one it wouldn't be the one that was requested to print.
+
   Interpreter &Interp = *const_cast<Interpreter *>(V.getInterpreter());
   const Transaction *T = Interp.getLastTransaction();
-  assert(T->getWrapperFD() && "Must have a wrapper.");
-  clang::FunctionDecl *WrapperFD = T->getWrapperFD();
-
-  const clang::FunctionDecl *FD = 0;
-  // CE should be the setValueNoAlloc call expr.
-  if (const clang::CallExpr *CallE
-      = llvm::dyn_cast_or_null<clang::CallExpr>(
-          utils::Analyze::GetOrCreateLastExpr(WrapperFD,
-              /*foundAtPos*/0,
-              /*omitDS*/false,
-                                              &Interp.getSema()))) {
-    if (const clang::FunctionDecl *FDsetValue
+  if (clang::FunctionDecl *WrapperFD = T->getWrapperFD()) {
+    clang::ASTContext &C = V.getASTContext();
+    const clang::FunctionDecl *FD = nullptr;
+    // CE should be the setValueNoAlloc call expr.
+    if (const clang::CallExpr *CallE
+            = llvm::dyn_cast_or_null<clang::CallExpr>(
+                    utils::Analyze::GetOrCreateLastExpr(WrapperFD,
+                                                        /*foundAtPos*/0,
+                                                        /*omitDS*/false,
+                                                        &Interp.getSema()))) {
+      if (const clang::FunctionDecl *FDsetValue
         = llvm::dyn_cast_or_null<clang::FunctionDecl>(CallE->getCalleeDecl())) {
-      if (FDsetValue->getNameAsString() == "setValueNoAlloc" &&
-          CallE->getNumArgs() == 5) {
-        const clang::Expr *Arg4 = CallE->getArg(4);
-        while (const clang::CastExpr *CastE
-            = clang::dyn_cast<clang::CastExpr>(Arg4))
-          Arg4 = CastE->getSubExpr();
-        if (const clang::DeclRefExpr *DeclRefExp
-            = llvm::dyn_cast<clang::DeclRefExpr>(Arg4))
-          FD = llvm::dyn_cast<clang::FunctionDecl>(DeclRefExp->getDecl());
+        if (FDsetValue->getNameAsString() == "setValueNoAlloc" &&
+            CallE->getNumArgs() == 5) {
+          const clang::Expr *Arg4 = CallE->getArg(4);
+          while (const clang::CastExpr *CastE
+              = clang::dyn_cast<clang::CastExpr>(Arg4))
+            Arg4 = CastE->getSubExpr();
+          if (const clang::DeclRefExpr *DeclRefExp
+              = llvm::dyn_cast<clang::DeclRefExpr>(Arg4))
+            FD = llvm::dyn_cast<clang::FunctionDecl>(DeclRefExp->getDecl());
+        }
       }
     }
-  }
 
-  if (FD) {
-    clang::SourceRange SRange = FD->getSourceRange();
-    const char *cBegin = 0;
-    const char *cEnd = 0;
-    bool Invalid;
-    if (SRange.isValid()) {
-      clang::SourceManager &SM = C.getSourceManager();
-      clang::SourceLocation LocBegin = SRange.getBegin();
-      LocBegin = SM.getExpansionRange(LocBegin).first;
-      o << "  at " << SM.getFilename(LocBegin);
-      unsigned LineNo = SM.getSpellingLineNumber(LocBegin, &Invalid);
-      if (!Invalid)
-        o << ':' << LineNo;
-      o << ":\n";
-      bool Invalid = false;
-      cBegin = SM.getCharacterData(LocBegin, &Invalid);
-      if (!Invalid) {
-        clang::SourceLocation LocEnd = SRange.getEnd();
-        LocEnd = SM.getExpansionRange(LocEnd).second;
-        cEnd = SM.getCharacterData(LocEnd, &Invalid);
-        if (Invalid)
+    if (FD) {
+      o << '\n';
+      clang::SourceRange SRange = FD->getSourceRange();
+      const char *cBegin = 0;
+      const char *cEnd = 0;
+      bool Invalid;
+      if (SRange.isValid()) {
+        clang::SourceManager &SM = C.getSourceManager();
+        clang::SourceLocation LocBegin = SRange.getBegin();
+        LocBegin = SM.getExpansionRange(LocBegin).first;
+        o << "  at " << SM.getFilename(LocBegin);
+        unsigned LineNo = SM.getSpellingLineNumber(LocBegin, &Invalid);
+        if (!Invalid)
+          o << ':' << LineNo;
+        o << ":\n";
+        bool Invalid = false;
+        cBegin = SM.getCharacterData(LocBegin, &Invalid);
+        if (!Invalid) {
+          clang::SourceLocation LocEnd = SRange.getEnd();
+          LocEnd = SM.getExpansionRange(LocEnd).second;
+          cEnd = SM.getCharacterData(LocEnd, &Invalid);
+          if (Invalid)
+            cBegin = 0;
+        } else {
           cBegin = 0;
-      } else {
-        cBegin = 0;
+        }
       }
-    }
-    if (cBegin && cEnd && cEnd > cBegin && cEnd - cBegin < 16 * 1024) {
-      o << llvm::StringRef(cBegin, cEnd - cBegin + 1);
-    } else {
-      const clang::FunctionDecl *FDef;
-      if (FD->hasBody(FDef))
-        FD = FDef;
-      FD->print(o);
-      //const clang::FunctionDecl* FD
-      //  = llvm::cast<const clang::FunctionType>(Ty)->getDecl();
+      if (cBegin && cEnd && cEnd > cBegin && cEnd - cBegin < 16 * 1024) {
+        o << llvm::StringRef(cBegin, cEnd - cBegin + 1);
+      } else {
+        const clang::FunctionDecl *FDef;
+        if (FD->hasBody(FDef))
+          FD = FDef;
+        FD->print(o);
+        //const clang::FunctionDecl* FD
+        //  = llvm::cast<const clang::FunctionType>(Ty)->getDecl();
+      }
+      // type-based print() never and decl-based print() sometimes does not
+      // include a final newline:
+      o << '\n';
     }
   }
-  // type-based print() never and decl-based print() sometimes does not include
-  // a final newline:
-  o << '\n';
   functionString = o.str();
   return functionString;
 }
