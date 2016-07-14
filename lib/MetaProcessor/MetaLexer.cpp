@@ -39,9 +39,11 @@ namespace cling {
     return value;
   }
 
-  MetaLexer::MetaLexer(llvm::StringRef line)
-    : bufferStart(line.data()), curPos(line.data())
-  { }
+  MetaLexer::MetaLexer(llvm::StringRef line, bool skipWhite)
+    : bufferStart(line.data()), curPos(line.data()) {
+    if (skipWhite)
+      SkipWhitespace();
+  }
 
   void MetaLexer::reset(llvm::StringRef line) {
     bufferStart = line.data();
@@ -56,7 +58,7 @@ namespace cling {
       return LexQuotedStringAndAdvance(curPos, Tok);
     case '[': case ']': case '(': case ')': case '{': case '}':
     case '\\': case ',': case '.': case '!': case '?': case '>':
-    case '&': case '#': case '@': case '*':
+    case '&': case '#': case '@': case '*': case ';':
       // INTENTIONAL FALL THROUGHs
       return LexPunctuator(curPos - 1, Tok);
 
@@ -127,6 +129,7 @@ namespace cling {
     case '&'  : Tok.setKind(tok::ampersand); break;
     case '#'  : Tok.setKind(tok::hash); break;
     case '*'  : Tok.setKind(tok::asterik); break;
+    case ';'  : Tok.setKind(tok::semicolon); break;
     case '\0' : Tok.setKind(tok::eof); Tok.setLength(0); break;// if static call
     default: Tok.setLength(0); break;
     }
@@ -224,11 +227,15 @@ namespace cling {
     }
   }
 
-  void MetaLexer::LexWhitespace(char C, Token& Tok) {
+  void MetaLexer::SkipWhitespace() {
+    char C = *curPos;
     while((C == ' ' || C == '\t') && C != '\0')
-      C = *curPos++;
+      C = *(++curPos);
+  }
 
-    --curPos; // Back up over the non whitespace char.
+  void MetaLexer::LexWhitespace(char C, Token& Tok) {
+    SkipWhitespace();
+
     Tok.setLength(curPos - Tok.getBufStart());
     Tok.setKind(tok::space);
   }

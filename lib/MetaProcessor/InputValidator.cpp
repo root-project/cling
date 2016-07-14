@@ -75,10 +75,22 @@ namespace cling {
     bool multilineComment = inBlockComment();
     int commentTok = multilineComment ? tok::asterik : tok::slash;
 
+    if (!multilineComment && m_ParenStack.empty()) {
+      // Only check for 'template' if we're not already indented
+      MetaLexer Lex(curPos, true);
+      Lex.Lex(Tok);
+      curPos = Lex.getLocation();
+      if (Tok.is(tok::ident)) {
+        if (Tok.getIdent()=="template")
+          m_ParenStack.push_back(tok::greater);
+      } else
+        curPos -= Tok.getLength(); // Rewind buffer for LexPunctuatorAndAdvance
+    }
+
     do {
       const char* prevStart = curPos;
       MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
-      int kind = (int)Tok.getKind();
+      const int kind = (int)Tok.getKind();
 
       if (kind == commentTok) {
         if (kind == tok::slash) {
@@ -145,6 +157,12 @@ namespace cling {
               break;
             }
             m_ParenStack.pop_back();
+
+            // Right brace will pop a template if their is one
+            if (kind == tok::r_brace && m_ParenStack.size() == 1 ) {
+              if (m_ParenStack.back() == tok::greater)
+                m_ParenStack.pop_back();
+            }
           }
           else
             m_ParenStack.push_back(kind);
@@ -166,12 +184,16 @@ namespace cling {
             m_ParenStack.push_back(tok::hash);
           }
         }
+        else if (kind == tok::semicolon) {
+          // Template forward declatation
+          if (m_ParenStack.size() == 1 && m_ParenStack.back()==tok::greater)
+            m_ParenStack.pop_back();
+        }
         else if (kind >= (int)tok::stringlit && kind <= (int)tok::charlit) {
           MetaLexer::LexQuotedStringAndAdvance(curPos, Tok);
         }
       }
-    }
-    while (Tok.isNot(tok::eof));
+    } while (Tok.isNot(tok::eof));
 
     if (!m_ParenStack.empty() && Res != kMismatch)
       Res = kIncomplete;
