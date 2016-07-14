@@ -701,17 +701,13 @@ namespace cling {
                             std::vector<std::string>& completions) const {
 
     const char * const argV = "cling";
-    std::string llvmdir = this->getCI()->getHeaderSearchOpts().ResourceDir;
-    StringRef Dir = llvm::sys::path::parent_path(
+    std::string llvmDir = this->getCI()->getHeaderSearchOpts().ResourceDir;
+    // Remove the extra 3 directory names "/lib/clang/3.9.0"
+    StringRef parentDir = llvm::sys::path::parent_path(
                     llvm::sys::path::parent_path(
-                    llvm::sys::path::parent_path(llvmdir)));
-     
-    /*std::string extra_part = "/lib/clang/3.9.0";
-    std::string::size_type i = llvmdir.find(extra_part);
-    if (i != std::string::npos)
-      llvmdir.erase(i, extra_part.length());*/
+                    llvm::sys::path::parent_path(llvmDir)));
 
-    cling::Interpreter childInterpreter(*this, 1, &argV, llvmdir.c_str());
+    cling::Interpreter childInterpreter(*this, 1, &argV, parentDir.data());
 
     auto childCI = childInterpreter.getCI();
     clang::Sema &childSemaRef = childCI->getSema();
