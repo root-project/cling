@@ -83,6 +83,7 @@ std::unique_ptr<TargetMachine>
   if (!TheTarget) {
     llvm::errs() << "cling::IncrementalExecutor: unable to find target:\n"
                  << Error;
+    return std::unique_ptr<TargetMachine>();
   }
 
   std::string MCPU;
