@@ -31,7 +31,8 @@ namespace cling {
 
   ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S,
                                                    llvm::raw_ostream* Stream)
-    : WrapperTransformer(S), m_Context(&S->getASTContext()) {
+    : WrapperTransformer(S), m_Context(&S->getASTContext()),
+      m_LookupResult(nullptr) {
     if (Stream)
       m_ValuePrinterStream.reset(Stream);
     else
