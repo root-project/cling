@@ -17,6 +17,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclGroup.h"
+#include "clang/Lex/MacroInfo.h"
 #include "clang/Lex/Token.h"
 
 using namespace clang;
@@ -270,11 +271,26 @@ namespace cling {
     m_Consumer->HandleCXXStaticMemberVarInstantiation(D);
   }
 
-  void DeclCollector::MacroDefined(const clang::Token &MacroNameTok,
-                                   const clang::MacroDirective *MD) {
+  void DeclCollector::MacroDirective(const clang::Token &MacroNameTok,
+                                     const clang::MacroDirective *MD) {
     assert(m_CurTransaction && "Missing transction");
     Transaction::MacroDirectiveInfo MDE(MacroNameTok.getIdentifierInfo(), MD);
     m_CurTransaction->append(MDE);
+  }
+
+  void
+  DeclCollectorPPAdapter::MacroDefined(const clang::Token &MacroNameTok,
+                                       const clang::MacroDirective *MD) {
+    m_parent->MacroDirective(MacroNameTok, MD);
+  }
+
+  void
+  DeclCollectorPPAdapter::MacroUndefined(const clang::Token &MacroNameTok,
+                                         const clang::MacroDefinition &MD,
+                                         const clang::MacroDirective *Undef) {
+    // If Undef is null, the macro was never defined
+    if (Undef)
+      m_parent->MacroDirective(MacroNameTok, Undef);
   }
 
 } // namespace cling

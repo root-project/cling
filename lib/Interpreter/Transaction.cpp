@@ -199,11 +199,23 @@ namespace cling {
     assert(MDE.m_MD && "Appending null MacroDirective?!");
     assert(getState() == kCollecting
            && "Cannot append declarations in current state.");
+
 #ifndef NDEBUG
-    // Check for duplicates
-    for (size_t i = 0, e = m_MacroDirectiveInfoQueue.size(); i < e; ++i) {
-      MacroDirectiveInfo &oldMacroDirectiveInfo (m_MacroDirectiveInfoQueue[i]);
-      assert(oldMacroDirectiveInfo != MDE && "Duplicates?!");
+    if (size_t i = m_MacroDirectiveInfoQueue.size()) {
+      // Check for duplicates
+      do {
+        MacroDirectiveInfo &prevDir (m_MacroDirectiveInfoQueue[--i]);
+        if (prevDir == MDE) {
+          const UndefMacroDirective* A =
+                                        dyn_cast<UndefMacroDirective>(MDE.m_MD);
+          const UndefMacroDirective* B =
+                                    dyn_cast<UndefMacroDirective>(prevDir.m_MD);
+          // Allow undef to follow def and vice versa, but that is all.
+          assert((A ? B==nullptr : B!=nullptr) && "Duplicates");
+          // Has previously been checked prior to here, so were done.
+          break;
+        }
+      } while (i != 0);
     }
 #endif
 

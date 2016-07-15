@@ -46,8 +46,14 @@ namespace cling {
     /// \name PPCallbacks overrides
     /// Macro support
     void MacroDefined(const clang::Token &MacroNameTok,
-                      const clang::MacroDirective *MD) override;
+                      const clang::MacroDirective *MD) final;
     /// \}
+
+    /// \name PPCallbacks overrides
+    /// Macro support
+    void MacroUndefined(const clang::Token &MacroNameTok,
+                        const clang::MacroDefinition &MD,
+                        const clang::MacroDirective *Undef) final;
   };
 
   ///\brief Collects declarations and fills them in cling::Transaction.
@@ -115,8 +121,8 @@ namespace cling {
 
     /// \name PPCallbacks overrides
     /// Macro support
-    void MacroDefined(const clang::Token &MacroNameTok,
-                              const clang::MacroDirective *MD);
+    void MacroDirective(const clang::Token &MacroNameTok,
+                        const clang::MacroDirective *MD);
     /// \}
 
     /// \{
@@ -144,13 +150,6 @@ namespace cling {
     // dyn_cast/isa support
     static bool classof(const clang::ASTConsumer*) { return true; }
   };
-
-  inline void
-  DeclCollectorPPAdapter::MacroDefined(const clang::Token &MacroNameTok,
-                                       const clang::MacroDirective *MD) {
-    m_parent->MacroDefined(MacroNameTok, MD);
-  }
-
 } // namespace cling
 
 #endif // CLING_DECL_COLLECTOR_H
