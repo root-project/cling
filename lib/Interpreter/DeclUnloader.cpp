@@ -160,32 +160,37 @@ static Decl* handleRedelaration(Decl* D, DeclContext* DC) {
       return MostRecentNotThis;
   }
 
-  if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
-    StoredDeclsMap::iterator Pos = Map->find(Name);
-    if (Pos != Map->end() && !Pos->second.isNull()) {
-      DeclContext::lookup_result decls = Pos->second.getLookupResult();
-      // FIXME: A decl meant to be added in the lookup already exists
-      // in the lookup table. My assumption is that the DeclUnloader
-      // adds it here. This needs to be investigated mode. For now
-      // std::find gets promoted from assert to condition :)
-      // DeclContext::lookup_result::iterator is not an InputIterator
-      // (const member, thus no op=(const iterator&)), thus we cannot use
-      // std::find. MSVC actually cares!
-      auto hasDecl = [](const DeclContext::lookup_result& Result,
-                        const NamedDecl* Needle) -> bool {
-        for (auto IDecl: Result) {
-          if (IDecl == Needle)
-            return true;
+  // Mirror what DeclContext::removeDecl does, otherwise we'll get out
+  // of synch for the call to removeDecl
+
+  do {
+    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+      StoredDeclsMap::iterator Pos = Map->find(Name);
+      if (Pos != Map->end() && !Pos->second.isNull()) {
+        DeclContext::lookup_result decls = Pos->second.getLookupResult();
+        // FIXME: A decl meant to be added in the lookup already exists
+        // in the lookup table. My assumption is that the DeclUnloader
+        // adds it here. This needs to be investigated mode. For now
+        // std::find gets promoted from assert to condition :)
+        // DeclContext::lookup_result::iterator is not an InputIterator
+        // (const member, thus no op=(const iterator&)), thus we cannot use
+        // std::find. MSVC actually cares!
+        auto hasDecl = [](const DeclContext::lookup_result& Result,
+                          const NamedDecl* Needle) -> bool {
+          for (auto IDecl: Result) {
+            if (IDecl == Needle)
+              return true;
+          }
+          return false;
+        };
+        if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
+          // The decl was registered in the lookup, update it.
+          Pos->second.HandleRedeclaration(MostRecentNotThis,
+                                          /*IsKnownNewer*/ true);
         }
-        return false;
-      };
-      if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
-        // The decl was registered in the lookup, update it.
-        Pos->second.HandleRedeclaration(MostRecentNotThis,
-                                        /*IsKnownNewer*/ true);
       }
     }
-  }
+  } while (DC->isTransparentContext() && (DC = DC->getParent()));
   return MostRecentNotThis;
 }
 
