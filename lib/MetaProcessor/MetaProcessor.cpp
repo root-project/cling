@@ -123,7 +123,10 @@ namespace cling {
     m_backupFDStderr = copyFileDescriptor(STDERR_FILENO);
   }
 
-  MetaProcessor::~MetaProcessor() {}
+  MetaProcessor::~MetaProcessor() {
+    close(m_backupFDStdout);
+    close(m_backupFDStderr);
+  }
 
   int MetaProcessor::process(const char* input_text,
                              Interpreter::CompilationResult& compRes,
