@@ -55,6 +55,10 @@ namespace cling {
         ///
         std::map <clang::DeclarationName, clang::DeclarationName > m_ImportedDecls;
 
+        ///\brief The ASTImporter which does the actual imports from the parent
+        /// interpreter to the child interpreter.
+        std::unique_ptr<clang::ASTImporter> m_Importer;
+
       public:
         ExternalInterpreterSource(const cling::Interpreter *parent,
                                   cling::Interpreter *child);
@@ -71,20 +75,16 @@ namespace cling {
         void ForgetSema() { m_Sema = nullptr; }
 
         bool Import(clang::DeclContext::lookup_result lookupResult,
-                    clang::ASTContext &parentASTContext,
-                    clang::ASTContext &childASTContext,
                     const clang::DeclContext *childCurrentDeclContext,
                     clang::DeclarationName &childDeclName,
                     clang::DeclarationName &parentDeclName);
 
         void ImportDeclContext(clang::DeclContext *declContextToImport,
-                               clang::ASTImporter &importer,
                                clang::DeclarationName &childDeclName,
                                clang::DeclarationName &parentDeclName,
                                const clang::DeclContext *childCurrentDeclContext);
 
         void ImportDecl(clang::Decl *declToImport,
-                        clang::ASTImporter &importer,
                         clang::DeclarationName &childDeclName,
                         clang::DeclarationName &parentDeclName,
                         const clang::DeclContext *childCurrentDeclContext);
