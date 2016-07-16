@@ -33,11 +33,8 @@ static void local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
 ///\brief Memory manager providing the lop-level link to the
 /// IncrementalExecutor, handles missing or special / replaced symbols.
 class ClingMemoryManager: public SectionMemoryManager {
-  cling::IncrementalExecutor& m_exe;
-
 public:
-  ClingMemoryManager(cling::IncrementalExecutor& Exe):
-    m_exe(Exe) {}
+  ClingMemoryManager(cling::IncrementalExecutor& Exe) {}
 
   ///\brief Simply wraps the base class's function setting AbortOnFailure
   /// to false and instead using the error handling mechanism to report it.
