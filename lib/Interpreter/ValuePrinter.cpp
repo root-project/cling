@@ -466,30 +466,32 @@ namespace cling {
   }
 
   // Chars
-  static std::string printChar(signed char val, bool apostrophe) {
-    std::ostringstream strm;
+  static void printChar(signed char val, std::ostringstream& strm) {
     if (val > 0x1F && val < 0x7F) {
-      if (apostrophe)
-        strm << "'";
       strm << val;
-      if (apostrophe)
-        strm << "'";
     } else {
       strm << "0x" << std::hex << (int) val;
     }
+  }
+
+  static std::string printOneChar(signed char val) {
+    std::ostringstream strm;
+    strm << "'";
+    printChar(val, strm);
+    strm << "'";
     return strm.str();
   }
 
   std::string printValue(const char *val) {
-    return printChar(*val, true);
+    return printOneChar(*val);
   }
 
   std::string printValue(const signed char *val) {
-    return printChar(*val, true);
+    return printOneChar(*val);
   }
 
   std::string printValue(const unsigned char *val) {
-    return printChar(*val, true);
+    return printOneChar(*val);
   }
 
   // Ints
@@ -569,7 +571,7 @@ namespace cling {
       strm << "\"";
       // 10000 limit to prevent potential printing of the whole RAM / inf loop
       for (const char *cobj = *val; *cobj != 0 && cobj - *val < 10000; ++cobj) {
-        strm << printChar(*cobj, false);
+        printChar(*cobj, strm);
       }
       strm << "\"";
       return strm.str();
