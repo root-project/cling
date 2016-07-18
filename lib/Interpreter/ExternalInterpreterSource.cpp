@@ -49,10 +49,12 @@ namespace {
       // Put the name of the Decl imported with the
       // DeclarationName coming from the parent, in  my map.
       if (NamedDecl *toNamedDecl = llvm::dyn_cast<NamedDecl>(To)) {
+        NamedDecl *fromNamedDecl = llvm::dyn_cast<NamedDecl>(From);
         m_Source.addToImportedDecls(toNamedDecl->getDeclName(),
                                     fromNamedDecl->getDeclName());
       }
       if (DeclContext *toDeclContext = llvm::dyn_cast<DeclContext>(To)) {
+        DeclContext *fromDeclContext = llvm::dyn_cast<DeclContext>(From);
         m_Source.addToImportedDeclContexts(toDeclContext, fromDeclContext);
       }
       return To;
