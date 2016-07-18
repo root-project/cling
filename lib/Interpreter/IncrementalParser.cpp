@@ -787,7 +787,7 @@ namespace cling {
 
     if (CO.CodeCompletionOffset != -1) {
       SourceLocation completionLoc = PP.getCodeCompletionLoc();
-      assert (SM.getFileOffset(completionLoc) == CO.CodeCompletionOffset
+      assert ((int)SM.getFileOffset(completionLoc) == CO.CodeCompletionOffset
               && "Completion point wrongly set!");
       assert(PP.isCodeCompletionReached()
              && "Code completion set but not reached!");
