@@ -6,7 +6,7 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-add_cling_library(clingUtils
+add_cling_library(clingUtils OBJECT
   AST.cpp
   Validation.cpp
 
