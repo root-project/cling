@@ -11,26 +11,33 @@ set(SOURCES
   )
 
 set(LIBS
-  clangAST
-  clangBasic
-  clangCodeGen
   clangDriver
   clangFrontend
-  clangLex
   clangParse
   clangSema
+  clangAST
+  clangLex
   clangSerialization
+  clangCodeGen
+  clangBasic
+
+  clingUtils
 )
 
 set( LLVM_LINK_COMPONENTS
-  bitwriter
-  mcjit
-  orcjit
-  native
-  option
+  analysis
+  core
+  executionengine
   ipo
-  instrumentation
-  objcarcopts
+  mc
+  native
+  nativecodegen
+  object
+  option
+  orcjit
+  runtimedyld
+  support
+  target
 )
 
 find_library(DL_LIBRARY_PATH dl)

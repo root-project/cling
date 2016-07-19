@@ -6,8 +6,9 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-set(LIBS
-  libclingInterpreter
+set( LLVM_LINK_COMPONENTS
+  core
+  support
 )
 
 add_cling_library(clingMetaProcessor OBJECT
@@ -19,15 +20,12 @@ add_cling_library(clingMetaProcessor OBJECT
   MetaSema.cpp
 
   LINK_LIBS
-  LLVMCore
-  LLVMSupport
-  clangBasic
-  clangAST
   clangLex
-  clingInterpreter
-  )
+  clangAST
+  clangBasic
 
-add_dependencies(clingMetaProcessor clangBasic LLVMSupport)
+  clingInterpreter
+)
 
 if ( MSVC )
   set_target_properties(clingMetaProcessor PROPERTIES
