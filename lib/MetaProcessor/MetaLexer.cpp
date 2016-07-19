@@ -25,15 +25,16 @@ namespace cling {
     return getConstant() != 0;
   }
 
-  static unsigned int pow10[10] = { 1, 10, 100, 1000, 10000,
-                                    100000, 1000000, 10000000, ~0U};
+  const static unsigned int kPow10[10] = { 1, 10, 100, 1000, 10000,
+                                           100000, 1000000, 10000000, ~0U };
+
   unsigned Token::getConstant() const {
     assert(kind == tok::constant && "Not a constant");
     if (value == ~0U) {
       value = 0;
       //calculate the value
       for (size_t i = 0, e = length; i < e; ++i)
-        value += (*(bufStart+i) -'0') * pow10[length - i - 1];
+        value += (*(bufStart+i) -'0') * kPow10[length - i - 1];
     }
     return value;
   }
