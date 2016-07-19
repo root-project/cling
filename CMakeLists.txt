@@ -364,6 +364,13 @@ option(CLING_INCLUDE_TESTS
        "Generate build targets for the Cling unit tests."
        ${LLVM_INCLUDE_TESTS})
 
+# All targets below may depend on all tablegen'd files.
+get_property(CLANG_TABLEGEN_TARGETS GLOBAL PROPERTY CLANG_TABLEGEN_TARGETS)
+list(APPEND LLVM_COMMON_DEPENDS ${CLANG_TABLEGEN_TARGETS})
+
+# And llvm-intrinsics.
+list(APPEND LLVM_COMMON_DEPENDS intrinsics_gen)
+
 add_subdirectory(lib)
 add_subdirectory(tools)
 
