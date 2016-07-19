@@ -12,6 +12,7 @@
 #include "cling/UserInterface/CompilationException.h"
 #include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
+#include "textinput/Callbacks.h"
 #include "textinput/TextInput.h"
 #include "textinput/StreamReader.h"
 #include "textinput/TerminalDisplay.h"
@@ -90,18 +91,20 @@ namespace {
   /// to code complete through its own textinput mechanism which is part of the
   /// UserInterface.
   ///
-  class TabCompletion : public textinput::TabCompletion {
-    const Interpreter& m_ParentInterpreter;
+  class UITabCompletion : public textinput::TabCompletion {
+    const cling::Interpreter& m_ParentInterpreter;
   
   public:
-    TabCompletion(const Interpreter& Parent) : m_ParentInterpreter(Parent) {}
-    ~TabCompletion() {}
+    UITabCompletion(const cling::Interpreter& Parent) :
+                    m_ParentInterpreter(Parent) {}
+    ~UITabCompletion() {}
 
     bool Complete(textinput::Text& Line /*in+out*/,
-                size_t& Cursor /*in+out*/,
-                textinput::EditorRange& R /*out*/,
-                std::vector<std::string>& Completions /*out*/) override {
-      m_ParentInterpreter->codeComplete(Line.GetText(), Cursor, Completions);
+                  size_t& Cursor /*in+out*/,
+                  textinput::EditorRange& R /*out*/,
+                  std::vector<std::string>& Completions /*out*/) override {
+      m_ParentInterpreter.codeComplete(Line.GetText(), Cursor, Completions);
+      return true;
     }
   };
 }
@@ -141,8 +144,8 @@ namespace cling {
 
     // Inform text input about the code complete consumer
     // TextInput owns the TabCompletion.
-    TabCompletion* Completion =
-                  new cling::TabCompletion(m_MetaProcessor->getInterpreter());
+    UITabCompletion* Completion =
+                      new UITabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(Completion);
 
     TI.SetPrompt("[cling]$ ");
