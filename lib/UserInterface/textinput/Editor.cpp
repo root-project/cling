@@ -20,6 +20,7 @@
 #include "textinput/Callbacks.h"
 #include "textinput/History.h"
 #include "textinput/KeyBinding.h"
+#include "textinput/StreamReaderUnix.h"
 #include "textinput/TextInput.h"
 #include "textinput/TextInputContext.h"
 
@@ -449,6 +450,9 @@ namespace textinput {
         ProcessMove(kMoveEnd, R);
         std::vector<std::string> completions;
         TabCompletion* tc = fContext->GetCompletion();
+        Reader* reader = fContext->GetReaders()[0];
+        StreamReaderUnix* streamReader = (StreamReaderUnix*)(reader);
+        if (!streamReader->IsFromTTY()) return kPRSuccess;
         if (tc) {
           bool ret = tc->Complete(Line, Cursor, R, completions);
           if (ret) {

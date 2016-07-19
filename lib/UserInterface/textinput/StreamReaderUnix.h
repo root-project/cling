@@ -35,6 +35,7 @@ namespace textinput {
     bool HavePendingInput(bool wait);
     bool HaveBufferedInput() const { return !fReadAheadBuffer.empty(); }
     bool ReadInput(size_t& nRead, InputData& in);
+    bool IsFromTTY() { return fIsTTY; }
 
   private:
     int ReadRawCharacter();
