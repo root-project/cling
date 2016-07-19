@@ -6,15 +6,40 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
+set(LIBS
+  clangDriver
+  clangFrontend
+  clangParse
+  clangSema
+  clangAST
+  clangLex
+  clangSerialization
+  clangCodeGen
+  clangBasic
+
+  clingUtils
+)
+
+find_library(DL_LIBRARY_PATH dl)
+if (DL_LIBRARY_PATH)
+  list(APPEND LIBS dl)
+endif()
+
+
 set( LLVM_LINK_COMPONENTS
-  bitwriter
-  mcjit
-  orcjit
-  native
-  option
+  analysis
+  core
+  executionengine
   ipo
-  instrumentation
-  objcarcopts
+  mc
+  native
+  nativecodegen
+  object
+  option
+  orcjit
+  runtimedyld
+  support
+  target
 )
 
 add_cling_library(clingInterpreter OBJECT
@@ -54,31 +79,8 @@ add_cling_library(clingInterpreter OBJECT
   ValuePrinterSynthesizer.cpp
 
   LINK_LIBS
-  LLVMSupport
-  LLVMMC
-  LLVMObject
-  LLVMAnalysis
-  LLVMExecutionEngine
-  LLVMCodeGen
-  LLVMRuntimeDyld
-  LLVMTarget  # for Target::Target()
-  LLVMCore
-  clangBasic
-  clangSerialization
-  clangAST
-  clangCodeGen
-  clangFrontend
-  clangDriver
-  clangParse
-  clangLex
-  clangSema
-  clingUtils
-  dl
-  )
-
-add_library(clingInterpreter-interface INTERFACE)
-target_sources(clingInterpreter-interface INTERFACE $<TARGET_OBJECTS:obj.clingInterpreter>)
-add_dependencies(clingInterpreter-interface clangBasic clangAST LLVMCore)
+  ${LIBS}
+)
 
 if(NOT WIN32)
 set_source_files_properties(ExceptionRTTI.cpp COMPILE_FLAGS "-fexceptions -frtti")
