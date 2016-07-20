@@ -31,6 +31,8 @@ namespace textinput {
     bool HavePendingInput(bool wait);
     bool ReadInput(size_t& nRead, InputData& in);
 
+    bool IsFromTTY() override { return fIsConsole; }
+
   private:
     void HandleError(const char* Where) const;
     void HandleKeyEvent(unsigned char C, InputData& in);
