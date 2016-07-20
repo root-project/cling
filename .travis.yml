@@ -37,6 +37,8 @@ before_script:
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz"
     travis_retry wget --no-check-certificate -O - $CMAKE_URL | tar --strip-components=1 -xz -C $TMPDIR/cmake
     export CMAKE=$TMPDIR/cmake/bin/cmake
+    export CC="ccache /usr/bin/gcc-6"
+    export CXX="ccache /usr/bin/g++-6"
   elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
     travis_retry curl -k $CMAKE_URL | tar --strip-components=1 -xz -C $TMPDIR/cmake
