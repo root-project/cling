@@ -220,13 +220,21 @@ ol li {
     border: 1px solid #ECECE0;
 }
 
-.sidebar {
+#sidebar {
     float: right;
     width: 20%;
+    background: #FFF;
+}
+body.news {
+    background-color: #FFF;
+}
+body.news > div {
+    -moz-border-radius: 20px; border-radius: 20px;
+    background-color: #EDEFF4; /*D8DFEA*/
     padding: 15px;
     margin-top: 1em;
-    background-color: #EDEFF4; /*D8DFEA*/
-    -moz-border-radius: 20px; border-radius: 20px;
+    padding: 15px;
+    margin-top: 1em;
 }
 .sidebar ul {
     width: 178px;
@@ -398,8 +406,13 @@ pre, .code {
     background: none repeat scroll 0 0 #F8F8F8;
     font: 0.95em "Consolas","DejaVu Sans Mono",monospace;
 }
-iframe {
+iframe.header, .footer {
     width:100%;
     height: 180px; /* see #header */
-  border:none;
+    border:none;
+}
+iframe.sidebar {
+  width: 100%;
+    height: 600px; /* see #header */
+    border: none;
 }
