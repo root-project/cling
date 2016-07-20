@@ -30,7 +30,7 @@ before_script:
 - git config --global user.name "Anirudha Bose"
 
 - |
-  export TMPDIR=`mktemp -d`
+  export TMPDIR=`mktemp -d 2>/dev/null || mktemp -d -t 'travis_tmp_dir'`
   mkdir -pv $TMPDIR/cmake
 
   export CMAKE=$TMPDIR/cmake/bin/cmake
