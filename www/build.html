@@ -1,40 +1,10 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
-
-<link rel="stylesheet" href="http://cdn.jsdelivr.net/highlight.js/9.2.0/styles/railscasts.min.css">
-<script src="http://cdn.jsdelivr.net/highlight.js/9.2.0/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad();</script>
-
 <head>
-  <title>Cling Website</title>
-  <meta name="description" content="Official website of Cling" />
-  <meta name="keywords" content="cling, interactive compiler interface, interpreter, clang, LLVM" />
-  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-  <meta http-equiv="robots" content="noindex,nofollow" />
-  <link rel="stylesheet" type="text/css" href="style/style.css" />
-  <link rel="stylesheet" type="text/css" href="style/menu.css" />
+  <title>Cling</title>
+  <link rel="import" href="import.html">
 </head>
-
-<body>
-  <div id="website">
-    <div id="header">
-      <div id="logo">
-        <div id="logo_text">
-          <!-- class="logo_colour", allows you to change the colour of the text -->
-          <h1><a href="index.html"><span class="logo_colour">Cling</span></a></h1>
-          <h2>Interactive Compiler Interface</h2>
-        </div>
-      </div>
-      <div id="mainmenubar">
-        <ul id="mainmenu">
-          <!-- put class="selected" in the li tag for the selected page - to highlight which page you're on -->
-          <li><a class="tab_link" href="newindex.html">Home</a></li>
-          <li class="selected"><a class="tab_link" href="build.html">Build</a></li>
-          <li><a class="tab_link" href="contribute.html">Contribuite</a></li>
-          <li><a class="tab_link" href="jupyter.html">Jupyter</a></li>
-        </ul>
-      </div>
-    </div>
+<body onload="selectMenu('build')">
+  <iframe seamless src="header.html" class="header" id="iheader"></iframe>
     <div id="breadcrumb"></div>
     <div id="content">
       <div class="sidebar">
