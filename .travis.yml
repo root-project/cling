@@ -71,7 +71,8 @@ before_deploy:
 deploy:
   provider: releases
   skip_cleanup: true
-  api_key: "afcebbd67ee9259667a6fdb414331c29e70000f4"
+  api_key:
+    secure: eIwVHJNxkAIi6IUYyx7qI1szsgWt3c42ugcJ1vZ6iH//+qJgks77I8dMlbRf0RUrhxpJhJPH5a6vqI/mo1Vq2vmoC8+D1DIQCbj+/WHhY71LQCPC+Wgj2JES5y1Wh91nMt4ybzb1dA8BIfeJOdCUn7ezJTGKk18N+h2jE+a/7IE=
   file: '${RELEASE_TARBALL}'
   on:
     tags: true
