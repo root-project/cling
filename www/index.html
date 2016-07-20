@@ -24,17 +24,17 @@
       </div>
       <div id="main">
         <!-- insert the page content here -->
-        <h1>Cling.. interprets C++</h1>
+        <h1>Cling interprets C++</h1>
 <p>
 <pre><code class = "cpp">
 ****************** CLING ******************
 * Type C++ code and press enter to run it *
 *             Type .q to exit             *
 *******************************************
-[cling]$ #include <string>
+[cling]$ #include &lt;string&gt;
 [cling]$ std::string s("abc");
 [cling]$ s.find('b')
-(std::basic_string<char, std::char_traits<char>, std::allocator<char> >::size_type) 1
+(std::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::size_type) 1
 [cling]$
 </code></pre>
 </p>
@@ -56,10 +56,10 @@
           <li>Creating scripts
           <p>
             The power of an interpreter lays as well in the compactness and ease of repeatedly running a small snippet of code - aka a script. This can be done in cling by inserting the bash-like style line:  
+          </p>
             <pre><code>
 #!/usr/bin/cling
             </code></pre>
-          </p>
            </li> 
 
           <li>Rapid Application Development (RAD) 
@@ -87,6 +87,7 @@
 <p>
         For compilation and linkage the application needs the path to the clang and llvm libraries and the invocation is order dependent since the linker cannot do backward searches.
 
+</p>
         <pre><code>
 g++ embedcling.cxx -std=c++11 -L/usr/local/lib
                     -lclingInterpreter -lclingUtils 
@@ -99,10 +100,9 @@ g++ embedcling.cxx -std=c++11 -L/usr/local/lib
                       -lz -pthread -ldl -ltinfo 
                     -o embedcling
         </code></pre>
-</p>
 <p>
         Embedding cling requires the creation of the interpreter. Optionally compiler arguments and the resource directory of llvm can be passed. An example is the following:
-            
+</p>
         <pre><code>
 #include "cling/Interpreter/Interpreter.h"
 
@@ -113,7 +113,6 @@ int main(int argc, char** argv) {
   interp.declare("int p=0;");
 }
         </code></pre>
-</p>
 
 
 
@@ -129,7 +128,6 @@ int main(int argc, char** argv) {
 
         
       </div>
-    </div>
   <iframe seamless src="footer.html"></iframe>
 </body>
 </html>
