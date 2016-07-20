@@ -57,6 +57,7 @@ script:
   else
     tools/packaging/cpt.py --last-stable=tar --with-cling-url=https://github.com/vgvassilev/cling
   fi
+- ccache -s
 
 notifications:
   recipients:
