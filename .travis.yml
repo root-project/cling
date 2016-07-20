@@ -4,9 +4,15 @@ language: cpp
 
 cache: ccache
 
+os:
+  - linux
+  - osx
+
 matrix:
   include:
     - os: linux
+  allow_failures:
+    - os: osx
 
 addons:
   apt:
