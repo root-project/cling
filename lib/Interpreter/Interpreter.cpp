@@ -308,9 +308,9 @@ namespace cling {
     AddIncludePath(InclPaths);
 #endif
     llvm::SmallString<512> P(GetExecutablePath(argv0));
-     if (!P.empty()
-         && llvm::StringRef(argv0).endswith("cling")
-         && llvm::sys::path::filename(P) == "cling") {
+    if (!P.empty()
+        && llvm::StringRef(argv0).endswith("cling")
+        && llvm::sys::path::filename(P) == "cling") {
       // Remove /cling from foo/bin/clang
       llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
       // Remove /bin   from foo/bin
