@@ -276,7 +276,7 @@ namespace cling {
                               Sema::LookupTagName, Sema::ForRedeclaration
                               );
 
-        m_Sema->LookupName(Previous, S);
+        m_Sema->LookupQualifiedName(Previous, DC);
 
         // There is no function diagnosing the redeclaration of tags (eg. enums).
         // So either we have to do it by hand or we can call the top-most
@@ -289,8 +289,7 @@ namespace cling {
         LookupResult Previous(*m_Sema, ND->getDeclName(), ND->getLocation(),
                               Sema::LookupOrdinaryName, Sema::ForRedeclaration
                               );
-
-        m_Sema->LookupName(Previous, S);
+        m_Sema->LookupQualifiedName(Previous, DC);
         m_Sema->CheckVariableDeclaration(VD, Previous);
         if (VD->isInvalidDecl())
           return true;

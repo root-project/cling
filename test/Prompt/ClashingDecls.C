@@ -6,22 +6,24 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify
 
-// XFAIL:*
-// The test exposes a weakness in the declaration extraction of types. As
-// reported in issue ROOT-5248.
+// Check that decl extraction doesn't complain about unrelated decls
+.rawInput 1
+namespace UNRELATED { void name(); }
+using namespace UNRELATED;
+.rawInput 0
+int name = 12;
 
-extern "C" int printf(const char* fmt, ...);
+// Check that decl extraction doesn't complain about unrelated decls
+.rawInput 1
+namespace N { void injected(); } // expected-note {{target of using declaration}}
+using N::injected; // expected-note {{using declaration}}
+.rawInput 0
+int injected = 13; // expected-error {{declaration conflicts with target of using declaration already in scope}}
 
-class MyClass;
-extern MyClass* my;
-class MyClass {
-public: MyClass* getMyClass() {
-  printf("Works!\n");
-  return 0;
-}
-} cl;
-MyClass* my = cl.getMyClass();
+// Check that decl extraction does complain about clashing decls
+extern "C" double likeSin(double); // expected-note {{previous definition is here}}
+int likeSin = 14; // expected-error {{redefinition of 'likeSin' as different kind of symbol}}
+
 .q
-//CHECK: Works!
