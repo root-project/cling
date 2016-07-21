@@ -74,3 +74,12 @@ using namespace std::placeholders;
 auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling::executePrintValue(): missing value string.
 // Make sure cling survives
 12 // CHECK: (int) 12
+
+// ROOT-8077
+.rawInput 1
+#include <string>
+void f(std::string) {}
+.rawInput 0
+f // CHECK: (void (*)(std::string)) Function @0x{{[0-9a-f]+}}
+// CHECK: at :1:
+// CHECK: void f(std::string) {}
