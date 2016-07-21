@@ -258,10 +258,11 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
 
     // Execute the ctor/dtor function!
     if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
-      executeInit(F->getName());
+      const llvm::StringRef fName = F->getName();
+      executeInit(fName);
 
       initFuncs.push_back(F);
-      if (F->getName().startswith("_GLOBAL__sub_I_")) {
+      if (fName.startswith("_GLOBAL__sub_I_")) {
         BasicBlock& BB = F->getEntryBlock();
         for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
           if (CallInst* call = dyn_cast<CallInst>(I))
