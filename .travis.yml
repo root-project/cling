@@ -12,6 +12,7 @@ matrix:
   include:
     - os: linux
       dist: trusty
+      sudo: required
   allow_failures:
     - os: osx
       osx_image: xcode7.1
