@@ -47,7 +47,9 @@
 #ifdef _MSC_VER
 # define WIN32_LEAN_AND_MEAN
 # define NOGDI
-# define NOMINMAX
+# ifndef NOMINMAX
+#  define NOMINMAX
+# endif
 # include <Windows.h>
 # include <direct.h>
 # include <sstream>
@@ -519,6 +521,13 @@ namespace {
   static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {
 #ifdef _MSC_VER
     PPOpts.addMacroDef("_HAS_EXCEPTIONS=0");
+#ifdef _DEBUG
+    PPOpts.addMacroDef("_DEBUG=1");
+#elif defined(NDEBUG)
+    PPOpts.addMacroDef("NDEBUG=1");
+#else // well, what else?
+    PPOpts.addMacroDef("NDEBUG=1");
+#endif
 #endif
 
     // Since cling, uses clang instead, macros always sees __CLANG__ defined
