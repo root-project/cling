@@ -119,6 +119,7 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
 
 
   switch (Inlining) {
+  case CodeGenOptions::OnlyHintInlining: // fall-through:
     case CodeGenOptions::NoInlining: {
       assert(0 && "libc++ requires at least OnlyAlwaysInlining!");
       break;
