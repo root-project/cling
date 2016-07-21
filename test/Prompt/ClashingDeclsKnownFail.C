@@ -12,13 +12,13 @@
 // The test exposes a weakness in the declaration extraction of types. As
 // reported in issue ROOT-5248.
 
-class MyClass; //expected-note {{candidate found by name lookup is 'MyClass'}}
+class MyClass;
 extern MyClass* my;
-class MyClass { //expected-note {{candidate found by name lookup is 'MyClass'}}
+class MyClass {
 public:
   MyClass* getMyClass() {
     return 0;
   }
 } cl;
 // The next line should work without complaints!
-MyClass* my = cl.getMyClass(); //expected-error {{reference to 'MyClass' is ambiguous}}
+MyClass* my = cl.getMyClass();
