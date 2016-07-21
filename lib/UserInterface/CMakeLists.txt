@@ -41,6 +41,7 @@ add_cling_library(clingUserInterface
 )
 
 IF(MSVC)
+  add_definitions(-UUNICODE -U_UNICODE)
   # windows.h doesn't compile with /Za
   get_target_property(NON_ANSI_COMPILE_FLAGS clingUserInterface COMPILE_FLAGS)
   if(${NON_ANSI_COMPILE_FLAGS})
