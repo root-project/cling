@@ -11,24 +11,16 @@ os:
 matrix:
   include:
     - os: linux
+      dist: trusty
   allow_failures:
     - os: osx
+      osx_image: xcode7.1
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - build-essential
-      - binutils-gold
-      - python
-      - gcc-6
-      - g++-6
+compiler:
+  - gcc
+  - clang
 
 before_script:
-- git config --global user.email "ani07nov@gmail.com"
-- git config --global user.name "Anirudha Bose"
-
 - |
   export TMPDIR=`mktemp -d 2>/dev/null || mktemp -d -t 'travis_tmp_dir'`
   mkdir -pv $TMPDIR/cmake
@@ -37,8 +29,6 @@ before_script:
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz"
     travis_retry wget --no-check-certificate -O - $CMAKE_URL | tar --strip-components=1 -xz -C $TMPDIR/cmake
     export CMAKE=$TMPDIR/cmake/bin/cmake
-    export CC="ccache /usr/bin/gcc-6"
-    export CXX="ccache /usr/bin/g++-6"
   elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
     travis_retry curl -k $CMAKE_URL | tar --strip-components=1 -xz -C $TMPDIR/cmake
