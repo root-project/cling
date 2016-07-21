@@ -43,6 +43,7 @@ namespace cling {
     bool NoCXXInc;
     bool StdVersion;
     bool StdLib;
+    bool HasOutput;
     bool Verbose;
 
     ///\brief The remaining arguments to pass to clang.

@@ -38,6 +38,9 @@ Experimental Features
 ---------------------
 * Code unloading:
 * Dynamic Scopes:
+* Precompiled Headers: cling now has the ability to generate precompiled headers
+cling -x c++-header InputHeader.h -o Output.pch
+
 
 Fixed Bugs
 ----------

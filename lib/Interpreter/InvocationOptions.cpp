@@ -89,7 +89,8 @@ namespace {
 
 CompilerOptions::CompilerOptions(int argc, const char* const* argv) :
   Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
-  NoCXXInc(false), StdVersion(false), StdLib(false), Verbose(false) {
+  NoCXXInc(false), StdVersion(false), StdLib(false), HasOutput(false),
+  Verbose(false) {
   if (argc && argv) {
     // Preserve what's already in Remaining, the user might want to push args
     // to clang while still using main's argc, argv
@@ -114,7 +115,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
     switch (arg->getOption().getID()) {
       // case options::OPT_d_Flag:
       // case options::OPT_E:
-      // case options::OPT_o: HasOuptut = true; break;
+      case options::OPT_o: HasOutput = true; break;
       case options::OPT_x: Language = true; break;
       case options::OPT_resource_dir: ResourceDir = true; break;
       case options::OPT_isysroot: SysRoot = true; break;

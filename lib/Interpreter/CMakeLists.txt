@@ -9,6 +9,7 @@
 set(LIBS
   clangDriver
   clangFrontend
+  clangFrontendTool
   clangParse
   clangSema
   clangAST
