@@ -240,7 +240,7 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
   if (InitList == 0)
     return kExeSuccess;
 
-  SmallVector<Function*, 2> initFuncs;
+  //SmallVector<Function*, 2> initFuncs;
 
   for (unsigned i = 0, e = InitList->getNumOperands(); i != e; ++i) {
     llvm::ConstantStruct *CS
@@ -260,7 +260,7 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
     if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
       const llvm::StringRef fName = F->getName();
       executeInit(fName);
-
+/*
       initFuncs.push_back(F);
       if (fName.startswith("_GLOBAL__sub_I_")) {
         BasicBlock& BB = F->getEntryBlock();
@@ -268,9 +268,11 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
           if (CallInst* call = dyn_cast<CallInst>(I))
             initFuncs.push_back(call->getCalledFunction());
       }
+*/
     }
   }
 
+/*
   for (SmallVector<Function*,2>::iterator I = initFuncs.begin(),
          E = initFuncs.end(); I != E; ++I) {
     // Cleanup also the dangling init functions. They are in the form:
@@ -288,9 +290,10 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
     // }
 
     // Erase __cxx_global_var_init(N-1)() first.
-    //(*I)->removeDeadConstantUsers();
-    //(*I)->eraseFromParent();
+    (*I)->removeDeadConstantUsers();
+    (*I)->eraseFromParent();
   }
+*/
 
   return kExeSuccess;
 }
