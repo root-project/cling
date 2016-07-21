@@ -15,7 +15,7 @@ See also the [cling web page](https://cdn.rawgit.com/root-mirror/cling/master/ww
 
 ### Further information & demos
   Please note that some of the resources are rather old and most of the stated limitations are outdated.
-  * https://github.com/root-mirror/cling/tree/master/www/docs/talks
+  * [talks](tree/master/www/docs/talks)
   * http://blog.coldflake.com/posts/2012-08-09-On-the-fly-C++.html
   * http://solarianprogrammer.com/2012/08/14/cling-cpp-11-interpreter/
   * https://www.youtube.com/watch?v=f9Xfh8pv3Fs
@@ -89,7 +89,7 @@ wget https://raw.githubusercontent.com/root-mirror/cling/master/tools/packaging/
 chmod +x cpt.py
 ```
 
-Full documentation of CPT can be found in [tools/packaging](https://github.com/root-mirror/cling/tree/master/tools/packaging).
+Full documentation of CPT can be found in [tools/packaging](tree/master/tools/packaging).
 
 ##USAGE
 ```c++
@@ -110,7 +110,7 @@ or type
 
 cling comes with a [Jupyter][6] kernel. After building cling, install Jupyter and run ```jupyter kernelspec install cling```. It requires a fairly new Jupyter. Make sure cling is in your PATH when you start jupyter!
 
-See also the [tools/Jupyter/kernel](https://github.com/root-mirror/cling/tree/master/tools/Jupyter/kernel) subdirectory.
+See also the [tools/Jupyter/kernel](tree/master/tools/Jupyter/kernel) subdirectory.
 
    [6]: http://jupyter.org
 
