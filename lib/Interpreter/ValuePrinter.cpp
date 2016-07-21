@@ -175,7 +175,10 @@ static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
 
 template<typename T>
 static std::string executePrintValue(const Value &V, const T &val) {
-  std::stringstream printValueSS;
+  // don't use std::stringstream, since it doesn't prepend '0x'
+  // in front of hexadecimal values when streaming pointer values
+  std::string strval;
+  llvm::raw_string_ostream printValueSS(strval);
   printValueSS << "cling::printValue(";
   printValueSS << getTypeString(V);
   printValueSS << (const void *) &val;
