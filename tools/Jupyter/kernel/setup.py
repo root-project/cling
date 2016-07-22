@@ -46,13 +46,13 @@ pkg_root = pjoin(here, name)
 
 setup_args = dict(
     name            = name,
-    version         = '0.0.1',
+    version         = '0.0.2',
     py_modules      = ['clingkernel'],
     scripts         = glob(pjoin('scripts', '*')),
     description     = "C++ Kernel for Jupyter with Cling",
-    author          = 'Min RK',
-    author_email    = 'benjaminrk@gmail.com',
-    url             = 'https://github.com/minrk/clingkernel',
+    author          = 'Min RK, Axel Naumann',
+    author_email    = 'cling-dev@cern.ch',
+    url             = 'https://github.com/root-mirror/cling/',
     license         = 'BSD',
     platforms       = "Linux, Mac OS X",
     keywords        = ['Interactive', 'Interpreter', 'Shell', 'Web'],
