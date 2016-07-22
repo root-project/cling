@@ -612,8 +612,8 @@ namespace cling {
     //FIXME: This must be in InterpreterCallbacks.
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
 
-    //FIXME: Terrible hack to let the IncrementalParser run static inits on
-    // transaction completed.
+    //FIXME: Lets the IncrementalParser run static inits on transaction
+    // completed. Find a better way.
     ExecutionResult executeTransaction(Transaction& T);
 
     ///\brief Evaluates given expression within given declaration context.
