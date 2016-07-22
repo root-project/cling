@@ -793,6 +793,8 @@ namespace cling {
              && "Completion point wrongly set!");
       assert(PP.isCodeCompletionReached()
              && "Code completion set but not reached!");
+      m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
+
       return kSuccess;
     }
 
