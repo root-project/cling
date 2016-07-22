@@ -15,7 +15,7 @@ See also the [cling web page](https://cdn.rawgit.com/root-mirror/cling/master/ww
 
 ### Further information & demos
   Please note that some of the resources are rather old and most of the stated limitations are outdated.
-  * [talks](tree/master/www/docs/talks)
+  * [talks](www/docs/talks)
   * http://blog.coldflake.com/posts/2012-08-09-On-the-fly-C++.html
   * http://solarianprogrammer.com/2012/08/14/cling-cpp-11-interpreter/
   * https://www.youtube.com/watch?v=f9Xfh8pv3Fs
