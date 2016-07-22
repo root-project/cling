@@ -430,6 +430,9 @@ if (CLING_BUILT_STANDALONE OR CMAKE_VERSION VERSION_EQUAL 3 OR
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/ClingConfig.cmake
     DESTINATION lib${LLVM_LIBDIR_SUFFIX}/cmake/cling)
 
+  install(DIRECTORY tools/Jupyter/kernel DESTINATION share/cling/Jupyter)
+
+
   # Also copy ClingConfig.cmake to the build directory so that dependent projects
   # can build against a build directory of Cling more easily.
   configure_file(
