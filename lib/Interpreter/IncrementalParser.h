@@ -192,18 +192,6 @@ namespace cling {
     ///
     ParseResultTransaction Compile(llvm::StringRef input, const CompilationOptions& Opts);
 
-    ///\brief Parses the given input without calling the custom consumers and
-    /// code generation.
-    ///
-    /// I.e changes to the decls in the transaction commiting it will cause
-    /// different executable code.
-    ///
-    ///\param[in] input - The code to parse.
-    ///\param[in] Opts - The compilation options to use.
-    ///\returns The transaction corresponding to the input.
-    ///
-    ParseResultTransaction Parse(llvm::StringRef input, const CompilationOptions& Opts);
-
     void printTransactionStructure() const;
 
     ///\brief Adds a UsedAttr to all decls in the transaction.
