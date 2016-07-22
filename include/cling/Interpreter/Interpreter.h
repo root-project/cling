@@ -484,7 +484,7 @@ namespace cling {
     /// The interface circumvents the most of the extra work necessary to
     /// code complete code.
     ///
-    /// @param[in] input - The input containing the string to be completed.
+    /// @param[in] line - The input containing the string to be completed.
     /// @param[in] cursor - The offset for the completion point.
     /// @param[out] completions - The results for teh completion
     ///
