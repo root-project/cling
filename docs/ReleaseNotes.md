@@ -20,18 +20,23 @@ infrastructure are described first.
 
 Major New Features
 ------------------
+* Support for GCC5 ABI, enabling e.g. native support for newer Fedora and Ubuntu.
+* Code completion from the prompt.
+* Rudimentary Windows support, requiring CMake from the master (!) and MSVC 2015.
 * Enable C++ module builds.
-* Extend Cling's static web site.
 
 Cling as a Library
 ------------------
+* Support for building cling as shared libraries.
+* Improved CMake dependencies.
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM XXX.
+* Upgrade to LLVM r274612.
 
 Misc
 ------
+* Extend Cling's static web site.
 
 Experimental Features
 ---------------------
