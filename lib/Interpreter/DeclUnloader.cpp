@@ -802,13 +802,10 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitDeclContext(DeclContext* DC) {
     bool Successful = true;
-    typedef llvm::SmallVector<Decl*, 64> Decls;
-    Decls declsToErase;
+
     // Removing from single-linked list invalidates the iterators.
-    for (DeclContext::decl_iterator I = DC->noload_decls_begin();
-         I != DC->noload_decls_end(); ++I) {
-      declsToErase.push_back(*I);
-    }
+    typedef llvm::SmallVector<Decl*, 64> Decls;
+    Decls declsToErase(DC->noload_decls_begin(), DC->noload_decls_end());
 
     for(Decls::reverse_iterator I = declsToErase.rbegin(),
           E = declsToErase.rend(); I != E; ++I) {
