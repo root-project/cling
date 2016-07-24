@@ -881,10 +881,14 @@ namespace cling {
                         const_cast<Transaction**>(&T));
         if (!T) {
           // Should also check T->getIssuedDiags() == Transaction::kErrors)?
-          
+
           // It's redundant, but nicer to see the error at the bottom.
           // if (!Trap.hasErrorOccurred())
-          cling::errs() << "RuntimePrintValue.h could not be loaded.\n";
+          clang::DiagnosticsEngine& Diag = Interp->getDiagnostics();
+          const unsigned ID = Diag.getCustomDiagID(
+                                     clang::DiagnosticsEngine::Level::Error,
+                                     "RuntimePrintValue.h could not be loaded");
+          Diag.Report(Interp->getSourceLocation(), ID);
           return kUndefined;
         }
       }
