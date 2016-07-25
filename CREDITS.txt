@@ -33,6 +33,10 @@ N: Lukasz Janyst
 E: ljanyst@cern.ch
 D: Initial prototype of cling.
 
+N: Frederich Munch
+E:
+D: Various contributions.
+
 N: Axel Naumann
 E: axel@cern.ch
 D: Core developer of cling.
