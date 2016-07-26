@@ -28,6 +28,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/SourceNormalization.h"
 #include "cling/Interpreter/AutoloadCallback.h"
 
 #include "clang/AST/ASTContext.h"
@@ -535,7 +536,12 @@ namespace cling {
   Interpreter::CompilationResult
   Interpreter::process(const std::string& input, Value* V /* = 0 */,
                        Transaction** T /* = 0 */) {
-    if (isRawInputEnabled() || !ShouldWrapInput(input)) {
+    std::string wrapReadySource = input;
+    size_t wrapPoint = std::string::npos;
+    if (!isRawInputEnabled())
+      wrapPoint = utils::getWrapPoint(wrapReadySource, getCI()->getLangOpts());
+
+    if (isRawInputEnabled() || wrapPoint == std::string::npos) {
       CompilationOptions CO;
       CO.DeclarationExtraction = 0;
       CO.ValuePrinting = 0;
@@ -553,7 +559,7 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
     CO.CheckPointerValidity = 1;
-    if (EvaluateInternal(input, CO, V, T) == Interpreter::kFailure) {
+    if (EvaluateInternal(wrapReadySource, CO, V, T) == Interpreter::kFailure) {
       return Interpreter::kFailure;
     }
 
@@ -658,7 +664,9 @@ namespace cling {
 
     std::string wrappedInput = input;
     std::string wrapperName;
-    if (ShouldWrapInput(input))
+    size_t wrapPos = utils::getWrapPoint(wrappedInput, getCI()->getLangOpts());
+
+    if (wrapPos != std::string::npos)
       WrapInput(wrappedInput, wrapperName, CO);
 
     StateDebuggerRAII stateDebugger(this);
@@ -786,89 +794,6 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
-  bool Interpreter::ShouldWrapInput(const std::string& input) {
-    // TODO: For future reference.
-    // Parser* P = const_cast<clang::Parser*>(m_IncrParser->getParser());
-    // Parser::TentativeParsingAction TA(P);
-    // TPResult result = P->isCXXDeclarationSpecifier();
-    // TA.Revert();
-    // return result == TPResult::True();
-
-    // FIXME: can't skipToEndOfLine because we don't want to PragmaLex
-    // because we don't want to pollute the preprocessor. Without PragmaLex
-    // there is no "end of line" / eod token. So skip the #line before lexing.
-    size_t posStart = 0;
-    size_t lenInput = input.length();
-    while (lenInput > posStart && isspace(input[posStart]))
-      ++posStart;
-    // Don't wrap empty input
-    if (posStart == lenInput)
-      return false;
-    if (input[posStart] == '#') {
-      size_t posDirective = posStart + 1;
-      while (lenInput > posDirective && isspace(input[posDirective]))
-        ++posDirective;
-      // A single '#'? Weird... better don't wrap.
-      if (posDirective == lenInput)
-        return false;
-      if (!strncmp(&input[posDirective], "line ", 5)) {
-        // There is a line directive. It does affect the determination whether
-        // this input should be wrapped; skip the line.
-        size_t posEOD = input.find('\n', posDirective + 5);
-        if (posEOD != std::string::npos)
-          posStart = posEOD + 1;
-      }
-    }
-    //llvm::OwningPtr<llvm::MemoryBuffer> buf;
-    //buf.reset(llvm::MemoryBuffer::getMemBuffer(&input[posStart],
-    //                                           "Cling Preparse Buf"));
-    Lexer WrapLexer(SourceLocation(), getSema().getLangOpts(),
-                    input.c_str() + posStart,
-                    input.c_str() + posStart,
-                    input.c_str() + input.size());
-    Token Tok;
-    WrapLexer.LexFromRawLexer(Tok);
-    const tok::TokenKind kind = Tok.getKind();
-
-    if (kind == tok::raw_identifier && !Tok.needsCleaning()) {
-      StringRef keyword(Tok.getRawIdentifier());
-      if (keyword.equals("using")) {
-        // FIXME: Using definitions and declarations should be decl extracted.
-        // Until we have that, don't wrap them if they are the only input.
-        const char* cursor = keyword.data();
-        cursor = strchr(cursor, ';'); // advance to end of using decl / def.
-        if (!cursor) {
-          // Using decl / def without trailing ';' means input consists of only
-          // that using decl /def: should not wrap.
-          return false;
-        }
-        // Skip whitespace after ';'
-        do ++cursor;
-        while (*cursor && isspace(*cursor));
-        if (!*cursor)
-          return false;
-        // There is "more" - let's assume this input consists of a using
-        // declaration or definition plus some code that should be wrapped.
-        return true;
-      }
-      if (keyword.equals("extern"))
-        return false;
-      if (keyword.equals("namespace"))
-        return false;
-      if (keyword.equals("template"))
-        return false;
-    }
-    else if (kind == tok::hash) {
-      WrapLexer.LexFromRawLexer(Tok);
-      if (Tok.is(tok::raw_identifier) && !Tok.needsCleaning()) {
-        StringRef keyword(Tok.getRawIdentifier());
-        if (keyword.equals("include"))
-          return false;
-      }
-    }
-
-    return true;
-  }
 
   void Interpreter::WrapInput(std::string& input, std::string& fname,
                               CompilationOptions &CO) {

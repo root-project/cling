@@ -232,15 +232,6 @@ namespace cling {
     CompilationResult CodeCompleteInternal(const std::string& input,
                                            unsigned offset);
 
-    ///\brief Decides whether the input line should be wrapped into a function
-    /// declaration that can later be executed.
-    ///
-    ///\param[in] input - The input being scanned.
-    ///
-    ///\returns true if the input should be wrapped into a function declaration.
-    ///
-    bool ShouldWrapInput(const std::string& input);
-
     ///\brief Wraps a given input.
     ///
     /// The interpreter must be able to run statements on the fly, which is not

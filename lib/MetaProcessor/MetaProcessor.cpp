@@ -189,7 +189,7 @@ namespace cling {
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                    Value* result,
-                                   bool ignoreOutmostBlock /*=false*/) {
+                                   size_t posOpenCurly) {
 
     {
       // check that it's not binary:
@@ -197,7 +197,9 @@ namespace cling {
       char magic[1024] = {0};
       in.read(magic, sizeof(magic));
       size_t readMagic = in.gcount();
-      if (readMagic >= 4) {
+      // Binary files < 300 bytes are rare, and below newlines etc make the
+      // heuristic unreliable.
+      if (readMagic >= 300) {
         llvm::StringRef magicStr(magic,in.gcount());
         llvm::sys::fs::file_magic fileType
           = llvm::sys::fs::identify_magic(magicStr);
@@ -226,59 +228,50 @@ namespace cling {
     in.seekg(0);
     in.read(&content[0], size);
 
-    if (ignoreOutmostBlock && !content.empty()) {
+    if (posOpenCurly != (size_t)-1 && !content.empty()) {
+      assert(content[posOpenCurly] == '{'
+             && "No curly at claimed position of opening curly!");
+      // hide the curly brace:
+      content[posOpenCurly] = ' ';
+      // and the matching closing '}'
       static const char whitespace[] = " \t\r\n";
-      std::string::size_type posNonWS = content.find_first_not_of(whitespace);
-      // Handle comments before leading {
-      while (posNonWS != std::string::npos
-             && content[posNonWS] == '/' && content[posNonWS+1] == '/') {
-        // Remove the comment line
-        posNonWS = content.find_first_of('\n', posNonWS+2)+1;
-        posNonWS = content.find_first_not_of(whitespace, posNonWS);
-      }
-      std::string::size_type replaced = posNonWS;
-      if (posNonWS != std::string::npos && content[posNonWS] == '{') {
-        // hide the curly brace:
-        content[posNonWS] = ' ';
-        // and the matching closing '}'
-        posNonWS = content.find_last_not_of(whitespace);
-        if (posNonWS != std::string::npos) {
-          if (content[posNonWS] == ';' && content[posNonWS-1] == '}') {
-            content[posNonWS--] = ' '; // replace ';' and enter next if
+      size_t posCloseCurly = content.find_last_not_of(whitespace);
+      if (posCloseCurly != std::string::npos) {
+        if (content[posCloseCurly] == ';' && content[posCloseCurly-1] == '}') {
+          content[posCloseCurly--] = ' '; // replace ';' and enter next if
+        }
+        if (content[posCloseCurly] == '}') {
+          content[posCloseCurly] = ' '; // replace '}'
+        } else {
+          std::string::size_type posBlockClose = content.find_last_of('}');
+          if (posBlockClose != std::string::npos) {
+            content[posBlockClose] = ' '; // replace '}'
           }
-          if (content[posNonWS] == '}') {
-            content[posNonWS] = ' '; // replace '}'
-          } else {
-            std::string::size_type posBlockClose = content.find_last_of('}');
-            if (posBlockClose != std::string::npos) {
-              content[posBlockClose] = ' '; // replace '}'
+          std::string::size_type posComment
+            = content.find_first_not_of(whitespace, posBlockClose);
+          if (posComment != std::string::npos
+              && content[posComment] == '/' && content[posComment+1] == '/') {
+            // More text (comments) are okay after the last '}', but
+            // we can not easily find it to remove it (so we need to upgrade
+            // this code to better handle the case with comments or
+            // preprocessor code before and after the leading { and
+            // trailing })
+            while (posComment <= posCloseCurly) {
+              content[posComment++] = ' '; // replace '}' and comment
             }
-            std::string::size_type posComment
-              = content.find_first_not_of(whitespace, posBlockClose);
-            if (posComment != std::string::npos
-                && content[posComment] == '/' && content[posComment+1] == '/') {
-              // More text (comments) are okay after the last '}', but
-              // we can not easily find it to remove it (so we need to upgrade
-              // this code to better handle the case with comments or
-              // preprocessor code before and after the leading { and
-              // trailing })
-              while (posComment <= posNonWS) {
-                content[posComment++] = ' '; // replace '}' and comment
-              }
-            } else {
-              content[replaced] = '{';
-              // By putting the '{' back, we keep the code as consistent as
-              // the user wrote it ... but we should still warn that we not
-              // goint to treat this file an unamed macro.
-              llvm::errs()
-                << "Warning in cling::MetaProcessor: can not find the closing '}', "
-                << llvm::sys::path::filename(filename)
-                << " is not handled as an unamed script!\n";
-            } // did not find "//"
-          } // remove comments after the trailing '}'
-        } // find '}'
-      } // have '{'
-    } // ignore outmost block
+          } else {
+            content[posCloseCurly] = '{';
+            // By putting the '{' back, we keep the code as consistent as
+            // the user wrote it ... but we should still warn that we not
+            // goint to treat this file an unamed macro.
+            llvm::errs()
+              << "Warning in cling::MetaProcessor: can not find the closing '}', "
+              << llvm::sys::path::filename(filename)
+              << " is not handled as an unamed script!\n";
+          } // did not find "//"
+        } // remove comments after the trailing '}'
+      } // find '}'
+    } // ignore outermost block
 
     std::string strFilename(filename.str());
     m_CurrentlyExecutingFile = strFilename;

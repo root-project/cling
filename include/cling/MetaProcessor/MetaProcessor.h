@@ -12,6 +12,8 @@
 
 #include "cling/Interpreter/Interpreter.h"
 
+#include "clang/Basic/SourceLocation.h"
+
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/SmallString.h"
 
@@ -158,14 +160,15 @@ namespace cling {
     ///\param [in] filename - The file to read.
     /// @param[out] result - the cling::Value as result of the
     ///             execution of the last statement
-    ///\param [in] ignoreOutmostBlock - Whether to ignore enlosing {}.
+    ///\param [in] curlyToIgnore - Whether to ignore enlosing {}, and position
+    ///            of the opening '{'.
     ///
     ///\returns result of the compilation.
     ///
     Interpreter::CompilationResult
     readInputFromFile(llvm::StringRef filename,
                       Value* result,
-                      bool ignoreOutmostBlock = false);
+                      size_t posOpenCurly = (size_t)(-1));
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///
     ///\param [in] file - The file for the redirection.

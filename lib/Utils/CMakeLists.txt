@@ -11,11 +11,13 @@ set( LLVM_LINK_COMPONENTS
 
 add_cling_library(clingUtils OBJECT
   AST.cpp
+  SourceNormalization.cpp
   Validation.cpp
 
   LINK_LIBS
   clangSema
   clangAST
+  clangLex
   clangBasic
 )
 
