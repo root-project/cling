@@ -110,7 +110,7 @@ or type
 
 cling comes with a [Jupyter][6] kernel. After building cling, install Jupyter and run ```jupyter kernelspec install cling```. It requires a fairly new Jupyter. Make sure cling is in your PATH when you start jupyter!
 
-See also the [tools/Jupyter/kernel](tree/master/tools/Jupyter/kernel) subdirectory.
+See also the [tools/Jupyter](tools/Jupyter) subdirectory.
 
    [6]: http://jupyter.org
 
