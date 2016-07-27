@@ -74,14 +74,21 @@ cling::utils::isUnnamedMacro(llvm::StringRef source,
 
   MinimalPPLexer Lex(LangOpts, source);
   Token Tok;
-  while (!Lex.Lex(Tok)) {
+  while (true) {
+    bool atEOF = Lex.Lex(Tok);
+    const tok::TokenKind kind = Tok.getKind();
+
+    if (kind == tok::l_brace)
+      return getFileOffset(Tok);
+
+    if (atEOF)
+      return std::string::npos;
+
     if (Lex.inPPDirective())
       continue; // Skip PP directives.
 
-    const tok::TokenKind kind = Tok.getKind();
-    if (kind == tok::comment) continue; // ignore comments
-    if (kind == tok::l_brace)
-      return getFileOffset(Tok);
+    if (kind == tok::comment)
+      continue; // ignore comments
 
     return std::string::npos;
   }
@@ -107,7 +114,8 @@ size_t cling::utils::getWrapPoint(std::string& source,
 
   size_t wrapPoint;
 
-  while (!Lex.Lex(Tok)) {
+  while (true) {
+    bool atEOF = Lex.Lex(Tok);
     if (Lex.inPPDirective()) {
       wrapPoint = getFileOffset(Tok);
       continue; // Skip PP directives; they just move the wrap point.
@@ -137,6 +145,8 @@ size_t cling::utils::getWrapPoint(std::string& source,
       // Else there is something else here that needs to be wrapped.
       return wrapPoint;
     }
+    if (atEOF)
+      break;
   }
 
   // We have only had PP directives; no need to wrap.
