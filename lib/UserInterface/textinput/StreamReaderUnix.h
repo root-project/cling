@@ -29,12 +29,12 @@ namespace textinput {
     StreamReaderUnix();
     ~StreamReaderUnix();
 
-    void GrabInputFocus();
-    void ReleaseInputFocus();
+    void GrabInputFocus() override;
+    void ReleaseInputFocus() override;
 
-    bool HavePendingInput(bool wait);
-    bool HaveBufferedInput() const { return !fReadAheadBuffer.empty(); }
-    bool ReadInput(size_t& nRead, InputData& in);
+    bool HavePendingInput(bool wait) override;
+    bool HaveBufferedInput() const override { return !fReadAheadBuffer.empty(); }
+    bool ReadInput(size_t& nRead, InputData& in) override;
 
     bool IsFromTTY() override { return fIsTTY; }
   private:
