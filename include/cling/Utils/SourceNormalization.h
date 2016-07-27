@@ -20,7 +20,7 @@ namespace clang {
   class LangOptions;
   class SourceLocation;
   class SourceManager;
-};
+}
 
 namespace cling {
 namespace utils {
