@@ -112,12 +112,14 @@ size_t cling::utils::getWrapPoint(std::string& source,
   MinimalPPLexer Lex(LangOpts, source);
   Token Tok;
 
-  size_t wrapPoint;
+  //size_t wrapPoint = 0;
 
   while (true) {
     bool atEOF = Lex.Lex(Tok);
     if (Lex.inPPDirective()) {
-      wrapPoint = getFileOffset(Tok);
+      //wrapPoint = getFileOffset(Tok);
+      if (atEOF)
+        break;
       continue; // Skip PP directives; they just move the wrap point.
     }
 
@@ -142,11 +144,15 @@ size_t cling::utils::getWrapPoint(std::string& source,
         return std::string::npos;
       if (keyword.equals("template"))
         return std::string::npos;
-      // Else there is something else here that needs to be wrapped.
-      return wrapPoint;
+
+      // There is something else here that needs to be wrapped.
+      return getFileOffset(Tok);
     }
-    if (atEOF)
-      break;
+
+    // FIXME: in the future, continue lexing to extract relevant PP directives;
+    // return wrapPoint
+    // There is something else here that needs to be wrapped.
+    return getFileOffset(Tok);
   }
 
   // We have only had PP directives; no need to wrap.
