@@ -91,7 +91,7 @@ class ClingKernel(Kernel):
         self.libclingJupyter.cling_create.restype = my_void_p
         self.libclingJupyter.cling_eval.restype = my_void_p
         strarr = ctypes.c_char_p*4
-        argv = strarr(b"clingJupyter",b"",b"",b"")
+        argv = strarr(b"clingJupyter",b"-I" + clingInstDir.encode('utf-8') + b"/include/",b"",b"")
         llvmResourceDirCP = ctypes.c_char_p(llvmResourceDir.encode('utf8'))
         self.output_pipe, pipe_in = os.pipe()
         self.interp = self.libclingJupyter.cling_create(4, argv, llvmResourceDirCP, pipe_in)
