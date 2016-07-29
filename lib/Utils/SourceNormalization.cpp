@@ -77,10 +77,6 @@ cling::utils::isUnnamedMacro(llvm::StringRef source,
   bool AfterHash = false;
   while (true) {
     bool atEOF = Lex.Lex(Tok);
-    const tok::TokenKind kind = Tok.getKind();
-
-    if (kind == tok::l_brace)
-      return getFileOffset(Tok);
 
     if (atEOF)
       return std::string::npos;
@@ -106,7 +102,10 @@ cling::utils::isUnnamedMacro(llvm::StringRef source,
       continue; // Skip PP directives.
     }
 
-    if (kind == tok::comment)
+    if (Tok.is(tok::l_brace))
+      return getFileOffset(Tok);
+
+    if (Tok.is(tok::comment))
       continue; // ignore comments
 
     return std::string::npos;
