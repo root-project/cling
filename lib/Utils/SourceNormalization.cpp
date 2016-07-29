@@ -74,6 +74,7 @@ cling::utils::isUnnamedMacro(llvm::StringRef source,
 
   MinimalPPLexer Lex(LangOpts, source);
   Token Tok;
+  bool AfterHash = false;
   while (true) {
     bool atEOF = Lex.Lex(Tok);
     const tok::TokenKind kind = Tok.getKind();
@@ -84,8 +85,26 @@ cling::utils::isUnnamedMacro(llvm::StringRef source,
     if (atEOF)
       return std::string::npos;
 
-    if (Lex.inPPDirective() || Tok.is(tok::eod))
+    if (Lex.inPPDirective() || Tok.is(tok::eod)) {
+      if (AfterHash) {
+        if (Tok.is(tok::raw_identifier)) {
+          StringRef keyword(Tok.getRawIdentifier());
+          if (keyword.startswith("if")) {
+            // This could well be
+            //   #if FOO
+            //   {
+            // where we would determine this to be an unnamed macro and replace
+            // '{' by ' ', whether FOO is #defined or not. Instead, assume that
+            // this is not an unnamed macro and we need to parse it as is.
+            return std::string::npos;
+          }
+        }
+        AfterHash = false;
+      } else
+        AfterHash = Tok.is(tok::hash);
+
       continue; // Skip PP directives.
+    }
 
     if (kind == tok::comment)
       continue; // ignore comments
