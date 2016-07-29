@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
+// XFAIL: powerpc64
 
 // We must be able to handle cases where, there is a custom function that has
 // attributes non-null arguments and we should be able to add a non-null arg

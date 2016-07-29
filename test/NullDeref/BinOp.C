@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
+// XFAIL: powerpc64
 //This file checks a pointer load operation for null prt dereference.
 int *p = 0;
 int x;

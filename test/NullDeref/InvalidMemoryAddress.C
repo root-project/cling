@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
+// XFAIL: powerpc64
 //This file checks a dereference of an invalid memory address pointer..
 int *p = (int*)0x1;
 *p; // expected-warning {{invalid memory pointer passed to a callee:}}
