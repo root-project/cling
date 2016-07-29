@@ -84,7 +84,7 @@ cling::utils::isUnnamedMacro(llvm::StringRef source,
     if (atEOF)
       return std::string::npos;
 
-    if (Lex.inPPDirective())
+    if (Lex.inPPDirective() || Tok.is(tok::eod))
       continue; // Skip PP directives.
 
     if (kind == tok::comment)
@@ -116,7 +116,7 @@ size_t cling::utils::getWrapPoint(std::string& source,
 
   while (true) {
     bool atEOF = Lex.Lex(Tok);
-    if (Lex.inPPDirective()) {
+    if (Lex.inPPDirective() || Tok.is(tok::eod)) {
       //wrapPoint = getFileOffset(Tok);
       if (atEOF)
         break;
