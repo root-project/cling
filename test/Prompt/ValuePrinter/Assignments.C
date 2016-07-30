@@ -14,7 +14,7 @@ const char* b = "b" // CHECK: (const char *) "b"
    const char* n = 0 // CHECK: (const char *) nullptr
 
 struct C {int d;} E = {22};
-E // CHECK: (struct C &) @0x{{[0-9A-Fa-f]{6,12}.}}
+E // CHECK: (struct C &) @0x{{[0-9A-Fa-f]{6,12}}}
 E.d // CHECK: (int) 22
 
 #include <string>
@@ -56,5 +56,5 @@ typedef void (*F_t)(int);
 F_t fp = 0;
 fp // CHECK: (F_t) Function @0x0
 #include <stdio.h>
-fp = (F_t)printf // CHECK: (F_t) Function @0x{{[0-9A-Fa-f]{6,12}.}}
+fp = (F_t)printf // CHECK: (F_t) Function @0x{{[0-9A-Fa-f]{6,12}}}
 .q
