@@ -25,7 +25,7 @@ int j = i;
 
 void decls() {
    int arg1 = 17, arg2 = 42, add = -1;
-#ifdef __linux__ && (__x86_64 || __i686 || __i386)
+#if defined(__linux__) && (__x86_64 || __i686 || __i386)
    __asm__ ( "addl %%ebx, %%eax;" : "=a" (add) : "a" (arg1) , "b" (arg2) );
 #else
    add = arg1 + arg2;
