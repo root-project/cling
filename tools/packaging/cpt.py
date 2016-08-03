@@ -1016,12 +1016,12 @@ def check_win(pkg):
 
 def get_win_dep():
     box_draw("Download NSIS compiler")
-    html = urlopen('http://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read().decode('utf-8')
+    html = urlopen('https://sourceforge.net/p/nsis/code/HEAD/tree/NSIS/tags/').read().decode('utf-8')
     NSIS_VERSION = html[html.rfind('<a href="v'):html.find('>', html.rfind('<a href="v'))].strip('<a href="v').strip(
         '"')
     NSIS_VERSION = NSIS_VERSION[:1] + '.' + NSIS_VERSION[1:]
     print('Latest version of NSIS is: ' + NSIS_VERSION)
-    wget(url="http://sourceforge.net/projects/nsis/files/NSIS%%203%%20Pre-release/%s/nsis-%s.zip" % (
+    wget(url="https://sourceforge.net/projects/nsis/files/NSIS%%203%%20Pre-release/%s/nsis-%s.zip" % (
         NSIS_VERSION, NSIS_VERSION),
          out_dir=TMP_PREFIX)
     print('Extracting: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
