@@ -146,7 +146,7 @@ def box_draw(msg):
 +-----------------------------------------------------------------------------+''' % (msg, spacer))
 
 
-def wget(url, out_dir, retries=3):
+def wget(url, out_dir, rename_file=None, retries=3):
     file_name = url.split('/')[-1]
     print("  HTTP request sent, awaiting response ... ")
     u = urlopen(url)
@@ -185,6 +185,8 @@ def wget(url, out_dir, retries=3):
             status += chr(8) * (len(status) + 1)
             print(status, end=' ')
         f.close()
+        if rename_file:
+            os.rename(os.path.join(out_dir, file_name), os.path.join(out_dir, rename_file))
         print()
 
 
@@ -1014,6 +1016,9 @@ def check_win(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
 
 
+def is_os_64bit():
+    return platform.machine().endswith('64')
+
 def get_win_dep():
     box_draw("Download NSIS compiler")
     html = urlopen('https://sourceforge.net/p/nsis/code/6780/log/?path=/NSIS/tags').read().decode('utf-8')
@@ -1030,17 +1035,21 @@ def get_win_dep():
     os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s' % (NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
     box_draw("Download CMake for Windows")
-    html = urlopen('http://www.cmake.org/cmake/resources/software.html').read().decode('utf-8')
-    CMAKE_VERSION = html[html.find('Latest Release ('): html.find(')', html.find('Latest Release ('))].strip(
-        'Latest Release (')
-    print('Latest stable version of CMake is: ' + CMAKE_VERSION)
-    wget(url='http://www.cmake.org/files/v%s/cmake-%s-win32-x86.zip' % (CMAKE_VERSION[:3], CMAKE_VERSION),
-         out_dir=TMP_PREFIX)
-    print('Extracting: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip' % (CMAKE_VERSION)))
-    zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip' % (CMAKE_VERSION)))
+
+    print('Downloading nightly release of cmake')
+
+    if is_os_64bit():
+        wget(url='https://cmake.org/files/dev/cmake-3.6.20160801-g62452-win64-x64.zip',
+             out_dir=TMP_PREFIX, rename_file='cmake-3.6.20160801-g62452.zip')
+    else:
+        wget(url='https://cmake.org/files/dev/cmake-3.6.20160801-g62452-win32-x86.zip',
+             out_dir=TMP_PREFIX, rename_file='cmake-3.6.20160801-g62452.zip')
+
+    print('Extracting: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip'))
+    zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip'))
     zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
-    print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-%s-win32-x86.zip' % (CMAKE_VERSION)))
-    os.rename(os.path.join(TMP_PREFIX, 'bin', 'cmake-%s-win32-x86' % (CMAKE_VERSION)),
+    print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip'))
+    os.rename(os.path.join(TMP_PREFIX, 'bin', 'cmake-3.6.20160801-g62452.zip'),
               os.path.join(TMP_PREFIX, 'bin', 'cmake'))
 
 
