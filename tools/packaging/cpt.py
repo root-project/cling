@@ -1020,7 +1020,7 @@ def get_win_dep():
     pin = '<p>Tagging for release'
     NSIS_VERSION = html[html.find(pin):html.find('</div>', html.find(pin))].strip(pin + ' ')
     print('Latest version of NSIS is: ' + NSIS_VERSION)
-    wget(url="https://sourceforge.net/projects/nsis/files/NSIS%%203%%20/%s/nsis-%s.zip" % (
+    wget(url="https://sourceforge.net/projects/nsis/files/NSIS%%203/%s/nsis-%s.zip" % (
         NSIS_VERSION, NSIS_VERSION),
          out_dir=TMP_PREFIX)
     print('Extracting: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
