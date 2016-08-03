@@ -186,7 +186,10 @@ def wget(url, out_dir, rename_file=None, retries=3):
             print(status, end=' ')
         f.close()
         if rename_file:
-            os.rename(os.path.join(out_dir, file_name), os.path.join(out_dir, rename_file))
+            ffrom = os.path.join(out_dir, file_name)
+            fto = os.path.join(out_dir, rename_file)
+            print('Moving file: ' + ffrom + ' -> ' + fto)
+            os.rename(ffrom, fto)
         print()
 
 
@@ -1045,12 +1048,19 @@ def get_win_dep():
         wget(url='https://cmake.org/files/dev/cmake-3.6.20160801-g62452-win32-x86.zip',
              out_dir=TMP_PREFIX, rename_file='cmake-3.6.20160801-g62452.zip')
 
-    print('Extracting: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip'))
-    zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip'))
-    zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
+    zip_file = os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip')
+    print('Extracting: ' + zip_file)
+    zip = zipfile.ZipFile(zip_file)
+    tmp_bin_dir = os.path.join(TMP_PREFIX, 'bin')
+    zip.extractall(tmp_bin_dir)
     print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip'))
-    os.rename(os.path.join(TMP_PREFIX, 'bin', 'cmake-3.6.20160801-g62452.zip'),
-              os.path.join(TMP_PREFIX, 'bin', 'cmake'))
+
+    if is_os_64bit():
+        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.20160801-g62452-win64-x64'),
+                  os.path.join(TMP_PREFIX, 'bin', 'cmake'))
+    else:
+        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.20160801-g62452-win32-x86'),
+                  os.path.join(TMP_PREFIX, 'bin', 'cmake'))
 
 
 def make_nsi():

@@ -15,7 +15,6 @@ build:
 
 install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat
-  - "SET PATH=C:\\Python35;C:\\Python35\\Scripts;%PATH%"
 
 build_script:
 - tools\packaging\cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling
