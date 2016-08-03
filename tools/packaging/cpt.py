@@ -67,11 +67,26 @@ def _convert_subprocess_cmd(cmd):
     else:
         return [cmd]
 
+def _pdebug_info():
+    box_draw("Printing debug information")
+
+    print("Printing CMakeOutput.log")
+    with open(os.path.join(LLVM_OBJ_ROOT, 'CMakeFiles', 'CMakeOutput.log'), 'r') as f:
+        print(f.read())
+
+    print("Printing CMakeError.log")
+    with open(os.path.join(LLVM_OBJ_ROOT, 'CMakeFiles', 'CMakeError.log'), 'r') as f:
+        print(f.read())
+
 
 def _perror(e):
     print("subprocess.CalledProcessError: Command '%s' returned non-zero exit status %s" % (
         ' '.join(e.cmd), str(e.returncode)))
-    cleanup()
+    # Print out some useful information, while keeping all files around in --debug-on-error.
+    if args['debug_on_error']:
+        _pdebug_info()
+    else:
+        cleanup()
     # Communicate return code to the calling program if any
     sys.exit(e.returncode)
 
@@ -1457,6 +1472,7 @@ parser.add_argument('--with-cling-url', action='store', help='Specify an alterna
                     default='https://github.com/vgvassilev/cling.git')
 
 parser.add_argument('--no-test', help='Do not run test suite of Cling', action='store_true')
+parser.add_argument('--debug-on-error', help='Print debug information on error', action='store_true')
 parser.add_argument('--use-wget', help='Do not use Git to fetch sources', action='store_true')
 parser.add_argument('--create-dev-env', help='Set up a release/debug environment')
 
