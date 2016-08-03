@@ -406,7 +406,7 @@ def compile(arg):
                 CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
             box_draw("Building Cling (using %s cores)" % (cores))
-            exec_subprocess_call('%s --build . --target clang --config Debug' % (CMAKE), LLVM_OBJ_ROOT)
+            #exec_subprocess_call('%s --build . --target clang --config Debug' % (CMAKE), LLVM_OBJ_ROOT)
 
             exec_subprocess_call('%s --build . --target cling --config Debug' % (CMAKE), LLVM_OBJ_ROOT)
 
@@ -417,7 +417,7 @@ def compile(arg):
                     CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
             box_draw("Building Cling (using %s cores)" % (cores))
-            exec_subprocess_call('%s --build . --target clang --config Release' % (CMAKE), LLVM_OBJ_ROOT)
+            #exec_subprocess_call('%s --build . --target clang --config Release' % (CMAKE), LLVM_OBJ_ROOT)
 
             exec_subprocess_call('%s --build . --target cling --config Release' % (CMAKE), LLVM_OBJ_ROOT)
 
