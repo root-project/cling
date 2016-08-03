@@ -2,7 +2,7 @@ platform:
   - x86
   - x64
 configuration:
-  - Debug
+  #- Debug
   - Release
 
 skip_tags: true
@@ -11,10 +11,10 @@ os:
 
 build:
   parallel: true
-  verbosity: normal
+  verbosity: detailed
 
 install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat
 
 build_script:
-- tools\packaging\cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling
+- tools\packaging\cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose
