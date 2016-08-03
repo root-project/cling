@@ -396,8 +396,8 @@ def compile(arg):
             CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
 
         if args['create_dev_env'] == 'debug':
-            box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
-            exec_subprocess_call('%s -G "Visual Studio 11" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
+            box_draw("Configure Cling with CMake and generate Visual Studio 14 project files")
+            exec_subprocess_call('%s -G "Visual Studio 14" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
                 CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
             box_draw("Building Cling (using %s cores)" % (cores))
@@ -406,9 +406,9 @@ def compile(arg):
             exec_subprocess_call('%s --build . --target cling --config Debug' % (CMAKE), LLVM_OBJ_ROOT)
 
         else:
-            box_draw("Configure Cling with CMake and generate Visual Studio 11 project files")
+            box_draw("Configure Cling with CMake and generate Visual Studio 14 project files")
             exec_subprocess_call(
-                '%s -G "Visual Studio 11" -DLLVM_ENABLE_LIBCXX=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
+                '%s -G "Visual Studio 14" -DLLVM_ENABLE_LIBCXX=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
                     CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
             box_draw("Building Cling (using %s cores)" % (cores))
@@ -978,9 +978,9 @@ rm -rf %{buildroot}
 ###############################################################################
 
 def check_win(pkg):
-    # Check for Microsoft Visual Studio 11.0
+    # Check for Microsoft Visual Studio 14.0
     if pkg == "msvc":
-        if exec_subprocess_check_output('REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.11.0', 'C:\\').find(
+        if exec_subprocess_check_output('REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.14.0', 'C:\\').find(
                 'ERROR') == -1:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
         else:
@@ -1616,7 +1616,7 @@ Install/update the required packages by:
         check_win('git')
         check_win('python')
         check_win('SSL')
-        # Check Windows registry for keys that prove an MS Visual Studio 11.0 installation
+        # Check Windows registry for keys that prove an MS Visual Studio 14.0 installation
         check_win('msvc')
         print('''
 Refer to the documentation of CPT for information on setting up your Windows environment.
