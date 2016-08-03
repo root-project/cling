@@ -438,21 +438,16 @@ def compile(arg):
         )
 
         box_draw('Building Cling (using {0} cores)'.format(cores))
+        make_command = 'make -j{0} cling'.format(cores)
         if args['verbose']:
-            exec_subprocess_call(
-                'make -j{0} VERBOSE=1'.format(cores),
-                LLVM_OBJ_ROOT
-            )
-        else:
-            exec_subprocess_call(
-                'make -j{0}'.format(cores),
-                LLVM_OBJ_ROOT
-            )
+            make_command += ' VERBOSE=1'
+
+        exec_subprocess_call(make_command, LLVM_OBJ_ROOT)
 
 
         box_draw('Install compiled binaries to prefix (using {0} cores)'.format(cores))
         exec_subprocess_call(
-            'make install -j{0} prefix={1}'.format(cores, TMP_PREFIX),
+            'make install -j{0} prefix={1} cling'.format(cores, TMP_PREFIX),
             LLVM_OBJ_ROOT
         )
 
