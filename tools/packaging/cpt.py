@@ -1064,6 +1064,7 @@ def get_win_dep():
     else:
         os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.20160801-g62452-win32-x86'),
                   os.path.join(TMP_PREFIX, 'bin', 'cmake'))
+    print()
 
 
 def make_nsi():
