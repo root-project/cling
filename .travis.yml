@@ -113,7 +113,7 @@ script:
 - |
   if [ -z $TRAVIS_TAG ]; then
     if [ $TRAVIS_OS_NAME == 'osx' ] ; then
-      # Try to workaround https://github.com/travis-ci/travis-ci/issues/6410 by
+      # Try to workaround travis-ci/travis-ci#6410 by
       # introducing a timeout fulction, which will timeout before the builder,
       # returning a 'fake' success (eg. 0), tricking it to store the cache.
       function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
