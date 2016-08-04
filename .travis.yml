@@ -118,7 +118,7 @@ script:
       # returning a 'fake' success (eg. 0), tricking it to store the cache.
       function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
       timeout 2000 tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose --debug-on-error ; \
-      RESULT=$?; if [ $RESULT -eq 142 ]; then true; else false; fi;
+      RESULT=$?; if [ $RESULT -eq 0 ] || [ $RESULT -eq 142 ]; then true; else false; fi;
     else
       tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose --debug-on-error
     fi
