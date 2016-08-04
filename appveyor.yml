@@ -18,3 +18,10 @@ install:
 
 build_script:
 - tools\packaging\cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose
+
+init:
+- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+on_failure:
+# Your RDP session is limited by overall build time (60 min).
+- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
