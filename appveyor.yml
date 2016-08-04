@@ -5,6 +5,14 @@ configuration:
   #- Debug
   - Release
 
+matrix:
+  fast_finish: true   # set this flag to immediately finish build once one of the jobs fails.
+  allow_failures:
+    - platform: x86
+      configuration: Debug
+    - platform: x64
+      configuration: Release
+
 skip_tags: true
 os:
   - Visual Studio 2015
