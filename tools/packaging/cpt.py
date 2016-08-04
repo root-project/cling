@@ -396,51 +396,34 @@ def compile(arg):
 
     os.makedirs(os.path.join(workdir, 'builddir'))
 
-    if platform.system() == 'Windows':
-        if not CMAKE:
-            CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
-
-        if args['create_dev_env'] == 'debug':
-            box_draw("Configure Cling with CMake and generate Visual Studio 14 project files")
-            exec_subprocess_call('%s -G "Visual Studio 14" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
-                CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
-
-            box_draw("Building Cling (using %s cores)" % (cores))
-            #exec_subprocess_call('%s --build . --target clang --config Debug' % (CMAKE), LLVM_OBJ_ROOT)
-
-            exec_subprocess_call('%s --build . --target cling --config Debug' % (CMAKE), LLVM_OBJ_ROOT)
-
-        else:
-            box_draw("Configure Cling with CMake and generate Visual Studio 14 project files")
-            exec_subprocess_call(
-                '%s -G "Visual Studio 14" -DLLVM_ENABLE_LIBCXX=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%s ..\%s' % (
-                    CMAKE, TMP_PREFIX, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
-
-            box_draw("Building Cling (using %s cores)" % (cores))
-            #exec_subprocess_call('%s --build . --target clang --config Release' % (CMAKE), LLVM_OBJ_ROOT)
-
-            exec_subprocess_call('%s --build . --target cling --config Release' % (CMAKE), LLVM_OBJ_ROOT)
-
-            box_draw("Install compiled binaries to prefix (using %s cores)" % (cores))
-            exec_subprocess_call('%s --build . --target INSTALL --config Release' % (CMAKE), LLVM_OBJ_ROOT)
-
-    else:
-        box_draw('Configure Cling with CMake')
-        build_type = 'Debug' if args.get('create_dev_env') else 'Release'
-
-        exec_subprocess_call(
-            (CMAKE or 'cmake') + ' '
+    build_type = 'Debug' if args.get('create_dev_env') else 'Release'
+    cmake_config_flags = (
             '-DLLVM_ENABLE_LIBCXX=ON '
             '-DCMAKE_BUILD_TYPE={0} '
             '-DLLVM_TARGETS_TO_BUILD=host '
             '-DCMAKE_INSTALL_PREFIX={1} '
-            '../{2}'.format(
-                build_type,
-                TMP_PREFIX,
-                os.path.basename(srcdir)
-            ),
-            LLVM_OBJ_ROOT
-        )
+            '../{2}'.format(build_type, TMP_PREFIX, os.path.basename(srcdir))
+    )
+
+
+    if platform.system() == 'Windows':
+        if not CMAKE:
+            CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
+
+        box_draw("Configure Cling with CMake and generate Visual Studio 14 project files")
+        exec_subprocess_call('%s -G "Visual Studio 14" %s ..\%s' % (
+            CMAKE, cmake_config_flags, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
+
+        box_draw("Building Cling (using %s cores)" % (cores))
+
+        exec_subprocess_call('%s --build . --target cling --config Debug' % (CMAKE), LLVM_OBJ_ROOT)
+        box_draw("Install compiled binaries to prefix (using %s cores)" % (cores))
+        exec_subprocess_call('%s --build . --target INSTALL' % (CMAKE), LLVM_OBJ_ROOT)
+
+    else:
+        box_draw('Configure Cling with CMake')
+
+        exec_subprocess_call((CMAKE or 'cmake') + ' ' + cmake_config_flags, LLVM_OBJ_ROOT)
 
         box_draw('Building Cling (using {0} cores)'.format(cores))
         make_command = 'make -j{0} cling'.format(cores)
