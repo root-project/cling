@@ -85,6 +85,7 @@ install:
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
     export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
     brew install ccache
+    PATH=/usr/local/opt/ccache/libexec:$PATH
   fi
 
   if [ ! -f $CMAKE ]; then
