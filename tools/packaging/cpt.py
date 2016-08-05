@@ -460,7 +460,7 @@ def install_prefix():
     box_draw("Filtering Cling's libraries and binaries")
 
     dist_files = json.loads(
-        open(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.json')).read()
+        open(os.path.join(CPT_SRC_DIR, 'dist-files.json')).read()
     )
 
     dist_files['BIN'] = [binary.replace('@EXEEXT@', EXEEXT) for binary in dist_files['BIN']]
@@ -1112,7 +1112,7 @@ InstallDir "C:\\Cling\\cling-${VERSION}"
 !define MUI_HEADERIMAGE
 
 ; Theme
-!define MUI_ICON "%s\\tools\\packaging\\LLVM.ico"
+!define MUI_ICON "%s\\LLVM.ico"
 !define MUI_UNICON "%s\\Contrib\\Graphics\\Icons\\orange-uninstall.ico"
 
 !insertmacro MUI_PAGE_WELCOME
@@ -1149,7 +1149,7 @@ Section "MainFiles"
        VERSION,
        os.path.basename(prefix) + '-setup.exe',
        VIProductVersion.replace('v', ''),
-       CLING_SRC_DIR,
+       CPT_SRC_DIR,
        NSIS,
        os.path.join(CLING_SRC_DIR, 'LICENSE.TXT'))
 
@@ -1407,7 +1407,7 @@ def make_dmg():
 
     os.makedirs(os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Resources'))
     shutil.copyfile(
-        os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'LLVM.icns'),
+        os.path.join(CPT_SRC_DIR, 'LLVM.icns'),
         os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Resources', 'LLVM.icns')
     )
 
@@ -1468,7 +1468,7 @@ def make_dmg():
     exec_subprocess_call(
         '{dmgbuild} -s {settings} -D app={app} -D size={size}M "{volname}" {dmg}'.format(
             dmgbuild=os.path.join(workdir, 'pip', 'bin', 'dmgbuild'),
-            settings=os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'settings.py'),
+            settings=os.path.join(CPT_SRC_DIR, 'settings.py'),
             app=os.path.join(workdir, '%s.app' % (APP_NAME)),
             dmg=DMG_FINAL,
             volname=VOL_NAME,
@@ -1590,6 +1590,7 @@ os.makedirs(TMP_PREFIX)
 
 srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
+CPT_SRC_DIR = os.path.dirname(__file__)
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
 LLVM_GIT_URL = args['with_llvm_url']
