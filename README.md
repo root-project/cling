@@ -97,3 +97,8 @@ who merged the code or in any other case the main developers.
 
 In order for a contribution to be accepted it has to obey the previously
 established rules for contribution acceptance in cling's work flow and rules.
+
+
+License
+-------
+Please see our [LICENSE](LICENSE.TXT).
