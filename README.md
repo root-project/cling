@@ -1,14 +1,9 @@
-```
-                         ______  __      ____  _   __  ______
-                        / ____/ / /     /  _/ / | / / / ____/
-                       / /     / /      / /  /  |/ / / / __
-                      / /___  / /___  _/ /  / /|  / / /_/ /
-                      \____/ /_____/ /___/ /_/ |_/  \____/
 
-```
+[![Unix and OSX Build Status](https://travis-ci.org/root-mirror/cling.svg?branch=master)](https://travis-ci.org/root-mirror/cling)
 
+# Cling - The Interactive C++ Interpreter
 
-##DESCRIPTION
+## Overview
 Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler infrastructure. Cling realizes the [read-eval-print loop (REPL)](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) concept, in order to leverage rapid application development. Implemented as a small extension to LLVM and Clang, the interpreter reuses their strengths such as the praised concise and expressive compiler diagnostics.
 
 See also the [cling web page](https://cdn.rawgit.com/root-mirror/cling/master/www/index.html)
@@ -29,57 +24,11 @@ See also the [cling web page](https://cdn.rawgit.com/root-mirror/cling/master/ww
 ###Binaries
   We offer binary snapshots for download at https://root.cern.ch/download/cling/
 
-###Source
-  CLING source depends on the [LLVM][1] and [CLANG][2] headers and libraries.
-You will also need [CMake][3] >= 2.6.1 or GNU Make to build all of those
-packages and [subversion][4] and [git][5] to get the source code.
+### Building from Source with Cling Packaging Tool
 
-   [1]: http://llvm.org
-   [2]: http://clang.llvm.org
-   [3]: http://cmake.org
-   [4]: http://subversion.tigris.org
-   [5]: http://git-scm.com
-
-####Building
-  Building LLVM and CLANG you must:
-   * Check out the sources:
-```bash
-    git clone http://root.cern.ch/git/llvm.git src
-    cd src
-    git checkout cling-patches
-    cd tools
-    git clone http://root.cern.ch/git/cling.git
-    git clone http://root.cern.ch/git/clang.git
-    cd clang
-    git checkout cling-patches
-```
-   * Configure, build and install them, either using CMake:
-
-```bash
-    cd ../../../
-    mkdir build
-    cd build
-    cmake -DCMAKE_INSTALL_PREFIX=/some/install/dir \
-          -DLLVM_TARGETS_TO_BUILD=host \
-          -DCMAKE_BUILD_TYPE=Debug \
-          ../src
-    make
-    make install
-```
-   * or GNU Make (see ../src/configure --help for all options):
-
-```bash
-    cd ../../../
-    mkdir build
-    cd build
-    ../src/configure --prefix=/some/install/dir
-    make
-    make install
-```
-#####Cling Packaging Tool
 Cling's tree has a user-friendly, command-line utility written in Python called
 Cling Packaging Tool (CPT) which can build Cling from source and generate
-installer bundles for a wide range of platforms.
+installer bundles for a wide range of platforms. CPT requires Python 2.7 or later.
 
 If you have Cling's source cloned locally, you can find the tool in
 ```tools/packaging``` directory. Alternatively, you can download the script
@@ -87,6 +36,7 @@ manually, or by using ```wget```:
 ```sh
 wget https://raw.githubusercontent.com/root-mirror/cling/master/tools/packaging/cpt.py
 chmod +x cpt.py
+./cpt.py --check-requirements && ./cpt.py --create-dev-env Debug --with-workdir=./cling-build/
 ```
 
 Full documentation of CPT can be found in [tools/packaging](tree/master/tools/packaging).
