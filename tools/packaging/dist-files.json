@@ -1,0 +1,59 @@
+{
+  "BIN": [
+    "bin/cling@EXEEXT@"
+  ],
+
+  "DOCS": [
+    "docs/llvm/html/cling/cling.html",
+    "docs/llvm/html/cling/manpage.css",
+    "docs/llvm/ps/cling.ps"
+  ],
+
+  "SHARE": [
+    "share/man/man1/cling.1"
+  ],
+
+  "CLANG": {
+    "IGNORE": [
+      "module.modulemap",
+      "CMakeLists.txt",
+      "config.h.cmake"
+    ],
+    "INCLUDE": [
+      "tools/clang/include/clang"
+    ],
+    "LIB": [
+      "lib/clang/@CLANG_VERSION@/include"
+    ]
+  },
+
+  "CLANG_C": {
+    "IGNORE": [
+      "module.modulemap",
+      "module.modulemap.build",
+      "CMakeLists.txt"
+    ],
+    "INCLUDE": [
+      "tools/clang/include/clang-c"
+    ]
+  },
+
+  "LLVM": {
+    "IGNORE": [
+      "CMakeLists.txt"
+    ],
+    "INCLUDE": [
+      "include/llvm"
+    ],
+
+    "LLVM_C": {
+      "IGNORE": [
+        "module.modulemap",
+        "module.modulemap.build"
+      ],
+      "INCLUDE": [
+        "include/llvm-c"
+      ]
+    }
+  }
+}

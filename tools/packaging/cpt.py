@@ -227,7 +227,7 @@ def fetch_llvm(llvm_revision):
     def update_old_llvm():
         exec_subprocess_call('git stash', srcdir)
 
-        exec_subprocess_call('git clean -f -x -d', srcdir)
+        # exec_subprocess_call('git clean -f -x -d', srcdir)
 
         exec_subprocess_call('git fetch --tags', srcdir)
 
@@ -272,7 +272,7 @@ def fetch_clang(llvm_revision):
     def update_old_clang():
         exec_subprocess_call('git stash', os.path.join(srcdir, 'tools', 'clang'))
 
-        exec_subprocess_call('git clean -f -x -d', os.path.join(srcdir, 'tools', 'clang'))
+        # exec_subprocess_call('git clean -f -x -d', os.path.join(srcdir, 'tools', 'clang'))
 
         exec_subprocess_call('git fetch --tags', os.path.join(srcdir, 'tools', 'clang'))
 
@@ -303,9 +303,9 @@ def fetch_cling(arg):
         exec_subprocess_call('git checkout %s' % checkout_branch, CLING_SRC_DIR)
 
     def update_old_cling():
-        exec_subprocess_call('git stash', CLING_SRC_DIR)
+        # exec_subprocess_call('git stash', CLING_SRC_DIR)
 
-        exec_subprocess_call('git clean -f -x -d', CLING_SRC_DIR)
+        # exec_subprocess_call('git clean -f -x -d', CLING_SRC_DIR)
 
         exec_subprocess_call('git fetch --tags', CLING_SRC_DIR)
 
@@ -391,10 +391,10 @@ def compile(arg):
 
     # Cleanup previous build directory if exists
     if os.path.isdir(os.path.join(workdir, 'builddir')):
-        print("Remove directory: " + os.path.join(workdir, 'builddir'))
-        shutil.rmtree(os.path.join(workdir, 'builddir'))
-
-    os.makedirs(os.path.join(workdir, 'builddir'))
+        print("Using previous build directory: " + os.path.join(workdir, 'builddir'))
+    else:
+        print("Creating build directory: " + os.path.join(workdir, 'builddir'))
+        os.makedirs(os.path.join(workdir, 'builddir'))
 
     build_type = 'Debug' if args.get('create_dev_env') else 'Release'
     cmake_config_flags = (
@@ -439,26 +439,35 @@ def compile(arg):
             LLVM_OBJ_ROOT
         )
 
+def build_dist_list(file_dict, include=[], ignore=[]):
+    for key, value in file_dict.items():
+        if isinstance(value, dict):
+                build_dist_list(value, include, ignore)
+        else:
+            if key == 'IGNORE':
+                ignore.extend(value)
+            else:
+                include.extend(value)
+
+    return include, ignore
 
 def install_prefix():
     set_vars()
     box_draw("Filtering Cling's libraries and binaries")
 
-    for line in fileinput.input(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.mk'), inplace=True):
-        if '@EXEEXT@' in line:
-            print(line.replace('@EXEEXT@', EXEEXT), end=' ')
-        elif '@SHLIBEXT@' in line:
-            print(line.replace('@SHLIBEXT@', SHLIBEXT), end=' ')
-        elif '@CLANG_VERSION@' in line:
-            print(line.replace('@CLANG_VERSION@', CLANG_VERSION), end=' ')
-        else:
-            print(line, end=' ')
+    dist_files = json.loads(
+        open(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.json')).read()
+    )
 
-    dist_files = open(os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'dist-files.mk'), 'r').read()
+    dist_files['BIN'] = [binary.replace('@EXEEXT@', EXEEXT) for binary in dist_files['BIN']]
+    dist_files['CLANG']['LIB'] = [header.replace('@CLANG_VERSION@', CLANG_VERSION) for header in dist_files['CLANG']['LIB']]
+
+    included, ignored = build_dist_list(dist_files)
+
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
             f = os.path.join(root, file).replace(TMP_PREFIX, '')
-            if f.lstrip(os.sep).replace(os.sep, '/') + ' ' in dist_files:
+            if any(map(lambda x: re.search(x, f), included)):
                 print("Filter: " + f)
                 if not os.path.isdir(os.path.join(prefix, os.path.dirname(f))):
                     os.makedirs(os.path.join(prefix, os.path.dirname(f)))
@@ -487,8 +496,7 @@ def cleanup():
     print('\n')
     box_draw("Clean up")
     if os.path.isdir(os.path.join(workdir, 'builddir')):
-        print("Remove directory: " + os.path.join(workdir, 'builddir'))
-        shutil.rmtree(os.path.join(workdir, 'builddir'))
+        print("Skipping build directory: " + os.path.join(workdir, 'builddir'))
 
     if os.path.isdir(prefix):
         print("Remove directory: " + prefix)
@@ -1353,8 +1361,8 @@ def check_mac(pkg):
 def make_dmg():
     box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
-    DMG_BACKGROUND_IMG = 'Background.png'
-    APP_EXE = '%s.app/Contents/MacOS/%s' % (APP_NAME, APP_NAME)
+    DMG_BACKGROUND_IMG = 'graphic.png'
+    APP_EXE = '%s.app/Contents/Resources/bin/%s' % (APP_NAME, APP_NAME.lower())
     VOL_NAME = "%s-%s" % (APP_NAME.lower(), VERSION)
     DMG_TMP = "%s-temp.dmg" % (VOL_NAME)
     DMG_FINAL = "%s.dmg" % (VOL_NAME)
@@ -1368,13 +1376,18 @@ def make_dmg():
         print("Remove directory: " + os.path.join(workdir, '%s.app' % (APP_NAME)))
         shutil.rmtree(os.path.join(workdir, '%s.app' % (APP_NAME)))
 
-    if os.path.isdir(os.path.join(workdir, DMG_TMP)):
-        print("Remove directory: " + os.path.join(workdir, DMG_TMP))
-        shutil.rmtree(os.path.join(workdir, DMG_TMP))
+    if os.path.isfile(os.path.join(workdir, DMG_TMP)):
+        print("Remove file: " + os.path.join(workdir, DMG_TMP))
+        os.remove(os.path.join(workdir, DMG_TMP))
 
-    if os.path.isdir(os.path.join(workdir, DMG_FINAL)):
-        print("Remove directory: " + os.path.join(workdir, DMG_FINAL))
-        shutil.rmtree(os.path.join(workdir, DMG_FINAL))
+    if os.path.isfile(os.path.join(workdir, DMG_FINAL)):
+        print("Remove file: " + os.path.join(workdir, DMG_FINAL))
+        os.remove(os.path.join(workdir, DMG_FINAL))
+
+
+    if os.path.isdir(os.path.join(workdir, '%s.app' % (APP_NAME))):
+        print("Remove directory:", os.path.join(workdir, '%s.app' % (APP_NAME)))
+        shutil.rmtree(os.path.join(workdir, '%s.app' % (APP_NAME)))
 
     print('Create directory: ' + os.path.join(workdir, '%s.app' % (APP_NAME)))
     os.makedirs(os.path.join(workdir, '%s.app' % (APP_NAME)))
@@ -1385,8 +1398,8 @@ def make_dmg():
     print('Copy APP Bundle to staging area: ' + STAGING_DIR)
     shutil.copytree(os.path.join(workdir, '%s.app' % (APP_NAME)), STAGING_DIR)
 
-    print('Stripping file: ' + APP_EXE.lower())
-    exec_subprocess_call('strip -u -r %s' % (APP_EXE.lower()), workdir)
+    print('Stripping file: ' + APP_EXE)
+    exec_subprocess_call('strip -u -r %s' % os.path.join(workdir, APP_EXE), workdir)
 
     DU = exec_subprocess_check_output("du -sh %s" % (STAGING_DIR), workdir)
     SIZE = str(float(DU[:DU.find('M')].strip()) + 1.0)
@@ -1394,46 +1407,68 @@ def make_dmg():
 
     print('Building temporary Apple Disk Image')
     exec_subprocess_call(
-        'hdiutil create -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s' % (
+        'hdiutil create -verbose -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s' % (
             STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
 
+    print('Syncing disk')
+    exec_subprocess_call(
+        'sync',
+        workdir
+    )
+
     print('Created Apple Disk Image: ' + DMG_TMP)
-    DEVICE = exec_subprocess_check_output(
-        "hdiutil attach -readwrite -noverify -noautoopen %s | egrep '^/dev/' | sed 1q | awk '{print $1}'" % (DMG_TMP),
-        workdir)
+
+    print('Attaching temporary DMG')
+    line = exec_subprocess_check_output(
+        "hdiutil attach -verbose -readwrite -noverify -noautoopen %s" % (DMG_TMP),
+        workdir
+    )
+
+    for each in line:
+        m = re.search(r'^/dev/(?:[0-9A-z])+', line)
+        if m:
+            DEVICE = m.group(0)
+            break
 
     print('Wating for device to unmount...')
     time.sleep(5)
 
-    # print 'Create directory: ' + '/Volumes/%s/.background'%(VOL_NAME)
-    # os.makedirs('/Volumes/%s/.background'%(VOL_NAME))
-    # shutil.copy(os.path.join(workdir,DMG_BACKGROUND_IMG), '/Volumes/%s/.background/'%(VOL_NAME))
+    print('Create directory:', '/Volumes/%s/.background'%VOL_NAME)
+    if not os.path.isdir('/Volumes/%s/.background'%VOL_NAME):
+        os.makedirs('/Volumes/%s/.background'%VOL_NAME)
+
+    shutil.copy(os.path.join(srcdir, 'tools', 'cling', 'www', 'style', 'graphic.png'), '/Volumes/%s/.background/'%(VOL_NAME))
 
     ascript = '''
-tell application "Finder"
-  tell disk "%s"
-        open
-        set current view of container window to icon view
-        set toolbar visible of container window to false
-        set statusbar visible of container window to false
-        set the bounds of container window to {400, 100, 920, 440}
-        set viewOptions to the icon view options of container window
-        set arrangement of viewOptions to not arranged
-        set icon size of viewOptions to 72
-        set background picture of viewOptions to file ".background:%s"
-        set position of item "%s.app" of container window to {160, 205}
-        set position of item "Applications" of container window to {360, 205}
-        close
-        open
-        update without registering application
-        delay 2
-  end tell
-end tell
-''' % (VOL_NAME, DMG_BACKGROUND_IMG, APP_NAME)
+   tell application "Finder"
+     tell disk "%s"
+           open
+           set current view of container window to icon view
+           set toolbar visible of container window to false
+           set statusbar visible of container window to false
+           set the bounds of container window to {400, 100, 885, 430}
+           set theViewOptions to the icon view options of container window
+           set arrangement of theViewOptions to not arranged
+           set icon size of theViewOptions to 72
+           set background picture of theViewOptions to file ".background:graphic.png"
+           make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
+           set position of item "Cling" of container window to {100, 100}
+           set position of item "Applications" of container window to {375, 100}
+           update without registering applications
+           delay 5
+           close
+     end tell
+   end tell
+''' % VOL_NAME
+
     ascript = ascript.strip()
 
+    f = open('%s/ascript'%(workdir), 'w')
+    f.write(ascript)
+    f.close()
+
     print('Executing AppleScript...')
-    exec_subprocess_call("echo %s | osascript" % (ascript), workdir)
+    exec_subprocess_call("cat ascript | osascript", workdir)
 
     print('Performing sync...')
     exec_subprocess_call("sync", workdir)
