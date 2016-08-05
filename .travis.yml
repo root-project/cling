@@ -24,6 +24,12 @@ env:
     - TIMEOUT=0
 
 
+# Do not build our sync branch.
+branches:
+  except:
+    - /^__internal.*$/
+
+
 matrix:
   # Abort all builds on a single failing matrix entry.
   fast_finish: true
