@@ -75,7 +75,13 @@ matrix:
       osx_image: xcode7.2
       env: CXX_COMPILER='clang++' CC_COMPILER='clang' BUILD_TYPE='Release'
 
+    - os: osx
+      compiler: clang
+      osx_image: xcode7.3
+      env: CXX_COMPILER='clang++' CC_COMPILER='clang' BUILD_TYPE='Release'
+
   allow_failures:
+    - os: osx
     # libc++-dev is not whitelisted yet (https://github.com/travis-ci/apt-package-whitelist/issues/3266)
     # The build falls back to an old version and fails.
     - os: linux
