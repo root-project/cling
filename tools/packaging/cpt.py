@@ -468,10 +468,11 @@ def install_prefix():
 def test_cling():
     box_draw("Run Cling test suite")
     # FIXME: Factor out the setting of CMAKE.
-    if platform.system() == 'Windows':
+    CMAKE = os.environ.get('CMAKE', None)
+    if not CMAKE and platform.system() == 'Windows':
         CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
 
-    exec_subprocess_call('cmake --build . --target check-cling', LLVM_OBJ_ROOT)
+    exec_subprocess_call((CMAKE or 'cmake') + ' --build . --target check-cling', LLVM_OBJ_ROOT)
 
 
 def tarball():
