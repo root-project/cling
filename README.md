@@ -3,13 +3,23 @@
 
 # Cling - The Interactive C++ Interpreter
 
+
 ## Overview
-Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler infrastructure. Cling realizes the [read-eval-print loop (REPL)](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) concept, in order to leverage rapid application development. Implemented as a small extension to LLVM and Clang, the interpreter reuses their strengths such as the praised concise and expressive compiler diagnostics.
+
+Cling is an interactive C++ interpreter, built on top of Clang and LLVM compiler
+infrastructure. Cling realizes the [read-eval-print loop
+(REPL)](http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop)
+concept, in order to leverage rapid application development. Implemented as a
+small extension to LLVM and Clang, the interpreter reuses their strengths such
+as the praised concise and expressive compiler diagnostics.
 
 See also the [cling web page](https://cdn.rawgit.com/root-mirror/cling/master/www/index.html)
 
+
 ### Further information & demos
-  Please note that some of the resources are rather old and most of the stated limitations are outdated.
+
+Please note that some of the resources are rather old and most of the stated
+limitations are outdated.
   * [talks](www/docs/talks)
   * http://blog.coldflake.com/posts/2012-08-09-On-the-fly-C++.html
   * http://solarianprogrammer.com/2012/08/14/cling-cpp-11-interpreter/
@@ -18,28 +28,38 @@ See also the [cling web page](https://cdn.rawgit.com/root-mirror/cling/master/ww
   * https://www.youtube.com/watch?v=wZZdDhf2wDw
   * https://www.youtube.com/watch?v=eoIuqLNvzFs
 
+
 ##INSTALLATION
+
+
 ###Release Notes
   See our [release notes](docs/ReleaseNotes.md) to find what's new.
+
+
 ###Binaries
-  We offer binary snapshots for download at https://root.cern.ch/download/cling/
+Our nightly binary snapshots can be found
+[here](for download at https://root.cern.ch/download/cling/)
+
 
 ### Building from Source with Cling Packaging Tool
 
 Cling's tree has a user-friendly, command-line utility written in Python called
 Cling Packaging Tool (CPT) which can build Cling from source and generate
-installer bundles for a wide range of platforms. CPT requires Python 2.7 or later.
+installer bundles for a wide range of platforms. CPT requires Python 2.7 or
+later.
 
 If you have Cling's source cloned locally, you can find the tool in
-```tools/packaging``` directory. Alternatively, you can download the script
-manually, or by using ```wget```:
+`tools/packaging` directory. Alternatively, you can download the script
+manually, or by using `wget`:
+
 ```sh
 wget https://raw.githubusercontent.com/root-mirror/cling/master/tools/packaging/cpt.py
 chmod +x cpt.py
 ./cpt.py --check-requirements && ./cpt.py --create-dev-env Debug --with-workdir=./cling-build/
 ```
 
-Full documentation of CPT can be found in [tools/packaging](tree/master/tools/packaging).
+More documentation of CPT can be found in [tools/packaging](tree/master/tools/packaging).
+
 
 ##USAGE
 ```c++
@@ -56,20 +76,24 @@ or type
 [cling]$ .help`
 ```
 
+
 ## Jupyter
 
-cling comes with a [Jupyter][6] kernel. After building cling, install Jupyter and run ```jupyter kernelspec install cling```. It requires a fairly new Jupyter. Make sure cling is in your PATH when you start jupyter!
+Cling comes with a [Jupyter](http://jupyter.org) kernel. After building cling,
+install Jupyter and run `jupyter kernelspec install cling`. It requires a fairly
+new Jupyter. Make sure cling is in your PATH when you start jupyter!
 
-See also the [tools/Jupyter](tools/Jupyter) subdirectory.
+See also the [tools/Jupyter](tools/Jupyter) subdirectory for more information.
 
-   [6]: http://jupyter.org
 
 ##DEVELOPERS' CORNER
-   We have doxygen documentation of cling's code at: http://cling.web.cern.ch/cling/doxygen/
+We have doxygen documentation of cling's code at: http://cling.web.cern.ch/cling/doxygen/
+
 
 ###CONTRIBUTIONS
-  Every contribution is very welcome. It is considered as a donation and its copyright and any other related
-rights become exclusive ownership of the person who merged the code or in any other case the main developers.
-  In order for a contribution to be accepted it has to obey the previously
-established rules for contribution acceptance in cling's work flow and rules.
+Every contribution is very welcome. It is considered as a donation and its
+copyright and any other related rights become exclusive ownership of the person
+who merged the code or in any other case the main developers.
 
+In order for a contribution to be accepted it has to obey the previously
+established rules for contribution acceptance in cling's work flow and rules.
