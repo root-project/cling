@@ -1336,14 +1336,14 @@ def check_mac(pkg):
     elif exec_subprocess_check_output("type -p %s" % (pkg), '/').strip() == '':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
     else:
-        if pkg == "g++":
-            if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
-                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
+        if pkg == "clang++":
+            if float(exec_subprocess_check_output('clang++ -dumpversion', '/')[:3].strip()) <= 4.1:
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.1)]'.ljust(30))
             else:
                 print(pkg.ljust(20) + '[OK]'.ljust(30))
-        elif pkg == "gcc":
-            if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
-                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
+        elif pkg == "clang":
+            if float(exec_subprocess_check_output('clang -dumpversion', '/')[:3].strip()) <= 4.1:
+                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.1)]'.ljust(30))
             else:
                 print(pkg.ljust(20) + '[OK]'.ljust(30))
         else:
@@ -1665,8 +1665,8 @@ Install/update the required packages by:
     if DIST == 'MacOSX':
         check_mac('git')
         check_mac('cmake')
-        check_mac('gcc')
-        check_mac('g++')
+        check_mac('clang')
+        check_mac('clang++')
         check_mac('python')
         check_mac('SSL')
         yes = {'yes', 'y', 'ye', ''}
@@ -1683,7 +1683,7 @@ Do you want to continue? [yes/no]: ''').lower()
                                  stdin=subprocess.PIPE,
                                  stdout=None,
                                  stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
-                subprocess.Popen(['sudo port install git g++ python'],
+                subprocess.Popen(['sudo port install git clang++ python'],
                                  shell=True,
                                  stdin=subprocess.PIPE,
                                  stdout=None,
@@ -1693,7 +1693,7 @@ Do you want to continue? [yes/no]: ''').lower()
                 print('''
 Install/update the required packages by:
   sudo port -v selfupdate
-  sudo port install git g++ python
+  sudo port install git clang++ python
 ''')
                 break
             else:
