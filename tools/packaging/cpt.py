@@ -46,6 +46,7 @@ import zipfile
 from email.utils import formatdate
 from datetime import tzinfo
 import time
+import pip
 import multiprocessing
 import fileinput
 import stat
@@ -65,7 +66,7 @@ def _convert_subprocess_cmd(cmd):
         else:
             return cmd.split()
     else:
-        return [cmd]
+        return shlex.split(cmd, posix=True, comments=True)
 
 def _pdebug_info():
     box_draw("Printing debug information")
@@ -94,7 +95,7 @@ def _perror(e):
 def exec_subprocess_call(cmd, cwd):
     cmd = _convert_subprocess_cmd(cmd)
     try:
-        subprocess.check_call(cmd, cwd=cwd, shell=True,
+        subprocess.check_call(cmd, cwd=cwd, shell=False,
                               stdin=subprocess.PIPE, stdout=None, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         _perror(e)
@@ -103,7 +104,7 @@ def exec_subprocess_call(cmd, cwd):
 def exec_subprocess_check_output(cmd, cwd):
     cmd = _convert_subprocess_cmd(cmd)
     try:
-        out = subprocess.check_output(cmd, cwd=cwd, shell=True,
+        out = subprocess.check_output(cmd, cwd=cwd, shell=False,
                                       stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('utf-8')
     except subprocess.CalledProcessError as e:
         _perror(e)
@@ -144,6 +145,9 @@ def box_draw(msg):
 +-----------------------------------------------------------------------------+
 | %s%s|
 +-----------------------------------------------------------------------------+''' % (msg, spacer))
+
+def pip_install(package):
+    pip.main(['install', '--ignore-installed', '--prefix', os.path.join(workdir, 'pip'), '--upgrade', package])
 
 
 def wget(url, out_dir, rename_file=None, retries=3):
@@ -1362,11 +1366,14 @@ def make_dmg():
     box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
     DMG_BACKGROUND_IMG = 'graphic.png'
-    APP_EXE = '%s.app/Contents/Resources/bin/%s' % (APP_NAME, APP_NAME.lower())
+    APP_EXE = '%s.app/Contents/MacOS/bin/%s' % (APP_NAME, APP_NAME.lower())
     VOL_NAME = "%s-%s" % (APP_NAME.lower(), VERSION)
     DMG_TMP = "%s-temp.dmg" % (VOL_NAME)
     DMG_FINAL = "%s.dmg" % (VOL_NAME)
     STAGING_DIR = os.path.join(workdir, 'Install')
+
+    pip_install('pyobjc-core')
+    pip_install('dmgbuild')
 
     if os.path.isdir(STAGING_DIR):
         print("Remove directory: " + STAGING_DIR)
@@ -1392,8 +1399,61 @@ def make_dmg():
     print('Create directory: ' + os.path.join(workdir, '%s.app' % (APP_NAME)))
     os.makedirs(os.path.join(workdir, '%s.app' % (APP_NAME)))
 
-    print('Populate directory: ' + os.path.join(workdir, '%s.app/Contents/Resources' % (APP_NAME)))
-    shutil.copytree(prefix, os.path.join(workdir, '%s.app/Contents/Resources' % (APP_NAME)))
+    print('Populate directory: ' + os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'MacOS'))
+    shutil.copytree(
+        prefix,
+        os.path.join(workdir, '%s.app'%(APP_NAME), 'Contents', 'MacOS')
+    )
+
+    os.makedirs(os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Resources'))
+    shutil.copyfile(
+        os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'LLVM.icns'),
+        os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Resources', 'LLVM.icns')
+    )
+
+
+    print('Configuring Info.plist file')
+    plist_path = os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Info.plist')
+    f = open(plist_path, 'w')
+    plist_xml = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleGetInfoString</key>
+  <string>Copyright © 2007-2014 by the Authors; Developed by The ROOT Team, CERN and Fermilab</string>
+  <key>CFBundleExecutable</key>
+  <string>bin/cling</string>
+  <key>CFBundleIdentifier</key>
+  <string>ch.cern.root.cling</string>
+  <key>CFBundleName</key>
+  <string>Cling</string>
+  <key>CFBundleIconFile</key>
+  <string>LLVM</string>
+  <key>CFBundleShortVersionString</key>
+  <string>{version}</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleSignature</key>
+  <string>llvm</string>
+  <key>IFMajorVersion</key>
+  <integer>{major}</integer>
+  <key>IFMinorVersion</key>
+  <integer>{minor}</integer>
+
+</dict>
+</plist>
+'''.format(
+        version=VERSION,
+        major=VERSION.split('.')[0],
+        minor=VERSION.split('.')[1]
+    ).strip()
+
+    f.write(plist_xml)
+    f.close()
+
 
     print('Copy APP Bundle to staging area: ' + STAGING_DIR)
     shutil.copytree(os.path.join(workdir, '%s.app' % (APP_NAME)), STAGING_DIR)
@@ -1405,79 +1465,23 @@ def make_dmg():
     SIZE = str(float(DU[:DU.find('M')].strip()) + 1.0)
     print('Estimated size of application bundle: ' + SIZE + 'MB')
 
-    print('Building temporary Apple Disk Image')
     exec_subprocess_call(
-        'hdiutil create -verbose -srcfolder %s -volname %s -fs HFS+ -fsargs "-c c=64,a=16,e=16" -format UDRW -size %sM %s' % (
-            STAGING_DIR, VOL_NAME, SIZE, DMG_TMP), workdir)
+        '{dmgbuild} -s {settings} -D app={app} -D size={size}M "{volname}" {dmg}'.format(
+            dmgbuild=os.path.join(workdir, 'pip', 'bin', 'dmgbuild'),
+            settings=os.path.join(CLING_SRC_DIR, 'tools', 'packaging', 'settings.py'),
+            app=os.path.join(workdir, '%s.app' % (APP_NAME)),
+            dmg=DMG_FINAL,
+            volname=VOL_NAME,
+            size=SIZE
+        ),
+        workdir
+    )
 
     print('Syncing disk')
     exec_subprocess_call(
         'sync',
         workdir
     )
-
-    print('Created Apple Disk Image: ' + DMG_TMP)
-
-    print('Attaching temporary DMG')
-    line = exec_subprocess_check_output(
-        "hdiutil attach -verbose -readwrite -noverify -noautoopen %s" % (DMG_TMP),
-        workdir
-    )
-
-    for each in line:
-        m = re.search(r'^/dev/(?:[0-9A-z])+', line)
-        if m:
-            DEVICE = m.group(0)
-            break
-
-    print('Wating for device to unmount...')
-    time.sleep(5)
-
-    print('Create directory:', '/Volumes/%s/.background'%VOL_NAME)
-    if not os.path.isdir('/Volumes/%s/.background'%VOL_NAME):
-        os.makedirs('/Volumes/%s/.background'%VOL_NAME)
-
-    shutil.copy(os.path.join(srcdir, 'tools', 'cling', 'www', 'style', 'graphic.png'), '/Volumes/%s/.background/'%(VOL_NAME))
-
-    ascript = '''
-   tell application "Finder"
-     tell disk "%s"
-           open
-           set current view of container window to icon view
-           set toolbar visible of container window to false
-           set statusbar visible of container window to false
-           set the bounds of container window to {400, 100, 885, 430}
-           set theViewOptions to the icon view options of container window
-           set arrangement of theViewOptions to not arranged
-           set icon size of theViewOptions to 72
-           set background picture of theViewOptions to file ".background:graphic.png"
-           make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
-           set position of item "Cling" of container window to {100, 100}
-           set position of item "Applications" of container window to {375, 100}
-           update without registering applications
-           delay 5
-           close
-     end tell
-   end tell
-''' % VOL_NAME
-
-    ascript = ascript.strip()
-
-    f = open('%s/ascript'%(workdir), 'w')
-    f.write(ascript)
-    f.close()
-
-    print('Executing AppleScript...')
-    exec_subprocess_call("cat ascript | osascript", workdir)
-
-    print('Performing sync...')
-    exec_subprocess_call("sync", workdir)
-
-    print('Detach device: ' + DEVICE)
-    exec_subprocess_call('hdiutil detach %s' % (DEVICE), CLING_SRC_DIR)
-
-    print("Creating compressed Apple Disk Image...")
-    exec_subprocess_call('hdiutil convert %s -format UDZO -imagekey zlib-level=9 -o %s' % (DMG_TMP, DMG_FINAL), workdir)
 
     print('Done')
 
