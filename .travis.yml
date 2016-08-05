@@ -121,9 +121,9 @@ before_script:
 script:
 - |
   if [ -z $TRAVIS_TAG ]; then
-    timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose --debug-on-error
+    timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --verbose --debug-on-error
   else
-    tools/packaging/cpt.py --last-stable=tar --with-cling-url=https://github.com/vgvassilev/cling
+    tools/packaging/cpt.py --last-stable=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
   fi
 
   # Convert the timeout exit code to 0.
@@ -154,7 +154,7 @@ deploy:
   file: '${RELEASE_TARBALL}'
   on:
     tags: true
-    repo: vgvassilev/cling
+    repo: $TRAVIS_REPO_SLUG
 
 after_failure:
 - |
