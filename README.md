@@ -54,11 +54,10 @@ chmod +x cpt.py
 ./cpt.py --check-requirements && ./cpt.py --create-dev-env Debug --with-workdir=./cling-build/
 ```
 
-More documentation of CPT can be found in [tools/packaging](tree/master/tools/packaging).
-
-
 Usage
 -----
+Full documentation of CPT can be found in [tools/packaging](tools/packaging).
+
 
 ```c++
 /some/install/dir/bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'`
