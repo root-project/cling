@@ -21,6 +21,7 @@ env:
     - CCACHE_CPP2=1
     - CLING_BUILD_DEPS=$TRAVIS_BUILD_DIR/deps/
     - CLING_LOCAL_BIN=$TRAVIS_BUILD_DIR/bin/
+    - TIMEOUT=0
 
 
 matrix:
@@ -86,7 +87,14 @@ install:
     export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
     brew install ccache
     PATH=/usr/local/opt/ccache/libexec:$PATH
+    # Try to workaround travis-ci/travis-ci#6410 by
+    # introducing a timeout fulction, which will timeout before the builder,
+    # returning a 'fake' success (eg. 0), tricking it to store the cache.
+    TIMEOUT=2400
   fi
+
+  # Implement a platform-independent timeout function.
+  function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 
   if [ ! -f $CMAKE ]; then
     mkdir -pv $CLING_BUILD_DEPS/cmake
@@ -105,26 +113,16 @@ before_script:
 - $CXX --version
 
 script:
-#- |
-#  mkdir -pv $CLING_LOCAL_BIN
-#  touch "$CLING_LOCAL_BIN/$CXX"; ls "$CLING_LOCAL_BIN/$CXX" ; echo "ccache $CXX" > "$CLING_LOCAL_BIN/$CXX"
-#  echo "ccache $CC" > "$CLING_LOCAL_BIN/$CC"
-#  chmod +x "$CLING_LOCAL_BIN/$CXX" && chmod +x "$CLING_LOCAL_BIN/$CC"
 - |
   if [ -z $TRAVIS_TAG ]; then
-    if [ $TRAVIS_OS_NAME == 'osx' ] ; then
-      # Try to workaround travis-ci/travis-ci#6410 by
-      # introducing a timeout fulction, which will timeout before the builder,
-      # returning a 'fake' success (eg. 0), tricking it to store the cache.
-      function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
-      timeout 2000 tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose --debug-on-error ; \
-      RESULT=$?; if [ $RESULT -eq 0 ] || [ $RESULT -eq 142 ]; then true; else false; fi;
-    else
-      tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose --debug-on-error
-    fi
+    timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose --debug-on-error
   else
     tools/packaging/cpt.py --last-stable=tar --with-cling-url=https://github.com/vgvassilev/cling
   fi
+
+  # Convert the timeout exit code to 0.
+  RESULT=$?; if [ $RESULT -eq 0 ] || [ $RESULT -eq 142 ]; then true; else false; fi;
+
 - ccache -s
 
 notifications:
