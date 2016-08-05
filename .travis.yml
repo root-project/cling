@@ -127,13 +127,14 @@ script:
 
 notifications:
   recipients:
-  - ani07nov@gmail.com
-  - vvasilev@cern.ch
+    - cling-dev@cern.ch
   email:
     on_success: change
     on_failure: always
   template:
-  - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"
+    - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"
+    - "Build details: %{build_url}"
+    - "Change view : %{compare_url}"
 
 before_deploy:
 - export RELEASE_TARBALL=$(ls $HOME/ci/build/cling*.tar.bz2)
