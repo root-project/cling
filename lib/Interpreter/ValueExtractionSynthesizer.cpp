@@ -236,7 +236,7 @@ namespace {
     }
     Expr* ETyVP
       = utils::Synthesize::CStyleCastPtrExpr(m_Sema, m_Context->VoidPtrTy,
-                                             (uint64_t)ETy.getAsOpaquePtr());
+                                             (uintptr_t)ETy.getAsOpaquePtr());
 
     // Pass whether to Value::dump() or not:
     Expr* EVPOn
@@ -264,7 +264,7 @@ namespace {
       QualType vQT = m_Context->VoidTy;
       Expr* vpQTVP
         = utils::Synthesize::CStyleCastPtrExpr(m_Sema, vpQT,
-                                               (uint64_t)vQT.getAsOpaquePtr());
+                                               (uintptr_t)vQT.getAsOpaquePtr());
       CallArgs[2] = vpQTVP;
 
 
@@ -291,7 +291,7 @@ namespace {
         CallArgs.clear();
         CallArgs.push_back(E);
         CallArgs.push_back(placement);
-        uint64_t arrSize
+        size_t arrSize
           = m_Context->getConstantArrayElementCount(constArray);
         Expr* arrSizeExpr
           = utils::Synthesize::IntegerLiteralExpr(*m_Context, arrSize);

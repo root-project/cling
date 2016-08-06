@@ -125,10 +125,10 @@ namespace cling {
       SourceLocation Loc = Arg->getLocStart();
       Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
                                                             m_Context.VoidPtrTy,
-                                                            (uint64_t)&m_Interp);
+                                                            (uintptr_t)&m_Interp);
       Expr* VoidExprArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
                                                           m_Context.VoidPtrTy,
-                                                          (uint64_t)Arg);
+                                                          (uintptr_t)Arg);
       Scope* S = m_Sema.getScopeForContext(m_Sema.CurContext);
       CXXScopeSpec CSS;
 

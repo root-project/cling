@@ -161,7 +161,13 @@ namespace utils {
 
   const char* const Synthesize::UniquePrefix = "__cling_Un1Qu3";
 
-  Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, uint64_t Ptr) {
+  IntegerLiteral* Synthesize::IntegerLiteralExpr(ASTContext& C, uintptr_t Ptr) {
+    const llvm::APInt Addr(8 * sizeof(void*), Ptr);
+    return IntegerLiteral::Create(C, Addr, C.getUIntPtrType(),
+                                  SourceLocation());
+  }
+
+  Expr* Synthesize::CStyleCastPtrExpr(Sema* S, QualType Ty, uintptr_t Ptr) {
     ASTContext& Ctx = S->getASTContext();
     return CStyleCastPtrExpr(S, Ty, Synthesize::IntegerLiteralExpr(Ctx, Ptr));
   }
@@ -176,12 +182,6 @@ namespace utils {
       = S->BuildCStyleCastExpr(SourceLocation(), TSI,SourceLocation(),E).get();
     assert(Result && "Cannot create CStyleCastPtrExpr");
     return Result;
-  }
-
-  IntegerLiteral* Synthesize::IntegerLiteralExpr(ASTContext& C, uint64_t Ptr) {
-    const llvm::APInt Addr(8 * sizeof(void *), Ptr);
-    return IntegerLiteral::Create(C, Addr, C.getUIntPtrType(),
-                                  SourceLocation());
   }
 
   static bool

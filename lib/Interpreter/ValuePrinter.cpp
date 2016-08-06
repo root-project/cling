@@ -283,7 +283,7 @@ static std::string printEnumValue(const Value &V) {
   const clang::EnumType *EnumTy = Ty.getNonReferenceType()->getAs<clang::EnumType>();
   assert(EnumTy && "ValuePrinter.cpp: ERROR, printEnumValue invoked for a non enum type.");
   clang::EnumDecl *ED = EnumTy->getDecl();
-  uint64_t value = *(const uint64_t *) &V;
+  uint64_t value = V.getULL();
   bool IsFirst = true;
   llvm::APSInt ValAsAPSInt = C.MakeIntValue(value, Ty);
   for (clang::EnumDecl::enumerator_iterator I = ED->enumerator_begin(),

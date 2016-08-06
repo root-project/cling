@@ -414,7 +414,7 @@ namespace cling {
         // Build Arg1 DeclContext* DC
         QualType DCTy = m_Context->getTypeDeclType(m_DeclContextDecl);
         Inits.push_back(utils::Synthesize::CStyleCastPtrExpr(m_Sema, DCTy,
-                                                     (uint64_t)m_CurDeclContext)
+                                                     (uintptr_t)m_CurDeclContext)
                         );
         // Build Arg2 llvm::StringRef
         // Get the type of the type without specifiers
@@ -618,7 +618,7 @@ namespace cling {
     // Build Arg1
     QualType DCTy = m_Context->getTypeDeclType(m_DeclContextDecl);
     Expr* Arg1 = utils::Synthesize::CStyleCastPtrExpr(m_Sema, DCTy,
-                                                    (uint64_t)m_CurDeclContext);
+                                                    (uintptr_t)m_CurDeclContext);
     CallArgs.push_back(Arg1);
 
     // Build the call

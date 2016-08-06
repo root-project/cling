@@ -141,10 +141,10 @@ namespace cling {
 
     Expr* VoidEArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
                                                           m_Context->VoidPtrTy,
-                                                          (uint64_t)E);
+                                                          (uintptr_t)E);
     Expr* VoidCArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
                                                           m_Context->VoidPtrTy,
-                                                          (uint64_t)m_Context);
+                                                          (uintptr_t)m_Context);
 
     SourceLocation NoSLoc = SourceLocation();
     Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);

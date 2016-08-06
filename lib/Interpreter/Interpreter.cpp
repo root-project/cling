@@ -344,7 +344,7 @@ namespace cling {
       // Set up the gCling variable if it can be used
       initializer << "namespace cling {namespace runtime { "
         "cling::Interpreter *gCling=(cling::Interpreter*)"
-                  << (uintptr_t)this << ";} }";
+        << "0x" << std::hex << (uintptr_t)this << " ;} }";
     }
     declare(initializer.str());
   }
