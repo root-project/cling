@@ -12,6 +12,9 @@ else ()
   set(LLVM_BUILD_MODE "%(build_mode)s")
 endif ()
 
+# Needed for '%shlibext'
+set(TARGET_SHLIBEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
 configure_lit_site_cfg(
   ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in
   ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
@@ -22,7 +25,8 @@ if(CLING_TEST_USE_VG)
   set(CLING_TEST_EXTRA_ARGS ${CLING_TEST_EXTRA_ARGS} "--vg")
 endif ()
 
-list(APPEND CLING_TEST_DEPS cling)
+list(APPEND CLING_TEST_DEPS cling llvm-config FileCheck clang c-index-test
+                            clang-check clang-format opt count not)
 
 set(CLING_TEST_PARAMS
   cling_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
