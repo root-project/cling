@@ -133,7 +133,7 @@ script:
   if [ -z $TRAVIS_TAG ]; then
     timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --verbose --debug-on-error
   else
-    tools/packaging/cpt.py --last-stable=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
+    tools/packaging/cpt.py --tarbal-tag=$TRAVIS_TAG --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
   fi
 
   # Convert the timeout exit code to 0.

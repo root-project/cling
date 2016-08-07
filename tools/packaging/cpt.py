@@ -1807,6 +1807,9 @@ if args['last_stable']:
     # For Python 3 compatibility
     tag = str(tag)
 
+    # FIXME
+    assert tag[0] is "v"
+
     llvm_revision = urlopen(
         'https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt' % tag
     ).readline().strip().decode('utf-8')
