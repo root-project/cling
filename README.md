@@ -90,12 +90,17 @@ Developers' Corner
 
 Contributions
 -------------
-Every contribution is very welcome. It is considered as a donation and its
-copyright and any other related rights become exclusive ownership of the person
-who merged the code or in any other case the main developers.
+Every contribution is considered a donation and its copyright and any other
+related rights become exclusive ownership of the person who merged the code or
+in any other case the main developers of the "Cling Project".
 
-In order for a contribution to be accepted it has to obey the previously
-established rules for contribution acceptance in cling's work flow and rules.
+We warmly welcome external contributions to the Cling! By providing code,
+you agree to transfer your copyright on the code to the "Cling project".
+Of course you will be duly credited and your name will appear on the
+contributors page, the release notes, and in the [CREDITS file](CREDITS.txt)
+shipped with every binary and source distribution. The copyright transfer is
+necessary for us to be able to effectively defend the project in case of
+litigation.
 
 
 License
