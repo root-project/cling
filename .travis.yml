@@ -96,7 +96,7 @@ install:
   elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
     export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
-    brew install ccache
+    brew install ccache python
     PATH=/usr/local/opt/ccache/libexec:$PATH
     # Try to workaround travis-ci/travis-ci#6410 by
     # introducing a timeout fulction, which will timeout before the builder,
