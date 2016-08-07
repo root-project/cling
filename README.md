@@ -35,7 +35,7 @@ See our [release notes](docs/ReleaseNotes.md) to find what's new.
 
 ### Binaries
 Our nightly binary snapshots can be found
-[here](https://root.cern.ch/download/cling/)
+[here](https://root.cern.ch/download/cling/).
 
 
 ### Building from Source with Cling Packaging Tool

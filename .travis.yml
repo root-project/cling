@@ -158,6 +158,7 @@ deploy:
     secure: eIwVHJNxkAIi6IUYyx7qI1szsgWt3c42ugcJ1vZ6iH//+qJgks77I8dMlbRf0RUrhxpJhJPH5a6vqI/mo1Vq2vmoC8+D1DIQCbj+/WHhY71LQCPC+Wgj2JES5y1Wh91nMt4ybzb1dA8BIfeJOdCUn7ezJTGKk18N+h2jE+a/7IE=
   file: '${RELEASE_TARBALL}'
   on:
+    branch: master
     tags: true
     repo: $TRAVIS_REPO_SLUG
 
