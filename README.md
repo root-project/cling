@@ -53,23 +53,22 @@ wget https://raw.githubusercontent.com/root-mirror/cling/master/tools/packaging/
 chmod +x cpt.py
 ./cpt.py --check-requirements && ./cpt.py --create-dev-env Debug --with-workdir=./cling-build/
 ```
-
-Usage
------
 Full documentation of CPT can be found in [tools/packaging](tools/packaging).
 
 
+Usage
+-----
 ```c++
-/some/install/dir/bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'`
+./cling '#include <stdio.h>' 'printf("Hello World!\n")'`
 ```
 
 To get started run:
 ```bash
-/some/install/dir/bin/cling --help`
+./cling --help`
 ```
 or type
 ```
-/some/install/dir/bin/cling
+./cling
 [cling]$ .help`
 ```
 
