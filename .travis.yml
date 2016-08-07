@@ -22,6 +22,7 @@ env:
     - CLING_BUILD_DEPS=$TRAVIS_BUILD_DIR/deps/
     - CLING_LOCAL_BIN=$TRAVIS_BUILD_DIR/bin/
     - TIMEOUT=0
+    - secure: eIwVHJNxkAIi6IUYyx7qI1szsgWt3c42ugcJ1vZ6iH//+qJgks77I8dMlbRf0RUrhxpJhJPH5a6vqI/mo1Vq2vmoC8+D1DIQCbj+/WHhY71LQCPC+Wgj2JES5y1Wh91nMt4ybzb1dA8BIfeJOdCUn7ezJTGKk18N+h2jE+a/7IE=
 
 
 # Do not build our sync branch.
@@ -125,6 +126,10 @@ before_script:
 
 script:
 - |
+  # Move the tag to newest master
+  git tag --force cling-nightlies HEAD
+  git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
+
   if [ -z $TRAVIS_TAG ]; then
     timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --verbose --debug-on-error
   else
@@ -151,14 +156,13 @@ before_deploy:
 - export RELEASE_TARBALL=$(ls $HOME/ci/build/cling*.tar.bz2)
 - echo "Deploying $RELEASE_TARBALL to GitHub releases"
 
+
 deploy:
   provider: releases
   skip_cleanup: true
-  api_key:
-    secure: eIwVHJNxkAIi6IUYyx7qI1szsgWt3c42ugcJ1vZ6iH//+qJgks77I8dMlbRf0RUrhxpJhJPH5a6vqI/mo1Vq2vmoC8+D1DIQCbj+/WHhY71LQCPC+Wgj2JES5y1Wh91nMt4ybzb1dA8BIfeJOdCUn7ezJTGKk18N+h2jE+a/7IE=
+  api_key: $OAUTH_TOKEN
   file: '${RELEASE_TARBALL}'
   on:
-    branch: master
     tags: true
     repo: $TRAVIS_REPO_SLUG
 
