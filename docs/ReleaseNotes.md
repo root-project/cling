@@ -22,12 +22,13 @@ Major New Features
 ------------------
 * Support for GCC5 ABI, enabling e.g. native support for newer Fedora and Ubuntu.
 * Code completion from the prompt.
-* Rudimentary Windows support, requiring CMake from the master (!) and MSVC 2015.
+* Rudimentary Windows support, requiring CMake nightly builds later than
+  01.08.2016 and MSVC 2015.
 * Enable C++ module builds.
 
 Cling as a Library
 ------------------
-* Support for building cling as shared libraries.
+* Support for building cling as a shared library.
 * Improved CMake dependencies.
 
 External Dependencies
@@ -35,7 +36,7 @@ External Dependencies
 * Upgrade to LLVM r274612.
 
 Misc
-------
+----
 * Extend Cling's static web site.
 
 Experimental Features
@@ -43,7 +44,7 @@ Experimental Features
 * Code unloading:
 * Dynamic Scopes:
 
-Fixed Bugs:
+Fixed Bugs
 ----------
 <!---Uniquify by sort ReleaseNotes.md | uniq -c | grep -v '1 ' --->
 <!---Standard MarkDown doesn't support neither variables nor <base> --->
