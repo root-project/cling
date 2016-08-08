@@ -27,7 +27,6 @@
 #include "clang/Frontend/FrontendDiagnostic.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Frontend/VerifyDiagnosticConsumer.h"
-#include "clang/FrontendTool/Utils.h"
 #include "clang/Serialization/SerializationDiagnostic.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
@@ -639,11 +638,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
   class ActionScan {
     std::set<const clang::driver::Action*> m_Visited;
-    const clang::driver::Action::ActionClass m_Kind;
+    llvm::SmallVector<clang::driver::Action::ActionClass, 2> m_Kinds;
 
     bool find (const clang::driver::Action* A) {
       if (A && !m_Visited.count(A)) {
-        if (A->getKind() == m_Kind)
+        if (std::find(m_Kinds.begin(), m_Kinds.end(), A->getKind()) !=
+            m_Kinds.end())
           return true;
 
         m_Visited.insert(A);
@@ -653,7 +653,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
 
   public:
-    ActionScan(clang::driver::Action::ActionClass k) : m_Kind(k) {}
+    ActionScan(clang::driver::Action::ActionClass a, int b = -1) {
+      m_Kinds.push_back(a);
+      if (b != -1)
+        m_Kinds.push_back(clang::driver::Action::ActionClass(b));
+    }
 
     bool find (clang::driver::Compilation* C) {
       for (clang::driver::Action* A : C->getActions()) {
@@ -667,7 +671,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
-               bool OnlyLex) {
+               bool OnlyLex, bool HasInput = false) {
     // Follow clang -v convention of printing version on first line
     if (COpts.Verbose)
       cling::log() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
@@ -712,8 +716,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       }
 #endif
 
-    const bool genOutput = COpts.HasOutput && !OnlyLex;
-    if (!genOutput) {
+    if (!COpts.HasOutput || !HasInput) {
       argvCompile.push_back("-c");
       argvCompile.push_back("-");
     }
@@ -762,17 +765,18 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     InvocationPtr.release();
     CI->setDiagnostics(Diags.get()); // Diags is ref-counted
 
-    if (genOutput) {
-      ActionScan scan(clang::driver::Action::PrecompileJobClass);
+    if (COpts.HasOutput && !OnlyLex) {
+      ActionScan scan(clang::driver::Action::PrecompileJobClass,
+                      clang::driver::Action::PreprocessJobClass);
       if (!scan.find(Compilation.get())) {
-        cling::errs() << "Only output to precompiled header is supported.\n";
+        cling::errs() << "Only precompiled header or preprocessor "
+                        "output is supported.\n";
         return nullptr;
       }
       if (!SetupCompiler(CI.get(), true))
         return nullptr;
 
       ProcessWarningOptions(*Diags, DiagOpts);
-      ExecuteCompilerInvocation(CI.get());
       return CI.release();
     }
 
@@ -941,7 +945,8 @@ CompilerInstance* CIFactory::createCI(llvm::StringRef Code,
                                       const InvocationOptions& Opts,
                                       const char* LLVMDir) {
   return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code),
-                      Opts.CompilerOpts, LLVMDir, false /*OnlyLex*/);
+                      Opts.CompilerOpts, LLVMDir, false /*OnlyLex*/,
+                      Opts.Inputs.size() > 0);
 }
 
 CompilerInstance* CIFactory::createCI(MemBufPtr_t Buffer, int argc,

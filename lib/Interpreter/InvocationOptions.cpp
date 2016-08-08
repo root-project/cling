@@ -114,7 +114,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
   for (const Arg* arg : Args) {
     switch (arg->getOption().getID()) {
       // case options::OPT_d_Flag:
-      // case options::OPT_E:
+      case options::OPT_E:
       case options::OPT_o: HasOutput = true; break;
       case options::OPT_x: Language = true; break;
       case options::OPT_resource_dir: ResourceDir = true; break;
