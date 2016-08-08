@@ -70,6 +70,7 @@ matrix:
       sudo: required
       dist: trusty
       env: CXX_COMPILER='g++-4.9' CC_COMPILER='gcc-4.9' BUILD_TYPE='Release'
+           TIMEOUT=3000
 
 
   # 3. OSX Clang Builds
