@@ -200,6 +200,46 @@ static bool getWindowsSDKDir(std::string &path) {
   return false;
 }
 
+// Find the most recent version of Universal CRT or Windows 10 SDK.
+// vcvarsqueryregistry.bat from Visual Studio 2015 sorts entries in the include
+// directory by name and uses the last one of the list.
+// So we compare entry names lexicographically to find the greatest one.
+static bool getWindows10SDKVersion(const std::string &SDKPath,
+                                   std::string &SDKVersion) {
+  SDKVersion.clear();
+
+  std::error_code EC;
+  llvm::SmallString<128> IncludePath(SDKPath);
+  llvm::sys::path::append(IncludePath, "Include");
+  for (llvm::sys::fs::directory_iterator DirIt(IncludePath, EC), DirEnd;
+       DirIt != DirEnd && !EC; DirIt.increment(EC)) {
+    if (!llvm::sys::fs::is_directory(DirIt->path()))
+      continue;
+    StringRef CandidateName = llvm::sys::path::filename(DirIt->path());
+    // If WDK is installed, there could be subfolders like "wdf" in the
+    // "Include" directory.
+    // Allow only directories which names start with "10.".
+    if (!CandidateName.startswith("10."))
+      continue;
+    if (CandidateName > SDKVersion)
+      SDKVersion = CandidateName;
+  }
+  return !SDKVersion.empty();
+}
+
+static bool getUniversalCRTSdkDir(std::string &Path,
+                                  std::string &UCRTVersion) {
+  // vcvarsqueryregistry.bat for Visual Studio 2015 queries the registry
+  // for the specific key "KitsRoot10". So do we.
+  char sPath[256];
+  if (!getSystemRegistryString(
+          "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows Kits\\Installed Roots",
+          "KitsRoot10", sPath, sizeof(sPath)))
+    return false;
+  Path = sPath;
+  return getWindows10SDKVersion(Path, UCRTVersion);
+}
+
   // Get Visual Studio installation directory.
 static bool getVisualStudioDir(std::string &path) {
   // First check the environment variables that vsvars32.bat sets.
@@ -435,6 +475,13 @@ namespace {
           HostCXXI.push_back("-I");
           HostCXXI.push_back(VSDir + "\\VC\\PlatformSDK\\Include");
         }
+      }
+      std::string UniversalCRTSdkPath;
+      std::string UCRTVersion;
+
+      if (getUniversalCRTSdkDir(UniversalCRTSdkPath, UCRTVersion)) {
+        HostCXXI.push_back("-I");
+        HostCXXI.push_back(UniversalCRTSdkPath + "\\Include\\" + UCRTVersion + "\\ucrt");
       }
 #else // _MSC_VER
       // Skip LLVM_CXX execution if -nostdinc++ was provided.
