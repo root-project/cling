@@ -40,6 +40,8 @@ Experimental Features
 * Dynamic Scopes:
 * Precompiled Headers: cling now has the ability to generate precompiled headers
 cling -x c++-header InputHeader.h -o Output.pch
+* Preprocessed Output: cling now has the ability to generate preprocessed output
+cling -E -dM will show all preprocessor definitions
 
 
 Fixed Bugs

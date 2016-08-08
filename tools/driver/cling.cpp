@@ -13,6 +13,7 @@
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/FrontendTool/Utils.h"
 
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/PrettyStackTrace.h"
@@ -50,6 +51,7 @@ static int checkDiagErrors(clang::CompilerInstance* CI, unsigned* OutErrs = 0) {
   return Errs ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+
 int main( int argc, char **argv ) {
 
   llvm::llvm_shutdown_obj shutdownTrigger;
@@ -79,8 +81,10 @@ int main( int argc, char **argv ) {
   if (!interp.isValid()) {
     unsigned ErrsReported = 0;
     if (clang::CompilerInstance* CI = interp.getCIOrNull()) {
-      // If output requested let the DiagnosticsEngine determine the result code
-      if (interp.getOptions().CompilerOpts.HasOutput)
+      // If output requested and execution succeeded let the DiagnosticsEngine
+      // determine the result code
+      if (interp.getOptions().CompilerOpts.HasOutput &&
+          ExecuteCompilerInvocation(CI))
         return checkDiagErrors(CI);
 
       checkDiagErrors(CI, &ErrsReported);
@@ -92,8 +96,10 @@ int main( int argc, char **argv ) {
 
     return EXIT_FAILURE;
   }
+
   if (interp.getOptions().Help || interp.getOptions().ShowVersion)
     return EXIT_SUCCESS;
+
 
   interp.AddIncludePath(".");
 
