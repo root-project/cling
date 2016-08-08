@@ -144,15 +144,15 @@ script:
 - ccache -s
 
 notifications:
-  recipients:
-    - cling-dev@cern.ch
   email:
+    recipients:
+      - cling-dev@cern.ch
     on_success: change
     on_failure: always
-  template:
-    - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"
-    - "Build details: %{build_url}"
-    - "Change view : %{compare_url}"
+    template:
+      - "%{repository}/%{branch} (%{commit} - %{author}): %{message}"
+      - "Build details: %{build_url}"
+      - "Change view : %{compare_url}"
 
 before_deploy:
 - |
