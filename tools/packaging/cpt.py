@@ -46,7 +46,6 @@ import zipfile
 from email.utils import formatdate
 from datetime import tzinfo
 import time
-import pip
 import multiprocessing
 import fileinput
 import stat
@@ -147,6 +146,9 @@ def box_draw(msg):
 +-----------------------------------------------------------------------------+''' % (msg, spacer))
 
 def pip_install(package):
+    # Needs brew install python. We should only install if we need the
+    # functionality
+    import pip
     pip.main(['install', '--ignore-installed', '--prefix', os.path.join(workdir, 'pip'), '--upgrade', package])
 
 
