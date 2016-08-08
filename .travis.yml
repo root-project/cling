@@ -67,7 +67,10 @@ matrix:
     - os: linux
       compiler: gcc
       addons: *gcc49
-      env: CXX_COMPILER='g++-4.9' CC_COMPILER='gcc-4.9' BUILD_TYPE='Debug'
+      sudo: required
+      dist: trusty
+      env: CXX_COMPILER='g++-4.9' CC_COMPILER='gcc-4.9' BUILD_TYPE='Release'
+
 
   # 3. OSX Clang Builds
 
