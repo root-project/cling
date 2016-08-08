@@ -1,5 +1,10 @@
-# Test runner infrastructure for Cling. This configures the Cling test trees
-# for use by Lit, and delegates to LLVM's lit test handlers.
+#------------------------------------------------------------------------------
+# CLING - the C++ LLVM-based InterpreterG :)
+#
+# This file is dual-licensed: you can choose to license it under the University
+# of Illinois Open Source License or the GNU Lesser General Public License. See
+# LICENSE.TXT for details.
+#------------------------------------------------------------------------------
 
 if (CMAKE_CFG_INTDIR STREQUAL ".")
   set(LLVM_BUILD_MODE ".")
