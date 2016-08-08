@@ -1,125 +1,40 @@
-#------------------------------------------------------------------------------
-# CLING - the C++ LLVM-based InterpreterG :)
-#
-# This file is dual-licensed: you can choose to license it under the University
-# of Illinois Open Source License or the GNU Lesser General Public License. See
-# LICENSE.TXT for details.
-#------------------------------------------------------------------------------
+# Test runner infrastructure for Cling. This configures the Cling test trees
+# for use by Lit, and delegates to LLVM's lit test handlers.
 
-set(CLING_TEST_DIRECTORIES
-  "ErrorRecovery"
-  "Extensions"
-  "LibraryCall"
-  "NullDeref"
-  "Prompt"
-  "Recursion"
-  "SourceCall")
+if (CMAKE_CFG_INTDIR STREQUAL ".")
+  set(LLVM_BUILD_MODE ".")
+else ()
+  set(LLVM_BUILD_MODE "%(build_mode)s")
+endif ()
 
-set(LLVM_SOURCE_DIR "${LLVM_MAIN_SRC_DIR}")
-set(LLVM_BINARY_DIR "${LLVM_BINARY_DIR}")
-set(LLVM_BUILD_MODE "%(build_mode)s")
-set(LLVM_TOOLS_DIR "${LLVM_TOOLS_BINARY_DIR}/%(build_config)s")
-set(LLVM_LIBS_DIR "${LLVM_BINARY_DIR}/lib/%(build_config)s")
-set(CLING_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
-set(CLING_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/..")
-set(TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
-set(TARGET_SHLIBEXT "${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
-if(BUILD_SHARED_LIBS)
-  set(ENABLE_SHARED 1)
-else()
-  set(ENABLE_SHARED 0)
-endif(BUILD_SHARED_LIBS)
-
-configure_file(
+configure_lit_site_cfg(
   ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in
-  ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg)
+  ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
+  )
 
-#configure_file(
-#  ${CMAKE_CURRENT_SOURCE_DIR}/Unit/lit.site.cfg.in
-#  ${CMAKE_CURRENT_BINARY_DIR}/Unit/lit.site.cfg
-#  @ONLY)
+option(CLING_TEST_USE_VG "Run Cling tests under Valgrind" OFF)
+if(CLING_TEST_USE_VG)
+  set(CLING_TEST_EXTRA_ARGS ${CLING_TEST_EXTRA_ARGS} "--vg")
+endif ()
 
-include(FindPythonInterp)
-if(PYTHONINTERP_FOUND)
-  if( LLVM_MAIN_SRC_DIR )
-    set(LIT "${LLVM_SOURCE_DIR}/utils/lit/lit.py")
-  else()
-    set(LIT "${PATH_TO_LLVM_BUILD}/bin/${CMAKE_CFG_INTDIR}/llvm-lit")
-    # Installed LLVM does not contain ${CMAKE_CFG_INTDIR} in paths.
-    if( NOT EXISTS ${LIT} )
-      set(LIT "${PATH_TO_LLVM_BUILD}/bin/llvm-lit")
-    endif()
-  endif()
+list(APPEND CLING_TEST_DEPS cling)
 
-  if( PATH_TO_LLVM_BUILD )
-    set(CLING_TEST_EXTRA_ARGS "--path=${CLING_BINARY_DIR}/bin/${CMAKE_CFG_INTDIR}")
-  endif()
+set(CLING_TEST_PARAMS
+  cling_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
+  )
 
-  option(CLING_TEST_USE_VG "Run Cling tests under Valgrind" OFF)
-  if(CLING_TEST_USE_VG)
-    set(CLING_TEST_EXTRA_ARGS ${CLING_TEST_EXTRA_ARGS} "--vg")
-  endif ()
+add_custom_target(cling-test-depends DEPENDS ${CLING_TEST_DEPS})
 
-  set(LIT_ARGS "${CLING_TEST_EXTRA_ARGS} ${LLVM_LIT_ARGS}")
-  separate_arguments(LIT_ARGS)
+add_lit_testsuite(check-cling "Running the Cling regression tests"
+  ${CMAKE_CURRENT_BINARY_DIR}
+  #LIT ${LLVM_LIT}
+  PARAMS ${CLING_TEST_PARAMS}
+  DEPENDS ${CLING_TEST_DEPS}
+  ARGS ${CLING_TEST_EXTRA_ARGS}
+  )
+set_target_properties(check-cling PROPERTIES FOLDER "Cling tests")
 
-  add_custom_target(cling-test.deps)
-  set_target_properties(cling-test.deps PROPERTIES FOLDER "Cling tests")
-
-  add_custom_target(check-cling
-    COMMAND ${PYTHON_EXECUTABLE}
-                ${LIT}
-                --param cling_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
-                --param cling_unit_site_config=${CMAKE_CURRENT_BINARY_DIR}/Unit/lit.site.cfg
-                --param build_config=${CMAKE_CFG_INTDIR}
-                --param build_mode=${RUNTIME_BUILD_MODE}
-                ${LIT_ARGS}
-                \$\(if $(TESTDIRS),$(TESTDIRS),.\)
-                COMMENT "Running Cling regression tests")
-
-  # Add a legacy target spelling: cling-test
-  add_custom_target(cling-test)
-  add_dependencies(cling-test check-cling)
-
-add_custom_command(OUTPUT cling-headers.stamp
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/include/llvm
-                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/llvm
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/include/llvm-c
-                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/llvm-c
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../../llvm/src/tools/clang/include/clang
-                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/clang
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/tools/clang/include/clang
-                           ${CMAKE_CURRENT_BINARY_DIR}/../../llvm/src/include/clang
-                   COMMAND ${CMAKE_COMMAND} -E touch cling-headers.stamp)
-add_custom_target(cling-headers DEPENDS cling-headers.stamp)
-
-#  if( NOT CLING_BUILT_STANDALONE )
-#    add_custom_target(check-all
-#      COMMAND ${PYTHON_EXECUTABLE}
-#                ${LIT}
-#                --param build_config=${CMAKE_CFG_INTDIR}
-#                --param build_mode=${RUNTIME_BUILD_MODE}
-#                ${LIT_ARGS}
-#                ${LLVM_BINARY_DIR}/test
-#                ${CMAKE_CURRENT_BINARY_DIR}
-#                COMMENT "Running Cling and LLVM regression tests")
-#    add_dependencies(check-all cling-test.deps)
-#    if ( LLVM_INCLUDE_TESTS )
-#      add_dependencies(cling-test.deps ClangUnitTests)
-#      add_dependencies(check-all check.deps)
-#    endif ( LLVM_INCLUDE_TESTS )
-#    add_dependencies(cling-test.deps
-#                     llvm-dis llc opt
-#                     FileCheck count not
-#                     )
-#  endif()
-
-  add_dependencies(cling-test cling-test.deps)
-  add_dependencies(cling-test.deps
-                   cling clang FileCheck c-index-test diagtool arcmt-test c-arcmt-test)
-endif()
+# Add a legacy target spelling: cling-test
+add_custom_target(cling-test)
+add_dependencies(cling-test check-cling)
+set_target_properties(cling-test PROPERTIES FOLDER "Cling tests")
