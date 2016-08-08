@@ -118,19 +118,17 @@ before_script:
 - export CXX=${CXX_COMPILER}
 - export PATH=$CLING_LOCAL_BIN:$PATH
 
-#- export
-#- which ccache
 - $CMAKE --version
 - $CC --version
 - $CXX --version
 
 script:
 - |
-  # Move the tag to newest master
-  git tag --force cling-nightlies HEAD
-  git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
-
   if [ -z $TRAVIS_TAG ]; then
+    # Move the tag to newest master
+    git tag --force cling-nightlies HEAD
+    git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
+
     timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --verbose --debug-on-error
   else
     tools/packaging/cpt.py --tarball-tag=$TRAVIS_TAG --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
