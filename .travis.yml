@@ -22,6 +22,7 @@ env:
     - CLING_BUILD_DEPS=$TRAVIS_BUILD_DIR/deps/
     - CLING_LOCAL_BIN=$TRAVIS_BUILD_DIR/bin/
     - TIMEOUT=0
+    - EXECUTE_COMMAND=
     - secure: "DQSDJnYWR7kb2ylcE1e4GIfP9KJadHjG696HelK09zmsTJiRoxg2HhDnm3gHkrPh18AxYJAMW1rZHm0ZsnBKpS09NxOcPVseL+z3iWfBFpgCa2ueUMKHy/YBhNghmLOXVeQzGwol6iCU5xbO4ZMJHpytmQCH6Vm9ws7sg8kiatY="
 
 
@@ -66,11 +67,15 @@ matrix:
 
     - os: linux
       compiler: gcc
-      addons: *gcc49
+      #addons: *gcc49
+      addons:
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['binutils-gold']
       sudo: required
       dist: trusty
-      env: CXX_COMPILER='g++-4.9' CC_COMPILER='gcc-4.9' BUILD_TYPE='Release'
-           TIMEOUT=2400
+      env: CXX_COMPILER='g++-4.8' CC_COMPILER='gcc-4.8' BUILD_TYPE='Release'
+           TIMEOUT=2400 EXECUTE_COMMAND="sudo ln -s `which gold` /usr/local/bin/ld"
 
 
   # 3. OSX Clang Builds
@@ -125,6 +130,8 @@ before_script:
 - $CMAKE --version
 - $CC --version
 - $CXX --version
+- eval $EXECUTE_COMMAND
+- ls -al `which ld` && ld -v
 
 script:
 - |
