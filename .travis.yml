@@ -146,7 +146,7 @@ script:
 notifications:
   email:
     recipients:
-      - cling-dev@cern.ch
+      #- cling-dev@cern.ch
     on_success: change
     on_failure: always
     template:
