@@ -158,23 +158,13 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime,
                            bool isChildInterp) :
-    m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
+    m_Opts(argc, argv), m_UniqueCounter(0), m_PrintDebug(false),
+    m_DynamicLookupDeclared(false), m_DynamicLookupEnabled(false),
+    m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
-    std::vector<unsigned> LeftoverArgsIdx;
-    m_Opts = InvocationOptions::CreateFromArgs(argc, argv, LeftoverArgsIdx);
-    std::vector<const char*> LeftoverArgs;
-
-    for (size_t I = 0, N = LeftoverArgsIdx.size(); I < N; ++I) {
-      LeftoverArgs.push_back(argv[LeftoverArgsIdx[I]]);
-    }
-
     m_DyLibManager.reset(new DynamicLibraryManager(getOptions()));
-
-    m_IncrParser.reset(new IncrementalParser(this, LeftoverArgs.size(),
-                                             &LeftoverArgs[0],
-                                             llvmdir, isChildInterp));
+    m_IncrParser.reset(new IncrementalParser(this, llvmdir));
 
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();

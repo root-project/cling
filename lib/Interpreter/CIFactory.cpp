@@ -9,6 +9,7 @@
 
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Utils/Paths.h"
+#include "cling/Interpreter/InvocationOptions.h"
 #include "ClingUtils.h"
 
 #include "DeclCollector.h"
@@ -461,6 +462,7 @@ static bool getISysRoot(std::string& sysRoot) {
 #endif // __APPLE__, _MSC_VER
 
 using namespace clang;
+using namespace cling;
 
 namespace {
   // This function isn't referenced outside its translation unit, but it
@@ -474,74 +476,6 @@ namespace {
     void *MainAddr = (void*) intptr_t(GetExecutablePath);
     return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
   }
-
-
-  struct CompilerOpts {
-    enum {
-      kHasMinusX      = 1,
-      kHasNoBultinInc = 2,
-      kHasNoCXXInc    = 4,
-      kHasResourceDir = 8,
-      kHasSysRoot     = 16,
-      kHasCXXVersion  = 32,
-      kHasCXXLibrary  = 64,
-      
-      kAllFlags = kHasMinusX|kHasNoBultinInc|kHasNoCXXInc|
-                  kHasResourceDir|kHasSysRoot|kHasCXXVersion|kHasCXXLibrary,
-    };
-    unsigned m_Flags;
-
-    static bool strEqual(const char* a, const char* b, size_t n) {
-      return !strncmp(a, b, n) && !a[n];
-    }
-
-    void parse(const char* arg) {
-      if (!hasMinusX() && !strncmp(arg, "-x", 2))
-        m_Flags |= kHasMinusX;
-      else if ((!hasCXXVersion() || !hasCXXLib()) && !strncmp(arg, "-std",4)) {
-        arg += 4;
-        if (!hasCXXVersion() && !strncmp(arg, "=c++", 4))
-          m_Flags |= kHasCXXVersion;
-        else if (!hasCXXLib() && !strncmp(arg, "lib=", 4))
-          m_Flags |= kHasCXXLibrary;
-      }
-      else if (!noBuiltinInc() && strEqual(arg, "-nobuiltininc", 13))
-        m_Flags |= kHasNoBultinInc;
-      else if (!noCXXIncludes() && strEqual(arg, "-nostdinc++", 11))
-        m_Flags |= kHasNoCXXInc;
-      else if (!hasRsrcPath() && strEqual(arg, "-resource-dir", 13))
-        m_Flags |= kHasResourceDir;
-#ifdef __APPLE__
-      else if (!hasSysRoot() && strEqual(arg, "-isysroot", 9))
-        m_Flags |= kHasSysRoot;
-#endif
-    }
-
-  public:
-    bool hasMinusX() const { return m_Flags & kHasMinusX; }
-    bool hasRsrcPath() const { return m_Flags & kHasResourceDir; }
-    bool hasSysRoot() const { return m_Flags & kHasSysRoot; }
-    bool noBuiltinInc() const { return m_Flags & kHasNoBultinInc; }
-    bool noCXXIncludes() const { return m_Flags & kHasNoCXXInc; }
-    bool hasCXXVersion() const { return m_Flags & kHasCXXVersion; }
-    bool hasCXXLib() const { return m_Flags & kHasCXXLibrary; }
-
-    CompilerOpts(const char* const* iarg, const char* const* earg)
-      : m_Flags(0) {
-
-      while (iarg < earg && (m_Flags != kAllFlags)) {
-        if (strEqual(*iarg, "-Xclang", 7)) {
-          // goto next arg if there is one
-          if (++iarg < earg)
-            parse(*iarg);
-        }
-        else
-          parse(*iarg);
-
-        ++iarg;
-      }
-    }
-  };
 
   class AdditionalArgList {
     typedef std::vector< std::pair<const char*,std::string> > container_t;
@@ -595,9 +529,8 @@ namespace {
   }
 
   static bool AddCxxPaths(llvm::StringRef PathStr, AdditionalArgList& Args) {
-      using namespace cling::utils;
       llvm::SmallVector<llvm::StringRef, 6> Paths;
-      if (!SplitPaths(PathStr, Paths, kFailNonExistant))
+      if (!utils::SplitPaths(PathStr, Paths, utils::kFailNonExistant))
         return false;
     
       for (llvm::StringRef Path : Paths)
@@ -610,7 +543,7 @@ namespace {
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
   static void AddHostArguments(llvm::StringRef clingBin,
                                std::vector<const char*>& args,
-                               const char* llvmdir, const CompilerOpts& opts) {
+                               const char* llvmdir, const CompilerOptions& opts) {
     static AdditionalArgList sArguments;
     if (sArguments.empty()) {
 #ifdef _MSC_VER
@@ -632,10 +565,10 @@ namespace {
       // When built with access to the proper Windows APIs, try to actually find
       // the correct include paths first.
       if (getVisualStudioDir(VSDir)) {
-        if (!opts.noCXXIncludes()) {
+        if (!opts.NoCXXInc) {
           sArguments.addArgument("-I", VSDir + "\\VC\\include");
         }
-        if (!opts.noBuiltinInc()) {
+        if (!opts.NoBuiltinInc) {
           if (getWindowsSDKDir(WindowsSDKDir)) {
             sArguments.addArgument("-I", WindowsSDKDir + "\\include");
           }
@@ -654,7 +587,7 @@ namespace {
 #else // _MSC_VER
 
       // Skip LLVM_CXX execution if -nostdinc++ was provided.
-      if (!opts.noCXXIncludes()) {
+      if (!opts.NoCXXInc) {
         // Need sArguments.empty as a check condition later
         assert(sArguments.empty() && "Arguments not empty");
 
@@ -669,7 +602,7 @@ namespace {
         clang.assign(&buffer[0], buffer.size());
 
         if (llvm::sys::fs::is_regular_file(clang)) {
-          if (!opts.hasCXXLib()) {
+          if (!opts.StdLib) {
   #if defined(_LIBCPP_VERSION)
             clang.append(" -stdlib=libc++");
   #elif defined(__GLIBCXX__)
@@ -711,7 +644,7 @@ namespace {
 
   #if defined(__APPLE__)
 
-      if (!opts.noBuiltinInc() && !opts.hasSysRoot()) {
+      if (!opts.NoBuiltinInc && !opts.SysRoot) {
         std::string sysRoot;
         if (getISysRoot(sysRoot))
           sArguments.addArgument("-isysroot", std::move(sysRoot));
@@ -719,14 +652,14 @@ namespace {
 
     #if defined(__GLIBCXX__)
       // Avoid '__float128 is not supported on this target' errors
-      if (!opts.hasCXXVersion())
+      if (!opts.StdVersion)
         sArguments.addArgument("-std=c++11");
     #endif //__GLIBCXX__
   #endif // __APPLE__
 
 #endif // _MSC_VER
 
-      if (!opts.hasRsrcPath() && !opts.noBuiltinInc()) {
+      if (!opts.ResourceDir && !opts.NoBuiltinInc) {
         std::string resourcePath;
         if (!llvmdir) {
           // FIXME: The first arg really does need to be argv[0] on FreeBSD.
@@ -943,12 +876,11 @@ namespace {
     To.insert(To.end(), From.begin(), From.end());
   }
 
-
   static void AddRuntimeIncludePaths(llvm::StringRef ClingBin,
                                      clang::HeaderSearchOptions& HOpts) {
     // Add configuration paths to interpreter's include files.
 #ifdef CLING_INCLUDE_PATHS
-      cling::utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
+      utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
 #endif
     llvm::SmallString<512> P(ClingBin);
     if (!P.empty()) {
@@ -960,17 +892,15 @@ namespace {
       // Get foo/include
       llvm::sys::path::append(P, "include");
       if (llvm::sys::fs::is_directory(P.str()))
-        cling::utils::AddIncludePaths(P.str(), HOpts, nullptr);
+        utils::AddIncludePaths(P.str(), HOpts, nullptr);
     }
   }
 
-  static CompilerInstance* createCIImpl(
-                                     std::unique_ptr<llvm::MemoryBuffer> buffer,
-                                        int argc,
-                                        const char* const *argv,
-                                        const char* llvmdir,
-                                        bool OnlyLex) {
-    // Create an instance builder, passing the llvmdir and arguments.
+  static CompilerInstance*
+  createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
+               const CompilerOptions& COpts, const char* LLVMDir,
+               bool OnlyLex) {
+    // Create an instance builder, passing the LLVMDir and arguments.
     //
 
     CheckClangCompatibility();
@@ -980,12 +910,12 @@ namespace {
     llvm::InitializeNativeTargetAsmParser();
     llvm::InitializeNativeTargetAsmPrinter();
 
-    std::string clingBin = GetExecutablePath(argv[0]);
-    CompilerOpts copts(argv, argv + argc);
-
+    const size_t argc = COpts.Remaining.size();
+    const char* const* argv = &COpts.Remaining[0];
     std::vector<const char*> argvCompile(argv, argv+1);
     argvCompile.reserve(argc+5);
-    if (!copts.hasMinusX()) {
+
+    if (!COpts.Language) {
       // We do C++ by default; append right after argv[0] if no "-x" given
       argvCompile.push_back("-x");
       argvCompile.push_back( "c++");
@@ -994,13 +924,14 @@ namespace {
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
     // Add host specific includes, -resource-dir if necessary, and -isysroot
-    AddHostArguments(clingBin, argvCompile, llvmdir, copts);
+    std::string ClingBin = GetExecutablePath(argv[0]);
+    AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts);
 
     // Be explicit about the stdlib on OS X
     // Would be nice on Linux but will warn 'argument unused during compilation'
     // when -nostdinc++ is passed
 #ifdef __APPLE__
-      if (!copts.hasCXXLib()) {
+      if (!COpts.StdLib) {
   #ifdef _LIBCPP_VERSION
         argvCompile.push_back("-stdlib=libc++");
   #elif defined(__GLIBCXX__)
@@ -1163,9 +1094,9 @@ namespace {
     const SrcMgr::SLocEntry& MainFileSLocE = SM->getSLocEntry(MainFileID);
     const SrcMgr::ContentCache* MainFileCC
       = MainFileSLocE.getFile().getContentCache();
-    if (!buffer)
-      buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/\n");
-    const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(std::move(buffer));
+    if (!Buffer)
+      Buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/\n");
+    const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(std::move(Buffer));
 
     // Set up the preprocessor
     CI->createPreprocessor(TU_Complete);
@@ -1209,7 +1140,7 @@ namespace {
       // -nobuiltininc
       clang::HeaderSearchOptions& HOpts = CI->getHeaderSearchOpts();
       if (CI->getHeaderSearchOpts().UseBuiltinIncludes)
-        AddRuntimeIncludePaths(clingBin, HOpts);
+        AddRuntimeIncludePaths(ClingBin, HOpts);
 
       // ### FIXME:
       // Want to update LLVM to 3.9 realease and better testing first, but
@@ -1228,20 +1159,18 @@ namespace {
 
 } // unnamed namespace
 
-namespace cling {
-  CompilerInstance* CIFactory::createCI(llvm::StringRef code,
-                                        int argc,
-                                        const char* const *argv,
-                                        const char* llvmdir) {
-    return createCIImpl(llvm::MemoryBuffer::getMemBuffer(code), argc, argv, llvmdir, false /*OnlyLex*/);
-  }
+CompilerInstance* CIFactory::createCI(llvm::StringRef Code,
+                                      const InvocationOptions& Opts,
+                                      const char* LLVMDir) {
+  return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code),
+                      Opts.CompilerOpts, LLVMDir, false /*OnlyLex*/);
+}
 
-  CompilerInstance* CIFactory::createCI(MemBufPtr_t buffer,
-                                        int argc,
-                                        const char* const *argv,
-                                        const char* llvmdir,
-                                        bool OnlyLex) {
-    return createCIImpl(std::move(buffer), argc, argv, llvmdir, OnlyLex);
-  }
-
-} // end namespace
+CompilerInstance* CIFactory::createCI(MemBufPtr_t Buffer,
+                                      int argc,
+                                      const char* const *argv,
+                                      const char* LLVMDir,
+                                      bool OnlyLex) {
+  return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv),
+                      LLVMDir, OnlyLex);
+}
