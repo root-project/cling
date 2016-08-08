@@ -137,9 +137,11 @@ before_script:
 script:
 - |
   if [ -z $TRAVIS_TAG ]; then
-    # Move the tag to newest master
-    git tag --force cling-nightlies HEAD
-    git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
+    if [ "$TRAVIS_BRANCH" == "master" ]; then
+      # Move the tag to newest master
+      git tag --force cling-nightlies HEAD
+      git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
+    fi
 
     timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --verbose --debug-on-error
   else
