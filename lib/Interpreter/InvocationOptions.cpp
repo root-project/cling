@@ -18,13 +18,17 @@
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <algorithm>
 #include <memory>
 
 using namespace clang;
-using namespace cling::driver::clingoptions;
+using namespace clang::driver;
 
 using namespace llvm;
 using namespace llvm::opt;
+
+using namespace cling;
+using namespace cling::driver::clingoptions;
 
 namespace {
 
@@ -57,7 +61,7 @@ namespace {
   }
 
   static void ParseStartupOpts(cling::InvocationOptions& Opts,
-                               InputArgList& Args /* , Diags */) {
+                               InputArgList& Args) {
     Opts.ErrorOut = Args.hasArg(OPT__errorout);
     Opts.NoLogo = Args.hasArg(OPT__nologo);
     Opts.ShowVersion = Args.hasArg(OPT_version);
@@ -73,70 +77,98 @@ namespace {
     }
   }
 
+  static void Extend(std::vector<std::string>& A, std::vector<std::string> B) {
+    A.reserve(A.size()+B.size());
+    for (std::string& Val: B)
+      A.push_back(std::move(Val));
+  }
+
   static void ParseLinkerOpts(cling::InvocationOptions& Opts,
                               InputArgList& Args /* , Diags */) {
-    Opts.LibsToLoad = Args.getAllArgValues(OPT_l);
-    std::vector<std::string> LibPaths = Args.getAllArgValues(OPT_L);
-    for (size_t i = 0; i < LibPaths.size(); ++i)
-      Opts.LibSearchPath.push_back(LibPaths[i]);
+    Extend(Opts.LibsToLoad, Args.getAllArgValues(OPT_l));
+    Extend(Opts.LibSearchPath, Args.getAllArgValues(OPT_L));
   }
+}
 
-  static void ParseInputs(cling::InvocationOptions& Opts,
-                          int argc, const char* const argv[]) {
-    if (argc <= 1) { return; }
-    unsigned MissingArgIndex, MissingArgCount;
-    std::unique_ptr<OptTable> OptsC1(clang::driver::createDriverOptTable());
-    Opts.Inputs.clear();
-    // see Driver::getIncludeExcludeOptionFlagMasks()
-    unsigned ExcludeOptionFlagMasks
-      = clang::driver::options::NoDriverOption | clang::driver::options::CLOption;
-    ArrayRef<const char *> ArgStrings(argv+1, argv + argc);
-    InputArgList Args(
-      OptsC1->ParseArgs(ArgStrings, MissingArgIndex, MissingArgCount,
-                        0, ExcludeOptionFlagMasks));
-    for (ArgList::const_iterator it = Args.begin(),
-           ie = Args.end(); it != ie; ++it) {
-      if ( (*it)->getOption().getKind() == Option::InputClass ) {
-          Opts.Inputs.push_back(std::string( (*it)->getValue() ) );
-      }
+CompilerOptions::CompilerOptions(int argc, const char* const* argv) :
+  Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
+  NoCXXInc(false), StdVersion(false), StdLib(false) {
+  if (argc && argv) {
+    // Preserve what's already in Remaining, the user might want to push args
+    // to clang while still using main's argc, argv
+    // insert should/usually does call reserve, but its not part of the standard
+    Remaining.reserve(Remaining.size() + argc);
+    Remaining.insert(Remaining.end(), argv, argv+argc);
+    Parse(argc, argv);
+  }
+}
+
+void CompilerOptions::Parse(int argc, const char* const argv[],
+                            std::vector<std::string>* Inputs) {
+  unsigned MissingArgIndex, MissingArgCount;
+  std::unique_ptr<OptTable> OptsC1(createDriverOptTable());
+  ArrayRef<const char *> ArgStrings(argv+1, argv + argc);
+
+  InputArgList Args(OptsC1->ParseArgs(ArgStrings, MissingArgIndex,
+                    MissingArgCount, 0,
+                    options::NoDriverOption | options::CLOption));
+
+  for (const Arg* arg : Args) {
+    switch (arg->getOption().getID()) {
+      // case options::OPT_d_Flag:
+      // case options::OPT_E:
+      // case options::OPT_o: HasOuptut = true; break;
+      case options::OPT_x: Language = true; break;
+      case options::OPT_resource_dir: ResourceDir = true; break;
+      case options::OPT_isysroot: SysRoot = true; break;
+      case options::OPT_std_EQ: StdVersion = true; break;
+      case options::OPT_stdlib_EQ: StdLib = true; break;
+      // case options::OPT_nostdlib:
+      case options::OPT_nobuiltininc: NoBuiltinInc = true; break;
+      // case options::OPT_nostdinc:
+      case options::OPT_nostdincxx: NoCXXInc = true; break;
+
+      default:
+        if (Inputs && arg->getOption().getKind() == Option::InputClass)
+          Inputs->push_back(arg->getValue());
+        break;
     }
   }
 }
 
-cling::InvocationOptions
-cling::InvocationOptions::CreateFromArgs(int argc, const char* const argv[],
-                                         std::vector<unsigned>& leftoverArgs
-                                         /* , Diagnostic &Diags */) {
-  InvocationOptions ClingOpts;
-  std::unique_ptr<OptTable> Opts(CreateClingOptTable());
-  unsigned MissingArgIndex, MissingArgCount;
-  // see Driver::getIncludeExcludeOptionFlagMasks()
-  unsigned ExcludeOptionFlagMasks
-    = clang::driver::options::NoDriverOption | clang::driver::options::CLOption;
-    ArrayRef<const char *> ArgStrings(argv, argv + argc);
-  InputArgList Args(
-    Opts->ParseArgs(ArgStrings, MissingArgIndex, MissingArgCount,
-                    0, ExcludeOptionFlagMasks));
+InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
+  MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
+  Verbose(false), Help(false) {
 
-  //if (MissingArgCount)
-  //  Diags.Report(diag::err_drv_missing_argument)
-  //    << Args->getArgString(MissingArgIndex) << MissingArgCount;
+  ArrayRef<const char *> ArgStrings(argv, argv + argc);
+  unsigned MissingArgIndex, MissingArgCount;
+  std::unique_ptr<OptTable> Opts(CreateClingOptTable());
+
+  InputArgList Args(Opts->ParseArgs(ArgStrings, MissingArgIndex,
+                    MissingArgCount, 0,
+                    options::NoDriverOption | options::CLOption));
 
   // Forward unknown arguments.
-  for (ArgList::const_iterator it = Args.begin(),
-         ie = Args.end(); it != ie; ++it) {
-    if ((*it)->getOption().getKind() == Option::UnknownClass
-        ||(*it)->getOption().getKind() == Option::InputClass) {
-      leftoverArgs.push_back((*it)->getIndex());
+  for (const Arg* arg : Args) {
+    switch (arg->getOption().getKind()) {
+      case Option::UnknownClass:
+      case Option::InputClass:
+        // prune "-" we need to control where it appears when invoking clang
+        if (!arg->getSpelling().equals("-"))
+          CompilerOpts.Remaining.push_back(argv[arg->getIndex()]);
+      default:
+        break;
     }
   }
-  ParseStartupOpts(ClingOpts, Args /* , Diags */);
-  ParseLinkerOpts(ClingOpts, Args /* , Diags */);
-  ParseInputs(ClingOpts, argc, argv);
-  return ClingOpts;
+
+  // Get Input list and any compiler specific flags we're interested in
+  CompilerOpts.Parse(argc, argv, &Inputs);
+
+  ParseStartupOpts(*this, Args);
+  ParseLinkerOpts(*this, Args);
 }
 
-void cling::InvocationOptions::PrintHelp() {
+void InvocationOptions::PrintHelp() {
   std::unique_ptr<OptTable> Opts(CreateClingOptTable());
 
   Opts->PrintHelp(llvm::outs(), "cling",
@@ -144,8 +176,7 @@ void cling::InvocationOptions::PrintHelp() {
 
   llvm::outs() << "\n\n";
 
-  std::unique_ptr<OptTable> OptsC1(clang::driver::createDriverOptTable());
+  std::unique_ptr<OptTable> OptsC1(createDriverOptTable());
   OptsC1->PrintHelp(llvm::outs(), "clang -cc1",
                     "LLVM 'Clang' Compiler: http://clang.llvm.org");
-
 }

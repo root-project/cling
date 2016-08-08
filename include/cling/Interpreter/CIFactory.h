@@ -24,19 +24,22 @@ namespace clang {
 }
 
 namespace cling {
+  class InvocationOptions;
+
   class CIFactory {
   public:
     typedef std::unique_ptr<llvm::MemoryBuffer> MemBufPtr_t;
-    // TODO: Add overload that takes file not MemoryBuffer
-    static clang::CompilerInstance* createCI(llvm::StringRef code,
-                                             int argc,
-                                             const char* const *argv,
-                                             const char* llvmdir);
 
-    static clang::CompilerInstance* createCI(MemBufPtr_t buffer,
-                                             int argc,
-                                             const char* const *argv,
-                                             const char* llvmdir,
+    // TODO: Add overload that takes file not MemoryBuffer
+
+    static clang::CompilerInstance* createCI(llvm::StringRef Code,
+                                             const InvocationOptions& Opts,
+                                             const char* LLVMDir);
+
+    static clang::CompilerInstance* createCI(MemBufPtr_t Buffer,
+                                             int Argc,
+                                             const char* const *Argv,
+                                             const char* LLVMDir,
                                              bool OnlyLex = false);
 
   private:
