@@ -159,7 +159,7 @@ before_deploy:
 - |
   export RELEASE_TARBALL=$(ls $HOME/ci/build/cling*.tar.bz2)
   if [[ $TRAVIS_TAG -eq "cling-nightlies" ]]; then
-    NIGHTLY=$(`dirname $RELEASE_TARBALL`/`date "+%Y-%b-%d-"``basename $RELEASE_TARBALL`)
+    NIGHTLY="`dirname $RELEASE_TARBALL`/`date "+%Y-%b-%d-"``basename $RELEASE_TARBALL`"
     echo "Renaming $RELEASE_TARBALL to $NIGHTLY"
     mv $RELEASE_TARBALL $NIGHTLY
     export RELEASE_TARBALL=$NIGHTLY
