@@ -3,7 +3,7 @@ Introduction
 
 This document contains the release notes for the interactive C++ interpreter
 Cling, release 0.4. Cling is built on top of [Clang](http://clang.llvm.org) and
-[LLVM](http://llvm.org>) compiler infrastructure Here we
+[LLVM](http://llvm.org>) compiler infrastructure. Here we
 describe the status of Cling in some detail, including major
 improvements from the previous release and new feature work.
 
