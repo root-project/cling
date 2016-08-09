@@ -105,3 +105,18 @@ litigation.
 License
 -------
 Please see our [LICENSE](LICENSE.TXT).
+
+
+Releases
+--------
+Our release steps to follow when cutting a new release:
+  1. Update [release notes](docs/ReleaseNotes.md)
+  2. Remove `~dev` prefx from [VERSION](VERSION)
+  3. Add a new entry in the news section of our [website](www/news.html)
+  4. Commit the changes.
+  5. `git tag -a v0.x -m "Tagging release v0.x"`
+  6. Create a draft release in github and copy the contents of the release notes.
+  7. Wait for green builds.
+  8. Upload binaries to github (Travis should do this automatically).
+  9. Publish the tag and announce it on the mailing list.
+  10. Increment the current version and append `~dev`.
