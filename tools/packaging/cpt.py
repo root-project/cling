@@ -404,7 +404,6 @@ def compile(arg):
 
     build_type = 'Debug' if args.get('create_dev_env') else 'Release'
     cmake_config_flags = (
-            '-DLLVM_ENABLE_LIBCXX=ON '
             '-DCMAKE_BUILD_TYPE={0} '
             '-DLLVM_TARGETS_TO_BUILD=host '
             '-DCMAKE_INSTALL_PREFIX={1} '
