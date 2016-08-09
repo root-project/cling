@@ -111,7 +111,7 @@ Releases
 --------
 Our release steps to follow when cutting a new release:
   1. Update [release notes](docs/ReleaseNotes.md)
-  2. Remove `~dev` prefx from [VERSION](VERSION)
+  2. Remove `~dev` suffix from [VERSION](VERSION)
   3. Add a new entry in the news section of our [website](www/news.html)
   4. Commit the changes.
   5. `git tag -a v0.x -m "Tagging release v0.x"`
