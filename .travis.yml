@@ -188,5 +188,16 @@ deploy:
 
 after_failure:
 - |
+  echo "Dumping CMakeOutput.log"
   cat /home/travis/ci/build/builddir/CMakeFiles/CMakeOutput.log
+- |
+  echo "Dumping CMakeError.log"
   cat /home/travis/ci/build/builddir/CMakeFiles/CMakeError.log
+- |
+  echo "Dumping cling-compiledata.h..."
+  COMPILE_DATA_H=$HOME/ci/build/builddir/tools/cling/lib/Interpreter/cling-compiledata.h
+  cat $COMPILE_DATA_H
+
+  echo "Running cling-compiledata compiler..."
+  COMPDATA_CXX=$(cat $COMPILE_DATA_H | cut -c 18- | sed "s,\",,g")
+  eval echo | LC_ALL=C $COMPDATA_CXX -xc++ -E -v -
