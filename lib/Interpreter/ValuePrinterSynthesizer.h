@@ -37,10 +37,6 @@ namespace cling {
     ///
     clang::ASTContext* m_Context;
 
-    ///\brief Stream to dump values into.
-    ///
-    std::unique_ptr<llvm::raw_ostream> m_ValuePrinterStream;
-
     ///\brief cling runtime "Cannot find cling_PrintValue(...)" cache.
     ///
     clang::LookupResult* m_LookupResult;
