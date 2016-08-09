@@ -48,6 +48,19 @@ Fixed Bugs
 ----------
 <!---Uniquify by sort ReleaseNotes.md | uniq -c | grep -v '1 ' --->
 <!---Standard MarkDown doesn't support neither variables nor <base> --->
+[ROOT-8281](https://sft.its.cern.ch/jira/browse/ROOT-8281)
+[ROOT-8270](https://sft.its.cern.ch/jira/browse/ROOT-8270)
+[ROOT-8267](https://sft.its.cern.ch/jira/browse/ROOT-8267)
+[ROOT-8253](https://sft.its.cern.ch/jira/browse/ROOT-8253)
+[ROOT-8233](https://sft.its.cern.ch/jira/browse/ROOT-8233)
+[ROOT-8225](https://sft.its.cern.ch/jira/browse/ROOT-8225)
+[ROOT-8077](https://sft.its.cern.ch/jira/browse/ROOT-8077)
+[ROOT-7947](https://sft.its.cern.ch/jira/browse/ROOT-7947)
+[ROOT-7943](https://sft.its.cern.ch/jira/browse/ROOT-7943)
+[ROOT-7858](https://sft.its.cern.ch/jira/browse/ROOT-7858)
+[ROOT-7834](https://sft.its.cern.ch/jira/browse/ROOT-7834)
+[ROOT-7741](https://sft.its.cern.ch/jira/browse/ROOT-7741)
+[ROOT-4455](https://sft.its.cern.ch/jira/browse/ROOT-4455)
 
 
 <!---Additional Information
@@ -60,3 +73,22 @@ going into the “clang/docs/” directory in the Cling source tree.
 
 If you have any questions or comments about Cling, please feel free to contact
 us via the mailing list.--->
+
+
+Special Kudos
+=============
+This release wouldn't have happened without the efforts of our contributors,
+listed in the form of Firstname Lastname (#contributions):
+
+Vassil Vassilev (77)
+Axel Naumann (69)
+CristinaCristescu (16)
+Anirudha Bose (15)
+Frederich Munch (11)
+Bertrand Bellenot (8)
+Pere Mato (2)
+Philippe Canal (1)
+
+<!---Find contributor list for this release
+git log --pretty=format:"%an"  v0.2...master | sort | uniq -c | sort -rn
+--->
