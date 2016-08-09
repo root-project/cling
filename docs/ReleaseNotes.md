@@ -2,7 +2,7 @@ Introduction
 ============
 
 This document contains the release notes for the interactive C++ interpreter
-Cling, release 0.3. Cling is built on top of [Clang](http://clang.llvm.org) and
+Cling, release 0.4. Cling is built on top of [Clang](http://clang.llvm.org) and
 [LLVM](http://llvm.org>) compiler infrastructure Here we
 describe the status of Cling in some detail, including major
 improvements from the previous release and new feature work.
@@ -11,7 +11,7 @@ Note that if you are reading this file from a git checkout or the
 main Cling web page, this document applies to the *next* release, not
 the current one.
 
-What's New in Cling 0.3?
+What's New in Cling 0.4?
 ========================
 
 Some of the major new features and improvements to Cling are listed
@@ -20,24 +20,19 @@ infrastructure are described first.
 
 Major New Features
 ------------------
-* Support for GCC5 ABI, enabling e.g. native support for newer Fedora and Ubuntu.
-* Code completion from the prompt.
-* Rudimentary Windows support, requiring CMake nightly builds later than
-  01.08.2016 and MSVC 2015.
-* Enable C++ module builds.
+* ...
 
 Cling as a Library
 ------------------
-* Support for building cling as a shared library.
-* Improved CMake dependencies.
+* ...
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM r274612.
+* Upgrade to LLVM rXXX.
 
 Misc
 ----
-* Extend Cling's static web site.
+* ...
 
 Experimental Features
 ---------------------
@@ -48,19 +43,7 @@ Fixed Bugs
 ----------
 <!---Uniquify by sort ReleaseNotes.md | uniq -c | grep -v '1 ' --->
 <!---Standard MarkDown doesn't support neither variables nor <base> --->
-[ROOT-8281](https://sft.its.cern.ch/jira/browse/ROOT-8281)
-[ROOT-8270](https://sft.its.cern.ch/jira/browse/ROOT-8270)
-[ROOT-8267](https://sft.its.cern.ch/jira/browse/ROOT-8267)
-[ROOT-8253](https://sft.its.cern.ch/jira/browse/ROOT-8253)
-[ROOT-8233](https://sft.its.cern.ch/jira/browse/ROOT-8233)
-[ROOT-8225](https://sft.its.cern.ch/jira/browse/ROOT-8225)
-[ROOT-8077](https://sft.its.cern.ch/jira/browse/ROOT-8077)
-[ROOT-7947](https://sft.its.cern.ch/jira/browse/ROOT-7947)
-[ROOT-7943](https://sft.its.cern.ch/jira/browse/ROOT-7943)
-[ROOT-7858](https://sft.its.cern.ch/jira/browse/ROOT-7858)
-[ROOT-7834](https://sft.its.cern.ch/jira/browse/ROOT-7834)
-[ROOT-7741](https://sft.its.cern.ch/jira/browse/ROOT-7741)
-[ROOT-4455](https://sft.its.cern.ch/jira/browse/ROOT-4455)
+[ROOT-XXX](https://sft.its.cern.ch/jira/browse/ROOT-XXX)
 
 
 <!---Additional Information
@@ -80,15 +63,8 @@ Special Kudos
 This release wouldn't have happened without the efforts of our contributors,
 listed in the form of Firstname Lastname (#contributions):
 
-Vassil Vassilev (77)
-Axel Naumann (69)
-CristinaCristescu (16)
-Anirudha Bose (15)
-Frederich Munch (11)
-Bertrand Bellenot (8)
-Pere Mato (2)
-Philippe Canal (1)
+FirstName LastName (#commits)
 
 <!---Find contributor list for this release
-git log --pretty=format:"%an"  v0.2...master | sort | uniq -c | sort -rn
+git log --pretty=format:"%an"  v0.3...master | sort | uniq -c | sort -rn
 --->
