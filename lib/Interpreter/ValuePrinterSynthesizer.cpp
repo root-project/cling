@@ -32,12 +32,7 @@ namespace cling {
   ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S,
                                                    llvm::raw_ostream* Stream)
     : WrapperTransformer(S), m_Context(&S->getASTContext()),
-      m_LookupResult(nullptr) {
-    if (Stream)
-      m_ValuePrinterStream.reset(Stream);
-    else
-      m_ValuePrinterStream.reset(new llvm::raw_os_ostream(std::cout));
-  }
+      m_LookupResult(nullptr) { }
 
 
   // pin the vtable here.
