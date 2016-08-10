@@ -97,6 +97,10 @@ matrix:
     # The build falls back to an old version and fails.
     - os: linux
       compiler: clang
+    # There are linker failures, which need to be further understood.
+    - os: linux
+      dist: trusty
+
 
 install:
 # If cmake is not in the cache, download it.
