@@ -856,14 +856,12 @@ namespace {
       = FM.getDirectory(getcwd_func(cwdbuf, sizeof(cwdbuf)));
     (void)DE;
     assert(!strcmp(DE->getName(), cwdbuf) && "Unexpected name for $PWD");
-    // Build the virtual file
-    const char* Filename = "InteractiveInputLineIncluder.h";
-    const std::string& CGOptsMainFileName
-      = CI->getInvocation().getCodeGenOpts().MainFileName;
-    if (!CGOptsMainFileName.empty())
-      Filename = CGOptsMainFileName.c_str();
-    const FileEntry* FE
-      = FM.getVirtualFile(Filename, 1U << 15U, time(0));
+
+    // Build the virtual file, Give it a name that's likely not to ever
+    // be #included (so we won't get a clash in clangs cache).
+    const char* Filename = "<<< cling interactive line includer >>>";
+    const FileEntry* FE = FM.getVirtualFile(Filename, 1U << 15U, time(0));
+
     // Tell ASTReader to create a FileID even if this file does not exist:
     SM->setFileIsTransient(FE);
     FileID MainFileID = SM->createFileID(FE, SourceLocation(), SrcMgr::C_User);
