@@ -476,9 +476,11 @@ namespace {
       kHasNoCXXInc    = 4,
       kHasResourceDir = 8,
       kHasSysRoot     = 16,
+      kHasCXXVersion  = 32,
+      kHasCXXLibrary  = 64,
       
       kAllFlags = kHasMinusX|kHasNoBultinInc|kHasNoCXXInc|
-                  kHasResourceDir|kHasSysRoot,
+                  kHasResourceDir|kHasSysRoot|kHasCXXVersion|kHasCXXLibrary,
     };
     unsigned m_Flags;
 
@@ -489,6 +491,13 @@ namespace {
     void parse(const char* arg) {
       if (!hasMinusX() && !strncmp(arg, "-x", 2))
         m_Flags |= kHasMinusX;
+      else if ((!hasCXXVersion() || !hasCXXLib()) && !strncmp(arg, "-std",4)) {
+        arg += 4;
+        if (!hasCXXVersion() && !strncmp(arg, "=c++", 4))
+          m_Flags |= kHasCXXVersion;
+        else if (!hasCXXLib() && !strncmp(arg, "lib=", 4))
+          m_Flags |= kHasCXXLibrary;
+      }
       else if (!noBuiltinInc() && strEqual(arg, "-nobuiltininc", 13))
         m_Flags |= kHasNoBultinInc;
       else if (!noCXXIncludes() && strEqual(arg, "-nostdinc++", 11))
@@ -507,6 +516,8 @@ namespace {
     bool hasSysRoot() const { return m_Flags & kHasSysRoot; }
     bool noBuiltinInc() const { return m_Flags & kHasNoBultinInc; }
     bool noCXXIncludes() const { return m_Flags & kHasNoCXXInc; }
+    bool hasCXXVersion() const { return m_Flags & kHasCXXVersion; }
+    bool hasCXXLib() const { return m_Flags & kHasCXXLibrary; }
 
     CompilerOpts(const char* const* iarg, const char* const* earg)
       : m_Flags(0) {
@@ -641,9 +652,17 @@ namespace {
         llvm::sys::path::append(buffer, "clang");
         clang.assign(&buffer[0], buffer.size());
 
-        if (llvm::sys::fs::is_regular_file(clang))
-          ReadCompilerIncludePaths(clang.c_str(), buffer, sArguments);
+        if (llvm::sys::fs::is_regular_file(clang)) {
+          if (!opts.hasCXXLib()) {
+  #if defined(_LIBCPP_VERSION)
+            clang.append(" -stdlib=libc++");
+  #elif defined(__GLIBCXX__)
+            clang.append(" -stdlib=libstdc++");
   #endif
+          }
+          ReadCompilerIncludePaths(clang.c_str(), buffer, sArguments);
+        }
+  #endif // _LIBCPP_VERSION
 
         if (sArguments.empty())
           ReadCompilerIncludePaths(LLVM_CXX, buffer, sArguments);
@@ -670,20 +689,9 @@ namespace {
       }
 
     #if defined(__GLIBCXX__)
-
       // Avoid '__float128 is not supported on this target' errors
-      bool haveCXXVers = false, haveCXXLib = false;
-      for (const auto arg : args) {
-        if (!strncmp(arg, "-std=", 5))
-          haveCXXVers = true;
-        if (!strncmp(arg, "-stdlib=", 8))
-          haveCXXLib = true;
-      }
-      if (!haveCXXVers)
+      if (!opts.hasCXXVersion())
         sArguments.addArgument("-std=c++11");
-      if (!haveCXXLib)
-        sArguments.addArgument("-stdlib=libstdc++");
-
     #endif //__GLIBCXX__
   #endif // __APPLE__
 
@@ -936,6 +944,19 @@ namespace {
 
     // Add host specific includes, -resource-dir if necessary, and -isysroot
     AddHostArguments(argvCompile, llvmdir, copts);
+
+    // Be explicit about the stdlib on OS X
+    // Would be nice on Linux but will warn 'argument unused during compilation'
+    // when -nostdinc++ is passed
+#ifdef __APPLE__
+      if (!copts.hasCXXLib()) {
+  #ifdef _LIBCPP_VERSION
+        argvCompile.push_back("-stdlib=libc++");
+  #elif defined(__GLIBCXX__)
+        argvCompile.push_back("-stdlib=libstdc++");
+  #endif
+      }
+#endif
 
     argvCompile.push_back("-c");
     argvCompile.push_back("-");
