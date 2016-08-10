@@ -26,7 +26,11 @@
 #include <Windows.h>
 #include <shlobj.h>
 #else
-#include <limits.h> /* PATH_MAX */
+#ifdef __APPLE__
+ #include <sys/syslimits.h> // PATH_MAX
+#else
+ #include <limits.h> // PATH_MAX
+#endif
 #include <dlfcn.h>
 #endif
 
