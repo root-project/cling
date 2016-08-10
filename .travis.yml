@@ -24,6 +24,9 @@ env:
     - CLING_LOCAL_BIN=$TRAVIS_BUILD_DIR/bin/
     - TIMEOUT=0
     - EXECUTE_COMMAND=
+    - CXX_COMPILER=
+    - CC_COMPILER=
+    - COMPILER_VERSION=
     - secure: "DQSDJnYWR7kb2ylcE1e4GIfP9KJadHjG696HelK09zmsTJiRoxg2HhDnm3gHkrPh18AxYJAMW1rZHm0ZsnBKpS09NxOcPVseL+z3iWfBFpgCa2ueUMKHy/YBhNghmLOXVeQzGwol6iCU5xbO4ZMJHpytmQCH6Vm9ws7sg8kiatY="
 
 
@@ -53,8 +56,7 @@ matrix:
         apt:
           sources: ['llvm-toolchain-precise-3.7', 'ubuntu-toolchain-r-test']
           packages: ['clang-3.7', '^libc\+\+-dev']
-      env: CXX_COMPILER='"ccache clang++-3.7"' CC_COMPILER='"ccache clang-3.7"' BUILD_TYPE='Release'
-
+      env: CXX_COMPILER='clang++' CC_COMPILER='clang' COMPILER_VERSION='-3.7' BUILD_TYPE='Release'
 
   # 2. Linux GCC Builds
 
@@ -64,7 +66,7 @@ matrix:
         apt:
           sources: ['ubuntu-toolchain-r-test']
           packages: ['g++-4.9']
-      env: CXX_COMPILER='g++-4.9' CC_COMPILER='gcc-4.9' BUILD_TYPE='Release'
+      env: CXX_COMPILER='g++' CC_COMPILER='gcc' COMPILER_VERSION='-4.9' BUILD_TYPE='Release'
 
     - os: linux
       compiler: gcc
@@ -75,7 +77,7 @@ matrix:
           packages: ['binutils-gold']
       sudo: required
       dist: trusty
-      env: CXX_COMPILER='g++-4.8' CC_COMPILER='gcc-4.8' BUILD_TYPE='Release'
+      env: CXX_COMPILER='g++' CC_COMPILER='gcc' COMPILER_VERSION='-4.8' BUILD_TYPE='Release'
            TIMEOUT=2400 EXECUTE_COMMAND="sudo ln -s `which gold` /usr/local/bin/ld"
 
 
@@ -131,13 +133,13 @@ before_script:
 - |
   echo "Making $CXX_COMPILER$COMPILER_VERSION and $CC_COMPILER$COMPILER_VERSION default."
   mkdir -pv $CLING_LOCAL_BIN
-  echo "ccache $CXX_COMPILER$COMPILER_VERSION \$@" > $CLING_LOCAL_BIN/$CXX_COMPILER
-  echo "ccache $CC_COMPILER$COMPILER_VERSION \$@" > $CLING_LOCAL_BIN/$CC_COMPILER
+  echo -e "#!/bin/bash\nccache $CXX_COMPILER$COMPILER_VERSION \"\$@\"" > $CLING_LOCAL_BIN/$CXX_COMPILER
+  echo -e "#!/bin/bash\nccache $CC_COMPILER$COMPILER_VERSION \"\$@\"" > $CLING_LOCAL_BIN/$CC_COMPILER
+
   chmod +x $CLING_LOCAL_BIN/$CXX_COMPILER
   chmod +x $CLING_LOCAL_BIN/$CC_COMPILER
 
 - export PATH=$CLING_LOCAL_BIN:$PATH
-
 - eval $EXECUTE_COMMAND
 
 script:
@@ -195,7 +197,7 @@ deploy:
 after_failure:
 - |
   echo "Dumping env."
-  find $CLING_LOCAL_BIN -print0 -exec cat {} \;
+  find $CLING_LOCAL_BIN -type f -print0 -exec cat {} \;
   $CMAKE --version
   $CC --version
   $CXX --version
