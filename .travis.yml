@@ -53,7 +53,7 @@ matrix:
         apt:
           sources: ['llvm-toolchain-precise-3.7', 'ubuntu-toolchain-r-test']
           packages: ['clang-3.7', '^libc\+\+-dev']
-      env: CXX_COMPILER='clang++-3.7' CC_COMPILER='clang-3.7' BUILD_TYPE='Release'
+      env: CXX_COMPILER='"ccache clang++-3.7"' CC_COMPILER='"ccache clang-3.7"' BUILD_TYPE='Release'
 
 
   # 2. Linux GCC Builds
