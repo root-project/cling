@@ -128,15 +128,17 @@ install:
   fi
 
 before_script:
-- export CC=${CC_COMPILER}
-- export CXX=${CXX_COMPILER}
+- |
+  echo "Making $CXX_COMPILER$COMPILER_VERSION and $CC_COMPILER$COMPILER_VERSION default."
+  mkdir -pv $CLING_LOCAL_BIN
+  echo "ccache $CXX_COMPILER$COMPILER_VERSION \$@" > $CLING_LOCAL_BIN/$CXX_COMPILER
+  echo "ccache $CC_COMPILER$COMPILER_VERSION \$@" > $CLING_LOCAL_BIN/$CC_COMPILER
+  chmod +x $CLING_LOCAL_BIN/$CXX_COMPILER
+  chmod +x $CLING_LOCAL_BIN/$CC_COMPILER
+
 - export PATH=$CLING_LOCAL_BIN:$PATH
 
-- $CMAKE --version
-- $CC --version
-- $CXX --version
 - eval $EXECUTE_COMMAND
-- ls -al `which ld` && ld -v
 
 script:
 - |
@@ -192,6 +194,14 @@ deploy:
 
 after_failure:
 - |
+  echo "Dumping env."
+  find $CLING_LOCAL_BIN -print0 -exec cat {} \;
+  $CMAKE --version
+  $CC --version
+  $CXX --version
+  ls -al `which ld` && ld -v
+  export
+- |
   echo "Dumping CMakeOutput.log"
   cat /home/travis/ci/build/builddir/CMakeFiles/CMakeOutput.log
 - |
@@ -205,3 +215,7 @@ after_failure:
   echo "Running cling-compiledata compiler..."
   COMPDATA_CXX=$(cat $COMPILE_DATA_H | cut -c 18- | sed "s,\",,g")
   eval echo | LC_ALL=C $COMPDATA_CXX -xc++ -E -v -
+- |
+  echo "Dumping `which ccache`"
+  ccache -s
+  ls -la /usr/lib/ccache/ || ls -la /usr/local/opt/ccache/libexec
