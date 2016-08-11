@@ -11,7 +11,6 @@
 #include "ClingUtils.h"
 
 #include "DeclCollector.h"
-#include "cling-compiledata.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TargetInfo.h"
@@ -43,8 +42,9 @@
 #include <memory>
 
 #ifndef _MSC_VER
-# include <unistd.h>
-# define getcwd_func getcwd
+#include "cling-compiledata.h"
+#include <unistd.h>
+#define getcwd_func getcwd
 #endif
 
 // FIXME: This code has been taken (copied from) llvm/tools/clang/lib/Driver/WindowsToolChain.cpp
@@ -587,6 +587,29 @@ namespace {
     }
   }
 
+  static bool AddCxxPaths(llvm::StringRef PathStr, AdditionalArgList& Args) {
+    bool Success = true;
+    llvm::SmallVector<llvm::StringRef, 6> Paths;
+    for (std::pair<llvm::StringRef, llvm::StringRef> Split
+           = PathStr.split(':');
+         !Split.second.empty(); Split = PathStr.split(':')) {
+      if (!llvm::sys::fs::is_directory(Split.first)) {
+        Success = false;
+        break;
+      }
+      Paths.push_back(Split.first);
+      PathStr = Split.second;
+    }
+    // Add remaining part
+    if (Success && llvm::sys::fs::is_directory(PathStr)) {
+      for (llvm::StringRef Path : Paths)
+        Args.addArgument("-I", Path.str());
+      Args.addArgument("-I", PathStr.str());
+      return true;
+    }
+    return false;
+  }
+
 #endif
   
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
@@ -664,8 +687,21 @@ namespace {
         }
   #endif // _LIBCPP_VERSION
 
+  // first try the include directory cling was built with
+  #ifdef CLING_CXX_INCL
         if (sArguments.empty())
-          ReadCompilerIncludePaths(LLVM_CXX, buffer, sArguments);
+          AddCxxPaths(CLING_CXX_INCL, sArguments);
+  #endif
+  // Then try the absolute path i.e.: '/usr/bin/g++'
+  #ifdef CLING_CXX_PATH
+        if (sArguments.empty())
+          ReadCompilerIncludePaths(CLING_CXX_PATH, buffer, sArguments);
+  #endif
+  // Finally try the relative path 'g++'
+  #ifdef CLING_CXX_RLTV
+        if (sArguments.empty())
+          ReadCompilerIncludePaths(CLING_CXX_RLTV, buffer, sArguments);
+  #endif
 
         if (sArguments.empty()) {
           // buffer is a copy of the query string that failed

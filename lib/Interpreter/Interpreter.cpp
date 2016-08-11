@@ -10,7 +10,6 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "ClingUtils.h"
 
-#include "cling-compiledata.h"
 #include "DynamicLookup.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
