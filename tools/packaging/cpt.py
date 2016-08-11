@@ -1591,7 +1591,7 @@ os.makedirs(TMP_PREFIX)
 
 srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
-CPT_SRC_DIR = os.path.dirname(__file__)
+CPT_SRC_DIR = os.path.join(srcdir, 'tools', 'packaging')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
 LLVM_GIT_URL = args['with_llvm_url']
