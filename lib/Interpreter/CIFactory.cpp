@@ -807,18 +807,12 @@ namespace {
     CI->setInvocation(Invocation);
     CI->setDiagnostics(Diags.get());
 
-    PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
-
-    //
-    //  Buffer the error messages while we process
-    //  the compiler options.
-    //
-
     if (PCHFileName.empty()) {
       // Set the language options, which cling needs
       SetClingCustomLangOpts(CI->getLangOpts());
     }
 
+    PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
     SetPreprocessorFromBinary(PPOpts);
 
     PPOpts.addMacroDef("__CLING__");
