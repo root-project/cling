@@ -139,7 +139,7 @@ $(call stripsrc,$(CLINGDIR)/%.o): $(CLINGDIR)/%.cpp $(LLVMDEP)
 
 $(CLINGCOMPDH): FORCE $(LLVMDEP)
 	@mkdir -p $(dir $@)
-	@echo '#define LLVM_CXX "$(CXX) $(OPT) $(CLINGCXXFLAGSNOI)"' > $@_tmp
+	@echo '#define CLING_CXX_PATH "$(CXX) $(OPT) $(CLINGCXXFLAGSNOI)"' > $@_tmp
 	@diff -q $@_tmp $@ > /dev/null 2>&1 || mv $@_tmp $@
 	@rm -f $@_tmp
 
