@@ -661,8 +661,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return nullptr;
     }
 
-    clang::driver::Driver Drvr(argv[0], llvm::sys::getDefaultTargetTriple(),
-                               *Diags);
+    clang::driver::Driver Drvr(argv[0], llvm::sys::getProcessTriple(), *Diags);
     //Drvr.setWarnMissingInput(false);
     Drvr.setCheckInputsExist(false); // think foo.C(12)
     llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());
