@@ -34,6 +34,8 @@ env:
 branches:
   except:
     - /^__internal.*$/
+  only:
+    - master
 
 
 matrix:
