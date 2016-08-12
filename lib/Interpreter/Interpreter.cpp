@@ -8,8 +8,10 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Utils/Paths.h"
 #include "ClingUtils.h"
 
+#include "cling-compiledata.h"
 #include "DynamicLookup.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
@@ -298,16 +300,10 @@ namespace cling {
   void Interpreter::AddRuntimeIncludePaths(const char* argv0) {
     // Add configuration paths to interpreter's include files.
 #ifdef CLING_INCLUDE_PATHS
-    llvm::StringRef InclPaths(CLING_INCLUDE_PATHS);
-    for (std::pair<llvm::StringRef, llvm::StringRef> Split
-           = InclPaths.split(':');
-         !Split.second.empty(); Split = InclPaths.split(':')) {
-      if (llvm::sys::fs::is_directory(Split.first))
-        AddIncludePath(Split.first);
-      InclPaths = Split.second;
-    }
-    // Add remaining part
-    AddIncludePath(InclPaths);
+      llvm::SmallVector<llvm::StringRef, 6> Paths;
+      utils::SplitPaths(CLING_INCLUDE_PATHS, Paths);
+      for (llvm::StringRef Path : Paths)
+        AddIncludePath(Path);
 #endif
     llvm::SmallString<512> P(GetExecutablePath(argv0));
     if (!P.empty()
@@ -323,7 +319,6 @@ namespace cling {
       if (llvm::sys::fs::is_directory(P.str()))
         AddIncludePath(P.str());
     }
-
   }
 
   void Interpreter::IncludeCXXRuntime() {

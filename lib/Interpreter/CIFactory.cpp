@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/CIFactory.h"
+#include "cling/Utils/Paths.h"
 #include "ClingUtils.h"
 
 #include "DeclCollector.h"
@@ -588,27 +589,14 @@ namespace {
   }
 
   static bool AddCxxPaths(llvm::StringRef PathStr, AdditionalArgList& Args) {
-    bool Success = true;
-    llvm::SmallVector<llvm::StringRef, 6> Paths;
-    for (std::pair<llvm::StringRef, llvm::StringRef> Split
-           = PathStr.split(':');
-         !Split.second.empty(); Split = PathStr.split(':')) {
-      if (!llvm::sys::fs::is_directory(Split.first)) {
-        Success = false;
-        break;
-      }
-      Paths.push_back(Split.first);
-      PathStr = Split.second;
-    }
-    // Add remaining part
-    if (Success && llvm::sys::fs::is_directory(PathStr)) {
+      llvm::SmallVector<llvm::StringRef, 6> Paths;
+      if (!cling::utils::SplitPaths(PathStr, Paths, true))
+        return false;
+    
       for (llvm::StringRef Path : Paths)
         Args.addArgument("-I", Path.str());
-      Args.addArgument("-I", PathStr.str());
       return true;
     }
-    return false;
-  }
 
 #endif
   

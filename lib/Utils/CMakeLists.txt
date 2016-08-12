@@ -11,6 +11,7 @@ set( LLVM_LINK_COMPONENTS
 
 add_cling_library(clingUtils OBJECT
   AST.cpp
+  Paths.cpp
   SourceNormalization.cpp
   Validation.cpp
 
