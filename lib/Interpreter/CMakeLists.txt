@@ -253,12 +253,14 @@ if (UNIX)
         #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
         #define CLING_CXX_PATH \"${CLING_CXX_PATH} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
         #define CLING_CXX_RLTV \"${CLING_CXX_RLTV} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
+        #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
       ")
     else()
       file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
         "
         #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
         #define CLING_CXX_PATH \"${CLING_CXX_PATH} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
+        #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
       ")
     endif()
   else()
@@ -267,22 +269,28 @@ if (UNIX)
       "
       #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
       #define CLING_CXX_RLTV \"${CLING_CXX_RLTV} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
+      #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
     ")
   endif()
 
-  # Make sure this goes last so so we can pick up any changes that occured
-  # Also means cling-compiledata.h.in should be edited never cling-compiledata.h
+else()
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+      "
+      #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
+    ")
+endif()
 
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
-                     ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
-                     MAIN_DEPENDENCY ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
-                     COMMENT "Updating cling-compiledata.h")
+# Make sure this goes last so so we can pick up any changes that occured
+# Also means cling-compiledata.h.in should be edited never cling-compiledata.h
 
-  add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
-                        ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
-  add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/Interpreter.cpp
-                        ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
+                   COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                   ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+                   ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
+                   MAIN_DEPENDENCY ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+                   COMMENT "Updating cling-compiledata.h")
 
-endif() # UNIX
+add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
+                      ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
+add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/Interpreter.cpp
+                      ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)

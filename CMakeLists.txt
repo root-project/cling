@@ -356,13 +356,24 @@ if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
     )
 endif()
 
-add_definitions( -D_GNU_SOURCE
-  -DCLING_VERSION=${CLING_VERSION}
-  -DCLING_INCLUDE_PATHS="${CMAKE_INSTALL_PREFIX}/include:${CMAKE_CURRENT_SOURCE_DIR}/include:${CMAKE_CURRENT_SOURCE_DIR}/../clang/include:${CMAKE_CURRENT_SOURCE_DIR}/../../include" )
+add_definitions( -D_GNU_SOURCE -DCLING_VERSION=${CLING_VERSION})
 
 option(CLING_INCLUDE_TESTS
        "Generate build targets for the Cling unit tests."
        ${LLVM_INCLUDE_TESTS})
+
+#Allow user to prepend to list via cmake -DCLING_INCLUDE_PATHS=
+set(cling_include_deflt "\
+${CMAKE_INSTALL_PREFIX}/include:${CMAKE_CURRENT_SOURCE_DIR}/include:\
+${CMAKE_CURRENT_SOURCE_DIR}/../clang/include:\
+${CMAKE_CURRENT_SOURCE_DIR}/../../include"
+)
+
+if(NOT CLING_INCLUDE_PATHS)
+ set(CLING_INCLUDE_PATHS "${cling_include_deflt}")
+else()
+ set(CLING_INCLUDE_PATHS "${CLING_INCLUDE_PATHS}:${cling_include_deflt}")
+endif()
 
 # All targets below may depend on all tablegen'd files.
 get_property(CLANG_TABLEGEN_TARGETS GLOBAL PROPERTY CLANG_TABLEGEN_TARGETS)
