@@ -153,7 +153,7 @@ script:
       git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
     fi
 
-    timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --verbose --debug-on-error
+    timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --verbose --skip-cleanup
   else
     tools/packaging/cpt.py --tarball-tag=$TRAVIS_TAG --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
   fi
