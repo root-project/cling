@@ -28,9 +28,9 @@
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/AutoloadCallback.h"
 #include "cling/Utils/AST.h"
 #include "cling/Utils/SourceNormalization.h"
-#include "cling/Interpreter/AutoloadCallback.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/GlobalDecl.h"
@@ -388,13 +388,9 @@ namespace cling {
                                     PP.getTargetInfo().getTriple());
   }
 
-  void Interpreter::DumpIncludePath() {
-    llvm::SmallVector<std::string, 100> IncPaths;
-    GetIncludePaths(IncPaths, true /*withSystem*/, true /*withFlags*/);
-    // print'em all
-    for (unsigned i = 0; i < IncPaths.size(); ++i) {
-      llvm::errs() << IncPaths[i] <<"\n";
-    }
+  void Interpreter::DumpIncludePath(llvm::raw_ostream* S) {
+    utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(), S ? *S : llvm::outs(),
+                            true /*withSystem*/, true /*withFlags*/);
   }
 
   void Interpreter::storeInterpreterState(const std::string& name) const {
@@ -433,89 +429,10 @@ namespace cling {
   }
 
 
-  // Adapted from clang/lib/Frontend/CompilerInvocation.cpp
   void Interpreter::GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
                                    bool withSystem, bool withFlags) {
-    const HeaderSearchOptions Opts(getCI()->getHeaderSearchOpts());
-
-    if (withFlags && Opts.Sysroot != "/") {
-      incpaths.push_back("-isysroot");
-      incpaths.push_back(Opts.Sysroot);
-    }
-
-    /// User specified include entries.
-    for (unsigned i = 0, e = Opts.UserEntries.size(); i != e; ++i) {
-      const HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
-      if (E.IsFramework && E.Group != frontend::Angled)
-        llvm::report_fatal_error("Invalid option set!");
-      switch (E.Group) {
-      case frontend::After:
-        if (withFlags) incpaths.push_back("-idirafter");
-        break;
-
-      case frontend::Quoted:
-        if (withFlags) incpaths.push_back("-iquote");
-        break;
-
-      case frontend::System:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-isystem");
-        break;
-
-      case frontend::IndexHeaderMap:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-index-header-map");
-        if (withFlags) incpaths.push_back(E.IsFramework? "-F" : "-I");
-        break;
-
-      case frontend::CSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-c-isystem");
-        break;
-
-      case frontend::ExternCSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-extern-c-isystem");
-        break;
-
-      case frontend::CXXSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-cxx-isystem");
-        break;
-
-      case frontend::ObjCSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-objc-isystem");
-        break;
-
-      case frontend::ObjCXXSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-objcxx-isystem");
-        break;
-
-      case frontend::Angled:
-        if (withFlags) incpaths.push_back(E.IsFramework ? "-F" : "-I");
-        break;
-      }
-      incpaths.push_back(E.Path);
-    }
-
-    if (withSystem && !Opts.ResourceDir.empty()) {
-      if (withFlags) incpaths.push_back("-resource-dir");
-      incpaths.push_back(Opts.ResourceDir);
-    }
-    if (withSystem && withFlags && !Opts.ModuleCachePath.empty()) {
-      incpaths.push_back("-fmodule-cache-path");
-      incpaths.push_back(Opts.ModuleCachePath);
-    }
-    if (withSystem && withFlags && !Opts.UseStandardSystemIncludes)
-      incpaths.push_back("-nostdinc");
-    if (withSystem && withFlags && !Opts.UseStandardCXXIncludes)
-      incpaths.push_back("-nostdinc++");
-    if (withSystem && withFlags && Opts.UseLibcxx)
-      incpaths.push_back("-stdlib=libc++");
-    if (withSystem && withFlags && Opts.Verbose)
-      incpaths.push_back("-v");
+    utils::CopyIncludePaths(getCI()->getHeaderSearchOpts(), incpaths,
+                            withSystem, withFlags);
   }
 
   CompilerInstance* Interpreter::getCI() const {

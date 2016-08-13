@@ -12,6 +12,15 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include <string>
+
+namespace llvm {
+  class raw_ostream;
+}
+
+namespace clang {
+  class HeaderSearchOptions;
+}
 
 namespace cling {
   namespace utils {
@@ -31,6 +40,37 @@ namespace cling {
                     llvm::SmallVectorImpl<llvm::StringRef>& Paths,
                     bool EarlyOut = false,
                     llvm::StringRef Delim = llvm::StringRef(":"));
+
+    ///\brief Copies the current include paths into the HeaderSearchOptions.
+    ///
+    ///\param[in] Opts - HeaderSearchOptions to read from
+    ///\param[out] Paths - Vector to output elements into
+    ///\param[in] WithSystem - if true, incpaths will also contain system
+    ///       include paths (framework, STL etc).
+    ///\param[in] WithFlags - if true, each element in incpaths will be prefixed
+    ///       with a "-I" or similar, and some entries of incpaths will signal
+    ///       a new include path region (e.g. "-cxx-isystem"). Also, flags
+    ///       defining header search behavior will be included in incpaths, e.g.
+    ///       "-nostdinc".
+    ///
+    void CopyIncludePaths(const clang::HeaderSearchOptions& Opts,
+                          llvm::SmallVectorImpl<std::string>& Paths,
+                          bool WithSystem, bool WithFlags);
+
+    ///\brief Prints the current include paths into the HeaderSearchOptions.
+    ///
+    ///\param[in] Opts - HeaderSearchOptions to read from
+    ///\param[in] Out - Stream to dump to
+    ///\param[in] WithSystem - dump contain system paths (framework, STL etc).
+    ///\param[in] WithFlags - if true, each line will be prefixed
+    ///       with a "-I" or similar, and some entries of incpaths will signal
+    ///       a new include path region (e.g. "-cxx-isystem"). Also, flags
+    ///       defining header search behavior will be included in incpaths, e.g.
+    ///       "-nostdinc".
+    ///
+    void DumpIncludePaths(const clang::HeaderSearchOptions& Opts,
+                          llvm::raw_ostream& Out,
+                          bool WithSystem, bool WithFlags);
   }
 }
 
