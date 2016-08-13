@@ -1736,7 +1736,20 @@ if args['current_dev']:
         'utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
-    fetch_cling('master')
+
+    # Travis has already cloned the repo out, so don;t do it again
+    # Particularly important for building a pull-request
+    travisBuildDir = os.environ.get('TRAVIS_BUILD_DIR', None)
+    if travisBuildDir:
+        clingDir = os.path.join(srcdir, 'tools', 'cling')
+        os.rename(travisBuildDir, clingDir)
+        # Check validity and show some info
+        box_draw("Using Travis clone, last 5 commits:")
+        exec_subprocess_call('git log -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', clingDir)
+        print('\n')
+    else:
+        fetch_cling('master')
+
     set_version()
     if args['current_dev'] == 'tar':
         if OS == 'Windows':

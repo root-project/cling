@@ -20,8 +20,6 @@ env:
     - CCACHE_COMPRESS=1
     - CCACHE_MAXSIZE=500M
     - CCACHE_CPP2=1
-    - CLING_BUILD_DEPS=$TRAVIS_BUILD_DIR/deps/
-    - CLING_LOCAL_BIN=$TRAVIS_BUILD_DIR/bin/
     - TIMEOUT=0
     - EXECUTE_COMMAND=
     - CXX_COMPILER=
@@ -109,6 +107,9 @@ matrix:
 install:
 # If cmake is not in the cache, download it.
 - |
+  CLING_USER_ROOT=`dirname $TRAVIS_BUILD_DIR`
+  export CLING_BUILD_DEPS="$CLING_USER_ROOT/deps"
+  export CLING_LOCAL_BIN="$CLING_USER_ROOT/bin"
   if [ $TRAVIS_OS_NAME == 'linux' ]; then
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz"
     export CMAKE=$CLING_BUILD_DEPS/cmake/bin/cmake
@@ -147,7 +148,7 @@ before_script:
 script:
 - |
   if [ -z $TRAVIS_TAG ]; then
-    if [ "$TRAVIS_BRANCH" == "master" ]; then
+    if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       # Move the tag to newest master
       git tag --force cling-nightlies HEAD
       git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
