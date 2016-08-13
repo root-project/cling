@@ -385,12 +385,15 @@ namespace cling {
     ///       a new include path region (e.g. "-cxx-isystem"). Also, flags
     ///       defining header search behavior will be included in incpaths, e.g.
     ///       "-nostdinc".
+    ///
     void GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
                          bool withSystem, bool withFlags);
 
     ///\brief Prints the current include paths that are used.
     ///
-    void DumpIncludePath();
+    ///\param[in] S - stream to dump to or nullptr for default (llvm::outs)
+    ///
+    void DumpIncludePath(llvm::raw_ostream* S = nullptr);
 
     ///\brief Store the interpreter state in files
     /// Store the AST, the included files and the lookup tables
