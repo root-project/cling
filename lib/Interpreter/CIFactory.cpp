@@ -498,7 +498,6 @@ namespace {
         "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"";
       if (FILE *pf = ::popen(CppInclQuery, "r")) {
 
-        HostCXXI.push_back("-nostdinc++");
         char buf[2048];
         while (fgets(buf, sizeof(buf), pf) && buf[0]) {
           size_t lenbuf = strlen(buf);
@@ -523,7 +522,9 @@ namespace {
           "results in\n";
         int ExitCode = system(CppInclQuery);
         llvm::errs() << "with exit code " << ExitCode << "\n";
-      }
+      } else
+        HostCXXI.push_back("-nostdinc++");
+
 #endif // _MSC_VER
     }
 
