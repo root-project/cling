@@ -464,6 +464,14 @@ def build_dist_list(file_dict, include=[], ignore=[]):
 
 def install_prefix():
     set_vars()
+
+    if TRAVIS_BUILD_DIR:
+        ### Run cling once, dumping the include paths, helps debug issues
+        try:
+            subprocess.check_call(os.path.join(workdir, 'builddir', 'bin', 'cling') + ' -v ".I"', shell=True)
+        except Exception as e:
+            print(e)
+
     box_draw("Filtering Cling's libraries and binaries")
 
     dist_files = json.loads(
