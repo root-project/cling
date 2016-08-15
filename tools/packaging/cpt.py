@@ -130,6 +130,9 @@ def box_draw(msg):
 | %s%s|
 +-----------------------------------------------------------------------------+''' % (msg, spacer))
 
+# Make sure git log is invoked without a pager
+GIT_LOG='git --no-pager log '
+
 def pip_install(package):
     # Needs brew install python. We should only install if we need the
     # functionality
@@ -326,7 +329,7 @@ def set_version():
     VERSION = open(os.path.join(CLING_SRC_DIR, 'VERSION'), 'r').readline().strip()
 
     # If development release, then add revision to the version
-    REVISION = exec_subprocess_check_output('git log -n 1 --pretty=format:%H', CLING_SRC_DIR).strip()
+    REVISION = exec_subprocess_check_output(GIT_LOG + ' -n 1 --pretty=format:%H', CLING_SRC_DIR).strip()
 
     if '~dev' in VERSION:
         VERSION = VERSION + '-' + REVISION[:7]
@@ -766,7 +769,7 @@ cling (%s-1) unstable; urgency=low
 
     if '~dev' in VERSION:
         TAG = str(float(VERSION[:VERSION.find('~')]) - 0.1)
-        template = exec_subprocess_check_output('git log v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR)
+        template = exec_subprocess_check_output(GIT_LOG + ' v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR)
 
         f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
         f.write(template)
@@ -791,7 +794,7 @@ cling (%s-1) unstable; urgency=low
             f.write('cling (' + TAG + '-1) unstable; urgency=low\n')
             f.close()
             STABLE_FLAG = '1'
-            template = exec_subprocess_check_output('git log v' + CMP + '...v' + TAG + '--format="  * %s" | fmt -s',
+            template = exec_subprocess_check_output(GIT_LOG + ' v' + CMP + '...v' + TAG + '--format="  * %s" | fmt -s',
                                                     CLING_SRC_DIR)
 
             f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
@@ -807,7 +810,7 @@ cling (%s-1) unstable; urgency=low
     f.write('\nOld Changelog:\n')
     f.close()
 
-    template = exec_subprocess_check_output('git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n"', CLING_SRC_DIR)
+    template = exec_subprocess_check_output(GIT_LOG + ' v0.1 --format="  * %s%n -- %an <%ae>  %cD%n"', CLING_SRC_DIR)
 
     f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
     f.write(template.encode('utf-8'))
@@ -1745,8 +1748,7 @@ if args['current_dev']:
         os.rename(travisBuildDir, clingDir)
         # Check validity and show some info
         box_draw("Using Travis clone, last 5 commits:")
-        exec_subprocess_call('git log -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', clingDir)
-        print('\n')
+        exec_subprocess_call(GIT_LOG + ' -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', clingDir)
     else:
         fetch_cling('master')
 
