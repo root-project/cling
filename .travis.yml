@@ -134,10 +134,15 @@ install:
 
 before_script:
 - |
+  # Get the real paths of the compilers, before overriding it.
+  REAL_CXX=$(which $CXX_COMPILER$COMPILER_VERSION)
+  REAL_CC=$(which $CC_COMPILER$COMPILER_VERSION)
+
   echo "Making $CXX_COMPILER$COMPILER_VERSION and $CC_COMPILER$COMPILER_VERSION default."
   mkdir -pv $CLING_LOCAL_BIN
-  echo -e "#!/bin/bash\nccache $CXX_COMPILER$COMPILER_VERSION \"\$@\"" > $CLING_LOCAL_BIN/$CXX_COMPILER
-  echo -e "#!/bin/bash\nccache $CC_COMPILER$COMPILER_VERSION \"\$@\"" > $CLING_LOCAL_BIN/$CC_COMPILER
+
+  echo -e "#!/bin/bash\nccache $REAL_CXX \"\$@\"" > $CLING_LOCAL_BIN/$CXX_COMPILER
+  echo -e "#!/bin/bash\nccache $REAL_CC \"\$@\"" > $CLING_LOCAL_BIN/$CC_COMPILER
 
   chmod +x $CLING_LOCAL_BIN/$CXX_COMPILER
   chmod +x $CLING_LOCAL_BIN/$CC_COMPILER
