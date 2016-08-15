@@ -490,9 +490,11 @@ namespace {
           return;
         }
       }
+      // Need HostCXXI.empty as a check condition later
+      assert(HostCXXI.empty() && "HostCXXI not empty");
 
       static const char *CppInclQuery =
-        "LC_ALL=C " LLVM_CXX " -xc++ -E -v /dev/null 2>&1 >/dev/null"
+        "LC_ALL=C " LLVM_CXX " -xc++ -E -v /dev/null 2>&1 >/dev/null "
         "| awk '/^#include </,/^End of search"
         "/{if (!/^#include </ && !/^End of search/){ print }}' "
         "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"";
@@ -513,8 +515,8 @@ namespace {
         }
         ::pclose(pf);
       }
-      // HostCXXI contains at least -nostdinc++, -I
-      if (HostCXXI.size() < 3) {
+
+      if (HostCXXI.empty()) {
         llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract "
           "standard library include paths!\n"
           "Invoking:\n"
