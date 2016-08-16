@@ -114,22 +114,42 @@ void DumpIncludePaths(const clang::HeaderSearchOptions& Opts,
   }
 }
 
+void LogNonExistantDirectory(llvm::StringRef Path) {
+  llvm::errs() << "  ignoring nonexistent directory \"" << Path << "\"\n";
+}
+
 bool SplitPaths(llvm::StringRef PathStr,
                 llvm::SmallVectorImpl<llvm::StringRef>& Paths,
-                SplitMode Mode,
-                llvm::StringRef Delim) {
+                SplitMode Mode, llvm::StringRef Delim, bool Verbose) {
   bool AllExisted = true;
   for (std::pair<llvm::StringRef, llvm::StringRef> Split = PathStr.split(Delim);
        !Split.second.empty(); Split = PathStr.split(Delim)) {
-    if (!llvm::sys::fs::is_directory(Split.first)) {
-      if (Mode == kFailNonExistant)
-        return false;
-      AllExisted = false;
-      if (Mode == kAllowNonExistant)
-        Paths.push_back(Split.first);
-    } else
-      Paths.push_back(Split.first);
+    const bool Exists = llvm::sys::fs::is_directory(Split.first);
+    AllExisted = AllExisted && Exists;
 
+    if (!Exists) {
+      if (Mode == kFailNonExistant) {
+        if (Verbose) {
+          // Exiting early, but still log all non-existant paths that we have
+          LogNonExistantDirectory(Split.first);
+          while (!Split.second.empty()) {
+            Split = PathStr.split(Delim);
+            if (llvm::sys::fs::is_directory(Split.first)) {
+              llvm::errs() << "  ignoring directory that exists \""
+                           << Split.first << "\"\n";
+            } else
+              LogNonExistantDirectory(Split.first);
+            Split = Split.second.split(Delim);
+          }
+          if (!llvm::sys::fs::is_directory(Split.first))
+            LogNonExistantDirectory(Split.first);
+        }
+        return false;
+      } else if (Verbose)
+        LogNonExistantDirectory(Split.first);
+    }
+
+    Paths.push_back(Split.first);
     PathStr = Split.second;
   }
 
@@ -149,7 +169,7 @@ void AddIncludePaths(llvm::StringRef PathStr, clang::HeaderSearchOptions& HOpts,
 
   llvm::SmallVector<llvm::StringRef, 10> Paths;
   if (Delim && *Delim)
-    SplitPaths(PathStr, Paths, kAllowNonExistant, Delim);
+    SplitPaths(PathStr, Paths, kAllowNonExistant, Delim, HOpts.Verbose);
   else
     Paths.push_back(PathStr);
 
@@ -170,6 +190,12 @@ void AddIncludePaths(llvm::StringRef PathStr, clang::HeaderSearchOptions& HOpts,
   for (llvm::StringRef Path : PathsChecked)
       HOpts.AddPath(Path, clang::frontend::Angled,
                     IsFramework, IsSysRootRelative);
+
+  if (HOpts.Verbose) {
+    llvm::errs() << "Added include paths:\n";
+    for (llvm::StringRef Path : PathsChecked)
+      llvm::errs() << "  " << Path << "\n";
+  }
 }
   
 } // namespace utils

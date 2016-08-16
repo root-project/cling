@@ -359,7 +359,7 @@ static bool getISysRootVersion(const std::string& SDKs, int major,
   return false;
 }
 
-static bool getISysRoot(std::string& sysRoot) {
+static bool getISysRoot(std::string& sysRoot, bool Verbose) {
   using namespace llvm::sys;
 
   // Some versions of OS X and Server have headers installed
@@ -408,12 +408,18 @@ static bool getISysRoot(std::string& sysRoot) {
     if (majorVersion != -1 && minorVersion != -1) {
       if (getISysRootVersion(SDKs, majorVersion, minorVersion, sysRoot))
         return true;
+    
+      if (Verbose)
+        llvm::errs() << "SDK version matching current OSX not found\n";
     }
   }
 
 #define GET_ISYSROOT_VER(maj, min) \
   if (getISysRootVersion(SDKs, maj, min, sysRoot)) \
-    return true;
+    return true; \
+  if (Verbose) \
+    llvm::errs() << "SDK version matching " << maj << "." << min \
+                 << " not found (this is what cling was compiled with)\n";
 
   // Try to get the SDK for whatever cling was compiled with
   #if defined(MAC_OS_X_VERSION_10_11)
@@ -495,13 +501,17 @@ namespace {
 
   static void ReadCompilerIncludePaths(const char* Compiler,
                                        llvm::SmallVectorImpl<char>& Buf,
-                                       AdditionalArgList& Args) {
+                                       AdditionalArgList& Args,
+                                       bool Verbose) {
     std::string CppInclQuery("LC_ALL=C ");
     CppInclQuery.append(Compiler);
     CppInclQuery.append(" -xc++ -E -v /dev/null 2>&1 >/dev/null "
                         "| awk '/^#include </,/^End of search"
                         "/{if (!/^#include </ && !/^End of search/){ print }}' "
                         "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"");
+
+    if (Verbose)
+      llvm::errs() << "Looking for C++ headers with:\n  " << CppInclQuery << "\n";
 
     if (FILE *PF = ::popen(CppInclQuery.c_str(), "r")) {
       Buf.resize(Buf.capacity_in_bytes());
@@ -510,28 +520,52 @@ namespace {
         // Skip leading and trailing whitespace
         Path = Path.trim();
         if (!Path.empty()) {
-          if (llvm::sys::fs::is_directory(Path))
+          if (!llvm::sys::fs::is_directory(Path)) {
+            if (Verbose)
+              cling::utils::LogNonExistantDirectory(Path);
+          }
+          else
             Args.addArgument("-I", Path.str());
         }
       }
       ::pclose(PF);
-    } else
-      llvm::errs() << "popen failed for '" << CppInclQuery << "'\n";
+    } else {
+      llvm::errs() << "popen failed";
+      // Don't be overly verbose, we already printed the command
+      if (!Verbose)
+        llvm::errs() << " for '" << CppInclQuery << "'\n";
+    }
 
     // Return the query in Buf on failure
     if (Args.empty()) {
       Buf.resize(0);
       Buf.insert(Buf.begin(), CppInclQuery.begin(), CppInclQuery.end());
+    } else if (Verbose) {
+      llvm::errs() << "Found:\n";
+      for (const auto& Arg : Args)
+        llvm::errs() << "  " << Arg.second << "\n";
     }
   }
 
-  static bool AddCxxPaths(llvm::StringRef PathStr, AdditionalArgList& Args) {
+  static bool AddCxxPaths(llvm::StringRef PathStr, AdditionalArgList& Args,
+                          bool Verbose) {
+    if (Verbose)
+      llvm::errs() << "Looking for C++ headers in \"" << PathStr << "\"\n";
+
       llvm::SmallVector<llvm::StringRef, 6> Paths;
-      if (!utils::SplitPaths(PathStr, Paths, utils::kFailNonExistant))
+      if (!utils::SplitPaths(PathStr, Paths, utils::kFailNonExistant,
+                             ":", Verbose))
         return false;
-    
+
+      if (Verbose) {
+        llvm::errs() << "Found:\n";
+        for (llvm::StringRef Path : Paths)
+          llvm::errs() << " " << Path << "\n";
+      }
+
       for (llvm::StringRef Path : Paths)
         Args.addArgument("-I", Path.str());
+
       return true;
     }
 
@@ -543,6 +577,7 @@ namespace {
                                const char* llvmdir, const CompilerOptions& opts) {
     static AdditionalArgList sArguments;
     if (sArguments.empty()) {
+      const bool Verbose = opts.Verbose;
 #ifdef _MSC_VER
       // Honor %INCLUDE%. It should know essential search paths with vcvarsall.bat.
       if (const char *cl_include_dir = getenv("INCLUDE")) {
@@ -606,35 +641,47 @@ namespace {
             clang.append(" -stdlib=libstdc++");
   #endif
           }
-          ReadCompilerIncludePaths(clang.c_str(), buffer, sArguments);
+          ReadCompilerIncludePaths(clang.c_str(), buffer, sArguments, Verbose);
         }
   #endif // _LIBCPP_VERSION
 
   // first try the include directory cling was built with
   #ifdef CLING_CXX_INCL
         if (sArguments.empty())
-          AddCxxPaths(CLING_CXX_INCL, sArguments);
+          AddCxxPaths(CLING_CXX_INCL, sArguments, Verbose);
   #endif
   // Then try the absolute path i.e.: '/usr/bin/g++'
   #ifdef CLING_CXX_PATH
         if (sArguments.empty())
-          ReadCompilerIncludePaths(CLING_CXX_PATH, buffer, sArguments);
+          ReadCompilerIncludePaths(CLING_CXX_PATH, buffer, sArguments, Verbose);
   #endif
   // Finally try the relative path 'g++'
   #ifdef CLING_CXX_RLTV
         if (sArguments.empty())
-          ReadCompilerIncludePaths(CLING_CXX_RLTV, buffer, sArguments);
+          ReadCompilerIncludePaths(CLING_CXX_RLTV, buffer, sArguments, Verbose);
   #endif
 
         if (sArguments.empty()) {
           // buffer is a copy of the query string that failed
-          llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract "
-            "standard library include paths!\n"
-            "Invoking:\n"
-            "    " << buffer.c_str() << "\n"
-            "results in\n";
-          int ExitCode = system(buffer.c_str());
-          llvm::errs() << "with exit code " << ExitCode << "\n";
+          llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract"
+                          " standard library include paths!\n";
+
+  #if defined(CLING_CXX_PATH) || defined(CLING_CXX_RLTV)
+          // Only when ReadCompilerIncludePaths called do we have the command
+          // Verbose has already printed the command
+          if (!Verbose)
+            llvm::errs() << "Invoking:\n  " << buffer.c_str() << "\n";
+
+          llvm::errs() << "Results was:\n";
+          const int ExitCode = system(buffer.c_str());
+          llvm::errs() << "With exit code " << ExitCode << "\n";
+  #elif !defined(CLING_CXX_INCL)
+          // Technically a valid configuration that just wants to use libClangs
+          // internal header detection, but for now give a hint about why.
+          llvm::errs() << "CLING_CXX_INCL, CLING_CXX_PATH, and CLING_CXX_RLTV"
+                          " are undefined, there was probably an error during"
+                          " configuration.\n"
+  #endif
         } else
           sArguments.addArgument("-nostdinc++");
       }
@@ -643,8 +690,11 @@ namespace {
 
       if (!opts.NoBuiltinInc && !opts.SysRoot) {
         std::string sysRoot;
-        if (getISysRoot(sysRoot))
+        if (getISysRoot(sysRoot, Verbose)) {
+          if (Verbose)
+            llvm::errs() << "Using SDK \"" << sysRoot << "\"\n";
           sArguments.addArgument("-isysroot", std::move(sysRoot));
+        }
       }
 
     #if defined(__GLIBCXX__)
@@ -875,9 +925,13 @@ namespace {
 
   static void AddRuntimeIncludePaths(llvm::StringRef ClingBin,
                                      clang::HeaderSearchOptions& HOpts) {
+    if (HOpts.Verbose)
+      llvm::errs() << "Adding runtime include paths:\n";
     // Add configuration paths to interpreter's include files.
 #ifdef CLING_INCLUDE_PATHS
-      utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
+    if (HOpts.Verbose)
+      llvm::errs() << "  \"" CLING_INCLUDE_PATHS "\"\n";
+    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
 #endif
     llvm::SmallString<512> P(ClingBin);
     if (!P.empty()) {
@@ -897,6 +951,10 @@ namespace {
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
                bool OnlyLex) {
+    // Follow clang -v convention of printing version on first line
+    if (COpts.Verbose)
+      llvm::errs() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
+
     // Create an instance builder, passing the LLVMDir and arguments.
     //
 
@@ -1138,6 +1196,10 @@ namespace {
       clang::HeaderSearchOptions& HOpts = CI->getHeaderSearchOpts();
       if (CI->getHeaderSearchOpts().UseBuiltinIncludes)
         AddRuntimeIncludePaths(ClingBin, HOpts);
+
+      // Write a marker to know the rest of the output is from clang
+      if (COpts.Verbose)
+        llvm::errs() << "Setting up system headers with clang:\n";
 
       // ### FIXME:
       // Want to update LLVM to 3.9 realease and better testing first, but
