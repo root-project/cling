@@ -292,5 +292,3 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
 
 add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
                       ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
-add_file_dependencies(${CMAKE_CURRENT_SOURCE_DIR}/Interpreter.cpp
-                      ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)

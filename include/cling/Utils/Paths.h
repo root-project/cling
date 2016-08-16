@@ -25,21 +25,40 @@ namespace clang {
 namespace cling {
   namespace utils {
 
+    enum SplitMode {
+      kPruneNonExistant,  ///< Don't add non-existant paths into output
+      kFailNonExistant,   ///< Fail on any non-existant paths
+      kAllowNonExistant   ///< Add all paths whether they exist or not
+    };
+
     ///\brief Collect the constituant paths from a PATH string.
     /// /bin:/usr/bin:/usr/local/bin -> {/bin, /usr/bin, /usr/local/bin}
     ///
     /// All paths returned existed at the time of the call
     /// \param [in] PathStr - The PATH string to be split
     /// \param [out] Paths - All the paths in the string that exist
-    /// \param [in] EarlyOut - If any path doesn't exist stop and return false
+    /// \param [in] Mode - If any path doesn't exist stop and return false
     /// \param [in] Delim - The delimeter to use
     ///
     /// \return true if all paths existed, otherwise false
     ///
     bool SplitPaths(llvm::StringRef PathStr,
                     llvm::SmallVectorImpl<llvm::StringRef>& Paths,
-                    bool EarlyOut = false,
+                    SplitMode Mode = kPruneNonExistant,
                     llvm::StringRef Delim = llvm::StringRef(":"));
+
+    ///\brief Adds multiple include paths separated by a delimter into the
+    /// given HeaderSearchOptions.  This adds the paths but does no further
+    /// processing. See Interpreter::AddIncludePaths or CIFactory::createCI
+    /// for examples of what needs to be done once the paths have been added.
+    ///
+    ///\param[in] PathsStr - Path(s)
+    ///\param[in] Opts - HeaderSearchOptions to add paths into
+    ///\param[in] Delim - Delimiter to separate paths or NULL if a single path
+    ///
+    void AddIncludePaths(llvm::StringRef PathStr,
+                         clang::HeaderSearchOptions& Opts,
+                         const char* Delim = ":");
 
     ///\brief Copies the current include paths into the HeaderSearchOptions.
     ///
