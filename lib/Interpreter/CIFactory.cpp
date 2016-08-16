@@ -503,21 +503,18 @@ namespace {
                         "/{if (!/^#include </ && !/^End of search/){ print }}' "
                         "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"");
 
-    if (FILE *pf = ::popen(CppInclQuery.c_str(), "r")) {
+    if (FILE *PF = ::popen(CppInclQuery.c_str(), "r")) {
       Buf.resize(Buf.capacity_in_bytes());
-      while (fgets(&Buf[0], Buf.capacity_in_bytes(), pf) && Buf[0]) {
-        const size_t lenbuf = strlen(&Buf[0]);
-        Buf[lenbuf - 1] = 0; // remove trailing \n
-        // Skip leading whitespace:
-        const char *start = &Buf[0];
-        while (start < (&Buf[0] + lenbuf) && ::isspace(*start))
-          ++start;
-        if (*start) {
-          if (llvm::sys::fs::is_directory(start))
-            Args.addArgument("-I", start);
+      while (fgets(&Buf[0], Buf.capacity_in_bytes(), PF) && Buf[0]) {
+        llvm::StringRef Path(&Buf[0]);
+        // Skip leading and trailing whitespace
+        Path = Path.trim();
+        if (!Path.empty()) {
+          if (llvm::sys::fs::is_directory(Path))
+            Args.addArgument("-I", Path.str());
         }
       }
-      ::pclose(pf);
+      ::pclose(PF);
     } else
       llvm::errs() << "popen failed for '" << CppInclQuery << "'\n";
 
