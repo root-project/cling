@@ -59,7 +59,7 @@ namespace cling {
     return "runtime_exception\n";
   }
 
-  InvalidDerefException::~InvalidDerefException() {}
+  InvalidDerefException::~InvalidDerefException() noexcept {}
 
   const char* InvalidDerefException::what() const noexcept {
     // Invalid memory access.

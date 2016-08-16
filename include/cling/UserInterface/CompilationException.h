@@ -32,7 +32,7 @@ namespace cling {
   public:
     CompilationException(const std::string& reason):
       std::runtime_error(reason) {}
-    ~CompilationException() throw(); // vtable pinned to UserInterface.cpp
+    ~CompilationException() noexcept; // vtable pinned to UserInterface.cpp
     virtual const char* what() const throw() {
       return std::runtime_error::what(); }
   };
