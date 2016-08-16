@@ -211,7 +211,19 @@ install:
   fi
 
   # Implement a platform-independent timeout function.
-  function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+  function timeout() {
+    perl -e 'alarm shift; exec @ARGV' "$@";
+    RESULT=$?
+    if [ $RESULT -eq 142 ]; then
+      # Timout occured, pass that on to after_failure so as not to dump logs
+      export CLING_BUILD_TIMEOUT=1
+    fi
+    return $RESULT 
+  }
+
+  # If we timeout, objects can be corrupted in the cache, causing link errors
+  # Turn this on to get the mapping to the cache.o to delete
+  # export CCACHE_LOGFILE="$CLING_USER_ROOT/ccache.log"
 
   if [ ! -f $CMAKE ]; then
     mkdir -pv $CLING_BUILD_DEPS/cmake
@@ -225,6 +237,17 @@ before_script:
 
 script:
 - |
+  # Save our build result and propogate it to Travis
+  # When build succeeds, but ccache fails that should return an error
+  function run_ccache() {
+    ccache -s
+    CCACHE_RSLT="$?"
+    if [ "$1" -eq 0 ]; then
+      return $CCACHE_RSLT
+    fi
+    return $1
+  }
+
   if [ -z $TRAVIS_TAG ]; then
     if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       # Move the tag to newest master
@@ -237,16 +260,7 @@ script:
     tools/packaging/cpt.py --tarball-tag=$TRAVIS_TAG --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
   fi
 
-  ### Fail if build not complete, but mark it as such for later
-  RESULT=$?
-  if [ $RESULT -ne 0 ]; then
-    if [ $RESULT -eq 142 ]; then
-      export CLING_BUILD_TIMEOUT=1
-    fi
-    exit $RESULT
-  fi
-
-- ccache -s
+  run_ccache "$?"
 
 notifications:
   email:
@@ -282,6 +296,11 @@ deploy:
     repo: $TRAVIS_REPO_SLUG
 
 after_failure:
+- |
+  if [ -n "$CCACHE_LOGFILE" ]; then
+    echo "ccache log stored to:"
+    cat "$CCACHE_LOGFILE" | curl -sT - chunk.io
+  fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
     echo "Dumping env."
