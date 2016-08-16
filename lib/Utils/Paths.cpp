@@ -115,27 +115,61 @@ void DumpIncludePaths(const clang::HeaderSearchOptions& Opts,
 }
 
 bool SplitPaths(llvm::StringRef PathStr,
-                llvm::SmallVectorImpl<llvm::StringRef>& Paths, bool EarlyOut,
+                llvm::SmallVectorImpl<llvm::StringRef>& Paths,
+                SplitMode Mode,
                 llvm::StringRef Delim) {
   bool AllExisted = true;
   for (std::pair<llvm::StringRef, llvm::StringRef> Split = PathStr.split(Delim);
        !Split.second.empty(); Split = PathStr.split(Delim)) {
     if (!llvm::sys::fs::is_directory(Split.first)) {
-      if (EarlyOut)
+      if (Mode == kFailNonExistant)
         return false;
       AllExisted = false;
+      if (Mode == kAllowNonExistant)
+        Paths.push_back(Split.first);
     } else
       Paths.push_back(Split.first);
+
     PathStr = Split.second;
   }
 
   // Add remaining part
-  if (llvm::sys::fs::is_directory(PathStr))
-    Paths.push_back(PathStr);
-  else
+  if (!llvm::sys::fs::is_directory(PathStr)) {
     AllExisted = false;
+    if (Mode == kAllowNonExistant)
+      Paths.push_back(PathStr);
+  } else
+    Paths.push_back(PathStr);
 
   return AllExisted;
+}
+
+void AddIncludePaths(llvm::StringRef PathStr, clang::HeaderSearchOptions& HOpts,
+                     const char* Delim) {
+
+  llvm::SmallVector<llvm::StringRef, 10> Paths;
+  if (Delim && *Delim)
+    SplitPaths(PathStr, Paths, kAllowNonExistant, Delim);
+  else
+    Paths.push_back(PathStr);
+
+  // Avoid duplicates
+  llvm::SmallVector<llvm::StringRef, 10> PathsChecked;
+  for (llvm::StringRef Path : Paths) {
+    bool Exists = false;
+    for (const clang::HeaderSearchOptions::Entry& E : HOpts.UserEntries) {
+      if ((Exists = E.Path == Path))
+        break;
+    }
+    if (!Exists)
+      PathsChecked.push_back(Path);
+  }
+
+  const bool IsFramework = false;
+  const bool IsSysRootRelative = true;
+  for (llvm::StringRef Path : PathsChecked)
+      HOpts.AddPath(Path, clang::frontend::Angled,
+                    IsFramework, IsSysRootRelative);
 }
   
 } // namespace utils

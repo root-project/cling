@@ -12,6 +12,7 @@
 #include "ClingUtils.h"
 
 #include "DeclCollector.h"
+#include "cling-compiledata.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TargetInfo.h"
@@ -43,7 +44,6 @@
 #include <memory>
 
 #ifndef _MSC_VER
-#include "cling-compiledata.h"
 #include <unistd.h>
 #define getcwd_func getcwd
 #endif
@@ -463,12 +463,18 @@ static bool getISysRoot(std::string& sysRoot) {
 using namespace clang;
 
 namespace {
-  //
-  //  Dummy function so we can use dladdr to find the executable path.
-  //
-  void locate_cling_executable()
-  {
+  // This function isn't referenced outside its translation unit, but it
+  // can't use the "static" keyword because its address is used for
+  // GetMainExecutable (since some platforms don't support taking the
+  // address of main, and some platforms can't implement GetMainExecutable
+  // without being given the address of a function in the main executable).
+  std::string GetExecutablePath(const char *Argv0) {
+    // This just needs to be some symbol in the binary; C++ doesn't
+    // allow taking the address of ::main however.
+    void *MainAddr = (void*) intptr_t(GetExecutablePath);
+    return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
   }
+
 
   struct CompilerOpts {
     enum {
@@ -589,8 +595,9 @@ namespace {
   }
 
   static bool AddCxxPaths(llvm::StringRef PathStr, AdditionalArgList& Args) {
+      using namespace cling::utils;
       llvm::SmallVector<llvm::StringRef, 6> Paths;
-      if (!cling::utils::SplitPaths(PathStr, Paths, true))
+      if (!SplitPaths(PathStr, Paths, kFailNonExistant))
         return false;
     
       for (llvm::StringRef Path : Paths)
@@ -601,7 +608,8 @@ namespace {
 #endif
   
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
-  static void AddHostArguments(std::vector<const char*>& args,
+  static void AddHostArguments(llvm::StringRef clingBin,
+                               std::vector<const char*>& args,
                                const char* llvmdir, const CompilerOpts& opts) {
     static AdditionalArgList sArguments;
     if (sArguments.empty()) {
@@ -655,10 +663,7 @@ namespace {
   #ifdef _LIBCPP_VERSION
         // Try to use a version of clang that is located next to cling
         // in case cling was built with a new/custom libc++
-        std::string clang = llvm::sys::fs::getMainExecutable(
-            "cling", (void*)(uintptr_t(locate_cling_executable)));
-
-        clang = llvm::sys::path::parent_path(clang);
+        std::string clang = llvm::sys::path::parent_path(clingBin);
         buffer.assign(clang);
         llvm::sys::path::append(buffer, "clang");
         clang.assign(&buffer[0], buffer.size());
@@ -737,7 +742,7 @@ namespace {
           //
           resourcePath
             = CompilerInvocation::GetResourcesPath("cling",
-                                       (void*)(intptr_t) locate_cling_executable);
+                                            (void*)intptr_t(GetExecutablePath));
         } else {
           llvm::SmallString<512> tmp(llvmdir);
           llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_STRING);
@@ -938,6 +943,27 @@ namespace {
     To.insert(To.end(), From.begin(), From.end());
   }
 
+
+  static void AddRuntimeIncludePaths(llvm::StringRef ClingBin,
+                                     clang::HeaderSearchOptions& HOpts) {
+    // Add configuration paths to interpreter's include files.
+#ifdef CLING_INCLUDE_PATHS
+      cling::utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
+#endif
+    llvm::SmallString<512> P(ClingBin);
+    if (!P.empty()) {
+      // Remove /cling from foo/bin/clang
+      llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
+      // Remove /bin   from foo/bin
+      ExeIncl = llvm::sys::path::parent_path(ExeIncl);
+      P.resize(ExeIncl.size());
+      // Get foo/include
+      llvm::sys::path::append(P, "include");
+      if (llvm::sys::fs::is_directory(P.str()))
+        cling::utils::AddIncludePaths(P.str(), HOpts, nullptr);
+    }
+  }
+
   static CompilerInstance* createCIImpl(
                                      std::unique_ptr<llvm::MemoryBuffer> buffer,
                                         int argc,
@@ -954,6 +980,7 @@ namespace {
     llvm::InitializeNativeTargetAsmParser();
     llvm::InitializeNativeTargetAsmPrinter();
 
+    std::string clingBin = GetExecutablePath(argv[0]);
     CompilerOpts copts(argv, argv + argc);
 
     std::vector<const char*> argvCompile(argv, argv+1);
@@ -967,7 +994,7 @@ namespace {
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
     // Add host specific includes, -resource-dir if necessary, and -isysroot
-    AddHostArguments(argvCompile, llvmdir, copts);
+    AddHostArguments(clingBin, argvCompile, llvmdir, copts);
 
     // Be explicit about the stdlib on OS X
     // Would be nice on Linux but will warn 'argument unused during compilation'
@@ -1177,6 +1204,24 @@ namespace {
                                                  // ctor to the base ctor causes
                                                  // the JIT to crash
     CI->getCodeGenOpts().VerifyModule = 0; // takes too long
+
+    if (!OnlyLex) {
+      // -nobuiltininc
+      clang::HeaderSearchOptions& HOpts = CI->getHeaderSearchOpts();
+      if (CI->getHeaderSearchOpts().UseBuiltinIncludes)
+        AddRuntimeIncludePaths(clingBin, HOpts);
+
+      // ### FIXME:
+      // Want to update LLVM to 3.9 realease and better testing first, but
+      // ApplyHeaderSearchOptions shouldn't even be called here:
+      //   1. It's already been called via CI->createPreprocessor(TU_Complete)
+      //   2. It could corrupt clang's directory cache
+      // HeaderSearchOptions.::AddSearchPath is a better alternative
+
+      clang::ApplyHeaderSearchOptions(PP.getHeaderSearchInfo(), HOpts,
+                                      PP.getLangOpts(),
+                                      PP.getTargetInfo().getTriple());
+    }
 
     return CI.release(); // Passes over the ownership to the caller.
   }
