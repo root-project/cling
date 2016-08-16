@@ -425,8 +425,17 @@ def compile(arg):
     else:
         box_draw('Configure Cling with CMake')
 
+        # Don't pollute the CCACHE_LOGFILE with CMake config
+        CCACHE_LOGFILE = os.environ.get('CCACHE_LOGFILE', None)
+        if CCACHE_LOGFILE:
+            del os.environ['CCACHE_LOGFILE']
+
         exec_subprocess_call((CMAKE or 'cmake') + ' ' + cmake_config_flags, LLVM_OBJ_ROOT)
 
+        # Start the logging, we currently don't log libcpp being built above
+        if CCACHE_LOGFILE:
+            os.environ['CCACHE_LOGFILE'] = CCACHE_LOGFILE
+        
         box_draw('Building Cling (using {0} cores)'.format(cores))
         make_command = 'make -j{0} cling'.format(cores)
         if args['verbose']:
