@@ -18,6 +18,7 @@ const char* argv[] = {
   "FileToExecuteA",
   "-isysroot",
   "APAth",
+  "-nobuiltininc",
   "-v",
   "FileToExecuteB",
   "-L/Path/To/Libs",
@@ -31,12 +32,14 @@ COpts.Language
 // CHECK: (bool) true
 COpts.SysRoot
 // CHECK: (bool) true
+COpts.NoBuiltinInc
+// CHECK: (bool) true
 COpts.NoCXXInc
 // CHECK: (bool) false
 
 // library caller options: arguments passed as is
 COpts.Remaining
-// CHECK: {{.*}} { "progname", "-", "-xobjective-c", "FileToExecuteA", "-isysroot", "APAth", "-v", "FileToExecuteB", "-L/Path/To/Libs", "-lTest" }
+// CHECK: {{.*}} { "progname", "-", "-xobjective-c", "FileToExecuteA", "-isysroot", "APAth", "-nobuiltininc", "-v", "FileToExecuteB", "-L/Path/To/Libs", "-lTest" }
 
 argv[6] = "-nostdinc++";
 cling::InvocationOptions IOpts(argc, argv);
@@ -53,12 +56,14 @@ IOpts.CompilerOpts.Language
 // CHECK: (bool) true
 IOpts.CompilerOpts.SysRoot
 // CHECK: (bool) true
+IOpts.CompilerOpts.NoBuiltinInc
+// CHECK: (bool) false
 IOpts.CompilerOpts.NoCXXInc
 // CHECK: (bool) true
 
 // user options from main: filtered by cling (no '-')
 IOpts.CompilerOpts.Remaining
-// CHECK: {{.*}} { "progname", "-xobjective-c", "FileToExecuteA", "-isysroot", "APAth", "-nostdinc++", "FileToExecuteB" }
+// CHECK: {{.*}} { "progname", "-xobjective-c", "FileToExecuteA", "-isysroot", "APAth", "-nostdinc++", "-v", "FileToExecuteB" }
 
 // expected-no-diagnostics
 .q

@@ -43,6 +43,7 @@ namespace cling {
     bool NoCXXInc;
     bool StdVersion;
     bool StdLib;
+    bool Verbose;
 
     ///\brief The remaining arguments to pass to clang.
     ///
@@ -65,8 +66,8 @@ namespace cling {
     bool ErrorOut;
     bool NoLogo;
     bool ShowVersion;
-    bool Verbose;
     bool Help;
+    bool Verbose() const { return CompilerOpts.Verbose; }
 
     static void PrintHelp();
   };

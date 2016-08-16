@@ -39,13 +39,15 @@ namespace cling {
     /// \param [out] Paths - All the paths in the string that exist
     /// \param [in] Mode - If any path doesn't exist stop and return false
     /// \param [in] Delim - The delimeter to use
+    /// \param [in] Verbose - Whether to print out details as 'clang -v' would
     ///
     /// \return true if all paths existed, otherwise false
     ///
     bool SplitPaths(llvm::StringRef PathStr,
                     llvm::SmallVectorImpl<llvm::StringRef>& Paths,
                     SplitMode Mode = kPruneNonExistant,
-                    llvm::StringRef Delim = llvm::StringRef(":"));
+                    llvm::StringRef Delim = llvm::StringRef(":"),
+                    bool Verbose = false);
 
     ///\brief Adds multiple include paths separated by a delimter into the
     /// given HeaderSearchOptions.  This adds the paths but does no further
@@ -59,6 +61,11 @@ namespace cling {
     void AddIncludePaths(llvm::StringRef PathStr,
                          clang::HeaderSearchOptions& Opts,
                          const char* Delim = ":");
+
+    ///\brief Write to llvm::errs that directory does not exist in a format
+    /// matching what 'clang -v' would do
+    ///
+    void LogNonExistantDirectory(llvm::StringRef Path);
 
     ///\brief Copies the current include paths into the HeaderSearchOptions.
     ///

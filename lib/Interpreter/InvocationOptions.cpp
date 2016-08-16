@@ -65,7 +65,6 @@ namespace {
     Opts.ErrorOut = Args.hasArg(OPT__errorout);
     Opts.NoLogo = Args.hasArg(OPT__nologo);
     Opts.ShowVersion = Args.hasArg(OPT_version);
-    Opts.Verbose = Args.hasArg(OPT_v);
     Opts.Help = Args.hasArg(OPT_help);
     if (Args.hasArg(OPT__metastr, OPT__metastr_EQ)) {
       Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ);
@@ -92,7 +91,7 @@ namespace {
 
 CompilerOptions::CompilerOptions(int argc, const char* const* argv) :
   Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
-  NoCXXInc(false), StdVersion(false), StdLib(false) {
+  NoCXXInc(false), StdVersion(false), StdLib(false), Verbose(false) {
   if (argc && argv) {
     // Preserve what's already in Remaining, the user might want to push args
     // to clang while still using main's argc, argv
@@ -127,6 +126,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
       case options::OPT_nobuiltininc: NoBuiltinInc = true; break;
       // case options::OPT_nostdinc:
       case options::OPT_nostdincxx: NoCXXInc = true; break;
+      case options::OPT_v: Verbose = true; break;
 
       default:
         if (Inputs && arg->getOption().getKind() == Option::InputClass)
@@ -138,7 +138,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
 
 InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
   MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
-  Verbose(false), Help(false) {
+  Help(false) {
 
   ArrayRef<const char *> ArgStrings(argv, argv + argc);
   unsigned MissingArgIndex, MissingArgCount;
@@ -151,6 +151,10 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
   // Forward unknown arguments.
   for (const Arg* arg : Args) {
     switch (arg->getOption().getKind()) {
+      case Option::FlagClass:
+        // pass -v to clang as well
+        if (arg->getOption().getID() != OPT_v)
+          break;
       case Option::UnknownClass:
       case Option::InputClass:
         // prune "-" we need to control where it appears when invoking clang
