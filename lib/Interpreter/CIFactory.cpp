@@ -1159,18 +1159,21 @@ namespace {
 
 } // unnamed namespace
 
-CompilerInstance* CIFactory::createCI(llvm::StringRef Code,
-                                      const InvocationOptions& Opts,
-                                      const char* LLVMDir) {
+namespace cling {
+namespace CIFactory {
+
+CompilerInstance* createCI(llvm::StringRef Code, const InvocationOptions& Opts,
+                           const char* LLVMDir) {
   return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code),
                       Opts.CompilerOpts, LLVMDir, false /*OnlyLex*/);
 }
 
-CompilerInstance* CIFactory::createCI(MemBufPtr_t Buffer,
-                                      int argc,
-                                      const char* const *argv,
-                                      const char* LLVMDir,
-                                      bool OnlyLex) {
+CompilerInstance* createCI(MemBufPtr_t Buffer, int argc, const char* const *argv,
+                           const char* LLVMDir, bool OnlyLex) {
   return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv),
                       LLVMDir, OnlyLex);
 }
+
+}
+}
+
