@@ -398,6 +398,12 @@ def compile(arg):
             '../{2}'.format(build_type, TMP_PREFIX, os.path.basename(srcdir))
     )
 
+    ### FIX: Target isn't being set properly on Travis OS X
+    ### Either because ccache or maybe the virtualization environment
+    if TRAVIS_BUILD_DIR and OS == 'Darwin':
+        triple = exec_subprocess_check_output('sh %s/cmake/config.guess' % srcdir, srcdir)
+        if triple:
+            cmake_config_flags += ' -DLLVM_HOST_TRIPLE="%s" ' % triple.rstrip()
 
     if platform.system() == 'Windows':
         if not CMAKE:
@@ -1594,6 +1600,8 @@ CLING_GIT_URL = args['with_cling_url']
 #   'utf-8')
 VERSION = ''
 REVISION = ''
+# Travis needs some special behaviour
+TRAVIS_BUILD_DIR = os.environ.get('TRAVIS_BUILD_DIR', None)
 
 print('Cling Packaging Tool (CPT)')
 print('Arguments vector: ' + str(sys.argv))
@@ -1742,13 +1750,14 @@ if args['current_dev']:
 
     # Travis has already cloned the repo out, so don;t do it again
     # Particularly important for building a pull-request
-    travisBuildDir = os.environ.get('TRAVIS_BUILD_DIR', None)
-    if travisBuildDir:
+    if TRAVIS_BUILD_DIR:
         clingDir = os.path.join(srcdir, 'tools', 'cling')
-        os.rename(travisBuildDir, clingDir)
+        os.rename(TRAVIS_BUILD_DIR, clingDir)
+        TRAVIS_BUILD_DIR = clingDir
         # Check validity and show some info
         box_draw("Using Travis clone, last 5 commits:")
-        exec_subprocess_call(GIT_LOG + ' -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', clingDir)
+        exec_subprocess_call(GIT_LOG + ' -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', TRAVIS_BUILD_DIR)
+        print('\n')
     else:
         fetch_cling('master')
 
