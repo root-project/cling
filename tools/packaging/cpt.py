@@ -370,10 +370,9 @@ def set_vars():
 
 
 def compile(arg):
-    global prefix
+    global prefix, EXTRA_CMAKE_FLAGS
     prefix = arg
     PYTHON = sys.executable
-
     CMAKE = os.environ.get('CMAKE', None)
 
     cores = multiprocessing.cpu_count()
@@ -393,20 +392,21 @@ def compile(arg):
         print("Creating build directory: " + os.path.join(workdir, 'builddir'))
         os.makedirs(os.path.join(workdir, 'builddir'))
 
-    build_type = 'Debug' if args.get('create_dev_env') else 'Release'
-    cmake_config_flags = (
-            '-DCMAKE_BUILD_TYPE={0} '
-            '-DLLVM_TARGETS_TO_BUILD=host '
-            '-DCMAKE_INSTALL_PREFIX={1} '
-            '../{2}'.format(build_type, TMP_PREFIX, os.path.basename(srcdir))
-    )
-
     ### FIX: Target isn't being set properly on Travis OS X
     ### Either because ccache or maybe the virtualization environment
     if TRAVIS_BUILD_DIR and OS == 'Darwin':
         triple = exec_subprocess_check_output('sh %s/cmake/config.guess' % srcdir, srcdir)
         if triple:
-            cmake_config_flags += ' -DLLVM_HOST_TRIPLE="%s" ' % triple.rstrip()
+            EXTRA_CMAKE_FLAGS = ' -DLLVM_HOST_TRIPLE="%s" ' % triple.rstrip() + EXTRA_CMAKE_FLAGS
+
+    build_type = 'Debug' if args.get('create_dev_env') else 'Release'
+    cmake_config_flags = ( ' ../{0} '
+                    '-DCMAKE_BUILD_TYPE={1} '
+                    '-DLLVM_TARGETS_TO_BUILD=host '
+                    '-DCMAKE_INSTALL_PREFIX={2} '
+                    .format(os.path.basename(srcdir), build_type, TMP_PREFIX)
+                    + ' ' + EXTRA_CMAKE_FLAGS
+                )
 
     if platform.system() == 'Windows':
         if not CMAKE:
@@ -1551,6 +1551,7 @@ else:
 
 parser.add_argument('--make-proper', help='Internal option to support calls from build system')
 parser.add_argument('--verbose', help='Tell CMake to build with verbosity', action='store_true')
+parser.add_argument('--with-cmake-flags', help='Additional CMake configuration flags', default='')
 
 args = vars(parser.parse_args())
 
@@ -1622,6 +1623,8 @@ prefix = ''
 LLVM_GIT_URL = args['with_llvm_url']
 CLANG_GIT_URL = args['with_clang_url']
 CLING_GIT_URL = args['with_cling_url']
+EXTRA_CMAKE_FLAGS = args.get('with_cmake_flags')
+
 # llvm_revision = urlopen(
 #    "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
 #   'utf-8')
