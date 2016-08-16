@@ -36,7 +36,6 @@ namespace clang {
 namespace cling {
   class BackendPasses;
   class CompilationOptions;
-  class CIFactory;
   class DeclCollector;
   class ExecutionContext;
   class Interpreter;
