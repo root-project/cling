@@ -235,6 +235,40 @@ def fetch_llvm(llvm_revision):
     else:
         get_fresh_llvm()
 
+class RepoCache(object):
+    def __init__(self, url, rootDir, depth=10):
+        self.__url = url
+        self.__depth = depth
+        self.__projDir = rootDir
+        self.__workDir = os.path.join(rootDir, url.split('/')[-1])
+    def fetch(self, branch):
+        if os.path.isdir(self.__workDir):
+            exec_subprocess_call('git stash', self.__workDir)
+            exec_subprocess_call('git clean -f -x -d', self.__workDir)
+            exec_subprocess_call('git fetch --tags', self.__workDir)
+        else:
+            exec_subprocess_call('git clone %s' % self.__url, self.__projDir)
+
+        exec_subprocess_call('git checkout %s' % branch, self.__workDir)
+
+def should_fetch_libcpp(llvm_revision):
+    stdlib = args.get('stdlib')
+    if stdlib.startswith('libc++'):
+        # -stdlib=libc++,release_39 means build libc++,release_39
+        # otherwise use sytem provided
+        # we return the revision and caller should know what to do with it
+        # set the arg to 'libc++' so that can be used as a test
+        args['stdlib'] = 'libc++'
+        return stdlib[7:]
+    return False
+
+def fetch_libcpp(llvm_revision, libcpp_tag):
+    if libcpp_tag:
+        # TODO make sure this tag has common ancestor with llvm_revision
+        projdir = os.path.join(srcdir, 'projects')
+        RepoCache('https://github.com/llvm-mirror/libcxx', projdir).fetch(libcpp_tag)
+        RepoCache('https://github.com/llvm-mirror/libcxxabi', projdir).fetch(libcpp_tag)
+    return True
 
 def fetch_clang(llvm_revision):
     if "github.com" in CLANG_GIT_URL and args['create_dev_env'] is None and args['use_wget']:
@@ -369,7 +403,7 @@ def set_vars():
     print('CLANG_VERSION: ' + CLANG_VERSION)
 
 
-def compile(arg):
+def compile(arg, build_libcpp):
     global prefix, EXTRA_CMAKE_FLAGS
     prefix = arg
     PYTHON = sys.executable
@@ -408,11 +442,19 @@ def compile(arg):
                     + ' ' + EXTRA_CMAKE_FLAGS
                 )
 
+    libcxx = ''
+    stdlib = args.get('stdlib')
+    if stdlib:
+        libcxx = ' -DLLVM_ENABLE_LIBCXX=%s' % ('ON' if stdlib == 'libc++' else 'OFF')
+
     if platform.system() == 'Windows':
         if not CMAKE:
             CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
 
         box_draw("Configure Cling with CMake and generate Visual Studio 14 project files")
+        if libcxx:
+            print('libc++ not supported on Windows')
+
         exec_subprocess_call('%s -G "Visual Studio 14" %s ..\%s' % (
             CMAKE, cmake_config_flags, os.path.basename(srcdir)), LLVM_OBJ_ROOT)
 
@@ -424,18 +466,36 @@ def compile(arg):
 
     else:
         box_draw('Configure Cling with CMake')
+        cmake = CMAKE or 'cmake'
 
         # Don't pollute the CCACHE_LOGFILE with CMake config
         CCACHE_LOGFILE = os.environ.get('CCACHE_LOGFILE', None)
         if CCACHE_LOGFILE:
             del os.environ['CCACHE_LOGFILE']
 
-        exec_subprocess_call((CMAKE or 'cmake') + ' ' + cmake_config_flags, LLVM_OBJ_ROOT)
+        if build_libcpp:
+            box_draw('Building libc++ (using {0} cores)'.format(cores))
+            exec_subprocess_call(cmake + cmake_config_flags, LLVM_OBJ_ROOT)
+            exec_subprocess_call('make cxx -j{0} {1}'.format(cores,
+                                        'VERBOSE=1' if args['verbose'] else ''),
+                                 LLVM_OBJ_ROOT)
+            
+            # Don't build libcxx and libcxxabi again with linker flags below
+            projdir = os.path.join(srcdir, 'projects')
+            shutil.rmtree(os.path.join(projdir, 'libcxx'))
+            shutil.rmtree(os.path.join(projdir, 'libcxxabi'))
+
+            cmake_config_flags += ' -DCMAKE_CXX_FLAGS="-I%s/include/c++/v1" ' % LLVM_OBJ_ROOT
+            cmake_config_flags += (' -DCMAKE_SHARED_LINKER_FLAGS="-L%s/lib %s/lib/libc++%s -lm"'
+                                   ' -DCMAKE_EXE_LINKER_FLAGS="-L%s/lib %s/lib/libc++%s -lm"'
+                                    % (LLVM_OBJ_ROOT,LLVM_OBJ_ROOT,SHLIBEXT, LLVM_OBJ_ROOT,LLVM_OBJ_ROOT,SHLIBEXT))
+
+        exec_subprocess_call(cmake + cmake_config_flags + libcxx, LLVM_OBJ_ROOT)
 
         # Start the logging, we currently don't log libcpp being built above
         if CCACHE_LOGFILE:
             os.environ['CCACHE_LOGFILE'] = CCACHE_LOGFILE
-        
+
         box_draw('Building Cling (using {0} cores)'.format(cores))
         make_command = 'make -j{0} cling'.format(cores)
         if args['verbose']:
@@ -1552,6 +1612,10 @@ else:
 parser.add_argument('--make-proper', help='Internal option to support calls from build system')
 parser.add_argument('--verbose', help='Tell CMake to build with verbosity', action='store_true')
 parser.add_argument('--with-cmake-flags', help='Additional CMake configuration flags', default='')
+parser.add_argument('--stdlib', help=('C++ Library to use, stdlibc++ or libc++.'
+                                     '  To build a spcific llvm <tag> of libc++ with cling '
+                                     'specify libc++,<tag>'),
+                    default='')
 
 args = vars(parser.parse_args())
 
@@ -1624,6 +1688,12 @@ LLVM_GIT_URL = args['with_llvm_url']
 CLANG_GIT_URL = args['with_clang_url']
 CLING_GIT_URL = args['with_cling_url']
 EXTRA_CMAKE_FLAGS = args.get('with_cmake_flags')
+
+# logic is too confusing supporting both at the same time
+if args.get('stdlib') and EXTRA_CMAKE_FLAGS.find('-DLLVM_ENABLE_LIBCXX=') != -1:
+    print('use of --stdlib cannot be combined with -DLLVM_ENABLE_LIBCXX')
+    parser.print_help()
+    raise SystemExit
 
 # llvm_revision = urlopen(
 #    "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
@@ -1777,6 +1847,8 @@ if args['current_dev']:
         'utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
+    libcpp = should_fetch_libcpp(llvm_revision)
+    if libcpp: fetch_libcpp(llvm_revision, libcpp)
 
     # Travis has already cloned the repo out, so don;t do it again
     # Particularly important for building a pull-request
@@ -1795,13 +1867,13 @@ if args['current_dev']:
     if args['current_dev'] == 'tar':
         if OS == 'Windows':
             get_win_dep()
-            compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
+            compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION), libcpp)
         else:
             if DIST == 'Scientific Linux CERN SLC':
-                compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+                compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
             else:
                 compile(os.path.join(workdir,
-                                     'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+                                     'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1809,7 +1881,7 @@ if args['current_dev']:
         cleanup()
 
     elif args['current_dev'] == 'deb' or (args['current_dev'] == 'pkg' and DIST == 'Ubuntu'):
-        compile(os.path.join(workdir, 'cling-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1818,7 +1890,7 @@ if args['current_dev']:
         cleanup()
 
     elif args['current_dev'] == 'rpm' or (args['current_dev'] == 'pkg' and platform.dist()[0] == 'redhat'):
-        compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')))
+        compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1828,7 +1900,7 @@ if args['current_dev']:
 
     elif args['current_dev'] == 'nsis' or (args['current_dev'] == 'pkg' and OS == 'Windows'):
         get_win_dep()
-        compile(os.path.join(workdir, 'cling-' + RELEASE + '-' + platform.machine().lower() + '-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + RELEASE + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1837,7 +1909,7 @@ if args['current_dev']:
         cleanup()
 
     elif args['current_dev'] == 'dmg' or (args['current_dev'] == 'pkg' and OS == 'Darwin'):
-        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1860,6 +1932,8 @@ if args['last_stable']:
 
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
+    libcpp = should_fetch_libcpp(llvm_revision)
+    if libcpp: fetch_libcpp(llvm_revision, libcpp)
 
     print("Last stable Cling release detected: ", tag)
     fetch_cling(tag)
@@ -1868,13 +1942,13 @@ if args['last_stable']:
         set_version()
         if OS == 'Windows':
             get_win_dep()
-            compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
+            compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION), libcpp)
         else:
             if DIST == 'Scientific Linux CERN SLC':
-                compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+                compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
             else:
                 compile(os.path.join(workdir,
-                                     'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+                                     'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1883,7 +1957,7 @@ if args['last_stable']:
 
     elif args['last_stable'] == 'deb' or (args['last_stable'] == 'pkg' and DIST == 'Ubuntu'):
         set_version()
-        compile(os.path.join(workdir, 'cling-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1893,7 +1967,7 @@ if args['last_stable']:
 
     elif args['last_stable'] == 'rpm' or (args['last_stable'] == 'pkg' and platform.dist()[0] == 'redhat'):
         set_version()
-        compile(os.path.join(workdir, 'cling-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1904,7 +1978,7 @@ if args['last_stable']:
     elif args['last_stable'] == 'nsis' or (args['last_stable'] == 'pkg' and OS == 'Windows'):
         set_version()
         get_win_dep()
-        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1914,7 +1988,7 @@ if args['last_stable']:
 
     elif args['last_stable'] == 'dmg' or (args['last_stable'] == 'pkg' and OS == 'Darwin'):
         set_version()
-        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
             test_cling()
@@ -1929,6 +2003,9 @@ if args['tarball_tag']:
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
     fetch_cling(args['tarball_tag'])
+    libcpp = should_fetch_libcpp(llvm_revision)
+    if libcpp: fetch_libcpp(llvm_revision, libcpp)
+
     set_version()
 
     if OS == 'Windows':
@@ -1936,10 +2013,10 @@ if args['tarball_tag']:
         compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
     else:
         if DIST == 'Scientific Linux CERN SLC':
-            compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         else:
             compile(
-                os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+                os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
 
     install_prefix()
     if not args['no_test']:
@@ -1955,8 +2032,11 @@ if args['deb_tag']:
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
     fetch_cling(args['deb_tag'])
+    libcpp = should_fetch_libcpp(llvm_revision)
+    if libcpp: fetch_libcpp(llvm_revision, libcpp)
+
     set_version()
-    compile(os.path.join(workdir, 'cling-' + VERSION))
+    compile(os.path.join(workdir, 'cling-' + VERSION), libcpp)
     install_prefix()
     if not args['no_test']:
         test_cling()
@@ -1972,8 +2052,11 @@ if args['rpm_tag']:
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
     fetch_cling(args['rpm_tag'])
+    libcpp = should_fetch_libcpp(llvm_revision)
+    if libcpp: fetch_libcpp(llvm_revision, libcpp)
+
     set_version()
-    compile(os.path.join(workdir, 'cling-' + VERSION))
+    compile(os.path.join(workdir, 'cling-' + VERSION), libcpp)
     install_prefix()
     if not args['no_test']:
         test_cling()
@@ -1987,11 +2070,12 @@ if args['nsis_tag']:
             'nsis_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
+    libcpp = fetch_libcpp(llvm_revision)
     fetch_clang(llvm_revision)
     fetch_cling(args['nsis_tag'])
     set_version()
     get_win_dep()
-    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
+    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION), libcpp)
     install_prefix()
     if not args['no_test']:
         test_cling()
@@ -2007,8 +2091,11 @@ if args['dmg_tag']:
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
     fetch_cling(args['dmg_tag'])
+    libcpp = should_fetch_libcpp(llvm_revision)
+    if libcpp: fetch_libcpp(llvm_revision, libcpp)
+
     set_version()
-    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+    compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
     install_prefix()
     if not args['no_test']:
         test_cling()
@@ -2022,16 +2109,19 @@ if args['create_dev_env']:
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
     fetch_cling('master')
+    libcpp = should_fetch_libcpp(llvm_revision)
+    if libcpp: fetch_libcpp(llvm_revision, libcpp)
+
     set_version()
     if OS == 'Windows':
         get_win_dep()
-        compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
+        compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION), libcpp)
     else:
         if DIST == 'Scientific Linux CERN SLC':
-            compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            compile(os.path.join(workdir, 'cling-SLC-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         else:
             compile(
-                os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+                os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
     install_prefix()
     if not args['no_test']:
         test_cling()
