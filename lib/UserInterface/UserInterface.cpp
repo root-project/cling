@@ -111,7 +111,7 @@ namespace {
 
 namespace cling {
   // Declared in CompilationException.h; vtable pinned here.
-  CompilationException::~CompilationException() throw() {}
+  CompilationException::~CompilationException() noexcept {}
 
   UserInterface::UserInterface(Interpreter& interp) {
     // We need stream that doesn't close its file descriptor, thus we are not

@@ -42,7 +42,7 @@ namespace cling {
     DerefType m_Type;
   public:
     InvalidDerefException(clang::Sema* S, clang::Expr* E, DerefType type);
-    virtual ~InvalidDerefException();
+    virtual ~InvalidDerefException() noexcept;
 
     const char* what() const noexcept override;
     void diagnose() const override;
