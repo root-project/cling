@@ -376,8 +376,10 @@ def compile(arg):
 
     CMAKE = os.environ.get('CMAKE', None)
 
-    # GCC crashes if more than 4 cores are used. Temporary fix for Travis CI.
-    cores = 4 if multiprocessing.cpu_count() > 4 else multiprocessing.cpu_count()
+    cores = multiprocessing.cpu_count()
+    if TRAVIS_BUILD_DIR:
+        # Temporary fix for Travis CI, GCC crashes if more than 4 cores used.
+        cores = min(cores, 4)
 
     # Cleanup previous installation directory if any
     if os.path.isdir(prefix):
