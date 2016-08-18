@@ -680,7 +680,7 @@ namespace {
           // internal header detection, but for now give a hint about why.
           llvm::errs() << "CLING_CXX_INCL, CLING_CXX_PATH, and CLING_CXX_RLTV"
                           " are undefined, there was probably an error during"
-                          " configuration.\n"
+                          " configuration.\n";
   #endif
         } else
           sArguments.addArgument("-nostdinc++");
