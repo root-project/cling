@@ -268,10 +268,6 @@ namespace cling {
                                                 llvm::StringRef code,
                                                 bool withAccessControl);
 
-    ///\brief Set up include paths for runtime headers.
-    ///
-    void AddRuntimeIncludePaths(const char* argv0);
-
     ///\brief Include C++ runtime headers and definitions.
     ///
     void IncludeCXXRuntime();
@@ -370,9 +366,18 @@ namespace cling {
     ///
     bool isUniqueWrapper(llvm::StringRef name);
 
-    ///\brief Adds an include path (-I).
+    ///\brief Adds multiple include paths separated by a delimter.
     ///
-    void AddIncludePath(llvm::StringRef incpath);
+    ///\param[in] PathsStr - Path(s)
+    ///\param[in] Delim - Delimiter to separate paths or NULL if a single path
+    ///
+    void AddIncludePaths(llvm::StringRef PathsStr, const char* Delim = ":");
+
+    ///\brief Adds a single include path (-I).
+    ///
+    void AddIncludePath(llvm::StringRef PathsStr) {
+      return AddIncludePaths(PathsStr, nullptr);
+    }
 
     ///\brief Prints the current include paths that are used.
     ///
@@ -385,12 +390,15 @@ namespace cling {
     ///       a new include path region (e.g. "-cxx-isystem"). Also, flags
     ///       defining header search behavior will be included in incpaths, e.g.
     ///       "-nostdinc".
+    ///
     void GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
                          bool withSystem, bool withFlags);
 
     ///\brief Prints the current include paths that are used.
     ///
-    void DumpIncludePath();
+    ///\param[in] S - stream to dump to or nullptr for default (llvm::outs)
+    ///
+    void DumpIncludePath(llvm::raw_ostream* S = nullptr);
 
     ///\brief Store the interpreter state in files
     /// Store the AST, the included files and the lookup tables

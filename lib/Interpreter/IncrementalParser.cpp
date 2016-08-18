@@ -82,7 +82,7 @@ namespace {
 # define CLING_CXXABIV -1 // intentionally invalid macro name
 # define CLING_CXXABIS "-1" // intentionally invalid macro name
     llvm::errs()
-      << "Warning in cling::CIFactory::createCI():\n  "
+      << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
       "C++ ABI check not implemented for this standard library\n";
     return;
 #endif
@@ -100,7 +100,7 @@ namespace {
     }
     else {
       llvm::errs()
-        << "Warning in cling::CIFactory::createCI():\n  "
+        << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
         "Possible C++ standard library mismatch, compiled with Visual Studio v"
         << VSVersion << ".0,\n"
         "but this version of Visual Studio was not found in your system's registry.\n";
@@ -160,26 +160,20 @@ namespace {
 } // unnamed namespace
 
 namespace cling {
-  IncrementalParser::IncrementalParser(Interpreter* interp,
-                                       int argc, const char* const *argv,
-                                       const char* llvmdir, bool isChildInterpreter):
-    m_Interpreter(interp), m_Consumer(0), m_ModuleNo(0) {
+  IncrementalParser::IncrementalParser(Interpreter* interp, const char* llvmdir):
+    m_Interpreter(interp),
+    m_CI(CIFactory::createCI("", interp->getOptions(), llvmdir)),
+    m_Consumer(nullptr), m_ModuleNo(0) {
+    assert(m_CI.get() && "CompilerInstance is (null)!");
 
-    CompilerInstance* CI = CIFactory::createCI("", argc, argv, llvmdir);
-    assert(CI && "CompilerInstance is (null)!");
-
-    m_Consumer = dyn_cast<DeclCollector>(&CI->getSema().getASTConsumer());
+    m_Consumer = dyn_cast<DeclCollector>(&m_CI->getSema().getASTConsumer());
     assert(m_Consumer && "Expected ChainedConsumer!");
 
-    m_CI.reset(CI);
-
-    if (CI->getFrontendOpts().ProgramAction != clang::frontend::ParseSyntaxOnly){
-      m_CodeGen.reset(CreateLLVMCodeGen(CI->getDiagnostics(), "cling-module-0",
-                                        CI->getHeaderSearchOpts(),
-                                        CI->getPreprocessorOpts(),
-                                        CI->getCodeGenOpts(),
-                                        *m_Interpreter->getLLVMContext()
-                                        ));
+    if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
+      m_CodeGen.reset(CreateLLVMCodeGen(
+          m_CI->getDiagnostics(), "cling-module-0", m_CI->getHeaderSearchOpts(),
+          m_CI->getPreprocessorOpts(), m_CI->getCodeGenOpts(),
+          *m_Interpreter->getLLVMContext()));
       m_Consumer->setContext(this, m_CodeGen.get());
     } else {
       m_Consumer->setContext(this, 0);

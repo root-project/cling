@@ -79,21 +79,25 @@ namespace {
       FILE *pf = popen(cmd.c_str (), "r");
       std::string result = "";
       std::string sys_path = "";
-      char buffer[128];
+      char buffer[1024];
       while (!feof(pf)) {
-        if (fgets(buffer, 128, pf) != NULL)
+        if (fgets(buffer, sizeof(buffer), pf) != NULL)
           result += buffer;
       }
       pclose(pf);
-      std::size_t from
-        = result.find("search path=", result.find("(LD_LIBRARY_PATH)"));
-      std::size_t to = result.find("(system search path)");
-      if (from != std::string::npos && to != std::string::npos) {
-        from += 12;
-        sys_path = result.substr(from, to-from);
-        sys_path.erase(std::remove_if(sys_path.begin(), sys_path.end(), isspace),
-                       sys_path.end());
-        sys_path += ':';
+
+      const std::size_t nPos = std::string::npos;
+      const std::size_t LD = result.find("(LD_LIBRARY_PATH)");
+      std::size_t from = result.find("search path=", LD == nPos ? 0 : LD);
+      if (from != nPos) {
+        const std::size_t to = result.find("(system search path)", from);
+        if (to != nPos) {
+          from += 12;
+          sys_path = result.substr(from, to-from);
+          sys_path.erase(std::remove_if(sys_path.begin(), sys_path.end(),
+                                        isspace), sys_path.end());
+          sys_path += ':';
+        }
       }
       static const char PathSeparator = ':';
       const char* at = sys_path.c_str();

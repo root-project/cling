@@ -14,16 +14,45 @@
 #include <vector>
 
 namespace cling {
+
+  ///\brief Class that stores options that are used by both cling and
+  /// clang::CompilerInvocation.
+  ///
+  class CompilerOptions {
+  public:
+    /// \brief Construct CompilerOptions from given arguments. When argc & argv
+    /// are 0, all arguments are saved into \pRemaining to pass to clang. If argc
+    /// or argv is 0, caller is must fill in \pRemaining with any arguments that
+    /// should be passed to clang.
+    ///
+    CompilerOptions(int argc = 0, const char* const *argv = nullptr);
+
+    ///\brief Parse argc, and argv into our variables.
+    ///
+    ///\param [in] argc - argument count
+    ///\param [in] argv - arguments
+    ///\param [out] Inputs - save all arguments that are inputs/files here
+    ///
+    void Parse(int argc, const char* const argv[],
+               std::vector<std::string>* Inputs = nullptr);
+
+    bool Language;
+    bool ResourceDir;
+    bool SysRoot;
+    bool NoBuiltinInc;
+    bool NoCXXInc;
+    bool StdVersion;
+    bool StdLib;
+    bool Verbose;
+
+    ///\brief The remaining arguments to pass to clang.
+    ///
+    std::vector<const char*> Remaining;
+  };
+
   class InvocationOptions {
   public:
-    InvocationOptions():
-      ErrorOut(false), NoLogo(false), ShowVersion(false), Verbose(false),
-      Help(false), MetaString(".") {}
-    bool ErrorOut;
-    bool NoLogo;
-    bool ShowVersion;
-    bool Verbose;
-    bool Help;
+    InvocationOptions(int argc, const char* const argv[]);
 
     /// \brief A line starting with this string is assumed to contain a
     ///        directive for the MetaProcessor. Defaults to "."
@@ -32,12 +61,15 @@ namespace cling {
     std::vector<std::string> LibsToLoad;
     std::vector<std::string> LibSearchPath;
     std::vector<std::string> Inputs;
+    CompilerOptions CompilerOpts;
 
-    static InvocationOptions CreateFromArgs(int argc, const char* const argv[],
-                                            std::vector<unsigned>& leftoverArgs
-                                            /* , Diagnostic &Diags */);
+    bool ErrorOut;
+    bool NoLogo;
+    bool ShowVersion;
+    bool Help;
+    bool Verbose() const { return CompilerOpts.Verbose; }
 
-    void PrintHelp();
+    static void PrintHelp();
   };
 }
 

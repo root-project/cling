@@ -8,9 +8,9 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Utils/Paths.h"
 #include "ClingUtils.h"
 
-#include "cling-compiledata.h"
 #include "DynamicLookup.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
@@ -27,9 +27,9 @@
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/AutoloadCallback.h"
 #include "cling/Utils/AST.h"
 #include "cling/Utils/SourceNormalization.h"
-#include "cling/Interpreter/AutoloadCallback.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/GlobalDecl.h"
@@ -39,6 +39,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/HeaderSearch.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
@@ -136,18 +137,6 @@ namespace cling {
     m_State->compare("aName");
   }
 
-  // This function isn't referenced outside its translation unit, but it
-  // can't use the "static" keyword because its address is used for
-  // GetMainExecutable (since some platforms don't support taking the
-  // address of main, and some platforms can't implement GetMainExecutable
-  // without being given the address of a function in the main executable).
-  std::string GetExecutablePath(const char *Argv0) {
-    // This just needs to be some symbol in the binary; C++ doesn't
-    // allow taking the address of ::main however.
-    void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-    return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
-  }
-
   const Parser& Interpreter::getParser() const {
     return *m_IncrParser->getParser();
   }
@@ -169,23 +158,13 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime,
                            bool isChildInterp) :
-    m_UniqueCounter(0), m_PrintDebug(false), m_DynamicLookupDeclared(false),
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
+    m_Opts(argc, argv), m_UniqueCounter(0), m_PrintDebug(false),
+    m_DynamicLookupDeclared(false), m_DynamicLookupEnabled(false),
+    m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
-    std::vector<unsigned> LeftoverArgsIdx;
-    m_Opts = InvocationOptions::CreateFromArgs(argc, argv, LeftoverArgsIdx);
-    std::vector<const char*> LeftoverArgs;
-
-    for (size_t I = 0, N = LeftoverArgsIdx.size(); I < N; ++I) {
-      LeftoverArgs.push_back(argv[LeftoverArgsIdx[I]]);
-    }
-
     m_DyLibManager.reset(new DynamicLibraryManager(getOptions()));
-
-    m_IncrParser.reset(new IncrementalParser(this, LeftoverArgs.size(),
-                                             &LeftoverArgs[0],
-                                             llvmdir, isChildInterp));
+    m_IncrParser.reset(new IncrementalParser(this, llvmdir));
 
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();
@@ -210,8 +189,6 @@ namespace cling {
     m_IncrParser->Initialize(IncrParserTransactions, isChildInterp);
 
     handleFrontendOptions();
-
-    AddRuntimeIncludePaths(argv[0]);
 
     if (!noRuntime) {
       if (getCI()->getLangOpts().CPlusPlus)
@@ -294,37 +271,6 @@ namespace cling {
     }
   }
 
-  void Interpreter::AddRuntimeIncludePaths(const char* argv0) {
-    // Add configuration paths to interpreter's include files.
-#ifdef CLING_INCLUDE_PATHS
-    llvm::StringRef InclPaths(CLING_INCLUDE_PATHS);
-    for (std::pair<llvm::StringRef, llvm::StringRef> Split
-           = InclPaths.split(':');
-         !Split.second.empty(); Split = InclPaths.split(':')) {
-      if (llvm::sys::fs::is_directory(Split.first))
-        AddIncludePath(Split.first);
-      InclPaths = Split.second;
-    }
-    // Add remaining part
-    AddIncludePath(InclPaths);
-#endif
-    llvm::SmallString<512> P(GetExecutablePath(argv0));
-    if (!P.empty()
-        && llvm::StringRef(argv0).endswith("cling")
-        && llvm::sys::path::filename(P) == "cling") {
-      // Remove /cling from foo/bin/clang
-      llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
-      // Remove /bin   from foo/bin
-      ExeIncl = llvm::sys::path::parent_path(ExeIncl);
-      P.resize(ExeIncl.size());
-      // Get foo/include
-      llvm::sys::path::append(P, "include");
-      if (llvm::sys::fs::is_directory(P.str()))
-        AddIncludePath(P.str());
-    }
-
-  }
-
   void Interpreter::IncludeCXXRuntime() {
     // Set up common declarations which are going to be available
     // only at runtime
@@ -365,40 +311,33 @@ namespace cling {
     declare("#include \"cling/Interpreter/CValuePrinter.h\"");
   }
 
-  void Interpreter::AddIncludePath(llvm::StringRef incpath)
-  {
-    // Add the given path to the list of directories in which the interpreter
-    // looks for include files. Only one path item can be specified at a
-    // time, i.e. "path1:path2" is not supported.
-
+  void Interpreter::AddIncludePaths(llvm::StringRef PathStr, const char* Delm) {
     CompilerInstance* CI = getCI();
-    HeaderSearchOptions& headerOpts = CI->getHeaderSearchOpts();
-    const bool IsFramework = false;
-    const bool IsSysRootRelative = true;
+    HeaderSearchOptions& HOpts = CI->getHeaderSearchOpts();
 
-    // Avoid duplicates; just return early if incpath is already in UserEntries.
-    for (std::vector<HeaderSearchOptions::Entry>::const_iterator
-           I = headerOpts.UserEntries.begin(),
-           E = headerOpts.UserEntries.end(); I != E; ++I)
-      if (I->Path == incpath)
-        return;
-
-    headerOpts.AddPath(incpath, frontend::Angled, IsFramework,
-                       IsSysRootRelative);
+    // Save the current number of entries
+    size_t Idx = HOpts.UserEntries.size();
+    utils::AddIncludePaths(PathStr, HOpts, Delm);
 
     Preprocessor& PP = CI->getPreprocessor();
-    clang::ApplyHeaderSearchOptions(PP.getHeaderSearchInfo(), headerOpts,
-                                    PP.getLangOpts(),
-                                    PP.getTargetInfo().getTriple());
+    SourceManager& SM = PP.getSourceManager();
+    FileManager& FM = SM.getFileManager();
+    HeaderSearch& HSearch = PP.getHeaderSearchInfo();
+    const bool isFramework = false;
+
+    // Add all the new entries into Preprocessor
+    for (const size_t N = HOpts.UserEntries.size(); Idx < N; ++Idx) {
+      const HeaderSearchOptions::Entry& E = HOpts.UserEntries[Idx];
+      if (const clang::DirectoryEntry *DE = FM.getDirectory(E.Path)) {
+        HSearch.AddSearchPath(DirectoryLookup(DE, SrcMgr::C_User, isFramework),
+                              E.Group == frontend::Angled);
+      }
+    }
   }
 
-  void Interpreter::DumpIncludePath() {
-    llvm::SmallVector<std::string, 100> IncPaths;
-    GetIncludePaths(IncPaths, true /*withSystem*/, true /*withFlags*/);
-    // print'em all
-    for (unsigned i = 0; i < IncPaths.size(); ++i) {
-      llvm::errs() << IncPaths[i] <<"\n";
-    }
+  void Interpreter::DumpIncludePath(llvm::raw_ostream* S) {
+    utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(), S ? *S : llvm::outs(),
+                            true /*withSystem*/, true /*withFlags*/);
   }
 
   void Interpreter::storeInterpreterState(const std::string& name) const {
@@ -437,89 +376,10 @@ namespace cling {
   }
 
 
-  // Adapted from clang/lib/Frontend/CompilerInvocation.cpp
   void Interpreter::GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
                                    bool withSystem, bool withFlags) {
-    const HeaderSearchOptions Opts(getCI()->getHeaderSearchOpts());
-
-    if (withFlags && Opts.Sysroot != "/") {
-      incpaths.push_back("-isysroot");
-      incpaths.push_back(Opts.Sysroot);
-    }
-
-    /// User specified include entries.
-    for (unsigned i = 0, e = Opts.UserEntries.size(); i != e; ++i) {
-      const HeaderSearchOptions::Entry &E = Opts.UserEntries[i];
-      if (E.IsFramework && E.Group != frontend::Angled)
-        llvm::report_fatal_error("Invalid option set!");
-      switch (E.Group) {
-      case frontend::After:
-        if (withFlags) incpaths.push_back("-idirafter");
-        break;
-
-      case frontend::Quoted:
-        if (withFlags) incpaths.push_back("-iquote");
-        break;
-
-      case frontend::System:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-isystem");
-        break;
-
-      case frontend::IndexHeaderMap:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-index-header-map");
-        if (withFlags) incpaths.push_back(E.IsFramework? "-F" : "-I");
-        break;
-
-      case frontend::CSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-c-isystem");
-        break;
-
-      case frontend::ExternCSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-extern-c-isystem");
-        break;
-
-      case frontend::CXXSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-cxx-isystem");
-        break;
-
-      case frontend::ObjCSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-objc-isystem");
-        break;
-
-      case frontend::ObjCXXSystem:
-        if (!withSystem) continue;
-        if (withFlags) incpaths.push_back("-objcxx-isystem");
-        break;
-
-      case frontend::Angled:
-        if (withFlags) incpaths.push_back(E.IsFramework ? "-F" : "-I");
-        break;
-      }
-      incpaths.push_back(E.Path);
-    }
-
-    if (withSystem && !Opts.ResourceDir.empty()) {
-      if (withFlags) incpaths.push_back("-resource-dir");
-      incpaths.push_back(Opts.ResourceDir);
-    }
-    if (withSystem && withFlags && !Opts.ModuleCachePath.empty()) {
-      incpaths.push_back("-fmodule-cache-path");
-      incpaths.push_back(Opts.ModuleCachePath);
-    }
-    if (withSystem && withFlags && !Opts.UseStandardSystemIncludes)
-      incpaths.push_back("-nostdinc");
-    if (withSystem && withFlags && !Opts.UseStandardCXXIncludes)
-      incpaths.push_back("-nostdinc++");
-    if (withSystem && withFlags && Opts.UseLibcxx)
-      incpaths.push_back("-stdlib=libc++");
-    if (withSystem && withFlags && Opts.Verbose)
-      incpaths.push_back("-v");
+    utils::CopyIncludePaths(getCI()->getHeaderSearchOpts(), incpaths,
+                            withSystem, withFlags);
   }
 
   CompilerInstance* Interpreter::getCI() const {

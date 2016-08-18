@@ -36,7 +36,6 @@ namespace clang {
 namespace cling {
   class BackendPasses;
   class CompilationOptions;
-  class CIFactory;
   class DeclCollector;
   class ExecutionContext;
   class Interpreter;
@@ -101,8 +100,7 @@ namespace cling {
     };
     typedef llvm::PointerIntPair<Transaction*, 2, EParseResult>
       ParseResultTransaction;
-    IncrementalParser(Interpreter* interp, int argc, const char* const *argv,
-                      const char* llvmdir, bool isChildInterpreter);
+    IncrementalParser(Interpreter* interp, const char* llvmdir);
     ~IncrementalParser();
 
     void Initialize(llvm::SmallVectorImpl<ParseResultTransaction>& result,
