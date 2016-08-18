@@ -34,7 +34,7 @@ E: ljanyst@cern.ch
 D: Initial prototype of cling.
 
 N: Roman Zulak (aka Frederich Munch)
-E:
+E: machtyrtle@gmail.com
 D: Various contributions.
 
 N: Axel Naumann
