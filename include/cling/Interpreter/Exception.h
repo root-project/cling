@@ -12,6 +12,10 @@
 
 #include <exception>
 
+#if defined(_MSC_VER) && (_MSC_VER <= 1900) && !defined(noexcept)
+  #define noexcept 
+#endif
+
 namespace clang {
   class Sema;
   class Expr;
