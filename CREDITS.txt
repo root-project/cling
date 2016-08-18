@@ -33,7 +33,7 @@ N: Lukasz Janyst
 E: ljanyst@cern.ch
 D: Initial prototype of cling.
 
-N: Frederich Munch
+N: Roman Zulak (aka Frederich Munch)
 E:
 D: Various contributions.
 
