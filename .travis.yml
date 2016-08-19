@@ -4,6 +4,7 @@ language: cpp
 
 addons: &addons
   apt:
+    packages: timeout
     sources: &sources
       - ubuntu-toolchain-r-test
       - llvm-toolchain-precise-3.5
@@ -196,30 +197,18 @@ install:
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz"
     export CMAKE=$CLING_BUILD_DEPS/cmake/bin/cmake
   elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
-    brew install ccache python
+    brew install ccache python coreutils
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
     export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
-    PATH=/usr/local/opt/ccache/libexec:$PATH
-    # Try to workaround travis-ci/travis-ci#6410 by
-    # introducing a timeout fulction, which will timeout before the builder,
-    # returning a 'fake' success (eg. 0), tricking it to store the cache.
+    PATH="/usr/local/opt/ccache/libexec:$PATH"
+    # This is where timeout is hiding now, is the above still neccessary?
+    PATH="$PATH:/usr/local/opt/coreutils/libexec/gnubin"
   fi
 
   # Containers need to timeout before the buildscript exists
   if [ $TRAVIS_OS_NAME == 'osx' ] || [ "$DIST" == "trusty" ]; then
-    TIMEOUT=2500 # Any more and Travis might cancel
+    TIMEOUT='44m' # Any more and Travis might cancel
   fi
-
-  # Implement a platform-independent timeout function.
-  function timeout() {
-    perl -e 'alarm shift; exec @ARGV' "$@";
-    RESULT=$?
-    if [ $RESULT -eq 142 ]; then
-      # Timout occured, pass that on to after_failure so as not to dump logs
-      export CLING_BUILD_TIMEOUT=1
-    fi
-    return $RESULT 
-  }
 
   # If we timeout, objects can be corrupted in the cache, causing link errors
   # Turn this on to get the mapping to the cache.o to delete
@@ -237,9 +226,9 @@ before_script:
 
 script:
 - |
-  # Save our build result and propogate it to Travis
-  # When build succeeds, but ccache fails that should return an error
   function run_ccache() {
+    # Save our build result and propogate it to Travis
+    # When build succeeds, but ccache fails that should return an error
     ccache -s
     CCACHE_RSLT="$?"
     if [ "$1" -eq 0 ]; then
@@ -255,12 +244,18 @@ script:
       git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
     fi
 
-    timeout $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --skip-cleanup
+    timeout -s SIGTERM $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --skip-cleanup
   else
     tools/packaging/cpt.py --tarball-tag=$TRAVIS_TAG --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
   fi
+  RESULT="$?"
+  echo "RESULT: $RESULT"
+  if [ $RESULT -eq 124 ]; then
+    # Timout occured, pass that on to after_failure so as not to dump logs
+    export CLING_BUILD_TIMEOUT=1
+  fi
 
-  run_ccache "$?"
+  run_ccache "$RESULT"
 
 notifications:
   email:
