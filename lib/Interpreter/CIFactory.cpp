@@ -390,13 +390,17 @@ static bool getISysRoot(std::string& sysRoot, bool Verbose) {
     return false;
 
 
-  // Seems to make more sense to get the currently running SDK so any loaded
-  // libraries won't cause conflicts
-
   // Try to get the SDK for whatever version of OS X is currently running
+  // Seems to make more sense to get the currently running SDK so headers
+  // and any loaded libraries will match.
   if (void *core = dlopen(
           "/System/Library/Frameworks/CoreServices.framework/CoreServices",
           RTLD_LAZY)) {
+    // Gestalt is a deprecated API (funnily enough clang is smart enough
+    // to know we're using it).
+    // Alternatives to NSProcessInfo and avoid linking to objc & Foundation:
+    //  sw_vers | grep ProductVersion | awk '{print $2}' => 10.10.5
+    //  kCFCoreFoundationVersionNumber symbol in CoreFoundation => 368.31
     SInt32 majorVersion = -1, minorVersion = -1;
     typedef ::OSErr (*GestaltProc)(::OSType, ::SInt32 *);
     if (GestaltProc Gestalt = (GestaltProc)dlsym(core, "Gestalt")) {
@@ -552,22 +556,22 @@ namespace {
     if (Verbose)
       llvm::errs() << "Looking for C++ headers in \"" << PathStr << "\"\n";
 
-      llvm::SmallVector<llvm::StringRef, 6> Paths;
-      if (!utils::SplitPaths(PathStr, Paths, utils::kFailNonExistant,
-                             ":", Verbose))
-        return false;
+    llvm::SmallVector<llvm::StringRef, 6> Paths;
+    if (!utils::SplitPaths(PathStr, Paths, utils::kFailNonExistant,
+                           ":", Verbose))
+      return false;
 
-      if (Verbose) {
-        llvm::errs() << "Found:\n";
-        for (llvm::StringRef Path : Paths)
-          llvm::errs() << " " << Path << "\n";
-      }
-
+    if (Verbose) {
+      llvm::errs() << "Found:\n";
       for (llvm::StringRef Path : Paths)
-        Args.addArgument("-I", Path.str());
-
-      return true;
+        llvm::errs() << " " << Path << "\n";
     }
+
+    for (llvm::StringRef Path : Paths)
+      Args.addArgument("-I", Path.str());
+
+    return true;
+  }
 
 #endif
   

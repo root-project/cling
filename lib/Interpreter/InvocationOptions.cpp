@@ -18,7 +18,6 @@
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <algorithm>
 #include <memory>
 
 using namespace clang;
