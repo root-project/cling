@@ -29,7 +29,7 @@ install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat
 
 build_script:
-- tools\packaging\cpt.py --current-dev=tar --with-cling-url=https://github.com/vgvassilev/cling --verbose --no-test
+  - tools\packaging\cpt.py --current-dev=tar --with-cling-url=https://github.com/%APPVEYOR_REPO_NAME% --no-test
 
 init:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
