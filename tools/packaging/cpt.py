@@ -525,13 +525,14 @@ def compile(arg, build_libcpp):
                 if args['compiler'] == 'clang++-3.5':
                     cmake_config_flags += ' -DCMAKE_CXX_FLAGS_RELEASE="-O0 -DNDEBUG" '
 
-        # Force LLVM, clang, and cling to use and link to 'local' libc++
+        # Force LLVM, clang, and cling to use headers & link to 'local' libc++
         cmake_config_flags += ' -DCMAKE_SHARED_LINKER_FLAGS="%s"' % linkFlags
         cmake_config_flags += ' -DCMAKE_EXE_LINKER_FLAGS="%s"' % linkFlags
         cmake_config_flags += ' -DCMAKE_CXX_FLAGS="%s %s" ' % (incFlag,
                             os.path.join(LLVM_OBJ_ROOT, 'include', 'c++', 'v1'))
 
-        # Don't build libcxx and libcxxabi again with linker flags below
+        # Don't build libcxx and libcxxabi again with linker flags above
+        # OS X allows a lib to link to -itself- which inf-loops dyld at runtime
         projdir = os.path.join(srcdir, 'projects')
         shutil.rmtree(os.path.join(projdir, 'libcxx'))
         shutil.rmtree(os.path.join(projdir, 'libcxxabi'))
@@ -1655,6 +1656,9 @@ parser.add_argument('--stdlib', help=('C++ Library to use, stdlibc++ or libc++.'
                                      '  To build a spcific llvm <tag> of libc++ with cling '
                                      'specify libc++,<tag>'),
                     default='')
+parser.add_argument('--compiler', help='The compiler being used to make cling (for heuristics only)',
+                    default='')
+
 
 args = vars(parser.parse_args())
 
@@ -1763,6 +1767,10 @@ print('Distribution: ' + DIST)
 print('Release: ' + RELEASE)
 print('Revision: ' + REV)
 print('Architecture: ' + platform.machine())
+if args['compiler']:
+  cInfo = None
+  cInfo = exec_subprocess_check_output(args['compiler'] + ' --version', srcdir).decode('utf-8')
+  print("Compiler: '%s' : %s" % (args['compiler'], cInfo.split('\n',1)[0] if cInfo else ''))
 
 if len(sys.argv) == 1:
     print("Error: no options passed")
