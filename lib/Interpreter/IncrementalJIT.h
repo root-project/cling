@@ -103,7 +103,7 @@ private:
   public:
     using Base_t = llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT>;
     using NotifyLoadedFtor = NotifyObjectLoadedT;
-    using NotifyFinalizedFtor = typename Base_t::NotifyFinalizedFtor;
+    using NotifyFinalizedFtor = Base_t::NotifyFinalizedFtor;
     RemovableObjectLinkingLayer(SymbolMapT &SymMap,
                                 NotifyObjectLoadedT NotifyLoaded,
                    NotifyFinalizedFtor NotifyFinalized = NotifyFinalizedFtor()):

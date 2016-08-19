@@ -14,6 +14,10 @@
 
 #include "clang/AST/DeclVisitor.h"
 
+#if defined(_MSC_VER) && (_MSC_VER <= 1900) && !defined(constexpr)
+  #define constexpr const
+#endif
+
 namespace clang {
 
   class CodeGenerator;
