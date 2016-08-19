@@ -2,6 +2,16 @@ sudo: false
 
 language: cpp
 
+addons: &addons
+  apt:
+    sources: &sources
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-precise-3.5
+      - llvm-toolchain-precise-3.6
+      - llvm-toolchain-precise-3.7
+      - llvm-toolchain-precise-3.8
+      - llvm-toolchain-precise
+
 cache:
   apt: true
   ccache: true
@@ -40,40 +50,40 @@ matrix:
       env: DIST=pangolin COMPILER=g++-4.7 CCOMPILER=gcc-4.7
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-4.7']
+          sources: *sources
+          packages: g++-4.7
       compiler: gcc-4.7
 
     - os: linux
       env: DIST=pangolin COMPILER=g++-4.8 CCOMPILER=gcc-4.8
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-4.8']
+          sources: *sources
+          packages: g++-4.8
       compiler: gcc-4.8
 
     - os: linux
       env: DIST=pangolin COMPILER=g++-4.9 CCOMPILER=gcc-4.9
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-4.9']
+          sources: *sources
+          packages: g++-4.9
       compiler: gcc-4.9
 
     - os: linux
       env: DIST=pangolin COMPILER=g++-5 CCOMPILER=gcc-5
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-5']
+          sources: *sources
+          packages: g++-5
       compiler: gcc-5
 
     - os: linux
       env: DIST=pangolin COMPILER=g++-6 CCOMPILER=gcc-6
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-6']
+          sources: *sources
+          packages: g++-6
       compiler: gcc-6
 
     - os: linux
@@ -82,8 +92,8 @@ matrix:
       dist: trusty
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-4.7']
+          sources: *sources
+          packages: g++-4.7
       compiler: gcc-4.7
 
     - os: linux
@@ -92,8 +102,8 @@ matrix:
       dist: trusty
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-4.8']
+          sources: *sources
+          packages: g++-4.8
       compiler: gcc-4.8
 
     - os: linux
@@ -102,8 +112,8 @@ matrix:
       dist: trusty
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-4.9']
+          sources: *sources
+          packages: g++-4.9
       compiler: gcc-4.9
 
     - os: linux
@@ -112,8 +122,8 @@ matrix:
       dist: trusty
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-5']
+          sources: *sources
+          packages: g++-5
       compiler: gcc-5
 
     - os: linux
@@ -122,15 +132,15 @@ matrix:
       dist: trusty
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-6']
+          sources: *sources
+          packages: g++-6
       compiler: gcc-6
 
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-3.7 CCOMPILER=clang-3.7
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.7']
+          sources: *sources
           packages: ['clang-3.7', 'libstdc++-5-dev']
       compiler: clang-3.7
 
@@ -138,7 +148,7 @@ matrix:
       env: CXXLIB=libstdc++ COMPILER=clang++-3.8 CCOMPILER=clang-3.8
       addons:
         apt:
-          sources: ['ubuntu-toolchain-r-test', 'llvm-toolchain-precise-3.8']
+          sources: *sources
           packages: ['clang-3.8', 'libstdc++-6-dev']
       compiler: clang-3.8
 
