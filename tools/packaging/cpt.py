@@ -87,6 +87,7 @@ def exec_subprocess_call(cmd, cwd):
 
 def exec_subprocess_check_output(cmd, cwd):
     cmd = _convert_subprocess_cmd(cmd)
+    out = ''
     try:
         out = subprocess.check_output(cmd, cwd=cwd, shell=False,
                                       stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('utf-8')
@@ -375,8 +376,10 @@ def compile(arg):
 
     CMAKE = os.environ.get('CMAKE', None)
 
-    # GCC crashes if more than 4 cores are used. Temporary fix for Travis CI.
-    cores = 4 if multiprocessing.cpu_count() > 4 else multiprocessing.cpu_count()
+    cores = multiprocessing.cpu_count()
+    if TRAVIS_BUILD_DIR:
+        # Temporary fix for Travis CI, GCC crashes if more than 4 cores used.
+        cores = min(cores, 4)
 
     # Cleanup previous installation directory if any
     if os.path.isdir(prefix):
@@ -398,6 +401,12 @@ def compile(arg):
             '../{2}'.format(build_type, TMP_PREFIX, os.path.basename(srcdir))
     )
 
+    ### FIX: Target isn't being set properly on Travis OS X
+    ### Either because ccache or maybe the virtualization environment
+    if TRAVIS_BUILD_DIR and OS == 'Darwin':
+        triple = exec_subprocess_check_output('sh %s/cmake/config.guess' % srcdir, srcdir)
+        if triple:
+            cmake_config_flags += ' -DLLVM_HOST_TRIPLE="%s" ' % triple.rstrip()
 
     if platform.system() == 'Windows':
         if not CMAKE:
@@ -416,8 +425,17 @@ def compile(arg):
     else:
         box_draw('Configure Cling with CMake')
 
+        # Don't pollute the CCACHE_LOGFILE with CMake config
+        CCACHE_LOGFILE = os.environ.get('CCACHE_LOGFILE', None)
+        if CCACHE_LOGFILE:
+            del os.environ['CCACHE_LOGFILE']
+
         exec_subprocess_call((CMAKE or 'cmake') + ' ' + cmake_config_flags, LLVM_OBJ_ROOT)
 
+        # Start the logging, we currently don't log libcpp being built above
+        if CCACHE_LOGFILE:
+            os.environ['CCACHE_LOGFILE'] = CCACHE_LOGFILE
+        
         box_draw('Building Cling (using {0} cores)'.format(cores))
         make_command = 'make -j{0} cling'.format(cores)
         if args['verbose']:
@@ -446,6 +464,14 @@ def build_dist_list(file_dict, include=[], ignore=[]):
 
 def install_prefix():
     set_vars()
+
+    if TRAVIS_BUILD_DIR:
+        ### Run cling once, dumping the include paths, helps debug issues
+        try:
+            subprocess.check_call(os.path.join(workdir, 'builddir', 'bin', 'cling') + ' -v ".I"', shell=True)
+        except Exception as e:
+            print(e)
+
     box_draw("Filtering Cling's libraries and binaries")
 
     dist_files = json.loads(
@@ -484,8 +510,14 @@ def tarball():
     tar.add(prefix, arcname=os.path.basename(prefix))
     tar.close()
 
-
+gInCleanup = False
 def cleanup():
+    global gInCleanup
+    if gInCleanup:
+        print('Failure in cleanup lead to recursion\n')
+        return 
+
+    gInCleanup = True
     print('\n')
     if args['skip_cleanup']:
         box_draw("Skipping cleanup")
@@ -534,6 +566,7 @@ def cleanup():
         if os.path.isdir(os.path.join(workdir, 'Install')):
             print('Remove directory: ' + os.path.join(workdir, 'Install'))
             shutil.rmtree(os.path.join(workdir, 'Install'))
+    gInCleanup = False
 
 
 ###############################################################################
@@ -1594,6 +1627,8 @@ CLING_GIT_URL = args['with_cling_url']
 #   'utf-8')
 VERSION = ''
 REVISION = ''
+# Travis needs some special behaviour
+TRAVIS_BUILD_DIR = os.environ.get('TRAVIS_BUILD_DIR', None)
 
 print('Cling Packaging Tool (CPT)')
 print('Arguments vector: ' + str(sys.argv))
@@ -1742,13 +1777,14 @@ if args['current_dev']:
 
     # Travis has already cloned the repo out, so don;t do it again
     # Particularly important for building a pull-request
-    travisBuildDir = os.environ.get('TRAVIS_BUILD_DIR', None)
-    if travisBuildDir:
+    if TRAVIS_BUILD_DIR:
         clingDir = os.path.join(srcdir, 'tools', 'cling')
-        os.rename(travisBuildDir, clingDir)
+        os.rename(TRAVIS_BUILD_DIR, clingDir)
+        TRAVIS_BUILD_DIR = clingDir
         # Check validity and show some info
         box_draw("Using Travis clone, last 5 commits:")
-        exec_subprocess_call(GIT_LOG + ' -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', clingDir)
+        exec_subprocess_call(GIT_LOG + ' -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', TRAVIS_BUILD_DIR)
+        print('\n')
     else:
         fetch_cling('master')
 
