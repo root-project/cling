@@ -120,7 +120,7 @@ def box_draw(msg):
     spaces_no = 80 - len(msg) - 4
     spacer = ' ' * spaces_no
 
-    if OS != 'Windows':
+    if OS == 'Linux':
         print('''
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ %s%s │
