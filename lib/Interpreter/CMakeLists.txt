@@ -198,9 +198,28 @@ if (UNIX)
     endif()
 
     if("$ENV{PATH}" MATCHES ${_path})
+      # This adds a lot of unneccessary flags, but may be useful if we're missing something
+      #set(CLING_CXX_RLTV "${_name} ${CMAKE_CXX_FLAGS}")
       set(CLING_CXX_RLTV ${_name})
     elseif(NOT CLING_CXX_PATH)
       set(CLING_CXX_PATH ${CMAKE_CXX_COMPILER})
+    endif()
+
+    # If CMAKE_CXX_FLAGS contains --gcc-toolchain= then that should be passed on
+    string(FIND "${CMAKE_CXX_FLAGS}" "--gcc-toolchain=" cling_gcc_toolchain)
+    if ("${cling_gcc_toolchain}" GREATER -1)
+      if (CLING_CXX_PATH)
+        string(FIND "${CLING_CXX_PATH}" "--gcc-toolchain=" cling_gcc_toolchain)
+        if ("${cling_gcc_toolchain}" EQUAL -1)
+          set(CLING_CXX_PATH "${CLING_CXX_PATH} --gcc-toolchain=${gcctoolchain}")
+        endif()
+      endif()
+      if (CLING_CXX_RLTV)
+        string(FIND "${CLING_CXX_RLTV}" "--gcc-toolchain=" cling_gcc_toolchain)
+        if ("${cling_gcc_toolchain}" EQUAL -1)
+          set(CLING_CXX_RLTV "${CLING_CXX_RLTV} --gcc-toolchain=${gcctoolchain}")
+        endif()
+      endif()
     endif()
   endif()
 
@@ -209,7 +228,9 @@ if (UNIX)
       execute_process(COMMAND ${CLING_CXX_PATH} -xc++ -E -v /dev/null
                       OUTPUT_QUIET ERROR_VARIABLE CLING_CXX_HEADERS)
     else()
-      execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} -xc++ -E -v /dev/null
+      # convert CMAKE_CXX_FLAGS to a list for execute_process
+      string(REPLACE " " ";" cling_tmp_arg_list ${CMAKE_CXX_FLAGS})
+      execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} ${cling_tmp_arg_list} -xc++ -E -v /dev/null
                       OUTPUT_QUIET ERROR_VARIABLE CLING_CXX_HEADERS)
     endif()
 
