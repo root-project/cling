@@ -605,7 +605,7 @@ def tarball():
     box_draw("Compress binaries into a bzip2 tarball")
     tar = tarfile.open(prefix + '.tar.bz2', 'w:bz2')
     print('Creating archive: ' + os.path.basename(prefix) + '.tar.bz2')
-    tar.add(prefix + '.tar.bz2', arcname=os.path.basename(prefix))
+    tar.add(prefix, arcname=os.path.basename(prefix))
     tar.close()
 
 gInCleanup = False
