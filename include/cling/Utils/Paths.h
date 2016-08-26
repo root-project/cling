@@ -54,7 +54,7 @@ namespace cling {
     /// processing. See Interpreter::AddIncludePaths or CIFactory::createCI
     /// for examples of what needs to be done once the paths have been added.
     ///
-    ///\param[in] PathsStr - Path(s)
+    ///\param[in] PathStr - Path(s)
     ///\param[in] Opts - HeaderSearchOptions to add paths into
     ///\param[in] Delim - Delimiter to separate paths or NULL if a single path
     ///

@@ -160,8 +160,7 @@ namespace cling {
     ///\param [in] filename - The file to read.
     /// @param[out] result - the cling::Value as result of the
     ///             execution of the last statement
-    ///\param [in] curlyToIgnore - Whether to ignore enlosing {}, and position
-    ///            of the opening '{'.
+    ///\param [in] posOpenCurly - position of the opening '{'; -1 if no curly.
     ///
     ///\returns result of the compilation.
     ///
@@ -169,6 +168,7 @@ namespace cling {
     readInputFromFile(llvm::StringRef filename,
                       Value* result,
                       size_t posOpenCurly = (size_t)(-1));
+
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///
     ///\param [in] file - The file for the redirection.

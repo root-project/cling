@@ -21,8 +21,8 @@ namespace cling {
   class CompilerOptions {
   public:
     /// \brief Construct CompilerOptions from given arguments. When argc & argv
-    /// are 0, all arguments are saved into \pRemaining to pass to clang. If argc
-    /// or argv is 0, caller is must fill in \pRemaining with any arguments that
+    /// are 0, all arguments are saved into Remaining to pass to clang. If argc
+    /// or argv is 0, caller is must fill in Remaining with any arguments that
     /// should be passed to clang.
     ///
     CompilerOptions(int argc = 0, const char* const *argv = nullptr);

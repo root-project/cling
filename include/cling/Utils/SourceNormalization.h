@@ -30,6 +30,7 @@ namespace utils {
   /// surrounded by a set of curly braces.
   ///
   /// \param source The source code to analyze.
+  /// \param LangOpts - LangOptions to use for lexing.
   /// \return the position of the unnamed macro's opening '{'; or
   ///         std::string::npos if this is not an unnamed macro.
   size_t isUnnamedMacro(llvm::StringRef source,
@@ -37,13 +38,13 @@ namespace utils {
 
   ///\brief Determine whether the source needs to be moved into a function.
   ///
-  /// If so, move possible #includes out of the future body of the function and
-  /// return the position where the function signature should be inserted.
+  /// If so, move possible includes directives out of the future body of the
+  /// function and return the position where the function signature should be
+  /// inserted.
   ///
   /// \param source - The source code to analyze; out: the source with
   ///        re-arranged includes.
   /// \param LangOpts - LangOptions to use for lexing.
-  /// \param SM - SourceManager to use for lexed SourceLocations.
   /// \return The position where the function signature and '{' should be
   ///     inserted; std::string::npos if this source should not be wrapped.
   size_t getWrapPoint(std::string& source, const clang::LangOptions& LangOpts);
