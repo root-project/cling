@@ -141,6 +141,12 @@ size_t cling::utils::getWrapPoint(std::string& source,
       continue; // Skip PP directives; they just move the wrap point.
     }
 
+    if (Tok.is(tok::eof)) {
+      // Reached EOF before seeing a non-preproc token.
+      // Nothing to wrap.
+      return std::string::npos;
+    }
+
     const tok::TokenKind kind = Tok.getKind();
 
     if (kind == tok::raw_identifier && !Tok.needsCleaning()) {
