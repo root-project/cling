@@ -16,7 +16,7 @@
 
 #ifndef CLING_CONSTEXPR
 # if defined(_MSC_VER) && (_MSC_VER < 1900)
-#  define CLING_CONSTEXPR const
+#  define CLING_CONSTEXPR
 # else
 #  define CLING_CONSTEXPR constexpr
 # endif
