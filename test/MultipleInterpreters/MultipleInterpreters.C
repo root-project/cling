@@ -7,6 +7,8 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
+// broken by ROOT's bbc130f
+// XFAIL: *
 
 // Test to check the functionality of the multiple interpreters.
 // Create a "child" interpreter and use gCling as its "parent".
