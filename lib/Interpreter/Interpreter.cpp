@@ -157,10 +157,11 @@ namespace cling {
 
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime,
-                           bool isChildInterp) :
-    m_Opts(argc, argv), m_UniqueCounter(0), m_PrintDebug(false),
-    m_DynamicLookupDeclared(false), m_DynamicLookupEnabled(false),
-    m_RawInputEnabled(false) {
+                           const Interpreter* parentInterp) :
+    m_Opts(argc, argv),
+    m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
+    m_PrintDebug(false), m_DynamicLookupDeclared(false),
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     m_DyLibManager.reset(new DynamicLibraryManager(getOptions()));
@@ -186,7 +187,7 @@ namespace cling {
 
     llvm::SmallVector<IncrementalParser::ParseResultTransaction, 2>
       IncrParserTransactions;
-    m_IncrParser->Initialize(IncrParserTransactions, isChildInterp);
+    m_IncrParser->Initialize(IncrParserTransactions, parentInterp);
 
     handleFrontendOptions();
 
@@ -204,13 +205,13 @@ namespace cling {
     bool showSuggestions = !llvm::StringRef(ClingStringify(CLING_VERSION)).startswith("ROOT");
 
     // We need InterpreterCallbacks only if it is a parent Interpreter.
-    if (!isChildInterp) {
+    if (!parentInterp) {
       std::unique_ptr<InterpreterCallbacks>
          AutoLoadCB(new AutoloadCallback(this, showSuggestions));
       setCallbacks(std::move(AutoLoadCB));
     }
 
-    m_IncrParser->SetTransformers(isChildInterp);
+    m_IncrParser->SetTransformers(parentInterp);
   }
 
   ///\brief Constructor for the child Interpreter.
@@ -219,7 +220,7 @@ namespace cling {
   Interpreter::Interpreter(const Interpreter &parentInterpreter, int argc,
                            const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime) :
-    Interpreter(argc, argv, llvmdir, noRuntime, /* isChildInterp */ true) {
+    Interpreter(argc, argv, llvmdir, noRuntime, &parentInterpreter) {
     // Do the "setup" of the connection between this interpreter and
     // its parent interpreter.
 

@@ -276,12 +276,12 @@ namespace cling {
     ///
     void IncludeCRuntime();
 
-    ///\brier The target constructor to be called from both the
-    /// delegating constructors.
+    ///\brief The target constructor to be called from both the delegating
+    /// constructors. parentInterp might be nullptr.
     ///
     Interpreter(int argc, const char* const *argv,
-                const char* llvmdir /*= 0*/, bool noRuntime,
-                bool isChildInterp);
+                const char* llvmdir, bool noRuntime,
+                const Interpreter* parentInterp);
 
   public:
     ///\brief Constructor for Interpreter.
@@ -293,7 +293,7 @@ namespace cling {
     ///
     Interpreter(int argc, const char* const *argv, const char* llvmdir = 0,
                 bool noRuntime = false) :
-      Interpreter(argc, argv, llvmdir, noRuntime, false) { }
+      Interpreter(argc, argv, llvmdir, noRuntime, nullptr) { }
 
     ///\brief Constructor for child Interpreter.
     ///\param[in] parentInterpreter - the  parent interpreter of this interpreter
