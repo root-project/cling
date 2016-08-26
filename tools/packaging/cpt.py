@@ -590,6 +590,8 @@ def install_prefix():
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
             f = os.path.join(root, file).replace(TMP_PREFIX, '')
+            if OS == 'Windows':
+                f = f.replace('\\', '/')
             if any(map(lambda x: re.search(x, f), included)):
                 print("Filter: " + f)
                 if not os.path.isdir(os.path.join(prefix, os.path.dirname(f))):
