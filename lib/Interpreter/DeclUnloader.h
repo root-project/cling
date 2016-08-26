@@ -14,11 +14,11 @@
 
 #include "clang/AST/DeclVisitor.h"
 
-#ifndef CLING_CONSTEXPR
+#ifndef CLING_CONSTEXPR_FUNC
 # if defined(_MSC_VER) && (_MSC_VER < 1900)
-#  define CLING_CONSTEXPR
+#  define CLING_CONSTEXPR_FUNC
 # else
-#  define CLING_CONSTEXPR constexpr
+#  define CLING_CONSTEXPR_FUNC constexpr
 # endif
 #endif
 
@@ -260,7 +260,7 @@ namespace clang {
     ///
     void CollectFilesToUncache(SourceLocation Loc);
 
-    CLING_CONSTEXPR static bool isDefinition(void*) { return false; }
+    CLING_CONSTEXPR_FUNC static bool isDefinition(void*) { return false; }
     static bool isDefinition(TagDecl* R);
 
     static void resetDefinitionData(void*) {
