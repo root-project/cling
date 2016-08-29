@@ -59,21 +59,10 @@ namespace cling {
     ///
     llvm::raw_ostream* m_Outs;
 
-    ///\brief The file descriptor of the copy of stdout.
+    ///\brief Internal class to store redirection state.
     ///
-    int m_backupFDStdout;
-
-    ///\brief The file descriptor of the copy of stdout.
-    ///
-    int m_backupFDStderr;
-
-    ///\brief Stores the stack for the redirect file paths for out.
-    llvm::SmallVector<llvm::SmallString<128>, 2> m_PrevStdoutFileName;
-    ///\brief Stores the stack for the redirect file paths for err.
-    llvm::SmallVector<llvm::SmallString<128>, 2> m_PrevStderrFileName;
-
-    //Counter to handle more than one redirection RAAI's
-    int m_RedirectionRAIILevel = 0;
+    class RedirectOutput;
+    std::unique_ptr<RedirectOutput> m_RedirectOutput;
 
   public:
     enum RedirectionScope {
@@ -82,7 +71,6 @@ namespace cling {
       kSTDBOTH = 3
     };
 
-  public:
     ///\brief Class to be created for each processing input to be
     /// able to redirect std.
     class MaybeRedirectOutputRAII {
@@ -128,11 +116,6 @@ namespace cling {
       m_Outs = &outs;
       return prev;
     }
-    void increaseRedirectionRAIILevel() { m_RedirectionRAIILevel++; }
-
-    void decreaseRedirectionRAIILevel() { m_RedirectionRAIILevel--; }
-
-    int getRedirectionRAIILevel() { return m_RedirectionRAIILevel; }
 
     ///\brief Process the input coming from the prompt and possibli returns
     /// result of the execution of the last statement
@@ -188,23 +171,6 @@ namespace cling {
     ///\param [in] T - the last transaction stay should filename be unloaded.
     ///\param [in] filename - The name of the file to be used as unload point.
     void registerUnloadPoint(const Transaction* T, llvm::StringRef filename);
-
-  private:
-    ///\brief Set a stream to a file
-    ///
-    ///\param [in] file - The file for the redirection.
-    ///\param [in] append - Write in append mode.
-    ///\param [in] fd - File descriptor for the file we want to open.
-    ///\param [out] prevFileStack - The stack of previous file paths.
-    void setFileStream(llvm::StringRef file, bool append, int fd,
-                  llvm::SmallVector<llvm::SmallString<128> ,2>& prevFileStack);
-
-    ///\brief Copy a file descriptor.
-    ///
-    ///\param [in] fd - The fd to be copied.
-
-    ///\returns - The copy of the file descriptor.
-    int copyFileDescriptor(int fd);
   };
 } // end namespace cling
 

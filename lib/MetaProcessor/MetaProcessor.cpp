@@ -41,33 +41,115 @@ using namespace clang;
 
 namespace cling {
 
+  class MetaProcessor::RedirectOutput {
+    typedef std::stack<std::string> RedirectStack;
+    enum { kNumRedirects = 2 };
+
+    int m_Backups[kNumRedirects];
+    RedirectStack m_Stacks[kNumRedirects];
+
+    static int translate(int fd) {
+      switch (fd) {
+        case STDOUT_FILENO: return 0;
+        case STDERR_FILENO: return 1;
+        default: break;
+      }
+      llvm_unreachable("Cannot backup given file descriptor");
+      return -1;
+    }
+
+    void backup(int fd, int iFD) {
+      // Have we already backed it up?
+      if (m_Backups[iFD] == 0) {
+        m_Backups[iFD] = dup(fd);
+        if (m_Backups[iFD] < 0) {
+          llvm::errs() << "RedirectOutput::copyFileDescriptor: Duplicating the"
+                          " file descriptor " << fd << " resulted in an error."
+                          " Will not be able to unredirect.";
+        }
+      }
+    }
+
+  public:
+    RedirectOutput() {
+      ::memset(m_Backups, 0, sizeof(m_Backups));
+    }
+
+    ~RedirectOutput() {
+      for (unsigned i = 0; i < kNumRedirects; ++i) {
+        if (const int fd = m_Backups[i])
+          ::close(fd);
+      }
+    }
+
+    void redirect(llvm::StringRef filePath, bool append, int fd) {
+      const int iFD = translate(fd);
+      RedirectStack& rStack = m_Stacks[iFD];
+
+      // If we have a fileName to redirect to store it.
+      if (!filePath.empty()) {
+        backup(fd, iFD);
+        rStack.push(filePath.str());
+        if (!append) {
+          FILE * f;
+          if (!(f = fopen(rStack.top().c_str(), "w"))) {
+            llvm::errs() << "cling::MetaProcessor::setFileStream:"
+                            " The file path " << filePath << "is not valid.";
+          } else
+            fclose(f);
+        }
+      } else {
+        // Else unredirection, so switch to the previous file.
+        // If there is no previous file on the stack we pop the file
+        if (!rStack.empty())
+          rStack.pop();
+      }
+    }
+
+    void unredirect(int expectedFD, FILE* file) {
+      // Switch back to previous file after line is processed.
+      // Flush the current content if there is any.
+      if (!feof(file))
+        fflush(file);
+
+      const int iFD = translate(expectedFD);
+      // Copy the original fd for the std.
+      if (dup2(m_Backups[iFD], expectedFD) != expectedFD) {
+          llvm::errs() << "cling::MetaProcessor::unredirect "
+                       << "The unredirection file descriptor not valid "
+                       << m_Backups[iFD] << ".\n";
+      }
+    }
+    
+    const std::string* file(int fd) const {
+      const int iFD = translate(fd);
+      return m_Stacks[iFD].empty() ? nullptr : &m_Stacks[iFD].top();
+    }
+  };
+
   MetaProcessor::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(
                                           MetaProcessor* p)
   :m_MetaProcessor(p), m_isCurrentlyRedirecting(0) {
     StringRef redirectionFile;
-    m_MetaProcessor->increaseRedirectionRAIILevel();
-    if (!m_MetaProcessor->m_PrevStdoutFileName.empty()) {
-      redirectionFile = m_MetaProcessor->m_PrevStdoutFileName.back();
-      redirect(stdout, redirectionFile.str(), kSTDOUT);
-    }
-    if (!m_MetaProcessor->m_PrevStderrFileName.empty()) {
-      redirectionFile = m_MetaProcessor->m_PrevStderrFileName.back();
-      // Deal with the case 2>&1 and 2&>1
-      if (strcmp(redirectionFile.data(), "_IO_2_1_stdout_") == 0) {
-        // If out is redirected to a file.
-        if (!m_MetaProcessor->m_PrevStdoutFileName.empty()) {
-          redirectionFile = m_MetaProcessor->m_PrevStdoutFileName.back();
-        } else {
-          unredirect(m_MetaProcessor->m_backupFDStderr, STDERR_FILENO, stderr);
+    if (RedirectOutput* output = m_MetaProcessor->m_RedirectOutput.get()) {
+      const std::string* stdOut = output->file(STDOUT_FILENO);
+      if (stdOut)
+        redirect(stdout, *stdOut, kSTDOUT);
+      if (const std::string* stdErr = output->file(STDERR_FILENO)) {
+        if (*stdErr == "_IO_2_1_stdout_") {
+          // If out is redirected to a file.
+          if (!stdOut)
+            output->unredirect(STDERR_FILENO, stderr);
+          else
+            stdErr = stdOut;
         }
+        redirect(stderr, *stdErr, kSTDERR);
       }
-      redirect(stderr, redirectionFile.str(), kSTDERR);
     }
   }
 
   MetaProcessor::MaybeRedirectOutputRAII::~MaybeRedirectOutputRAII() {
     pop();
-    m_MetaProcessor->decreaseRedirectionRAIILevel();
   }
 
   void MetaProcessor::MaybeRedirectOutputRAII::redirect(FILE* file,
@@ -88,31 +170,11 @@ namespace cling {
   void MetaProcessor::MaybeRedirectOutputRAII::pop() {
     //If we have only one redirection RAII
     //only then do the unredirection.
-    if (m_MetaProcessor->getRedirectionRAIILevel() != 1)
-      return;
-
-    if (m_isCurrentlyRedirecting & kSTDOUT) {
-      unredirect(m_MetaProcessor->m_backupFDStdout, STDOUT_FILENO, stdout);
-    }
-    if (m_isCurrentlyRedirecting & kSTDERR) {
-      unredirect(m_MetaProcessor->m_backupFDStderr, STDERR_FILENO, stderr);
-    }
-  }
-
-  void MetaProcessor::MaybeRedirectOutputRAII::unredirect(int backupFD,
-                                                          int expectedFD,
-                                                          FILE* file) {
-    // Switch back to previous file after line is processed.
-
-    // Flush the current content if there is any.
-    if (!feof(file)) {
-      fflush(file);
-    }
-    // Copy the original fd for the std.
-    if (dup2(backupFD, expectedFD) != expectedFD) {
-        llvm::errs() << "cling::MetaProcessor::unredirect "
-                     << "The unredirection file descriptor not valid "
-                     << backupFD << ".\n";
+    if (RedirectOutput* redirect = m_MetaProcessor->m_RedirectOutput.get()) {
+      if (m_isCurrentlyRedirecting & kSTDOUT)
+        redirect->unredirect(STDOUT_FILENO, stdout);
+      if (m_isCurrentlyRedirecting & kSTDERR)
+        redirect->unredirect(STDERR_FILENO, stderr);
     }
   }
 
@@ -120,13 +182,9 @@ namespace cling {
     : m_Interp(interp), m_Outs(&outs) {
     m_InputValidator.reset(new InputValidator());
     m_MetaParser.reset(new MetaParser(new MetaSema(interp, *this)));
-    m_backupFDStdout = copyFileDescriptor(STDOUT_FILENO);
-    m_backupFDStderr = copyFileDescriptor(STDERR_FILENO);
   }
 
   MetaProcessor::~MetaProcessor() {
-    close(m_backupFDStdout);
-    close(m_backupFDStderr);
   }
 
   int MetaProcessor::process(const char* input_text,
@@ -335,54 +393,15 @@ namespace cling {
     return ret;
   }
 
-  void MetaProcessor::setFileStream(llvm::StringRef file, bool append, int fd,
-              llvm::SmallVector<llvm::SmallString<128>, 2>& prevFileStack) {
-    // If we have a fileName to redirect to store it.
-    if (!file.empty()) {
-      prevFileStack.push_back(file);
-      // pop and push a null terminating 0.
-      // SmallVectorImpl<T> does not have a c_str(), thus instead of casting to
-      // a SmallString<T> we null terminate the data that we have and pop the
-      // 0 char back.
-      prevFileStack.back().push_back(0);
-      prevFileStack.back().pop_back();
-      if (!append) {
-        FILE * f;
-        if (!(f = fopen(file.data(), "w"))) {
-          llvm::errs() << "cling::MetaProcessor::setFileStream:"
-                       " The file path " << file.data() << " is not valid.\n";
-        } else {
-          fclose(f);
-        }
-      }
-    // Else unredirection, so switch to the previous file.
-    } else {
-      // If there is no previous file on the stack we pop the file
-      if (!prevFileStack.empty()) {
-        prevFileStack.pop_back();
-      }
-    }
-  }
-
-  void MetaProcessor::setStdStream(llvm::StringRef file,
-                                   RedirectionScope stream, bool append) {
-
-    if (stream & kSTDOUT) {
-      setFileStream(file, append, STDOUT_FILENO, m_PrevStdoutFileName);
-    }
-    if (stream & kSTDERR) {
-      setFileStream(file, append, STDERR_FILENO, m_PrevStderrFileName);
-    }
-  }
-
-  int MetaProcessor::copyFileDescriptor(int fd) {
-    int backupFD = dup(fd);
-    if (backupFD < 0) {
-      llvm::errs() << "MetaProcessor::copyFileDescriptor: Duplicating the file"
-                   " descriptor " << fd << " resulted in an error."
-                   " Will not be able to unredirect.\n";
-    }
-    return backupFD;
+  void MetaProcessor::setStdStream(llvm::StringRef file, RedirectionScope scope,
+                                   bool append) {
+    assert((scope & kSTDOUT || scope & kSTDERR) && "Invalid RedirectionScope");
+    if (!m_RedirectOutput)
+      m_RedirectOutput.reset(new RedirectOutput);
+    if (scope & kSTDOUT)
+      m_RedirectOutput->redirect(file, append, STDOUT_FILENO);
+    if (scope & kSTDERR)
+      m_RedirectOutput->redirect(file, append, STDERR_FILENO);
   }
 
   void MetaProcessor::registerUnloadPoint(const Transaction* T,
