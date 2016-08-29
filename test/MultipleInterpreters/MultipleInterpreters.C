@@ -24,23 +24,15 @@ int foo(){ return 42; }
 //gCling->declare("void foo(){ llvm::outs() << \"foo(void)\\n\"; }");
 
 const char* argV[1] = {"cling"};
-using namespace cling;
-Interpreter::CompilationResult compRes = Interpreter::kSuccess;
-Interpreter ChildInterp(*gCling, 1, argV);
-MetaProcessor ChildMP(ChildInterp, llvm::errs());
-
-// Also declare something in the Child Interpreter
-// Then execute it from the child interpreter
-// And check if function overloading works.
-// All needs to happen in one statement, or else the contract
+// Declare something in the child interpreter, then execute it from the child
+// interpreter, and check if function overload resolution works.
+// All needs to happen in one parent statement, or else the contract
 // that the parent is not modified during the child's lifetime
 // is violated.
-ChildMP.process(".rawInput 1\n"
-                "void foo(int i){ printf(\"foo(int) = %d\\n\", i); }\n"
-                ".rawInput 0\n"
-                "foo()\n" //CHECK: (int) 42
-                "foo(1)",
-                compRes, nullptr
-); //CHECK: foo(int) = 1
-compRes // CHECK: cling::Interpreter::CompilationResult::kSuccess
+{
+  cling::Interpreter ChildInterp(*gCling, 1, argV);
+  ChildInterp.declare("void foo(int i){ printf(\"foo(int) = %d\\n\", i); }\n");
+  ChildInterp.echo("foo()"); //CHECK: (int) 42
+  ChildInterp.echo("foo(1)"); //CHECK: foo(int) = 1
+}
 .q
