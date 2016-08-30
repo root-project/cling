@@ -4,9 +4,23 @@
 // RUN: cat /tmp/bothfile.txt | FileCheck --check-prefix=CHECK-REDIRECTBOTH %s
 // RUN: cat /tmp/anotheroutfile.txt | FileCheck --check-prefix=CHECK-REDIRECTANOTHER %s
 // RUN: cat %s | %cling 2> /tmp/stderr.txt && cat /tmp/stderr.txt | FileCheck --check-prefix=CHECKERR %s
+// RUN: cat %s | %cling 2>&1 | FileCheck --check-prefix=CHECKERR --check-prefix=CHECKOUT %s
 
 #include <iostream>
 
+.2>&1
+std::cerr << "Error into stdout.\n";
+//CHECKOUT: Error into stdout.
+.2>
+std::cerr << "Error back from stdout.\n";
+//CHECKERR: Error back from stdout.
+
+.1>&2
+std::cout << "stdout into stderr.\n";
+//CHECKERR: stdout into stderr.
+.1>
+std::cout << "stdout back from stderr.\n";
+//CHECKOUT: stdout back from stderr.
 
 // Test redirect stdout
 .> /tmp/outfile.txt
