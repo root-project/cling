@@ -111,7 +111,19 @@ namespace cling {
     return ASTTransformer::Result(D, true);
   }
 
-  bool DeclCollector::Transform(DeclGroupRef& DGR) const {
+  bool DeclCollector::Transform(DeclGroupRef& DGR) {
+    // Do not tranform recursively, e.g. when emitting a DeclExtracted decl.
+    if (m_Transforming)
+      return true;
+
+    struct TransformingRAII {
+      bool& m_Transforming;
+      TransformingRAII(bool& Transforming): m_Transforming(Transforming) {
+        m_Transforming = true;
+      }
+      ~TransformingRAII() { m_Transforming = false; }
+    } transformingUpdater(m_Transforming);
+
     llvm::SmallVector<Decl*, 4> ReplacedDecls;
     bool HaveReplacement = false;
     for (Decl* D: DGR) {

@@ -72,13 +72,16 @@ namespace cling {
     clang::ASTConsumer* m_Consumer;
     Transaction* m_CurTransaction;
 
+    /// Whether Transform() is active; prevents recursion.
+    bool m_Transforming = false;
+
     ///\brief Test whether the first decl of the DeclGroupRef comes from an AST
     /// file.
     ///
     bool comesFromASTReader(clang::DeclGroupRef DGR) const;
     bool comesFromASTReader(const clang::Decl* D) const;
 
-    bool Transform(clang::DeclGroupRef& DGR) const;
+    bool Transform(clang::DeclGroupRef& DGR);
 
     ///\brief Runs AST transformers on a transaction.
     ///
