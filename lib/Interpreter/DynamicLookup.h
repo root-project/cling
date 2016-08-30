@@ -273,12 +273,9 @@ namespace cling {
     ///
     bool IsArtificiallyDependent(clang::Expr* Node);
 
-    ///\brief Checks if the given declaration should be examined. It checks
-    /// whether a declaration context marked as dependent contains the
-    /// declaration or the declaration type is not one of those we are looking
-    /// for.
+    ///\brief Checks if the function might contain dynamically scoped Decls.
     ///
-    bool ShouldVisit(clang::Decl* D);
+    bool ShouldVisit(clang::FunctionDecl* D);
 
     /// \brief Gets all children of a given node.
     ///

@@ -845,53 +845,12 @@ namespace cling {
 
   // end EvalBuilder
 
-  // Helpers
-
-
-  // Class extracting recursively every decl defined somewhere.
-  class DeclVisitor : public RecursiveASTVisitor<DeclVisitor> {
-  private:
-    bool m_ShouldVisitSubTree;
-  public:
-    DeclVisitor() : m_ShouldVisitSubTree(false) {}
-
-    bool getShouldVisitSubTree() const { return m_ShouldVisitSubTree; }
-
-    bool isCandidate(Decl* D) {
-      // FIXME: Here we should have our custom attribute.
-      if (AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-        if (A->getAnnotation().equals("__ResolveAtRuntime"))
-          return true;
-
-      return false;
-    }
-
-    bool VisitDeclStmt(DeclStmt* DS) {
-      DeclGroupRef DGR = DS->getDeclGroup();
-      for (DeclGroupRef::const_iterator I = DGR.begin(),
-             E = DGR.end(); I != E; ++I) {
-        if (isCandidate(*I)) {
-          m_ShouldVisitSubTree = true;
-          return false; // returning false will abort the in-depth traversal.
-        }
-      }
-      return true;
-    }
-
-    // In cases when there is no decl stmt, like dep->Call();
-    bool VisitDeclRefExpr(DeclRefExpr* DRE) {
-      if (isCandidate(DRE->getDecl())) {
-        m_ShouldVisitSubTree = true;
-        return false; // returning false will abort the in-depth traversal.
-      }
-      return true;
-    }
-  };
-
-  bool EvaluateTSynthesizer::ShouldVisit(Decl* D) {
-    DeclVisitor Visitor;
-    Visitor.TraverseStmt(D->getBody());
-    return Visitor.getShouldVisitSubTree();
+  bool EvaluateTSynthesizer::ShouldVisit(FunctionDecl* D) {
+    // FIXME: Here we should have our custom attribute.
+    if (AnnotateAttr* A = D->getAttr<AnnotateAttr>())
+      if (A->getAnnotation().equals("__ResolveAtRuntime"))
+        return true;
+    return false;
   }
 
   bool EvaluateTSynthesizer::IsArtificiallyDependent(Expr* Node) {
