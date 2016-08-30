@@ -48,7 +48,7 @@ namespace utils {
     ///
     ///\returns true if the decl is a interpreter-generated wrapper function.
     ///
-    bool IsWrapper(const clang::NamedDecl* ND);
+    bool IsWrapper(const clang::FunctionDecl* ND);
 
     ///\brief Get the mangled name of a GlobalDecl.
     ///

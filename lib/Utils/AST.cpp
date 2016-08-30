@@ -49,7 +49,7 @@ namespace utils {
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
                                                       NestedNameSpecifier* scope);
 
-  bool Analyze::IsWrapper(const NamedDecl* ND) {
+  bool Analyze::IsWrapper(const FunctionDecl* ND) {
     if (!ND)
       return false;
 
