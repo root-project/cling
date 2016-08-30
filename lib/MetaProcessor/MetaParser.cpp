@@ -200,42 +200,46 @@ namespace cling {
     }
     // &> redirection for both stdout & stderr
     if (getCurTok().is(tok::ampersand)) {
-      if (constant_FD != 2) {
+      if (constant_FD == 0) {
         stream = MetaProcessor::kSTDBOTH;
       }
       consumeToken();
     }
+    llvm::StringRef file;
     if (getCurTok().is(tok::greater)) {
       bool append = false;
       consumeToken();
+      // check whether we have >>
+      if (getCurTok().is(tok::greater)) {
+        append = true;
+        consumeToken();
+      }
       // check for syntax like: 2>&1
       if (getCurTok().is(tok::ampersand)) {
-        if (constant_FD != 2) {
+        if (constant_FD == 0) {
           stream = MetaProcessor::kSTDBOTH;
         }
         consumeToken();
-      } else {
-        // check whether we have >>
-        if (getCurTok().is(tok::greater)) {
-          append = true;
-          consumeToken();
-        }
-      }
-      llvm::StringRef file;
-      if (getCurTok().is(tok::constant) && getCurTok().getConstant() == 1) {
-        file = llvm::StringRef("_IO_2_1_stdout_");
-      } else {
-        if (getCurTok().is(tok::eof)) {
-          file  = llvm::StringRef();
-        } else {
-          consumeAnyStringToken(tok::eof);
-          if (getCurTok().is(tok::raw_ident)) {
-            file = getCurTok().getIdent();
+        const Token& Tok = getCurTok();
+        if (Tok.is(tok::constant)) {
+          switch (Tok.getConstant()) {
+            case 1: file = llvm::StringRef("&1"); break;
+            case 2: file = llvm::StringRef("&2"); break;
+            default: break;
+          }
+          if (!file.empty()) {
+            // Mark the stream name as refering to stderr or stdout, not a name
+            stream = MetaProcessor::RedirectionScope(stream |
+                                                     MetaProcessor::kSTDSTRM);
             consumeToken();
           }
-          else {
-            file  = llvm::StringRef();
-          }
+        }
+      }
+      if (!getCurTok().is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
+        consumeAnyStringToken(tok::eof);
+        if (getCurTok().is(tok::raw_ident)) {
+          file = getCurTok().getIdent();
+          consumeToken();
         }
       }
       // Empty file means std.

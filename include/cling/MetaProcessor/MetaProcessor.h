@@ -67,32 +67,18 @@ namespace cling {
   public:
     enum RedirectionScope {
       kSTDOUT = 1,
-      kSTDERR = 2,
-      kSTDBOTH = 3
+      kSTDERR,
+      kSTDBOTH,
+      kSTDSTRM  // "&1" or "&2" is not a filename
     };
 
     ///\brief Class to be created for each processing input to be
     /// able to redirect std.
     class MaybeRedirectOutputRAII {
-    private:
-      MetaProcessor* m_MetaProcessor;
-      int m_isCurrentlyRedirecting;
-
+      MetaProcessor& m_MetaProcessor;
     public:
-      MaybeRedirectOutputRAII(MetaProcessor* p);
+      MaybeRedirectOutputRAII(MetaProcessor& P);
       ~MaybeRedirectOutputRAII();
-
-      // Don't mess with m_RedirectionRAIILevel
-      MaybeRedirectOutputRAII(const MaybeRedirectOutputRAII&) = delete;
-      MaybeRedirectOutputRAII(MaybeRedirectOutputRAII&&) = delete;
-      MaybeRedirectOutputRAII& operator=(const MaybeRedirectOutputRAII&) = delete;
-      MaybeRedirectOutputRAII& operator=(MaybeRedirectOutputRAII&&) = delete;
-
-    private:
-      void pop();
-      void redirect(FILE* file, const std::string& fileName,
-                    MetaProcessor::RedirectionScope scope);
-      void unredirect(int backFD, int expectedFD, FILE* file);
     };
 
   public:

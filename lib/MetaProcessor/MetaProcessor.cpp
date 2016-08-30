@@ -23,6 +23,7 @@
 
 #include "llvm/Support/Path.h"
 
+#include <fcntl.h>
 #include <fstream>
 #include <cstdlib>
 #include <cctype>
@@ -42,140 +43,239 @@ using namespace clang;
 namespace cling {
 
   class MetaProcessor::RedirectOutput {
-    typedef std::stack<std::string> RedirectStack;
-    enum { kNumRedirects = 2 };
 
-    int m_Backups[kNumRedirects];
-    RedirectStack m_Stacks[kNumRedirects];
+    static int dupOnce(int Fd, int& Bak) {
+#ifdef LLVM_ON_WIN32
+      // Possibly because Windows isn't really Posix, we need to flush
+      // now or can drop the buffer when dup2 is called with Fd later.
+      // This seems only neccessary when piping stdout or stderr, but do it
+      // for ttys to avoid over complicated code for minimal benefit.
+      ::fflush(Fd==STDOUT_FILENO ? stdout : stderr);
+#endif
+      if (Bak == kInvalidFD)
+        Bak = ::dup(Fd);
 
-    static int translate(int fd) {
-      switch (fd) {
-        case STDOUT_FILENO: return 0;
-        case STDERR_FILENO: return 1;
-        default: break;
-      }
-      llvm_unreachable("Cannot backup given file descriptor");
-      return -1;
+      return Bak;
     }
 
-    void backup(int fd, int iFD) {
-      // Have we already backed it up?
-      if (m_Backups[iFD] == 0) {
-        m_Backups[iFD] = dup(fd);
-        if (m_Backups[iFD] < 0) {
-          llvm::errs() << "RedirectOutput::copyFileDescriptor: Duplicating the"
-                          " file descriptor " << fd << " resulted in an error."
-                          " Will not be able to unredirect.";
+    struct Redirect {
+      int FD;
+      MetaProcessor::RedirectionScope Scope;
+      bool Close;
+
+      Redirect(std::string file, bool append, RedirectionScope S, int* Baks) :
+        FD(-1), Scope(S), Close(false) {
+        if (S & kSTDSTRM) {
+          // Remove the flag from Scope, we don't need it anymore
+          Scope = RedirectionScope(Scope & ~kSTDSTRM);
+          if (file == "&1")
+            FD = dupOnce(STDOUT_FILENO, Baks[0]);
+          else if (file == "&2")
+            FD = dupOnce(STDERR_FILENO, Baks[1]);
+          // Close = false; Parent manages lifetime
+          if (FD != -1)
+            return;
+          llvm_unreachable("kSTDSTRM passed for unknown stream");
         }
+        const int Perm = 0644;
+#ifdef LLVM_ON_WIN32
+        const int Mode = _O_CREAT | _O_WRONLY | (append ? _O_APPEND : _O_TRUNC);
+        FD = ::_open(file.c_str(), Mode, Perm);
+#else
+        const int Mode = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
+        FD = ::open(file.c_str(), Mode, Perm);
+#endif
+        if (FD == -1) {
+          ::perror("Redirect::open");
+          return;
+        }
+        Close = true;
+        if (append)
+          ::lseek(FD, 0, SEEK_END);
       }
+      ~Redirect() {
+        if (Close)
+          ::close(FD);
+      }
+    };
+
+    typedef std::vector<std::unique_ptr<Redirect>> RedirectStack;
+    enum { kNumRedirects = 2, kInvalidFD = -1 };
+
+    RedirectStack m_Stack;
+    int m_Bak[kNumRedirects];
+    int m_CurStdOut;
+
+#ifdef LLVM_ON_WIN32
+    // After a redirection from stdout into stderr then undirecting stdout, the
+    // console will loose line-buffering. To get arround this we test if stdout
+    // is a tty during construction, and if so mark the case when stdout has
+    // returned from a redirection into stderr, then handle it ~RedirectOutput.
+    // We need two bits for 3 possible states.
+    unsigned m_TTY : 2;
+#else
+    const bool m_TTY;
+#endif
+
+    // Exception safe push routine
+    int push(Redirect* R) {
+      std::unique_ptr<Redirect> Re(R);
+      const int FD = R->FD;
+      m_Stack.emplace_back(Re.get());
+      Re.release();
+      return FD;
+    }
+
+    // Call ::dup2 and report errMsg on failure
+    bool dup2(int oldfd, int newfd, const char* errMsg) {
+      if (::dup2(oldfd, newfd) == kInvalidFD) {
+        ::perror(errMsg);
+        return false;
+      }
+      return true;
+    }
+
+    // Restore stdstream from backup and close the backup
+    void close(int oldfd, int newfd) {
+      assert(newfd == STDOUT_FILENO || newfd == STDERR_FILENO && "Not std FD");
+      assert(oldfd == m_Bak[newfd == STDERR_FILENO] && "Not backup FD");
+      if (oldfd != kInvalidFD) {
+        dup2(oldfd, newfd, "RedirectOutput::close");
+        ::close(oldfd);
+      }
+    }
+
+    void reset(int oldfd, int newfd, FILE *F) {
+      fflush(F);
+      dup2(oldfd, newfd, "RedirectOutput::reset");
+    }
+
+    int restore(int FD, FILE *F, MetaProcessor::RedirectionScope Flag,
+                int bakFD) {
+      // If no backup, we have never redirected the file, so nothing to restore
+      if (bakFD != kInvalidFD) {
+        // Find the last redirect for the scope, and restore redirection to it
+        for (RedirectStack::const_reverse_iterator it = m_Stack.rbegin(),
+                                                   e = m_Stack.rend();
+             it != e; ++it) {
+          const Redirect *R = (*it).get();
+          if (R->Scope & Flag) {
+            dup2(R->FD, FD, "RedirectOutput::restore");
+            return R->FD;
+          }
+        }
+
+        // No redirection for this scope, restore to backup
+        reset(bakFD, FD, F);
+      }
+      return bakFD;
     }
 
   public:
-    RedirectOutput() {
-      ::memset(m_Backups, 0, sizeof(m_Backups));
+    RedirectOutput() : m_CurStdOut(kInvalidFD),
+      m_TTY(::isatty(STDOUT_FILENO) ? 1 : 0) {
+      for (unsigned i = 0; i < kNumRedirects; ++i)
+        m_Bak[i] = kInvalidFD;
     }
 
     ~RedirectOutput() {
-      for (unsigned i = 0; i < kNumRedirects; ++i) {
-        if (const int fd = m_Backups[i])
-          ::close(fd);
-      }
+      close(m_Bak[0], STDOUT_FILENO);
+      close(m_Bak[1], STDERR_FILENO);
+      while (!m_Stack.empty())
+        m_Stack.pop_back();
+
+#ifdef LLVM_ON_WIN32
+      // State 2, was tty to begin with, then redirected to stderr and back.
+      if (m_TTY == 2)
+        ::freopen("CON", "w", stdout);
+#endif
     }
 
-    void redirect(llvm::StringRef filePath, bool append, int fd) {
-      const int iFD = translate(fd);
-      RedirectStack& rStack = m_Stacks[iFD];
-
-      // If we have a fileName to redirect to store it.
-      if (!filePath.empty()) {
-        backup(fd, iFD);
-        rStack.push(filePath.str());
-        if (!append) {
-          FILE * f;
-          if (!(f = fopen(rStack.top().c_str(), "w"))) {
-            llvm::errs() << "cling::MetaProcessor::setFileStream:"
-                            " The file path " << filePath << "is not valid.";
-          } else
-            fclose(f);
+    void redirect(llvm::StringRef file, bool apnd,
+                  MetaProcessor::RedirectionScope scope) {
+      if (file.empty()) {
+        // Unredirection, remove last redirection state(s) for given scope(s)
+        if (m_Stack.empty()) {
+          llvm::errs() << "No redirections left to remove\n";
+          return;
         }
+
+        MetaProcessor::RedirectionScope lScope = scope;
+        SmallVector<RedirectStack::iterator, 2> Remove;
+        for (auto it = m_Stack.rbegin(), e = m_Stack.rend(); it != e; ++it) {
+          Redirect *R = (*it).get();
+          const unsigned Match = R->Scope & lScope;
+          if (Match) {
+#ifdef LLVM_ON_WIN32
+            // stdout back from stderr, fix up our console output on destruction
+            if (m_TTY && R->FD == m_Bak[1] && scope & kSTDOUT)
+              m_TTY = 2;
+#endif
+            // Clear the flag so restore below will ignore R for scope
+            R->Scope = MetaProcessor::RedirectionScope(R->Scope & ~Match);
+            // If no scope left, then R should be removed
+            if (!R->Scope) {
+              // standard [24.4.1/1] says &*(reverse_iterator(i)) == &*(i - 1)
+              Remove.push_back(std::next(it).base());
+            }
+            // Clear match to reduce lScope (kSTDBOTH -> kSTDOUT or kSTDERR)
+            lScope = MetaProcessor::RedirectionScope(lScope & ~Match);
+            // If nothing to match anymore, then we're done
+            if (!lScope)
+              break;
+          }
+        }
+        // std::vector::erase invalidates iterators at or after the point of
+        // the erase, so if we reverse iterate on Remove everything is fine
+        for (auto it = Remove.rbegin(), e = Remove.rend(); it != e; ++it)
+          m_Stack.erase(*it);
       } else {
-        // Else unredirection, so switch to the previous file.
-        // If there is no previous file on the stack we pop the file
-        if (!rStack.empty())
-          rStack.pop();
+        // Add new redirection state
+        if (push(new Redirect(file.str(), apnd, scope, m_Bak)) != kInvalidFD) {
+          // Save a backup for the scope(s), if not already done
+          if (scope & MetaProcessor::kSTDOUT)
+            dupOnce(STDOUT_FILENO, m_Bak[0]);
+          if (scope & MetaProcessor::kSTDERR)
+            dupOnce(STDERR_FILENO, m_Bak[1]);
+        } else
+          return; // Failure
       }
+
+      if (scope & MetaProcessor::kSTDOUT)
+        m_CurStdOut =
+            restore(STDOUT_FILENO, stdout, MetaProcessor::kSTDOUT, m_Bak[0]);
+      if (scope & MetaProcessor::kSTDERR)
+        restore(STDERR_FILENO, stderr, MetaProcessor::kSTDERR, m_Bak[1]);
     }
 
-    void unredirect(int expectedFD, FILE* file) {
-      // Switch back to previous file after line is processed.
-      // Flush the current content if there is any.
-      if (!feof(file))
-        fflush(file);
+    void resetStdOut(bool toBackup = false) {
+      // When not outputing to a TTY there is no need to unredirect as
+      // TerminalDisplay handles writing to the console FD already.
+      if (!m_TTY)
+        return;
 
-      const int iFD = translate(expectedFD);
-      // Copy the original fd for the std.
-      if (dup2(m_Backups[iFD], expectedFD) != expectedFD) {
-          llvm::errs() << "cling::MetaProcessor::unredirect "
-                       << "The unredirection file descriptor not valid "
-                       << m_Backups[iFD] << ".\n";
-      }
+      if (toBackup) {
+        if (m_Bak[0] != kInvalidFD)
+          reset(m_Bak[0], STDOUT_FILENO, stdout);
+      } else if (m_CurStdOut != kInvalidFD)
+        dup2(m_CurStdOut, STDOUT_FILENO, "RedirectOutput::reset");
     }
-    
-    const std::string* file(int fd) const {
-      const int iFD = translate(fd);
-      return m_Stacks[iFD].empty() ? nullptr : &m_Stacks[iFD].top();
+
+    bool empty() const {
+      return m_Stack.empty();
     }
   };
 
   MetaProcessor::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(
-                                          MetaProcessor* p)
-  :m_MetaProcessor(p), m_isCurrentlyRedirecting(0) {
-    StringRef redirectionFile;
-    if (RedirectOutput* output = m_MetaProcessor->m_RedirectOutput.get()) {
-      const std::string* stdOut = output->file(STDOUT_FILENO);
-      if (stdOut)
-        redirect(stdout, *stdOut, kSTDOUT);
-      if (const std::string* stdErr = output->file(STDERR_FILENO)) {
-        if (*stdErr == "_IO_2_1_stdout_") {
-          // If out is redirected to a file.
-          if (!stdOut)
-            output->unredirect(STDERR_FILENO, stderr);
-          else
-            stdErr = stdOut;
-        }
-        redirect(stderr, *stdErr, kSTDERR);
-      }
-    }
+                                                             MetaProcessor &P) :
+    m_MetaProcessor(P) {
+    if (m_MetaProcessor.m_RedirectOutput)
+      m_MetaProcessor.m_RedirectOutput->resetStdOut(true);
   }
 
   MetaProcessor::MaybeRedirectOutputRAII::~MaybeRedirectOutputRAII() {
-    pop();
-  }
-
-  void MetaProcessor::MaybeRedirectOutputRAII::redirect(FILE* file,
-                                        const std::string& fileName,
-                                        MetaProcessor::RedirectionScope scope) {
-    if (!fileName.empty()) {
-      FILE* redirectionFile = freopen(fileName.c_str(), "a", file);
-      if (!redirectionFile) {
-        llvm::errs()<<"cling::MetaProcessor::MaybeRedirectOutputRAII::redirect:"
-                    " Not succefully reopened the redirection file "
-                    << fileName.c_str() << "\n.";
-      } else {
-        m_isCurrentlyRedirecting |= scope;
-      }
-    }
-  }
-
-  void MetaProcessor::MaybeRedirectOutputRAII::pop() {
-    //If we have only one redirection RAII
-    //only then do the unredirection.
-    if (RedirectOutput* redirect = m_MetaProcessor->m_RedirectOutput.get()) {
-      if (m_isCurrentlyRedirecting & kSTDOUT)
-        redirect->unredirect(STDOUT_FILENO, stdout);
-      if (m_isCurrentlyRedirecting & kSTDERR)
-        redirect->unredirect(STDERR_FILENO, stderr);
-    }
+    if (m_MetaProcessor.m_RedirectOutput)
+      m_MetaProcessor.m_RedirectOutput->resetStdOut();
   }
 
   MetaProcessor::MetaProcessor(Interpreter& interp, raw_ostream& outs)
@@ -398,10 +498,10 @@ namespace cling {
     assert((scope & kSTDOUT || scope & kSTDERR) && "Invalid RedirectionScope");
     if (!m_RedirectOutput)
       m_RedirectOutput.reset(new RedirectOutput);
-    if (scope & kSTDOUT)
-      m_RedirectOutput->redirect(file, append, STDOUT_FILENO);
-    if (scope & kSTDERR)
-      m_RedirectOutput->redirect(file, append, STDERR_FILENO);
+
+    m_RedirectOutput->redirect(file, append, scope);
+    if (m_RedirectOutput->empty())
+      m_RedirectOutput.reset();
   }
 
   void MetaProcessor::registerUnloadPoint(const Transaction* T,
