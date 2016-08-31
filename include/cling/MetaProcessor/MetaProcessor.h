@@ -147,7 +147,7 @@ namespace cling {
     ///
     int process(const char* input_line,
                 Interpreter::CompilationResult& compRes,
-                cling::Value* result);
+                cling::Value* result = nullptr);
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.
