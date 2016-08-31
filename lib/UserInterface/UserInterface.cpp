@@ -103,36 +103,35 @@ namespace cling {
                       new UITabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(Completion);
 
-    TI.SetPrompt("[cling]$ ");
-    std::string line;
+    std::string Line;
+    std::string Prompt("[cling]$ ");
+
     while (true) {
       try {
+        TI.SetPrompt(Prompt.c_str());
         m_MetaProcessor->getOuts().flush();
         TextInput::EReadResult RR = TI.ReadInput();
-        TI.TakeInput(line);
+        TI.TakeInput(Line);
         if (RR == TextInput::kRREOF) {
           break;
         }
 
         cling::Interpreter::CompilationResult compRes;
         MetaProcessor::MaybeRedirectOutputRAII RAII(m_MetaProcessor.get());
-        const int indent = m_MetaProcessor->process(line.c_str(), compRes);
+        const int indent = m_MetaProcessor->process(Line.c_str(), compRes);
 
         // Quit requested?
         if (indent < 0)
           break;
-        std::string Prompt = "[cling]";
-        if (m_MetaProcessor->getInterpreter().isRawInputEnabled())
-          Prompt.append("! ");
-        else
-          Prompt.append("$ ");
 
-        if (indent > 0)
-          // Continuation requested.
-          Prompt.append('?' + std::string(indent * 3, ' '));
+        Prompt.replace(7, std::string::npos,
+           m_MetaProcessor->getInterpreter().isRawInputEnabled() ? "! " : "$ ");
 
-        TI.SetPrompt(Prompt.c_str());
-
+        // Continuation requested?
+        if (indent > 0) {
+          Prompt.append(1, '?');
+          Prompt.append(indent * 3, ' ');
+        }
       }
       catch(InvalidDerefException& e) {
         e.diagnose();
