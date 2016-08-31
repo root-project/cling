@@ -170,6 +170,9 @@ $(CLINGETC) : $(LLVMLIB)
 $(CLINGO)   : $(CLINGETC)
 $(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): $(CLINGCOMPDH)
 $(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): CLINGCXXFLAGS += -I$(dir $(CLINGCOMPDH)) -pthread
+ifeq ($(PLATFORM),macosx)
+$(call stripsrc,$(MODDIR)/lib/Interpreter/CIFactory.o): CLINGCXXFLAGS += -Wno-deprecated-declarations
+endif
 $(call stripsrc,$(MODDIR)/lib/Interpreter/Interpreter.o): $(CLINGCOMPDH)
 $(call stripsrc,$(MODDIR)/lib/Interpreter/Interpreter.o): CLINGCXXFLAGS += -I$(dir $(CLINGCOMPDH))
 $(call stripsrc,$(MODDIR)/lib/Interpreter/Interpreter.o): CLINGCXXFLAGS += -DCLING_VERSION=$(CLING_VERSION)
