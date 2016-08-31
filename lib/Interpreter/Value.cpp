@@ -257,9 +257,7 @@ namespace cling {
     // using llvm::outs. Keeping file descriptor open we will be able to use
     // the results in pipes (Savannah #99234).
 
-    // Alternatively we could use llvm::errs()
-    std::unique_ptr<llvm::raw_ostream> Out;
-    Out.reset(new llvm::raw_os_ostream(std::cout));
-    print(*Out.get());
+    llvm::raw_os_ostream Out(std::cout);
+    print(Out);
   }
 } // end namespace cling
