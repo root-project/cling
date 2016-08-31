@@ -79,8 +79,16 @@ static std::string getTypeString(const Value &V) {
   if (llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
     typeWithOptDeref << "(" << type << "*)";
   } else if (Ty->isPointerType()) {
-    // It's a pointer already, but the value will be a ptr-ptr.
-    typeWithOptDeref << "*(" << type << "*)";
+    if (!V.getPtr()) {
+      // Will try to print a nullptr, so this must become (TYPE*)nullptr:
+      typeWithOptDeref << "(" << type << ")";
+    } else if (Ty->getPointeeType()->isCharType()) {
+      // Print char pointers as strings.
+      typeWithOptDeref << "(" << type << "*)";
+    } else {
+      // It's a pointer already, but the value will be a ptr-ptr.
+      typeWithOptDeref << "*(" << type << "*)";
+    }
   }
   else if (Ty->isArrayType()) {
     const clang::ArrayType *ArrTy = Ty->getAsArrayTypeUnsafe();
@@ -251,6 +259,8 @@ static std::string invokePrintValueOverload(const Value &V) {
         return executePrintValue<long double>(V, V.getLongDouble());
 
       default:
+        if (!V.getPtr())
+          return "nullptr";
         return executePrintValue<void *>(V, V.getPtr());
     }
   }
@@ -258,15 +268,21 @@ static std::string invokePrintValueOverload(const Value &V) {
     return executePrintValue<long long>(V, V.getLL());
   }
   else if (Ty->isFunctionType()) {
+    if (!V.getPtr())
+      return "nullptr";
     return executePrintValue<const void *>(V, &V);
   }
   else if (Ty->isPointerType()
            || Ty->isReferenceType()
            || Ty->isArrayType()) {
+    if (!V.getPtr())
+      return "nullptr";
     return executePrintValue<void *>(V, V.getPtr());
   }
   else {
     // struct case.
+    if (!V.getPtr())
+      return "nullptr";
     return executePrintValue<void *>(V, V.getPtr());
   }
 }
