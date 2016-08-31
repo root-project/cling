@@ -79,13 +79,8 @@ static std::string getTypeString(const Value &V) {
   if (llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
     typeWithOptDeref << "(" << type << "*)";
   } else if (Ty->isPointerType()) {
-    if (Ty->getPointeeType()->isCharType()) {
-      // Print char pointers as strings.
-      typeWithOptDeref << "(" << type << "*)";
-    } else {
-      // Fallback to void pointer for other pointers and print the address.
-      typeWithOptDeref << "(const void**)";
-    }
+    // It's a pointer already, but the value will be a ptr-ptr.
+    typeWithOptDeref << "*(" << type << "*)";
   }
   else if (Ty->isArrayType()) {
     const clang::ArrayType *ArrTy = Ty->getAsArrayTypeUnsafe();
