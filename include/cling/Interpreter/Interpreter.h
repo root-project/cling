@@ -332,7 +332,9 @@ namespace cling {
 
     ///\brief Returns the current or last Transactions source location.
     ///
-    clang::SourceLocation getSourceLocation() const;
+    ///\param[in] skipWrapper - skip the length of a cling wrapper
+    ///
+    clang::SourceLocation getSourceLocation(bool skipWrapper = true) const;
 
     ///\brief Returns the next available valid free source location.
     ///
