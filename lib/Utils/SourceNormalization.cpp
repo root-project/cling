@@ -105,7 +105,7 @@ public:
       } else
         Ctor = true;
 
-      // Constructor and Desctructor identifiers must match
+      // Constructor and Destructor identifiers must match
       if (!First.equals(Identifier(Tok)))
         return false;
 
@@ -115,15 +115,17 @@ public:
     } else {
       // This doesn't handle macro expansion. Missing anything?
       if (First.equals("static") || First.equals("constexpr") ||
-          First.equals("inline") || First.equals("const")) {
+          First.equals("inline") || First.equals("const") ||
+          First.equals("struct") || First.equals("class")) {  // struct T func()
+        // Advance past identifier for below
         if (!LexClean(Tok))
           return false;
       }
 
       if (!Tok.is(tok::raw_identifier)) {
-        // Skip over all *& tokens for a return value
+        // Skip over all '*' '&' '::' tokens for a return value
         do {
-          if (!Tok.isOneOf(tok::star, tok::amp))
+          if (!Tok.isOneOf(tok::star, tok::amp) && !Tok.is(tok::coloncolon))
             return false;
           if (!LexClean(Tok))
             return false;
