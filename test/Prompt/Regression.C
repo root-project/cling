@@ -43,3 +43,6 @@ const enumName constVar = (enumName) 1 // k2 is invisible!
 // ROOT-8036: check that library symbols do not override interpreter symbols
 int step = 10 // CHECK: (int) 10
 step // CHECK: (int) 10
+
+gCling->process("#ifdef __UNDEFINED__\n42\n#endif")
+//CHECK: (cling::Interpreter::CompilationResult) (cling::Interpreter::CompilationResult::kSuccess) : (unsigned int) 0

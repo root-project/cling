@@ -213,13 +213,15 @@ namespace cling {
     ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
     ///\param [out] T - The cling::Transaction of the compiled input.
+    ///\param [in] wrapPoint - Where in input to begin the wrapper
     ///
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult EvaluateInternal(const std::string& input,
                                        CompilationOptions CO,
                                        Value* V = 0,
-                                       Transaction** T = 0);
+                                       Transaction** T = 0,
+                                       size_t wrapPoint = 0);
 
     ///\brief Worker function to code complete after all the mechanism
     /// has been set up.
