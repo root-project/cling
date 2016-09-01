@@ -521,21 +521,18 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
     CO.CheckPointerValidity = 0;
-    CO.CodeCompletionOffset = offset;
 
+    std::string wrapped = input;
+    size_t wrapPos = utils::getWrapPoint(wrapped, getCI()->getLangOpts());
+    const std::string& Src = WrapInput(wrapped, wrapped, wrapPos);
 
-    std::string wrappedInput = input;
-    std::string wrapperName;
-    size_t wrapPos = utils::getWrapPoint(wrappedInput, getCI()->getLangOpts());
-
-    if (wrapPos != std::string::npos)
-      WrapInput(wrappedInput, wrapperName, CO);
+    CO.CodeCompletionOffset = offset + wrapPos;
 
     StateDebuggerRAII stateDebugger(this);
 
     // This triggers the FileEntry to be created and the completion
     // point to be set in clang.
-    m_IncrParser->Compile(wrappedInput, CO);
+    m_IncrParser->Compile(Src, CO);
 
     return kSuccess;
   }
@@ -656,16 +653,27 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
+  const std::string& Interpreter::WrapInput(const std::string& Input,
+                                            std::string& Output,
+                                            size_t& WrapPoint) const {
+    // If wrapPoint is > length of input, nothing is wrapped!
+    if (WrapPoint < Input.size()) {
+      std::string Header("void ");
+      Header.append(createUniqueWrapper());
+      Header.append("(void* vpClingValue) {\n ");
 
-  void Interpreter::WrapInput(std::string& input, std::string& fname,
-                              CompilationOptions &CO) {
-    fname = createUniqueWrapper();
-    std::string wrapperHeader = "void " + fname + "(void* vpClingValue) {\n ";
-    if (CO.CodeCompletionOffset != -1) {
-      CO.CodeCompletionOffset += wrapperHeader.size();
+      // Suppport Input and Output begin the same string
+      std::string Wrapper = Input.substr(WrapPoint);
+      Wrapper.insert(0, Header);
+      Wrapper.append("\n;\n}");
+      Wrapper.insert(0, Input.substr(0, WrapPoint));
+      Wrapper.swap(Output);
+      WrapPoint += Header.size();
+      return Output;
     }
-    input.insert(0, wrapperHeader);
-    input.append("\n;\n}");
+    // in-case std::string::npos was passed
+    WrapPoint = 0;
+    return Input;
   }
 
   Interpreter::ExecutionResult
@@ -872,12 +880,9 @@ namespace cling {
     return name.startswith(utils::Synthesize::UniquePrefix);
   }
 
-  llvm::StringRef Interpreter::createUniqueWrapper() {
-    const size_t size
-      = sizeof(utils::Synthesize::UniquePrefix) + sizeof(m_UniqueCounter);
-    llvm::SmallString<size> out(utils::Synthesize::UniquePrefix);
+  llvm::StringRef Interpreter::createUniqueWrapper() const {
+    llvm::SmallString<128> out(utils::Synthesize::UniquePrefix);
     llvm::raw_svector_ostream(out) << m_UniqueCounter++;
-
     return (getCI()->getASTContext().Idents.getOwn(out)).getName();
   }
 
@@ -915,15 +920,8 @@ namespace cling {
     StateDebuggerRAII stateDebugger(this);
 
     // Wrap the expression
-    std::string WrapperName;
-    std::string Wrapper;
-    // If wrapPoint is length of input, nothing is wrapped!
-    if (wrapPoint != input.size()) {
-      Wrapper = input.substr(wrapPoint);
-      WrapInput(Wrapper, WrapperName, CO);
-      Wrapper.insert(0, input.substr(0, wrapPoint));
-    } else
-      Wrapper = input;
+    std::string WrapperBuffer;
+    const std::string& Wrapper = WrapInput(input, WrapperBuffer, wrapPoint);
 
     // We have wrapped and need to disable warnings that are caused by
     // non-default C++ at the prompt:
