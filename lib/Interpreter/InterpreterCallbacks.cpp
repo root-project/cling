@@ -338,6 +338,16 @@ namespace test {
       DC = static_cast<DeclContext*>(S->getEntity());
       S = S->getParent();
     }
+
+    // DynamicLookup only happens inside topmost functions:
+    clang::DeclContext* TopmostDC = DC;
+    while (!isa<TranslationUnitDecl>(TopmostDC->getParent())) {
+      TopmostDC = TopmostDC->getParent();
+    }
+    FunctionDecl* TopmostFunc = dyn_cast<FunctionDecl>(TopmostDC);
+    if (!TopmostFunc)
+       return false;
+
     DeclarationName Name = R.getLookupName();
     IdentifierInfo* II = Name.getAsIdentifierInfo();
     SourceLocation Loc = R.getNameLoc();
@@ -348,7 +358,8 @@ namespace test {
     // is a gross hack, because TClingCallbacks shouldn't know about
     // EvaluateTSynthesizer at all!
     SourceRange invalidRange;
-    Res->addAttr(new (C) AnnotateAttr(invalidRange, C, "__ResolveAtRuntime", 0));
+    TopmostFunc->addAttr(new (C) AnnotateAttr(invalidRange, C,
+                                              "__ResolveAtRuntime", 0));
     R.addDecl(Res);
     DC->addDecl(Res);
     // Say that we can handle the situation. Clang should try to recover
