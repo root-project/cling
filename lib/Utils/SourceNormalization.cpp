@@ -58,6 +58,128 @@ public:
     }
     return true;
   }
+
+  ///\brief Lex a token that requires no cleaning
+  ///
+  /// \return - Result of the lex and whether the token is clean.
+  bool LexClean(Token& Tok) {
+    if (!LexFromRawLexer(Tok))
+      return !Tok.needsCleaning();
+    return false;
+  }
+
+  ///\brief Test if a given token is a valid identifier for the current language
+  ///
+  /// \param Tok - Token, advanced to first token to test
+  /// \return - The valid identifier or empty llvm::StringRef
+  llvm::StringRef Identifier(Token& Tok) const {
+    if (Tok.is(tok::raw_identifier)) {
+      StringRef Id(Tok.getRawIdentifier());
+      if (Lexer::isIdentifierBodyChar(Id.front(), getLangOpts()))
+        return Id;
+    }
+    return llvm::StringRef();
+  }
+
+  ///\brief Test if the given input is a function definition
+  ///
+  /// \param Tok - Token, advanced to first token to test
+  /// \param First - First token identifier.
+  /// \return - true if the input is a function
+  bool IsFunction(Token& Tok, llvm::StringRef First) {
+    if (!Lexer::isIdentifierBodyChar(First.front(), getLangOpts()))
+      return false;
+
+    // Early out calling a function/macro Ident()
+    if (!LexClean(Tok) || Tok.is(tok::l_paren))
+      return false;
+
+    bool Ctor = false;
+    if (getLangOpts().CPlusPlus && Tok.is(tok::coloncolon)) {
+      // CLASS::CLASS or CLASS::~CLASS
+      if (!LexClean(Tok))
+        return false;
+      if (Tok.is(tok::tilde)) {
+        if (!LexClean(Tok))
+          return false;
+      } else
+        Ctor = true;
+
+      // Constructor and Desctructor identifiers must match
+      if (!First.equals(Identifier(Tok)))
+        return false;
+
+      // Advance to argument list
+      if (!LexClean(Tok))
+        return false;
+    } else {
+      // This doesn't handle macro expansion. Missing anything?
+      if (First.equals("static") || First.equals("constexpr") ||
+          First.equals("inline") || First.equals("const")) {
+        if (!LexClean(Tok))
+          return false;
+      }
+
+      if (!Tok.is(tok::raw_identifier)) {
+        // Skip over all *& tokens for a return value
+        do {
+          if (!Tok.isOneOf(tok::star, tok::amp))
+            return false;
+          if (!LexClean(Tok))
+            return false;
+        } while (!Tok.is(tok::raw_identifier));
+      }
+
+      // Function or class name
+      if (Identifier(Tok).empty())
+        return false;
+
+      // Advance to argument list or method name
+      if (!LexClean(Tok))
+        return false;
+
+      if (getLangOpts().CPlusPlus && Tok.is(tok::coloncolon)) {
+        // Method name
+        if (!LexClean(Tok) || Identifier(Tok).empty())
+          return false;
+        // Advance to argument list
+        if (!LexClean(Tok))
+          return false;
+      }
+    }
+
+    // Argument list
+    if (!Tok.is(tok::l_paren))
+      return false;
+
+    for (int unBalanced = 1; unBalanced;) {
+      if (!LexClean(Tok))
+        return false;
+      if (Tok.is(tok::r_paren))
+        --unBalanced;
+      else if (Tok.is(tok::l_paren))
+        ++unBalanced;
+    }
+
+    if (!LexClean(Tok))
+      return false;
+
+    // 'int func() {' or 'CLASS::method() {'
+    if (Tok.is(tok::l_brace))
+      return true;
+
+    if (getLangOpts().CPlusPlus) {
+      // constructor initialization 'CLASS::CLASS() :'
+      if (Ctor && Tok.is(tok::colon))
+        return true;
+
+      // class const method 'CLASS::method() const {'
+      if (!Ctor && Identifier(Tok).equals("const"))
+        return LexClean(Tok) && Tok.is(tok::l_brace);
+    }
+
+    return false;
+  }
 };
 
 size_t getFileOffset(const Token& Tok) {
@@ -167,6 +289,8 @@ size_t cling::utils::getWrapPoint(std::string& source,
       if (keyword.equals("namespace"))
         return std::string::npos;
       if (keyword.equals("template"))
+        return std::string::npos;
+      if (Lex.IsFunction(Tok, keyword))
         return std::string::npos;
 
       // There is something else here that needs to be wrapped.
