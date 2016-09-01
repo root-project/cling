@@ -26,10 +26,8 @@ namespace test { int y = 0; }
 
 TemplatedF((int)2) // expected-diagnostics{{C++ requires a type specifier for all declarations}} expected-diagnostics{{expected ';' after top level declarator}}
 
-.rawInput 1
 template<> int TemplatedF(int i) { return i + 100; }
 int OverloadedF(int i) { return i + 100;}
-.rawInput 0
 
 int __my_i = 10
 // CHECK: (int) 10

@@ -20,8 +20,6 @@
 
 #include <stdio.h>
 
-.rawInput 1
-
 using namespace cling;
 
 void generateNestedTransaction(int depth) {
@@ -35,8 +33,6 @@ void generateNestedTransaction(int depth) {
   } // this will cause every even transaction to be reused.
   generateNestedTransaction(--depth);
 }
-
-.rawInput 0
 
 generateNestedTransaction(5);
 const cling::Transaction* T = gCling->getFirstTransaction();
