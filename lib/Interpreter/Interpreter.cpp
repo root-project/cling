@@ -420,7 +420,8 @@ namespace cling {
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
     CO.CheckPointerValidity = 1;
-    if (EvaluateInternal(wrapReadySource, CO, V, T) == Interpreter::kFailure) {
+    if (EvaluateInternal(wrapReadySource, CO, V, T, wrapPoint)
+                                                     == Interpreter::kFailure) {
       return Interpreter::kFailure;
     }
 
@@ -909,13 +910,20 @@ namespace cling {
   Interpreter::EvaluateInternal(const std::string& input,
                                 CompilationOptions CO,
                                 Value* V, /* = 0 */
-                                Transaction** T /* = 0 */) {
+                                Transaction** T /* = 0 */,
+                                size_t wrapPoint /* = 0*/) {
     StateDebuggerRAII stateDebugger(this);
 
     // Wrap the expression
     std::string WrapperName;
-    std::string Wrapper = input;
-    WrapInput(Wrapper, WrapperName, CO);
+    std::string Wrapper;
+    // If wrapPoint is length of input, nothing is wrapped!
+    if (wrapPoint != input.size()) {
+      Wrapper = input.substr(wrapPoint);
+      WrapInput(Wrapper, WrapperName, CO);
+      Wrapper.insert(0, input.substr(0, wrapPoint));
+    } else
+      Wrapper = input;
 
     // We have wrapped and need to disable warnings that are caused by
     // non-default C++ at the prompt:

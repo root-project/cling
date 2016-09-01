@@ -11,6 +11,17 @@
 
 extern "C" int printf(const char*,...);
 
+class TestDecl { public: int methodDefLater(); } t
+// CHECK: (class TestDecl &) @0x{{.*}}
+int TestDecl::methodDefLater() { return 2; }
+t.methodDefLater()
+// CHECK: (int) 2
+
+class TestDecl2 { public: float methodDefLater(); } b;
+float TestDecl2::methodDefLater() { return 5.f; }
+b.methodDefLater()
+// CHECK: (float) 5.00000f
+
 static int staticFunc(int a) {
   printf("staticFunc(%d)\n", a);
   return 1;
@@ -80,8 +91,6 @@ Test::~Test() {
 }
 // CHECK: Test::~Test
 
-extern "C" int printf(const char*,...);
-
 class Test2 {
   int A, B;
 public:
@@ -90,6 +99,18 @@ public:
   int addition() const;
   void argspacing(int a, int b, int c) const;
 
+  class Nested {
+    public:
+      struct Value {
+        typedef int type;
+      };
+      Value::type m_A;
+      Nested(int A);
+      ~Nested();
+      int simpleAdd(int b) const;
+      int* pointer() const;
+      const int& reference() const;
+  };
 };
 
 Test2::Test2(int a, int b) : A(a), B(b) {
@@ -111,7 +132,6 @@ void Test2::argspacing(int a,
   printf("Test2::argspacing(%d,%d,%d)\n", a, b, c);
 }
 
-
 Test2 t0(4, 5);
 // CHECK: Test2::Test2(4,5)
 
@@ -123,6 +143,36 @@ t0.addition()
 
 t0.argspacing(1,2,3)
 // CHECK: Test2::argspacing(1,2,3)
+
+Test2::Nested::Nested(int A) : m_A(A) {
+  printf("Nested::Nested(%d)\n", m_A*2);
+}
+
+Test2::Nested::~Nested() {
+  printf("Nested::~Nested(%d)\n", m_A);
+}
+
+Test2::Nested::Value::type Test2::Nested::simpleAdd(int b) const {
+  return m_A + b;
+}
+
+Test2::Nested::Value::type* Test2::Nested::pointer() const {
+  return (int*)&m_A;
+}
+const Test2::Nested::Value::type & Test2::Nested::reference() const {
+  return m_A;
+}
+
+{
+  Test2::Nested Nest(45);
+  // CHECK: Nested::Nested(90)
+}
+// CHECK: Nested::~Nested(45)
+
+Test2::Nested Nest2(80);
+// CHECK: Nested::Nested(160)
+Nest2.simpleAdd(3)
+// CHECK: (Test2::Nested::Value::type) 83
 
 class Test2 classReturn() { return Test2(10, 11); }
 classReturn()
