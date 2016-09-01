@@ -41,14 +41,12 @@ custom_namespace::standaloneFunc(pNull, 1, f); // expected-warning {{null passed
 custom_namespace::standaloneFunc(p, 1, fNull); // expected-warning {{null passed to a callee that requires a non-null argument}}
 printf(charNull, ""); // expected-warning {{null passed to a callee that requires a non-null argument}}
 
-.rawInput 1
 int trampoline() {
   custom_namespace::standaloneFunc(pNull, 1, fNull);
   custom_namespace::standaloneFunc(pNull, 1, f);
   custom_namespace::standaloneFunc(p, 1, fNull);
   return 1;
 }
-.rawInput 0
 
 //trampoline()
 

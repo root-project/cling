@@ -17,9 +17,8 @@
 
 
 //Declare something in the parent interpreter
-.rawInput 1
 int foo(){ return 42; }
-.rawInput 0
+
 // OR
 //gCling->declare("void foo(){ llvm::outs() << \"foo(void)\\n\"; }");
 

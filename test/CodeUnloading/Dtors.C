@@ -33,7 +33,7 @@ public:
 // See CodeGenModule::EmitCXXGlobalVarDeclInitFunc() - they get emitted *next*
 // to GLOBAL__I_a, not as call nodes within GLOBAL__I_a.
 .storeState "preUnload3"
-.rawInput 1
+
 struct XYZ {
    XYZ(int I = -10): m(I) {}
    int m;
@@ -53,7 +53,7 @@ int T(){
    S<int> o;
    return o.one.m;
 }
-.rawInput 0
+
 .undo 7
 .compareState "preUnload3"
 
@@ -65,7 +65,7 @@ int T(){
 12  // This is a temporary fix, not to allow .undo to try to unload RuntimePrintvalue.h
     // If this is not here, the test hangs on first .undo 3 below. Should be investigated further.
 .storeState "preUnload2"
-.rawInput 1
+
 extern "C" int printf(const char*, ...);
 struct X {
    X(): i(12) {}
@@ -77,7 +77,7 @@ int S() {
    X b;
    return a.i + b.i;
 }
-.rawInput 0
+
 S() // CHECK: (int) 24
 .undo 3 // Remove up to "X a;"
 // CHECK-NEXT: ~X: 1

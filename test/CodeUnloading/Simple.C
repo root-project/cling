@@ -15,13 +15,11 @@ printf("Force printf codegeneration. Otherwise CG will defer it and .storeState 
 .storeState "preUnload"
 int f = 0;
 .undo
-.rawInput 1
 int f() {
   printf("Now f is a function\n");
   return 0;
 } int a = f();
 .undo
-.rawInput 0
 //CHECK: Now f is a function
 .compareState "preUnload"
 //CHECK-NOT: Differences

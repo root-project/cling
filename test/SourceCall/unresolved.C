@@ -10,10 +10,8 @@
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
 // Test handling and recovery from calling an unresolved symbol.
 
-.rawInput
-int foo(); // extern C++
+extern int foo(); // extern C++
 void bar() { foo(); }
-.rawInput
 extern "C" int functionWithoutDefinition();
 
 int i = 42;
