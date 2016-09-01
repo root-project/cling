@@ -154,11 +154,6 @@ namespace cling {
     return m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
   }
 
-  clang::SourceLocation Interpreter::getSourceLocation() const {
-    const Transaction* T = getLatestTransaction();
-    return T ? T->getSourceStart(getCI()->getSourceManager()) : SourceLocation();
-  }
-
   bool Interpreter::isInSyntaxOnlyMode() const {
     return getCI()->getFrontendOpts().ProgramAction
       == clang::frontend::ParseSyntaxOnly;
@@ -1036,6 +1031,21 @@ namespace cling {
 
   bool Interpreter::isUniqueWrapper(llvm::StringRef name) {
     return name.startswith(utils::Synthesize::UniquePrefix);
+  }
+
+  clang::SourceLocation Interpreter::getSourceLocation(bool skipWrapper) const {
+    const Transaction* T = getLatestTransaction();
+    if (!T)
+      return SourceLocation();
+
+    const SourceManager &SM = getCI()->getSourceManager();
+    if (skipWrapper) {
+      cling::ostrstream Strm;
+      Strm << "void " << utils::Synthesize::UniquePrefix << m_UniqueCounter
+           << "(void* vpClingValue) {\n ";
+      return T->getSourceStart(SM).getLocWithOffset(Strm.str().size());
+    }
+    return T->getSourceStart(SM);
   }
 
   Interpreter::CompilationResult
