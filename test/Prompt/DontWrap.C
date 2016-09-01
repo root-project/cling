@@ -124,6 +124,15 @@ t0.addition()
 t0.argspacing(1,2,3)
 // CHECK: Test2::argspacing(1,2,3)
 
+class Test2 classReturn() { return Test2(10, 11); }
+classReturn()
+// CHECK: Test2::Test2(10,11)
+// CHECK: (class Test2) @0x{{.*}}
+
+class Test2* classReturnPtr() { return nullptr; }
+classReturnPtr()
+// CHECK: (class Test2 *) nullptr
+
 int Ref = 42;
 const int& cIntRef(const int &val) {
   return val;
