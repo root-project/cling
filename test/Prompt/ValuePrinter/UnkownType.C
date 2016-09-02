@@ -9,9 +9,9 @@
 //RUN: cat %s | %cling -Xclang -verify 2>&1
 // Test unknownTypeTest
 
- #include <x86intrin.h>
+typedef float vec4f __attribute__((ext_vector_type(4)));
 
- __m128 testVar;
-testVar // expected-error@2 {{__attribute__((__vector_size__(4 * sizeof(float)))) float has unknown type, which is not supported for this kind of declaration}}
+vec4f testVar;
+testVar // expected-error {{float __attribute__((ext_vector_type(4))) has unknown type, which is not supported for this kind of declaration}}
 
 .q
