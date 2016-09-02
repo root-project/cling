@@ -480,6 +480,7 @@ namespace cling {
 
     void setBufferFID(clang::FileID FID) { m_BufferFID = FID; }
     clang::FileID getBufferFID() const { return m_BufferFID; }
+    clang::SourceLocation getSourceStart(const clang::SourceManager& SM) const;
 
     ///\brief The transactions could be reused and the pointer couldn't serve
     /// as a unique handle to a transaction. Unique handles are used by clients
