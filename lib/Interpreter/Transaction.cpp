@@ -372,4 +372,12 @@ namespace cling {
     return D->isFromASTFile();
   }
 
+  SourceLocation
+  Transaction::getSourceStart(const clang::SourceManager& SM) const {
+    // Children can have invalid BufferIDs. In that case use the parent's.
+    if (m_BufferFID.isInvalid() && m_Parent)
+      return m_Parent->getSourceStart(SM);
+    return SM.getLocForStartOfFile(m_BufferFID);
+  }
+
 } // end namespace cling
