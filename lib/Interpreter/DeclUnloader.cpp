@@ -1061,13 +1061,41 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
-  bool DeclUnloader::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
+  bool DeclUnloader::wasInstatiatedBefore(Decl* D,
+                                          const SourceLocation& Loc) const {
+    if (m_CurTransaction && Loc.isValid()) {
+      // ##TODO: If this was never instantiated then Loc.isValid() is false
+      // But what does that mean? Should we return false just to get rid of it
+      SourceManager &SManger = m_Sema->getSourceManager();
+      if (SManger.isBeforeInTranslationUnit(Loc,
+                                 m_CurTransaction->getSourceStart(SManger))) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  template <class DeclT>
+  bool DeclUnloader::VisitSpecializations(DeclT *D) {
+    llvm::SmallVector<typename DeclT::spec_iterator::pointer, 8> specs;
+    for (typename DeclT::spec_iterator I = D->spec_begin(),
+           E = D->spec_end(); I != E; ++I) {
+      if (!wasInstatiatedBefore(*I, I->getPointOfInstantiation()))
+        specs.push_back(*I);
+    }
+
     bool Successful = true;
+    for (typename DeclT::spec_iterator::pointer spec : specs)
+      Successful &= Visit(spec);
+
+    return Successful;
+  }
+
+  bool DeclUnloader::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
+    // FunctionTemplateDecl: TemplateDecl, Redeclarable
 
     // Remove specializations:
-    for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(),
-           E = FTD->spec_end(); I != E; ++I)
-      Successful &= Visit(*I);
+    bool Successful = VisitSpecializations(FTD);
 
     Successful &= VisitRedeclarableTemplateDecl(FTD);
     Successful &= VisitFunctionDecl(FTD->getTemplatedDecl());
@@ -1080,11 +1108,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     if (CTD == m_Sema->StdInitializerList)
       m_Sema->StdInitializerList = m_Sema->StdInitializerList->getPreviousDecl();
 
-    bool Successful = true;
     // Remove specializations:
-    for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(),
-           E = CTD->spec_end(); I != E; ++I)
-      Successful &= Visit(*I);
+    bool Successful = VisitSpecializations(CTD);
 
     Successful &= VisitRedeclarableTemplateDecl(CTD);
     Successful &= Visit(CTD->getTemplatedDecl());
@@ -1176,7 +1201,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitClassTemplateSpecializationDecl(
                                         ClassTemplateSpecializationDecl* CTSD) {
     // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
-    bool Successful = VisitCXXRecordDecl(CTSD);
+
     ClassTemplateSpecializationDecl* CanonCTSD =
       static_cast<ClassTemplateSpecializationDecl*>(CTSD->getCanonicalDecl());
     if (auto D = dyn_cast<ClassTemplatePartialSpecializationDecl>(CanonCTSD))
@@ -1186,6 +1211,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     else
       ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
                                                  CanonCTSD);
-    return Successful;
+
+    //###FIXME We can get here through DeclUnloader::VisitSpecializations
+    // in which case we know the folowing is true
+    if (!wasInstatiatedBefore(CTSD, CTSD->getPointOfInstantiation()))
+      return VisitCXXRecordDecl(CTSD);
+    
+    return true;
   }
 } // end namespace cling
