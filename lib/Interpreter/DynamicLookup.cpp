@@ -121,16 +121,18 @@ namespace {
       m_EvalTSynth(evalTSynth) {}
 
     bool VisitFunctionDecl(FunctionDecl* FD) {
-      cling::ASTNodeInfo Replacement = m_EvalTSynth.Visit(FD->getBody());
-      if (Replacement.hasErrorOccurred()) {
-        FD->setBody(nullptr);
-        return true;
-      }
+      if (Stmt* Body = FD->getBody()) {
+        cling::ASTNodeInfo Replacement = m_EvalTSynth.Visit(Body);
+        if (Replacement.hasErrorOccurred()) {
+          FD->setBody(nullptr);
+          return true;
+        }
 
-      if (Replacement.isForReplacement()) {
-        // FIXME: support multiple Stmt Replacement!
-        FD->setBody(Replacement.getAsSingleNode());
-        return true;
+        if (Replacement.isForReplacement()) {
+          // FIXME: support multiple Stmt Replacement!
+          FD->setBody(Replacement.getAsSingleNode());
+          return true;
+        }
       }
 
       return false;
