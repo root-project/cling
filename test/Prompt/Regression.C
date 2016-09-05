@@ -46,3 +46,7 @@ step // CHECK: (int) 10
 
 gCling->process("#ifdef __UNDEFINED__\n42\n#endif")
 //CHECK: (cling::Interpreter::CompilationResult) (cling::Interpreter::CompilationResult::kSuccess) : (unsigned int) 0
+
+// ROOT-8300
+struct B { static void *fgStaticVar; B(){ printf("B::B()\n"); } };
+B b; // CHECK: B::B()
