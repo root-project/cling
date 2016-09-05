@@ -169,9 +169,9 @@ matrix:
       compiler: clang
 
     - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
+      env: COMPILER=g++-6 CCOMPILER=gcc-6
       osx_image: xcode7.2
-      compiler: clang
+      compiler: g++-6
 
     - os: osx
       env: COMPILER=clang++ CCOMPILER=clang
@@ -198,6 +198,11 @@ install:
     export CMAKE=$CLING_BUILD_DEPS/cmake/bin/cmake
   elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
     brew install ccache python coreutils
+    if [[ "$COMPILER" == g++-* ]]; then
+      brew install "gcc${COMPILER##*++-}"
+      export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
+      export CFLAGS="-D__builtin_unreachable=__builtin_trap"
+    fi
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
     export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
     PATH="/usr/local/opt/ccache/libexec:$PATH"
@@ -207,7 +212,7 @@ install:
 
   # Containers need to timeout before the buildscript exists
   if [ $TRAVIS_OS_NAME == 'osx' ] || [ "$DIST" == "trusty" ]; then
-    TIMEOUT='44m' # Any more and Travis might cancel
+    TIMEOUT='43m' # Any more and Travis might cancel
   fi
 
   # If we timeout, objects can be corrupted in the cache, causing link errors
