@@ -50,3 +50,10 @@ gCling->process("#ifdef __UNDEFINED__\n42\n#endif")
 // ROOT-8300
 struct B { static void *fgStaticVar; B(){ printf("B::B()\n"); } };
 B b; // CHECK: B::B()
+
+// ROOT-7857
+template <class T> void tfunc(T) {}
+struct ROOT7857{
+  void func() { tfunc((ROOT7857*)0); }
+};
+ROOT7857* root7857;
