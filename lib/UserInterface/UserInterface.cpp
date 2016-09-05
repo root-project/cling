@@ -9,7 +9,6 @@
 
 #include "cling/UserInterface/UserInterface.h"
 
-#include "cling/UserInterface/CompilationException.h"
 #include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "textinput/Callbacks.h"
@@ -50,14 +49,7 @@
 #include <memory>
 
 namespace {
-  // Handle fatal llvm errors by throwing an exception.
-  // Yes, throwing exceptions in error handlers is bad.
-  // Doing nothing is pretty terrible, too.
-  void exceptionErrorHandler(void * /*user_data*/,
-                             const std::string& reason,
-                             bool /*gen_crash_diag*/) {
-    throw cling::CompilationException(reason);
-  }
+
 #if defined(LLVM_ON_UNIX)
   static void GetUserHomeDirectory(llvm::SmallVectorImpl<char>& str) {
     str.clear();
@@ -110,8 +102,6 @@ namespace {
 }
 
 namespace cling {
-  // Declared in CompilationException.h; vtable pinned here.
-  CompilationException::~CompilationException() LLVM_NOEXCEPT {}
 
   UserInterface::UserInterface(Interpreter& interp) {
     // We need stream that doesn't close its file descriptor, thus we are not
@@ -119,7 +109,7 @@ namespace cling {
     // the results in pipes (Savannah #99234).
     static llvm::raw_fd_ostream m_MPOuts (STDOUT_FILENO, /*ShouldClose*/false);
     m_MetaProcessor.reset(new MetaProcessor(interp, m_MPOuts));
-    llvm::install_fatal_error_handler(&exceptionErrorHandler);
+    llvm::install_fatal_error_handler(&CompilationException::throwingHandler);
   }
 
   UserInterface::~UserInterface() {}

@@ -69,4 +69,20 @@ namespace cling {
     else
       return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
   }
+
+  CompilationException::CompilationException(const std::string& reason) :
+    std::runtime_error(reason) {}
+
+  CompilationException::~CompilationException() LLVM_NOEXCEPT {}
+
+  const char* CompilationException::what() const LLVM_NOEXCEPT {
+    return std::runtime_error::what();
+  }
+
+  void CompilationException::throwingHandler(void * /*user_data*/,
+                                             const std::string& reason,
+                                             bool /*gen_crash_diag*/) {
+    throw cling::CompilationException(reason);
+  }
+
 } // end namespace cling
