@@ -57,3 +57,9 @@ struct ROOT7857{
   void func() { tfunc((ROOT7857*)0); }
 };
 ROOT7857* root7857;
+
+// ROOT-5248
+class MyClass;
+extern MyClass* my;
+class MyClass {public: MyClass* getMyClass() {return 0;}} cl;
+MyClass* my = cl.getMyClass();
