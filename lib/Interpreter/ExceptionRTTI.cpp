@@ -53,15 +53,15 @@ void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
 
 namespace cling {
   // Pin vtable
-  InterpreterException::~InterpreterException() noexcept {}
+  InterpreterException::~InterpreterException() LLVM_NOEXCEPT {}
 
-  const char* InterpreterException::what() const noexcept {
+  const char* InterpreterException::what() const LLVM_NOEXCEPT {
     return "runtime_exception\n";
   }
 
-  InvalidDerefException::~InvalidDerefException() noexcept {}
+  InvalidDerefException::~InvalidDerefException() LLVM_NOEXCEPT {}
 
-  const char* InvalidDerefException::what() const noexcept {
+  const char* InvalidDerefException::what() const LLVM_NOEXCEPT {
     // Invalid memory access.
     if (m_Type == cling::InvalidDerefException::DerefType::INVALID_MEM)
       return "Trying to access a pointer that points to an invalid memory address.";
