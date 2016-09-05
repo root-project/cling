@@ -14,12 +14,11 @@ extern "C" int printf(const char*,...);
 #include "cling/Utils/AST.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/GlobalDecl.h"
-.rawInput
+
 const char* comp(void* A, void* B) {
   if (A == B) { return "equal"; }
   else { printf("[%p %p] ", A, B); return "DIFFER!"; }
 }
-.rawInput
 
 bool fromJIT = false;
 clang::Sema& sema = gCling->getSema();

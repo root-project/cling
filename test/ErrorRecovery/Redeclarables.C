@@ -21,11 +21,9 @@ int my_funct();
 .compareState "testRedeclarables"
 // CHECK-NOT: Differences
 
-.rawInput 1
 int my_funct() {
   return 20;
 }
-.rawInput 0
 
 int my_int = 20;
 

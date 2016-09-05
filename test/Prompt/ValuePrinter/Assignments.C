@@ -50,9 +50,8 @@ e2
 float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0.00000f, 1.00000f, 2.00000f, 3.00000f, 4.00000f, 5.00000f }
 std::string sarr[3] = {"A", "B", "C"} // CHECK: (std::string [3]) { "A", "B", "C" }
 
-.rawInput
 typedef void (*F_t)(int);
-.rawInput
+
 F_t fp = 0;
 fp // CHECK: (F_t) Function @0x0
 #include <stdio.h>
