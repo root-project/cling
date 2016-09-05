@@ -10,15 +10,8 @@
 #ifndef CLING_RUNTIME_EXCEPTION_H
 #define CLING_RUNTIME_EXCEPTION_H
 
+#include "llvm/Support/Compiler.h"
 #include <exception>
-
-#ifndef CLING_NOEXCEPT
-# if defined(_MSC_VER) && (_MSC_VER < 1900)
-#  define CLING_NOEXCEPT
-# else
-#  define CLING_NOEXCEPT noexcept
-# endif
-#endif
 
 namespace clang {
   class Sema;
@@ -31,9 +24,9 @@ namespace cling {
   ///
   class InterpreterException : public std::exception {
   public:
-    virtual ~InterpreterException() CLING_NOEXCEPT;
+    virtual ~InterpreterException() LLVM_NOEXCEPT;
 
-    virtual const char* what() const CLING_NOEXCEPT;
+    virtual const char* what() const LLVM_NOEXCEPT;
     virtual void diagnose() const {}
   };
 
@@ -50,9 +43,9 @@ namespace cling {
     DerefType m_Type;
   public:
     InvalidDerefException(clang::Sema* S, clang::Expr* E, DerefType type);
-    virtual ~InvalidDerefException() CLING_NOEXCEPT;
+    virtual ~InvalidDerefException() LLVM_NOEXCEPT;
 
-    const char* what() const CLING_NOEXCEPT override;
+    const char* what() const LLVM_NOEXCEPT override;
     void diagnose() const override;
   };
 } // end namespace cling
