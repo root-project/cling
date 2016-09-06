@@ -371,12 +371,22 @@ else()
 endif()
 
 #Allow user to prepend to list via cmake -DCLING_INCLUDE_PATHS=
-set(cling_include_deflt "\
+if(DEFINED ROOT_BINARY_DIR)
+  set(cling_include_deflt "\
+${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
+${CMAKE_CURRENT_BINARY_DIR}/../llvm/src/tools/clang/include${cling_path_delim}\
+${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include${cling_path_delim}\
+${CMAKE_CURRENT_BINARY_DIR}/../llvm/src/include${cling_path_delim}\
+${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/include"
+  )
+else()
+  set(cling_include_deflt "\
 ${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../../include"
-)
+  )
+endif()
 
 if (WIN32)
  set(cling_include_deflt "${cling_include_deflt}${cling_path_delim}\
