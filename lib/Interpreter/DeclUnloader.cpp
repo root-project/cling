@@ -793,6 +793,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         GlobalValueEraser GVEraser(m_CodeGen);
         GVEraser.EraseGlobalValue(GV);
       }
+      m_CodeGen->forgetDecl(GD);
     }
   }
 
