@@ -10,4 +10,6 @@
 
 struct {int j;}; // expected-error {{anonymous structs and classes must be class members}}
 
+// ROOT-7610
+do { int a = 0; } while(a==0); // expected-error {{use of undeclared identifier 'a'}}
 .q
