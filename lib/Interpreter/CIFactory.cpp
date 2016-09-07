@@ -935,7 +935,11 @@ namespace {
 #ifdef CLING_INCLUDE_PATHS
     if (HOpts.Verbose)
       llvm::errs() << "  \"" CLING_INCLUDE_PATHS "\"\n";
-    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
+  #ifndef _WIN32
+    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts, ":");
+  #else
+    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts, ";");
+  #endif
 #endif
     llvm::SmallString<512> P(ClingBin);
     if (!P.empty()) {
