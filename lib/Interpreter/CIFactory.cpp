@@ -201,6 +201,7 @@ static bool getWindowsSDKDir(std::string &path) {
   return false;
 }
 
+#if LLVM_MSC_PREREQ(1900)
 // Find the most recent version of Universal CRT or Windows 10 SDK.
 // vcvarsqueryregistry.bat from Visual Studio 2015 sorts entries in the include
 // directory by name and uses the last one of the list.
@@ -240,6 +241,7 @@ static bool getUniversalCRTSdkDir(std::string &Path,
   Path = sPath;
   return getWindows10SDKVersion(Path, UCRTVersion);
 }
+#endif
 
   // Get Visual Studio installation directory.
 static bool getVisualStudioDir(std::string &path) {
@@ -613,12 +615,14 @@ namespace {
           }
         }
       }
+
+#if LLVM_MSC_PREREQ(1900)
       std::string UniversalCRTSdkPath;
       std::string UCRTVersion;
-
       if (getUniversalCRTSdkDir(UniversalCRTSdkPath, UCRTVersion))
           sArguments.addArgument("-I",
                   UniversalCRTSdkPath + "\\Include\\" + UCRTVersion + "\\ucrt");
+#endif
 
 #else // _MSC_VER
 
