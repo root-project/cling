@@ -56,7 +56,9 @@
 #ifdef _MSC_VER
   #define WIN32_LEAN_AND_MEAN
   #define NOGDI
-  #define NOMINMAX
+  #ifndef NOMINMAX
+    #define NOMINMAX
+  #endif
   #include <Windows.h>
   #include <sstream>
   #define popen _popen

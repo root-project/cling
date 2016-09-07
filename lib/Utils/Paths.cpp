@@ -122,9 +122,24 @@ bool SplitPaths(llvm::StringRef PathStr,
                 llvm::SmallVectorImpl<llvm::StringRef>& Paths,
                 SplitMode Mode, llvm::StringRef Delim, bool Verbose) {
   bool AllExisted = true;
+#ifdef _MSC_VER
+  const bool WindowsColon = Delim.equals(":");
+#endif
   for (std::pair<llvm::StringRef, llvm::StringRef> Split = PathStr.split(Delim);
        !Split.second.empty(); Split = PathStr.split(Delim)) {
-    const bool Exists = llvm::sys::fs::is_directory(Split.first);
+    bool Exists = llvm::sys::fs::is_directory(Split.first);
+#ifdef _MSC_VER
+  // TODO: Should this all go away and have user handle platform differences?
+  // Right now there are issues with CMake updating cling-compiledata.h
+  // and it was previoulsy generating 'C:\User\Path:G:\Another\Path'
+  if (!Exists && WindowsColon && Split.first.size()==1) {
+    std::pair<llvm::StringRef, llvm::StringRef> Tmp = Split.second.split(Delim);
+    // Split.first = 'C', but we want 'C:', so Tmp.first.size()+2
+    Split.first = llvm::StringRef(Split.first.data(), Tmp.first.size()+2);
+    Split.second = Tmp.second;
+    Exists = llvm::sys::fs::is_directory(Split.first);
+  }
+#endif
     AllExisted = AllExisted && Exists;
 
     if (!Exists) {
@@ -145,11 +160,13 @@ bool SplitPaths(llvm::StringRef PathStr,
             LogNonExistantDirectory(Split.first);
         }
         return false;
-      } else if (Verbose)
+      } else if (Mode == kAllowNonExistant)
+        Paths.push_back(Split.first);
+      else if (Verbose)
         LogNonExistantDirectory(Split.first);
-    }
+    } else
+      Paths.push_back(Split.first);
 
-    Paths.push_back(Split.first);
     PathStr = Split.second;
   }
 
@@ -158,6 +175,8 @@ bool SplitPaths(llvm::StringRef PathStr,
     AllExisted = false;
     if (Mode == kAllowNonExistant)
       Paths.push_back(PathStr);
+    else if (Verbose)
+      LogNonExistantDirectory(PathStr);
   } else
     Paths.push_back(PathStr);
 
