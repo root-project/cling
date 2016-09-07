@@ -86,10 +86,15 @@ namespace {
     container_t m_Saved;
 
   public:
-    
-    void addArgument(const char* arg, std::string value = std::string()) {
-      m_Saved.push_back(std::make_pair(arg,std::move(value)));
+    // First argument is string-pooled, must be constant data.
+    void addArgument(const char* Arg, std::string Value = std::string()) {
+      m_Saved.emplace_back(Arg, std::move(Value));
     }
+    void addHeaderSearch(std::string Value) {
+      addArgument("-I", std::move(Value));
+    }
+    void addArgument(std::string Value) { addArgument("", std::move(Value)); }
+
     container_t::const_iterator begin() const { return m_Saved.begin(); }
     container_t::const_iterator end() const { return m_Saved.end(); }
     bool empty() const { return m_Saved.empty(); }
@@ -123,7 +128,7 @@ namespace {
               cling::utils::LogNonExistantDirectory(Path);
           }
           else
-            Args.addArgument("-I", Path.str());
+            Args.addHeaderSearch(Path.str());
         }
       }
       ::pclose(PF);
@@ -162,7 +167,7 @@ namespace {
     }
 
     for (llvm::StringRef Path : Paths)
-      Args.addArgument("-I", Path.str());
+      Args.addHeaderSearch(Path.str());
 
     return true;
   }
@@ -189,19 +194,19 @@ namespace {
           const std::string VSIncl = VSDir + "\\VC\\include";
           if (Verbose)
             cling::log() << "Adding VisualStudio SDK: '" << VSIncl << "'\n";
-          sArguments.addArgument("-I", std::move(VSIncl));
+          sArguments.addHeaderSearch(std::move(VSIncl));
         }
         if (!opts.NoBuiltinInc) {
           if (!WinSDK.empty()) {
             WinSDK.append("\\include");
             if (Verbose)
               cling::log() << "Adding Windows SDK: '" << WinSDK << "'\n";
-            sArguments.addArgument("-I", std::move(WinSDK));
+            sArguments.addHeaderSearch(std::move(WinSDK));
           } else {
             VSDir.append("\\VC\\PlatformSDK\\Include");
             if (Verbose)
               cling::log() << "Adding Platform SDK: '" << VSDir << "'\n";
-            sArguments.addArgument("-I", std::move(VSDir));
+            sArguments.addHeaderSearch(std::move(VSDir));
           }
         }
       }
@@ -210,7 +215,7 @@ namespace {
       if (!UnivSDK.empty()) {
         if (Verbose)
           cling::log() << "Adding UniversalCRT SDK: '" << UnivSDK << "'\n";
-        sArguments.addArgument("-I", std::move(UnivSDK));
+        sArguments.addHeaderSearch(std::move(UnivSDK));
       }
 #endif
 
