@@ -145,11 +145,13 @@ bool SplitPaths(llvm::StringRef PathStr,
             LogNonExistantDirectory(Split.first);
         }
         return false;
-      } else if (Verbose)
+      } else if (Mode == kAllowNonExistant)
+        Paths.push_back(Split.first);
+      else if (Verbose)
         LogNonExistantDirectory(Split.first);
-    }
+    } else
+      Paths.push_back(Split.first);
 
-    Paths.push_back(Split.first);
     PathStr = Split.second;
   }
 
@@ -158,6 +160,8 @@ bool SplitPaths(llvm::StringRef PathStr,
     AllExisted = false;
     if (Mode == kAllowNonExistant)
       Paths.push_back(PathStr);
+    else if (Verbose)
+      LogNonExistantDirectory(PathStr);
   } else
     Paths.push_back(PathStr);
 
