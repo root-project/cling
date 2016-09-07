@@ -329,6 +329,29 @@ namespace cling {
     return "";
   }
 
+#if defined(LLVM_ON_WIN32)
+  static void GetLastErrorAsString(const char* Prefix, std::string& ErrStr) {
+    if (const DWORD Err = ::GetLastError()) {
+      llvm::raw_string_ostream Strm(ErrStr);
+      Strm << Prefix << ": returned " << Err;
+
+      LPTSTR Message = nullptr;
+      const DWORD Size = ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                nullptr, Err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPTSTR)&Message, 0, nullptr);
+
+      if (Size && Message) {
+        Strm << " (" << Message << ')';
+        ::LocalFree(Message);
+        Strm.flush();
+        while (ErrStr.back() == '\n')
+          ErrStr.pop_back();
+      }
+    }
+  }
+#endif
+
   DynamicLibraryManager::LoadLibResult
   DynamicLibraryManager::loadLibrary(const std::string& libStem,
                                      bool permanent, bool resolved) {
@@ -348,8 +371,8 @@ namespace cling {
 #if defined(LLVM_ON_WIN32)
     HMODULE dyLibHandle = LoadLibraryEx(canonicalLoadedLib.c_str(), NULL,
                                         DONT_RESOLVE_DLL_REFERENCES);
-    errMsg = "LoadLibraryEx: GetLastError() returned ";
-    errMsg += GetLastError();
+    if (!dyLibHandle)
+      GetLastErrorAsString("LoadLibraryEx", errMsg);
 #else
     const void* dyLibHandle = dlopen(canonicalLoadedLib.c_str(),
                                      RTLD_LAZY|RTLD_GLOBAL);
@@ -391,15 +414,19 @@ namespace cling {
     std::string errMsg;
     // TODO: !permanent case
 #if defined(LLVM_ON_WIN32)
-    FreeLibrary((HMODULE)dyLibHandle);
-    errMsg = "UnoadLibraryEx: GetLastError() returned ";
-    errMsg += GetLastError();
+    if (FreeLibrary((HMODULE)dyLibHandle) == 0)
+      GetLastErrorAsString("FreeLibrary", errMsg);
 #else
     dlclose(const_cast<void*>(dyLibHandle));
     if (const char* DyLibError = dlerror()) {
       errMsg = DyLibError;
     }
 #endif
+    if (!errMsg.empty()) {
+      llvm::errs() << "cling::DynamicLibraryManager::unloadLibrary(): "
+                   << errMsg << '\n';
+    }
+
     if (InterpreterCallbacks* C = getCallbacks())
       C->LibraryUnloaded(dyLibHandle, canonicalLoadedLib);
 
