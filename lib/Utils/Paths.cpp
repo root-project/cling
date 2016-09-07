@@ -124,32 +124,37 @@ bool SplitPaths(llvm::StringRef PathStr,
   bool AllExisted = true;
   for (std::pair<llvm::StringRef, llvm::StringRef> Split = PathStr.split(Delim);
        !Split.second.empty(); Split = PathStr.split(Delim)) {
-    const bool Exists = llvm::sys::fs::is_directory(Split.first);
-    AllExisted = AllExisted && Exists;
 
-    if (!Exists) {
-      if (Mode == kFailNonExistant) {
-        if (Verbose) {
-          // Exiting early, but still log all non-existant paths that we have
-          LogNonExistantDirectory(Split.first);
-          while (!Split.second.empty()) {
-            Split = PathStr.split(Delim);
-            if (llvm::sys::fs::is_directory(Split.first)) {
-              llvm::errs() << "  ignoring directory that exists \""
-                           << Split.first << "\"\n";
-            } else
-              LogNonExistantDirectory(Split.first);
-            Split = Split.second.split(Delim);
-          }
-          if (!llvm::sys::fs::is_directory(Split.first))
+    if (!Split.first.empty()) {
+      const bool Exists = llvm::sys::fs::is_directory(Split.first);
+      AllExisted = AllExisted && Exists;
+
+      if (!Exists) {
+        if (Mode == kFailNonExistant) {
+          if (Verbose) {
+            // Exiting early, but still log all non-existant paths that we have
             LogNonExistantDirectory(Split.first);
-        }
-        return false;
-      } else if (Verbose)
-        LogNonExistantDirectory(Split.first);
+            while (!Split.second.empty()) {
+              Split = PathStr.split(Delim);
+              if (llvm::sys::fs::is_directory(Split.first)) {
+                llvm::errs() << "  ignoring directory that exists \""
+                             << Split.first << "\"\n";
+              } else
+                LogNonExistantDirectory(Split.first);
+              Split = Split.second.split(Delim);
+            }
+            if (!llvm::sys::fs::is_directory(Split.first))
+              LogNonExistantDirectory(Split.first);
+          }
+          return false;
+        } else if (Mode == kAllowNonExistant)
+          Paths.push_back(Split.first);
+        else if (Verbose)
+          LogNonExistantDirectory(Split.first);
+      } else
+        Paths.push_back(Split.first);
     }
 
-    Paths.push_back(Split.first);
     PathStr = Split.second;
   }
 
@@ -158,6 +163,8 @@ bool SplitPaths(llvm::StringRef PathStr,
     AllExisted = false;
     if (Mode == kAllowNonExistant)
       Paths.push_back(PathStr);
+    else if (Verbose)
+      LogNonExistantDirectory(PathStr);
   } else
     Paths.push_back(PathStr);
 
