@@ -593,26 +593,51 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   }
 
   static void AddRuntimeIncludePaths(llvm::StringRef ClingBin,
-                                     clang::HeaderSearchOptions& HOpts) {
-    if (HOpts.Verbose)
-      cling::log() << "Adding runtime include paths:\n";
-    // Add configuration paths to interpreter's include files.
-#ifdef CLING_INCLUDE_PATHS
-    if (HOpts.Verbose)
-      cling::log() << "  \"" CLING_INCLUDE_PATHS "\"\n";
-    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
-#endif
-    llvm::SmallString<512> P(ClingBin);
-    if (!P.empty()) {
-      // Remove /cling from foo/bin/clang
-      llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
-      // Remove /bin   from foo/bin
-      ExeIncl = llvm::sys::path::parent_path(ExeIncl);
-      P.resize(ExeIncl.size());
-      // Get foo/include
-      llvm::sys::path::append(P, "include");
-      if (llvm::sys::fs::is_directory(P.str()))
-        utils::AddIncludePaths(P.str(), HOpts, nullptr);
+                                     std::vector<const char*>& Args,
+                                     bool Verbose) {
+    // Using a static here follows the pattern used by AddHostArguments.
+    // It both avoids doing work twice, and forces all child Interpreters to
+    // have been invoked with some common set of flags.
+    static std::vector<std::string> sArguments;
+    if (sArguments.empty()) {
+  #ifdef CLING_INCLUDE_PATHS
+      // Add configuration paths to interpreter's include files.
+      llvm::SmallVector<llvm::StringRef, 8> Paths;
+      cling::utils::SplitPaths(CLING_INCLUDE_PATHS, Paths,
+                               utils::kAllowNonExistant, platform::kEnvDelim,
+                               Verbose);
+      for (llvm::StringRef& Path : Paths)
+        sArguments.push_back(Path.str());
+  #endif
+
+      llvm::SmallString<1024> P(ClingBin);
+      if (!P.empty()) {
+        // Remove /cling from foo/bin/clang
+        llvm::StringRef ExeIncl = llvm::sys::path::parent_path(P);
+        // Remove /bin   from foo/bin
+        ExeIncl = llvm::sys::path::parent_path(ExeIncl);
+        P.resize(ExeIncl.size());
+        // Get foo/include
+        llvm::sys::path::append(P, "include");
+        if (llvm::sys::fs::is_directory(P))
+          sArguments.push_back(P.str());
+      }
+    }
+
+    for (const std::string& arg : sArguments) {
+      Args.push_back("-I");
+      Args.push_back(arg.c_str());
+    }
+
+    if (Verbose) {
+      cling::log() << "Added runtime include paths:"
+  #ifdef CLING_INCLUDE_PATHS
+                   << " '" CLING_INCLUDE_PATHS "'"
+  #endif
+                   << "\n";
+
+      for (const std::string& arg : sArguments)
+        cling::log() << "  " << arg << "\n";
     }
   }
 
@@ -740,6 +765,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Add host specific includes, -resource-dir if necessary, and -isysroot
     std::string ClingBin = GetExecutablePath(argv[0]);
     AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts);
+    if (!OnlyLex && !COpts.NoBuiltinInc)
+      AddRuntimeIncludePaths(ClingBin, argvCompile, COpts.Verbose);
 
     // Be explicit about the stdlib on OS X
     // Would be nice on Linux but will warn 'argument unused during compilation'
@@ -987,29 +1014,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CGOpts.CXXCtorDtorAliases = 0;
     CGOpts.VerifyModule = 0; // takes too long
 
-    if (!OnlyLex) {
-      // -nobuiltininc
-      clang::HeaderSearchOptions& HOpts = CI->getHeaderSearchOpts();
-      if (CI->getHeaderSearchOpts().UseBuiltinIncludes)
-        AddRuntimeIncludePaths(ClingBin, HOpts);
-
-      // Write a marker to know the rest of the output is from clang
-      if (COpts.Verbose)
-        cling::log() << "Setting up system headers with clang:\n";
-
-      // ### FIXME:
-      // Want to update LLVM to 3.9 realease and better testing first, but
-      // ApplyHeaderSearchOptions shouldn't even be called here:
-      //   1. It's already been called via CI->createPreprocessor(TU_Complete)
-      //   2. It could corrupt clang's directory cache
-      // HeaderSearchOptions.::AddSearchPath is a better alternative
-
-      clang::ApplyHeaderSearchOptions(PP.getHeaderSearchInfo(), HOpts,
-                                      PP.getLangOpts(),
-                                      PP.getTargetInfo().getTriple());
-    }
-
-    return CI.release(); // Passes over the ownership to the caller.
+    // Passes over the ownership to the caller.
+    return CI.release();
   }
 
 } // unnamed namespace
