@@ -11,6 +11,7 @@
 #define CLING_INTERPRETER_CALLBACKS_H
 
 #include "clang/AST/DeclarationName.h"
+#include "clang/Basic/SourceLocation.h"
 
 #include "llvm/ADT/ArrayRef.h"
 
