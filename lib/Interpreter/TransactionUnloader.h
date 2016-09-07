@@ -10,6 +10,10 @@
 #ifndef CLING_TRANSACTION_UNLOADER
 #define CLING_TRANSACTION_UNLOADER
 
+namespace llvm {
+  class Module;
+}
+
 namespace clang {
   class CodeGenerator;
   class Decl;
@@ -36,6 +40,7 @@ namespace cling {
     bool unloadDeserializedDeclarations(Transaction* T,
                                         clang::DeclUnloader& DeclU);
     bool unloadFromPreprocessor(Transaction* T, clang::DeclUnloader& DeclU);
+    bool unloadModule(llvm::Module* M);
 
   public:
     TransactionUnloader(cling::Interpreter* I, clang::Sema* Sema,
