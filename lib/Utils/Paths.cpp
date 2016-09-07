@@ -130,7 +130,8 @@ bool SplitPaths(llvm::StringRef PathStr,
     bool Exists = llvm::sys::fs::is_directory(Split.first);
 #ifdef _MSC_VER
   // TODO: Should this all go away and have user handle platform differences?
-  // Right now CMake is generating 'C:\User\Path:G:\Another\Path' so it can't
+  // Right now there are issues with CMake updating cling-compiledata.h
+  // and it was previoulsy generating 'C:\User\Path:G:\Another\Path'
   if (!Exists && WindowsColon && Split.first.size()==1) {
     std::pair<llvm::StringRef, llvm::StringRef> Tmp = Split.second.split(Delim);
     // Split.first = 'C', but we want 'C:', so Tmp.first.size()+2

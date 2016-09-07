@@ -364,17 +364,24 @@ option(CLING_INCLUDE_TESTS
        "Generate build targets for the Cling unit tests."
        ${LLVM_INCLUDE_TESTS})
 
+if (NOT WIN32)
+  set(cling_path_delim ":")
+else()
+  set(cling_path_delim ";")
+endif()
+
 #Allow user to prepend to list via cmake -DCLING_INCLUDE_PATHS=
 set(cling_include_deflt "\
-${CMAKE_INSTALL_PREFIX}/include:${CMAKE_CURRENT_SOURCE_DIR}/include:\
-${CMAKE_CURRENT_SOURCE_DIR}/../clang/include:\
+${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
+${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
+${CMAKE_CURRENT_SOURCE_DIR}/../clang/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../../include"
 )
 
 if(NOT CLING_INCLUDE_PATHS)
  set(CLING_INCLUDE_PATHS "${cling_include_deflt}")
 else()
- set(CLING_INCLUDE_PATHS "${CLING_INCLUDE_PATHS}:${cling_include_deflt}")
+ set(CLING_INCLUDE_PATHS "${CLING_INCLUDE_PATHS}${cling_path_delim}${cling_include_deflt}")
 endif()
 
 # All targets below may depend on all tablegen'd files.
