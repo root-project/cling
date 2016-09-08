@@ -53,15 +53,15 @@ void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
 
 namespace cling {
   // Pin vtable
-  InterpreterException::~InterpreterException() noexcept {}
+  InterpreterException::~InterpreterException() LLVM_NOEXCEPT {}
 
-  const char* InterpreterException::what() const noexcept {
+  const char* InterpreterException::what() const LLVM_NOEXCEPT {
     return "runtime_exception\n";
   }
 
-  InvalidDerefException::~InvalidDerefException() noexcept {}
+  InvalidDerefException::~InvalidDerefException() LLVM_NOEXCEPT {}
 
-  const char* InvalidDerefException::what() const noexcept {
+  const char* InvalidDerefException::what() const LLVM_NOEXCEPT {
     // Invalid memory access.
     if (m_Type == cling::InvalidDerefException::DerefType::INVALID_MEM)
       return "Trying to access a pointer that points to an invalid memory address.";
@@ -69,4 +69,20 @@ namespace cling {
     else
       return "Trying to dereference null pointer or trying to call routine taking non-null arguments";
   }
+
+  CompilationException::CompilationException(const std::string& reason) :
+    std::runtime_error(reason) {}
+
+  CompilationException::~CompilationException() LLVM_NOEXCEPT {}
+
+  const char* CompilationException::what() const LLVM_NOEXCEPT {
+    return std::runtime_error::what();
+  }
+
+  void CompilationException::throwingHandler(void * /*user_data*/,
+                                             const std::string& reason,
+                                             bool /*gen_crash_diag*/) {
+    throw cling::CompilationException(reason);
+  }
+
 } // end namespace cling
