@@ -666,44 +666,48 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
     CI->createFileManager();
 
-    llvm::StringRef PCHFileName
+    std::string& PCHFileName
       = Invocation->getPreprocessorOpts().ImplicitPCHInclude;
     if (!PCHFileName.empty()) {
-      // Load target options etc from PCH.
-      struct PCHListener: public ASTReaderListener {
-        CompilerInvocation& m_Invocation;
+      if (cling::utils::LookForFile(argvCompile, PCHFileName,
+              &CI->getFileManager(),
+              COpts.Verbose ? "Precompiled header" : nullptr)) {
+        // Load target options etc from PCH.
+        struct PCHListener: public ASTReaderListener {
+          CompilerInvocation& m_Invocation;
 
-        PCHListener(CompilerInvocation& I): m_Invocation(I) {}
+          PCHListener(CompilerInvocation& I): m_Invocation(I) {}
 
-        bool ReadLanguageOptions(const LangOptions &LangOpts,
+          bool ReadLanguageOptions(const LangOptions &LangOpts,
+                                   bool /*Complain*/,
+                                   bool /*AllowCompatibleDifferences*/) override {
+            *m_Invocation.getLangOpts() = LangOpts;
+            return false;
+          }
+          bool ReadTargetOptions(const TargetOptions &TargetOpts,
                                  bool /*Complain*/,
                                  bool /*AllowCompatibleDifferences*/) override {
-          *m_Invocation.getLangOpts() = LangOpts;
-          return false;
-        }
-        bool ReadTargetOptions(const TargetOptions &TargetOpts,
-                               bool /*Complain*/,
-                               bool /*AllowCompatibleDifferences*/) override {
-          m_Invocation.getTargetOpts() = TargetOpts;
-          return false;
-        }
-        bool ReadPreprocessorOptions(const PreprocessorOptions &PPOpts,
-                                     bool /*Complain*/,
-                                std::string &/*SuggestedPredefines*/) override {
-          // Import selected options, e.g. don't overwrite ImplicitPCHInclude.
-          PreprocessorOptions& myPP = m_Invocation.getPreprocessorOpts();
-          insertBehind(myPP.Macros, PPOpts.Macros);
-          insertBehind(myPP.Includes, PPOpts.Includes);
-          insertBehind(myPP.MacroIncludes, PPOpts.MacroIncludes);
-          return false;
-        }
-      };
-      PCHListener listener(*Invocation);
-      ASTReader::readASTFileControlBlock(PCHFileName,
-                                         CI->getFileManager(),
-                                         CI->getPCHContainerReader(),
-                                         false /*FindModuleFileExtensions*/,
-                                         listener);
+            m_Invocation.getTargetOpts() = TargetOpts;
+            return false;
+          }
+          bool ReadPreprocessorOptions(const PreprocessorOptions &PPOpts,
+                                       bool /*Complain*/,
+                                  std::string &/*SuggestedPredefines*/) override {
+            // Import selected options, e.g. don't overwrite ImplicitPCHInclude.
+            PreprocessorOptions& myPP = m_Invocation.getPreprocessorOpts();
+            insertBehind(myPP.Macros, PPOpts.Macros);
+            insertBehind(myPP.Includes, PPOpts.Includes);
+            insertBehind(myPP.MacroIncludes, PPOpts.MacroIncludes);
+            return false;
+          }
+        };
+        PCHListener listener(*Invocation);
+        ASTReader::readASTFileControlBlock(PCHFileName,
+                                           CI->getFileManager(),
+                                           CI->getPCHContainerReader(),
+                                           false /*FindModuleFileExtensions*/,
+                                           listener);
+      }
     }
 
     Invocation->getFrontendOpts().DisableFree = true;
