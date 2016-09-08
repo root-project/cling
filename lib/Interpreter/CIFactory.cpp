@@ -243,14 +243,23 @@ static bool getUniversalCRTSdkDir(std::string &Path,
 }
 #endif
 
+static void logSearch(const char* Name, const std::string& Value,
+                      const char* Found = nullptr) {
+  if (Found)
+    llvm::errs() << "Found " << Name << " '" << Value << "' that matches "
+                 << Found << " version\n";
+  else
+    llvm::errs() << Name << " '" << Value << "' not found.\n";
+}
+
 static void trimString(const char* Value, const char* SubStr,
-                       std::string& Out) {
+  std::string& Out) {
   const char* End = ::strstr(Value, SubStr);
   Out = End ? std::string(Value, End) : Value;
 }
 
 static bool getVSRegistryString(const char* Product, int VSVersion,
-                                std::string& Path) {
+                                std::string& Path, const char* Verbose) {
   std::stringstream Key;
   Key << "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\" << Product << "\\"
       << VSVersion << ".0";
@@ -258,30 +267,43 @@ static bool getVSRegistryString(const char* Product, int VSVersion,
   if (!getSystemRegistryString(Key.str().c_str(), "InstallDir",
                                IDEInstallDir, sizeof(IDEInstallDir) - 1)
       || IDEInstallDir[0] == 0) {
+    if (Verbose)
+      logSearch("Registry", Key.str());
     return false;
   }
+
   trimString(IDEInstallDir, "\\Common7\\IDE", Path);
+  if (Verbose)
+    logSearch("Registry", Key.str(), Verbose);
   return true;
 }
 
-static bool getVSEnvironmentString(int VSVersion, std::string& Path) {
+static bool getVSEnvironmentString(int VSVersion, std::string& Path,
+                                   const char* Verbose) {
   std::stringstream Key;
   Key << "VS" << VSVersion * 10 << "COMNTOOLS";
-  if (const char* Tools = ::getenv(Key.str().c_str())) {
-    trimString(Tools, "\\Common7\\Tools", Path);
-    return true;
+  const char* Tools = ::getenv(Key.str().c_str());
+  if (!Tools) {
+    if (Verbose)
+      logSearch("Environment", Key.str());
+    return false;
   }
-  return false;
+
+  trimString(Tools, "\\Common7\\Tools", Path);
+  if (Verbose)
+    logSearch("Environment", Key.str(), Verbose);
+  return true;
 }
 
-static bool getVisualStudioVer(int VSVersion, std::string& Path) {
-  if (getVSRegistryString("VisualStudio", VSVersion, Path))
+static bool getVisualStudioVer(int VSVersion, std::string& Path,
+                               const char* Verbose) {
+  if (getVSRegistryString("VisualStudio", VSVersion, Path, Verbose))
     return true;
 
-  if (getVSRegistryString("VCExpress", VSVersion, Path))
+  if (getVSRegistryString("VCExpress", VSVersion, Path, Verbose))
     return true;
 
-  if (getVSEnvironmentString(VSVersion, Path))
+  if (getVSEnvironmentString(VSVersion, Path, Verbose))
     return true;
 
   return false;
@@ -297,23 +319,25 @@ static bool getVisualStudioDir(std::string& Path, bool Verbose) {
 #endif
 
   // Try for the version compiled with first
-  if (getVisualStudioVer(VSVersion, Path))
+  if (getVisualStudioVer(VSVersion, Path, Verbose ? "compiled" : nullptr))
     return true;
 
   // Check the environment variables that vsvars32.bat sets.
   // We don't do this first so we can run from other VSStudio shells properly
   if (const char* VCInstall = ::getenv("VCINSTALLDIR")) {
     trimString(VCInstall, "\\VC", Path);
+    if (Verbose)
+      llvm::errs() << "Using VCINSTALLDIR '" << VCInstall << "'\n";
     return true;
   }
 
   // Try for any other version we can get
   const int Versions[] = { 14, 12, 11, 10, 9, 8, 0 };
   for (unsigned i = 0; Versions[i]; ++i) {
-    if (Versions[i] != VSVersion && getVisualStudioVer(Versions[i], Path))
+    if (Versions[i] != VSVersion && getVisualStudioVer(Versions[i], Path,
+                                                 Verbose ? "highest" : nullptr))
       return true;
   }
-
   return false;
 }
 
