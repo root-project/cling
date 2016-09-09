@@ -41,8 +41,8 @@
 
 #include <ctime>
 #include <cstdio>
-
 #include <memory>
+#include <sstream>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -63,7 +63,6 @@
 # endif
 # include <Windows.h>
 # include <direct.h>
-# include <sstream>
 # define popen _popen
 # define pclose _pclose
 # define getcwd_func _getcwd
@@ -343,22 +342,52 @@ static bool getVisualStudioDir(std::string& Path, bool Verbose) {
 
 #elif defined(__APPLE__)
 
+#include <CoreFoundation/CFBase.h> // For MAC_OS_X_VERSION_X_X macros
+
+// gcc on Mac can only include CoreServices.h up to 10.9 SDK, which means
+// we cannot use Gestalt to get the running OS version when >= 10.10
+#if defined(__clang__) || !defined(MAC_OS_X_VERSION_10_10)
 #include <dlfcn.h> // dlopen to avoid linking with CoreServices
 #include <CoreServices/CoreServices.h>
-#include <sstream>
+#else
+#define CLING_SWVERS_PARSE_ONLY 1
+#endif
 
-static bool getISysRootVersion(const std::string& SDKs, int major,
-                               int minor, std::string& sysRoot) {
+
+static bool getISysRootVersion(const std::string& SDKs, int Major,
+                               int Minor, std::string& SysRoot,
+                               const char* Verbose) {
   std::ostringstream os;
-  os << SDKs << "MacOSX" << major << "." << minor << ".sdk";
-
+  os << SDKs << "MacOSX" << Major << "." << Minor << ".sdk";
+  
   std::string SDKv = os.str();
   if (llvm::sys::fs::is_directory(SDKv)) {
-    sysRoot.swap(SDKv);
+    SysRoot.swap(SDKv);
+    if (Verbose) {
+      llvm::errs() << "SDK version matching " << Major << "." << Minor
+                   << " found, this does " << Verbose << "\n";
+    }
     return true;
   }
 
+  if (Verbose)
+    llvm::errs() << "SDK version matching " << Major << "." << Minor
+                 << " not found, this would " << Verbose << "\n";
+
   return false;
+}
+
+static std::string ReadSingleLine(const char* Cmd) {
+  
+  if (FILE *PF = ::popen(Cmd, "r")) {
+    char Buf[1024];
+    if (fgets(Buf, sizeof(Buf), PF)) {
+      const llvm::StringRef Result(Buf);
+      assert(Result.size() < sizeof(Buf) && "Single line too large");
+      return Result.trim().str();
+    }
+  }
+  return "";
 }
 
 static bool getISysRoot(std::string& sysRoot, bool Verbose) {
@@ -373,18 +402,9 @@ static bool getISysRoot(std::string& sysRoot, bool Verbose) {
   // Is XCode installed where it usually is?
   if (!fs::is_directory(SDKs)) {
     // Nope, use xcode-select -p to get the path
-    if (FILE *pf = ::popen("xcode-select -p", "r")) {
-      SDKs.clear();
-      char buffer[512];
-      while (fgets(buffer, sizeof(buffer), pf) && buffer[0])
-        SDKs.append(buffer);
-
-      // remove trailing \n
-      while (!SDKs.empty() && SDKs.back() == '\n')
-        SDKs.resize(SDKs.size() - 1);
-      ::pclose(pf);
-    } else // Nothing more we can do
-      return false;
+    SDKs = ReadSingleLine("xcode-select -p");
+    if (SDKs.empty())
+      return false;  // Nothing more we can do
   }
 
   SDKs.append("/Platforms/MacOSX.platform/Developer/SDKs/");
@@ -395,37 +415,51 @@ static bool getISysRoot(std::string& sysRoot, bool Verbose) {
   // Try to get the SDK for whatever version of OS X is currently running
   // Seems to make more sense to get the currently running SDK so headers
   // and any loaded libraries will match.
+  
+  int32_t majorVers = -1, minorVers = -1;
+#ifndef CLING_SWVERS_PARSE_ONLY
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   if (void *core = dlopen(
           "/System/Library/Frameworks/CoreServices.framework/CoreServices",
           RTLD_LAZY)) {
-    // Gestalt is a deprecated API (funnily enough clang is smart enough
-    // to know we're using it).
-    // Alternatives to NSProcessInfo and avoid linking to objc & Foundation:
-    //  sw_vers | grep ProductVersion | awk '{print $2}' => 10.10.5
-    //  kCFCoreFoundationVersionNumber symbol in CoreFoundation => 368.31
-    SInt32 majorVersion = -1, minorVersion = -1;
     typedef ::OSErr (*GestaltProc)(::OSType, ::SInt32 *);
     if (GestaltProc Gestalt = (GestaltProc)dlsym(core, "Gestalt")) {
-      Gestalt(gestaltSystemVersionMajor, &majorVersion);
-      Gestalt(gestaltSystemVersionMinor, &minorVersion);
+      if (Gestalt(gestaltSystemVersionMajor, &majorVers) == ::noErr) {
+        if (Gestalt(gestaltSystemVersionMinor, &minorVers) != ::noErr)
+          minorVers = -1;
+      } else
+        majorVers = -1;
     }
     ::dlclose(core);
+  }
+ #pragma clang diagnostic pop
+#endif
 
-    if (majorVersion != -1 && minorVersion != -1) {
-      if (getISysRootVersion(SDKs, majorVersion, minorVersion, sysRoot))
-        return true;
-    
-      if (Verbose)
-        llvm::errs() << "SDK version matching current OSX not found\n";
+  if (majorVers == -1 || minorVers == -1) {
+    const std::string SWVers = ReadSingleLine("sw_vers | grep ProductVersion"
+                                              " | awk '{print $2}'");
+    if (!SWVers.empty()) {
+      if (::sscanf(SWVers.c_str(), "%d.%d", &majorVers, &minorVers) != 2) {
+        majorVers = -1;
+        minorVers = -1;
+      }
     }
   }
 
+  if (majorVers != -1 && minorVers != -1) {
+    if (getISysRootVersion(SDKs, majorVers, minorVers, sysRoot,
+            Verbose ? "match the version of OS X running"
+                    : nullptr)) {
+      return true;
+    }
+  }
+  
+
 #define GET_ISYSROOT_VER(maj, min) \
-  if (getISysRootVersion(SDKs, maj, min, sysRoot)) \
-    return true; \
-  if (Verbose) \
-    llvm::errs() << "SDK version matching " << maj << "." << min \
-                 << " not found (this is what cling was compiled with)\n";
+  if (getISysRootVersion(SDKs, maj, min, sysRoot, Verbose ? \
+                 "match what cling was compiled with" : nullptr)) \
+    return true;
 
   // Try to get the SDK for whatever cling was compiled with
   #if defined(MAC_OS_X_VERSION_10_11)
