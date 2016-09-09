@@ -378,12 +378,13 @@ static bool getISysRootVersion(const std::string& SDKs, int Major,
 }
 
 static std::string ReadSingleLine(const char* Cmd) {
-
-  if (FILE *PF = ::popen(Cmd, "r")) {
+  if (FILE* PF = ::popen(Cmd, "r")) {
     char Buf[1024];
-    if (fgets(Buf, sizeof(Buf), PF)) {
+    char* BufPtr = ::fgets(Buf, sizeof(Buf), PF);
+    ::pclose(PF);
+    if (BufPtr && Buf[0]) {
       const llvm::StringRef Result(Buf);
-      assert(Result.size() < sizeof(Buf) && "Single line too large");
+      assert(Result[Result.size()-1] == '\n' && "Single line too large");
       return Result.trim().str();
     }
   }
