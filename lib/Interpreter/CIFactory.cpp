@@ -359,7 +359,7 @@ static bool getISysRootVersion(const std::string& SDKs, int Major,
                                const char* Verbose) {
   std::ostringstream os;
   os << SDKs << "MacOSX" << Major << "." << Minor << ".sdk";
-  
+
   std::string SDKv = os.str();
   if (llvm::sys::fs::is_directory(SDKv)) {
     SysRoot.swap(SDKv);
@@ -378,7 +378,7 @@ static bool getISysRootVersion(const std::string& SDKs, int Major,
 }
 
 static std::string ReadSingleLine(const char* Cmd) {
-  
+
   if (FILE *PF = ::popen(Cmd, "r")) {
     char Buf[1024];
     if (fgets(Buf, sizeof(Buf), PF)) {
@@ -415,7 +415,7 @@ static bool getISysRoot(std::string& sysRoot, bool Verbose) {
   // Try to get the SDK for whatever version of OS X is currently running
   // Seems to make more sense to get the currently running SDK so headers
   // and any loaded libraries will match.
-  
+
   int32_t majorVers = -1, minorVers = -1;
 #ifndef CLING_SWVERS_PARSE_ONLY
  #pragma clang diagnostic push
@@ -454,7 +454,7 @@ static bool getISysRoot(std::string& sysRoot, bool Verbose) {
       return true;
     }
   }
-  
+
 
 #define GET_ISYSROOT_VER(maj, min) \
   if (getISysRootVersion(SDKs, maj, min, sysRoot, Verbose ? \
