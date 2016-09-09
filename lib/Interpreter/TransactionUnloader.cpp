@@ -24,7 +24,7 @@ using namespace clang;
 
 namespace cling {
   bool TransactionUnloader::unloadDeclarations(Transaction* T,
-                                               clang::DeclUnloader& DeclU) {
+                                               DeclUnloader& DeclU) {
     bool Successful = true;
 
     for (Transaction::const_reverse_iterator I = T->rdecls_begin(),
@@ -61,7 +61,7 @@ namespace cling {
   }
 
   bool TransactionUnloader::unloadFromPreprocessor(Transaction* T,
-                                                   clang::DeclUnloader& DeclU) {
+                                                   DeclUnloader& DeclU) {
     bool Successful = true;
     for (Transaction::const_reverse_macros_iterator MI = T->rmacros_begin(),
            ME = T->rmacros_end(); MI != ME; ++MI) {
@@ -75,7 +75,7 @@ namespace cling {
   }
 
   bool TransactionUnloader::unloadDeserializedDeclarations(Transaction* T,
-                                                   clang::DeclUnloader& DeclU) {
+                                                   DeclUnloader& DeclU) {
     //FIXME: Terrible hack, we *must* get rid of parseForModule by implementing
     // a header file generator in cling.
     bool Successful = true;
@@ -150,4 +150,3 @@ namespace cling {
     return true;
   }
 } // end namespace cling
-
