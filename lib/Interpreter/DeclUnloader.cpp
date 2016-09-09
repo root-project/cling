@@ -23,9 +23,8 @@
 
 #include "llvm/IR/Constants.h"
 
-// FIXME: rename back to cling when gcc fix the
-// namespace cling { using cling::DeclUnloader DeclUnloader} bug
-namespace clang {
+namespace cling {
+using namespace clang;
 
 bool DeclUnloader::isDefinition(TagDecl* R) {
   return R->isCompleteDefinition() && isa<CXXRecordDecl>(R);
@@ -173,8 +172,6 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 #endif
   return true;
 }
-
- using namespace cling;
 
   // Copied and adapted from GlobalDCE.cpp
   class GlobalValueEraser {
@@ -964,4 +961,4 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
                                                  CanonCTSD);
     return Successful;
   }
-} // end namespace clang
+} // end namespace cling

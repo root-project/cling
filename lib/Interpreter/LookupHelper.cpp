@@ -26,7 +26,7 @@
 
 using namespace clang;
 
-namespace clang {
+namespace cling {
 
   ///\brief Cleanup Parser state after a failed lookup.
   ///
