@@ -20,15 +20,17 @@ namespace clang {
 
 namespace cling {
   class TransactionPool {
-#define TRANSACTIONS_IN_BLOCK 8
-#define POOL_SIZE 2 * TRANSACTIONS_IN_BLOCK
-  private:
+    enum {
+      kTransactionsInBlock = 8,
+      kPoolSize = 2 * kTransactionsInBlock
+    };
+
     // It is twice the size of the block because there might be easily around 8
     // transactions in flight which can be empty, which might lead to refill of
     // the smallvector and then the return for reuse will exceed the capacity
     // of the smallvector causing redundant copy of the elements.
     //
-    llvm::SmallVector<Transaction*, POOL_SIZE>  m_Transactions;
+    llvm::SmallVector<Transaction*, kPoolSize>  m_Transactions;
 
   public:
     TransactionPool() {}
@@ -64,16 +66,13 @@ namespace cling {
       T->~Transaction();
 
       // don't overflow the pool
-      if (reuse && (m_Transactions.size() < POOL_SIZE)) {
+      if (reuse && (m_Transactions.size() < kPoolSize)) {
         T->m_State = Transaction::kNumStates;
         m_Transactions.push_back(T);
       }
       else
        ::operator delete(T);
     }
-
-#undef POOL_SIZE
-#undef TRANSACTIONS_IN_BLOCK
   };
 
 } // end namespace cling
