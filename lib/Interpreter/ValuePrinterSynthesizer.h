@@ -45,9 +45,7 @@ public:
     ///\ brief Constructs the value printer synthesizer.
     ///
     ///\param[in] S - The semantic analysis object
-    ///\param[in] Stream - The output stream where the value printer will write
-    ///                    to. Defaults to std::cout. Owns the stream.
-    ValuePrinterSynthesizer(clang::Sema* S, llvm::raw_ostream* Stream);
+    ValuePrinterSynthesizer(clang::Sema* S);
 
     virtual ~ValuePrinterSynthesizer();
 

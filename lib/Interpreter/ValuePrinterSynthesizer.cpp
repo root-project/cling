@@ -29,8 +29,7 @@ using namespace clang;
 
 namespace cling {
 
-  ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S,
-                                                   llvm::raw_ostream* Stream)
+  ValuePrinterSynthesizer::ValuePrinterSynthesizer(clang::Sema* S)
     : WrapperTransformer(S), m_Context(&S->getASTContext()),
       m_LookupResult(nullptr) { }
 
