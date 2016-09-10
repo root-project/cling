@@ -10,6 +10,7 @@
 #include "ClingPragmas.h"
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 
 #include "clang/AST/ASTContext.h"
@@ -36,8 +37,8 @@ namespace {
     Token Tok;
     PP.Lex(Tok);
     if (Tok.isNot(tok::l_paren)) {
-      llvm::errs() << "cling:HandlePragmaHelper : expect '(' after #"
-                   << pragmaInst;
+      cling::errs() << "cling:HandlePragmaHelper : expect '(' after #"
+                    << pragmaInst;
       return ParseResult_t{false, ""};
     }
     std::string Literal;
@@ -67,7 +68,7 @@ namespace {
       if (!Result.first)
         return;
       if (Result.second.empty()) {
-        llvm::errs() << "Cannot load unnamed files.\n" ;
+        cling::errs() << "Cannot load unnamed files.\n" ;
         return;
       }
       clang::Parser& P = m_Interp.getParser();

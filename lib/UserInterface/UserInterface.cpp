@@ -11,13 +11,13 @@
 
 #include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
+#include "cling/Utils/Output.h"
 #include "textinput/Callbacks.h"
 #include "textinput/TextInput.h"
 #include "textinput/StreamReader.h"
 #include "textinput/TerminalDisplay.h"
 
 #include "llvm/ADT/SmallString.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Config/config.h"
@@ -70,11 +70,7 @@ namespace {
 namespace cling {
 
   UserInterface::UserInterface(Interpreter& interp) {
-    // We need stream that doesn't close its file descriptor, thus we are not
-    // using llvm::outs. Keeping file descriptor open we will be able to use
-    // the results in pipes (Savannah #99234).
-    static llvm::raw_fd_ostream m_MPOuts (STDOUT_FILENO, /*ShouldClose*/false);
-    m_MetaProcessor.reset(new MetaProcessor(interp, m_MPOuts));
+    m_MetaProcessor.reset(new MetaProcessor(interp, cling::outs()));
     llvm::install_fatal_error_handler(&CompilationException::throwingHandler);
   }
 
@@ -137,15 +133,15 @@ namespace cling {
         e.diagnose();
       }
       catch(InterpreterException& e) {
-        llvm::errs() << ">>> Caught an interpreter exception!\n"
-                     << ">>> " << e.what() << '\n';
+        cling::errs() << ">>> Caught an interpreter exception!\n"
+                      << ">>> " << e.what() << '\n';
       }
       catch(std::exception& e) {
-        llvm::errs() << ">>> Caught a std::exception!\n"
-                     << ">>> " << e.what() << '\n';
+        cling::errs() << ">>> Caught a std::exception!\n"
+                      << ">>> " << e.what() << '\n';
       }
       catch(...) {
-        llvm::errs() << "Exception occurred. Recovering...\n";
+        cling::errs() << "Exception occurred. Recovering...\n";
       }
     }
     m_MetaProcessor->getOuts().flush();

@@ -15,6 +15,7 @@
 #include "cling/Interpreter/Value.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -723,12 +724,12 @@ namespace cling {
                                Addresses[i]).get();
       if (!UnOp) {
         // Not good, return what we had.
-        llvm::errs() << "Error while creating dynamic expression for:\n  ";
-        SubTree->printPretty(llvm::errs(), 0 /*PrinterHelper*/,
+        cling::errs() << "Error while creating dynamic expression for:\n  ";
+        SubTree->printPretty(cling::errs(), 0 /*PrinterHelper*/,
                              m_Context->getPrintingPolicy(), 2);
-        llvm::errs() <<
+        cling::errs() <<
           "\nwith internal representation (look for <dependent type>):\n";
-        SubTree->dump(llvm::errs(), m_Sema->getSourceManager());
+        SubTree->dump(cling::errs(), m_Sema->getSourceManager());
         return SubTree;
       }
       m_Sema->ImpCastExprToType(UnOp,

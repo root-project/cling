@@ -14,6 +14,7 @@
 #include "cling/Interpreter/Value.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CodeGenOptions.h"
@@ -26,7 +27,6 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Triple.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
@@ -87,8 +87,8 @@ std::unique_ptr<TargetMachine>
   const Target *TheTarget
     = TargetRegistry::lookupTarget(TheTriple.getTriple(), Error);
   if (!TheTarget) {
-    llvm::errs() << "cling::IncrementalExecutor: unable to find target:\n"
-                 << Error;
+    cling::errs() << "cling::IncrementalExecutor: unable to find target:\n"
+                  << Error;
     return std::unique_ptr<TargetMachine>();
   }
 
@@ -142,7 +142,7 @@ void unresolvedSymbol()
   // This might get called recursively, or a billion of times. Do not generate
   // useless output; unresolvedSymbol() is always handed out with an error
   // message - that's enough.
-  //llvm::errs() << "IncrementalExecutor: calling unresolved symbol, "
+  //cling::errs() << "IncrementalExecutor: calling unresolved symbol, "
   //  "see previous error message!\n";
 
   // throw exception instead?
@@ -152,7 +152,7 @@ void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name
 {
   // Not found in the map, add the symbol in the list of unresolved symbols
   if (m_unresolvedSymbols.insert(mangled_name).second) {
-    //llvm::errs() << "IncrementalExecutor: use of undefined symbol '"
+    //cling::errs() << "IncrementalExecutor: use of undefined symbol '"
     //             << mangled_name << "'!\n";
   }
 
@@ -392,18 +392,18 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
     //m_Diags.Report(diagID) << *i << funcname; // TODO: demangle the names.
 #endif
 
-    llvm::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
-                 << "' unresolved while linking ";
+    cling::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
+                  << "' unresolved while linking ";
     if (trigger.find(utils::Synthesize::UniquePrefix) != llvm::StringRef::npos)
-      llvm::errs() << "[cling interface function]";
+      cling::errs() << "[cling interface function]";
     else {
       if (!title.empty())
-        llvm::errs() << title << " '";
-      llvm::errs() << trigger;
+        cling::errs() << title << " '";
+      cling::errs() << trigger;
       if (!title.empty())
-        llvm::errs() << "'";
+        cling::errs() << "'";
     }
-    llvm::errs() << "!\n";
+    cling::errs() << "!\n";
 
     // Be helpful, demangle!
     std::string demangledName;
@@ -422,7 +422,7 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
 #endif
     }
     if (!demangledName.empty()) {
-       llvm::errs()
+       cling::errs()
           << "You are probably missing the definition of "
           << demangledName << "\n"
           << "Maybe you need to load the corresponding shared library?\n";

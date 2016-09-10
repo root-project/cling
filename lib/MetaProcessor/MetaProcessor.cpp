@@ -15,6 +15,7 @@
 #include "MetaSema.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/TargetInfo.h"
@@ -196,7 +197,7 @@ namespace cling {
       if (file.empty()) {
         // Unredirection, remove last redirection state(s) for given scope(s)
         if (m_Stack.empty()) {
-          llvm::errs() << "No redirections left to remove\n";
+          cling::errs() << "No redirections left to remove\n";
           return;
         }
 
@@ -348,7 +349,7 @@ namespace cling {
 
   static Interpreter::CompilationResult reportIOErr(llvm::StringRef File,
                                                     const char* What) {
-    llvm::errs() << "Error in cling::MetaProcessor: "
+    cling::errs() << "Error in cling::MetaProcessor: "
           "cannot " << What << " input: '" << File << "'\n";
     return Interpreter::kFailure;
   }
@@ -446,7 +447,7 @@ namespace cling {
             // By putting the '{' back, we keep the code as consistent as
             // the user wrote it ... but we should still warn that we not
             // goint to treat this file an unamed macro.
-            llvm::errs()
+            cling::errs()
               << "Warning in cling::MetaProcessor: can not find the closing '}', "
               << llvm::sys::path::filename(filename)
               << " is not handled as an unamed script!\n";
@@ -478,7 +479,7 @@ namespace cling {
           break;
       }
       if (rslt) {
-        llvm::errs() << "Error in cling::MetaProcessor: file "
+        cling::errs() << "Error in cling::MetaProcessor: file "
                      << llvm::sys::path::filename(filename)
                      << " is incomplete (missing parenthesis or similar)!\n";
       }
