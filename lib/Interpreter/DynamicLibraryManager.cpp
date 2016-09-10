@@ -12,11 +12,11 @@
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Utils/Paths.h"
 #include "cling/Utils/Platform.h"
+#include "cling/Utils/Output.h"
 
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <system_error>
 #include <sys/stat.h>
@@ -44,7 +44,7 @@ namespace cling {
     // does this make sense? Path could pop into existance at any time.
     for (const char* Var : kSysLibraryEnv) {
       if (Opts.Verbose())
-        llvm::errs() << "Adding library paths from '" << Var << "':\n";
+        cling::log() << "Adding library paths from '" << Var << "':\n";
       if (const char* Env = ::getenv(Var)) {
         llvm::SmallVector<llvm::StringRef, 10> CurPaths;
         SplitPaths(Env, CurPaths, utils::kPruneNonExistant, platform::kEnvDelim,
@@ -145,7 +145,7 @@ namespace cling {
     // get canonical path name and check if already loaded
     const std::string Path = platform::NormalizePath(foundDyLib);
     if (Path.empty()) {
-      llvm::errs() << "cling::DynamicLibraryManager::lookupLibMaybeAddExt(): "
+      cling::errs() << "cling::DynamicLibraryManager::lookupLibMaybeAddExt(): "
         "error getting real (canonical) path of library " << foundDyLib << '\n';
       return foundDyLib;
     }
@@ -161,7 +161,7 @@ namespace cling {
 
     const std::string NPath = platform::NormalizePath(Path);
     if (NPath.empty())
-      llvm::errs() << "Could not normalize: " << Path << '\n';
+      cling::log() << "Could not normalize: '" << Path << "'";
     return NPath;
   }
 
@@ -210,8 +210,8 @@ namespace cling {
     std::string errMsg;
     DyLibHandle dyLibHandle = platform::DLOpen(canonicalLoadedLib, &errMsg);
     if (!dyLibHandle) {
-      llvm::errs() << "cling::DynamicLibraryManager::loadLibrary(): " << errMsg
-                   << '\n';
+      cling::errs() << "cling::DynamicLibraryManager::loadLibrary(): " << errMsg
+                    << '\n';
       return kLoadLibLoadError;
     }
     else if (InterpreterCallbacks* C = getCallbacks())
@@ -245,8 +245,8 @@ namespace cling {
     std::string errMsg;
     platform::DLClose(dyLibHandle, &errMsg);
     if (!errMsg.empty()) {
-      llvm::errs() << "cling::DynamicLibraryManager::unloadLibrary(): "
-                   << errMsg << '\n';
+      cling::errs() << "cling::DynamicLibraryManager::unloadLibrary(): "
+                    << errMsg << '\n';
     }
 
     if (InterpreterCallbacks* C = getCallbacks())

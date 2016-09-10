@@ -9,6 +9,7 @@
 
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/ClingOptions.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/Driver/Options.h"
 
@@ -16,7 +17,6 @@
 #include "llvm/Option/ArgList.h"
 #include "llvm/Option/Option.h"
 #include "llvm/Option/OptTable.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <memory>
 
@@ -68,7 +68,7 @@ namespace {
     if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ)) {
       Opts.MetaString = MetaStringArg->getValue();
       if (Opts.MetaString.empty()) {
-        llvm::errs() << "ERROR: meta string must be non-empty! Defaulting to '.'.\n";
+        cling::errs() << "ERROR: meta string must be non-empty! Defaulting to '.'.\n";
         Opts.MetaString = ".";
       }
     }
@@ -173,12 +173,12 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
 void InvocationOptions::PrintHelp() {
   std::unique_ptr<OptTable> Opts(CreateClingOptTable());
 
-  Opts->PrintHelp(llvm::outs(), "cling",
+  Opts->PrintHelp(cling::outs(), "cling",
                   "cling: LLVM/clang C++ Interpreter: http://cern.ch/cling");
 
-  llvm::outs() << "\n\n";
+  cling::outs() << "\n\n";
 
   std::unique_ptr<OptTable> OptsC1(createDriverOptTable());
-  OptsC1->PrintHelp(llvm::outs(), "clang -cc1",
+  OptsC1->PrintHelp(cling::outs(), "clang -cc1",
                     "LLVM 'Clang' Compiler: http://clang.llvm.org");
 }

@@ -25,6 +25,7 @@ endif()
 add_cling_library(clingUtils OBJECT
   AST.cpp
   ParserStateRAII.cpp
+  Output.cpp
   Paths.cpp
   PlatformMac.cpp
   PlatformPosix.cpp

@@ -15,12 +15,12 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
 
 namespace cling {
 
@@ -193,8 +193,8 @@ namespace cling {
         stream = MetaProcessor::kSTDERR;
       // Wrong constant_FD, do not redirect.
       } else if (constant_FD != 1) {
-        llvm::errs() << "cling::MetaParser::isRedirectCommand():"
-                     << "invalid file descriptor number " << constant_FD <<"\n";
+        cling::errs() << "cling::MetaParser::isRedirectCommand():"
+                      << "invalid file descriptor number " << constant_FD <<"\n";
         return true;
       }
       consumeToken();

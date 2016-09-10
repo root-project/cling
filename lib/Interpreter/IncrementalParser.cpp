@@ -26,6 +26,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Attr.h"
@@ -45,7 +46,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/CrashRecoveryContext.h"
 #include "llvm/Support/MemoryBuffer.h"
-#include "llvm/Support/raw_os_ostream.h"
 
 #include <iostream>
 #include <sstream>
@@ -95,7 +95,7 @@ namespace {
         return true;
     }
 
-    llvm::errs() <<
+    cling::errs() <<
       "Warning in cling::IncrementalParser::CheckABICompatibility():\n"
       "  Possible C++ standard library mismatch, compiled with "
       << CLING_CXXABI_NAME << " '" << CLING_CXXABI_VERS << "'\n"

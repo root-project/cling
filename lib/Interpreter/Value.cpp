@@ -12,6 +12,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/CanonicalType.h"
@@ -24,10 +25,7 @@
 
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Module.h"
-#include "llvm/Support/raw_os_ostream.h"
-#include "llvm/Support/raw_ostream.h"
 
-#include <iostream>
 #include <sstream>
 
 namespace {
@@ -253,11 +251,6 @@ namespace cling {
   }
 
   void Value::dump() const {
-    // We need stream that doesn't close its file descriptor, thus we are not
-    // using llvm::outs. Keeping file descriptor open we will be able to use
-    // the results in pipes (Savannah #99234).
-
-    llvm::raw_os_ostream Out(std::cout);
-    print(Out);
+    print(cling::outs());
   }
 } // end namespace cling

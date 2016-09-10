@@ -14,6 +14,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
+#include "cling/Utils/Output.h"
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -104,7 +105,7 @@ TheMetaProcessor*
 cling_create(int argc, const char *argv[], const char* llvmdir, int pipefd) {
   pipeToJupyterFD = pipefd;
   auto I = new cling::Interpreter(argc, argv, llvmdir);
-  return new cling::MetaProcessor(*I, llvm::errs());
+  return new cling::MetaProcessor(*I, cling::errs());
 }
 
 

@@ -8,10 +8,10 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Utils/Paths.h"
+#include "cling/Utils/Output.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/Support/raw_ostream.h"
 
 namespace cling {
 namespace utils {
@@ -147,7 +147,7 @@ void DumpIncludePaths(const clang::HeaderSearchOptions& Opts,
 }
 
 void LogNonExistantDirectory(llvm::StringRef Path) {
-  llvm::errs() << "  ignoring nonexistent directory \"" << Path << "\"\n";
+  cling::log() << "  ignoring nonexistent directory \"" << Path << "\"\n";
 }
 
 bool SplitPaths(llvm::StringRef PathStr,
@@ -194,7 +194,7 @@ bool SplitPaths(llvm::StringRef PathStr,
             while (!Split.second.empty()) {
               Split = PathStr.split(Delim);
               if (llvm::sys::fs::is_directory(Split.first)) {
-                llvm::errs() << "  ignoring directory that exists \""
+                cling::log() << "  ignoring directory that exists \""
                              << Split.first << "\"\n";
               } else
                 LogNonExistantDirectory(Split.first);
@@ -261,9 +261,9 @@ void AddIncludePaths(llvm::StringRef PathStr, clang::HeaderSearchOptions& HOpts,
                     IsFramework, IsSysRootRelative);
 
   if (HOpts.Verbose) {
-    llvm::errs() << "Added include paths:\n";
+    cling::log() << "Added include paths:\n";
     for (llvm::StringRef Path : PathsChecked)
-      llvm::errs() << "  " << Path << "\n";
+      cling::log() << "  " << Path << "\n";
   }
 }
   

@@ -19,6 +19,7 @@
 #include "MultiplexInterpreterCallbacks.h"
 #include "TransactionUnloader.h"
 
+#include "cling/Interpreter/AutoloadCallback.h"
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/ClangInternalState.h"
 #include "cling/Interpreter/ClingCodeCompleteConsumer.h"
@@ -27,8 +28,8 @@
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
-#include "cling/Interpreter/AutoloadCallback.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/SourceNormalization.h"
 
 #include "clang/AST/ASTContext.h"
@@ -47,7 +48,6 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <sstream>
 #include <string>
@@ -260,7 +260,7 @@ namespace cling {
 
   void Interpreter::handleFrontendOptions() {
     if (m_Opts.ShowVersion) {
-      llvm::errs() << getVersion() << '\n';
+      cling::log() << getVersion() << '\n';
     }
     if (m_Opts.Help) {
       m_Opts.PrintHelp();
@@ -332,7 +332,7 @@ namespace cling {
   }
 
   void Interpreter::DumpIncludePath(llvm::raw_ostream* S) {
-    utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(), S ? *S : llvm::outs(),
+    utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(), S ? *S : cling::outs(),
                             true /*withSystem*/, true /*withFlags*/);
   }
 
@@ -357,7 +357,7 @@ namespace cling {
       }
     }
     if (foundAtPos < 0) {
-      llvm::errs() << "The store point name " << name << " does not exist."
+      cling::errs() << "The store point name " << name << " does not exist."
       "Unbalanced store / compare\n";
       return;
     }
@@ -1067,7 +1067,7 @@ namespace cling {
     while(true) {
       cling::Transaction* T = m_IncrParser->getLastTransaction();
       if (!T) {
-        llvm::errs() << "cling: invalid last transaction; unload failed!\n";
+        cling::errs() << "cling: invalid last transaction; unload failed!\n";
         return;
       }
       unload(*T);

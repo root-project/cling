@@ -14,6 +14,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Validation.h"
 
 #include "clang/AST/ASTContext.h"
@@ -23,7 +24,7 @@
 #include "clang/AST/Type.h"
 #include "clang/Frontend/CompilerInstance.h"
 
-#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Format.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 
 #include <string>
@@ -34,11 +35,6 @@ using namespace cling;
 // Implements the CValuePrinter interface.
 extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
   //Value* value = (Value*)V;
-
-  // We need stream that doesn't close its file descriptor, thus we are not
-  // using llvm::outs. Keeping file descriptor open we will be able to use
-  // the results in pipes (Savannah #99234).
-  //llvm::raw_fd_ostream outs (STDOUT_FILENO, /*ShouldClose*/false);
 
   //std::string typeStr = printTypeInternal(*value);
   //std::string valueStr = printValueInternal(*value);
@@ -141,8 +137,8 @@ bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
     = Interp.declare("namespace { void* cling_printValue_Failure_Typename_check"
                      " = (void*)" + typenam.str() + "nullptr; }");
   if (Res != cling::Interpreter::kSuccess)
-    llvm::errs() << "ERROR in cling::executePrintValue(): "
-                      "this typename cannot be spelled.\n";
+    cling::errs() << "ERROR in cling::executePrintValue(): "
+                     "this typename cannot be spelled.\n";
   return Res == cling::Interpreter::kSuccess;
 }
 #endif
@@ -223,7 +219,7 @@ static std::string executePrintValue(const Value &V, const T &val) {
 
   if (!printValueV.isValid() || printValueV.getPtr() == nullptr) {
     // That didn't work. We probably diagnosed the issue as part of evaluate().
-    llvm::errs() << "ERROR in cling::executePrintValue(): cannot pass value!\n";
+    cling::errs() << "ERROR in cling::executePrintValue(): cannot pass value!\n";
 
     // Check that the issue comes from an unparsable type name: lambdas, unnamed
     // namespaces, types declared inside functions etc. Assert on everything

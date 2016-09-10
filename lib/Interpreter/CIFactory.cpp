@@ -13,6 +13,7 @@
 
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/InvocationOptions.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 #include "cling/Utils/Platform.h"
 
@@ -88,7 +89,7 @@ namespace {
                         "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"");
 
     if (Verbose)
-      llvm::errs() << "Looking for C++ headers with:\n  " << CppInclQuery << "\n";
+      cling::log() << "Looking for C++ headers with:\n  " << CppInclQuery << "\n";
 
     if (FILE *PF = ::popen(CppInclQuery.c_str(), "r")) {
       Buf.resize(Buf.capacity_in_bytes());
@@ -107,10 +108,10 @@ namespace {
       }
       ::pclose(PF);
     } else {
-      llvm::errs() << "popen failed";
+      cling::errs() << "popen failed";
       // Don't be overly verbose, we already printed the command
       if (!Verbose)
-        llvm::errs() << " for '" << CppInclQuery << "'\n";
+        cling::errs() << " for '" << CppInclQuery << "'\n";
     }
 
     // Return the query in Buf on failure
@@ -118,16 +119,16 @@ namespace {
       Buf.resize(0);
       Buf.insert(Buf.begin(), CppInclQuery.begin(), CppInclQuery.end());
     } else if (Verbose) {
-      llvm::errs() << "Found:\n";
+      cling::log() << "Found:\n";
       for (const auto& Arg : Args)
-        llvm::errs() << "  " << Arg.second << "\n";
+        cling::log() << "  " << Arg.second << "\n";
     }
   }
 
   static bool AddCxxPaths(llvm::StringRef PathStr, AdditionalArgList& Args,
                           bool Verbose) {
     if (Verbose)
-      llvm::errs() << "Looking for C++ headers in \"" << PathStr << "\"\n";
+      cling::log() << "Looking for C++ headers in \"" << PathStr << "\"\n";
 
     llvm::SmallVector<llvm::StringRef, 6> Paths;
     if (!utils::SplitPaths(PathStr, Paths, utils::kFailNonExistant,
@@ -135,9 +136,9 @@ namespace {
       return false;
 
     if (Verbose) {
-      llvm::errs() << "Found:\n";
+      cling::log() << "Found:\n";
       for (llvm::StringRef Path : Paths)
-        llvm::errs() << " " << Path << "\n";
+        cling::log() << " " << Path << "\n";
     }
 
     for (llvm::StringRef Path : Paths)
@@ -176,19 +177,19 @@ namespace {
         if (!opts.NoCXXInc) {
           const std::string VSIncl = VSDir + "\\VC\\include";
           if (Verbose)
-            llvm::errs() << "Adding VisualStudio SDK: '" << VSIncl << "'\n";
+            cling::log() << "Adding VisualStudio SDK: '" << VSIncl << "'\n";
           sArguments.addArgument("-I", std::move(VSIncl));
         }
         if (!opts.NoBuiltinInc) {
           if (!WinSDK.empty()) {
             WinSDK.append("\\include");
             if (Verbose)
-              llvm::errs() << "Adding Windows SDK: '" << WinSDK << "'\n";
+              cling::log() << "Adding Windows SDK: '" << WinSDK << "'\n";
             sArguments.addArgument("-I", std::move(WinSDK));
           } else {
             VSDir.append("\\VC\\PlatformSDK\\Include");
             if (Verbose)
-              llvm::errs() << "Adding Platform SDK: '" << VSDir << "'\n";
+              cling::log() << "Adding Platform SDK: '" << VSDir << "'\n";
             sArguments.addArgument("-I", std::move(VSDir));
           }
         }
@@ -197,7 +198,7 @@ namespace {
 #if LLVM_MSC_PREREQ(1900)
       if (!UnivSDK.empty()) {
         if (Verbose)
-          llvm::errs() << "Adding UniversalCRT SDK: '" << UnivSDK << "'\n";
+          cling::log() << "Adding UniversalCRT SDK: '" << UnivSDK << "'\n";
         sArguments.addArgument("-I", std::move(UnivSDK));
       }
 #endif
@@ -249,22 +250,22 @@ namespace {
 
         if (sArguments.empty()) {
           // buffer is a copy of the query string that failed
-          llvm::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract"
+          cling::errs() << "ERROR in cling::CIFactory::createCI(): cannot extract"
                           " standard library include paths!\n";
 
   #if defined(CLING_CXX_PATH) || defined(CLING_CXX_RLTV)
           // Only when ReadCompilerIncludePaths called do we have the command
           // Verbose has already printed the command
           if (!Verbose)
-            llvm::errs() << "Invoking:\n  " << buffer.c_str() << "\n";
+            cling::errs() << "Invoking:\n  " << buffer.c_str() << "\n";
 
-          llvm::errs() << "Results was:\n";
+          cling::errs() << "Results was:\n";
           const int ExitCode = system(buffer.c_str());
-          llvm::errs() << "With exit code " << ExitCode << "\n";
+          cling::errs() << "With exit code " << ExitCode << "\n";
   #elif !defined(CLING_CXX_INCL)
           // Technically a valid configuration that just wants to use libClangs
           // internal header detection, but for now give a hint about why.
-          llvm::errs() << "CLING_CXX_INCL, CLING_CXX_PATH, and CLING_CXX_RLTV"
+          cling::errs() << "CLING_CXX_INCL, CLING_CXX_PATH, and CLING_CXX_RLTV"
                           " are undefined, there was probably an error during"
                           " configuration.\n";
   #endif
@@ -278,7 +279,7 @@ namespace {
         std::string sysRoot;
         if (platform::GetISysRoot(sysRoot, Verbose)) {
           if (Verbose)
-            llvm::errs() << "Using SDK \"" << sysRoot << "\"\n";
+            cling::log() << "Using SDK \"" << sysRoot << "\"\n";
           sArguments.addArgument("-isysroot", std::move(sysRoot));
         }
       }
@@ -318,7 +319,7 @@ namespace {
         // FIXME: Handle cases, where the cling is part of a library/framework.
         // There we can't rely on the find executable logic.
         if (!llvm::sys::fs::is_directory(resourcePath)) {
-          llvm::errs()
+          cling::errs()
             << "ERROR in cling::CIFactory::createCI():\n  resource directory "
             << resourcePath << " not found!\n";
           resourcePath = "";
@@ -443,7 +444,7 @@ namespace {
   static void CheckClangCompatibility() {
     if (clang::getClangToolFullVersion("cling")
         != CopyOfClanggetClangToolFullVersion("cling"))
-      llvm::errs()
+      cling::errs()
         << "Warning in cling::CIFactory::createCI():\n  "
         "Using incompatible clang library! "
         "Please use the one provided by cling!\n";
@@ -534,9 +535,9 @@ std::string stringifyPreprocSetting(const char* name, int val) {
       } else if (TTriple.getArch() == llvm::Triple::x86_64) {
         PPOpts.addMacroDef("__x86_64=1");
       } else {
-        llvm::errs() << "Warning in cling::CIFactory::createCI():\n"
-          "unhandled target architecture "
-        << TTriple.getArchName() << '\n';
+        cling::errs() << "Warning in cling::CIFactory::createCI():\n"
+                         "unhandled target architecture "
+                      << TTriple.getArchName() << '\n';
       }
     }
   }
@@ -549,11 +550,11 @@ std::string stringifyPreprocSetting(const char* name, int val) {
   static void AddRuntimeIncludePaths(llvm::StringRef ClingBin,
                                      clang::HeaderSearchOptions& HOpts) {
     if (HOpts.Verbose)
-      llvm::errs() << "Adding runtime include paths:\n";
+      cling::log() << "Adding runtime include paths:\n";
     // Add configuration paths to interpreter's include files.
 #ifdef CLING_INCLUDE_PATHS
     if (HOpts.Verbose)
-      llvm::errs() << "  \"" CLING_INCLUDE_PATHS "\"\n";
+      cling::log() << "  \"" CLING_INCLUDE_PATHS "\"\n";
     utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
 #endif
     llvm::SmallString<512> P(ClingBin);
@@ -576,7 +577,7 @@ std::string stringifyPreprocSetting(const char* name, int val) {
                bool OnlyLex) {
     // Follow clang -v convention of printing version on first line
     if (COpts.Verbose)
-      llvm::errs() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
+      cling::log() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
 
     // Create an instance builder, passing the LLVMDir and arguments.
     //
@@ -627,7 +628,7 @@ std::string stringifyPreprocSetting(const char* name, int val) {
     // Everything else points to them.
     DiagnosticOptions& DiagOpts = Invocation->getDiagnosticOpts();
     TextDiagnosticPrinter* DiagnosticPrinter
-      = new TextDiagnosticPrinter(llvm::errs(), &DiagOpts);
+      = new TextDiagnosticPrinter(cling::errs(), &DiagOpts);
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
     llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
       Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
@@ -821,7 +822,7 @@ std::string stringifyPreprocSetting(const char* name, int val) {
 
       // Write a marker to know the rest of the output is from clang
       if (COpts.Verbose)
-        llvm::errs() << "Setting up system headers with clang:\n";
+        cling::log() << "Setting up system headers with clang:\n";
 
       // ### FIXME:
       // Want to update LLVM to 3.9 realease and better testing first, but

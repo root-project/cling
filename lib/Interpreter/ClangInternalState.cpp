@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/ClangInternalState.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Platform.h"
 
 #include "clang/AST/ASTContext.h"
@@ -22,7 +23,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Signals.h"
 
 #include <cstdio>
@@ -208,14 +208,14 @@ namespace cling {
     platform::Popen(diffCall, Difs);
 
     if (verbose)
-      llvm::errs() << diffCall << "\n";
+      cling::log() << diffCall << "\n";
 
     if (Difs.empty())
       return false;
 
     if (type) {
-      llvm::errs() << "Differences in the " << type << ":\n";
-      llvm::errs() << Difs << "\n";
+      cling::log() << "Differences in the " << type << ":\n";
+      cling::log() << Difs << "\n";
     }
     return true;
   }

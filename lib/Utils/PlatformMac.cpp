@@ -19,11 +19,11 @@
 
 #ifdef __APPLE__
 
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/raw_ostream.h"
 
 #include <sstream>
 
@@ -55,15 +55,15 @@ static bool getISysRootVersion(const std::string& SDKs, int Major,
   if (llvm::sys::fs::is_directory(SDKv)) {
     SysRoot.swap(SDKv);
     if (Verbose) {
-      llvm::errs() << "SDK version matching " << Major << "." << Minor
-                   << " found, this does " << Verbose << "\n";
+      cling::errs() << "SDK version matching " << Major << "." << Minor
+                    << " found, this does " << Verbose << "\n";
     }
     return true;
   }
 
   if (Verbose)
-    llvm::errs() << "SDK version matching " << Major << "." << Minor
-                 << " not found, this would " << Verbose << "\n";
+    cling::errs() << "SDK version matching " << Major << "." << Minor
+                  << " not found, this would " << Verbose << "\n";
 
   return false;
 }
@@ -168,7 +168,7 @@ bool GetISysRoot(std::string& sysRoot, bool Verbose) {
   // against 'MacOSX10.' as this is how they are installed, and fallback to
   // lexicographical sorting if things didn't work out.
   if (Verbose)
-      llvm::errs() << "Looking in '" << SDKs << "' for highest version SDK.\n";
+      cling::errs() << "Looking in '" << SDKs << "' for highest version SDK.\n";
   sysRoot.clear();
   int SdkVers = 0;
   const std::string Match("MacOSX10.");
@@ -188,7 +188,7 @@ bool GetISysRoot(std::string& sysRoot, bool Verbose) {
   }
   if (sysRoot.empty() && !LexicalSdks.empty()) {
     if (Verbose)
-      llvm::errs() << "Selecting SDK based on a lexical sort.\n";
+      cling::errs() << "Selecting SDK based on a lexical sort.\n";
     std::sort(LexicalSdks.begin(), LexicalSdks.end());
     sysRoot.swap(LexicalSdks.back());
   }

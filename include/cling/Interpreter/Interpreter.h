@@ -402,7 +402,7 @@ namespace cling {
 
     ///\brief Prints the current include paths that are used.
     ///
-    ///\param[in] S - stream to dump to or nullptr for default (llvm::outs)
+    ///\param[in] S - stream to dump to or nullptr for default (cling::outs)
     ///
     void DumpIncludePath(llvm::raw_ostream* S = nullptr);
 

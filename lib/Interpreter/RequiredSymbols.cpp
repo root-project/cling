@@ -12,8 +12,8 @@
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
+#include "cling/Utils/Output.h"
 #include "clang/AST/Type.h"
-#include "llvm/Support/raw_ostream.h"
 
 extern "C"
 void* cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,

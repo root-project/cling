@@ -48,6 +48,7 @@ add_cling_library(clingUserInterface
   LINK_LIBS
   clingMetaProcessor
   clingInterpreter
+  clingUtils
 )
 
 IF(MSVC)

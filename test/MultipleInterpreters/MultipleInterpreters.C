@@ -13,14 +13,14 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
-#include "llvm/Support/raw_ostream.h"
+// #include "cling/Utils/Output.h"
 
 
 //Declare something in the parent interpreter
 int foo(){ return 42; }
 
 // OR
-//gCling->declare("void foo(){ llvm::outs() << \"foo(void)\\n\"; }");
+//gCling->declare("void foo(){ cling::outs() << \"foo(void)\\n\"; }");
 
 const char* argV[1] = {"cling"};
 // Declare something in the child interpreter, then execute it from the child

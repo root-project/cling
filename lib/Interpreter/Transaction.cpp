@@ -8,8 +8,8 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/Transaction.h"
-
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 #include "IncrementalExecutor.h"
 
 #include "clang/AST/ASTContext.h"
@@ -20,7 +20,6 @@
 #include "clang/Sema/Sema.h"
 
 #include "llvm/IR/Module.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace clang;
 
@@ -224,7 +223,7 @@ namespace cling {
 
   void Transaction::DelayCallInfo::dump() const {
     PrintingPolicy Policy((LangOptions()));
-    print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+    print(cling::log(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::DelayCallInfo::print(llvm::raw_ostream& Out,
@@ -266,7 +265,7 @@ namespace cling {
   }
 
   void Transaction::MacroDirectiveInfo::dump(const clang::Preprocessor& PP) const {
-    print(llvm::errs(), PP);
+    print(cling::log(), PP);
   }
 
   void Transaction::MacroDirectiveInfo::print(llvm::raw_ostream& Out,
@@ -277,13 +276,13 @@ namespace cling {
   void Transaction::dump() const {
     const ASTContext& C = m_Sema.getASTContext();
     PrintingPolicy Policy = C.getPrintingPolicy();
-    print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+    print(cling::log(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::dumpPretty() const {
     const ASTContext& C = m_Sema.getASTContext();
     PrintingPolicy Policy(C.getLangOpts());
-    print(llvm::errs(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
+    print(cling::log(), Policy, /*Indent*/0, /*PrintInstantiation*/true);
   }
 
   void Transaction::print(llvm::raw_ostream& Out, const PrintingPolicy& Policy,
@@ -331,19 +330,19 @@ namespace cling {
     assert((sizeof(stateNames) / sizeof(void*)) == kNumStates
            && "Missing a state to print.");
     std::string indent(nindent, ' ');
-    llvm::errs() << indent << "Transaction @" << this << ": \n";
+    cling::log() << indent << "Transaction @" << this << ": \n";
     for (const_nested_iterator I = nested_begin(), E = nested_end();
          I != E; ++I) {
       (*I)->printStructure(nindent + 3);
     }
-    llvm::errs() << indent << " state: " << stateNames[getState()]
+    cling::log() << indent << " state: " << stateNames[getState()]
                  << " decl groups, ";
     if (hasNestedTransactions())
-      llvm::errs() << m_NestedTransactions->size();
+      cling::log() << m_NestedTransactions->size();
     else
-      llvm::errs() << "0";
+      cling::log() << "0";
 
-    llvm::errs() << " nested transactions\n"
+    cling::log() << " nested transactions\n"
                  << indent << " wrapper: " << m_WrapperFD
                  << ", parent: " << m_Parent
                  << ", next: " << m_Next << "\n";
@@ -351,14 +350,14 @@ namespace cling {
 
   void Transaction::printStructureBrief(size_t nindent /*=0*/) const {
     std::string indent(nindent, ' ');
-    llvm::errs() << indent << "<cling::Transaction* " << this
+    cling::log() << indent << "<cling::Transaction* " << this
                  << " isEmpty=" << empty();
-    llvm::errs() << " isCommitted=" << (getState() == kCommitted);
-    llvm::errs() <<"> \n";
+    cling::log() << " isCommitted=" << (getState() == kCommitted);
+    cling::log() <<"> \n";
 
     for (const_nested_iterator I = nested_begin(), E = nested_end();
          I != E; ++I) {
-      llvm::errs() << indent << "`";
+      cling::log() << indent << "`";
       (*I)->printStructureBrief(nindent + 3);
     }
   }
