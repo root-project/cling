@@ -668,7 +668,7 @@ void ClassPrinter::ProcessLinkageSpecDecl(decl_iterator decl)const
 }
 
 //______________________________________________________________________________
-void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
+void ClassPrinter::ProcessClassDecl(decl_iterator decl) const
 {
   assert(fInterpreter != 0 && "ProcessClassDecl, fInterpreter is null");
   assert(*decl != 0 && "ProcessClassDecl, 'decl' parameter is not a valid iterator");
@@ -685,9 +685,10 @@ void ClassPrinter::ProcessClassDecl(decl_iterator decl)const
 
   // Could trigger deserialization of decls.
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
-  //Now we have to check nested scopes for class declarations.
-  for (decl_iterator decl = classDecl->decls_begin(); decl != classDecl->decls_end(); ++decl)
-    ProcessDecl(decl);
+  // Now we have to check nested scopes for class declarations.
+  for (decl_iterator nestedDecl = classDecl->decls_begin();
+       nestedDecl != classDecl->decls_end(); ++nestedDecl)
+    ProcessDecl(nestedDecl);
 }
 
 //______________________________________________________________________________
