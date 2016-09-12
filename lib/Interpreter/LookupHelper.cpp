@@ -192,10 +192,11 @@ namespace cling {
 
     PP.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
 
-    if (complete) {
-      const TagDecl *result = dyn_cast<TagDecl>(complete);
+    if (!complete)
+      return 0;
+    if (const TagDecl *result = dyn_cast<TagDecl>(complete))
       return result->getDefinition();
-    } else return 0;
+    return 0;
   }
 
   ///\brief Look for a tag decl based on its name
