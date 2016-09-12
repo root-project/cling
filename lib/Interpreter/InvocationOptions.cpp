@@ -66,9 +66,11 @@ namespace {
     Opts.ShowVersion = Args.hasArg(OPT_version);
     Opts.Help = Args.hasArg(OPT_help);
     if (Args.hasArg(OPT__metastr, OPT__metastr_EQ)) {
-      Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ);
-      Opts.MetaString = MetaStringArg->getValue();
-      if (Opts.MetaString.length() == 0) {
+      if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ))
+        Opts.MetaString = MetaStringArg->getValue();
+      else
+        Opts.MetaString.clear();
+      if (Opts.MetaString.empty()) {
         llvm::errs() << "ERROR: meta string must be non-empty! Defaulting to '.'.\n";
         Opts.MetaString = ".";
       }
