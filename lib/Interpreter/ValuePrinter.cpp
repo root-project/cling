@@ -470,7 +470,9 @@ namespace cling {
     if (val > 0x1F && val < 0x7F) {
       strm << val;
     } else {
+      std::ios::fmtflags prevFlags = strm.flags();
       strm << "0x" << std::hex << (int) val;
+      strm.flags(prevFlags);
     }
   }
 
