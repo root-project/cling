@@ -572,8 +572,8 @@ namespace cling {
   bool IncrementalParser::transformTransactionIR(Transaction* T) {
     // Transform IR
     bool success = true;
-    if (!success)
-      m_Interpreter->unload(*T);
+    //if (!success)
+    //  m_Interpreter->unload(*T);
     if (m_BackendPasses && T->getModule())
       m_BackendPasses->runOnModule(*T->getModule());
     return success;
