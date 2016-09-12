@@ -185,12 +185,7 @@ namespace cling {
     ///
     clang::FileID m_BufferFID;
 
-    ///\brief This is all to support allocation via TransactionPool.
-    /// There is currently no way for TransactionPool to mark if a Transaction
-    /// originated there or elsewhere, so if this interface is needed
-    /// then TransactionPool will have to be rewritten (or even removed
-    /// as the performance gains seem negligable)
-    ///
+    /// TransactionPool needs direct access to m_State as setState asserts
     friend class TransactionPool;
 
     void Initialize(clang::Sema& S);
