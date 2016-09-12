@@ -38,7 +38,7 @@ namespace cling {
         const cling::Interpreter *m_ParentInterpreter;
         cling::Interpreter *m_ChildInterpreter;
 
-        clang::Sema *m_Sema;
+        clang::Sema *m_Sema = nullptr;
 
         ///\brief We keep a mapping between the imported DeclContexts
         /// and the original ones from of the first Interpreter.
