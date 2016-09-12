@@ -100,10 +100,10 @@ namespace cling {
         (new DeclCollectorPPAdapter(this));
     }
 
-    void SetTransformers(std::vector<std::unique_ptr<ASTTransformer>>&& TT,
-                         std::vector<std::unique_ptr<WrapperTransformer>>&& WT){
-      m_TransactionTransformers.swap(TT);
-      m_WrapperTransformers.swap(WT);
+    void SetTransformers(std::vector<std::unique_ptr<ASTTransformer>>&& allTT,
+                      std::vector<std::unique_ptr<WrapperTransformer>>&& allWT){
+      m_TransactionTransformers.swap(allTT);
+      m_WrapperTransformers.swap(allWT);
       for (auto&& TT: m_TransactionTransformers)
         TT->SetConsumer(this);
       for (auto&& WT: m_WrapperTransformers)
