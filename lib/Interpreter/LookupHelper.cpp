@@ -1698,12 +1698,12 @@ namespace cling {
         SourceLocation loc;
         sema::TemplateDeductionInfo Info(loc);
         FunctionDecl *fdecl = 0;
-        Sema::TemplateDeductionResult Result
+        Sema::TemplateDeductionResult TemplDedResult
           = S.DeduceTemplateArguments(MethodTmpl,
                     const_cast<TemplateArgumentListInfo*>(ExplicitTemplateArgs),
                                       fdecl,
                                       Info);
-        if (Result) {
+        if (TemplDedResult != Sema::TDK_Success) {
           // Deduction failure.
           return 0;
         } else {
