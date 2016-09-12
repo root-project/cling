@@ -192,14 +192,10 @@ namespace cling {
     /// as the performance gains seem negligable)
     ///
     friend class TransactionPool;
-    Transaction(clang::Sema& S);
-    Transaction(const CompilationOptions& Opts, clang::Sema& S);
-    ~Transaction();
 
     void Initialize(clang::Sema& S);
 
   public:
-
     enum State {
       kCollecting,
       kCompleted,
@@ -214,6 +210,10 @@ namespace cling {
       kWarnings,
       kNone
     };
+
+    Transaction(clang::Sema& S);
+    Transaction(const CompilationOptions& Opts, clang::Sema& S);
+    ~Transaction();
 
     /// \{
     /// \name Iteration
