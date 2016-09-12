@@ -49,8 +49,8 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
   //RedeclLink is a protected member.
   struct RedeclDerived : public Redeclarable<DeclT> {
     typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
-    static DeclLink_t& getLink(DeclT* R) {
-      Redeclarable<DeclT>* D = R;
+    static DeclLink_t& getLink(DeclT* LR) {
+      Redeclarable<DeclT>* D = LR;
       return ((RedeclDerived*)D)->RedeclLink;
     }
     static void setLatest(DeclT* Latest) {
@@ -205,8 +205,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       // The first pass is to drop initializers of global vars which are dead.
       for (Globals::iterator I = VisitedGlobals.begin(),
              E = VisitedGlobals.end(); I != E; ++I)
-        if (GlobalVariable* GV = dyn_cast<GlobalVariable>(*I)) {
-          GV->setInitializer(0);
+        if (GlobalVariable* GVar = dyn_cast<GlobalVariable>(*I)) {
+          GVar->setInitializer(0);
         }
         else if (GlobalAlias* GA = dyn_cast<GlobalAlias>(*I)) {
           GA->setAliasee(0);
