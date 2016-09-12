@@ -249,9 +249,18 @@ script:
       git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
     fi
 
-    timeout -s SIGTERM $TIMEOUT tools/packaging/cpt.py --current-dev=tar --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG --skip-cleanup
+    timeout -s SIGTERM $TIMEOUT tools/packaging/cpt.py \
+      --current-dev=tar \
+      --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
+      --with-clang-url=http://root.cern.ch/git/clang.git \
+      --with-llvm-url=http://root.cern.ch/git/llvm.git \
+      --skip-cleanup
   else
-    tools/packaging/cpt.py --tarball-tag=$TRAVIS_TAG --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG
+    tools/packaging/cpt.py \
+      --tarball-tag=$TRAVIS_TAG \
+      --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
+      --with-clang-url=http://root.cern.ch/git/clang.git \
+      --with-llvm-url=http://root.cern.ch/git/llvm.git \
   fi
   RESULT="$?"
   echo "RESULT: $RESULT"
