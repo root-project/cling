@@ -87,7 +87,7 @@ namespace cling {
     ///   dependencies.
     void AssertOnUnsupportedTypeCast() const;
 
-    unsigned long GetNumberOfElements() const;
+    size_t GetNumberOfElements() const;
 
     // Allow simplisticCastAs to be partially specialized.
     template<typename T>
