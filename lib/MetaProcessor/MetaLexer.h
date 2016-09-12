@@ -80,7 +80,6 @@ namespace cling {
   class MetaLexer {
   protected:
     const char* bufferStart;
-    const char* bufferEnd;
     const char* curPos;
   public:
     MetaLexer(const char* bufStart)
