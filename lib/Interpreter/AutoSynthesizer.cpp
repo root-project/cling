@@ -52,8 +52,8 @@ namespace cling {
         Stmt *s = TS->getHandler(h)->getHandlerBlock();
         if (CompoundStmt* CS = dyn_cast_or_null<CompoundStmt>(s))
           Fix(CS);
-        else if (CXXTryStmt *TS = dyn_cast_or_null<CXXTryStmt>(s))
-          Fix(TS);
+        else if (CXXTryStmt *HandlerTS = dyn_cast_or_null<CXXTryStmt>(s))
+          Fix(HandlerTS);
       }
     }
 
