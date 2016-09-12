@@ -21,8 +21,13 @@ namespace clang {
 namespace cling {
   class TransactionPool {
     enum {
+#ifdef NDEBUG
+      kDebugMode           = 0,
+#else
+      kDebugMode           = 1, // Always use a new Transaction
+#endif
       kTransactionsInBlock = 8,
-      kPoolSize = 2 * kTransactionsInBlock
+      kPoolSize            = 2 * kTransactionsInBlock
     };
 
     // It is twice the size of the block because there might be easily around 8
@@ -57,6 +62,9 @@ namespace cling {
         assert((T->getState() == Transaction::kCompleted ||
                 T->getState() == Transaction::kRolledBack)
                && "Transaction must completed!");
+        // Force reuse to off when not in Debug mode
+        if (kDebugMode)
+          reuse = false;
       }
 
       // Tell the parent that T is gone.
