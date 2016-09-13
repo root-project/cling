@@ -580,6 +580,9 @@ namespace cling {
   }
 
   void IncrementalParser::deregisterTransaction(Transaction& T) {
+    if (&T == m_Consumer->getTransaction())
+      m_Consumer->setTransaction(T.getParent());
+
     if (Transaction* Parent = T.getParent()) {
       Parent->removeNestedTransaction(&T);
       T.setParent(0);
