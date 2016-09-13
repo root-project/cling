@@ -44,7 +44,11 @@ const int TerminalConfigUnix::fgSignals[kNumHandledSignals] = {
   SIGABRT,
   SIGSEGV,
   SIGILL,
-  SIGBUS
+  SIGBUS,
+  SIGQUIT,
+  SIGFPE,
+  SIGXCPU,
+  SIGXFSZ
 };
 
 TerminalConfigUnix&

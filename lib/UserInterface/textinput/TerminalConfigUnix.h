@@ -56,7 +56,7 @@ private:
 
   bool fIsAttached; // whether fConfTIOS is active.
   int fFD; // file descriptor
-  enum { kNumHandledSignals = 5 }; // number of fPrevHandler entries
+  enum { kNumHandledSignals = 9 }; // number of fPrevHandler entries
   static const int
     fgSignals[kNumHandledSignals]; // signal nums, order as in fPrevHandler
   sig_t fPrevHandler[kNumHandledSignals]; // next signal handler to call
