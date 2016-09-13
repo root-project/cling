@@ -131,28 +131,36 @@ void LogNonExistantDirectory(llvm::StringRef Path) {
 bool SplitPaths(llvm::StringRef PathStr,
                 llvm::SmallVectorImpl<llvm::StringRef>& Paths,
                 SplitMode Mode, llvm::StringRef Delim, bool Verbose) {
-  bool AllExisted = true;
-#ifdef _MSC_VER
+  assert(Delim.size() && "Splitting without a delimiter");
+
+#if defined(LLVM_ON_WIN32)
+  // Support using a ':' delimiter on Windows.
   const bool WindowsColon = Delim.equals(":");
 #endif
+
+  bool AllExisted = true;
   for (std::pair<llvm::StringRef, llvm::StringRef> Split = PathStr.split(Delim);
        !Split.second.empty(); Split = PathStr.split(Delim)) {
 
     if (!Split.first.empty()) {
       bool Exists = llvm::sys::fs::is_directory(Split.first);
 
-  #ifdef _MSC_VER
-    // TODO: Should this all go away and have user handle platform differences?
-    // Right now there are issues with CMake updating cling-compiledata.h
-    // and it was previoulsy generating 'C:\User\Path:G:\Another\Path'
+#if defined(LLVM_ON_WIN32)
+    // Because drive letters will have a colon we have to make sure the split
+    // occurs at a colon not followed by a path separator.
     if (!Exists && WindowsColon && Split.first.size()==1) {
-      std::pair<llvm::StringRef, llvm::StringRef> Tmp = Split.second.split(Delim);
-      // Split.first = 'C', but we want 'C:', so Tmp.first.size()+2
-      Split.first = llvm::StringRef(Split.first.data(), Tmp.first.size()+2);
-      Split.second = Tmp.second;
-      Exists = llvm::sys::fs::is_directory(Split.first);
+      // Both clang and cl.exe support '\' and '/' path separators.
+      if (Split.second.front() == '\\' || Split.second.front() == '/') {
+          const std::pair<llvm::StringRef, llvm::StringRef> Tmp =
+              Split.second.split(Delim);
+          // Split.first = 'C', but we want 'C:', so Tmp.first.size()+2
+          Split.first =
+              llvm::StringRef(Split.first.data(), Tmp.first.size() + 2);
+          Split.second = Tmp.second;
+          Exists = llvm::sys::fs::is_directory(Split.first);
+      }
     }
-  #endif
+#endif
 
       AllExisted = AllExisted && Exists;
 
@@ -185,7 +193,10 @@ bool SplitPaths(llvm::StringRef PathStr,
     PathStr = Split.second;
   }
 
-  // Add remaining part, can be empty from _MSC_VER code
+  // Trim trailing sep in case of A:B:C:D:
+  if (!PathStr.empty() && PathStr.endswith(Delim))
+    PathStr = PathStr.substr(0, PathStr.size()-Delim.size());
+
   if (!PathStr.empty()) {
     if (!llvm::sys::fs::is_directory(PathStr)) {
       AllExisted = false;

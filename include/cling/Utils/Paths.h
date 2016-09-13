@@ -52,7 +52,7 @@ namespace cling {
     bool SplitPaths(llvm::StringRef PathStr,
                     llvm::SmallVectorImpl<llvm::StringRef>& Paths,
                     SplitMode Mode = kPruneNonExistant,
-                    llvm::StringRef Delim = llvm::StringRef(platform::kEnvDelim),
+                    llvm::StringRef Delim = platform::kEnvDelim,
                     bool Verbose = false);
 
     ///\brief Adds multiple include paths separated by a delimter into the
