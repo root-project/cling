@@ -145,10 +145,6 @@ namespace cling {
     Transaction* getTransaction() { return m_CurTransaction; }
     const Transaction* getTransaction() const { return m_CurTransaction; }
     void setTransaction(Transaction* curT) { m_CurTransaction = curT; }
-    void setTransaction(const Transaction* curT) {
-      m_CurTransaction = const_cast<Transaction*>(curT);
-    }
-
     /// \}
 
     // dyn_cast/isa support
