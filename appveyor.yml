@@ -29,10 +29,7 @@ install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat
 
 build_script:
-  - cmd: >-
-      @echo off
-
-      "tools\packaging\cpt.py
+  - "tools\packaging\cpt.py
         --current-dev=tar
         --with-cling-url=https://github.com/%APPVEYOR_REPO_NAME%
         --with-clang-url=http://root.cern.ch/git/clang.git
