@@ -12,6 +12,9 @@ set( LLVM_LINK_COMPONENTS
 add_cling_library(clingUtils OBJECT
   AST.cpp
   Paths.cpp
+  PlatformMac.cpp
+  PlatformPosix.cpp
+  PlatformWin.cpp
   SourceNormalization.cpp
   Validation.cpp
 
