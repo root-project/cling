@@ -454,7 +454,7 @@ bool IsDLL(const std::string& Path) {
   ::CloseHandle(hFile);
   return isDLL;
 }
-  
+
 } // namespace windows
 
 std::string GetCwd() {
@@ -473,6 +473,17 @@ std::string NormalizePath(const std::string& Path) {
 
   ReportLastError("_fullpath");
   return std::string();
+}
+
+bool IsMemoryValid(const void *P) {
+  MEMORY_BASIC_INFORMATION MBI;
+  if (::VirtualQuery(P, &MBI, sizeof(MBI)) == 0) {
+    ReportLastError("VirtualQuery");
+    return false;
+  }
+  if (MBI.State != MEM_COMMIT)
+    return false;
+  return true;
 }
 
 const void* DLOpen(const std::string& Path, std::string* Err) {

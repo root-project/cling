@@ -51,6 +51,10 @@ namespace platform {
   ///
   std::string NormalizePath(const std::string& Path);
 
+  ///\brief Return true if the given pointer is in a valid memory region.
+  ///
+  bool IsMemoryValid(const void *P);
+
 #if defined(LLVM_ON_UNIX)
 
 #if defined(__APPLE__)
