@@ -18,17 +18,8 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <algorithm>
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+#include <system_error>
 #include <sys/stat.h>
-
-#ifdef LLVM_ON_WIN32
-#include <Windows.h>
-#else
-#include <dlfcn.h>
-#endif
 
 namespace cling {
   DynamicLibraryManager::DynamicLibraryManager(const InvocationOptions& Opts)
@@ -213,20 +204,10 @@ namespace cling {
     if (m_LoadedLibraries.find(canonicalLoadedLib) != m_LoadedLibraries.end())
       return kLoadLibAlreadyLoaded;
 
-    std::string errMsg;
     // TODO: !permanent case
-#if defined(LLVM_ON_WIN32)
-    HMODULE dyLibHandle = LoadLibraryEx(canonicalLoadedLib.c_str(), NULL,
-                                        DONT_RESOLVE_DLL_REFERENCES);
-    if (!dyLibHandle)
-      platform::GetLastErrorAsString(errMsg, "LoadLibraryEx");
-#else
-    const void* dyLibHandle = dlopen(canonicalLoadedLib.c_str(),
-                                     RTLD_LAZY|RTLD_GLOBAL);
-    if (const char* DyLibError = dlerror()) {
-      errMsg = DyLibError;
-    }
-#endif
+
+    std::string errMsg;
+    DyLibHandle dyLibHandle = platform::DLOpen(canonicalLoadedLib, &errMsg);
     if (!dyLibHandle) {
       llvm::errs() << "cling::DynamicLibraryManager::loadLibrary(): " << errMsg
                    << '\n';
@@ -258,17 +239,10 @@ namespace cling {
       }
     }
 
-    std::string errMsg;
     // TODO: !permanent case
-#if defined(LLVM_ON_WIN32)
-    if (FreeLibrary((HMODULE)dyLibHandle) == 0)
-      platform::GetLastErrorAsString(errMsg, "FreeLibrary");
-#else
-    dlclose(const_cast<void*>(dyLibHandle));
-    if (const char* DyLibError = dlerror()) {
-      errMsg = DyLibError;
-    }
-#endif
+
+    std::string errMsg;
+    platform::DLClose(dyLibHandle, &errMsg);
     if (!errMsg.empty()) {
       llvm::errs() << "cling::DynamicLibraryManager::unloadLibrary(): "
                    << errMsg << '\n';
