@@ -28,6 +28,10 @@ namespace platform {
   ///
   bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths);
 
+  ///\brief Returns a normalized version of the given Path
+  ///
+  std::string NormalizePath(const std::string& Path);
+
 #if defined(LLVM_ON_UNIX)
 
 #if defined(__APPLE__)

@@ -22,16 +22,27 @@
  #include <limits.h>
 #endif
 
+#define PATH_MAXC (PATH_MAX+1)
+
 namespace cling {
 namespace utils {
 namespace platform {
 
 std::string GetCwd() {
-  char Buffer[PATH_MAX+1];
+  char Buffer[PATH_MAXC];
   if (::getcwd(Buffer, sizeof(Buffer)))
     return Buffer;
 
   ::perror("Could not get current working directory");
+  return std::string();
+}
+
+std::string NormalizePath(const std::string& Path) {
+  char Buf[PATH_MAXC];
+  if (const char* Result = ::realpath(Path.c_str(), Buf))
+    return std::string(Result);
+
+  ::perror("realpath");
   return std::string();
 }
 

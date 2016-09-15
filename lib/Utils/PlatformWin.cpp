@@ -454,6 +454,7 @@ bool IsDLL(const std::string& Path) {
   ::CloseHandle(hFile);
   return isDLL;
 }
+  
 } // namespace windows
 
 std::string GetCwd() {
@@ -462,6 +463,15 @@ std::string GetCwd() {
     return Buffer;
 
   ::perror("Could not get current working directory");
+  return std::string();
+}
+
+std::string NormalizePath(const std::string& Path) {
+  char Buf[MAX_PATHC];
+  if (const char* Result = ::_fullpath(Buf, Path.c_str(), sizeof(Buf)))
+    return std::string(Result);
+
+  ReportLastError("_fullpath");
   return std::string();
 }
 
