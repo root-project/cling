@@ -12,8 +12,13 @@
 #if defined(LLVM_ON_UNIX)
 
 #include "cling/Utils/Paths.h"
+
+#include <array>
+#include <atomic>
 #include <string>
 #include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 // PATH_MAX
@@ -28,6 +33,67 @@
 namespace cling {
 namespace utils {
 namespace platform {
+
+namespace {
+  // A simple round-robin cache: what enters first, leaves first.
+  // MRU cache wasn't worth the extra CPU cycles.
+  struct Cache {
+  private:
+    std::array<const void*, 8> lines;
+    std::atomic<unsigned> mostRecent = {0};
+  public:
+    bool contains(const void* P) {
+      return std::find(lines.begin(), lines.end(), P) != lines.end();
+    }
+
+    // Concurrent writes to the same cache element can result in invalid cache
+    // elements, causing pointer address not being available in the cache even
+    // though they should be, i.e. false cache misses. While can cause a
+    // slow-down, the cost for keeping the cache thread-local or atomic is
+    // much higher (yes, this was measured).
+    void push(const void* P) {
+      unsigned acquiredVal = mostRecent;
+      while(!mostRecent.compare_exchange_weak(acquiredVal, (acquiredVal+1)%lines.size())) {
+        acquiredVal = mostRecent;
+      }
+      lines[acquiredVal] = P;
+    }
+  };
+
+  // Note: not thread safe, see comment above push().
+  static Cache& getCache() {
+    static Cache threadCache;
+    return threadCache;
+  }
+
+  static int getNullDevFileDescriptor() {
+    struct FileDescriptor {
+      int FD;
+      const char* file = "/dev/random";
+      FileDescriptor() { FD = open(file, O_WRONLY); }
+      ~FileDescriptor() {
+        close(FD);
+      }
+    };
+    static FileDescriptor nullDev;
+    return nullDev.FD;
+  }
+} // anonymous namespace
+
+bool IsMemoryValid(const void *P) {
+  // Look-up the address in the cache.
+  Cache& currentCache = getCache();
+  if (currentCache.contains(P))
+    return true;
+  // There is a POSIX way of finding whether an address
+  // can be accessed for reading.
+  if (write(getNullDevFileDescriptor(), P, 1/*byte*/) != 1) {
+    assert(errno == EFAULT && "unexpected write error at address");
+    return false;
+  }
+  currentCache.push(P);
+  return true;
+}
 
 std::string GetCwd() {
   char Buffer[PATH_MAXC];
