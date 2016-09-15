@@ -35,16 +35,13 @@ namespace utils {
 namespace platform {
 
 namespace {
-  // A simple round-robin cache: what enters first, leaves first.
-  // MRU cache wasn't worth the extra CPU cycles.
-  struct Cache {
+  struct PointerCheck {
   private:
+    // A simple round-robin cache: what enters first, leaves first.
+    // MRU cache wasn't worth the extra CPU cycles.
     std::array<const void*, 8> lines;
     std::atomic<unsigned> mostRecent = {0};
-  public:
-    bool contains(const void* P) {
-      return std::find(lines.begin(), lines.end(), P) != lines.end();
-    }
+    int FD;
 
     // Concurrent writes to the same cache element can result in invalid cache
     // elements, causing pointer address not being available in the cache even
@@ -53,46 +50,43 @@ namespace {
     // much higher (yes, this was measured).
     void push(const void* P) {
       unsigned acquiredVal = mostRecent;
-      while(!mostRecent.compare_exchange_weak(acquiredVal, (acquiredVal+1)%lines.size())) {
+      while(!mostRecent.compare_exchange_weak(acquiredVal,
+                                              (acquiredVal+1)%lines.size())) {
         acquiredVal = mostRecent;
       }
       lines[acquiredVal] = P;
     }
-  };
 
-  // Note: not thread safe, see comment above push().
-  static Cache& getCache() {
-    static Cache threadCache;
-    return threadCache;
-  }
+  public:
+    PointerCheck() : FD(::open("/dev/random", O_WRONLY)) {
+      if (FD == -1) ::perror("open('/dev/random')");
+    }
+    ~PointerCheck() {
+      if (FD != -1) ::close(FD);
+    }
 
-  static int getNullDevFileDescriptor() {
-    struct FileDescriptor {
-      int FD;
-      const char* file = "/dev/random";
-      FileDescriptor() { FD = open(file, O_WRONLY); }
-      ~FileDescriptor() {
-        close(FD);
+    bool operator () (const void* P) {
+      if (FD == -1)
+        return false;
+
+      if (std::find(lines.begin(), lines.end(), P) != lines.end())
+        return true;
+
+      // There is a POSIX way of finding whether an address
+      // can be accessed for reading.
+      if (::write(FD, P, 1/*byte*/) != 1) {
+        assert(errno == EFAULT && "unexpected write error at address");
+        return false;
       }
-    };
-    static FileDescriptor nullDev;
-    return nullDev.FD;
-  }
-} // anonymous namespace
+      push(P);
+      return true;
+    }
+  };
+}
 
 bool IsMemoryValid(const void *P) {
-  // Look-up the address in the cache.
-  Cache& currentCache = getCache();
-  if (currentCache.contains(P))
-    return true;
-  // There is a POSIX way of finding whether an address
-  // can be accessed for reading.
-  if (write(getNullDevFileDescriptor(), P, 1/*byte*/) != 1) {
-    assert(errno == EFAULT && "unexpected write error at address");
-    return false;
-  }
-  currentCache.push(P);
-  return true;
+  static PointerCheck sPointerCheck;
+  return sPointerCheck(P);
 }
 
 std::string GetCwd() {
