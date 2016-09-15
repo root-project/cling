@@ -27,11 +27,6 @@
 #ifdef LLVM_ON_WIN32
 #include <Windows.h>
 #else
-#ifdef __APPLE__
- #include <sys/syslimits.h> // PATH_MAX
-#else
- #include <limits.h> // PATH_MAX
-#endif
 #include <dlfcn.h>
 #endif
 
@@ -153,42 +148,29 @@ namespace cling {
     }
 
     if (foundDyLib.empty())
-      return "";
+      return std::string();
 
     // get canonical path name and check if already loaded
-#if defined(LLVM_ON_WIN32)
-    llvm::SmallString<_MAX_PATH> FullPath("");
-    char *res = _fullpath((char *)FullPath.data(), foundDyLib.c_str(), _MAX_PATH);
-#else
-    llvm::SmallString<PATH_MAX+1> FullPath("");
-    char *res = realpath(foundDyLib.c_str(), (char *)FullPath.data());
-#endif
-    if (res == 0) {
+    const std::string Path = platform::NormalizePath(foundDyLib);
+    if (Path.empty()) {
       llvm::errs() << "cling::DynamicLibraryManager::lookupLibMaybeAddExt(): "
         "error getting real (canonical) path of library " << foundDyLib << '\n';
       return foundDyLib;
     }
-    FullPath.set_size(strlen(res));
-    return FullPath.str();
+    return Path;
   }
 
   std::string DynamicLibraryManager::normalizePath(llvm::StringRef path) {
     // Make the path canonical if the file exists.
+    const std::string Path = path.str();
     struct stat buffer;
-    if (stat(path.data(), &buffer) != 0)
-      return "";
-#if defined(LLVM_ON_WIN32)
-    char buf[_MAX_PATH];
-    char *res = _fullpath(buf, path.data(), _MAX_PATH);
-#else
-    char buf[PATH_MAX+1];
-    char *res = realpath(path.data(), buf);
-#endif
-    if (res == 0) {
-      assert(0 && "Cannot normalize!?");
-      return "";
-    }
-    return res;
+    if (::stat(Path.c_str(), &buffer) != 0)
+      return std::string();
+
+    const std::string NPath = platform::NormalizePath(Path);
+    if (NPath.empty())
+      llvm::errs() << "Could not normalize: " << Path << '\n';
+    return NPath;
   }
 
   std::string
@@ -202,7 +184,7 @@ namespace cling {
       if (isSharedLib(libStem))
         return normalizePath(libStem);
       else
-        return "";
+        return std::string();
     }
 
     std::string foundName = lookupLibMaybeAddExt(libStem);
@@ -211,9 +193,10 @@ namespace cling {
       foundName = lookupLibMaybeAddExt("lib" + libStem.str());
     }
 
-    if (isSharedLib(foundName))
-      return normalizePath(foundName);
-    return "";
+    if (!foundName.empty() && isSharedLib(foundName))
+      return platform::NormalizePath(foundName);
+
+    return std::string();
   }
 
   DynamicLibraryManager::LoadLibResult
