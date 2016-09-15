@@ -96,6 +96,12 @@ inline namespace windows {
   ///
   bool IsDLL(const std::string& Path);
 
+  ///\brief Look for given symbol in all modules loaded by the current process
+  ///
+  /// \returns The adress of the symbol or null if not found
+  ///
+  const void* LookupSymbol(const std::string& Name);
+
   /// \brief Read registry string.
   /// This also supports a means to look for high-versioned keys by use
   /// of a $VERSION placeholder in the key path.
