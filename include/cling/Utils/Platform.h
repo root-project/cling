@@ -10,6 +10,7 @@
 #ifndef CLING_PLATFORM_H
 #define CLING_PLATFORM_H
 
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Compiler.h"
 #include <string>
 
@@ -20,6 +21,12 @@ namespace platform {
   ///\brief Returns the current working directory
   ///
   std::string GetCwd();
+
+  ///\brief Get the system library paths
+  ///
+  /// \returns true on success false otherwise
+  ///
+  bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths);
 
 #if defined(LLVM_ON_UNIX)
 
@@ -57,6 +64,10 @@ inline namespace windows {
   /// \param [in] Prefix - Prefix the message with this
   ///
   bool ReportLastError(const char* Prefix = nullptr);
+
+  ///\brief Return true if a given Path is a dynamic library
+  ///
+  bool IsDLL(const std::string& Path);
 
   /// \brief Read registry string.
   /// This also supports a means to look for high-versioned keys by use
