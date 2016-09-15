@@ -10,6 +10,7 @@
 #include "IncrementalJIT.h"
 
 #include "IncrementalExecutor.h"
+#include "cling/Utils/Platform.h"
 
 #include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
 #include "llvm/Support/DynamicLibrary.h"
@@ -217,13 +218,20 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
   if (auto Sym = getInjectedSymbols(Name))
     return Sym;
 
+  // Avoid constructing std::string from llvm::StringRef more than once
+  const std::string SymName = Name;
   if (AlsoInProcess) {
-    if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(Name))
+    if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(SymName))
       return llvm::orc::JITSymbol(SymInfo.getAddress(),
                                   llvm::JITSymbolFlags::Exported);
+#ifdef LLVM_ON_WIN32
+    if (const void* Sym = platform::LookupSymbol(SymName))
+      return llvm::orc::JITSymbol(llvm::orc::TargetAddress(Sym),
+                                  llvm::JITSymbolFlags::Exported);
+#endif
   }
 
-  if (auto Sym = m_LazyEmitLayer.findSymbol(Name, false))
+  if (auto Sym = m_LazyEmitLayer.findSymbol(SymName, false))
     return Sym;
 
   return llvm::orc::JITSymbol(nullptr);
