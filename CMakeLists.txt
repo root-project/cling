@@ -374,7 +374,6 @@ endif()
 if(DEFINED ROOT_BINARY_DIR)
   if( CLING_INCLUDE_TESTS )
      set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
-${cling_include_deflt}${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/include"
@@ -383,7 +382,6 @@ ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/include"
 else()
   if( CLING_INCLUDE_TESTS )
     set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
-${cling_include_deflt}${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../../include"
