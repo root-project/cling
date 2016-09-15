@@ -92,7 +92,7 @@ namespace {
 static bool readFullStringValue(HKEY hkey, const char *valueName,
                                 std::string &value) {
   std::wstring WideValueName;
-  if (!llvm::ConvertUTF8toWide(valueName, WideValueName))
+  if (valueName && !llvm::ConvertUTF8toWide(valueName, WideValueName))
     return false;
 
   // First just query for the required size.
@@ -244,20 +244,26 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
   HKEY hRootKey = NULL;
   const char* subKey = NULL;
 
-  if (::strncmp(keyPath, "HKEY_CLASSES_ROOT\\", 18) == 0) {
+  if (::strncmp(keyPath, "HKEY_CLASSES_ROOT", 17) == 0) {
     hRootKey = HKEY_CLASSES_ROOT;
-    subKey = keyPath + 18;
-  } else if (::strncmp(keyPath, "HKEY_USERS\\", 11) == 0) {
+    subKey = keyPath + 17;
+  } else if (::strncmp(keyPath, "HKEY_USERS", 10) == 0) {
     hRootKey = HKEY_USERS;
-    subKey = keyPath + 11;
-  } else if (::strncmp(keyPath, "HKEY_LOCAL_MACHINE\\", 19) == 0) {
+    subKey = keyPath + 10;
+  } else if (::strncmp(keyPath, "HKEY_LOCAL_MACHINE", 18) == 0) {
     hRootKey = HKEY_LOCAL_MACHINE;
-    subKey = keyPath + 19;
-  } else if (::strncmp(keyPath, "HKEY_CURRENT_USER\\", 18) == 0) {
-    hRootKey = HKEY_CURRENT_USER;
     subKey = keyPath + 18;
+  } else if (::strncmp(keyPath, "HKEY_CURRENT_USER", 17) == 0) {
+    hRootKey = HKEY_CURRENT_USER;
+    subKey = keyPath + 17;
   } else {
     return false;
+  }
+  // Accept HKEY_CLASSES_ROOT or HKEY_CLASSES_ROOT\\ as the key to lookup in
+  switch (subKey[0]) {
+    case '\\': ++subKey;
+    case 0:    break;
+    default:   return false; // HKEY_CLASSES_ROOT_MORE_STUFF ?
   }
 
   long lResult;
@@ -330,6 +336,11 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
     } else
       ReportError(lResult, "RegOpenKeyEx");
   } else {
+    // If subKey is empty, then valueName is subkey, and we retreive that
+    if (subKey[0]==0) {
+      subKey = valueName;
+      valueName = nullptr;
+    }
     lResult = ::RegOpenKeyExA(hRootKey, subKey, 0, KEY_READ | KEY_WOW64_32KEY,
                               &hKey);
     if (lResult == ERROR_SUCCESS) {
