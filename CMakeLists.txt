@@ -386,12 +386,12 @@ ${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/../../include"
     )
-  endif()
-  if (WIN32)
-    set(cling_include_deflt "${cling_include_deflt}${cling_path_delim}\
+    if (WIN32)
+      set(cling_include_deflt "${cling_include_deflt}${cling_path_delim}\
 ${CMAKE_BINARY_DIR}/include${cling_path_delim}\
 ${CMAKE_BINARY_DIR}/tools/clang/include"
-    )
+      )
+    endif()
   endif()
 endif()
 
