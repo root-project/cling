@@ -9,6 +9,7 @@
 
 #include "IncrementalParser.h"
 
+#include "ASTTransformer.h"
 #include "AutoSynthesizer.h"
 #include "BackendPasses.h"
 #include "CheckEmptyTransactionTransformer.h"
@@ -18,25 +19,25 @@
 #include "DynamicLookup.h"
 #include "IncrementalExecutor.h"
 #include "NullDerefProtectionTransformer.h"
-#include "ValueExtractionSynthesizer.h"
 #include "TransactionPool.h"
-#include "ASTTransformer.h"
+#include "ValueExtractionSynthesizer.h"
 #include "ValuePrinterSynthesizer.h"
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/Platform.h"
 
-#include "clang/AST/Attr.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclGroup.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
-#include "clang/Parse/Parser.h"
-#include "clang/Lex/Preprocessor.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Parse/Parser.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "clang/Serialization/ASTWriter.h"
@@ -48,23 +49,8 @@
 #include "llvm/Support/raw_os_ostream.h"
 
 #include <iostream>
-#include <stdio.h>
 #include <sstream>
-
-// Include the necessary headers to interface with the Windows registry and
-// environment.
-#ifdef _MSC_VER
-  #define WIN32_LEAN_AND_MEAN
-  #define NOGDI
-  #ifndef NOMINMAX
-    #define NOMINMAX
-  #endif
-  #include <Windows.h>
-  #include <sstream>
-  #define popen _popen
-  #define pclose _pclose
-  #pragma comment(lib, "Advapi32.lib")
-#endif
+#include <stdio.h>
 
 using namespace clang;
 
@@ -89,18 +75,12 @@ namespace {
     return;
 #endif
 #ifdef _MSC_VER
-    HKEY regVS;
-#if (_MSC_VER >= 1900)
-    int VSVersion = (_MSC_VER / 100) - 5;
-#else
-    int VSVersion = (_MSC_VER / 100) - 6;
-#endif
+    const int VSVersion = cling::platform::GetVisualStudioVersionCompiledWith();
     std::stringstream subKey;
     subKey << "VisualStudio.DTE." << VSVersion << ".0";
-    if (RegOpenKeyEx(HKEY_CLASSES_ROOT, subKey.str().c_str(), 0, KEY_READ, &regVS) == ERROR_SUCCESS) {
-      RegCloseKey(regVS);
-    }
-    else {
+    std::string Value;
+    if (!cling::platform::GetSystemRegistryString("HKEY_CLASSES_ROOT",
+                                subKey.str().c_str(), Value) || Value.empty()) {
       llvm::errs()
         << "Warning in cling::IncrementalParser::CheckABICompatibility():\n  "
         "Possible C++ standard library mismatch, compiled with Visual Studio v"
