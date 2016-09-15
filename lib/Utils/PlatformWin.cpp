@@ -35,23 +35,14 @@
 #include <Windows.h>
 #include <Psapi.h>   // EnumProcessModulesEx
 #include <direct.h>  // _getcwd
+#include <shlobj.h>  // SHGetFolderPath
 #pragma comment(lib, "Advapi32.lib")
 
-// This is how MSDN does it
-#define MAX_PATH (_MAX_PATH + 1)
+#define MAX_PATHC (MAX_PATH + 1)
 
 namespace cling {
 namespace utils {
 namespace platform {
-
-std::string GetCwd() {
-  char Buffer[MAX_PATH];
-  if (::_getcwd(Buffer, sizeof(Buffer)))
-    return Buffer;
-
-  ::perror("Could not get current working directory");
-  return std::string();
-}
 
 inline namespace windows {
 
@@ -112,7 +103,7 @@ static bool readFullStringValue(HKEY hkey, const char *valueName,
     if (type != REG_SZ || !valueSize)
       return false;
 
-    llvm::SmallVector<wchar_t, MAX_PATH> buffer;
+    llvm::SmallVector<wchar_t, MAX_PATHC> buffer;
     buffer.resize(valueSize/sizeof(wchar_t));
     result = ::RegQueryValueExW(hkey, WideValueName.c_str(), NULL, NULL,
                                 reinterpret_cast<BYTE*>(&buffer[0]), &valueSize);
@@ -208,7 +199,7 @@ static bool getWindows10SDKVersion(std::string& SDKPath,
   SDKVersion.clear();
 
   std::error_code EC;
-  llvm::SmallString<MAX_PATH> IncludePath(SDKPath);
+  llvm::SmallString<MAX_PATHC> IncludePath(SDKPath);
   llvm::sys::path::append(IncludePath, "Include");
   for (llvm::sys::fs::directory_iterator DirIt(IncludePath, EC), DirEnd;
        DirIt != DirEnd && !EC; DirIt.increment(EC)) {
@@ -424,7 +415,79 @@ bool GetVisualStudioDirs(std::string& Path, std::string* WinSDK,
   return false;
 }
 
+
+bool IsDLL(const std::string& Path) {
+  bool isDLL = false;
+  HANDLE hFile = ::CreateFileA(Path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
+                               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  if (hFile == INVALID_HANDLE_VALUE) {
+    ReportLastError("CreateFile");
+    return false;
+  }
+  HANDLE hFileMapping = ::CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0,
+                                            NULL);
+  if (hFileMapping == INVALID_HANDLE_VALUE) {
+    ReportLastError("CreateFileMapping");
+    ::CloseHandle(hFile);
+    return false;
+  }
+
+  LPVOID lpFileBase = ::MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
+  if (!lpFileBase) {
+    ReportLastError("CreateFileMapping");
+    ::CloseHandle(hFileMapping);
+    ::CloseHandle(hFile);
+    return false;
+  }
+
+  PIMAGE_DOS_HEADER pDOSHeader = static_cast<PIMAGE_DOS_HEADER>(lpFileBase);
+  if (pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE) {
+    PIMAGE_NT_HEADERS pNTHeader = reinterpret_cast<PIMAGE_NT_HEADERS>(
+        (PBYTE)lpFileBase + pDOSHeader->e_lfanew);
+    if ((pNTHeader->Signature == IMAGE_NT_SIGNATURE) &&
+        ((pNTHeader->FileHeader.Characteristics & IMAGE_FILE_DLL)))
+      isDLL = true;
+  }
+
+  ::UnmapViewOfFile(lpFileBase);
+  ::CloseHandle(hFileMapping);
+  ::CloseHandle(hFile);
+  return isDLL;
+}
 } // namespace windows
+
+std::string GetCwd() {
+  char Buffer[MAX_PATHC];
+  if (::_getcwd(Buffer, sizeof(Buffer)))
+    return Buffer;
+
+  ::perror("Could not get current working directory");
+  return std::string();
+}
+
+bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
+  char Buf[MAX_PATHC];
+  // Generic form of C:\Windows\System32
+  HRESULT result = ::SHGetFolderPathA(NULL, CSIDL_FLAG_CREATE | CSIDL_SYSTEM,
+                                      NULL, SHGFP_TYPE_CURRENT, Buf);
+  if (result != S_OK) {
+    ReportError(result, "SHGetFolderPathA");
+    return false;
+  }
+  Paths.push_back(Buf);
+  Buf[0] = 0; // Reset Buf.
+  
+  // Generic form of C:\Windows
+  result = ::SHGetFolderPathA(NULL, CSIDL_FLAG_CREATE | CSIDL_WINDOWS,
+                              NULL, SHGFP_TYPE_CURRENT, Buf);
+  if (result != S_OK) {
+    ReportError(result, "SHGetFolderPathA");
+    return false;
+  }
+  Paths.push_back(Buf);
+  return true;
+}
+
 } // namespace platform
 } // namespace utils
 } // namespace cling
