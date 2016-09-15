@@ -475,6 +475,22 @@ std::string NormalizePath(const std::string& Path) {
   return std::string();
 }
 
+const void* DLOpen(const std::string& Path, std::string* Err) {
+  HMODULE dyLibHandle = ::LoadLibraryExA(Path.c_str(), NULL,
+                                         DONT_RESOLVE_DLL_REFERENCES);
+  if (!dyLibHandle && Err)
+    GetLastErrorAsString(*Err, "LoadLibraryEx");
+
+  return reinterpret_cast<void*>(dyLibHandle);
+}
+
+void DLClose(const void* Lib, std::string* Err) {
+  if (::FreeLibrary(reinterpret_cast<HMODULE>(const_cast<void*>(Lib))) == 0) {
+    if (Err)
+      GetLastErrorAsString(*Err, "FreeLibrary");
+  }
+}
+
 bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   char Buf[MAX_PATHC];
   // Generic form of C:\Windows\System32

@@ -28,6 +28,25 @@ namespace platform {
   ///
   bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths);
 
+  ///\brief Open a handle to a shared library. On Unix the lib is opened with
+  /// RTLD_LAZY|RTLD_GLOBAL flags.
+  ///
+  /// \param [in] Path - Library to open
+  /// \param [out] Err - Write errors to this string when given
+  ///
+  /// \returns the library handle
+  ///
+  const void* DLOpen(const std::string& Path, std::string* Err = nullptr);
+
+  ///\brief Close a handle to a shared library.
+  ///
+  /// \param [in] Lib - Handle to library from previous call to DLOpen
+  /// \param [out] Err - Write errors to this string when given
+  ///
+  /// \returns the library handle
+  ///
+  void DLClose(const void* Lib, std::string* Err = nullptr);
+
   ///\brief Returns a normalized version of the given Path
   ///
   std::string NormalizePath(const std::string& Path);

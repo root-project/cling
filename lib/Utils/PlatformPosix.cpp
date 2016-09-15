@@ -13,6 +13,7 @@
 
 #include "cling/Utils/Paths.h"
 #include <string>
+#include <dlfcn.h>
 #include <unistd.h>
 
 // PATH_MAX
@@ -35,6 +36,23 @@ std::string GetCwd() {
 
   ::perror("Could not get current working directory");
   return std::string();
+}
+
+const void* DLOpen(const std::string& Path, std::string* Err) {
+  void* Lib = dlopen(Path.c_str(), RTLD_LAZY|RTLD_GLOBAL);
+  if (Err) {
+    if (const char* DyLibError = ::dlerror())
+      *Err = DyLibError;
+  }
+  return Lib;
+}
+
+void DLClose(const void* Lib, std::string* Err) {
+  ::dlclose(const_cast<void*>(Lib));
+  if (Err) {
+    if (const char* DyLibError = ::dlerror())
+      *Err = DyLibError;
+  }
 }
 
 std::string NormalizePath(const std::string& Path) {
