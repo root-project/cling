@@ -1747,10 +1747,12 @@ if args.get('stdlib') and EXTRA_CMAKE_FLAGS.find('-DLLVM_ENABLE_LIBCXX=') != -1:
     raise SystemExit
 
 CLING_BRANCH = CLANG_BRANCH = LLVM_BRANCH = None
-if args['current_dev'].startswith('branch:'):
-  CLING_BRANCH = CLANG_BRANCH = LLVM_BRANCH = args['current_dev'][7:]
-elif args['current_dev'].startswith('branches:'):
-  CLING_BRANCH, CLANG_BRANCH, LLVM_BRANCH = args['current_dev'][9:].split(',')
+if args['current_dev']:
+    cDev = args['current_dev']
+    if cDev.startswith('branch:'):
+      CLING_BRANCH = CLANG_BRANCH = LLVM_BRANCH = cDev[7:]
+    elif cDev.startswith('branches:'):
+      CLING_BRANCH, CLANG_BRANCH, LLVM_BRANCH = cDev[9:].split(',')
 
 # llvm_revision = urlopen(
 #    "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
