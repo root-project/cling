@@ -57,6 +57,8 @@ namespace cling {
       return T;
     }
 
+    // Transaction T must be from call to TransactionPool::takeTransaction
+    //
     void releaseTransaction(Transaction* T, bool reuse = true) {
       if (reuse) {
         assert((T->getState() == Transaction::kCompleted ||
