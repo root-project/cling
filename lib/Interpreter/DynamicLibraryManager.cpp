@@ -191,12 +191,11 @@ namespace cling {
   static bool isSharedLib(llvm::StringRef LibName, bool* exists = 0) {
     using namespace llvm::sys::fs;
     file_magic Magic;
-    std::error_code Error = identify_magic(LibName, Magic);
-    bool onDisk = (Error != std::errc::no_such_file_or_directory);
+    const std::error_code Error = identify_magic(LibName, Magic);
     if (exists)
-      *exists = onDisk;
+      *exists = !Error;
 
-    return onDisk &&
+    return !Error &&
 #ifdef __APPLE__
       (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
        || Magic == file_magic::macho_dynamically_linked_shared_lib
