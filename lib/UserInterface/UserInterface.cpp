@@ -30,10 +30,6 @@
 # include <unistd.h>
 #endif
 
-#if defined(LLVM_ON_WIN32)
-#include <Shlobj.h>
-#endif
-
 #if defined(_MSC_VER)
 #ifndef STDIN_FILENO
 # define STDIN_FILENO 0
@@ -47,36 +43,6 @@
 #endif
 
 #include <memory>
-
-namespace {
-
-#if defined(LLVM_ON_UNIX)
-  static void GetUserHomeDirectory(llvm::SmallVectorImpl<char>& str) {
-    str.clear();
-    const char* home = getenv("HOME");
-    if (!home)
-      home = "/";
-    llvm::StringRef SRhome(home);
-    str.insert(str.begin(), SRhome.begin(), SRhome.end());
-  }
-#elif defined(LLVM_ON_WIN32)
-  static void GetUserHomeDirectory(llvm::SmallVectorImpl<char>& str) {
-    str.reserve(MAX_PATH);
-    HRESULT res = SHGetFolderPathA(NULL,
-                                   CSIDL_FLAG_CREATE | CSIDL_APPDATA,
-                                   NULL,
-                                   SHGFP_TYPE_CURRENT,
-                                   str.data());
-    if (res != S_OK) {
-      assert(0 && "Failed to get user home directory");
-      llvm::StringRef SRhome("\\");
-      str.insert(str.begin(), SRhome.begin(), SRhome.end());
-    }
-  }
-#else
-# error "Unsupported platform."
-#endif
-}
 
 namespace {
   ///\brief Class that specialises the textinput TabCompletion to allow Cling
@@ -122,9 +88,8 @@ namespace cling {
     llvm::SmallString<512> histfilePath;
     if (!getenv("CLING_NOHISTORY")) {
       // History file is $HOME/.cling_history
-      static const char* histfile = ".cling_history";
-      GetUserHomeDirectory(histfilePath);
-      llvm::sys::path::append(histfilePath, histfile);
+      if (llvm::sys::path::home_directory(histfilePath))
+        llvm::sys::path::append(histfilePath, ".cling_history");
     }
 
     using namespace textinput;
