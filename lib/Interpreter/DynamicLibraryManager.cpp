@@ -167,12 +167,8 @@ namespace cling {
 
   std::string
   DynamicLibraryManager::lookupLibrary(llvm::StringRef libStem) const {
-    llvm::SmallString<128> Absolute(libStem);
-    llvm::sys::fs::make_absolute(Absolute);
-    bool isAbsolute = libStem == Absolute;
-
     // If it is an absolute path, don't try iterate over the paths.
-    if (isAbsolute) {
+    if (llvm::sys::path::is_absolute(libStem)) {
       if (isSharedLib(libStem))
         return normalizePath(libStem);
       else
