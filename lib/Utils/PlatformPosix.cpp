@@ -42,21 +42,37 @@ std::string GetCwd() {
   return std::string();
 }
 
+static void DLErr(std::string* Err) {
+  if (!Err)
+    return;
+  if (const char* DyLibError = ::dlerror())
+    *Err = DyLibError;
+}
+
 const void* DLOpen(const std::string& Path, std::string* Err) {
   void* Lib = dlopen(Path.c_str(), RTLD_LAZY|RTLD_GLOBAL);
-  if (Err) {
-    if (const char* DyLibError = ::dlerror())
-      *Err = DyLibError;
-  }
+  DLErr(Err);
   return Lib;
+}
+
+const void* DLSym(const std::string& Name, std::string* Err) {
+  if (const void* Self = ::dlopen(nullptr, RTLD_GLOBAL)) {
+    // get dlopen error if there is one
+    DLErr(Err);
+    const void* Sym = ::dlsym(const_cast<void*>(Self), Name.c_str());
+    // overwrite error if dlsym caused one
+    DLErr(Err);
+    // only get dlclose error if dlopen & dlsym haven't emited one
+    DLClose(Self, Err && Err->empty() ? Err : nullptr);
+    return Sym;
+  }
+  DLErr(Err);
+  return nullptr;
 }
 
 void DLClose(const void* Lib, std::string* Err) {
   ::dlclose(const_cast<void*>(Lib));
-  if (Err) {
-    if (const char* DyLibError = ::dlerror())
-      *Err = DyLibError;
-  }
+  DLErr(Err);
 }
 
 std::string NormalizePath(const std::string& Path) {

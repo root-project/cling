@@ -86,49 +86,6 @@ bool ReportLastError(const char* Prefix) {
   return false;
 }
 
-const void* LookupSymbol(const std::string& Name) {
- #ifdef _WIN64
-  const DWORD Flags = LIST_MODULES_64BIT;
- #else
-  const DWORD Flags = LIST_MODULES_32BIT;
- #endif
-
-  DWORD Bytes;
-  const std::string CStr(Name);
-  std::string ErrStr;
-  llvm::SmallVector<HMODULE, 128> Modules;
-  Modules.resize(Modules.capacity());
-  if (::EnumProcessModulesEx(::GetCurrentProcess(), &Modules[0],
-                           Modules.capacity_in_bytes(), &Bytes, Flags) != 0) {
-    // Search the modules we got
-    const DWORD NumNeeded = Bytes/sizeof(HMODULE);
-    const DWORD NumFirst = Modules.size();
-    if (NumNeeded < NumFirst)
-      Modules.resize(NumNeeded);
-
-    // In reverse so user loaded modules are searched first
-    for (auto It = Modules.rbegin(), End = Modules.rend(); It < End; ++It) {
-      if (const void* Addr = ::GetProcAddress(*It, CStr.c_str()))
-            return Addr;
-    }
-    if (NumNeeded > NumFirst) {
-      // The number of modules was too small to get them all, so call again
-      Modules.resize(NumNeeded);
-      if (::EnumProcessModulesEx(::GetCurrentProcess(), &Modules[0],
-                               Modules.capacity_in_bytes(), &Bytes, Flags) != 0) {
-        for (DWORD i = NumNeeded-1; i > NumFirst; --i) {
-          if (const void* Addr = ::GetProcAddress(Modules[i], CStr.c_str()))
-            return Addr;
-        }
-      } else
-        ReportLastError("EnumProcessModulesEx");
-    }
-  } else
-    ReportLastError("EnumProcessModulesEx");
-
-  return nullptr;
-}
-
 namespace {
 
 // Taken from clang/lib/Driver/MSVCToolChain.cpp
@@ -552,6 +509,48 @@ const void* DLOpen(const std::string& Path, std::string* Err) {
     GetLastErrorAsString(*Err, "LoadLibraryEx");
 
   return reinterpret_cast<void*>(dyLibHandle);
+}
+
+const void* DLSym(const std::string& Name, std::string* Err) {
+ #ifdef _WIN64
+  const DWORD Flags = LIST_MODULES_64BIT;
+ #else
+  const DWORD Flags = LIST_MODULES_32BIT;
+ #endif
+
+  DWORD Bytes;
+  std::string ErrStr;
+  llvm::SmallVector<HMODULE, 128> Modules;
+  Modules.resize(Modules.capacity());
+  if (::EnumProcessModulesEx(::GetCurrentProcess(), &Modules[0],
+                           Modules.capacity_in_bytes(), &Bytes, Flags) != 0) {
+    // Search the modules we got
+    const DWORD NumNeeded = Bytes/sizeof(HMODULE);
+    const DWORD NumFirst = Modules.size();
+    if (NumNeeded < NumFirst)
+      Modules.resize(NumNeeded);
+
+    // In reverse so user loaded modules are searched first
+    for (auto It = Modules.rbegin(), End = Modules.rend(); It < End; ++It) {
+      if (const void* Addr = ::GetProcAddress(*It, Name.c_str()))
+            return Addr;
+    }
+    if (NumNeeded > NumFirst) {
+      // The number of modules was too small to get them all, so call again
+      Modules.resize(NumNeeded);
+      if (::EnumProcessModulesEx(::GetCurrentProcess(), &Modules[0],
+                               Modules.capacity_in_bytes(), &Bytes, Flags) != 0) {
+        for (DWORD i = NumNeeded-1; i > NumFirst; --i) {
+          if (const void* Addr = ::GetProcAddress(Modules[i], Name.c_str()))
+            return Addr;
+        }
+      } else if (Err)
+        GetLastErrorAsString(*Err, "EnumProcessModulesEx");
+    }
+  } else if (Err)
+    GetLastErrorAsString(*Err, "EnumProcessModulesEx");
+
+  return nullptr;
 }
 
 void DLClose(const void* Lib, std::string* Err) {

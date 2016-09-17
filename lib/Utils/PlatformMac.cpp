@@ -124,7 +124,7 @@ bool GetISysRoot(std::string& sysRoot, bool Verbose) {
           "/System/Library/Frameworks/CoreServices.framework/CoreServices",
           RTLD_LAZY)) {
     typedef ::OSErr (*GestaltProc)(::OSType, ::SInt32 *);
-    if (GestaltProc Gestalt = (GestaltProc)dlsym(core, "Gestalt")) {
+    if (GestaltProc Gestalt = (GestaltProc)::dlsym(core, "Gestalt")) {
       if (Gestalt(gestaltSystemVersionMajor, &majorVers) == ::noErr) {
         if (Gestalt(gestaltSystemVersionMinor, &minorVers) != ::noErr)
           minorVers = -1;
