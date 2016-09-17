@@ -38,6 +38,12 @@ namespace platform {
   ///
   const void* DLOpen(const std::string& Path, std::string* Err = nullptr);
 
+  ///\brief Look for given symbol in all modules loaded by the current process
+  ///
+  /// \returns The adress of the symbol or null if not found
+  ///
+  const void* DLSym(const std::string& Name, std::string* Err = nullptr);
+
   ///\brief Close a handle to a shared library.
   ///
   /// \param [in] Lib - Handle to library from previous call to DLOpen
@@ -95,12 +101,6 @@ inline namespace windows {
   ///\brief Return true if a given Path is a dynamic library
   ///
   bool IsDLL(const std::string& Path);
-
-  ///\brief Look for given symbol in all modules loaded by the current process
-  ///
-  /// \returns The adress of the symbol or null if not found
-  ///
-  const void* LookupSymbol(const std::string& Name);
 
   /// \brief Read registry string.
   /// This also supports a means to look for high-versioned keys by use

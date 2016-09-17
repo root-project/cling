@@ -225,7 +225,7 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
       return llvm::orc::JITSymbol(SymInfo.getAddress(),
                                   llvm::JITSymbolFlags::Exported);
 #ifdef LLVM_ON_WIN32
-    if (const void* Sym = platform::LookupSymbol(SymName))
+    if (const void* Sym = platform::DLSym(SymName))
       return llvm::orc::JITSymbol(llvm::orc::TargetAddress(Sym),
                                   llvm::JITSymbolFlags::Exported);
 #endif
