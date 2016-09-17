@@ -1148,23 +1148,23 @@ def is_os_64bit():
     return platform.machine().endswith('64')
 
 def get_win_dep():
-    box_draw("Download NSIS compiler")
-    html = urlopen('https://sourceforge.net/p/nsis/code/6780/log/?path=/NSIS/tags').read().decode('utf-8')
-    pin = '<p>Tagging for release'
-    NSIS_VERSION = html[html.find(pin):html.find('</div>', html.find(pin))].strip(pin + ' ')
-    print('Latest version of NSIS is: ' + NSIS_VERSION)
-    wget(url="https://sourceforge.net/projects/nsis/files/NSIS%%203/%s/nsis-%s.zip" % (
-        NSIS_VERSION, NSIS_VERSION),
-         out_dir=TMP_PREFIX)
-    print('Extracting: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
-    zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
-    zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
-    print('Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
-    os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s' % (NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
-    box_draw("Download CMake for Windows")
+    if args['current_dev'] == 'nsis' or (args['current_dev'] == 'pkg' and OS == 'Windows'):
+        box_draw("Download NSIS compiler")
+        html = urlopen('https://sourceforge.net/p/nsis/code/6780/log/?path=/NSIS/tags').read().decode('utf-8')
+        pin = '<p>Tagging for release'
+        NSIS_VERSION = html[html.find(pin):html.find('</div>', html.find(pin))].strip(pin + ' ')
+        print('Latest version of NSIS is: ' + NSIS_VERSION)
+        wget(url="https://sourceforge.net/projects/nsis/files/NSIS%%203/%s/nsis-%s.zip" % (
+            NSIS_VERSION, NSIS_VERSION),
+             out_dir=TMP_PREFIX)
+        print('Extracting: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
+        zip = zipfile.ZipFile(os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
+        zip.extractall(os.path.join(TMP_PREFIX, 'bin'))
+        print('Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
+        os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s' % (NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
-    print('Downloading nightly release of cmake')
+    box_draw("Download CMake v2.6.2 required for Windows")
 
     if is_os_64bit():
         wget(url='https://cmake.org/files/v3.6/cmake-3.6.2-win64-x64.zip',
