@@ -1,5 +1,9 @@
-
-[![Unix and OSX Build Status](https://travis-ci.org/root-mirror/cling.svg?branch=master)](https://travis-ci.org/root-mirror/cling)
+<a target="_blank" href="https://travis-ci.org/root-mirror/cling">
+  ![Travis status][https://travis-ci.org/root-mirror/cling.svg?branch=master]
+</a>
+<a target="_blank" href="https://ci.appveyor.com/project/vgvassilev/cling-j0wdg">
+  ![Appveyor status][https://ci.appveyor.com/api/projects/status/github/vgvassilev/cling?svg=true&branch=master]
+</a>
 
 Cling - The Interactive C++ Interpreter
 =========================================
