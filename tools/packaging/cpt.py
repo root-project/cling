@@ -1167,24 +1167,24 @@ def get_win_dep():
     print('Downloading nightly release of cmake')
 
     if is_os_64bit():
-        wget(url='https://cmake.org/files/dev/cmake-3.6.20160801-g62452-win64-x64.zip',
-             out_dir=TMP_PREFIX, rename_file='cmake-3.6.20160801-g62452.zip')
+        wget(url='https://cmake.org/files/v3.6/cmake-3.6.2-win64-x64.zip',
+             out_dir=TMP_PREFIX, rename_file='cmake-3.6.2.zip')
     else:
-        wget(url='https://cmake.org/files/dev/cmake-3.6.20160801-g62452-win32-x86.zip',
-             out_dir=TMP_PREFIX, rename_file='cmake-3.6.20160801-g62452.zip')
+        wget(url='https://cmake.org/files/v3.6/cmake-3.6.2-win32-x86.zip',
+             out_dir=TMP_PREFIX, rename_file='cmake-3.6.2.zip')
 
-    zip_file = os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip')
+    zip_file = os.path.join(TMP_PREFIX, 'cmake-3.6.2.zip')
     print('Extracting: ' + zip_file)
     zip = zipfile.ZipFile(zip_file)
     tmp_bin_dir = os.path.join(TMP_PREFIX, 'bin')
     zip.extractall(tmp_bin_dir)
-    print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.20160801-g62452.zip'))
+    print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.2.zip'))
 
     if is_os_64bit():
-        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.20160801-g62452-win64-x64'),
+        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.2-win64-x64'),
                   os.path.join(TMP_PREFIX, 'bin', 'cmake'))
     else:
-        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.20160801-g62452-win32-x86'),
+        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.2-win32-x86'),
                   os.path.join(TMP_PREFIX, 'bin', 'cmake'))
     print()
 

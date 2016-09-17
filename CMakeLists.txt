@@ -5,6 +5,13 @@ cmake_minimum_required(VERSION 3.4.3)
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
   project(Cling)
 
+  if(WIN32)
+    # We need cmake to support exporting of symbols not only from libraries but
+    # from executables too. This way cling can find symbols from its own
+    # executable during runtime.
+    cmake_minimum_required(VERSION 3.6.2)
+  endif(WIN32)
+
   # Rely on llvm-config.
   set(CONFIG_OUTPUT)
   find_program(LLVM_CONFIG "llvm-config")
