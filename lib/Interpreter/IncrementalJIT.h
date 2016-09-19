@@ -181,7 +181,7 @@ private:
     return MangledName;
   }
 
-  llvm::orc::JITSymbol getInjectedSymbols(llvm::StringRef Name) const;
+  llvm::orc::JITSymbol getInjectedSymbols(const std::string& Name) const;
 
 public:
   IncrementalJIT(IncrementalExecutor& exe,
@@ -194,14 +194,14 @@ public:
   ///   (prefixed by '_') to make IR versus symbol names.
   /// \param AlsoInProcess - Sometimes you only care about JITed symbols. If so,
   ///   pass `false` here to not resolve the symbol through dlsym().
-  uint64_t getSymbolAddress(llvm::StringRef Name, bool AlsoInProcess) {
+  uint64_t getSymbolAddress(const std::string& Name, bool AlsoInProcess) {
     return getSymbolAddressWithoutMangling(Mangle(Name), AlsoInProcess)
       .getAddress();
   }
 
   ///\brief Get the address of a symbol from the JIT or the memory manager.
   /// Use this to resolve symbols of known, target-specific names.
-  llvm::orc::JITSymbol getSymbolAddressWithoutMangling(llvm::StringRef Name,
+  llvm::orc::JITSymbol getSymbolAddressWithoutMangling(const std::string& Name,
                                                        bool AlsoInProcess);
 
   size_t addModules(std::vector<llvm::Module*>&& modules);

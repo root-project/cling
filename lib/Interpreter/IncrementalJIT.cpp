@@ -192,7 +192,7 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 
 
 llvm::orc::JITSymbol
-IncrementalJIT::getInjectedSymbols(llvm::StringRef Name) const {
+IncrementalJIT::getInjectedSymbols(const std::string& Name) const {
   using JITSymbol = llvm::orc::JITSymbol;
   if (Name == MANGLE_PREFIX "__cxa_atexit") {
     // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
@@ -229,15 +229,13 @@ IncrementalJIT::searchLibraries(llvm::StringRef Name, void *InAddr) {
 }
     
 llvm::orc::JITSymbol
-IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
+IncrementalJIT::getSymbolAddressWithoutMangling(const std::string& Name,
                                                 bool AlsoInProcess) {
   if (auto Sym = getInjectedSymbols(Name))
     return Sym;
 
-  // Avoid constructing std::string from llvm::StringRef more than once
-  const std::string SymName = Name;
   if (AlsoInProcess) {
-    if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(SymName))
+    if (RuntimeDyld::SymbolInfo SymInfo = m_ExeMM->findSymbol(Name))
       return llvm::orc::JITSymbol(SymInfo.getAddress(),
                                   llvm::JITSymbolFlags::Exported);
 #ifdef LLVM_ON_WIN32
@@ -248,13 +246,13 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
     // look only through user loaded libraries.
     // An upside to doing it this way is RTLD_GLOBAL won't need to be used
     // allowing libs with competing symbols to co-exists.
-    if (const void* Sym = platform::DLSym(SymName))
+    if (const void* Sym = platform::DLSym(Name))
       return llvm::orc::JITSymbol(llvm::orc::TargetAddress(Sym),
                                   llvm::JITSymbolFlags::Exported);
 #endif
   }
 
-  if (auto Sym = m_LazyEmitLayer.findSymbol(SymName, false))
+  if (auto Sym = m_LazyEmitLayer.findSymbol(Name, false))
     return Sym;
 
   return llvm::orc::JITSymbol(nullptr);
