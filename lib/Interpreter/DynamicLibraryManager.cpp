@@ -39,18 +39,13 @@ namespace cling {
       "PATH",
   #endif
     };
-  #if defined(LLVM_ON_WIN32)
-    const llvm::StringRef Delim(";");
-  #else
-    const llvm::StringRef Delim(":");
-  #endif
 
     // Behaviour is to not add paths that don't exist...In an interpreted env
     // does this make sense? Path could pop into existance at any time.
     for (const char* Var : kSysLibraryEnv) {
       if (const char* Env = ::getenv(Var)) {
         llvm::SmallVector<llvm::StringRef, 10> CurPaths;
-        SplitPaths(Env, CurPaths, utils::kPruneNonExistant, Delim);
+        SplitPaths(Env, CurPaths, utils::kPruneNonExistant, platform::kEnvDelim);
         for (const auto& Path : CurPaths)
           m_SystemSearchPaths.push_back(Path.str());
       }
