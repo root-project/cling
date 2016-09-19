@@ -131,7 +131,7 @@ namespace {
 
     llvm::SmallVector<llvm::StringRef, 6> Paths;
     if (!utils::SplitPaths(PathStr, Paths, utils::kFailNonExistant,
-                           ":", Verbose))
+                           platform::kEnvDelim, Verbose))
       return false;
 
     if (Verbose) {
@@ -160,7 +160,7 @@ namespace {
       if (const char* Includes = getenv("INCLUDE")) {
         SmallVector<StringRef, 8> Dirs;
         utils::SplitPaths(Includes, Dirs, utils::kAllowNonExistant,
-                          ";", Verbose);
+                          platform::kEnvDelim, Verbose);
         for (const llvm::StringRef& Path : Dirs)
           sArguments.addArgument("-I", Path.str());
       }
@@ -516,11 +516,7 @@ namespace {
 #ifdef CLING_INCLUDE_PATHS
     if (HOpts.Verbose)
       llvm::errs() << "  \"" CLING_INCLUDE_PATHS "\"\n";
-  #ifndef _WIN32
-    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts, ":");
-  #else
-    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts, ";");
-  #endif
+    utils::AddIncludePaths(CLING_INCLUDE_PATHS, HOpts);
 #endif
     llvm::SmallString<512> P(ClingBin);
     if (!P.empty()) {

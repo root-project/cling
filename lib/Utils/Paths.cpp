@@ -16,6 +16,16 @@
 namespace cling {
 namespace utils {
 
+namespace platform {
+#if defined(LLVM_ON_UNIX)
+  const char* const kEnvDelim = ":";
+#elif defined(LLVM_ON_WIN32)
+  const char* const kEnvDelim = ";";
+#else
+  #error "Unknown platform (environmental delimiter)"
+#endif
+}
+
 using namespace clang;
 
 // Adapted from clang/lib/Frontend/CompilerInvocation.cpp

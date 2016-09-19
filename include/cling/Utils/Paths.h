@@ -25,6 +25,12 @@ namespace clang {
 namespace cling {
   namespace utils {
 
+    namespace platform {
+      ///\brief Platform specific delimiter for splitting environment variables.
+      /// ':' on Unix, and ';' on Windows
+      extern const char* const kEnvDelim;
+    }
+    
     enum SplitMode {
       kPruneNonExistant,  ///< Don't add non-existant paths into output
       kFailNonExistant,   ///< Fail on any non-existant paths
@@ -46,7 +52,7 @@ namespace cling {
     bool SplitPaths(llvm::StringRef PathStr,
                     llvm::SmallVectorImpl<llvm::StringRef>& Paths,
                     SplitMode Mode = kPruneNonExistant,
-                    llvm::StringRef Delim = llvm::StringRef(":"),
+                    llvm::StringRef Delim = llvm::StringRef(platform::kEnvDelim),
                     bool Verbose = false);
 
     ///\brief Adds multiple include paths separated by a delimter into the
@@ -60,7 +66,7 @@ namespace cling {
     ///
     void AddIncludePaths(llvm::StringRef PathStr,
                          clang::HeaderSearchOptions& Opts,
-                         const char* Delim = ":");
+                         const char* Delim = platform::kEnvDelim);
 
     ///\brief Write to llvm::errs that directory does not exist in a format
     /// matching what 'clang -v' would do
