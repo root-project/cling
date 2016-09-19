@@ -43,15 +43,21 @@ namespace cling {
     // Behaviour is to not add paths that don't exist...In an interpreted env
     // does this make sense? Path could pop into existance at any time.
     for (const char* Var : kSysLibraryEnv) {
+      if (Opts.Verbose())
+        llvm::errs() << "Adding library paths from '" << Var << "':\n";
       if (const char* Env = ::getenv(Var)) {
         llvm::SmallVector<llvm::StringRef, 10> CurPaths;
-        SplitPaths(Env, CurPaths, utils::kPruneNonExistant, platform::kEnvDelim);
+        SplitPaths(Env, CurPaths, utils::kPruneNonExistant, platform::kEnvDelim,
+                   Opts.Verbose());
         for (const auto& Path : CurPaths)
           m_SystemSearchPaths.push_back(Path.str());
       }
     }
 
     platform::GetSystemLibraryPaths(m_SystemSearchPaths);
+
+    // This will currently be the last path searched, should it be pushed to
+    // the front of the line, or even to the front of user paths?
     m_SystemSearchPaths.push_back(".");
   }
 
