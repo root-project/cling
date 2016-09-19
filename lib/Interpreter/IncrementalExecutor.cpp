@@ -157,10 +157,9 @@ void* IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled
     if (ret)
       return ret;
   }
-  llvm::StringRef name(mangled_name);
   void *address = nullptr;
   if (m_externalIncrementalExecutor)
-   address = m_externalIncrementalExecutor->getAddressOfGlobal(name);
+   address = m_externalIncrementalExecutor->getAddressOfGlobal(mangled_name);
 
   return (address ? address : HandleMissingFunction(mangled_name));
 }
