@@ -166,8 +166,9 @@ namespace {
       }
 
       // When built with access to the proper Windows APIs, try to actually find
-      // the correct include paths first.
-      std::string VSDir, WinSDK, UnivSDK;
+      // the correct include paths first. Init for UnivSDK.empty check below.
+      std::string VSDir, WinSDK,
+                  UnivSDK(opts.NoBuiltinInc ? "" : CLING_UCRT_VERSION);
       if (platform::GetVisualStudioDirs(VSDir,
                                         opts.NoBuiltinInc ? nullptr : &WinSDK,
                                         opts.NoBuiltinInc ? nullptr : &UnivSDK,

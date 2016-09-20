@@ -196,7 +196,9 @@ static bool getVisualStudioVer(int VSVersion, std::string& Path,
 // So we compare entry names lexicographically to find the greatest one.
 static bool getWindows10SDKVersion(std::string& SDKPath,
                                    std::string& SDKVersion) {
-  SDKVersion.clear();
+  // Save input SDKVersion to match, and clear SDKVersion for > comparsion
+  std::string UcrtCompiledVers;
+  UcrtCompiledVers.swap(SDKVersion);
 
   std::error_code EC;
   llvm::SmallString<MAX_PATHC> IncludePath(SDKPath);
@@ -205,15 +207,15 @@ static bool getWindows10SDKVersion(std::string& SDKPath,
        DirIt != DirEnd && !EC; DirIt.increment(EC)) {
     if (!llvm::sys::fs::is_directory(DirIt->path()))
       continue;
-    llvm::StringRef CandidateName = llvm::sys::path::filename(DirIt->path());
-    // If WDK is installed, there could be subfolders like "wdf" in the
-    // "Include" directory.
-    // Allow only directories which names start with "10.".
-    if (!CandidateName.startswith("10."))
-      continue;
-    if (CandidateName > SDKVersion) {
+    llvm::StringRef Candidate = llvm::sys::path::filename(DirIt->path());
+    // There could be subfolders like "wdf" in the "Include" directory, so only
+    // test names that start with "10." or match input.
+    const bool Match = Candidate == UcrtCompiledVers;
+    if (Match || (Candidate.startswith("10.") && Candidate > SDKVersion)) {
       SDKPath = DirIt->path();
-      SDKVersion = CandidateName;
+      Candidate.str().swap(SDKVersion);
+      if (Match)
+        return true;
     }
   }
   return !SDKVersion.empty();
@@ -392,7 +394,9 @@ bool GetVisualStudioDirs(std::string& Path, std::string* WinSDK,
   }
 
   if (UniversalSDK) {
+    // On input UniversalSDK is the best version to match
     std::string UCRTVersion;
+    UniversalSDK->swap(UCRTVersion);
     if (!getUniversalCRTSdkDir(*UniversalSDK, UCRTVersion)) {
       UniversalSDK->clear();
       if (Verbose)
