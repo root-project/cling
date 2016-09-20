@@ -6,23 +6,20 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: clang -shared -fPIC -DBUILD_SHARED %s -o%T/libSymbols%shlibext
+// RUN: clang -shared -fPIC -DCLING_EXPORT=%dllexport -DBUILD_SHARED %s -o%T/libSymbols%shlibext
 // RUN: %cling --nologo -L%T -lSymbols  %s | FileCheck %s
-// This won't work on Windows as the weak symbol's address is not uniqued
-// across DLL boundaries.
-// REQUIRES: not_system-windows
 
 // Check that weak symbols do not get re-emitted (ROOT-6124)
 extern "C" int printf(const char*,...);
 
 template <class T>
-struct StaticStuff {
+struct CLING_EXPORT StaticStuff {
   static T s_data;
 };
 template <class T>
 T StaticStuff<T>::s_data = 42;
 
-int compareAddr(int* interp);
+CLING_EXPORT int compareAddr(int* interp);
 #ifdef BUILD_SHARED
 int compareAddr(int* interp) {
   if (interp != &StaticStuff<int>::s_data) {

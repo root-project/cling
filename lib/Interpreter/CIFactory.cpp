@@ -516,6 +516,12 @@ std::string stringifyPreprocSetting(const char* name, int val) {
     PPOpts.addMacroDef("_GLIBCXX_USE_CXX11_ABI="
                        ClingStringify(_GLIBCXX_USE_CXX11_ABI));
 #endif
+
+#if defined(LLVM_ON_WIN32)
+    PPOpts.addMacroDef("CLING_EXPORT=__declspec(dllimport)");
+#else
+    PPOpts.addMacroDef("CLING_EXPORT=");
+#endif
   }
 
   /// Set target-specific preprocessor defines.

@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: mkdir -p %T/subdir && clang -shared %S/call_lib.c -o %T/subdir/libtest%shlibext
+// RUN: mkdir -p %T/subdir && clang -DCLING_EXPORT=%dllexport -shared %S/call_lib.c -o %T/subdir/libtest%shlibext
 // RUN: %setenv ENVVAR_LIB="%T/subdir" && %setenv ENVVAR_INC="%S/subdir"
 // RUN: cat %s | %cling -I %S -Xclang -verify 2>&1 | FileCheck %s
 
