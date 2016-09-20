@@ -127,7 +127,8 @@ inline namespace windows {
   ///
   /// \param [out] Path - Path to VisualStudio
   /// \param [out] WindSDK - Store the path to the Windows SDK here
-  /// \param [out] UniversalSDK - Store the path to the Universal SDK here
+  /// \param [in/out] UniversalSDK - Universal SDK version to match, or empty to
+  /// match the highest version. On ouput the path to the Universal SDK.
   /// \param [in] Verbose - Log progress
   ///
   bool GetVisualStudioDirs(std::string& Path,

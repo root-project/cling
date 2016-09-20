@@ -298,6 +298,7 @@ else()
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
       "
       #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
+      #define CLING_UCRT_VERSION  \"$ENV{UCRTVersion}\"
     ")
 endif()
 
