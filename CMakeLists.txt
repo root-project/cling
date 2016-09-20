@@ -422,6 +422,7 @@ list(APPEND LLVM_COMMON_DEPENDS ${CLANG_TABLEGEN_TARGETS})
 
 # And llvm-intrinsics.
 list(APPEND LLVM_COMMON_DEPENDS intrinsics_gen)
+list(APPEND LLVM_COMMON_DEPENDS clang-headers)
 
 add_subdirectory(lib)
 add_subdirectory(tools)
