@@ -281,10 +281,7 @@ class ClingKernel(Kernel):
 
 class ClingKernelApp(IPKernelApp):
     kernel_class = ClingKernel
-    def init_io(self):
-        # disable io forwarding
-        pass
-
+    
 
 def main():
     """launch a cling kernel"""
