@@ -92,38 +92,32 @@ namespace cling {
     assert(!args.empty() && "Arguments must be provided (at least \"()\"");
     cling::Transaction* T = 0;
     MetaSema::ActionResult actionResult = actOnLCommand(file, &T);
-    if (actionResult == AR_Success) {
-      // Look for start of parameters:
-      typedef std::pair<llvm::StringRef,llvm::StringRef> StringRefPair;
+    // T can be nullptr if there is no code (but comments)
+    if (actionResult == AR_Success && T) {
+      std::string expression;
+      llvm::StringRef FuncName = llvm::sys::path::stem(file);
+      if (!FuncName.empty()) {
+        if (T->containsNamedDecl(FuncName)) {
+          expression = FuncName.str() + args.str();
+          // Give the user some context in case we have a problem invoking
+          expression += " /* invoking function corresponding to '.x' */";
+          if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
+            actionResult = AR_Failure;
+        }
+      } else
+        FuncName = file; // Not great, but pass the diagnostics below something
 
-      StringRefPair pairPathFile = file.rsplit('/');
-      if (pairPathFile.second.empty()) {
-        pairPathFile.second = pairPathFile.first;
-      }
-
-      StringRefPair pairFuncExt = pairPathFile.second.rsplit('.');
-      std::string expression = pairFuncExt.first.str() + args.str();
-      // Give the user some context in case we have a problem in an invocation.
-      expression += " /* invoking function corresponding to '.x' */";
-
-      using namespace clang;
-      // T can be nullptr if there is no code (but comments)
-      NamedDecl* ND = T ? T->containsNamedDecl(pairFuncExt.first) : 0;
-      DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
-      SourceLocation noLoc;
-      if (!ND) {
+      if (expression.empty()) {
+        using namespace clang;
+        DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
         unsigned diagID
           = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
                                    "cannot find function '%0()'; falling back to .L");
         //FIXME: Figure out how to pass in proper source locations, which we can
         // use with -verify.
-        Diags.Report(noLoc, diagID)
-          << pairFuncExt.first;
+        Diags.Report(SourceLocation(), diagID) << FuncName;
         return AR_Success;
       }
-
-      if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
-        actionResult = AR_Failure;
     }
     return actionResult;
   }
