@@ -151,6 +151,8 @@ namespace cling {
       == clang::frontend::ParseSyntaxOnly;
   }
 
+  namespace internal { void symbol_requester(); }
+
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime,
                            const Interpreter* parentInterp) :
@@ -207,6 +209,13 @@ namespace cling {
     }
 
     m_IncrParser->SetTransformers(parentInterp);
+    
+    if (!m_LLVMContext) {
+      // Never true, but don't tell the compiler.
+      // Force symbols needed by runtime to be included in binaries.
+      // Prevents stripping the symbol due to dead-code optimization.
+      internal::symbol_requester();
+    }
   }
 
   ///\brief Constructor for the child Interpreter.
