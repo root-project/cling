@@ -48,7 +48,7 @@ matrix:
 
   include:
     - os: linux
-      env: DIST=pangolin COMPILER=g++-4.7 CCOMPILER=gcc-4.7
+      env: DIST=pangolin COMPILER=g++-4.7 CCOMPILER=gcc-4.7 NIGHTLY_CRON_SYNC=1
       addons:
         apt:
           sources: *sources
@@ -228,6 +228,17 @@ before_script:
  - $CMAKE --version
  - export CXX="ccache $COMPILER"
  - export CC="ccache $CCOMPILER"
+ - |
+   # If we are running our nightly cron job, sync.
+   if [ -n $NIGHTLY_CRON_SYNC ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
+      && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
+      && ["$TRAVIS_REPO_SLUG" == "vgvassilev/cling"] ; then
+      cd vgvassilev/cling
+      git remote add alt https://root.cern.ch/git/cling.git
+      git pull alt master
+      git push origin master
+      cd -
+   fi
 
 script:
 - |
