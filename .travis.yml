@@ -232,7 +232,8 @@ before_script:
    # If we are running our nightly cron job, sync.
    if [ -n $NIGHTLY_CRON_SYNC ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
       && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
-      && ["$TRAVIS_REPO_SLUG" == "vgvassilev/cling"] ; then
+      && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
+      echo "Syncing repository."
       cd vgvassilev/cling
       git remote add alt https://root.cern.ch/git/cling.git
       git pull alt master
