@@ -739,12 +739,24 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return nullptr;
     }
 
-    llvm::Triple TheTriple(llvm::sys::getProcessTriple());
-#ifdef LLVM_ON_WIN32
-    // COFF format currently needs a few changes in LLVM to function properly.
-    TheTriple.setObjectFormat(llvm::Triple::ELF);
+    std::string Triple;
+    if (COpts.JITFormat) {
+      // Taken from sys::getProcessTriple() in lib/Support/Host.cpp
+      llvm::Triple PrTriple(llvm::Triple::normalize(LLVM_HOST_TRIPLE));
+      if (sizeof(void*) == 8 && PrTriple.isArch32Bit())
+        PrTriple = PrTriple.get64BitArchVariant();
+      else if (sizeof(void*) == 4 && PrTriple.isArch64Bit())
+        PrTriple = PrTriple.get32BitArchVariant();
+      PrTriple.setObjectFormat(llvm::Triple::ObjectFormatType(COpts.JITFormat));
+#ifdef __APPLE__
+      PrTriple.setOSName("unknown"); // -darwin- is tied to mach-o format
+      argvCompile.push_back("-D__APPLE__"); // without darwin this isn't defined
 #endif
-    clang::driver::Driver Drvr(argv[0], TheTriple.getTriple(), *Diags);
+      Triple = PrTriple.str();
+    } else
+      Triple = llvm::sys::getProcessTriple();
+
+    clang::driver::Driver Drvr(argv[0], Triple, *Diags);
     //Drvr.setWarnMissingInput(false);
     Drvr.setCheckInputsExist(false); // think foo.C(12)
     llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());

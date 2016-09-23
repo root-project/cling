@@ -22,6 +22,10 @@ OPTION(prefix_2, "errorout", _errorout, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not recover from input errors", 0)
 OPTION(prefix_3, "help", help, Flag, INVALID, INVALID, 0, 0, 0,
        "Print this help text", 0)
+OPTION(prefix_2, "jit=", _jit_EQ, Joined, INVALID, INVALID, 0, HelpHidden, 0,
+       "JIT file format: coff, elf, mach-o", 0)
+OPTION(prefix_2, "jit", _jit, Separate, INVALID, INVALID, 0, HelpHidden, 0,
+       "JIT file format: coff, elf, mach-o", 0)
 OPTION(prefix_1, "L", L, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
        "Add directory to library search path", "<directory>")
 // Re-implement to forward to our help

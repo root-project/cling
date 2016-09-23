@@ -325,7 +325,7 @@ namespace cling {
     }
 
     // Force built function to be emitted to the JIT
-    void Emit(IncrementalExecutor* Exec) {
+    void Emit(IncrementalExecutor* Exec, bool Explicit) {
       for (auto&& F : m_Functions) {
         void* Addr = Exec->getPointerToGlobalFromJIT(*F);
         if (!Addr) {
@@ -333,7 +333,7 @@ namespace cling {
                        << "' was not overloaded\n";
         }
 #ifdef LLVM_ON_WIN32
-        else {
+        else if (Explicit) {
           // Add to injected symbols explicitly on Windows, as COFF format
           // doesn't tag individual symbols as exported and the JIT needs this.
           // https://reviews.llvm.org/rL258665
@@ -475,7 +475,7 @@ namespace cling {
 
       // Add the modules and emit the symbols
       addModule(m_IncrParser->getCodeGenerator()->ReleaseModule(), true);
-      Overload.Emit(m_Executor.get());
+      Overload.Emit(m_Executor.get(), m_Opts.CompilerOpts.JITFormat == 0);
 
       // Start a new module for the remaining initialization
       m_IncrParser->StartModule();

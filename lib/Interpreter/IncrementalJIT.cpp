@@ -16,7 +16,7 @@
 #include "llvm/Support/DynamicLibrary.h"
 
 #ifdef __APPLE__
-// Apple adds an extra '_'
+// Apple Mach-O adds an extra '_'
 # define MANGLE_PREFIX "_"
 #endif
 
@@ -370,7 +370,8 @@ IncrementalJIT::lookupSymbol(llvm::StringRef Name, void *InAddr, bool Jit) {
     if (Jit) {
       std::string Key(Name);
 #ifdef MANGLE_PREFIX
-      Key.insert(0, MANGLE_PREFIX);
+      if (m_TMDataLayout.hasLinkerPrivateGlobalPrefix())
+        Key.insert(0, MANGLE_PREFIX);
 #endif
       m_SymbolMap[Key] = llvm::orc::TargetAddress(InAddr);
     }
@@ -422,11 +423,14 @@ IncrementalJIT::getSymbolAddress(const std::string& Name, bool InProcess) {
 }
 
 size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
-  // If this module doesn't have a DataLayout attached then attach the
-  // default.
+
+#ifndef NDEBUG
+  // Make sure layouts are same/compatible.
   for (auto&& mod: modules) {
-    mod->setDataLayout(m_TMDataLayout);
+    assert(m_TM->isCompatibleDataLayout(mod->getDataLayout())
+           && "Layouts differ");
   }
+#endif
 
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
@@ -434,20 +438,27 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
       if (auto Sym = getInjectedSymbols(S))
         return RuntimeDyld::SymbolInfo((uint64_t)Sym.getAddress(),
                                        Sym.getFlags());
+#ifdef MANGLE_PREFIX
+      const size_t PrfxLen = strlen(MANGLE_PREFIX);
+      const bool HasPrefix = !S.compare(0, PrfxLen, MANGLE_PREFIX);
+      if (!m_TMDataLayout.hasLinkerPrivateGlobalPrefix() && HasPrefix) {
+        return m_ExeMM->findSymbol(std::string(MANGLE_PREFIX, PrfxLen) + S);
+      }
+#endif
       return m_ExeMM->findSymbol(S);
     },
-    [&](const std::string &Name) {
-      if (auto Sym = getSymbolAddressWithoutMangling(Name, true))
+    [&](const std::string &InName) {
+      if (auto Sym = getSymbolAddressWithoutMangling(InName, true))
         return RuntimeDyld::SymbolInfo(Sym.getAddress(),
                                        Sym.getFlags());
 
-      const std::string* Name2 = &Name;
+      const std::string* Name = &InName;
 #ifdef MANGLE_PREFIX
-      std::string NameNoPrefix;
+      std::string EditedName;
       const size_t PrfxLen = strlen(MANGLE_PREFIX);
-      if (!Name.compare(0, PrfxLen, MANGLE_PREFIX)) {
-        NameNoPrefix = Name.substr(PrfxLen);
-        Name2 = &NameNoPrefix;
+      if (!InName.compare(0, PrfxLen, MANGLE_PREFIX)) {
+        EditedName += InName.substr(PrfxLen);
+        Name = &EditedName;
       }
 #endif
 
@@ -456,7 +467,7 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
       /// possible weak symbols by the ExecutionEngine.
       /// It is used to resolve symbols during module linking.
 
-      uint64_t addr = uint64_t(getParent().NotifyLazyFunctionCreators(*Name2));
+      uint64_t addr = uint64_t(getParent().NotifyLazyFunctionCreators(*Name));
       return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
     });
 
