@@ -7,6 +7,14 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
+// FIXME: This should probably be handled in CMake so as not to overwrite what
+// the user may have specifically requested.
+// Make sure MAC_OS_X_VERSION_MAX_ALLOWED is not user defined, so that it will
+// match the SDK version we are compiling with.
+#ifdef MAC_OS_X_VERSION_MAX_ALLOWED
+ #undef MAC_OS_X_VERSION_MAX_ALLOWED
+#endif
+
 #include "cling/Utils/Platform.h"
 
 #ifdef __APPLE__
@@ -89,6 +97,12 @@ static std::string ReadSingleLine(const char* Cmd) {
   return "";
 }
 
+static std::pair<int, int> SplitSDKVersion(int SDKVers) {
+  if (SDKVers > 100000)
+    return std::make_pair(SDKVers/10000, (SDKVers-100000)/100);
+  return std::make_pair(SDKVers/100, (SDKVers-1000)/10);
+}
+
 } // anonymous namespace
 
 bool GetISysRoot(std::string& sysRoot, bool Verbose) {
@@ -156,40 +170,13 @@ bool GetISysRoot(std::string& sysRoot, bool Verbose) {
     }
   }
 
-
-#define GET_ISYSROOT_VER(maj, min) \
-  if (getISysRootVersion(SDKs, maj, min, sysRoot, Verbose ? \
-                 "match what cling was compiled with" : nullptr)) \
-    return true;
-
-  // Try to get the SDK for whatever cling was compiled with
-  #if defined(MAC_OS_X_VERSION_10_11)
-    GET_ISYSROOT_VER(10, 11);
-  #elif defined(MAC_OS_X_VERSION_10_10)
-    GET_ISYSROOT_VER(10, 10);
-  #elif defined(MAC_OS_X_VERSION_10_9)
-    GET_ISYSROOT_VER(10, 9);
-  #elif defined(MAC_OS_X_VERSION_10_8)
-    GET_ISYSROOT_VER(10, 8);
-  #elif defined(MAC_OS_X_VERSION_10_7)
-    GET_ISYSROOT_VER(10, 7);
-  #elif defined(MAC_OS_X_VERSION_10_6)
-    GET_ISYSROOT_VER(10, 6);
-  #elif defined(MAC_OS_X_VERSION_10_5)
-    GET_ISYSROOT_VER(10, 5);
-  #elif defined(MAC_OS_X_VERSION_10_4)
-    GET_ISYSROOT_VER(10, 4);
-  #elif defined(MAC_OS_X_VERSION_10_3)
-    GET_ISYSROOT_VER(10, 3);
-  #elif defined(MAC_OS_X_VERSION_10_2)
-    GET_ISYSROOT_VER(10, 2);
-  #elif defined(MAC_OS_X_VERSION_10_1)
-    GET_ISYSROOT_VER(10, 1);
-  #else // MAC_OS_X_VERSION_10_0
-    GET_ISYSROOT_VER(10, 0);
-  #endif
-
-#undef GET_ISYSROOT_VER
+  // MAC_OS_X_VERSION_MAX_ALLOWED is -probably- the SDK being compiled with
+  const std::pair<int,int> Vers = SplitSDKVersion(MAC_OS_X_VERSION_MAX_ALLOWED);
+  if (Vers.first != majorVers || Vers.second != minorVers) {
+    if (getISysRootVersion(SDKs, Vers.first, Vers.second, sysRoot, Verbose ?
+                               "match what cling was compiled with" : nullptr))
+      return true;
+  }
 
   // Nothing left to do but iterate the SDKs directory
   // Using a generic numerical sorting could easily break down, so we match
