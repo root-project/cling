@@ -14,6 +14,7 @@
 #include "cling/Utils/Paths.h"
 
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <sstream>
@@ -191,18 +192,36 @@ bool GetISysRoot(std::string& sysRoot, bool Verbose) {
 #undef GET_ISYSROOT_VER
 
   // Nothing left to do but iterate the SDKs directory
-  // copy the paths and then sort for the latest
+  // Using a generic numerical sorting could easily break down, so we match
+  // against 'MacOSX10.' as this is how they are installed, and fallback to
+  // lexicographical sorting if things didn't work out.
+  if (Verbose)
+      llvm::errs() << "Looking in '" << SDKs << "' for highest version SDK.\n";
+  sysRoot.clear();
+  int SdkVers = 0;
+  const std::string Match("MacOSX10.");
+  std::vector<std::string> LexicalSdks;
   std::error_code ec;
-  std::vector<std::string> srtd;
-  for (fs::directory_iterator it(SDKs, ec), e; it != e; it.increment(ec))
-    srtd.push_back(it->path());
-  if (!srtd.empty()) {
-    std::sort(srtd.begin(), srtd.end(), std::greater<std::string>());
-    sysRoot.swap(srtd[0]);
-    return true;
+  for (fs::directory_iterator it(SDKs, ec), e; !ec && it != e;
+       it.increment(ec)) {
+    const std::string SDKName = it->path().substr(SDKs.size());
+    if (SDKName.find(Match) == 0) {
+      const int CurVer = ::atoi(SDKName.c_str() + Match.size());
+      if (CurVer > SdkVers) {
+        sysRoot = it->path();
+        SdkVers = CurVer;
+      }
+    } else if (sysRoot.empty())
+      LexicalSdks.push_back(it->path());
+  }
+  if (sysRoot.empty() && !LexicalSdks.empty()) {
+    if (Verbose)
+      llvm::errs() << "Selecting SDK based on a lexical sort.\n";
+    std::sort(LexicalSdks.begin(), LexicalSdks.end());
+    sysRoot.swap(LexicalSdks.back());
   }
 
-  return false;
+  return !sysRoot.empty();
 }
 
 
