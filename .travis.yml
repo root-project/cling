@@ -234,11 +234,9 @@ before_script:
       && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
       && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
       echo "Syncing repository."
-      cd vgvassilev/cling
       git remote add alt https://root.cern.ch/git/cling.git
       git pull alt master
       git push origin master
-      cd -
    fi
 
 script:
