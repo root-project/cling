@@ -230,7 +230,7 @@ before_script:
  - export CC="ccache $CCOMPILER"
  - |
    # If we are running our nightly cron job, sync.
-   if [ -n $NIGHTLY_CRON_SYNC ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
+   if [ -n "$NIGHTLY_CRON_SYNC" ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
       && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
       && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
       echo "Syncing repository."
