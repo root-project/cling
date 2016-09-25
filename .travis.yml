@@ -234,9 +234,13 @@ before_script:
       && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
       && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
       echo "Syncing repository."
-      git remote add alt https://root.cern.ch/git/cling.git
+      git remote add alt http://root.cern.ch/git/cling.git
       git pull alt master
-      git push origin master
+      git push https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} master
+
+      # Move the tag to newest master
+      git tag --force cling-nightlies HEAD
+      git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
    fi
 
 script:
@@ -253,12 +257,6 @@ script:
   }
 
   if [ -z $TRAVIS_TAG ]; then
-    if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-      # Move the tag to newest master
-      git tag --force cling-nightlies HEAD
-      git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
-    fi
-
     timeout -s SIGTERM $TIMEOUT tools/packaging/cpt.py \
       --current-dev=tar \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
