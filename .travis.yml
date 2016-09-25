@@ -310,6 +310,7 @@ deploy:
   file: '${RELEASE_TARBALL}'
   on:
     tags: true
+    all_branches: true
     repo: $TRAVIS_REPO_SLUG
 
 after_failure:
