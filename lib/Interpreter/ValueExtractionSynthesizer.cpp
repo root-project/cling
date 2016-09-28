@@ -299,7 +299,7 @@ namespace {
 
         CallArgs.push_back(arrSizeExpr);
         // 2.1) arrays:
-        // call copyArray(T* src, void* placement, int size)
+        // call copyArray(T* src, void* placement, size_t size)
         Call = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedCopyArray,
                                      locStart, CallArgs, locEnd);
 
