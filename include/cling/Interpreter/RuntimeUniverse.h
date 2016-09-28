@@ -160,7 +160,7 @@ namespace cling {
       ///\param[in] size - size of the array.
       ///
       template <typename T>
-      void copyArray(T* src, void* placement, int size) {
+      void copyArray(T* src, void* placement, std::size_t size) {
         for (int i = 0; i < size; ++i)
           new ((void*)(((T*)placement) + i)) T(src[i]);
       }
