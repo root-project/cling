@@ -172,7 +172,7 @@ const Test2::Nested::Value::type & Test2::Nested::reference() const {
 Test2::Nested Nest2(80);
 // CHECK: Nested::Nested(160)
 Nest2.simpleAdd(3)
-// CHECK: (Test2::Nested::Value::type) 83
+// CHECK: (int) 83
 
 class Test2 classReturn() { return Test2(10, 11); }
 classReturn()

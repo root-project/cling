@@ -143,10 +143,12 @@ static std::string printDeclType(const clang::QualType& QT,
 static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
   using namespace clang;
   const QualType QTNonRef = QT.getNonReferenceType();
+  const QualType QTCanon = QTNonRef.getCanonicalType();
 
   std::string ValueTyStr("(");
-  if (const TypedefType *TDTy = dyn_cast<TypedefType>(QTNonRef))
-    ValueTyStr += printDeclType(QTNonRef, TDTy->getDecl());
+  if ((isa<TypedefType>(QTNonRef) || QTCanon->isBuiltinType())
+      && !QTNonRef->isFunctionPointerType() && !QTNonRef->isMemberPointerType())
+    ValueTyStr += QTCanon.getAsString(Ctx.getPrintingPolicy());
   else if (const TagType *TTy = dyn_cast<TagType>(QTNonRef))
     ValueTyStr += printDeclType(QTNonRef, TTy->getDecl());
   else if (const RecordType *TRy = dyn_cast<RecordType>(QTNonRef))
