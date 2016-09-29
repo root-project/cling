@@ -61,6 +61,17 @@ namespace platform {
   ///
   bool IsMemoryValid(const void *P);
 
+  ///\brief Invoke a command and read it's output.
+  ///
+  /// \param [in] Cmd - Command and arguments to invoke.
+  /// \param [out] Buf - Buffer to write output to.
+  /// \param [in] StdErrToStdOut - Redirect stderr to stdout.
+  ///
+  /// \returns whether any output was written to Buf
+  ///
+  bool Popen(const std::string& Cmd, llvm::SmallVectorImpl<char>& Buf,
+             bool StdErrToStdOut = false);
+
 #if defined(LLVM_ON_UNIX)
 
 #if defined(__APPLE__)

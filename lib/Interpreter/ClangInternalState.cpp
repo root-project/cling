@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/ClangInternalState.h"
+#include "cling/Utils/Platform.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Lex/Preprocessor.h"
@@ -29,11 +30,6 @@
 #include <string>
 #include <time.h>
 
-#ifdef WIN32
-#define popen _popen
-#define pclose _pclose
-#endif
-
 using namespace clang;
 
 namespace cling {
@@ -42,7 +38,12 @@ namespace cling {
                                          llvm::Module* M, CodeGenerator* CG,
                                          const std::string& name)
     : m_ASTContext(AC), m_Preprocessor(PP), m_CodeGen(CG), m_Module(M),
-      m_DiffCommand("diff -u --text "), m_Name(name), m_DiffPair(nullptr) {
+#if defined(LLVM_ON_WIN32)
+      m_DiffCommand("diff.exe -u --text "),
+#else
+      m_DiffCommand("diff -u --text "),
+#endif
+      m_Name(name), m_DiffPair(nullptr) {
     store();
   }
 
@@ -153,23 +154,14 @@ namespace cling {
 
     builtinNames.push_back(".*__builtin.*");
 
-    if (differentContent(m_LookupTablesFile, m_DiffPair->m_LookupTablesFile,
-                         differences, &builtinNames)) {
-      llvm::errs() << "Differences in the lookup tables\n";
-      llvm::errs() << differences << "\n";
-      differences = "";
-    }
-    if (differentContent(m_IncludedFilesFile, m_DiffPair->m_IncludedFilesFile,
-                         differences)) {
-      llvm::errs() << "Differences in the included files\n";
-      llvm::errs() << differences << "\n";
-      differences = "";
-    }
-    if (differentContent(m_ASTFile, m_DiffPair->m_ASTFile, differences)) {
-      llvm::errs() << "Differences in the AST \n";
-      llvm::errs() << differences << "\n";
-      differences = "";
-    }
+    differentContent(m_LookupTablesFile, m_DiffPair->m_LookupTablesFile,
+                     "lookup tables", &builtinNames);
+
+    differentContent(m_IncludedFilesFile, m_DiffPair->m_IncludedFilesFile,
+                     "included files");
+
+    differentContent(m_ASTFile, m_DiffPair->m_ASTFile, "AST");
+
     if (m_Module) {
       assert(m_CodeGen && "Must have CodeGen set");
       // We want to skip the intrinsics
@@ -179,24 +171,19 @@ namespace cling {
         if (I->isIntrinsic())
           builtinNames.push_back(I->getName().data());
 
-      if (differentContent(m_LLVMModuleFile, m_DiffPair->m_LLVMModuleFile,
-                           differences, &builtinNames)) {
-        llvm::errs() << "Differences in the llvm Module \n";
-        llvm::errs() << differences << "\n";
-        differences = "";
-      }
+      differentContent(m_LLVMModuleFile, m_DiffPair->m_LLVMModuleFile,
+                       "llvm Module", &builtinNames);
     }
-    if (differentContent(m_MacrosFile, m_DiffPair->m_MacrosFile, differences)){
-      llvm::errs() << "Differences in the Macro Definitions \n";
-      llvm::errs() << differences << "\n";
-      differences = "";
-    }
+
+    differentContent(m_MacrosFile, m_DiffPair->m_MacrosFile,
+                     "Macro Definitions");
   }
 
   bool ClangInternalState::differentContent(const std::string& file1,
                                             const std::string& file2,
-                                            std::string& differences,
-                const llvm::SmallVectorImpl<const char*>* ignores/*=0*/) const {
+                                            const char* type,
+                const llvm::SmallVectorImpl<const char*>* ignores/*=0*/) const {    
+
     std::string diffCall = m_DiffCommand;
     if (ignores) {
       for (size_t i = 0, e = ignores->size(); i < e; ++i) {
@@ -205,22 +192,23 @@ namespace cling {
         diffCall += ".*\"";
       }
     }
+    diffCall += " ";
+    diffCall += file1;
+    diffCall += " ";
+    diffCall += file2;
 
-    FILE* pipe = popen((diffCall + " " + file1 + " " + file2).c_str() , "r");
-    assert(pipe && "Error creating the pipe");
-    assert(differences.empty() && "Must be empty");
+    llvm::SmallString<1024> Difs;
+    platform::Popen(diffCall, Difs);
 
-    char buffer[128];
-    while(!feof(pipe)) {
-      if(fgets(buffer, 128, pipe) != NULL)
-        differences += buffer;
+    if (Difs.empty())
+      return false;
+
+    if (type) {
+      llvm::errs() << diffCall << "\n";
+      llvm::errs() << "Differences in the " << type << ":\n";
+      llvm::errs() << Difs << "\n";
     }
-    pclose(pipe);
-
-    if (!differences.empty())
-      llvm::errs() << diffCall << " " << file1 << " " << file2 << "\n";
-
-    return !differences.empty();
+    return true;
   }
 
   class DumpLookupTables : public RecursiveASTVisitor<DumpLookupTables> {
