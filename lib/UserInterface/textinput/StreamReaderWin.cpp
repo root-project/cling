@@ -176,9 +176,21 @@ namespace textinput {
         return false;
       }
     } else {
+      // Testing for the End of a File
+      // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365690(v=vs.85).aspx
       if (!::ReadFile(fIn, &C, 1, &NRead, NULL)) {
-        HandleError("reading file input");
-        return false;
+        if (NRead != 0) {
+          switch (::GetLastError()) {
+            default:
+              HandleError("reading file input");
+              return false;
+            case ERROR_HANDLE_EOF:
+            case ERROR_BROKEN_PIPE:
+              break;
+          }
+        }
+        in.SetExtended(InputData::kEIEOF);
+        return true;
       }
     }
     HandleKeyEvent(C, in);
