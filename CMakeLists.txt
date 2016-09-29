@@ -185,6 +185,15 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND NOT MSVC_IDE )
 "`CMakeFiles'. Please delete them.")
 endif()
 
+# From ROOT:
+function(cling_add_cxx_flag var flag)
+  string(REGEX REPLACE "[-.+/:= ]" "_" flag_esc "${flag}")
+  CHECK_CXX_COMPILER_FLAG("${flag}" CXX_HAS${flag_esc})
+  if(CXX_HAS${flag_esc})
+    set(${var} "${${var}} ${flag}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 # Add appropriate flags for GCC
 if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual")
@@ -193,10 +202,7 @@ if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   endif ()
 
   foreach (check_flag "-Wno-nested-anon-types" "-Wno-covered-switch-default" "-Wno-unused-local-typedef")
-    check_cxx_compiler_flag(${check_flag} CXX_SUPPORTS_SOME_FLAG)
-    if (CXX_SUPPORTS_SOME_FLAG)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${check_flag}")
-    endif ()
+    cling_add_cxx_flag(CMAKE_CXX_FLAGS ${check_flag})
   endforeach ()
 endif ()
 
