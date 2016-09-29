@@ -72,12 +72,12 @@ namespace cling {
     ///\brief Runs diff on two files.
     ///\param[in] file1 - A file to diff
     ///\param[in] file2 - A file to diff
-    ///\param[in] differences - The differences if any between file1 and file2
+    ///\param[in] type - The type/name of the differences to print.
     ///\param[in] ignores - A list of differences to ignore.
     ///\returns true if there is difference in the contents.
     ///
     bool differentContent(const std::string& file1, const std::string& file2,
-                          std::string& differences,
+                          const char* type = nullptr,
                    const llvm::SmallVectorImpl<const char*>* ignores = 0) const;
 
     static void printLookupTables(llvm::raw_ostream& Out, clang::ASTContext& C);

@@ -587,6 +587,104 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   return true;
 }
 
+static void CloseHandle(HANDLE H) {
+  if (::CloseHandle(H) == 0)
+    ReportLastError("CloseHandle");
+}
+
+bool Popen(const std::string& Cmd, llvm::SmallVectorImpl<char>& Buf, bool RdE) {
+  Buf.resize(0);
+
+  SECURITY_ATTRIBUTES saAttr;
+  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+  saAttr.bInheritHandle = TRUE;
+  saAttr.lpSecurityDescriptor = NULL;
+
+  HANDLE Process = ::GetCurrentProcess();
+  HANDLE hOutputReadTmp, hOutputRead, hOutputWrite, hErrorWrite;
+
+  if (::CreatePipe(&hOutputReadTmp, &hOutputWrite, &saAttr, 0) == 0)
+    return false;
+  if (RdE) {
+    if (::DuplicateHandle(Process, hOutputWrite, Process, &hErrorWrite, 0, TRUE,
+                          DUPLICATE_SAME_ACCESS) == 0) {
+      ReportLastError("DuplicateHandle");
+      ::CloseHandle(hOutputReadTmp);
+      ::CloseHandle(hOutputWrite);
+      return false;
+    }
+  }
+
+  // Create new output read handle. Set the Properties to FALSE, otherwise the
+  // child inherits the properties and, as a result, non-closeable handles to
+  // the pipes are created.
+  if (::DuplicateHandle(Process, hOutputReadTmp, Process, &hOutputRead, 0,
+                        FALSE, DUPLICATE_SAME_ACCESS) == 0) {
+    ReportLastError("DuplicateHandle");
+    ::CloseHandle(hOutputReadTmp);
+    ::CloseHandle(hOutputWrite);
+    if (RdE)
+      ::CloseHandle(hErrorWrite);
+    return false;
+  }
+
+  // Close inheritable copies of the handles you do not want to be inherited.
+  CloseHandle(hOutputReadTmp);
+
+  STARTUPINFOA si;
+  ZeroMemory(&si, sizeof(si));
+  si.cb = sizeof(si);
+  si.dwFlags = STARTF_USESTDHANDLES;
+  si.hStdOutput = hOutputWrite;
+  if (RdE)
+    si.hStdError = hErrorWrite;
+
+  PROCESS_INFORMATION pi;
+  ZeroMemory(&pi, sizeof(pi));
+
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682425%28v=vs.85%29.aspx
+  // CreateProcessW can write back to second arguement, CreateProcessA not
+  BOOL Result = ::CreateProcessA(NULL, (LPSTR)Cmd.c_str(), NULL, NULL, TRUE, 0,
+                                 NULL, NULL, &si, &pi);
+  DWORD Err = ::GetLastError();
+
+  // Close pipe handles (do not continue to modify the parent) to make sure
+  // that no handles to the write end of the output pipe are maintained in this
+  // process or else the pipe will not close when the child process exits and
+  // the ReadFile will hang.
+  CloseHandle(hOutputWrite);
+  if (RdE)
+    CloseHandle(hErrorWrite);
+  
+  if (Result != 0) {
+    DWORD dwRead;
+    const size_t Chunk = Buf.capacity_in_bytes();
+    while (true) {
+      const size_t Len = Buf.size();
+      Buf.resize(Len + Chunk);
+      Result = ::ReadFile(hOutputRead, &Buf[Len], Chunk, &dwRead, NULL);
+      if (!Result || !dwRead) {
+        Err = ::GetLastError();
+        if (Err != ERROR_BROKEN_PIPE)
+          ReportError(Err, "ReadFile");
+        Buf.resize(Len);
+        break;
+      }
+      if (dwRead < Chunk)
+        Buf.resize(Len + dwRead);
+    }
+
+    // Close process and thread handles.
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+  } else
+    ReportError(Err, "CreateProcess");
+
+  CloseHandle(hOutputRead);
+
+  return !Buf.empty();
+}
+
 } // namespace platform
 } // namespace utils
 } // namespace cling

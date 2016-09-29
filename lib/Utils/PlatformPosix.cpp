@@ -12,6 +12,7 @@
 #if defined(LLVM_ON_UNIX)
 
 #include "cling/Utils/Paths.h"
+#include "llvm/ADT/SmallString.h"
 
 #include <string>
 #include <dlfcn.h>
@@ -84,6 +85,25 @@ std::string NormalizePath(const std::string& Path) {
   return std::string();
 }
 
+bool Popen(const std::string& Cmd, llvm::SmallVectorImpl<char>& Buf, bool RdE) {
+  if (FILE *PF = ::popen(RdE ? (Cmd + " 2>&1").c_str() : Cmd.c_str(), "r")) {
+    Buf.resize(0);
+    const size_t Chunk = Buf.capacity_in_bytes();
+    while (true) {
+      const size_t Len = Buf.size();
+      Buf.resize(Len + Chunk);
+      const size_t R = ::fread(&Buf[Len], sizeof(char), Chunk, PF);
+      if (R < Chunk) {
+        Buf.resize(Len + R);
+        break;
+      }
+    }
+    ::pclose(PF);
+    return !Buf.empty();
+  }
+  return false;
+}
+
 bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
 #if defined(__APPLE__) || defined(__CYGWIN__)
   Paths.push_back("/usr/local/lib/");
@@ -98,13 +118,9 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   Paths.push_back("/lib64/");
  #endif
 #else
-  std::string Result;
-  if (FILE* F = ::popen("LD_DEBUG=libs LD_PRELOAD=DOESNOTEXIST ls 2>&1", "r")) {
-    char Buf[1024];
-    while (::fgets(&Buf[0], sizeof(Buf), F))
-      Result += Buf;
-    ::pclose(F);
-  }
+  llvm::SmallString<1024> Buf;
+  platform::Popen("LD_DEBUG=libs LD_PRELOAD=DOESNOTEXIST ls", Buf, true);
+  const llvm::StringRef Result = Buf.str();
 
   const std::size_t NPos = std::string::npos;
   const std::size_t LD = Result.find("(LD_LIBRARY_PATH)");
