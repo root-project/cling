@@ -133,27 +133,31 @@ bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
 }
 #endif
 
+static std::string printDeclType(const clang::QualType& QT,
+                                 const clang::NamedDecl* D) {
+  if (!QT.hasQualifiers())
+    return D->getQualifiedNameAsString();
+  return QT.getQualifiers().getAsString() + " " + D->getQualifiedNameAsString();
+}
+
 static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
   using namespace clang;
-  std::ostringstream strm;
-  QualType QTNonRef = QT.getNonReferenceType();
-  std::string ValueTyStr;
+  const QualType QTNonRef = QT.getNonReferenceType();
+
+  std::string ValueTyStr("(");
   if (const TypedefType *TDTy = dyn_cast<TypedefType>(QTNonRef))
-    ValueTyStr = TDTy->getDecl()->getQualifiedNameAsString();
+    ValueTyStr += printDeclType(QTNonRef, TDTy->getDecl());
   else if (const TagType *TTy = dyn_cast<TagType>(QTNonRef))
-    ValueTyStr = TTy->getDecl()->getQualifiedNameAsString();
+    ValueTyStr += printDeclType(QTNonRef, TTy->getDecl());
+  else if (const RecordType *TRy = dyn_cast<RecordType>(QTNonRef))
+    ValueTyStr += printDeclType(QTNonRef, TRy->getDecl());
+  else
+    ValueTyStr += cling::utils::TypeName::GetFullyQualifiedName(QTNonRef, Ctx);
 
-  if (ValueTyStr.empty())
-    ValueTyStr = cling::utils::TypeName::GetFullyQualifiedName(QTNonRef, Ctx);
-  else if (QTNonRef.hasQualifiers())
-    ValueTyStr = QTNonRef.getQualifiers().getAsString() + " " + ValueTyStr;
-
-  strm << "(";
-  strm << ValueTyStr;
   if (QT->isReferenceType())
-    strm << " &";
-  strm << ")";
-  return strm.str();
+    ValueTyStr += " &";
+
+  return ValueTyStr + ")";
 }
 
 } // anonymous namespace
