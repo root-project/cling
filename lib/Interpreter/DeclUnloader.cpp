@@ -274,7 +274,9 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
           MarkConstant(GV->getInitializer());
       } else if (GlobalAlias *GA = dyn_cast<GlobalAlias>(G)) {
         // The target of a global alias as referenced.
-        MarkConstant(GA->getAliasee());
+        // GA->getAliasee() is sometimes returning NULL on Windows
+        if (llvm::Constant* C = GA->getAliasee())
+          MarkConstant(C);
       } else {
         // Otherwise this must be a function object.  We have to scan the body
         // of the function looking for constants and global values which are
