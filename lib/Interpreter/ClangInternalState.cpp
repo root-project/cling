@@ -131,7 +131,7 @@ namespace cling {
     return OS.release();
   }
 
-  void ClangInternalState::compare(const std::string& name) {
+  void ClangInternalState::compare(const std::string& name, bool verbose) {
     assert(name == m_Name && "Different names!?");
     m_DiffPair.reset(new ClangInternalState(m_ASTContext, m_Preprocessor,
                                             m_Module, m_CodeGen, name));
@@ -160,12 +160,12 @@ namespace cling {
     builtinNames.push_back(".*__builtin.*");
 
     differentContent(m_LookupTablesFile, m_DiffPair->m_LookupTablesFile,
-                     "lookup tables", &builtinNames);
+                     "lookup tables", verbose, &builtinNames);
 
     differentContent(m_IncludedFilesFile, m_DiffPair->m_IncludedFilesFile,
-                     "included files");
+                     "included files", verbose);
 
-    differentContent(m_ASTFile, m_DiffPair->m_ASTFile, "AST");
+    differentContent(m_ASTFile, m_DiffPair->m_ASTFile, "AST", verbose);
 
     if (m_Module) {
       assert(m_CodeGen && "Must have CodeGen set");
@@ -176,16 +176,17 @@ namespace cling {
           builtinNames.emplace_back(Func.getName());
       }
       differentContent(m_LLVMModuleFile, m_DiffPair->m_LLVMModuleFile,
-                       "llvm Module", &builtinNames);
+                       "llvm Module", verbose, &builtinNames);
     }
 
     differentContent(m_MacrosFile, m_DiffPair->m_MacrosFile,
-                     "Macro Definitions");
+                     "Macro Definitions", verbose);
   }
 
   bool ClangInternalState::differentContent(const std::string& file1,
                                             const std::string& file2,
                                             const char* type,
+                                            bool verbose,
             const llvm::SmallVectorImpl<llvm::StringRef>* ignores/*=0*/) const {
 
     std::string diffCall = m_DiffCommand;
@@ -204,11 +205,13 @@ namespace cling {
     llvm::SmallString<1024> Difs;
     platform::Popen(diffCall, Difs);
 
+    if (verbose)
+      llvm::errs() << diffCall << "\n";
+
     if (Difs.empty())
       return false;
 
     if (type) {
-      llvm::errs() << diffCall << "\n";
       llvm::errs() << "Differences in the " << type << ":\n";
       llvm::errs() << Difs << "\n";
     }

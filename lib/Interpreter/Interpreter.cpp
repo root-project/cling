@@ -128,7 +128,7 @@ namespace cling {
       // The ClangInternalState destructor can provoke deserialization,
       // we need a transaction.
       PushTransactionRAII pushedT(m_Interpreter);
-      m_State->compare("aName");
+      m_State->compare("aName", m_Interpreter->m_Opts.Verbose());
       m_State.reset();
     }
   }
@@ -364,7 +364,7 @@ namespace cling {
 
     // This may induce deserialization
     PushTransactionRAII RAII(this);
-    m_StoredStates[foundAtPos]->compare(name);
+    m_StoredStates[foundAtPos]->compare(name, m_Opts.Verbose());
   }
 
   void Interpreter::printIncludedFiles(llvm::raw_ostream& Out) const {
