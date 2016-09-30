@@ -7,7 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: mkdir -p %T/subdir && clang -shared %S/call_lib.c -o %T/subdir/libtest%shlibext
-// RUN: export ENVVAR_LIB="%T/subdir" ; export ENVVAR_INC="%S/subdir"
+// RUN: %setenv ENVVAR_LIB="%T/subdir" && %setenv ENVVAR_INC="%S/subdir"
 // RUN: cat %s | %cling -I %S -Xclang -verify 2>&1 | FileCheck %s
 
 #pragma cling add_include_path("$ENVVAR_INC")
