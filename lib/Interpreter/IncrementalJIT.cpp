@@ -212,6 +212,22 @@ IncrementalJIT::getInjectedSymbols(llvm::StringRef Name) const {
   return JITSymbol(nullptr);
 }
 
+llvm::PointerIntPair<void*, 1>
+IncrementalJIT::searchLibraries(llvm::StringRef Name, void *InAddr) {
+  // FIXME: See comments on DLSym below.
+#if !defined(LLVM_ON_WIN32)
+  void* Addr = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(Name);
+#else
+  void* Addr = const_cast<void*>(platform::DLSym(Name));
+#endif
+
+  if (InAddr && !Addr) {
+    llvm::sys::DynamicLibrary::AddSymbol(Name, InAddr);
+    return llvm::PointerIntPair<void*, 1>(InAddr, true);
+  }
+  return llvm::PointerIntPair<void*, 1>(Addr, false);
+}
+    
 llvm::orc::JITSymbol
 IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
                                                 bool AlsoInProcess) {
@@ -225,6 +241,13 @@ IncrementalJIT::getSymbolAddressWithoutMangling(llvm::StringRef Name,
       return llvm::orc::JITSymbol(SymInfo.getAddress(),
                                   llvm::JITSymbolFlags::Exported);
 #ifdef LLVM_ON_WIN32
+    // FIXME: DLSym symbol lookup can overlap m_ExeMM->findSymbol wasting time
+    // looking for a symbol in libs where it is already known not to exist.
+    // Perhaps a better solution would be to have IncrementalJIT own the
+    // DynamicLibraryManger instance (or at least have a reference) that will
+    // look only through user loaded libraries.
+    // An upside to doing it this way is RTLD_GLOBAL won't need to be used
+    // allowing libs with competing symbols to co-exists.
     if (const void* Sym = platform::DLSym(SymName))
       return llvm::orc::JITSymbol(llvm::orc::TargetAddress(Sym),
                                   llvm::JITSymbolFlags::Exported);
