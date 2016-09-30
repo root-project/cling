@@ -238,31 +238,25 @@ static std::string invokePrintValueOverload(const Value &V) {
           return "nullptr";
         return executePrintValue<void *>(V, V.getPtr());
     }
+    llvm_unreachable("invokePrintValueOverload falling through!");
   }
-  else if (Ty->isIntegralOrEnumerationType()) {
+  else if (Ty->isIntegralOrEnumerationType())
     return executePrintValue<long long>(V, V.getLL());
-  }
-  else if (Ty->isFunctionType()) {
-    if (!V.getPtr())
-      return "nullptr";
-    return executePrintValue<const void *>(V, &V);
-  }
-  else if (Ty->isPointerType()
-           || Ty->isReferenceType()
-           || Ty->isArrayType()) {
-    if (!V.getPtr())
-      return "nullptr";
-    return executePrintValue<void *>(V, V.getPtr());
-  }
-  else if (Ty->isObjCObjectPointerType()) {
-    return executePrintValue<void *>(V, V.getPtr());
-  }
-  else {
-    // struct case.
-    if (!V.getPtr())
-      return "nullptr";
-    return executePrintValue<void *>(V, V.getPtr());
-  }
+
+  if (!V.getPtr())
+    return "nullptr";
+
+  if (Ty->isFunctionType())
+    return executePrintValue<const void*>(V, &V);
+
+  if (Ty->isPointerType() || Ty->isReferenceType() || Ty->isArrayType())
+    return executePrintValue<void*>(V, V.getPtr());
+
+  if (Ty->isObjCObjectPointerType())
+    return executePrintValue<void*>(V, V.getPtr());
+
+  // struct/fallback case
+  return executePrintValue<void*>(V, V.getPtr());
 }
 
 static std::string printEnumValue(const Value &V) {
