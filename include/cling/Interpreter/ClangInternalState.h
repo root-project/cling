@@ -67,17 +67,18 @@ namespace cling {
 
     ///\brief Compares the states with the current state of the same objects.
     ///
-    void compare(const std::string& name);
+    void compare(const std::string& Name, bool Verbose);
 
     ///\brief Runs diff on two files.
     ///\param[in] file1 - A file to diff
     ///\param[in] file2 - A file to diff
     ///\param[in] type - The type/name of the differences to print.
+    ///\param[in] verbose - Verbose output.
     ///\param[in] ignores - A list of differences to ignore.
     ///\returns true if there is difference in the contents.
     ///
     bool differentContent(const std::string& file1, const std::string& file2,
-                          const char* type = nullptr,
+                          const char* type = nullptr, bool verbose = false,
                const llvm::SmallVectorImpl<llvm::StringRef>* ignores = 0) const;
 
     static void printLookupTables(llvm::raw_ostream& Out, clang::ASTContext& C);
