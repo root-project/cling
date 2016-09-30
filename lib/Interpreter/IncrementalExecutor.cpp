@@ -26,7 +26,6 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
@@ -331,20 +330,13 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 
 bool
 IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
-  void* actualAddress
-    = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
-  if (actualAddress)
-    return false;
-
-  llvm::sys::DynamicLibrary::AddSymbol(symbolName, symbolAddress);
-  return true;
+  return IncrementalJIT::searchLibraries(symbolName, symbolAddress).getInt();
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) {
   // Return a symbol's address, and whether it was jitted.
-  void* address
-    = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName);
+  void* address = IncrementalJIT::searchLibraries(symbolName).getPointer();
 
   // It's not from the JIT if it's in a dylib.
   if (fromJIT)

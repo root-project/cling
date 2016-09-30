@@ -213,6 +213,13 @@ public:
   RemoveUnfinalizedSection(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
     m_UnfinalizedSections.erase(H);
   }
+
+  ///\brief Get the address of a symbol from the process' loaded libraries.
+  /// \param Name - symbol to look for
+  /// \param Addr - known address of the symbol that can be cached later use
+  /// \returns The address of the symbol and whether it was cached
+  static llvm::PointerIntPair<void*, 1>
+  searchLibraries(llvm::StringRef Name, void* Addr = nullptr);
 };
 } // end cling
 #endif // CLING_INCREMENTAL_EXECUTOR_H
