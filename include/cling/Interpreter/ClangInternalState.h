@@ -41,18 +41,18 @@ namespace cling {
     std::string m_ASTFile;
     std::string m_LLVMModuleFile;
     std::string m_MacrosFile;
-    clang::ASTContext& m_ASTContext;
-    clang::Preprocessor& m_Preprocessor;
+    const clang::ASTContext& m_ASTContext;
+    const clang::Preprocessor& m_Preprocessor;
     clang::CodeGenerator* m_CodeGen;
-    llvm::Module* m_Module;
-    std::string m_DiffCommand;
-    std::string m_Name;
+    const llvm::Module* m_Module;
+    const std::string m_DiffCommand;
+    const std::string m_Name;
     ///\brief Takes the ownership after compare was made.
     ///
     std::unique_ptr<ClangInternalState> m_DiffPair;
   public:
-    ClangInternalState(clang::ASTContext& AC, clang::Preprocessor& PP,
-                       llvm::Module* M, clang::CodeGenerator* CG,
+    ClangInternalState(const clang::ASTContext& AC, const clang::Preprocessor&,
+                       const llvm::Module* M, clang::CodeGenerator* CG,
                        const std::string& name);
     ~ClangInternalState();
 
@@ -81,14 +81,14 @@ namespace cling {
                           const char* type = nullptr, bool verbose = false,
                const llvm::SmallVectorImpl<llvm::StringRef>* ignores = 0) const;
 
-    static void printLookupTables(llvm::raw_ostream& Out, clang::ASTContext& C);
+    static void printLookupTables(llvm::raw_ostream& Out, const clang::ASTContext& C);
     static void printIncludedFiles(llvm::raw_ostream& Out,
-                                   clang::SourceManager& SM);
-    static void printAST(llvm::raw_ostream& Out, clang::ASTContext& C);
-    static void printLLVMModule(llvm::raw_ostream& Out, llvm::Module& M,
+                                   const clang::SourceManager& SM);
+    static void printAST(llvm::raw_ostream& Out, const clang::ASTContext& C);
+    static void printLLVMModule(llvm::raw_ostream& Out, const llvm::Module& M,
                                 clang::CodeGenerator& CG);
     static void printMacroDefinitions(llvm::raw_ostream& Out,
-                                      clang::Preprocessor& PP);
+                                      const clang::Preprocessor& PP);
   private:
     llvm::raw_fd_ostream* createOutputFile(llvm::StringRef OutFile,
                                            std::string* TempPathName = 0,

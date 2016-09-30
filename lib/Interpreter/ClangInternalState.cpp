@@ -34,8 +34,10 @@ using namespace clang;
 
 namespace cling {
 
-  ClangInternalState::ClangInternalState(ASTContext& AC, Preprocessor& PP,
-                                         llvm::Module* M, CodeGenerator* CG,
+  ClangInternalState::ClangInternalState(const ASTContext& AC,
+                                         const Preprocessor& PP,
+                                         const llvm::Module* M,
+                                         CodeGenerator* CG,
                                          const std::string& name)
     : m_ASTContext(AC), m_Preprocessor(PP), m_CodeGen(CG), m_Module(M),
 #if defined(LLVM_ON_WIN32)
@@ -239,13 +241,13 @@ namespace cling {
   };
 
   void ClangInternalState::printLookupTables(llvm::raw_ostream& Out,
-                                             ASTContext& C) {
+                                             const ASTContext& C) {
     DumpLookupTables dumper(Out);
     dumper.TraverseDecl(C.getTranslationUnitDecl());
   }
 
   void ClangInternalState::printIncludedFiles(llvm::raw_ostream& Out,
-                                              SourceManager& SM) {
+                                              const SourceManager& SM) {
     Out << "Legend: [p] parsed; [P] parsed and open; [r] from AST file\n\n";
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
@@ -274,7 +276,7 @@ namespace cling {
     }
   }
 
-  void ClangInternalState::printAST(llvm::raw_ostream& Out, ASTContext& C) {
+  void ClangInternalState::printAST(llvm::raw_ostream& Out, const ASTContext& C) {
     TranslationUnitDecl* TU = C.getTranslationUnitDecl();
     unsigned Indentation = 0;
     bool PrintInstantiation = false;
@@ -289,14 +291,14 @@ namespace cling {
   }
 
   void ClangInternalState::printLLVMModule(llvm::raw_ostream& Out,
-                                           llvm::Module& M,
+                                           const llvm::Module& M,
                                            CodeGenerator& CG) {
     M.print(Out, /*AssemblyAnnotationWriter*/ 0);
     CG.print(Out);
   }
 
   void ClangInternalState::printMacroDefinitions(llvm::raw_ostream& Out,
-                            clang::Preprocessor& PP) {
+                                                const clang::Preprocessor& PP) {
     std::string contents;
     llvm::raw_string_ostream contentsOS(contents);
     PP.printMacros(contentsOS);
