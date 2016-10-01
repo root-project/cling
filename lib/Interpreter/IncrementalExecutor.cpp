@@ -38,8 +38,7 @@ namespace cling {
 
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
                                          const clang::CompilerInstance& CI):
-  m_externalIncrementalExecutor(nullptr),
-  m_CurrentAtExitModule(0)
+  m_externalIncrementalExecutor(nullptr)
 #if 0
   : m_Diags(diags)
 #endif
@@ -123,10 +122,11 @@ void IncrementalExecutor::shuttingDown() {
   }
 }
 
-void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg) {
+void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
+                                        llvm::Module* M) {
   // Register a CXAAtExit function
   cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
-  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, m_CurrentAtExitModule));
+  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, M));
 }
 
 void unresolvedSymbol()
@@ -205,14 +205,6 @@ IncrementalExecutor::ExecutionResult
 IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
   llvm::Module* m = T.getModule();
   assert(m && "Module must not be null");
-
-  // Set m_CurrentAtExitModule to the Module, unset to 0 once done.
-  struct AtExitModuleSetterRAII {
-    llvm::Module*& m_AEM;
-    AtExitModuleSetterRAII(llvm::Module* M, llvm::Module*& AEM): m_AEM(AEM)
-    { AEM = M; }
-    ~AtExitModuleSetterRAII() { m_AEM = 0; }
-  } DSOHandleSetter(m, m_CurrentAtExitModule);
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
@@ -333,14 +325,15 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 }
 
 bool
-IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
-  return IncrementalJIT::searchLibraries(symbolName, symbolAddress).second;
+IncrementalExecutor::addSymbol(const char* Name,  void* Addr,
+                               bool Jit) {
+  return m_JIT->lookupSymbol(Name, Addr, Jit).second;
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) {
   // Return a symbol's address, and whether it was jitted.
-  void* address = IncrementalJIT::searchLibraries(symbolName).first;
+  void* address = m_JIT->lookupSymbol(symbolName).first;
 
   // It's not from the JIT if it's in a dylib.
   if (fromJIT)

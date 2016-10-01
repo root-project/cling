@@ -274,17 +274,16 @@ namespace cling {
                                                 llvm::StringRef code,
                                                 bool withAccessControl);
 
-    ///\brief Include C++ runtime headers and definitions.
+    ///\brief Initialize runtime and C/C++ level overrides
     ///
-    void IncludeCXXRuntime();
-
-    ///\brief Include C runtime headers and definitions.
+    ///\param[in] NoRuntime - Don't include the runtime headers / gCling
+    ///\param[in] SyntaxOnly - In SyntaxOnly mode
+    ///\param[out] Globals - Global symbols that need to be emitted
     ///
-    void IncludeCRuntime();
-
-    ///\brief Init atexit runtime delegation.
+    ///\returns The resulting Transation of initialization.
     ///
-    void InitAExit();
+    Transaction* Initialize(bool NoRuntime, bool SyntaxOnly,
+                            llvm::SmallVectorImpl<llvm::StringRef>& Globals);
 
     ///\brief The target constructor to be called from both the delegating
     /// constructors. parentInterp might be nullptr.

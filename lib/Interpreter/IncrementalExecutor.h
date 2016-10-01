@@ -114,10 +114,6 @@ namespace cling {
     ///
     AtExitFunctions m_AtExitFuncs;
 
-    ///\brief Module for which registration of static destructors currently
-    /// takes place.
-    llvm::Module* m_CurrentAtExitModule;
-
     ///\brief Modules to emit upon the next call to the JIT.
     ///
     std::vector<llvm::Module*> m_ModulesToJIT;
@@ -208,12 +204,13 @@ namespace cling {
     /// Allows runtime declaration of a function passing its pointer for being
     /// used by JIT generated code.
     ///
-    /// @param[in] symbolName - The name of the symbol as required by the
+    /// @param[in] Name - The name of the symbol as required by the
     ///                         linker (mangled if needed)
-    /// @param[in] symbolAddress - The function pointer to register
+    /// @param[in] Address - The function pointer to register
+    /// @param[in] JIT - Add to the JIT injected symbol table
     /// @returns true if the symbol is successfully registered, false otherwise.
     ///
-    bool addSymbol(const char* symbolName,  void* symbolAddress);
+    bool addSymbol(const char* Name, void* Address, bool JIT = false);
 
     ///\brief Add a llvm::Module to the JIT.
     ///
@@ -251,7 +248,7 @@ namespace cling {
 
     ///\brief Keep track of the entities whose dtor we need to call.
     ///
-    void AddAtExitFunc(void (*func) (void*), void* arg);
+    void AddAtExitFunc(void (*func) (void*), void* arg, llvm::Module* M);
 
     ///\brief Try to resolve a symbol through our LazyFunctionCreators;
     /// print an error message if that fails.
