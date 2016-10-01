@@ -25,12 +25,6 @@
 using namespace llvm;
 
 namespace {
-// Forward cxa_atexit for global d'tors.
-static int local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
-  cling::IncrementalExecutor* exe = (cling::IncrementalExecutor*)dso;
-  exe->AddAtExitFunc(func, arg);
-  return 0;
-}
 
 ///\brief Memory manager providing the lop-level link to the
 /// IncrementalExecutor, handles missing or special / replaced symbols.
@@ -195,17 +189,6 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 llvm::orc::JITSymbol
 IncrementalJIT::getInjectedSymbols(const std::string& Name) const {
   using JITSymbol = llvm::orc::JITSymbol;
-  if (Name == MANGLE_PREFIX "__cxa_atexit") {
-    // Rewire __cxa_atexit to ~Interpreter(), thus also global destruction
-    // coming from the JIT.
-    return JITSymbol((uint64_t)&local_cxa_atexit,
-                     llvm::JITSymbolFlags::Exported);
-  } else if (Name == MANGLE_PREFIX "__dso_handle") {
-    // Provide IncrementalExecutor as the third argument to __cxa_atexit.
-    return JITSymbol((uint64_t)&m_Parent,
-                     llvm::JITSymbolFlags::Exported);
-  }
-
   auto SymMapI = m_SymbolMap.find(Name);
   if (SymMapI != m_SymbolMap.end())
     return JITSymbol(SymMapI->second, llvm::JITSymbolFlags::Exported);
@@ -214,7 +197,7 @@ IncrementalJIT::getInjectedSymbols(const std::string& Name) const {
 }
 
 std::pair<void*, bool>
-IncrementalJIT::searchLibraries(llvm::StringRef Name, void *InAddr) {
+IncrementalJIT::lookupSymbol(llvm::StringRef Name, void *InAddr, bool Jit) {
   // FIXME: See comments on DLSym below.
 #if !defined(LLVM_ON_WIN32)
   void* Addr = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(Name);
@@ -222,7 +205,12 @@ IncrementalJIT::searchLibraries(llvm::StringRef Name, void *InAddr) {
   void* Addr = const_cast<void*>(platform::DLSym(Name));
 #endif
 
-  if (InAddr && !Addr) {
+  if (InAddr && (!Addr || Jit)) {
+    if (Jit) {
+      std::string Key(Name);
+      Key.insert(0, MANGLE_PREFIX);
+      m_SymbolMap[Key] = llvm::orc::TargetAddress(InAddr);
+    }
     llvm::sys::DynamicLibrary::AddSymbol(Name, InAddr);
     return std::make_pair(InAddr, true);
   }
