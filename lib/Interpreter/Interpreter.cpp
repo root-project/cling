@@ -216,6 +216,8 @@ namespace cling {
       // Prevents stripping the symbol due to dead-code optimization.
       internal::symbol_requester();
     }
+
+    InitAExit();
   }
 
   ///\brief Constructor for the child Interpreter.
@@ -273,6 +275,25 @@ namespace cling {
     }
     if (m_Opts.Help) {
       m_Opts.PrintHelp();
+    }
+  }
+
+  void Interpreter::InitAExit() {
+    if (isInSyntaxOnlyMode())
+      return;
+
+    const char* Linkage = getCI()->getLangOpts().CPlusPlus ? "extern \"C\"" : "";
+    llvm::SmallString<512> Buf;
+    llvm::raw_svector_ostream Strm(Buf);
+    Strm << Linkage << " int __cxa_atexit(void (*f) (void*), void*, void*);\n"
+         << Linkage << " int atexit(void(*f)()) {"
+            "return __cxa_atexit((void(*)(void*))f, nullptr, (void*)"
+         << m_Executor.get() << "); }\n";
+    Transaction *T = nullptr;
+    declare(Strm.str(), &T);
+    if (llvm::Module* M = T ? T->getModule() : nullptr) {
+      if (const llvm::GlobalValue* GV = M->getNamedValue("atexit"))
+        m_Executor->getPointerToGlobalFromJIT(*GV);
     }
   }
 

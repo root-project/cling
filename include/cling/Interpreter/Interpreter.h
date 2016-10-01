@@ -282,6 +282,10 @@ namespace cling {
     ///
     void IncludeCRuntime();
 
+    ///\brief Init atexit runtime delegation.
+    ///
+    void InitAExit();
+
     ///\brief The target constructor to be called from both the delegating
     /// constructors. parentInterp might be nullptr.
     ///
