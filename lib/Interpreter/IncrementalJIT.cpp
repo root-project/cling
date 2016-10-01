@@ -26,9 +26,10 @@ using namespace llvm;
 
 namespace {
 // Forward cxa_atexit for global d'tors.
-static void local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
+static int local_cxa_atexit(void (*func) (void*), void* arg, void* dso) {
   cling::IncrementalExecutor* exe = (cling::IncrementalExecutor*)dso;
   exe->AddAtExitFunc(func, arg);
+  return 0;
 }
 
 ///\brief Memory manager providing the lop-level link to the
