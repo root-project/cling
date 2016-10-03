@@ -346,9 +346,11 @@ namespace cling {
       Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*);\n";
 
       // C atexit, std::atexit
+#if !defined(LLVM_ON_WIN32) || !defined(_M_CEE_PURE)
       Strm << Linkage << " int atexit(void(*f)()) { "
            "return __cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); }\n";
       Globals.push_back("atexit");
+#endif
 
       // C++ 11 at_quick_exit, std::at_quick_exit
       if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
@@ -359,16 +361,37 @@ namespace cling {
 
 #if defined(LLVM_ON_WIN32)
       // Windows specific: _onexit, _onexit_m, __dllonexit
+      if (NoRuntime) {
+        // Have to declare the function pointer types now and hope no conflicts.
+ #if !defined(_M_CEE)
+        Strm << "typedef int (__cdecl* _onexit_t)(void)\n;";
+ #else
+        Strm << "typedef int (__clrcall* _onexit_t)(void)\n";
+ #endif
+      }
+      Strm << Linkage << " _onexit_t __dllonexit(_onexit_t f, void**, void**) { "
+         "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;}\n";
+      Globals.push_back("__dllonexit");
+ #if !defined(_M_CEE_PURE)
       Strm << Linkage << " _onexit_t _onexit(_onexit_t f) { "
          "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;}\n";
       Globals.push_back("_onexit");
-      Strm << Linkage << " _onexit_t __dllonexit(_onexit_t f, PVFV**, PVFV**) { "
-         "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;}\n";
-      Globals.push_back("__dllonexit");
- #ifdef _M_CEE
-      Strm << Linkage << " _onexit_t_m _onexit_m(_onexit_t f) { "
-         "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;}\n";
+ #endif
+ #if defined(_M_CEE) || defined(_M_CEE_PURE)
+  #ifdef _M_CEE_MIXED
+      Strm << Linkage << " int __clrcall _atexit_m(_onexit_t f) { "
+         "return __cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); }\n";
+      Globals.push_back("_atexit_m");
+      Strm << Linkage << " _onexit_t_m __clrcall _onexit_m(_onexit_t f) { "
+         "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f; }\n";
       Globals.push_back("_onexit_m");
+  #endif
+      Strm << Linkage << " _onexit_t_m __clrcall _onexit_m_appdomain(_onexit_t f) { "
+         "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f; }\n";
+      Globals.push_back("_onexit_m_appdomain");
+      Strm << Linkage << " int __clrcall _atexit_m_appdomain(_onexit_t f) { "
+         "return __cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); }\n";
+      Globals.push_back("_atexit_m_appdomain");
  #endif
 #endif
 
