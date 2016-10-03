@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling | FileCheck %s
+// RUN: cat %s | %cling 2>&1 | FileCheck %s
 
 // This file should be used as regression test for the value printing subsystem
 // Reproducers of fixed bugs should be put here
@@ -56,8 +56,14 @@ nullptr // CHECK: (nullptr_t) nullptr
 true // CHECK: (bool) true
 false // CHECK: (bool) false
 
+unordered_multiset<float> {1} // ROOT-7310
+// expected-error@2 {{use of undeclared identifier 'unordered_multiset'}}
+// expected-error@2 {{expected '(' for function-style cast or type construction}}
+// expected-error@2 {{initializer list cannot be used on the right hand side of operator '>'}}
+
 #include <unordered_set>
-std::unordered_multiset<float> {1} // ROOT-7310
+std::unordered_multiset<float> {1}
+// FIXME: BROKEN_ON_LINUX-CHECK: (std::unordered_multiset<float>) { 1.00000f }
 
 // ROOT-7426
 #include <string>
@@ -67,8 +73,16 @@ a // CHECK: (std::vector<std::string> &) { "a", "b", "c" }
 a[0] // CHECK: ({{.*}} &) "a"
 
 // ROOT-7918
-enum H {  h = (unsigned long long )-1 };
-h // CHECK: (H) (H::h) : (unsigned long{{( long)?}}) 18446744073709551615
+struct Enumer {
+#ifndef _WIN32
+  // This variant fails on Windows, and seems conforming behaviour to do so
+  enum H {  h = (unsigned long long )-1 };
+#else
+  enum H : unsigned long long { h = (unsigned long long )-1 };
+#endif
+};
+Enumer::h
+// CHECK: (Enumer::H) (Enumer::H::h) : (unsigned long{{( long)?}}) 18446744073709551615
 
 // ROOT-7837
 auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lambda) &) @0x
@@ -76,6 +90,12 @@ auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lam
 #include <functional>
 using namespace std::placeholders;
 auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling::executePrintValue(): missing value string.
+// expected-error {{use of undeclared identifier 'lambda'}}
+// expected-error {{expected expression}}
+// expected-error {{type name requires a specifier or qualifier}}
+// expected-error {{expected ')'}}
+// expected-note  {{to match this '('}}
+
 // Make sure cling survives
 12 // CHECK: (int) 12
 

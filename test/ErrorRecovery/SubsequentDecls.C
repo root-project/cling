@@ -24,7 +24,10 @@ namespace test { int y = 0; }
 .compareState "testSubsequentDecls"
 // CHECK-NOT: Differences
 
-TemplatedF((int)2) // expected-diagnostics{{C++ requires a type specifier for all declarations}} expected-diagnostics{{expected ';' after top level declarator}}
+TemplatedF((int)2)
+// CHECK: IncrementalExecutor::executeFunction: symbol '{{.*}}' unresolved while linking [cling interface function]!
+// CHECK: You are probably missing the definition of int {{.*}}TemplatedF<int>(int)
+// CHECK: Maybe you need to load the corresponding shared library?
 
 template<> int TemplatedF(int i) { return i + 100; }
 int OverloadedF(int i) { return i + 100;}
@@ -37,7 +40,9 @@ TemplatedF(__my_i)
 // CHECK: (int) 110
 
 TemplatedF((double)3.14)
-// CHECK: IncrementalExecutor::executeFunction: symbol '_Z10TemplatedFIdET_S0_' unresolved while linking
+// CHECK: IncrementalExecutor::executeFunction: symbol '{{.*}}' unresolved while linking [cling interface function]!
+// CHECK: You are probably missing the definition of double {{.*}}TemplatedF<double>(double)
+// CHECK: Maybe you need to load the corresponding shared library?
 
 // ROOT-7295
 #include <vector>

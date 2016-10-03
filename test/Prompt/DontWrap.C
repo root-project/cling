@@ -217,7 +217,7 @@ constexpr int cExpr() {
   return 801;
 }
 cExpr()
-// CHECK: (int) 8
+// CHECK: (int) 801
 
 int * & cIntStarRef(int*& val) {
   return val;
@@ -226,10 +226,12 @@ int * & cIntStarRef(int*& val) {
 int * RPtr = &Ref;
 int *& RefRPtr = RPtr;
 cIntStarRef(RefRPtr)
-// CHECK: (int *) 0x{{[0-9]+}}
+// CHECK: (int *) 0x{{[0-9a-f]+}}
 
 namespace Issue_113 {}
 // Keep the blank space after the using clause.
 using namespace Issue_113; 
+
+// CHECK: Nested::~Nested(80)
 
 // expected-no-diagnostics
