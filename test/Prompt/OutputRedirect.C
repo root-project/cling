@@ -1,13 +1,23 @@
-// RUN: cat %s | %cling | FileCheck --check-prefix=CHECKOUT %s
-// RUN: cat /tmp/outfile.txt | FileCheck --check-prefix=CHECK-REDIRECTOUT %s
-// RUN: cat /tmp/errfile.txt | FileCheck --check-prefix=CHECK-REDIRECTERR %s
-// RUN: cat /tmp/bothfile.txt | FileCheck --check-prefix=CHECK-REDIRECTBOTH %s
-// RUN: cat /tmp/anotheroutfile.txt | FileCheck --check-prefix=CHECK-REDIRECTANOTHER %s
-// RUN: cat /tmp/nospace.txt | FileCheck --check-prefix=CHECK-NOSPACE %s
-// RUN: cat %s | %cling 2> /tmp/stderr.txt && cat /tmp/stderr.txt | FileCheck --check-prefix=CHECKERR %s
-// RUN: cat %s | %cling 2>&1 | FileCheck --check-prefix=CHECKERR --check-prefix=CHECKOUT %s
+// RUN: cat %s | %cling -DCLING_TMP="\"%/T\"" | FileCheck --check-prefix=CHECKOUT %s
+// RUN: cat %T/outfile.txt | FileCheck --check-prefix=CHECK-REDIRECTOUT %s
+// RUN: cat %T/errfile.txt | FileCheck --check-prefix=CHECK-REDIRECTERR %s
+// RUN: cat %T/bothfile.txt | FileCheck --check-prefix=CHECK-REDIRECTBOTH %s
+// RUN: cat %T/anotheroutfile.txt | FileCheck --check-prefix=CHECK-REDIRECTANOTHER %s
+// RUN: cat %T/nospace.txt | FileCheck --check-prefix=CHECK-NOSPACE %s
+// RUN: cat %s | %cling -DCLING_TMP="\"%/T\"" 2> %T/stderr.txt && cat %T/stderr.txt | FileCheck --check-prefix=CHECKERR %s
+// RUN: cat %s | %cling -DCLING_TMP="\"%/T\"" 2>&1 | FileCheck --check-prefix=CHECKERR --check-prefix=CHECKOUT %s
 
 #include <iostream>
+
+extern "C" int setenv(const char *name, const char *value, int overwrite);
+extern "C" int _putenv_s(const char *name, const char *value);
+static void setup() {
+#ifdef _WIN32
+ #define setenv(n, v, o) _putenv_s(n,v)
+#endif
+  ::setenv("CLING_TMP", CLING_TMP, 1);
+}
+setup();
 
 .2>&1
 std::cerr << "Error into stdout.\n";
@@ -24,7 +34,7 @@ std::cout << "stdout back from stderr.\n";
 //CHECKOUT: stdout back from stderr.
 
 // Test redirect stdout
-.> /tmp/outfile.txt
+.> $CLING_TMP/outfile.txt
 int a = 101
 //CHECK-REDIRECTOUT: (int) 101
 int b = 102
@@ -42,7 +52,7 @@ int var = 9
 //CHECKOUT: (int) 9
 
 // Test append mode.
-.>> /tmp/outfile.txt
+.>> $CLING_TMP/outfile.txt
 a = 991
 //CHECK-REDIRECTOUT: (int) 991
 b = 992
@@ -51,7 +61,7 @@ c = 993
 //CHECK-REDIRECTOUT: (int) 993
 
 // Test redirect stderr
-.2> /tmp/errfile.txt
+.2> $CLING_TMP/errfile.txt
 std::cerr << "Error redirected.\n";
 //CHECK-REDIRECTERR: Error redirected.
 
@@ -73,7 +83,7 @@ std::cerr << "Error back to prompt.\n";
 
 
 // Test redirect of both streams.
-.&> /tmp/bothfile.txt
+.&> $CLING_TMP/bothfile.txt
 a=310
 //CHECK-REDIRECTBOTH: (int) 310
 b=311
@@ -91,7 +101,7 @@ std::cerr << "Both back to prompt.\n";
 //CHECKERR: Both back to prompt.
 
 // Test append mode for both streams.
-.&>> /tmp/bothfile.txt
+.&>> $CLING_TMP/bothfile.txt
 a=491
 //CHECK-REDIRECTBOTH: (int) 491
 b=492
@@ -115,20 +125,8 @@ std::cerr << "Err is still in &> file.\n";
 std::cerr << "Err back from &> file.\n";
 //CHECKERR: Err back from &> file.
 
-// Test redirect with & and toggle to out file.
-.&>> /tmp/bothfile.txt
-var = 999
-//CHECK-REDIRECTBOTH: (int) 999
-.1> /tmp/anotheroutfile.txt
-a = 710
-//CHECK-REDIRECTANOTHER: (int) 710
-b = 711
-//CHECK-REDIRECTANOTHER: (int) 711
-c = 712
-//CHECK-REDIRECTANOTHER: (int) 712
-
 // Test redirect to filename without space
-.>/tmp/nospace.txt
+.>$CLING_TMP/nospace.txt
 a = 1012
 //CHECK-NOSPACE: (int) 1012
 b = 1023
@@ -137,10 +135,23 @@ c = 1034
 //CHECK-NOSPACE: (int) 1034
 
 // Test append mode to filename without space
-.>>/tmp/nospace.txt
+.>>$CLING_TMP/nospace.txt
 a = 9915
 //CHECK-NOSPACE: (int) 9915
 b = 9926
 //CHECK-NOSPACE: (int) 9926
 c = 9937
 //CHECK-NOSPACE: (int) 9937
+
+// Test redirect with & and toggle to out file.
+.&>> $CLING_TMP/bothfile.txt
+var = 999
+//CHECK-REDIRECTBOTH: (int) 999
+.1> $CLING_TMP/anotheroutfile.txt
+a = 710
+//CHECK-REDIRECTANOTHER: (int) 710
+b = 711
+//CHECK-REDIRECTANOTHER: (int) 711
+c = 712
+//CHECK-REDIRECTANOTHER: (int) 712
+
