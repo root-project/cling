@@ -40,6 +40,7 @@ if (h->PrintArray(a, 5)) { // runtime result type bool
   printf("\n%s\n", "Array Printed Successfully!");
 }
 // CHECK: 12345
+// CHECK: Replaced in then.
 // CHECK: Array Printed Successfully!
 
 int b, c = 1;

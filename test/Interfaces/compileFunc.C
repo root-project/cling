@@ -50,7 +50,7 @@ void compileFunc() {
 
 
   const char* myBadFuncCode = "extern \"C\" int myBadFunc(int) { \n"
-    "return What; //expected-error@2 {{use of undeclared identifier 'What'}} \n"
+    "return NOFUZZY; //expected-error@2 {{use of undeclared identifier 'NOFUZZY'}} \n"
     "}";
 
   if (!gCling->compileFunction("myBadFunc", myBadFuncCode)) {

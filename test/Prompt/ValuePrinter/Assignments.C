@@ -47,7 +47,7 @@ e2
 
 
 // Arrays:
-float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0.00000f, 1.00000f, 2.00000f, 3.00000f, 4.00000f, 5.00000f }
+float farr[] = {0.,1.,2.,3.,4.,5.} // CHECK: (float [6]) { 0.{{0+}}f, 1.{{0+}}f, 2.{{0+}}f, 3.{{0+}}f, 4.{{0+}}f, 5.{{0+}}f }
 std::string sarr[3] = {"A", "B", "C"} // CHECK: (std::string [3]) { "A", "B", "C" }
 
 typedef void (*F_t)(int);
