@@ -24,6 +24,28 @@ namespace platform {
 #else
   #error "Unknown platform (environmental delimiter)"
 #endif
+} // namespace platform
+
+bool ExpandEnvVars(std::string& Str, bool Path) {
+  std::size_t DPos = Str.find("$");
+  while (DPos != std::string::npos) {
+    std::size_t SPos = Str.find("/", DPos + 1);
+    std::size_t Length = Str.length();
+
+    if (SPos != std::string::npos) // if we found a "/"
+      Length = SPos - DPos;
+
+    std::string EnvVar = Str.substr(DPos + 1, Length -1); //"HOME"
+    std::string FullPath;
+    if (const char* Tok = ::getenv(EnvVar.c_str()))
+      FullPath = Tok;
+
+    Str.replace(DPos, Length, FullPath);
+    DPos = Str.find("$", DPos + 1); //search for next env variable
+  }
+  if (!Path)
+    return true;
+  return llvm::sys::fs::exists(Str.c_str());
 }
 
 using namespace clang;

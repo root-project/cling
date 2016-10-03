@@ -15,6 +15,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Utils/Paths.h"
 
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
@@ -234,11 +235,24 @@ namespace cling {
           }
         }
       }
+      std::string EnvExpand;
       if (!lookAhead(1).is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
         consumeAnyStringToken(tok::eof);
         if (getCurTok().is(tok::raw_ident)) {
-          file = getCurTok().getIdent();
+          EnvExpand = getCurTok().getIdent();
+          // Quoted path, no expansion and strip quotes
+          if (EnvExpand.size() > 3 && EnvExpand.front() == '"' &&
+              EnvExpand.back() == '"') {
+            file = EnvExpand;
+            file = file.substr(1, file.size()-2);
+          } else if (!EnvExpand.empty()) {
+            cling::utils::ExpandEnvVars(EnvExpand);
+            file = EnvExpand;
+          }
           consumeToken();
+          // If we had a token, we need a path; empty means to undo a redirect
+          if (file.empty())
+            return false;
         }
       }
       // Empty file means std.
