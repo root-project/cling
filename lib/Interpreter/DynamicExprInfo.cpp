@@ -9,7 +9,8 @@
 
 #include "cling/Interpreter/DynamicExprInfo.h"
 
-#include <sstream>
+#include "llvm/ADT/SmallString.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace cling {
 namespace runtime {
@@ -18,10 +19,12 @@ namespace runtime {
       int i = 0;
       size_t found;
 
+      llvm::SmallString<256> Buf;
       while ((found = m_Result.find("@")) && (found != std::string::npos)) {
-        std::stringstream address;
-        address << m_Addresses[i];
-        m_Result = m_Result.insert(found + 1, address.str());
+        Buf.resize(0);
+        llvm::raw_svector_ostream Strm(Buf);
+        Strm << m_Addresses[i];
+        m_Result = m_Result.insert(found + 1, Strm.str());
         m_Result = m_Result.erase(found, 1);
         ++i;
       }

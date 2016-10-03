@@ -371,66 +371,55 @@ static std::string printFunctionValue(const Value &V, const void *ptr, clang::Qu
   return functionString;
 }
 
-static std::string printUnpackedClingValue(const Value &V) {
-  std::stringstream strm;
+static std::string printAddress(const void* Ptr, const char Prfx = 0) {
+  if (!Ptr)
+    return "nullptr";
 
+  llvm::SmallString<256> Buf;
+  llvm::raw_svector_ostream Strm(Buf);
+  if (Prfx)
+    Strm << Prfx;
+  Strm << Ptr;
+  if (!utils::isAddressValid(Ptr))
+    Strm << " <invalid memory address>";
+  return Strm.str();
+}
+
+static std::string printUnpackedClingValue(const Value &V) {
   clang::ASTContext &C = V.getASTContext();
   clang::QualType QT = V.getType();
   clang::QualType Ty = QT.getDesugaredType(C).getNonReferenceType();
 
   if (Ty->isNullPtrType()) {
     // special case nullptr_t
-    strm << "nullptr_t";
+    return "nullptr_t";
   } else if (Ty->isEnumeralType()) {
     // special case enum printing, using compiled information
-    strm << printEnumValue(V);
+    return printEnumValue(V);
   } else if (Ty->isFunctionType()) {
     // special case function printing, using compiled information
-    strm << printFunctionValue(V, &V, Ty);
+    return printFunctionValue(V, &V, Ty);
   } else if ((Ty->isPointerType() || Ty->isMemberPointerType()) && Ty->getPointeeType()->isFunctionProtoType()) {
     // special case function printing, using compiled information
-    strm << printFunctionValue(V, V.getPtr(), Ty->getPointeeType());
+    return printFunctionValue(V, V.getPtr(), Ty->getPointeeType());
   } else if (clang::CXXRecordDecl *CXXRD = Ty->getAsCXXRecordDecl()) {
-    if (CXXRD->isLambda()) {
-      strm << "@" << V.getPtr();
-    } else {
-      // default case, modular printing using cling::printValue
-      strm << invokePrintValueOverload(V);
-    }
-  } else {
-    // default case, modular printing using cling::printValue
-    strm << invokePrintValueOverload(V);
+    if (CXXRD->isLambda())
+      return printAddress(V.getPtr(), '@');
   }
-
-  return strm.str();
+  // default case, modular printing using cling::printValue
+  return invokePrintValueOverload(V);
 }
 
 namespace cling {
 
   // General fallback - prints the address
   std::string printValue(const void *ptr) {
-    if (!ptr) {
-      return "nullptr";
-    } else {
-      std::ostringstream strm;
-      strm << "@" << ptr;
-      if (!utils::isAddressValid(ptr))
-        strm << " <invalid memory address>";
-      return strm.str();
-    }
+    return printAddress(ptr, '@');
   }
 
   // void pointer
   std::string printValue(const void **ptr) {
-    if (!*ptr) {
-      return "nullptr";
-    } else {
-      std::ostringstream strm;
-      strm << *ptr;
-      if (!utils::isAddressValid(*ptr))
-        strm << " <invalid memory address>";
-      return strm.str();
-    }
+    return printAddress(*ptr);
   }
 
   // Bool
@@ -566,9 +555,7 @@ namespace cling {
   std::string printValue(const Value *value) {
     std::ostringstream strm;
 
-    if (!value->isValid()) {
-      strm << "<<<invalid>>> @" << value;
-    } else {
+    if (value->isValid()) {
       clang::ASTContext &C = value->getASTContext();
       clang::QualType QT = value->getType();
       strm << "boxes [";
@@ -577,7 +564,8 @@ namespace cling {
         strm << printUnpackedClingValue(*value);
       }
       strm << "]";
-    }
+    } else
+      strm << "<<<invalid>>> " << printAddress(value, '@');
 
     return strm.str();
   }
