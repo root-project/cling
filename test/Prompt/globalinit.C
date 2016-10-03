@@ -6,13 +6,13 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: %cling %s "globalinit(\"%s\")" | FileCheck %s
+// RUN: %cling %s -I%p | FileCheck %s
 
 #include "cling/Interpreter/Interpreter.h"
 
-void globalinit(const std::string& location) {
-  gCling->loadFile(location + ".h", false); // CHECK: A::S()
-  gCling->loadFile(location + "2.h", false); // CHECK: B::S()
+void globalinit() {
+  gCling->loadFile("globalinit.C.h", false); // CHECK: A::S()
+  gCling->loadFile("globalinit.C2.h", false); // CHECK: B::S()
 }
 // CHECK: B::~S()
 // CHECK: A::~S()
