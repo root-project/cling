@@ -6,9 +6,9 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// Test runing a file in the same directory `cling CurrentDir.C`
-// More info in CIFactory.cpp createCIImpl (line ~850)
-// RUN: cd %S && %cling -Xclang -verify CurrentDir.C 2>&1 | FileCheck %s
+// Removing the cwd on Unix works but on Windows cannot be done.
+// RUN: mkdir -p %T/Remove && cd %T/Remove && rm -rf %T/Remove && %cling %s -Xclang -verify 2>&1 | FileCheck %s
+// REQUIRES: not_system-windows
 
 extern "C" {
   int printf(const char*, ...);
@@ -16,9 +16,19 @@ extern "C" {
 }
 
 // Make sure include still works
+#include <string.h>
 #include <vector>
 
-void CurrentDir() {
+void CurrentDirRm() {
+  char thisDir[1024];
+  const char *rslt = getcwd(thisDir, sizeof(thisDir));
+  // Make sure cling reported the error
+  // CHECK: Could not get current working directory: {{.*}}
+
+  if (rslt)
+    printf("Working directory exists\n");
+  // CHECK-NOT: Working directory exists
+
   printf("Script ran\n");
   // CHECK: Script ran
 }
