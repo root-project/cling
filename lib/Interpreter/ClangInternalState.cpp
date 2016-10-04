@@ -137,19 +137,24 @@ namespace cling {
                                             m_Module, m_CodeGen, name));
     std::string differences = "";
     // Ignore the builtins
-    typedef llvm::SmallVector<const char*, 1024> Builtins;
-    Builtins builtinNames;
+    llvm::SmallVector<llvm::StringRef, 1024> builtinNames;
     const clang::Builtin::Context& BuiltinCtx = m_ASTContext.BuiltinInfo;
-    for (unsigned i = clang::Builtin::NotBuiltin+1;
+    for (auto i = clang::Builtin::NotBuiltin+1;
          i != clang::Builtin::FirstTSBuiltin; ++i) {
-      const char* Name = BuiltinCtx.getName(i);
-      if (!llvm::StringRef(Name).startswith("__builtin"))
-        builtinNames.push_back(Name);
+      llvm::StringRef Name(BuiltinCtx.getName(i));
+      if (Name.startswith("__builtin"))
+        builtinNames.emplace_back(Name);
     }
 
     for (auto&& BuiltinInfo: m_ASTContext.getTargetInfo().getTargetBuiltins()) {
-      if (!llvm::StringRef(BuiltinInfo.Name).startswith("__builtin"))
-        builtinNames.push_back(BuiltinInfo.Name);
+      llvm::StringRef Name(BuiltinInfo.Name);
+      if (!Name.startswith("__builtin"))
+        builtinNames.emplace_back(Name);
+#ifndef NDEBUG
+      else // Make sure it's already in the list
+        assert(std::find(builtinNames.begin(), builtinNames.end(),
+                         Name) == builtinNames.end() && "Not in list!");
+#endif
     }
 
     builtinNames.push_back(".*__builtin.*");
@@ -166,11 +171,10 @@ namespace cling {
       assert(m_CodeGen && "Must have CodeGen set");
       // We want to skip the intrinsics
       builtinNames.clear();
-      for (llvm::Module::const_iterator I = m_Module->begin(),
-             E = m_Module->end(); I != E; ++I)
-        if (I->isIntrinsic())
-          builtinNames.push_back(I->getName().data());
-
+      for (const auto& Func : m_Module->getFunctionList()) {
+        if (Func.isIntrinsic())
+          builtinNames.emplace_back(Func.getName());
+      }
       differentContent(m_LLVMModuleFile, m_DiffPair->m_LLVMModuleFile,
                        "llvm Module", &builtinNames);
     }
@@ -182,13 +186,13 @@ namespace cling {
   bool ClangInternalState::differentContent(const std::string& file1,
                                             const std::string& file2,
                                             const char* type,
-                const llvm::SmallVectorImpl<const char*>* ignores/*=0*/) const {    
+            const llvm::SmallVectorImpl<llvm::StringRef>* ignores/*=0*/) const {
 
     std::string diffCall = m_DiffCommand;
     if (ignores) {
-      for (size_t i = 0, e = ignores->size(); i < e; ++i) {
+      for (const llvm::StringRef& ignore : *ignores) {
         diffCall += " --ignore-matching-lines=\".*";
-        diffCall += (*ignores)[i];
+        diffCall += ignore;
         diffCall += ".*\"";
       }
     }
