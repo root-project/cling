@@ -78,7 +78,7 @@ namespace cling {
     ///
     bool differentContent(const std::string& file1, const std::string& file2,
                           const char* type = nullptr,
-                   const llvm::SmallVectorImpl<const char*>* ignores = 0) const;
+               const llvm::SmallVectorImpl<llvm::StringRef>* ignores = 0) const;
 
     static void printLookupTables(llvm::raw_ostream& Out, clang::ASTContext& C);
     static void printIncludedFiles(llvm::raw_ostream& Out,
