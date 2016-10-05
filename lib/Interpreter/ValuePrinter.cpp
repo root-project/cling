@@ -44,6 +44,13 @@ extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
   //std::string valueStr = printValueInternal(*value);
 }
 
+// Exported for RuntimePrintValue.h
+namespace cling {
+  namespace valuePrinterInternal {
+    extern const char* const kEmptyCollection = "{}";
+  }
+}
+
 namespace {
 
 static std::string enclose(const std::string& Mid, const char* Begin,

@@ -78,59 +78,18 @@ namespace cling {
   // cling::Value
   std::string printValue(const Value *value);
 
-  // Collections internal declaration
-  namespace collectionPrinterInternal {
-    // Maps declaration
-    template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, short)
-      -> decltype(
-      ++(obj->begin()), obj->end(),
-        obj->begin()->first, obj->begin()->second,
-        std::string());
-
-    // Vector, set, deque etc. declaration.
-    template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, int)
-      -> decltype(
-                  ++(obj->begin()), obj->end(),
-                  *(obj->begin()),  &(*(obj->begin())),
-                  std::string());
-
-    // As above, but without ability to take address of elements.
-    template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, long)
-      -> decltype(
-                  ++(obj->begin()), obj->end(),
-                  *(obj->begin()),
-                  std::string());
-
-    // No general fallback anymore here, void* overload used for that now
-  }
-
-  // Collections
-  template<typename CollectionType>
-  auto printValue(const CollectionType *obj)
-  -> decltype(collectionPrinterInternal::printValue_impl(obj, 0), std::string())
-  {
-    return collectionPrinterInternal::printValue_impl(obj, (short)0);  // short -> int -> long = priority order
-  }
-
-  // Arrays
-  template<typename T, size_t N>
-  std::string printValue(const T (*obj)[N]) {
-    std::string str = "{ ";
-
-    for (int i = 0; i < N; ++i) {
-      str += printValue(*obj + i);
-      if (i < N - 1) str += ", ";
-    }
-
-    return str + " }";
+  namespace valuePrinterInternal {
+    extern const char* const kEmptyCollection;
   }
 
   // Collections internal
   namespace collectionPrinterInternal {
     // Maps
+    template<typename Pair>
+    std::string printPair(const Pair& P) {
+      return printValue(&P->first) + " => " + printValue(&P->second);
+    }
+    
     template<typename CollectionType>
     auto printValue_impl(const CollectionType *obj, short)
     -> decltype(
@@ -138,20 +97,17 @@ namespace cling {
         obj->begin()->first, obj->begin()->second,
         std::string())
     {
-      std::string str = "{ ";
-
       auto iter = obj->begin();
       auto iterEnd = obj->end();
-      while (iter != iterEnd) {
-        str += printValue(&iter->first);
-        str += " => ";
-        str += printValue(&iter->second);
-        ++iter;
-        if (iter != iterEnd) {
-          str += ", ";
-        }
-      }
+      if (iter == iterEnd)
+        return valuePrinterInternal::kEmptyCollection;
 
+      std::string str("{ ");
+      str += printPair(*iter);
+      while (++iter != iterEnd) {
+        str += ", ";
+        str += printPair(*iter);
+      }
       return str + " }";
     }
 
@@ -163,18 +119,17 @@ namespace cling {
         *(obj->begin()),  &(*(obj->begin())),
         std::string())
     {
-      std::string str = "{ ";
-
       auto iter = obj->begin();
       auto iterEnd = obj->end();
-      while (iter != iterEnd) {
-        str += printValue(&(*iter));
-        ++iter;
-        if (iter != iterEnd) {
-          str += ", ";
-        }
-      }
+      if (iter == iterEnd)
+        return valuePrinterInternal::kEmptyCollection;
 
+      std::string str("{ ");
+      str += printValue(&(*iter));
+      while (++iter != iterEnd) {
+        str += ", ";
+        str += printValue(&(*iter));
+      }
       return str + " }";
     }
 
@@ -186,22 +141,45 @@ namespace cling {
         *(obj->begin()),
         std::string())
      {
-        std::string str = "{ ";
+      auto iter = obj->begin();
+      auto iterEnd = obj->end();
+      if (iter == iterEnd)
+        return valuePrinterInternal::kEmptyCollection;
 
-        auto iter = obj->begin();
-        auto iterEnd = obj->end();
-        while (iter != iterEnd) {
-           const auto value = (*iter);
-           str += printValue(&value);
-           ++iter;
-           if (iter != iterEnd) {
-              str += ", ";
-           }
-        }
-
-        return str + " }";
+      std::string str("{ ");
+      const auto value0 = (*iter);
+      str += printValue(&value0);
+      while (++iter != iterEnd) {
+        const auto valueN = (*iter);
+        str += ", ";
+        str += printValue(&valueN);
+      }
+      return str + " }";
      }
+  }
 
+  // Collections
+  template<typename CollectionType>
+  auto printValue(const CollectionType *obj)
+  -> decltype(collectionPrinterInternal::printValue_impl(obj, 0), std::string())
+  {
+    // short -> int -> long = priority order
+    return collectionPrinterInternal::printValue_impl(obj, (short)0);
+  }
+
+  // Arrays
+  template<typename T, size_t N>
+  std::string printValue(const T (*obj)[N]) {
+    if (N == 0)
+      return valuePrinterInternal::kEmptyCollection;
+
+    std::string str = "{ ";
+    str += printValue(*obj + 0);
+    for (size_t i = 1; i < N; ++i) {
+      str += ", ";
+      str += printValue(*obj + i);
+    }
+    return str + " }";
   }
 
   // Tuples
@@ -269,6 +247,8 @@ namespace cling {
   std::string printValue(std::tuple<ARGS...> *val)
   {
     using T = std::tuple<ARGS...>;
+    if (std::tuple_size<T>::value == 0)
+      return valuePrinterInternal::kEmptyCollection;
     return collectionPrinterInternal::tuplePairPrintValue<T>(val);
   }
 
