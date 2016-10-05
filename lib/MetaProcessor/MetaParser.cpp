@@ -96,6 +96,42 @@ namespace cling {
       consumeToken();
   }
 
+  std::string MetaParser::tokenAsPath(bool Validate, bool AllowRoot) {
+    std::string Path;
+    const Token& Tok = getCurTok();
+    switch (Tok.getKind()) {
+      case tok::ident:
+      case tok::raw_ident:
+        Path = Tok.getIdent();
+        // When quoted do not expand
+        if (Path.size() > 3 && Path.front() == '"' && Path.back() == '"')
+          Path = Path.substr(1, Path.size()-2);
+        else
+          cling::utils::ExpandEnvVars(Path, Validate);
+        break;
+
+      case tok::charlit:
+      case tok::stringlit:
+        // When quoted do not expand
+        Path = Tok.getIdentNoQuotes();
+        break;
+
+      case tok::slash:
+        consumeAnyStringToken(tok::eof);
+        // Tok now references new token
+        if (Tok.is(tok::eof))
+          return AllowRoot ? "/" : "";
+        Path = "/";
+        Path.append(Tok.getBufStart(), Tok.getLength());
+        cling::utils::ExpandEnvVars(Path, Validate);
+        break;
+
+      default:
+        return "";
+    }
+    return Path;
+  }
+
   bool MetaParser::isMetaCommand(MetaSema::ActionResult& actionResult,
                                  Value* resultValue) {
     return isCommandSymbol() && isCommand(actionResult, resultValue);
@@ -236,24 +272,13 @@ namespace cling {
         }
       }
       std::string EnvExpand;
-      if (!lookAhead(1).is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
-        consumeAnyStringToken(tok::eof);
-        if (getCurTok().is(tok::raw_ident)) {
-          EnvExpand = getCurTok().getIdent();
-          // Quoted path, no expansion and strip quotes
-          if (EnvExpand.size() > 3 && EnvExpand.front() == '"' &&
-              EnvExpand.back() == '"') {
-            file = EnvExpand;
-            file = file.substr(1, file.size()-2);
-          } else if (!EnvExpand.empty()) {
-            cling::utils::ExpandEnvVars(EnvExpand);
-            file = EnvExpand;
-          }
-          consumeToken();
-          // If we had a token, we need a path; empty means to undo a redirect
-          if (file.empty())
-            return false;
-        }
+      consumeAnyStringToken(tok::eof);
+      if (!getCurTok().is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
+        EnvExpand = tokenAsPath();
+        // If we had a token, we need a path; empty means to undo a redirect
+        if (EnvExpand.empty())
+          return false;
+        file = EnvExpand;
       }
       // Empty file means std.
       actionResult =
