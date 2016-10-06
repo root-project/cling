@@ -53,6 +53,12 @@ namespace cling {
 
 namespace {
 
+const static char
+  * const kNullPtrStr = "nullptr",
+  * const kNullPtrTStr = "nullptr_t",
+  * const kTrueStr = "true",
+  * const kFalseStr = "false";
+
 static std::string enclose(const std::string& Mid, const char* Begin,
                            const char* End) {
   llvm::SmallString<512> Buf;
@@ -262,7 +268,7 @@ static std::string invokePrintValueOverload(const Value &V) {
   assert(!Ty->isFunctionType() && "Bad Type.");
 
   if (!V.getPtr())
-    return "nullptr";
+    return kNullPtrStr;
 
   // Ty->isPointerType() || Ty->isReferenceType() || Ty->isArrayType()
   // Ty->isObjCObjectPointerType()
@@ -380,7 +386,7 @@ static std::string printFunctionValue(const Value &V, const void *ptr, clang::Qu
 
 static std::string printAddress(const void* Ptr, const char Prfx = 0) {
   if (!Ptr)
-    return "nullptr";
+    return kNullPtrStr;
 
   llvm::SmallString<256> Buf;
   llvm::raw_svector_ostream Strm(Buf);
@@ -399,7 +405,7 @@ static std::string printUnpackedClingValue(const Value &V) {
 
   if (Ty->isNullPtrType()) {
     // special case nullptr_t
-    return "nullptr_t";
+    return kNullPtrTStr;
   } else if (Ty->isEnumeralType()) {
     // special case enum printing, using compiled information
     return printEnumValue(V);
@@ -431,7 +437,7 @@ namespace cling {
 
   // Bool
   std::string printValue(const bool *val) {
-    return *val ? "true" : "false";
+    return *val ? kTrueStr : kFalseStr;
   }
 
   // Chars
@@ -536,7 +542,7 @@ namespace cling {
   // Char pointers
   std::string printValue(const char *const *val) {
     if (!*val) {
-      return "nullptr";
+      return kNullPtrStr;
     } else {
       std::ostringstream strm;
       strm << "\"";
