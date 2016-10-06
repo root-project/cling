@@ -44,56 +44,63 @@ extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
   //std::string valueStr = printValueInternal(*value);
 }
 
+namespace {
+
+static std::string enclose(const std::string& Mid, const char* Begin,
+                           const char* End) {
+  llvm::SmallString<512> Buf;
+  llvm::raw_svector_ostream Strm(Buf);
+  Strm << Begin << Mid << End;
+  return Strm.str();
+}
+
+static std::string enclose(const clang::QualType& Ty, clang::ASTContext& C,
+                           const char* Begin = "(", const char* End = "*)") {
+  return enclose(cling::utils::TypeName::GetFullyQualifiedName(Ty, C),
+                 Begin, End);
+}
+
 static std::string getTypeString(const Value &V) {
-  std::ostringstream strm;
   clang::ASTContext &C = V.getASTContext();
   clang::QualType Ty = V.getType().getDesugaredType(C).getNonReferenceType();
-  std::string type = cling::utils::TypeName::GetFullyQualifiedName(Ty, C);
-  std::ostringstream typeWithOptDeref;
 
-  if (llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType())) {
-    typeWithOptDeref << "(" << type << "*)";
-  } else if (Ty->isPointerType()) {
-    if (Ty->getPointeeType()->isCharType()) {
-      // Print char pointers as strings.
-      typeWithOptDeref << "(" << type << "*)";
-    } else {
-      // Fallback to void pointer for other pointers and print the address.
-      typeWithOptDeref << "(const void**)";
-    }
+  if (llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType()))
+    return enclose(Ty, C);
+
+  if (Ty->isPointerType()) {
+    // Print char pointers as strings.
+    if (Ty->getPointeeType()->isCharType())
+      return enclose(Ty, C);
+
+    // Fallback to void pointer for other pointers and print the address.
+    return "(const void**)";
   }
-  else if (Ty->isArrayType()) {
+  if (Ty->isArrayType()) {
     const clang::ArrayType *ArrTy = Ty->getAsArrayTypeUnsafe();
     clang::QualType ElementTy = ArrTy->getElementType();
     // In case of char ElementTy, printing as string
-    if (ElementTy->isCharType()) {
-      typeWithOptDeref << "(const char **)";
-    } else if (Ty->isConstantArrayType()) {
+    if (ElementTy->isCharType())
+      return "(const char **)";
+
+    if (Ty->isConstantArrayType()) {
       const clang::ConstantArrayType *CArrTy = C.getAsConstantArrayType(Ty);
       const llvm::APInt &APSize = CArrTy->getSize();
-      size_t size = (size_t) APSize.getZExtValue();
 
       // typeWithOptDeref example for int[40] array: "((int(*)[40])*(void**)0x5c8f260)"
-      typeWithOptDeref << "(" << cling::utils::TypeName::GetFullyQualifiedName(ElementTy, C) << "(*)[" << size << "])*(void**)";
-    } else {
-      typeWithOptDeref << "(void**)";
+      return enclose(ElementTy, C, "(", "(*)[") +
+                     std::to_string(APSize.getZExtValue()) + "])*(void**)";
     }
+    return "(void**)";
   }
-  else if (Ty->isObjCObjectPointerType()) {
-    typeWithOptDeref << "(const void**)";
-  }
-  else {
-    // In other cases, dereference the address of the object.
-    // If no overload or specific template matches,
-    // the general template will be used which only prints the address.
-    typeWithOptDeref << "*(" << type << "**)";
-  }
+  if (Ty->isObjCObjectPointerType())
+    return "(const void**)";
 
-  strm << typeWithOptDeref.str();
-  return strm.str();
+  // In other cases, dereference the address of the object.
+  // If no overload or specific template matches,
+  // the general template will be used which only prints the address.
+  return enclose(Ty, C, "*(", "**)");
 }
 
-namespace {
 /// RAII object to disable and then re-enable access control in the LangOptions.
 struct AccessCtrlRAII_t {
   bool savedAccessControl;
@@ -559,9 +566,7 @@ namespace cling {
       clang::ASTContext &C = value->getASTContext();
       clang::QualType QT = value->getType();
       strm << "boxes [";
-      strm << "("
-      << cling::utils::TypeName::GetFullyQualifiedName(QT, C)
-      << ") ";
+      strm << enclose(QT, C, "(", ") ");
       if (!QT->isVoidType()) {
         strm << printUnpackedClingValue(*value);
       }
