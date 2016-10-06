@@ -28,31 +28,6 @@
 
 #include <string>
 #include <sstream>
-#include <cstdio>
-
-// Fragment copied from LLVM's raw_ostream.cpp
-#if defined(LLVM_ON_WIN32)
-#ifndef STDIN_FILENO
-# define STDIN_FILENO 0
-#endif
-#ifndef STDOUT_FILENO
-# define STDOUT_FILENO 1
-#endif
-#ifndef STDERR_FILENO
-# define STDERR_FILENO 2
-#endif
-#else
-//#if defined(HAVE_UNISTD_H)
-# include <unistd.h>
-//#endif
-#endif
-
-// For address validation
-#ifdef LLVM_ON_WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
 
 using namespace cling;
 
