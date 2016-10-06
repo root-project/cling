@@ -36,7 +36,7 @@ gCling->evaluate("bool a = [](){return true;};", V);
 V // CHECK-NEXT: (cling::Value &) boxes [(bool) true]
 
 gCling->evaluate("auto a = 12.3; a;", V);
-V // CHECK: (cling::Value &) boxes [(double) 12.3000]
+V // CHECK: (cling::Value &) boxes [(double) 12.300000]
 
 long LongV = 17;
 gCling->evaluate("LongV;", V);
@@ -54,10 +54,10 @@ V // CHECK: (cling::Value &) boxes [(int *) 0x12 <invalid memory address>]
 
 // Savannah #96277
 gCling->evaluate("gCling->declare(\"double sin(double);\"); double one = sin(3.141/2);", V);
-V // CHECK: (cling::Value &) boxes [(double) 1.00000]
+V // CHECK: (cling::Value &) boxes [(double) 1.000000]
 
 gCling->process("double one = sin(3.141/2);", &V);
-V // CHECK: (cling::Value &) boxes [(double) 1.00000]
+V // CHECK: (cling::Value &) boxes [(double) 1.000000]
 one // CHECK: (double) 1
 int one; // expected-error {{redefinition of 'one' with a different type: 'int' vs 'double'}} expected-note {{previous definition is here}}
 
