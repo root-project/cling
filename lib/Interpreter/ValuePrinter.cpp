@@ -160,25 +160,25 @@ static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
 
 template<typename T>
 static std::string executePrintValue(const Value &V, const T &val) {
-  // don't use std::stringstream, since it doesn't prepend '0x'
-  // in front of hexadecimal values when streaming pointer values
-  std::string strval;
-  llvm::raw_string_ostream printValueSS(strval);
-  printValueSS << "cling::printValue(";
-  printValueSS << getTypeString(V);
-  printValueSS << (const void *) &val;
-  printValueSS << ");";
-
   Interpreter *Interp = V.getInterpreter();
   Value printValueV;
 
   {
+    // Use an llvm::raw_ostream to prepend '0x' in front of the pointer value.
+
+    llvm::SmallString<512> Buf;
+    llvm::raw_svector_ostream Strm(Buf);
+    Strm << "cling::printValue(";
+    Strm << getTypeString(V);
+    Strm << (const void*) &val;
+    Strm << ");";
+
     // We really don't care about protected types here (ROOT-7426)
     AccessCtrlRAII_t AccessCtrlRAII(*Interp);
     clang::DiagnosticsEngine& Diag = Interp->getCI()->getDiagnostics();
     bool oldSuppDiags = Diag.getSuppressAllDiagnostics();
     Diag.setSuppressAllDiagnostics(true);
-    Interp->evaluate(printValueSS.str(), printValueV);
+    Interp->evaluate(Strm.str(), printValueV);
     Diag.setSuppressAllDiagnostics(oldSuppDiags);
   }
 
