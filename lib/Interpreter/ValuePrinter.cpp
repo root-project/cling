@@ -27,6 +27,8 @@
 #include "llvm/Support/Format.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 
+#include <locale>
+#include <codecvt>
 #include <string>
 
 using namespace cling;
@@ -561,6 +563,77 @@ namespace cling {
   // std::string
   std::string printValue(const std::string *val) {
     return "\"" + *val + "\"";
+  }
+
+  template <typename T>
+  static std::string encodeUTF8(const T* const Str, size_t N, const char Prfx) {
+    std::wstring_convert<std::codecvt_utf8_utf16<T>, T> Convert;
+    if (!Prfx)
+      return Convert.to_bytes(Str, Str+N);
+
+    const char Begin[3] = { Prfx, '"', 0 };
+    return enclose(Convert.to_bytes(Str, Str+N), Begin, &Begin[1], 3);
+  }
+
+  // public cling/Interpreter/RuntimePrintValue.h
+  template <typename T>
+  std::string toUTF8(const T* const Str, size_t N, const char Prefix) {
+    if (!Str)
+      return kNullPtrStr;
+    if (N==0)
+      return printAddress(Str, '@');
+
+    // Drop the null terminator or else it will be encoded into the std::string.
+    return encodeUTF8(Str, Str[N-1] == 0 ? (N-1) : N, Prefix);
+  }
+
+  template <typename T>
+  static std::string toUTF8(
+      const std::basic_string<T, std::char_traits<T>, std::allocator<T>>* Src,
+      const char Prefix) {
+    // Forcing the export of toUTF8 above for char16_t, char32_t, and wchar_t.
+    if (!Src->data())
+      return toUTF8(Src->data(), Src->size(), Prefix);
+    return encodeUTF8(Src->data(), Src->size(), Prefix);
+  }
+
+  std::string printValue(const std::u16string* Val) {
+    return toUTF8(Val, 'u');
+  }
+
+  std::string printValue(const std::u32string* Val) {
+    return toUTF8(Val, 'U');
+  }
+
+  std::string printValue(const std::wstring* Val) {
+    return toUTF8(Val, 'L');
+  }
+
+  // Unicode chars
+  template <typename T>
+  static std::string toUnicode(const T* Src, const char Prefix, char Esc = 0) {
+    if (!Src)
+      return kNullPtrStr;
+    if (!Esc)
+      Esc = Prefix;
+
+    llvm::SmallString<128> Buf;
+    llvm::raw_svector_ostream Strm(Buf);
+    Strm << Prefix << "'\\" << Esc
+         << llvm::format_hex_no_prefix(unsigned(*Src), sizeof(T)*2) << "'";
+    return Strm.str();
+  }
+
+  std::string printValue(const char16_t *Val) {
+    return toUnicode(Val, 'u');
+  }
+
+  std::string printValue(const char32_t *Val) {
+    return toUnicode(Val, 'U');
+  }
+
+  std::string printValue(const wchar_t *Val) {
+    return toUnicode(Val, 'L', 'x');
   }
 
   // cling::Value
