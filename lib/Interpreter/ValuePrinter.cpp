@@ -59,18 +59,19 @@ const static char
   * const kTrueStr = "true",
   * const kFalseStr = "false";
 
-static std::string enclose(const std::string& Mid, const char* Begin,
-                           const char* End) {
-  llvm::SmallString<512> Buf;
-  llvm::raw_svector_ostream Strm(Buf);
-  Strm << Begin << Mid << End;
-  return Strm.str();
+static std::string enclose(std::string Mid, const char* Begin,
+                           const char* End, size_t Hint = 0) {
+  Mid.reserve(Mid.size() + Hint ? Hint : (::strlen(Begin) + ::strlen(End)));
+  Mid.insert(0, Begin);
+  Mid.append(End);
+  return Mid;
 }
 
 static std::string enclose(const clang::QualType& Ty, clang::ASTContext& C,
-                           const char* Begin = "(", const char* End = "*)") {
+                           const char* Begin = "(", const char* End = "*)",
+                           size_t Hint = 3) {
   return enclose(cling::utils::TypeName::GetFullyQualifiedName(Ty, C),
-                 Begin, End);
+                 Begin, End, Hint);
 }
 
 static std::string getTypeString(const Value &V) {
@@ -100,7 +101,7 @@ static std::string getTypeString(const Value &V) {
       const llvm::APInt &APSize = CArrTy->getSize();
 
       // typeWithOptDeref example for int[40] array: "((int(*)[40])*(void**)0x5c8f260)"
-      return enclose(ElementTy, C, "(", "(*)[") +
+      return enclose(ElementTy, C, "(", "(*)[", 5) +
                      std::to_string(APSize.getZExtValue()) + "])*(void**)";
     }
     return "(void**)";
@@ -111,7 +112,7 @@ static std::string getTypeString(const Value &V) {
   // In other cases, dereference the address of the object.
   // If no overload or specific template matches,
   // the general template will be used which only prints the address.
-  return enclose(Ty, C, "*(", "**)");
+  return enclose(Ty, C, "*(", "**)", 5);
 }
 
 /// RAII object to disable and then re-enable access control in the LangOptions.
@@ -581,7 +582,7 @@ namespace cling {
       clang::ASTContext &C = value->getASTContext();
       clang::QualType QT = value->getType();
       strm << "boxes [";
-      strm << enclose(QT, C, "(", ") ");
+      strm << enclose(QT, C, "(", ") ", 3);
       if (!QT->isVoidType()) {
         strm << printUnpackedClingValue(*value);
       }
