@@ -28,7 +28,6 @@
 #include "llvm/ExecutionEngine/GenericValue.h"
 
 #include <string>
-#include <sstream>
 
 using namespace cling;
 
@@ -201,8 +200,7 @@ static std::string executePrintValue(const Value &V, const T &val) {
   {
     // Use an llvm::raw_ostream to prepend '0x' in front of the pointer value.
 
-    llvm::SmallString<512> Buf;
-    llvm::raw_svector_ostream Strm(Buf);
+    cling::ostrstream Strm;
     Strm << "cling::printValue(";
     Strm << getTypeString(V);
     Strm << (const void*) &val;
@@ -234,7 +232,7 @@ static std::string executePrintValue(const Value &V, const T &val) {
 }
 
 static std::string printEnumValue(const Value &V) {
-  std::stringstream enumString;
+  cling::ostrstream enumString;
   clang::ASTContext &C = V.getASTContext();
   clang::QualType Ty = V.getType().getDesugaredType(C);
   const clang::EnumType *EnumTy = Ty.getNonReferenceType()->getAs<clang::EnumType>();
@@ -259,8 +257,7 @@ static std::string printEnumValue(const Value &V) {
 }
 
 static std::string printFunctionValue(const Value &V, const void *ptr, clang::QualType Ty) {
-  std::string functionString;
-  llvm::raw_string_ostream o(functionString);
+  cling::largestream o;
   o << "Function @" << ptr;
 
   // If a function is the first thing printed in a session,
@@ -337,16 +334,14 @@ static std::string printFunctionValue(const Value &V, const void *ptr, clang::Qu
       o << '\n';
     }
   }
-  functionString = o.str();
-  return functionString;
+  return o.str();
 }
 
 static std::string printAddress(const void* Ptr, const char Prfx = 0) {
   if (!Ptr)
     return kNullPtrStr;
 
-  llvm::SmallString<256> Buf;
-  llvm::raw_svector_ostream Strm(Buf);
+  cling::smallstream Strm;
   if (Prfx)
     Strm << Prfx;
   Strm << Ptr;
@@ -447,22 +442,19 @@ namespace cling {
   }
 
   // Chars
-  static void printChar(signed char val, std::ostringstream& strm) {
-    if (val > 0x1F && val < 0x7F) {
-      strm << val;
-    } else {
-      std::ios::fmtflags prevFlags = strm.flags();
-      strm << "0x" << std::hex << (int) val;
-      strm.flags(prevFlags);
-    }
+  static void printChar(signed char Val, llvm::raw_ostream& Strm) {
+    if (Val > 0x1F && Val < 0x7F)
+      Strm << Val;
+    else
+      Strm << llvm::format_hex(uint64_t(Val)&0xff, 4);
   }
 
-  static std::string printOneChar(signed char val) {
-    std::ostringstream strm;
-    strm << "'";
-    printChar(val, strm);
-    strm << "'";
-    return strm.str();
+  static std::string printOneChar(signed char Val) {
+    cling::smallstream Strm;
+    Strm << "'";
+    printChar(Val, Strm);
+    Strm << "'";
+    return Strm.str();
   }
 
   std::string printValue(const char *val) {
@@ -479,69 +471,70 @@ namespace cling {
 
   // Ints
   std::string printValue(const short *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   std::string printValue(const unsigned short *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   std::string printValue(const int *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   std::string printValue(const unsigned int *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   std::string printValue(const long *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   std::string printValue(const unsigned long *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   std::string printValue(const long long *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   std::string printValue(const unsigned long long *val) {
-    std::ostringstream strm;
+    cling::smallstream strm;
     strm << *val;
     return strm.str();
   }
 
   // Reals
   std::string printValue(const float *val) {
-    std::ostringstream strm;
-    strm << std::showpoint << *val << "f";
+    cling::smallstream strm;
+    strm << llvm::format("%.5f", *val) << 'f';
     return strm.str();
   }
 
   std::string printValue(const double *val) {
-    std::ostringstream strm;
-    strm << std::showpoint << *val;
+    cling::smallstream strm;
+    strm << llvm::format("%.6f", *val);
     return strm.str();
   }
 
   std::string printValue(const long double *val) {
-    std::ostringstream strm;
-    strm << *val << "L";
+    cling::smallstream strm;
+    strm << llvm::format("%.8Lf", *val) << 'L';
+    //strm << llvm::format("%Le", *val) << 'L';
     return strm.str();
   }
 
@@ -550,7 +543,7 @@ namespace cling {
     if (!*val) {
       return kNullPtrStr;
     } else {
-      std::ostringstream strm;
+      cling::largestream strm;
       strm << "\"";
       // 10000 limit to prevent potential printing of the whole RAM / inf loop
       for (const char *cobj = *val; *cobj != 0 && cobj - *val < 10000; ++cobj) {
@@ -572,7 +565,7 @@ namespace cling {
 
   // cling::Value
   std::string printValue(const Value *value) {
-    std::ostringstream strm;
+    cling::smallstream strm;
 
     if (value->isValid()) {
       clang::ASTContext &C = value->getASTContext();
