@@ -234,27 +234,18 @@ static std::string invokePrintValueOverload(const Value &V) {
         return executePrintValue<long double>(V, V.getLongDouble());
 
       default:
-        if (!V.getPtr())
-          return "nullptr";
-        return executePrintValue<void *>(V, V.getPtr());
+        break;
     }
-    llvm_unreachable("invokePrintValueOverload falling through!");
-  }
-  else if (Ty->isIntegralOrEnumerationType())
-    return executePrintValue<long long>(V, V.getLL());
+  } else
+    assert(!Ty->isIntegralOrEnumerationType() && "Bad Type.");
+
+  assert(!Ty->isFunctionType() && "Bad Type.");
 
   if (!V.getPtr())
     return "nullptr";
 
-  if (Ty->isFunctionType())
-    return executePrintValue<const void*>(V, &V);
-
-  if (Ty->isPointerType() || Ty->isReferenceType() || Ty->isArrayType())
-    return executePrintValue<void*>(V, V.getPtr());
-
-  if (Ty->isObjCObjectPointerType())
-    return executePrintValue<void*>(V, V.getPtr());
-
+  // Ty->isPointerType() || Ty->isReferenceType() || Ty->isArrayType()
+  // Ty->isObjCObjectPointerType()
   // struct/fallback case
   return executePrintValue<void*>(V, V.getPtr());
 }
