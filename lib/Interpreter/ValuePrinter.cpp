@@ -54,7 +54,8 @@ const static char
   * const kNullPtrStr = "nullptr",
   * const kNullPtrTStr = "nullptr_t",
   * const kTrueStr = "true",
-  * const kFalseStr = "false";
+  * const kFalseStr = "false",
+  * const kInvalidAddr = " <invalid memory address>";
 
 static std::string enclose(std::string Mid, const char* Begin,
                            const char* End, size_t Hint = 0) {
@@ -89,10 +90,6 @@ static std::string getTypeString(const Value &V) {
   if (Ty->isArrayType()) {
     const clang::ArrayType *ArrTy = Ty->getAsArrayTypeUnsafe();
     clang::QualType ElementTy = ArrTy->getElementType();
-    // In case of char ElementTy, printing as string
-    if (ElementTy->isCharType())
-      return "(const char **)";
-
     if (Ty->isConstantArrayType()) {
       const clang::ConstantArrayType *CArrTy = C.getAsConstantArrayType(Ty);
       const llvm::APInt &APSize = CArrTy->getSize();
@@ -348,7 +345,7 @@ static std::string printAddress(const void* Ptr, const char Prfx = 0) {
     Strm << Prfx;
   Strm << Ptr;
   if (!utils::isAddressValid(Ptr))
-    Strm << " <invalid memory address>";
+    Strm << kInvalidAddr;
   return Strm.str();
 }
 
@@ -444,17 +441,24 @@ namespace cling {
   }
 
   // Chars
-  static void printChar(signed char Val, llvm::raw_ostream& Strm) {
-    if (Val > 0x1F && Val < 0x7F)
-      Strm << Val;
-    else
-      Strm << llvm::format_hex(uint64_t(Val)&0xff, 4);
-  }
-
-  static std::string printOneChar(signed char Val) {
-    cling::smallstream Strm;
+  static std::string printOneChar(char Val,
+                                  const std::locale& Locale = std::locale()) {
+    llvm::SmallString<128> Buf;
+    llvm::raw_svector_ostream Strm(Buf);
     Strm << "'";
-    printChar(Val, Strm);
+    if (!std::isprint(Val, Locale)) {
+      switch (std::isspace(Val, Locale) ? Val : 0) {
+        case '\t': Strm << "\\t"; break;
+        case '\n': Strm << "\\n"; break;
+        case '\r': Strm << "\\r"; break;
+        case '\f': Strm << "\\f"; break;
+        case '\v': Strm << "\\v"; break;
+        default:
+          Strm << llvm::format_hex(uint64_t(Val)&0xff, 4);
+      }
+    }
+    else
+      Strm << Val;
     Strm << "'";
     return Strm.str();
   }
@@ -541,38 +545,75 @@ namespace cling {
   }
 
   // Char pointers
-  std::string printValue(const char *const *val) {
-    if (!*val) {
+  std::string printString(const char *const *Ptr, size_t N = 10000) {
+    // Assumption is this is a string.
+    // N is limit to prevent endless loop if Ptr is not really a string.
+
+    const char* Start = *Ptr;
+    if (!Start)
       return kNullPtrStr;
-    } else {
-      cling::largestream strm;
-      strm << "\"";
-      // 10000 limit to prevent potential printing of the whole RAM / inf loop
-      for (const char *cobj = *val; *cobj != 0 && cobj - *val < 10000; ++cobj) {
-        printChar(*cobj, strm);
+
+    const char* End = Start + N;
+    bool IsValid = utils::isAddressValid(Start);
+    if (IsValid) {
+      // If we're gonnd do this, better make sure the end is valid too
+      // FIXME: getpagesize() & GetSystemInfo().dwPageSize might be better
+      enum { PAGE_SIZE = 1024 };
+      while (!(IsValid = utils::isAddressValid(End)) && N > 1024) {
+        N -= PAGE_SIZE;
+        End = Start + N;
       }
-      strm << "\"";
-      return strm.str();
     }
+    if (!IsValid) {
+      cling::smallstream Strm;
+      Strm << static_cast<const void*>(Start) << kInvalidAddr;
+      return Strm.str();
+    }
+
+    if (*Start == 0)
+      return "\"\"";
+
+    // Copy the bytes until we get a null-terminator
+    llvm::SmallString<1024> Buf;
+    llvm::raw_svector_ostream Strm(Buf);
+    Strm << "\"";
+    while (Start < End && *Start)
+      Strm << *Start++;
+    Strm << "\"";
+
+    return Strm.str();
+  }
+
+  std::string printValue(const char *const *val) {
+    return printString(val);
   }
 
   std::string printValue(const char **val) {
-    return printValue((const char *const *) val);
+    return printString(val);
   }
 
   // std::string
   std::string printValue(const std::string *val) {
     return "\"" + *val + "\"";
   }
+  
+  static std::string quoteString(std::string Str, const char Prefix) {
+    // No wrap
+    if (!Prefix)
+      return Str;
+    // Quoted wrap
+    if (Prefix==1)
+      return enclose(std::move(Str), "\"", "\"", 2);
+
+    // Prefix quoted wrap
+    char Begin[3] = { Prefix, '"', 0 };
+    return enclose(std::move(Str), Begin, &Begin[1], 3);
+  }
 
   template <typename T>
   static std::string encodeUTF8(const T* const Str, size_t N, const char Prfx) {
     std::wstring_convert<std::codecvt_utf8_utf16<T>, T> Convert;
-    if (!Prfx)
-      return Convert.to_bytes(Str, Str+N);
-
-    const char Begin[3] = { Prfx, '"', 0 };
-    return enclose(Convert.to_bytes(Str, Str+N), Begin, &Begin[1], 3);
+    return quoteString(Convert.to_bytes(Str, Str+N), Prfx);
   }
 
   // public cling/Interpreter/RuntimePrintValue.h
@@ -585,6 +626,17 @@ namespace cling {
 
     // Drop the null terminator or else it will be encoded into the std::string.
     return encodeUTF8(Str, Str[N-1] == 0 ? (N-1) : N, Prefix);
+  }
+
+  template <>
+  std::string toUTF8<char>(const char* const Str, size_t N, const char Prefix) {
+    if (!Str)
+      return kNullPtrStr;
+    if (N==0)
+      return printAddress(Str, '@');
+
+    // Drop the null terminator or else it will be encoded into the std::string.
+    return quoteString(std::string(Str, Str[N-1] == 0 ? (N-1) : N), Prefix);
   }
 
   template <typename T>

@@ -8,10 +8,33 @@
 
 //RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
-#include <string>
+const char* Data = (const char*) 0x01
+// CHECK: (const char *) 0x{{.+}} <invalid memory address>
+
+std::string RawData("\x12""\x13");
+
+cling::printValue(&RawData)[1]
+// CHECK-NEXT: (char) '0x12'
+
+cling::printValue(&RawData)[2]
+// CHECK-NEXT: (char) '0x13'
+
+RawData = "Line1\nLine2\rLine3";
+cling::printValue(&RawData)[6]
+// CHECK-NEXT: (char) '\n'
+cling::printValue(&RawData)[12]
+// CHECK-NEXT: (char) '\r'
+cling::printValue(&RawData)[13]
+// CHECK-NEXT: (char) 'L'
+
+"Line1\nLine2\nLine3"
+// CHECK-NEXT: (const char [18]) "Line1
+// CHECK-NEXT: Line2
+// CHECK-NEXT: Line3"
+
 
 std::string(u8"UTF-8")
-// CHECK: (std::string) "UTF-8"
+// CHECK-NEXT: (std::string) "UTF-8"
 
 std::u16string(u"UTF-16 " u"\x394" u"\x3a6" u"\x3a9")
 // CHECK-NEXT: (std::u16string) u"UTF-16 ΔΦΩ"

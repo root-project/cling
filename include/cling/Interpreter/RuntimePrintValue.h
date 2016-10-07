@@ -89,7 +89,7 @@ namespace cling {
 
   // constant unicode strings, i.e. u"String"
   template <typename T>
-  std::string toUTF8(const T* const Src, size_t N, const char Prefix);
+  std::string toUTF8(const T* const Src, size_t N, const char Prefix = 0);
 
   template <size_t N>
   std::string printValue(char16_t const (*val)[N]) {
@@ -104,6 +104,11 @@ namespace cling {
   template <size_t N>
   std::string printValue(wchar_t const (*val)[N]) {
     return toUTF8(reinterpret_cast<const char32_t * const>(val), N, 'L');
+  }
+
+  template <size_t N>
+  std::string printValue(char const (*val)[N]) {
+    return toUTF8(reinterpret_cast<const char * const>(val), N, 1);
   }
 
   // cling::Value
