@@ -249,7 +249,7 @@ namespace cling {
     std::string valueStr = cling::valuePrinterInternal::printValueInternal(*this);
 
     // Print the type and the value:
-    Out << typeStr + " " + valueStr << "\n";
+    Out << typeStr << " " << valueStr << '\n';
   }
 
   void Value::dump() const {
