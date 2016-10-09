@@ -8,6 +8,20 @@
 
 //RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
+#include <stdlib.h>
+#ifdef _WIN32
+ extern "C" int SetConsoleOutputCP(unsigned int);
+#endif
+
+static void setLang(const char* Lang) {
+#ifdef _WIN32
+  ::SetConsoleOutputCP(strcmp("en_US.UTF-8")==0 ? 65001 : 20127);
+#else
+  ::setenv("LANG", Lang, 1);
+#endif
+}
+setLang("en_US.UTF-8");
+
 const char* Data = (const char*) 0x01
 // CHECK: (const char *) 0x{{.+}} <invalid memory address>
 
@@ -32,6 +46,70 @@ cling::printValue(&RawData)[13]
 // CHECK-NEXT: Line2
 // CHECK-NEXT: Line3"
 
+"\x12""\x13"
+// CHECK: (const char [3]) "\x12\x13"
+
+"ABCD" "\x10""\x15" "EFG"
+// CHECK-NEXT: (const char [10]) "ABCD\x10\x15" "EFG"
+
+"ENDWITH" "\x11""\x07"
+// CHECK-NEXT: (const char [10]) "ENDWITH\x11\x07"
+
+"\x03" "\x09" "BEGANWITH"
+// CHECK-NEXT: (const char [12]) "\x03\x09" "BEGANWITH"
+
+"1233123213\n\n\n\f234\x3"
+// CHECK-NEXT: (const char [19]) "1233123213\x0a\x0a\x0a\x0c" "234\x03"
+
+// Posing as UTF-8, but invalid
+// https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+
+"\xea"
+// CHECK-NEXT: (const char [2]) "\xea"
+
+"\xea\xfb"
+// CHECK-NEXT: (const char [3]) "\xea\xfb"
+
+"\xfe\xfe\xff\xff"
+// CHECK-NEXT: (const char [5]) "\xfe\xfe\xff\xff"
+
+"\xfc\x80\x80\x80\x80\xaf"
+// CHECK-NEXT: (const char [7]) "\xfc\x80\x80\x80\x80\xaf"
+
+"\xfc\x83\xbf\xbf\xbf\xbf"
+// CHECK-NEXT: (const char [7]) "\xfc\x83\xbf\xbf\xbf\xbf"
+
+"\xed\xa0\x80"
+// CHECK-NEXT: (const char [4]) "\xed\xa0\x80"
+"\xed\xad\xbf"
+// CHECK-NEXT: (const char [4]) "\xed\xad\xbf"
+"\xed\xae\x80"
+// CHECK-NEXT: (const char [4]) "\xed\xae\x80"
+"\xed\xaf\xbf"
+// CHECK-NEXT: (const char [4]) "\xed\xaf\xbf"
+"\xed\xb0\x80"
+// CHECK-NEXT: (const char [4]) "\xed\xb0\x80"
+"\xed\xbe\x80"
+// CHECK-NEXT: (const char [4]) "\xed\xbe\x80"
+"\xed\xbf\xbf"
+// CHECK-NEXT: (const char [4]) "\xed\xbf\xbf"
+
+"\xed\xa0\x80\xed\xb0\x80"
+// CHECK-NEXT: (const char [7]) "\xed\xa0\x80\xed\xb0\x80"
+"\xed\xa0\x80\xed\xbf\xbf"
+// CHECK-NEXT: (const char [7]) "\xed\xa0\x80\xed\xbf\xbf"
+"\xed\xad\xbf\xed\xb0\x80"
+// CHECK-NEXT: (const char [7]) "\xed\xad\xbf\xed\xb0\x80"
+"\xed\xad\xbf\xed\xbf\xbf"
+// CHECK-NEXT: (const char [7]) "\xed\xad\xbf\xed\xbf\xbf"
+"\xed\xae\x80\xed\xb0\x80"
+// CHECK-NEXT: (const char [7]) "\xed\xae\x80\xed\xb0\x80"
+"\xed\xae\x80\xed\xbf\xbf"
+// CHECK-NEXT: (const char [7]) "\xed\xae\x80\xed\xbf\xbf"
+"\xed\xaf\xbf\xed\xb0\x80"
+// CHECK-NEXT: (const char [7]) "\xed\xaf\xbf\xed\xb0\x80"
+"\xed\xaf\xbf\xed\xbf\xbf"
+// CHECK-NEXT: (const char [7]) "\xed\xaf\xbf\xed\xbf\xbf"
 
 std::string(u8"UTF-8")
 // CHECK-NEXT: (std::string) "UTF-8"
@@ -68,6 +146,45 @@ utf32[1]
 const wchar_t* wides = L"wide";
 wides[3]
 // CHECK-NEXT: (const wchar_t) L'\x{{0+}}65'
+
+// ASCII output
+
+setLang("");
+
+u"UTF-16 " u"\x394" u"\x3a6" u"\x3a9"
+// CHECK-NEXT: (const char16_t [11]) u"UTF-16 \u0394\u03a6\u03a9"
+
+U"UTF-32\x262D\x2615\x265F"
+// CHECK-NEXT: (const char32_t [10]) U"UTF-32\u262d\u2615\u265f"
+
+"\u20ac"
+// CHECk-NEXT: (const char [4]) "\xe2\x82\xac"
+
+"\u2620\u2603\u2368"
+// CHECk-NEXT: (const char [10]) "\xe2\x98\xa0\xe2\x98\x83\xe2\x8d\xa8"
+
+
+#include <stdio.h>
+#include <vector>
+
+static void ReadData(std::vector<char>& FData) {
+  FILE *File = ::fopen("Strings.dat", "r");
+  if (File) {
+    ::fseek(File, 0L, SEEK_END);
+    const size_t N = ::ftell(File);
+    FData.reserve(N+1);
+    FData.resize(N);
+    ::fseek(File, 0L, SEEK_SET);
+    ::fread(&FData[0], N, 1, File);
+    ::fclose(File);
+  }
+  FData.push_back(0);
+}
+
+std::vector<char> FDat;
+ReadData(FDat);
+(char*)FDat.data()
+// CHECk-NEXT: (char *) "deadbeeffeedfacec0ffeedebac1eecafebabe\xde\xad\xbe\xef\xfe\xed\xfa\xce\xc0\xff\xee\xde\xba\xc1\xee\xca\xfe\xba\xbe"
 
 // expected-no-diagnostics
 .q
