@@ -616,7 +616,7 @@ namespace cling {
     return quoteString(Convert.to_bytes(Str, Str+N), Prfx);
   }
 
-  // public cling/Interpreter/RuntimePrintValue.h
+  // declaration: cling/Utils/UTF8.h & cling/Interpreter/RuntimePrintValue.h
   template <typename T>
   std::string toUTF8(const T* const Str, size_t N, const char Prefix) {
     if (!Str)

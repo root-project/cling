@@ -229,8 +229,8 @@ namespace cling {
     ///   std::string printValue(const MyClass* const p, POSSIBLYDERIVED* ac,
     ///                          const Value& V);
     ///\endcode
-    void print(llvm::raw_ostream& Out) const;
-    void dump() const;
+    void print(llvm::raw_ostream& Out, bool escape = false) const;
+    void dump(bool escape = true) const;
   };
 } // end namespace cling
 
