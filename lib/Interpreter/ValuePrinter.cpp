@@ -217,65 +217,6 @@ static std::string executePrintValue(const Value &V, const T &val) {
   return *(std::string *) printValueV.getPtr();
 }
 
-static std::string invokePrintValueOverload(const Value &V) {
-  clang::ASTContext &C = V.getASTContext();
-  clang::QualType Ty = V.getType().getDesugaredType(C).getCanonicalType();
-  if (const clang::BuiltinType *BT
-      = llvm::dyn_cast<clang::BuiltinType>(Ty.getTypePtr())) {
-    switch (BT->getKind()) {
-      case clang::BuiltinType::Bool:
-        return executePrintValue<bool>(V, V.getLL());
-
-      case clang::BuiltinType::Char_S:
-        return executePrintValue<signed char>(V, V.getLL());
-      case clang::BuiltinType::SChar:
-        return executePrintValue<signed char>(V, V.getLL());
-      case clang::BuiltinType::Short:
-        return executePrintValue<short>(V, V.getLL());
-      case clang::BuiltinType::Int:
-        return executePrintValue<int>(V, V.getLL());
-      case clang::BuiltinType::Long:
-        return executePrintValue<long>(V, V.getLL());
-      case clang::BuiltinType::LongLong:
-        return executePrintValue<long long>(V, V.getLL());
-
-      case clang::BuiltinType::Char_U:
-        return executePrintValue<unsigned char>(V, V.getULL());
-      case clang::BuiltinType::UChar:
-        return executePrintValue<unsigned char>(V, V.getULL());
-      case clang::BuiltinType::UShort:
-        return executePrintValue<unsigned short>(V, V.getULL());
-      case clang::BuiltinType::UInt:
-        return executePrintValue<unsigned int>(V, V.getULL());
-      case clang::BuiltinType::ULong:
-        return executePrintValue<unsigned long>(V, V.getULL());
-      case clang::BuiltinType::ULongLong:
-        return executePrintValue<unsigned long long>(V, V.getULL());
-
-      case clang::BuiltinType::Float:
-        return executePrintValue<float>(V, V.getFloat());
-      case clang::BuiltinType::Double:
-        return executePrintValue<double>(V, V.getDouble());
-      case clang::BuiltinType::LongDouble:
-        return executePrintValue<long double>(V, V.getLongDouble());
-
-      default:
-        break;
-    }
-  } else
-    assert(!Ty->isIntegralOrEnumerationType() && "Bad Type.");
-
-  assert(!Ty->isFunctionType() && "Bad Type.");
-
-  if (!V.getPtr())
-    return kNullPtrStr;
-
-  // Ty->isPointerType() || Ty->isReferenceType() || Ty->isArrayType()
-  // Ty->isObjCObjectPointerType()
-  // struct/fallback case
-  return executePrintValue<void*>(V, V.getPtr());
-}
-
 static std::string printEnumValue(const Value &V) {
   std::stringstream enumString;
   clang::ASTContext &C = V.getASTContext();
@@ -399,9 +340,9 @@ static std::string printAddress(const void* Ptr, const char Prfx = 0) {
 }
 
 static std::string printUnpackedClingValue(const Value &V) {
-  clang::ASTContext &C = V.getASTContext();
-  clang::QualType QT = V.getType();
-  clang::QualType Ty = QT.getDesugaredType(C).getNonReferenceType();
+  const clang::ASTContext &C = V.getASTContext();
+  const clang::QualType Td = V.getType().getDesugaredType(C);
+  const clang::QualType Ty = Td.getNonReferenceType();
 
   if (Ty->isNullPtrType()) {
     // special case nullptr_t
@@ -418,9 +359,58 @@ static std::string printUnpackedClingValue(const Value &V) {
   } else if (clang::CXXRecordDecl *CXXRD = Ty->getAsCXXRecordDecl()) {
     if (CXXRD->isLambda())
       return printAddress(V.getPtr(), '@');
-  }
-  // default case, modular printing using cling::printValue
-  return invokePrintValueOverload(V);
+  } else if (const clang::BuiltinType *BT
+      = llvm::dyn_cast<clang::BuiltinType>(Td.getCanonicalType().getTypePtr())) {
+    switch (BT->getKind()) {
+      case clang::BuiltinType::Bool:
+        return executePrintValue<bool>(V, V.getLL());
+
+      case clang::BuiltinType::Char_S:
+        return executePrintValue<signed char>(V, V.getLL());
+      case clang::BuiltinType::SChar:
+        return executePrintValue<signed char>(V, V.getLL());
+      case clang::BuiltinType::Short:
+        return executePrintValue<short>(V, V.getLL());
+      case clang::BuiltinType::Int:
+        return executePrintValue<int>(V, V.getLL());
+      case clang::BuiltinType::Long:
+        return executePrintValue<long>(V, V.getLL());
+      case clang::BuiltinType::LongLong:
+        return executePrintValue<long long>(V, V.getLL());
+
+      case clang::BuiltinType::Char_U:
+        return executePrintValue<unsigned char>(V, V.getULL());
+      case clang::BuiltinType::UChar:
+        return executePrintValue<unsigned char>(V, V.getULL());
+      case clang::BuiltinType::UShort:
+        return executePrintValue<unsigned short>(V, V.getULL());
+      case clang::BuiltinType::UInt:
+        return executePrintValue<unsigned int>(V, V.getULL());
+      case clang::BuiltinType::ULong:
+        return executePrintValue<unsigned long>(V, V.getULL());
+      case clang::BuiltinType::ULongLong:
+        return executePrintValue<unsigned long long>(V, V.getULL());
+
+      case clang::BuiltinType::Float:
+        return executePrintValue<float>(V, V.getFloat());
+      case clang::BuiltinType::Double:
+        return executePrintValue<double>(V, V.getDouble());
+      case clang::BuiltinType::LongDouble:
+        return executePrintValue<long double>(V, V.getLongDouble());
+
+      default:
+        break;
+    }
+  } else
+    assert(!Ty->isIntegralOrEnumerationType() && "Bad Type.");
+
+  if (!V.getPtr())
+    return kNullPtrStr;
+
+  // Print all the other cases by calling into runtime 'cling::printValue()'.
+  // Ty->isPointerType() || Ty->isReferenceType() || Ty->isArrayType()
+  // Ty->isObjCObjectPointerType()
+  return executePrintValue<void*>(V, V.getPtr());
 }
 
 namespace cling {
