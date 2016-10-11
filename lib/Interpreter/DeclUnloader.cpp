@@ -634,8 +634,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     bool Successful = true;
     Successful = VisitRedeclarable(USD, USD->getDeclContext());
 
-    if (isOnly && dyn_cast<TypedefNameDecl>(USD->getTargetDecl())) {
-      // It's the last shadow in the chain, of a typedef
+    if (isOnly) {
       // Don't call VisitNamedDecl as it will call eraseDeclFromMap on the
       // primary context, and what it is acually erasing is the UsingDecl.
 
@@ -678,8 +677,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       }
     }
 
-    for (UsingShadowDecl *USD : UD->shadows())
+    llvm::SmallVector<UsingShadowDecl*, 12> Shadows(UD->shadow_begin(),
+                                                    UD->shadow_end());
+    for (UsingShadowDecl *USD : Shadows) {
       Success &= VisitUsingShadowDecl(USD);
+      assert(Success);
+    }
 
     Success &= VisitNamedDecl(UD);
 
