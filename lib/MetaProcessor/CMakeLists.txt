@@ -19,6 +19,9 @@ add_cling_library(clingMetaProcessor OBJECT
   MetaProcessor.cpp
   MetaSema.cpp
 
+  DEPENDS
+  ClangDriverOptions
+
   LINK_LIBS
   clangLex
   clangAST
