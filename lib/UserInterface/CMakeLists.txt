@@ -19,10 +19,11 @@ if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/textinput)
 else()
   # For cling, install textinput *.h in include/cling/UserInterface/textinput.
   install(DIRECTORY ${TEXTINPUTSRC}textinput
-    DESTINATION include/cling/UserInterface/textinput
+    DESTINATION include/cling/UserInterface
     FILES_MATCHING
     PATTERN "CMakeFiles" EXCLUDE
     PATTERN "*.cpp" EXCLUDE
+    PATTERN "doc" EXCLUDE
     PATTERN "*.h"
     )
 endif()
