@@ -156,18 +156,37 @@ static std::string printDeclType(const clang::QualType& QT,
 static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
   using namespace clang;
   const QualType QTNonRef = QT.getNonReferenceType();
-  const QualType QTCanon = QTNonRef.getCanonicalType();
 
   std::string ValueTyStr("(");
-  if ((isa<TypedefType>(QTNonRef) || QTCanon->isBuiltinType())
-      && !QTNonRef->isFunctionPointerType() && !QTNonRef->isMemberPointerType())
-    ValueTyStr += QTCanon.getAsString(Ctx.getPrintingPolicy());
-  else if (const TagType *TTy = dyn_cast<TagType>(QTNonRef))
+  if (const TagType *TTy = dyn_cast<TagType>(QTNonRef))
     ValueTyStr += printDeclType(QTNonRef, TTy->getDecl());
   else if (const RecordType *TRy = dyn_cast<RecordType>(QTNonRef))
     ValueTyStr += printDeclType(QTNonRef, TRy->getDecl());
-  else
-    ValueTyStr += cling::utils::TypeName::GetFullyQualifiedName(QTNonRef, Ctx);
+  else {
+    const QualType QTCanon = QTNonRef.getCanonicalType();
+    if (QTCanon->isBuiltinType() && !QTNonRef->isFunctionPointerType()
+        && !QTNonRef->isMemberPointerType()) {
+      ValueTyStr += QTCanon.getAsString(Ctx.getPrintingPolicy());
+    }
+    else if (const TypedefType* TDTy = dyn_cast<TypedefType>(QTNonRef)) {
+      // FIXME: TemplateSpecializationType & SubstTemplateTypeParmType checks are
+      // predominately to get STL containers to print nicer and might be better
+      // handled in GetFullyQualifiedName.
+      //
+      // std::vector<Type>::iterator is a TemplateSpecializationType
+      // std::vector<Type>::value_type is a SubstTemplateTypeParmType
+      //
+      QualType SSDesugar = TDTy->getLocallyUnqualifiedSingleStepDesugaredType();
+      if (dyn_cast<SubstTemplateTypeParmType>(SSDesugar))
+        ValueTyStr += utils::TypeName::GetFullyQualifiedName(QTCanon, Ctx);
+      else if (dyn_cast<TemplateSpecializationType>(SSDesugar))
+        ValueTyStr += utils::TypeName::GetFullyQualifiedName(QTNonRef, Ctx);
+      else
+        ValueTyStr += printDeclType(QTNonRef, TDTy->getDecl());
+    }
+    else
+      ValueTyStr += utils::TypeName::GetFullyQualifiedName(QTNonRef, Ctx);
+  }
 
   if (QT->isReferenceType())
     ValueTyStr += " &";
