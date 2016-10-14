@@ -92,7 +92,7 @@ namespace cling {
 
     // As above, but without ability to take address of elements.
     template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, int, ...)
+    auto printValue_impl(const CollectionType *obj, long)
       -> decltype(
                   ++(obj->begin()), obj->end(),
                   *(obj->begin()),
@@ -174,7 +174,7 @@ namespace cling {
 
     // As above, but without ability to take address of elements.
     template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, int, ...)
+    auto printValue_impl(const CollectionType *obj, long)
     -> decltype(
     ++(obj->begin()), obj->end(),
         *(obj->begin()),
