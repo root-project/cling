@@ -128,9 +128,6 @@ inline namespace windows {
                            std::string* WindSDK = nullptr,
                            std::string* UniversalSDK = nullptr,
                            bool Verbose = false);
-  
-  ///\brief Returns the VisualStudio version cling was compiled with
-  int GetVisualStudioVersionCompiledWith();
 
 } // namespace windows
 #endif // LLVM_ON_WIN32

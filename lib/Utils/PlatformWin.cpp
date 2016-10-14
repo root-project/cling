@@ -352,11 +352,16 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
   return returnValue;
 }
 
-int GetVisualStudioVersionCompiledWith() {
-#if (_MSC_VER >= 1900)
-  return 14;
-#endif
+static int GetVisualStudioVersionCompiledWith() {
+#if (_MSC_VER < 1900)
   return (_MSC_VER / 100) - 6;
+#elif (_MSC_VER < 1910)
+  return 14;
+#else
+  #error "Unsupported/Untested _MSC_VER"
+  // As of now this is what is should be...have fun!
+  return 15;
+#endif
 }
 
 static void fixupPath(std::string& Path, const char* Append = nullptr) {
