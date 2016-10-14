@@ -236,11 +236,13 @@ before_script:
       echo "Syncing repository."
       git remote add alt http://root.cern.ch/git/cling.git
       git pull alt master
-      git push https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} master
+      git remote remove origin
+      git remote add origin https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG}
+      git push --verbose origin master
 
       # Move the tag to newest master
       git tag --force cling-nightlies HEAD
-      git push --force https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} cling-nightlies
+      git push --verbose --force origin cling-nightlies
    fi
 
 script:
