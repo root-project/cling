@@ -228,4 +228,8 @@ int *& RefRPtr = RPtr;
 cIntStarRef(RefRPtr)
 // CHECK: (int *) 0x{{[0-9]+}}
 
+namespace Issue_113 {}
+// Keep the blank space after the using clause.
+using namespace Issue_113; 
+
 // expected-no-diagnostics
