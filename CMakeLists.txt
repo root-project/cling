@@ -335,7 +335,7 @@ if(DEFINED ROOT_BINARY_DIR)
     ${CMAKE_CURRENT_BINARY_DIR}/../llvm/src/tools/clang/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include
     )
-elseif(DEFINED ROOT_CLASSIC)
+elseif(ROOT_CLASSIC)
   # Building as part of ROOT (classic)
   include_directories(BEFORE
     ${CMAKE_CURRENT_BINARY_DIR}/../llvm/obj/tools/clang/include
