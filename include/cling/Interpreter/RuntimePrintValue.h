@@ -16,6 +16,7 @@
 
 #include <string>
 #include <tuple>
+#include <type_traits>
 
 namespace cling {
 
@@ -24,7 +25,7 @@ namespace cling {
   // General fallback - prints the address
   std::string printValue(const void *ptr);
 
-  // Fallback for e.g. vactor<bool>'s bit iterator:
+  // Fallback for e.g. vector<bool>'s bit iterator:
   template <class T,
     class = typename std::enable_if<!std::is_pointer<T>::value>::type>
   std::string printValue(const T& val) { return "{not representable}"; }
