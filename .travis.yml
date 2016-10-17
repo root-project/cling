@@ -35,6 +35,7 @@ branches:
     - /^__internal.*$/
   only:
     - master
+    - cling-nightlies
 
 matrix:
   # Abort all builds on a single failing matrix entry.
