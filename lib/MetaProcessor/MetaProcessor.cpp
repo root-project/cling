@@ -310,7 +310,7 @@ namespace cling {
         FILE * f;
         if (!(f = fopen(file.data(), "w"))) {
           llvm::errs() << "cling::MetaProcessor::setFileStream:"
-                       " The file path " << file.data() << "is not valid.";
+                       " The file path " << file.data() << "is not valid.\n";
         } else {
           fclose(f);
         }
@@ -340,7 +340,7 @@ namespace cling {
     if (backupFD < 0) {
       llvm::errs() << "MetaProcessor::copyFileDescriptor: Duplicating the file"
                    " descriptor " << fd << "resulted in an error."
-                   " Will not be able to unredirect.";
+                   " Will not be able to unredirect.\n";
     }
     return backupFD;
   }
