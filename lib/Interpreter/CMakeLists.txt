@@ -128,8 +128,9 @@ if (UNIX)
 
   if(NOT CLING_CXX_PATH)
     # Remove absolute path from CMAKE_CXX_COMPILER
-    get_filename_component(_name ${CMAKE_CXX_COMPILER} NAME)
-    get_filename_component(_path ${CMAKE_CXX_COMPILER} PATH)
+    get_filename_component(_real_cxx_compiler ${CMAKE_CXX_COMPILER} REALPATH)
+    get_filename_component(_name ${_real_cxx_compiler} NAME)
+    get_filename_component(_path ${_real_cxx_compiler} PATH)
 
     # This should probably be more general...but how?
     if(_name STREQUAL "ccache" OR _name STREQUAL "distcc")
@@ -200,17 +201,28 @@ if (UNIX)
       get_filename_component(_path ${CMAKE_CXX_COMPILER} PATH)
     endif()
 
-    if("$ENV{PATH}" MATCHES ${_path})
-      # This adds a lot of unneccessary flags, but may be useful if we're missing something
-      #set(CLING_CXX_RLTV "${_name} ${CMAKE_CXX_FLAGS}")
-      set(CLING_CXX_RLTV ${_name})
-    elseif(NOT CLING_CXX_PATH)
+    # Test if path compiler is on PATH.
+    string(REPLACE ":" ";" _pathlist $ENV{PATH})
+    foreach (_pathcomp ${_pathlist})
+      get_filename_component(_pathcomp ${_pathcomp} REALPATH)
+      if (_path STREQUAL _pathcomp)
+        # This adds a lot of unneccessary flags, but may be useful if there's
+        # a flag that should be passed to cling.
+        set(CLING_CXX_RLTV ${_name})
+        break()
+      endif()
+    endforeach()
+
+    # FIXME: Perhaps CLING_CXX_RLTV should have a better name?
+    if(NOT CLING_CXX_RLTV AND NOT CLING_CXX_PATH)
+      # We got nothing, just use whatever CMake is using.
       set(CLING_CXX_PATH ${CMAKE_CXX_COMPILER})
     endif()
 
     # If CMAKE_CXX_FLAGS contains --gcc-toolchain= then that should be passed on
     string(FIND "${CMAKE_CXX_FLAGS}" "--gcc-toolchain=" cling_gcc_toolchain)
     if ("${cling_gcc_toolchain}" GREATER -1)
+      # TODO Refactor these two into common function
       if (CLING_CXX_PATH)
         string(FIND "${CLING_CXX_PATH}" "--gcc-toolchain=" cling_gcc_toolchain)
         if ("${cling_gcc_toolchain}" EQUAL -1)
