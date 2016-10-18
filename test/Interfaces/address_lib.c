@@ -9,3 +9,6 @@
 // RUN: true
 // Used as library source by address.C
 int gLibGlobal = 14;
+
+#pragma pack(1)
+const char gByteAlign0 = 0, gByteAlign1 = 1, gByteAlign2 = 2, gByteAlign3 = 3;
