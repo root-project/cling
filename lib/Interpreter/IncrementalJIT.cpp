@@ -212,7 +212,7 @@ IncrementalJIT::getInjectedSymbols(const std::string& Name) const {
   return JITSymbol(nullptr);
 }
 
-llvm::PointerIntPair<void*, 1>
+std::pair<void*, bool>
 IncrementalJIT::searchLibraries(llvm::StringRef Name, void *InAddr) {
   // FIXME: See comments on DLSym below.
 #if !defined(LLVM_ON_WIN32)
@@ -223,9 +223,9 @@ IncrementalJIT::searchLibraries(llvm::StringRef Name, void *InAddr) {
 
   if (InAddr && !Addr) {
     llvm::sys::DynamicLibrary::AddSymbol(Name, InAddr);
-    return llvm::PointerIntPair<void*, 1>(InAddr, true);
+    return std::make_pair(InAddr, true);
   }
-  return llvm::PointerIntPair<void*, 1>(Addr, false);
+  return std::make_pair(Addr, false);
 }
     
 llvm::orc::JITSymbol

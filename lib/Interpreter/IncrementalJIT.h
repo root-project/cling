@@ -218,7 +218,7 @@ public:
   /// \param Name - symbol to look for
   /// \param Addr - known address of the symbol that can be cached later use
   /// \returns The address of the symbol and whether it was cached
-  static llvm::PointerIntPair<void*, 1>
+  static std::pair<void*, bool>
   searchLibraries(llvm::StringRef Name, void* Addr = nullptr);
 };
 } // end cling

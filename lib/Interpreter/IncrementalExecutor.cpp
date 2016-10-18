@@ -329,13 +329,13 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 
 bool
 IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
-  return IncrementalJIT::searchLibraries(symbolName, symbolAddress).getInt();
+  return IncrementalJIT::searchLibraries(symbolName, symbolAddress).second;
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) {
   // Return a symbol's address, and whether it was jitted.
-  void* address = IncrementalJIT::searchLibraries(symbolName).getPointer();
+  void* address = IncrementalJIT::searchLibraries(symbolName).first;
 
   // It's not from the JIT if it's in a dylib.
   if (fromJIT)
