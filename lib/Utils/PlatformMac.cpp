@@ -26,8 +26,6 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <sstream>
-#include <mach/vm_map.h>
-#include <mach/mach_host.h>
 
 #include <CoreFoundation/CFBase.h> // For MAC_OS_X_VERSION_X_X macros
 
@@ -43,19 +41,6 @@
 namespace cling {
 namespace utils {
 namespace platform {
-
-bool IsMemoryValid(const void *P) {
-  char Buf;
-  vm_size_t sizeRead = sizeof(Buf);
-  if (::vm_read_overwrite(mach_task_self(), vm_address_t(P), sizeRead,
-                          vm_address_t(&Buf), &sizeRead) != KERN_SUCCESS)
-    return false;
-  if (sizeRead != sizeof(Buf))
-    return false;
-
-  return true;
-}
-
 inline namespace osx {
 
 namespace {

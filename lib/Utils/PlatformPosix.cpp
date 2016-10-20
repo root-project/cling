@@ -14,17 +14,18 @@
 #include "cling/Utils/Paths.h"
 #include "llvm/ADT/SmallString.h"
 
+#include <array>
+#include <atomic>
 #include <string>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 
+// PATH_MAX
 #ifdef __APPLE__
- #include <sys/syslimits.h> // PATH_MAX
+ #include <sys/syslimits.h>
 #else
- #include <array>
- #include <atomic>
  #include <limits.h>
 #endif
 
@@ -33,6 +34,61 @@
 namespace cling {
 namespace utils {
 namespace platform {
+
+namespace {
+  struct PointerCheck {
+  private:
+    // A simple round-robin cache: what enters first, leaves first.
+    // MRU cache wasn't worth the extra CPU cycles.
+    std::array<const void*, 8> lines;
+    std::atomic<unsigned> mostRecent = {0};
+    int FD;
+
+    // Concurrent writes to the same cache element can result in invalid cache
+    // elements, causing pointer address not being available in the cache even
+    // though they should be, i.e. false cache misses. While can cause a
+    // slow-down, the cost for keeping the cache thread-local or atomic is
+    // much higher (yes, this was measured).
+    void push(const void* P) {
+      unsigned acquiredVal = mostRecent;
+      while(!mostRecent.compare_exchange_weak(acquiredVal,
+                                              (acquiredVal+1)%lines.size())) {
+        acquiredVal = mostRecent;
+      }
+      lines[acquiredVal] = P;
+    }
+
+  public:
+    PointerCheck() : FD(::open("/dev/random", O_WRONLY)) {
+      if (FD == -1) ::perror("open('/dev/random')");
+    }
+    ~PointerCheck() {
+      if (FD != -1) ::close(FD);
+    }
+
+    bool operator () (const void* P) {
+      if (FD == -1)
+        return false;
+
+      if (std::find(lines.begin(), lines.end(), P) != lines.end())
+        return true;
+
+      // There is a POSIX way of finding whether an address
+      // can be accessed for reading.
+      if (::write(FD, P, 1/*byte*/) != 1) {
+        assert(errno == EFAULT && "unexpected write error at address");
+        return false;
+      }
+      push(P);
+      return true;
+    }
+  };
+}
+
+bool IsMemoryValid(const void *P) {
+  static PointerCheck sPointerCheck;
+  return sPointerCheck(P);
+}
 
 std::string GetCwd() {
   char Buffer[PATH_MAXC];
@@ -142,73 +198,6 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
 #endif
   return true;
 }
-
-/*
-### FIXME Use OS X IsMemoryValid on all BSD variants:
-#include <sys/param.h>
-#if !defined(BSD)
-  <SNIP>
-#else
-*/
-
-#if !defined(__APPLE__)
-
-namespace {
-  struct PointerCheck {
-  private:
-    // A simple round-robin cache: what enters first, leaves first.
-    // MRU cache wasn't worth the extra CPU cycles.
-    std::array<const void*, 8> lines;
-    std::atomic<unsigned> mostRecent = {0};
-    int FD;
-
-    // Concurrent writes to the same cache element can result in invalid cache
-    // elements, causing pointer address not being available in the cache even
-    // though they should be, i.e. false cache misses. While can cause a
-    // slow-down, the cost for keeping the cache thread-local or atomic is
-    // much higher (yes, this was measured).
-    void push(const void* P) {
-      unsigned acquiredVal = mostRecent;
-      while(!mostRecent.compare_exchange_weak(acquiredVal,
-                                              (acquiredVal+1)%lines.size())) {
-        acquiredVal = mostRecent;
-      }
-      lines[acquiredVal] = P;
-    }
-
-  public:
-    PointerCheck() : FD(::open("/dev/random", O_WRONLY)) {
-      if (FD == -1) ::perror("open('/dev/random')");
-    }
-    ~PointerCheck() {
-      if (FD != -1) ::close(FD);
-    }
-
-    bool operator () (const void* P) {
-      if (FD == -1)
-        return false;
-
-      if (std::find(lines.begin(), lines.end(), P) != lines.end())
-        return true;
-
-      // There is a POSIX way of finding whether an address
-      // can be accessed for reading.
-      if (::write(FD, P, 1/*byte*/) != 1) {
-        assert(errno == EFAULT && "unexpected write error at address");
-        return false;
-      }
-      push(P);
-      return true;
-    }
-  };
-}
-
-bool IsMemoryValid(const void *P) {
-  static PointerCheck sPointerCheck;
-  return sPointerCheck(P);
-}
-
-#endif // !__APPLE__
 
 } // namespace platform
 } // namespace utils
