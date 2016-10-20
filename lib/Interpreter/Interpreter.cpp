@@ -1110,7 +1110,8 @@ namespace cling {
   }
 
   void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
-    m_Executor->installLazyFunctionCreator(fp);
+    if (m_Executor)
+      m_Executor->installLazyFunctionCreator(fp);
   }
 
   Value Interpreter::Evaluate(const char* expr, DeclContext* DC,
