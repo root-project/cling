@@ -28,9 +28,15 @@ else()
    #this will prevent missing symbol errors because we don't know at
    #link time what function calls will be made by the user of 
    #the shared library
-   set(INTERPRETER
-      -Wl,--whole-archive clingInterpreter -Wl,--no-whole-archive
-      )
+   if (XCODE)
+      set(INTERPRETER
+         -Wl,-all_load clingInterpreter -Wl,-noall_load 
+         )
+   else()
+      set(INTERPRETER
+         -Wl,--whole-archive clingInterpreter -Wl,--no-whole-archive
+         )
+   endif()
 endif()
 
 set(LIBS
