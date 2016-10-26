@@ -28,7 +28,7 @@ else()
    #this will prevent missing symbol errors because we don't know at
    #link time what function calls will be made by the user of 
    #the shared library
-   if (XCODE)
+   if (APPLE)
       set(INTERPRETER
          -Wl,-all_load clingInterpreter -Wl,-noall_load 
          )
