@@ -1,0 +1,9 @@
+{
+  "display_name": "C++14",
+  "argv": [
+      "jupyter-cling-kernel",
+      "-f",
+      "{connection_file}",
+      "--std=c++14"
+  ]
+}
