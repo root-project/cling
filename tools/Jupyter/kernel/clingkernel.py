@@ -29,9 +29,14 @@ import struct
 import sys
 import threading
 
-from traitlets import Unicode, Float
-from ipykernel.kernelapp import IPKernelApp
+from traitlets import Unicode, Float, Dict, List, CaselessStrEnum
 from ipykernel.kernelbase import Kernel
+from ipykernel.kernelapp import kernel_aliases,kernel_flags, IPKernelApp
+from ipykernel.ipkernel import IPythonKernel
+from ipykernel.zmqshell import ZMQInteractiveShell
+from IPython.core.profiledir import ProfileDir
+from jupyter_client.session import Session
+
 
 class my_void_p(ctypes.c_void_p):
   pass
@@ -65,10 +70,14 @@ class ClingKernel(Kernel):
 
     flush_interval = Float(0.25, config=True)
 
+    std = CaselessStrEnum(default_value='c++11',
+            values = ['c++11', 'c++14'],
+            help="C++ standard to use, either c++14 or c++11").tag(config=True);
+
     def __init__(self, **kwargs):
         super(ClingKernel, self).__init__(**kwargs)
         try:
-            whichCling = shutil.which('cling')
+            whichCling = os.readlink(shutil.which('cling'))
         except AttributeError:
             from distutils.spawn import find_executable
             whichCling = find_executable('cling')
@@ -90,11 +99,16 @@ class ClingKernel(Kernel):
 
         self.libclingJupyter.cling_create.restype = my_void_p
         self.libclingJupyter.cling_eval.restype = my_void_p
-        strarr = ctypes.c_char_p*4
-        argv = strarr(b"clingJupyter",b"-I" + clingInstDir.encode('utf-8') + b"/include/",b"",b"")
+        #build -std=c++11 or -std=c++14 option
+        stdopt = ("-std=" + self.std).encode('utf-8')
+        self.log.info("Using {}".format(stdopt.decode('utf-8')))
+        #from IPython.utils import io
+        #io.rprint("DBG: Using {}".format(stdopt.decode('utf-8')))
+        strarr = ctypes.c_char_p*5
+        argv = strarr(b"clingJupyter",stdopt, b"-I" + clingInstDir.encode('utf-8') + b"/include/",b"",b"")
         llvmResourceDirCP = ctypes.c_char_p(llvmResourceDir.encode('utf8'))
         self.output_pipe, pipe_in = os.pipe()
-        self.interp = self.libclingJupyter.cling_create(4, argv, llvmResourceDirCP, pipe_in)
+        self.interp = self.libclingJupyter.cling_create(5, argv, llvmResourceDirCP, pipe_in)
 
         self.libclingJupyter.cling_complete_start.restype = my_void_p
         self.libclingJupyter.cling_complete_next.restype = my_void_p #c_char_p
@@ -279,10 +293,16 @@ class ClingKernel(Kernel):
                 'metadata' : {},
                 'status' : 'ok'}
 
+cling_flags = kernel_flags
 class ClingKernelApp(IPKernelApp):
+    name='cling-kernel'
+    cling_aliases = kernel_aliases.copy()
+    cling_aliases['std']='ClingKernel.std'
+    aliases = Dict(cling_aliases)
+    flags = Dict(cling_flags)
+    classes = List([ ClingKernel, IPythonKernel, ZMQInteractiveShell, ProfileDir, Session ])
     kernel_class = ClingKernel
     
-
 def main():
     """launch a cling kernel"""
     ClingKernelApp.launch_instance()
