@@ -206,9 +206,10 @@ if (UNIX)
 
     # Test if path compiler is on PATH.
     string(REPLACE ":" ";" _pathlist $ENV{PATH})
+    get_filename_component(_realpath ${_path} REALPATH)
     foreach (_pathcomp ${_pathlist})
       get_filename_component(_pathcomp ${_pathcomp} REALPATH)
-      if (_path STREQUAL _pathcomp)
+      if (_realpath STREQUAL _pathcomp)
         # This adds a lot of unneccessary flags, but may be useful if there's
         # a flag that should be passed to cling.
         set(CLING_CXX_RLTV ${_name})
