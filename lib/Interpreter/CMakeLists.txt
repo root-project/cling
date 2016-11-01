@@ -201,7 +201,9 @@ if (UNIX)
       # binary. Eg. /usr/local/gcc -> /usr/bin/ccache. Resolving the realpath
       # we will get to the ccache and not the intended compiler binary. This
       # could be fixed if we run 'gcc -###' which will give us the correct info.
-      get_filename_component(_path ${CMAKE_CXX_COMPILER} REALPATH)
+      get_filename_component(_realpath ${CMAKE_CXX_COMPILER} REALPATH)
+      get_filename_component(_name ${_realpath} NAME)
+      get_filename_component(_path ${_realpath} PATH)
     endif()
 
     # Test if path compiler is on PATH.
