@@ -192,12 +192,6 @@ namespace cling {
 
     void printTransactionStructure() const;
 
-    ///\brief Adds a UsedAttr to all decls in the transaction.
-    ///
-    ///\param[in] T - the transaction for which all decls will get a UsedAttr.
-    ///
-    void markWholeTransactionAsUsed(Transaction* T) const;
-
     ///\brief Runs the static initializers created by codegening a transaction.
     ///
     ///\param[in] T - the transaction for which to run the initializers.

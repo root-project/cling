@@ -637,7 +637,6 @@ namespace cling {
     assert(!isInSyntaxOnlyMode() && "No CodeGenerator?");
     m_IncrParser->emitTransaction(T);
     m_IncrParser->addTransaction(T);
-    m_IncrParser->markWholeTransactionAsUsed(T);
     T->setState(Transaction::kCollecting);
     auto PRT = m_IncrParser->endTransaction(T);
     m_IncrParser->commitTransaction(PRT);

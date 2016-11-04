@@ -417,31 +417,6 @@ namespace cling {
 
   }
 
-  void IncrementalParser::markWholeTransactionAsUsed(Transaction* T) const {
-    ASTContext& C = m_CI->getASTContext();
-    for (Transaction::const_iterator I = T->decls_begin(), E = T->decls_end();
-         I != E; ++I) {
-      // Copy DCI; it might get relocated below.
-      Transaction::DelayCallInfo DCI = *I;
-      // FIXME: implement for multiple decls in a DGR.
-      assert(DCI.m_DGR.isSingleDecl());
-      Decl* D = DCI.m_DGR.getSingleDecl();
-      if (!D->hasAttr<clang::UsedAttr>())
-        D->addAttr(::new (D->getASTContext())
-                   clang::UsedAttr(D->getSourceRange(), D->getASTContext(),
-                                   0/*AttributeSpellingListIndex*/));
-    }
-    for (Transaction::iterator I = T->deserialized_decls_begin(),
-           E = T->deserialized_decls_end(); I != E; ++I) {
-      // FIXME: implement for multiple decls in a DGR.
-      assert(I->m_DGR.isSingleDecl());
-      Decl* D = I->m_DGR.getSingleDecl();
-      if (!D->hasAttr<clang::UsedAttr>())
-        D->addAttr(::new (C) clang::UsedAttr(D->getSourceRange(), C,
-                                   0/*AttributeSpellingListIndex*/));
-    }
-  }
-
   void IncrementalParser::emitTransaction(Transaction* T) {
     for (auto DI = T->decls_begin(), DE = T->decls_end(); DI != DE; ++DI)
       m_Consumer->HandleTopLevelDecl(DI->m_DGR);
