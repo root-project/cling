@@ -752,8 +752,6 @@ namespace {
       std::unique_ptr<cling::DeclCollector>
         stateCollector(new cling::DeclCollector());
 
-      // Set up the ASTConsumers
-      CI->getASTContext().setASTMutationListener(stateCollector.get());
       // Add the callback keeping track of the macro definitions
       PP.addPPCallbacks(stateCollector->MakePPAdapter());
       CI->setASTConsumer(std::move(stateCollector));

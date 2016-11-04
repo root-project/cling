@@ -11,7 +11,6 @@
 #define CLING_DECL_COLLECTOR_H
 
 #include "clang/AST/ASTConsumer.h"
-#include "clang/AST/ASTMutationListener.h"
 #include "clang/Lex/PPCallbacks.h"
 
 #include "ASTTransformer.h"
@@ -57,8 +56,7 @@ namespace cling {
   /// cling::DeclCollector is responsible for appending all the declarations
   /// seen by clang.
   ///
-  class DeclCollector: public clang::ASTMutationListener,
-                       public clang::ASTConsumer  {
+  class DeclCollector: public clang::ASTConsumer  {
   private:
     ///\brief Contains the transaction AST transformers.
     ///
@@ -119,10 +117,6 @@ namespace cling {
     /// Macro support
     void MacroDefined(const clang::Token &MacroNameTok,
                               const clang::MacroDirective *MD);
-    /// \}
-    /// \name ASTMutationListeners overrides
-    virtual void AddedCXXImplicitMember(const clang::CXXRecordDecl *RD,
-                                        const clang::Decl *D);
     /// \}
 
     /// \{

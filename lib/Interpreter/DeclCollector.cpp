@@ -73,17 +73,7 @@ namespace cling {
   // pin the vtable here.
   DeclCollector::~DeclCollector() { }
 
-  void DeclCollector::AddedCXXImplicitMember(const CXXRecordDecl *RD,
-                                             const Decl *D) {
-    assert(D->isImplicit());
-    // We need to mark the decls coming from the modules
-    if (comesFromASTReader(RD) || comesFromASTReader(D)) {
-      Decl* implicitD = const_cast<Decl*>(D);
-      implicitD->addAttr(UsedAttr::CreateImplicit(implicitD->getASTContext()));
-    }
-  }
-
-  ASTTransformer::Result DeclCollector::TransformDecl(Decl* D) const {
+ ASTTransformer::Result DeclCollector::TransformDecl(Decl* D) const {
     // We are sure it's safe to pipe it through the transformers
     // Consume late transformers init
     for (size_t i = 0; D && i < m_TransactionTransformers.size(); ++i) {
