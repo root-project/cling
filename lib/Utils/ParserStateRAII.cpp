@@ -29,7 +29,13 @@ cling::ParserStateRAII::ParserStateRAII(Parser& p)
   OldInNonInstantiationSFINAEContext(P->getActions()
                                      .InNonInstantiationSFINAEContext)
 {
+  // Set to defaults, reset to previous values by ~ParserStateRAII().
   OldTemplateIds.swap(P->TemplateIds);
+  P->ParenCount = 0;
+  P->BracketCount = 0;
+  P->BraceCount = 0;
+  P->TemplateParameterDepth = 0;
+  P->getActions().InNonInstantiationSFINAEContext = false;
 }
 
 cling::ParserStateRAII::~ParserStateRAII() {
