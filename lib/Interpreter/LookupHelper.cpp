@@ -12,6 +12,7 @@
 #include "DeclUnloader.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/ParserStateRAII.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -25,82 +26,6 @@
 #include "clang/Sema/TemplateDeduction.h"
 
 using namespace clang;
-
-namespace cling {
-
-  ///\brief Cleanup Parser state after a failed lookup.
-  ///
-  /// After a failed lookup we need to discard the remaining unparsed input,
-  /// restore the original state of the incremental parsing flag, clear any
-  /// pending diagnostics, restore the suppress diagnostics flag, and restore
-  /// the spell checking language options.
-  ///
-  class ParserStateRAII {
-  private:
-    Parser* P;
-    Preprocessor& PP;
-    decltype(Parser::TemplateIds) OldTemplateIds;
-    bool ResetIncrementalProcessing;
-    bool OldSuppressAllDiagnostics;
-    bool OldPPSuppressAllDiagnostics;
-    bool OldSpellChecking;
-    SourceLocation OldPrevTokLocation;
-    unsigned short OldParenCount, OldBracketCount, OldBraceCount;
-    unsigned OldTemplateParameterDepth;
-    bool OldInNonInstantiationSFINAEContext;
-
-  public:
-    ParserStateRAII(Parser& p)
-      : P(&p), PP(p.getPreprocessor()),
-        ResetIncrementalProcessing(p.getPreprocessor()
-                                   .isIncrementalProcessingEnabled()),
-        OldSuppressAllDiagnostics(P->getActions().getDiagnostics()
-                                  .getSuppressAllDiagnostics()),
-        OldPPSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
-                                  .getSuppressAllDiagnostics()),
-        OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
-        OldPrevTokLocation(p.PrevTokLocation),
-        OldParenCount(p.ParenCount), OldBracketCount(p.BracketCount),
-        OldBraceCount(p.BraceCount),
-        OldTemplateParameterDepth(p.TemplateParameterDepth),
-        OldInNonInstantiationSFINAEContext(P->getActions()
-                                           .InNonInstantiationSFINAEContext)
-    {
-       OldTemplateIds.swap(P->TemplateIds);
-    }
-
-    ~ParserStateRAII()
-    {
-      //
-      // Advance the parser to the end of the file, and pop the include stack.
-      //
-      // Note: Consuming the EOF token will pop the include stack.
-      //
-      {
-         // Cleanup the TemplateIds before swapping the previous set back.
-         DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds(*P);
-      }
-      P->TemplateIds.swap(OldTemplateIds);
-      P->SkipUntil(tok::eof);
-      PP.enableIncrementalProcessing(ResetIncrementalProcessing);
-      // Doesn't reset the diagnostic mappings
-      P->getActions().getDiagnostics().Reset(/*soft=*/true);
-      P->getActions().getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
-      PP.getDiagnostics().Reset(/*soft=*/true);
-      PP.getDiagnostics().setSuppressAllDiagnostics(OldPPSuppressAllDiagnostics);
-      const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking =
-         OldSpellChecking;
-
-      P->PrevTokLocation = OldPrevTokLocation;
-      P->ParenCount = OldParenCount;
-      P->BracketCount = OldBracketCount;
-      P->BraceCount = OldBraceCount;
-      P->TemplateParameterDepth = OldTemplateParameterDepth;
-      P->getActions().InNonInstantiationSFINAEContext =
-         OldInNonInstantiationSFINAEContext;
-    }
-  };
-}
 
 namespace cling {
   ///\brief Class to help with the custom allocation of clang::Expr

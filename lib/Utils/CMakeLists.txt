@@ -11,6 +11,7 @@ set( LLVM_LINK_COMPONENTS
 
 add_cling_library(clingUtils OBJECT
   AST.cpp
+  ParserStateRAII.cpp
   Paths.cpp
   PlatformMac.cpp
   PlatformPosix.cpp
