@@ -20,12 +20,6 @@ set(LIBS
   clingUtils
 )
 
-find_library(DL_LIBRARY_PATH dl)
-if (DL_LIBRARY_PATH)
-  list(APPEND LIBS dl)
-endif()
-
-
 set( LLVM_LINK_COMPONENTS
   analysis
   core
