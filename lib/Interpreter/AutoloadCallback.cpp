@@ -74,6 +74,19 @@ namespace cling {
     const clang::FileEntry* m_PrevFE;
     std::string m_PrevFileName;
   private:
+    bool IsAutoloadEntry(Decl *D) {
+       AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
+       if (attr) {
+         llvm::StringRef annotation = attr->getAnnotation();
+         assert(!annotation.empty() && "Empty annotation!");
+         if (annotation.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
+            // autoload annotation.
+            return true;
+         }
+       }
+       return false;
+    }
+
     void InsertIntoAutoloadingState (Decl* decl, llvm::StringRef annotation) {
 
       assert(!annotation.empty() && "Empty annotation!");
@@ -229,7 +242,8 @@ namespace cling {
         return true;
 
       // Now that we will read the full enum, unload the forward decl.
-      UnloadDecl(m_Sema, D);
+      if (IsAutoloadEntry(D))
+        UnloadDecl(m_Sema, D);
       return true;
     }
   };
