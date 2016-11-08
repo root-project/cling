@@ -124,11 +124,13 @@ namespace cling {
     AutoloadingVisitor():
       m_IsStoringState(false), m_Map(0), m_PP(0), m_Sema(0), m_PrevFE(0) {}
     void RemoveDefaultArgsOf(Decl* D, Sema* S) {
-      //D = D->getMostRecentDecl();
       m_Sema = S;
+
+      D = D->getMostRecentDecl();
       TraverseDecl(D);
-      //while ((D = D->getPreviousDecl()))
-      //  TraverseDecl(D);
+      while ((D = D->getPreviousDecl())) {
+        TraverseDecl(D);
+      }
     }
 
     void TrackDefaultArgStateOf(Decl* D, AutoloadCallback::FwdDeclsMap& map,
