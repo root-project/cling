@@ -14,6 +14,7 @@ set( LIBS
   clangAST
   clangLex
   clangBasic
+  clangParse
 )
 
 find_library(DL_LIBRARY_PATH dl)
