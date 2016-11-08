@@ -620,7 +620,8 @@ namespace cling {
 
                       // Make sure it is not just forward declared, and
                       // instantiate any templates.
-                      if (!S.RequireCompleteDeclContext(SS, TD)) {
+                      DeclContext *ctxt = TD;
+                      if (!S.RequireCompleteDeclContext(SS, ctxt)) {
                         // Success, type is complete, instantiations have
                         // been done.
                         TheDecl = TD->getDefinition();
