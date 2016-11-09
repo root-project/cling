@@ -177,6 +177,11 @@ namespace cling {
     if (External)
       External->StartTranslationUnit(m_Consumer);
 
+    Parser::DeclGroupPtrTy ADecl;
+    // Start parsing the "main file" to warm up lexing (enter caching lex mode
+    // for ParseInternal()'s call EnterSourceFile() to make sense.
+    while (!m_Parser->ParseTopLevelDecl(ADecl)) {}
+
     // If I belong to the parent Interpreter, only then do
     // the #include <new>
     if (!isChildInterpreter && m_CI->getLangOpts().CPlusPlus) {

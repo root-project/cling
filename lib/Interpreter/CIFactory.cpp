@@ -731,7 +731,7 @@ namespace {
     const SrcMgr::ContentCache* MainFileCC
       = MainFileSLocE.getFile().getContentCache();
     if (!Buffer)
-      Buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/\n");
+      Buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/;\n");
     const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(std::move(Buffer));
 
     // Set up the preprocessor
