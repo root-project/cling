@@ -78,9 +78,18 @@ class ClingKernel(Kernel):
         super(ClingKernel, self).__init__(**kwargs)
         try:
             whichCling = os.readlink(shutil.which('cling'))
+        except OSError as e:
+            #If cling is not a symlink try a regular file
+            #readlink returns POSIX error EINVAL (22) if the
+            #argument is not a symlink
+            if e.args[0] == 22:
+                whichCling = shutil.which('cling')
+            else:
+                raise e
         except AttributeError:
             from distutils.spawn import find_executable
             whichCling = find_executable('cling')
+
         if whichCling:
             clingInstDir = os.path.dirname(os.path.dirname(whichCling))
             llvmResourceDir = clingInstDir
