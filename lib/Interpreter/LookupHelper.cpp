@@ -411,7 +411,7 @@ namespace cling {
 
     // Use P for shortness
     Parser& P = *m_Parser;
-    ParserStateRAII ResetParserState(P);
+    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
     prepareForParsing(P,m_Interpreter,
                       typeName, llvm::StringRef("lookup.type.by.name.file"),
                       diagOnOff);
@@ -518,7 +518,7 @@ namespace cling {
     // the caused instantiation decl.
     Interpreter::PushTransactionRAII pushedT(m_Interpreter);
 
-    ParserStateRAII ResetParserState(P);
+    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
     prepareForParsing(P,m_Interpreter,
                       className.str() + "::",
                       llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
@@ -714,7 +714,7 @@ namespace cling {
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
     ASTContext& Context = S.getASTContext();
-    ParserStateRAII ResetParserState(P);
+    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
     prepareForParsing(P,m_Interpreter,
                       Name.str(),
                       llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
@@ -1305,7 +1305,7 @@ namespace cling {
     S.EnterDeclaratorContext(P.getCurScope(), foundDC);
 
     UnqualifiedId FuncId;
-    ParserStateRAII ResetParserState(P);
+    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
     if (!ParseWithShortcuts(foundDC, Context, funcName, Interp,
                             FuncId, diagOnOff)) {
       // Failed parse, cleanup.
@@ -1496,7 +1496,7 @@ namespace cling {
       //  Parse the prototype now.
       //
 
-      ParserStateRAII ResetParserState(P);
+      ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
       prepareForParsing(P,Interp,
                         funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
 
@@ -1751,7 +1751,7 @@ namespace cling {
       //
 
       Interpreter::PushTransactionRAII TforDeser(Interp);
-      ParserStateRAII ResetParserState(P);
+      ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
       prepareForParsing(P,Interp,
                         funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
 
@@ -1832,7 +1832,7 @@ namespace cling {
     //
     // Use P for shortness
     Parser& P = *m_Parser;
-    ParserStateRAII ResetParserState(P);
+    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
     prepareForParsing(P,m_Interpreter,
                       argList, llvm::StringRef("arg.list.file"), diagOnOff);
     //

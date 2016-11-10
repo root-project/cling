@@ -38,9 +38,10 @@ namespace cling {
     unsigned short OldParenCount, OldBracketCount, OldBraceCount;
     unsigned OldTemplateParameterDepth;
     bool OldInNonInstantiationSFINAEContext;
+    bool SkipToEOF;
 
   public:
-    ParserStateRAII(clang::Parser& p);
+    ParserStateRAII(clang::Parser& p, bool skipToEOF);
     ~ParserStateRAII();
 
 };

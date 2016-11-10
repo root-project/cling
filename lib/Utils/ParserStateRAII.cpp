@@ -13,7 +13,7 @@
 
 using namespace clang;
 
-cling::ParserStateRAII::ParserStateRAII(Parser& p)
+cling::ParserStateRAII::ParserStateRAII(Parser& p, bool skipToEOF)
   : P(&p), PP(p.getPreprocessor()),
     ResetIncrementalProcessing(p.getPreprocessor()
                                .isIncrementalProcessingEnabled()),
@@ -27,7 +27,8 @@ cling::ParserStateRAII::ParserStateRAII(Parser& p)
   OldBraceCount(p.BraceCount),
   OldTemplateParameterDepth(p.TemplateParameterDepth),
   OldInNonInstantiationSFINAEContext(P->getActions()
-                                     .InNonInstantiationSFINAEContext)
+                                     .InNonInstantiationSFINAEContext),
+  SkipToEOF(skipToEOF)
 {
   // Set to defaults, reset to previous values by ~ParserStateRAII().
   OldTemplateIds.swap(P->TemplateIds);
@@ -49,7 +50,8 @@ cling::ParserStateRAII::~ParserStateRAII() {
     DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds(*P);
   }
   P->TemplateIds.swap(OldTemplateIds);
-  P->SkipUntil(tok::eof);
+  if (SkipToEOF)
+    P->SkipUntil(tok::eof);
   PP.enableIncrementalProcessing(ResetIncrementalProcessing);
   // Doesn't reset the diagnostic mappings
   P->getActions().getDiagnostics().Reset(/*soft=*/true);
