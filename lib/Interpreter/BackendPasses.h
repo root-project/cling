@@ -7,6 +7,9 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
+#ifndef CLING_BACKENDPASSES_H
+#define CLING_BACKENDPASSES_H
+
 #include <memory>
 
 namespace llvm {
@@ -48,3 +51,5 @@ namespace cling {
     void runOnModule(llvm::Module& M);
   };
 }
+
+#endif // CLING_BACKENDPASSES_H
