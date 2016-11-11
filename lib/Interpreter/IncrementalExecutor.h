@@ -10,14 +10,15 @@
 #ifndef CLING_INCREMENTAL_EXECUTOR_H
 #define CLING_INCREMENTAL_EXECUTOR_H
 
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/StringRef.h"
-
 #include "IncrementalJIT.h"
+#include "BackendPasses.h"
 
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringRef.h"
 
 #include <vector>
 #include <set>
