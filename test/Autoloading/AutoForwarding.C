@@ -26,9 +26,26 @@ A<int> ai2;
 // compilation error at this next line:
 A<float> af2;
 
+
+// We want to make sure that forward template carying default are not
+// affected and that forward declaration are properly cleaned-up (if needed).
+template <typename T = int> class DefaultInFwd;
+template <typename T> class WithDefaultAndFwd;
+
 .T Def2.h fwd_Def2.h
 #include "fwd_Def2.h"
+
+// In some implementation the AutoloadingVisitor, when called upon by the next
+// #includes, was not properly removing default value that was attached to
+// this following class template forward declaration (the default comes from
+// the forward declaration in fwd_Def2.h). See ROOT-8443.
+template <typename T> class TemplateWithUserForward;
+
 #include "Def2.h"
+
+DefaultInFwd<> dif;
+WithDefaultAndFwd<> wdaf;
+TemplateWithUserForward<> twuf;
 
 .T Enum.h fwd_enums.h
 #include "fwd_enums.h"

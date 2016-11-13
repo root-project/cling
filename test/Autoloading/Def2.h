@@ -12,6 +12,9 @@ class Foo {};
 template <typename T>
 class Foo;
 
+template <typename T> class DefaultInFwd {};
+template <typename T = int> class WithDefaultAndFwd {};
+template <typename T = int> class TemplateWithUserForward{};
 
 
 namespace M {
