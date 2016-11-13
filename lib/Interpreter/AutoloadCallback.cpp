@@ -139,11 +139,6 @@ namespace cling {
     void RemoveDefaultArgsOf(Decl* D, Sema* S) {
       m_Sema = S;
 
-      // Temporarily disable the default argument removal as it currently
-      // does too much (also remove default on declaration not from the rootmap
-      // files nor from the 'autoparsing' section of the dictionary).
-      return;
-
       D = D->getMostRecentDecl();
       TraverseDecl(D);
       while ((D = D->getPreviousDecl())) {
