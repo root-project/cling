@@ -76,7 +76,7 @@ namespace cling {
   private:
     bool IsAutoloadEntry(Decl *D) {
        AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
-       if (attr) {
+       if (attr && !attr->isInherited()) {
          llvm::StringRef annotation = attr->getAnnotation();
          assert(!annotation.empty() && "Empty annotation!");
          if (annotation.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
@@ -172,7 +172,8 @@ namespace cling {
         return true;
 
       if (AnnotateAttr* attr = D->getAttr<AnnotateAttr>())
-        InsertIntoAutoloadingState(D, attr->getAnnotation());
+        if (!attr->isInherited())
+           InsertIntoAutoloadingState(D, attr->getAnnotation());
 
       return true;
     }
