@@ -181,6 +181,11 @@ namespace cling {
     }
 
     bool VisitCXXRecordDecl(CXXRecordDecl* D) {
+      // Since we are only interested in fixing forward declaration
+      // there is no need to continue on when we see a complete definition.
+      if (D->isCompleteDefinition())
+        return false;
+
       if (!D->hasAttr<AnnotateAttr>())
         return true;
 
