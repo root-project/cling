@@ -9,6 +9,23 @@
 // RUN: cat %s | %cling -I%S -Xclang -verify
 // Test FwdPrinterTest
 
+// Test similar to ROOT-7037
+// Equivalent to parsing the dictionary preamble
+.T Def2b.h fwd_Def2b.h
+#include "fwd_Def2b.h"
+// Then doing the autoparsing
+#include "Def2b.h"
+A<int> ai2;
+// And then do both a second time with a different template instantiation.
+.T Def2c.h fwd_Def2c.h
+#include "fwd_Def2c.h"
+#include "Def2c.h"
+
+// In some implementations the AutoloadingVisitor was stripping the default
+// template parameter value from the class template definition leading to
+// compilation error at this next line:
+A<float> af2;
+
 .T Def2.h fwd_Def2.h
 #include "fwd_Def2.h"
 #include "Def2.h"
