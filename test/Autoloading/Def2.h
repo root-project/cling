@@ -16,6 +16,7 @@ template <typename T> class DefaultInFwd {};
 template <typename T = int> class WithDefaultAndFwd {};
 template <typename T = int> class TemplateWithUserForward{};
 
+#include "Def2sub.h"
 
 namespace M {
   namespace N {
@@ -23,9 +24,17 @@ namespace M {
     T function(T t) {
       return t;
     }
-    class A{};
+    class A {
+      public:
+        A(int i = 0) {};
+    };
     template<typename T>class B : public A {};
     class C :public B<int> {};
+
+    class D {
+      public:
+        D(int i = 0) {};
+    };
 
   }
   void FunctionWithDefaultArg(int x=0) {

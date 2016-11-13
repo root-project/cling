@@ -41,11 +41,22 @@ template <typename T> class WithDefaultAndFwd;
 // the forward declaration in fwd_Def2.h). See ROOT-8443.
 template <typename T> class TemplateWithUserForward;
 
+#include "Def2sub.h"
 #include "Def2.h"
 
 DefaultInFwd<> dif;
 WithDefaultAndFwd<> wdaf;
 TemplateWithUserForward<> twuf;
+
+// In some implementation the AutoloadingVisitor was not when Def2sub.h, which
+// contains the definition for CtorWithDefault, and then the implementation
+// was also looping over all element of the decl chain without skipping definition,
+// resulting in a loss of the default parameter values for the method/functions of
+// CtorWithDefault when AutoloadingVisitor was called upon because of the inclusion
+// Def2.h
+CtorWithDefault c;
+M::N::A mna;
+M::N::D mnd;
 
 .T Enum.h fwd_enums.h
 #include "fwd_enums.h"
