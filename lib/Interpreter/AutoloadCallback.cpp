@@ -68,6 +68,7 @@ namespace cling {
     /// the definition read from the include) and by removing enum declarations
     /// that would otherwise be duplicates.
     bool m_IsStoringState;
+    bool m_IsAutloadEntry;  // True during the traversal of an explicitly annotated decl.
     AutoloadCallback::FwdDeclsMap* m_Map;
     clang::Preprocessor* m_PP;
     clang::Sema* m_Sema;
@@ -135,15 +136,21 @@ namespace cling {
 
   public:
     AutoloadingVisitor():
-      m_IsStoringState(false), m_Map(0), m_PP(0), m_Sema(0), m_PrevFE(0) {}
+      m_IsStoringState(false), m_IsAutloadEntry(false), m_Map(0), m_PP(0),
+      m_Sema(0), m_PrevFE(0)
+    {}
+
     void RemoveDefaultArgsOf(Decl* D, Sema* S) {
       m_Sema = S;
 
       auto cursor = D->getMostRecentDecl();
+      m_IsAutloadEntry = IsAutoloadEntry(cursor);
       TraverseDecl(cursor);
       while (cursor != D && (cursor = cursor->getPreviousDecl())) {
+        m_IsAutloadEntry = IsAutoloadEntry(cursor);
         TraverseDecl(cursor);
       }
+      m_IsAutloadEntry = false;
     }
 
     void TrackDefaultArgStateOf(Decl* D, AutoloadCallback::FwdDeclsMap& map,
@@ -186,8 +193,13 @@ namespace cling {
       if (m_IsStoringState)
         return true;
 
-      if (D->hasDefaultArgument())
-        D->removeDefaultArgument();
+      if (m_IsAutloadEntry) {
+        if (D->hasDefaultArgument() && !D->defaultArgumentWasInherited())
+          D->removeDefaultArgument();
+      } else {
+        if (D->hasDefaultArgument() && D->defaultArgumentWasInherited())
+          D->removeDefaultArgument();
+      }
       return true;
     }
 
@@ -215,8 +227,13 @@ namespace cling {
       if (m_IsStoringState)
         return true;
 
-      if (D->hasDefaultArgument())
-        D->removeDefaultArgument();
+      if (m_IsAutloadEntry) {
+        if (D->hasDefaultArgument() && !D->defaultArgumentWasInherited())
+          D->removeDefaultArgument();
+      } else {
+        if (D->hasDefaultArgument() && D->defaultArgumentWasInherited())
+          D->removeDefaultArgument();
+      }
       return true;
     }
 
@@ -224,8 +241,13 @@ namespace cling {
       if (m_IsStoringState)
         return true;
 
-      if (D->hasDefaultArgument())
-        D->removeDefaultArgument();
+      if (m_IsAutloadEntry) {
+        if (D->hasDefaultArgument() && !D->defaultArgumentWasInherited())
+          D->removeDefaultArgument();
+      } else {
+        if (D->hasDefaultArgument() && D->defaultArgumentWasInherited())
+          D->removeDefaultArgument();
+      }
       return true;
     }
 
@@ -233,8 +255,13 @@ namespace cling {
       if (m_IsStoringState)
         return true;
 
-      if (D->hasDefaultArg())
-        D->setDefaultArg(nullptr);
+      if (m_IsAutloadEntry) {
+        if (D->hasDefaultArg() && !D->hasInheritedDefaultArg())
+          D->setDefaultArg(nullptr);
+      } else {
+        if (D->hasDefaultArg() && D->hasInheritedDefaultArg())
+          D->setDefaultArg(nullptr);
+      }
       return true;
     }
 
