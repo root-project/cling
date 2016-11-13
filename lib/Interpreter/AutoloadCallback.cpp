@@ -139,10 +139,10 @@ namespace cling {
     void RemoveDefaultArgsOf(Decl* D, Sema* S) {
       m_Sema = S;
 
-      D = D->getMostRecentDecl();
-      TraverseDecl(D);
-      while ((D = D->getPreviousDecl())) {
-        TraverseDecl(D);
+      auto cursor = D->getMostRecentDecl();
+      TraverseDecl(cursor);
+      while (cursor != D && (cursor = cursor->getPreviousDecl())) {
+        TraverseDecl(cursor);
       }
     }
 
