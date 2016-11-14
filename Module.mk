@@ -65,6 +65,13 @@ CLINGLLVMCXXFLAGS = $(filter-out -fvisibility-inlines-hidden,$(filter-out -fvisi
                     $(filter-out -W%,\
                     $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags)))))
 # -ffunction-sections breaks the debugger on some platforms ... and does not help libCling at all.
+
+# FIXME: This is temporary until I update my compiler on mac and add -fmodules-local-submodule-visibility.
+# -gmodules comes from configuring LLVM with modules. We need to filter it out too.
+ifeq ($(CXXMODULES),yes)
+CLINGLLVMCXXFLAGS := $(filter-out $(ROOT_CXXMODULES_CXXFLAGS) -gmodules,$(CLINGLLVMCXXFLAGS))
+endif
+
 CLINGCXXFLAGS += -I$(CLINGDIR)/include $(filter-out -ffunction-sections,$(CLINGLLVMCXXFLAGS)) -fno-strict-aliasing
 
 ifeq ($(CTORSINITARRAY),yes)
