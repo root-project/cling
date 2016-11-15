@@ -116,20 +116,18 @@ void BackendPasses::CreatePasses(llvm::Module& M)
 
   llvm::PassManagerBuilder PMBuilder;
   PMBuilder.OptLevel = OptLevel;
-  llvm::PassManagerBuilder* m_PMBuilder = &PMBuilder;
-  m_PMBuilder->OptLevel = OptLevel;
-  m_PMBuilder->SizeLevel = m_CGOpts.OptimizeSize;
-  m_PMBuilder->BBVectorize = m_CGOpts.VectorizeBB;
-  m_PMBuilder->SLPVectorize = m_CGOpts.VectorizeSLP;
-  m_PMBuilder->LoopVectorize = m_CGOpts.VectorizeLoop;
+  PMBuilder.SizeLevel = m_CGOpts.OptimizeSize;
+  PMBuilder.BBVectorize = m_CGOpts.VectorizeBB;
+  PMBuilder.SLPVectorize = m_CGOpts.VectorizeSLP;
+  PMBuilder.LoopVectorize = m_CGOpts.VectorizeLoop;
 
-  m_PMBuilder->DisableTailCalls = m_CGOpts.DisableTailCalls;
-  m_PMBuilder->DisableUnitAtATime = !m_CGOpts.UnitAtATime;
-  m_PMBuilder->DisableUnrollLoops = !m_CGOpts.UnrollLoops;
-  m_PMBuilder->MergeFunctions = m_CGOpts.MergeFunctions;
-  m_PMBuilder->RerollLoops = m_CGOpts.RerollLoops;
+  PMBuilder.DisableTailCalls = m_CGOpts.DisableTailCalls;
+  PMBuilder.DisableUnitAtATime = !m_CGOpts.UnitAtATime;
+  PMBuilder.DisableUnrollLoops = !m_CGOpts.UnrollLoops;
+  PMBuilder.MergeFunctions = m_CGOpts.MergeFunctions;
+  PMBuilder.RerollLoops = m_CGOpts.RerollLoops;
 
-  m_PMBuilder->LibraryInfo = new TargetLibraryInfoImpl(m_TM.getTargetTriple());
+  PMBuilder.LibraryInfo = new TargetLibraryInfoImpl(m_TM.getTargetTriple());
 
 
   switch (Inlining) {
@@ -139,7 +137,7 @@ void BackendPasses::CreatePasses(llvm::Module& M)
       break;
     }
     case CodeGenOptions::NormalInlining: {
-      m_PMBuilder->Inliner =
+      PMBuilder.Inliner =
         new InlinerKeepDeadFunc(createFunctionInliningPass(OptLevel,
                                                         m_CGOpts.OptimizeSize));
       break;
@@ -148,10 +146,10 @@ void BackendPasses::CreatePasses(llvm::Module& M)
       // Respect always_inline.
       if (OptLevel == 0)
         // Do not insert lifetime intrinsics at -O0.
-        m_PMBuilder->Inliner
+        PMBuilder.Inliner
           = new InlinerKeepDeadFunc(createAlwaysInlinerPass(false));
       else
-        m_PMBuilder->Inliner
+        PMBuilder.Inliner
           = new InlinerKeepDeadFunc(createAlwaysInlinerPass());
       break;
   }
@@ -162,27 +160,29 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   m_MPM->add(createTargetTransformInfoWrapperPass(m_TM.getTargetIRAnalysis()));
 
   // Add target-specific passes that need to run as early as possible.
-  m_PMBuilder->addExtension(
-                           PassManagerBuilder::EP_EarlyAsPossible,
-                           [&](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-                             m_TM.addEarlyAsPossiblePasses(PM);
-                           });
+  PMBuilder.addExtension(
+                         PassManagerBuilder::EP_EarlyAsPossible,
+                         [&](const PassManagerBuilder &,
+                             legacy::PassManagerBase &PM) {
+                           m_TM.addEarlyAsPossiblePasses(PM);
+                         });
 
-  m_PMBuilder->addExtension(PassManagerBuilder::EP_EarlyAsPossible,
-                         [&](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
+  PMBuilder.addExtension(PassManagerBuilder::EP_EarlyAsPossible,
+                         [&](const PassManagerBuilder &,
+                             legacy::PassManagerBase &PM) {
                               PM.add(createAddDiscriminatorsPass());
                             });
 
   //if (!CGOpts.RewriteMapFiles.empty())
   //  addSymbolRewriterPass(CGOpts, m_MPM);
 
-  m_PMBuilder->populateModulePassManager(*m_MPM);
+  PMBuilder.populateModulePassManager(*m_MPM);
 
   m_FPM.reset(new legacy::FunctionPassManager(&M));
   m_FPM->add(createTargetTransformInfoWrapperPass(m_TM.getTargetIRAnalysis()));
   if (m_CGOpts.VerifyModule)
       m_FPM->add(createVerifierPass());
-  m_PMBuilder->populateFunctionPassManager(*m_FPM);
+  PMBuilder.populateFunctionPassManager(*m_FPM);
 }
 
 void BackendPasses::runOnModule(Module& M) {
