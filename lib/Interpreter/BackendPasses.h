@@ -17,6 +17,7 @@ namespace llvm {
   class LLVMContext;
   class Module;
   class PassManagerBuilder;
+  class TargetMachine;
 
   namespace legacy {
     class FunctionPassManager;
@@ -24,7 +25,7 @@ namespace llvm {
   }
 }
 
-namespace clang{
+namespace clang {
   class CodeGenOptions;
   class LangOptions;
   class TargetOptions;
@@ -35,17 +36,26 @@ namespace cling {
   /// what's in clang's CodeGen/BackendUtil.
   class BackendPasses {
     std::unique_ptr<llvm::legacy::PassManager> m_MPM;
-    std::unique_ptr<llvm::PassManagerBuilder> m_PMBuilder;
-    bool m_CodeGenOptsVerifyModule;
+    std::unique_ptr<llvm::legacy::FunctionPassManager> m_FPM;
 
-    void CreatePasses(const clang::CodeGenOptions &CGOpts,
-                      const clang::TargetOptions &TOpts,
-                      const clang::LangOptions &LOpts);
+    llvm::TargetMachine& m_TM;
+    const clang::CodeGenOptions &m_CGOpts;
+    const clang::TargetOptions &m_TOpts;
+    const clang::LangOptions &m_LOpts;
+
+    void CreatePasses(llvm::Module& M);
 
   public:
     BackendPasses(const clang::CodeGenOptions &CGOpts,
                   const clang::TargetOptions &TOpts,
-                  const clang::LangOptions &LOpts);
+                  const clang::LangOptions &LOpts,
+                  llvm::TargetMachine& TM):
+      m_TM(TM),
+      m_CGOpts(CGOpts),
+      m_TOpts(TOpts),
+      m_LOpts(LOpts)
+    {}
+
     ~BackendPasses();
 
     void runOnModule(llvm::Module& M);

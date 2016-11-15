@@ -10,12 +10,16 @@
 #include "BackendPasses.h"
 
 #include "llvm/Analysis/InlineCost.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/InlinerPass.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/Scalar.h"
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/TargetOptions.h"
@@ -69,33 +73,39 @@ namespace {
 char InlinerKeepDeadFunc::ID = 0;
 
 
-BackendPasses::BackendPasses(const CodeGenOptions &CGOpts,
-                             const clang::TargetOptions &TOpts,
-                             const LangOptions &LOpts):
-  m_CodeGenOptsVerifyModule(CGOpts.VerifyModule)
-{
-  CreatePasses(CGOpts, TOpts, LOpts);
-}
-
-
 BackendPasses::~BackendPasses() {
-  delete m_PMBuilder->Inliner;
+  //delete m_PMBuilder->Inliner;
 }
 
-void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
-                                 const clang::TargetOptions &TOpts,
-                                 const LangOptions &LOpts)
+void BackendPasses::CreatePasses(llvm::Module& M)
 {
   // From BackEndUtil's clang::EmitAssemblyHelper::CreatePasses().
 
-  unsigned OptLevel = CGOpts.OptimizationLevel;
+  CodeGenOptions& CGOpts_ = const_cast<CodeGenOptions&>(m_CGOpts);
+  // DON'T: we will not find our symbols...
+  //CGOpts_.CXXCtorDtorAliases = 1;
 
-  // CodeGenOptions::InliningMethod Inlining = CGOpts.getInlining();
+  // Default clang -O2 on Linux 64bit also has:
+#if 0
+  CGOpts_.DisableFPElim = 0;
+  CGOpts_.DiscardValueNames = 1;
+  CGOpts_.OmitLeafFramePointer = 1;
+  CGOpts_.OptimizationLevel = 2;
+  CGOpts_.RelaxAll = 0;
+  CGOpts_.UnrollLoops = 1;
+  CGOpts_.VectorizeLoop = 1;
+  CGOpts_.VectorizeSLP = 1;
+#endif
+  CGOpts_.setInlining(CodeGenOptions::NormalInlining);
+
+  unsigned OptLevel = m_CGOpts.OptimizationLevel;
+
+  // CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
   CodeGenOptions::InliningMethod Inlining = CodeGenOptions::NormalInlining;
 
   // Handle disabling of LLVM optimization, where we want to preserve the
   // internal module before any optimization.
-  if (CGOpts.DisableLLVMOpts) {
+  if (m_CGOpts.DisableLLVMOpts) {
     OptLevel = 0;
     // Always keep at least ForceInline - NoInlining is deadly for libc++.
     // Inlining = CGOpts.NoInlining;
@@ -104,18 +114,22 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
   OptLevel = 0; // we need to keep even "unused" values - until we
   // feed incremental modules into the JIT.
 
-  m_PMBuilder.reset(new PassManagerBuilder());
+  llvm::PassManagerBuilder PMBuilder;
+  PMBuilder.OptLevel = OptLevel;
+  llvm::PassManagerBuilder* m_PMBuilder = &PMBuilder;
   m_PMBuilder->OptLevel = OptLevel;
-  m_PMBuilder->SizeLevel = CGOpts.OptimizeSize;
-  m_PMBuilder->BBVectorize = CGOpts.VectorizeBB;
-  m_PMBuilder->SLPVectorize = CGOpts.VectorizeSLP;
-  m_PMBuilder->LoopVectorize = CGOpts.VectorizeLoop;
+  m_PMBuilder->SizeLevel = m_CGOpts.OptimizeSize;
+  m_PMBuilder->BBVectorize = m_CGOpts.VectorizeBB;
+  m_PMBuilder->SLPVectorize = m_CGOpts.VectorizeSLP;
+  m_PMBuilder->LoopVectorize = m_CGOpts.VectorizeLoop;
 
-  m_PMBuilder->DisableTailCalls = CGOpts.DisableTailCalls;
-  m_PMBuilder->DisableUnitAtATime = !CGOpts.UnitAtATime;
-  m_PMBuilder->DisableUnrollLoops = !CGOpts.UnrollLoops;
-  m_PMBuilder->MergeFunctions = CGOpts.MergeFunctions;
-  m_PMBuilder->RerollLoops = CGOpts.RerollLoops;
+  m_PMBuilder->DisableTailCalls = m_CGOpts.DisableTailCalls;
+  m_PMBuilder->DisableUnitAtATime = !m_CGOpts.UnitAtATime;
+  m_PMBuilder->DisableUnrollLoops = !m_CGOpts.UnrollLoops;
+  m_PMBuilder->MergeFunctions = m_CGOpts.MergeFunctions;
+  m_PMBuilder->RerollLoops = m_CGOpts.RerollLoops;
+
+  m_PMBuilder->LibraryInfo = new TargetLibraryInfoImpl(m_TM.getTargetTriple());
 
 
   switch (Inlining) {
@@ -127,7 +141,7 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
     case CodeGenOptions::NormalInlining: {
       m_PMBuilder->Inliner =
         new InlinerKeepDeadFunc(createFunctionInliningPass(OptLevel,
-                                                          CGOpts.OptimizeSize));
+                                                        m_CGOpts.OptimizeSize));
       break;
     }
     case CodeGenOptions::OnlyAlwaysInlining:
@@ -144,28 +158,45 @@ void BackendPasses::CreatePasses(const CodeGenOptions &CGOpts,
 
   // Set up the per-module pass manager.
   m_MPM.reset(new legacy::PassManager());
-  //m_MPM->add(createTargetTransformInfoWrapperPass(getTargetIRAnalysis()));
+
+  m_MPM->add(createTargetTransformInfoWrapperPass(m_TM.getTargetIRAnalysis()));
+
+  // Add target-specific passes that need to run as early as possible.
+  m_PMBuilder->addExtension(
+                           PassManagerBuilder::EP_EarlyAsPossible,
+                           [&](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
+                             m_TM.addEarlyAsPossiblePasses(PM);
+                           });
+
+  m_PMBuilder->addExtension(PassManagerBuilder::EP_EarlyAsPossible,
+                         [&](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
+                              PM.add(createAddDiscriminatorsPass());
+                            });
+
   //if (!CGOpts.RewriteMapFiles.empty())
   //  addSymbolRewriterPass(CGOpts, m_MPM);
 
   m_PMBuilder->populateModulePassManager(*m_MPM);
+
+  m_FPM.reset(new legacy::FunctionPassManager(&M));
+  m_FPM->add(createTargetTransformInfoWrapperPass(m_TM.getTargetIRAnalysis()));
+  if (m_CGOpts.VerifyModule)
+      m_FPM->add(createVerifierPass());
+  m_PMBuilder->populateFunctionPassManager(*m_FPM);
 }
 
 void BackendPasses::runOnModule(Module& M) {
 
+  if (!m_MPM)
+    CreatePasses(M);
   // Set up the per-function pass manager.
-  legacy::FunctionPassManager FPM(&M);
-  //FPM.add(createTargetTransformInfoWrapperPass(getTargetIRAnalysis()));
-  if (m_CodeGenOptsVerifyModule)
-      FPM.add(createVerifierPass());
-  m_PMBuilder->populateFunctionPassManager(FPM);
 
   // Run the per-function passes on the module.
-  FPM.doInitialization();
+  m_FPM->doInitialization();
   for (auto&& I: M.functions())
     if (!I.isDeclaration())
-      FPM.run(I);
-  FPM.doFinalization();
+      m_FPM->run(I);
+  m_FPM->doFinalization();
 
   m_MPM->run(M);
 }
