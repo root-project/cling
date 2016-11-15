@@ -29,6 +29,7 @@
 namespace clang {
   class DiagnosticsEngine;
   class CodeGenOptions;
+  class CompilerInstance;
 }
 
 namespace llvm {
@@ -38,8 +39,8 @@ namespace llvm {
 }
 
 namespace cling {
-  class Value;
   class IncrementalJIT;
+  class Value;
 
   class IncrementalExecutor {
   public:
@@ -49,6 +50,9 @@ namespace cling {
     ///\brief Our JIT interface.
     ///
     std::unique_ptr<IncrementalJIT> m_JIT;
+
+    // optimizer etc passes
+    std::unique_ptr<BackendPasses> m_BackendPasses;
 
     ///\brier A pointer to the IncrementalExecutor of the parent Interpreter.
     ///
@@ -145,7 +149,7 @@ namespace cling {
     };
 
     IncrementalExecutor(clang::DiagnosticsEngine& diags,
-                        const clang::CodeGenOptions& CGOpt);
+                        const clang::CompilerInstance& CI);
 
     ~IncrementalExecutor();
 
@@ -214,7 +218,11 @@ namespace cling {
     ///\brief Add a llvm::Module to the JIT.
     ///
     /// @param[in] module - The module to pass to the execution engine.
-    void addModule(llvm::Module* module) { m_ModulesToJIT.push_back(module); }
+    void addModule(llvm::Module* module) {
+      if (m_BackendPasses)
+        m_BackendPasses->runOnModule(*module);
+      m_ModulesToJIT.push_back(module);
+    }
 
     ///\brief Tells the execution context that we are shutting down the system.
     ///

@@ -34,7 +34,6 @@ namespace clang {
 }
 
 namespace cling {
-  class BackendPasses;
   class CompilationOptions;
   class DeclCollector;
   class ExecutionContext;
@@ -60,9 +59,6 @@ namespace cling {
 
     // parser (incremental)
     std::unique_ptr<clang::Parser> m_Parser;
-
-    // optimizer etc passes
-    std::unique_ptr<BackendPasses> m_BackendPasses;
 
     // One buffer for each command line, owner by the source file manager
     std::deque<std::pair<llvm::MemoryBuffer*, clang::FileID>> m_MemoryBuffers;
@@ -208,12 +204,6 @@ namespace cling {
     ///\param[in] T - the transaction to be finalized
     ///
     void codeGenTransaction(Transaction* T);
-
-    ///\brief Runs IR transformers on a transaction.
-    ///
-    ///\param[in] T - the transaction to be transformed.
-    ///
-    bool transformTransactionIR(Transaction* T);
 
     ///\brief Initializes a virtual file, which will be able to produce valid
     /// source locations, with the proper offsets.

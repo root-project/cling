@@ -133,12 +133,8 @@ namespace cling {
   IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
                                 result, bool isChildInterpreter) {
     m_TransactionPool.reset(new TransactionPool);
-    if (hasCodeGenerator()) {
+    if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
-      m_BackendPasses.reset(new BackendPasses(getCI()->getCodeGenOpts(),
-                                              getCI()->getTargetOpts(),
-                                              getCI()->getLangOpts()));
-    }
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
@@ -401,7 +397,6 @@ namespace cling {
       Transaction* prevConsumerT = m_Consumer->getTransaction();
       m_Consumer->setTransaction(T);
       codeGenTransaction(T);
-      transformTransactionIR(T);
       T->setState(Transaction::kCommitted);
       if (!T->getParent()) {
         if (m_Interpreter->executeTransaction(*T)
@@ -492,16 +487,6 @@ namespace cling {
                                       *m_Interpreter->getLLVMContext(),
                                       getCI()->getCodeGenOpts());
     }
-  }
-
-  bool IncrementalParser::transformTransactionIR(Transaction* T) {
-    // Transform IR
-    bool success = true;
-    //if (!success)
-    //  m_Interpreter->unload(*T);
-    if (m_BackendPasses && T->getModule())
-      m_BackendPasses->runOnModule(*T->getModule());
-    return success;
   }
 
   void IncrementalParser::deregisterTransaction(Transaction& T) {

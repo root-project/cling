@@ -16,7 +16,8 @@
 #include "cling/Utils/AST.h"
 
 #include "clang/Basic/Diagnostic.h"
-#include <clang/Frontend/CodeGenOptions.h>
+#include "clang/Frontend/CodeGenOptions.h"
+#include "clang/Frontend/CompilerInstance.h"
 
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
@@ -44,7 +45,7 @@ using namespace llvm;
 namespace cling {
 
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
-                                         const clang::CodeGenOptions& CGOpt):
+                                         const clang::CompilerInstance& CI):
   m_externalIncrementalExecutor(nullptr),
   m_CurrentAtExitModule(0)
 #if 0
@@ -59,7 +60,13 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
   // can use this object yet.
   m_AtExitFuncs.reserve(256);
 
-  m_JIT.reset(new IncrementalJIT(*this, CreateHostTargetMachine(CGOpt)));
+  std::unique_ptr<TargetMachine>
+    TM(CreateHostTargetMachine(CI.getCodeGenOpts()));
+  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
+                                          CI.getTargetOpts(),
+                                          CI.getLangOpts(),
+                                          *TM));
+  m_JIT.reset(new IncrementalJIT(*this, std::move(TM)));
 }
 
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
