@@ -174,8 +174,7 @@ namespace cling {
                                                      /*isTemp*/true), this));
 
     if (!isInSyntaxOnlyMode())
-      m_Executor.reset(new IncrementalExecutor(SemaRef.Diags,
-                                               getCI()->getCodeGenOpts()));
+      m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI()));
 
     // Tell the diagnostic client that we are entering file parsing mode.
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
