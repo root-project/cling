@@ -36,8 +36,10 @@ set( LLVM_LINK_COMPONENTS
   option
   orcjit
   runtimedyld
+  scalaropts
   support
   target
+  transformutils
 )
 
 find_library(DL_LIBRARY_PATH dl)

@@ -32,8 +32,10 @@ set( LLVM_LINK_COMPONENTS
   option
   orcjit
   runtimedyld
+  scalaropts
   support
   target
+  transformutils
 )
 
 add_cling_library(clingInterpreter OBJECT
