@@ -1267,11 +1267,13 @@ namespace cling {
     llvm::raw_fd_ostream log((outFile + ".skipped").str().c_str(),
                              EC, llvm::sys::fs::OpenFlags::F_None);
     log << "Generated for :" << inFile << "\n";
-    forwardDeclare(*T, fwdGen.getCI()->getSema(), out, enableMacros,
+    forwardDeclare(*T, fwdGenPP, fwdGen.getCI()->getSema().getASTContext(),
+                   out, enableMacros,
                    &log);
   }
 
-  void Interpreter::forwardDeclare(Transaction& T, Sema& S,
+  void Interpreter::forwardDeclare(Transaction& T, Preprocessor& P,
+                                   clang::ASTContext& Ctx,
                                    llvm::raw_ostream& out,
                                    bool enableMacros /*=false*/,
                                    llvm::raw_ostream* logs /*=0*/,
@@ -1280,7 +1282,7 @@ namespace cling {
     if (!logs)
       logs = &null;
 
-    ForwardDeclPrinter visitor(out, *logs, S, T, 0, false, ignoreFiles);
+    ForwardDeclPrinter visitor(out, *logs, P, Ctx, T, 0, false, ignoreFiles);
     visitor.printStats();
 
     // Avoid assertion in the ~IncrementalParser.

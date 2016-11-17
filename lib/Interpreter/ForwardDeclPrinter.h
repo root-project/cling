@@ -96,6 +96,7 @@ namespace cling {
     llvm::raw_ostream& m_Log;
     unsigned m_Indentation;
     bool m_PrintInstantiation;
+    clang::Preprocessor& m_PP;
     clang::SourceManager& m_SMgr;
     clang::ASTContext& m_Ctx;
     bool m_SkipFlag;
@@ -109,7 +110,8 @@ namespace cling {
   public:
     ForwardDeclPrinter(llvm::raw_ostream& OutS,
                        llvm::raw_ostream& LogS,
-                       clang::Sema& S,
+                       clang::Preprocessor& P,
+                       clang::ASTContext& Ctx,
                        const Transaction& T,
                        unsigned Indentation = 0,
                        bool printMacros = false,

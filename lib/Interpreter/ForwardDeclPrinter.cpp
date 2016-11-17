@@ -23,14 +23,15 @@ namespace cling {
 
   ForwardDeclPrinter::ForwardDeclPrinter(llvm::raw_ostream& OutS,
                                          llvm::raw_ostream& LogS,
-                                         Sema& S,
+                                         Preprocessor& P,
+                                         ASTContext& Ctx,
                                          const Transaction& T,
                                          unsigned Indentation,
                                          bool printMacros,
                                          IgnoreFilesFunc_t ignoreFiles)
     : m_Policy(clang::PrintingPolicy(clang::LangOptions())), m_Log(LogS),
-      m_Indentation(Indentation), m_SMgr(S.getSourceManager()),
-      m_Ctx(S.getASTContext()), m_SkipFlag(false), m_IgnoreFile(ignoreFiles) {
+      m_Indentation(Indentation), m_PP(P), m_SMgr(P.getSourceManager()),
+      m_Ctx(Ctx), m_SkipFlag(false), m_IgnoreFile(ignoreFiles) {
     m_PrintInstantiation = false;
     m_Policy.SuppressTagKeyword = true;
 
