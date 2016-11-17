@@ -41,12 +41,22 @@ template <typename T> class WithDefaultAndFwd;
 // the forward declaration in fwd_Def2.h). See ROOT-8443.
 template <typename T> class TemplateWithUserForward;
 
+// The includsion of nesting/h2.h is not (yet) supported as it is included
+// in the forward declaration generation step via a #include with a path
+// relative to its includer (h1.h) and this we can not properly record
+// that this is the same thing as this one (or at least it is harder than
+// what we do for now).
+// #include "nesting/h2.h"
+#include "nesting/h1.h"
 #include "Def2sub.h"
 #include "Def2.h"
 
 DefaultInFwd<> dif;
 WithDefaultAndFwd<> wdaf;
 TemplateWithUserForward<> twuf;
+TemplateWithAllDefault<> twad;
+WithDefaultInH1<> wdh1;
+WithDefaultInH2<> wdh2;
 
 // In some implementation the AutoloadingVisitor was not when Def2sub.h, which
 // contains the definition for CtorWithDefault, and then the implementation
