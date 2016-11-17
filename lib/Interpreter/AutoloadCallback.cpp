@@ -27,6 +27,10 @@
 #include "cling/Interpreter/Transaction.h"
 #include "DeclUnloader.h"
 
+
+
+#include <clang/Lex/HeaderSearch.h>
+
 namespace {
   static const char annoTag[] = "$clingAutoload$";
   static const size_t lenAnnoTag = sizeof(annoTag) - 1;
@@ -72,72 +76,106 @@ namespace cling {
     AutoloadCallback::FwdDeclsMap* m_Map;
     clang::Preprocessor* m_PP;
     clang::Sema* m_Sema;
-    const clang::FileEntry* m_PrevFE;
-    std::string m_PrevFileName;
+
+    std::pair<const clang::FileEntry*,const clang::FileEntry*> m_PrevFE;
+    std::pair<std::string,std::string> m_PrevFileName;
   private:
     bool IsAutoloadEntry(Decl *D) {
-       AnnotateAttr* attr = D->getAttr<AnnotateAttr>();
-       if (attr && !attr->isInherited()) {
-         llvm::StringRef annotation = attr->getAnnotation();
-         assert(!annotation.empty() && "Empty annotation!");
-         if (annotation.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
+      for(auto attr = D->specific_attr_begin<AnnotateAttr>(),
+               end = D->specific_attr_end<AnnotateAttr> ();
+          attr != end;
+          ++attr)
+      {
+        //        llvm::errs() << "Annotation: " << c->getAnnotation() << "\n";
+        if (!attr->isInherited()) {
+          llvm::StringRef annotation = attr->getAnnotation();
+          assert(!annotation.empty() && "Empty annotation!");
+          if (annotation.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
             // autoload annotation.
             return true;
-         }
-       }
-       return false;
+          }
+        }
+      }
+      return false;
     }
 
-    void InsertIntoAutoloadingState (Decl* decl, llvm::StringRef annotation) {
+    using Annotations_t = std::pair<llvm::StringRef,llvm::StringRef>;
 
-      assert(!annotation.empty() && "Empty annotation!");
-      if (!annotation.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
-        // not an autoload annotation.
-        return;
-      }
+    void InsertIntoAutoloadingState(Decl* decl, Annotations_t FileNames) {
 
       assert(m_PP);
 
-      const FileEntry* FE = 0;
-      SourceLocation fileNameLoc;
-      bool isAngled = false;
-      const DirectoryLookup* FromDir = 0;
-      const FileEntry* FromFile = 0;
-      const DirectoryLookup* CurDir = 0;
-      llvm::StringRef FileName = annotation.drop_front(lenAnnoTag);
-      if (FileName.equals(m_PrevFileName))
-        FE = m_PrevFE;
-      else {
-        FE = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
-                              FromDir, FromFile, CurDir, /*SearchPath*/0,
-                              /*RelativePath*/ 0, /*suggestedModule*/0,
-                              /*SkipCache*/ false, /*OpenFile*/ false,
-                              /*CacheFail*/ true);
-        m_PrevFE = FE;
-        m_PrevFileName = FileName;
-      }
+      auto addFile = [this,decl](llvm::StringRef FileName, bool warn) {
+        if (FileName.empty()) return (const FileEntry*)nullptr;
 
-      if (FE) {
-        auto& Vec = (*m_Map)[FE];
-        Vec.push_back(decl);
-      } else {
-        llvm::errs()
+        const FileEntry* FE = 0;
+        SourceLocation fileNameLoc;
+        bool isAngled = false;
+        const DirectoryLookup* FromDir = 0;
+        const FileEntry* FromFile = 0;
+        const DirectoryLookup* CurDir = 0;
+        bool needCacheUpdate = false;
+
+        if (FileName.equals(m_PrevFileName.first))
+          FE = m_PrevFE.first;
+        else if (FileName.equals(m_PrevFileName.second))
+          FE = m_PrevFE.second;
+        else {
+          FE = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
+                                FromDir, FromFile, CurDir, /*SearchPath*/0,
+                                /*RelativePath*/ 0, /*suggestedModule*/0,
+                                /*SkipCache*/ false, /*OpenFile*/ false,
+                                /*CacheFail*/ true);
+          needCacheUpdate = true;
+        }
+
+        if (FE) {
+          auto& Vec = (*m_Map)[FE];
+          Vec.push_back(decl);
+          if (needCacheUpdate) return FE;
+          else return (const FileEntry*)nullptr;
+        } else if (warn) {
+          // If the top level header is expected to be findable at run-time,
+          // the direct header might not because the include path might be
+          // different enough and only the top-header is guaranteed to be seen
+          // by the user as an interface header to be available on the
+          // run-time include path.
+          llvm::errs()
           << "Error in cling::AutoloadingVisitor::InsertIntoAutoloadingState:\n"
           "   Missing FileEntry for " << FileName << "\n";
-        if (NamedDecl* ND = dyn_cast<NamedDecl>(decl)) {
-          llvm::errs() << "   requested to autoload type ";
-          ND->getNameForDiagnostic(llvm::errs(),
-                                   ND->getASTContext().getPrintingPolicy(),
-                                   true /*qualified*/);
-          llvm::errs() << "\n";
+          if (NamedDecl* ND = dyn_cast<NamedDecl>(decl)) {
+            llvm::errs() << "   requested to autoload type ";
+            ND->getNameForDiagnostic(llvm::errs(),
+                                     ND->getASTContext().getPrintingPolicy(),
+                                     true /*qualified*/);
+            llvm::errs() << "\n";
+          }
+          return (const FileEntry*)nullptr;
+        } else {
+          // Case of the direct header that is not a top level header, no
+          // warning in this case (to likely to be a false positive).
+          return (const FileEntry*)nullptr;
         }
+      };
+
+      const FileEntry* cacheUpdate;
+
+      if ( (cacheUpdate = addFile(FileNames.first,true)) ) {
+        m_PrevFE.first = cacheUpdate;
+        m_PrevFileName.first = FileNames.first;
       }
+      if ( (cacheUpdate = addFile(FileNames.second,false)) ) {
+        m_PrevFE.second = cacheUpdate;
+        m_PrevFileName.second = FileNames.second;
+      }
+
+
     }
 
   public:
     AutoloadingVisitor():
       m_IsStoringState(false), m_IsAutloadEntry(false), m_Map(0), m_PP(0),
-      m_Sema(0), m_PrevFE(0)
+    m_Sema(0), m_PrevFE({nullptr,nullptr})
     {}
 
     void RemoveDefaultArgsOf(Decl* D, Sema* S) {
@@ -173,9 +211,24 @@ namespace cling {
       if (!D->hasAttr<AnnotateAttr>())
         return true;
 
-      if (AnnotateAttr* attr = D->getAttr<AnnotateAttr>())
-        if (!attr->isInherited())
-           InsertIntoAutoloadingState(D, attr->getAnnotation());
+      Annotations_t annotations;
+      for(auto attr = D->specific_attr_begin<AnnotateAttr> (),
+          end = D->specific_attr_end<AnnotateAttr> ();
+          attr != end;
+          ++attr)
+      {
+        if (!attr->isInherited()) {
+          auto annot = attr->getAnnotation();
+          if (annot.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
+            if (annotations.first.empty()) {
+              annotations.first = annot.drop_front(lenAnnoTag);
+            } else {
+              annotations.second = annot.drop_front(lenAnnoTag);
+            }
+          }
+        }
+      }
+      InsertIntoAutoloadingState(D, annotations);
 
       return true;
     }
