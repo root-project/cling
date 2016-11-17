@@ -175,38 +175,101 @@ namespace cling {
       }
     }
 
+     auto &smgr = m_SMgr;
+     auto getIncludeFileName = [&smgr](PresumedLoc loc) {
+        clang::SourceLocation includeLoc = smgr.getSpellingLoc(loc.getIncludeLoc());
+        bool invalid = true;
+        const char* includeText = smgr.getCharacterData(includeLoc, &invalid);
+        assert(!invalid && "Invalid source data");
+        assert(includeText && "Cannot find #include location");
+        assert((includeText[0] == '<' || includeText[0] == '"')
+               && "Unexpected #include delimiter");
+        char endMarker = includeText[0] == '<' ? '>' : '"';
+        ++includeText;
+        const char* includeEnd = includeText;
+        while (*includeEnd != endMarker && *includeEnd) {
+           ++includeEnd;
+        }
+        assert(includeEnd && "Cannot find end of #include file name");
+        return llvm::StringRef(includeText, includeEnd - includeText);
+    };
+
+    auto &PP = m_PP;
+    auto isDirectlyReacheable = [&PP](llvm::StringRef FileName) {
+      const FileEntry* FE = nullptr;
+      SourceLocation fileNameLoc;
+      bool isAngled = false;
+      const DirectoryLookup* FromDir = nullptr;
+      const FileEntry* FromFile = nullptr;
+      const DirectoryLookup* CurDir = nullptr;
+
+      FE = PP.LookupFile(fileNameLoc, FileName, isAngled,
+                          FromDir, FromFile, CurDir, /*SearchPath*/0,
+                          /*RelativePath*/ 0, /*suggestedModule*/0,
+                          /*SkipCache*/ false, /*OpenFile*/ false,
+                          /*CacheFail*/ true);
+      // Return true if we can '#include' the given filename
+      return FE != nullptr;
+    };
+
     SourceLocation spellingLoc = m_SMgr.getSpellingLoc(D->getLocStart());
     // Walk up the include chain.
     PresumedLoc PLoc = m_SMgr.getPresumedLoc(spellingLoc);
     llvm::SmallVector<PresumedLoc, 16> PLocs;
+    llvm::SmallVector<StringRef, 16> PLocNames;
     while (!m_IgnoreFile(PLoc)) {
       if (!m_SMgr.getPresumedLoc(PLoc.getIncludeLoc()).isValid())
         break;
       PLocs.push_back(PLoc);
+      StringRef name( getIncludeFileName(PLoc) );
+
+      // We record in PLocNames only the include file names that can be
+      // reached directly.  Whenever a #include is parsed in addition to
+      // the record include path, the directory where the file containing
+      // the #include is located is also added implicitly and temporarily
+      // to the include path.  So if the include path is empty and a file
+      // is include via a full pathname it can still #include file in its
+      // (sub)directory using their relative path.
+      // Similarly a file included via a sub-directory of the include path
+      // (eg. #include "Product/mainheader.h") can include header files in
+      // the same subdirectory without mentioning it
+      // (eg. #include "otherheader_in_Product.h")
+      // Since we do not (want to) record the actual directory in which is
+      // located the header with the #include we are looking at, if the
+      // #include is relative to that directory we will not be able to find
+      // it back and thus there is no point in recording it.
+      if (isDirectlyReacheable(name)) {
+        PLocNames.push_back(name);
+      }
       PLoc = m_SMgr.getPresumedLoc(PLoc.getIncludeLoc());
     }
 
     if (PLocs.empty() /* declared in dictionary payload*/)
        return;
-
-    clang::SourceLocation includeLoc = m_SMgr.getSpellingLoc(PLocs[PLocs.size() - 1].getIncludeLoc());
-    bool invalid = true;
-    const char* includeText = m_SMgr.getCharacterData(includeLoc, &invalid);
-    assert(!invalid && "Invalid source data");
-    assert(includeText && "Cannot find #include location");
-    assert((includeText[0] == '<' || includeText[0] == '"')
-           && "Unexpected #include delimiter");
-    char endMarker = includeText[0] == '<' ? '>' : '"';
-    ++includeText;
-    const char* includeEnd = includeText;
-    while (*includeEnd != endMarker && *includeEnd) {
-      ++includeEnd;
+    else if (PLocNames.empty()) {
+      // In this case, all the header file name are of the 'unreacheable' type,
+      // most likely because the first one was related to the linkdef file and
+      // the linkdef file was pass using a full path name.
+      // We are not (easy) to find it back, nonetheless record it as is, just
+      // in case the user add the missing include path at run-time.
+      if (PLocs.size() > 1) {
+        Out() << " __attribute__((annotate(\"$clingAutoload$";
+        Out() << getIncludeFileName(PLocs[0]);
+        Out() << "\"))) ";
+      }
+      Out() << " __attribute__((annotate(\"$clingAutoload$";
+      Out() << getIncludeFileName(PLocs[PLocs.size() - 1]);
+      Out() << "\"))) ";
+      return;
     }
-    assert(includeEnd && "Cannot find end of #include file name");
 
-//    assert ( file.length() != 0 && "Filename Should not be blank");
-    Out() << " __attribute__((annotate(\"$clingAutoload$"
-          << llvm::StringRef(includeText, includeEnd - includeText);
+    if (PLocNames.size() > 1) {
+      Out() << " __attribute__((annotate(\"$clingAutoload$";
+      Out() << PLocNames[0];
+      Out() << "\"))) ";
+    }
+    Out() << " __attribute__((annotate(\"$clingAutoload$";
+    Out() << PLocNames[PLocNames.size()-1];
     Out() << "\"))) ";
   }
 
