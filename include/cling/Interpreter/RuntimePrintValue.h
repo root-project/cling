@@ -103,10 +103,10 @@ namespace cling {
         return valuePrinterInternal::kEmptyCollection;
 
       std::string str("{ ");
-      str += printPair(*iter);
+      str += printPair(iter);
       while (++iter != iterEnd) {
         str += ", ";
-        str += printPair(*iter);
+        str += printPair(iter);
       }
       return str + " }";
     }

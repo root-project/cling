@@ -12,6 +12,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <map>
 
 std::vector<bool> Bv(5,5)
 // FIXME: Printing std::vector<bool> is still broken.
@@ -33,6 +34,15 @@ cling::printValue(&A) == cling::printValue(&B)
 
 std::tuple<> tA
 // CHECK: (std::tuple<> &) {}
+
+std::map<int, int> m
+// CHECK: (std::map<int, int> &) {}
+
+for (int i = 0; i < 5; ++i) m[i] = i+1;
+
+m
+// CHECK: (std::map<int, int> &) { 0 => 1, 1 => 2, 2 => 3, 3 => 4, 4 => 5 }
+
 
 // expected-no-diagnostics
 .q
