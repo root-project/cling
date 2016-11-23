@@ -4,6 +4,6 @@
       "jupyter-cling-kernel",
       "-f",
       "{connection_file}",
-      "--std=c++1z"
+      "--std=c++17"
   ]
 }
