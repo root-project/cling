@@ -118,9 +118,9 @@ namespace cling {
           case '@': // Intentional fall though.
           case '\'': // Intentional fall though.
           case '\\': c = '_'; break;
-          default:
+          default: break;
             /* nothing to do */
-        };
+        }
       }
       return ret;
     }
