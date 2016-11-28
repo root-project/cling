@@ -208,19 +208,17 @@ namespace cling {
     llvm::StringRef file;
     if (getCurTok().is(tok::greater)) {
       bool append = false;
-      consumeToken();
       // check whether we have >>
-      if (getCurTok().is(tok::greater)) {
-        append = true;
+      if (lookAhead(1).is(tok::greater)) {
         consumeToken();
+        append = true;
       }
       // check for syntax like: 2>&1
-      if (getCurTok().is(tok::ampersand)) {
-        if (constant_FD == 0) {
+      if (lookAhead(1).is(tok::ampersand)) {
+        if (constant_FD == 0)
           stream = MetaProcessor::kSTDBOTH;
-        }
-        consumeToken();
-        const Token& Tok = getCurTok();
+
+        const Token& Tok = lookAhead(2);
         if (Tok.is(tok::constant)) {
           switch (Tok.getConstant()) {
             case 1: file = llvm::StringRef("&1"); break;
@@ -231,11 +229,12 @@ namespace cling {
             // Mark the stream name as refering to stderr or stdout, not a name
             stream = MetaProcessor::RedirectionScope(stream |
                                                      MetaProcessor::kSTDSTRM);
-            consumeToken();
+            consumeToken(); // &
+            consumeToken(); // 1,2
           }
         }
       }
-      if (!getCurTok().is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
+      if (!lookAhead(1).is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
         consumeAnyStringToken(tok::eof);
         if (getCurTok().is(tok::raw_ident)) {
           file = getCurTok().getIdent();
