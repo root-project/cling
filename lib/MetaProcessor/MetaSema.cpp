@@ -91,8 +91,36 @@ namespace cling {
       if (ret[0] >= '0' && ret[0] <= '9')
         ret.insert(ret.begin(), '_');
       for (char& c: ret) {
-        if (c == '-' || c == '+' || c == '-' || c == '.' || c == '@' || c == '~')
-          c = '_';
+        switch(c) {
+          case '+': c = '_'; break;
+          case '-': c = '_'; break;
+          case '*': c = '_'; break;
+          case '/': c = '_'; break;
+          case '&': c = '_'; break;
+          case '%': c = '_'; break;
+          case '|': c = '_'; break;
+          case '^': c = '_'; break;
+          case '>': c = '_'; break;
+          case '<': c = '_'; break;
+          case '=': c = '_'; break;
+          case '~': c = '_'; break;
+          case '.': c = '_'; break;
+          case '(': c = '_'; break;
+          case ')': c = '_'; break;
+          case '[': c = '_'; break;
+          case ']': c = '_'; break;
+          case '!': c = '_'; break;
+          case ',': c = '_'; break;
+          case '$': c = '_'; break;
+          case ' ': c = '_'; break;
+          case ':': c = '_'; break;
+          case '"': c = '_'; break;
+          case '@': c = '_'; break;
+          case '\'': c = '_'; break;
+          case '\\': c = '_'; break;
+          default:
+            /* nothing to do */
+        };
       }
       return ret;
     }
@@ -111,7 +139,7 @@ namespace cling {
       std::string expression;
       std::string FuncName = llvm::sys::path::stem(file);
       if (!FuncName.empty()) {
-	FuncName = normalizeDotXFuncName(FuncName);
+        FuncName = normalizeDotXFuncName(FuncName);
         if (T->containsNamedDecl(FuncName)) {
           expression = FuncName + args.str();
           // Give the user some context in case we have a problem invoking
