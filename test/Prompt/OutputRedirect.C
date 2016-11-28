@@ -3,6 +3,7 @@
 // RUN: cat /tmp/errfile.txt | FileCheck --check-prefix=CHECK-REDIRECTERR %s
 // RUN: cat /tmp/bothfile.txt | FileCheck --check-prefix=CHECK-REDIRECTBOTH %s
 // RUN: cat /tmp/anotheroutfile.txt | FileCheck --check-prefix=CHECK-REDIRECTANOTHER %s
+// RUN: cat /tmp/nospace.txt | FileCheck --check-prefix=CHECK-NOSPACE %s
 // RUN: cat %s | %cling 2> /tmp/stderr.txt && cat /tmp/stderr.txt | FileCheck --check-prefix=CHECKERR %s
 // RUN: cat %s | %cling 2>&1 | FileCheck --check-prefix=CHECKERR --check-prefix=CHECKOUT %s
 
@@ -126,3 +127,20 @@ b = 711
 c = 712
 //CHECK-REDIRECTANOTHER: (int) 712
 
+// Test redirect to filename without space
+.>/tmp/nospace.txt
+a = 1012
+//CHECK-NOSPACE: (int) 1012
+b = 1023
+//CHECK-NOSPACE: (int) 1023
+c = 1034
+//CHECK-NOSPACE: (int) 1034
+
+// Test append mode to filename without space
+.>>/tmp/nospace.txt
+a = 9915
+//CHECK-NOSPACE: (int) 9915
+b = 9926
+//CHECK-NOSPACE: (int) 9926
+c = 9937
+//CHECK-NOSPACE: (int) 9937
