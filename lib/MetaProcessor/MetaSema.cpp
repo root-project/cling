@@ -92,31 +92,31 @@ namespace cling {
         ret.insert(ret.begin(), '_');
       for (char& c: ret) {
         switch(c) {
-          case '+': c = '_'; break;
-          case '-': c = '_'; break;
-          case '*': c = '_'; break;
-          case '/': c = '_'; break;
-          case '&': c = '_'; break;
-          case '%': c = '_'; break;
-          case '|': c = '_'; break;
-          case '^': c = '_'; break;
-          case '>': c = '_'; break;
-          case '<': c = '_'; break;
-          case '=': c = '_'; break;
-          case '~': c = '_'; break;
-          case '.': c = '_'; break;
-          case '(': c = '_'; break;
-          case ')': c = '_'; break;
-          case '[': c = '_'; break;
-          case ']': c = '_'; break;
-          case '!': c = '_'; break;
-          case ',': c = '_'; break;
-          case '$': c = '_'; break;
-          case ' ': c = '_'; break;
-          case ':': c = '_'; break;
-          case '"': c = '_'; break;
-          case '@': c = '_'; break;
-          case '\'': c = '_'; break;
+          case '+': // Intentional fall though.
+          case '-': // Intentional fall though.
+          case '*': // Intentional fall though.
+          case '/': // Intentional fall though.
+          case '&': // Intentional fall though.
+          case '%': // Intentional fall though.
+          case '|': // Intentional fall though.
+          case '^': // Intentional fall though.
+          case '>': // Intentional fall though.
+          case '<': // Intentional fall though.
+          case '=': // Intentional fall though.
+          case '~': // Intentional fall though.
+          case '.': // Intentional fall though.
+          case '(': // Intentional fall though.
+          case ')': // Intentional fall though.
+          case '[': // Intentional fall though.
+          case ']': // Intentional fall though.
+          case '!': // Intentional fall though.
+          case ',': // Intentional fall though.
+          case '$': // Intentional fall though.
+          case ' ': // Intentional fall though.
+          case ':': // Intentional fall though.
+          case '"': // Intentional fall though.
+          case '@': // Intentional fall though.
+          case '\'': // Intentional fall though.
           case '\\': c = '_'; break;
           default:
             /* nothing to do */
