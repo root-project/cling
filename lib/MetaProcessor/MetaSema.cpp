@@ -84,6 +84,20 @@ namespace cling {
     m_Interpreter.declare(comment);
   }
 
+  namespace {
+    /// Replace non-identifier chars by '_'
+    std::string normalizeDotXFuncName(const std::string& FuncName) {
+      std::string ret = FuncName;
+      if (ret[0] >= '0' && ret[0] <= '9')
+        ret.insert(ret.begin(), '_');
+      for (char& c: ret) {
+        if (c == '-' || c == '+' || c == '-' || c == '.' || c == '@' || c == '~')
+          c = '_';
+      }
+      return ret;
+    }
+  }
+
   MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file,
                                                  llvm::StringRef args,
                                                  Value* result) {
@@ -95,10 +109,11 @@ namespace cling {
     // T can be nullptr if there is no code (but comments)
     if (actionResult == AR_Success && T) {
       std::string expression;
-      llvm::StringRef FuncName = llvm::sys::path::stem(file);
+      std::string FuncName = llvm::sys::path::stem(file);
       if (!FuncName.empty()) {
+	FuncName = normalizeDotXFuncName(FuncName);
         if (T->containsNamedDecl(FuncName)) {
-          expression = FuncName.str() + args.str();
+          expression = FuncName + args.str();
           // Give the user some context in case we have a problem invoking
           expression += " /* invoking function corresponding to '.x' */";
           if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
