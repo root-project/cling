@@ -11,7 +11,8 @@
 // and the structure of the warning message 
 // It will also fail when it is not possible to verify matching C++ ABIs
 
-// RUN: cat %s | %cling -nostdinc++ -Xclang -verify 2>&1 | FileCheck %s
+// %nostdincxx is -nostdinc on Windows, -nostdinc++ everywhere else.
+// RUN: cat %s | %cling %nostdincxx -Xclang -verify 2>&1 | FileCheck %s
 // Test nobuiltinincTest
 
 // expected-error@1 {{'new' file not found}}
