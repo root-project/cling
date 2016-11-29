@@ -88,39 +88,20 @@ namespace cling {
     /// Replace non-identifier chars by '_'
     std::string normalizeDotXFuncName(const std::string& FuncName) {
       std::string ret = FuncName;
+      // Prepend '_' if name starts with a digit.
       if (ret[0] >= '0' && ret[0] <= '9')
         ret.insert(ret.begin(), '_');
       for (char& c: ret) {
-        switch(c) {
-          case '+': // Intentional fall though.
-          case '-': // Intentional fall though.
-          case '*': // Intentional fall though.
-          case '/': // Intentional fall though.
-          case '&': // Intentional fall though.
-          case '%': // Intentional fall though.
-          case '|': // Intentional fall though.
-          case '^': // Intentional fall though.
-          case '>': // Intentional fall though.
-          case '<': // Intentional fall though.
-          case '=': // Intentional fall though.
-          case '~': // Intentional fall though.
-          case '.': // Intentional fall though.
-          case '(': // Intentional fall though.
-          case ')': // Intentional fall though.
-          case '[': // Intentional fall though.
-          case ']': // Intentional fall though.
-          case '!': // Intentional fall though.
-          case ',': // Intentional fall though.
-          case '$': // Intentional fall though.
-          case ' ': // Intentional fall though.
-          case ':': // Intentional fall though.
-          case '"': // Intentional fall though.
-          case '@': // Intentional fall though.
-          case '\'': // Intentional fall though.
-          case '\\': c = '_'; break;
-          default: break;
-            /* nothing to do */
-        }
+        // Instead of "escaping" all non-C++-id chars, only escape those that
+        // are fairly certainly file names, to keep helpful error messages for
+        // broken quoting or parsing. Example:
+        // "Cannot find '_func_1___'" is much less helpful than
+        // "Cannot find '/func(1)*&'"
+        // I.e. find a compromise between helpful diagnostics and common file
+        // name (stem) ingredients.
+        if (c == '+' || c == '-' || c == '=' || c == '.' || c == ' '
+            || c == '@')
+          c = '_';
       }
       return ret;
     }
