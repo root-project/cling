@@ -337,15 +337,32 @@ namespace {
   static void SetClingCustomLangOpts(LangOptions& Opts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
 #ifdef _MSC_VER
+#if _HAS_EXCEPTIONS
+    Opts.Exceptions = 1;
+    if (Opts.CPlusPlus) {
+      Opts.CXXExceptions = 1;
+    }
+#else
     Opts.Exceptions = 0;
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 0;
     }
+#endif
+    Opts.Trigraphs = 0;
+    Opts.RTTIData = 0;
+    Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
+#ifdef _DEBUG
+    Opts.setStackProtector(clang::LangOptions::SSPStrong);
+#endif
 #else
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 1;
     }
+    Opts.Trigraphs = 1;
+//    Opts.RTTIData = 1;
+//    Opts.DefaultCallingConventions = 1;
+//    Opts.StackProtector = 0;
 #endif // _MSC_VER
     Opts.Deprecated = 1;
     //Opts.Modules = 1;
@@ -357,7 +374,6 @@ namespace {
 
     Opts.Deprecated = 1;
     Opts.GNUKeywords = 0;
-    Opts.Trigraphs = 1; // o no??! but clang has it on by default...
 
 #ifdef __APPLE__
     Opts.Blocks = 1;
@@ -456,16 +472,27 @@ namespace {
     return &Cmd->getArguments();
   }
 
+std::string stringifyPreprocSetting(const char* name, int val) {
+  std::string ret(name);
+  {
+    llvm::raw_string_ostream sstr(ret);
+    sstr << "=" << val;
+  }
+  return ret;
+}
+
+#define STRINGIFY_PREPROC_SETTING(name) \
+  stringifyPreprocSetting(#name, name).c_str()
+
   /// Set cling's preprocessor defines to match the cling binary.
   static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {
 #ifdef _MSC_VER
-    PPOpts.addMacroDef("_HAS_EXCEPTIONS=0");
+    PPOpts.addMacroDef(STRINGIFY_PREPROC_SETTING(_HAS_EXCEPTIONS));
 #ifdef _DEBUG
-    PPOpts.addMacroDef("_DEBUG=1");
-#elif defined(NDEBUG)
-    PPOpts.addMacroDef("NDEBUG=1");
-#else // well, what else?
-    PPOpts.addMacroDef("NDEBUG=1");
+    PPOpts.addMacroDef(STRINGIFY_PREPROC_SETTING(_DEBUG));
+#endif
+#ifdef NDEBUG
+    PPOpts.addMacroDef(STRINGIFY_PREPROC_SETTING(NDEBUG));
 #endif
 #endif
 
@@ -763,6 +790,12 @@ namespace {
 
     // Set CodeGen options
     // want debug info
+#ifdef _MSC_VER
+    CI->getCodeGenOpts().MSVolatile = 1;
+    CI->getCodeGenOpts().RelaxedAliasing = 1;
+    CI->getCodeGenOpts().EmitCodeView = 1;
+    CI->getCodeGenOpts().CXXCtorDtorAliases = 1;
+#endif
     //CI->getCodeGenOpts().setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
     // CI->getCodeGenOpts().EmitDeclMetadata = 1; // For unloading, for later
     CI->getCodeGenOpts().CXXCtorDtorAliases = 0; // aliasing the complete
