@@ -719,7 +719,7 @@ namespace cling {
       ForceSymbolsAsUsed(){
         // Never true, but don't tell the compiler.
         // Prevents stripping the symbol due to dead-code optimization.
-        if (std::getenv("bar") == (char*) -1) symbol_requester();
+        if (std::atoi("0")) symbol_requester();
       }
     } sForceSymbolsAsUsed;
   }
