@@ -91,7 +91,6 @@ endif()
 # cl : Command line warning D9025: overriding '/EHc' with '/EHc-'
 # so let's change the target compiler flags instead:
 if(MSVC)
-  add_definitions(-UUNICODE -U_UNICODE)
   get_target_property(CI_COMPILE_FLAGS clingInterpreter COMPILE_FLAGS)
   if(${CI_COMPILE_FLAGS})
     string(REPLACE "/EHs-c-" "" CI_COMPILE_FLAGS ${CI_COMPILE_FLAGS})
