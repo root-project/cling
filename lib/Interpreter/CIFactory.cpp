@@ -352,7 +352,9 @@ namespace {
     Opts.RTTIData = 0;
     Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
 #ifdef _DEBUG
-    Opts.setStackProtector(clang::LangOptions::SSPStrong);
+    // FIXME: This requires bufferoverflowu.lib, but adding:
+    // #pragma comment(lib, "bufferoverflowu.lib") still gives errors!
+    // Opts.setStackProtector(clang::LangOptions::SSPStrong);
 #endif
 #else
     Opts.Exceptions = 1;
