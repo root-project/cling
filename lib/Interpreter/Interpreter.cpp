@@ -359,20 +359,22 @@ namespace cling {
 
 #if defined(LLVM_ON_WIN32)
       // Windows specific: _onexit, _onexit_m, __dllonexit
-      if (NoRuntime) {
-        // Have to declare the function pointer types now and hope no conflicts.
  #if !defined(_M_CEE)
-        Strm << "typedef int (__cdecl* _onexit_t)(void)\n;";
+      const char* Spec = "__cdecl";
  #else
-        Strm << "typedef int (__clrcall* _onexit_t)(void)\n";
+      const char* Spec = "__clrcall";
  #endif
-      }
-      Strm << Linkage << " _onexit_t __dllonexit(_onexit_t f, void**, void**) { "
-         "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;}\n";
+      Strm << Linkage << " " << Spec << " int (*__dllonexit("
+           << "int (" << Spec << " *f)(void**, void**), void**, void**))"
+           "(void**, void**) { "
+           "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;"
+           "}\n";
       Globals.push_back("__dllonexit");
  #if !defined(_M_CEE_PURE)
-      Strm << Linkage << " _onexit_t _onexit(_onexit_t f) { "
-         "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;}\n";
+      Strm << Linkage << " " << Spec << " int (*_onexit("
+           << "int (" << Spec << 	" *f)()))() { "
+           "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;"
+           "}\n";
       Globals.push_back("_onexit");
  #endif
 #endif
