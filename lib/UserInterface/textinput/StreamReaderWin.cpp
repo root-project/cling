@@ -49,7 +49,7 @@ namespace textinput {
     if (fIsConsole) {
       // Allocate our own console handle, to prevent redirection from
       // stealing it.
-      fIn = ::CreateFile("CONIN$", GENERIC_READ | GENERIC_WRITE,
+      fIn = ::CreateFileA("CONIN$", GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL, NULL);
       ::GetConsoleMode(fIn, &fOldMode);

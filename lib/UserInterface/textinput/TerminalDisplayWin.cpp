@@ -28,7 +28,7 @@ namespace textinput {
     if (isConsole) {
       // Prevent redirection from stealing our console handle,
       // simply open our own.
-      fOut = ::CreateFile("CONOUT$", GENERIC_READ | GENERIC_WRITE,
+      fOut = ::CreateFileA("CONOUT$", GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL, NULL);
       ::GetConsoleMode(fOut, &fOldMode);
@@ -151,7 +151,7 @@ namespace textinput {
   TerminalDisplayWin::EraseToRight() {
     DWORD NumWritten;
     COORD C = {fWritePos.fCol, fWritePos.fLine + fStartLine};
-    ::FillConsoleOutputCharacter(fOut, ' ', GetWidth() - C.X, C,
+    ::FillConsoleOutputCharacterA(fOut, ' ', GetWidth() - C.X, C,
       &NumWritten);
     // It wraps, so move up and reset WritePos:
     //MoveUp();
@@ -162,7 +162,7 @@ namespace textinput {
   TerminalDisplayWin::WriteRawString(const char *text, size_t len) {
     DWORD NumWritten = 0;
     if (IsTTY()) {
-      WriteConsole(fOut, text, (DWORD) len, &NumWritten, NULL);
+      WriteConsoleA(fOut, text, (DWORD) len, &NumWritten, NULL);
     } else {
       WriteFile(fOut, text, (DWORD) len, &NumWritten, NULL);
     }
@@ -208,9 +208,9 @@ namespace textinput {
   TerminalDisplayWin::ShowError(const char* Where) const {
     DWORD Err = GetLastError();
     LPVOID MsgBuf = 0;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
       FORMAT_MESSAGE_IGNORE_INSERTS, NULL, Err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      (LPTSTR) &MsgBuf, 0, NULL);
+      (LPSTR) &MsgBuf, 0, NULL);
 
     printf("Error %d in textinput::TerminalDisplayWin %s: %s\n", Err, Where, MsgBuf);
     LocalFree(MsgBuf);
