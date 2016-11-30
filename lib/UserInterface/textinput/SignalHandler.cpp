@@ -15,7 +15,9 @@
 #include "textinput/SignalHandler.h"
 
 #include <csignal>
+#ifndef _WIN32
 #include <sys/signal.h> // For SIGINT when building with -fmodules
+#endif
 
 namespace textinput {
   using std::raise;
