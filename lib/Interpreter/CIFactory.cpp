@@ -203,6 +203,16 @@ namespace {
       }
 #endif
 
+      // Windows headers use '__declspec(dllexport) __cdecl' for most funcs
+      // causing a lot of warnings for different redeclarations (eg. coming from
+      // the test suite).
+      // Do not warn about such cases.
+      sArguments.addArgument("-Wno-dll-attribute-on-redeclaration");
+      sArguments.addArgument("-Wno-inconsistent-dllimport");
+      //sArguments.addArgument("-Wno-ignored-attributes");
+      //sArguments.addArgument("-Wno-dllimport-static-field-def");
+      //sArguments.addArgument("-Wno-microsoft-template");
+
 #else // _MSC_VER
 
       // Skip LLVM_CXX execution if -nostdinc++ was provided.
