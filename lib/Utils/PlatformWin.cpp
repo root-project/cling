@@ -507,10 +507,9 @@ bool IsMemoryValid(const void *P) {
 }
 
 const void* DLOpen(const std::string& Path, std::string* Err) {
-  HMODULE dyLibHandle = ::LoadLibraryExA(Path.c_str(), NULL,
-                                         DONT_RESOLVE_DLL_REFERENCES);
+  HMODULE dyLibHandle = ::LoadLibraryA(Path.c_str());
   if (!dyLibHandle && Err)
-    GetLastErrorAsString(*Err, "LoadLibraryEx");
+    GetLastErrorAsString(*Err, "LoadLibrary");
 
   return reinterpret_cast<void*>(dyLibHandle);
 }
