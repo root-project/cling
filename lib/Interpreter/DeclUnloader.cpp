@@ -649,12 +649,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     GD = GlobalDecl(CXXDtor, Dtor_Base);
     MaybeRemoveDeclFromModule(GD);
     GD = GlobalDecl(CXXDtor, Dtor_Comdat);
-#if defined(LLVM_ON_WIN32)
-    // MicrosoftMangle.cpp:954 calls llvm_unreachable when mangling Dtor_Comdat
-    MaybeRemoveDeclFromModule(GD, false);
-#else
     MaybeRemoveDeclFromModule(GD);
-#endif
 
     bool Successful = VisitCXXMethodDecl(CXXDtor);
     return Successful;
@@ -734,8 +729,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
-  void DeclUnloader::MaybeRemoveDeclFromModule(GlobalDecl& GD,
-                                               bool Mangle) const {
+  void DeclUnloader::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
     if (!m_CurTransaction
         || !m_CurTransaction->getModule()) // syntax-only mode exit
       return;
@@ -778,31 +772,24 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     //
     if (m_CurTransaction->getState() == Transaction::kCommitted) {
       std::string mangledName;
-      if (LLVM_UNLIKELY(!Mangle)) {
-        const NamedDecl* D = cast<NamedDecl>(const_cast<Decl*>(GD.getDecl()));
-        if (const IdentifierInfo *II = D->getIdentifier())
-          mangledName = II->getName();
-      } else
-        utils::Analyze::maybeMangleDeclName(GD, mangledName);
+      utils::Analyze::maybeMangleDeclName(GD, mangledName);
 
-      if (LLVM_LIKELY(!mangledName.empty())) {
-        // Handle static locals. void func() { static int var; } is represented
-        // in the llvm::Module is a global named @func.var
-        if (const VarDecl* VD = dyn_cast<VarDecl>(GD.getDecl())) {
-          if (VD->isStaticLocal()) {
-            std::string functionMangledName;
-            GlobalDecl FDGD(cast<FunctionDecl>(VD->getDeclContext()));
-            utils::Analyze::maybeMangleDeclName(FDGD, functionMangledName);
-            mangledName = functionMangledName + "." + mangledName;
-          }
+      // Handle static locals. void func() { static int var; } is represented
+      // in the llvm::Module is a global named @func.var
+      if (const VarDecl* VD = dyn_cast<VarDecl>(GD.getDecl())) {
+        if (VD->isStaticLocal()) {
+          std::string functionMangledName;
+          GlobalDecl FDGD(cast<FunctionDecl>(VD->getDeclContext()));
+          utils::Analyze::maybeMangleDeclName(FDGD, functionMangledName);
+          mangledName = functionMangledName + "." + mangledName;
         }
+      }
 
-        llvm::Module* M = m_CurTransaction->getModule();
-        GlobalValue* GV = M->getNamedValue(mangledName);
-        if (GV) { // May be deferred decl and thus 0
-          GlobalValueEraser GVEraser(m_CodeGen);
-          GVEraser.EraseGlobalValue(GV);
-        }
+      llvm::Module* M = m_CurTransaction->getModule();
+      GlobalValue* GV = M->getNamedValue(mangledName);
+      if (GV) { // May be deferred decl and thus 0
+        GlobalValueEraser GVEraser(m_CodeGen);
+        GVEraser.EraseGlobalValue(GV);
       }
       m_CodeGen->forgetDecl(GD);
     }

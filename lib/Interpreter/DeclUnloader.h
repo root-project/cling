@@ -228,8 +228,7 @@ namespace cling {
 
     ///@}
 
-    void MaybeRemoveDeclFromModule(clang::GlobalDecl& GD,
-                                   bool Mangle = true) const;
+    void MaybeRemoveDeclFromModule(clang::GlobalDecl& GD) const;
 
     /// @name Helpers
     /// @{
