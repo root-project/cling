@@ -47,7 +47,7 @@ extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
 // Exported for RuntimePrintValue.h
 namespace cling {
   namespace valuePrinterInternal {
-    extern const char* const kEmptyCollection = "{}";
+    const char* const kEmptyCollection = "{}";
   }
 }
 
