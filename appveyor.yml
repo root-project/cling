@@ -26,7 +26,7 @@ build:
   verbosity: detailed
 
 install:
-  - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat
+  - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat "%platform%"
 
 build_script:
   - tools\packaging\cpt.py ^
