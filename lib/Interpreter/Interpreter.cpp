@@ -208,7 +208,13 @@ namespace cling {
     if (const Transaction* T = getLastTransaction()) {
       if (llvm::Module* M = T->getModule()) {
         for (const llvm::StringRef& Sym : Syms) {
-          if (const llvm::GlobalValue* GV = M->getNamedValue(Sym)) {
+          const llvm::GlobalValue* GV = M->getNamedValue(Sym);
+#if defined(__GLIBCXX__) && !defined(__APPLE__)
+          // libstdc++ mangles at_quick_exit on Linux when headers from g++ < 5
+          if (!GV && Sym.equals("at_quick_exit"))
+            GV = M->getNamedValue("_Z13at_quick_exitPFvvE");
+#endif
+          if (GV) {
             if (void* Addr = m_Executor->getPointerToGlobalFromJIT(*GV))
               m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
             else
@@ -326,6 +332,14 @@ namespace cling {
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
     if (!SyntaxOnly) {
+#if defined(__GLIBCXX__) && !defined(__APPLE__)
+      const char* LinkageCxx = "extern \"C++\"";
+      const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
+#else
+      const char* LinkageCxx = Linkage;
+      const char* Attr = "";
+#endif
+
       // While __dso_handle is still overriden in the JIT below,
       // #define __dso_handle is used to mitigate the following problems:
       //  1. Type of __dso_handle is void* making assignemnt to it legal
@@ -346,14 +360,14 @@ namespace cling {
       Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*);\n";
 
       // C atexit, std::atexit
-      Strm << Linkage << " int atexit(void(*f)()) { "
-           "return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+      Strm << Linkage << " int atexit(void(*f)()) " << Attr << " { return "
+                        "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
       Globals.push_back("atexit");
 
       // C++ 11 at_quick_exit, std::at_quick_exit
       if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
-          Strm << Linkage << " int at_quick_exit(void(*f)()) { "
-           "return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+        Strm << LinkageCxx << " int at_quick_exit(void(*f)()) " << Attr <<
+              " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
         Globals.push_back("at_quick_exit");
       }
 
