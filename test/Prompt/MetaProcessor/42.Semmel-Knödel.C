@@ -9,6 +9,6 @@
 // RUN: %cling %s | FileCheck %s
 
 extern "C" int printf(const char*, ...);
-void _42_Semmel_Knödel() {
+void _42_Semmel_Knödel() {
   printf("Semmelknödel\n"); // CHECK: Semmelknödel 
 }
