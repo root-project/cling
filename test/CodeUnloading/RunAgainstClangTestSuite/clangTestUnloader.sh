@@ -64,10 +64,10 @@ echo "echo -e '$testcase' | $cling_binary $cling_args" >&2
 echo -e "\n" >&2
 
 echo -e "\n\e[32mTODEBUG:\e[0m" >&2
-echo "echo -e '$testcase' > /tmp/testcase && CLING_NOHISTORY=1 gdb $cling_binary || rm /tmp/testcase" >&2
+echo "echo -e '$testcase' > '$TMP/testcase' && CLING_NOHISTORY=1 gdb $cling_binary || rm '$TMP/testcase'" >&2
 
 echo -e "\n\e[32mGDB ARGS:\e[0m" >&2
-echo "run $cling_args < /tmp/testcase" >&2
+echo "run $cling_args < '$TMP/testcase'" >&2
 echo -e "\n" >&2
 
 #Known failures: Sema/warn-unused-function.c < We cannot know whether we need a function or not
