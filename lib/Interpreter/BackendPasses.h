@@ -40,20 +40,20 @@ namespace cling {
 
     llvm::TargetMachine& m_TM;
     const clang::CodeGenOptions &m_CGOpts;
-    const clang::TargetOptions &m_TOpts;
-    const clang::LangOptions &m_LOpts;
+    //const clang::TargetOptions &m_TOpts;
+    //const clang::LangOptions &m_LOpts;
 
     void CreatePasses(llvm::Module& M);
 
   public:
     BackendPasses(const clang::CodeGenOptions &CGOpts,
-                  const clang::TargetOptions &TOpts,
-                  const clang::LangOptions &LOpts,
+                  const clang::TargetOptions & /*TOpts*/,
+                  const clang::LangOptions & /*LOpts*/,
                   llvm::TargetMachine& TM):
       m_TM(TM),
-      m_CGOpts(CGOpts),
-      m_TOpts(TOpts),
-      m_LOpts(LOpts)
+      m_CGOpts(CGOpts) //,
+      //m_TOpts(TOpts),
+      //m_LOpts(LOpts)
     {}
 
     ~BackendPasses();

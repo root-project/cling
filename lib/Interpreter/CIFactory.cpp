@@ -472,6 +472,7 @@ namespace {
     return &Cmd->getArguments();
   }
 
+#ifdef _MSC_VER
 std::string stringifyPreprocSetting(const char* name, int val) {
   std::string ret(name);
   {
@@ -483,6 +484,7 @@ std::string stringifyPreprocSetting(const char* name, int val) {
 
 #define STRINGIFY_PREPROC_SETTING(name) \
   stringifyPreprocSetting(#name, name).c_str()
+#endif
 
   /// Set cling's preprocessor defines to match the cling binary.
   static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {

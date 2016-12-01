@@ -21,8 +21,8 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Scalar.h"
 
-#include "clang/Basic/LangOptions.h"
-#include "clang/Basic/TargetOptions.h"
+//#include "clang/Basic/LangOptions.h"
+//#include "clang/Basic/TargetOptions.h"
 #include "clang/Frontend/CodeGenOptions.h"
 
 using namespace cling;
