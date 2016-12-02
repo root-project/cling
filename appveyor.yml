@@ -16,7 +16,7 @@ matrix:
       configuration: Release
     - platform: x64
       configuration: Release
-      CMAKE_EXTRA_ARGS: "-DLLVM_HOST_TRIPLE=x86_64-pc-win32"
+      CMAKE_EXTRA_ARGS: "-GVisual Studio 15 Win64"
 
 skip_tags: true
 os:
@@ -42,6 +42,7 @@ init:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 - cmd: wmic os get osarchitecture
 - cmd: echo platform is %platform%
+- cmd: set
 
 on_failure:
 # Your RDP session is limited by overall build time (60 min).
