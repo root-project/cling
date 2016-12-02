@@ -29,11 +29,14 @@ install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat %platform%
 
 build_script:
+# appveyor doesn't recognize x64 architecture when running on a virtual machine, so let's force it
+  - if %platform% == x64 set CMAKE_EXTRA_ARGS=" -DLLVM_HOST_TRIPLE=x86_64-pc-win32 "
   - tools\packaging\cpt.py ^
         --current-dev=tar ^
         --with-cling-url=https://github.com/%APPVEYOR_REPO_NAME% ^
         --with-clang-url=http://root.cern.ch/git/clang.git ^
-        --with-llvm-url=http://root.cern.ch/git/llvm.git
+        --with-llvm-url=http://root.cern.ch/git/llvm.git ^
+        --with-cmake-flags="%CMAKE_EXTRA_ARGS%"
 
 init:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
