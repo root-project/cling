@@ -347,13 +347,13 @@ namespace cling {
 
       // C atexit, std::atexit
       Strm << Linkage << " int atexit(void(*f)()) { "
-           "return __cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); }\n";
+           "return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
       Globals.push_back("atexit");
 
       // C++ 11 at_quick_exit, std::at_quick_exit
       if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
           Strm << Linkage << " int at_quick_exit(void(*f)()) { "
-           "return __cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); }\n";
+           "return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
         Globals.push_back("at_quick_exit");
       }
 
@@ -367,13 +367,13 @@ namespace cling {
       Strm << Linkage << " " << Spec << " int (*__dllonexit("
            << "int (" << Spec << " *f)(void**, void**), void**, void**))"
            "(void**, void**) { "
-           "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;"
+           "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
            "}\n";
       Globals.push_back("__dllonexit");
  #if !defined(_M_CEE_PURE)
       Strm << Linkage << " " << Spec << " int (*_onexit("
            << "int (" << Spec << 	" *f)()))() { "
-           "__cxa_atexit((void(*)(void*))f, nullptr, __dso_handle); return f;"
+           "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
            "}\n";
       Globals.push_back("_onexit");
  #endif
