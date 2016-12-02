@@ -16,7 +16,6 @@ matrix:
       configuration: Release
     - platform: x64
       configuration: Release
-      CMAKE_EXTRA_ARGS: "-GVisual Studio 15 Win64"
 
 skip_tags: true
 os:
@@ -29,6 +28,10 @@ build:
 
 install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat %platform%
+
+# scripts to run before build
+before_build:
+  - if [%platform%]==[x64] set CMAKE_EXTRA_ARGS="-GVisual Studio 15 Win64"
 
 build_script:
   - tools\packaging\cpt.py ^
