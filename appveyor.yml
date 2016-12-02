@@ -30,7 +30,7 @@ install:
 
 build_script:
 # appveyor doesn't recognize x64 architecture when running on a virtual machine, so let's force it
-  - if %platform% == x64 set CMAKE_EXTRA_ARGS=" -DLLVM_HOST_TRIPLE=x86_64-pc-win32 "
+  - if [%platform%]==[x64] set CMAKE_EXTRA_ARGS=" -DLLVM_HOST_TRIPLE=x86_64-pc-win32 "
   - tools\packaging\cpt.py ^
         --current-dev=tar ^
         --with-cling-url=https://github.com/%APPVEYOR_REPO_NAME% ^
