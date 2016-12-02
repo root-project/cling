@@ -16,6 +16,7 @@ matrix:
       configuration: Release
     - platform: x64
       configuration: Release
+      CMAKE_EXTRA_ARGS: "-DLLVM_HOST_TRIPLE=x86_64-pc-win32"
 
 skip_tags: true
 os:
@@ -25,14 +26,6 @@ build:
   parallel: true
   verbosity: detailed
 
-# appveyor doesn't recognize x64 architecture when running on a virtual machine, so let's try to force it
-environment:
-  matrix:
-  - platform: x86
-    CMAKE_EXTRA_ARGS: ""
-
-  - platform: x64
-    CMAKE_EXTRA_ARGS: "-DLLVM_HOST_TRIPLE=x86_64-pc-win32"
 
 install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat %platform%
