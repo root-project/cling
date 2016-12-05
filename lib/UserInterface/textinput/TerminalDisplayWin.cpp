@@ -22,7 +22,7 @@
 namespace textinput {
   TerminalDisplayWin::TerminalDisplayWin():
     TerminalDisplay(false), fStartLine(0), fIsAttached(false),
-    fDefaultAttributes(0) {
+    fDefaultAttributes(0), fOldCodePage(::GetConsoleOutputCP()) {
     DWORD mode;
     SetIsTTY(::GetConsoleMode(::GetStdHandle(STD_INPUT_HANDLE), &mode) != 0);
 
@@ -40,7 +40,8 @@ namespace textinput {
       ::GetConsoleScreenBufferInfo(fOut, &csbi);
       fDefaultAttributes = csbi.wAttributes;
       assert(fDefaultAttributes != 0 && "~TerminalDisplayWin broken");
-    }
+    } else
+      ::SetConsoleOutputCP(65001); // Force UTF-8 output
     fMyMode = fOldMode | ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT;
     HandleResizeEvent();
   }
@@ -50,7 +51,8 @@ namespace textinput {
       ::SetConsoleTextAttribute(fOut, fDefaultAttributes);
       // We allocated CONOUT$:
       CloseHandle(fOut);
-    }
+    } else
+      ::SetConsoleOutputCP(fOldCodePage);
   }
 
   void

@@ -54,6 +54,7 @@ namespace textinput {
     DWORD fOldMode; // console configuration before grabbing
     DWORD fMyMode; // console configuration when active
     WORD fDefaultAttributes; // attributes to restore on destruction
+    const UINT fOldCodePage; // saved codepage of console
   };
 }
 #endif // TEXTINPUT_TERMINALDISPLAYWIN_H
