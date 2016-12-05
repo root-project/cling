@@ -124,9 +124,7 @@ namespace textinput {
   }
 
   static void syncOut(int fd) {
-    ::fsync(fd);
-    //if (fd != STDOUT_FILENO)
-      ::fflush(stdout);
+    ::fflush(stdout);
   }
 
   TerminalDisplayUnix::~TerminalDisplayUnix() {
