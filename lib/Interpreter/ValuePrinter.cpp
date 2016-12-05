@@ -610,10 +610,18 @@ namespace cling {
     return enclose(std::move(Str), Begin, &Begin[1], 3);
   }
 
+  template <class T> struct CharTraits { typedef T value_type; };
+#if defined(LLVM_ON_WIN32) // Likely only to be needed when _MSC_VER < 19??
+  template <> struct CharTraits<char16_t> { typedef unsigned short value_type; };
+  template <> struct CharTraits<char32_t> { typedef unsigned int value_type; };
+#endif
+
   template <typename T>
   static std::string encodeUTF8(const T* const Str, size_t N, const char Prfx) {
-    std::wstring_convert<std::codecvt_utf8_utf16<T>, T> Convert;
-    return quoteString(Convert.to_bytes(Str, Str+N), Prfx);
+    typedef typename CharTraits<T>::value_type value_type;
+    std::wstring_convert<std::codecvt_utf8_utf16<value_type>, value_type> Convert;
+    const value_type* Src = reinterpret_cast<const value_type*>(Str);
+    return quoteString(Convert.to_bytes(Src, Src + N), Prfx);
   }
 
   // declaration: cling/Utils/UTF8.h & cling/Interpreter/RuntimePrintValue.h
