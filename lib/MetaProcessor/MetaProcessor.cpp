@@ -26,6 +26,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <cctype>
+#include <sstream>
 #include <stdio.h>
 #ifndef WIN32
 #include <unistd.h>
@@ -197,7 +198,8 @@ namespace cling {
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                    Value* result,
-                                   size_t posOpenCurly) {
+                                   size_t posOpenCurly,
+                                   bool lineByLine) {
 
     // FIXME: This will fail for Unicode BOMs (and seems really weird)
     {
@@ -302,17 +304,28 @@ namespace cling {
       m_TopExecutingFile = m_CurrentlyExecutingFile;
 #endif
 
-    Interpreter::CompilationResult ret;
+    content.insert(0, "#line 2 \"" + filename.str() + "\" \n");
     // We don't want to value print the results of a unnamed macro.
-    content = "#line 2 \"" + filename.str() + "\" \n" + content;
-    if (process((content + ";").c_str(), ret, result)) {
-      // Input file has to be complete.
-       llvm::errs()
-          << "Error in cling::MetaProcessor: file "
-          << llvm::sys::path::filename(filename)
-          << " is incomplete (missing parenthesis or similar)!\n";
-      ret = Interpreter::kFailure;
-    }
+    if (content.back() != ';')
+      content.append(";");
+
+    Interpreter::CompilationResult ret = Interpreter::kSuccess;
+    if (lineByLine) {
+      int rslt = 0;
+      std::string line;
+      std::stringstream ss(content);
+      while (std::getline(ss, line, '\n')) {
+        rslt = process(line.c_str(), ret, result);
+        if (ret == Interpreter::kFailure)
+          break;
+      }
+      if (rslt) {
+        llvm::errs() << "Error in cling::MetaProcessor: file "
+                     << llvm::sys::path::filename(filename)
+                     << " is incomplete (missing parenthesis or similar)!\n";
+      }
+    } else
+      ret = m_Interp.process(content, result);
 
 #ifndef NDEBUG
     m_CurrentlyExecutingFile = llvm::StringRef();
