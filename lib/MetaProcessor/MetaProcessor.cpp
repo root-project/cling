@@ -295,10 +295,13 @@ namespace cling {
       } // find '}'
     } // ignore outermost block
 
+#ifndef NDEBUG
     m_CurrentlyExecutingFile = filename;
     bool topmost = !m_TopExecutingFile.data();
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
+#endif
+
     Interpreter::CompilationResult ret;
     // We don't want to value print the results of a unnamed macro.
     content = "#line 2 \"" + filename.str() + "\" \n" + content;
@@ -310,9 +313,12 @@ namespace cling {
           << " is incomplete (missing parenthesis or similar)!\n";
       ret = Interpreter::kFailure;
     }
+
+#ifndef NDEBUG
     m_CurrentlyExecutingFile = llvm::StringRef();
     if (topmost)
       m_TopExecutingFile = llvm::StringRef();
+#endif
     return ret;
   }
 
