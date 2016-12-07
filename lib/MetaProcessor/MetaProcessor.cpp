@@ -187,47 +187,68 @@ namespace cling {
     return m_InputValidator->getExpectedIndent();
   }
 
+  static Interpreter::CompilationResult reportIOErr(llvm::StringRef File,
+                                                    const char* What) {
+    llvm::errs() << "Error in cling::MetaProcessor: "
+          "cannot " << What << " input: '" << File << "'\n";
+    return Interpreter::kFailure;
+  }
+
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                    Value* result,
                                    size_t posOpenCurly) {
 
+    // FIXME: This will fail for Unicode BOMs (and seems really weird)
     {
       // check that it's not binary:
       std::ifstream in(filename.str().c_str(), std::ios::in | std::ios::binary);
+      if (in.fail())
+        return reportIOErr(filename, "open");
+
       char magic[1024] = {0};
       in.read(magic, sizeof(magic));
       size_t readMagic = in.gcount();
       // Binary files < 300 bytes are rare, and below newlines etc make the
       // heuristic unreliable.
-      if (readMagic >= 300) {
+      if (!in.fail() && readMagic >= 300) {
         llvm::StringRef magicStr(magic,in.gcount());
         llvm::sys::fs::file_magic fileType
           = llvm::sys::fs::identify_magic(magicStr);
-        if (fileType != llvm::sys::fs::file_magic::unknown) {
-          llvm::errs() << "Error in cling::MetaProcessor: "
-            "cannot read input from a binary file!\n";
-          return Interpreter::kFailure;
-        }
+        if (fileType != llvm::sys::fs::file_magic::unknown)
+          return reportIOErr(filename, "read from binary");
+
         unsigned printable = 0;
         for (size_t i = 0; i < readMagic; ++i)
           if (isprint(magic[i]))
             ++printable;
         if (10 * printable <  5 * readMagic) {
           // 50% printable for ASCII files should be a safe guess.
-          llvm::errs() << "Error in cling::MetaProcessor: "
-            "cannot read input from a (likely) binary file!\n" << printable;
-          return Interpreter::kFailure;
+          return reportIOErr(filename, "won't read from likely binary");
         }
       }
     }
 
     std::ifstream in(filename.str().c_str());
+    if (in.fail())
+      return reportIOErr(filename, "open");
+
     in.seekg(0, std::ios::end);
+    if (in.fail())
+      return reportIOErr(filename, "seek");
+
     size_t size = in.tellg();
-    std::string content(size, ' ');
+    if (in.fail())
+      return reportIOErr(filename, "tell");
+
     in.seekg(0);
+    if (in.fail())
+      return reportIOErr(filename, "rewind");
+
+    std::string content(size, ' ');
     in.read(&content[0], size);
+    if (in.fail())
+      return reportIOErr(filename, "read");
 
     if (posOpenCurly != (size_t)-1 && !content.empty()) {
       assert(content[posOpenCurly] == '{'
@@ -274,8 +295,7 @@ namespace cling {
       } // find '}'
     } // ignore outermost block
 
-    std::string strFilename(filename.str());
-    m_CurrentlyExecutingFile = strFilename;
+    m_CurrentlyExecutingFile = filename;
     bool topmost = !m_TopExecutingFile.data();
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
