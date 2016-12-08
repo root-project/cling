@@ -103,8 +103,15 @@ namespace textinput {
   // If input is not a tty don't write in tty-mode either.
   TerminalDisplayUnix::TerminalDisplayUnix():
     TerminalDisplay(TerminalConfigUnix::Get().IsInteractive()),
-    fIsAttached(false), fNColors(16) {
-    HandleResizeSignal();
+    fIsAttached(false), fNColors(16), fOutputID(STDOUT_FILENO)
+  {
+    if (::isatty(::fileno(stdin)) && !::isatty(fOutputID)) {
+      // Display prompt, even if stdout is going somewhere else
+      fOutputID = ::open("/dev/tty", O_WRONLY);
+      SetIsTTY(true);
+    }
+
+    HandleResizeSignal(); // needs fOutputID
     gTerminalDisplayUnix() = this;
     signal(SIGWINCH, TerminalDisplayUnix__handleResizeSignal);
 #ifdef TCSANOW
@@ -114,12 +121,6 @@ namespace textinput {
     const char* TERM = getenv("TERM");
     if (TERM &&  strstr(TERM, "256")) {
       fNColors = 256;
-    }
-    fOutputID = STDOUT_FILENO;
-    if (::isatty(::fileno(stdin)) && !::isatty(fOutputID)) {
-      // Display prompt, even if stdout is going somewhere else
-      fOutputID = ::open("/dev/tty", O_WRONLY);
-      SetIsTTY(true);
     }
   }
 
