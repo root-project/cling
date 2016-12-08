@@ -54,12 +54,6 @@ namespace cling {
     ///
     ValidationResult validate(llvm::StringRef line);
 
-    ///\returns Reference to the collected input.
-    ///
-    std::string& getInput() {
-      return m_Input;
-    }
-
     ///\brief Retrieves the number of spaces that the next input line should be
     /// indented.
     ///
@@ -67,7 +61,15 @@ namespace cling {
 
     ///\brief Resets the collected input and its corresponding brace stack.
     ///
-    void reset();
+    ///\param[in] input - Grab the collected input before reseting.
+    ///
+    void reset(std::string* input = nullptr);
+
+    ///\brief Return whether we are inside a mult-line comment
+    ///
+    ///\returns true if currently inside a multi-line comment block
+    ///
+    bool inBlockComment() const;
   };
 }
 #endif // CLING_INPUT_VALIDATOR_H

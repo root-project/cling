@@ -39,6 +39,8 @@ namespace cling {
       space,      // (' ' | '\t')*
       constant,   // {0-9}
       at,         // @
+      asterik,    // *
+      semicolon,  // ;
       eof,
       unknown
     };
@@ -82,10 +84,8 @@ namespace cling {
     const char* bufferStart;
     const char* curPos;
   public:
-    MetaLexer(const char* bufStart)
-      : bufferStart(bufStart), curPos(bufStart)
-    { }
-    MetaLexer(llvm::StringRef input);
+    MetaLexer(llvm::StringRef input, bool skipWhiteSpace = false);
+    void reset(llvm::StringRef Line);
 
     void Lex(Token& Tok);
     void LexAnyString(Token& Tok);
@@ -99,9 +99,7 @@ namespace cling {
     void LexEndOfFile(char C, Token& Tok);
     void LexWhitespace(char C, Token& Tok);
     void SkipWhitespace();
-    inline char getAndAdvanceChar(const char *&Ptr) {
-      return *Ptr++;
-    }
+    const char* getLocation() const { return curPos; }
   };
 } //end namespace cling
 

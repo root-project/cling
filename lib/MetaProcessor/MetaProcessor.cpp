@@ -26,6 +26,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <cctype>
+#include <sstream>
 #include <stdio.h>
 #ifndef WIN32
 #include <unistd.h>
@@ -149,7 +150,8 @@ namespace cling {
     //  Check for and handle meta commands.
     m_MetaParser->enterNewInputLine(input_line);
     MetaSema::ActionResult actionResult = MetaSema::AR_Success;
-    if (m_MetaParser->isMetaCommand(actionResult, result)) {
+    if (!m_InputValidator->inBlockComment() &&
+         m_MetaParser->isMetaCommand(actionResult, result)) {
 
       if (m_MetaParser->isQuitRequested())
         return -1;
@@ -168,8 +170,8 @@ namespace cling {
     }
 
     //  We have a complete statement, compile and execute it.
-    std::string input = m_InputValidator->getInput();
-    m_InputValidator->reset();
+    std::string input;
+    m_InputValidator->reset(&input);
     // if (m_Options.RawInput)
     //   compResLocal = m_Interp.declare(input);
     // else
@@ -186,47 +188,69 @@ namespace cling {
     return m_InputValidator->getExpectedIndent();
   }
 
+  static Interpreter::CompilationResult reportIOErr(llvm::StringRef File,
+                                                    const char* What) {
+    llvm::errs() << "Error in cling::MetaProcessor: "
+          "cannot " << What << " input: '" << File << "'\n";
+    return Interpreter::kFailure;
+  }
+
   Interpreter::CompilationResult
   MetaProcessor::readInputFromFile(llvm::StringRef filename,
                                    Value* result,
-                                   size_t posOpenCurly) {
+                                   size_t posOpenCurly,
+                                   bool lineByLine) {
 
+    // FIXME: This will fail for Unicode BOMs (and seems really weird)
     {
       // check that it's not binary:
       std::ifstream in(filename.str().c_str(), std::ios::in | std::ios::binary);
+      if (in.fail())
+        return reportIOErr(filename, "open");
+
       char magic[1024] = {0};
       in.read(magic, sizeof(magic));
       size_t readMagic = in.gcount();
       // Binary files < 300 bytes are rare, and below newlines etc make the
       // heuristic unreliable.
-      if (readMagic >= 300) {
+      if (!in.fail() && readMagic >= 300) {
         llvm::StringRef magicStr(magic,in.gcount());
         llvm::sys::fs::file_magic fileType
           = llvm::sys::fs::identify_magic(magicStr);
-        if (fileType != llvm::sys::fs::file_magic::unknown) {
-          llvm::errs() << "Error in cling::MetaProcessor: "
-            "cannot read input from a binary file!\n";
-          return Interpreter::kFailure;
-        }
+        if (fileType != llvm::sys::fs::file_magic::unknown)
+          return reportIOErr(filename, "read from binary");
+
         unsigned printable = 0;
         for (size_t i = 0; i < readMagic; ++i)
           if (isprint(magic[i]))
             ++printable;
         if (10 * printable <  5 * readMagic) {
           // 50% printable for ASCII files should be a safe guess.
-          llvm::errs() << "Error in cling::MetaProcessor: "
-            "cannot read input from a (likely) binary file!\n" << printable;
-          return Interpreter::kFailure;
+          return reportIOErr(filename, "won't read from likely binary");
         }
       }
     }
 
     std::ifstream in(filename.str().c_str());
+    if (in.fail())
+      return reportIOErr(filename, "open");
+
     in.seekg(0, std::ios::end);
+    if (in.fail())
+      return reportIOErr(filename, "seek");
+
     size_t size = in.tellg();
-    std::string content(size, ' ');
+    if (in.fail())
+      return reportIOErr(filename, "tell");
+
     in.seekg(0);
+    if (in.fail())
+      return reportIOErr(filename, "rewind");
+
+    std::string content(size, ' ');
     in.read(&content[0], size);
+    if (in.fail())
+      return reportIOErr(filename, "read");
 
     if (posOpenCurly != (size_t)-1 && !content.empty()) {
       assert(content[posOpenCurly] == '{'
@@ -273,25 +297,41 @@ namespace cling {
       } // find '}'
     } // ignore outermost block
 
-    std::string strFilename(filename.str());
-    m_CurrentlyExecutingFile = strFilename;
+#ifndef NDEBUG
+    m_CurrentlyExecutingFile = filename;
     bool topmost = !m_TopExecutingFile.data();
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
-    Interpreter::CompilationResult ret;
+#endif
+
+    content.insert(0, "#line 2 \"" + filename.str() + "\" \n");
     // We don't want to value print the results of a unnamed macro.
-    content = "#line 2 \"" + filename.str() + "\" \n" + content;
-    if (process((content + ";").c_str(), ret, result)) {
-      // Input file has to be complete.
-       llvm::errs()
-          << "Error in cling::MetaProcessor: file "
-          << llvm::sys::path::filename(filename)
-          << " is incomplete (missing parenthesis or similar)!\n";
-      ret = Interpreter::kFailure;
-    }
+    if (content.back() != ';')
+      content.append(";");
+
+    Interpreter::CompilationResult ret = Interpreter::kSuccess;
+    if (lineByLine) {
+      int rslt = 0;
+      std::string line;
+      std::stringstream ss(content);
+      while (std::getline(ss, line, '\n')) {
+        rslt = process(line.c_str(), ret, result);
+        if (ret == Interpreter::kFailure)
+          break;
+      }
+      if (rslt) {
+        llvm::errs() << "Error in cling::MetaProcessor: file "
+                     << llvm::sys::path::filename(filename)
+                     << " is incomplete (missing parenthesis or similar)!\n";
+      }
+    } else
+      ret = m_Interp.process(content, result);
+
+#ifndef NDEBUG
     m_CurrentlyExecutingFile = llvm::StringRef();
     if (topmost)
       m_TopExecutingFile = llvm::StringRef();
+#endif
     return ret;
   }
 

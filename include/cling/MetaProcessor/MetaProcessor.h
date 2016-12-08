@@ -45,6 +45,7 @@ namespace cling {
     ///
     std::unique_ptr<MetaParser> m_MetaParser;
 
+#ifndef NDEBUG
     ///\brief Currently executing file as passed into executeFile
     ///
     llvm::StringRef m_CurrentlyExecutingFile;
@@ -52,6 +53,7 @@ namespace cling {
     ///\brief Outermost currently executing file as passed into executeFile
     ///
     llvm::StringRef m_TopExecutingFile;
+#endif
 
     ///\brief The output stream being used for various purposes.
     ///
@@ -161,13 +163,15 @@ namespace cling {
     /// @param[out] result - the cling::Value as result of the
     ///             execution of the last statement
     ///\param [in] posOpenCurly - position of the opening '{'; -1 if no curly.
+    ///\param [in] lineByLine - Process each line individually.
     ///
     ///\returns result of the compilation.
     ///
     Interpreter::CompilationResult
     readInputFromFile(llvm::StringRef filename,
                       Value* result,
-                      size_t posOpenCurly = (size_t)(-1));
+                      size_t posOpenCurly = (size_t)(-1),
+                      bool lineByLine = true);
 
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///
