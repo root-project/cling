@@ -124,7 +124,7 @@ namespace textinput {
     }
   }
 
-  static void syncOut(int fd) {
+  static void syncOut(int /*fd*/) {
     ::fflush(stdout);
   }
 
