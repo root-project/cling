@@ -113,5 +113,8 @@ int main( int argc, char **argv ) {
     client->BeginSourceFile(CI->getLangOpts(), &CI->getPreprocessor());
   }
 
+  // Only for test/OutputRedirect.C, but shouldn't affect performance too much.
+  ::fflush(stdout);
+  ::fflush(stderr);
   return ret;
 }
