@@ -267,8 +267,8 @@ namespace cling {
   };
 
   MetaProcessor::MaybeRedirectOutputRAII::MaybeRedirectOutputRAII(
-                                                             MetaProcessor &P) :
-    m_MetaProcessor(P) {
+                                                             MetaProcessor *P) :
+    m_MetaProcessor(*P) {
     if (m_MetaProcessor.m_RedirectOutput)
       m_MetaProcessor.m_RedirectOutput->resetStdOut(true);
   }

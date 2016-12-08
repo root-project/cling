@@ -77,7 +77,7 @@ namespace cling {
     class MaybeRedirectOutputRAII {
       MetaProcessor& m_MetaProcessor;
     public:
-      MaybeRedirectOutputRAII(MetaProcessor& P);
+      MaybeRedirectOutputRAII(MetaProcessor* P);
       ~MaybeRedirectOutputRAII();
     };
 

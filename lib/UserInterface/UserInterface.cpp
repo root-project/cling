@@ -110,7 +110,7 @@ namespace cling {
       try {
         m_MetaProcessor->getOuts().flush();
         {
-          MetaProcessor::MaybeRedirectOutputRAII RAII(*m_MetaProcessor);
+          MetaProcessor::MaybeRedirectOutputRAII RAII(m_MetaProcessor.get());
           TI.SetPrompt(Prompt.c_str());
           if (TI.ReadInput() == TextInput::kRREOF)
             break;
