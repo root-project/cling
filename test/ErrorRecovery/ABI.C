@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -nostdinc++ -nobuiltininc -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling %nostdincxx -nobuiltininc -Xclang -verify 2>&1 | FileCheck %s
 
 // expected-error {{'new' file not found}}
 

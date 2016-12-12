@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: clang -shared %S/address_lib.c -olibaddress_lib%shlibext
+// RUN: clang -shared -DCLING_EXPORT=%dllexport %S/address_lib.c -olibaddress_lib%shlibext
 // RUN: cat %s | %built_cling -L. -fno-rtti | FileCheck %s
 extern "C" int printf(const char*,...);
 
