@@ -171,7 +171,7 @@ namespace cling {
     readInputFromFile(llvm::StringRef filename,
                       Value* result,
                       size_t posOpenCurly = (size_t)(-1),
-                      bool lineByLine = true);
+                      bool lineByLine = false);
 
     ///\brief Set the stdout and stderr stream to the appropriate file.
     ///
