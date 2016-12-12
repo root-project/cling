@@ -10,6 +10,7 @@
 #include "ClingPragmas.h"
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Utils/Paths.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TokenKinds.h"
@@ -22,28 +23,6 @@ using namespace cling;
 using namespace clang;
 
 namespace {
-  static void replaceEnvVars(std::string &Path) {
-    std::size_t bpos = Path.find("$");
-    while (bpos != std::string::npos) {
-      std::size_t spos = Path.find("/", bpos + 1);
-      std::size_t length = Path.length();
-
-      if (spos != std::string::npos) // if we found a "/"
-        length = spos - bpos;
-
-      std::string envVar = Path.substr(bpos + 1, length -1); //"HOME"
-      const char* c_Path = getenv(envVar.c_str());
-      std::string fullPath;
-      if (c_Path != NULL) {
-        fullPath = std::string(c_Path);
-      } else {
-        fullPath = std::string("");
-      }
-      Path.replace(bpos, length, fullPath);
-      bpos = Path.find("$", bpos + 1); //search for next env variable
-    }
-  }
-
   typedef std::pair<bool, std::string> ParseResult_t;
 
   static ParseResult_t HandlePragmaHelper(Preprocessor &PP,
@@ -67,7 +46,7 @@ namespace {
       // already diagnosed.
       return ParseResult_t {false, ""};
     }
-    replaceEnvVars(Literal);
+    utils::ExpandEnvVars(Literal);
 
     return ParseResult_t {true, Literal};
   }
