@@ -137,7 +137,7 @@ namespace cling {
 
     // Restore stdstream from backup and close the backup
     void close(int oldfd, int newfd) {
-      assert(newfd == STDOUT_FILENO || (newfd == STDERR_FILENO && "Not std FD"));
+      assert((newfd == STDOUT_FILENO || newfd == STDERR_FILENO) && "Not std FD");
       assert(oldfd == m_Bak[newfd == STDERR_FILENO] && "Not backup FD");
       if (oldfd != kInvalidFD) {
         dup2(oldfd, newfd, "RedirectOutput::close");
