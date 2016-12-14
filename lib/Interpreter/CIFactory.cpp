@@ -474,7 +474,7 @@ namespace {
     return &Cmd->getArguments();
   }
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(NDEBUG)
 static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                     const char* Name, int Val) {
   smallstream Strm;
@@ -493,11 +493,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 #ifdef _DEBUG
     STRINGIFY_PREPROC_SETTING(PPOpts, _DEBUG);
 #endif
+#endif
+
 #ifdef NDEBUG
     STRINGIFY_PREPROC_SETTING(PPOpts, NDEBUG);
 #endif
-#endif
-
     // Since cling, uses clang instead, macros always sees __CLANG__ defined
     // In addition, clang also defined __GNUC__, we add the following two macros
     // to allow scripts, and more important, dictionary generation to know which
