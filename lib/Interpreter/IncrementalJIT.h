@@ -10,6 +10,8 @@
 #ifndef CLING_INCREMENTAL_JIT_H
 #define CLING_INCREMENTAL_JIT_H
 
+#include "cling/Utils/Output.h"
+
 #include <map>
 #include <memory>
 #include <set>
@@ -172,13 +174,9 @@ private:
 
 
   std::string Mangle(llvm::StringRef Name) {
-    std::string MangledName;
-    {
-      llvm::raw_string_ostream MangledNameStream(MangledName);
-      llvm::Mangler::getNameWithPrefix(MangledNameStream, Name,
-                                       m_TMDataLayout);
-    }
-    return MangledName;
+    stdstrstream MangledName;
+    llvm::Mangler::getNameWithPrefix(MangledName, Name, m_TMDataLayout);
+    return MangledName.str();
   }
 
   llvm::orc::JITSymbol getInjectedSymbols(const std::string& Name) const;

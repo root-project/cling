@@ -11,6 +11,8 @@
 #ifndef CLING_AUTOLOADING_VISITOR_H
 #define CLING_AUTOLOADING_VISITOR_H
 
+#include "cling/Utils/Output.h"
+
 #include "clang/AST/DeclVisitor.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/Basic/Specifiers.h"
@@ -262,35 +264,31 @@ namespace cling {
     class StreamRAII {
       ForwardDeclPrinter& m_pr;
       clang::PrintingPolicy m_oldPol;
-      std::string m_Output;
-      llvm::raw_string_ostream m_Stream;
+      largestream m_Stream;
       bool m_HavePopped;
     public:
       StreamRAII(ForwardDeclPrinter& pr, clang::PrintingPolicy* pol = 0):
-        m_pr(pr), m_oldPol(pr.m_Policy), m_Stream(m_Output),
-        m_HavePopped(false) {
-        m_pr.m_StreamStack.push(&m_Stream);
+        m_pr(pr), m_oldPol(pr.m_Policy), m_HavePopped(false) {
+        m_pr.m_StreamStack.push(&static_cast<llvm::raw_ostream&>(m_Stream));
         if (pol)
           m_pr.m_Policy = *pol;
       }
       ~StreamRAII() {
         if (!m_HavePopped) {
           m_pr.m_StreamStack.pop();
-          m_Stream.flush();
           if (!m_pr.m_SkipFlag) {
-            m_pr.Out() << m_Output;
+            m_pr.Out() << m_Stream.str();
           }
         }
         m_pr.m_Policy = m_oldPol;
       }
-      std::string take(bool pop = false) {
-        m_Stream.flush();
+      llvm::StringRef take(bool pop = false) {
         if (pop) {
           assert(!m_HavePopped && "No popping twice");
           m_HavePopped = true;
           m_pr.m_StreamStack.pop();
         }
-        return m_Output;
+        return m_Stream.str();
       }
     };
   };

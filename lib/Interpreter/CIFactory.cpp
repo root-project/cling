@@ -423,8 +423,7 @@ namespace {
   // This must be a copy of clang::getClangToolFullVersion(). Luckily
   // we'll notice quickly if it ever changes! :-)
   static std::string CopyOfClanggetClangToolFullVersion(StringRef ToolName) {
-    std::string buf;
-    llvm::raw_string_ostream OS(buf);
+    cling::stdstrstream OS;
 #ifdef CLANG_VENDOR
     OS << CLANG_VENDOR;
 #endif
@@ -476,28 +475,26 @@ namespace {
   }
 
 #ifdef _MSC_VER
-std::string stringifyPreprocSetting(const char* name, int val) {
-  std::string ret(name);
-  {
-    llvm::raw_string_ostream sstr(ret);
-    sstr << "=" << val;
-  }
-  return ret;
+static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
+                                    const char* Name, int Val) {
+  smallstream Strm;
+  Strm << Name << "=" << Val;
+  PPOpts.addMacroDef(Strm.str());
 }
 
-#define STRINGIFY_PREPROC_SETTING(name) \
-  stringifyPreprocSetting(#name, name).c_str()
+#define STRINGIFY_PREPROC_SETTING(PP, name) \
+  stringifyPreprocSetting(PP, #name, name)
 #endif
 
   /// Set cling's preprocessor defines to match the cling binary.
   static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {
 #ifdef _MSC_VER
-    PPOpts.addMacroDef(STRINGIFY_PREPROC_SETTING(_HAS_EXCEPTIONS));
+    STRINGIFY_PREPROC_SETTING(PPOpts, _HAS_EXCEPTIONS);
 #ifdef _DEBUG
-    PPOpts.addMacroDef(STRINGIFY_PREPROC_SETTING(_DEBUG));
+    STRINGIFY_PREPROC_SETTING(PPOpts, _DEBUG);
 #endif
 #ifdef NDEBUG
-    PPOpts.addMacroDef(STRINGIFY_PREPROC_SETTING(NDEBUG));
+    STRINGIFY_PREPROC_SETTING(PPOpts, NDEBUG);
 #endif
 #endif
 

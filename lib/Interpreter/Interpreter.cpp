@@ -845,29 +845,24 @@ namespace cling {
     if (addr)
       return addr;
 
-    std::string funcname;
-    {
-      llvm::raw_string_ostream namestr(funcname);
-      namestr << "__cling_Destruct_" << RD;
-    }
+    smallstream funcname;
+    funcname << "__cling_Destruct_" << RD;
 
-    std::string code = "extern \"C\" void ";
-    clang::QualType RDQT(RD->getTypeForDecl(), 0);
-    std::string typeName
-      = utils::TypeName::GetFullyQualifiedName(RDQT, RD->getASTContext());
-    std::string dtorName = RD->getNameAsString();
-    code += funcname + "(void* obj){((" + typeName + "*)obj)->~"
-      + dtorName + "();}";
+    largestream code;
+    code << "extern \"C\" void " << funcname.str() << "(void* obj){(("
+         << utils::TypeName::GetFullyQualifiedName(
+                clang::QualType(RD->getTypeForDecl(), 0), RD->getASTContext())
+         << "*)obj)->~" << RD->getNameAsString() << "();}";
 
     // ifUniq = false: we know it's unique, no need to check.
-    addr = compileFunction(funcname, code, false /*ifUniq*/,
+    addr = compileFunction(funcname.str(), code.str(), false /*ifUniq*/,
                            false /*withAccessControl*/);
     return addr;
   }
 
   void Interpreter::createUniqueName(std::string& out) {
-    out += utils::Synthesize::UniquePrefix;
-    llvm::raw_string_ostream(out) << m_UniqueCounter++;
+    llvm::raw_string_ostream(out)
+      << utils::Synthesize::UniquePrefix << m_UniqueCounter++;
   }
 
   bool Interpreter::isUniqueName(llvm::StringRef name) {
@@ -875,9 +870,9 @@ namespace cling {
   }
 
   llvm::StringRef Interpreter::createUniqueWrapper() const {
-    llvm::SmallString<128> out(utils::Synthesize::UniquePrefix);
-    llvm::raw_svector_ostream(out) << m_UniqueCounter++;
-    return (getCI()->getASTContext().Idents.getOwn(out)).getName();
+    smallstream Stream;
+    Stream << utils::Synthesize::UniquePrefix << m_UniqueCounter++;
+    return (getCI()->getASTContext().Idents.getOwn(Stream.str())).getName();
   }
 
   bool Interpreter::isUniqueWrapper(llvm::StringRef name) {
