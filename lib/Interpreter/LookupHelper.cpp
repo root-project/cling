@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/LookupHelper.h"
+#include "cling/Utils/Output.h"
 
 #include "DeclUnloader.h"
 #include "cling/Interpreter/Interpreter.h"
@@ -1777,8 +1778,7 @@ namespace cling {
             else {
               proto += ',';
             }
-            std::string empty;
-            llvm::raw_string_ostream tmp(empty);
+            stdstrstream tmp;
             expr->printPretty(tmp, /*PrinterHelper=*/0, Policy,
                               /*Indentation=*/0);
             proto += tmp.str();

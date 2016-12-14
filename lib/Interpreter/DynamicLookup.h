@@ -267,7 +267,7 @@ namespace cling {
                                       bool ValuePrinterReq = false);
 
     ///\brief Creates const char* expression from given value.
-    clang::Expr* ConstructConstCharPtrExpr(const char* Val);
+    clang::Expr* ConstructConstCharPtrExpr(llvm::StringRef Val);
 
     ///\brief Checks if the given node is marked as dependent by us.
     ///
@@ -284,7 +284,7 @@ namespace cling {
     /// \brief Creates unique name (eg. of a variable). Used internally for
     /// AST node synthesis.
     ///
-    void createUniqueName(std::string& out);
+    std::string createUniqueName();
     /// @}
   };
 } // end namespace cling

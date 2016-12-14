@@ -341,12 +341,9 @@ namespace cling {
 
       if (MustStartNewModule) {
         // Create a new module.
-        std::string ModuleName;
-        {
-          llvm::raw_string_ostream strm(ModuleName);
-          strm << "cling-module-" << ++m_ModuleNo;
-        }
-        getCodeGenerator()->StartModule(ModuleName,
+        stdstrstream ModuleName;
+        ModuleName << "cling-module-" << ++m_ModuleNo;
+        getCodeGenerator()->StartModule(ModuleName.str(),
                                         *m_Interpreter->getLLVMContext(),
                                         getCI()->getCodeGenOpts());
       }
@@ -478,12 +475,9 @@ namespace cling {
       }
 
       // Create a new module.
-      std::string ModuleName;
-      {
-        llvm::raw_string_ostream strm(ModuleName);
-        strm << "cling-module-" << ++m_ModuleNo;
-      }
-      getCodeGenerator()->StartModule(ModuleName,
+      smallstream ModuleName;
+      ModuleName << "cling-module-" << ++m_ModuleNo;
+      getCodeGenerator()->StartModule(ModuleName.str(),
                                       *m_Interpreter->getLLVMContext(),
                                       getCI()->getCodeGenOpts());
     }

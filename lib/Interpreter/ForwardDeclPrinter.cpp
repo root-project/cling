@@ -960,8 +960,7 @@ namespace cling {
         D = RD;
     }
 
-    std::string Output;
-    llvm::raw_string_ostream Stream(Output);
+    stdstrstream Stream;
 
     std::string closeBraces;
     if (!isa<TemplateTemplateParmDecl>(D))
@@ -989,8 +988,7 @@ namespace cling {
       }
       Stream << SubStream.take(true);
     }
-    Stream.flush();
-    Out() << Output << closeBraces << '\n';
+    Out() << Stream.str() << closeBraces << '\n';
   }
 
   void ForwardDeclPrinter::VisitFunctionTemplateDecl(FunctionTemplateDecl *D) {

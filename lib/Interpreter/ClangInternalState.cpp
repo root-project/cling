@@ -299,16 +299,14 @@ namespace cling {
 
   void ClangInternalState::printMacroDefinitions(llvm::raw_ostream& Out,
                                                 const clang::Preprocessor& PP) {
-    std::string contents;
-    llvm::raw_string_ostream contentsOS(contents);
+    stdstrstream contentsOS;
     PP.printMacros(contentsOS);
-    contentsOS.flush();
     Out << "Ordered Alphabetically:\n";
     std::vector<std::string> elems;
     {
       // Split the string into lines.
       char delim = '\n';
-      std::stringstream ss(contents);
+      std::stringstream ss(contentsOS.str());
       std::string item;
       while (std::getline(ss, item, delim)) {
         elems.push_back(item);

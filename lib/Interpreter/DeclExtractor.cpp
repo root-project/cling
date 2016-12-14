@@ -195,9 +195,8 @@ namespace cling {
     if (out.empty())
       out += '_';
 
-    out += "_init_order";
-    out += utils::Synthesize::UniquePrefix;
-    llvm::raw_string_ostream(out) << m_UniqueNameCounter++;
+    llvm::raw_string_ostream(out) << "_init_order"
+      << utils::Synthesize::UniquePrefix << m_UniqueNameCounter++;
   }
 
   void DeclExtractor::EnforceInitOrder(llvm::SmallVectorImpl<Stmt*>& Stmts){
