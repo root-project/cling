@@ -11,20 +11,15 @@
 
 extern "C" int cling_testlibrary_function();
 
-// For gcc setenv
-#ifndef __THROW
- #define __THROW
-#endif
-extern "C" int setenv(const char *name, const char *value, int overwrite) __THROW;
-extern "C" int _putenv_s(const char *name, const char *value);
-static void setup() {
-#ifdef _WIN32
+#ifndef _WIN32
+ #include <stdlib.h>
+#else
+ extern "C" int _putenv_s(const char *name, const char *value);
  #define setenv(n, v, o) _putenv_s(n,v)
 #endif
-  ::setenv("ENVVAR_INC", ENVVAR_INC, 1);
-  ::setenv("ENVVAR_LIB", ENVVAR_LIB, 1);
-}
-setup();
+
+::setenv("ENVVAR_INC", ENVVAR_INC, 1);
+::setenv("ENVVAR_LIB", ENVVAR_LIB, 1);
 
 #pragma cling add_include_path("$ENVVAR_INC")
 #include "Include_header.h"
