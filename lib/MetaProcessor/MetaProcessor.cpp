@@ -46,13 +46,11 @@ namespace cling {
   class MetaProcessor::RedirectOutput {
 
     static int dupOnce(int Fd, int& Bak) {
-#ifdef LLVM_ON_WIN32
-      // Possibly because Windows isn't really Posix, we need to flush
-      // now or can drop the buffer when dup2 is called with Fd later.
+      // Flush now or can drop the buffer when dup2 is called with Fd later.
       // This seems only neccessary when piping stdout or stderr, but do it
       // for ttys to avoid over complicated code for minimal benefit.
       ::fflush(Fd==STDOUT_FILENO ? stdout : stderr);
-#endif
+
       if (Bak == kInvalidFD)
         Bak = ::dup(Fd);
 
