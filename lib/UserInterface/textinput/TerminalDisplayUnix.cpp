@@ -124,14 +124,13 @@ namespace textinput {
     }
   }
 
-  static void syncOut(int /*fd*/) {
-    ::fflush(stdout);
-  }
+// Don't rely on flushing here.
+#define SYNC_OUT(fd) /*if (fd==STDOUT_FILENO) { ::fflush(stdout); } }*/
 
   TerminalDisplayUnix::~TerminalDisplayUnix() {
     Detach();
     if (fOutputID != STDOUT_FILENO) {
-      syncOut(fOutputID);
+      SYNC_OUT(fOutputID);
       ::close(fOutputID);
     }
   }
@@ -280,7 +279,7 @@ namespace textinput {
   TerminalDisplayUnix::Attach() {
     // set to noecho
     if (fIsAttached) return;
-    syncOut(fOutputID);
+    SYNC_OUT(fOutputID);
     TerminalConfigUnix::Get().Attach();
     fWritePos = Pos();
     fWriteLen = 0;
@@ -290,7 +289,7 @@ namespace textinput {
   void
   TerminalDisplayUnix::Detach() {
     if (!fIsAttached) return;
-    syncOut(fOutputID);
+    SYNC_OUT(fOutputID);
     TerminalConfigUnix::Get().Detach();
     TerminalDisplay::Detach();
     fIsAttached = false;
