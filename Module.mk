@@ -61,9 +61,11 @@ INCLUDEFILES += $(CLINGDEP)
 # 2) rely on TCling to addIncludePath instead of using CLING_..._INCL below
 # -fvisibility=hidden renders libCore unusable.
 # Filter out warning flags.
-CLINGLLVMCXXFLAGS = $(filter-out -fvisibility-inlines-hidden,$(filter-out -fvisibility=hidden,\
+CLINGLLVMCXXFLAGSRAW = $(shell $(LLVMCONFIG) --cxxflags)
+CLINGLLVMCXXFLAGS = $(filter-out -pedantic,$(filter-out -fvisibility-inlines-hidden,$(filter-out -fvisibility=hidden,\
                     $(filter-out -W%,\
-                    $(patsubst -O%,,$(shell $(LLVMCONFIG) --cxxflags)))))
+                    $(patsubst -O%,,$(CLINGLLVMCXXFLAGSRAW)))))) \
+                    $(filter -Wno-%,$(CLINGLLVMCXXFLAGSRAW))
 # -ffunction-sections breaks the debugger on some platforms ... and does not help libCling at all.
 
 # FIXME: This is temporary until I update my compiler on mac and add -fmodules-local-submodule-visibility.
