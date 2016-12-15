@@ -122,6 +122,16 @@ namespace textinput {
     if (TERM &&  strstr(TERM, "256")) {
       fNColors = 256;
     }
+    fOutputID = STDOUT_FILENO;
+    if (::isatty(::fileno(stdin)) && !::isatty(fOutputID)) {
+      // Display prompt, even if stdout is going somewhere else
+      fOutputID = ::open("/dev/tty", O_WRONLY);
+      SetIsTTY(true);
+    }
+  }
+
+  static void syncOut(int fd) {
+    ::fflush(stdout);
   }
 
   static void syncOut(int /*fd*/) {
