@@ -39,6 +39,10 @@
 #include <shlobj.h>  // SHGetFolderPath
 #pragma comment(lib, "Advapi32.lib")
 
+extern "C" char* __unDName(char *demangled, const char *mangled, int out_len,
+                           void * (* pAlloc )(size_t), void (* pFree )(void *),
+                           unsigned short int flags);
+
 #define MAX_PATHC (MAX_PATH + 1)
 
 namespace cling {
@@ -683,6 +687,16 @@ bool Popen(const std::string& Cmd, llvm::SmallVectorImpl<char>& Buf, bool RdE) {
   CloseHandle(hOutputRead);
 
   return !Buf.empty();
+}
+
+std::string Demangle(const std::string& Symbol) {
+  struct AutoFree {
+    char* Str;
+    AutoFree(char* Ptr) : Str(Ptr) {}
+    ~AutoFree() { ::free(Str); };
+  };
+  AutoFree af(__unDName(0, Symbol.c_str(), 0, ::malloc, ::free, 0));
+  return af.Str ? std::string(af.Str) : std::string();
 }
 
 } // namespace platform

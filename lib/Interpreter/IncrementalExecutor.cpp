@@ -15,6 +15,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
 #include "cling/Utils/Output.h"
+#include "cling/Utils/Platform.h"
 
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CodeGenOptions.h"
@@ -30,15 +31,6 @@
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
-
-#ifdef LLVM_ON_WIN32
-extern "C"
-char *__unDName(char *demangled, const char *mangled, int out_len,
-                void * (* pAlloc )(size_t), void (* pFree )(void *),
-                unsigned short int flags);
-#else
-#include <cxxabi.h>
-#endif
 
 using namespace llvm;
 
@@ -406,21 +398,7 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
     cling::errs() << "!\n";
 
     // Be helpful, demangle!
-    std::string demangledName;
-    {
-#ifndef LLVM_ON_WIN32
-      int status = 0;
-      char *demang = abi::__cxa_demangle(i->c_str(), 0, 0, &status);
-      if (status == 0)
-        demangledName = demang;
-      free(demang);
-#else
-      if (char* demang = __unDName(0, i->c_str(), 0, malloc, free, 0)) {
-        demangledName = demang;
-        free(demang);
-      }
-#endif
-    }
+    std::string demangledName = platform::Demangle(*i);
     if (!demangledName.empty()) {
        cling::errs()
           << "You are probably missing the definition of "

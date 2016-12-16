@@ -44,6 +44,12 @@ namespace platform {
   ///
   const void* DLSym(const std::string& Name, std::string* Err = nullptr);
 
+  ///\brief Demangle the given symbol name
+  ///
+  /// \returns The demangled name or an empty string
+  ///
+  std::string Demangle(const std::string& Symbol);
+
   ///\brief Close a handle to a shared library.
   ///
   /// \param [in] Lib - Handle to library from previous call to DLOpen
