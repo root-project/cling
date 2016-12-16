@@ -17,6 +17,7 @@
 #include <array>
 #include <atomic>
 #include <string>
+#include <cxxabi.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -197,6 +198,19 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   }
 #endif
   return true;
+}
+
+std::string Demangle(const std::string& Symbol) {
+  struct AutoFree {
+    char* Str;
+    AutoFree(char* Ptr) : Str(Ptr) {}
+    ~AutoFree() { ::free(Str); };
+  };
+  int status = 0;
+  size_t len;
+  AutoFree af(abi::__cxa_demangle(Symbol.c_str(), 0, &len, &status));
+  assert(((len && af.Str[len-1]==0) || status != 0) && "Not null terminated");
+  return status == 0 ? std::string(af.Str, len-1) : std::string();
 }
 
 } // namespace platform
