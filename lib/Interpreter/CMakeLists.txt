@@ -55,7 +55,6 @@ add_cling_library(clingInterpreter OBJECT
   DynamicLookup.cpp
   DynamicExprInfo.cpp
   Exception.cpp
-  ExceptionRTTI.cpp
   ExternalInterpreterSource.cpp
   ForwardDeclPrinter.cpp
   IncrementalExecutor.cpp

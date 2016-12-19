@@ -22,12 +22,16 @@ namespace clang {
 namespace cling {
   ///\brief Base class for all interpreter exceptions.
   ///
-  class InterpreterException : public std::exception {
+  class InterpreterException : public std::runtime_error {
+  protected:
+    clang::Sema* const m_Sema;
   public:
+    InterpreterException(const std::string& Reason);
+    InterpreterException(const char* What, clang::Sema* = nullptr);
     virtual ~InterpreterException() LLVM_NOEXCEPT;
 
-    virtual const char* what() const LLVM_NOEXCEPT;
-    virtual void diagnose() const {}
+    ///\brief Return true if error was diagnosed false otherwise
+    virtual bool diagnose() const;
   };
 
   ///\brief Exception that is thrown when a invalid pointer dereference is found
@@ -37,33 +41,26 @@ namespace cling {
   public:
     enum DerefType {INVALID_MEM, NULL_DEREF};
   private:
-    clang::Sema* m_Sema;
-    clang::Expr* m_Arg;
-    clang::DiagnosticsEngine* m_Diags;
-    DerefType m_Type;
+    const clang::Expr* const m_Arg;
+    const DerefType m_Type;
   public:
-    InvalidDerefException(clang::Sema* S, clang::Expr* E, DerefType type);
+    InvalidDerefException(clang::Sema* S, const clang::Expr* E, DerefType type);
     virtual ~InvalidDerefException() LLVM_NOEXCEPT;
 
-    const char* what() const LLVM_NOEXCEPT override;
-    void diagnose() const override;
+    bool diagnose() const override;
   };
 
   ///\brief Exception that pulls cling out of runtime-compilation (llvm + clang)
   ///       errors.
   ///
   /// If user code provokes an llvm::unreachable it will cause this exception
-  /// to be thrown. Given that this is at the process's runtime and an
-  /// interpreter error it inherits from InterpreterException and runtime_error.
+  /// to be thrown.
   /// Note that this exception is *not* thrown during the execution of the
   /// user's code but during its compilation (at runtime).
-  class CompilationException: public virtual InterpreterException,
-                              public virtual std::runtime_error {
+  class CompilationException: public InterpreterException {
   public:
-    CompilationException(const std::string& reason);
+    CompilationException(const std::string& Reason);
     ~CompilationException() LLVM_NOEXCEPT;
-
-    const char* what() const LLVM_NOEXCEPT override;
 
     // Handle fatal llvm errors by throwing an exception.
     // Yes, throwing exceptions in error handlers is bad.
