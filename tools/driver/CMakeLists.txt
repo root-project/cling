@@ -39,8 +39,8 @@ set_target_properties(cling
 if(MSVC)
   set_target_properties(cling
     PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
-#  set_property(TARGET cling APPEND_STRING PROPERTY LINK_FLAGS
-#    " /EXPORT:?kEmptyCollection@valuePrinterInternal@cling@@3QEBDEB ")
+  set_property(TARGET cling APPEND_STRING PROPERTY LINK_FLAGS
+    " /EXPORT:??_7type_info@@6B@ /EXPORT:?__type_info_root_node@@3U__type_info_node@@A")
 endif(MSVC)
 
 target_link_libraries(cling
