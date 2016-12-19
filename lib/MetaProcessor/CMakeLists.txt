@@ -30,8 +30,3 @@ add_cling_library(clingMetaProcessor OBJECT
   clingInterpreter
   clingUtils
 )
-
-if ( MSVC )
-  set_target_properties(clingMetaProcessor PROPERTIES
-  COMPILE_FLAGS "/D_HAS_EXCEPTIONS=0")
-endif ()
