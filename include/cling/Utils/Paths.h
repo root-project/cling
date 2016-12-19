@@ -33,7 +33,7 @@ namespace cling {
 
     ///\brief Replace all $TOKENS in a string with environent variable values.
     ///
-    /// \param [in/out] Str - String with tokens to replace (in place)
+    /// \param [in,out] Str - String with tokens to replace (in place)
     /// \param [in] Path - Check if the result is a valid filesystem path.
     ///
     /// \returns When Path is true, return whether Str was expanded to an
