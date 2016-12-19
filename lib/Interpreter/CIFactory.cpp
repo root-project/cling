@@ -756,7 +756,7 @@ std::string stringifyPreprocSetting(const char* name, int val) {
     FM.getDirectory(platform::GetCwd());
 
     // Build the virtual file, Give it a name that's likely not to ever
-    // be #included (so we won't get a clash in clangs cache).
+    // be #included (so we won't get a clash in clang's cache).
     const char* Filename = "<<< cling interactive line includer >>>";
     const FileEntry* FE = FM.getVirtualFile(Filename, 1U << 15U, time(0));
 
