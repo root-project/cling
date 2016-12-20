@@ -36,44 +36,22 @@ using namespace llvm;
 
 namespace cling {
 
-IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
-                                         const clang::CompilerInstance& CI):
-  m_externalIncrementalExecutor(nullptr)
-#if 0
-  : m_Diags(diags)
-#endif
-{
+namespace {
 
-  // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
-  std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
-
-  // No need to protect this access of m_AtExitFuncs, since nobody
-  // can use this object yet.
-  m_AtExitFuncs.reserve(256);
-
-  std::unique_ptr<TargetMachine>
-    TM(CreateHostTargetMachine(CI.getCodeGenOpts()));
-  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
-                                          CI.getTargetOpts(),
-                                          CI.getLangOpts(),
-                                          *TM));
-  m_JIT.reset(new IncrementalJIT(*this, std::move(TM)));
-}
-
-// Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
-IncrementalExecutor::~IncrementalExecutor() {}
-
-std::unique_ptr<TargetMachine>
-  IncrementalExecutor::CreateHostTargetMachine(const
-                                           clang::CodeGenOptions& CGOpt) const {
-  // TODO: make this configurable.
+static std::unique_ptr<TargetMachine>
+CreateHostTargetMachine(const clang::CodeGenOptions& CGOpt, unsigned Fmt = 0) {
   Triple TheTriple(sys::getProcessTriple());
-#ifdef _WIN32
-  /*
-   * MCJIT works on Windows, but currently only through ELF object format.
-   */
-  TheTriple.setObjectFormat(llvm::Triple::ELF);
+  if (Fmt) {
+    assert(Fmt > llvm::Triple::UnknownObjectFormat &&
+           Fmt <= llvm::Triple::MachO && "Invalid Format");
+    TheTriple.setObjectFormat(static_cast<llvm::Triple::ObjectFormatType>(Fmt));
+  }
+#ifdef LLVM_ON_WIN32
+  // COFF format currently needs a few changes in LLVM to function properly.
+  else
+    TheTriple.setObjectFormat(llvm::Triple::ELF);
 #endif
+
   std::string Error;
   const Target *TheTarget
     = TargetRegistry::lookupTarget(TheTriple.getTriple(), Error);
@@ -112,6 +90,34 @@ std::unique_ptr<TargetMachine>
                                           OptLevel));
   return TM;
 }
+} // anonymous namespace
+
+IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
+                                         const clang::CompilerInstance& CI):
+  m_externalIncrementalExecutor(nullptr)
+#if 0
+  : m_Diags(diags)
+#endif
+{
+
+  // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
+  std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
+
+  // No need to protect this access of m_AtExitFuncs, since nobody
+  // can use this object yet.
+  m_AtExitFuncs.reserve(256);
+
+  std::unique_ptr<TargetMachine>
+    TM(CreateHostTargetMachine(CI.getCodeGenOpts()));
+  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
+                                          CI.getTargetOpts(),
+                                          CI.getLangOpts(),
+                                          *TM));
+  m_JIT.reset(new IncrementalJIT(*this, std::move(TM)));
+}
+
+// Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
+IncrementalExecutor::~IncrementalExecutor() {}
 
 void IncrementalExecutor::shuttingDown() {
   // No need to protect this access, since hopefully there is no concurrent
