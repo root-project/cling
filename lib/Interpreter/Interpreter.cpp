@@ -209,7 +209,7 @@ namespace cling {
     }
 
     m_IncrParser->SetTransformers(parentInterp);
-    
+
     if (!m_LLVMContext) {
       // Never true, but don't tell the compiler.
       // Force symbols needed by runtime to be included in binaries.
