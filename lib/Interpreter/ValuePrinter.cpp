@@ -28,8 +28,16 @@
 #include "llvm/ExecutionEngine/GenericValue.h"
 
 #include <locale>
-#include <codecvt>
 #include <string>
+
+// GCC 4.x doesn't have the proper UTF-8 conversion routines. So use the
+// LLVM conversion routines (which require a buffer 4x string length).
+#if !defined(__GLIBCXX__) || (__GNUC__ >= 5)
+ #include <codecvt>
+#else
+ #define LLVM_UTF8
+ #include "llvm/Support/ConvertUTF.h"
+#endif
 
 using namespace cling;
 
@@ -610,6 +618,62 @@ namespace cling {
     return enclose(std::move(Str), Begin, &Begin[1], 3);
   }
 
+  static std::string quoteString(const char* Str, size_t N, const char Prefix) {
+    return quoteString(std::string(Str, Str[N-1] == 0 ? (N-1) : N), Prefix);
+  }
+
+#ifdef LLVM_UTF8
+
+  template <class T> struct CharTraits;
+  template <> struct CharTraits<char16_t> {
+    static bool convert(const char16_t* const* src, const char16_t* srcEnd,
+                        char** dst, char* dstEnd) {
+      return ConvertUTF16toUTF8((const UTF16**)src, (const UTF16*)srcEnd,
+                                (UTF8**)dst, (UTF8*)dstEnd,
+                                strictConversion) == conversionOK;
+    }
+  };
+  template <> struct CharTraits<char32_t> {
+    static bool convert(const char32_t* const* src, const char32_t* srcEnd,
+                        char** dst, char* dstEnd) {
+      return ConvertUTF32toUTF8((const UTF32**)src, (const UTF32*)srcEnd,
+                                (UTF8**)dst, (UTF8*)dstEnd,
+                                strictConversion) == conversionOK;
+    }
+  };
+  template <> struct CharTraits<wchar_t> {
+    static bool convert(const wchar_t* const* src, const wchar_t* srcEnd,
+                        char** dst, char* dstEnd) {
+      switch (sizeof(wchar_t)) {
+        case sizeof(char16_t):
+          return CharTraits<char16_t>::convert((const char16_t**)src,
+                                               (char16_t*)srcEnd, dst, dstEnd);
+        case sizeof(char32_t):
+          return CharTraits<char32_t>::convert((const char32_t**)src,
+                                               (char32_t*)srcEnd, dst, dstEnd);
+        default:
+          break;
+      }
+      llvm_unreachable("wchar_t conversion failure");
+    }
+  };
+
+  template <typename T>
+  static std::string encodeUTF8(const T* const Str, size_t N, const char Prfx) {
+    const T *End = Str + N;
+    std::string Result;
+    Result.resize(UNI_MAX_UTF8_BYTES_PER_CODE_POINT * N);
+    char *ResultPtr = &Result[0],
+         *ResultEnd = ResultPtr + Result.size();
+    if (CharTraits<T>::convert(&Str, End, &ResultPtr, ResultEnd)) {
+      Result.resize(ResultPtr - &Result[0]);
+      return quoteString(std::move(Result), Prfx);
+    }
+    return "<invalid unicode>";
+  }
+
+#else // !LLVM_UTF8
+
   template <class T> struct CharTraits { typedef T value_type; };
 #if defined(LLVM_ON_WIN32) // Likely only to be needed when _MSC_VER < 19??
   template <> struct CharTraits<char16_t> { typedef unsigned short value_type; };
@@ -623,37 +687,54 @@ namespace cling {
     const value_type* Src = reinterpret_cast<const value_type*>(Str);
     return quoteString(Convert.to_bytes(Src, Src + N), Prfx);
   }
+#endif // LLVM_UTF8
 
-  // declaration: cling/Utils/UTF8.h & cling/Interpreter/RuntimePrintValue.h
   template <typename T>
-  std::string toUTF8(const T* const Str, size_t N, const char Prefix) {
+  std::string utf8Value(const T* const Str, size_t N, const char Prefix,
+                        std::string (*Func)(const T* const Str, size_t N,
+                        const char Prfx) ) {
     if (!Str)
       return kNullPtrStr;
     if (N==0)
       return printAddress(Str, '@');
 
     // Drop the null terminator or else it will be encoded into the std::string.
-    return encodeUTF8(Str, Str[N-1] == 0 ? (N-1) : N, Prefix);
+    return Func(Str, Str[N-1] == 0 ? (N-1) : N, Prefix);
+  }
+
+  // declaration: cling/Utils/UTF8.h & cling/Interpreter/RuntimePrintValue.h
+  template <class T>
+  std::string toUTF8(const T* const Str, size_t N, const char Prefix);
+
+  template <>
+  std::string toUTF8<char16_t>(const char16_t* const Str, size_t N,
+                               const char Prefix) {
+    return utf8Value(Str, N, Prefix, encodeUTF8);
+  }
+
+  template <>
+  std::string toUTF8<char32_t>(const char32_t* const Str, size_t N,
+                               const char Prefix) {
+    return utf8Value(Str, N, Prefix, encodeUTF8);
+  }
+
+  template <>
+  std::string toUTF8<wchar_t>(const wchar_t* const Str, size_t N,
+                              const char Prefix) {
+    return utf8Value(Str, N, Prefix, encodeUTF8);
   }
 
   template <>
   std::string toUTF8<char>(const char* const Str, size_t N, const char Prefix) {
-    if (!Str)
-      return kNullPtrStr;
-    if (N==0)
-      return printAddress(Str, '@');
-
-    // Drop the null terminator or else it will be encoded into the std::string.
-    return quoteString(std::string(Str, Str[N-1] == 0 ? (N-1) : N), Prefix);
+    return utf8Value(Str, N, Prefix, quoteString);
   }
 
   template <typename T>
   static std::string toUTF8(
       const std::basic_string<T, std::char_traits<T>, std::allocator<T>>* Src,
       const char Prefix) {
-    // Forcing the export of toUTF8 above for char16_t, char32_t, and wchar_t.
-    if (!Src->data())
-      return toUTF8(Src->data(), Src->size(), Prefix);
+    if (!Src)
+      return kNullPtrStr;
     return encodeUTF8(Src->data(), Src->size(), Prefix);
   }
 
