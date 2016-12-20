@@ -206,6 +206,8 @@ if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   endforeach ()
 endif ()
 
+# Lots of cling is needed at runtime (e.g. Value, or Interpreter::Evaluate()).
+# The JIT needs to be able to resolve these symbols from cling; unhide them.
 string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 # The package needs to be compiler without RTTI information
 if(MSVC)
