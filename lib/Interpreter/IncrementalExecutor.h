@@ -133,8 +133,6 @@ namespace cling {
     clang::DiagnosticsEngine& m_Diags;
 #endif
 
-    std::unique_ptr<llvm::TargetMachine>
-       CreateHostTargetMachine(const clang::CodeGenOptions& CGOpt) const;
 
   public:
     enum ExecutionResult {
