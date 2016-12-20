@@ -30,7 +30,7 @@ else()
    #the shared library
    if (APPLE)
       set(INTERPRETER
-         -Wl,-all_load clingInterpreter -Wl,-noall_load 
+         -Wl,-force_load clingInterpreter 
          )
    else()
       set(INTERPRETER
