@@ -129,16 +129,15 @@ namespace cling {
           Prompt.append(indent * 3, ' ');
         }
       }
-      catch(InvalidDerefException& e) {
-        e.diagnose();
-      }
       catch(InterpreterException& e) {
-        cling::errs() << ">>> Caught an interpreter exception!\n"
-                      << ">>> " << e.what() << '\n';
+        if (!e.diagnose()) {
+          cling::errs() << ">>> Caught an interpreter exception!\n"
+                        << ">>> " << e.what() << '\n';
+        }
       }
       catch(std::exception& e) {
         cling::errs() << ">>> Caught a std::exception!\n"
-                      << ">>> " << e.what() << '\n';
+                     << ">>> " << e.what() << '\n';
       }
       catch(...) {
         cling::errs() << "Exception occurred. Recovering...\n";

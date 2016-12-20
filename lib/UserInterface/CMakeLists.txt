@@ -6,9 +6,6 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-set(LLVM_REQUIRES_EH true)
-set(LLVM_REQUIRES_RTTI true)
-
 set( LLVM_LINK_COMPONENTS
   support
 )
@@ -51,16 +48,6 @@ add_cling_library(clingUserInterface
   clingUtils
 )
 
-IF(MSVC)
-  # windows.h doesn't compile with /Za
-  get_target_property(NON_ANSI_COMPILE_FLAGS clingUserInterface COMPILE_FLAGS)
-  if(${NON_ANSI_COMPILE_FLAGS})
-    string(REPLACE "/Za" "" NON_ANSI_COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
-    # add /EHsc exception handling flag
-    set(NON_ANSI_COMPILE_FLAGS "${NON_ANSI_COMPILE_FLAGS} /EHsc")
-  else()
-    set(NON_ANSI_COMPILE_FLAGS "/EHsc")
-  endif()
-  set_target_properties(clingUserInterface PROPERTIES
-    COMPILE_FLAGS ${NON_ANSI_COMPILE_FLAGS})
-ENDIF()
+if(UNIX)
+  set_source_files_properties(UserInterface.cpp COMPILE_FLAGS "-fexceptions")
+endif()
