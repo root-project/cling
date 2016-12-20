@@ -292,10 +292,10 @@ macro(add_cling_library name)
   if (MSVC)
     # On Windows exceptions aren’t as generic as an x64 ABI.
     # Stack unwinding code must be generated for every function between the
-    # throw and catch blocks. 
+    # throw and catch blocks.
     if (${name} STREQUAL "clingInterpreter")
       # All of libClingInterpreter is compiled with exceptions, mostly because
-      # llvm_unreachable throws an exception. Otherwise it could be reduced: 
+      # llvm_unreachable throws an exception. Otherwise it could be reduced:
       #    Exception.cpp, Interpreter.cpp, IncrementalParser.cpp,
       #    IncrementalExecutor.cpp
       set(cling_ex_file_match ".cpp$")
