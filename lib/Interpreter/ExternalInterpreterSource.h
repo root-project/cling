@@ -38,8 +38,6 @@ namespace cling {
         const cling::Interpreter *m_ParentInterpreter;
         cling::Interpreter *m_ChildInterpreter;
 
-        clang::Sema *m_Sema = nullptr;
-
         ///\brief We keep a mapping between the imported DeclContexts
         /// and the original ones from of the first Interpreter.
         /// Key: imported DeclContext
@@ -69,10 +67,6 @@ namespace cling {
         bool FindExternalVisibleDeclsByName(
                               const clang::DeclContext *childCurrentDeclContext,
                               clang::DeclarationName childDeclName) override;
-
-        void InitializeSema(clang::Sema &S) { m_Sema = &S; }
-
-        void ForgetSema() { m_Sema = nullptr; }
 
         bool Import(clang::DeclContext::lookup_result lookupResult,
                     const clang::DeclContext *childCurrentDeclContext,
