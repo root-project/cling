@@ -96,13 +96,35 @@ namespace cling {
                                    DeclarationName &parentDeclName,
                                    const DeclContext *childCurrentDeclContext) {
 
-    // Don't do the import if we have a Function Template.
-    // Not supported by clang.
-    // FIXME: This is also a temporary check. Will be de-activated
-    // once clang supports the import of function templates.
-    if (declToImport->isFunctionOrFunctionTemplate() 
-        && declToImport->isTemplateDecl())
+    // Don't do the import if we have a Function Template or using decls. They
+    // are not supported by clang.
+    // FIXME: These are temporary checks and should be de-activated once clang
+    // supports their import.
+    if ((declToImport->isFunctionOrFunctionTemplate()
+         && declToImport->isTemplateDecl()) || dyn_cast<UsingDecl>(declToImport)
+         || dyn_cast<UsingShadowDecl>(declToImport)) {
+#ifndef NDEBUG
+      // DiagnosticsTrap isn't working here!
+      DiagnosticsEngine& Diags = m_Importer->getFromContext().getDiagnostics();
+      const bool OwnClient = Diags.ownsClient();
+      std::unique_ptr<DiagnosticConsumer> Prev = Diags.takeClient();
+      DiagnosticConsumer Trap;
+      Diags.setClient(&Trap, false);
+
+      assert((!Trap.getNumErrors() && m_Importer->Import(declToImport)==nullptr
+             && Trap.getNumErrors() != 0) && "Import using worked!");
+      assert(Trap.getNumErrors() == 1 && "Import caused multiple errors");
+
+      Diags.setClient(Prev.get(), OwnClient);
+      Prev.release();
+#if LLVM_VERSION_MAJOR >= 4
+      // In LLVM 4 the test above still works, but the errors generated are
+      // still propogated...So just reset the Diags.
+      Diags.Reset(true);
+#endif
+#endif
       return;
+    }
 
     if (Decl *importedDecl = m_Importer->Import(declToImport)) {
       if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
