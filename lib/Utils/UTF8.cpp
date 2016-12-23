@@ -237,11 +237,13 @@ public:
 };
 
 EscapeSequence::EscapeSequence() : m_Utf8Out(false) {
-#ifndef LLVM_ON_WIN32
+#if !defined(LLVM_ON_WIN32)
   if (!::strcasestr(m_Loc.name().c_str(), "utf-8")) {
     if (const char* LANG = ::getenv("LANG")) {
       if (::strcasestr(LANG, "utf-8")) {
+ #if !defined(__APPLE__) || !defined(__GLIBCXX__)
         m_Loc = std::locale(LANG);
+ #endif
         m_Utf8Out = true;
       }
     }
