@@ -33,6 +33,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclGroup.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -104,6 +105,63 @@ namespace {
 
     return false;
   }
+
+  class FilteringDiagConsumer: public ForwardingDiagnosticConsumer {
+    std::stack<bool> fIgnorePromptDiags;
+    std::unique_ptr<DiagnosticConsumer> fOwnedTarget;
+
+  public:
+    FilteringDiagConsumer(std::unique_ptr<DiagnosticConsumer>&& Target):
+      ForwardingDiagnosticConsumer(*Target.get()),
+      fOwnedTarget(std::move(Target)) {}
+
+    void BeginSourceFile(const LangOptions &LangOpts,
+                         const Preprocessor *PP=nullptr) override {
+      fOwnedTarget->BeginSourceFile(LangOpts, PP);
+    }
+
+    void EndSourceFile() override {
+      fOwnedTarget->EndSourceFile();
+    }
+
+    void finish() override {
+      fOwnedTarget->finish();
+    }
+
+    void clear() override {
+      fOwnedTarget->clear();
+    }
+
+    void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
+                          const Diagnostic &Info) override {
+      if (Ignoring()) {
+        if (Info.getID() == diag::warn_unused_expr
+            || Info.getID() == diag::warn_unused_call
+            || Info.getID() == diag::warn_unused_comparison
+            || Info.getID() == diag::ext_return_has_expr)
+          return; // ignore!
+        if (Info.getID() == diag::warn_falloff_nonvoid_function) {
+          DiagLevel = DiagnosticsEngine::Error;
+          auto Diags = const_cast<DiagnosticsEngine*>(Info.getDiags());
+          assert(Diags->NumErrors && "Expected NumErrors");
+          if (!--Diags->NumErrors) {
+            assert(Diags->ErrorOccurred && "Expected ErrorOccurred");
+            Diags->ErrorOccurred = false;
+          }
+        }
+      }
+      ForwardingDiagnosticConsumer::HandleDiagnostic(DiagLevel, Info);
+    }
+
+    void push(bool ignoreDiags) { fIgnorePromptDiags.push(ignoreDiags); }
+    void pop() {
+      assert(!fIgnorePromptDiags.empty() && "Unignoring non-ignored prompt diags!");
+      fIgnorePromptDiags.pop();
+    }
+    bool Ignoring() const {
+      return !fIgnorePromptDiags.empty() && fIgnorePromptDiags.top();
+    }
+  };
 } // unnamed namespace
 
 namespace cling {
@@ -116,15 +174,21 @@ namespace cling {
     m_Consumer = dyn_cast<DeclCollector>(&m_CI->getSema().getASTConsumer());
     assert(m_Consumer && "Expected ChainedConsumer!");
 
+
+    DiagnosticsEngine& Diag = m_CI->getDiagnostics();
     if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
       m_CodeGen.reset(CreateLLVMCodeGen(
-          m_CI->getDiagnostics(), "cling-module-0", m_CI->getHeaderSearchOpts(),
+          Diag, "cling-module-0", m_CI->getHeaderSearchOpts(),
           m_CI->getPreprocessorOpts(), m_CI->getCodeGenOpts(),
           *m_Interpreter->getLLVMContext()));
       m_Consumer->setContext(this, m_CodeGen.get());
     } else {
       m_Consumer->setContext(this, 0);
     }
+
+    DiagnosticConsumer* DC
+      = new FilteringDiagConsumer(std::move(Diag.takeClient()));
+    Diag.setClient(DC, true /*own*/);
 
     initializeVirtualFile();
   }
@@ -640,33 +704,15 @@ namespace cling {
 
     DiagnosticsEngine& Diags = getCI()->getDiagnostics();
 
-    bool IgnorePromptDiags = CO.IgnorePromptDiags;
-    if (IgnorePromptDiags) {
-      // Disable warnings which doesn't make sense when using the prompt
-      // This gets reset with the clang::Diagnostics().Reset(/*soft*/=false)
-      // using clang's API we simulate:
-      // #pragma warning push
-      // #pragma warning ignore ...
-      // #pragma warning ignore ...
-      // #pragma warning pop
-      SourceLocation Loc = SM.getLocForStartOfFile(FID);
-      Diags.pushMappings(Loc);
-      // The source locations of #pragma warning ignore must be greater than
-      // the ones from #pragma push
+    FilteringDiagConsumer* PromptDiagClient
+      = static_cast<FilteringDiagConsumer*>(Diags.getClient());
 
-      auto setIgnore = [&](clang::diag::kind Diag) {
-        Diags.setSeverity(Diag, diag::Severity::Ignored, SourceLocation());
-      };
+    struct PromptDiagClientRAII_t {
+      FilteringDiagConsumer* fClient;
+      ~PromptDiagClientRAII_t() { fClient->pop(); }
+    } PromptDiagClientRAII{PromptDiagClient};
 
-      setIgnore(clang::diag::warn_unused_expr);
-      setIgnore(clang::diag::warn_unused_call);
-      setIgnore(clang::diag::warn_unused_comparison);
-      setIgnore(clang::diag::ext_return_has_expr);
-    }
-    auto setError = [&](clang::diag::kind Diag) {
-      Diags.setSeverity(Diag, diag::Severity::Error, SourceLocation());
-    };
-    setError(clang::diag::warn_falloff_nonvoid_function);
+    PromptDiagClient->push(CO.IgnorePromptDiags);
 
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
@@ -710,11 +756,6 @@ namespace cling {
     PP.Lex(AssertTok);
     assert(AssertTok.is(tok::eof) && "Lexer must be EOF when starting incremental parse!");
 #endif
-
-    if (IgnorePromptDiags) {
-      SourceLocation Loc = SM.getLocForEndOfFile(m_MemoryBuffers.back().second);
-      Diags.popMappings(Loc);
-    }
 
     // Process any TopLevelDecls generated by #pragma weak.
     for (llvm::SmallVector<Decl*,2>::iterator I = S.WeakTopLevelDecls().begin(),
