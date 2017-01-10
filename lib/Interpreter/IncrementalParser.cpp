@@ -137,17 +137,19 @@ namespace {
       if (Ignoring()) {
         if (Info.getID() == diag::warn_unused_expr
             || Info.getID() == diag::warn_unused_call
-            || Info.getID() == diag::warn_unused_comparison
-            || Info.getID() == diag::ext_return_has_expr)
+            || Info.getID() == diag::warn_unused_comparison)
           return; // ignore!
         if (Info.getID() == diag::warn_falloff_nonvoid_function) {
           DiagLevel = DiagnosticsEngine::Error;
+        }
+        if (Info.getID() == diag::ext_return_has_expr) {
+          // An error that we need to suppress.
           auto Diags = const_cast<DiagnosticsEngine*>(Info.getDiags());
-          assert(Diags->NumErrors && "Expected NumErrors");
-          if (!--Diags->NumErrors) {
-            assert(Diags->ErrorOccurred && "Expected ErrorOccurred");
-            Diags->ErrorOccurred = false;
-          }
+          assert(Diags->hasErrorOccurred() && "Expected ErrorOccurred");
+          if (fOwnedTarget->getNumErrors() == 0) { // first error
+            Diags->Reset(true /*soft - only counts, not mappings*/);
+          } // else we had other errors, too.
+          return; // ignore!
         }
       }
       ForwardingDiagnosticConsumer::HandleDiagnostic(DiagLevel, Info);
