@@ -189,7 +189,7 @@ namespace cling {
     }
 
     DiagnosticConsumer* DC
-      = new FilteringDiagConsumer(std::move(Diag.takeClient()));
+      = new FilteringDiagConsumer(Diag.takeClient());
     Diag.setClient(DC, true /*own*/);
 
     initializeVirtualFile();
