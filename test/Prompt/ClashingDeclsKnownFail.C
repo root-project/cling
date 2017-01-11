@@ -7,7 +7,6 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify
-// XFAIL: *
 
 // The test exposes a weakness in the declaration extraction of types. As
 // reported in issue ROOT-5248.
