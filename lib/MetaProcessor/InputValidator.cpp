@@ -89,7 +89,10 @@ namespace cling {
 
     do {
       const char* prevStart = curPos;
-      MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
+      if (!MetaLexer::LexPunctuatorAndAdvance(curPos, Tok)) {
+        // there were tokens between the previous and this Tok.
+        commentTok = tok::slash;
+      }
       const int kind = (int)Tok.getKind();
 
       if (kind == commentTok) {
