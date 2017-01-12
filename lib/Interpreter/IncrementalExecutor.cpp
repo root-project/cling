@@ -95,7 +95,7 @@ std::unique_ptr<TargetMachine>
   std::string MCPU;
   std::string FeaturesStr;
 
-  TargetOptions Options = TargetOptions();
+  llvm::TargetOptions Options = llvm::TargetOptions();
 // We have to use large code model for PowerPC64 because TOC and text sections
 // can be more than 2GB apart.
 #if defined(__powerpc64__) || defined(__PPC64__)
