@@ -110,6 +110,11 @@ namespace {
     std::stack<bool> fIgnorePromptDiags;
     std::unique_ptr<DiagnosticConsumer> fOwnedTarget;
 
+    void SyncDiagCountWithTarget() {
+      NumWarnings = fOwnedTarget->getNumWarnings();
+      NumErrors = fOwnedTarget->getNumErrors();
+    }
+
   public:
     FilteringDiagConsumer(std::unique_ptr<DiagnosticConsumer>&& Target):
       ForwardingDiagnosticConsumer(*Target.get()),
@@ -122,14 +127,17 @@ namespace {
 
     void EndSourceFile() override {
       fOwnedTarget->EndSourceFile();
+      SyncDiagCountWithTarget();
     }
 
     void finish() override {
       fOwnedTarget->finish();
+      SyncDiagCountWithTarget();
     }
 
     void clear() override {
       fOwnedTarget->clear();
+      SyncDiagCountWithTarget();
     }
 
     void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
@@ -153,6 +161,7 @@ namespace {
         }
       }
       ForwardingDiagnosticConsumer::HandleDiagnostic(DiagLevel, Info);
+      SyncDiagCountWithTarget();
     }
 
     void push(bool ignoreDiags) { fIgnorePromptDiags.push(ignoreDiags); }
