@@ -135,8 +135,9 @@ namespace cling {
     }
   }
 
-  void MetaLexer::LexPunctuatorAndAdvance(const char*& curPos, Token& Tok) {
+  bool MetaLexer::LexPunctuatorAndAdvance(const char*& curPos, Token& Tok) {
     Tok.startToken(curPos);
+    bool nextWasPunct = true;
     while (true) {
 
       if(*curPos == '\\')
@@ -149,12 +150,13 @@ namespace cling {
           Tok.setBufStart(curPos);
           Tok.setKind(tok::eof);
           Tok.setLength(0);
-          return;
+          return nextWasPunct;
         }
       }
       MetaLexer::LexPunctuator(curPos++, Tok);
       if (Tok.isNot(tok::unknown))
-        return;
+        return nextWasPunct;
+      nextWasPunct = false;
     }
   }
 
