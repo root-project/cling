@@ -26,4 +26,15 @@ int injected = 13; // expected-error {{declaration conflicts with target of usin
 extern "C" double likeSin(double); // expected-note {{previous definition is here}}
 int likeSin = 14; // expected-error {{redefinition of 'likeSin' as different kind of symbol}}
 
+// Test a weakness in the declaration extraction of types (ROOT-5248).
+class MyClass; // this type...
+extern MyClass* my;
+class MyClass { // and that type used to not be redecls
+public:
+  MyClass* getMyClass() {
+    return 0;
+  }
+} cl;
+MyClass* my = cl.getMyClass();
+
 .q
