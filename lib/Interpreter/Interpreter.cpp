@@ -413,7 +413,8 @@ namespace cling {
       CO.ResultEvaluation = 0;
       CO.DynamicScoping = isDynamicLookupEnabled();
       CO.Debug = isPrintingDebug();
-      CO.CheckPointerValidity = 1;
+      CO.IgnorePromptDiags = !isRawInputEnabled();
+      CO.CheckPointerValidity = !isRawInputEnabled();
       return DeclareInternal(input, CO, T);
     }
 
@@ -423,6 +424,7 @@ namespace cling {
     CO.ResultEvaluation = (bool)V;
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
+    // CO.IgnorePromptDiags = 1; done by EvaluateInternal().
     CO.CheckPointerValidity = 1;
     if (EvaluateInternal(wrapReadySource, CO, V, T, wrapPoint)
                                                      == Interpreter::kFailure) {
