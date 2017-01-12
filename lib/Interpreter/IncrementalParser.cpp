@@ -107,8 +107,8 @@ namespace {
   }
 
   class FilteringDiagConsumer: public ForwardingDiagnosticConsumer {
-    std::stack<bool> fIgnorePromptDiags;
     std::unique_ptr<DiagnosticConsumer> fOwnedTarget;
+    std::stack<bool> fIgnorePromptDiags;
 
     void SyncDiagCountWithTarget() {
       NumWarnings = fOwnedTarget->getNumWarnings();
@@ -117,7 +117,7 @@ namespace {
 
   public:
     FilteringDiagConsumer(std::unique_ptr<DiagnosticConsumer>&& Target):
-      ForwardingDiagnosticConsumer(*Target.get()),
+      ForwardingDiagnosticConsumer(*Target),
       fOwnedTarget(std::move(Target)) {}
 
     void BeginSourceFile(const LangOptions &LangOpts,
