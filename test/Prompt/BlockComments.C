@@ -120,4 +120,8 @@
 62
 // CHECK-NEXT: (int) 62
 
+// ROOT-8529
+12/3*4
+// CHECK-NEXT: (int) 16
+
 .q
