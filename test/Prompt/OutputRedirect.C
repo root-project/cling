@@ -147,7 +147,7 @@ c = 9937
 .&>> $CLING_TMP/bothfile.txt
 var = 999
 //CHECK-REDIRECTBOTH: (int) 999
-.1> $CLING_TMP/anotheroutfile.txt
+.1>$CLING_TMP/anotheroutfile.txt
 a = 710
 //CHECK-REDIRECTANOTHER: (int) 710
 b = 711
