@@ -124,4 +124,11 @@
 12/3*4
 // CHECK-NEXT: (int) 16
 
+// ROOT-7354
+/*
+    * :(
+*/
+42
+// CHECK_NEXT: (int) 42
+
 .q
