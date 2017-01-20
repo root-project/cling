@@ -626,33 +626,38 @@ namespace cling {
 
   template <class T> struct CharTraits;
   template <> struct CharTraits<char16_t> {
-    static bool convert(const char16_t* const* src, const char16_t* srcEnd,
-                        char** dst, char* dstEnd) {
-      return ConvertUTF16toUTF8((const UTF16**)src, (const UTF16*)srcEnd,
-                                (UTF8**)dst, (UTF8*)dstEnd,
-                                strictConversion) == conversionOK;
+    static ConversionResult convert(const char16_t** begin, const char16_t* end,
+                                    char** d, char* dEnd, ConversionFlags F ) {
+      return ConvertUTF16toUTF8(reinterpret_cast<const UTF16**>(begin),
+                                reinterpret_cast<const UTF16*>(end),
+                                reinterpret_cast<UTF8**>(d),
+                                reinterpret_cast<UTF8*>(dEnd), F);
     }
   };
   template <> struct CharTraits<char32_t> {
-    static bool convert(const char32_t* const* src, const char32_t* srcEnd,
-                        char** dst, char* dstEnd) {
-      return ConvertUTF32toUTF8((const UTF32**)src, (const UTF32*)srcEnd,
-                                (UTF8**)dst, (UTF8*)dstEnd,
-                                strictConversion) == conversionOK;
+    static ConversionResult convert(const char32_t** begin, const char32_t* end,
+                                    char** d, char* dEnd, ConversionFlags F ) {
+      return ConvertUTF32toUTF8(reinterpret_cast<const UTF32**>(begin),
+                                reinterpret_cast<const UTF32*>(end),
+                                reinterpret_cast<UTF8**>(d),
+                                reinterpret_cast<UTF8*>(dEnd), F);
     }
   };
   template <> struct CharTraits<wchar_t> {
-    static bool convert(const wchar_t* const* src, const wchar_t* srcEnd,
-                        char** dst, char* dstEnd) {
+    static ConversionResult convert(const wchar_t** src, const wchar_t* srcEnd,
+                                    char** dst, char* dEnd, ConversionFlags F) {
       switch (sizeof(wchar_t)) {
         case sizeof(char16_t):
-          return CharTraits<char16_t>::convert((const char16_t**)src,
-                                               (char16_t*)srcEnd, dst, dstEnd);
+          return CharTraits<char16_t>::convert(
+                            reinterpret_cast<const char16_t**>(src),
+                            reinterpret_cast<const char16_t*>(srcEnd),
+                            dst, dEnd, F);
         case sizeof(char32_t):
-          return CharTraits<char32_t>::convert((const char32_t**)src,
-                                               (char32_t*)srcEnd, dst, dstEnd);
-        default:
-          break;
+          return CharTraits<char32_t>::convert(
+                            reinterpret_cast<const char32_t**>(src),
+                            reinterpret_cast<const char32_t*>(srcEnd),
+                            dst, dEnd, F);
+        default: break;
       }
       llvm_unreachable("wchar_t conversion failure");
     }
@@ -660,16 +665,16 @@ namespace cling {
 
   template <typename T>
   static std::string encodeUTF8(const T* const Str, size_t N, const char Prfx) {
-    const T *End = Str + N;
+    const T *Bgn = Str,
+            *End = Str + N;
     std::string Result;
     Result.resize(UNI_MAX_UTF8_BYTES_PER_CODE_POINT * N);
     char *ResultPtr = &Result[0],
          *ResultEnd = ResultPtr + Result.size();
-    if (CharTraits<T>::convert(&Str, End, &ResultPtr, ResultEnd)) {
-      Result.resize(ResultPtr - &Result[0]);
-      return quoteString(std::move(Result), Prfx);
-    }
-    return "<invalid unicode>";
+    
+    CharTraits<T>::convert(&Bgn, End, &ResultPtr, ResultEnd, lenientConversion);
+    Result.resize(ResultPtr - &Result[0]);
+    return quoteString(std::move(Result), Prfx);
   }
 
 #else // !LLVM_UTF8
