@@ -86,11 +86,12 @@ namespace cling {
     static constexpr EStorageType determineStorageTypeT(...) {
       return kManagedAllocation;
     }
+
     template <class T, class = typename std::enable_if<std::is_integral<T>::value>::type>
     static constexpr EStorageType determineStorageTypeT(T*) {
-      if (std::is_signed<T>::value)
-        return kSignedIntegerOrEnumerationType;
-      return kUnsignedIntegerOrEnumerationType;
+      return std::is_signed<T>::value
+        ? kSignedIntegerOrEnumerationType
+        : kUnsignedIntegerOrEnumerationType;
     }
     static constexpr EStorageType determineStorageTypeT(double*) {
       return kDoubleType;
