@@ -22,6 +22,9 @@
 #include <unistd.h>
 #include <termios.h>
 #include <stdio.h>
+#ifdef __APPLE__
+#include <errno.h> // For EINTR
+#endif
 
 #include <cctype>
 #include <cstring>
@@ -297,7 +300,12 @@ namespace textinput {
       buf = fReadAheadBuffer.front();
       fReadAheadBuffer.pop();
     } else {
-       size_t ret = read(fileno(stdin), &buf, 1);
+      ssize_t ret = read(fileno(stdin), &buf, 1);
+#ifdef __APPLE__
+      // Allow a debugger to be attached and used on OS X.
+      while (ret == -1 && errno == EINTR)
+        ret = read(fileno(stdin), &buf, 1);
+#endif
       if (ret != 1) return -1;
     }
     return buf;
