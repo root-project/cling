@@ -147,11 +147,12 @@ c = 9937
 .&>> $CLING_TMP/bothfile.txt
 var = 999
 //CHECK-REDIRECTBOTH: (int) 999
-.1>$CLING_TMP/anotheroutfile.txt
+
+// Test that exiting in a redirected state will flush properly
+.1> $CLING_TMP/anotheroutfile.txt
 a = 710
 //CHECK-REDIRECTANOTHER: (int) 710
 b = 711
 //CHECK-REDIRECTANOTHER: (int) 711
 c = 712
 //CHECK-REDIRECTANOTHER: (int) 712
-
