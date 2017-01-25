@@ -26,6 +26,7 @@ add_cling_library(clingMetaProcessor OBJECT
   clangLex
   clangAST
   clangBasic
+  clangFrontend
 
   clingInterpreter
   clingUtils
