@@ -29,6 +29,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Casting.h"
 #include "cling/Utils/Output.h"
 #include "cling/Utils/SourceNormalization.h"
 
@@ -394,7 +395,8 @@ namespace cling {
 #endif
 
       // Override the native symbols now, before anything can be emitted.
-      m_Executor->addSymbol("__cxa_atexit", (void*)&local_cxa_atexit, true);
+      m_Executor->addSymbol("__cxa_atexit",
+                            utils::FunctionToVoidPtr(&local_cxa_atexit), true);
       // __dso_handle is inserted for the link phase, as macro is useless then
       m_Executor->addSymbol("__dso_handle", this, true);
     }

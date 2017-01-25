@@ -15,6 +15,7 @@
 
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Utils/Casting.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -274,20 +275,13 @@ namespace cling {
 
     template <class T>
     ExecutionResult executeInitOrWrapper(llvm::StringRef funcname, T& fun) {
-      union {
-        T fun;
-        void* address;
-      } p2f;
-      p2f.address = (void*)m_JIT->getSymbolAddress(funcname,
-                                                   false /*no dlsym*/);
+      fun = utils::UIntToFunctionPtr<T>(m_JIT->getSymbolAddress(funcname,
+                                                              false /*dlsym*/));
 
       // check if there is any unresolved symbol in the list
-      if (diagnoseUnresolvedSymbols(funcname, "function") || !p2f.address) {
-        fun = 0;
+      if (diagnoseUnresolvedSymbols(funcname, "function") || !fun)
         return IncrementalExecutor::kExeUnresolvedSymbols;
-      }
 
-      fun = p2f.fun;
       return IncrementalExecutor::kExeSuccess;
     }
   };
