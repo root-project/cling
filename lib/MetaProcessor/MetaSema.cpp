@@ -22,6 +22,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/ASTConsumers.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Serialization/ASTReader.h"
 
@@ -291,6 +292,13 @@ namespace cling {
     if (name.equals("ast")) {
       m_Interpreter.getCI()->getSema().getASTContext().PrintStats();
     }
+  }
+
+  // dumps the ast tree. uses name as the filter string
+  void MetaSema::actOndumpASTCommand(llvm::StringRef name) const {
+    std::unique_ptr<clang::ASTConsumer> printer = clang::CreateASTDumper(
+      name, /*DumpDecls = */ true, /*DumpLookups = */ false);
+    printer->HandleTranslationUnit(m_Interpreter.getCI()->getSema().getASTContext());
   }
 
   void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/)

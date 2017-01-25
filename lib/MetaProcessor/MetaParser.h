@@ -47,6 +47,7 @@ namespace cling {
   //                 StoreStateCommand := 'storeState' "Ident"
   //                 CompareStateCommand := 'compareState' "Ident"
   //                 StatsCommand := 'stats' ['ast']
+  //                 dumpAST := 'printAST' ["Ident"]
   //                 undoCommand := 'undo' [Constant]
   //                 DynamicExtensionsCommand := 'dynamicExtensions' [Constant]
   //                 HelpCommand := 'help'
@@ -99,6 +100,7 @@ namespace cling {
     bool isstoreStateCommand();
     bool iscompareStateCommand();
     bool isstatsCommand();
+    bool isdumpASTCommand();
     bool isundoCommand();
     bool isdynamicExtensionsCommand();
     bool ishelpCommand();

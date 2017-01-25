@@ -172,6 +172,12 @@ namespace cling {
     ///
     void actOnstatsCommand(llvm::StringRef name) const;
 
+    ///\brief Dumps the AST
+    ///
+    ///\param[in] name - Filter string
+    ///
+    void actOndumpASTCommand(llvm::StringRef name) const;
+
     ///\brief Switches on/off the experimental dynamic extensions (dynamic
     /// scopes) and late binding.
     ///
