@@ -298,11 +298,6 @@ namespace cling {
   void MetaSema::actOntraceCommand(llvm::StringRef repr,
       llvm::StringRef filter /* = llvm::StringRef() */) const {
     m_Interpreter.dumpTrace(repr, filter);
-    
-    //std::unique_ptr<clang::ASTConsumer> printer = clang::CreateASTDumper(
-    //  name, /*DumpDecls = */ true, /*DumpLookups = */ false);
-    //printer->HandleTranslationUnit(m_Interpreter.getCI()->getSema().getASTContext());
-    
   }
 
   void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/)
