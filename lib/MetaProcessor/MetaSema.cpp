@@ -360,6 +360,7 @@ namespace cling {
       "\n"
       "   " << metaString << "stats [name]\t\t- Show stats for internal data structures\n"
                              "\t\t\t\t  'ast'  abstract syntax tree stats\n"
+                             "\t\t\t\t  'asttree [filter]'  abstract syntax tree layout\n"
                              "\t\t\t\t  'decl' dump ast declarations\n"
                              "\t\t\t\t  'undo' show undo stack\n"
       "\n"

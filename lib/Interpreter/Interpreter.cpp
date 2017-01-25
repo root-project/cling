@@ -38,6 +38,7 @@
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
+#include "clang/Frontend/ASTConsumers.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/Preprocessor.h"
@@ -441,7 +442,12 @@ namespace cling {
   // FIXME: Add stream argument and move DumpIncludePath path here.
   void Interpreter::dump(llvm::StringRef what, llvm::StringRef filter) {
     llvm::raw_ostream &where = cling::log();
-    if (what.equals("ast"))
+    if (what.equals("asttree")) {
+      std::unique_ptr<clang::ASTConsumer> printer =
+          clang::CreateASTDumper(filter, true  /*DumpDecls*/,
+                                         false /*DumpLookups*/ );
+      printer->HandleTranslationUnit(getSema().getASTContext());
+    } else if (what.equals("ast"))
       getSema().getASTContext().PrintStats();
     else if (what.equals("decl"))
       ClangInternalState::printLookupTables(where, getSema().getASTContext());
