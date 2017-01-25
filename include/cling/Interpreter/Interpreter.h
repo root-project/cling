@@ -406,6 +406,14 @@ namespace cling {
     ///
     void DumpIncludePath(llvm::raw_ostream* S = nullptr);
 
+    ///\brief Dumps the trace of the requested Representation.
+    ///
+    ///\param[in] repr - representation: AST only now
+    ///\param[in] filter - filter string to apply
+    ///
+    void dumpTrace(llvm::StringRef repr, 
+                   llvm::StringRef filter = llvm::StringRef()) const;
+
     ///\brief Store the interpreter state in files
     /// Store the AST, the included files and the lookup tables
     ///

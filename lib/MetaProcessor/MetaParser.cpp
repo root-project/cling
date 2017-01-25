@@ -131,7 +131,7 @@ namespace cling {
       || isTypedefCommand()
       || isShellCommand(actionResult, resultValue) || isstoreStateCommand()
       || iscompareStateCommand() || isstatsCommand() || isundoCommand()
-      || isRedirectCommand(actionResult) || isdumpASTCommand();
+      || isRedirectCommand(actionResult) || istraceCommand();
   }
 
   // L := 'L' FilePath Comment
@@ -471,20 +471,24 @@ namespace cling {
     return false;
   }
 
-  // dumps AST. Ident provides the filter string
-  bool MetaParser::isdumpASTCommand() {
+  // dumps/creates a trace of the requested representation. 
+  bool MetaParser::istraceCommand() {
     if (getCurTok().is(tok::ident) &&
-        getCurTok().getIdent().equals("dumpAST")) {
+        getCurTok().getIdent().equals("trace")) {
       consumeToken();
       skipWhitespace();
-      if (getCurTok().is(tok::ident)) {
-        std::string ident = getCurTok().getIdent();
+      if (!getCurTok().is(tok::ident))
+          return false;
+      std::string ident = getCurTok().getIdent();
+      consumeToken();
+      skipWhitespace();
+      if (getCurTok().is(tok::eof)) {
+        m_Actions->actOntraceCommand(ident);
         consumeToken();
-        m_Actions->actOndumpASTCommand(ident);
       }
-      else if (getCurTok().is(tok::eof)) {
+      else if (getCurTok().is(tok::ident)) {
+        m_Actions->actOntraceCommand(ident, getCurTok().getIdent());
         consumeToken();
-        m_Actions->actOndumpASTCommand(std::string(""));
       }
       else return false;
       return true;
