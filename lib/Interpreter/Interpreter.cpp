@@ -154,6 +154,10 @@ namespace cling {
     return m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
   }
 
+  clang::SourceLocation Interpreter::getSourceLocation() const {
+    const Transaction* T = getLatestTransaction();
+    return T ? T->getSourceStart(getCI()->getSourceManager()) : SourceLocation();
+  }
 
   bool Interpreter::isInSyntaxOnlyMode() const {
     return getCI()->getFrontendOpts().ProgramAction
@@ -1332,6 +1336,11 @@ namespace cling {
     return m_IncrParser->getCurrentTransaction();
   }
 
+  const Transaction* Interpreter::getLatestTransaction() const {
+    if (const Transaction* T = m_IncrParser->getCurrentTransaction())
+      return T;
+    return m_IncrParser->getLastTransaction();
+  }
 
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {
     if (!m_DynamicLookupDeclared && value) {
@@ -1395,15 +1404,7 @@ namespace cling {
   }
 
   void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {
-    const Transaction* T = getCurrentTransaction();
-    // Should this be ROOT only?
-    if (!T) {
-      // IncrementalParser::commitTransaction will call
-      // Interpreter::executeTransaction if transaction has no parent.
-      T = getLastTransaction();
-    }
-    assert(T && "No Transaction for Interpreter::AddAtExitFunc");
-    m_Executor->AddAtExitFunc(Func, Arg, T->getModule());
+    m_Executor->AddAtExitFunc(Func, Arg, getLatestTransaction()->getModule());
   }
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
