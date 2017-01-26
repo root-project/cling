@@ -771,6 +771,38 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     else if (NamedDecl* ND = FD->getFriendDecl())
       Successful &= Visit(ND);
 
+    // Is it possible to unload a friend but not the parent class?
+    // This requires adding DeclUnloader as a friend to FriendDecl
+#if 0
+    // Unlink the FriendDecl from linked list in CXXRecordDecl
+    TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
+    if (CXXRecordDecl* CD = dyn_cast_or_null<CXXRecordDecl>(Parent)) {
+      Successful = false;
+      if (FriendDecl *First = CD->getFirstFriend()) {
+        if (First != FD) {
+          FriendDecl *Prev = First;
+          for (FriendDecl* Cur : CD->friends()) {
+            if (Cur == FD) {
+              Prev->NextFriend = Cur->NextFriend;
+              Successful = true;
+              break;
+            }
+            Prev = Cur;
+          }
+        } else {
+          Successful = true;
+          CD->data().FirstFriend = nullptr;
+        }
+      }
+
+      // Arrived back here through recursion?
+      if (!Successful)
+        return true;
+
+      Successful = true;
+    }
+#endif
+
     Successful &= VisitDecl(FD);
     return Successful;
   }
