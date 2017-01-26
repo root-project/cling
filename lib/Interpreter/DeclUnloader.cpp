@@ -26,6 +26,14 @@
 namespace cling {
 using namespace clang;
 
+bool DeclUnloader::UnloadDecl(Decl* D) {
+  DiagnosticErrorTrap Trap(m_Sema->getDiagnostics());
+  const bool Successful = Visit(D);
+  if (Trap.hasErrorOccurred())
+    m_Sema->getDiagnostics().Reset(true);
+  return Successful;
+}
+
 namespace {
   static bool isDefinition(void*) {
     return false;
@@ -400,6 +408,41 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       m_FilesToUncache.insert(FID);
   }
 
+  static void reportContext(const DeclContext* DC, llvm::raw_ostream& Out) {
+    Out << DC->getDeclKindName();
+    if (const NamedDecl* Ctx = dyn_cast<NamedDecl>(DC))
+      Out << " '" << Ctx->getNameAsString() << "'";
+    else
+      Out << " (" << DC << ")";
+  }
+
+  static void reportErrors(Sema* Sema, Decl* D, const SourceLocation& Loc,
+                           const llvm::SmallVector<DeclContext*, 4>& errors) {
+    std::string errStr("success trying to remove ");
+    llvm::raw_string_ostream Out(errStr);
+
+    // We know its a NamedDecl as that's the only type that can set an error
+    Out << D->getDeclKindName() << " '" << cast<NamedDecl>(D)->getNameAsString()
+        << "' from ";
+
+    if (errors.size() > 1) {
+      Out << "{";
+      llvm::SmallVector<DeclContext *, 4>::const_iterator itr = errors.begin(),
+                                                          end = errors.end();
+      while (true) {
+        Out << " ";
+        reportContext(*itr, Out);
+        if (++itr == end)
+          break;
+        Out << ",";
+      }
+      Out << " }";
+    } else
+      reportContext(errors[0], Out);
+
+    Sema->Diags.Report(Loc, diag::err_expected) << Out.str();
+  }
+
   static SourceLocation getDeclLocation(Decl* D) {
     switch (D->getKind()) {
       case Decl::ClassTemplateSpecialization:
@@ -430,13 +473,18 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitDecl(Decl* D) {
     assert(D && "The Decl is null");
-    CollectFilesToUncache(getDeclLocation(D));
+    const SourceLocation Loc = getDeclLocation(D);
+    CollectFilesToUncache(Loc);
 
     DeclContext* DC = D->getLexicalDeclContext();
 
     bool Successful = true;
-    if (DC->containsDecl(D))
-      DC->removeDecl(D);
+    if (DC->containsDecl(D)) {
+      llvm::SmallVector<DeclContext*, 4> errors;
+      DC->removeDecl(D, &errors);
+      if (!errors.empty())
+        reportErrors(m_Sema, D, Loc, errors);
+    }
 
     // With the bump allocator this is nop.
     if (Successful)
