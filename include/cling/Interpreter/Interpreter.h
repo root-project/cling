@@ -330,6 +330,10 @@ namespace cling {
     const clang::Parser& getParser() const;
     clang::Parser& getParser();
 
+    ///\brief Returns the current or last Transactions source location.
+    ///
+    clang::SourceLocation getSourceLocation() const;
+
     ///\brief Returns the next available valid free source location.
     ///
     clang::SourceLocation getNextAvailableLoc() const;
@@ -661,6 +665,10 @@ namespace cling {
     const Transaction* getFirstTransaction() const;
     const Transaction* getLastTransaction() const;
     const Transaction* getCurrentTransaction() const;
+
+    ///\brief Returns the current or last Transaction.
+    ///
+    const Transaction* getLatestTransaction() const;
 
     ///\brief Compile extern "C" function and return its address.
     ///
