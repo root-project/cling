@@ -117,11 +117,8 @@ namespace cling {
 
       Diags.setClient(Prev.get(), OwnClient);
       Prev.release();
-#if LLVM_VERSION_MAJOR >= 4
-      // In LLVM 4 the test above still works, but the errors generated are
-      // still propogated...So just reset the Diags.
+      // Already asserted there were no errors to begin with so just reset it.
       Diags.Reset(true);
-#endif
 #endif
       return;
     }
