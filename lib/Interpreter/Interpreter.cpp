@@ -1163,17 +1163,20 @@ namespace cling {
   }
 
   void Interpreter::unload(unsigned numberOfTransactions) {
-    while(true) {
+    const Transaction *First = m_IncrParser->getFirstTransaction();
+    if (!First) {
+      cling::errs() << "cling: No transactions to unload!";
+      return;
+    }
+    for (unsigned i = 0; i < numberOfTransactions; ++i) {
       cling::Transaction* T = m_IncrParser->getLastTransaction();
-      if (!T) {
-        cling::errs() << "cling: invalid last transaction; unload failed!\n";
+      if (T == First) {
+        cling::errs() << "cling: Can't unload first transaction!  Unloaded "
+                      << i << " of " << numberOfTransactions << "\n";
         return;
       }
       unload(*T);
-      if (!--numberOfTransactions)
-        break;
     }
-
   }
 
   static void runAndRemoveStaticDestructorsImpl(IncrementalExecutor &executor,
