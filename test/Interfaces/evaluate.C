@@ -15,8 +15,10 @@
 cling::Value V;
 V // CHECK: (cling::Value &) <<<invalid>>> @0x{{.*}}
 
+V.dump(); // CHECK-NEXT: <<<invalid>>>
+
 gCling->evaluate("return 1;", V);
-V // CHECK: (cling::Value &) boxes [(int) 1]
+V // CHECK-NEXT: (cling::Value &) boxes [(int) 1]
 
 gCling->evaluate("(void)V", V);
 V // CHECK-NEXT: (cling::Value &) boxes [(void) ]

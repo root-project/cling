@@ -55,6 +55,8 @@ extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
 namespace cling {
   namespace valuePrinterInternal {
     extern const char* const kEmptyCollection = "{}";
+    extern const char* const kUndefined = "<<<undefined>>>";
+    extern const char* const kInvalid = "<<<invalid>>>";
   }
 }
 
@@ -602,7 +604,7 @@ static std::string callPrintValue(const Value& V, const void* Val) {
                              "Could not execute cling::printValue with '%0'");
   Diag.Report(Interp->getSourceLocation(), ID) << getTypeString(V);
 
-  return "ERROR in cling's callPrintValue(): missing value string.";
+  return valuePrinterInternal::kUndefined;
 }
 
 template <typename T>
@@ -847,7 +849,7 @@ namespace cling {
       }
       strm << "]";
     } else
-      strm << "<<<invalid>>> " << printAddress(value, '@');
+      strm << valuePrinterInternal::kInvalid << ' ' << printAddress(value, '@');
 
     return strm.str();
   }
@@ -855,10 +857,12 @@ namespace cling {
   namespace valuePrinterInternal {
 
     std::string printTypeInternal(const Value &V) {
+      assert(V.getInterpreter() && "Invalid cling::Value");
       return printQualType(V.getASTContext(), V.getType());
     }
 
     std::string printValueInternal(const Value &V) {
+      assert(V.getInterpreter() && "Invalid cling::Value");
       static bool includedRuntimePrintValue = false; // initialized only once as a static function variable
       // Include "RuntimePrintValue.h" only on the first printing.
       // This keeps the interpreter lightweight and reduces the startup time.

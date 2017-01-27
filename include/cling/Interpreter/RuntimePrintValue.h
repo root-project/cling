@@ -21,14 +21,20 @@
 namespace cling {
 
   class Value;
+  namespace valuePrinterInternal {
+    extern const char* const kEmptyCollection;
+    extern const char* const kUndefined;
+  }
 
   // General fallback - prints the address
   std::string printValue(const void *ptr);
 
   // Fallback for e.g. vector<bool>'s bit iterator:
   template <class T,
-    class = typename std::enable_if<!std::is_pointer<T>::value>::type>
-  std::string printValue(const T& val) { return "{not representable}"; }
+            class = typename std::enable_if<!std::is_pointer<T>::value>::type>
+  std::string printValue(const T& val) {
+    return valuePrinterInternal::kUndefined;
+  }
 
   // void pointer
   std::string printValue(const void **ptr);
@@ -113,10 +119,6 @@ namespace cling {
 
   // cling::Value
   std::string printValue(const Value *value);
-
-  namespace valuePrinterInternal {
-    extern const char* const kEmptyCollection;
-  }
 
   // Collections internal
   namespace collectionPrinterInternal {

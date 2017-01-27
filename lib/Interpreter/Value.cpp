@@ -231,9 +231,15 @@ namespace cling {
   namespace valuePrinterInternal {
     std::string printTypeInternal(const Value& V);
     std::string printValueInternal(const Value& V);
+    extern const char* const kInvalid;
   } // end namespace valuePrinterInternal
 
   void Value::print(llvm::raw_ostream& Out, bool Escape) const {
+    if (!m_Interpreter) {
+      Out << valuePrinterInternal::kInvalid << "\n";
+      return;
+    }
+
     // Save the default type string representation so output can occur as one
     // operation (calling printValueInternal below may write to stderr).
     const std::string Type = valuePrinterInternal::printTypeInternal(*this);
