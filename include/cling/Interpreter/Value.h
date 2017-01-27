@@ -11,6 +11,7 @@
 #define CLING_VALUE_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <type_traits>
 
 namespace llvm {
@@ -137,7 +138,7 @@ namespace cling {
           return (T) V.getAs<long double>();
         case kPointerType:
         case kManagedAllocation:
-          return (T) (size_t) V.getAs<void*>();
+          return (T) (uintptr_t) V.getAs<void*>();
         case kUnsupportedType:
           V.AssertOnUnsupportedTypeCast();
         }
@@ -151,7 +152,7 @@ namespace cling {
         EStorageType storageType = V.getStorageType();
         if (storageType == kPointerType
             || storageType == kManagedAllocation)
-          return (T*) (size_t) V.getAs<void*>();
+          return (T*) (uintptr_t) V.getAs<void*>();
         V.AssertOnUnsupportedTypeCast();
         return 0;
       }
