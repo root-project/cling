@@ -654,10 +654,50 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitUsingDecl(UsingDecl* UD) {
     // UsingDecl: NamedDecl, Mergeable<UsingDecl>
     bool Success = true;
+
+    // UsingDecls currently are not Redeclarables, instead they overwrite the
+    // entry in the shared lookup map.  The prior declarations still exist in
+    // the previous context's decl list, so grab the prior value, and add
+    // the entry in the lookup map as a final step.
+    //
+    // Save the previous Namespace and UsingDecl now.
+    NamespaceDecl *PrvNS = nullptr;
+    UsingDecl *PrvUD = nullptr;
+    if (NamespaceDecl *NS =
+                        dyn_cast_or_null<NamespaceDecl>(UD->getDeclContext())) {
+      if ((PrvNS = NS->getPreviousDecl())) {
+        const IdentifierInfo *ID = UD->getIdentifier();
+        for (Decl* D : PrvNS->noload_decls()) {
+          if (UsingDecl *Ud = dyn_cast<UsingDecl>(D)) {
+            if (Ud->getIdentifier() == ID) {
+              PrvUD = Ud;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     for (UsingShadowDecl *USD : UD->shadows())
       Success &= VisitUsingShadowDecl(USD);
 
     Success &= VisitNamedDecl(UD);
+
+    // Replace or re-add the prior UsingDecl entry.
+    if (PrvNS && PrvUD) {
+      // Only need to overwrite PrvNS as they all share a map
+      // do {
+        if (DeclContext *DC = PrvNS->getPrimaryContext()) {
+          if (StoredDeclsMap *Map = DC->getLookupPtr()) {
+            auto &DeclList = (*Map)[PrvUD->getDeclName()];
+            if (!DeclList.HandleRedeclaration(PrvUD, true))
+              DeclList.AddSubsequentDecl(PrvUD);
+          }
+        }
+      //  PrvNS = PrvNS->getPreviousDecl();
+      // } while (PrvNS);
+    }
+
     return Success;
   }
 

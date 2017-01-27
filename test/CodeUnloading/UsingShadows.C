@@ -6,7 +6,58 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -I %S 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -I %S -Xclang -verify 2>&1 | FileCheck %s
+
+extern "C" int printf(const char*, ...);
+
+namespace C { struct foo { foo() { printf("foo\n"); } }; }
+// FIXME .compareState X fails when a runtime function is called
+// after .storeState X has been run
+C::foo();
+// CHECK: foo
+.storeState "C"
+
+namespace D {}
+.storeState "CD"
+
+namespace D { using C::foo; }
+namespace D { using C::foo; }
+.storeState "CDD"
+
+namespace D { using C::foo; }
+namespace D { using C::foo; }
+.undo
+.undo
+
+.compareState "CDD"
+//CHECK-NOT: Differences
+
+
+namespace D { using C::foo; }
+namespace D { using C::foo; }
+namespace D { using C::foo; }
+namespace D { using C::foo; }
+.undo
+.undo
+.undo
+.undo
+.compareState "CDD"
+//CHECK-NOT: Differences
+
+D::foo();
+// CHECK-NEXT: foo
+
+.undo
+.undo
+.undo
+.compareState "CD"
+//CHECK-NOT: Differences
+
+D::foo(); //expected-error {{no member named 'foo' in namespace 'D'}}
+
+.undo
+.compareState "C"
+//CHECK-NOT: Differences
 
 namespace A { void foo(); }
 .storeState "TESTU1"
@@ -45,11 +96,10 @@ typedef long long_t;
 
 long_t val = 9;
 val
-// CHECK: 9
+// CHECK-NEXT: 9
 
 // Unloading <string> used to fail as well (which as annoying).
 #include <string>
 .undo
 
-// expected-no-diagnostics
 .q
