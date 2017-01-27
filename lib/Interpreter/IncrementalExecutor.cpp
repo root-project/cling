@@ -154,9 +154,7 @@ void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name
     //             << mangled_name << "'!\n";
   }
 
-  // Avoid "ISO C++ forbids casting between pointer-to-function and
-  // pointer-to-object":
-  return (void*)reinterpret_cast<size_t>(unresolvedSymbol);
+  return utils::FunctionToVoidPtr(&unresolvedSymbol);
 }
 
 void* IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
