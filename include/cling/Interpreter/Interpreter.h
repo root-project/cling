@@ -35,6 +35,7 @@ namespace clang {
   class CompilerInstance;
   class Decl;
   class DeclContext;
+  class DiagnosticsEngine;
   class FunctionDecl;
   class GlobalDecl;
   class NamedDecl;
@@ -630,6 +631,7 @@ namespace cling {
     clang::CompilerInstance* getCI() const;
     clang::CompilerInstance* getCIOrNull() const;
     clang::Sema& getSema() const;
+    clang::DiagnosticsEngine& getDiagnostics() const;
 
     //FIXME: This must be in InterpreterCallbacks.
     void installLazyFunctionCreator(void* (*fp)(const std::string&));

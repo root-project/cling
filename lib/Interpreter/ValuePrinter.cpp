@@ -215,7 +215,7 @@ static std::string executePrintValue(const Value &V, const T &val) {
 
     // We really don't care about protected types here (ROOT-7426)
     AccessCtrlRAII_t AccessCtrlRAII(*Interp);
-    clang::DiagnosticsEngine& Diag = Interp->getCI()->getDiagnostics();
+    clang::DiagnosticsEngine& Diag = Interp->getDiagnostics();
     bool oldSuppDiags = Diag.getSuppressAllDiagnostics();
     Diag.setSuppressAllDiagnostics(true);
     Interp->evaluate(Strm.str(), printValueV);
