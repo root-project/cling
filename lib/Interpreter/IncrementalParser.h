@@ -28,6 +28,7 @@ namespace llvm {
 namespace clang {
   class CodeGenerator;
   class CompilerInstance;
+  class DiagnosticConsumer;
   class Decl;
   class FileID;
   class Parser;
@@ -87,6 +88,10 @@ namespace cling {
     ///\brief Pool of reusable block-allocated transactions.
     ///
     std::unique_ptr<TransactionPool> m_TransactionPool;
+
+    ///\brief DiagnosticConsumer instance
+    ///
+    std::unique_ptr<clang::DiagnosticConsumer> m_DiagConsumer;
 
   public:
     enum EParseResult {
