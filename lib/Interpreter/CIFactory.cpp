@@ -679,13 +679,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                  bool /*Complain*/,
                                  bool /*AllowCompatibleDifferences*/) override {
           *m_Invocation.getLangOpts() = LangOpts;
-          return true;
+          return false;
         }
         bool ReadTargetOptions(const TargetOptions &TargetOpts,
                                bool /*Complain*/,
                                bool /*AllowCompatibleDifferences*/) override {
           m_Invocation.getTargetOpts() = TargetOpts;
-          return true;
+          return false;
         }
         bool ReadPreprocessorOptions(const PreprocessorOptions &PPOpts,
                                      bool /*Complain*/,
@@ -695,7 +695,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
           insertBehind(myPP.Macros, PPOpts.Macros);
           insertBehind(myPP.Includes, PPOpts.Includes);
           insertBehind(myPP.MacroIncludes, PPOpts.MacroIncludes);
-          return true;
+          return false;
         }
       };
       PCHListener listener(*Invocation);
