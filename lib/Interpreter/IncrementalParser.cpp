@@ -230,13 +230,18 @@ namespace cling {
     const std::string& PCHFileName
       = m_CI->getInvocation().getPreprocessorOpts().ImplicitPCHInclude;
     if (!PCHFileName.empty()) {
-      Transaction* CurT = beginTransaction(CO);
+      Transaction* PchT = beginTransaction(CO);
+      DiagnosticErrorTrap Trap(Diags);
       m_CI->createPCHExternalASTSource(PCHFileName,
                                        true /*DisablePCHValidation*/,
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/,
                                        true /*OwnsDeserializationListener*/);
-      result.push_back(endTransaction(CurT));
+      result.push_back(endTransaction(PchT));
+      if (Trap.hasErrorOccurred()) {
+        result.push_back(endTransaction(CurT));
+        return false;
+      }
     }
 
     addClingPragmas(*m_Interpreter);
