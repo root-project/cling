@@ -89,9 +89,11 @@ namespace {
     const clang::Preprocessor& PP = CI->getPreprocessor();
     const clang::Token* Tok = getMacroToken(PP, CLING_CXXABI_NAME);
     if (Tok && Tok->isLiteral()) {
+      // Tok::getLiteralData can fail even if Tok::isLiteral is true!
+      SmallString<64> Buffer;
+      CurABI = PP.getSpelling(*Tok, Buffer);
       // Strip any quotation marks.
-      CurABI = llvm::StringRef(Tok->getLiteralData(),
-                               Tok->getLength()).trim("\"");
+      CurABI = CurABI.trim("\"");
       if (CurABI.equals(CLING_CXXABI_VERS))
         return true;
     }
