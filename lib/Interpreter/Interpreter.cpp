@@ -536,6 +536,10 @@ namespace cling {
     return getCI()->getSema();
   }
 
+  DiagnosticsEngine& Interpreter::getDiagnostics() const {
+    return getCI()->getDiagnostics();
+  }
+
   ///\brief Maybe transform the input line to implement cint command line
   /// semantics (declarations are global) and compile to produce a module.
   ///
@@ -648,7 +652,7 @@ namespace cling {
     // being loaded ... we probably might as well extend this to
     // ALL warnings ... but this will suffice for now (working
     // around a real bug in QT :().
-    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    DiagnosticsEngine& Diag = getDiagnostics();
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Ignored, SourceLocation());
     CompilationResult Result = DeclareInternal(input, CO);
@@ -826,7 +830,7 @@ namespace cling {
 
   Interpreter::ExecutionResult
   Interpreter::RunFunction(const FunctionDecl* FD, Value* res /*=0*/) {
-    if (getCI()->getDiagnostics().hasErrorOccurred())
+    if (getDiagnostics().hasErrorOccurred())
       return kExeCompilationError;
 
     if (isInSyntaxOnlyMode()) {
@@ -926,7 +930,7 @@ namespace cling {
     return 0;
     }
     */
-    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    DiagnosticsEngine& Diag = getDiagnostics();
     Diag.setSeverity(clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
                      clang::diag::Severity::Ignored, SourceLocation());
 
