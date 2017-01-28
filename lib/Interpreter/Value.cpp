@@ -232,8 +232,9 @@ namespace cling {
   } // end namespace valuePrinterInternal
 
   void Value::print(llvm::raw_ostream& Out, bool Escape) const {
-    // Get the default type string representation
-    Out << cling::valuePrinterInternal::printTypeInternal(*this) << ' ';
+    // Save the default type string representation so output can occur as one
+    // operation (calling printValueInternal below may write to stderr).
+    const std::string Type = valuePrinterInternal::printTypeInternal(*this);
 
     // Get the value string representation, by printValue() method overloading
     const std::string Val = cling::valuePrinterInternal::printValueInternal(*this);
@@ -249,14 +250,15 @@ namespace cling {
         case '\"':
           if (N > 2 && Data[N-1] == '\"') {
             // Drop the terminating " so Utf-8 errors can be detected ("\xeA")
-            Out << utils::utf8::EscapeSequence().encode(Data, N-1) << "\"\n";
+            Out << Type << ' '
+                << utils::utf8::EscapeSequence().encode(Data, N-1) << "\"\n";
             return;
           }
         default:
           break;
       }
     }
-    Out << Val << '\n';
+    Out << Type << ' ' << Val << '\n';
   }
 
   void Value::dump(bool Escape) const {
