@@ -26,6 +26,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Utils/Diagnostics.h"
 #include "cling/Utils/Output.h"
 
 #include "clang/AST/ASTContext.h"
@@ -106,38 +107,36 @@ namespace {
     return false;
   }
 
-  class FilteringDiagConsumer: public ForwardingDiagnosticConsumer {
-    std::unique_ptr<DiagnosticConsumer> fOwnedTarget;
-    std::stack<bool> fIgnorePromptDiags;
+  class FilteringDiagConsumer : public cling::utils::DiagnosticsOverride {
+    std::stack<bool> m_IgnorePromptDiags;
 
     void SyncDiagCountWithTarget() {
-      NumWarnings = fOwnedTarget->getNumWarnings();
-      NumErrors = fOwnedTarget->getNumErrors();
+      NumWarnings = m_PrevClient.getNumWarnings();
+      NumErrors = m_PrevClient.getNumErrors();
     }
-
-  public:
-    FilteringDiagConsumer(std::unique_ptr<DiagnosticConsumer>&& Target):
-      ForwardingDiagnosticConsumer(*Target),
-      fOwnedTarget(std::move(Target)) {}
 
     void BeginSourceFile(const LangOptions &LangOpts,
                          const Preprocessor *PP=nullptr) override {
-      fOwnedTarget->BeginSourceFile(LangOpts, PP);
+      m_PrevClient.BeginSourceFile(LangOpts, PP);
     }
 
     void EndSourceFile() override {
-      fOwnedTarget->EndSourceFile();
+      m_PrevClient.EndSourceFile();
       SyncDiagCountWithTarget();
     }
-
+  
     void finish() override {
-      fOwnedTarget->finish();
+      m_PrevClient.finish();
       SyncDiagCountWithTarget();
     }
 
     void clear() override {
-      fOwnedTarget->clear();
+      m_PrevClient.clear();
       SyncDiagCountWithTarget();
+    }
+
+    bool IncludeInDiagnosticCounts() const override {
+      return m_PrevClient.IncludeInDiagnosticCounts();
     }
 
     void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
@@ -154,24 +153,33 @@ namespace {
           // An error that we need to suppress.
           auto Diags = const_cast<DiagnosticsEngine*>(Info.getDiags());
           assert(Diags->hasErrorOccurred() && "Expected ErrorOccurred");
-          if (fOwnedTarget->getNumErrors() == 0) { // first error
+          if (m_PrevClient.getNumErrors() == 0) { // first error
             Diags->Reset(true /*soft - only counts, not mappings*/);
           } // else we had other errors, too.
           return; // ignore!
         }
       }
-      ForwardingDiagnosticConsumer::HandleDiagnostic(DiagLevel, Info);
+      m_PrevClient.HandleDiagnostic(DiagLevel, Info);
       SyncDiagCountWithTarget();
     }
 
-    void push(bool ignoreDiags) { fIgnorePromptDiags.push(ignoreDiags); }
-    void pop() {
-      assert(!fIgnorePromptDiags.empty() && "Unignoring non-ignored prompt diags!");
-      fIgnorePromptDiags.pop();
-    }
     bool Ignoring() const {
-      return !fIgnorePromptDiags.empty() && fIgnorePromptDiags.top();
+      return !m_IgnorePromptDiags.empty() && m_IgnorePromptDiags.top();
     }
+
+  public:
+    FilteringDiagConsumer(DiagnosticsEngine& Diags, bool Own) :
+      DiagnosticsOverride(Diags, Own) {
+    }
+
+    struct RAAI {
+      FilteringDiagConsumer& m_Client;
+      RAAI(DiagnosticConsumer& F, bool Ignore) :
+       m_Client(static_cast<FilteringDiagConsumer&>(F)) {
+        m_Client.m_IgnorePromptDiags.push(Ignore);
+      }
+      ~RAAI() { m_Client.m_IgnorePromptDiags.pop(); }
+    };
   };
 } // unnamed namespace
 
@@ -197,9 +205,7 @@ namespace cling {
       m_Consumer->setContext(this, 0);
     }
 
-    DiagnosticConsumer* DC
-      = new FilteringDiagConsumer(Diag.takeClient());
-    Diag.setClient(DC, true /*own*/);
+    m_DiagConsumer.reset(new FilteringDiagConsumer(Diag, false));
 
     initializeVirtualFile();
   }
@@ -715,15 +721,7 @@ namespace cling {
 
     DiagnosticsEngine& Diags = getCI()->getDiagnostics();
 
-    FilteringDiagConsumer* PromptDiagClient
-      = static_cast<FilteringDiagConsumer*>(Diags.getClient());
-
-    struct PromptDiagClientRAII_t {
-      FilteringDiagConsumer* fClient;
-      ~PromptDiagClientRAII_t() { fClient->pop(); }
-    } PromptDiagClientRAII{PromptDiagClient};
-
-    PromptDiagClient->push(CO.IgnorePromptDiags);
+    FilteringDiagConsumer::RAAI RAAITmp(*m_DiagConsumer, CO.IgnorePromptDiags);
 
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
