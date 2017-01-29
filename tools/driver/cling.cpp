@@ -76,15 +76,15 @@ int main( int argc, char **argv ) {
 #endif
 
   // Set up the interpreter
-  cling::Interpreter interp(argc, argv);
+  cling::Interpreter Interp(argc, argv);
+  const cling::InvocationOptions& Opts = Interp.getOptions();
 
-  if (!interp.isValid()) {
-    const cling::InvocationOptions& Opts = interp.getOptions();
+  if (!Interp.isValid()) {
     if (Opts.Help || Opts.ShowVersion)
       return EXIT_SUCCESS;
 
     unsigned ErrsReported = 0;
-    if (clang::CompilerInstance* CI = interp.getCIOrNull()) {
+    if (clang::CompilerInstance* CI = Interp.getCIOrNull()) {
       // If output requested and execution succeeded let the DiagnosticsEngine
       // determine the result code
       if (Opts.CompilerOpts.HasOutput && ExecuteCompilerInvocation(CI))
@@ -100,50 +100,43 @@ int main( int argc, char **argv ) {
     return EXIT_FAILURE;
   }
 
-  interp.AddIncludePath(".");
+  Interp.AddIncludePath(".");
 
-  for (size_t I = 0, N = interp.getOptions().LibsToLoad.size(); I < N; ++I) {
-    interp.loadFile(interp.getOptions().LibsToLoad[I]);
-  }
+  for (const std::string& Lib : Opts.LibsToLoad)
+    Interp.loadFile(Lib);
 
-
-  // Interactive means no input (or one input that's "-")
-  std::vector<std::string>& Inputs = interp.getOptions().Inputs;
-  bool Interactive = Inputs.empty() || (Inputs.size() == 1
-                                        && Inputs[0] == "-");
-
-  cling::UserInterface ui(interp);
+  cling::UserInterface Ui(Interp);
   // If we are not interactive we're supposed to parse files
-  if (!Interactive) {
-    for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
-      std::string cmd;
-      cling::Interpreter::CompilationResult compRes;
-      if (!interp.lookupFileOrLibrary(Inputs[I]).empty()) {
-        std::ifstream infile(interp.lookupFileOrLibrary(Inputs[I]));
-        std::string line;
-        std::getline(infile, line);
-        if (line[0] == '#' && line[1] == '!') {
+  if (!Opts.IsInteractive()) {
+    for (const std::string &Input : Opts.Inputs) {
+      std::string Cmd;
+      cling::Interpreter::CompilationResult Result;
+      const std::string Filepath = Interp.lookupFileOrLibrary(Input);
+      if (!Filepath.empty()) {
+        std::ifstream File(Filepath);
+        std::string Line;
+        std::getline(File, Line);
+        if (Line[0] == '#' && Line[1] == '!') {
           // TODO: Check whether the filename specified after #! is the current
           // executable.
-          while(std::getline(infile, line)) {
-            ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
+          while (std::getline(File, Line)) {
+            Ui.getMetaProcessor()->process(Line.c_str(), Result, 0);
           }
           continue;
         }
-        else
-          cmd += ".x ";
+        Cmd += ".x ";
       }
-      cmd += Inputs[I];
-      ui.getMetaProcessor()->process(cmd.c_str(), compRes, 0);
+      Cmd += Input;
+      Ui.getMetaProcessor()->process(Cmd.c_str(), Result, 0);
     }
   }
   else {
-    ui.runInteractively(interp.getOptions().NoLogo);
+    Ui.runInteractively(Opts.NoLogo);
   }
 
   // Only for test/OutputRedirect.C, but shouldn't affect performance too much.
   ::fflush(stdout);
   ::fflush(stderr);
 
-  return checkDiagErrors(interp.getCI());
+  return checkDiagErrors(Interp.getCI());
 }
