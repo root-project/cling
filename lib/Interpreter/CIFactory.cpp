@@ -599,10 +599,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     return Diags;
   }
 
-  static bool SetupCompiler(CompilerInstance* CI, bool full) {
+  static bool
+  SetupCompiler(CompilerInstance* CI, bool Lang = true, bool Targ = true) {
     // Set the language options, which cling needs.
     // This may have already been done via a precompiled header
-    if (full)
+    if (Lang)
       SetClingCustomLangOpts(CI->getLangOpts());
 
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
@@ -629,7 +630,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CI->getTarget().adjust(CI->getLangOpts());
 
     // This may have already been done via a precompiled header
-    if (full)
+    if (Targ)
       SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
 
     SetPreprocessorFromTarget(PPOpts, CI->getTarget().getTriple());
@@ -780,7 +781,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                         "output is supported.\n";
         return nullptr;
       }
-      if (!SetupCompiler(CI.get(), true))
+      if (!SetupCompiler(CI.get()))
         return nullptr;
 
       ProcessWarningOptions(*Diags, DiagOpts);
@@ -789,28 +790,32 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     CI->createFileManager();
     clang::CompilerInvocation& Invocation = CI->getInvocation();
-    std::string& PCHFileName
-      = Invocation.getPreprocessorOpts().ImplicitPCHInclude;
-    if (!PCHFileName.empty()) {
-      if (cling::utils::LookForFile(argvCompile, PCHFileName,
+    std::string& PCHFile = Invocation.getPreprocessorOpts().ImplicitPCHInclude;
+    bool InitLang = true, InitTarget = true;
+    if (!PCHFile.empty()) {
+      if (cling::utils::LookForFile(argvCompile, PCHFile,
               &CI->getFileManager(),
               COpts.Verbose ? "Precompiled header" : nullptr)) {
         // Load target options etc from PCH.
         struct PCHListener: public ASTReaderListener {
           CompilerInvocation& m_Invocation;
+          bool m_ReadLang, m_ReadTarget;
 
-          PCHListener(CompilerInvocation& I): m_Invocation(I) {}
+          PCHListener(CompilerInvocation& I) :
+            m_Invocation(I), m_ReadLang(false), m_ReadTarget(false) {}
 
           bool ReadLanguageOptions(const LangOptions &LangOpts,
                                    bool /*Complain*/,
                                    bool /*AllowCompatibleDifferences*/) override {
             *m_Invocation.getLangOpts() = LangOpts;
+            m_ReadLang = true;
             return false;
           }
           bool ReadTargetOptions(const TargetOptions &TargetOpts,
                                  bool /*Complain*/,
                                  bool /*AllowCompatibleDifferences*/) override {
             m_Invocation.getTargetOpts() = TargetOpts;
+            m_ReadTarget = true;
             return false;
           }
           bool ReadPreprocessorOptions(const PreprocessorOptions &PPOpts,
@@ -825,18 +830,36 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
           }
         };
         PCHListener listener(Invocation);
-        ASTReader::readASTFileControlBlock(PCHFileName,
-                                           CI->getFileManager(),
-                                           CI->getPCHContainerReader(),
-                                           false /*FindModuleFileExtensions*/,
-                                           listener);
+        if (ASTReader::readASTFileControlBlock(PCHFile,
+                                               CI->getFileManager(),
+                                               CI->getPCHContainerReader(),
+                                               false /*FindModuleFileExt*/,
+                                               listener)) {
+          // When running interactively pass on the info that the PCH
+          // has failed so that IncrmentalParser::Initialize won't try again.
+          if (!HasInput && llvm::sys::Process::StandardInIsUserInput()) {
+            const unsigned ID = Diags->getCustomDiagID(
+                                       clang::DiagnosticsEngine::Level::Error,
+                                       "Problems loading PCH: '%0'.");
+            
+            Diags->Report(ID) << PCHFile;
+            // If this was the only error, then don't let it stop anything
+            if (Diags->getClient()->getNumErrors() == 1)
+              Diags->Reset(true);
+            // Clear the include so no one else uses it.
+            std::string().swap(PCHFile);
+          }
+        }
+        // All we care about is if Language and Target options were successful.
+        InitLang = !listener.m_ReadLang;
+        InitTarget = !listener.m_ReadTarget;
       }
     }
 
     Invocation.getFrontendOpts().DisableFree = true;
 
     // Set up compiler language and target
-    if (!SetupCompiler(CI.get(), PCHFileName.empty()))
+    if (!SetupCompiler(CI.get(), InitLang, InitTarget))
       return nullptr;
 
     // Set up source managers
