@@ -8,47 +8,82 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Utils/Output.h"
+
+#include "llvm/Support/Format.h"
+#include "llvm/Support/Process.h"
 #include "llvm/Support/raw_os_ostream.h"
-#include <atomic>
+
 #include <iostream>
 
 namespace cling {
   namespace utils {
 
-    ///\brief Unbuffer the llvm::raw_os_ostream wrapper
-    /// Shouldn't affect the underlying iostream buffering
-    template <unsigned I>
-    static inline void Unbuffer(llvm::raw_os_ostream& S) {
-      static std::atomic<unsigned char> Unbufferd(0);
-      // Prevent overflow
-      if (!Unbufferd) {
-        // Run exactly once
-        if (++Unbufferd == 1)
-          S.SetUnbuffered();
-      }
-    }
+    namespace {
+      class ColoredOutput : public llvm::raw_os_ostream {
+        bool m_Colorize;
 
-    
+        raw_ostream& changeColor(enum Colors colors, bool bold, bool bg) {
+          if (m_Colorize) {
+            if (llvm::sys::Process::ColorNeedsFlush()) flush();
+            if (const char* colorcode =
+                    (colors == SAVEDCOLOR)
+                        ? llvm::sys::Process::OutputBold(bg)
+                        : llvm::sys::Process::OutputColor(colors, bold, bg))
+              write(colorcode, strlen(colorcode));
+          }
+          return *this;
+        }
+        raw_ostream& resetColor() {
+          if (m_Colorize) {
+            if (llvm::sys::Process::ColorNeedsFlush()) flush();
+            if (const char* colorcode = llvm::sys::Process::ResetColor())
+              write(colorcode, ::strlen(colorcode));
+          }
+          return *this;
+        }
+
+        raw_ostream& reverseColor() {
+          if (m_Colorize) {
+            if (llvm::sys::Process::ColorNeedsFlush()) flush();
+
+            if (const char* colorcode = llvm::sys::Process::OutputReverse())
+              write(colorcode, ::strlen(colorcode));
+          }
+          return *this;
+        }
+        bool has_colors() const { return m_Colorize; }
+        bool is_displayed() const { return m_Colorize; }
+      public:
+
+        ColoredOutput(std::ostream& OS, bool Unbufferd = true)
+            : raw_os_ostream(OS) {
+          if (Unbufferd) SetUnbuffered();
+        }
+        
+        bool Colors(bool C) { m_Colorize = C; return m_Colorize; }
+      };
+    } // anonymous namespace
+
     llvm::raw_ostream& outs() {
-      // We need stream that doesn't close its file descriptor, thus we are not
-      // using llvm::outs. Keeping file descriptor open we will be able to use
-      // the results in pipes (Savannah #99234).
-
-      static llvm::raw_os_ostream S(std::cout);
-      Unbuffer<1>(S);
-      return S;
+      static ColoredOutput sOut(std::cout);
+      return sOut;
     }
 
     llvm::raw_ostream& errs() {
-      static llvm::raw_os_ostream S(std::cerr);
-      // For command line applications, it make sense to run unbuffered
-      // so that we will synch with llvm::errs()
-      Unbuffer<2>(S);
-      return S;
+      static ColoredOutput sErr(std::cerr);
+      return sErr;
     }
 
     llvm::raw_ostream& log() {
       return cling::errs();
+    }
+
+    bool ColorizeOutput(unsigned Which) {
+#define COLOR_FLAG(Fv, Fn) (Which == 8 ? llvm::sys::Process::Fn() : Which & Fv)
+      return static_cast<ColoredOutput &>(outs()).Colors(
+                              COLOR_FLAG(1, StandardOutIsDisplayed)) |
+             static_cast<ColoredOutput &>(errs()).Colors(
+                              COLOR_FLAG(2, StandardErrIsDisplayed));
     }
   }
 }

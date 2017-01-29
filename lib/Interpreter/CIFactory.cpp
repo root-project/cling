@@ -773,6 +773,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CI->setInvocation(InvocationPtr.get());
     InvocationPtr.release();
     CI->setDiagnostics(Diags.get()); // Diags is ref-counted
+    if (!OnlyLex)
+      CI->getDiagnosticOpts().ShowColors = cling::utils::ColorizeOutput();
+
 
     // Copied from CompilerInstance::createDiagnostics:
     // Chain in -verify checker, if requested.
