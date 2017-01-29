@@ -248,10 +248,9 @@ namespace cling {
     if (External)
       External->StartTranslationUnit(m_Consumer);
 
-    Parser::DeclGroupPtrTy ADecl;
     // Start parsing the "main file" to warm up lexing (enter caching lex mode
     // for ParseInternal()'s call EnterSourceFile() to make sense.
-    while (!m_Parser->ParseTopLevelDecl(ADecl)) {}
+    while (!m_Parser->ParseTopLevelDecl()) {}
 
     // If I belong to the parent Interpreter, only then do
     // the #include <new>
@@ -370,14 +369,16 @@ namespace cling {
     return ParseResultTransaction(T, ParseResult);
   }
 
-  void IncrementalParser::commitTransaction(ParseResultTransaction& PRT) {
+  void IncrementalParser::commitTransaction(ParseResultTransaction& PRT,
+                                            bool ClearDiagClient) {
     Transaction* T = PRT.getPointer();
     if (!T) {
       if (PRT.getInt() != kSuccess) {
         // Nothing has been emitted to Codegen, reset the Diags.
         DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
         Diags.Reset(/*soft=*/true);
-        Diags.getClient()->clear();
+        if (ClearDiagClient)
+          Diags.getClient()->clear();
       }
       return;
     }
@@ -408,7 +409,8 @@ namespace cling {
       // Module has been released from Codegen, reset the Diags now.
       DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
       Diags.Reset(/*soft=*/true);
-      Diags.getClient()->clear();
+      if (ClearDiagClient)
+        Diags.getClient()->clear();
 
       PRT.setPointer(nullptr);
       PRT.setInt(kFailed);
