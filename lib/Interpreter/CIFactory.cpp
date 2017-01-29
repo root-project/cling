@@ -765,6 +765,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     InvocationPtr.release();
     CI->setDiagnostics(Diags.get()); // Diags is ref-counted
 
+    // Copied from CompilerInstance::createDiagnostics:
+    // Chain in -verify checker, if requested.
+    if (DiagOpts.VerifyDiagnostics)
+      Diags->setClient(new clang::VerifyDiagnosticConsumer(*Diags));
+    // Configure our handling of diagnostics.
+    ProcessWarningOptions(*Diags, DiagOpts);
+
     if (COpts.HasOutput && !OnlyLex) {
       ActionScan scan(clang::driver::Action::PrecompileJobClass,
                       clang::driver::Action::PreprocessJobClass);
@@ -827,12 +834,6 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
 
     Invocation.getFrontendOpts().DisableFree = true;
-    // Copied from CompilerInstance::createDiagnostics:
-    // Chain in -verify checker, if requested.
-    if (DiagOpts.VerifyDiagnostics)
-      Diags->setClient(new clang::VerifyDiagnosticConsumer(*Diags));
-    // Configure our handling of diagnostics.
-    ProcessWarningOptions(*Diags, DiagOpts);
 
     // Set up compiler language and target
     if (!SetupCompiler(CI.get(), PCHFileName.empty()))
