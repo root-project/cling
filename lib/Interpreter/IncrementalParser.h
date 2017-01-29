@@ -121,10 +121,12 @@ namespace cling {
     ///\brief Commits a transaction if it was complete. I.e pipes it
     /// through the consumer chain, including codegen.
     ///
-    ///\param[in] PRT - the transaction (ParseResultTransaction, really) to be
+    ///\param[in] PRT - the transaction (ParseResultTransaction) to be
     /// committed
+    ///\param[in] ClearDiagClient - Reset the DiagnosticsEngine client or not
     ///
-    void commitTransaction(ParseResultTransaction& PRT);
+    void commitTransaction(ParseResultTransaction& PRT,
+                           bool ClearDiagClient = true);
 
     ///\brief Runs the consumers (e.g. CodeGen) on a non-parsed transaction.
     ///
