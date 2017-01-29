@@ -947,7 +947,7 @@ CompilerInstance* CIFactory::createCI(llvm::StringRef Code,
                                       const char* LLVMDir) {
   return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code),
                       Opts.CompilerOpts, LLVMDir, false /*OnlyLex*/,
-                      Opts.Inputs.size() > 0);
+                      !Opts.IsInteractive());
 }
 
 CompilerInstance* CIFactory::createCI(MemBufPtr_t Buffer, int argc,

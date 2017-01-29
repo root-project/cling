@@ -71,6 +71,11 @@ namespace cling {
     bool Verbose() const { return CompilerOpts.Verbose; }
 
     static void PrintHelp();
+
+    // Interactive means no input (or one input that's "-")
+    bool IsInteractive() const {
+      return Inputs.empty() || (Inputs.size() == 1 && Inputs[0] == "-");
+    }
   };
 }
 
