@@ -10,6 +10,8 @@
 #ifndef CLING_UTILS_CASTING_H
 #define CLING_UTILS_CASTING_H
 
+#include <cstdint>
+
 namespace cling {
   namespace utils {
 
