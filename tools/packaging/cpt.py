@@ -58,14 +58,8 @@ import json
 
 def _convert_subprocess_cmd(cmd):
     if OS == 'Windows':
-        if '"' in cmd:
-            # Assume there's only one quoted argument.
-            bits = cmd.split('"')
-            return bits[0].split() + [bits[1]] + bits[2].split()
-        else:
-            return cmd.split()
-    else:
-        return shlex.split(cmd, posix=True, comments=True)
+        cmd = cmd.replace('\\','/')
+    return shlex.split(cmd, posix=True, comments=True)
 
 
 def _perror(e):
@@ -132,8 +126,6 @@ def box_draw(msg):
 | %s%s|
 +-----------------------------------------------------------------------------+''' % (msg, spacer))
 
-# Make sure git log is invoked without a pager
-GIT_LOG='git --no-pager log '
 
 def pip_install(package):
     # Needs brew install python. We should only install if we need the
@@ -398,7 +390,7 @@ def set_version():
     VERSION = open(os.path.join(CLING_SRC_DIR, 'VERSION'), 'r').readline().strip()
 
     # If development release, then add revision to the version
-    REVISION = exec_subprocess_check_output(GIT_LOG + ' -n 1 --pretty=format:%H', CLING_SRC_DIR).strip()
+    REVISION = exec_subprocess_check_output('git log -n 1 --pretty=format:%H', CLING_SRC_DIR).strip()
 
     if '~dev' in VERSION:
         VERSION = VERSION + '-' + REVISION[:7]
@@ -902,7 +894,7 @@ cling (%s-1) unstable; urgency=low
 
     if '~dev' in VERSION:
         TAG = str(float(VERSION[:VERSION.find('~')]) - 0.1)
-        template = exec_subprocess_check_output(GIT_LOG + ' v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR)
+        template = exec_subprocess_check_output('git log v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR)
 
         f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
         f.write(template)
@@ -927,7 +919,7 @@ cling (%s-1) unstable; urgency=low
             f.write('cling (' + TAG + '-1) unstable; urgency=low\n')
             f.close()
             STABLE_FLAG = '1'
-            template = exec_subprocess_check_output(GIT_LOG + ' v' + CMP + '...v' + TAG + '--format="  * %s" | fmt -s',
+            template = exec_subprocess_check_output('git log v' + CMP + '...v' + TAG + '--format="  * %s" | fmt -s',
                                                     CLING_SRC_DIR)
 
             f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
@@ -943,7 +935,7 @@ cling (%s-1) unstable; urgency=low
     f.write('\nOld Changelog:\n')
     f.close()
 
-    template = exec_subprocess_check_output(GIT_LOG + ' v0.1 --format="  * %s%n -- %an <%ae>  %cD%n"', CLING_SRC_DIR)
+    template = exec_subprocess_check_output('git log v0.1 --format="  * %s%n -- %an <%ae>  %cD%n"', CLING_SRC_DIR)
 
     f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
     f.write(template.encode('utf-8'))
@@ -1164,7 +1156,7 @@ def get_win_dep():
         print('Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
         os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s' % (NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
-    box_draw("Download CMake v2.6.2 required for Windows")
+    box_draw("Download CMake v3.6.2 required for Windows")
 
     if is_os_64bit():
         wget(url='https://cmake.org/files/v3.6/cmake-3.6.2-win64-x64.zip',
@@ -1714,16 +1706,6 @@ else:
 ###############################################################################
 
 workdir = os.path.abspath(os.path.expanduser(args['with_workdir']))
-
-# This is needed in Windows
-if not os.path.isdir(workdir):
-    os.makedirs(workdir)
-
-if os.path.isdir(TMP_PREFIX):
-    shutil.rmtree(TMP_PREFIX)
-
-os.makedirs(TMP_PREFIX)
-
 srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
 CPT_SRC_DIR = os.path.join(CLING_SRC_DIR, 'tools', 'packaging')
@@ -1761,6 +1743,10 @@ VERSION = ''
 REVISION = ''
 # Travis needs some special behaviour
 TRAVIS_BUILD_DIR = os.environ.get('TRAVIS_BUILD_DIR', None)
+APPVEYOR_BUILD_FOLDER = os.environ.get('APPVEYOR_BUILD_FOLDER', None)
+
+# Make sure git log is invoked without a pager.
+os.environ['GIT_PAGER']=''
 
 print('Cling Packaging Tool (CPT)')
 print('Arguments vector: ' + str(sys.argv))
@@ -1779,6 +1765,14 @@ if args['compiler']:
 if len(sys.argv) == 1:
     print("Error: no options passed")
     parser.print_help()
+
+# This is needed in Windows
+if not os.path.isdir(workdir):
+    os.makedirs(workdir)
+if not (TRAVIS_BUILD_DIR or APPVEYOR_BUILD_FOLDER) and os.path.isdir(TMP_PREFIX):
+    shutil.rmtree(TMP_PREFIX)
+if not os.path.isdir(TMP_PREFIX):
+    os.makedirs(TMP_PREFIX)
 
 if args['check_requirements']:
     box_draw('Check availability of required softwares')
@@ -1915,13 +1909,22 @@ if args['current_dev']:
 
     # Travis has already cloned the repo out, so don;t do it again
     # Particularly important for building a pull-request
-    if TRAVIS_BUILD_DIR:
+    if TRAVIS_BUILD_DIR or APPVEYOR_BUILD_FOLDER:
+        ciCloned = TRAVIS_BUILD_DIR if TRAVIS_BUILD_DIR else APPVEYOR_BUILD_FOLDER
         clingDir = os.path.join(srcdir, 'tools', 'cling')
-        os.rename(TRAVIS_BUILD_DIR, clingDir)
-        TRAVIS_BUILD_DIR = clingDir
+        if TRAVIS_BUILD_DIR:
+            os.rename(ciCloned, clingDir)
+            TRAVIS_BUILD_DIR = clingDir
+        else:
+            # Cannot move the directory: it is being used by another process
+            os.mkdir(clingDir)
+            for f in os.listdir(APPVEYOR_BUILD_FOLDER):
+                shutil.move(os.path.join(APPVEYOR_BUILD_FOLDER, f), clingDir)
+            APPVEYOR_BUILD_FOLDER = clingDir
+
         # Check validity and show some info
-        box_draw("Using Travis clone, last 5 commits:")
-        exec_subprocess_call(GIT_LOG + ' -5 --pretty=format:"%h <%ae> %<(60,trunc)%s"', TRAVIS_BUILD_DIR)
+        box_draw("Using CI clone, last 5 commits:")
+        exec_subprocess_call('git log -5 --pretty="format:%h <%ae> %<(60,trunc)%s"', clingDir)
         print('\n')
     else:
         fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
