@@ -9,6 +9,11 @@ branches:
   only:
     - master
 
+cache:
+  - builddir
+
+clone_depth: 10
+
 matrix:
   fast_finish: true   # set this flag to immediately finish build once one of the jobs fails.
   allow_failures:
@@ -38,7 +43,8 @@ build_script:
         --with-cling-url=https://github.com/%APPVEYOR_REPO_NAME% ^
         --with-clang-url=http://root.cern.ch/git/clang.git ^
         --with-llvm-url=http://root.cern.ch/git/llvm.git ^
-        --with-cmake-flags="-G\"Visual Studio 14 2015 Win64\""
+        --with-cmake-flags="-G\"Visual Studio 14 2015 Win64\"" ^
+        --skip-cleanup
 
 init:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
