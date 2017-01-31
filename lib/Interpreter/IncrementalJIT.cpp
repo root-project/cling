@@ -161,6 +161,7 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 
   // Make debug symbols available.
   m_GDBListener = 0; // JITEventListener::createGDBRegistrationListener();
+  m_GDBListener = JITEventListener::createGDBRegistrationListener();
 
 // #if MCJIT
 //   llvm::EngineBuilder builder(std::move(m));
