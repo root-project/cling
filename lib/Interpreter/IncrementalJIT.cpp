@@ -95,8 +95,10 @@ class Azog: public RTDyldMemoryManager {
 
       uintptr_t RequiredSize = Alignment * ((Size + Alignment - 1)/Alignment + 1);
       if ( (m_Current + RequiredSize) > m_End ) {
-        fprintf(stderr,"Error ... did not reserved enough memory: need %ld(%ld) and have %ld\n",
-                Size,RequiredSize,(m_End - m_Current));
+        cling::errs() << "Error in block allocation by Azog. "
+           << "Not enough memory was reserved for the current module. "
+           << Size << " (round to " << RequiredSize << " ) was need but\n"
+           << "We only have " << (m_End - m_Current) << ".\n";
         return nullptr;
       }
 
