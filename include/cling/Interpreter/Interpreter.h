@@ -411,7 +411,7 @@ namespace cling {
     ///\param[in] repr - representation: AST only now
     ///\param[in] filter - filter string to apply
     ///
-    void dumpTrace(llvm::StringRef repr, 
+    void dumpTrace(llvm::StringRef repr,
                    llvm::StringRef filter = llvm::StringRef()) const;
 
     ///\brief Store the interpreter state in files

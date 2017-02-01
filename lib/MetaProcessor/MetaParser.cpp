@@ -471,7 +471,7 @@ namespace cling {
     return false;
   }
 
-  // dumps/creates a trace of the requested representation. 
+  // dumps/creates a trace of the requested representation.
   bool MetaParser::istraceCommand() {
     if (getCurTok().is(tok::ident) &&
         getCurTok().getIdent().equals("trace")) {

@@ -172,12 +172,12 @@ namespace cling {
     ///
     void actOnstatsCommand(llvm::StringRef name) const;
 
-    ///\brief 
+    ///\brief
     ///
     ///\param[in] repr - Representation
-    ///\param[in] filter 
+    ///\param[in] filter
     ///
-    void actOntraceCommand(llvm::StringRef repr, 
+    void actOntraceCommand(llvm::StringRef repr,
         llvm::StringRef filter = llvm::StringRef()) const;
 
     ///\brief Switches on/off the experimental dynamic extensions (dynamic
