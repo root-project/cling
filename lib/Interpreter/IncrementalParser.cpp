@@ -371,8 +371,11 @@ namespace cling {
     //TODO: Make the enum orable.
     EParseResult ParseResult = kSuccess;
 
-    if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred()
-        || T->getIssuedDiags() == Transaction::kErrors) {
+    assert((Diags.hasFatalErrorOccurred() ? Diags.hasErrorOccurred() : true)
+            && "Diags.hasFatalErrorOccurred without Diags.hasErrorOccurred !");
+
+    if (Diags.hasErrorOccurred() || T->getIssuedDiags() == Transaction::kErrors)
+    {
       T->setIssuedDiags(Transaction::kErrors);
       ParseResult = kFailed;
     } else if (Diags.getNumWarnings() > 0) {
