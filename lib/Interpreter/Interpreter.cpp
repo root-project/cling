@@ -499,23 +499,19 @@ namespace cling {
     m_StoredStates.push_back(state);
   }
 
-  void Interpreter::compareInterpreterState(const std::string& name) const {
-    short foundAtPos = -1;
-    for (short i = 0, e = m_StoredStates.size(); i != e; ++i) {
-      if (m_StoredStates[i]->getName() == name) {
-        foundAtPos = i;
-        break;
-      }
-    }
-    if (foundAtPos < 0) {
-      cling::errs() << "The store point name " << name << " does not exist."
-      "Unbalanced store / compare\n";
+  void Interpreter::compareInterpreterState(const std::string &Name) const {
+    const auto Itr = std::find_if(
+        m_StoredStates.begin(), m_StoredStates.end(),
+        [&Name](const ClangInternalState *S) { return S->getName() == Name; });
+    if (Itr == m_StoredStates.end()) {
+      cling::errs() << "The store point name " << Name
+                    << " does not exist."
+                       "Unbalanced store / compare\n";
       return;
     }
-
     // This may induce deserialization
     PushTransactionRAII RAII(this);
-    m_StoredStates[foundAtPos]->compare(name, m_Opts.Verbose());
+    (*Itr)->compare(Name, m_Opts.Verbose());
   }
 
   void Interpreter::printIncludedFiles(llvm::raw_ostream& Out) const {
@@ -1184,23 +1180,21 @@ namespace cling {
     // Clear any stored states that reference the llvm::Module.
     // Do it first in case
     if (!m_StoredStates.empty()) {
-      const llvm::Module* const module = T.getModule();
-      std::vector<unsigned> badStates;
-      for (unsigned i = 0, N = m_StoredStates.size(); i < N; ++i) {
-        if (m_StoredStates[i]->getModule() == module) {
-          badStates.push_back(i);
-          if (m_Opts.Verbose()) {
-            cling::errs() << "Unloading Transaction forced state '"
-                          << m_StoredStates[i]->getName()
-                          << "' to be destroyed\n";
-          }
+      const llvm::Module *const Module = T.getModule();
+      const auto Predicate = [&Module](const ClangInternalState *S) {
+        return S->getModule() == Module;
+      };
+      auto Itr =
+          std::find_if(m_StoredStates.begin(), m_StoredStates.end(), Predicate);
+      while (Itr != m_StoredStates.end()) {
+        if (m_Opts.Verbose()) {
+          cling::errs() << "Unloading Transaction forced state '"
+                        << (*Itr)->getName() << "' to be destroyed\n";
         }
-      }
-      // Pop off the back so as not to recompute index.
-      // Should the user be warned in verbose mode?
-      for (std::vector<unsigned>::reverse_iterator it = badStates.rbegin(),
-           e = badStates.rend(); it != e; ++it) {
-        m_StoredStates.erase(m_StoredStates.begin()+(*it));
+        m_StoredStates.erase(Itr);
+
+        Itr = std::find_if(m_StoredStates.begin(), m_StoredStates.end(),
+                           Predicate);
       }
     }
 

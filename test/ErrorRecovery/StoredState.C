@@ -10,9 +10,21 @@
 
 int i = 0;
 .storeState "A"
+.storeState "B"
+.storeState "C"
 
 .undo
 // CHECK: Unloading Transaction forced state 'A' to be destroyed
+// CHECK-NEXT: Unloading Transaction forced state 'B' to be destroyed
+// CHECK-NEXT: Unloading Transaction forced state 'C' to be destroyed
+
+.compareState "D"
+.compareState "E"
+.compareState "F"
+
+// CHECK-NEXT: The store point name D does not exist.Unbalanced store / compare
+// CHECK-NEXT: The store point name E does not exist.Unbalanced store / compare
+// CHECK-NEXT: The store point name F does not exist.Unbalanced store / compare
 
 // expected-no-diagnostics
 
