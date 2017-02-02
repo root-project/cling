@@ -103,11 +103,7 @@ namespace cling {
 
   template <size_t N>
   std::string printValue(wchar_t const (*val)[N]) {
-#ifdef _WIN32
-    return toUTF8(reinterpret_cast<const char16_t * const>(val), N, 'L');
-#else
-    return toUTF8(reinterpret_cast<const char32_t * const>(val), N, 'L');
-#endif
+    return toUTF8(reinterpret_cast<const wchar_t * const>(val), N, 'L');
   }
 
   template <size_t N>
