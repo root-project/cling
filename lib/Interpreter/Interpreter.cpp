@@ -314,10 +314,14 @@ namespace cling {
   }
 
   Interpreter::~Interpreter() {
-    if (m_Executor)
-      m_Executor->shuttingDown();
+    // Do this first so m_StoredStates will be ignored if Interpreter::unload
+    // is called later on.
     for (size_t i = 0, e = m_StoredStates.size(); i != e; ++i)
       delete m_StoredStates[i];
+    m_StoredStates.clear();
+
+    if (m_Executor)
+      m_Executor->shuttingDown();
 
     if (CompilerInstance* CI = getCIOrNull())
       getCI()->getDiagnostics().getClient()->EndSourceFile();
@@ -1177,6 +1181,29 @@ namespace cling {
   }
 
   void Interpreter::unload(Transaction& T) {
+    // Clear any stored states that reference the llvm::Module.
+    // Do it first in case
+    if (!m_StoredStates.empty()) {
+      const llvm::Module* const module = T.getModule();
+      std::vector<unsigned> badStates;
+      for (unsigned i = 0, N = m_StoredStates.size(); i < N; ++i) {
+        if (m_StoredStates[i]->getModule() == module) {
+          badStates.push_back(i);
+          if (m_Opts.Verbose()) {
+            cling::errs() << "Unloading Transaction forced state '"
+                          << m_StoredStates[i]->getName()
+                          << "' to be destroyed\n";
+          }
+        }
+      }
+      // Pop off the back so as not to recompute index.
+      // Should the user be warned in verbose mode?
+      for (std::vector<unsigned>::reverse_iterator it = badStates.rbegin(),
+           e = badStates.rend(); it != e; ++it) {
+        m_StoredStates.erase(m_StoredStates.begin()+(*it));
+      }
+    }
+
     if (InterpreterCallbacks* callbacks = getCallbacks())
       callbacks->TransactionUnloaded(T);
     if (m_Executor) { // we also might be in fsyntax-only mode.

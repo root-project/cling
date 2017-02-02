@@ -81,6 +81,10 @@ namespace cling {
                           const char* type = nullptr, bool verbose = false,
                const llvm::SmallVectorImpl<llvm::StringRef>* ignores = 0) const;
 
+    ///\brief Return the llvm::Module this state is bound too.
+    ///
+    const llvm::Module* getModule() const { return m_Module; }
+
     static void printLookupTables(llvm::raw_ostream& Out, const clang::ASTContext& C);
     static void printIncludedFiles(llvm::raw_ostream& Out,
                                    const clang::SourceManager& SM);
