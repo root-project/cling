@@ -324,7 +324,7 @@ namespace cling {
       m_Executor->shuttingDown();
 
     if (CompilerInstance* CI = getCIOrNull())
-      getCI()->getDiagnostics().getClient()->EndSourceFile();
+      CI->getDiagnostics().getClient()->EndSourceFile();
 
     // LookupHelper's ~Parser needs the PP from IncrParser's CI, so do this
     // first:
