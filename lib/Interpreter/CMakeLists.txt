@@ -268,6 +268,7 @@ if (UNIX)
     MESSAGE(STATUS "And if not found, will invoke: '${CLING_CXX_PATH}' for them.")
     if (CLING_CXX_RLTV)
       MESSAGE(STATUS "And then fallback to: '${CLING_CXX_RLTV}'")
+      # FIXME: We should use file(GENERATE) cmake command.
       file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
         "
         #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
