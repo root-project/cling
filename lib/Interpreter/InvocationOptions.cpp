@@ -63,6 +63,7 @@ namespace {
                                InputArgList& Args) {
     Opts.ErrorOut = Args.hasArg(OPT__errorout);
     Opts.NoLogo = Args.hasArg(OPT__nologo);
+    Opts.DumbTerm = Args.hasArg(OPT__dumbterm);
     Opts.ShowVersion = Args.hasArg(OPT_version);
     Opts.Help = Args.hasArg(OPT_help);
     if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ)) {
@@ -136,7 +137,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
 }
 
 InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
-  MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
+  MetaString("."), ErrorOut(false), NoLogo(false), DumbTerm(false), ShowVersion(false),
   Help(false) {
 
   ArrayRef<const char *> ArgStrings(argv, argv + argc);

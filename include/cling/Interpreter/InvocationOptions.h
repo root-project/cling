@@ -66,6 +66,7 @@ namespace cling {
 
     bool ErrorOut;
     bool NoLogo;
+    bool DumbTerm;
     bool ShowVersion;
     bool Help;
     bool Verbose() const { return CompilerOpts.Verbose; }

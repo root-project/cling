@@ -98,6 +98,9 @@ namespace cling {
     UITabCompletion* Completion =
                       new UITabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(Completion);
+    if (m_MetaProcessor->getInterpreter().getOptions().DumbTerm) {
+        TI.SetIsDumbTerm(true);
+    }
 
     std::string Line;
     std::string Prompt("[cling]$ ");
