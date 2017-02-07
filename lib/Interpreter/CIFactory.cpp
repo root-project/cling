@@ -350,7 +350,14 @@ namespace {
   static void SetClingCustomLangOpts(LangOptions& Opts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
 #ifdef _MSC_VER
-#if _HAS_EXCEPTIONS
+#if 0 //_HAS_EXCEPTIONS
+// FIXME: Disable exceptions on Windows for the time being.
+// Enabling exceptions here makes 42 more tests failing.
+// For example, CodeGeneration\RecursiveInit.C raises a unhandled exception in
+// WinEHPrepare.cpp, at:
+//      if (UserI->isEHPad())
+//        report_fatal_error("Cleanup funclets for the MSVC++ personality cannot "
+//                           "contain exceptional actions");
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 1;
@@ -503,7 +510,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   /// Set cling's preprocessor defines to match the cling binary.
   static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {
 #ifdef _MSC_VER
-    STRINGIFY_PREPROC_SETTING(PPOpts, _HAS_EXCEPTIONS);
+// FIXME: Stay consistent with the _HAS_EXCEPTIONS flag settings in SetClingCustomLangOpts
+//    STRINGIFY_PREPROC_SETTING(PPOpts, _HAS_EXCEPTIONS);
 #ifdef _DEBUG
     STRINGIFY_PREPROC_SETTING(PPOpts, _DEBUG);
 #endif
