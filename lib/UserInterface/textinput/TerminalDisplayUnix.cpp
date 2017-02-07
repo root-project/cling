@@ -125,7 +125,7 @@ namespace textinput {
   }
 
 // Don't rely on flushing here.
-#define SYNC_OUT(fd) /*if (fd==STDOUT_FILENO) { ::fflush(stdout); } }*/
+#define SYNC_OUT(fd) if (fd==STDOUT_FILENO) { ::fflush(stdout); }
 
   TerminalDisplayUnix::~TerminalDisplayUnix() {
     Detach();
