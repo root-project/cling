@@ -805,14 +805,46 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
+  static void makeUniqueName(llvm::raw_ostream &Strm, unsigned long long ID) {
+    Strm << utils::Synthesize::UniquePrefix << ID;
+  }
+
+  static std::string makeUniqueWrapper(unsigned long long ID) {
+    cling::ostrstream Strm;
+    Strm << "void ";
+    makeUniqueName(Strm, ID);
+    Strm << "(void* vpClingValue) {\n ";
+    return Strm.str();
+  }
+
+  void Interpreter::createUniqueName(std::string &Out) {
+    llvm::raw_string_ostream Strm(Out);
+    makeUniqueName(Strm, m_UniqueCounter++);
+  }
+
+  bool Interpreter::isUniqueName(llvm::StringRef name) {
+    return name.startswith(utils::Synthesize::UniquePrefix);
+  }
+
+  clang::SourceLocation Interpreter::getSourceLocation(bool skipWrapper) const {
+    const Transaction* T = getLatestTransaction();
+    if (!T)
+      return SourceLocation();
+
+    const SourceManager &SM = getCI()->getSourceManager();
+    if (skipWrapper) {
+      return T->getSourceStart(SM).getLocWithOffset(
+          makeUniqueWrapper(m_UniqueCounter).size());
+    }
+    return T->getSourceStart(SM);
+  }
+
   const std::string& Interpreter::WrapInput(const std::string& Input,
                                             std::string& Output,
                                             size_t& WrapPoint) const {
     // If wrapPoint is > length of input, nothing is wrapped!
     if (WrapPoint < Input.size()) {
-      std::string Header("void ");
-      Header.append(createUniqueWrapper());
-      Header.append("(void* vpClingValue) {\n ");
+      const std::string Header = makeUniqueWrapper(m_UniqueCounter++);
 
       // Suppport Input and Output begin the same string
       std::string Wrapper = Input.substr(WrapPoint);
@@ -1016,40 +1048,6 @@ namespace cling {
     addr = compileFunction(funcname.str(), code.str(), false /*ifUniq*/,
                            false /*withAccessControl*/);
     return addr;
-  }
-
-  void Interpreter::createUniqueName(std::string& out) {
-    llvm::raw_string_ostream(out)
-      << utils::Synthesize::UniquePrefix << m_UniqueCounter++;
-  }
-
-  bool Interpreter::isUniqueName(llvm::StringRef name) {
-    return name.startswith(utils::Synthesize::UniquePrefix);
-  }
-
-  llvm::StringRef Interpreter::createUniqueWrapper() const {
-    smallstream Stream;
-    Stream << utils::Synthesize::UniquePrefix << m_UniqueCounter++;
-    return (getCI()->getASTContext().Idents.getOwn(Stream.str())).getName();
-  }
-
-  bool Interpreter::isUniqueWrapper(llvm::StringRef name) {
-    return name.startswith(utils::Synthesize::UniquePrefix);
-  }
-
-  clang::SourceLocation Interpreter::getSourceLocation(bool skipWrapper) const {
-    const Transaction* T = getLatestTransaction();
-    if (!T)
-      return SourceLocation();
-
-    const SourceManager &SM = getCI()->getSourceManager();
-    if (skipWrapper) {
-      cling::ostrstream Strm;
-      Strm << "void " << utils::Synthesize::UniquePrefix << m_UniqueCounter
-           << "(void* vpClingValue) {\n ";
-      return T->getSourceStart(SM).getLocWithOffset(Strm.str().size());
-    }
-    return T->getSourceStart(SM);
   }
 
   Interpreter::CompilationResult
