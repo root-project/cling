@@ -9,9 +9,14 @@
 // RUN: cat %s | %cling -I %S -Xclang -verify 2>&1 | FileCheck %s
 // Test unloadInitializerList
 
+// FIXME: REMOVE once print unloading is merged
+extern "C" int printf(const char*, ...);
+
 #include "InitializerList.h"
 TestIList<int,10> t = {0,1,2,3,4,5,6,7,8,9};
-t.sum()
+// REMOVE ->
+printf("(int) %d\n", t.sum());
+// <- REMOVE, REPLACE: t.sum()
 // CHECK: (int) 45
 .undo
 .undo
@@ -19,7 +24,9 @@ t.sum()
 
 #include "InitializerList.h"
 TestIList<int,15> t = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-t.sum()
+// REMOVE ->
+printf("(int) %d\n", t.sum());
+// <- REMOVE, REPLACE: t.sum()
 // CHECK-NEXT: (int) 120
 .undo
 .undo
@@ -38,12 +45,12 @@ TestIList<float,4> tf = {10,20,30,40};
 tf.sum()
 // CHECK-NEXT: (float) 100.00000f
 
-// Still busted because of inlining problems
-// #include <vector>
-// std::vector<int> v = { 0, 1, 2, 3, 4, 5 };
-// .undo
-// .undo
+#include <vector>
+std::vector<int> v = { 0, 1, 2, 3, 4, 5 };
+.undo
+.undo
 
+// Still busted because of template problems
 // #include <vector>
 // std::vector<int> v1 = { 0, 1, 2, 3, 4, 5 };
 // v1
