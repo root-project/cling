@@ -194,8 +194,8 @@ namespace cling {
   DynamicLibraryManager::LoadLibResult
   DynamicLibraryManager::loadLibrary(const std::string& libStem,
                                      bool permanent, bool resolved) {
-    std::string       lResolved;
-    const std::string &canonicalLoadedLib = resolved ? libStem : lResolved;
+    std::string lResolved;
+    const std::string& canonicalLoadedLib = resolved ? libStem : lResolved;
     if (!resolved) {
       lResolved = lookupLibrary(libStem);
       if (lResolved.empty())
