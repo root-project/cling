@@ -29,9 +29,9 @@ void bestFriend();
 
 
 // STL has many of these in memory & stdexcept
-//#include <memory>
-//.undo
-//#include <memory>
+#include <memory>
+.undo
+#include <memory>
 
 //expected-no-diagnostics
 .q
