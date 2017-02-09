@@ -97,7 +97,7 @@ namespace cling {
     /// other error was encountered.
     ///
     LoadLibResult loadLibrary(const std::string& libStem, bool permanent,
-                              bool resolved = false );
+                              bool resolved = false);
 
     void unloadLibrary(llvm::StringRef libStem);
 
