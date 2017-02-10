@@ -737,17 +737,23 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
 
-    // When unloading a NamedDecl within an inline namespace within the
-    // NamedDecl needs to be removed from the parent well.
-    StoredDeclsMap *removeFromParent = nullptr;
+    // When unloading a NamedDecl within an inline namespace within std the
+    // NamedDecl needs to be removed from the parent std as well.
+    // Not sure why, but test/CodeUnloading/NameSpaces.C demonstrates
+    // that this only affects the std namespace
+    StoredDeclsMap *removeFromSTD = nullptr;
     if (NSD->isInline()) {
-      if (NamespaceDecl *parent = dyn_cast<NamespaceDecl>(NSD->getParent()))
-        removeFromParent = parent->getFirstDecl()->getLookupPtr();
+      if (NamespaceDecl *parent = dyn_cast<NamespaceDecl>(NSD->getParent())) {
+        if (parent->getNameAsString()=="std") {
+          if ((parent = m_Sema->getStdNamespace()))
+            removeFromSTD = m_Sema->getStdNamespace()->getLookupPtr();
+        }
+      }
     }
 
     bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
 
-    // Inlined version of VisitDeclContext so we can check against parent
+    // Inlined version of VisitDeclContext so we can check against removeFromSTD
     llvm::SmallVector<Decl*, 64> declsToErase;
     for (Decl *D : NSD->noload_decls())
       declsToErase.push_back(D);
@@ -756,11 +762,11 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       Successful = Visit(*I) & Successful;
       assert(Successful);
 
-      if (removeFromParent) {
+      if (removeFromSTD) {
         if (NamedDecl *ND = dyn_cast<NamedDecl>(*I)) {
-          eraseDeclFromMap(removeFromParent, ND);
+          eraseDeclFromMap(removeFromSTD, ND);
 #ifndef NDEBUG
-          checkDeclIsGone(removeFromParent, ND);
+          checkDeclIsGone(removeFromSTD, ND);
 #endif
         }
       }

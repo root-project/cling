@@ -24,18 +24,6 @@
 #undef TEST_NAMESPACE
 
 
-namespace A{}
-namespace A { inline namespace __BBB { int f; } }
-namespace A { inline namespace __BBB { int f1; } }
-namespace A { inline namespace __BBB { int f2; } }
-.undo
-A::f2 // expected-error {{no member named 'f2' in namespace 'A'}}
-.undo
-A::f1 // expected-error {{no member named 'f1' in namespace 'A'}}
-.undo
-A::f // expected-error {{no member named 'f' in namespace 'A'}}
-
-
 #include <stdexcept>
 .undo
 #include <stdexcept>
@@ -44,4 +32,5 @@ A::f // expected-error {{no member named 'f' in namespace 'A'}}
 101
 // CHECK: (int) 101
 
+// expected-no-diagnostics
 .q
