@@ -557,8 +557,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     // We start with the decl context first, because parameters are part of the
     // DeclContext and when trying to remove them we need the full redecl chain
     // still in place.
-    bool Successful = VisitRedeclarable(FD, FD->getDeclContext());
-    Successful &= VisitDeclContext(FD);
+    bool Successful = VisitDeclContext(FD);
+    Successful &= VisitRedeclarable(FD, FD->getDeclContext());
     Successful &= VisitDeclaratorDecl(FD);
 
     // Template instantiation of templated function first creates a canonical
@@ -711,8 +711,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
-    bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
-    Successful &= VisitDeclContext(NSD);
+    bool Successful = VisitDeclContext(NSD);
+    Successful &= VisitRedeclarable(NSD, NSD->getDeclContext());
     Successful &= VisitNamedDecl(NSD);
 
     return Successful;
@@ -809,8 +809,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitTagDecl(TagDecl* TD) {
     // TagDecl: TypeDecl, DeclContext, Redeclarable
-    bool Successful = VisitRedeclarable(TD, TD->getDeclContext());
-    Successful &= VisitDeclContext(TD);
+    bool Successful = VisitDeclContext(TD);
+    Successful &= VisitRedeclarable(TD, TD->getDeclContext());
     Successful &= VisitTypeDecl(TD);
     return Successful;
   }

@@ -22,12 +22,6 @@ void bestFriend();
 .compareState "NF"
 //CHECK-NOT: Differences
 
-#include "FriendRecursive.h"
-.undo
-.compareState "NF"
-//CHECK-NOT: Differences
-
-
 // STL has many of these in memory & stdexcept
 //#include <memory>
 //.undo
