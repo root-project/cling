@@ -171,15 +171,6 @@ namespace cling {
     ///
     bool VisitLinkageSpecDecl(clang::LinkageSpecDecl* LSD);
 
-    ///\brief Removes all friend named declarations. This is needed
-    /// as under some circumstances clang stores the NamedDecl for a
-    /// friend function in a FriendDecl.
-    /// @param[in] FD - The declaration context to be remove.
-    ///
-    ///\returns true on success.
-    ///
-    bool VisitFriendDecl(clang::FriendDecl* FD);
-
     ///\brief Removes a Tag (class/union/struct/enum). Most of the other
     /// containers fall back into that case.
     /// @param[in] TD - The declaration to be removed.

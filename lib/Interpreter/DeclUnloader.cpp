@@ -748,33 +748,6 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
-  bool DeclUnloader::VisitFriendDecl(FriendDecl* FD) {
-    // FriendDecl: Decl
-    
-    // Remove the friend declarations
-    bool Successful = true;
-    if (TypeSourceInfo* TI = FD->getFriendType()) {
-      if (const Type* T = TI->getType().getTypePtrOrNull()) {
-        if (const TagType* RT = T->getAs<TagType>()) {
-          TagDecl *F = RT->getDecl();
-          // If the friend is a class and embedded in the parent and not defined
-          // then there is no further declaration so it must be unloaded now.
-          if (F->isEmbeddedInDeclarator() &&  !F->isCompleteDefinition()) {
-            // Avoid recursion: class A { class B { friend class A; } }
-            TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
-            if (!Parent || F != Parent->getDeclContext())
-              Successful &= Visit(F);
-          }
-        }
-      }
-    }
-    else if (NamedDecl* ND = FD->getFriendDecl())
-      Successful &= Visit(ND);
-
-    Successful &= VisitDecl(FD);
-    return Successful;
-  }
-
   bool DeclUnloader::VisitTagDecl(TagDecl* TD) {
     // TagDecl: TypeDecl, DeclContext, Redeclarable
     bool Successful = VisitDeclContext(TD);
