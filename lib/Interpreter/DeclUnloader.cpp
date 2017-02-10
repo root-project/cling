@@ -42,39 +42,34 @@ void DeclUnloader::resetDefinitionData(TagDecl *decl) {
   }
 }
 
-// RedeclLink is a protected member, which we need access to in
-// removeRedeclFromChain (and VisitRedeclarable for checking in debug mode)
-template<typename DeclT>
-struct RedeclDerived : public Redeclarable<DeclT> {
-  typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
-  static DeclLink_t& getLink(DeclT* LR) {
-    Redeclarable<DeclT>* D = LR;
-    return ((RedeclDerived*)D)->RedeclLink;
-  }
-  static void setLatest(DeclT* Latest) {
-    // Convert A -> Latest -> B into A -> Latest
-    getLink(Latest->getFirstDecl()).setLatest(Latest);
-  }
-  static void skipPrev(DeclT* Next) {
-    // Convert A -> B -> Next into A -> Next
-    DeclT* Skip = Next->getPreviousDecl();
-    getLink(Next).setPrevious(Skip->getPreviousDecl());
-  }
-  static void setFirst(DeclT* First) {
-    // Convert A -> First -> B into First -> B
-    DeclT* Latest = First->getMostRecentDecl();
-    getLink(First)
-      = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
-    getLink(First).setLatest(Latest);
-  }
-  static DeclT *getNextRedeclaration(DeclT* R) {
-    return getLink(R).getNext(R);
-  }
-};
-
 // Copied and adapted from: ASTReaderDecl.cpp
 template<typename DeclT>
 void DeclUnloader::removeRedeclFromChain(DeclT* R) {
+  //RedeclLink is a protected member.
+  struct RedeclDerived : public Redeclarable<DeclT> {
+    typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
+    static DeclLink_t& getLink(DeclT* LR) {
+      Redeclarable<DeclT>* D = LR;
+      return ((RedeclDerived*)D)->RedeclLink;
+    }
+    static void setLatest(DeclT* Latest) {
+      // Convert A -> Latest -> B into A -> Latest
+      getLink(Latest->getFirstDecl()).setLatest(Latest);
+    }
+    static void skipPrev(DeclT* Next) {
+      // Convert A -> B -> Next into A -> Next
+      DeclT* Skip = Next->getPreviousDecl();
+      getLink(Next).setPrevious(Skip->getPreviousDecl());
+    }
+    static void setFirst(DeclT* First) {
+      // Convert A -> First -> B into First -> B
+      DeclT* Latest = First->getMostRecentDecl();
+      getLink(First)
+        = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
+      getLink(First).setLatest(Latest);
+    }
+  };
+
   assert(R != R->getFirstDecl() && "Cannot remove only redecl from chain");
 
   const bool isdef = isDefinition(R);
@@ -84,7 +79,7 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
   DeclT* Prev = R->getPreviousDecl();
   if (R == R->getMostRecentDecl()) {
     // A -> .. -> R
-    RedeclDerived<DeclT>::setLatest(Prev);
+    RedeclDerived::setLatest(Prev);
   } else {
     // Find the next redecl, starting at the end
     DeclT* Next = R->getMostRecentDecl();
@@ -97,11 +92,11 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
 
     if (R->getPreviousDecl()) {
       // A -> .. -> R -> .. -> Z
-      RedeclDerived<DeclT>::skipPrev(Next);
+      RedeclDerived::skipPrev(Next);
     } else {
       assert(R->getFirstDecl() == R && "Logic error");
       // R -> .. -> Z
-      RedeclDerived<DeclT>::setFirst(Next);
+      RedeclDerived::setFirst(Next);
     }
   }
   // If the decl was the definition, the other decl might have their
@@ -186,25 +181,15 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
 #ifndef NDEBUG
   // Validate redecl chain by iterating through it.
-  // If we get here and T == clang::UsingShadowDecl
-  // for (auto RD: MostRecentNotThis->redecls()) won't work
-  // as the redecl_iterator has an ambigous isFirstDecl call
-  // So we had to pull the guts out of redecl_iterator into here
-
-  std::set<clang::Redeclarable<T>*> Unique;
-  T* Current = MostRecentNotThis;
-  T* Starter = Current;
-
-  while (Current) {
-    assert(Unique.insert(Current).second && "Dupe redecl chain element");
-    Current = RedeclDerived<T>::getNextRedeclaration(Current);
-    if (Current==Starter)
-      Current = nullptr;
+  std::set<clang::Redeclarable<T>*> CheckUnique;
+  (void)CheckUnique;
+  for (auto RD: MostRecentNotThis->redecls()) {
+    assert(CheckUnique.insert(RD).second && "Dupe redecl chain element");
+    (void)RD;
   }
 #else
   (void)MostRecentNotThis; // templated function issues a lot -Wunused-variable
 #endif
-
   return true;
 }
 
@@ -493,7 +478,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
     bool Successful = true;
-    Successful = VisitRedeclarable(USD, USD->getDeclContext());
+    // FIXME: This is needed when we have newest clang:
+    //Successful = VisitRedeclarable(USD, USD->getDeclContext());
     Successful &= VisitNamedDecl(USD);
 
     // Unregister from the using decl that it shadows.
