@@ -502,24 +502,13 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
-  bool DeclUnloader::VisitUsingDecl(UsingDecl* UD) {
-    // UsingDecl: NamedDecl, Mergeable<UsingDecl>
-    bool Success = true;
-    for (UsingShadowDecl *USD : UD->shadows())
-      Success &= VisitUsingShadowDecl(USD);
-
-    // Calling VisitNamedDecl will triger an assert in clang as the decl
-    // has already been removed when the last shadow is gone.
-    // Success &= VisitNamedDecl(UD);
-    return Success;
-  }
-
   bool DeclUnloader::VisitTypedefNameDecl(TypedefNameDecl* TND) {
     // TypedefNameDecl: TypeDecl, Redeclarable
     bool Successful = VisitRedeclarable(TND, TND->getDeclContext());
     Successful &= VisitTypeDecl(TND);
     return Successful;
   }
+
 
   bool DeclUnloader::VisitVarDecl(VarDecl* VD) {
     // llvm::Module cannot contain:
