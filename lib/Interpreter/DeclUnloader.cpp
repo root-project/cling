@@ -743,10 +743,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     if (NSD->isInline()) {
       NamespaceDecl* Parent = cast<NamespaceDecl>(NSD->getParent());
       do {
-        // Should always have a lookup ptr: NSD is inside of it!
-        assert((Parent->getFirstDecl() != Parent ? !Parent->getLookupPtr() :
-               Parent->getLookupPtr() != nullptr) && "Has unique lookup ptr!");
-        Parents.insert(Parent->getFirstDecl()->getLookupPtr());
+        assert((Parent->getFirstDecl() != Parent ? !Parent->getLookupPtr() : 1)
+               && "Has unique lookup ptr!");
+        // There is a chance that lookup ptr will not exist when rolling back
+        // a bad Transaction. The question is whether we can stop the loop too?
+        if (StoredDeclsMap* Map = Parent->getFirstDecl()->getLookupPtr())
+          Parents.insert(Map);
         DeclContext* Next = Parent->getParent();
         Parent = dyn_cast<NamespaceDecl>(Next);
       } while (Parent);
