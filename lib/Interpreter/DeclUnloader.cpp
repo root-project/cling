@@ -42,6 +42,9 @@ void DeclUnloader::resetDefinitionData(DeclT*) {
 template <>
 void DeclUnloader::resetDefinitionData(clang::TagDecl* D) {
   if (clang::CXXRecordDecl* C = dyn_cast<CXXRecordDecl>(D)) {
+    // It was allocated this way...
+    ::operator delete(C->DefinitionData, D->getASTContext(),
+                      sizeof(CXXRecordDecl::DefinitionData));
     for (C = C->getCanonicalDecl()->getMostRecentDecl(); C;
          C = C->getPreviousDecl()) {
       C->DefinitionData = nullptr;
