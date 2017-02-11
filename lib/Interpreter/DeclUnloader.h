@@ -304,21 +304,11 @@ namespace cling {
     template <class DeclT>
     bool VisitSpecializations(DeclT *D);
 
-    LLVM_CONSTEXPR static bool isDefinition(void*) { return false; }
-    static bool isDefinition(clang::TagDecl* R);
-
-    static void resetDefinitionData(void*) {
-      llvm_unreachable("resetDefinitionData on non-cxx record declaration");
-    }
-
-    static void resetDefinitionData(clang::TagDecl *decl);
+    template<typename DeclT>
+    static void resetDefinitionData(DeclT* R);
 
     template<typename DeclT>
     static void removeRedeclFromChain(DeclT* R);
-
-    static void removeRedeclFromChain(void*) {
-      llvm_unreachable("setLatestDeclImpl on non-redeclarable declaration");
-    }
 
     template <typename T>
     bool VisitRedeclarable(clang::Redeclarable<T>* R, clang::DeclContext* DC);
