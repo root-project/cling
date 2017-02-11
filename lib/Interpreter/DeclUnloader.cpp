@@ -874,23 +874,28 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     
     // Remove the friend declarations
     bool Successful = true;
-    if (TypeSourceInfo* TI = FD->getFriendType()) {
-      if (const Type* T = TI->getType().getTypePtrOrNull()) {
-        if (const TagType* RT = T->getAs<TagType>()) {
-          TagDecl *F = RT->getDecl();
-          // If the friend is a class and embedded in the parent and not defined
-          // then there is no further declaration so it must be unloaded now.
-          if (F->isEmbeddedInDeclarator() &&  !F->isCompleteDefinition()) {
-            // Avoid recursion: class A { class B { friend class A; } }
-            TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
-            if (!Parent || F != Parent->getDeclContext())
-              Successful &= Visit(F);
+
+    // Don't do this on ClassTemplateSpecializationDecls though.
+    // Clang seems to only emit the declaration for the CXXRecord that
+    // the ClassTemplateSpecializationDecl is instantiated from
+    if (!m_VisSpecializations) {
+      if (TypeSourceInfo* TI = FD->getFriendType()) {
+        if (const Type* T = TI->getType().getTypePtrOrNull()) {
+          if (const TagType* RT = T->getAs<TagType>()) {
+            TagDecl *F = RT->getDecl();
+            // If the friend is a class and embedded in the parent and not defined
+            // then there is no further declaration so it must be unloaded now.
+            if (F->isEmbeddedInDeclarator() &&  !F->isCompleteDefinition()) {
+              // Avoid recursion: class A { class B { friend class A; } }
+              TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
+              if (!Parent || F != Parent->getDeclContext())
+                Successful &= Visit(F);
+            }
           }
         }
-      }
+      } else if (NamedDecl* ND = FD->getFriendDecl())
+        Successful &= Visit(ND);
     }
-    else if (NamedDecl* ND = FD->getFriendDecl())
-      Successful &= Visit(ND);
 
     // Is it possible to unload a friend but not the parent class?
     // This requires adding DeclUnloader as a friend to FriendDecl
@@ -1099,16 +1104,31 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  namespace {
+    class VisStateRestore {
+      bool &m_VisSpecializations;
+      const bool m_Prev;
+    public:
+      VisStateRestore(bool& var, bool on=true) :
+        m_VisSpecializations(var), m_Prev(m_VisSpecializations) {
+        m_VisSpecializations = on;
+      }
+      ~VisStateRestore() {
+        m_VisSpecializations = m_Prev;
+      }
+    };
+  } // end anonymous namespace
+
   template <class DeclT>
   bool DeclUnloader::VisitSpecializations(DeclT *D) {
     llvm::SmallVector<typename DeclT::spec_iterator::pointer, 8> specs;
     for (typename DeclT::spec_iterator I = D->spec_begin(),
            E = D->spec_end(); I != E; ++I) {
-      if (!wasInstatiatedBefore(I->getPointOfInstantiation()))
         specs.push_back(*I);
     }
 
     bool Successful = true;
+    VisStateRestore visState(m_VisSpecializations);
     for (typename DeclT::spec_iterator::pointer spec : specs)
       Successful &= Visit(spec);
 
@@ -1221,7 +1241,6 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   };
   } // end anonymous namespace
 
-
   bool DeclUnloader::VisitClassTemplateSpecializationDecl(
                                         ClassTemplateSpecializationDecl* CTSD) {
     // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
@@ -1236,11 +1255,13 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
                                                  CanonCTSD);
 
-    //###FIXME We can get here through DeclUnloader::VisitSpecializations
-    // in which case we know the folowing is true
-    if (!wasInstatiatedBefore(CTSD->getPointOfInstantiation()))
-      return VisitCXXRecordDecl(CTSD);
-    
-    return true;
+    bool Success = true;
+    if (m_VisSpecializations ||
+        !wasInstatiatedBefore(CTSD->getPointOfInstantiation())) {
+      VisStateRestore visState(m_VisSpecializations);
+      Success = VisitCXXRecordDecl(CTSD);
+    }
+
+    return Success;
   }
 } // end namespace cling

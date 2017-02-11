@@ -49,9 +49,14 @@ namespace cling {
     ///
     FileIDs m_FilesToUncache;
 
+    ///\brief Mark whether we are recursing via VisitSpecializations.
+    ///
+    bool m_VisSpecializations;
+
   public:
     DeclUnloader(clang::Sema* S, clang::CodeGenerator* CG, const Transaction* T)
-      : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T) { }
+      : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T),
+        m_VisSpecializations(false) { }
     ~DeclUnloader();
 
     ///\brief Interface with nice name, forwarding to Visit.
