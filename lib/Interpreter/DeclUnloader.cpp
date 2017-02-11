@@ -381,9 +381,27 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       m_FilesToUncache.insert(FID);
   }
 
+  static SourceLocation getDeclLocation(Decl* D) {
+    switch (D->getKind()) {
+      case Decl::ClassTemplateSpecialization:
+      case Decl::ClassTemplatePartialSpecialization:
+        return cast<ClassTemplateSpecializationDecl>(D)->getPointOfInstantiation();
+      case Decl::Function: {
+          FunctionDecl* FD = cast<FunctionDecl>(D);
+          if (FunctionTemplateSpecializationInfo *Info =
+                                          FD->getTemplateSpecializationInfo()) {
+            return Info->getPointOfInstantiation();
+          }
+        }
+      default:
+        break;
+    }
+    return D->getLocStart();
+  }
+
   bool DeclUnloader::VisitDecl(Decl* D) {
     assert(D && "The Decl is null");
-    CollectFilesToUncache(D->getLocStart());
+    CollectFilesToUncache(getDeclLocation(D));
 
     DeclContext* DC = D->getLexicalDeclContext();
 
