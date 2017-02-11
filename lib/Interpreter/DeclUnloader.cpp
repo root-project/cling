@@ -738,11 +738,18 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
 
     // When unloading a NamedDecl within an inline namespace within the
-    // NamedDecl needs to be removed from the parent well.
-    StoredDeclsMap *removeFromParent = nullptr;
+    // NamedDecl needs to be removed from the parent(s) as well.
+    llvm::SetVector<StoredDeclsMap*> Parents;
     if (NSD->isInline()) {
-      if (NamespaceDecl *parent = dyn_cast<NamespaceDecl>(NSD->getParent()))
-        removeFromParent = parent->getFirstDecl()->getLookupPtr();
+      NamespaceDecl* Parent = cast<NamespaceDecl>(NSD->getParent());
+      do {
+        // Should always have a lookup ptr: NSD is inside of it!
+        assert((Parent->getFirstDecl() != Parent ? !Parent->getLookupPtr() :
+               Parent->getLookupPtr() != nullptr) && "Has unique lookup ptr!");
+        Parents.insert(Parent->getFirstDecl()->getLookupPtr());
+        DeclContext* Next = Parent->getParent();
+        Parent = dyn_cast<NamespaceDecl>(Next);
+      } while (Parent);
     }
 
     bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
@@ -756,11 +763,11 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       Successful = Visit(*I) & Successful;
       assert(Successful);
 
-      if (removeFromParent) {
-        if (NamedDecl *ND = dyn_cast<NamedDecl>(*I)) {
-          eraseDeclFromMap(removeFromParent, ND);
+      if (NamedDecl *ND = dyn_cast<NamedDecl>(*I)) {
+        for (StoredDeclsMap* Parent : Parents) {
+          eraseDeclFromMap(Parent, ND);
 #ifndef NDEBUG
-          checkDeclIsGone(removeFromParent, ND);
+          checkDeclIsGone(Parent, ND);
 #endif
         }
       }
