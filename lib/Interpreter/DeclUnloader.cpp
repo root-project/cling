@@ -820,11 +820,19 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       assert(Successful);
 
       if (NamedDecl *ND = dyn_cast<NamedDecl>(*I)) {
-        for (StoredDeclsMap* Parent : Parents) {
-          eraseDeclFromMap(Parent, ND);
-#ifndef NDEBUG
-          checkDeclIsGone(Parent, ND);
-#endif
+        UsingShadowDecl* USD = dyn_cast<UsingShadowDecl>(ND);
+        assert((USD ? USD->getTargetDecl()!=nullptr : 1)
+               && "No target for UsingShadow");
+        const bool Skip = USD &&
+                    wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()));
+
+        if (!Skip) {
+          for (StoredDeclsMap* Parent : Parents) {
+            eraseDeclFromMap(Parent, ND);
+  #ifndef NDEBUG
+            checkDeclIsGone(Parent, ND);
+  #endif
+          }
         }
       }
     }
