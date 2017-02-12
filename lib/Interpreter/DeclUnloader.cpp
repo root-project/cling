@@ -600,6 +600,32 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     }
   }
 
+  bool DeclUnloader::VisitReturnValue(const QualType QT, Decl* Parent) {
+    // struct FirstDecl* function();
+    // In the example above, FirstDecl* will be declared as the function is
+    // parsed, and if FirstDecl* never gets a definiton, it's declaration
+    // will never be removed, so we have to check for that case.
+    const Type* T = QT.getTypePtrOrNull();
+    if (T && !T->isVoidType()) {
+      if (const TagType* TT = getTagPointedToo(T)) {
+        TagDecl* Tag = TT->getDecl();
+        // So we have a TagDecl, was it embedded, and is it still undefined?
+        if (Tag->isEmbeddedInDeclarator() && !Tag->isCompleteDefinition()) {
+          // Possibly overkill, but just to be safe
+          if (Tag->getFirstDecl() == Tag) {
+            // Only unload it the first time it appeared with a function
+            const SourceManager& SM = m_Sema->getSourceManager();
+            if (!SM.isBeforeInTranslationUnit(Tag->getLocStart(),
+                                              Parent->getLocStart())) {
+              return Visit(Tag);
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   bool DeclUnloader::VisitFunctionDecl(FunctionDecl* FD) {
     // The Structors need to be handled differently.
     if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
@@ -711,29 +737,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       FunctionTemplateDeclExt::removeSpecialization(FTD, FD);
     }
 
-    // struct FirstDecl* function();
-    // In the example above, FirstDecl* will be declared as the function is
-    // parsed, and if FirstDecl* never gets a definiton, it's declaration
-    // will never be removed, so we have to check for that case.
-
-    const Type* type = FD->getReturnType().getTypePtrOrNull();
-    if (type && !type->isVoidType()) {
-      if (const TagType* TT = getTagPointedToo(type)) {
-        TagDecl* Tag = TT->getDecl();
-        // So we have a TagDecl, was it embedded, and is it still undefined?
-        if (Tag->isEmbeddedInDeclarator() && !Tag->isCompleteDefinition()) {
-          // Possibly overkill, but just to be safe
-          if (Tag->getFirstDecl() == Tag) {
-            // Only unload it the first time it appeared with a function
-            const SourceManager& SM = m_Sema->getSourceManager();
-            if (!SM.isBeforeInTranslationUnit(Tag->getLocStart(),
-                                              FD->getLocStart())) {
-              Visit(Tag);
-            }
-          }
-        }
-      }
-    }
+    Successful &= VisitReturnValue(FD->getReturnType(), FD);
 
     // Remove new and delete (all variants) from the cache (m_Sema->IdResolver)
     // This will still leave the built-in operator new & delete present m_Sema

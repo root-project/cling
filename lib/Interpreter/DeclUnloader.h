@@ -322,6 +322,8 @@ namespace cling {
 
     template <typename T>
     bool VisitRedeclarable(clang::Redeclarable<T>* R, clang::DeclContext* DC);
+
+    bool VisitReturnValue(const clang::QualType T, clang::Decl* Parent);
   };
 
   /// \brief Unload a Decl from the AST, but not from CodeGen or Module.
