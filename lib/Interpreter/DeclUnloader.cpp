@@ -875,27 +875,22 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     // Remove the friend declarations
     bool Successful = true;
 
-    // Don't do this on ClassTemplateSpecializationDecls though.
-    // Clang seems to only emit the declaration for the CXXRecord that
-    // the ClassTemplateSpecializationDecl is instantiated from
-    if (!m_VisSpecializations) {
-      if (TypeSourceInfo* TI = FD->getFriendType()) {
-        if (const Type* T = TI->getType().getTypePtrOrNull()) {
-          if (const TagType* RT = T->getAs<TagType>()) {
-            TagDecl *F = RT->getDecl();
-            // If the friend is a class and embedded in the parent and not defined
-            // then there is no further declaration so it must be unloaded now.
-            if (F->isEmbeddedInDeclarator() &&  !F->isCompleteDefinition()) {
-              // Avoid recursion: class A { class B { friend class A; } }
-              TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
-              if (!Parent || F != Parent->getDeclContext())
-                Successful &= Visit(F);
-            }
+    if (TypeSourceInfo* TI = FD->getFriendType()) {
+      if (const Type* T = TI->getType().getTypePtrOrNull()) {
+        if (const TagType* RT = T->getAs<TagType>()) {
+          TagDecl *F = RT->getDecl();
+          // If the friend is a class and embedded in the parent and not defined
+          // then there is no further declaration so it must be unloaded now.
+          if (F->isEmbeddedInDeclarator() &&  !F->isCompleteDefinition()) {
+            // Avoid recursion: class A { class B { friend class A; } }
+            TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
+            if (!Parent || F != Parent->getDeclContext())
+              Successful &= Visit(F);
           }
         }
-      } else if (NamedDecl* ND = FD->getFriendDecl())
-        Successful &= Visit(ND);
-    }
+      }
+    } else if (NamedDecl* ND = FD->getFriendDecl())
+      Successful &= Visit(ND);
 
     // Is it possible to unload a friend but not the parent class?
     // This requires adding DeclUnloader as a friend to FriendDecl
