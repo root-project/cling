@@ -561,14 +561,16 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return DC;
   }
 
-  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
+  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND, bool RemoveFromScopeMap) {
     if (!VisitDecl(ND))
       return false;
 
     llvm::SetVector<StoredDeclsMap*> Maps;
     DeclContext* DC = removeFromScope(ND);
-    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr())
-      Maps.insert(Map);
+    if (RemoveFromScopeMap) {
+      if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr())
+        Maps.insert(Map);
+    }
 
     // Remove from all namespace's lookup maps going upwards.
     // Except for:
@@ -629,20 +631,10 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
-    const bool isOnly = USD->getFirstDecl() == USD;
 
-    bool Successful = true;
-    Successful = VisitRedeclarable(USD, USD->getDeclContext());
-
-    if (isOnly) {
-      // Don't call VisitNamedDecl as it will call eraseDeclFromMap on the
-      // primary context, and what it is acually erasing is the UsingDecl.
-
-      // Taken from VisitNamedDecl:
-      Successful &= VisitDecl(USD);
-      removeFromScope(USD);
-    } else
-      Successful &= VisitNamedDecl(USD);
+    const bool Only = USD->getFirstDecl() == USD;
+    bool Successful = VisitRedeclarable(USD, USD->getDeclContext());
+    Successful &= VisitNamedDecl(USD, !Only);
 
     // Unregister from the using decl that it shadows.
     USD->getUsingDecl()->removeShadowDecl(USD);

@@ -80,7 +80,7 @@ namespace cling {
     ///
     ///\returns true on success.
     ///
-    bool VisitNamedDecl(clang::NamedDecl* ND);
+    bool VisitNamedDecl(clang::NamedDecl* ND, bool RemoveFromScopeMap = true);
 
     ///\brief Removes the declaration from Sema's unused decl registry
     /// @param[in] DD - The declaration to be removed.
