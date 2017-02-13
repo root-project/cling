@@ -384,15 +384,22 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   static SourceLocation getDeclLocation(Decl* D) {
     switch (D->getKind()) {
       case Decl::ClassTemplateSpecialization:
-      case Decl::ClassTemplatePartialSpecialization:
-        return cast<ClassTemplateSpecializationDecl>(D)->getPointOfInstantiation();
+      case Decl::ClassTemplatePartialSpecialization: {
+        const SourceLocation Loc = cast<ClassTemplateSpecializationDecl>(D)->getPointOfInstantiation();
+        if (Loc.isValid())
+          return Loc;
+        break;
+      }
       case Decl::Function: {
           FunctionDecl* FD = cast<FunctionDecl>(D);
           if (FunctionTemplateSpecializationInfo *Info =
                                           FD->getTemplateSpecializationInfo()) {
-            return Info->getPointOfInstantiation();
+            const SourceLocation Loc = Info->getPointOfInstantiation();
+            if (Loc.isValid())
+              return Loc;
           }
-        }
+        break;
+      }
       default:
         break;
     }
