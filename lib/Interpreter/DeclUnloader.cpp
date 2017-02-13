@@ -43,11 +43,25 @@ namespace {
   }
   // Flags for DeclUnloader::VisitNamedDecl
   enum {
-    kLeaveScopeMap  = 1,  // Don't remove Decl from StoredDeclsMap of scope.
-    kSkipNamespaceRemoval = 2, // Don't remove Decl from enclosing namespace(s)
+    kVisitingSpecialization  = 1,  // Currently visiting specializations
+    kLeaveScopeMap  = 2,  // Don't remove Decl from StoredDeclsMap of scope.
+    kSkipNamespaceRemoval = 4, // Don't remove Decl from enclosing namespace(s)
+    // Anything added here must increase bits in DeclUnloader::m_Flags
   };
 }
 
+class DeclUnloader::VisitorState {
+  DeclUnloader& m_DU; // parent
+  const unsigned m_F; // prior flags
+public:
+  VisitorState(DeclUnloader &DU, unsigned F) :  m_DU(DU), m_F(DU.m_Flags) {
+    m_DU.m_Flags |= F;  // Or in the new flags
+  }
+  ~VisitorState() {
+    m_DU.m_Flags = m_F; // Reset it to the way it was
+  }
+};
+  
 template <class DeclT>
 void DeclUnloader::resetDefinitionData(DeclT*) {
 }
@@ -566,19 +580,19 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return DC;
   }
 
-  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND, unsigned Flags) {
+  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
     if (!VisitDecl(ND))
       return false;
 
     llvm::SetVector<StoredDeclsMap*> Maps;
     DeclContext* DC = removeFromScope(ND);
-    if (LLVM_UNLIKELY(!(Flags & kLeaveScopeMap))) {
+    if (LLVM_UNLIKELY(!(m_Flags & kLeaveScopeMap))) {
       if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr())
         Maps.insert(Map);
     }
 
     // Remove from all namespace's lookup maps going upwards.
-    if (LLVM_UNLIKELY(!(Flags & kSkipNamespaceRemoval))) {
+    if (LLVM_UNLIKELY(!(m_Flags & kSkipNamespaceRemoval))) {
       NamespaceDecl* NS = dyn_cast<NamespaceDecl>(DC);
       while(DC && !NS) {
         DC = DC->getParent();
@@ -631,13 +645,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     // UsingShadowDecl: NamedDecl, Redeclarable
 
     assert(USD->getTargetDecl() && "No target for UsingShadow");
-    const unsigned Flags = (USD->getFirstDecl() == USD ? kLeaveScopeMap : 0) |
-        (wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()))
-             ? kSkipNamespaceRemoval
-             : 0);
+    VisitorState VS(*this, (USD->getFirstDecl() == USD ? kLeaveScopeMap : 0) |
+                    (wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()))
+                    ? kSkipNamespaceRemoval : 0));
 
     bool Successful = VisitRedeclarable(USD, USD->getDeclContext());
-    Successful &= VisitNamedDecl(USD, Flags);
+    Successful &= VisitNamedDecl(USD);
 
     // Unregister from the using decl that it shadows.
     USD->getUsingDecl()->removeShadowDecl(USD);
@@ -1259,18 +1272,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   }
 
   namespace {
-    class VisStateRestore {
-      bool &m_VisSpecializations;
-      const bool m_Prev;
-    public:
-      VisStateRestore(bool& var, bool on=true) :
-        m_VisSpecializations(var), m_Prev(m_VisSpecializations) {
-        m_VisSpecializations = on;
-      }
-      ~VisStateRestore() {
-        m_VisSpecializations = m_Prev;
-      }
-    };
+
   } // end anonymous namespace
 
   template <class DeclT>
@@ -1282,7 +1284,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     }
 
     bool Successful = true;
-    VisStateRestore visState(m_VisSpecializations);
+    VisitorState VS(*this, kVisitingSpecialization);
     for (typename DeclT::spec_iterator::pointer spec : specs)
       Successful &= Visit(spec);
 
@@ -1399,8 +1401,9 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
                                         ClassTemplateSpecializationDecl* CTSD) {
     // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
 
+    const bool VisitingSpec = m_Flags & kVisitingSpecialization;
     const SourceLocation Loc = CTSD->getPointOfInstantiation();
-    if (m_VisSpecializations && !Loc.isValid())
+    if (VisitingSpec && !Loc.isValid())
       return true;
 
     ClassTemplateSpecializationDecl* CanonCTSD =
@@ -1414,8 +1417,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
                                                  CanonCTSD);
 
     bool Success = true;
-    if (m_VisSpecializations || !wasInstatiatedBefore(Loc)) {
-      VisStateRestore visState(m_VisSpecializations);
+    if (VisitingSpec || !wasInstatiatedBefore(Loc)) {
+      VisitorState VS(*this, kVisitingSpecialization);
       Success = VisitCXXRecordDecl(CTSD);
     }
 

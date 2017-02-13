@@ -49,14 +49,14 @@ namespace cling {
     ///
     FileIDs m_FilesToUncache;
 
-    ///\brief Mark whether we are recursing via VisitSpecializations.
+    ///\brief Mark the current visitation state.
     ///
-    bool m_VisSpecializations;
+    unsigned m_Flags : 4;
+    class VisitorState;
 
   public:
     DeclUnloader(clang::Sema* S, clang::CodeGenerator* CG, const Transaction* T)
-      : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T),
-        m_VisSpecializations(false) { }
+      : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T), m_Flags(0) {}
     ~DeclUnloader();
 
     ///\brief Interface with nice name, forwarding to Visit.
@@ -77,11 +77,10 @@ namespace cling {
     ///\brief Removes the declaration from the lookup chains and from the
     /// declaration context.
     /// @param[in] ND - The declaration to be removed.
-    /// @param[in] Flags - Private information about how to handle removal.
     ///
     ///\returns true on success.
     ///
-    bool VisitNamedDecl(clang::NamedDecl* ND, unsigned Flags = 0);
+    bool VisitNamedDecl(clang::NamedDecl* ND);
 
     ///\brief Removes the declaration from Sema's unused decl registry
     /// @param[in] DD - The declaration to be removed.
