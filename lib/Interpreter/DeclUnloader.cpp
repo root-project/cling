@@ -492,11 +492,47 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     if (!VisitDecl(ND))
       return false;
 
+    llvm::SetVector<StoredDeclsMap*> Maps;
     DeclContext* DC = removeFromScope(ND);
+    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr())
+      Maps.insert(Map);
+
+    // Remove from all namespace's lookup maps going upwards.
+    // Except for:
+    //   UsingShadowDecl who's target was declared before must stay however.
+    UsingShadowDecl* USD = dyn_cast<UsingShadowDecl>(ND);
+    assert((USD ? USD->getTargetDecl()!=nullptr : 1)
+           && "No target for UsingShadow");
+    const bool Skip = USD &&
+                wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()));
+    if (!Skip) {
+      NamespaceDecl* NS = dyn_cast<NamespaceDecl>(DC);
+      while(DC && !NS) {
+        DC = DC->getParent();
+        NS = dyn_cast_or_null<NamespaceDecl>(DC);
+      }
+
+      if (NS && NS->isInline()) {
+        // VisitDecl will have already done a removal on Lexical, so skip that
+        DeclContext* Lexical = ND->getLexicalDeclContext();
+        do {
+          assert((NS->getFirstDecl() != NS ? !NS->getLookupPtr() : 1)
+                 && "Has unique lookup ptr!");
+          if (DC != Lexical) {
+            // There is a chance that lookup ptr will not exist when rolling back
+            // a bad Transaction. The question is whether we can stop the loop too?
+            if (StoredDeclsMap* Map = NS->getFirstDecl()->getLookupPtr())
+              Maps.insert(Map);
+          }
+          DC = DC->getParent();
+          NS = dyn_cast<NamespaceDecl>(DC);
+        } while (NS);
+      }
+    }
 
     // If the decl was removed make sure that we fix the lookup
     // DeclContexts like EnumDecls don't have lookup maps.
-    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+    for (StoredDeclsMap* Map : Maps) {
       eraseDeclFromMap(Map, ND);
 #ifndef NDEBUG
       checkDeclIsGone(Map, ND);
@@ -827,52 +863,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
 
-    // When unloading a NamedDecl within an inline namespace within the
-    // NamedDecl needs to be removed from the parent(s) as well.
-    llvm::SetVector<StoredDeclsMap*> Parents;
-    if (NSD->isInline()) {
-      NamespaceDecl* Parent = cast<NamespaceDecl>(NSD->getParent());
-      do {
-        assert((Parent->getFirstDecl() != Parent ? !Parent->getLookupPtr() : 1)
-               && "Has unique lookup ptr!");
-        // There is a chance that lookup ptr will not exist when rolling back
-        // a bad Transaction. The question is whether we can stop the loop too?
-        if (StoredDeclsMap* Map = Parent->getFirstDecl()->getLookupPtr())
-          Parents.insert(Map);
-        DeclContext* Next = Parent->getParent();
-        Parent = dyn_cast<NamespaceDecl>(Next);
-      } while (Parent);
-    }
-
     bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
-
-    // Inlined version of VisitDeclContext so we can check against parent
-    llvm::SmallVector<Decl*, 64> declsToErase;
-    for (Decl *D : NSD->noload_decls())
-      declsToErase.push_back(D);
-
-    for (auto I = declsToErase.rbegin(), E = declsToErase.rend(); I != E; ++I) {
-      Successful = Visit(*I) & Successful;
-      assert(Successful);
-
-      if (NamedDecl *ND = dyn_cast<NamedDecl>(*I)) {
-        UsingShadowDecl* USD = dyn_cast<UsingShadowDecl>(ND);
-        assert((USD ? USD->getTargetDecl()!=nullptr : 1)
-               && "No target for UsingShadow");
-        const bool Skip = USD &&
-                    wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()));
-
-        if (!Skip) {
-          for (StoredDeclsMap* Parent : Parents) {
-            eraseDeclFromMap(Parent, ND);
-  #ifndef NDEBUG
-            checkDeclIsGone(Parent, ND);
-  #endif
-          }
-        }
-      }
-    }
-
+    Successful &= VisitDeclContext(NSD);
     Successful &= VisitNamedDecl(NSD);
 
     // Get these out of the caches
