@@ -41,6 +41,11 @@ namespace {
   static bool isDefinition(clang::TagDecl* R) {
     return R->isCompleteDefinition();
   }
+  // Flags for DeclUnloader::VisitNamedDecl
+  enum {
+    kLeaveScopeMap  = 1,  // Don't remove Decl from StoredDeclsMap of scope.
+    kSkipNamespaceRemoval = 2, // Don't remove Decl from enclosing namespace(s)
+  };
 }
 
 template <class DeclT>
@@ -561,26 +566,19 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return DC;
   }
 
-  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND, bool RemoveFromScopeMap) {
+  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND, unsigned Flags) {
     if (!VisitDecl(ND))
       return false;
 
     llvm::SetVector<StoredDeclsMap*> Maps;
     DeclContext* DC = removeFromScope(ND);
-    if (RemoveFromScopeMap) {
+    if (LLVM_UNLIKELY(!(Flags & kLeaveScopeMap))) {
       if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr())
         Maps.insert(Map);
     }
 
     // Remove from all namespace's lookup maps going upwards.
-    // Except for:
-    //   UsingShadowDecl who's target was declared before must stay however.
-    UsingShadowDecl* USD = dyn_cast<UsingShadowDecl>(ND);
-    assert((USD ? USD->getTargetDecl()!=nullptr : 1)
-           && "No target for UsingShadow");
-    const bool Skip = USD &&
-                wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()));
-    if (!Skip) {
+    if (LLVM_UNLIKELY(!(Flags & kSkipNamespaceRemoval))) {
       NamespaceDecl* NS = dyn_cast<NamespaceDecl>(DC);
       while(DC && !NS) {
         DC = DC->getParent();
@@ -632,9 +630,14 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
 
-    const bool Only = USD->getFirstDecl() == USD;
+    assert(USD->getTargetDecl() && "No target for UsingShadow");
+    const unsigned Flags = (USD->getFirstDecl() == USD ? kLeaveScopeMap : 0) |
+        (wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()))
+             ? kSkipNamespaceRemoval
+             : 0);
+
     bool Successful = VisitRedeclarable(USD, USD->getDeclContext());
-    Successful &= VisitNamedDecl(USD, !Only);
+    Successful &= VisitNamedDecl(USD, Flags);
 
     // Unregister from the using decl that it shadows.
     USD->getUsingDecl()->removeShadowDecl(USD);

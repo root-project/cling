@@ -77,10 +77,11 @@ namespace cling {
     ///\brief Removes the declaration from the lookup chains and from the
     /// declaration context.
     /// @param[in] ND - The declaration to be removed.
+    /// @param[in] Flags - Private information about how to handle removal.
     ///
     ///\returns true on success.
     ///
-    bool VisitNamedDecl(clang::NamedDecl* ND, bool RemoveFromScopeMap = true);
+    bool VisitNamedDecl(clang::NamedDecl* ND, unsigned Flags = 0);
 
     ///\brief Removes the declaration from Sema's unused decl registry
     /// @param[in] DD - The declaration to be removed.
