@@ -179,6 +179,28 @@ static Decl* handleRedelaration(Decl* D, DeclContext* DC) {
       return MostRecentNotThis;
   }
 
+  // For templates, don't use the most recent, look for default arguments.
+  // FIXME: Use the decl with the most default template parameters.
+  if (RedeclarableTemplateDecl* RD =
+                        dyn_cast<RedeclarableTemplateDecl>(MostRecentNotThis)) {
+    do {
+      if (TemplateParameterList* TPL = RD->getTemplateParameters()) {
+        for (NamedDecl* P : *TPL) {
+          if (TemplateTypeParmDecl* TP = dyn_cast<TemplateTypeParmDecl>(P)) {
+            if (TP->hasDefaultArgument()) {
+              if (RD != MostRecent)
+                MostRecentNotThis = RD;
+              RD = nullptr;
+              break;
+            }
+          }
+        }
+      }
+      if (RD)
+        RD = RD->getPreviousDecl();
+    } while (RD);
+  }
+
   // Mirror what DeclContext::removeDecl does, otherwise we'll get out
   // of synch for the call to removeDecl
 
