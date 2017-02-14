@@ -31,6 +31,14 @@ using namespace cling::driver::clingoptions;
 
 namespace {
 
+// MSVC C++ backend currently does not support -nostdinc++. Translate it to
+// -nostdinc so users scripts are insulated from mundane implementation details.
+#if defined(LLVM_ON_WIN32) && !defined(_LIBCPP_VERSION)
+#define CLING_TRANSLATE_NOSTDINCxx
+// Likely to be string-pooled, but make sure it's valid after func exit.
+static const char kNoStdInc[] = "-nostdinc";
+#endif
+
 #define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
                HELPTEXT, METAVAR)
@@ -158,8 +166,15 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
       case Option::UnknownClass:
       case Option::InputClass:
         // prune "-" we need to control where it appears when invoking clang
-        if (!arg->getSpelling().equals("-"))
-          CompilerOpts.Remaining.push_back(argv[arg->getIndex()]);
+        if (!arg->getSpelling().equals("-")) {
+          if (const char* Arg = argv[arg->getIndex()]) {
+#ifdef CLING_TRANSLATE_NOSTDINCxx
+            if (!::strcmp(Arg, "-nostdinc++"))
+              Arg = kNoStdInc;
+#endif
+            CompilerOpts.Remaining.push_back(Arg);
+          }
+        }
       default:
         break;
     }
