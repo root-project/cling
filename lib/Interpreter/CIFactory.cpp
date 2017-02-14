@@ -159,15 +159,6 @@ namespace {
     if (sArguments.empty()) {
       const bool Verbose = opts.Verbose;
 #ifdef _MSC_VER
-      // Honor %INCLUDE%. It should know essential search paths with vcvarsall.bat.
-      if (const char* Includes = getenv("INCLUDE")) {
-        SmallVector<StringRef, 8> Dirs;
-        utils::SplitPaths(Includes, Dirs, utils::kAllowNonExistant,
-                          platform::kEnvDelim, Verbose);
-        for (const llvm::StringRef& Path : Dirs)
-          sArguments.addArgument("-I", Path.str());
-      }
-
       // When built with access to the proper Windows APIs, try to actually find
       // the correct include paths first. Init for UnivSDK.empty check below.
       std::string VSDir, WinSDK,
