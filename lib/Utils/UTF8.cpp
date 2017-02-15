@@ -156,19 +156,38 @@ class EscapeSequence::ByteDumper {
   const char* const m_End;
   const bool m_Utf8;
   bool m_HexRun;
-  bool (*isPrintable)(char32_t, const std::locale&);
+  bool (* const isPrintable)(char32_t, const std::locale&);
 
-  template <class T> static bool isPrint(char32_t C, const std::locale& L) {
-    return std::isprint(T(C), L);
+  static bool stdIsPrintU(char32_t C, const std::locale& L) {
+#if !defined(LLVM_ON_WIN32)
+    static_assert(sizeof(wchar_t) == sizeof(char32_t), "Sizes don't match");
+    return std::isprint(wchar_t(C), L);
+#else
+    // Each on their own report a lot of characters printable.
+    return iswprint(C) && std::isprint(C, L);
+#endif
+  }
+
+  static bool stdIsPrintA(char32_t C, const std::locale& L) {
+#if defined(LLVM_ON_WIN32)
+    // Windows Debug does not like being sent values > 255!
+    if (C > 0xff)
+      return false;
+#endif
+    return std::isprint(char(C), L);
   }
 
 public:
 
-  ByteDumper(EscapeSequence& Enc, const char* E, bool Utf8)
-    : m_Loc(Enc.m_Loc), m_End(E), m_Utf8(Utf8) {
-    // cache the correct isprint variant rather than checking in a loop
-    isPrintable = Enc.m_Utf8Out && m_Utf8 ? &utf8::isPrint :
-                                  (m_Utf8 ? &isPrint<wchar_t> : &isPrint<char>);
+  ByteDumper(EscapeSequence& Enc, const char* E, bool Utf8) :
+    m_Loc(Enc.m_Loc), m_End(E), m_Utf8(Utf8),
+    isPrintable(Enc.m_Utf8Out && m_Utf8 ? &utf8::isPrint :
+                                         (Utf8 ? &stdIsPrintU : &stdIsPrintA)) {
+    // Cached the correct isprint variant rather than checking in a loop.
+    //
+    // If output handles UTF-8 and string is UTF-8, then validate against UTF-8.
+    // If string is UTF-8 validate printable against std::isprint<char32_t>.
+    // If nothing is UTF-8 validate against std::isprint<char> .
   }
 
   HexState operator() (const char*& Ptr, llvm::raw_ostream& Stream,
@@ -250,6 +269,7 @@ EscapeSequence::EscapeSequence() : m_Utf8Out(false) {
   } else
     m_Utf8Out = true;
 #else
+  // Can other other codepages support UTF-8?
   m_Utf8Out = ::GetConsoleOutputCP() == 65001;
 #endif
 }
