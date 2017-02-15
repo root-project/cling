@@ -250,8 +250,8 @@ namespace cling {
         case '\"':
           if (N > 2 && Data[N-1] == '\"') {
             // Drop the terminating " so Utf-8 errors can be detected ("\xeA")
-            Out << Type << ' '
-                << utils::utf8::EscapeSequence().encode(Data, N-1) << "\"\n";
+            Out << Type << ' ';
+            utils::utf8::EscapeSequence().encode(Data, N-1, Out) << "\"\n";
             return;
           }
         default:

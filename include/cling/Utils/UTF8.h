@@ -10,8 +10,9 @@
 #ifndef CLING_UTILS_UTF8_H
 #define CLING_UTILS_UTF8_H
 
-#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/raw_ostream.h"
 #include <locale>
+#include <string>
 
 namespace cling {
 
@@ -64,6 +65,7 @@ namespace cling {
 
       public:
         EscapeSequence();
+
         ///\brief Encode the bytes from Str into a representation capable of
         /// being printed in the current locale without data loss.
         /// When Str begins with any of the C++ unicode string literal
@@ -71,8 +73,16 @@ namespace cling {
         ///
         /// \param [in] Str - Start of bytes to convert
         /// \param [in] N - Number of bytes to convert
+        /// \param [in] Output - Ouput stream to write to
         ///
-        llvm::StringRef encode(const char* const Str, size_t N);
+        /// \return 'Output' to allow: EscapeSequence().encode(...) << "";
+        ///
+        llvm::raw_ostream& encode(const char* const Str, size_t N,
+                                  llvm::raw_ostream& Output);
+
+        ///\brief Overload for above returning a std::string.
+        ///
+        std::string encode(const char* const Str, size_t N);
       };
     }
   }

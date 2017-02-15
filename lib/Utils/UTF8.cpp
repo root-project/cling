@@ -7,11 +7,11 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
+#include "cling/Utils/Output.h"
 #include "cling/Utils/UTF8.h"
 
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/Format.h"
-#include "llvm/Support/raw_ostream.h"
 
 #ifdef LLVM_ON_WIN32
 #include <Shlwapi.h>
@@ -254,7 +254,8 @@ EscapeSequence::EscapeSequence() : m_Utf8Out(false) {
 #endif
 }
 
-llvm::StringRef EscapeSequence::encode(const char* const Start, size_t N) {
+llvm::raw_ostream& EscapeSequence::encode(const char* const Start, size_t N,
+                                          llvm::raw_ostream& Output) {
   const char* Ptr = Start;
   const char* const End = Start + N;
 
@@ -271,7 +272,7 @@ llvm::StringRef EscapeSequence::encode(const char* const Start, size_t N) {
 
     // Simple printable string, just return it now.
     if (isPrint)
-      return llvm::StringRef(Start, N);
+      return Output << llvm::StringRef(Start, N);
 
     Ptr = Start;
   } else {
@@ -305,7 +306,7 @@ llvm::StringRef EscapeSequence::encode(const char* const Start, size_t N) {
       }
     }
     if (Hex != kEnd)
-      return Strm.str();
+      return Output << Strm.str();
 
     Ptr = Start + LastGood;
     Dump.buf().resize(LastGood);
@@ -315,6 +316,13 @@ llvm::StringRef EscapeSequence::encode(const char* const Start, size_t N) {
   llvm::raw_svector_ostream Strm(Dump.buf());
   while (Ptr < End)
     Dump(Ptr, Strm, true);
+
+  return Output << Strm.str();
+}
+
+std::string EscapeSequence::encode(const char* const Start, size_t N) {
+  stdstrstream Strm;
+  encode(Start, N, Strm);
   return Strm.str();
 }
 
