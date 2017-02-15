@@ -202,7 +202,13 @@ namespace {
       // Do not warn about such cases.
       sArguments.addArgument("-Wno-dll-attribute-on-redeclaration");
       sArguments.addArgument("-Wno-inconsistent-dllimport");
-      //sArguments.addArgument("-Wno-ignored-attributes");
+
+      // Assume Windows.h might be included, and don't spew a ton of warnings
+      sArguments.addArgument("-Wno-ignored-attributes");
+      sArguments.addArgument("-Wno-nonportable-include-path");
+      sArguments.addArgument("-Wno-microsoft-enum-value");
+      sArguments.addArgument("-Wno-expansion-to-defined");
+
       //sArguments.addArgument("-Wno-dllimport-static-field-def");
       //sArguments.addArgument("-Wno-microsoft-template");
 
