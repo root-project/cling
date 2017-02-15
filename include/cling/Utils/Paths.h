@@ -75,7 +75,7 @@ namespace cling {
     /// has been created.
     ///
     /// \param [in] Args - The argv vector to look for '-I' & '/I' flags
-    /// \param [in/out] File - File to look for, may mutate to an absolute path
+    /// \param [in,out] File - File to look for, may mutate to an absolute path
     /// \param [in] FM - File manger to resolve current dir with (can be null)
     /// \param [in] FileType - File type for logging or nullptr for no logging
     ///
