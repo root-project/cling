@@ -20,7 +20,6 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/ASTConsumers.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Serialization/ASTReader.h"
 
@@ -290,12 +289,6 @@ namespace cling {
                                    llvm::StringRef args) const {
     m_Interpreter.dump(name, args);
   }
-
-  // dumps the ast tree. uses name as the filter string
-  //void MetaSema::actOntraceCommand(llvm::StringRef repr,
- //     llvm::StringRef filter /* = llvm::StringRef() */) const {
- //   m_Interpreter.dumpTrace(repr, filter);
- // }
 
   void MetaSema::actOndynamicExtensionsCommand(SwitchMode mode/* = kToggle*/)
     const {
