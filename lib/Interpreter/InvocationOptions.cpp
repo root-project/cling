@@ -65,6 +65,7 @@ namespace {
     Opts.NoLogo = Args.hasArg(OPT__nologo);
     Opts.ShowVersion = Args.hasArg(OPT_version);
     Opts.Help = Args.hasArg(OPT_help);
+    Opts.NoRuntime = Args.hasArg(OPT_noruntime);
     if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ)) {
       Opts.MetaString = MetaStringArg->getValue();
       if (Opts.MetaString.empty()) {
@@ -89,7 +90,8 @@ namespace {
 
 CompilerOptions::CompilerOptions(int argc, const char* const* argv) :
   Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
-  NoCXXInc(false), StdVersion(false), StdLib(false), Verbose(false) {
+  NoCXXInc(false), StdVersion(false), StdLib(false), HasOutput(false),
+  Verbose(false) {
   if (argc && argv) {
     // Preserve what's already in Remaining, the user might want to push args
     // to clang while still using main's argc, argv
@@ -113,8 +115,8 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
   for (const Arg* arg : Args) {
     switch (arg->getOption().getID()) {
       // case options::OPT_d_Flag:
-      // case options::OPT_E:
-      // case options::OPT_o: HasOuptut = true; break;
+      case options::OPT_E:
+      case options::OPT_o: HasOutput = true; break;
       case options::OPT_x: Language = true; break;
       case options::OPT_resource_dir: ResourceDir = true; break;
       case options::OPT_isysroot: SysRoot = true; break;
@@ -136,7 +138,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
 
 InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
   MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
-  Help(false) {
+  Help(false), NoRuntime(false) {
 
   ArrayRef<const char *> ArgStrings(argv, argv + argc);
   unsigned MissingArgIndex, MissingArgCount;

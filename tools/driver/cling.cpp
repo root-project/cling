@@ -13,6 +13,7 @@
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/FrontendTool/Utils.h"
 
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/PrettyStackTrace.h"
@@ -26,6 +27,30 @@
 #if defined(WIN32) && defined(_MSC_VER)
 #include <crtdbg.h>
 #endif
+
+// If we are running with -verify a reported has to be returned as unsuccess.
+// This is relevant especially for the test suite.
+static int checkDiagErrors(clang::CompilerInstance* CI, unsigned* OutErrs = 0) {
+
+  unsigned Errs = CI->getDiagnostics().getClient()->getNumErrors();
+
+  if (CI->getDiagnosticOpts().VerifyDiagnostics) {
+    // If there was an error that came from the verifier we must return 1 as
+    // an exit code for the process. This will make the test fail as expected.
+    clang::DiagnosticConsumer* Client = CI->getDiagnostics().getClient();
+    Client->EndSourceFile();
+    Errs = Client->getNumErrors();
+
+    // The interpreter expects BeginSourceFile/EndSourceFiles to be balanced.
+    Client->BeginSourceFile(CI->getLangOpts(), &CI->getPreprocessor());
+  }
+
+  if (OutErrs)
+    *OutErrs = Errs;
+
+  return Errs ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
 
 int main( int argc, char **argv ) {
 
@@ -51,70 +76,67 @@ int main( int argc, char **argv ) {
 #endif
 
   // Set up the interpreter
-  cling::Interpreter interp(argc, argv);
-  if (interp.getOptions().Help) {
-    return 0;
+  cling::Interpreter Interp(argc, argv);
+  const cling::InvocationOptions& Opts = Interp.getOptions();
+
+  if (!Interp.isValid()) {
+    if (Opts.Help || Opts.ShowVersion)
+      return EXIT_SUCCESS;
+
+    unsigned ErrsReported = 0;
+    if (clang::CompilerInstance* CI = Interp.getCIOrNull()) {
+      // If output requested and execution succeeded let the DiagnosticsEngine
+      // determine the result code
+      if (Opts.CompilerOpts.HasOutput && ExecuteCompilerInvocation(CI))
+        return checkDiagErrors(CI);
+
+      checkDiagErrors(CI, &ErrsReported);
+    }
+
+    // If no errors have been reported, try perror
+    if (ErrsReported == 0)
+      ::perror("Could not create Interpreter instance");
+
+    return EXIT_FAILURE;
   }
 
-  clang::CompilerInstance* CI = interp.getCI();
-  interp.AddIncludePath(".");
+  Interp.AddIncludePath(".");
 
-  for (size_t I = 0, N = interp.getOptions().LibsToLoad.size(); I < N; ++I) {
-    interp.loadFile(interp.getOptions().LibsToLoad[I]);
-  }
+  for (const std::string& Lib : Opts.LibsToLoad)
+    Interp.loadFile(Lib);
 
-
-  // Interactive means no input (or one input that's "-")
-  std::vector<std::string>& Inputs = interp.getOptions().Inputs;
-  bool Interactive = Inputs.empty() || (Inputs.size() == 1
-                                        && Inputs[0] == "-");
-
-  cling::UserInterface ui(interp);
+  cling::UserInterface Ui(Interp);
   // If we are not interactive we're supposed to parse files
-  if (!Interactive) {
-    for (size_t I = 0, N = Inputs.size(); I < N; ++I) {
-      std::string cmd;
-      cling::Interpreter::CompilationResult compRes;
-      if (!interp.lookupFileOrLibrary(Inputs[I]).empty()) {
-        std::ifstream infile(interp.lookupFileOrLibrary(Inputs[I]));
-        std::string line;
-        std::getline(infile, line);
-        if (line[0] == '#' && line[1] == '!') {
+  if (!Opts.IsInteractive()) {
+    for (const std::string &Input : Opts.Inputs) {
+      std::string Cmd;
+      cling::Interpreter::CompilationResult Result;
+      const std::string Filepath = Interp.lookupFileOrLibrary(Input);
+      if (!Filepath.empty()) {
+        std::ifstream File(Filepath);
+        std::string Line;
+        std::getline(File, Line);
+        if (Line[0] == '#' && Line[1] == '!') {
           // TODO: Check whether the filename specified after #! is the current
           // executable.
-          while(std::getline(infile, line)) {
-            ui.getMetaProcessor()->process(line.c_str(), compRes, 0);
+          while (std::getline(File, Line)) {
+            Ui.getMetaProcessor()->process(Line.c_str(), Result, 0);
           }
           continue;
         }
-        else
-          cmd += ".x ";
+        Cmd += ".x ";
       }
-      cmd += Inputs[I];
-      ui.getMetaProcessor()->process(cmd.c_str(), compRes, 0);
+      Cmd += Input;
+      Ui.getMetaProcessor()->process(Cmd.c_str(), Result, 0);
     }
   }
   else {
-    ui.runInteractively(interp.getOptions().NoLogo);
-  }
-
-  bool ret = CI->getDiagnostics().getClient()->getNumErrors();
-
-  // if we are running with -verify a reported has to be returned as unsuccess.
-  // This is relevant especially for the test suite.
-  if (CI->getDiagnosticOpts().VerifyDiagnostics) {
-    // If there was an error that came from the verifier we must return 1 as
-    // an exit code for the process. This will make the test fail as expected.
-    clang::DiagnosticConsumer* client = CI->getDiagnostics().getClient();
-    client->EndSourceFile();
-    ret = client->getNumErrors();
-
-    // The interpreter expects BeginSourceFile/EndSourceFiles to be balanced.
-    client->BeginSourceFile(CI->getLangOpts(), &CI->getPreprocessor());
+    Ui.runInteractively(Opts.NoLogo);
   }
 
   // Only for test/OutputRedirect.C, but shouldn't affect performance too much.
   ::fflush(stdout);
   ::fflush(stderr);
-  return ret;
+
+  return checkDiagErrors(Interp.getCI());
 }

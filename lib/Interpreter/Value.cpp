@@ -12,6 +12,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Casting.h"
 #include "cling/Utils/Output.h"
 #include "cling/Utils/UTF8.h"
 
@@ -55,23 +56,14 @@ namespace {
     ///\brief The start of the allocation.
     char m_Payload[1];
 
-    static DtorFunc_t PtrToFunc(void* ptr) {
-      union {
-        void* m_Ptr;
-        DtorFunc_t m_Func;
-      };
-      m_Ptr = ptr;
-      return m_Func;
-    }
-
-
   public:
     ///\brief Initialize the storage management part of the allocated object.
     ///  The allocator is referencing it, thus initialize m_RefCnt with 1.
     ///\param [in] dtorFunc - the function to be called before deallocation.
     AllocatedValue(void* dtorFunc, size_t allocSize, size_t nElements):
-      m_RefCnt(1), m_DtorFunc(PtrToFunc(dtorFunc)), m_AllocSize(allocSize),
-      m_NElements(nElements)
+      m_RefCnt(1),
+      m_DtorFunc(cling::utils::VoidToFunctionPtr<DtorFunc_t>(dtorFunc)),
+      m_AllocSize(allocSize), m_NElements(nElements)
     {}
 
     char* getPayload() { return m_Payload; }
@@ -240,8 +232,9 @@ namespace cling {
   } // end namespace valuePrinterInternal
 
   void Value::print(llvm::raw_ostream& Out, bool Escape) const {
-    // Get the default type string representation
-    Out << cling::valuePrinterInternal::printTypeInternal(*this) << ' ';
+    // Save the default type string representation so output can occur as one
+    // operation (calling printValueInternal below may write to stderr).
+    const std::string Type = valuePrinterInternal::printTypeInternal(*this);
 
     // Get the value string representation, by printValue() method overloading
     const std::string Val = cling::valuePrinterInternal::printValueInternal(*this);
@@ -257,14 +250,15 @@ namespace cling {
         case '\"':
           if (N > 2 && Data[N-1] == '\"') {
             // Drop the terminating " so Utf-8 errors can be detected ("\xeA")
-            Out << utils::utf8::EscapeSequence().encode(Data, N-1) << "\"\n";
+            Out << Type << ' '
+                << utils::utf8::EscapeSequence().encode(Data, N-1) << "\"\n";
             return;
           }
         default:
           break;
       }
     }
-    Out << Val << '\n';
+    Out << Type << ' ' << Val << '\n';
   }
 
   void Value::dump(bool Escape) const {

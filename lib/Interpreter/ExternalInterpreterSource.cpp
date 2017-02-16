@@ -9,8 +9,10 @@
 
 #include "ExternalInterpreterSource.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Utils/Diagnostics.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTDiagnostic.h"
 #include "clang/AST/ASTImporter.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
@@ -96,13 +98,24 @@ namespace cling {
                                    DeclarationName &parentDeclName,
                                    const DeclContext *childCurrentDeclContext) {
 
-    // Don't do the import if we have a Function Template.
-    // Not supported by clang.
-    // FIXME: This is also a temporary check. Will be de-activated
-    // once clang supports the import of function templates.
-    if (declToImport->isFunctionOrFunctionTemplate() 
-        && declToImport->isTemplateDecl())
+    // Don't do the import if we have a Function Template or using decls. They
+    // are not supported by clang.
+    // FIXME: These are temporary checks and should be de-activated once clang
+    // supports their import.
+    if ((declToImport->isFunctionOrFunctionTemplate()
+         && declToImport->isTemplateDecl()) || dyn_cast<UsingDecl>(declToImport)
+         || dyn_cast<UsingShadowDecl>(declToImport)) {
+#ifndef NDEBUG
+      utils::DiagnosticsStore DS(
+        m_Importer->getFromContext().getDiagnostics(), false, false, true);
+
+      assert((m_Importer->Import(declToImport)==nullptr) && "Import worked!");
+      assert(!DS.empty() &&
+             DS[0].getID() == clang::diag::err_unsupported_ast_node &&
+             "Import may be supported");
+#endif
       return;
+    }
 
     if (Decl *importedDecl = m_Importer->Import(declToImport)) {
       if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {

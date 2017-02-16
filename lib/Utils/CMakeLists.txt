@@ -24,6 +24,7 @@ endif()
 
 add_cling_library(clingUtils OBJECT
   AST.cpp
+  Diagnostics.cpp
   ParserStateRAII.cpp
   Output.cpp
   Paths.cpp

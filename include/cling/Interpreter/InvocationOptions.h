@@ -43,6 +43,7 @@ namespace cling {
     bool NoCXXInc;
     bool StdVersion;
     bool StdLib;
+    bool HasOutput;
     bool Verbose;
 
     ///\brief The remaining arguments to pass to clang.
@@ -67,9 +68,15 @@ namespace cling {
     bool NoLogo;
     bool ShowVersion;
     bool Help;
+    bool NoRuntime;
     bool Verbose() const { return CompilerOpts.Verbose; }
 
     static void PrintHelp();
+
+    // Interactive means no input (or one input that's "-")
+    bool IsInteractive() const {
+      return Inputs.empty() || (Inputs.size() == 1 && Inputs[0] == "-");
+    }
   };
 }
 

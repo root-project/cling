@@ -215,9 +215,10 @@ public:
   ///\brief Get the address of a symbol from the process' loaded libraries.
   /// \param Name - symbol to look for
   /// \param Addr - known address of the symbol that can be cached later use
+  /// \param Jit - add to the injected symbols cache
   /// \returns The address of the symbol and whether it was cached
-  static std::pair<void*, bool>
-  searchLibraries(llvm::StringRef Name, void* Addr = nullptr);
+  std::pair<void*, bool>
+  lookupSymbol(llvm::StringRef Name, void* Addr = nullptr, bool Jit = false);
 };
 } // end cling
 #endif // CLING_INCREMENTAL_EXECUTOR_H

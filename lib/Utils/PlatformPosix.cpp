@@ -207,10 +207,10 @@ std::string Demangle(const std::string& Symbol) {
     ~AutoFree() { ::free(Str); };
   };
   int status = 0;
-  size_t len;
-  AutoFree af(abi::__cxa_demangle(Symbol.c_str(), 0, &len, &status));
-  assert(((len && af.Str[len-1]==0) || status != 0) && "Not null terminated");
-  return status == 0 ? std::string(af.Str, len-1) : std::string();
+  // Some implementations of __cxa_demangle are giving back length of allocation
+  // Passing NULL for length seems to guarantee null termination.
+  AutoFree af(abi::__cxa_demangle(Symbol.c_str(), NULL, NULL, &status));
+  return status == 0 ? std::string(af.Str) : std::string();
 }
 
 } // namespace platform

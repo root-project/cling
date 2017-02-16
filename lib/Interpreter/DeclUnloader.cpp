@@ -107,6 +107,57 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
   }
 }
 
+///\brief Adds the previous declaration into the lookup map on DC.
+/// @param[in] D - The decl that is being removed.
+/// @param[in] DC - The DeclContext to add the previous declaration of D.
+///\returns the previous declaration.
+///
+static Decl* handleRedelaration(Decl* D, DeclContext* DC) {
+  NamedDecl* ND = dyn_cast<NamedDecl>(D);
+  if (!ND)
+    return nullptr;
+
+  DeclarationName Name = ND->getDeclName();
+  if (Name.isEmpty())
+    return nullptr;
+
+  NamedDecl* MostRecent = ND->getMostRecentDecl();
+  NamedDecl* MostRecentNotThis = MostRecent;
+  if (MostRecentNotThis == ND) {
+    MostRecentNotThis = dyn_cast_or_null<NamedDecl>(ND->getPreviousDecl());
+    if (!MostRecentNotThis || MostRecentNotThis == ND)
+      return MostRecentNotThis;
+  }
+
+  if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+    StoredDeclsMap::iterator Pos = Map->find(Name);
+    if (Pos != Map->end() && !Pos->second.isNull()) {
+      DeclContext::lookup_result decls = Pos->second.getLookupResult();
+      // FIXME: A decl meant to be added in the lookup already exists
+      // in the lookup table. My assumption is that the DeclUnloader
+      // adds it here. This needs to be investigated mode. For now
+      // std::find gets promoted from assert to condition :)
+      // DeclContext::lookup_result::iterator is not an InputIterator
+      // (const member, thus no op=(const iterator&)), thus we cannot use
+      // std::find. MSVC actually cares!
+      auto hasDecl = [](const DeclContext::lookup_result& Result,
+                        const NamedDecl* Needle) -> bool {
+        for (auto IDecl: Result) {
+          if (IDecl == Needle)
+            return true;
+        }
+        return false;
+      };
+      if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
+        // The decl was registered in the lookup, update it.
+        Pos->second.HandleRedeclaration(MostRecentNotThis,
+                                        /*IsKnownNewer*/ true);
+      }
+    }
+  }
+  return MostRecentNotThis;
+}
+
 ///\brief Removes given declaration from the chain of redeclarations.
 /// Rebuilds the chain and sets properly first and last redeclaration.
 /// @param[in] R - The redeclarable, its chain to be rebuilt.
@@ -121,46 +172,13 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return true;
   }
 
-  T* MostRecent = R->getMostRecentDecl();
-  T* MostRecentNotThis = MostRecent;
-  if (MostRecentNotThis == R)
-    MostRecentNotThis = R->getPreviousDecl();
-
-  if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
-    // Make sure we update the lookup maps, because the removed decl might
-    // be registered in the lookup and still findable.
-    NamedDecl* ND = (T*)R;
-    DeclarationName Name = ND->getDeclName();
-    if (!Name.isEmpty()) {
-      StoredDeclsMap::iterator Pos = Map->find(Name);
-      if (Pos != Map->end() && !Pos->second.isNull()) {
-        DeclContext::lookup_result decls = Pos->second.getLookupResult();
-        // FIXME: A decl meant to be added in the lookup already exists
-        // in the lookup table. My assumption is that the DeclUnloader
-        // adds it here. This needs to be investigated mode. For now
-        // std::find gets promoted from assert to condition :)
-        // DeclContext::lookup_result::iterator is not an InputIterator
-        // (const member, thus no op=(const iterator&)), thus we cannot use
-        // std::find. MSVC actually cares!
-        auto hasDecl = [](const DeclContext::lookup_result& Result,
-                          const NamedDecl* Needle) -> bool {
-          for (auto IDecl: Result) {
-            if (IDecl == Needle)
-              return true;
-          }
-          return false;
-        };
-        if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
-          // The decl was registered in the lookup, update it.
-          Pos->second.HandleRedeclaration(MostRecentNotThis,
-            /*IsKnownNewer*/ true);
-        }
-      }
-    }
-  }
+  // Make sure we update the lookup maps, because the removed decl might
+  // be registered in the lookup and still findable.
+  T* MostRecentNotThis = (T*)handleRedelaration((T*)R, DC);
 
   // Set a new latest redecl.
   removeRedeclFromChain((T*)R);
+
 #ifndef NDEBUG
   // Validate redecl chain by iterating through it.
   std::set<clang::Redeclarable<T>*> CheckUnique;
@@ -169,6 +187,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     assert(CheckUnique.insert(RD).second && "Dupe redecl chain element");
     (void)RD;
   }
+#else
+  (void)MostRecentNotThis; // templated function issues a lot -Wunused-variable
 #endif
   return true;
 }
@@ -362,6 +382,55 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  // Remove a decl and possibly it's parent entry in lookup tables.
+  static void eraseDeclFromMap(StoredDeclsMap* Map, NamedDecl* ND) {
+    assert(Map && ND && "eraseDeclFromMap recieved NULL value(s)");
+    // Make sure we the decl doesn't exist in the lookup tables.
+    StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
+    if (Pos != Map->end()) {
+      // Most decls only have one entry in their list, special case it.
+      if (Pos->second.getAsDecl() == ND) {
+        // This is the only decl, no need to call Pos->second.remove(ND);
+        // as it only sets data to nullptr, just remove the entire entry
+        Map->erase(Pos);
+      }
+      else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
+        // Otherwise iterate over the list with entries with the same name.
+        for (NamedDecl* NDi : *Vec) {
+          if (NDi == ND)
+            Pos->second.remove(ND);
+        }
+        if (Vec->empty())
+          Map->erase(Pos);
+      }
+      else if (Pos->second.isNull()) // least common case
+        Map->erase(Pos);
+    }
+  }
+
+#ifndef NDEBUG
+  // Make sure we the decl doesn't exist in the lookup tables.
+  static void checkDeclIsGone(StoredDeclsMap* Map, NamedDecl* ND) {
+    assert(Map && ND && "checkDeclIsGone recieved NULL value(s)");
+    StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
+    if ( Pos != Map->end()) {
+      // Most decls only have one entry in their list, special case it.
+      if (NamedDecl* OldD = Pos->second.getAsDecl())
+        assert(OldD != ND && "Lookup entry still exists.");
+      else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
+        // Otherwise iterate over the list with entries with the same name.
+        // TODO: Walk the redeclaration chain if the entry was a redeclaration.
+
+        for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
+               E = Vec->end(); I != E; ++I)
+          assert(*I != ND && "Lookup entry still exists.");
+      }
+      else
+        assert(Pos->second.isNull() && "!?");
+    }
+  }
+#endif
+
   bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
     bool Successful = VisitDecl(ND);
 
@@ -383,48 +452,13 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     }
 
     // Cleanup the lookup tables.
-    StoredDeclsMap *Map = DC->getPrimaryContext()->getLookupPtr();
-    if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
-      // Make sure we the decl doesn't exist in the lookup tables.
-      StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
-      if ( Pos != Map->end()) {
-        // Most decls only have one entry in their list, special case it.
-        if (Pos->second.getAsDecl() == ND)
-          Pos->second.remove(ND);
-        else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
-          // Otherwise iterate over the list with entries with the same name.
-          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
-                 E = Vec->end(); I != E; ++I)
-            if (*I == ND)
-              Pos->second.remove(ND);
-        }
-        if (Pos->second.isNull() ||
-            (Pos->second.getAsVector() && !Pos->second.getAsVector()->size()))
-          Map->erase(Pos);
-      }
-    }
-
+    // DeclContexts like EnumDecls don't have lookup maps.
+    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+      eraseDeclFromMap(Map, ND);
 #ifndef NDEBUG
-    if (Map) { // DeclContexts like EnumDecls don't have lookup maps.
-      // Make sure we the decl doesn't exist in the lookup tables.
-      StoredDeclsMap::iterator Pos = Map->find(ND->getDeclName());
-      if ( Pos != Map->end()) {
-        // Most decls only have one entry in their list, special case it.
-        if (NamedDecl *OldD = Pos->second.getAsDecl())
-          assert(OldD != ND && "Lookup entry still exists.");
-        else if (StoredDeclsList::DeclsTy* Vec = Pos->second.getAsVector()) {
-          // Otherwise iterate over the list with entries with the same name.
-          // TODO: Walk the redeclaration chain if the entry was a redeclaration.
-
-          for (StoredDeclsList::DeclsTy::const_iterator I = Vec->begin(),
-                 E = Vec->end(); I != E; ++I)
-            assert(*I != ND && "Lookup entry still exists.");
-        }
-        else
-          assert(Pos->second.isNull() && "!?");
-      }
-    }
+      checkDeclIsGone(Map, ND);
 #endif
+    }
 
     return Successful;
   }
@@ -681,6 +715,36 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     Successful &= VisitRedeclarable(NSD, NSD->getDeclContext());
     Successful &= VisitNamedDecl(NSD);
 
+    return Successful;
+  }
+
+  bool DeclUnloader::VisitLinkageSpecDecl(LinkageSpecDecl* LSD) {
+    // LinkageSpecDecl: DeclContext
+
+    // Re-add any previous declarations so they are reachable throughout the
+    // translation unit. Also remove any global variables from:
+    // m_Sema->Context.getExternCContextDecl()
+
+    if (LSD->isExternCContext()) {
+      // Sadly ASTContext::getExternCContextDecl will create if it doesn't exist
+      // Hopefully LSD->isExternCContext() means that it already does exist
+      ExternCContextDecl* ECD = m_Sema->Context.getExternCContextDecl();
+      StoredDeclsMap* Map = ECD ? ECD->getLookupPtr() : nullptr;
+      
+      for (Decl* D : LSD->noload_decls()) {
+        if (NamedDecl* ND = dyn_cast<NamedDecl>(D)) {
+
+          // extern "C" linkage goes in the translation unit
+          DeclContext* DC = m_Sema->getASTContext().getTranslationUnitDecl();
+          handleRedelaration(ND, DC);
+          if (Map)
+            eraseDeclFromMap(Map, ND);
+        }
+      }
+    }
+
+    bool Successful = VisitDeclContext(LSD);
+    Successful &= VisitDecl(LSD);
     return Successful;
   }
 

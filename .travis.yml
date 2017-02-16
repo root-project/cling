@@ -48,6 +48,9 @@ matrix:
     - os: linux
 
   include:
+    # There seems to be a hard limit to how many machines a Travis build will
+    # across all platforms. By interleaving OS X, the hope is to get in the
+    # queue faster while not blocking Linux builds from occuring.
     - os: linux
       env: DIST=pangolin COMPILER=g++-4.7 CCOMPILER=gcc-4.7 NIGHTLY_CRON_SYNC=1
       addons:
@@ -64,6 +67,11 @@ matrix:
           packages: g++-4.8
       compiler: gcc-4.8
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode6.4
+      compiler: clang
+
     - os: linux
       env: DIST=pangolin COMPILER=g++-4.9 CCOMPILER=gcc-4.9
       addons:
@@ -79,6 +87,11 @@ matrix:
           sources: *sources
           packages: g++-5
       compiler: gcc-5
+
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode7
+      compiler: clang
 
     - os: linux
       env: DIST=pangolin COMPILER=g++-6 CCOMPILER=gcc-6
@@ -97,6 +110,11 @@ matrix:
           sources: *sources
           packages: g++-4.7
       compiler: gcc-4.7
+
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode7.1
+      compiler: clang
 
     - os: linux
       env: DIST=trusty COMPILER=g++-4.8 CCOMPILER=gcc-4.8
@@ -118,6 +136,11 @@ matrix:
           packages: g++-4.9
       compiler: gcc-4.9
 
+    - os: osx
+      env: COMPILER=g++-6 CCOMPILER=gcc-6
+      osx_image: xcode7.2
+      compiler: g++-6
+
     - os: linux
       env: DIST=trusty COMPILER=g++-5 CCOMPILER=gcc-5
       sudo: required
@@ -138,6 +161,11 @@ matrix:
           packages: g++-6
       compiler: gcc-6
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode7.3
+      compiler: clang
+
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-3.7 CCOMPILER=clang-3.7
       addons:
@@ -153,31 +181,6 @@ matrix:
           sources: *sources
           packages: ['clang-3.8', 'libstdc++-6-dev']
       compiler: clang-3.8
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode6.4
-      compiler: clang
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7
-      compiler: clang
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7.1
-      compiler: clang
-
-    - os: osx
-      env: COMPILER=g++-6 CCOMPILER=gcc-6
-      osx_image: xcode7.2
-      compiler: g++-6
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7.3
-      compiler: clang
 
     - os: osx
       env: COMPILER=clang++ CCOMPILER=clang

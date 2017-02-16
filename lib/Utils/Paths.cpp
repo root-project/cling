@@ -9,9 +9,11 @@
 
 #include "cling/Utils/Paths.h"
 #include "cling/Utils/Output.h"
+#include "clang/Basic/FileManager.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 
 namespace cling {
 namespace utils {
@@ -148,6 +150,65 @@ void DumpIncludePaths(const clang::HeaderSearchOptions& Opts,
 
 void LogNonExistantDirectory(llvm::StringRef Path) {
   cling::log() << "  ignoring nonexistent directory \"" << Path << "\"\n";
+}
+
+static void LogFileStatus(const char* Prefix, const char* FileType,
+                          llvm::StringRef Path) {
+  cling::log() << Prefix << " " << FileType << " '" << Path << "'\n";
+}
+
+bool LookForFile(const std::vector<const char*>& Args, std::string& Path,
+                 const clang::FileManager* FM, const char* FileType) {
+  if (llvm::sys::fs::is_regular_file(Path)) {
+    if (FileType)
+      LogFileStatus("Using", FileType, Path);
+    return true;
+  }
+  if (FileType)
+    LogFileStatus("Ignoring", FileType, Path);
+
+  SmallString<1024> FilePath;
+  if (FM) {
+    FilePath.assign(Path);
+    if (FM->FixupRelativePath(FilePath) &&
+        llvm::sys::fs::is_regular_file(FilePath)) {
+      if (FileType)
+        LogFileStatus("Using", FileType, FilePath.str());
+      Path = FilePath.str();
+      return true;
+    }
+    // Don't write same same log entry twice when FilePath == Path
+    if (FileType && !FilePath.str().equals(Path))
+      LogFileStatus("Ignoring", FileType, FilePath);
+  }
+  else if (llvm::sys::path::is_absolute(Path))
+    return false;
+
+  for (std::vector<const char*>::const_iterator It = Args.begin(),
+       End = Args.end(); It < End; ++It) {
+    const char* Arg = *It;
+    // TODO: Suppport '-iquote' and MSVC equivalent
+    if (!::strncmp("-I", Arg, 2) || !::strncmp("/I", Arg, 2)) {
+      if (!Arg[2]) {
+        if (++It >= End)
+          break;
+        FilePath.assign(*It);
+      }
+      else
+        FilePath.assign(Arg + 2);
+
+      llvm::sys::path::append(FilePath, Path.c_str());
+      if (llvm::sys::fs::is_regular_file(FilePath)) {
+        if (FileType)
+          LogFileStatus("Using", FileType, FilePath.str());
+        Path = FilePath.str();
+        return true;
+      }
+      if (FileType)
+        LogFileStatus("Ignoring", FileType, FilePath);
+    }
+  }
+  return false;
 }
 
 bool SplitPaths(llvm::StringRef PathStr,

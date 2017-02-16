@@ -36,45 +36,22 @@ using namespace llvm;
 
 namespace cling {
 
-IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
-                                         const clang::CompilerInstance& CI):
-  m_externalIncrementalExecutor(nullptr),
-  m_CurrentAtExitModule(0)
-#if 0
-  : m_Diags(diags)
-#endif
-{
+namespace {
 
-  // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
-  std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
-
-  // No need to protect this access of m_AtExitFuncs, since nobody
-  // can use this object yet.
-  m_AtExitFuncs.reserve(256);
-
-  std::unique_ptr<TargetMachine>
-    TM(CreateHostTargetMachine(CI.getCodeGenOpts()));
-  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
-                                          CI.getTargetOpts(),
-                                          CI.getLangOpts(),
-                                          *TM));
-  m_JIT.reset(new IncrementalJIT(*this, std::move(TM)));
-}
-
-// Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
-IncrementalExecutor::~IncrementalExecutor() {}
-
-std::unique_ptr<TargetMachine>
-  IncrementalExecutor::CreateHostTargetMachine(const
-                                           clang::CodeGenOptions& CGOpt) const {
-  // TODO: make this configurable.
+static std::unique_ptr<TargetMachine>
+CreateHostTargetMachine(const clang::CodeGenOptions& CGOpt, unsigned Fmt = 0) {
   Triple TheTriple(sys::getProcessTriple());
-#ifdef _WIN32
-  /*
-   * MCJIT works on Windows, but currently only through ELF object format.
-   */
-  TheTriple.setObjectFormat(llvm::Triple::ELF);
+  if (Fmt) {
+    assert(Fmt > llvm::Triple::UnknownObjectFormat &&
+           Fmt <= llvm::Triple::MachO && "Invalid Format");
+    TheTriple.setObjectFormat(static_cast<llvm::Triple::ObjectFormatType>(Fmt));
+  }
+#ifdef LLVM_ON_WIN32
+  // COFF format currently needs a few changes in LLVM to function properly.
+  else
+    TheTriple.setObjectFormat(llvm::Triple::ELF);
 #endif
+
   std::string Error;
   const Target *TheTarget
     = TargetRegistry::lookupTarget(TheTriple.getTriple(), Error);
@@ -113,6 +90,34 @@ std::unique_ptr<TargetMachine>
                                           OptLevel));
   return TM;
 }
+} // anonymous namespace
+
+IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
+                                         const clang::CompilerInstance& CI):
+  m_externalIncrementalExecutor(nullptr)
+#if 0
+  : m_Diags(diags)
+#endif
+{
+
+  // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
+  std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
+
+  // No need to protect this access of m_AtExitFuncs, since nobody
+  // can use this object yet.
+  m_AtExitFuncs.reserve(256);
+
+  std::unique_ptr<TargetMachine>
+    TM(CreateHostTargetMachine(CI.getCodeGenOpts()));
+  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
+                                          CI.getTargetOpts(),
+                                          CI.getLangOpts(),
+                                          *TM));
+  m_JIT.reset(new IncrementalJIT(*this, std::move(TM)));
+}
+
+// Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
+IncrementalExecutor::~IncrementalExecutor() {}
 
 void IncrementalExecutor::shuttingDown() {
   // No need to protect this access, since hopefully there is no concurrent
@@ -123,10 +128,11 @@ void IncrementalExecutor::shuttingDown() {
   }
 }
 
-void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg) {
+void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
+                                        llvm::Module* M) {
   // Register a CXAAtExit function
   cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
-  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, m_CurrentAtExitModule));
+  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, M));
 }
 
 void unresolvedSymbol()
@@ -148,9 +154,7 @@ void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name
     //             << mangled_name << "'!\n";
   }
 
-  // Avoid "ISO C++ forbids casting between pointer-to-function and
-  // pointer-to-object":
-  return (void*)reinterpret_cast<size_t>(unresolvedSymbol);
+  return utils::FunctionToVoidPtr(&unresolvedSymbol);
 }
 
 void* IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
@@ -205,14 +209,6 @@ IncrementalExecutor::ExecutionResult
 IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
   llvm::Module* m = T.getModule();
   assert(m && "Module must not be null");
-
-  // Set m_CurrentAtExitModule to the Module, unset to 0 once done.
-  struct AtExitModuleSetterRAII {
-    llvm::Module*& m_AEM;
-    AtExitModuleSetterRAII(llvm::Module* M, llvm::Module*& AEM): m_AEM(AEM)
-    { AEM = M; }
-    ~AtExitModuleSetterRAII() { m_AEM = 0; }
-  } DSOHandleSetter(m, m_CurrentAtExitModule);
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
@@ -333,14 +329,15 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 }
 
 bool
-IncrementalExecutor::addSymbol(const char* symbolName,  void* symbolAddress) {
-  return IncrementalJIT::searchLibraries(symbolName, symbolAddress).second;
+IncrementalExecutor::addSymbol(const char* Name,  void* Addr,
+                               bool Jit) {
+  return m_JIT->lookupSymbol(Name, Addr, Jit).second;
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) {
   // Return a symbol's address, and whether it was jitted.
-  void* address = IncrementalJIT::searchLibraries(symbolName).first;
+  void* address = m_JIT->lookupSymbol(symbolName).first;
 
   // It's not from the JIT if it's in a dylib.
   if (fromJIT)
