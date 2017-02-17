@@ -28,9 +28,9 @@ build:
 
 install:
   - C:\"Program Files (x86)"\"Microsoft Visual Studio 14.0"\VC\vcvarsall.bat %platform%
-  - appveyor DownloadFile http://gnuwin32.sourceforge.net/downlinks/make-bin-zip.php -FileName make.zip
-  - unzip make.zip -d c:\gnuwin32\
   - set PATH=c:\gnuwin32\bin;%PATH%
+#   - appveyor DownloadFile http://gnuwin32.sourceforge.net/downlinks/make-bin-zip.php -FileName make.zip
+#   - unzip make.zip -d c:\gnuwin32\
 
 build_script:
   - tools\packaging\cpt.py ^
