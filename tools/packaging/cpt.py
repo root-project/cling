@@ -27,7 +27,6 @@ import sys
 if sys.version_info < (3, 0):
     # Python 2.x
     from urllib2 import urlopen
-
     input = raw_input
 else:
     # Python 3.x
@@ -88,7 +87,6 @@ def exec_subprocess_check_output(cmd, cwd):
                                       stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('utf-8')
     except subprocess.CalledProcessError as e:
         _perror(e)
-
     finally:
         return out
 
@@ -1156,8 +1154,24 @@ def get_win_dep():
         print('Remove file: ' + os.path.join(TMP_PREFIX, 'nsis-%s.zip' % (NSIS_VERSION)))
         os.rename(os.path.join(TMP_PREFIX, 'bin', 'nsis-%s' % (NSIS_VERSION)), os.path.join(TMP_PREFIX, 'bin', 'nsis'))
 
-    box_draw("Download CMake v3.6.2 required for Windows")
+    def tryCmake(cmake):
+        try:
+            rslt = exec_subprocess_check_output(cmake + ' --version', TMP_PREFIX)
+            vers = [int(v) for v in rslt.split()[2].split('.')]
+            if vers[0] >= 3 and (vers[1] > 6 or (vers[1]==6 and vers[2] >= 2)):
+                return cmake
+        except:
+            pass
+        return False
 
+    global CMAKE
+    cmakeEXE = tryCmake('cmake.exe') or tryCmake(CMAKE)
+    if cmakeEXE:
+        CMAKE = cmakeEXE
+        box_draw("Using previous CMake: %s" % cmakeEXE)
+        return
+
+    box_draw("Download CMake v3.6.2 required for Windows")
     if is_os_64bit():
         wget(url='https://cmake.org/files/v3.6/cmake-3.6.2-win64-x64.zip',
              out_dir=TMP_PREFIX, rename_file='cmake-3.6.2.zip')
@@ -1173,11 +1187,9 @@ def get_win_dep():
     print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.2.zip'))
 
     if is_os_64bit():
-        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.2-win64-x64'),
-                  os.path.join(TMP_PREFIX, 'bin', 'cmake'))
+        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.2-win64-x64'), cmakeDir)
     else:
-        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.2-win32-x86'),
-                  os.path.join(TMP_PREFIX, 'bin', 'cmake'))
+        os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.2-win32-x86'), cmakeDir)
     print()
 
 
