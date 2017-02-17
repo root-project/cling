@@ -7,7 +7,10 @@
 //------------------------------------------------------------------------------
 
 // Removing the cwd on Unix works but on Windows cannot be done.
-// RUN: mkdir -p %T/Remove && cd %T/Remove && rm -rf %T/Remove && %cling %s -Xclang -verify 2>&1 | FileCheck %s
+// RUN: %mkdir "%T/Remove"
+// RUN: cd "%T/Remove"
+// RUN: %rmdir "%T/Remove"
+// RUN: %cling %s -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: not_system-windows
 
 extern "C" {
