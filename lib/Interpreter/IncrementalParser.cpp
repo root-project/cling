@@ -366,19 +366,18 @@ namespace cling {
 
     T->setState(Transaction::kCompleted);
 
-    DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+    DiagnosticsEngine& Diag = getCI()->getSema().getDiagnostics();
 
     //TODO: Make the enum orable.
     EParseResult ParseResult = kSuccess;
 
-    assert((Diags.hasFatalErrorOccurred() ? Diags.hasErrorOccurred() : true)
-            && "Diags.hasFatalErrorOccurred without Diags.hasErrorOccurred !");
+    assert((Diag.hasFatalErrorOccurred() ? Diag.hasErrorOccurred() : true)
+            && "Diag.hasFatalErrorOccurred without Diag.hasErrorOccurred !");
 
-    if (Diags.hasErrorOccurred() || T->getIssuedDiags() == Transaction::kErrors)
-    {
+    if (Diag.hasErrorOccurred() || T->getIssuedDiags() == Transaction::kErrors) {
       T->setIssuedDiags(Transaction::kErrors);
       ParseResult = kFailed;
-    } else if (Diags.getNumWarnings() > 0) {
+    } else if (Diag.getNumWarnings() > 0) {
       T->setIssuedDiags(Transaction::kWarnings);
       ParseResult = kSuccessWithWarnings;
     }
