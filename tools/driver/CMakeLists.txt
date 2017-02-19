@@ -56,6 +56,16 @@ if(MSVC)
     _Init_thread_footer _Init_thread_header _tls_index
   )
 
+  # new/delete variants needed when linking to static msvc runtime (esp. Debug)
+  set(cling_exports ${cling_exports}
+    #??2@YAPEAX_KPEBDH@Z  ## not used in cling
+    #??_U@YAPEAX_KPEBDH@Z ## not used in cling
+    ??2@YAPEAX_K@Z
+    ??3@YAXPEAX@Z
+    ??_U@YAPEAX_K@Z
+    ??_V@YAXPEAX@Z
+  )
+
   # Most (if not all) of these MSVC decided are inlines that aren't exported
   set(cling_exports ${cling_exports} ?print@Decl@clang@@QEBAXAEAVraw_ostream@llvm@@I_N@Z
     ?getAsString@QualType@clang@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBVType@2@VQualifiers@2@@Z
