@@ -20,11 +20,6 @@
 
 namespace cling {
 
-#ifdef _WIN32
-  // FIXME: Interpreter currently needs to construct the first std::string
-  namespace horriblehack { static const std::string kRealyyBad; }
-#endif
-
   class Value;
 
   // General fallback - prints the address
