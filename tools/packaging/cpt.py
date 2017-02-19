@@ -538,10 +538,7 @@ def compile(arg, build_libcpp):
 
     if not CLING_BRANCH:
         box_draw("Install compiled binaries to prefix (using %d cores)" % build.cores)
-        if build.win32:
-            build.make('INSTALL')
-        else:
-            build.make('install', 'prefix=%s' % TMP_PREFIX)
+        build.make('install')
 
     if TRAVIS_BUILD_DIR:
         ### Run cling once, dumping the include paths, helps debug issues
