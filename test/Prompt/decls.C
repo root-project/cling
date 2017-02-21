@@ -9,6 +9,8 @@
 // RUN: cat %s | %cling -I%p | FileCheck %s
 #include <cmath>
 
+TEMPORARY BREAKAGE!
+
 struct S{int i;} ss;
 S s = {12 };
 
