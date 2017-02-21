@@ -9,9 +9,6 @@
 // RUN: cat %s | %cling -I%p | FileCheck %s
 #include <cmath>
 
-#include <stdlib.h>
-exit(42)
-
 struct S{int i;} ss;
 S s = {12 };
 
