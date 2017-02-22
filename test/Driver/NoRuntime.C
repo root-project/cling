@@ -6,11 +6,16 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -nostdinc++ -nobuiltininc -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -noruntime -Xclang -verify 2>&1 | FileCheck %s
+// Test noruntimeTest
 
-// expected-error {{'new' file not found}}
+extern "C" int printf(const char*,...);
+int TEST = 9;
+TEST
+// CHECK-NOT: (int) 9
 
-// CHECK: Warning in cling::IncrementalParser::CheckABICompatibility():
-// CHECK:  Possible C++ standard library mismatch, compiled with
+printf("TEST: %d\n", TEST);
+// CHECK: TEST: 9
 
+// expected-no-diagnostics
 .q

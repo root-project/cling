@@ -23,7 +23,6 @@ extern "C" int printf(const char*,...);
 extern "C" {
   int printf(const char*,...);
   int abs(int);
-  int atexit(void (*)(void));
   double atof(const char *);
   void free(void* ptr);
 }

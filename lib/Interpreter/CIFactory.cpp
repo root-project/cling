@@ -159,15 +159,6 @@ namespace {
     if (sArguments.empty()) {
       const bool Verbose = opts.Verbose;
 #ifdef _MSC_VER
-      // Honor %INCLUDE%. It should know essential search paths with vcvarsall.bat.
-      if (const char* Includes = getenv("INCLUDE")) {
-        SmallVector<StringRef, 8> Dirs;
-        utils::SplitPaths(Includes, Dirs, utils::kAllowNonExistant,
-                          platform::kEnvDelim, Verbose);
-        for (const llvm::StringRef& Path : Dirs)
-          sArguments.addArgument("-I", Path.str());
-      }
-
       // When built with access to the proper Windows APIs, try to actually find
       // the correct include paths first. Init for UnivSDK.empty check below.
       std::string VSDir, WinSDK,
@@ -211,7 +202,13 @@ namespace {
       // Do not warn about such cases.
       sArguments.addArgument("-Wno-dll-attribute-on-redeclaration");
       sArguments.addArgument("-Wno-inconsistent-dllimport");
-      //sArguments.addArgument("-Wno-ignored-attributes");
+
+      // Assume Windows.h might be included, and don't spew a ton of warnings
+      sArguments.addArgument("-Wno-ignored-attributes");
+      sArguments.addArgument("-Wno-nonportable-include-path");
+      sArguments.addArgument("-Wno-microsoft-enum-value");
+      sArguments.addArgument("-Wno-expansion-to-defined");
+
       //sArguments.addArgument("-Wno-dllimport-static-field-def");
       //sArguments.addArgument("-Wno-microsoft-template");
 
@@ -350,7 +347,14 @@ namespace {
   static void SetClingCustomLangOpts(LangOptions& Opts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
 #ifdef _MSC_VER
-#if _HAS_EXCEPTIONS
+#if 0 //_HAS_EXCEPTIONS
+// FIXME: Disable exceptions on Windows for the time being.
+// Enabling exceptions here makes 42 more tests failing.
+// For example, CodeGeneration\RecursiveInit.C raises a unhandled exception in
+// WinEHPrepare.cpp, at:
+//      if (UserI->isEHPad())
+//        report_fatal_error("Cleanup funclets for the MSVC++ personality cannot "
+//                           "contain exceptional actions");
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 1;
@@ -503,7 +507,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   /// Set cling's preprocessor defines to match the cling binary.
   static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {
 #ifdef _MSC_VER
-    STRINGIFY_PREPROC_SETTING(PPOpts, _HAS_EXCEPTIONS);
+// FIXME: Stay consistent with the _HAS_EXCEPTIONS flag settings in SetClingCustomLangOpts
+//    STRINGIFY_PREPROC_SETTING(PPOpts, _HAS_EXCEPTIONS);
 #ifdef _DEBUG
     STRINGIFY_PREPROC_SETTING(PPOpts, _DEBUG);
 #endif
@@ -521,6 +526,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     PPOpts.addMacroDef("__CLING__clang__=" ClingStringify(__clang__));
 #elif defined(__GNUC__)
     PPOpts.addMacroDef("__CLING__GNUC__=" ClingStringify(__GNUC__));
+#elif defined(_MSC_VER)
+    PPOpts.addMacroDef("__CLING__MSVC__=" ClingStringify(_MSC_VER));
 #endif
 
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
@@ -765,6 +772,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CI->setInvocation(InvocationPtr.get());
     InvocationPtr.release();
     CI->setDiagnostics(Diags.get()); // Diags is ref-counted
+    if (!OnlyLex)
+      CI->getDiagnosticOpts().ShowColors = cling::utils::ColorizeOutput();
+
 
     // Copied from CompilerInstance::createDiagnostics:
     // Chain in -verify checker, if requested.

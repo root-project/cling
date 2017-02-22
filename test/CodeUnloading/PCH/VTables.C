@@ -1,6 +1,5 @@
-// RUN: mkdir -p %T/Rel/Path
-// RUN: rm -f CompGen.h.pch
-// RUN: rm -f %T/Rel/Path/Relative.pch
+// RUN: %mkdir "%T/Rel/Path" || true
+// RUN: %rm "CompGen.h.pch" && %rm "%T/Rel/Path/Relative.pch"
 // RUN: clang -x c++-header -fexceptions -fcxx-exceptions -std=c++14 -pthread %S/Inputs/CompGen.h -o CompGen.h.pch
 // RUN: clang -x c++-header -fexceptions -fcxx-exceptions -std=c++14 -pthread %S/Inputs/CompGen.h -o %T/Rel/Path/Relative.pch
 // RUN: cat %s | %cling -I%p -Xclang -include-pch -Xclang CompGen.h.pch  2>&1 | FileCheck %s

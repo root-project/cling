@@ -275,9 +275,10 @@ namespace cling {
     // for ParseInternal()'s call EnterSourceFile() to make sense.
     while (!m_Parser->ParseTopLevelDecl()) {}
 
-    // If I belong to the parent Interpreter, only then do
-    // the #include <new>
-    if (!isChildInterpreter && m_CI->getLangOpts().CPlusPlus) {
+    // If I belong to the parent Interpreter, am using C++, and -noruntime
+    // wasn't given on command line, then #include <new> and check ABI
+    if (!isChildInterpreter && m_CI->getLangOpts().CPlusPlus &&
+        !m_Interpreter->getOptions().NoRuntime) {
       // <new> is needed by the ValuePrinter so it's a good thing to include it.
       // We need to include it to determine the version number of the standard
       // library implementation.
@@ -365,16 +366,18 @@ namespace cling {
 
     T->setState(Transaction::kCompleted);
 
-    DiagnosticsEngine& Diags = getCI()->getSema().getDiagnostics();
+    DiagnosticsEngine& Diag = getCI()->getSema().getDiagnostics();
 
     //TODO: Make the enum orable.
     EParseResult ParseResult = kSuccess;
 
-    if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred()
-        || T->getIssuedDiags() == Transaction::kErrors) {
+    assert((Diag.hasFatalErrorOccurred() ? Diag.hasErrorOccurred() : true)
+            && "Diag.hasFatalErrorOccurred without Diag.hasErrorOccurred !");
+
+    if (Diag.hasErrorOccurred() || T->getIssuedDiags() == Transaction::kErrors) {
       T->setIssuedDiags(Transaction::kErrors);
       ParseResult = kFailed;
-    } else if (Diags.getNumWarnings() > 0) {
+    } else if (Diag.getNumWarnings() > 0) {
       T->setIssuedDiags(Transaction::kWarnings);
       ParseResult = kSuccessWithWarnings;
     }
@@ -750,6 +753,7 @@ namespace cling {
 
     FilteringDiagConsumer::RAAI RAAITmp(*m_DiagConsumer, CO.IgnorePromptDiags);
 
+    DiagnosticErrorTrap Trap(Diags);
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
     Parser::DeclGroupPtrTy ADecl;
@@ -757,11 +761,14 @@ namespace cling {
       // If we got a null return and something *was* parsed, ignore it.  This
       // is due to a top-level semicolon, an action override, or a parse error
       // skipping something.
-      if (Diags.hasErrorOccurred() || Diags.hasFatalErrorOccurred())
+      if (Trap.hasErrorOccurred())
         m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
       if (ADecl)
         m_Consumer->HandleTopLevelDecl(ADecl.get());
     };
+    // If never entered the while block, there's a chance an error occured
+    if (Trap.hasErrorOccurred())
+      m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
 
     if (CO.CodeCompletionOffset != -1) {
       assert((int)SM.getFileOffset(PP.getCodeCompletionLoc())
@@ -821,7 +828,7 @@ namespace cling {
     std::vector<ASTTPtr_t> ASTTransformers;
     ASTTransformers.emplace_back(new AutoSynthesizer(TheSema));
     ASTTransformers.emplace_back(new EvaluateTSynthesizer(TheSema));
-    if (hasCodeGenerator()) {
+    if (hasCodeGenerator() && !m_Interpreter->getOptions().NoRuntime) {
        // Don't protect against crashes if we cannot run anything.
        // cling might also be in a PCH-generation mode; don't inject our Sema pointer
        // into the PCH.
@@ -830,9 +837,12 @@ namespace cling {
 
     typedef std::unique_ptr<WrapperTransformer> WTPtr_t;
     std::vector<WTPtr_t> WrapperTransformers;
-    WrapperTransformers.emplace_back(new ValuePrinterSynthesizer(TheSema));
+    if (!m_Interpreter->getOptions().NoRuntime)
+      WrapperTransformers.emplace_back(new ValuePrinterSynthesizer(TheSema));
     WrapperTransformers.emplace_back(new DeclExtractor(TheSema));
-    WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema, isChildInterpreter));
+    if (!m_Interpreter->getOptions().NoRuntime)
+      WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema,
+                                                           isChildInterpreter));
     WrapperTransformers.emplace_back(new CheckEmptyTransactionTransformer(TheSema));
 
     m_Consumer->SetTransformers(std::move(ASTTransformers),

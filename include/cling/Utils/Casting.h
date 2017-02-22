@@ -17,7 +17,7 @@ namespace cling {
 
     ///\brief Legally cast a pointer to a function to void*.
     ///
-    /// \param [in] The function to cast
+    /// \param [in] funptr - The function to cast
     ///
     /// \return A void* of the functions address.
     ///
@@ -30,7 +30,7 @@ namespace cling {
 
     ///\brief Legally cast a uintptr_t to a function.
     ///
-    /// \param [in] The uintptr_t to cast
+    /// \param [in] ptr - The uintptr_t to cast
     ///
     /// \return The function's address.
     ///
@@ -43,7 +43,7 @@ namespace cling {
 
     ///\brief Legally cast a void* to a function.
     ///
-    /// \param [in] The void* to cast
+    /// \param [in] ptr - The void* to cast
     ///
     /// \return The function's address.
     ///

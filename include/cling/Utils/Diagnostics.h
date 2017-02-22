@@ -30,7 +30,7 @@ namespace utils {
       ///\param[in] Replace - The DiagnosticConsumer to set as the new client
       ///\param[in] Own - Whether the DiagnosticsEngine owns that client
       ///
-      ReplaceDiagnostics(clang::DiagnosticsEngine& D,
+      ReplaceDiagnostics(clang::DiagnosticsEngine& Diags,
                          clang::DiagnosticConsumer& Replace, bool Own);
 
       ///\brief Temporarily restore the prior DiagnosticConsumer

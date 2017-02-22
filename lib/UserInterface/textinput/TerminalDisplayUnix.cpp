@@ -124,7 +124,7 @@ namespace textinput {
     }
   }
 
-// Don't rely on flushing here.
+// Don't rely on flushing here. REALLY, try to fix it elsewhere!
 #define SYNC_OUT(fd) /*if (fd==STDOUT_FILENO) { ::fflush(stdout); } }*/
 
   TerminalDisplayUnix::~TerminalDisplayUnix() {

@@ -154,7 +154,6 @@ namespace cling {
     return m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
   }
 
-
   bool Interpreter::isInSyntaxOnlyMode() const {
     return getCI()->getFrontendOpts().ProgramAction
       == clang::frontend::ParseSyntaxOnly;
@@ -235,7 +234,7 @@ namespace cling {
     }
 
     llvm::SmallVector<llvm::StringRef, 6> Syms;
-    Initialize(noRuntime, isInSyntaxOnlyMode(), Syms);
+    Initialize(noRuntime || m_Opts.NoRuntime, isInSyntaxOnlyMode(), Syms);
 
     // Commit the transactions, now that gCling is set up. It is needed for
     // static initialization in these transactions through local_cxa_atexit().
@@ -314,13 +313,17 @@ namespace cling {
   }
 
   Interpreter::~Interpreter() {
-    if (m_Executor)
-      m_Executor->shuttingDown();
+    // Do this first so m_StoredStates will be ignored if Interpreter::unload
+    // is called later on.
     for (size_t i = 0, e = m_StoredStates.size(); i != e; ++i)
       delete m_StoredStates[i];
+    m_StoredStates.clear();
+
+    if (m_Executor)
+      m_Executor->shuttingDown();
 
     if (CompilerInstance* CI = getCIOrNull())
-      getCI()->getDiagnostics().getClient()->EndSourceFile();
+      CI->getDiagnostics().getClient()->EndSourceFile();
 
     // LookupHelper's ~Parser needs the PP from IncrParser's CI, so do this
     // first:
@@ -495,23 +498,19 @@ namespace cling {
     m_StoredStates.push_back(state);
   }
 
-  void Interpreter::compareInterpreterState(const std::string& name) const {
-    short foundAtPos = -1;
-    for (short i = 0, e = m_StoredStates.size(); i != e; ++i) {
-      if (m_StoredStates[i]->getName() == name) {
-        foundAtPos = i;
-        break;
-      }
-    }
-    if (foundAtPos < 0) {
-      cling::errs() << "The store point name " << name << " does not exist."
-      "Unbalanced store / compare\n";
+  void Interpreter::compareInterpreterState(const std::string &Name) const {
+    const auto Itr = std::find_if(
+        m_StoredStates.begin(), m_StoredStates.end(),
+        [&Name](const ClangInternalState *S) { return S->getName() == Name; });
+    if (Itr == m_StoredStates.end()) {
+      cling::errs() << "The store point name " << Name
+                    << " does not exist."
+                       "Unbalanced store / compare\n";
       return;
     }
-
     // This may induce deserialization
     PushTransactionRAII RAII(this);
-    m_StoredStates[foundAtPos]->compare(name, m_Opts.Verbose());
+    (*Itr)->compare(Name, m_Opts.Verbose());
   }
 
   void Interpreter::printIncludedFiles(llvm::raw_ostream& Out) const {
@@ -535,6 +534,10 @@ namespace cling {
 
   Sema& Interpreter::getSema() const {
     return getCI()->getSema();
+  }
+
+  DiagnosticsEngine& Interpreter::getDiagnostics() const {
+    return getCI()->getDiagnostics();
   }
 
   ///\brief Maybe transform the input line to implement cint command line
@@ -649,7 +652,7 @@ namespace cling {
     // being loaded ... we probably might as well extend this to
     // ALL warnings ... but this will suffice for now (working
     // around a real bug in QT :().
-    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    DiagnosticsEngine& Diag = getDiagnostics();
     Diag.setSeverity(clang::diag::warn_field_is_uninit,
                      clang::diag::Severity::Ignored, SourceLocation());
     CompilationResult Result = DeclareInternal(input, CO);
@@ -802,14 +805,46 @@ namespace cling {
     return Interpreter::kFailure;
   }
 
+  static void makeUniqueName(llvm::raw_ostream &Strm, unsigned long long ID) {
+    Strm << utils::Synthesize::UniquePrefix << ID;
+  }
+
+  static std::string makeUniqueWrapper(unsigned long long ID) {
+    cling::ostrstream Strm;
+    Strm << "void ";
+    makeUniqueName(Strm, ID);
+    Strm << "(void* vpClingValue) {\n ";
+    return Strm.str();
+  }
+
+  void Interpreter::createUniqueName(std::string &Out) {
+    llvm::raw_string_ostream Strm(Out);
+    makeUniqueName(Strm, m_UniqueCounter++);
+  }
+
+  bool Interpreter::isUniqueName(llvm::StringRef name) {
+    return name.startswith(utils::Synthesize::UniquePrefix);
+  }
+
+  clang::SourceLocation Interpreter::getSourceLocation(bool skipWrapper) const {
+    const Transaction* T = getLatestTransaction();
+    if (!T)
+      return SourceLocation();
+
+    const SourceManager &SM = getCI()->getSourceManager();
+    if (skipWrapper) {
+      return T->getSourceStart(SM).getLocWithOffset(
+          makeUniqueWrapper(m_UniqueCounter).size());
+    }
+    return T->getSourceStart(SM);
+  }
+
   const std::string& Interpreter::WrapInput(const std::string& Input,
                                             std::string& Output,
                                             size_t& WrapPoint) const {
     // If wrapPoint is > length of input, nothing is wrapped!
     if (WrapPoint < Input.size()) {
-      std::string Header("void ");
-      Header.append(createUniqueWrapper());
-      Header.append("(void* vpClingValue) {\n ");
+      const std::string Header = makeUniqueWrapper(m_UniqueCounter++);
 
       // Suppport Input and Output begin the same string
       std::string Wrapper = Input.substr(WrapPoint);
@@ -827,7 +862,7 @@ namespace cling {
 
   Interpreter::ExecutionResult
   Interpreter::RunFunction(const FunctionDecl* FD, Value* res /*=0*/) {
-    if (getCI()->getDiagnostics().hasErrorOccurred())
+    if (getDiagnostics().hasErrorOccurred())
       return kExeCompilationError;
 
     if (isInSyntaxOnlyMode()) {
@@ -927,7 +962,7 @@ namespace cling {
     return 0;
     }
     */
-    DiagnosticsEngine& Diag = getCI()->getDiagnostics();
+    DiagnosticsEngine& Diag = getDiagnostics();
     Diag.setSeverity(clang::diag::ext_nested_name_member_ref_lookup_ambiguous,
                      clang::diag::Severity::Ignored, SourceLocation());
 
@@ -1013,25 +1048,6 @@ namespace cling {
     addr = compileFunction(funcname.str(), code.str(), false /*ifUniq*/,
                            false /*withAccessControl*/);
     return addr;
-  }
-
-  void Interpreter::createUniqueName(std::string& out) {
-    llvm::raw_string_ostream(out)
-      << utils::Synthesize::UniquePrefix << m_UniqueCounter++;
-  }
-
-  bool Interpreter::isUniqueName(llvm::StringRef name) {
-    return name.startswith(utils::Synthesize::UniquePrefix);
-  }
-
-  llvm::StringRef Interpreter::createUniqueWrapper() const {
-    smallstream Stream;
-    Stream << utils::Synthesize::UniquePrefix << m_UniqueCounter++;
-    return (getCI()->getASTContext().Idents.getOwn(Stream.str())).getName();
-  }
-
-  bool Interpreter::isUniqueWrapper(llvm::StringRef name) {
-    return name.startswith(utils::Synthesize::UniquePrefix);
   }
 
   Interpreter::CompilationResult
@@ -1177,6 +1193,27 @@ namespace cling {
   }
 
   void Interpreter::unload(Transaction& T) {
+    // Clear any stored states that reference the llvm::Module.
+    // Do it first in case
+    if (!m_StoredStates.empty()) {
+      const llvm::Module *const Module = T.getModule();
+      const auto Predicate = [&Module](const ClangInternalState *S) {
+        return S->getModule() == Module;
+      };
+      auto Itr =
+          std::find_if(m_StoredStates.begin(), m_StoredStates.end(), Predicate);
+      while (Itr != m_StoredStates.end()) {
+        if (m_Opts.Verbose()) {
+          cling::errs() << "Unloading Transaction forced state '"
+                        << (*Itr)->getName() << "' to be destroyed\n";
+        }
+        m_StoredStates.erase(Itr);
+
+        Itr = std::find_if(m_StoredStates.begin(), m_StoredStates.end(),
+                           Predicate);
+      }
+    }
+
     if (InterpreterCallbacks* callbacks = getCallbacks())
       callbacks->TransactionUnloaded(T);
     if (m_Executor) { // we also might be in fsyntax-only mode.
@@ -1214,17 +1251,20 @@ namespace cling {
   }
 
   void Interpreter::unload(unsigned numberOfTransactions) {
-    while(true) {
+    const Transaction *First = m_IncrParser->getFirstTransaction();
+    if (!First) {
+      cling::errs() << "cling: No transactions to unload!";
+      return;
+    }
+    for (unsigned i = 0; i < numberOfTransactions; ++i) {
       cling::Transaction* T = m_IncrParser->getLastTransaction();
-      if (!T) {
-        cling::errs() << "cling: invalid last transaction; unload failed!\n";
+      if (T == First) {
+        cling::errs() << "cling: Can't unload first transaction!  Unloaded "
+                      << i << " of " << numberOfTransactions << "\n";
         return;
       }
       unload(*T);
-      if (!--numberOfTransactions)
-        break;
     }
-
   }
 
   static void runAndRemoveStaticDestructorsImpl(IncrementalExecutor &executor,
@@ -1308,6 +1348,11 @@ namespace cling {
     return m_IncrParser->getCurrentTransaction();
   }
 
+  const Transaction* Interpreter::getLatestTransaction() const {
+    if (const Transaction* T = m_IncrParser->getCurrentTransaction())
+      return T;
+    return m_IncrParser->getLastTransaction();
+  }
 
   void Interpreter::enableDynamicLookup(bool value /*=true*/) {
     if (!m_DynamicLookupDeclared && value) {
@@ -1371,15 +1416,7 @@ namespace cling {
   }
 
   void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {
-    const Transaction* T = getCurrentTransaction();
-    // Should this be ROOT only?
-    if (!T) {
-      // IncrementalParser::commitTransaction will call
-      // Interpreter::executeTransaction if transaction has no parent.
-      T = getLastTransaction();
-    }
-    assert(T && "No Transaction for Interpreter::AddAtExitFunc");
-    m_Executor->AddAtExitFunc(Func, Arg, T->getModule());
+    m_Executor->AddAtExitFunc(Func, Arg, getLatestTransaction()->getModule());
   }
 
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,

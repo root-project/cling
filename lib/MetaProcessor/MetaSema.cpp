@@ -131,7 +131,7 @@ namespace cling {
 
       if (expression.empty()) {
         using namespace clang;
-        DiagnosticsEngine& Diags = m_Interpreter.getCI()->getDiagnostics();
+        DiagnosticsEngine& Diags = m_Interpreter.getDiagnostics();
         unsigned diagID
           = Diags.getCustomDiagID (DiagnosticsEngine::Level::Warning,
                                    "cannot find function '%0()'; falling back to .L");

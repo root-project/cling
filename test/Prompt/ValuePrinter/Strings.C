@@ -6,16 +6,18 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-//RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
+// Windows wants -Wno-deprecated-declarations
+//RUN: cat %s | %cling -Wno-deprecated-declarations -Xclang -verify 2>&1 | FileCheck %s
 
 #include <stdlib.h>
 #ifdef _WIN32
  extern "C" int SetConsoleOutputCP(unsigned int);
+ extern "C" int strcmp(const char*, const char*);
 #endif
 
 static void setLang(const char* Lang) {
 #ifdef _WIN32
-  ::SetConsoleOutputCP(strcmp("en_US.UTF-8")==0 ? 65001 : 20127);
+  ::SetConsoleOutputCP(strcmp(Lang, "en_US.UTF-8")==0 ? 65001 : 20127);
 #else
   ::setenv("LANG", Lang, 1);
 #endif
@@ -120,6 +122,9 @@ std::u16string(u"UTF-16 " u"\x394" u"\x3a6" u"\x3a9")
 std::u32string(U"UTF-32 " U"\x262D" U"\x2615" U"\x265F")
 // CHECK-NEXT: (std::u32string) U"UTF-32 ☭☕♟"
 
+std::u32string(U"UTF-32 " U"\u2616\u2615\u2614")
+// CHECK-NEXT: (std::u32string) U"UTF-32 ☖☕☔"
+
 std::wstring(L"wide")
 // CHECK-NEXT: (std::wstring) L"wide"
 
@@ -156,6 +161,9 @@ u"UTF-16 " u"\x394" u"\x3a6" u"\x3a9"
 
 U"UTF-32\x262D\x2615\x265F"
 // CHECK-NEXT: (const char32_t [10]) U"UTF-32\u262d\u2615\u265f"
+
+U"UTF-32\x2616\x2615\x2614"
+// CHECK-NEXT: (const char32_t [10]) U"UTF-32\u2616\u2615\u2614"
 
 "\u20ac"
 // CHECk-NEXT: (const char [4]) "\xe2\x82\xac"

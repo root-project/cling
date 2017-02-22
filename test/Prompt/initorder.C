@@ -26,8 +26,8 @@ public:
    int get() { return *I; }
    ~RAII() { delete I; printf("~RAII%d\n", InstanceCount--); }
 private:
-   RAII(RAII&) {throw;};
-   RAII& operator=(RAII) {throw;}
+   RAII(RAII&);
+   RAII& operator=(RAII);
    int* I;
    static int InstanceCount; // will notice object copy
 };

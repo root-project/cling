@@ -48,6 +48,9 @@ matrix:
     - os: linux
 
   include:
+    # There seems to be a hard limit to how many machines a Travis build will
+    # across all platforms. By interleaving OS X, the hope is to get in the
+    # queue faster while not blocking Linux builds from occuring.
     - os: linux
       env: DIST=pangolin COMPILER=g++-4.7 CCOMPILER=gcc-4.7 NIGHTLY_CRON_SYNC=1
       addons:
@@ -64,6 +67,11 @@ matrix:
           packages: g++-4.8
       compiler: gcc-4.8
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode6.4
+      compiler: clang
+
     - os: linux
       env: DIST=pangolin COMPILER=g++-4.9 CCOMPILER=gcc-4.9
       addons:
@@ -79,6 +87,11 @@ matrix:
           sources: *sources
           packages: g++-5
       compiler: gcc-5
+
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode7
+      compiler: clang
 
     - os: linux
       env: DIST=pangolin COMPILER=g++-6 CCOMPILER=gcc-6
@@ -97,6 +110,11 @@ matrix:
           sources: *sources
           packages: g++-4.7
       compiler: gcc-4.7
+
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode7.1
+      compiler: clang
 
     - os: linux
       env: DIST=trusty COMPILER=g++-4.8 CCOMPILER=gcc-4.8
@@ -118,6 +136,11 @@ matrix:
           packages: g++-4.9
       compiler: gcc-4.9
 
+    - os: osx
+      env: COMPILER=g++-6 CCOMPILER=gcc-6
+      osx_image: xcode7.2
+      compiler: g++-6
+
     - os: linux
       env: DIST=trusty COMPILER=g++-5 CCOMPILER=gcc-5
       sudo: required
@@ -138,6 +161,11 @@ matrix:
           packages: g++-6
       compiler: gcc-6
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode7.3
+      compiler: clang
+
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-3.7 CCOMPILER=clang-3.7
       addons:
@@ -153,31 +181,6 @@ matrix:
           sources: *sources
           packages: ['clang-3.8', 'libstdc++-6-dev']
       compiler: clang-3.8
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode6.4
-      compiler: clang
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7
-      compiler: clang
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7.1
-      compiler: clang
-
-    - os: osx
-      env: COMPILER=g++-6 CCOMPILER=gcc-6
-      osx_image: xcode7.2
-      compiler: g++-6
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7.3
-      compiler: clang
 
     - os: osx
       env: COMPILER=clang++ CCOMPILER=clang
@@ -248,17 +251,6 @@ before_script:
 
 script:
 - |
-  function run_ccache() {
-    # Save our build result and propogate it to Travis
-    # When build succeeds, but ccache fails that should return an error
-    ccache -s
-    CCACHE_RSLT="$?"
-    if [ "$1" -eq 0 ]; then
-      return $CCACHE_RSLT
-    fi
-    return $1
-  }
-
   if [ -z $TRAVIS_TAG ]; then
     timeout -s SIGTERM $TIMEOUT tools/packaging/cpt.py \
       --current-dev=tar \
@@ -273,14 +265,18 @@ script:
       --with-clang-url=http://root.cern.ch/git/clang.git \
       --with-llvm-url=http://root.cern.ch/git/llvm.git
   fi
+
   RESULT="$?"
-  echo "RESULT: $RESULT"
-  if [ $RESULT -eq 124 ]; then
-    # Timout occured, pass that on to after_failure so as not to dump logs
-    export CLING_BUILD_TIMEOUT=1
+  echo "Build Result: $RESULT"
+  ccache -s
+  if [ $RESULT -ne 124 ]; then
+    return $RESULT
   fi
 
-  run_ccache "$RESULT"
+  # Timout occured, pass that on to after_failure so as not to dump logs
+  export CLING_BUILD_TIMEOUT=1
+  TRAVIS_TEST_RESULT=124
+  return $TRAVIS_TEST_RESULT
 
 notifications:
   email:
