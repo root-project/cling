@@ -57,22 +57,9 @@ using namespace clang;
 
 namespace {
 
-  static const Token* getMacroToken(const Preprocessor& PP, const char* Macro) {
-    if (const IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
-      if (const DefMacroDirective* MD = llvm::dyn_cast_or_null
-          <DefMacroDirective>(PP.getLocalMacroDirective(II))) {
-        if (const clang::MacroInfo* MI = MD->getMacroInfo()) {
-          if (MI->getNumTokens() == 1)
-            return MI->tokens_begin();
-        }
-      }
-    }
-    return nullptr;
-  }
-
   ///\brief Check the compile-time C++ ABI version vs the run-time ABI version,
   /// a mismatch could cause havoc. Reports if ABI versions differ.
-  static bool CheckABICompatibility(clang::CompilerInstance* CI) {
+  static bool CheckABICompatibility(cling::Interpreter& Interp) {
 #if defined(__GLIBCXX__)
     #define CLING_CXXABI_VERS       std::to_string(__GLIBCXX__)
     const char* CLING_CXXABI_NAME = "__GLIBCXX__";
@@ -87,16 +74,18 @@ namespace {
 #endif
 
     llvm::StringRef CurABI;
-    const clang::Preprocessor& PP = CI->getPreprocessor();
-    const clang::Token* Tok = getMacroToken(PP, CLING_CXXABI_NAME);
-    if (Tok && Tok->isLiteral()) {
-      // Tok::getLiteralData can fail even if Tok::isLiteral is true!
-      SmallString<64> Buffer;
-      CurABI = PP.getSpelling(*Tok, Buffer);
-      // Strip any quotation marks.
-      CurABI = CurABI.trim("\"");
-      if (CurABI.equals(CLING_CXXABI_VERS))
-        return true;
+    if (const clang::MacroInfo* MI = Interp.getMacro(CLING_CXXABI_NAME)) {
+      const clang::Token* Tok = MI->getNumTokens() == 1 ?
+                                                   MI->tokens_begin() : nullptr;
+      if (Tok && Tok->isLiteral()) {
+        // Tok::getLiteralData can fail even if Tok::isLiteral is true!
+        SmallString<64> Buffer;
+        CurABI = Interp.getCI()->getPreprocessor().getSpelling(*Tok, Buffer);
+        // Strip any quotation marks.
+        CurABI = CurABI.trim("\"");
+        if (CurABI.equals(CLING_CXXABI_VERS))
+          return true;
+      }
     }
 
     cling::errs() <<
@@ -284,7 +273,7 @@ namespace cling {
       // library implementation.
       ParseInternal("#include <new>");
       // That's really C++ ABI compatibility. C has other problems ;-)
-      CheckABICompatibility(m_CI.get());
+      CheckABICompatibility(*m_Interpreter);
     }
 
     // DO NOT commit the transactions here: static initialization in these
