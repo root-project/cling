@@ -29,13 +29,13 @@ const int argc = sizeof(argv)/sizeof(argv[0]);
 cling::CompilerOptions COpts(argc, argv);
 
 COpts.Language
-// CHECK: (bool) true
+// CHECK: (unsigned int) 1
 COpts.SysRoot
-// CHECK-NEXT: (bool) true
+// CHECK-NEXT: (unsigned int) 1
 COpts.NoBuiltinInc
-// CHECK-NEXT: (bool) true
+// CHECK-NEXT: (unsigned int) 1
 COpts.NoCXXInc
-// CHECK-NEXT: (bool) false
+// CHECK-NEXT: (unsigned int) 0
 
 // library caller options: arguments passed as is
 COpts.Remaining
@@ -53,13 +53,13 @@ IOpts.LibsToLoad
 // CHECK-NEXT: {{.*}} { "Test" }
 
 IOpts.CompilerOpts.Language
-// CHECK-NEXT: (bool) true
+// CHECK-NEXT: (unsigned int) 1
 IOpts.CompilerOpts.SysRoot
-// CHECK-NEXT: (bool) true
+// CHECK-NEXT: (unsigned int) 1
 IOpts.CompilerOpts.NoBuiltinInc
-// CHECK-NEXT: (bool) false
+// CHECK-NEXT: (unsigned int) 0
 IOpts.CompilerOpts.NoCXXInc
-// CHECK-NEXT: (bool) true
+// CHECK-NEXT: (unsigned int) 1
 
 // user options from main: filtered by cling (no '-')
 IOpts.CompilerOpts.Remaining

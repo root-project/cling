@@ -36,15 +36,15 @@ namespace cling {
     void Parse(int argc, const char* const argv[],
                std::vector<std::string>* Inputs = nullptr);
 
-    bool Language;
-    bool ResourceDir;
-    bool SysRoot;
-    bool NoBuiltinInc;
-    bool NoCXXInc;
-    bool StdVersion;
-    bool StdLib;
-    bool HasOutput;
-    bool Verbose;
+    unsigned Language : 1;
+    unsigned ResourceDir : 1;
+    unsigned SysRoot : 1;
+    unsigned NoBuiltinInc : 1;
+    unsigned NoCXXInc : 1;
+    unsigned StdVersion : 1;
+    unsigned StdLib : 1;
+    unsigned HasOutput : 1;
+    unsigned Verbose : 1;
 
     ///\brief The remaining arguments to pass to clang.
     ///
@@ -64,11 +64,11 @@ namespace cling {
     std::vector<std::string> Inputs;
     CompilerOptions CompilerOpts;
 
-    bool ErrorOut;
-    bool NoLogo;
-    bool ShowVersion;
-    bool Help;
-    bool NoRuntime;
+    unsigned ErrorOut : 1;
+    unsigned NoLogo : 1;
+    unsigned ShowVersion : 1;
+    unsigned Help : 1;
+    unsigned NoRuntime : 1;
     bool Verbose() const { return CompilerOpts.Verbose; }
 
     static void PrintHelp();
