@@ -38,6 +38,7 @@ namespace clang {
   class DiagnosticsEngine;
   class FunctionDecl;
   class GlobalDecl;
+  class MacroInfo;
   class NamedDecl;
   class Parser;
   class Preprocessor;
@@ -713,6 +714,14 @@ namespace cling {
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
     void* getAddressOfGlobal(llvm::StringRef SymName, bool* fromJIT = 0) const;
+
+    ///\brief Get a given macro definition by name.
+    ///
+    ///\param[in]  Name - the name of the macro to look for
+    ///
+    ///\returns the MacroInfo if the macro was defined, otherwise null
+    ///
+    const clang::MacroInfo* getMacro(llvm::StringRef Name) const;
 
     ///\brief Add an atexit function.
     ///

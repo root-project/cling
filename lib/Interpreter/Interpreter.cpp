@@ -549,6 +549,17 @@ namespace cling {
     return getCI()->getDiagnostics();
   }
 
+  const MacroInfo* Interpreter::getMacro(llvm::StringRef Macro) const {
+    const clang::Preprocessor& PP = getCI()->getPreprocessor();
+    if (const IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
+      if (const DefMacroDirective* MD = llvm::dyn_cast_or_null
+          <DefMacroDirective>(PP.getLocalMacroDirective(II))) {
+          return MD->getMacroInfo();
+      }
+    }
+    return nullptr;
+  }
+
   ///\brief Maybe transform the input line to implement cint command line
   /// semantics (declarations are global) and compile to produce a module.
   ///
