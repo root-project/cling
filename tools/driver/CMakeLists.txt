@@ -92,7 +92,7 @@ if(MSVC)
     ?classof@DeclContext@clang@@SA_NPEBVDecl@2@@Z
   )
 
-  if (CMAKE_BUILD_TYPE MATCHES Debug)
+  if ($<CONFIG:Debug>)
     set(cling_exports ${cling_exports}
       ??$dyn_cast@VValueDecl@clang@@$$CBVDecl@2@@llvm@@YAPEBVValueDecl@clang@@PEBVDecl@2@@Z
     )
