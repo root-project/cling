@@ -73,20 +73,9 @@ namespace {
     #error "Unknown platform for ABI check";
 #endif
 
-    llvm::StringRef CurABI;
-    if (const clang::MacroInfo* MI = Interp.getMacro(CLING_CXXABI_NAME)) {
-      const clang::Token* Tok = MI->getNumTokens() == 1 ?
-                                                   MI->tokens_begin() : nullptr;
-      if (Tok && Tok->isLiteral()) {
-        // Tok::getLiteralData can fail even if Tok::isLiteral is true!
-        SmallString<64> Buffer;
-        CurABI = Interp.getCI()->getPreprocessor().getSpelling(*Tok, Buffer);
-        // Strip any quotation marks.
-        CurABI = CurABI.trim("\"");
-        if (CurABI.equals(CLING_CXXABI_VERS))
-          return true;
-      }
-    }
+    const std::string CurABI = Interp.getMacroValue(CLING_CXXABI_NAME);
+    if (CurABI == CLING_CXXABI_VERS)
+      return true;
 
     cling::errs() <<
       "Warning in cling::IncrementalParser::CheckABICompatibility():\n"

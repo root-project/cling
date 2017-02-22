@@ -723,6 +723,16 @@ namespace cling {
     ///
     const clang::MacroInfo* getMacro(llvm::StringRef Name) const;
 
+    ///\brief Get a given macro value by name.
+    ///
+    ///\param[in]  Name - the name of the macro to look for
+    ///\param[out] Strip - characters to remove from the value.
+    ///
+    ///\returns the macro's value if the macro was defined, otherwise empty
+    ///
+    std::string getMacroValue(llvm::StringRef Name,
+                              const char* Strip = "\"") const;
+
     ///\brief Add an atexit function.
     ///
     ///\param[in] Func - Function to be called.

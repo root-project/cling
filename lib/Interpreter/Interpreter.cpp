@@ -560,6 +560,21 @@ namespace cling {
     return nullptr;
   }
 
+  std::string Interpreter::getMacroValue(llvm::StringRef Macro,
+                                         const char* Trim) const {
+    std::string Value;
+    if (const MacroInfo* MI = getMacro(Macro)) {
+      for (const clang::Token& Tok : MI->tokens()) {
+        llvm::SmallString<64> Buffer;
+        Macro = getCI()->getPreprocessor().getSpelling(Tok, Buffer);
+        if (!Value.empty())
+          Value += " ";
+        Value += Trim ? Macro.trim(Trim).str() : Macro.str();
+      }
+    }
+    return Value;
+  }
+  
   ///\brief Maybe transform the input line to implement cint command line
   /// semantics (declarations are global) and compile to produce a module.
   ///
