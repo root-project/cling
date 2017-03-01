@@ -70,7 +70,7 @@ class Azog: public RTDyldMemoryManager {
                   uintptr_t Size, uint32_t Align,
                   bool code, bool isReadOnly) {
 
-      uintptr_t RequiredSize = 2*Size; // Space for internal alignment.
+      uintptr_t RequiredSize = Size;
       if (code)
         m_Start = exeMM->allocateCodeSection(RequiredSize, Align,
                                              0 /* SectionID */,
@@ -95,11 +95,17 @@ class Azog: public RTDyldMemoryManager {
 
       uintptr_t RequiredSize = Alignment * ((Size + Alignment - 1)/Alignment + 1);
       if ( (m_Current + RequiredSize) > m_End ) {
-        cling::errs() << "Error in block allocation by Azog. "
-           << "Not enough memory was reserved for the current module. "
-           << Size << " (round to " << RequiredSize << " ) was need but\n"
-           << "We only have " << (m_End - m_Current) << ".\n";
-        return nullptr;
+        // This must be the last block.
+        if ((m_Current + Size) <= m_End) {
+          RequiredSize = Size;
+        } else {
+          cling::errs() << "Error in block allocation by Azog. "
+                        << "Not enough memory was reserved for the current module. "
+                        << Size << " (with alignment: " << RequiredSize
+                        << " ) is needed but\n"
+                        << "we only have " << (m_End - m_Current) << ".\n";
+          return nullptr;
+        }
       }
 
       uintptr_t Addr = (uintptr_t)m_Current;
