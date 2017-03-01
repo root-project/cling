@@ -742,7 +742,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return nullptr;
     }
 
-    clang::driver::Driver Drvr(argv[0], llvm::sys::getProcessTriple(), *Diags);
+    llvm::Triple TheTriple(llvm::sys::getProcessTriple());
+#ifdef LLVM_ON_WIN32
+    // COFF format currently needs a few changes in LLVM to function properly.
+    TheTriple.setObjectFormat(llvm::Triple::ELF);
+#endif
+    clang::driver::Driver Drvr(argv[0], TheTriple.getTriple(), *Diags);
     //Drvr.setWarnMissingInput(false);
     Drvr.setCheckInputsExist(false); // think foo.C(12)
     llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());
