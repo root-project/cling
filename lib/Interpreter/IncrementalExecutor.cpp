@@ -39,18 +39,15 @@ namespace cling {
 namespace {
 
 static std::unique_ptr<TargetMachine>
-CreateHostTargetMachine(const clang::CodeGenOptions& CGOpt, unsigned Fmt = 0) {
-  Triple TheTriple(sys::getProcessTriple());
+CreateHostTargetMachine(const clang::CompilerInstance& CI, unsigned Fmt = 0) {
+  const clang::TargetOptions& TargetOpts = CI.getTargetOpts();
+  const clang::CodeGenOptions& CGOpt = CI.getCodeGenOpts();
+  Triple TheTriple(TargetOpts.Triple);
   if (Fmt) {
     assert(Fmt > llvm::Triple::UnknownObjectFormat &&
            Fmt <= llvm::Triple::MachO && "Invalid Format");
     TheTriple.setObjectFormat(static_cast<llvm::Triple::ObjectFormatType>(Fmt));
   }
-#ifdef LLVM_ON_WIN32
-  // COFF format currently needs a few changes in LLVM to function properly.
-  else
-    TheTriple.setObjectFormat(llvm::Triple::ELF);
-#endif
 
   std::string Error;
   const Target *TheTarget
@@ -108,7 +105,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
   m_AtExitFuncs.reserve(256);
 
   std::unique_ptr<TargetMachine>
-    TM(CreateHostTargetMachine(CI.getCodeGenOpts()));
+    TM(CreateHostTargetMachine(CI));
   m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
                                           CI.getTargetOpts(),
                                           CI.getLangOpts(),
