@@ -364,16 +364,20 @@ namespace {
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 0;
     }
-#endif
-    Opts.Trigraphs = 0;
-    Opts.RTTIData = 0;
-    Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
+#endif // _HAS_EXCEPTIONS
 #ifdef _DEBUG
     // FIXME: This requires bufferoverflowu.lib, but adding:
     // #pragma comment(lib, "bufferoverflowu.lib") still gives errors!
     // Opts.setStackProtector(clang::LangOptions::SSPStrong);
-#endif
+#endif // _DEBUG
+#ifdef _CPPRTTI
+    Opts.RTTIData = 1;
 #else
+    Opts.RTTIData = 0;
+#endif // _CPPRTTI
+    Opts.Trigraphs = 0;
+    Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
+#else // !_MSC_VER
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 1;
@@ -383,6 +387,7 @@ namespace {
 //    Opts.DefaultCallingConventions = 1;
 //    Opts.StackProtector = 0;
 #endif // _MSC_VER
+
     Opts.Deprecated = 1;
     //Opts.Modules = 1;
 
