@@ -127,6 +127,23 @@ class Azog: public RTDyldMemoryManager {
   AllocInfo m_ROData;
   AllocInfo m_RWData;
 
+#ifdef LLVM_ON_WIN32
+  uintptr_t getBaseAddr() const {
+    if (LLVM_LIKELY(m_Code.m_Start && m_ROData.m_Start && m_RWData.m_Start)) {
+      return uintptr_t(std::min(std::min(m_Code.m_Start, m_ROData.m_Start),
+                                m_RWData.m_Start));
+    }
+    if (LLVM_LIKELY(m_Code.m_Start)) {
+      return uintptr_t(m_ROData.m_Start
+                           ? std::min(m_Code.m_Start, m_ROData.m_Start)
+                           : std::min(m_Code.m_Start, m_RWData.m_Start));
+    }
+    return uintptr_t(m_ROData.m_Start && m_RWData.m_Start
+                         ? std::min(m_ROData.m_Start, m_RWData.m_Start)
+                         : std::max(m_ROData.m_Start, m_RWData.m_Start));
+  }
+#endif
+
 public:
   Azog(cling::IncrementalJIT& Jit): m_jit(Jit) {}
 
@@ -183,12 +200,20 @@ public:
 
   void registerEHFrames(uint8_t *Addr, uint64_t LoadAddr,
                         size_t Size) override {
+#ifdef LLVM_ON_WIN32
+    platform::RegisterEHFrames(Addr, Size, getBaseAddr(), true);
+#else
     return getExeMM()->registerEHFrames(Addr, LoadAddr, Size);
+#endif
   }
 
   void deregisterEHFrames(uint8_t *Addr, uint64_t LoadAddr,
                           size_t Size) override {
+#ifdef LLVM_ON_WIN32
+    platform::DeRegisterEHFrames(Addr, Size);
+#else
     return getExeMM()->deregisterEHFrames(Addr, LoadAddr, Size);
+#endif
   }
 
   uint64_t getSymbolAddress(const std::string &Name) override {

@@ -347,24 +347,6 @@ namespace {
   static void SetClingCustomLangOpts(LangOptions& Opts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
 #ifdef _MSC_VER
-#if 0 //_HAS_EXCEPTIONS
-// FIXME: Disable exceptions on Windows for the time being.
-// Enabling exceptions here makes 42 more tests failing.
-// For example, CodeGeneration\RecursiveInit.C raises a unhandled exception in
-// WinEHPrepare.cpp, at:
-//      if (UserI->isEHPad())
-//        report_fatal_error("Cleanup funclets for the MSVC++ personality cannot "
-//                           "contain exceptional actions");
-    Opts.Exceptions = 1;
-    if (Opts.CPlusPlus) {
-      Opts.CXXExceptions = 1;
-    }
-#else
-    Opts.Exceptions = 0;
-    if (Opts.CPlusPlus) {
-      Opts.CXXExceptions = 0;
-    }
-#endif // _HAS_EXCEPTIONS
 #ifdef _DEBUG
     // FIXME: This requires bufferoverflowu.lib, but adding:
     // #pragma comment(lib, "bufferoverflowu.lib") still gives errors!
@@ -378,15 +360,16 @@ namespace {
     Opts.Trigraphs = 0;
     Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
 #else // !_MSC_VER
-    Opts.Exceptions = 1;
-    if (Opts.CPlusPlus) {
-      Opts.CXXExceptions = 1;
-    }
     Opts.Trigraphs = 1;
 //    Opts.RTTIData = 1;
 //    Opts.DefaultCallingConventions = 1;
 //    Opts.StackProtector = 0;
 #endif // _MSC_VER
+
+    Opts.Exceptions = 1;
+    if (Opts.CPlusPlus) {
+      Opts.CXXExceptions = 1;
+    }
 
     Opts.Deprecated = 1;
     //Opts.Modules = 1;
