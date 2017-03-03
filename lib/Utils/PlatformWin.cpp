@@ -20,8 +20,10 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 
+#include <map>
 #include <sstream>
 #include <stdlib.h>
+#include <vector>
 
 #ifndef WIN32_LEAN_AND_MEAN
  #define WIN32_LEAN_AND_MEAN
@@ -698,6 +700,192 @@ std::string Demangle(const std::string& Symbol) {
   AutoFree af(__unDName(0, Symbol.c_str(), 0, ::malloc, ::free, 0));
   return af.Str ? std::string(af.Str) : std::string();
 }
+
+namespace windows {
+// Use less memory and store the function ranges to watch as a mapping
+// between of BaseAddr to Ranges watched.
+//
+typedef std::vector<std::pair<DWORD, DWORD>> ImageRanges;
+typedef std::map<uintptr_t, ImageRanges> ImageBaseMap;
+
+ImageBaseMap& getImageBaseMap() {
+  static ImageBaseMap sMap;
+  return sMap;
+}
+
+// Merge overlaping ranges
+static void MergeRanges(ImageRanges &Ranges) {
+  std::sort(Ranges.begin(), Ranges.end());
+
+  ImageRanges Merged;
+  ImageRanges::iterator It = Ranges.begin();
+  auto Current = *(It)++;
+  while (It != Ranges.end()) {
+    if (Current.second+1 < It->first) {
+      Merged.push_back(Current);
+      Current = *(It);
+    } else
+      Current.second = std::max(Current.second, It->second);
+    ++It;
+  }
+  Merged.emplace_back(Current);
+  Ranges.swap(Merged);
+}
+
+static uintptr_t FindEHFrame(uintptr_t Caller) {
+  ImageBaseMap& Unwind = getImageBaseMap();
+  for (auto&& Itr : Unwind) {
+    const uintptr_t CurAddr = Itr.first;
+    for (auto&& Rng : Itr.second) {
+      if (Caller >=(CurAddr + Rng.first) &&
+          Caller <= (CurAddr + Rng.second)) {
+        return CurAddr;
+      }
+    }
+  }
+  return 0;
+}
+
+void RegisterEHFrames(uint8_t* A, size_t Size, uintptr_t BaseAddr, bool Block) {
+  assert(getImageBaseMap().find(DWORD64(A)) == getImageBaseMap().end());
+
+  PRUNTIME_FUNCTION RFunc = reinterpret_cast<PRUNTIME_FUNCTION>(A);
+  const size_t N = Size / sizeof(RUNTIME_FUNCTION);
+  ImageBaseMap::mapped_type &Ranges = getImageBaseMap()[BaseAddr];
+  if (Block) {
+    // Merge all unwind adresses into a single contiguous block
+    Ranges.emplace_back(std::numeric_limits<DWORD>::max(),
+                        std::numeric_limits<DWORD>::min());
+    ImageRanges::value_type& Range = Ranges.front();
+    for (PRUNTIME_FUNCTION It = RFunc, End = RFunc +N; It < End; ++It) {
+      Range.first = std::min(Range.first, It->BeginAddress);
+      Range.second = std::max(Range.second, It->EndAddress);
+    }
+  } else {
+    for (PRUNTIME_FUNCTION It = RFunc, End = RFunc +N; It < End; ++It)
+      Ranges.emplace_back(It->BeginAddress, It->EndAddress);
+
+    // Initial sort and merge
+    MergeRanges(Ranges);
+  }
+
+  ::RtlAddFunctionTable(RFunc, N, BaseAddr);
+}
+
+void DeRegisterEHFrames(uint8_t* Addr, size_t Size) {
+  assert(getImageBaseMap().find(DWORD64(Addr)) != getImageBaseMap().end());
+
+  ImageBaseMap& Unwind = getImageBaseMap();
+  Unwind.erase(Unwind.find(DWORD64(Addr)));
+  ::RtlDeleteFunctionTable(reinterpret_cast<PRUNTIME_FUNCTION>(Addr));
+}
+
+// Adapted from VisualStudio/VC/crt/src/vcruntime/throw.cpp
+#ifdef _WIN64
+ #define _EH_RELATIVE_OFFSETS 1
+#endif
+// The NT Exception # that we use
+#define EH_EXCEPTION_NUMBER ('msc' | 0xE0000000)
+// The magic # identifying this version
+#define EH_MAGIC_NUMBER1 0x19930520
+#define EH_PURE_MAGIC_NUMBER1 0x01994000
+// Number of parameters in exception record
+#define EH_EXCEPTION_PARAMETERS 4
+
+// A generic exception record
+struct EHExceptionRecord {
+  DWORD ExceptionCode;
+  DWORD ExceptionFlags;     // Flags determined by NT
+  _EXCEPTION_RECORD* ExceptionRecord; // Extra exception record (unused)
+  void* ExceptionAddress;   // Address at which exception occurred
+  DWORD NumberParameters;   // No. of parameters = EH_EXCEPTION_PARAMETERS
+  struct EHParameters {
+    DWORD  magicNumber;           // = EH_MAGIC_NUMBER1
+    void *pExceptionObject;       // Pointer to the actual object thrown
+    struct ThrowInfo *pThrowInfo; // Description of thrown object
+#if _EH_RELATIVE_OFFSETS
+    DWORD64 pThrowImageBase;      // Image base of thrown object
+#endif
+  } params;
+};
+
+__declspec(noreturn) void
+__stdcall ClingRaiseSEHException(void* CxxExcept, void* Info) {
+
+  uintptr_t Caller;
+  static_assert(sizeof(Caller) == sizeof(PVOID), "Size mismatch");
+
+  USHORT Frames = CaptureStackBackTrace(1, 1,(PVOID*)&Caller, NULL);
+  assert(Frames && "No frames captured");
+
+  const DWORD64 BaseAddr = FindEHFrame(Caller);
+  if (BaseAddr == 0)
+    _CxxThrowException(CxxExcept, (_ThrowInfo*) Info);
+
+  // A generic exception record
+  EHExceptionRecord Exception = {
+    EH_EXCEPTION_NUMBER,      // Exception number
+    EXCEPTION_NONCONTINUABLE, // Exception flags (we don't do resume)
+    nullptr,                  // Additional record (none)
+    nullptr,                  // Address of exception (OS fills in)
+    EH_EXCEPTION_PARAMETERS,  // Number of parameters
+    {
+      EH_MAGIC_NUMBER1,
+      CxxExcept,
+      (struct ThrowInfo*)Info,
+#if _EH_RELATIVE_OFFSETS
+      BaseAddr
+#endif
+    }
+  };
+
+  // const ThrowInfo* pTI = (const ThrowInfo*)Info;
+
+#ifdef THROW_ISWINRT
+  if (pTI && (THROW_ISWINRT((*pTI)))) {
+    // The pointer to the ExceptionInfo structure is stored sizeof(void*)
+    // infront of each WinRT Exception Info.
+    ULONG_PTR* EPtr = *reinterpret_cast<ULONG_PTR**>(CxxExcept);
+    EPtr--;
+
+    WINRTEXCEPTIONINFO** ppWei = reinterpret_cast<WINRTEXCEPTIONINFO**>(EPtr);
+    pTI = (*ppWei)->throwInfo;
+    (*ppWei)->PrepareThrow(ppWei);
+  }
+#endif
+
+  // If the throw info indicates this throw is from a pure region,
+  // set the magic number to the Pure one, so only a pure-region
+  // catch will see it.
+  //
+  // Also use the Pure magic number on Win64 if we were unable to
+  // determine an image base, since that was the old way to determine
+  // a pure throw, before the TI_IsPure bit was added to the FuncInfo
+  // attributes field.
+  if (Info != nullptr) {
+#ifdef THROW_ISPURE
+    if (THROW_ISPURE(*pTI))
+      Exception.params.magicNumber = EH_PURE_MAGIC_NUMBER1;
+#if _EH_RELATIVE_OFFSETS
+    else
+#endif // _EH_RELATIVE_OFFSETS
+#endif // THROW_ISPURE
+
+#if 0 && _EH_RELATIVE_OFFSETS
+    if (Exception.params.pThrowImageBase == 0)
+      Exception.params.magicNumber = EH_PURE_MAGIC_NUMBER1;
+#endif // _EH_RELATIVE_OFFSETS
+  }
+
+// Hand it off to the OS:
+#if defined(_M_X64) && defined(_NTSUBSET_)
+  RtlRaiseException((PEXCEPTION_RECORD)&Exception);
+#else
+  RaiseException(Exception.ExceptionCode, Exception.ExceptionFlags,
+                 Exception.NumberParameters, (PULONG_PTR)&Exception.params);
+#endif
+}
+} // namespace windows
 
 } // namespace platform
 } // namespace utils

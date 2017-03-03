@@ -153,6 +153,15 @@ inline namespace windows {
                            std::string* UniversalSDK = nullptr,
                            bool Verbose = false);
 
+  ///\brief Runtime override for _CxxThrowException in Interpreter.
+  //
+  __declspec(noreturn) void __stdcall ClingRaiseSEHException(void*, void*);
+
+  void RegisterEHFrames(uint8_t* Addr, size_t Size, uintptr_t BaseAddr,
+                        bool Block);
+
+  void DeRegisterEHFrames(uint8_t* Addr, size_t Size);
+
 } // namespace windows
 #endif // LLVM_ON_WIN32
 

@@ -9,6 +9,9 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/Paths.h"
+#ifdef LLVM_ON_WIN32
+#include "cling/Utils/Platform.h"
+#endif
 #include "ClingUtils.h"
 
 #include "DynamicLookup.h"
@@ -431,6 +434,12 @@ namespace cling {
                             utils::FunctionToVoidPtr(&local_cxa_atexit), true);
       // __dso_handle is inserted for the link phase, as macro is useless then
       m_Executor->addSymbol("__dso_handle", this, true);
+
+#ifdef LLVM_ON_WIN32
+      // Windows C++ SEH handler
+      m_Executor->addSymbol("_CxxThrowException",
+          utils::FunctionToVoidPtr(&platform::ClingRaiseSEHException), true);
+#endif
     }
 
     if (m_Opts.Verbose())
