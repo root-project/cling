@@ -71,7 +71,6 @@ static const char kNoStdInc[] = "-nostdinc";
                                InputArgList& Args) {
     Opts.ErrorOut = Args.hasArg(OPT__errorout);
     Opts.NoLogo = Args.hasArg(OPT__nologo);
-    Opts.DumbTerm = Args.hasArg(OPT__dumbterm);
     Opts.ShowVersion = Args.hasArg(OPT_version);
     Opts.Help = Args.hasArg(OPT_help);
     Opts.NoRuntime = Args.hasArg(OPT_noruntime);
@@ -147,7 +146,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
 
 InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
 
-  MetaString("."), ErrorOut(false), NoLogo(false), DumbTerm(false), ShowVersion(false),
+  MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
   Help(false), NoRuntime(false) {
 
 

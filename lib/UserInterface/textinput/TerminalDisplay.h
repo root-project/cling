@@ -40,6 +40,8 @@ namespace textinput {
     void Detach();
     void DisplayInfo(const std::vector<std::string>& Options);
     bool IsTTY() const { return fIsTTY; }
+    void SetTERM(const char* TERM) { fTERM = TERM; };
+    const char* GetTERM() { return fTERM; };
 
   protected:
     TerminalDisplay(bool isTTY):
@@ -83,6 +85,7 @@ namespace textinput {
     size_t fWriteLen; // Length of output written.
     Pos fWritePos; // Current position of writing (temporarily != cursor)
     char fPrevColor; // currently configured color
+    const char* fTERM; // terminal type
   };
 }
 #endif // TEXTINPUT_TERMINALDISPLAY_H

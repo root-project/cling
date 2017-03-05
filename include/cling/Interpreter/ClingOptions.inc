@@ -18,8 +18,6 @@ PREFIX(prefix_2, {"--" COMMA 0})
 
 OPTION(prefix_0, "<input>", INPUT, Input, INVALID, INVALID, 0, 0, 0, 0, 0)
 OPTION(prefix_0, "<unknown>", UNKNOWN, Unknown, INVALID, INVALID, 0, 0, 0, 0, 0)
-OPTION(prefix_2, "dumbterm", _dumbterm, Flag, INVALID, INVALID, 0, 0, 0,
-       "Using a dumb terminal", 0)
 OPTION(prefix_2, "errorout", _errorout, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not recover from input errors", 0)
 OPTION(prefix_3, "help", help, Flag, INVALID, INVALID, 0, 0, 0,

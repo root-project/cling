@@ -23,6 +23,7 @@ namespace textinput {
   TerminalDisplayWin::TerminalDisplayWin():
     TerminalDisplay(false), fStartLine(0), fIsAttached(false),
     fDefaultAttributes(0), fOldCodePage(::GetConsoleOutputCP()) {
+    SetTerm("win");
     DWORD mode;
     SetIsTTY(::GetConsoleMode(::GetStdHandle(STD_INPUT_HANDLE), &mode) != 0);
 
