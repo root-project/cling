@@ -9,7 +9,7 @@ Requires ipykernel ≥ 4.0
 To install the kernel with sources in src/tools/cling:
 
     export PATH=/cling-install-prefix/bin:$PATH
-    cd /cling-install-prefix/share/cling/Jupyter/kernel
+    cd /cling-install-prefix/tools/Jupyter/kernel
 
     pip install -e .
     # or: pip3 install -e .
