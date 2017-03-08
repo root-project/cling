@@ -587,7 +587,7 @@ namespace cling {
     ///\returns result of the compilation.
     ///
     CompilationResult loadHeader(const std::string& filename,
-                               Transaction** T = 0);
+                                 Transaction** T = 0);
 
     ///\brief Loads header file or shared library.
     ///
