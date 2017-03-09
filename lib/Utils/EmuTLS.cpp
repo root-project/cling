@@ -5,15 +5,24 @@
  * This file is dual licensed under the MIT and the University of Illinois Open
  * Source Licenses. See LICENSE.TXT for details.
  *
+ * Taken from compiler-rt/lib/builtins/emutls.c with additions for Windows
+ *
  * ===----------------------------------------------------------------------===
  */
+
+// When compiling with GCC, use its version of __emutls_get_address
+
+#if defined(__clang__) || defined(_WIN32)
+
+#include "cling/Utils/Casting.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "int_lib.h"
-#include "int_util.h"
+#ifndef COMPILE_TIME_ASSERT
+#define COMPILE_TIME_ASSERT(X) static_assert(X, "Error")
+#endif
 
 typedef struct emutls_address_array {
     uintptr_t size;  /* number of elements in the 'data' array */
@@ -340,10 +349,12 @@ emutls_get_address_array(uintptr_t index) {
     return array;
 }
 
-void* __emutls_get_address(__emutls_control* control) {
+extern "C" void* __emutls_get_address(__emutls_control* control) {
     uintptr_t index = emutls_get_index(control);
     emutls_address_array* array = emutls_get_address_array(index--);
     if (array->data[index] == NULL)
         array->data[index] = emutls_allocate_object(control);
     return array->data[index];
 }
+
+#endif
