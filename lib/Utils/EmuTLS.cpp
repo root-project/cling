@@ -350,6 +350,14 @@ emutls_get_address_array(uintptr_t index) {
 }
 
 extern "C" void* __emutls_get_address(__emutls_control* control) {
+#ifdef _WIN32
+    // FIXME: Using emulated TLS LLVM doesn't respect external TLS data.
+    // To get arround this Interpreter::Initialize binds
+    // "__emutls_v._Init_thread_epoch" to &__emutls_get_address to mark that
+    // the current thread's _Init_thread_epoch should be returned.
+    if (reinterpret_cast<void*>(control) == cling::utils::FunctionToVoidPtr(&__emutls_get_address))
+      return &_Init_thread_epoch;
+#endif
     uintptr_t index = emutls_get_index(control);
     emutls_address_array* array = emutls_get_address_array(index--);
     if (array->data[index] == NULL)
