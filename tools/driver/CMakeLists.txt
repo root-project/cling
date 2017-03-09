@@ -48,7 +48,6 @@ if(MSVC)
   set(cling_exports ${cling_exports} ??_7type_info@@6B@
     ?__type_info_root_node@@3U__type_info_node@@A
     ?nothrow@std@@3Unothrow_t@1@B
-    ?_Facet_Register@std@@YAXPEAV_Facet_base@1@@Z
   )
 
   # Compiler added symbols for static variables. NOT for VStudio < 2015

@@ -252,13 +252,14 @@ namespace cling {
           for (llvm::Function &F : M->getFunctionList()) {
             if (!F.isDeclaration()) {
               const llvm::StringRef Sym = F.getName();
+              assert(((Sym.find("exit") != Sym.npos) ||
+                      (Sym.find("_Facet_Register") != Sym.npos)) &&
+                     "Unexpected function");
               if (m_Opts.Verbose())
                 cling::errs() << "Forcing emission of: " << Sym << "\n";
-              assert(Sym.find("exit") != Sym.npos && "Unexpected function");
               if (void* Addr = m_Executor->getPointerToGlobalFromJIT(F))
                 m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
-              else
-                cling::errs() << Sym << " not defined\n";
+              // else getPointerToGlobalFromJIT will show an error if !Addr
             }
           }
         }
@@ -320,6 +321,11 @@ namespace cling {
     for (size_t i = 0, e = m_StoredStates.size(); i != e; ++i)
       delete m_StoredStates[i];
     m_StoredStates.clear();
+
+#if defined(LLVM_ON_WIN32)
+    for (void *Ptr : m_RuntimeFacets)
+      delete reinterpret_cast<std::_Facet_base*>(Ptr)->_Decref();
+#endif
 
     if (m_Executor)
       m_Executor->shuttingDown();
@@ -428,6 +434,42 @@ namespace cling {
     Strm << Linkage << Spec << "int (*_onexit(int (" << Spec << "*f)()))()"
          << WinFnDef;
 #endif
+
+    if (EmitDefinitions && LangOpts.CPlusPlus) {
+      // MSVC retains a linked list of all facets created for a process.
+      // This is a problem as ~Interpreter will release the memory aquired
+      // for a facets v-table, and after main exits MSVC will then try to
+      // cleanup the registered facets but the pointers are invalid.
+      //
+      // To get around this we override std::_Facet_Register(_Facet_base* P) ->
+      //   __cxa_atexit(__dso_handle, P, __dso_handle);
+      // In Interpreter::AddAtExitFunc we check if the registered function is
+      // actually a pointer to -this- and when it is, save the facet so that
+      // destruction will occur in Interpreter::~Interpreter.
+      //
+      // Try to use MSVCs _STD_BEGIN when defined, but when --norutime is given
+      // it may not be defined. So assert in DEBUG that it is what is expected.
+#ifndef NDEBUG
+      if (!NoRuntime) assert(getMacroValue("_STD_BEGIN") == "namespace std {");
+#endif
+      const std::pair<const char* const, const char* const> StdNamespace =
+          getMacro("_STD_BEGIN") ? std::make_pair("_STD_BEGIN ", " _STD_END")
+                                 : std::make_pair("namespace std { ", " }");
+#if !defined(_M_CEE)
+      const char* const FacetReg = "_Facet_Register";
+#else
+      const char* const FacetReg = "_Facet_Register_m";
+#endif
+      const std::string CrtImp2Pure = getMacroValue("_CRTIMP2_PURE");
+
+      Strm << StdNamespace.first
+           << "class " << CrtImp2Pure << " _Facet_base;"
+           << "void " << Spec << ' ' << FacetReg
+           << "(_Facet_base* F) { __cxa_atexit((void(*)(void*))__dso_handle, "
+              "F, __dso_handle); }"
+           << StdNamespace.second << "\n";
+  }
+
 #endif // LLVM_ON_WIN32
 
     if (!SyntaxOnly) {
@@ -1500,6 +1542,12 @@ namespace cling {
   }
 
   void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {
+#ifdef LLVM_ON_WIN32
+    if (utils::FunctionToVoidPtr(Func) == this) {
+      m_RuntimeFacets.insert(Arg);
+      return;
+    }
+#endif
     m_Executor->AddAtExitFunc(Func, Arg, getLatestTransaction()->getModule());
   }
 
