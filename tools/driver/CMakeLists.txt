@@ -52,8 +52,8 @@ if(MSVC)
   )
 
   # Compiler added symbols for static variables. NOT for VStudio < 2015
-  set(cling_exports ${cling_exports} _Init_thread_abort _Init_thread_epoch
-    _Init_thread_footer _Init_thread_header _tls_index
+  set(cling_exports ${cling_exports} _Init_thread_abort
+    _Init_thread_footer _Init_thread_header
   )
 
   # new/delete variants needed when linking to static msvc runtime (esp. Debug)
