@@ -19,6 +19,10 @@
 #include <string>
 #include <unordered_map>
 
+#ifdef LLVM_ON_WIN32
+#include <unordered_set>
+#endif
+
 namespace llvm {
   class raw_ostream;
   struct GenericValue;
@@ -190,6 +194,14 @@ namespace cling {
     ///\brief Information about the last stored states through .storeState
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
+
+#ifdef LLVM_ON_WIN32
+    // Windows specific _Facet_base pointers registered at runtime.
+    std::unordered_set<void*> m_RuntimeFacets;
+
+    // Windows specific _Facet_base registration function.
+    static void RegisterFacet(void *Facet, void *Interp);
+#endif
 
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.

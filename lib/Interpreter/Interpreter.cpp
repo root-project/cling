@@ -322,6 +322,11 @@ namespace cling {
       delete m_StoredStates[i];
     m_StoredStates.clear();
 
+#if defined(LLVM_ON_WIN32)
+    for (void *Ptr : m_RuntimeFacets)
+      delete reinterpret_cast<std::_Facet_base*>(Ptr)->_Decref();
+#endif
+
     if (m_Executor)
       m_Executor->shuttingDown();
 
@@ -339,6 +344,12 @@ namespace cling {
     m_IncrParser.reset(0);
   }
 
+#if defined(LLVM_ON_WIN32)
+  void Interpreter::RegisterFacet(void *Facet, void *Interp) {
+    reinterpret_cast<Interpreter*>(Interp)->m_RuntimeFacets.insert(Facet);
+  }
+#endif
+  
   Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,
                               llvm::SmallVectorImpl<llvm::StringRef>& Globals) {
     llvm::SmallString<1024> Buf;
@@ -427,6 +438,32 @@ namespace cling {
            "}\n";
       Globals.push_back("_onexit");
  #endif
+      if (LangOpts.CPlusPlus) {
+        // MSVC retains a linked list of all facets created for a process.
+        // This is a problem as ~Interpreter will release the memory aquired
+        // for a facets v-table, and after main exits MSVC will then try to
+        // cleanup the registered facets but the pointers are invalid.
+        //
+        // To get around this:
+        // cling::runtime::_Facet_Register(void *Ptr, void *Interp);
+        // #define _Facet_Register _FacetReg_MSVC
+        // #include <xfacet>
+        // #undef _Facet_Register
+        // #define _Facet_Register(P) cling::runtime::_Facet_Register(P, gCling)
+        //
+ #if !defined(_M_CEE)
+        const char* FacetReg = "_Facet_Register";
+ #else
+        const char* FacetReg = "_Facet_Register_m";
+ #endif
+        Strm << "namespace cling { namespace runtime { "
+                "void _Facet_Register(void*, void*); } }\n";
+        Strm << "#define " << FacetReg << " _FacetReg_MSVC\n";
+        Strm << "#include <xfacet>\n";
+        Strm << "#undef " << FacetReg << "\n";
+        Strm << "#define " << FacetReg << "(P) cling::runtime::_Facet_Register
+                "(P, __dso_handle);\n";
+    }
 #endif
 
       // Override the native symbols now, before anything can be emitted.
@@ -439,6 +476,10 @@ namespace cling {
       // Windows C++ SEH handler
       m_Executor->addSymbol("_CxxThrowException",
           utils::FunctionToVoidPtr(&platform::ClingRaiseSEHException), true);
+
+      // cling::runtime::_Facet_Register
+      m_Executor->addSymbol("?_Facet_Register@runtime@cling@@YAXPEAX0@Z",
+          utils::FunctionToVoidPtr(&RegisterFacet), true);
 #endif
     }
 
