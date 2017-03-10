@@ -101,4 +101,34 @@ namespace cling {
                                              bool /*gen_crash_diag*/) {
     throw cling::CompilationException(reason);
   }
+
+  namespace internal {
+    void TestExceptions(intptr_t Throw) {
+     struct LocalObj {};
+     switch (Throw) {
+        case -1:  throw LocalObj();
+        case  1:  throw std::exception();
+        case  2:  throw std::logic_error("std::logic_error");
+        case  3:  throw std::runtime_error("std::runtime_error");
+        case  4:  throw std::out_of_range("std::out_of_range");
+        case  5:  throw std::bad_alloc();
+        case  6:  throw "c-string";
+        case  7:  throw std::string("std::string");
+
+        case 10:  throw bool(true);
+        case 11:  throw float(1.41421354);
+        case 12:  throw double(3.14159265);
+
+        case -8:  throw int8_t(-8);
+        case  8:  throw uint8_t(8);
+        case -16: throw int16_t(-16);
+        case  16: throw uint16_t(16);
+        case -32: throw int32_t(-32);
+        case  32: throw uint32_t(32);
+        case -64: throw int64_t(-64);
+        case  64: throw uint64_t(64);
+        default:  break;
+     }
+    }
+  }
 } // end namespace cling
