@@ -208,8 +208,6 @@ namespace cling {
       else
         m_Input.append("\n");
     }
-    else
-      m_Input = "";
 
     m_Input.append(line);
 
