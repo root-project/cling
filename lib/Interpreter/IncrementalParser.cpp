@@ -219,14 +219,15 @@ namespace cling {
     m_DiagConsumer.reset(new FilteringDiagConsumer(Diag, false));
 
     initializeVirtualFile();
+
+    if (hasCodeGenerator())
+      getCodeGenerator()->Initialize(getCI()->getASTContext());
   }
 
   bool
   IncrementalParser::Initialize(llvm::SmallVectorImpl<ParseResultTransaction>&
                                 result, bool isChildInterpreter) {
     m_TransactionPool.reset(new TransactionPool);
-    if (hasCodeGenerator())
-      getCodeGenerator()->Initialize(getCI()->getASTContext());
 
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
