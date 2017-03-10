@@ -220,13 +220,13 @@ if (UNIX)
     if (CLING_CXX_PATH)
       execute_process(COMMAND ${CLING_CXX_PATH} ${CLING_CXX_PATH_ARGS} -xc++ -E -v /dev/null
                       OUTPUT_QUIET ERROR_VARIABLE CLING_CXX_HEADERS)
+      set(CLING_CXX_PATH "${CLING_CXX_PATH} ${CLING_CXX_PATH_ARGS}")
     else()
       # convert CMAKE_CXX_FLAGS to a list for execute_process
       string(REPLACE " " ";" cling_tmp_arg_list ${CMAKE_CXX_FLAGS})
       execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} ${cling_tmp_arg_list} -xc++ -E -v /dev/null
                       OUTPUT_QUIET ERROR_VARIABLE CLING_CXX_HEADERS)
     endif()
-    set(CLING_CXX_PATH "${CLING_CXX_PATH} ${CLING_CXX_PATH_ARGS}")
 
     execute_process(
       COMMAND echo ${CLING_CXX_HEADERS}
