@@ -19,10 +19,6 @@
 #include <string>
 #include <unordered_map>
 
-#ifdef LLVM_ON_WIN32
-#include <unordered_set>
-#endif
-
 namespace llvm {
   class raw_ostream;
   struct GenericValue;
@@ -195,12 +191,13 @@ namespace cling {
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
 
-#ifdef LLVM_ON_WIN32
-    // Windows specific _Facet_base pointers registered at runtime.
-    std::unordered_set<void*> m_RuntimeFacets;
+    class InterceptBuilder;
+    struct RuntimeIntercept;
 
-    // Windows specific _Facet_base registration function.
-    static void RegisterFacet(void *Facet, void *Interp);
+#ifdef LLVM_ON_WIN32
+    // Platform specific data that needs to be retained.
+    // Currently only Windows _Facet_base pointers registered at runtime.
+    std::unique_ptr<RuntimeIntercept> m_RuntimeIntercept;
 #endif
 
     ///\brief Worker function, building block for interpreter's public
@@ -289,13 +286,11 @@ namespace cling {
     ///\brief Initialize runtime and C/C++ level overrides
     ///
     ///\param[in] NoRuntime - Don't include the runtime headers / gCling
-    ///\param[in] SyntaxOnly - In SyntaxOnly mode
-    ///\param[out] Globals - Global symbols that need to be emitted
+    ///\param[in] Parent - The parent interpreter
     ///
     ///\returns The resulting Transation of initialization.
     ///
-    Transaction* Initialize(bool NoRuntime, bool SyntaxOnly,
-                            llvm::SmallVectorImpl<llvm::StringRef>& Globals);
+    Transaction* Initialize(bool NoRuntime, const Interpreter* Parent);
 
     ///\brief The target constructor to be called from both the delegating
     /// constructors. parentInterp might be nullptr.
@@ -752,9 +747,12 @@ namespace cling {
     ///
     void AddAtExitFunc(void (*Func) (void*), void* Arg);
 
-    ///\brief Forwards to cling::IncrementalExecutor::addModule.
+    ///\brief Add the Module to the JIT, forwards to cling::IncrementalExecutor
     ///
-    void addModule(llvm::Module* module);
+    ///\param[in] Module - The Module to add
+    ///\param[in] Emit - Whether to emit this and pending modules in the JIT
+    ///
+    void addModule(llvm::Module* Module, bool Emit = false);
 
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);
