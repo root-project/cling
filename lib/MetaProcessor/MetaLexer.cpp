@@ -139,9 +139,6 @@ namespace cling {
     Tok.startToken(curPos);
     bool nextWasPunct = true;
     while (true) {
-
-      if(*curPos == '\\')
-        curPos += 2;
       // On comment skip until the eof token.
       if (curPos[0] == '/' && curPos[1] == '/') {
         while (*curPos != '\0' && *curPos != '\r' && *curPos != '\n')
