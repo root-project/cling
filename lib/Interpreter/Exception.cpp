@@ -12,6 +12,7 @@
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Validation.h"
 
 #include "clang/Frontend/CompilerInstance.h"
@@ -100,6 +101,49 @@ namespace cling {
                                              const std::string& reason,
                                              bool /*gen_crash_diag*/) {
     throw cling::CompilationException(reason);
+  }
+
+  static void ReportException(const char* Msg, const char* What = nullptr) {
+    cling::errs() << ">>> " << Msg;
+    if (What) cling::errs() << ": '" << What << "'";
+    cling::errs() << ".\n";
+  }
+
+  bool InterpreterException::ReportErr(void* Data, const std::exception* E) {
+    if (E) {
+      const InterpreterException* IE =
+          dynamic_cast<const InterpreterException*>(E);
+      if (IE && IE->diagnose())
+        return true;
+
+      ReportException(IE ? "Caught an interpreter exception"
+                         : "Caught a std::exception",
+                      E->what());
+    } else
+      ReportException("Caught an unkown exception");
+    return true;
+  }
+
+  static bool NoReport(void*, const std::exception*) {
+    return true;
+  }
+
+  void InterpreterException::RunLoop(bool (*Proc)(void* Data), void* Data,
+                                     ErrorHandler OnError) {
+    bool Run = true;
+    if (!OnError) OnError = &NoReport;
+
+    while (Run) {
+      try {
+        Run = Proc(Data);
+      } catch (const InterpreterException& E) {
+        Run = OnError(Data, &E);
+      } catch (const std::exception& E) {
+        Run = OnError(Data, &E);
+      } catch (...) {
+        Run = OnError(Data, nullptr);
+      }
+    }
   }
 
   namespace internal {

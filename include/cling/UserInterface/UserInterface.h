@@ -11,6 +11,7 @@
 #define CLING_USERINTERFACE_H
 
 #include <memory>
+#include <string>
 
 namespace cling {
   class Interpreter;
@@ -19,14 +20,20 @@ namespace cling {
   ///\brief Makes the interpreter interactive
   ///
   class UserInterface {
-  private:
+    struct TextInput;
     std::unique_ptr<MetaProcessor> m_MetaProcessor;
+    std::unique_ptr<TextInput> m_TextInput;
+    std::string m_Prompt;
+    const size_t m_PromptLen;
 
     ///\brief Prints cling's startup logo
     ///
     void PrintLogo();
+
+    bool RunLoop();
+
   public:
-    UserInterface(Interpreter& interp);
+    UserInterface(Interpreter& Interp, const char* Prompt = "[cling]");
     ~UserInterface();
 
     MetaProcessor* getMetaProcessor() { return m_MetaProcessor.get(); }
@@ -34,7 +41,7 @@ namespace cling {
     ///\brief Drives the interactive prompt talking to the user.
     /// @param[in] nologo - whether to show cling's welcome logo or not
     ///
-    void runInteractively(bool nologo = false);
+    void RunInteractively();
   };
 }
 

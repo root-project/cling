@@ -46,85 +46,90 @@ namespace {
       return true;
     }
   };
+
+  static bool Quit(cling::MetaProcessor& MP) {
+    MP.getOuts().flush();
+    return false;
+  }
 }
 
 namespace cling {
 
-  UserInterface::UserInterface(Interpreter& interp) {
-    m_MetaProcessor.reset(new MetaProcessor(interp, cling::outs()));
+  UserInterface::UserInterface(Interpreter& Interp, const char* Prompt)
+      : m_Prompt(Prompt), m_PromptLen(m_Prompt.size()) {
+    m_MetaProcessor.reset(new MetaProcessor(Interp, cling::outs()));
     llvm::install_fatal_error_handler(&CompilationException::throwingHandler);
   }
 
   UserInterface::~UserInterface() {}
 
-  void UserInterface::runInteractively(bool nologo /* = false */) {
-    if (!nologo) {
-      PrintLogo();
+  struct UserInterface::TextInput {
+    std::unique_ptr<textinput::StreamReader> Reader;
+    std::unique_ptr<textinput::TerminalDisplay> Display;
+    std::unique_ptr<textinput::TextInput> Input;
+
+    TextInput(const cling::Interpreter& Interp)
+        : Reader(textinput::StreamReader::Create()),
+          Display(textinput::TerminalDisplay::Create()) {
+      llvm::SmallString<512> History;
+      if (!getenv("CLING_NOHISTORY")) {
+        // History file is $HOME/.cling_history
+        if (llvm::sys::path::home_directory(History))
+          llvm::sys::path::append(History, ".cling_history");
+      }
+
+      Input.reset(new textinput::TextInput(
+          *Reader, *Display, History.empty() ? nullptr : History.c_str()));
+
+      Input->SetCompletion(new UITabCompletion(Interp));
     }
-
-    llvm::SmallString<512> histfilePath;
-    if (!getenv("CLING_NOHISTORY")) {
-      // History file is $HOME/.cling_history
-      if (llvm::sys::path::home_directory(histfilePath))
-        llvm::sys::path::append(histfilePath, ".cling_history");
+    
+    static bool RunLoop(void* This) {
+      return reinterpret_cast<UserInterface*>(This)->RunLoop();
     }
+  };
 
-    using namespace textinput;
-    std::unique_ptr<StreamReader> R(StreamReader::Create());
-    std::unique_ptr<TerminalDisplay> D(TerminalDisplay::Create());
-    TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
-
-    // Inform text input about the code complete consumer
-    // TextInput owns the TabCompletion.
-    UITabCompletion* Completion =
-                      new UITabCompletion(m_MetaProcessor->getInterpreter());
-    TI.SetCompletion(Completion);
+  bool UserInterface::RunLoop() {
+    MetaProcessor& MP = *m_MetaProcessor;
+    textinput::TextInput& TI = *m_TextInput->Input;
+    MP.getOuts().flush();
 
     std::string Line;
-    std::string Prompt("[cling]$ ");
-
-    while (true) {
-      try {
-        m_MetaProcessor->getOuts().flush();
-        {
-          MetaProcessor::MaybeRedirectOutputRAII RAII(*m_MetaProcessor);
-          TI.SetPrompt(Prompt.c_str());
-          if (TI.ReadInput() == TextInput::kRREOF)
-            break;
-          TI.TakeInput(Line);
-        }
-
-        cling::Interpreter::CompilationResult compRes;
-        const int indent = m_MetaProcessor->process(Line.c_str(), compRes);
-
-        // Quit requested?
-        if (indent < 0)
-          break;
-
-        Prompt.replace(7, std::string::npos,
-           m_MetaProcessor->getInterpreter().isRawInputEnabled() ? "! " : "$ ");
-
-        // Continuation requested?
-        if (indent > 0) {
-          Prompt.append(1, '?');
-          Prompt.append(indent * 3, ' ');
-        }
-      }
-      catch(InterpreterException& e) {
-        if (!e.diagnose()) {
-          cling::errs() << ">>> Caught an interpreter exception!\n"
-                        << ">>> " << e.what() << '\n';
-        }
-      }
-      catch(std::exception& e) {
-        cling::errs() << ">>> Caught a std::exception!\n"
-                     << ">>> " << e.what() << '\n';
-      }
-      catch(...) {
-        cling::errs() << "Exception occurred. Recovering...\n";
-      }
+    {
+      cling::MetaProcessor::MaybeRedirectOutputRAII RAII(MP);
+      TI.SetPrompt(m_Prompt.c_str());
+      if (TI.ReadInput() == textinput::TextInput::kRREOF)
+        return Quit(MP);
+      TI.TakeInput(Line);
     }
-    m_MetaProcessor->getOuts().flush();
+
+    cling::Interpreter::CompilationResult Result;
+    const int Indent = MP.process(Line.c_str(), Result);
+
+    // Quit requested?
+    if (Indent < 0)
+      return Quit(MP);
+
+    m_Prompt.replace(m_PromptLen, std::string::npos,
+                     MP.getInterpreter().isRawInputEnabled() ? "! " : "$ ");
+
+    // Continuation requested?
+    if (Indent > 0) {
+      m_Prompt.append(1, '?');
+      m_Prompt.append(Indent * 3, ' ');
+    }
+    return true;
+  }
+
+  void UserInterface::RunInteractively() {
+    if (!m_MetaProcessor->getInterpreter().getOptions().NoLogo)
+      PrintLogo();
+
+    m_Prompt.append("$ ");
+    m_TextInput.reset(new TextInput(m_MetaProcessor->getInterpreter()));
+
+    InterpreterException::RunLoop(&TextInput::RunLoop,
+                                  reinterpret_cast<void*>(this));
   }
 
   void UserInterface::PrintLogo() {

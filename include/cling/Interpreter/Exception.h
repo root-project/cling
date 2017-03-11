@@ -32,6 +32,28 @@ namespace cling {
 
     ///\brief Return true if error was diagnosed false otherwise
     virtual bool diagnose() const;
+
+    ///\brief Error handling function type.
+    ///
+    ///\param[in] Data - User Data passed to RunLoop
+    ///\param[in] Err - Pointer to the std::exception or InterpreterException
+    ///
+    ///\returns Whether the run loop should continue
+    ///
+    typedef bool (*ErrorHandler)(void* Data, const std::exception* Err);
+
+    ///\brief Default error reporter
+    static bool ReportErr(void* Data, const std::exception* Err);
+
+    ///\brief Run Proc(Ptr) until it returns false, catching and reporting
+    /// any exceptions that occur.
+    ///
+    ///\param[in] RunProc - Function to run
+    ///\param[in] Ptr - Data to be passed back to RunProc and OnError
+    ///\param[in] OnError - Function to run on error
+    ///
+    static void RunLoop(bool (*RunProc)(void* Data), void* Data,
+                        ErrorHandler OnError = &ReportErr);
   };
 
   ///\brief Exception that is thrown when a invalid pointer dereference is found

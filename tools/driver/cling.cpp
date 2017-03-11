@@ -131,7 +131,7 @@ int main( int argc, char **argv ) {
     }
   }
   else {
-    Ui.runInteractively(Opts.NoLogo);
+    Ui.RunInteractively();
   }
 
   // Only for test/OutputRedirect.C, but shouldn't affect performance too much.
