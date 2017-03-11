@@ -59,6 +59,8 @@
 #ifdef LLVM_ON_WIN32
 #include "cling/Utils/Platform.h"
 #include <unordered_set>
+#else
+extern "C" void* __dso_handle;
 #endif
 
 using namespace clang;
@@ -400,8 +402,10 @@ namespace cling {
       // Defined even when not in C++ in case any other language uses it.
       Overload("__cxa_atexit", this, 3);
 
-      // __dso_handle is inserted for the link phase, as macro is useless then
-      m_Executor->addSymbol("__dso_handle", this, true);
+      // Give the user a __dso_handle in case they need it.
+      // Note cling will generate code: __cxa_atexit(Dtor, 0, __dso_handle);
+      // but Overload("__cxa_atexit") above replaces __dso_handle with this.
+      m_Executor->addSymbol("__dso_handle", &__dso_handle, true);
 
 #else // LLVM_ON_WIN32
 
