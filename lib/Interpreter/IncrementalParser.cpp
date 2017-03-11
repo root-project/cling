@@ -187,7 +187,7 @@ namespace cling {
     DiagnosticsEngine& Diag = m_CI->getDiagnostics();
     if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
       m_CodeGen.reset(CreateLLVMCodeGen(
-          Diag, "cling-module-0", m_CI->getHeaderSearchOpts(),
+          Diag, makeModuleName(), m_CI->getHeaderSearchOpts(),
           m_CI->getPreprocessorOpts(), m_CI->getCodeGenOpts(),
           *m_Interpreter->getLLVMContext()));
       m_Consumer->setContext(this, m_CodeGen.get());
@@ -377,6 +377,16 @@ namespace cling {
     return ParseResultTransaction(T, ParseResult);
   }
 
+  std::string IncrementalParser::makeModuleName() {
+    return std::string("cling-module-") + std::to_string(m_ModuleNo++);
+  }
+
+  llvm::Module* IncrementalParser::StartModule() {
+    return getCodeGenerator()->StartModule(makeModuleName(),
+                                           *m_Interpreter->getLLVMContext(),
+                                           getCI()->getCodeGenOpts());
+  }
+
   void IncrementalParser::commitTransaction(ParseResultTransaction& PRT,
                                             bool ClearDiagClient) {
     Transaction* T = PRT.getPointer();
@@ -424,14 +434,10 @@ namespace cling {
       PRT.setInt(kFailed);
       m_Interpreter->unload(*T);
 
-      if (MustStartNewModule) {
-        // Create a new module.
-        stdstrstream ModuleName;
-        ModuleName << "cling-module-" << ++m_ModuleNo;
-        getCodeGenerator()->StartModule(ModuleName.str(),
-                                        *m_Interpreter->getLLVMContext(),
-                                        getCI()->getCodeGenOpts());
-      }
+      // Create a new module if necessary.
+      if (MustStartNewModule)
+        StartModule();
+
       return;
     }
 
@@ -549,11 +555,7 @@ namespace cling {
       }
 
       // Create a new module.
-      smallstream ModuleName;
-      ModuleName << "cling-module-" << ++m_ModuleNo;
-      getCodeGenerator()->StartModule(ModuleName.str(),
-                                      *m_Interpreter->getLLVMContext(),
-                                      getCI()->getCodeGenOpts());
+      StartModule();
     }
   }
 
