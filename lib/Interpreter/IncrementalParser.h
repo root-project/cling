@@ -23,6 +23,7 @@
 namespace llvm {
   struct GenericValue;
   class MemoryBuffer;
+  class Module;
 }
 
 namespace clang {
@@ -210,6 +211,14 @@ namespace cling {
     ///\brief Add the trnasformers to the Incremental Parser.
     ///
     void SetTransformers(bool isChildInterpreter);
+
+    ///\brief Create a unique name for the next llvm::Module
+    ///
+    std::string makeModuleName();
+
+    ///\brief Create a new llvm::Module
+    ///
+    llvm::Module* StartModule();
 
   private:
     ///\brief Finalizes the consumers (e.g. CodeGen) on a transaction.
