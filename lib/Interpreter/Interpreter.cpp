@@ -52,7 +52,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Path.h"
 
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -584,8 +583,7 @@ namespace cling {
   }
 
   Transaction* Interpreter::Initialize(bool NoRuntime, const Interpreter* Pnt) {
-    llvm::SmallString<1024> Buf;
-    llvm::raw_svector_ostream Strm(Buf);
+    largestream Strm;
     const clang::LangOptions& LangOpts = getCI()->getLangOpts();
     const void* thisP = static_cast<void*>(this);
 
