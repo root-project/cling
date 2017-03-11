@@ -9,9 +9,9 @@
 
 #include "cling/UserInterface/UserInterface.h"
 
-#include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "cling/Utils/Output.h"
+#include "cling-c/Exception.h"
 #include "textinput/Callbacks.h"
 #include "textinput/TextInput.h"
 #include "textinput/StreamReader.h"
@@ -58,7 +58,7 @@ namespace cling {
   UserInterface::UserInterface(Interpreter& Interp, const char* Prompt)
       : m_Prompt(Prompt), m_PromptLen(m_Prompt.size()) {
     m_MetaProcessor.reset(new MetaProcessor(Interp, cling::outs()));
-    llvm::install_fatal_error_handler(&CompilationException::throwingHandler);
+    llvm::install_fatal_error_handler(&cling_ThrowCompilationException);
   }
 
   UserInterface::~UserInterface() {}
@@ -128,8 +128,7 @@ namespace cling {
     m_Prompt.append("$ ");
     m_TextInput.reset(new TextInput(m_MetaProcessor->getInterpreter()));
 
-    InterpreterException::RunLoop(&TextInput::RunLoop,
-                                  reinterpret_cast<void*>(this));
+    cling_RunLoop(&TextInput::RunLoop, reinterpret_cast<void*>(this));
   }
 
   void UserInterface::PrintLogo() {

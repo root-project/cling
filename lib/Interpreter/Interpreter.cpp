@@ -594,7 +594,7 @@ namespace cling {
                 "namespace cling { class Interpreter; namespace runtime { "
                 "Interpreter* gCling=(Interpreter*)" << thisP << "; }}\n";
       } else {
-        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
+        Strm << "#include \"cling-c/ValuePrinter.h\"\n"
                 "void* gCling=(void*)" << thisP << ";\n";
       }
     }

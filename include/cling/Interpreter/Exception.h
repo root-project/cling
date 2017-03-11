@@ -10,6 +10,10 @@
 #ifndef CLING_RUNTIME_EXCEPTION_H
 #define CLING_RUNTIME_EXCEPTION_H
 
+#if !defined(__CLING__) && !defined(CLING_RUNTIME_EXCEPTION_CPP)
+#error "This file should only be included at runtime"
+#endif
+
 #include "llvm/Support/Compiler.h"
 #include <stdexcept>
 
@@ -83,13 +87,6 @@ namespace cling {
   public:
     CompilationException(const std::string& Reason);
     ~CompilationException() LLVM_NOEXCEPT;
-
-    // Handle fatal llvm errors by throwing an exception.
-    // Yes, throwing exceptions in error handlers is bad.
-    // Doing nothing is pretty terrible, too.
-    static void throwingHandler(void * /*user_data*/,
-                                const std::string& reason,
-                                bool /*gen_crash_diag*/);
   };
 } // end namespace cling
 

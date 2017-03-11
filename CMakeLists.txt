@@ -315,7 +315,7 @@ macro(add_cling_library name)
 
   if (MSVC AND ${name} STREQUAL "clingInterpreter")
     foreach(file_var ${ARGN})
-      # /EHs because cling_runtime_internal_throwIfInvalidPointer is extern “C”
+      # /EHs because cling_ThrowIfInvalidPointer is extern “C”
       set_property(SOURCE ${file_var} APPEND_STRING PROPERTY COMPILE_FLAGS
                    " /D _HAS_EXCEPTIONS=1 /EHs /GR /wd4714 ")
     endforeach()

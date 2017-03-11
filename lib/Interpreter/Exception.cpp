@@ -7,20 +7,21 @@
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
-
+#define CLING_RUNTIME_EXCEPTION_CPP
 #include "cling/Interpreter/Exception.h"
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Validation.h"
+#include "cling-c/Exception.h"
 
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 
-extern "C" {
+CLING_EXTERN_C_
 /// Throw an InvalidDerefException if the Arg pointer is invalid.
 ///\param Interp: The interpreter that has compiled the code.
 ///\param Expr: The expression corresponding determining the pointer value.
@@ -28,8 +29,7 @@ extern "C" {
 ///\returns void*, const-cast from Arg, to reduce the complexity in the
 /// calling AST nodes, at the expense of possibly doing a
 /// T* -> const void* -> const_cast<void*> -> T* round trip.
-void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
-                                                   const void* Arg) {
+void* cling_ThrowIfInvalidPointer(void* Interp, void* Expr, const void* Arg) {
 
   const clang::Expr* const E = (const clang::Expr*)Expr;
 
@@ -53,7 +53,16 @@ void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
   }
   return const_cast<void*>(Arg);
 }
+
+void cling_RunLoop(bool (*RunProc)(void* Data), void* Data) {
+  cling::InterpreterException::RunLoop(RunProc, Data);
 }
+
+void cling_ThrowCompilationException(void*, const std::string& Reason, bool) {
+  throw cling::CompilationException(Reason);
+}
+
+_CLING_EXTERN_C
 
 namespace cling {
   InterpreterException::InterpreterException(const std::string& What) :
@@ -96,12 +105,6 @@ namespace cling {
     InterpreterException(Reason) {}
 
   CompilationException::~CompilationException() LLVM_NOEXCEPT {}
-
-  void CompilationException::throwingHandler(void * /*user_data*/,
-                                             const std::string& reason,
-                                             bool /*gen_crash_diag*/) {
-    throw cling::CompilationException(reason);
-  }
 
   static void ReportException(const char* Msg, const char* What = nullptr) {
     cling::errs() << ">>> " << Msg;

@@ -8,16 +8,14 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/Interpreter.h"
-//#include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Utils/Output.h"
-#include "clang/AST/Type.h"
+//#include "cling-c/ValuePrinter.h"
+#include "cling-c/Exception.h"
 
-extern "C"
-void* cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
-                                                   const void* Arg);
+#include "clang/AST/Type.h"
 
 namespace cling {
 namespace internal {
@@ -39,7 +37,7 @@ void symbol_requester() {
    h.findFunctionArgs(0, "", "", LookupHelper::NoDiagnostics);
    runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
-   cling_runtime_internal_throwIfInvalidPointer(nullptr, nullptr, nullptr);
+   cling_ThrowIfInvalidPointer(nullptr, nullptr, nullptr);
 }
 }
 }

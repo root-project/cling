@@ -9,13 +9,13 @@
 
 #include "cling/Interpreter/Value.h"
 
-#include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Validation.h"
+#include "cling-c/ValuePrinter.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
