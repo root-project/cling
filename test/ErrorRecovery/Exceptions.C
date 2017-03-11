@@ -22,8 +22,13 @@
 namespace cling {
   namespace internal {
     void TestExceptions(intptr_t Throw);
+    void TestUnwind(void (*Proc)(intptr_t), intptr_t);
   }
 }
+
+cling::internal::TestUnwind(&cling::internal::TestExceptions, 1);
+// CHECK: UnwindTest::~UnwindTest
+// CHECK-NEXT: >>> Caught a std::exception: '{{.*}}'.
 
 #define TYPE_NAME(X) cling::platform::Demangle(typeid(X).name()).c_str()
 
@@ -45,7 +50,7 @@ namespace cling {
   catch(const std::exception& e) { printf("Caught Ref std::exception %s " F "\n", TYPE_NAME(e), V); }
 
 CLING_TEST_STD_EXCEPT(1, std::exception, "%s", e.what())
-// CHECK: Caught: std::exception {{.*}}
+// CHECK-NEXT: Caught: std::exception {{.*}}
 // CHECK-NEXT: Caught Ref: std::exception {{.*}}
 // CHECK-NEXT: Caught All Handler
 // CHECK-NEXT: Caught std::exception: std::exception {{.*}}

@@ -39,5 +39,26 @@ void symbol_requester() {
    DEI.getExpr();
    cling_ThrowIfInvalidPointer(nullptr, nullptr, nullptr);
 }
+
+// test/ErrorRecovery/Exceptions.C calls this function so to make sure the
+// stack is properly unwound when throwing from the JIT or null deref checking
+//
+void TestUnwind(void (*Proc)(intptr_t), intptr_t Data) {
+  if (Proc) {
+    struct Unwinder {
+      ~Unwinder() {
+        printf("UnwindTest::~UnwindTest\n");
+        fflush(stdout);
+      }
+    };
+    Unwinder UW;
+    Proc(Data);
+  } else {
+    // If TestUnwind isn't stripped, why would symbol_requester?
+    // Whatever...Prepare to crash!
+    symbol_requester();
+  }
+}
+
 }
 }

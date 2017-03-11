@@ -83,9 +83,11 @@ add_cling_library(clingInterpreter OBJECT
 #add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
 #                 ClangDriverOptions ClangCC1Options ClangCC1AsOptions)
 
-if (UNIX)
-  set_source_files_properties(Exception.cpp COMPILE_FLAGS "-fexceptions -frtti")
+# Enable exceptions for Exception.cpp so that cling can catch std::exceptions
+set_source_files_properties(Exception.cpp COMPILE_FLAGS
+                            " ${clingExceptions_ON} ")
 
+if (UNIX)
   # Remove all -I from CMAKE_CXX_FLAGS
   string(REPLACE ";" " " __flags "${CMAKE_CXX_FLAGS}")
   string(REGEX REPLACE "-I[^ ]+" "" CLING_COMPILER_FLAGS_NO_I "${__flags}")
