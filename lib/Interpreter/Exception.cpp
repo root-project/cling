@@ -106,28 +106,28 @@ namespace cling {
 
   CompilationException::~CompilationException() LLVM_NOEXCEPT {}
 
-  static void ReportException(const char* Msg, const char* What = nullptr) {
+  static bool ReportException(const char* Msg, const char* What = nullptr) {
     cling::errs() << ">>> " << Msg;
     if (What) cling::errs() << ": '" << What << "'";
     cling::errs() << ".\n";
-  }
-
-  bool InterpreterException::ReportErr(void* Data, const std::exception* E) {
-    if (E) {
-      const InterpreterException* IE =
-          dynamic_cast<const InterpreterException*>(E);
-      if (IE && IE->diagnose())
-        return true;
-
-      ReportException(IE ? "Caught an interpreter exception"
-                         : "Caught a std::exception",
-                      E->what());
-    } else
-      ReportException("Caught an unkown exception");
     return true;
   }
 
-  static bool NoReport(void*, const std::exception*) {
+  bool InterpreterException::ReportErr(void* Data, const Error& E) {
+    if (E.isNull())
+      return ReportException("Caught an unkown exception");
+
+    const InterpreterException* IE = E.dyn_cast<const InterpreterException*>();
+    if (IE && IE->diagnose())
+      return true;
+
+    const std::exception* Err = IE ? IE : E.get<const std::exception*>();
+    return ReportException(IE ? "Caught an interpreter exception"
+                              : "Caught a std::exception",
+                           Err->what());
+  }
+
+  static bool NoReport(void*, const InterpreterException::Error& E) {
     return true;
   }
 
@@ -144,7 +144,7 @@ namespace cling {
       } catch (const std::exception& E) {
         Run = OnError(Data, &E);
       } catch (...) {
-        Run = OnError(Data, nullptr);
+        Run = OnError(Data, static_cast<const std::exception*>(nullptr));
       }
     }
   }

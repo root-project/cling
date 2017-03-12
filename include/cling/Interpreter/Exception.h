@@ -15,6 +15,7 @@
 #endif
 
 #include "llvm/Support/Compiler.h"
+#include "llvm/ADT/PointerUnion.h"
 #include <stdexcept>
 
 namespace clang {
@@ -37,6 +38,10 @@ namespace cling {
     ///\brief Return true if error was diagnosed false otherwise
     virtual bool diagnose() const;
 
+    typedef llvm::PointerUnion<const InterpreterException*,
+                               const std::exception*>
+        Error;
+
     ///\brief Error handling function type.
     ///
     ///\param[in] Data - User Data passed to RunLoop
@@ -44,10 +49,10 @@ namespace cling {
     ///
     ///\returns Whether the run loop should continue
     ///
-    typedef bool (*ErrorHandler)(void* Data, const std::exception* Err);
+    typedef bool (*ErrorHandler)(void* Data, const Error&);
 
     ///\brief Default error reporter
-    static bool ReportErr(void* Data, const std::exception* Err);
+    static bool ReportErr(void* Data, const Error& Err);
 
     ///\brief Run Proc(Ptr) until it returns false, catching and reporting
     /// any exceptions that occur.
