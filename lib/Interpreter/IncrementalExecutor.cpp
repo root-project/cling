@@ -403,4 +403,41 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
   return true;
 }
 
+template <class T>
+IncrementalExecutor::ExecutionResult
+IncrementalExecutor::executeInitOrWrapper(llvm::StringRef Function, T& Func) {
+  Func = utils::UIntToFunctionPtr<T>(
+      m_JIT->getSymbolAddress(Function, false /*dlsym*/));
+
+  // check if there is any unresolved symbol in the list
+  if (diagnoseUnresolvedSymbols(Function, "function") || !Func)
+    return IncrementalExecutor::kExeUnresolvedSymbols;
+
+  return IncrementalExecutor::kExeSuccess;
+}
+
+IncrementalExecutor::ExecutionResult
+IncrementalExecutor::executeWrapper(llvm::StringRef Function,
+                                    Value* ReturnVal) {
+  // Set the value to cling::invalid.
+  if (ReturnVal)
+    *ReturnVal = Value();
+
+  void (*Func)(void*);
+  if (const ExecutionResult Result = executeInitOrWrapper(Function, Func))
+    return Result;
+
+  (*Func)(ReturnVal);
+  return kExeSuccess;
+}
+
+IncrementalExecutor::ExecutionResult
+IncrementalExecutor::executeInit(llvm::StringRef Function) {
+  void (*Func)();
+  if (const ExecutionResult Result = executeInitOrWrapper(Function, Func))
+    return Result;
+  (*Func)();
+  return kExeSuccess;
+}
+
 }// end namespace cling
