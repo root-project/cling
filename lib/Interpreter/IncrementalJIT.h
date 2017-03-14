@@ -60,41 +60,7 @@ private:
 
     void operator()(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H,
                     const ObjListT &Objects,
-                    const LoadedObjInfoListT &Infos) const
-    {
-      m_JIT.m_UnfinalizedSections[H]
-        = std::move(m_JIT.m_SectionsAllocatedSinceLastLoad);
-      m_JIT.m_SectionsAllocatedSinceLastLoad = SectionAddrSet();
-      assert(Objects.size() == Infos.size() &&
-             "Incorrect number of Infos for Objects.");
-      if (auto GDBListener = m_JIT.m_GDBListener) {
-        for (size_t I = 0, N = Objects.size(); I < N; ++I)
-          GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(),
-                                           *Infos[I]);
-      }
-
-      for (const auto &Object: Objects) {
-        for (const auto &Symbol: Object->getBinary()->symbols()) {
-          auto Flags = Symbol.getFlags();
-          if (Flags & llvm::object::BasicSymbolRef::SF_Undefined)
-            continue;
-          // FIXME: this should be uncommented once we serve incremental
-          // modules from a TU module.
-          //if (!(Flags & llvm::object::BasicSymbolRef::SF_Exported))
-          //  continue;
-          auto NameOrError = Symbol.getName();
-          if (!NameOrError)
-            continue;
-          auto Name = NameOrError.get();
-          if (m_JIT.m_SymbolMap.find(Name) == m_JIT.m_SymbolMap.end()) {
-            llvm::orc::JITSymbol Sym
-              = m_JIT.m_CompileLayer.findSymbolIn(H, Name, true);
-            if (llvm::orc::TargetAddress Addr = Sym.getAddress())
-              m_JIT.m_SymbolMap[Name] = Addr;
-          }
-        }
-      }
-    }
+                    const LoadedObjInfoListT &Infos) const;
 
   private:
     IncrementalJIT &m_JIT;
@@ -112,26 +78,8 @@ private:
       Base_t(NotifyLoaded, NotifyFinalized), m_SymbolMap(SymMap)
     {}
 
-    void removeObjectSet(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
-      struct AccessSymbolTable: public LinkedObjectSet {
-        const llvm::StringMap<llvm::RuntimeDyld::SymbolInfo>&
-        getSymbolTable() const
-        {
-          return SymbolTable;
-        }
-      };
-      const AccessSymbolTable* HSymTable
-        = static_cast<const AccessSymbolTable*>(H->get());
-      for (auto&& NameSym: HSymTable->getSymbolTable()) {
-        auto iterSymMap = m_SymbolMap.find(NameSym.first());
-        if (iterSymMap == m_SymbolMap.end())
-          continue;
-        // Is this this symbol (address)?
-        if (iterSymMap->second == NameSym.second.getAddress())
-          m_SymbolMap.erase(iterSymMap);
-      }
-      llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT>::removeObjectSet(H);
-    }
+    void removeObjectSet(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H);
+
   private:
     SymbolMapT& m_SymbolMap;
   };
@@ -173,11 +121,7 @@ private:
   std::vector<ModuleSetHandleT> m_UnloadPoints;
 
 
-  std::string Mangle(llvm::StringRef Name) {
-    stdstrstream MangledName;
-    llvm::Mangler::getNameWithPrefix(MangledName, Name, m_TMDataLayout);
-    return MangledName.str();
-  }
+  std::string Mangle(llvm::StringRef Name);
 
   llvm::orc::JITSymbol getInjectedSymbols(const std::string& Name) const;
 
@@ -192,10 +136,7 @@ public:
   ///   (prefixed by '_') to make IR versus symbol names.
   /// \param AlsoInProcess - Sometimes you only care about JITed symbols. If so,
   ///   pass `false` here to not resolve the symbol through dlsym().
-  uint64_t getSymbolAddress(const std::string& Name, bool AlsoInProcess) {
-    return getSymbolAddressWithoutMangling(Mangle(Name), AlsoInProcess)
-      .getAddress();
-  }
+  uint64_t getSymbolAddress(const std::string& Name, bool AlsoInProcess);
 
   ///\brief Get the address of a symbol from the JIT or the memory manager.
   /// Use this to resolve symbols of known, target-specific names.
