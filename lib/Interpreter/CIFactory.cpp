@@ -352,19 +352,27 @@ namespace {
     // #pragma comment(lib, "bufferoverflowu.lib") still gives errors!
     // Opts.setStackProtector(clang::LangOptions::SSPStrong);
 #endif // _DEBUG
-#ifdef _CPPRTTI
-    Opts.RTTIData = 1;
-#else
-    Opts.RTTIData = 0;
+#if !defined(_CPPRTTI)
+ #define CLING_NO_RTTI
 #endif // _CPPRTTI
     Opts.Trigraphs = 0;
     Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
 #else // !_MSC_VER
     Opts.Trigraphs = 1;
-//    Opts.RTTIData = 1;
 //    Opts.DefaultCallingConventions = 1;
 //    Opts.StackProtector = 0;
-#endif // _MSC_VER
+#if (defined(__clang__) ? !__has_feature(cxx_rtti) : !defined(__GXX_RTTI))
+ #define CLING_NO_RTTI
+#endif // RTTI
+#endif /* !_MSC_VER */
+
+    // Allow -frtti -fno-rtti to set availabaility of RTTI features, but always
+    // generate RTTI data based on how cling was compiled.
+#if defined(CLING_NO_RTTI)
+    Opts.RTTIData = 0;
+#else
+    Opts.RTTIData = 1;
+#endif
 
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {

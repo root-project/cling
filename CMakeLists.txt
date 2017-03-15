@@ -288,14 +288,6 @@ else()
   set(clingExceptionFlags "${clingExceptions_OFF}")
 endif()
 
-# Honor LLVM_REQUIRES_RTTI whether being built in LLVM or not
-# Introducing a new flag doesn't make sense as there will be link time failure
-# when RTTI doesn't match between LLVM and cling.
-if (LLVM_REQUIRES_RTTI)
-  set(clingRTTIFlags "${clingRTTI_ON}")
-else()
-  set(clingRTTIFlags "${clingRTTI_OFF}")
-endif()
 
 macro(add_cling_library name)
   cmake_parse_arguments(ARG
