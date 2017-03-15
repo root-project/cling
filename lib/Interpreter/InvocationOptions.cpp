@@ -142,9 +142,6 @@ CompilerOptions::CompilerOptions(int argc, const char* const* argv) :
   Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
   NoCXXInc(false), StdVersion(false), StdLib(false), HasOutput(false),
   Verbose(false), JITFormat(0) {
-#if defined(LLVM_ON_WIN32)
-  JITFormat = llvm::Triple::ELF;
-#endif
   if (argc && argv) {
     // Preserve what's already in Remaining, the user might want to push args
     // to clang while still using main's argc, argv
