@@ -1928,6 +1928,9 @@ Install/update the required packages by:
                 choice = input("Please respond with 'yes' or 'no': ")
                 continue
 
+if OS == 'Windows':
+    get_win_dep()
+
 if args['current_dev']:
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
@@ -1962,7 +1965,6 @@ if args['current_dev']:
     set_version()
     if args['current_dev'] == 'tar':
         if OS == 'Windows':
-            get_win_dep()
             compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION), libcpp)
         else:
             if DIST == 'Scientific Linux CERN SLC':
@@ -1995,7 +1997,6 @@ if args['current_dev']:
         cleanup()
 
     elif args['current_dev'] == 'nsis' or (args['current_dev'] == 'pkg' and OS == 'Windows'):
-        get_win_dep()
         compile(os.path.join(workdir, 'cling-' + RELEASE + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
@@ -2043,7 +2044,6 @@ if args['last_stable']:
     if args['last_stable'] == 'tar':
         set_version()
         if OS == 'Windows':
-            get_win_dep()
             compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION), libcpp)
         else:
             if DIST == 'Scientific Linux CERN SLC':
@@ -2079,7 +2079,6 @@ if args['last_stable']:
 
     elif args['last_stable'] == 'nsis' or (args['last_stable'] == 'pkg' and OS == 'Windows'):
         set_version()
-        get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION), libcpp)
         install_prefix()
         if not args['no_test']:
@@ -2111,7 +2110,6 @@ if args['tarball_tag']:
     set_version()
 
     if OS == 'Windows':
-        get_win_dep()
         compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION))
     else:
         if DIST == 'Scientific Linux CERN SLC':
@@ -2176,7 +2174,6 @@ if args['nsis_tag']:
     fetch_clang(llvm_revision)
     fetch_cling(args['nsis_tag'])
     set_version()
-    get_win_dep()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION), libcpp)
     install_prefix()
     if not args['no_test']:
@@ -2216,7 +2213,6 @@ if args['create_dev_env']:
 
     set_version()
     if OS == 'Windows':
-        get_win_dep()
         compile(os.path.join(workdir, 'cling-win-' + platform.machine().lower() + '-' + VERSION), libcpp)
     else:
         if DIST == 'Scientific Linux CERN SLC':
