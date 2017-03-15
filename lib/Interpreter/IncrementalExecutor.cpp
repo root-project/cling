@@ -39,29 +39,19 @@ namespace cling {
 namespace {
 
 static std::unique_ptr<TargetMachine>
-CreateHostTargetMachine(const clang::CompilerInstance& CI, unsigned Fmt = 0) {
+CreateHostTargetMachine(const clang::CompilerInstance& CI) {
   const clang::TargetOptions& TargetOpts = CI.getTargetOpts();
   const clang::CodeGenOptions& CGOpt = CI.getCodeGenOpts();
-  Triple TheTriple(TargetOpts.Triple);
-  if (Fmt) {
-    assert(Fmt > llvm::Triple::UnknownObjectFormat &&
-           Fmt <= llvm::Triple::MachO && "Invalid Format");
-    TheTriple.setObjectFormat(static_cast<llvm::Triple::ObjectFormatType>(Fmt));
-  }
+  const std::string& Triple = TargetOpts.Triple;
 
   std::string Error;
-  const Target *TheTarget
-    = TargetRegistry::lookupTarget(TheTriple.getTriple(), Error);
+  const Target *TheTarget = TargetRegistry::lookupTarget(Triple, Error);
   if (!TheTarget) {
     cling::errs() << "cling::IncrementalExecutor: unable to find target:\n"
                   << Error;
     return std::unique_ptr<TargetMachine>();
   }
 
-  std::string MCPU;
-  std::string FeaturesStr;
-
-  llvm::TargetOptions Options = llvm::TargetOptions();
 // We have to use large code model for PowerPC64 because TOC and text sections
 // can be more than 2GB apart.
 #if defined(__powerpc64__) || defined(__PPC64__)
@@ -78,15 +68,16 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI, unsigned Fmt = 0) {
     default: OptLevel = CodeGenOpt::Default;
   }
 
-  std::unique_ptr<TargetMachine> TM;
-  TM.reset(TheTarget->createTargetMachine(TheTriple.getTriple(),
-                                          MCPU, FeaturesStr,
-                                          Options,
-                                          Optional<Reloc::Model>(),
-                                          CMModel,
-                                          OptLevel));
-  return TM;
+  std::string MCPU;
+  std::string FeaturesStr;
+
+  return std::unique_ptr<TargetMachine>(TheTarget->createTargetMachine(Triple,
+                                        MCPU, FeaturesStr,
+                                        llvm::TargetOptions(),
+                                        Optional<Reloc::Model>(), CMModel,
+                                        OptLevel));
 }
+
 } // anonymous namespace
 
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
@@ -104,8 +95,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
   // can use this object yet.
   m_AtExitFuncs.reserve(256);
 
-  std::unique_ptr<TargetMachine>
-    TM(CreateHostTargetMachine(CI));
+  std::unique_ptr<TargetMachine> TM(CreateHostTargetMachine(CI));
   m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
                                           CI.getTargetOpts(),
                                           CI.getLangOpts(),
