@@ -853,17 +853,16 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         utils::DiagnosticsOverride IgnoreMangleErrors(m_Sema->getDiagnostics());
 #endif
 #endif
-        utils::Analyze::maybeMangleDeclName(GD, mangledName);
+        utils::Analyze::maybeMangleDeclName(GD).swap(mangledName);
       }
 
       // Handle static locals. void func() { static int var; } is represented
       // in the llvm::Module is a global named @func.var
       if (const VarDecl* VD = dyn_cast<VarDecl>(GD.getDecl())) {
         if (VD->isStaticLocal()) {
-          std::string functionMangledName;
-          GlobalDecl FDGD(cast<FunctionDecl>(VD->getDeclContext()));
-          utils::Analyze::maybeMangleDeclName(FDGD, functionMangledName);
-          mangledName = functionMangledName + "." + mangledName;
+          mangledName = utils::Analyze::maybeMangleDeclName(GlobalDecl(
+                            cast<FunctionDecl>(VD->getDeclContext()))) +
+                        "." + mangledName;
         }
       }
 

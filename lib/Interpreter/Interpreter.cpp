@@ -983,10 +983,8 @@ namespace cling {
     if (!FD)
       return kExeUnkownFunction;
 
-    std::string mangledNameIfNeeded;
-    utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
     IncrementalExecutor::ExecutionResult ExeRes =
-       m_Executor->executeWrapper(mangledNameIfNeeded, res);
+       m_Executor->executeWrapper(utils::Analyze::maybeMangleDeclName(FD), res);
     return ConvertExecutionResult(ExeRes);
   }
 
@@ -1550,9 +1548,7 @@ namespace cling {
   void* Interpreter::getAddressOfGlobal(const GlobalDecl& GD,
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
-    std::string mangledName;
-    utils::Analyze::maybeMangleDeclName(GD, mangledName);
-    return getAddressOfGlobal(mangledName, fromJIT);
+    return getAddressOfGlobal(utils::Analyze::maybeMangleDeclName(GD), fromJIT);
   }
 
   void* Interpreter::getAddressOfGlobal(llvm::StringRef SymName,

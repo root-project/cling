@@ -107,21 +107,29 @@ namespace utils {
       }
       return RawStr.str();
     }
-    
-    void maybeMangleDeclName(const GlobalDecl& GD, std::string& mangledName) {
-      mangledName = maybeMangleDeclName(cast<NamedDecl>(GD.getDecl()), &GD);
+
+    std::string maybeMangleDeclName(const GlobalDecl& GD) {
+      return maybeMangleDeclName(cast<NamedDecl>(GD.getDecl()), &GD);
     }
     
     template <>
-    void maybeMangleDeclName<FunctionDecl>(const FunctionDecl* FD,
-                                           std::string& mangledName) {
-      return maybeMangleDeclName(GlobalDecl(FD), mangledName);
+    std::string maybeMangleDeclName<FunctionDecl>(const FunctionDecl* FD) {
+      return maybeMangleDeclName(GlobalDecl(FD));
     }
 
     template <>
-    void maybeMangleDeclName<VarDecl>(const VarDecl* VD,
-                                      std::string& mangledName) {
-      return maybeMangleDeclName(GlobalDecl(VD), mangledName);
+    std::string maybeMangleDeclName<VarDecl>(const VarDecl* VD) {
+      return maybeMangleDeclName(GlobalDecl(VD));
+    }
+
+    template <>
+    std::string maybeMangleDeclName<ValueDecl>(const ValueDecl* VD) {
+      return maybeMangleDeclName(cast<NamedDecl>(VD), nullptr);
+    }
+
+    template <>
+    std::string maybeMangleDeclName<NamedDecl>(const NamedDecl* ND) {
+      return maybeMangleDeclName(ND, nullptr);
     }
   }
 
