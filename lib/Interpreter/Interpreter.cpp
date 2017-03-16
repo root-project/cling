@@ -269,7 +269,7 @@ namespace cling {
   #endif
             if (GV) {
               if (void* Addr = m_Executor->getPointerToGlobalFromJIT(*GV))
-                m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
+                m_Executor->addSymbol(Sym, Addr, true);
               else
                 cling::errs() << Sym << " not defined\n";
             } else
@@ -296,9 +296,9 @@ namespace cling {
 #endif
               // gCling gets linked to top-most Interpreter.
               if (!parent())
-                m_Executor->addSymbol(Name.c_str(), &m_Parenting, true);
+                m_Executor->addSymbol(Name, &m_Parenting, true);
               else
-                m_Executor->addSymbol(Name.c_str(), &m_Parenting[1], true);
+                m_Executor->addSymbol(Name, &m_Parenting[1], true);
             }
           } else {
             cling::errs() << "gCling was not found\n";
