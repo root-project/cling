@@ -326,7 +326,7 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 }
 
 bool
-IncrementalExecutor::addSymbol(const char* Name,  void* Addr,
+IncrementalExecutor::addSymbol(llvm::StringRef Name,  void* Addr,
                                bool Jit) {
   return m_JIT->lookupSymbol(Name, Addr, Jit).second;
 }
