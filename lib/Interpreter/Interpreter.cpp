@@ -60,6 +60,20 @@
 #include <unordered_set>
 #else
 extern "C" void* __dso_handle;
+
+#if (defined(__clang__) ? !__has_feature(cxx_rtti) : !defined(__GXX_RTTI))
+#define CLING_NO_RTTI
+// -fno-rtti, export the std::exceptions to the JIT
+extern "C" std::type_info
+  *_ZTISt9exception,
+  *_ZTISt11logic_error,
+  *_ZTISt11range_error,
+  *_ZTISt12length_error,
+  *_ZTISt12out_of_range,
+  *_ZTISt13runtime_error,
+  *_ZTISt9bad_alloc;
+#endif
+
 #endif
 
 using namespace clang;
@@ -407,6 +421,16 @@ namespace cling {
       // Note cling will generate code: __cxa_atexit(Dtor, 0, __dso_handle);
       // but Overload("__cxa_atexit") above replaces __dso_handle with this.
       m_Executor->addSymbol("__dso_handle", &__dso_handle, true);
+
+#ifdef CLING_NO_RTTI
+      m_Executor->addSymbol("_ZTISt9exception", &_ZTISt9exception, true);
+      m_Executor->addSymbol("_ZTISt11logic_error", &_ZTISt11logic_error, true);
+      m_Executor->addSymbol("_ZTISt11range_error", &_ZTISt11range_error, true);
+      m_Executor->addSymbol("_ZTISt12length_error", &_ZTISt12length_error, 1);
+      m_Executor->addSymbol("_ZTISt12out_of_range", &_ZTISt12out_of_range, 1);
+      m_Executor->addSymbol("_ZTISt13runtime_error", &_ZTISt13runtime_error, 1);
+      m_Executor->addSymbol("_ZTISt9bad_alloc", &_ZTISt9bad_alloc, true);
+#endif
 
 #else // LLVM_ON_WIN32
 
