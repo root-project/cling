@@ -215,8 +215,10 @@ install:
   fi
 
   # Containers need to timeout before the buildscript exists
-  if [ $TRAVIS_OS_NAME == 'osx' ] || [ "$DIST" == "trusty" ]; then
-    TIMEOUT='40m' # Any more and Travis might cancel
+  if [ $TRAVIS_OS_NAME == 'osx' ]; then
+    TIMEOUT='37m'
+  elif [ "$DIST" == "trusty" ]; then
+    TIMEOUT='40m'
   fi
 
   # If we timeout, objects can be corrupted in the cache, causing link errors
