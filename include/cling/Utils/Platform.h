@@ -28,6 +28,10 @@ namespace platform {
   ///
   bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths);
 
+  ///\brief Returns a normalized version of the given Path
+  ///
+  std::string NormalizePath(const std::string& Path);
+
   ///\brief Open a handle to a shared library. On Unix the lib is opened with
   /// RTLD_LAZY|RTLD_GLOBAL flags.
   ///
@@ -44,12 +48,6 @@ namespace platform {
   ///
   const void* DLSym(const std::string& Name, std::string* Err = nullptr);
 
-  ///\brief Demangle the given symbol name
-  ///
-  /// \returns The demangled name or an empty string
-  ///
-  std::string Demangle(const std::string& Symbol);
-
   ///\brief Close a handle to a shared library.
   ///
   /// \param [in] Lib - Handle to library from previous call to DLOpen
@@ -59,9 +57,11 @@ namespace platform {
   ///
   void DLClose(const void* Lib, std::string* Err = nullptr);
 
-  ///\brief Returns a normalized version of the given Path
+  ///\brief Demangle the given symbol name
   ///
-  std::string NormalizePath(const std::string& Path);
+  /// \returns The demangled name or an empty string
+  ///
+  std::string Demangle(const std::string& Symbol);
 
   ///\brief Return true if the given pointer is in a valid memory region.
   ///
