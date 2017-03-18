@@ -337,16 +337,13 @@ namespace {
         // 1)  enum, integral, float, double, referece, pointer types :
         //      call to cling::internal::setValueNoAlloc(...);
 
-        // If the type is enum or integral we need to force-cast it into
-        // uint64 in order to pick up the correct overload.
-        if (desugaredTy->isIntegralOrEnumerationType()) {
-          QualType UInt64Ty = m_Context->UnsignedLongLongTy;
-          TypeSourceInfo* TSI
-            = m_Context->getTrivialTypeSourceInfo(UInt64Ty, noLoc);
-          Expr* castedE
-            = m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).get();
-          CallArgs.push_back(castedE);
-        }
+        // force-cast it into uint64 in order to pick up the correct overload.
+        QualType UInt64Ty = m_Context->UnsignedLongLongTy;
+        TypeSourceInfo* TSI
+          = m_Context->getTrivialTypeSourceInfo(UInt64Ty, noLoc);
+        Expr* castedE
+          = m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).get();
+        CallArgs.push_back(castedE);
       }
       else if (desugaredTy->isReferenceType()) {
         // we need to get the address of the references
