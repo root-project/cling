@@ -12,7 +12,6 @@ set(LLVM_NO_DEAD_STRIP 1)
 if(BUILD_SHARED_LIBS)
   set(LIBS
     LLVMSupport
-    clangFrontendTool
     clingInterpreter
     clingMetaProcessor
     clingUserInterface
@@ -24,7 +23,6 @@ if(BUILD_SHARED_LIBS)
 else()
   set(LIBS
     LLVMSupport
-    clangFrontendTool
     clingUserInterface
   )
   add_cling_executable(cling
