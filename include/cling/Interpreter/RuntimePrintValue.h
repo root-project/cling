@@ -124,87 +124,80 @@ namespace cling {
 
   // Collections internal
   namespace collectionPrinterInternal {
-    // Maps
-    template<typename Pair>
-    std::string printPair(const Pair& P) {
-      return printValue(&P->first) + " => " + printValue(&P->second);
-    }
-    
-    template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, short)
-    -> decltype(
-    ++(obj->begin()), obj->end(),
-        obj->begin()->first, obj->begin()->second,
-        std::string())
-    {
-      auto iter = obj->begin();
-      auto iterEnd = obj->end();
-      if (iter == iterEnd)
-        return valuePrinterInternal::kEmptyCollection;
 
-      std::string str("{ ");
-      str += printPair(iter);
-      while (++iter != iterEnd) {
-        str += ", ";
-        str += printPair(iter);
-      }
-      return str + " }";
+    // Forward declaration, so recursion of containers possible.
+    template <typename T> std::string printValue(const T* V, const void* = 0);
+
+    template <typename T> std::string
+    printValue(const T& V, typename std::enable_if<
+                             std::is_pointer<decltype(&V)>::value>::type* = 0) {
+      return printValue(&V);
     }
 
-    // Vector, set, deque etc.
-    template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, int)
-    -> decltype(
-    ++(obj->begin()), obj->end(),
-        *(obj->begin()),  &(*(obj->begin())),
-        std::string())
-    {
-      auto iter = obj->begin();
-      auto iterEnd = obj->end();
-      if (iter == iterEnd)
-        return valuePrinterInternal::kEmptyCollection;
+    template <typename T0, typename T1> std::string
+    printValue(const std::pair<T1, T0>* V, const void* AsMap = 0) {
+      if (AsMap)
+        return printValue(&V->first) + " => " + printValue(&V->second);
+      return "{" + printValue(&V->first) + " , " + printValue(&V->second) + "}";
+    }
+
+    // For std::vector<bool> elements
+    std::string printValue(const bool& B, const void* = 0) {
+      return cling::printValue(&B);
+    }
+
+    struct TypeTest {
+      template <class T> static constexpr const void*
+      isMap(const T* M, const typename T::mapped_type* V = 0) { return M; }
+      static constexpr const void* isMap(const void* M) { return nullptr; }
+    };
+
+    // vector, set, deque etc.
+    template <typename CollectionType>
+    auto printValue_impl(
+        const CollectionType* obj,
+        typename std::enable_if<
+            std::is_reference<decltype(*(obj->begin()))>::value>::type* = 0)
+        -> decltype(++(obj->begin()), obj->end(), std::string()) {
+      auto iter = obj->begin(), iterEnd = obj->end();
+      if (iter == iterEnd) return valuePrinterInternal::kEmptyCollection;
+
+      const void* M = TypeTest::isMap(obj);
 
       std::string str("{ ");
-      str += printValue(&(*iter));
+      str += printValue(&(*iter), M);
       while (++iter != iterEnd) {
         str += ", ";
-        str += printValue(&(*iter));
+        str += printValue(&(*iter), M);
       }
       return str + " }";
     }
 
     // As above, but without ability to take address of elements.
-    template<typename CollectionType>
-    auto printValue_impl(const CollectionType *obj, long)
-    -> decltype(
-    ++(obj->begin()), obj->end(),
-        *(obj->begin()),
-        std::string())
-     {
-      auto iter = obj->begin();
-      auto iterEnd = obj->end();
-      if (iter == iterEnd)
-        return valuePrinterInternal::kEmptyCollection;
+    template <typename CollectionType>
+    auto printValue_impl(
+        const CollectionType* obj,
+        typename std::enable_if<
+            !std::is_reference<decltype(*(obj->begin()))>::value>::type* = 0)
+        -> decltype(++(obj->begin()), obj->end(), std::string()) {
+      auto iter = obj->begin(), iterEnd = obj->end();
+      if (iter == iterEnd) return valuePrinterInternal::kEmptyCollection;
 
       std::string str("{ ");
-      const auto value0 = (*iter);
-      str += printValue(&value0);
+      str += printValue(*iter);
       while (++iter != iterEnd) {
-        const auto valueN = (*iter);
         str += ", ";
-        str += printValue(&valueN);
+        str += printValue(*iter);
       }
       return str + " }";
-     }
+    }
   }
 
   // Collections
   template<typename CollectionType>
   auto printValue(const CollectionType *obj)
-  -> decltype(collectionPrinterInternal::printValue_impl(obj, 0), std::string())
-  {
-    // short -> int -> long = priority order
-    return collectionPrinterInternal::printValue_impl(obj, (short)0);
+  -> decltype(collectionPrinterInternal::printValue_impl(obj), std::string()) {
+    return collectionPrinterInternal::printValue_impl(obj);
   }
 
   // Arrays
@@ -297,6 +290,13 @@ namespace cling {
   {
     using T = std::pair<ARGS...>;
     return collectionPrinterInternal::tuplePairPrintValue<T>(val);
+  }
+
+  namespace collectionPrinterInternal {
+    // Keep this last to allow picking up all specializations above.
+    template <typename T> std::string printValue(const T* V, const void*) {
+      return cling::printValue(V);
+    }
   }
 }
 
