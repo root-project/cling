@@ -78,6 +78,7 @@ delete t;
 .undo
 .stats undo
 // CHECK-NEXT: <cling::Transaction* 0x{{[0-9a-f]+}} isEmpty=0 isCommitted=1>
+// CHECK-NEXT: `   <cling::Transaction* 0x{{[0-9a-f]+}} isEmpty=0 isCommitted=1>
 
 unsigned *uptr = new unsigned[5];
 for (unsigned i = 0; i < 5; ++i) {

@@ -536,7 +536,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     bool Successful = true;
     if (DC->containsDecl(D)) {
       llvm::SmallVector<DeclContext*, 4> errors;
-      DC->removeDecl(D, &errors);
+      DC->removeDecl(D/*, &errors*/);
       if (!errors.empty())
         reportErrors(m_Sema, D, Loc, errors);
     }
@@ -1254,7 +1254,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         GlobalValueEraser GVEraser(m_CodeGen);
         GVEraser.EraseGlobalValue(GV);
       }
-      m_CodeGen->forgetDecl(GD, mangledName);
+      m_CodeGen->forgetDecl(GD/*, mangledName*/);
     }
   }
 
