@@ -372,7 +372,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   }
 
   void DeclUnloader::CollectFilesToUncache(SourceLocation Loc) {
-    if (!m_CurTransaction)
+    if (!m_CurTransaction || Loc.isInvalid())
       return;
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
@@ -385,9 +385,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     switch (D->getKind()) {
       case Decl::ClassTemplateSpecialization:
       case Decl::ClassTemplatePartialSpecialization: {
-        const SourceLocation Loc = cast<ClassTemplateSpecializationDecl>(D)->getPointOfInstantiation();
+        auto* CTS = cast<ClassTemplateSpecializationDecl>(D);
+        const SourceLocation Loc = CTS->getPointOfInstantiation();
         if (Loc.isValid())
           return Loc;
+        if (CTS->getSpecializationKind() == clang::TSK_Undeclared)
+          return SourceLocation();
         break;
       }
       case Decl::Function: {
