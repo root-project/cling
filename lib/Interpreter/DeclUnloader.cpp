@@ -1417,7 +1417,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
                                                  CanonCTSD);
 
     bool Success = true;
-    if (VisitingSpec || !wasInstatiatedBefore(Loc)) {
+    if (!wasInstatiatedBefore(Loc)) {
       VisitorState VS(*this, kVisitingSpecialization);
       Success = VisitCXXRecordDecl(CTSD);
     }
