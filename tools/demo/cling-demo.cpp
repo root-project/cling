@@ -43,7 +43,7 @@ std::string* createAString(const char* str) {
    interp.process(sstr.str(), &res);
 
    // Grab the return value of `createAString()`:
-   std::string* resStr = reinterpret_cast<std::string*>(res.getPtr());
+   std::string* resStr = static_cast<std::string*>(res.getPtr());
    return std::unique_ptr<std::string>(resStr);
 }
 
@@ -51,8 +51,8 @@ int main(int argc, const char* const* argv) {
     // Create the Interpreter. LLVMDIR is provided as -D during compilation.
     cling::Interpreter interp(argc, argv, LLVMDIR);
 
-    std::cout << setAndUpdate(17, interp) << '\n';
-    std::cout << *stringify(42, interp) << '\n';
+    std::cout << "The square of 17 is " << setAndUpdate(17, interp) << '\n';
+    std::cout << "Printing a string of 42: " << *stringify(42, interp) << '\n';
 
     return 0;
 }
