@@ -9,50 +9,72 @@
 
 #include <cling/Interpreter/Interpreter.h>
 #include <cling/Interpreter/Value.h>
+#include <cling/Utils/Casting.h>
 #include <iostream>
 #include <string>
 #include <sstream>
 
-///\brief Pass a value from the compiled program into cling, let cling modify it
-///  and return the modified value into the compiled program.
-int setAndUpdate(int arg, cling::Interpreter& interp) {
-   int ret = arg; // The value that will be modified
-                  // Update the value of ret by passing it to the interpreter.
-   std::ostringstream sstr;
-   sstr << "int& ref = *(int*)" << &ret << ';';
-   sstr << "ref = ref * ref;";
-   interp.process(sstr.str());
-   return ret;
+/// Definitions of declarations injected also into cling.
+/// NOTE: this could also stay in a header #included here and into cling, but
+/// for the sake of simplicity we just redeclare them here.
+int aGlobal = 42;
+static float anotherGlobal = 3.141;
+float getAnotherGlobal() { return anotherGlobal; };
+void setAnotherGlobal(float val) { anotherGlobal = val; }
+
+///\brief Call compiled functions from the interpreter.
+void useHeader(cling::Interpreter& interp) {
+  // We could use a header, too...
+  interp.declare("int aGlobal;\n"
+                 "float getAnotherGlobal();\n"
+                 "void setAnotherGlobal(float val);\n");
+
+  cling::Value res; // Will hold the result of the expression evaluation.
+  interp.process("aGlobal;", &res);
+  std::cout << "aGlobal is " << res.getAs<long long>() << '\n';
+  interp.process("getAnotherGlobal();", &res);
+  std::cout << "getAnotherGlobal() returned " << res.getAs<float>() << '\n';
+
+  setAnotherGlobal(1.); // We modify the compiled value,
+  interp.process("getAnotherGlobal();", &res); // does the interpreter see it?
+  std::cout << "getAnotherGlobal() returned " << res.getAs<float>() << '\n';
+
+  // We modify using the interpreter, now the binary sees the new value.
+  interp.process("setAnotherGlobal(7.777); getAnotherGlobal();");
+  std::cout << "getAnotherGlobal() returned " << getAnotherGlobal() << '\n';
 }
 
-///\brief A ridiculously complicated way of converting an int to a string.
-std::unique_ptr<std::string> stringify(int value, cling::Interpreter& interp) {
+///\brief Call an interpreted function using its symbol address.
+void useSymbolAddress(cling::Interpreter& interp) {
+  // Declare a function to the interpreter. Make it extern "C" to remove
+  // mangling from the game.
+  interp.declare("extern \"C\" int plutification(int siss, int sat) "
+                 "{ return siss * sat; }");
+  void* addr = interp.getAddressOfGlobal("plutification");
+  using func_t = int(int, int);
+  func_t* pFunc = cling::utils::VoidToFunctionPtr<func_t*>(addr);
+  std::cout << "7 * 8 = " << pFunc(7, 8) << '\n';
+}
 
-   // Declare the function to cling:
-   static const std::string codeFunc = R"CODE(
-#include <string>
-std::string* createAString(const char* str) {
-   return new std::string(str);
-})CODE";
-   interp.declare(codeFunc);
+///\brief Pass a pointer into cling as a string.
+void usePointerLiteral(cling::Interpreter& interp) {
+  int res = 17; // The value that will be modified
 
-   // Call the function with "runtime" values:
-   std::ostringstream sstr;
-   sstr << "createAString(\"" << value << "\");";
-   cling::Value res; // Will hold the result of the expression evaluation.
-   interp.process(sstr.str(), &res);
-
-   // Grab the return value of `createAString()`:
-   std::string* resStr = static_cast<std::string*>(res.getPtr());
-   return std::unique_ptr<std::string>(resStr);
+  // Update the value of res by passing it to the interpreter.
+  std::ostringstream sstr;
+  sstr << "int& ref = *(int*)" << &res << ';';
+  sstr << "ref = ref * ref;";
+  interp.process(sstr.str());
+  std::cout << "The square of 17 is " << res << '\n';
 }
 
 int main(int argc, const char* const* argv) {
-    // Create the Interpreter. LLVMDIR is provided as -D during compilation.
-    cling::Interpreter interp(argc, argv, LLVMDIR);
+  // Create the Interpreter. LLVMDIR is provided as -D during compilation.
+  cling::Interpreter interp(argc, argv, LLVMDIR);
 
-    std::cout << "The square of 17 is " << setAndUpdate(17, interp) << '\n';
-    std::cout << "Printing a string of 42: " << *stringify(42, interp) << '\n';
+  useHeader(interp);
+  useSymbolAddress(interp);
+  usePointerLiteral(interp);
 
-    return 0;
+  return 0;
 }
