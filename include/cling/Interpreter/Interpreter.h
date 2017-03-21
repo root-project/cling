@@ -126,6 +126,8 @@ namespace cling {
       kExeCompilationError,
       ///\brief The function is not known.
       kExeUnkownFunction,
+      ///\brief The Transaction had no module (probably an error in CodeGen).
+      kExeNoModule,
 
       ///\brief Number of possible results.
       kNumExeResults

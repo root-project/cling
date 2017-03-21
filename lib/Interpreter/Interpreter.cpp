@@ -1211,8 +1211,8 @@ namespace cling {
   void Interpreter::unload(Transaction& T) {
     // Clear any stored states that reference the llvm::Module.
     // Do it first in case
-    if (!m_StoredStates.empty()) {
-      const llvm::Module *const Module = T.getModule();
+    llvm::Module* const Module = T.getModule();
+    if (Module && !m_StoredStates.empty()) {
       const auto Predicate = [&Module](const ClangInternalState *S) {
         return S->getModule() == Module;
       };
@@ -1236,7 +1236,7 @@ namespace cling {
       m_Executor->runAndRemoveStaticDestructors(&T);
       if (!T.getExecutor()) {
         // this transaction might be queued in the executor
-        m_Executor->unloadFromJIT(T.getModule(),
+        m_Executor->unloadFromJIT(Module,
                                   Transaction::ExeUnloadHandle({(void*)(size_t)-1}));
       }
     }
@@ -1401,9 +1401,13 @@ namespace cling {
     assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
 
+    llvm::Module* const M = T.getModule();
+    if (!M)
+      return Interpreter::kExeNoModule;
+
     IncrementalExecutor::ExecutionResult ExeRes
        = IncrementalExecutor::kExeSuccess;
-    if (!isPracticallyEmptyModule(T.getModule())) {
+    if (!isPracticallyEmptyModule(M)) {
       T.setExeUnloadHandle(m_Executor.get(), m_Executor->emitToJIT());
 
       // Forward to IncrementalExecutor; should not be called by
