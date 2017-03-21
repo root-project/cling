@@ -508,10 +508,12 @@ namespace cling {
       if (!T->getParent()) {
         if (m_Interpreter->executeTransaction(*T)
             >= Interpreter::kExeFirstError) {
-          // Roll back on error in initializers
-          //assert(0 && "Error on inits.");
+          // Roll back on error in initializers.
+          // T maybe pointing to freed memory after this call:
+          // Interpreter::unload
+          //   IncrementalParser::deregisterTransaction
+          //     TransactionPool::releaseTransaction
           m_Interpreter->unload(*T);
-          T->setState(Transaction::kRolledBackWithErrors);
           return;
         }
       }
