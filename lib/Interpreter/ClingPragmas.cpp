@@ -78,18 +78,22 @@ namespace {
       Token& CurTok = const_cast<Token&>(P.getCurToken());
       CurTok.setKind(tok::semi);
 
-      Preprocessor::CleanupAndRestoreCacheRAII cleanupRAII(PP);
-      // We can't PushDeclContext, because we go up and the routine that pops
-      // the DeclContext assumes that we drill down always.
-      // We have to be on the global context. At that point we are in a
-      // wrapper function so the parent context must be the global.
-      TranslationUnitDecl* TU =
-                  m_Interp.getCI()->getASTContext().getTranslationUnitDecl();
-      Sema::ContextAndScopeRAII pushedDCAndS(m_Interp.getSema(),
-                                             TU, m_Interp.getSema().TUScope);
-      Interpreter::PushTransactionRAII pushedT(&m_Interp);
+      if (!m_Interp.isInSyntaxOnlyMode()) {
+        // No need to load libraries if we're not executing anything.
 
-      m_Interp.loadFile(Result.second, true /*allowSharedLib*/);
+        Preprocessor::CleanupAndRestoreCacheRAII cleanupRAII(PP);
+        // We can't PushDeclContext, because we go up and the routine that pops
+        // the DeclContext assumes that we drill down always.
+        // We have to be on the global context. At that point we are in a
+        // wrapper function so the parent context must be the global.
+        TranslationUnitDecl* TU =
+          m_Interp.getCI()->getASTContext().getTranslationUnitDecl();
+        Sema::ContextAndScopeRAII pushedDCAndS(m_Interp.getSema(),
+                                               TU, m_Interp.getSema().TUScope);
+        Interpreter::PushTransactionRAII pushedT(&m_Interp);
+
+        m_Interp.loadFile(Result.second, true /*allowSharedLib*/);
+      }
     }
   };
 
