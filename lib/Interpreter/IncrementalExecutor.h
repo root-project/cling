@@ -184,19 +184,7 @@ namespace cling {
 
     ///\brief Runs a wrapper function.
     ExecutionResult executeWrapper(llvm::StringRef function,
-                                   Value* returnValue = 0) {
-      // Set the value to cling::invalid.
-      if (returnValue) {
-        *returnValue = Value();
-      }
-      typedef void (*InitFun_t)(void*);
-      InitFun_t fun;
-      ExecutionResult res = executeInitOrWrapper(function, fun);
-      if (res != kExeSuccess)
-        return res;
-      (*fun)(returnValue);
-      return kExeSuccess;
-    }
+                                   Value* returnValue = 0);
 
     ///\brief Adds a symbol (function) to the execution engine.
     ///
@@ -209,7 +197,7 @@ namespace cling {
     /// @param[in] JIT - Add to the JIT injected symbol table
     /// @returns true if the symbol is successfully registered, false otherwise.
     ///
-    bool addSymbol(const char* Name, void* Address, bool JIT = false);
+    bool addSymbol(llvm::StringRef Name, void* Address, bool JIT = false);
 
     ///\brief Add a llvm::Module to the JIT.
     ///
@@ -263,27 +251,10 @@ namespace cling {
     void* HandleMissingFunction(const std::string& symbol);
 
     ///\brief Runs an initializer function.
-    ExecutionResult executeInit(llvm::StringRef function) {
-      typedef void (*InitFun_t)();
-      InitFun_t fun;
-      ExecutionResult res = executeInitOrWrapper(function, fun);
-      if (res != kExeSuccess)
-        return res;
-      (*fun)();
-      return kExeSuccess;
-    }
+    ExecutionResult executeInit(llvm::StringRef function);
 
     template <class T>
-    ExecutionResult executeInitOrWrapper(llvm::StringRef funcname, T& fun) {
-      fun = utils::UIntToFunctionPtr<T>(m_JIT->getSymbolAddress(funcname,
-                                                              false /*dlsym*/));
-
-      // check if there is any unresolved symbol in the list
-      if (diagnoseUnresolvedSymbols(funcname, "function") || !fun)
-        return IncrementalExecutor::kExeUnresolvedSymbols;
-
-      return IncrementalExecutor::kExeSuccess;
-    }
+    ExecutionResult executeInitOrWrapper(llvm::StringRef funcname, T& fun);
   };
 } // end cling
 #endif // CLING_INCREMENTAL_EXECUTOR_H

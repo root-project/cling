@@ -45,7 +45,7 @@ namespace cling {
     ///
     ASTContext& m_Context;
 
-    ///\brief cling_runtime_internal_throwIfInvalidPointer cache.
+    ///\brief cling_ThrowIfInvalidPointer cache.
     ///
     LookupResult* m_clingthrowIfInvalidPointerCache;
 
@@ -212,7 +212,7 @@ namespace cling {
       assert(!m_clingthrowIfInvalidPointerCache && "Called multiple times!?");
 
       DeclarationName Name
-        = &m_Context.Idents.get("cling_runtime_internal_throwIfInvalidPointer");
+        = &m_Context.Idents.get("cling_ThrowIfInvalidPointer");
       SourceLocation noLoc;
       m_clingthrowIfInvalidPointerCache = new LookupResult(m_Sema, Name, noLoc,
                                         Sema::LookupOrdinaryName,
@@ -220,7 +220,7 @@ namespace cling {
       m_Sema.LookupQualifiedName(*m_clingthrowIfInvalidPointerCache,
                                  m_Context.getTranslationUnitDecl());
       assert(!m_clingthrowIfInvalidPointerCache->empty() &&
-              "Lookup of cling_runtime_internal_throwIfInvalidPointer failed!");
+              "Lookup of cling_ThrowIfInvalidPointer failed!");
     }
   };
 

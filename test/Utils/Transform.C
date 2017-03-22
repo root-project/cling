@@ -274,7 +274,7 @@ Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
 lookup.findScope("A<B<Double32_t, std::size_t*> >", diags, &t);
 QT = clang::QualType(t, 0);
 Transform::GetPartiallyDesugaredType(Ctx, QT, transConfig).getAsString().c_str()
-// CHECK:({{[^)]+}}) "A<B<Double32_t, unsigned {{long|int}} *> >"
+// CHECK:({{[^)]+}}) "A<B<Double32_t, unsigned {{long|int|long long}} *> >"
 
 lookup.findScope("CTD", diags, &t);
 QT = clang::QualType(t, 0);

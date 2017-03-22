@@ -7,19 +7,21 @@
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
-
+#define CLING_RUNTIME_EXCEPTION_CPP
 #include "cling/Interpreter/Exception.h"
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Utils/Output.h"
 #include "cling/Utils/Validation.h"
+#include "cling-c/Exception.h"
 
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 
-extern "C" {
+CLING_EXTERN_C_
 /// Throw an InvalidDerefException if the Arg pointer is invalid.
 ///\param Interp: The interpreter that has compiled the code.
 ///\param Expr: The expression corresponding determining the pointer value.
@@ -27,8 +29,7 @@ extern "C" {
 ///\returns void*, const-cast from Arg, to reduce the complexity in the
 /// calling AST nodes, at the expense of possibly doing a
 /// T* -> const void* -> const_cast<void*> -> T* round trip.
-void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
-                                                   const void* Arg) {
+void* cling_ThrowIfInvalidPointer(void* Interp, void* Expr, const void* Arg) {
 
   const clang::Expr* const E = (const clang::Expr*)Expr;
 
@@ -52,7 +53,16 @@ void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
   }
   return const_cast<void*>(Arg);
 }
+
+void cling_RunLoop(bool (*RunProc)(void* Data), void* Data) {
+  cling::InterpreterException::RunLoop(RunProc, Data);
 }
+
+void cling_ThrowCompilationException(void*, const std::string& Reason, bool) {
+  throw cling::CompilationException(Reason);
+}
+
+_CLING_EXTERN_C
 
 namespace cling {
   InterpreterException::InterpreterException(const std::string& What) :
@@ -96,9 +106,76 @@ namespace cling {
 
   CompilationException::~CompilationException() LLVM_NOEXCEPT {}
 
-  void CompilationException::throwingHandler(void * /*user_data*/,
-                                             const std::string& reason,
-                                             bool /*gen_crash_diag*/) {
-    throw cling::CompilationException(reason);
+  static bool ReportException(const char* Msg, const char* What = nullptr) {
+    cling::errs() << ">>> " << Msg;
+    if (What) cling::errs() << ": '" << What << "'";
+    cling::errs() << ".\n";
+    return true;
+  }
+
+  bool InterpreterException::ReportErr(void* Data, const Error& E) {
+    if (E.isNull())
+      return ReportException("Caught an unkown exception");
+
+    const InterpreterException* IE = E.dyn_cast<const InterpreterException*>();
+    if (IE && IE->diagnose())
+      return true;
+
+    const std::exception* Err = IE ? IE : E.get<const std::exception*>();
+    return ReportException(IE ? "Caught an interpreter exception"
+                              : "Caught a std::exception",
+                           Err->what());
+  }
+
+  static bool NoReport(void*, const InterpreterException::Error& E) {
+    return true;
+  }
+
+  void InterpreterException::RunLoop(bool (*Proc)(void* Data), void* Data,
+                                     ErrorHandler OnError) {
+    bool Run = true;
+    if (!OnError) OnError = &NoReport;
+
+    while (Run) {
+      try {
+        Run = Proc(Data);
+      } catch (const InterpreterException& E) {
+        Run = OnError(Data, &E);
+      } catch (const std::exception& E) {
+        Run = OnError(Data, &E);
+      } catch (...) {
+        Run = OnError(Data, static_cast<const std::exception*>(nullptr));
+      }
+    }
+  }
+
+  namespace internal {
+    void TestExceptions(intptr_t Throw) {
+     struct LocalObj {};
+     switch (Throw) {
+        case -1:  throw LocalObj();
+        case  1:  throw std::exception();
+        case  2:  throw std::logic_error("std::logic_error");
+        case  3:  throw std::runtime_error("std::runtime_error");
+        case  4:  throw std::out_of_range("std::out_of_range");
+        case  5:  throw std::bad_alloc();
+        case  6:  throw "c-string";
+        case  7:  throw std::string("std::string");
+
+        case 10:  throw bool(true);
+        case 11:  throw float(1.41421354);
+        case 12:  throw double(3.14159265);
+
+        case -8:  throw int8_t(-8);
+        case  8:  throw uint8_t(8);
+        case -16: throw int16_t(-16);
+        case  16: throw uint16_t(16);
+        case -32: throw int32_t(-32);
+        case  32: throw uint32_t(32);
+        case -64: throw int64_t(-64);
+        case  64: throw uint64_t(64);
+        default:  break;
+     }
+    }
   }
 } // end namespace cling

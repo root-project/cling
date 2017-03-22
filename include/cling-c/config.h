@@ -1,17 +1,21 @@
 //--------------------------------------------------------------------*- C++ -*-
 // CLING - the C++ LLVM-based InterpreterG :)
-// author:  Vassil Vassilev <vasil.georgiev.vasilev@cern.ch>
+// author:  Roman Zulak
 //
 // This file is dual-licensed: you can choose to license it under the University
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#ifndef CLING_VALUEPRINTERC_H
-#define CLING_VALUEPRINTERC_H
-#ifdef __cplusplus
-extern "C"
-#endif
-void cling_PrintValue(void* /*cling::Value**/ V);
+#ifndef CLING_CINTERACE_CONFIG_H
+#define CLING_CINTERACE_CONFIG_H
 
-#endif // CLING_VALUEPRINTERC_H
+#ifdef __cplusplus
+#define CLING_EXTERN_C_ extern "C" {
+#define _CLING_EXTERN_C }
+#else
+#define CLING_EXTERN_C_
+#define _CLING_EXTERN_C
+#endif
+
+#endif // CLING_CINTERACE_CONFIG_H

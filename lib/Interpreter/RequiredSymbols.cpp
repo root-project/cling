@@ -8,16 +8,14 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/Interpreter.h"
-//#include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Utils/Output.h"
-#include "clang/AST/Type.h"
+//#include "cling-c/ValuePrinter.h"
+#include "cling-c/Exception.h"
 
-extern "C"
-void* cling_runtime_internal_throwIfInvalidPointer(void* Sema, void* Expr,
-                                                   const void* Arg);
+#include "clang/AST/Type.h"
 
 namespace cling {
 namespace internal {
@@ -39,7 +37,28 @@ void symbol_requester() {
    h.findFunctionArgs(0, "", "", LookupHelper::NoDiagnostics);
    runtime::internal::DynamicExprInfo DEI(0,0,false);
    DEI.getExpr();
-   cling_runtime_internal_throwIfInvalidPointer(nullptr, nullptr, nullptr);
+   cling_ThrowIfInvalidPointer(nullptr, nullptr, nullptr);
 }
+
+// test/ErrorRecovery/Exceptions.C calls this function so to make sure the
+// stack is properly unwound when throwing from the JIT or null deref checking
+//
+void TestUnwind(void (*Proc)(intptr_t), intptr_t Data) {
+  if (Proc) {
+    struct Unwinder {
+      ~Unwinder() {
+        printf("UnwindTest::~UnwindTest\n");
+        fflush(stdout);
+      }
+    };
+    Unwinder UW;
+    Proc(Data);
+  } else {
+    // If TestUnwind isn't stripped, why would symbol_requester?
+    // Whatever...Prepare to crash!
+    symbol_requester();
+  }
+}
+
 }
 }

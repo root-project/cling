@@ -352,19 +352,27 @@ namespace {
     // #pragma comment(lib, "bufferoverflowu.lib") still gives errors!
     // Opts.setStackProtector(clang::LangOptions::SSPStrong);
 #endif // _DEBUG
-#ifdef _CPPRTTI
-    Opts.RTTIData = 1;
-#else
-    Opts.RTTIData = 0;
+#if !defined(_CPPRTTI)
+ #define CLING_NO_RTTI
 #endif // _CPPRTTI
     Opts.Trigraphs = 0;
     Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
 #else // !_MSC_VER
     Opts.Trigraphs = 1;
-//    Opts.RTTIData = 1;
 //    Opts.DefaultCallingConventions = 1;
 //    Opts.StackProtector = 0;
-#endif // _MSC_VER
+#if (defined(__clang__) ? !__has_feature(cxx_rtti) : !defined(__GXX_RTTI))
+ #define CLING_NO_RTTI
+#endif // RTTI
+#endif /* !_MSC_VER */
+
+    // Allow -frtti -fno-rtti to set availabaility of RTTI features, but always
+    // generate RTTI data based on how cling was compiled.
+#if defined(CLING_NO_RTTI)
+    Opts.RTTIData = 0;
+#else
+    Opts.RTTIData = 1;
+#endif
 
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
@@ -514,6 +522,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     PPOpts.addMacroDef("__CLING__clang__=" ClingStringify(__clang__));
 #elif defined(__GNUC__)
     PPOpts.addMacroDef("__CLING__GNUC__=" ClingStringify(__GNUC__));
+    PPOpts.addMacroDef("__CLING__GNUC_MINOR__=" ClingStringify(__GNUC_MINOR__));
 #elif defined(_MSC_VER)
     PPOpts.addMacroDef("__CLING__MSVC__=" ClingStringify(_MSC_VER));
 #endif
@@ -730,12 +739,24 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return nullptr;
     }
 
-    llvm::Triple TheTriple(llvm::sys::getProcessTriple());
-#ifdef LLVM_ON_WIN32
-    // COFF format currently needs a few changes in LLVM to function properly.
-    TheTriple.setObjectFormat(llvm::Triple::ELF);
+    std::string Triple;
+    if (COpts.JITFormat) {
+      // Taken from sys::getProcessTriple() in lib/Support/Host.cpp
+      llvm::Triple PrTriple(llvm::Triple::normalize(LLVM_HOST_TRIPLE));
+      if (sizeof(void*) == 8 && PrTriple.isArch32Bit())
+        PrTriple = PrTriple.get64BitArchVariant();
+      else if (sizeof(void*) == 4 && PrTriple.isArch64Bit())
+        PrTriple = PrTriple.get32BitArchVariant();
+      PrTriple.setObjectFormat(llvm::Triple::ObjectFormatType(COpts.JITFormat));
+#ifdef __APPLE__
+      PrTriple.setOSName("unknown"); // -darwin- is tied to mach-o format
+      argvCompile.push_back("-D__APPLE__"); // without darwin this isn't defined
 #endif
-    clang::driver::Driver Drvr(argv[0], TheTriple.getTriple(), *Diags);
+      Triple = PrTriple.str();
+    } else
+      Triple = llvm::sys::getProcessTriple();
+
+    clang::driver::Driver Drvr(argv[0], Triple, *Diags);
     //Drvr.setWarnMissingInput(false);
     Drvr.setCheckInputsExist(false); // think foo.C(12)
     llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());

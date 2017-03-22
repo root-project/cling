@@ -74,6 +74,7 @@ namespace cling {
     const char* curPos = line.data();
     bool multilineComment = inBlockComment();
     int commentTok = multilineComment ? tok::asterik : tok::slash;
+    int lastKind;
 
     if (!multilineComment && m_ParenStack.empty()) {
       // Only check for 'template' if we're not already indented
@@ -88,12 +89,14 @@ namespace cling {
     }
 
     do {
+      lastKind = int(Tok.getKind());
+
       const char* prevStart = curPos;
       if (!MetaLexer::LexPunctuatorAndAdvance(curPos, Tok)) {
         // there were tokens between the previous and this Tok.
         commentTok = tok::slash;
       }
-      const int kind = (int)Tok.getKind();
+      const int kind = int(Tok.getKind());
 
       if (kind == commentTok) {
         if (kind == tok::slash) {
@@ -198,7 +201,8 @@ namespace cling {
       }
     } while (Tok.isNot(tok::eof));
 
-    if (!m_ParenStack.empty() && Res != kMismatch)
+    const bool Continue = lastKind == tok::backslash || lastKind == tok::comma;
+    if (Continue || (!m_ParenStack.empty() && Res != kMismatch))
       Res = kIncomplete;
 
     if (!m_Input.empty()) {
@@ -208,8 +212,6 @@ namespace cling {
       else
         m_Input.append("\n");
     }
-    else
-      m_Input = "";
 
     m_Input.append(line);
 

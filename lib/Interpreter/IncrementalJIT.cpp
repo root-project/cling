@@ -16,10 +16,8 @@
 #include "llvm/Support/DynamicLibrary.h"
 
 #ifdef __APPLE__
-// Apple adds an extra '_'
+// Apple Mach-O adds an extra '_'
 # define MANGLE_PREFIX "_"
-#else
-# define MANGLE_PREFIX ""
 #endif
 
 using namespace llvm;
@@ -295,6 +293,59 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
 // #endif
 }
 
+void IncrementalJIT::NotifyObjectLoadedT::operator() (
+    llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H, const ObjListT& Objects,
+    const LoadedObjInfoListT& Infos) const {
+  m_JIT.m_UnfinalizedSections[H] =
+      std::move(m_JIT.m_SectionsAllocatedSinceLastLoad);
+  m_JIT.m_SectionsAllocatedSinceLastLoad = SectionAddrSet();
+  assert(Objects.size() == Infos.size() &&
+         "Incorrect number of Infos for Objects.");
+  if (auto GDBListener = m_JIT.m_GDBListener) {
+    for (size_t I = 0, N = Objects.size(); I < N; ++I)
+      GDBListener->NotifyObjectEmitted(*Objects[I]->getBinary(), *Infos[I]);
+  }
+
+  for (const auto& Object : Objects) {
+    for (const auto& Symbol : Object->getBinary()->symbols()) {
+      auto Flags = Symbol.getFlags();
+      if (Flags & llvm::object::BasicSymbolRef::SF_Undefined) continue;
+      // FIXME: this should be uncommented once we serve incremental
+      // modules from a TU module.
+      // if (!(Flags & llvm::object::BasicSymbolRef::SF_Exported))
+      //  continue;
+      auto NameOrError = Symbol.getName();
+      if (!NameOrError) continue;
+      auto Name = NameOrError.get();
+      if (m_JIT.m_SymbolMap.find(Name) == m_JIT.m_SymbolMap.end()) {
+        llvm::orc::JITSymbol Sym =
+            m_JIT.m_CompileLayer.findSymbolIn(H, Name, true);
+        if (llvm::orc::TargetAddress Addr = Sym.getAddress())
+          m_JIT.m_SymbolMap[Name] = Addr;
+      }
+    }
+  }
+}
+
+void IncrementalJIT::RemovableObjectLinkingLayer::removeObjectSet(
+    llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
+  struct AccessSymbolTable : public LinkedObjectSet {
+    const llvm::StringMap<llvm::RuntimeDyld::SymbolInfo>&
+    getSymbolTable() const {
+      return SymbolTable;
+    }
+  };
+  const AccessSymbolTable* HSymTable =
+      static_cast<const AccessSymbolTable*>(H->get());
+  for (auto&& NameSym : HSymTable->getSymbolTable()) {
+    auto iterSymMap = m_SymbolMap.find(NameSym.first());
+    if (iterSymMap == m_SymbolMap.end()) continue;
+    // Is this this symbol (address)?
+    if (iterSymMap->second == NameSym.second.getAddress())
+      m_SymbolMap.erase(iterSymMap);
+  }
+  llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT>::removeObjectSet(H);
+}
 
 llvm::orc::JITSymbol
 IncrementalJIT::getInjectedSymbols(const std::string& Name) const {
@@ -318,7 +369,10 @@ IncrementalJIT::lookupSymbol(llvm::StringRef Name, void *InAddr, bool Jit) {
   if (InAddr && (!Addr || Jit)) {
     if (Jit) {
       std::string Key(Name);
-      Key.insert(0, MANGLE_PREFIX);
+#ifdef MANGLE_PREFIX
+      if (m_TMDataLayout.hasLinkerPrivateGlobalPrefix())
+        Key.insert(0, MANGLE_PREFIX);
+#endif
       m_SymbolMap[Key] = llvm::orc::TargetAddress(InAddr);
     }
     llvm::sys::DynamicLibrary::AddSymbol(Name, InAddr);
@@ -357,12 +411,26 @@ IncrementalJIT::getSymbolAddressWithoutMangling(const std::string& Name,
   return llvm::orc::JITSymbol(nullptr);
 }
 
+std::string IncrementalJIT::Mangle(llvm::StringRef Name) {
+  stdstrstream MangledName;
+  llvm::Mangler::getNameWithPrefix(MangledName, Name, m_TMDataLayout);
+  return MangledName.str();
+}
+  
+uint64_t
+IncrementalJIT::getSymbolAddress(const std::string& Name, bool InProcess) {
+  return getSymbolAddressWithoutMangling(Mangle(Name), InProcess).getAddress();
+}
+
 size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
-  // If this module doesn't have a DataLayout attached then attach the
-  // default.
+
+#ifndef NDEBUG
+  // Make sure layouts are same/compatible.
   for (auto&& mod: modules) {
-    mod->setDataLayout(m_TMDataLayout);
+    assert(m_TM->isCompatibleDataLayout(mod->getDataLayout())
+           && "Layouts differ");
   }
+#endif
 
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
@@ -370,28 +438,36 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
       if (auto Sym = getInjectedSymbols(S))
         return RuntimeDyld::SymbolInfo((uint64_t)Sym.getAddress(),
                                        Sym.getFlags());
+#ifdef MANGLE_PREFIX
+      const size_t PrfxLen = strlen(MANGLE_PREFIX);
+      const bool HasPrefix = !S.compare(0, PrfxLen, MANGLE_PREFIX);
+      if (!m_TMDataLayout.hasLinkerPrivateGlobalPrefix() && HasPrefix) {
+        return m_ExeMM->findSymbol(std::string(MANGLE_PREFIX, PrfxLen) + S);
+      }
+#endif
       return m_ExeMM->findSymbol(S);
     },
-    [&](const std::string &Name) {
-      if (auto Sym = getSymbolAddressWithoutMangling(Name, true)
-          /*was: findSymbol(Name)*/)
+    [&](const std::string &InName) {
+      if (auto Sym = getSymbolAddressWithoutMangling(InName, true))
         return RuntimeDyld::SymbolInfo(Sym.getAddress(),
                                        Sym.getFlags());
 
+      const std::string* Name = &InName;
+#ifdef MANGLE_PREFIX
+      std::string EditedName;
+      const size_t PrfxLen = strlen(MANGLE_PREFIX);
+      if (!InName.compare(0, PrfxLen, MANGLE_PREFIX)) {
+        EditedName += InName.substr(PrfxLen);
+        Name = &EditedName;
+      }
+#endif
 
       /// This method returns the address of the specified function or variable
       /// that could not be resolved by getSymbolAddress() or by resolving
       /// possible weak symbols by the ExecutionEngine.
       /// It is used to resolve symbols during module linking.
 
-      std::string NameNoPrefix;
-      if (MANGLE_PREFIX[0]
-          && !Name.compare(0, strlen(MANGLE_PREFIX), MANGLE_PREFIX))
-        NameNoPrefix = Name.substr(strlen(MANGLE_PREFIX), -1);
-      else
-        NameNoPrefix = std::move(Name);
-      uint64_t addr
-        = (uint64_t) getParent().NotifyLazyFunctionCreators(NameNoPrefix);
+      uint64_t addr = uint64_t(getParent().NotifyLazyFunctionCreators(*Name));
       return RuntimeDyld::SymbolInfo(addr, llvm::JITSymbolFlags::Weak);
     });
 

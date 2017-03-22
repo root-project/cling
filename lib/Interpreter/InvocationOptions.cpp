@@ -13,12 +13,20 @@
 
 #include "clang/Driver/Options.h"
 
+#include "llvm/ADT/Triple.h"
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Option/Option.h"
 #include "llvm/Option/OptTable.h"
 
 #include <memory>
+// strncasecmp
+#ifndef LLVM_ON_WIN32
+ #include <strings.h>
+#else
+ #include <string.h>
+ #define strncasecmp _strnicmp
+#endif
 
 using namespace clang;
 using namespace clang::driver;
@@ -81,6 +89,40 @@ static const char kNoStdInc[] = "-nostdinc";
         Opts.MetaString = ".";
       }
     }
+
+    if (Arg* JitArg = Args.getLastArg(OPT__jit, OPT__jit_EQ)) {
+      const char* JitFmt = JitArg->getValue();
+      const char Elf[] = "elf";
+      const char Coff[] = "coff";
+      const char MachO[] = "mach-o";
+      const std::pair<const char*, llvm::Triple::ObjectFormatType> Default =
+#if defined(__APPLE__)
+        std::make_pair(MachO, llvm::Triple::MachO);
+#elif defined(LLVM_ON_WIN32)
+        std::make_pair(Coff, llvm::Triple::COFF);
+#else
+        std::make_pair(Elf, llvm::Triple::ELF);
+#endif
+      if (::strncasecmp(JitFmt, Elf, sizeof(Elf)) == 0)
+        Opts.CompilerOpts.JITFormat = llvm::Triple::ELF;
+      else if (::strncasecmp(JitFmt, MachO, sizeof(MachO)) == 0)
+        Opts.CompilerOpts.JITFormat = llvm::Triple::MachO;
+      else if (::strncasecmp(JitFmt, Coff, sizeof(Coff)) == 0) {
+#if !defined(LLVM_ON_WIN32)
+        cling::errs() << "COFF only supported on Windows, using: '"
+                      << Default.first << "'\n";
+#else
+        Opts.CompilerOpts.JITFormat = llvm::Triple::COFF;
+#endif
+      }
+      else
+        cling::errs() << "Unkown JIT format: '" << JitFmt << "', using '"
+                      << Default.first << "'\n";
+
+      // If default was specified don't bother marking the format.
+      if (Opts.CompilerOpts.JITFormat == Default.second)
+        Opts.CompilerOpts.JITFormat = 0;
+    }
   }
 
   static void Extend(std::vector<std::string>& A, std::vector<std::string> B) {
@@ -99,7 +141,7 @@ static const char kNoStdInc[] = "-nostdinc";
 CompilerOptions::CompilerOptions(int argc, const char* const* argv) :
   Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
   NoCXXInc(false), StdVersion(false), StdLib(false), HasOutput(false),
-  Verbose(false) {
+  Verbose(false), JITFormat(0) {
   if (argc && argv) {
     // Preserve what's already in Remaining, the user might want to push args
     // to clang while still using main's argc, argv
