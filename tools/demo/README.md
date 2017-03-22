@@ -13,6 +13,6 @@ CMake configuration that uses cling.
 After installing cling (say into /where/cling/is/installed), configure this
 project using CMake like this:
 ```bash
-cmake -Dcling_DIR=/where/cling/is/installed/lib/cmake/cling  /path/to/cling/sources/tools/cling/tools/demo
+cmake -Dcling_DIR=/cling-install-dir/lib/cmake/cling /cling-source-dir/tools/cling/tools/demo
 make && ./cling-demo
 ```
