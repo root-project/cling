@@ -185,7 +185,7 @@ namespace cling {
     // Default redirect is stdout.
     MetaProcessor::RedirectionScope stream = MetaProcessor::kSTDOUT;
 
-    if (getCurTok().is(tok::constant)) {
+    if (getCurTok().is(tok::constant) && lookAhead(1).is(tok::greater)) {
       // > or 1> the redirection is for stdout stream
       // 2> redirection for stderr stream
       constant_FD = getCurTok().getConstant();

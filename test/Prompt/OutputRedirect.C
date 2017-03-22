@@ -19,6 +19,9 @@ static void setup() {
 }
 setup();
 
+// ROOT-8696
+.5 //CHECKOUT: (double) 0.500000
+
 .2>&1
 std::cerr << "Error into stdout.\n";
 //CHECKOUT: Error into stdout.
