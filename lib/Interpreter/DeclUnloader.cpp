@@ -26,7 +26,16 @@
 namespace cling {
 using namespace clang;
 
+static SourceLocation getDeclLocation(Decl* D);
+
 bool DeclUnloader::UnloadDecl(Decl* D) {
+  // FIXME: This prune can easily be handled in the Transaction to save memory.
+  // ClassTemplateSpecializationDecl does it's own filtering based on Location.
+  if (!dyn_cast<ClassTemplateSpecializationDecl>(D)) {
+    if (wasInstatiatedBefore(D->getLocEnd()))
+      return true;
+  }
+
   DiagnosticErrorTrap Trap(m_Sema->getDiagnostics());
   const bool Successful = Visit(D);
   if (Trap.hasErrorOccurred())
