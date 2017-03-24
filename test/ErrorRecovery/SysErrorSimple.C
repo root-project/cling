@@ -1,0 +1,35 @@
+//------------------------------------------------------------------------------
+// CLING - the C++ LLVM-based InterpreterG :)
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
+//------------------------------------------------------------------------------
+
+// RUN: cat %s | %cling -I %S -Xclang -verify 2>&1 | FileCheck %s
+
+// Test for Windows simulating:
+// #include <system_error>
+// .undo
+// #include <system_error>
+
+#include "SysErrorSimple.h"
+//.stats decl
+
+#define CLING_SYSERRR_SIMPLE_2
+#include "SysErrorSimple.h"
+//.stats decl
+.undo
+//.stats decl
+
+#include "SysErrorSimple.h"
+.undo
+//.stats decl
+
+#include "SysErrorSimple.h"
+
+Impl<FwdDecl>()(FwdDecl())
+// CHECK: (unsigned int) 101
+
+// expected-no-diagnostics
+.q
