@@ -6,7 +6,7 @@
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
-
+#define private public  // FIXME: Make DeclUnloader a friend of clang::TagDecl
 #include "DeclUnloader.h"
 
 #include "cling/Utils/AST.h"
