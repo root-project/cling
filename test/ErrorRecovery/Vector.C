@@ -9,13 +9,14 @@
 // RUN: cat %s | %cling -I %S -Xclang -verify 2>&1 | FileCheck %s
 // Test stlVecRecover
 
+#include <iterator>
 #include <vector>
-std::vector<int> v = { 0, 1, 2, 3, 4, 5 };
-for (auto val : v ) *val; // expected-error {{indirection requires pointer operand ('int' invalid)}}
+.undo
 
 #include <string>
 std::string test("later");
 (const char*) test.c_str()
 // CHECK: (const char *) "later"
 
+// expected-no-diagnostics
 .q
