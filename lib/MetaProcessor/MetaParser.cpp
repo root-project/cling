@@ -485,18 +485,10 @@ namespace cling {
       std::string ident = getCurTok().getIdent();
       consumeToken();
       skipWhitespace();
-      if (getCurTok().is(tok::eof)) {
-        m_Actions->actOnstatsCommand(ident=="ast" 
-            ? llvm::StringRef("asttree") : llvm::StringRef(ident), llvm::StringRef());
-        consumeToken();
-      }
-      else if (getCurTok().is(tok::ident)) {
-        m_Actions->actOnstatsCommand(ident=="ast"
-            ? llvm::StringRef("asttree") : llvm::StringRef(ident), 
-            getCurTok().getIdent());
-        consumeToken();
-      }
-      else return false;
+      m_Actions->actOnstatsCommand(ident=="ast"
+        ? llvm::StringRef("asttree") : llvm::StringRef(ident),
+        getCurTok().is(tok::ident) ? getCurTok().getIdent() : llvm::StringRef());
+      consumeToken();
       return true;
     }
     return false;
