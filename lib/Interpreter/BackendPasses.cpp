@@ -30,49 +30,6 @@ using namespace clang;
 using namespace llvm;
 using namespace llvm::legacy;
 
-namespace {
-
-  class InlinerKeepDeadFunc: public Inliner {
-    Inliner* m_Inliner; // the actual inliner
-    static char ID; // Pass identification, replacement for typeid
-  public:
-    InlinerKeepDeadFunc():
-    Inliner(ID), m_Inliner(0) { }
-    InlinerKeepDeadFunc(Pass* I):
-    Inliner(ID), m_Inliner((Inliner*)I) { }
-
-    using llvm::Pass::doInitialization;
-    bool doInitialization(CallGraph &CG) override {
-      // Forward out Resolver now that we are registered.
-      if (!m_Inliner->getResolver())
-        m_Inliner->setResolver(getResolver());
-      return m_Inliner->doInitialization(CG); // no Module modification
-    }
-
-    InlineCost getInlineCost(CallSite CS) override {
-      return m_Inliner->getInlineCost(CS);
-    }
-    void getAnalysisUsage(AnalysisUsage &AU) const override {
-      m_Inliner->getAnalysisUsage(AU);
-    }
-    bool runOnSCC(CallGraphSCC &SCC) override {
-      return m_Inliner->runOnSCC(SCC);
-    }
-
-    using llvm::Pass::doFinalization;
-    // No-op: we need to keep the inlined functions for later use.
-    bool doFinalization(CallGraph& /*CG*/) override {
-      // Module is unchanged
-      return false;
-    }
-  };
-} // end anonymous namespace
-
-// Pass registration. Luckily all known inliners depend on the same set
-// of passes.
-char InlinerKeepDeadFunc::ID = 0;
-
-
 BackendPasses::~BackendPasses() {
   //delete m_PMBuilder->Inliner;
 }
@@ -96,12 +53,15 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   CGOpts_.VectorizeLoop = 1;
   CGOpts_.VectorizeSLP = 1;
 #endif
+
+  // Better inlining is pending https://bugs.llvm.org//show_bug.cgi?id=19668
+  // and its consequence https://sft.its.cern.ch/jira/browse/ROOT-7111
+  // shown e.g. by roottest/cling/stl/map/badstringMap
   CGOpts_.setInlining(CodeGenOptions::NormalInlining);
 
   unsigned OptLevel = m_CGOpts.OptimizationLevel;
 
-  // CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
-  CodeGenOptions::InliningMethod Inlining = CodeGenOptions::NormalInlining;
+  CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
 
   // Handle disabling of LLVM optimization, where we want to preserve the
   // internal module before any optimization.
@@ -137,20 +97,17 @@ void BackendPasses::CreatePasses(llvm::Module& M)
       break;
     }
     case CodeGenOptions::NormalInlining: {
-      PMBuilder.Inliner =
-        new InlinerKeepDeadFunc(createFunctionInliningPass(OptLevel,
-                                                        m_CGOpts.OptimizeSize));
+      PMBuilder.Inliner = createFunctionInliningPass(OptLevel,
+                                                     m_CGOpts.OptimizeSize);
       break;
     }
     case CodeGenOptions::OnlyAlwaysInlining:
       // Respect always_inline.
       if (OptLevel == 0)
         // Do not insert lifetime intrinsics at -O0.
-        PMBuilder.Inliner
-          = new InlinerKeepDeadFunc(createAlwaysInlinerPass(false));
+        PMBuilder.Inliner = createAlwaysInlinerPass(false);
       else
-        PMBuilder.Inliner
-          = new InlinerKeepDeadFunc(createAlwaysInlinerPass());
+        PMBuilder.Inliner = createAlwaysInlinerPass();
       break;
   }
 
