@@ -42,7 +42,8 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   // DON'T: we will not find our symbols...
   //CGOpts_.CXXCtorDtorAliases = 1;
 
-  // Default clang -O2 on Linux 64bit also has:
+  // Default clang -O2 on Linux 64bit also has the following, but see
+  // CIFactory.cpp.
 #if 0
   CGOpts_.DisableFPElim = 0;
   CGOpts_.DiscardValueNames = 1;
@@ -70,9 +71,6 @@ void BackendPasses::CreatePasses(llvm::Module& M)
     // Always keep at least ForceInline - NoInlining is deadly for libc++.
     // Inlining = CGOpts.NoInlining;
   }
-
-  OptLevel = 0; // we need to keep even "unused" values - until we
-  // feed incremental modules into the JIT.
 
   llvm::PassManagerBuilder PMBuilder;
   PMBuilder.OptLevel = OptLevel;

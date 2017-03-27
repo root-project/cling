@@ -934,6 +934,15 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CI->getCodeGenOpts().EmitCodeView = 1;
     CI->getCodeGenOpts().CXXCtorDtorAliases = 1;
 #endif
+     // Reduce amount of emitted symbols by optimizing more.
+    CI->getCodeGenOpts().OptimizationLevel = 2;
+    // Taken from a -O2 run of clang:
+    CI->getCodeGenOpts().DiscardValueNames = 1;
+    CI->getCodeGenOpts().OmitLeafFramePointer = 1;
+    CI->getCodeGenOpts().UnrollLoops = 1;
+    CI->getCodeGenOpts().VectorizeLoop = 1;
+    CI->getCodeGenOpts().VectorizeSLP = 1;
+
     //CI->getCodeGenOpts().setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
     // CI->getCodeGenOpts().EmitDeclMetadata = 1; // For unloading, for later
     CI->getCodeGenOpts().CXXCtorDtorAliases = 0; // aliasing the complete
