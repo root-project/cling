@@ -42,9 +42,9 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   // DON'T: we will not find our symbols...
   //CGOpts_.CXXCtorDtorAliases = 1;
 
+#if 0
   // Default clang -O2 on Linux 64bit also has the following, but see
   // CIFactory.cpp.
-#if 0
   CGOpts_.DisableFPElim = 0;
   CGOpts_.DiscardValueNames = 1;
   CGOpts_.OmitLeafFramePointer = 1;
@@ -95,8 +95,8 @@ void BackendPasses::CreatePasses(llvm::Module& M)
       break;
     }
     case CodeGenOptions::NormalInlining: {
-      PMBuilder.Inliner = createFunctionInliningPass(OptLevel,
-                                                     m_CGOpts.OptimizeSize);
+      PMBuilder.Inliner =
+        createFunctionInliningPass(OptLevel, m_CGOpts.OptimizeSize);
       break;
     }
     case CodeGenOptions::OnlyAlwaysInlining:
