@@ -580,18 +580,25 @@ namespace cling {
 
     // FIXME: gCling should be const so assignment is a compile time error.
     if (!NoRuntime) {
-      if (LangOpts.CPlusPlus) {
-        Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n"
-                "namespace cling { class Interpreter; namespace runtime { "
-                "Interpreter* gCling=(Interpreter*)" << thisP << "; }}\n";
-      } else {
-        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
-                "void* gCling=(void*)" << thisP << ";\n";
+      if (LangOpts.CPlusPlus)
+        Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
+      else
+        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n";
+
+      if (!isInSyntaxOnlyMode()) {
+        if (LangOpts.CPlusPlus) {
+          Strm << "namespace cling { class Interpreter; namespace runtime { "
+                  "Interpreter* gCling=(Interpreter*)" << thisP << "; }}\n";
+        } else {
+          Strm << "void* gCling=(void*)" << thisP << ";\n";
+        }
       }
     }
     // Make all Interpreter accessible via thisCling pointer
     if (!NoRuntime || (Pnt && !m_Opts.NoRuntime)) {
       const char* InrpTy = LangOpts.CPlusPlus ? "cling::Interpreter" : "void";
+      // FIXME: #undef is a work-around for clingroot
+      Strm << "#undef thisCling\n";
       Strm << "#define thisCling ((" << InrpTy << "*)" << thisP << ")\n";
     }
 
