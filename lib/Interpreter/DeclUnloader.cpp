@@ -6,7 +6,7 @@
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
-
+#define private public  // FIXME: Make DeclUnloader a friend of clang::TagDecl
 #include "DeclUnloader.h"
 
 #include "cling/Utils/AST.h"
@@ -26,50 +26,109 @@
 namespace cling {
 using namespace clang;
 
-bool DeclUnloader::isDefinition(TagDecl* R) {
-  return R->isCompleteDefinition() && isa<CXXRecordDecl>(R);
-}
+static SourceLocation getDeclLocation(Decl* D);
 
-
-void DeclUnloader::resetDefinitionData(TagDecl *decl) {
-  auto canon = dyn_cast<CXXRecordDecl>(decl->getCanonicalDecl());
-  assert(canon && "Only CXXRecordDecl have DefinitionData");
-  for (auto iter = canon->getMostRecentDecl(); iter;
-       iter = iter->getPreviousDecl()) {
-    auto declcxx = dyn_cast<CXXRecordDecl>(iter);
-    assert(declcxx && "Only CXXRecordDecl have DefinitionData");
-    declcxx->DefinitionData = nullptr;
+bool DeclUnloader::UnloadDecl(Decl* D) {
+  // FIXME: This prune can easily be handled in the Transaction to save memory.
+  // ClassTemplateSpecializationDecl does it's own filtering based on Location.
+  if (!D->isInvalidDecl()) {
+    if (wasInstatiatedBefore(D->getLocEnd()))
+      return true;
   }
+
+  DiagnosticErrorTrap Trap(m_Sema->getDiagnostics());
+  const bool Successful = Visit(D);
+  if (Trap.hasErrorOccurred())
+    m_Sema->getDiagnostics().Reset(true);
+  return Successful;
 }
+
+namespace {
+  static bool isDefinition(void*) {
+    return false;
+  }
+  static bool isDefinition(clang::TagDecl* R) {
+    return R->isCompleteDefinition();
+  }
+  // Flags for DeclUnloader::VisitNamedDecl
+  enum {
+    kVisitingSpecialization  = 1,  // Currently visiting specializations
+    kLeaveScopeMap  = 2,  // Don't remove Decl from StoredDeclsMap of scope.
+    kSkipNamespaceRemoval = 4, // Don't remove Decl from enclosing namespace(s)
+    // Anything added here must increase bits in DeclUnloader::m_Flags
+  };
+}
+
+class DeclUnloader::VisitorState {
+  DeclUnloader& m_DU; // parent
+  const unsigned m_F; // prior flags
+public:
+  VisitorState(DeclUnloader &DU, unsigned F) :  m_DU(DU), m_F(DU.m_Flags) {
+    m_DU.m_Flags |= F;  // Or in the new flags
+  }
+  ~VisitorState() {
+    m_DU.m_Flags = m_F; // Reset it to the way it was
+  }
+};
+  
+template <class DeclT>
+void DeclUnloader::resetDefinitionData(DeclT*) {
+}
+
+template <>
+void DeclUnloader::resetDefinitionData(clang::TagDecl* D) {
+  if (clang::CXXRecordDecl* C = dyn_cast<CXXRecordDecl>(D)) {
+    // It was allocated this way...
+    ::operator delete(C->DefinitionData, D->getASTContext(),
+                      sizeof(CXXRecordDecl::DefinitionData));
+    for (C = C->getCanonicalDecl()->getMostRecentDecl(); C;
+         C = C->getPreviousDecl()) {
+      C->DefinitionData = nullptr;
+      C->IsCompleteDefinition = 0;
+    }
+    assert(cast<CXXRecordDecl>(D)->DefinitionData == nullptr && "Not cleared");
+  } else {
+    for (clang::TagDecl* T = D->getCanonicalDecl()->getMostRecentDecl(); T;
+         T = T->getPreviousDecl()) {
+      T->IsCompleteDefinition = 0;
+    }
+  }
+  assert(D->IsCompleteDefinition == 0 && "Not reset");
+}
+
+// RedeclLink is a protected member, which we need access to in
+// removeRedeclFromChain (and VisitRedeclarable for checking in debug mode)
+template<typename DeclT>
+struct RedeclDerived : public Redeclarable<DeclT> {
+  typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
+  static DeclLink_t& getLink(DeclT* LR) {
+    Redeclarable<DeclT>* D = LR;
+    return ((RedeclDerived*)D)->RedeclLink;
+  }
+  static void setLatest(DeclT* Latest) {
+    // Convert A -> Latest -> B into A -> Latest
+    getLink(Latest->getFirstDecl()).setLatest(Latest);
+  }
+  static void skipPrev(DeclT* Next) {
+    // Convert A -> B -> Next into A -> Next
+    DeclT* Skip = Next->getPreviousDecl();
+    getLink(Next).setPrevious(Skip->getPreviousDecl());
+  }
+  static void setFirst(DeclT* First) {
+    // Convert A -> First -> B into First -> B
+    DeclT* Latest = First->getMostRecentDecl();
+    getLink(First)
+      = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
+    getLink(First).setLatest(Latest);
+  }
+  static DeclT *getNextRedeclaration(DeclT* R) {
+    return getLink(R).getNext(R);
+  }
+};
 
 // Copied and adapted from: ASTReaderDecl.cpp
 template<typename DeclT>
 void DeclUnloader::removeRedeclFromChain(DeclT* R) {
-  //RedeclLink is a protected member.
-  struct RedeclDerived : public Redeclarable<DeclT> {
-    typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
-    static DeclLink_t& getLink(DeclT* LR) {
-      Redeclarable<DeclT>* D = LR;
-      return ((RedeclDerived*)D)->RedeclLink;
-    }
-    static void setLatest(DeclT* Latest) {
-      // Convert A -> Latest -> B into A -> Latest
-      getLink(Latest->getFirstDecl()).setLatest(Latest);
-    }
-    static void skipPrev(DeclT* Next) {
-      // Convert A -> B -> Next into A -> Next
-      DeclT* Skip = Next->getPreviousDecl();
-      getLink(Next).setPrevious(Skip->getPreviousDecl());
-    }
-    static void setFirst(DeclT* First) {
-      // Convert A -> First -> B into First -> B
-      DeclT* Latest = First->getMostRecentDecl();
-      getLink(First)
-        = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
-      getLink(First).setLatest(Latest);
-    }
-  };
-
   assert(R != R->getFirstDecl() && "Cannot remove only redecl from chain");
 
   const bool isdef = isDefinition(R);
@@ -79,7 +138,7 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
   DeclT* Prev = R->getPreviousDecl();
   if (R == R->getMostRecentDecl()) {
     // A -> .. -> R
-    RedeclDerived::setLatest(Prev);
+    RedeclDerived<DeclT>::setLatest(Prev);
   } else {
     // Find the next redecl, starting at the end
     DeclT* Next = R->getMostRecentDecl();
@@ -92,11 +151,11 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
 
     if (R->getPreviousDecl()) {
       // A -> .. -> R -> .. -> Z
-      RedeclDerived::skipPrev(Next);
+      RedeclDerived<DeclT>::skipPrev(Next);
     } else {
       assert(R->getFirstDecl() == R && "Logic error");
       // R -> .. -> Z
-      RedeclDerived::setFirst(Next);
+      RedeclDerived<DeclT>::setFirst(Next);
     }
   }
   // If the decl was the definition, the other decl might have their
@@ -129,32 +188,59 @@ static Decl* handleRedelaration(Decl* D, DeclContext* DC) {
       return MostRecentNotThis;
   }
 
-  if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
-    StoredDeclsMap::iterator Pos = Map->find(Name);
-    if (Pos != Map->end() && !Pos->second.isNull()) {
-      DeclContext::lookup_result decls = Pos->second.getLookupResult();
-      // FIXME: A decl meant to be added in the lookup already exists
-      // in the lookup table. My assumption is that the DeclUnloader
-      // adds it here. This needs to be investigated mode. For now
-      // std::find gets promoted from assert to condition :)
-      // DeclContext::lookup_result::iterator is not an InputIterator
-      // (const member, thus no op=(const iterator&)), thus we cannot use
-      // std::find. MSVC actually cares!
-      auto hasDecl = [](const DeclContext::lookup_result& Result,
-                        const NamedDecl* Needle) -> bool {
-        for (auto IDecl: Result) {
-          if (IDecl == Needle)
-            return true;
+  // For templates, don't use the most recent, look for default arguments.
+  // FIXME: Use the decl with the most default template parameters.
+  if (RedeclarableTemplateDecl* RD =
+                        dyn_cast<RedeclarableTemplateDecl>(MostRecentNotThis)) {
+    do {
+      if (TemplateParameterList* TPL = RD->getTemplateParameters()) {
+        for (NamedDecl* P : *TPL) {
+          if (TemplateTypeParmDecl* TP = dyn_cast<TemplateTypeParmDecl>(P)) {
+            if (TP->hasDefaultArgument()) {
+              if (RD != MostRecent)
+                MostRecentNotThis = RD;
+              RD = nullptr;
+              break;
+            }
+          }
         }
-        return false;
-      };
-      if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
-        // The decl was registered in the lookup, update it.
-        Pos->second.HandleRedeclaration(MostRecentNotThis,
-                                        /*IsKnownNewer*/ true);
+      }
+      if (RD)
+        RD = RD->getPreviousDecl();
+    } while (RD);
+  }
+
+  // Mirror what DeclContext::removeDecl does, otherwise we'll get out
+  // of synch for the call to removeDecl
+
+  do {
+    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+      StoredDeclsMap::iterator Pos = Map->find(Name);
+      if (Pos != Map->end() && !Pos->second.isNull()) {
+        DeclContext::lookup_result decls = Pos->second.getLookupResult();
+        // FIXME: A decl meant to be added in the lookup already exists
+        // in the lookup table. My assumption is that the DeclUnloader
+        // adds it here. This needs to be investigated mode. For now
+        // std::find gets promoted from assert to condition :)
+        // DeclContext::lookup_result::iterator is not an InputIterator
+        // (const member, thus no op=(const iterator&)), thus we cannot use
+        // std::find. MSVC actually cares!
+        auto hasDecl = [](const DeclContext::lookup_result& Result,
+                          const NamedDecl* Needle) -> bool {
+          for (auto IDecl: Result) {
+            if (IDecl == Needle)
+              return true;
+          }
+          return false;
+        };
+        if (!hasDecl(decls, MostRecentNotThis) && hasDecl(decls, ND)) {
+          // The decl was registered in the lookup, update it.
+          Pos->second.HandleRedeclaration(MostRecentNotThis,
+                                          /*IsKnownNewer*/ true);
+        }
       }
     }
-  }
+  } while (DC->isTransparentContext() && (DC = DC->getParent()));
   return MostRecentNotThis;
 }
 
@@ -169,6 +255,8 @@ template <typename T>
 bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC) {
   if (R->getFirstDecl() == R) {
     // This is the only element in the chain.
+    if (isDefinition((T*)R))
+      resetDefinitionData((T*)R);
     return true;
   }
 
@@ -181,15 +269,25 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
 #ifndef NDEBUG
   // Validate redecl chain by iterating through it.
-  std::set<clang::Redeclarable<T>*> CheckUnique;
-  (void)CheckUnique;
-  for (auto RD: MostRecentNotThis->redecls()) {
-    assert(CheckUnique.insert(RD).second && "Dupe redecl chain element");
-    (void)RD;
+  // If we get here and T == clang::UsingShadowDecl
+  // for (auto RD: MostRecentNotThis->redecls()) won't work
+  // as the redecl_iterator has an ambigous isFirstDecl call
+  // So we had to pull the guts out of redecl_iterator into here
+
+  std::set<clang::Redeclarable<T>*> Unique;
+  T* Current = MostRecentNotThis;
+  T* Starter = Current;
+
+  while (Current) {
+    assert(Unique.insert(Current).second && "Dupe redecl chain element");
+    Current = RedeclDerived<T>::getNextRedeclaration(Current);
+    if (Current==Starter)
+      Current = nullptr;
   }
 #else
   (void)MostRecentNotThis; // templated function issues a lot -Wunused-variable
 #endif
+
   return true;
 }
 
@@ -357,24 +455,91 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   }
 
   void DeclUnloader::CollectFilesToUncache(SourceLocation Loc) {
-    if (!m_CurTransaction)
+    if (!m_CurTransaction || Loc.isInvalid())
       return;
     const SourceManager& SM = m_Sema->getSourceManager();
     FileID FID = SM.getFileID(SM.getSpellingLoc(Loc));
-    if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID()
-        && !m_FilesToUncache.count(FID))
+    if (!FID.isInvalid() && FID >= m_CurTransaction->getBufferFID())
       m_FilesToUncache.insert(FID);
+  }
+
+  static void reportContext(const DeclContext* DC, llvm::raw_ostream& Out) {
+    Out << DC->getDeclKindName();
+    if (const NamedDecl* Ctx = dyn_cast<NamedDecl>(DC))
+      Out << " '" << Ctx->getNameAsString() << "'";
+    else
+      Out << " (" << DC << ")";
+  }
+
+  static void reportErrors(Sema* Sema, Decl* D, const SourceLocation& Loc,
+                           const llvm::SmallVector<DeclContext*, 4>& errors) {
+    std::string errStr("success trying to remove ");
+    llvm::raw_string_ostream Out(errStr);
+
+    // We know its a NamedDecl as that's the only type that can set an error
+    Out << D->getDeclKindName() << " '" << cast<NamedDecl>(D)->getNameAsString()
+        << "' from ";
+
+    if (errors.size() > 1) {
+      Out << "{";
+      llvm::SmallVector<DeclContext *, 4>::const_iterator itr = errors.begin(),
+                                                          end = errors.end();
+      while (true) {
+        Out << " ";
+        reportContext(*itr, Out);
+        if (++itr == end)
+          break;
+        Out << ",";
+      }
+      Out << " }";
+    } else
+      reportContext(errors[0], Out);
+
+    Sema->Diags.Report(Loc, diag::err_expected) << Out.str();
+  }
+
+  static SourceLocation getDeclLocation(Decl* D) {
+    switch (D->getKind()) {
+      case Decl::ClassTemplateSpecialization:
+      case Decl::ClassTemplatePartialSpecialization: {
+        auto* CTS = cast<ClassTemplateSpecializationDecl>(D);
+        const SourceLocation Loc = CTS->getPointOfInstantiation();
+        if (Loc.isValid())
+          return Loc;
+        if (CTS->getSpecializationKind() == clang::TSK_Undeclared)
+          return SourceLocation();
+        break;
+      }
+      case Decl::Function: {
+          FunctionDecl* FD = cast<FunctionDecl>(D);
+          if (FunctionTemplateSpecializationInfo *Info =
+                                          FD->getTemplateSpecializationInfo()) {
+            const SourceLocation Loc = Info->getPointOfInstantiation();
+            if (Loc.isValid())
+              return Loc;
+          }
+        break;
+      }
+      default:
+        break;
+    }
+    return D->getLocStart();
   }
 
   bool DeclUnloader::VisitDecl(Decl* D) {
     assert(D && "The Decl is null");
-    CollectFilesToUncache(D->getLocStart());
+    const SourceLocation Loc = getDeclLocation(D);
+    CollectFilesToUncache(Loc);
 
     DeclContext* DC = D->getLexicalDeclContext();
 
     bool Successful = true;
-    if (DC->containsDecl(D))
-      DC->removeDecl(D);
+    if (DC->containsDecl(D)) {
+      llvm::SmallVector<DeclContext*, 4> errors;
+      DC->removeDecl(D/*, &errors*/);
+      if (!errors.empty())
+        reportErrors(m_Sema, D, Loc, errors);
+    }
 
     // With the bump allocator this is nop.
     if (Successful)
@@ -431,36 +596,68 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   }
 #endif
 
-  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
-    bool Successful = VisitDecl(ND);
-
+  DeclContext* DeclUnloader::removeFromScope(NamedDecl* ND, bool Force) {
     DeclContext* DC = ND->getDeclContext();
     while (DC->isTransparentContext())
       DC = DC->getLookupParent();
 
-    // if the decl was anonymous we are done.
-    if (!ND->getIdentifier())
-      return Successful;
-
-     // If the decl was removed make sure that we fix the lookup
-    if (Successful) {
+    if (Force || ND->getIdentifier()) {
       if (Scope* S = m_Sema->getScopeForContext(DC))
         S->RemoveDecl(ND);
 
       if (utils::Analyze::isOnScopeChains(ND, *m_Sema))
         m_Sema->IdResolver.RemoveDecl(ND);
     }
+    return DC;
+  }
 
-    // Cleanup the lookup tables.
+  bool DeclUnloader::VisitNamedDecl(NamedDecl* ND) {
+    if (!VisitDecl(ND))
+      return false;
+
+    llvm::SetVector<StoredDeclsMap*> Maps;
+    DeclContext* DC = removeFromScope(ND);
+    if (LLVM_UNLIKELY(!(m_Flags & kLeaveScopeMap))) {
+      if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr())
+        Maps.insert(Map);
+    }
+
+    // Remove from all namespace's lookup maps going upwards.
+    if (LLVM_UNLIKELY(!(m_Flags & kSkipNamespaceRemoval))) {
+      NamespaceDecl* NS = dyn_cast<NamespaceDecl>(DC);
+      while(DC && !NS) {
+        DC = DC->getParent();
+        NS = dyn_cast_or_null<NamespaceDecl>(DC);
+      }
+
+      if (NS && NS->isInline()) {
+        // VisitDecl will have already done a removal on Lexical, so skip that
+        DeclContext* Lexical = ND->getLexicalDeclContext();
+        do {
+          assert((NS->getFirstDecl() != NS ? !NS->getLookupPtr() : 1)
+                 && "Has unique lookup ptr!");
+          if (DC != Lexical) {
+            // There is a chance that lookup ptr will not exist when rolling back
+            // a bad Transaction. The question is whether we can stop the loop too?
+            if (StoredDeclsMap* Map = NS->getFirstDecl()->getLookupPtr())
+              Maps.insert(Map);
+          }
+          DC = DC->getParent();
+          NS = dyn_cast<NamespaceDecl>(DC);
+        } while (NS);
+      }
+    }
+
+    // If the decl was removed make sure that we fix the lookup
     // DeclContexts like EnumDecls don't have lookup maps.
-    if (StoredDeclsMap* Map = DC->getPrimaryContext()->getLookupPtr()) {
+    for (StoredDeclsMap* Map : Maps) {
       eraseDeclFromMap(Map, ND);
 #ifndef NDEBUG
       checkDeclIsGone(Map, ND);
 #endif
     }
 
-    return Successful;
+    return true;
   }
 
   bool DeclUnloader::VisitDeclaratorDecl(DeclaratorDecl* DD) {
@@ -477,15 +674,73 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
-    bool Successful = true;
-    // FIXME: This is needed when we have newest clang:
-    //Successful = VisitRedeclarable(USD, USD->getDeclContext());
+
+    assert(USD->getTargetDecl() && "No target for UsingShadow");
+    VisitorState VS(*this, (USD->getFirstDecl() == USD ? kLeaveScopeMap : 0) |
+                    (wasInstatiatedBefore(getDeclLocation(USD->getTargetDecl()))
+                    ? kSkipNamespaceRemoval : 0));
+
+    bool Successful = VisitRedeclarable(USD, USD->getDeclContext());
     Successful &= VisitNamedDecl(USD);
 
     // Unregister from the using decl that it shadows.
     USD->getUsingDecl()->removeShadowDecl(USD);
 
     return Successful;
+  }
+
+  bool DeclUnloader::VisitUsingDecl(UsingDecl* UD) {
+    // UsingDecl: NamedDecl, Mergeable<UsingDecl>
+    bool Success = true;
+
+    // UsingDecls currently are not Redeclarables, instead they overwrite the
+    // entry in the shared lookup map.  The prior declarations still exist in
+    // the previous context's decl list, so grab the prior value, and add
+    // the entry in the lookup map as a final step.
+    //
+    // Save the previous Namespace and UsingDecl now.
+    NamespaceDecl *PrvNS = nullptr;
+    UsingDecl *PrvUD = nullptr;
+    if (NamespaceDecl *NS =
+                        dyn_cast_or_null<NamespaceDecl>(UD->getDeclContext())) {
+      if ((PrvNS = NS->getPreviousDecl())) {
+        const IdentifierInfo *ID = UD->getIdentifier();
+        for (Decl* D : PrvNS->noload_decls()) {
+          if (UsingDecl *Ud = dyn_cast<UsingDecl>(D)) {
+            if (Ud->getIdentifier() == ID) {
+              PrvUD = Ud;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    llvm::SmallVector<UsingShadowDecl*, 12> Shadows(UD->shadow_begin(),
+                                                    UD->shadow_end());
+    for (UsingShadowDecl *USD : Shadows) {
+      Success &= VisitUsingShadowDecl(USD);
+      assert(Success);
+    }
+
+    Success &= VisitNamedDecl(UD);
+
+    // Replace or re-add the prior UsingDecl entry.
+    if (PrvNS && PrvUD) {
+      // Only need to overwrite PrvNS as they all share a map
+      // do {
+        if (DeclContext *DC = PrvNS->getPrimaryContext()) {
+          if (StoredDeclsMap *Map = DC->getLookupPtr()) {
+            auto &DeclList = (*Map)[PrvUD->getDeclName()];
+            if (!DeclList.HandleRedeclaration(PrvUD, true))
+              DeclList.AddSubsequentDecl(PrvUD);
+          }
+        }
+      //  PrvNS = PrvNS->getPreviousDecl();
+      // } while (PrvNS);
+    }
+
+    return Success;
   }
 
   bool DeclUnloader::VisitTypedefNameDecl(TypedefNameDecl* TND) {
@@ -495,12 +750,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
-
   bool DeclUnloader::VisitVarDecl(VarDecl* VD) {
     // llvm::Module cannot contain:
     // * variables and parameters with dependent context;
     // * mangled names for parameters;
-    if (!isa<ParmVarDecl>(VD) && !VD->getDeclContext()->isDependentContext()) {
+    const bool DepContext = VD->getDeclContext()->isDependentContext();
+    if (!isa<ParmVarDecl>(VD) && !DepContext) {
       // Cleanup the module if the transaction was committed and code was
       // generated. This has to go first, because it may need the AST
       // information which we will remove soon. (Eg. mangleDeclName iterates the
@@ -511,7 +766,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
     // VarDecl : DeclaratiorDecl, Redeclarable
     bool Successful = VisitRedeclarable(VD, VD->getDeclContext());
-    Successful &= VisitDeclaratorDecl(VD);
+    if (!DepContext)
+      Successful &= VisitDeclaratorDecl(VD);
 
     return Successful;
   }
@@ -533,7 +789,46 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         return true;
       }
     };
+
+    static const TagType* getTagPointedToo(const Type* T) {
+      if ((T = T->getPointeeType().getTypePtrOrNull())) {
+        const Type* Resolved;
+        do {
+          Resolved = T;
+          T = T->getPointeeType().getTypePtrOrNull();
+        } while (T);
+        return Resolved->getAs<TagType>();
+      }
+      return nullptr;
+    }
   }
+
+  bool DeclUnloader::VisitReturnValue(const QualType QT, Decl* Parent) {
+    // struct FirstDecl* function();
+    // In the example above, FirstDecl* will be declared as the function is
+    // parsed, and if FirstDecl* never gets a definiton, it's declaration
+    // will never be removed, so we have to check for that case.
+    const Type* T = QT.getTypePtrOrNull();
+    if (T && !T->isVoidType()) {
+      if (const TagType* TT = getTagPointedToo(T)) {
+        TagDecl* Tag = TT->getDecl();
+        // So we have a TagDecl, was it embedded, and is it still undefined?
+        if (Tag->isEmbeddedInDeclarator() && !Tag->isCompleteDefinition()) {
+          // Possibly overkill, but just to be safe
+          if (Tag->getFirstDecl() == Tag) {
+            // Only unload it the first time it appeared with a function
+            const SourceManager& SM = m_Sema->getSourceManager();
+            if (!SM.isBeforeInTranslationUnit(Tag->getLocStart(),
+                                              Parent->getLocStart())) {
+              return Visit(Tag);
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   bool DeclUnloader::VisitFunctionDecl(FunctionDecl* FD) {
     // The Structors need to be handled differently.
     if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
@@ -557,8 +852,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     // We start with the decl context first, because parameters are part of the
     // DeclContext and when trying to remove them we need the full redecl chain
     // still in place.
-    bool Successful = VisitDeclContext(FD);
-    Successful &= VisitRedeclarable(FD, FD->getDeclContext());
+    bool Successful = VisitRedeclarable(FD, FD->getDeclContext());
+    Successful &= VisitDeclContext(FD);
     Successful &= VisitDeclaratorDecl(FD);
 
     // Template instantiation of templated function first creates a canonical
@@ -645,6 +940,22 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       FunctionTemplateDeclExt::removeSpecialization(FTD, FD);
     }
 
+    Successful &= VisitReturnValue(FD->getReturnType(), FD);
+
+    // Remove new and delete (all variants). These are 'anonymous' and not
+    // removed in VisitNamedDecl. Built-in operator new & delete are still
+    // present in m_Sema, so don't touch m_Sema->GlobalNewDeleteDeclared
+    if (!FD->getIdentifier()) {
+      const DeclarationName Name = FD->getDeclName();
+      DeclarationNameTable& Table = m_Sema->getASTContext().DeclarationNames;
+      if (Name == Table.getCXXOperatorName(OO_New) ||
+          Name == Table.getCXXOperatorName(OO_Array_New) ||
+          Name == Table.getCXXOperatorName(OO_Delete) ||
+          Name == Table.getCXXOperatorName(OO_Array_Delete)) {
+        (void)removeFromScope(FD, true);
+      }
+    }
+
     return Successful;
   }
 
@@ -693,13 +1004,10 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitDeclContext(DeclContext* DC) {
     bool Successful = true;
-    typedef llvm::SmallVector<Decl*, 64> Decls;
-    Decls declsToErase;
+
     // Removing from single-linked list invalidates the iterators.
-    for (DeclContext::decl_iterator I = DC->noload_decls_begin();
-         I != DC->noload_decls_end(); ++I) {
-      declsToErase.push_back(*I);
-    }
+    typedef llvm::SmallVector<Decl*, 64> Decls;
+    Decls declsToErase(DC->noload_decls_begin(), DC->noload_decls_end());
 
     for(Decls::reverse_iterator I = declsToErase.rbegin(),
           E = declsToErase.rend(); I != E; ++I) {
@@ -709,11 +1017,27 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  bool DeclUnloader::wasInstatiatedBefore(SourceLocation Loc) const {
+    if (m_CurTransaction && Loc.isValid()) {
+      SourceManager &SManger = m_Sema->getSourceManager();
+      SourceLocation TLoc = m_CurTransaction->getSourceStart(SManger);
+      if (TLoc.isValid())
+        return SManger.isBeforeInTranslationUnit(Loc, TLoc);
+    }
+    return false;
+  }
+
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
-    bool Successful = VisitDeclContext(NSD);
-    Successful &= VisitRedeclarable(NSD, NSD->getDeclContext());
+
+    bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
+    Successful &= VisitDeclContext(NSD);
     Successful &= VisitNamedDecl(NSD);
+
+    // Get these out of the caches
+    if (NSD == m_Sema->getStdNamespace())
+      m_Sema->StdNamespace = NSD->getPreviousDecl();
+    m_Sema->KnownNamespaces.erase(NSD);
 
     return Successful;
   }
@@ -748,10 +1072,69 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  bool DeclUnloader::VisitFriendDecl(FriendDecl* FD) {
+    // FriendDecl: Decl
+    
+    // Remove the friend declarations
+    bool Successful = true;
+
+    if (TypeSourceInfo* TI = FD->getFriendType()) {
+      if (const Type* T = TI->getType().getTypePtrOrNull()) {
+        if (const TagType* RT = T->getAs<TagType>()) {
+          TagDecl *F = RT->getDecl();
+          // If the friend is a class and embedded in the parent and not defined
+          // then there is no further declaration so it must be unloaded now.
+          if (F->isEmbeddedInDeclarator() &&  !F->isCompleteDefinition()) {
+            // Avoid recursion: class A { class B { friend class A; } }
+            TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
+            if (!Parent || F != Parent->getDeclContext())
+              Successful &= Visit(F);
+          }
+        }
+      }
+    } else if (NamedDecl* ND = FD->getFriendDecl())
+      Successful &= Visit(ND);
+
+    // Is it possible to unload a friend but not the parent class?
+    // This requires adding DeclUnloader as a friend to FriendDecl
+#if 0
+    // Unlink the FriendDecl from linked list in CXXRecordDecl
+    TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
+    if (CXXRecordDecl* CD = dyn_cast_or_null<CXXRecordDecl>(Parent)) {
+      Successful = false;
+      if (FriendDecl *First = CD->getFirstFriend()) {
+        if (First != FD) {
+          FriendDecl *Prev = First;
+          for (FriendDecl* Cur : CD->friends()) {
+            if (Cur == FD) {
+              Prev->NextFriend = Cur->NextFriend;
+              Successful = true;
+              break;
+            }
+            Prev = Cur;
+          }
+        } else {
+          Successful = true;
+          CD->data().FirstFriend = nullptr;
+        }
+      }
+
+      // Arrived back here through recursion?
+      if (!Successful)
+        return true;
+
+      Successful = true;
+    }
+#endif
+
+    Successful &= VisitDecl(FD);
+    return Successful;
+  }
+
   bool DeclUnloader::VisitTagDecl(TagDecl* TD) {
     // TagDecl: TypeDecl, DeclContext, Redeclarable
-    bool Successful = VisitDeclContext(TD);
-    Successful &= VisitRedeclarable(TD, TD->getDeclContext());
+    bool Successful = VisitRedeclarable(TD, TD->getDeclContext());
+    Successful &= VisitDeclContext(TD);
     Successful &= VisitTypeDecl(TD);
     return Successful;
   }
@@ -793,6 +1176,20 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
     Successful &= VisitTagDecl(RD);
     return Successful;
+  }
+
+  bool DeclUnloader::VisitCXXRecordDecl(CXXRecordDecl* RD) {
+    // CXXRecordDecl: RecordDecl
+
+    // clang caches some decls, so we have to remove them there as well
+    if (RD == m_Sema->CXXTypeInfoDecl)
+      m_Sema->CXXTypeInfoDecl = m_Sema->CXXTypeInfoDecl->getPreviousDecl();
+    else if (RD == m_Sema->MSVCGuidDecl)
+      m_Sema->MSVCGuidDecl = m_Sema->MSVCGuidDecl->getPreviousDecl();
+    else if (RD == m_Sema->getStdBadAlloc())
+      m_Sema->StdBadAlloc = m_Sema->getStdBadAlloc()->getPreviousDecl();
+
+    return VisitRecordDecl(RD);
   }
 
   void DeclUnloader::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
@@ -857,7 +1254,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         GlobalValueEraser GVEraser(m_CodeGen);
         GVEraser.EraseGlobalValue(GV);
       }
-      m_CodeGen->forgetDecl(GD);
+      m_CodeGen->forgetDecl(GD/*, mangledName*/);
     }
   }
 
@@ -905,13 +1302,31 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
-  bool DeclUnloader::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
+  namespace {
+
+  } // end anonymous namespace
+
+  template <class DeclT>
+  bool DeclUnloader::VisitSpecializations(DeclT *D) {
+    llvm::SmallVector<typename DeclT::spec_iterator::pointer, 8> specs;
+    for (typename DeclT::spec_iterator I = D->spec_begin(),
+           E = D->spec_end(); I != E; ++I) {
+        specs.push_back(*I);
+    }
+
     bool Successful = true;
+    VisitorState VS(*this, kVisitingSpecialization);
+    for (typename DeclT::spec_iterator::pointer spec : specs)
+      Successful &= Visit(spec);
+
+    return Successful;
+  }
+
+  bool DeclUnloader::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
+    // FunctionTemplateDecl: TemplateDecl, Redeclarable
 
     // Remove specializations:
-    for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(),
-           E = FTD->spec_end(); I != E; ++I)
-      Successful &= Visit(*I);
+    bool Successful = VisitSpecializations(FTD);
 
     Successful &= VisitRedeclarableTemplateDecl(FTD);
     Successful &= VisitFunctionDecl(FTD->getTemplatedDecl());
@@ -920,11 +1335,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
     // ClassTemplateDecl: TemplateDecl, Redeclarable
-    bool Successful = true;
+
+    if (CTD == m_Sema->StdInitializerList)
+      m_Sema->StdInitializerList = m_Sema->StdInitializerList->getPreviousDecl();
+
     // Remove specializations:
-    for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(),
-           E = CTD->spec_end(); I != E; ++I)
-      Successful &= Visit(*I);
+    bool Successful = VisitSpecializations(CTD);
 
     Successful &= VisitRedeclarableTemplateDecl(CTD);
     Successful &= Visit(CTD->getTemplatedDecl());
@@ -1012,20 +1428,33 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   };
   } // end anonymous namespace
 
-
   bool DeclUnloader::VisitClassTemplateSpecializationDecl(
                                         ClassTemplateSpecializationDecl* CTSD) {
     // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
-    bool Successful = VisitCXXRecordDecl(CTSD);
+
+    if (m_Flags & kVisitingSpecialization)
+      return true;
+
     ClassTemplateSpecializationDecl* CanonCTSD =
       static_cast<ClassTemplateSpecializationDecl*>(CTSD->getCanonicalDecl());
     if (auto D = dyn_cast<ClassTemplatePartialSpecializationDecl>(CanonCTSD))
       ClassTemplateDeclExt::removePartialSpecialization(
                                                     D->getSpecializedTemplate(),
                                                     D);
-    else
-      ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
-                                                 CanonCTSD);
+    else {
+      ClassTemplateDecl* CTD = CTSD->getSpecializedTemplate();
+      if (!CTD->isThisDeclarationReferenced())
+        ClassTemplateDeclExt::removeSpecialization(CTD, CanonCTSD);
+    }
+
+    if (wasInstatiatedBefore(CTSD->getPointOfInstantiation()))
+      return true;
+
+    VisitorState VS(*this, kVisitingSpecialization);
+
+    bool Successful = true;
+    Successful &= VisitRedeclarable(CTSD, CTSD->getDeclContext());
+    Successful &= VisitCXXRecordDecl(CTSD);
     return Successful;
   }
 } // end namespace cling

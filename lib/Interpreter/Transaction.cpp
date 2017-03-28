@@ -374,10 +374,10 @@ namespace cling {
 
   SourceLocation
   Transaction::getSourceStart(const clang::SourceManager& SM) const {
-    // Children can have invalid BufferIDs. In that case use the parent's.
-    if (m_BufferFID.isInvalid() && m_Parent)
-      return m_Parent->getSourceStart(SM);
-    return SM.getLocForStartOfFile(m_BufferFID);
+    if (m_BufferFID.isValid())
+      return SM.getLocForStartOfFile(m_BufferFID);
+    // Check the parent if there is one.
+    return m_Parent ? m_Parent->getSourceStart(SM) : SourceLocation();
   }
 
 } // end namespace cling

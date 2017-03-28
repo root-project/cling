@@ -49,9 +49,14 @@ namespace cling {
     ///
     FileIDs m_FilesToUncache;
 
+    ///\brief Mark the current visitation state.
+    ///
+    unsigned m_Flags : 4;
+    class VisitorState;
+
   public:
     DeclUnloader(clang::Sema* S, clang::CodeGenerator* CG, const Transaction* T)
-      : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T) { }
+      : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T), m_Flags(0) {}
     ~DeclUnloader();
 
     ///\brief Interface with nice name, forwarding to Visit.
@@ -59,7 +64,7 @@ namespace cling {
     ///\param[in] D - The declaration to forward.
     ///\returns true on success.
     ///
-    bool UnloadDecl(clang::Decl* D) { return Visit(D); }
+    bool UnloadDecl(clang::Decl* D);
 
     ///\brief If it falls back in the base class just remove the declaration
     /// only from the declaration context.
@@ -99,6 +104,18 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitUsingShadowDecl(clang::UsingShadowDecl* USD);
+
+    ///\brief Removes a using declaration
+    /// This method iterates all of the shadows it is holding and calls
+    /// VisitUsingShadowDecl on them.
+    /// It is provided to fix issues where a declaration is removed
+    /// to many times (see test/CodeUnloading/UsingShadows.C)
+    ///
+    ///\param[in] UD - The using declararion to be removed
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitUsingDecl(clang::UsingDecl* UD);
 
     ///\brief Removes a typedef name decls. A base class for TypedefDecls and
     /// TypeAliasDecls.
@@ -171,6 +188,15 @@ namespace cling {
     ///
     bool VisitLinkageSpecDecl(clang::LinkageSpecDecl* LSD);
 
+    ///\brief Removes all friend named declarations. This is needed
+    /// as under some circumstances clang stores the NamedDecl for a
+    /// friend function in a FriendDecl.
+    /// @param[in] FD - The declaration context to be remove.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitFriendDecl(clang::FriendDecl* FD);
+
     ///\brief Removes a Tag (class/union/struct/enum). Most of the other
     /// containers fall back into that case.
     /// @param[in] TD - The declaration to be removed.
@@ -186,6 +212,11 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitRecordDecl(clang::RecordDecl* RD);
+
+    ///\brief Removes a CXXRecordDecl. This removes a few cached Decls
+    /// in the sema but otherwise calls through to VisitRecordDecl
+    ///
+    bool VisitCXXRecordDecl(clang::CXXRecordDecl* RD);
 
     ///\brief Remove the macro from the Preprocessor.
     /// @param[in] MD - The MacroDirectiveInfo containing the IdentifierInfo and
@@ -260,24 +291,35 @@ namespace cling {
     ///
     void CollectFilesToUncache(clang::SourceLocation Loc);
 
-    LLVM_CONSTEXPR static bool isDefinition(void*) { return false; }
-    static bool isDefinition(clang::TagDecl* R);
+    ///\brief Test if the given SourceLocation came before the SourceLocation
+    /// of our Transaction.  If m_CurTransaction is NULL or has an invalid
+    /// source location, it is assumed to be known that the declaration occured
+    /// in the current Transaction.
+    ///
+    /// This is used to test whether the declaration holding specializations
+    /// was actullay part of the transaction being unloaded.
+    ///
+    bool wasInstatiatedBefore(clang::SourceLocation Loc) const;
 
-    static void resetDefinitionData(void*) {
-      llvm_unreachable("resetDefinitionData on non-cxx record declaration");
-    }
+    template <class DeclT>
+    bool VisitSpecializations(DeclT *D);
 
-    static void resetDefinitionData(clang::TagDecl *decl);
+    template<typename DeclT>
+    static void resetDefinitionData(DeclT* R);
 
     template<typename DeclT>
     static void removeRedeclFromChain(DeclT* R);
 
-    static void removeRedeclFromChain(void*) {
-      llvm_unreachable("setLatestDeclImpl on non-redeclarable declaration");
-    }
-
     template <typename T>
     bool VisitRedeclarable(clang::Redeclarable<T>* R, clang::DeclContext* DC);
+
+    bool VisitReturnValue(const clang::QualType T, clang::Decl* Parent);
+    
+    ///\brief Remove the NamedDecl from it's parent scope.
+    ///\param[in] force - Don't check if the decl is anonymous.
+    ///\returns The lookup context for the decl.
+    ///
+    clang::DeclContext* removeFromScope(clang::NamedDecl* ND, bool Force = false);
   };
 
   /// \brief Unload a Decl from the AST, but not from CodeGen or Module.

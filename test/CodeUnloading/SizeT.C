@@ -1,0 +1,21 @@
+//------------------------------------------------------------------------------
+// CLING - the C++ LLVM-based InterpreterG :)
+//
+// This file is dual-licensed: you can choose to license it under the University
+// of Illinois Open Source License or the GNU Lesser General Public License. See
+// LICENSE.TXT for details.
+//------------------------------------------------------------------------------
+
+// RUN: cat %s | %cling -I%S -Xclang -verify 2>&1 | FileCheck %s
+// Test size_t-using
+
+// FIXME: This test probably becomes useless once ciso646 is the default include
+#include <cstddef>
+#include <cstring>
+.undo
+
+std::size_t P = 201
+// CHECK: (unsigned {{long|int|long long}}) 201
+
+// expected-no-diagnostics
+.q
