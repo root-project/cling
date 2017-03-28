@@ -31,7 +31,7 @@ static SourceLocation getDeclLocation(Decl* D);
 bool DeclUnloader::UnloadDecl(Decl* D) {
   // FIXME: This prune can easily be handled in the Transaction to save memory.
   // ClassTemplateSpecializationDecl does it's own filtering based on Location.
-  if (!dyn_cast<ClassTemplateSpecializationDecl>(D)) {
+  if (!D->isInvalidDecl()) {
     if (wasInstatiatedBefore(D->getLocEnd()))
       return true;
   }
