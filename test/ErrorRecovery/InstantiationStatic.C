@@ -19,7 +19,6 @@
 
 // Test instantiationRecover
 // RUN: cat %s | %cling -I %S -Xclang -verify 2>&1 | FileCheck %s
-// XFAIL: *
 
 extern "C" int printf(const char*,...);
 #include "Instantiation.h"
