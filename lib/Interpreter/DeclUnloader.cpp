@@ -1441,9 +1441,11 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       ClassTemplateDeclExt::removePartialSpecialization(
                                                     D->getSpecializedTemplate(),
                                                     D);
-    else
-      ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
-                                                 CanonCTSD);
+    else {
+      ClassTemplateDecl* CTD = CTSD->getSpecializedTemplate();
+      if (!CTD->isThisDeclarationReferenced())
+        ClassTemplateDeclExt::removeSpecialization(CTD, CanonCTSD);
+    }
 
     if (wasInstatiatedBefore(CTSD->getPointOfInstantiation()))
       return true;
