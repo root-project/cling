@@ -1445,12 +1445,14 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
       ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
                                                  CanonCTSD);
 
-    bool Success = true;
-    if (!wasInstatiatedBefore(CTSD->getLocEnd())) {
-      VisitorState VS(*this, kVisitingSpecialization);
-      Success = VisitCXXRecordDecl(CTSD);
-    }
+    if (wasInstatiatedBefore(CTSD->getPointOfInstantiation()))
+      return true;
 
-    return Success;
+    VisitorState VS(*this, kVisitingSpecialization);
+
+    bool Successful = true;
+    Successful &= VisitRedeclarable(CTSD, CTSD->getDeclContext());
+    Successful &= VisitCXXRecordDecl(CTSD);
+    return Successful;
   }
 } // end namespace cling
