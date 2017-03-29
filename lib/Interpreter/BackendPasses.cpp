@@ -30,6 +30,34 @@ using namespace clang;
 using namespace llvm;
 using namespace llvm::legacy;
 
+namespace {
+  class KeepLocalFuncPass: public FunctionPass {
+    static char ID;
+  public:
+    KeepLocalFuncPass() : FunctionPass(ID) {}
+    bool runOnFunction(Function &F) override {
+      if (F.isDeclaration())
+        return false; // no change.
+
+      // F is a definition.
+
+      if (!F.isDiscardableIfUnused())
+        return false;
+
+      llvm::GlobalValue::LinkageTypes LT = F.getLinkage();
+      if (LT == llvm::GlobalValue::InternalLinkage
+          || LT == llvm::GlobalValue::PrivateLinkage) {
+        F.setLinkage(llvm::GlobalValue::ExternalLinkage);
+        return true; // a change!
+      }
+      return false;
+    }
+  };
+}
+
+char KeepLocalFuncPass::ID = 0;
+
+
 BackendPasses::~BackendPasses() {
   //delete m_PMBuilder->Inliner;
 }
@@ -134,6 +162,7 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   PMBuilder.populateModulePassManager(*m_MPM);
 
   m_FPM.reset(new legacy::FunctionPassManager(&M));
+  m_FPM->add(new KeepLocalFuncPass());
   m_FPM->add(createTargetTransformInfoWrapperPass(m_TM.getTargetIRAnalysis()));
   if (m_CGOpts.VerifyModule)
       m_FPM->add(createVerifierPass());
