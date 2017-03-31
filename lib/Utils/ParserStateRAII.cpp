@@ -17,6 +17,8 @@ cling::ParserStateRAII::ParserStateRAII(Parser& p, bool skipToEOF)
   : P(&p), PP(p.getPreprocessor()),
     ResetIncrementalProcessing(p.getPreprocessor()
                                .isIncrementalProcessingEnabled()),
+    PPDiagHadErrors(PP.getDiagnostics().hasErrorOccurred()),
+    SemaDiagHadErrors(P->getActions().getDiagnostics().hasErrorOccurred()),
     OldSuppressAllDiagnostics(P->getActions().getDiagnostics()
                               .getSuppressAllDiagnostics()),
     OldPPSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
@@ -53,10 +55,13 @@ cling::ParserStateRAII::~ParserStateRAII() {
   if (SkipToEOF)
     P->SkipUntil(tok::eof);
   PP.enableIncrementalProcessing(ResetIncrementalProcessing);
-  // Doesn't reset the diagnostic mappings
-  P->getActions().getDiagnostics().Reset(/*soft=*/true);
+  if (!SemaDiagHadErrors) {
+    // Doesn't reset the diagnostic mappings
+    P->getActions().getDiagnostics().Reset(/*soft=*/true);
+  }
   P->getActions().getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
-  PP.getDiagnostics().Reset(/*soft=*/true);
+  if (!PPDiagHadErrors)
+    PP.getDiagnostics().Reset(/*soft=*/true);
   PP.getDiagnostics().setSuppressAllDiagnostics(OldPPSuppressAllDiagnostics);
   const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking =
     OldSpellChecking;
