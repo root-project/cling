@@ -19,7 +19,7 @@
 /// for the sake of simplicity we just redeclare them here.
 int aGlobal = 42;
 static float anotherGlobal = 3.141;
-float getAnotherGlobal() { return anotherGlobal; };
+float getAnotherGlobal() { return anotherGlobal; }
 void setAnotherGlobal(float val) { anotherGlobal = val; }
 
 ///\brief Call compiled functions from the interpreter.
