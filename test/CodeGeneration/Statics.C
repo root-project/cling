@@ -15,14 +15,10 @@ struct TERD {
     TERD(const char *N) : Name(N) { printf("TERD::TERD::%s\n", Name); }
     ~TERD() { printf("TERD::~TERD::%s\n", Name); }
 };
-static TERD& inst01() {
-    static TERD st01("inst01");
-    return st01;
-}
-static TERD& inst02() {
-    static TERD st02("inst02");
-    return st02;
-}
+static TERD& inst01() { static TERD st01("inst01"); return st01; }
+static TERD& inst02() { static TERD st02("inst02"); return st02; }
+static TERD& inst03() { static TERD st03("inst03"); return st03; }
+static TERD& inst04() { static TERD st04("inst04"); return st04; }
 
 inst01();
 inst01();
@@ -34,8 +30,23 @@ inst02();
 inst02();
 // CHECK-NEXT: TERD::TERD::inst02
 
+inst03();
+// CHECK-NEXT: TERD::TERD::inst03
+.undo
+// CHECK-NEXT: TERD::~TERD::inst03
+inst03();
+// CHECK-NEXT: TERD::TERD::inst03
+
+inst04();
+// CHECK-NEXT: TERD::TERD::inst04
+inst04();
+.undo
+inst04();
+// CHECK-NEXT: TERD::~TERD::inst04
+
 // expected-no-diagnostics
 .q
 
+// CHECK-NEXT: TERD::~TERD::inst03
 // CHECK-NEXT: TERD::~TERD::inst02
 // CHECK-NEXT: TERD::~TERD::inst01
