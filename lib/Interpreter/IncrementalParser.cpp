@@ -33,6 +33,7 @@
 #include "clang/AST/Attr.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclGroup.h"
+#include "clang/AST/GlobalDecl.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileManager.h"
@@ -545,6 +546,18 @@ namespace cling {
       deserT = beginTransaction(CompilationOptions());
       // Reset the module builder to clean up global initializers, c'tors, d'tors
       getCodeGenerator()->HandleTranslationUnit(Context);
+
+      // Take the defer-emitted values and store them in the Transaction so
+      // they can be put back (marked as not emitted) if undone.
+      std::map<llvm::StringRef, clang::GlobalDecl> Emitted;
+      getCodeGenerator()->takeEmittedDeferred(Emitted);
+      auto& Store = T->getDeferred();
+      for (auto& E : Emitted) {
+        // Strip __cling_Un1Qu3, they'll only eat up memory.
+        if (!m_Interpreter->isUniqueName(E.first))
+          Store.push_back(E.second.getAsOpaquePtr());
+      }
+
       FileName = OldName;
       auto PRT = endTransaction(deserT);
       commitTransaction(PRT);
