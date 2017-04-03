@@ -31,31 +31,42 @@ using namespace llvm;
 using namespace llvm::legacy;
 
 namespace {
-  class KeepLocalFuncPass: public FunctionPass {
+  class KeepLocalGVPass: public ModulePass {
     static char ID;
-  public:
-    KeepLocalFuncPass() : FunctionPass(ID) {}
-    bool runOnFunction(Function &F) override {
-      if (F.isDeclaration())
+
+    bool runOnGlobal(GlobalValue& GV) {
+      if (GV.isDeclaration())
         return false; // no change.
 
-      // F is a definition.
+      // GV is a definition.
 
-      if (!F.isDiscardableIfUnused())
+      llvm::GlobalValue::LinkageTypes LT = GV.getLinkage();
+      if (!GV.isDiscardableIfUnused(LT))
         return false;
 
-      llvm::GlobalValue::LinkageTypes LT = F.getLinkage();
       if (LT == llvm::GlobalValue::InternalLinkage
           || LT == llvm::GlobalValue::PrivateLinkage) {
-        F.setLinkage(llvm::GlobalValue::ExternalLinkage);
+        GV.setLinkage(llvm::GlobalValue::ExternalLinkage);
         return true; // a change!
       }
       return false;
     }
+
+  public:
+    KeepLocalGVPass() : ModulePass(ID) {}
+
+    bool runOnModule(Module &M) override {
+      bool ret = false;
+      for (auto &&F: M)
+        ret |= runOnGlobal(F);
+      for (auto &&G: M.globals())
+        ret |= runOnGlobal(G);
+      return ret;
+    }
   };
 }
 
-char KeepLocalFuncPass::ID = 0;
+char KeepLocalGVPass::ID = 0;
 
 
 BackendPasses::~BackendPasses() {
@@ -140,6 +151,7 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   // Set up the per-module pass manager.
   m_MPM.reset(new legacy::PassManager());
 
+  m_MPM->add(new KeepLocalGVPass());
   m_MPM->add(createTargetTransformInfoWrapperPass(m_TM.getTargetIRAnalysis()));
 
   // Add target-specific passes that need to run as early as possible.
@@ -162,7 +174,6 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   PMBuilder.populateModulePassManager(*m_MPM);
 
   m_FPM.reset(new legacy::FunctionPassManager(&M));
-  m_FPM->add(new KeepLocalFuncPass());
   m_FPM->add(createTargetTransformInfoWrapperPass(m_TM.getTargetIRAnalysis()));
   if (m_CGOpts.VerifyModule)
       m_FPM->add(createVerifierPass());
