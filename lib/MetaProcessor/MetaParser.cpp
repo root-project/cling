@@ -485,7 +485,7 @@ namespace cling {
       llvm::StringRef ident = getCurTok().getIdent();
       consumeToken();
       skipWhitespace();
-      m_Actions->actOnstatsCommand(ident.equals("ast") 
+      m_Actions->actOnstatsCommand(ident.equals("ast")
         ? llvm::StringRef("asttree") : ident,
         getCurTok().is(tok::ident) ? getCurTok().getIdent() : llvm::StringRef());
       consumeToken();
