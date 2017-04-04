@@ -482,11 +482,11 @@ namespace cling {
       skipWhitespace();
       if (!getCurTok().is(tok::ident))
           return false;
-      std::string ident = getCurTok().getIdent();
+      llvm::StringRef ident = getCurTok().getIdent();
       consumeToken();
       skipWhitespace();
-      m_Actions->actOnstatsCommand(ident=="ast"
-        ? llvm::StringRef("asttree") : llvm::StringRef(ident),
+      m_Actions->actOnstatsCommand(ident.equals("ast") 
+        ? llvm::StringRef("asttree") : ident,
         getCurTok().is(tok::ident) ? getCurTok().getIdent() : llvm::StringRef());
       consumeToken();
       return true;
