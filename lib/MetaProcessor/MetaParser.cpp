@@ -131,7 +131,7 @@ namespace cling {
       || isTypedefCommand()
       || isShellCommand(actionResult, resultValue) || isstoreStateCommand()
       || iscompareStateCommand() || isstatsCommand() || isundoCommand()
-      || isRedirectCommand(actionResult);
+      || isRedirectCommand(actionResult) || istraceCommand();
   }
 
   // L := 'L' FilePath Comment
@@ -469,6 +469,26 @@ namespace cling {
       const Token& next = getCurTok();
       m_Actions->actOnstatsCommand(what, next.is(tok::ident)
                                          ? next.getIdent() : llvm::StringRef());
+      return true;
+    }
+    return false;
+  }
+
+  // dumps/creates a trace of the requested representation.
+  bool MetaParser::istraceCommand() {
+    if (getCurTok().is(tok::ident) &&
+        getCurTok().getIdent().equals("trace")) {
+      consumeToken();
+      skipWhitespace();
+      if (!getCurTok().is(tok::ident))
+          return false;
+      llvm::StringRef ident = getCurTok().getIdent();
+      consumeToken();
+      skipWhitespace();
+      m_Actions->actOnstatsCommand(ident.equals("ast") 
+        ? llvm::StringRef("asttree") : ident,
+        getCurTok().is(tok::ident) ? getCurTok().getIdent() : llvm::StringRef());
+      consumeToken();
       return true;
     }
     return false;
