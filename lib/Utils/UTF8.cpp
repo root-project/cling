@@ -180,7 +180,7 @@ class EscapeSequence::ByteDumper {
 public:
 
   ByteDumper(EscapeSequence& Enc, const char* E, bool Utf8) :
-    m_Loc(Enc.m_Loc), m_End(E), m_Utf8(Utf8),
+    m_Loc(Enc.m_Loc), m_End(E), m_Utf8(Utf8), m_HexRun(false),
     isPrintable(Enc.m_Utf8Out && m_Utf8 ? &utf8::isPrint :
                                          (Utf8 ? &stdIsPrintU : &stdIsPrintA)) {
     // Cached the correct isprint variant rather than checking in a loop.
