@@ -429,7 +429,13 @@ def set_vars():
 class Build(object):
     def __init__(self, target=None):
         super(Build, self).__init__()
-        self.buildType = 'Debug' if args.get('create_dev_env') else 'Release'
+        if args.get('create_dev_env'):
+            if args.get('create_dev_env') is None:
+                self.buildType = 'Debug'
+            else:
+                self.buildType = args.get('create_dev_env')
+        else:
+            self.buildType = 'Release'
         self.win32 = platform.system() == 'Windows'
         self.cores = multiprocessing.cpu_count()
         # Travis CI, GCC crashes if more than 4 cores used.
