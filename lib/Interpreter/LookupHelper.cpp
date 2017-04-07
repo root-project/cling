@@ -162,10 +162,7 @@ namespace cling {
           return true;
         }
         next = utils::Lookup::Named(&S, declName.substr(last, c - last), sofar);
-        if (next == (void *) -1) {
-          // Ambiguous result, we need to go through the long path
-          return false;
-        } else if (next && next != (void *) -1) {
+        if (next && next != (void *) -1) {
           // Need to handle typedef here too.
           const TypedefNameDecl *typedefDecl = dyn_cast<TypedefNameDecl>(next);
           if (typedefDecl) {
@@ -222,7 +219,7 @@ namespace cling {
         }
         if (!sofar) {
           // We are looking into something that is not a decl context,
-          // so we won't find anything.
+          // we won't find anything.
           return true;
         }
         last = c + 2;
@@ -230,8 +227,7 @@ namespace cling {
       } else if (c + 1 == declName.size()) {
         // End of the line.
         next = utils::Lookup::Named(&S, declName.substr(last, c + 1 - last), sofar);
-        // If there is an ambiguity, we need to go the long route.
-        if (next == (void *) -1) return false;
+        if (next == (void *) -1) next = 0;
         if (next) {
           resultDecl = next;
         }
