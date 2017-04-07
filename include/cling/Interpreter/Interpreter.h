@@ -742,7 +742,7 @@ namespace cling {
 
     ///\brief Forwards to cling::IncrementalExecutor::addModule.
     ///
-    void addModule(llvm::Module* module);
+    void addModule(llvm::Module* module, int OptLevel);
 
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);

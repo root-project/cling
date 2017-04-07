@@ -1452,8 +1452,8 @@ namespace cling {
     return m_Executor->addSymbol(symbolName, symbolAddress);
   }
 
-  void Interpreter::addModule(llvm::Module* module) {
-     m_Executor->addModule(module);
+  void Interpreter::addModule(llvm::Module* module, int OptLevel) {
+    m_Executor->addModule(module, OptLevel);
   }
 
 

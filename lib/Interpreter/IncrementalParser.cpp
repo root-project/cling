@@ -553,7 +553,7 @@ namespace cling {
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
 
       if (M) {
-        m_Interpreter->addModule(M.get());
+        m_Interpreter->addModule(M.get(), T->getCompilationOpts().OptLevel);
         T->setModule(std::move(M));
       }
 
