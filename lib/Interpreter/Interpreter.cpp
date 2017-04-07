@@ -192,7 +192,8 @@ namespace cling {
     m_Opts(argc, argv),
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
-    m_DynamicLookupEnabled(false), m_RawInputEnabled(false) {
+    m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
+    m_OptLevel(parentInterp ? parentInterp->m_OptLevel : -1) {
 
     if (handleSimpleOptions(m_Opts))
       return;
@@ -202,6 +203,10 @@ namespace cling {
     m_IncrParser.reset(new IncrementalParser(this, llvmdir));
     if (!m_IncrParser->isValid(false))
       return;
+
+    // Initialize the opt level to what CodeGenOpts says.
+    if (m_OptLevel == -1)
+      m_OptLevel = getCI()->getCodeGenOpts().OptimizationLevel;
 
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();

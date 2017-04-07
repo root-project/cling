@@ -179,6 +179,10 @@ namespace cling {
     ///
     bool m_RawInputEnabled;
 
+    ///\brief Flag toggling the optimization level to be used.
+    ///
+    int m_OptLevel;
+
     ///\brief Interpreter callbacks.
     ///
     std::unique_ptr<InterpreterCallbacks> m_Callbacks;
@@ -632,6 +636,9 @@ namespace cling {
 
     bool isRawInputEnabled() const { return m_RawInputEnabled; }
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
+
+    int getDefaultOptLevel() const { return m_OptLevel; }
+    void setDefaultOptLevel(int optLevel) { m_OptLevel = optLevel; }
 
     clang::CompilerInstance* getCI() const;
     clang::CompilerInstance* getCIOrNull() const;
