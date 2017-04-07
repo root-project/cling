@@ -645,6 +645,9 @@ namespace cling {
     clang::Sema& getSema() const;
     clang::DiagnosticsEngine& getDiagnostics() const;
 
+    ///\brief Create suitable default compilation options.
+    CompilationOptions makeDefaultCompilationOpts() const;
+
     //FIXME: This must be in InterpreterCallbacks.
     void installLazyFunctionCreator(void* (*fp)(const std::string&));
 

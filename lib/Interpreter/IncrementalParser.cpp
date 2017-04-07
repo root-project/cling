@@ -206,11 +206,7 @@ namespace cling {
     if (hasCodeGenerator())
       getCodeGenerator()->Initialize(getCI()->getASTContext());
 
-    CompilationOptions CO;
-    CO.DeclarationExtraction = 0;
-    CO.ValuePrinting = CompilationOptions::VPDisabled;
-    CO.CodeGeneration = hasCodeGenerator();
-
+    CompilationOptions CO = m_Interpreter->makeDefaultCompilationOpts();
     Transaction* CurT = beginTransaction(CO);
     Preprocessor& PP = m_CI->getPreprocessor();
     DiagnosticsEngine& Diags = m_CI->getSema().getDiagnostics();
