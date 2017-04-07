@@ -7,7 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %built_cling -fno-rtti 2>&1 | FileCheck %s
-// Test findScope, which is esentially is a DeclContext.
+// Test findScope, which is essentially is a DeclContext.
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/LookupHelper.h"
 
@@ -90,3 +90,16 @@ lookup.findScope("W<Int_t>", diags, &resType);
 clang::QualType(resType,0).getAsString().c_str()
 //CHECK-NEXT: ({{[^)]+}}) "W<Int_t>"
 
+.rawInput 1
+namespace Functions {
+void Next();
+}
+
+using namespace Functions;
+
+namespace Next {}
+.rawInput 0
+
+const clang::Decl* cl_Next = lookup.findScope("Next", diags);
+printf("cl_Next: 0x%lx\n", (unsigned long) cl_Next);
+//CHECK-NEXT: cl_Next: 0x{{[1-9a-f][0-9a-f]*$}}
