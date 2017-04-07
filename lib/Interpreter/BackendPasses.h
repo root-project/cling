@@ -10,6 +10,7 @@
 #ifndef CLING_BACKENDPASSES_H
 #define CLING_BACKENDPASSES_H
 
+#include <array>
 #include <memory>
 
 namespace llvm {
@@ -35,15 +36,15 @@ namespace cling {
   ///\brief Runs passes on IR. Remove once we can migrate from ModuleBuilder to
   /// what's in clang's CodeGen/BackendUtil.
   class BackendPasses {
-    std::unique_ptr<llvm::legacy::PassManager> m_MPM;
-    std::unique_ptr<llvm::legacy::FunctionPassManager> m_FPM;
+    std::array<std::unique_ptr<llvm::legacy::PassManager>, 4> m_MPM;
+    std::array<std::unique_ptr<llvm::legacy::FunctionPassManager>, 4> m_FPM;
 
     llvm::TargetMachine& m_TM;
     const clang::CodeGenOptions &m_CGOpts;
     //const clang::TargetOptions &m_TOpts;
     //const clang::LangOptions &m_LOpts;
 
-    void CreatePasses(llvm::Module& M);
+    void CreatePasses(llvm::Module& M, int OptLevel);
 
   public:
     BackendPasses(const clang::CodeGenOptions &CGOpts,
@@ -58,7 +59,7 @@ namespace cling {
 
     ~BackendPasses();
 
-    void runOnModule(llvm::Module& M);
+    void runOnModule(llvm::Module& M, int OptLevel);
   };
 }
 
