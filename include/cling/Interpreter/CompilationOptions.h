@@ -62,6 +62,9 @@ namespace cling {
     ///
     unsigned CheckPointerValidity : 1;
 
+    ///\brief Optimization level.
+    unsigned OptLevel : 2;
+
     ///\brief Offset into the input line to enable the setting of the
     /// code completion point.
     /// -1 diasables code completion.
@@ -77,6 +80,7 @@ namespace cling {
       CodeGeneration = 1;
       CodeGenerationForModule = 0;
       IgnorePromptDiags = 0;
+      OptLevel = 2;
       CheckPointerValidity = 1;
     }
 
@@ -91,6 +95,7 @@ namespace cling {
         CodeGenerationForModule == Other.CodeGenerationForModule &&
         IgnorePromptDiags     == Other.IgnorePromptDiags &&
         CheckPointerValidity  == Other.CheckPointerValidity &&
+        OptLevel              == Other.OptLevel &&
         CodeCompletionOffset  == Other.CodeCompletionOffset;
     }
 
@@ -105,6 +110,7 @@ namespace cling {
         CodeGenerationForModule != Other.CodeGenerationForModule ||
         IgnorePromptDiags     != Other.IgnorePromptDiags ||
         CheckPointerValidity  != Other.CheckPointerValidity ||
+        OptLevel              != Other.OptLevel ||
         CodeCompletionOffset  != Other.CodeCompletionOffset;
     }
   };
