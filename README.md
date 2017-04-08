@@ -1,6 +1,4 @@
-<a target="_blank" href="https://travis-ci.org/root-project/cling">
-  ![Travis status](https://travis-ci.org/root-project/cling.svg?branch=master)
-</a>
+[![Travis status](https://travis-ci.org/root-project/cling.svg?branch=master)](https://travis-ci.org/root-project/cling)
 <!-- a target="_blank" href="https://ci.appveyor.com/project/root-project/cling-j0wdg">
   ![Appveyor status](https://ci.appveyor.com/api/projects/status/github/root-project/cling?svg=true&branch=master)
 </a -->
