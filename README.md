@@ -61,17 +61,17 @@ Full documentation of CPT can be found in [tools/packaging](tools/packaging).
 Usage
 -----
 ```c++
-./cling '#include <stdio.h>' 'printf("Hello World!\n")'`
+./cling '#include <stdio.h>' 'printf("Hello World!\n")'
 ```
 
 To get started run:
 ```bash
-./cling --help`
+./cling --help
 ```
 or type
 ```
 ./cling
-[cling]$ .help`
+[cling]$ .help
 ```
 
 
