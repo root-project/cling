@@ -67,6 +67,16 @@ namespace cling {
     ActionResult actOnLCommand(llvm::StringRef file,
                                Transaction** transaction = 0);
 
+    ///\brief O command sets the optimization level.
+    ///
+    ///\param[in] optLevel - The optimization level to set.
+    ///
+    ActionResult actOnOCommand(int optLevel);
+
+    ///\brief O command prints the current optimization level.
+    ///
+    void actOnOCommand();
+
     ///\brief T command prepares the tag files for giving semantic hints.
     ///
     ///\param[in] inputFile - The source file of the map.

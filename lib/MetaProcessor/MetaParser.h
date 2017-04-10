@@ -93,7 +93,7 @@ namespace cling {
     bool isqCommand();
     bool isUCommand(MetaSema::ActionResult& actionResult);
     bool isICommand();
-    bool isOCommand();
+    bool isOCommand(MetaSema::ActionResult& actionResult);
     bool israwInputCommand();
     bool isdebugCommand();
     bool isprintDebugCommand();

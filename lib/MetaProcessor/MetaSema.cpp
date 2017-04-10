@@ -63,6 +63,22 @@ namespace cling {
     return AR_Failure;
   }
 
+  MetaSema::ActionResult MetaSema::actOnOCommand(int optLevel) {
+    if (optLevel >= 0 && optLevel < 4) {
+      m_Interpreter.setDefaultOptLevel(optLevel);
+      return AR_Success;
+    }
+    m_MetaProcessor.getOuts()
+      << "Refusing to set invalid cling optimization level "
+      << optLevel << '\n';
+    return AR_Failure;
+  }
+
+  void MetaSema::actOnOCommand() {
+    m_MetaProcessor.getOuts() << "Current cling optimization level: "
+                              << m_Interpreter.getDefaultOptLevel() << '\n';
+  }
+
   MetaSema::ActionResult MetaSema::actOnTCommand(llvm::StringRef inputFile,
                                                  llvm::StringRef outputFile) {
     m_Interpreter.GenerateAutoloadingMap(inputFile, outputFile);
@@ -123,8 +139,13 @@ namespace cling {
           expression = FuncName + args.str();
           // Give the user some context in case we have a problem invoking
           expression += " /* invoking function corresponding to '.x' */";
+
+          // Above transaction might have set a different OptLevel; use that.
+          int prevOptLevel = m_Interpreter.getDefaultOptLevel();
+          m_Interpreter.setDefaultOptLevel(T->getCompilationOpts().OptLevel);
           if (m_Interpreter.echo(expression, result) != Interpreter::kSuccess)
             actionResult = AR_Failure;
+          m_Interpreter.setDefaultOptLevel(prevOptLevel);
         }
       } else
         FuncName = file; // Not great, but pass the diagnostics below something

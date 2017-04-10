@@ -124,7 +124,7 @@ namespace cling {
       || isXCommand(actionResult, resultValue) ||isTCommand(actionResult)
       || isAtCommand()
       || isqCommand() || isUCommand(actionResult) || isICommand()
-      || isOCommand() || israwInputCommand()
+      || isOCommand(actionResult) || israwInputCommand()
       || isdebugCommand() || isprintDebugCommand()
       || isdynamicExtensionsCommand() || ishelpCommand() || isfileExCommand()
       || isfilesCommand() || isClassCommand() || isNamespaceCommand() || isgCommand()
@@ -336,7 +336,7 @@ namespace cling {
     return false;
   }
 
-  bool MetaParser::isOCommand() {
+  bool MetaParser::isOCommand(MetaSema::ActionResult& actionResult) {
     const Token& currTok = getCurTok();
     if (currTok.is(tok::ident)) {
       llvm::StringRef ident = currTok.getIdent();
@@ -347,7 +347,7 @@ namespace cling {
             consumeAnyStringToken(tok::eof);
             if (getCurTok().is(tok::raw_ident))
               return false;
-            //TODO: Process .OXXX here as .O with level XXX.
+            actionResult = m_Actions->actOnOCommand(level);
             return true;
           }
         } else {
@@ -356,12 +356,14 @@ namespace cling {
           if (lastStringToken.is(tok::raw_ident)
               && lastStringToken.getLength()) {
             int level = 0;
-            if (!lastStringToken.getIdent().getAsInteger(10, level) && level >= 0) {
-              //TODO: process .O XXX
+            if (!lastStringToken.getIdent().getAsInteger(10, level)
+                && level >= 0) {
+              actionResult = m_Actions->actOnOCommand(level);
               return true;
             }
           } else {
-            //TODO: process .O
+            m_Actions->actOnOCommand();
+            actionResult = MetaSema::AR_Success;
             return true;
           }
         }
