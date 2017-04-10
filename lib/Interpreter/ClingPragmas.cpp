@@ -20,6 +20,8 @@
 #include "clang/Lex/Token.h"
 #include "clang/Parse/Parser.h"
 
+#include <cstdlib>
+
 using namespace cling;
 using namespace clang;
 
@@ -27,7 +29,8 @@ namespace {
   typedef std::pair<bool, std::string> ParseResult_t;
 
   static ParseResult_t HandlePragmaHelper(Preprocessor &PP,
-                                          const std::string &pragmaInst) {
+                                          const std::string &pragmaInst,
+                                          bool stringLiteralArg = true) {
     struct SkipToEOD_t {
       Preprocessor& m_PP;
       SkipToEOD_t(Preprocessor& PParg): m_PP(PParg) {}
@@ -37,17 +40,29 @@ namespace {
     Token Tok;
     PP.Lex(Tok);
     if (Tok.isNot(tok::l_paren)) {
-      cling::errs() << "cling:HandlePragmaHelper : expect '(' after #"
-                    << pragmaInst;
+      cling::errs() << "cling::HandlePragmaHelper: expect '(' after #"
+                    << pragmaInst << '\n';
       return ParseResult_t{false, ""};
     }
     std::string Literal;
-    if (!PP.LexStringLiteral(Tok, Literal, pragmaInst.c_str(),
-                             false /*allowMacroExpansion*/)) {
-      // already diagnosed.
-      return ParseResult_t {false, ""};
+    if (stringLiteralArg) {
+      if (!PP.LexStringLiteral(Tok, Literal, pragmaInst.c_str(),
+                               false /*allowMacroExpansion*/)) {
+        // already diagnosed.
+        return ParseResult_t {false, ""};
+      }
+      utils::ExpandEnvVars(Literal);
+    } else {
+      // integer literal
+      PP.Lex(Tok);
+      if (!Tok.isLiteral()) {
+        cling::errs()
+          << "cling::HandlePragmaHelper: expect integer literal after #"
+          << pragmaInst << '\n';
+        return ParseResult_t {false, ""};
+      }
+      Literal = std::string(Tok.getLiteralData(), Tok.getLength());
     }
-    utils::ExpandEnvVars(Literal);
 
     return ParseResult_t {true, Literal};
   }
