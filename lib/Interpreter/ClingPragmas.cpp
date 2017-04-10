@@ -10,6 +10,7 @@
 #include "ClingPragmas.h"
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 
@@ -157,6 +158,57 @@ namespace {
       }
     }
   };
+
+  class PHOptLevel: public PragmaHandler {
+    Interpreter& m_Interp;
+
+  public:
+    PHOptLevel(Interpreter& interp):
+      PragmaHandler("optimize"), m_Interp(interp) {}
+
+    void HandlePragma(Preprocessor &PP,
+                      PragmaIntroducerKind Introducer,
+                      Token &FirstToken) override {
+      // TODO: use Diagnostics!
+      ParseResult_t Result = HandlePragmaHelper(PP, "pragma cling optimize",
+                                                false /*string literal*/);
+      //if the function HandlePragmaHelper returned false,
+      if (!Result.first)
+        return;
+      if (Result.second.empty()) {
+        cling::errs() << "Missing optimization level.\n" ;
+        return;
+      }
+
+      char* ConvEnd = nullptr;
+      int OptLevel = std::strtol(Result.second.c_str(), &ConvEnd, 10 /*base*/);
+      if (!ConvEnd || ConvEnd == Result.second.c_str()) {
+        cling::errs() << "cling::PHOptLevel: "
+          "missing or non-numerical optimization level.\n" ;
+        return;
+      }
+      auto T = const_cast<Transaction*>(m_Interp.getCurrentTransaction());
+      assert(T && "Parsing code without transaction!");
+      // The topmost Transaction drives the jitting.
+      T = T->getTopmostParent();
+      CompilationOptions& CO = T->getCompilationOpts();
+      if (CO.OptLevel != m_Interp.getDefaultOptLevel()) {
+        // Another #pragma already changed the opt level. That's a conflict that
+        // we cannot resolve here; mention that and  keep the lower one.
+        cling::errs() << "cling::PHOptLevel: "
+          "conflicting `#pragma cling optimize` directives: "
+          "was already set to " << CO.OptLevel << '\n';
+        if (CO.OptLevel > OptLevel) {
+          CO.OptLevel = OptLevel;
+          cling::errs() << "Setting to lower value of " << OptLevel << '\n';
+        } else {
+          cling::errs() << "Ignoring higher value of " << OptLevel << '\n';
+        }
+      } else {
+        CO.OptLevel = OptLevel;
+      }
+    }
+  };
 }
 
 void cling::addClingPragmas(Interpreter& interp) {
@@ -165,4 +217,5 @@ void cling::addClingPragmas(Interpreter& interp) {
   PP.AddPragmaHandler("cling", new PHLoad(interp));
   PP.AddPragmaHandler("cling", new PHAddIncPath(interp));
   PP.AddPragmaHandler("cling", new PHAddLibraryPath(interp));
+  PP.AddPragmaHandler("cling", new PHOptLevel(interp));
 }
