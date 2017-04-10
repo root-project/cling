@@ -457,6 +457,13 @@ namespace cling {
     Preprocessor &PP = P.getPreprocessor();
     ASTContext &Context = S.getASTContext();
 
+
+    // The user wants to see the template instantiation, existing or not.
+    // Here we might not have an active transaction to handle
+    // the caused instantiation decl.
+    // Also quickFindDecl could trigger deserialization of decls.
+    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
+
     // See if we can find it without a buffer and any clang parsing,
     // We need to go scope by scope.
     {
@@ -517,11 +524,6 @@ namespace cling {
         }
       }
     }
-
-    // The user wants to see the template instantiation, existing or not.
-    // Here we might not have an active transaction to handle
-    // the caused instantiation decl.
-    Interpreter::PushTransactionRAII pushedT(m_Interpreter);
 
     ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
     prepareForParsing(P,m_Interpreter,
