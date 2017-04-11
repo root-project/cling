@@ -7,12 +7,16 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify 2>&1 -fsyntax-only
 
-// Test to check functions registered via atexit are intercepted, and __dso_handle
-// is properly overridden in for child interpreters.
+// Test to check functions registered via atexit are intercepted, and gCling &
+// thisCling are properly setup in child interpreters.
 #include <cstdlib>
 #include "cling/Interpreter/Interpreter.h"
 
+#if !defined(_WIN32) && !defined(_LIBCPP_HAS_QUICK_EXIT) && !defined(_GLIBCXX_HAVE_AT_QUICK_EXIT)
+#define at_quick_exit atexit
+#endif
 
 static void atexit_1() {
   printf("atexit_1\n");
@@ -24,7 +28,7 @@ static void atexit_3() {
   printf("atexit_3\n");
 }
 
-atexit(atexit_1);
+std::atexit(atexit_1);
 .undo
 // Undoing the registration should call the function
 // CHECK: atexit_1
@@ -41,16 +45,17 @@ cling::Interpreter * gChild = 0;
   const char* kArgV[1] = {"cling"};
   cling::Interpreter ChildInterp(*gCling, 1, kArgV);
   gChild = &ChildInterp;
-  ChildInterp.declare("static void atexit_c() { printf(\"atexit_c %d\\n\", gChild==__dso_handle); }");
+  ChildInterp.declare("static void atexit_c() { printf(\"atexit_c %d\\n\""
+                      ", gChild==thisCling); }");
   ChildInterp.execute("atexit(atexit_c);");
 }
 // ChildInterp
 // CHECK-NEXT: atexit_c 1
 
 static void atexit_f() {
-  printf("atexit_f %s\n", gCling==__dso_handle ? "true" : "false");
+  printf("atexit_f %s\n", gCling==thisCling ? "true" : "false");
 }
-at_quick_exit(atexit_f);
+std::at_quick_exit(atexit_f);
 
 // expected-no-diagnostics
 .q
