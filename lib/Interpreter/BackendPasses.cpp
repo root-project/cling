@@ -96,14 +96,13 @@ void BackendPasses::CreatePasses(llvm::Module& M)
   CGOpts_.VectorizeSLP = 1;
 #endif
 
+#ifdef __GNUC__
   // Better inlining is pending https://bugs.llvm.org//show_bug.cgi?id=19668
   // and its consequence https://sft.its.cern.ch/jira/browse/ROOT-7111
   // shown e.g. by roottest/cling/stl/map/badstringMap
-  CGOpts_.setInlining(CodeGenOptions::NormalInlining);
-
-  unsigned OptLevel = m_CGOpts.OptimizationLevel;
-
-  CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
+  if (Inlining > CodeGenOptions::NormalInlining)
+    Inlining = CodeGenOptions::NormalInlining;
+#endif
 
   // Handle disabling of LLVM optimization, where we want to preserve the
   // internal module before any optimization.
