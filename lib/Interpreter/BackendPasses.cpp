@@ -77,11 +77,13 @@ void BackendPasses::CreatePasses(llvm::Module& M)
 {
   // From BackEndUtil's clang::EmitAssemblyHelper::CreatePasses().
 
+  CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
+
+#if 0
   CodeGenOptions& CGOpts_ = const_cast<CodeGenOptions&>(m_CGOpts);
   // DON'T: we will not find our symbols...
   //CGOpts_.CXXCtorDtorAliases = 1;
 
-#if 0
   // Default clang -O2 on Linux 64bit also has the following, but see
   // CIFactory.cpp.
   CGOpts_.DisableFPElim = 0;
