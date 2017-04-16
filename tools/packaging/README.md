@@ -21,7 +21,7 @@ Below is a list of platforms currently supported by CPT:
   * Mac OS X - *Apple Disk Images*
   * Virtually any UNIX-like platform which supports Bash - *Tarballs*.
 
-###Requirements
+### Requirements
 Before using this tool, make sure you have the required packages installed on
 your system. Detailed information on what and how to install is provided below,
 but the recommended (and much easier) way is to use the following command which
@@ -51,7 +51,7 @@ a case, you should install ```openssl-devel```, re-compile Python and ```configu
 will automatically link against the required libraries and produce a binary with SSL
 support.
 
-####Ubuntu/Debian
+#### Ubuntu/Debian
 On Debian, Ubuntu, Linux Mint, CrunchBang, or any other distro based on Debian
 which supports APT package manager, you can install all the required packages by:
 ```sh
@@ -60,7 +60,7 @@ sudo apt-get install git g++ debhelper devscripts gnupg python
 ```
 You are not required to do this manually since CPT can do this for you automatically.
 
-######Setting up:
+###### Setting up:
 Make sure GnuPG is properly set up with your correct fingerprint. These
 credentials are needed to sign the Debian package and create Debian changelogs.
 On a build machine (Electric Commander), make sure the fingerprint is of the
@@ -77,7 +77,7 @@ gpg --fingerprint
 Again, all these checks are performed by default when you launch CPT with ```-c``` option.
 [Ubuntu Packaging Guide]:http://packaging.ubuntu.com/html/getting-set-up.html#create-your-gpg-key
 
-####Windows
+#### Windows
 CPT is meant to be executed on cmd.exe prompt. Make sure you have set the
 environment properly before continuing.
 Below is a list of required packages for Windows (Win32-x86):
@@ -91,7 +91,7 @@ Microsoft Visual Studio 11 (2012), with Microsoft Visual C++ 2012
 [MSYS Git]:http://msysgit.github.io/
 [Python]:https://www.python.org/
 
-######Setting Up:
+###### Setting Up:
 Unlike other UNIX-like platforms, Windows requires you to follow some rules.
 Do not ignore this section unless you want CPT to fail mid-way with wierd
 errors. You should require these instructions only once.
@@ -119,7 +119,7 @@ cd tools/packaging/
 ./cpt.py --check-requirements
 ```
 
-####Red Hat Linux (Fedora/Scientific Linux CERN)
+#### Red Hat Linux (Fedora/Scientific Linux CERN)
 This section applies to all distros based on Red Hat Linux like Fedora, and
 Scientific Linux CERN (SLC). Apparently, you can build RPM packages in any
 distro regardless of the package manager it uses. This has been tested on
@@ -135,7 +135,7 @@ sudo yum update
 sudo yum install git gcc gcc-c++ rpm-build python
 ```
 
-####Mac OS X
+#### Mac OS X
 Mac OS X provides a sane environement for CPT to build Apple Disk Images
 (DMG Installers). On older versions of Mac OS, you need to update XCode to
 get the latest version of Clang supporting c++11 features. A great package
@@ -151,7 +151,7 @@ sudo port -v selfupdate
 sudo port install git g++ python
 ```
 
-###Usage
+### Usage
 ```sh
 cd tools/packaging/
 ```
@@ -213,7 +213,7 @@ or
 ```sh
 ./cpt.py --last-stable=pkg
 ```
-###Overriding Default Variables
+### Overriding Default Variables
 There are a select number of variables which can be set to make CPT work
 differently. This eliminates the need to manually edit the script.
 You can overrride variables by using the following syntax:
