@@ -399,7 +399,10 @@ namespace {
     // I would claim that the check should be relaxed to:
 
     if (Opts.CPlusPlus) {
-#if __cplusplus > 201103L
+#if __cplusplus >= 201703L
+      Opts.CPlusPlus1z = 1;
+#endif
+#if __cplusplus >= 201402L
       Opts.CPlusPlus14 = 1;
 #endif
 #if __cplusplus >= 201103L
