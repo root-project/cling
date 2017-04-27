@@ -459,12 +459,10 @@ namespace cling {
       } // find '}'
     } // ignore outermost block
 
-#ifndef NDEBUG
     m_CurrentlyExecutingFile = filename;
     bool topmost = !m_TopExecutingFile.data();
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
-#endif
 
     content.insert(0, "#line 2 \"" + filename.str() + "\" \n");
     // We don't want to value print the results of a unnamed macro.
@@ -489,11 +487,9 @@ namespace cling {
     } else
       ret = m_Interp.process(content, result);
 
-#ifndef NDEBUG
     m_CurrentlyExecutingFile = llvm::StringRef();
     if (topmost)
       m_TopExecutingFile = llvm::StringRef();
-#endif
     return ret;
   }
 

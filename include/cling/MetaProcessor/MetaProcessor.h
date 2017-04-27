@@ -45,7 +45,6 @@ namespace cling {
     ///
     std::unique_ptr<MetaParser> m_MetaParser;
 
-#ifndef NDEBUG
     ///\brief Currently executing file as passed into executeFile
     ///
     llvm::StringRef m_CurrentlyExecutingFile;
@@ -53,7 +52,6 @@ namespace cling {
     ///\brief Outermost currently executing file as passed into executeFile
     ///
     llvm::StringRef m_TopExecutingFile;
-#endif
 
     ///\brief The output stream being used for various purposes.
     ///
