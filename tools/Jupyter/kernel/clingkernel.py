@@ -116,12 +116,15 @@ class ClingKernel(Kernel):
         strarr = ctypes.c_char_p*5
         argv = strarr(b"clingJupyter",stdopt, b"-I" + clingInstDir.encode('utf-8') + b"/include/",b"",b"")
         llvmResourceDirCP = ctypes.c_char_p(llvmResourceDir.encode('utf8'))
-        self.output_pipe, pipe_in = os.pipe()
+
+        # The sideband_pipe is used by cling::Jupyter::pushOutput() to publish MIME data to Jupyter.
+        self.sideband_pipe, pipe_in = os.pipe()
         self.interp = self.libclingJupyter.cling_create(5, argv, llvmResourceDirCP, pipe_in)
 
         self.libclingJupyter.cling_complete_start.restype = my_void_p
         self.libclingJupyter.cling_complete_next.restype = my_void_p #c_char_p
-        self.output_thread = threading.Thread(target=self.publish_pipe_output)
+
+        self.output_thread = threading.Thread(target=self.publish_sideband_output)
         self.output_thread.daemon = True
         self.output_thread.start()
 
@@ -159,15 +162,15 @@ class ClingKernel(Kernel):
             data[key] = value
         return data
 
-    def publish_pipe_output(self):
-        """Watch output_pipe for display-data messages
+    def publish_sideband_output(self):
+        """Watch sideband_pipe for display-data messages
 
         and publish them on IOPub when they arrive
         """
 
         while True:
-            select.select([self.output_pipe], [], [])
-            data = self._recv_dict(self.output_pipe)
+            select.select([self.sideband_pipe], [], [])
+            data = self._recv_dict(self.sideband_pipe)
             self.session.send(self.iopub_socket, 'display_data',
                 content={
                     'data': data,
