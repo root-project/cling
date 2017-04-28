@@ -11,7 +11,7 @@ easiest way to build Cling for your favorite platorm and bundle it into an
 installer. If you want to manually compile Cling from source, go through the
 [README] of Cling or the build instructions [here].
 
-[README]:https://github.com/vgvassilev/cling/blob/master/README.md
+[README]:https://github.com/root-project/cling/blob/master/README.md
 [here]:http://root.cern.ch/drupal/content/cling-build-instructions
 
 Below is a list of platforms currently supported by CPT:
@@ -257,4 +257,4 @@ license terms of Cling. You can choose to license it under the University of
 Illinois Open Source License or the GNU Lesser General Public License. See
 [LICENSE.TXT] for details.
 
-[LICENSE.TXT]:https://github.com/vgvassilev/cling/blob/master/LICENSE.TXT
+[LICENSE.TXT]:https://github.com/root-project/cling/blob/master/LICENSE.TXT
