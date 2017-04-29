@@ -371,9 +371,11 @@ namespace cling {
 #if defined(__GLIBCXX__) && !defined(__APPLE__)
       const char* LinkageCxx = "extern \"C++\"";
       const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
+      const char* cxa_atexit_is_noexcept = LangOpts.CPlusPlus ? " noexcept" : "";
 #else
       const char* LinkageCxx = Linkage;
       const char* Attr = "";
+      const char* cxa_atexit_is_noexcept = "";
 #endif
 
       // While __dso_handle is still overriden in the JIT below,
@@ -393,7 +395,8 @@ namespace cling {
       Strm << "#define __dso_handle ((void*)" << thisP << ")\n";
 
       // Use __cxa_atexit to intercept all of the following routines
-      Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*);\n";
+      Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*) "
+           << cxa_atexit_is_noexcept << ";\n";
 
       // C atexit, std::atexit
       Strm << Linkage << " int atexit(void(*f)()) " << Attr << " { return "
