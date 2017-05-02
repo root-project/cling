@@ -17,7 +17,7 @@ Talks to Cling via ctypes
 
 from __future__ import print_function
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 import ctypes
 from contextlib import contextmanager
@@ -51,6 +51,27 @@ except ValueError:
     c_stderr_p = ctypes.c_void_p.in_dll(libc, '__stderrp')
 
 
+class FdReplacer:
+    """Stream replacement by pipes."""
+    def __init__(self, name):
+        self.name = name
+        self.real_fd = getattr(sys, '__%s__' % name).fileno()
+        self.save_fd = os.dup(self.real_fd)
+        self.pipe_out, pipe_in = os.pipe()
+        os.dup2(pipe_in, self.real_fd)
+        os.close(pipe_in)
+        # make pipe_out non-blocking
+        flags = fcntl(self.pipe_out, F_GETFL)
+        fcntl(self.pipe_out, F_SETFL, flags|os.O_NONBLOCK)
+
+    def restore(self):
+        os.close(self.real_fd)
+        # and restore original stdout/stderr
+        os.close(self.pipe_out)
+        os.dup2(self.save_fd, self.real_fd)
+        os.close(self.save_fd)
+
+
 class ClingKernel(Kernel):
     """Cling Kernel for Jupyter"""
     implementation = 'cling_kernel'
@@ -68,6 +89,7 @@ class ClingKernel(Kernel):
                      'mimetype': ' text/x-c++src',
                      'file_extension': '.c++'}
 
+    # Used in handle_input()
     flush_interval = Float(0.25, config=True)
 
     std = CaselessStrEnum(default_value='c++11',
@@ -124,9 +146,14 @@ class ClingKernel(Kernel):
         self.libclingJupyter.cling_complete_start.restype = my_void_p
         self.libclingJupyter.cling_complete_next.restype = my_void_p #c_char_p
 
-        self.output_thread = threading.Thread(target=self.publish_sideband_output)
-        self.output_thread.daemon = True
-        self.output_thread.start()
+    def _process_stdio_data(self, pipe, name):
+        """Read from the pipe, send it to IOPub as name stream."""
+        data = os.read(pipe, 1024)
+        # send output
+        self.session.send(self.iopub_socket, 'stream', {
+          'name': name,
+          'text': data.decode('utf8', 'replace'),
+        }, parent=self._parent_header)
 
     def _recv_dict(self, pipe):
         """Receive a serialized dict on a pipe
@@ -162,82 +189,64 @@ class ClingKernel(Kernel):
             data[key] = value
         return data
 
-    def publish_sideband_output(self):
-        """Watch sideband_pipe for display-data messages
 
-        and publish them on IOPub when they arrive
+    def _process_sideband_data(self):
+        """publish display-data messages on IOPub.
         """
-
-        while True:
-            select.select([self.sideband_pipe], [], [])
-            data = self._recv_dict(self.sideband_pipe)
-            self.session.send(self.iopub_socket, 'display_data',
-                content={
-                    'data': data,
-                    'metadata': {},
-                },
-                parent=self._parent_header,
+        data = self._recv_dict(self.sideband_pipe)
+        self.session.send(self.iopub_socket, 'display_data',
+            content={
+                'data': data,
+                'metadata': {},
+            },
+            parent=self._parent_header,
             )
 
-    @contextmanager
-    def forward_stream(self, name):
-        """Capture stdout and forward it as stream messages"""
-        # create pipe for stdout
-        if name == 'stdout':
-            c_flush_p = c_stdout_p
-        elif name == 'stderr':
-            c_flush_p = c_stderr_p
-        else:
-            raise ValueError("Name must be stdout or stderr, not %r" % name)
+    def forward_streams(self):
+        """Put the forwarding pipes in place for stdout, stderr."""
+        self.replaced_streams = [FdReplacer("stdout"), FdReplacer("stderr")]
 
-        real_fd = getattr(sys, '__%s__' % name).fileno()
-        save_fd = os.dup(real_fd)
-        pipe_out, pipe_in = os.pipe()
-        os.dup2(pipe_in, real_fd)
-        os.close(pipe_in)
+    def handle_input(self):
+        """Capture stdout, stderr and sideband. Forward them as stream messages."""
+        # create pipe for stdout, stderr
+        select_on = [self.sideband_pipe]
+        for rs in self.replaced_streams:
+            if rs:
+                select_on.append(rs.pipe_out)
 
-        # make pipe_out non-blocking
-        flags = fcntl(pipe_out, F_GETFL)
-        fcntl(pipe_out, F_SETFL, flags|os.O_NONBLOCK)
+        r, w, x = select.select(select_on, [], [], self.flush_interval)
+        if not r:
+            # nothing to read, flush libc's stdout and check again
+            libc.fflush(c_stdout_p)
+            libc.fflush(c_stderr_p)
+            return False
 
-        def forwarder(pipe):
-            """Forward bytes on a pipe to stream messages"""
-            while True:
-                r, w, x = select.select([pipe], [], [], self.flush_interval)
-                if not r:
-                    # nothing to read, flush libc's stdout and check again
-                    libc.fflush(c_flush_p)
-                    continue
-                data = os.read(pipe, 1024)
-                if not data:
-                    # pipe closed, we are done
-                    break
-                # send output
-                self.session.send(self.iopub_socket, 'stream', {
-                    'name': name,
-                    'text': data.decode('utf8', 'replace'),
-                }, parent=self._parent_header)
+        for fd in r:
+            if fd == self.sideband_pipe:
+                self._process_sideband_data()
+            else:
+                if fd == self.replaced_streams[0].pipe_out:
+                    rs = 0
+                else:
+                    rs = 1
+                self._process_stdio_data(fd, self.replaced_streams[rs].name)
+        return True
 
-        t = threading.Thread(target=forwarder, args=(pipe_out,))
-        t.start()
-        try:
-            yield
-        finally:
-            # flush the pipe
-            libc.fflush(c_flush_p)
-            os.close(real_fd)
-            t.join()
-
-            # and restore original stdout
-            os.close(pipe_out)
-            os.dup2(save_fd, real_fd)
-            os.close(save_fd)
+    def close_forwards(self):
+        """Close the forwarding pipes."""
+        libc.fflush(c_stdout_p)
+        libc.fflush(c_stderr_p)
+        for rs in self.replaced_streams:
+            rs.restore()
+        self.replaced_streams = []
 
     def run_cell(self, code, silent=False):
-        return self.libclingJupyter.cling_eval(self.interp, ctypes.c_char_p(code.encode('utf8')))
+        """Run code in cling, storing the expression result or an empty string if there is none."""
+        self.stringResult = self.libclingJupyter.cling_eval(self.interp, ctypes.c_char_p(code.encode('utf8')))
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
+        """Runs code in cling and handles input; returns the evaluation result."""
         if not code.strip():
             return {
                 'status': 'ok',
@@ -245,27 +254,43 @@ class ClingKernel(Kernel):
                 'payload': [],
                 'user_expressions': {},
             }
+
+        # Redirect stdout, stderr so handle_input() can pick it up.
+        self.forward_streams()
+
+        # Run code in cling in a thread.
+        run_cell_thread = threading.Thread(target=self.run_cell, args=(code, silent,))
+        run_cell_thread.start()
+        while True:
+            self.handle_input()
+            if not run_cell_thread.is_alive():
+                # self.run_cell() has returned.
+                break
+
+        run_cell_thread.join()
+
+        # Any leftovers?
+        while self.handle_input(): True
+
+        self.close_forwards()
         status = 'ok'
-
-        with self.forward_stream('stdout'), self.forward_stream('stderr'):
-            stringResult = self.run_cell(code, silent)
-
-        if not stringResult:
+        if not self.stringResult:
             status = 'error'
         else:
+            # Execution has finished; we have a result.
             self.session.send(
                 self.iopub_socket,
                 'execute_result',
                 content={
                     'data': {
-                        'text/plain': ctypes.cast(stringResult, ctypes.c_char_p).value.decode('utf8', 'replace'),
+                        'text/plain': ctypes.cast(self.stringResult, ctypes.c_char_p).value.decode('utf8', 'replace'),
                     },
                     'metadata': {},
                     'execution_count': self.execution_count,
                 },
                 parent=self._parent_header
             )
-            self.libclingJupyter.cling_eval_free(stringResult)
+            self.libclingJupyter.cling_eval_free(self.stringResult)
 
 
         reply = {
@@ -314,7 +339,7 @@ class ClingKernelApp(IPKernelApp):
     flags = Dict(cling_flags)
     classes = List([ ClingKernel, IPythonKernel, ZMQInteractiveShell, ProfileDir, Session ])
     kernel_class = ClingKernel
-    
+
 def main():
     """launch a cling kernel"""
     ClingKernelApp.launch_instance()
