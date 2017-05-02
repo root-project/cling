@@ -101,12 +101,14 @@ namespace cling {
       return prev;
     }
 
-    ///\brief Process the input coming from the prompt and possibli returns
-    /// result of the execution of the last statement
+    ///\brief Process the input coming from the prompt and possibly returns
+    /// result of the execution of the last statement.
     /// @param[in] input_line - the user input
+    /// @param[out] compRes - whether compilation was successful
     /// @param[out] result - the cling::Value as result of the
     ///             execution of the last statement
-    /// @param[out] compRes - whether compilation was successful
+    /// @param[in] disableValuePrinting - whether to suppress echoing of the
+    ///             expression result
     ///
     ///\returns 0 on success or the indentation of the next input line should
     /// have in case of multi input mode.
@@ -114,7 +116,8 @@ namespace cling {
     ///
     int process(const char* input_line,
                 Interpreter::CompilationResult& compRes,
-                cling::Value* result = nullptr);
+                cling::Value* result = nullptr,
+                bool disableValuePrinting = false);
 
     ///\brief When continuation is requested, this cancels and ignores previous
     /// input, resetting the continuation to a new line.

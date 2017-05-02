@@ -293,7 +293,8 @@ namespace cling {
 
   int MetaProcessor::process(const char* input_text,
                              Interpreter::CompilationResult& compRes,
-                             Value* result) {
+                             Value* result,
+                             bool disableValuePrinting /* = false */) {
     if (result)
       *result = Value();
     compRes = Interpreter::kSuccess;
@@ -337,7 +338,8 @@ namespace cling {
     // if (m_Options.RawInput)
     //   compResLocal = m_Interp.declare(input);
     // else
-    compRes = m_Interp.process(input, result);
+    compRes = m_Interp.process(input, result, /*Transaction*/ nullptr,
+                               disableValuePrinting);
 
     return 0;
   }

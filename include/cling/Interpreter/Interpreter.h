@@ -447,11 +447,13 @@ namespace cling {
     ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
     ///\param[out] T - The cling::Transaction of the compiled input.
+    ///\param[in] disableValuePrinting - Whether to echo the expression result.
     ///
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult process(const std::string& input, Value* V = 0,
-                              Transaction** T = 0);
+                              Transaction** T = 0,
+                              bool disableValuePrinting = false);
 
     ///\brief Parses input line, which doesn't contain statements. No code
     /// generation is done.

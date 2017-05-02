@@ -596,7 +596,8 @@ namespace cling {
   ///
   Interpreter::CompilationResult
   Interpreter::process(const std::string& input, Value* V /* = 0 */,
-                       Transaction** T /* = 0 */) {
+                       Transaction** T /* = 0 */,
+                       bool disableValuePrinting /* = false*/) {
     std::string wrapReadySource = input;
     size_t wrapPoint = std::string::npos;
     if (!isRawInputEnabled())
@@ -612,7 +613,8 @@ namespace cling {
 
     CompilationOptions CO = makeDefaultCompilationOpts();
     CO.DeclarationExtraction = 1;
-    CO.ValuePrinting = CompilationOptions::VPAuto;
+    CO.ValuePrinting = disableValuePrinting ? CompilationOptions::VPDisabled
+      : CompilationOptions::VPAuto;
     CO.ResultEvaluation = (bool)V;
     // CO.IgnorePromptDiags = 1; done by EvaluateInternal().
     CO.CheckPointerValidity = 1;
