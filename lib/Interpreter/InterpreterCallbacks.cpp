@@ -165,7 +165,10 @@ namespace cling {
     Sema& SemaRef = interp->getSema();
     ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
     ExternalSemaSource* externalSemaSrc = SemaRef.getExternalSource();
-    if (enableExternalSemaSourceCallbacks)
+    // Disable the ROOT external sema source when we have modules. In the
+    // modules case the module manager is taking it's place and we don't want
+    // to overwrite it.
+    if (!getenv("ROOT_MODULES") && enableExternalSemaSourceCallbacks)
       if (!externalSemaSrc || externalSemaSrc == Reader) {
         // If the ExternalSemaSource is the PCH reader we still need to insert
         // our listener.
