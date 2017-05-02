@@ -133,7 +133,7 @@ char* cling_eval(TheMetaProcessor *metaProc, const char *code) {
   cling::MetaProcessor *M = (cling::MetaProcessor*)metaProc;
   cling::Value V;
   cling::Interpreter::CompilationResult Res;
-  if (M->process(code, Res, &V)) {
+  if (M->process(code, Res, &V, /*disableValuePrinting*/ true)) {
     cling::Jupyter::pushOutput({{"text/html", "Incomplete input! Ignored."}});
     M->cancelContinuation();
     return nullptr;
