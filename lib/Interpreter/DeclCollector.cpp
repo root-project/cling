@@ -22,6 +22,11 @@
 using namespace clang;
 
 namespace {
+  ///\brief Return true if this decl (which comes from an AST file) should
+  /// not be sent to CodeGen. The module is assumed to describe the contents
+  /// of a library; symbols inside the library must thus not be reemitted /
+  /// duplicated by CodeGen.
+  ///
   static bool shouldIgnore(const Decl* D) {
     // This function is called for all "deserialized" decls, where the
     // "deserialized" decl either really comes from an AST file or from
