@@ -96,7 +96,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   CGOpts_.VectorizeSLP = 1;
 #endif
 
-#ifdef __GNUC__
+#if 0 // def __GNUC__
   // Better inlining is pending https://bugs.llvm.org//show_bug.cgi?id=19668
   // and its consequence https://sft.its.cern.ch/jira/browse/ROOT-7111
   // shown e.g. by roottest/cling/stl/map/badstringMap
