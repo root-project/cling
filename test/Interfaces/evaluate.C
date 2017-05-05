@@ -70,6 +70,11 @@ gCling->evaluate("f", V);
 V.isValid() //CHECK: {{\([_]B|b}}ool) true
 // end PR#98434
 
+// Multi-dim arrays (ROOT-7016)
+gCling->evaluate("int multiDimArray[2][3][4]{{{1,2,3,4},{11,12,13,14},{21,22,23,24}},"
+                 "{{101,102,103,104},{111,112,113,114},{121,122,123,124}}};", V);
+V // CHECK-NEXT: (cling::Value &) boxes [(int [2][3][4]) { { { 1, 2, 3, 4 }, { 11, 12, 13, 14 }, { 21, 22, 23, 24 } }, { { 101, 102, 103, 104 }, { 111, 112, 113, 114 }, { 121, 122, 123, 124 } } }]
+
 // Check lifetime of objects in Value
 .rawInput 1
 struct WithDtor {
