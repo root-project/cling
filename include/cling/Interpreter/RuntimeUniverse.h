@@ -159,10 +159,16 @@ namespace cling {
       ///\param[in] placement - where to copy
       ///\param[in] size - size of the array.
       ///
-      template <typename T>
+      template <class T, class = T (*)() /*disable for arrays*/>
       void copyArray(T* src, void* placement, std::size_t size) {
         for (int i = 0; i < size; ++i)
           new ((void*)(((T*)placement) + i)) T(src[i]);
+      }
+
+      // "size" is the number of elements even for subarrays; flatten the type:
+      template <class T, std::size_t N>
+      void copyArray(const T (*src)[N], void* placement, std::size_t size) {
+        copyArray(src[0], placement, size);
       }
     } // end namespace internal
   } // end namespace runtime
