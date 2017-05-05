@@ -11,6 +11,7 @@
 
 #include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
@@ -749,6 +750,11 @@ static std::string printFunctionValue(const Value &V, const void *ptr, clang::Qu
 }
 
 static std::string printUnpackedClingValue(const Value &V) {
+  // Find the Type for `std::string`. We are guaranteed to have that declared
+  // when this function is called; RuntimePrintValue.h #includes it.
+  static const clang::QualType QTString
+    = V.getInterpreter()->getLookupHelper().findType("std::string",
+                                          cling::LookupHelper::WithDiagnostics);
   const clang::ASTContext &C = V.getASTContext();
   const clang::QualType Td = V.getType().getDesugaredType(C);
   const clang::QualType Ty = Td.getNonReferenceType();
@@ -768,6 +774,8 @@ static std::string printUnpackedClingValue(const Value &V) {
   } else if (clang::CXXRecordDecl *CXXRD = Ty->getAsCXXRecordDecl()) {
     if (CXXRD->isLambda())
       return printAddress(V.getPtr(), '@');
+    if (C.hasSameType(CXXRD->getTypeForDecl(), QTString.getTypePtr()))
+      return executePrintValue<std::string>(V, *(std::string*)V.getPtr());
   } else if (const clang::BuiltinType *BT
       = llvm::dyn_cast<clang::BuiltinType>(Td.getCanonicalType().getTypePtr())) {
     switch (BT->getKind()) {
