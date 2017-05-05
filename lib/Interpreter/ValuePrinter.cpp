@@ -80,6 +80,19 @@ static std::string enclose(const clang::QualType& Ty, clang::ASTContext& C,
                  Begin, End, Hint);
 }
 
+static clang::QualType
+getElementTypeAndExtent(const clang::ConstantArrayType *CArrTy,
+                        std::string& extent) {
+  clang::QualType ElementTy = CArrTy->getElementType();
+  const llvm::APInt &APSize = CArrTy->getSize();
+  extent += '[' +  std::to_string(APSize.getZExtValue()) + ']';
+  if (auto CArrElTy
+      = llvm::dyn_cast<clang::ConstantArrayType>(ElementTy.getTypePtr())) {
+    return getElementTypeAndExtent(CArrElTy, extent);
+  }
+  return ElementTy;
+}
+
 static std::string getTypeString(const Value &V) {
   clang::ASTContext &C = V.getASTContext();
   clang::QualType Ty = V.getType().getDesugaredType(C).getNonReferenceType();
@@ -96,15 +109,11 @@ static std::string getTypeString(const Value &V) {
     return "(const void**)";
   }
   if (Ty->isArrayType()) {
-    const clang::ArrayType *ArrTy = Ty->getAsArrayTypeUnsafe();
-    clang::QualType ElementTy = ArrTy->getElementType();
     if (Ty->isConstantArrayType()) {
-      const clang::ConstantArrayType *CArrTy = C.getAsConstantArrayType(Ty);
-      const llvm::APInt &APSize = CArrTy->getSize();
-
-      // typeWithOptDeref example for int[40] array: "((int(*)[40])*(void**)0x5c8f260)"
-      return enclose(ElementTy, C, "(", "(*)[", 5) +
-                     std::to_string(APSize.getZExtValue()) + "])*(void**)";
+      std::string extent("(*)");
+      clang::QualType InnermostElTy
+        = getElementTypeAndExtent(C.getAsConstantArrayType(Ty), extent);
+      return enclose(InnermostElTy, C, "(", (extent + ")*(void**)").c_str());
     }
     return "(void**)";
   }
