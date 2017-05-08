@@ -333,7 +333,7 @@ namespace cling {
 
     llvm::LLVMContext* getLLVMContext() { return m_LLVMContext.get(); }
 
-    const LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
+    LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
 
     const clang::Parser& getParser() const;
     clang::Parser& getParser();
