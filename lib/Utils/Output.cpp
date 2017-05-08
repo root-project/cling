@@ -20,7 +20,7 @@ namespace cling {
 
     namespace {
       class ColoredOutput : public llvm::raw_os_ostream {
-        bool m_Colorize;
+        bool m_Colorize = true;
 
         raw_ostream& changeColor(enum Colors colors, bool bold, bool bg) {
           if (m_Colorize) {
