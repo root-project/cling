@@ -40,7 +40,6 @@
 #include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Process.h"
-#include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetOptions.h"
 
 #include <cstdio>
@@ -681,11 +680,6 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     //
 
     CheckClangCompatibility();
-
-    //  Initialize the llvm library.
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmParser();
-    llvm::InitializeNativeTargetAsmPrinter();
 
     const size_t argc = COpts.Remaining.size();
     const char* const* argv = &COpts.Remaining[0];

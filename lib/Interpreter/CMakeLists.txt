@@ -26,8 +26,6 @@ set( LLVM_LINK_COMPONENTS
   executionengine
   ipo
   mc
-  native
-  nativecodegen
   object
   option
   orcjit
@@ -36,6 +34,7 @@ set( LLVM_LINK_COMPONENTS
   support
   target
   transformutils
+  ${LLVM_TARGETS_TO_BUILD}
 )
 
 add_cling_library(clingInterpreter OBJECT
