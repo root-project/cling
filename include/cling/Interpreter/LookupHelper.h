@@ -41,6 +41,7 @@ namespace cling {
   private:
     std::unique_ptr<clang::Parser> m_Parser;
     Interpreter* m_Interpreter; // we do not own.
+    const clang::Type* m_StringTy;
   public:
 
     enum DiagSetting {
@@ -220,6 +221,10 @@ namespace cling {
     ///\param [in] diagOnOff - whether to diagnose lookup failures.
     bool hasFunction(const clang::Decl* scopeDecl, llvm::StringRef funcName,
                      DiagSetting diagOnOff) const;
+
+
+    ///\brief Retrieve the QualType of `std::string`.
+    const clang::Type* getStringType();
 
   };
 

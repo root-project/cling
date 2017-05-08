@@ -38,7 +38,7 @@ namespace cling {
   // pin *tor here so that we can have clang::Parser defined and be able to call
   // the dtor on the OwningPtr
   LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp)
-    : m_Parser(P), m_Interpreter(interp) {}
+    : m_Parser(P), m_Interpreter(interp), m_StringTy(nullptr) {}
 
   LookupHelper::~LookupHelper() {}
 
@@ -1896,4 +1896,11 @@ namespace cling {
                                      hasFunctionSelector,
                                      diagOnOff);
   }
+
+  const Type* LookupHelper::getStringType() {
+    if (!m_StringTy)
+      m_StringTy = findType("std::string", WithDiagnostics).getTypePtr();
+    return m_StringTy;
+  }
+
 } // end namespace cling
