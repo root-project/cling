@@ -30,8 +30,6 @@ set( LLVM_LINK_COMPONENTS
   executionengine
   ipo
   mc
-  native
-  nativecodegen
   object
   option
   orcjit
@@ -40,6 +38,7 @@ set( LLVM_LINK_COMPONENTS
   support
   target
   transformutils
+  ${LLVM_TARGETS_TO_BUILD}
 )
 
 find_library(DL_LIBRARY_PATH dl)
