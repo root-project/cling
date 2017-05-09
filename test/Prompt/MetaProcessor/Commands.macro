@@ -3,7 +3,7 @@
 extern "C" int printf(const char* fmt, ...);
 
 int f() {
-  print("I am a function called f.\n");
+  printf("I am a function called f.\n");
   return 0;
 }
 f();
