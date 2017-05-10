@@ -30,7 +30,6 @@
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetRegistry.h"
-#include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 
 using namespace llvm;
@@ -49,12 +48,6 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI, unsigned Fmt = 0) {
            Fmt <= llvm::Triple::MachO && "Invalid Format");
     TheTriple.setObjectFormat(static_cast<llvm::Triple::ObjectFormatType>(Fmt));
   }
-
-  llvm::InitializeAllTargetInfos();
-  llvm::InitializeAllTargets();
-  llvm::InitializeAllAsmParsers();
-  llvm::InitializeAllAsmPrinters();
-  llvm::InitializeAllTargetMCs();
 
   std::string Error;
   const Target *TheTarget

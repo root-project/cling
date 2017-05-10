@@ -40,6 +40,7 @@
 #include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Process.h"
+#include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetOptions.h"
 
 #include <cstdio>
@@ -667,7 +668,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return false;
     }
   };
-  
+
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
@@ -675,6 +676,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Follow clang -v convention of printing version on first line
     if (COpts.Verbose)
       cling::log() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
+
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllAsmParsers();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllTargetMCs();
 
     // Create an instance builder, passing the LLVMDir and arguments.
     //
