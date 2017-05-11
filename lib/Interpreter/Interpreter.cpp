@@ -44,6 +44,7 @@
 #include "clang/Frontend/ASTConsumers.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
+#include "clang/Lex/ExternalPreprocessorSource.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Parse/Parser.h"
@@ -571,12 +572,17 @@ namespace cling {
   }
 
   const MacroInfo* Interpreter::getMacro(llvm::StringRef Macro) const {
-    const clang::Preprocessor& PP = getCI()->getPreprocessor();
-    if (const IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
-      if (const DefMacroDirective* MD = llvm::dyn_cast_or_null
-          <DefMacroDirective>(PP.getLocalMacroDirective(II))) {
-          return MD->getMacroInfo();
-      }
+    clang::Preprocessor& PP = getCI()->getPreprocessor();
+    if (IdentifierInfo* II = PP.getIdentifierInfo(Macro)) {
+      // If the information about this identifier is out of date, update it from
+      // the external source.
+      // FIXME: getIdentifierInfo will probably do this for us once we update
+      // clang. If so, please remove this manual update.
+      if (II->isOutOfDate())
+        PP.getExternalSource()->updateOutOfDateIdentifier(*II);
+      MacroDefinition MDef = PP.getMacroDefinition(II);
+      MacroInfo* MI = MDef.getMacroInfo();
+      return MI;
     }
     return nullptr;
   }
