@@ -7,8 +7,9 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -I %S -Xclang -verify
-// Test templateFail
-//XFAIL: *
+// XFAIL: *
+// REQUIRES: vanilla-cling
+
 //All the currently failing stuff
 
 .T Fail.h fwd_fail.h

@@ -1,5 +1,7 @@
 // RUN: cd "%testexecdir/../../clang/test" && python "%llvmsrcdir/utils/lit/lit.py" -v -sv --param clang_site_config="%testexecdir/../../clang/test/lit.site.cfg" "%/p/../../../clang/test/Sema/address-constant.c"
 
+// REQUIRES: vanilla-cling
+
 // Current SemaCXX failures:
 // Expected Passes    : 392
 // Expected Failures  : 1
