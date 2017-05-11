@@ -83,10 +83,9 @@ class ClingKernel(Kernel):
         return 'cling-%s' % self.language_version
         return self._banner
 
-    # codemirror_mode='clike' *should* work but doesn't, using the mimetype instead
     language_info = {'name': 'c++',
-                     'codemirror_mode': 'text/x-c++src',
-                     'mimetype': ' text/x-c++src',
+                     'codemirror_mode': 'c++',
+                     'mimetype': 'text/x-c++src',
                      'file_extension': '.c++'}
 
     # Used in handle_input()
