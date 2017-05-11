@@ -89,10 +89,7 @@ namespace cling {
 
     do {
       const char* prevStart = curPos;
-      if (!MetaLexer::LexPunctuatorAndAdvance(curPos, Tok)) {
-        // there were tokens between the previous and this Tok.
-        commentTok = tok::slash;
-      }
+      MetaLexer::LexPunctuatorAndAdvance(curPos, Tok);
       const int kind = (int)Tok.getKind();
 
       if (kind == commentTok) {
@@ -118,9 +115,11 @@ namespace cling {
         else {
           assert(commentTok == tok::asterik && "Comment token not / or *");
           if (!multilineComment) {
-            // entering a new comment
-            multilineComment = true;
-            m_ParenStack.push_back(tok::slash);
+            if ((curPos - prevStart) == 1) {
+              // entering a new comment
+              multilineComment = true;
+              m_ParenStack.push_back(tok::slash);
+            }
           }
           else // wait for closing / (must be next token)
             commentTok = tok::slash;
