@@ -124,8 +124,8 @@ namespace cling {
           FE = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
                                 FromDir, FromFile, CurDir, /*SearchPath*/0,
                                 /*RelativePath*/ 0, /*suggestedModule*/0,
-                                /*SkipCache*/ false, /*OpenFile*/ false,
-                                /*CacheFail*/ true);
+                                /*IsMapped*/0, /*SkipCache*/ false,
+                                /*OpenFile*/ false, /*CacheFail*/ true);
           needCacheUpdate = true;
         }
 

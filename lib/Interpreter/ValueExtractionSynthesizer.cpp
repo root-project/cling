@@ -323,8 +323,7 @@ namespace {
                                    /*allocTypeInfo*/ETSI,
                                    /*arraySize*/0,
                                    /*directInitRange*/E->getSourceRange(),
-                                   /*initializer*/E,
-                                   /*mayContainAuto*/false
+                                   /*initializer*/E
                                    );
         // Handle possible cleanups:
         Call = m_Sema->ActOnFinishFullExpr(Call.get());

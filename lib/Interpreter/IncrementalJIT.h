@@ -21,10 +21,11 @@
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
+#include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/LazyEmittingLayer.h"
-#include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
+#include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/Target/TargetMachine.h"
 
@@ -39,7 +40,7 @@ class IncrementalExecutor;
 
 class IncrementalJIT {
 public:
-  using SymbolMapT = llvm::StringMap<llvm::orc::TargetAddress>;
+  using SymbolMapT = llvm::StringMap<llvm::JITTargetAddress>;
 
 private:
   friend class Azog;
@@ -58,7 +59,7 @@ private:
 
     NotifyObjectLoadedT(IncrementalJIT &jit) : m_JIT(jit) {}
 
-    void operator()(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H,
+    void operator()(llvm::orc::RTDyldObjectLinkingLayerBase::ObjSetHandleT H,
                     const ObjListT &Objects,
                     const LoadedObjInfoListT &Infos) const
     {
@@ -87,9 +88,9 @@ private:
             continue;
           auto Name = NameOrError.get();
           if (m_JIT.m_SymbolMap.find(Name) == m_JIT.m_SymbolMap.end()) {
-            llvm::orc::JITSymbol Sym
+            llvm::JITSymbol Sym
               = m_JIT.m_CompileLayer.findSymbolIn(H, Name, true);
-            if (llvm::orc::TargetAddress Addr = Sym.getAddress())
+            if (llvm::JITTargetAddress Addr = Sym.getAddress())
               m_JIT.m_SymbolMap[Name] = Addr;
           }
         }
@@ -101,9 +102,9 @@ private:
   };
 
   class RemovableObjectLinkingLayer:
-    public llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT> {
+    public llvm::orc::RTDyldObjectLinkingLayer<NotifyObjectLoadedT> {
   public:
-    using Base_t = llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT>;
+    using Base_t = llvm::orc::RTDyldObjectLinkingLayer<NotifyObjectLoadedT>;
     using NotifyLoadedFtor = NotifyObjectLoadedT;
     using NotifyFinalizedFtor = Base_t::NotifyFinalizedFtor;
     RemovableObjectLinkingLayer(SymbolMapT &SymMap,
@@ -112,11 +113,11 @@ private:
       Base_t(NotifyLoaded, NotifyFinalized), m_SymbolMap(SymMap)
     {}
 
-    void removeObjectSet(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
+    void
+    removeObjectSet(llvm::orc::RTDyldObjectLinkingLayerBase::ObjSetHandleT H) {
       struct AccessSymbolTable: public LinkedObjectSet {
-        const llvm::StringMap<llvm::RuntimeDyld::SymbolInfo>&
-        getSymbolTable() const
-        {
+        const llvm::StringMap<llvm::JITEvaluatedSymbol>&
+        getSymbolTable() const {
           return SymbolTable;
         }
       };
@@ -130,7 +131,7 @@ private:
         if (iterSymMap->second == NameSym.second.getAddress())
           m_SymbolMap.erase(iterSymMap);
       }
-      llvm::orc::ObjectLinkingLayer<NotifyObjectLoadedT>::removeObjectSet(H);
+      llvm::orc::RTDyldObjectLinkingLayer<NotifyObjectLoadedT>::removeObjectSet(H);
     }
   private:
     SymbolMapT& m_SymbolMap;
@@ -179,7 +180,7 @@ private:
     return MangledName.str();
   }
 
-  llvm::orc::JITSymbol getInjectedSymbols(const std::string& Name) const;
+  llvm::JITSymbol getInjectedSymbols(const std::string& Name) const;
 
 public:
   IncrementalJIT(IncrementalExecutor& exe,
@@ -199,7 +200,7 @@ public:
 
   ///\brief Get the address of a symbol from the JIT or the memory manager.
   /// Use this to resolve symbols of known, target-specific names.
-  llvm::orc::JITSymbol getSymbolAddressWithoutMangling(const std::string& Name,
+  llvm::JITSymbol getSymbolAddressWithoutMangling(const std::string& Name,
                                                        bool AlsoInProcess);
 
   size_t addModules(std::vector<llvm::Module*>&& modules);
@@ -207,8 +208,8 @@ public:
 
   IncrementalExecutor& getParent() const { return m_Parent; }
 
-  void
-  RemoveUnfinalizedSection(llvm::orc::ObjectLinkingLayerBase::ObjSetHandleT H) {
+  void RemoveUnfinalizedSection(
+                     llvm::orc::RTDyldObjectLinkingLayerBase::ObjSetHandleT H) {
     m_UnfinalizedSections.erase(H);
   }
 

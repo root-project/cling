@@ -29,6 +29,7 @@
 #include "clang/Frontend/VerifyDiagnosticConsumer.h"
 #include "clang/Serialization/SerializationDiagnostic.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "clang/Serialization/ASTReader.h"
@@ -39,6 +40,7 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetOptions.h"
@@ -730,8 +732,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       argvCompile.push_back("-");
     }
 
-    std::unique_ptr<clang::CompilerInvocation>
-      InvocationPtr(new clang::CompilerInvocation);
+    auto InvocationPtr = std::make_shared<clang::CompilerInvocation>();
 
     // The compiler invocation is the owner of the diagnostic options.
     // Everything else points to them.
@@ -775,8 +776,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     // Create and setup a compiler instance.
     std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
-    CI->setInvocation(InvocationPtr.get());
-    InvocationPtr.release();
+    CI->setInvocation(InvocationPtr);
     CI->setDiagnostics(Diags.get()); // Diags is ref-counted
     if (!OnlyLex)
       CI->getDiagnosticOpts().ShowColors = cling::utils::ColorizeOutput();
@@ -850,7 +850,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                                CI->getFileManager(),
                                                CI->getPCHContainerReader(),
                                                false /*FindModuleFileExt*/,
-                                               listener)) {
+                                               listener,
+                                         /*ValidateDiagnosticOptions=*/false)) {
           // When running interactively pass on the info that the PCH
           // has failed so that IncrmentalParser::Initialize won't try again.
           if (!HasInput && llvm::sys::Process::StandardInIsUserInput()) {

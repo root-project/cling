@@ -292,14 +292,14 @@ const clang::FunctionDecl* G_d1_proto = lookup.findFunctionProto(G, "G_d<int>", 
 printf("G_d1_args: 0x%lx\n", (unsigned long) G_d1_args);
 //CHECK: G_d1_args: 0x{{[1-9a-f][0-9a-f]*$}}
 G_d1_args->print(cling::outs());
-//CHECK-NEXT: void G_d(int v) {
+//CHECK-NEXT: template<> void G_d<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("G_d1_proto: 0x%lx\n", (unsigned long) G_d1_proto);
 //CHECK: G_d1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 G_d1_proto->print(cling::outs());
-//CHECK-NEXT: void G_d(int v) {
+//CHECK-NEXT: template<> void G_d<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
@@ -309,14 +309,14 @@ const clang::FunctionDecl* G_d2_proto = lookup.findFunctionProto(G, "G_d<double>
 printf("G_d2_args: 0x%lx\n", (unsigned long) G_d2_args);
 //CHECK: G_d2_args: 0x{{[1-9a-f][0-9a-f]*$}}
 G_d2_args->print(cling::outs());
-//CHECK-NEXT: void G_d(double v) {
+//CHECK-NEXT: template<> void G_d<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("G_d2_proto: 0x%lx\n", (unsigned long) G_d2_proto);
 //CHECK: G_d2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 G_d2_proto->print(cling::outs());
-//CHECK-NEXT: void G_d(double v) {
+//CHECK-NEXT: template<> void G_d<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
@@ -447,14 +447,14 @@ const clang::FunctionDecl* H_d1_proto = lookup.findFunctionProto(namespace_N, "H
 printf("H_d1_args: 0x%lx\n", (unsigned long) H_d1_args);
 //CHECK: H_d1_args: 0x{{[1-9a-f][0-9a-f]*$}}
 H_d1_args->print(cling::outs());
-//CHECK-NEXT: void H_d(int v) {
+//CHECK-NEXT: template<> void H_d<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("H_d1_proto: 0x%lx\n", (unsigned long) H_d1_proto);
 //CHECK: H_d1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 H_d1_proto->print(cling::outs());
-//CHECK-NEXT: void H_d(int v) {
+//CHECK-NEXT: template<> void H_d<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
@@ -464,14 +464,14 @@ const clang::FunctionDecl* H_d2_proto = lookup.findFunctionProto(namespace_N, "H
 printf("H_d2_args: 0x%lx\n", (unsigned long) H_d2_args);
 //CHECK: H_d2_args: 0x{{[1-9a-f][0-9a-f]*$}}
 H_d2_args->print(cling::outs());
-//CHECK-NEXT: void H_d(double v) {
+//CHECK-NEXT: template<> void H_d<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("H_d2_proto: 0x%lx\n", (unsigned long) H_d2_proto);
 //CHECK: H_d2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 H_d2_proto->print(cling::outs());
-//CHECK-NEXT: void H_d(double v) {
+//CHECK-NEXT: template<> void H_d<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
@@ -602,14 +602,14 @@ const clang::FunctionDecl* func_A_k1_proto = lookup.findFunctionProto(class_A, "
 printf("func_A_k1_args: 0x%lx\n", (unsigned long) func_A_k1_args);
 //CHECK: func_A_k1_args: 0x{{[1-9a-f][0-9a-f]*$}}
 func_A_k1_args->print(cling::outs());
-//CHECK-NEXT: void A_k(int v) {
+//CHECK-NEXT: template<> void A_k<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("func_A_k1_proto: 0x%lx\n", (unsigned long) func_A_k1_proto);
 //CHECK: func_A_k1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 func_A_k1_proto->print(cling::outs());
-//CHECK-NEXT: void A_k(int v) {
+//CHECK-NEXT: template<> void A_k<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
@@ -619,14 +619,14 @@ const clang::FunctionDecl* func_A_k2_proto = lookup.findFunctionProto(class_A, "
 printf("func_A_k2_args: 0x%lx\n", (unsigned long) func_A_k2_args);
 //CHECK: func_A_k2_args: 0x{{[1-9a-f][0-9a-f]*$}}
 func_A_k2_args->print(cling::outs());
-//CHECK-NEXT: void A_k(double v) {
+//CHECK-NEXT: template<> void A_k<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("func_A_k2_proto: 0x%lx\n", (unsigned long) func_A_k2_proto);
 //CHECK: func_A_k2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 func_A_k2_proto->print(cling::outs());
-//CHECK-NEXT: void A_k(double v) {
+//CHECK-NEXT: template<> void A_k<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
@@ -850,14 +850,14 @@ const clang::FunctionDecl* func_B_k1_proto = lookup.findFunctionProto(class_A, "
 printf("func_B_k1_args: 0x%lx\n", (unsigned long) func_B_k1_args);
 //CHECK: func_B_k1_args: 0x{{[1-9a-f][0-9a-f]*$}}
 func_B_k1_args->print(cling::outs());
-//CHECK-NEXT: void B_k(int v) {
+//CHECK-NEXT: template<> void B_k<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
 printf("func_B_k1_proto: 0x%lx\n", (unsigned long) func_B_k1_proto);
 //CHECK: func_B_k1_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 func_B_k1_proto->print(cling::outs());
-//CHECK-NEXT: void B_k(int v) {
+//CHECK-NEXT: template<> void B_k<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 
@@ -867,14 +867,14 @@ const clang::FunctionDecl* func_B_k2_proto = lookup.findFunctionProto(class_A, "
 printf("func_B_k2_args: 0x%lx\n", (unsigned long) func_B_k2_args);
 //CHECK: func_B_k2_args: 0x{{[1-9a-f][0-9a-f]*$}}
 func_B_k2_args->print(cling::outs());
-//CHECK-NEXT: void B_k(double v) {
+//CHECK-NEXT: template<> void B_k<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
 printf("func_B_k2_proto: 0x%lx\n", (unsigned long) func_B_k2_proto);
 //CHECK: func_B_k2_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 func_B_k2_proto->print(cling::outs());
-//CHECK-NEXT: void B_k(double v) {
+//CHECK-NEXT: template<> void B_k<double>(double v) {
 //CHECK-NEXT:     double x = v;
 //CHECK-NEXT: }
 
@@ -1057,7 +1057,7 @@ const clang::FunctionDecl* func_B_ctr4_proto = lookup.findFunctionProto(class_B,
 dumpDecl("func_B_ctr4_args", func_B_ctr4_args);
 //CHECK: func_B_ctr4_args: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_ctr4_args name: B::B<char>
-//CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
+//CHECK-NEXT: template<> B<char>(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT:     this->m_B_i = (long)(char *)v;
 //CHECK-NEXT:     this->m_B_d = 1.;
 //CHECK-NEXT: }
@@ -1065,7 +1065,7 @@ dumpDecl("func_B_ctr4_args", func_B_ctr4_args);
 dumpDecl("func_B_ctr4_proto", func_B_ctr4_proto);
 //CHECK: func_B_ctr4_proto: 0x{{[1-9a-f][0-9a-f]*$}}
 //CHECK-NEXT: func_B_ctr4_proto name: B::B<char>
-//CHECK-NEXT: B(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
+//CHECK-NEXT: template<> B<char>(char *v) : m_B_i(0), m_B_d(0.), m_B_ip(0) {
 //CHECK-NEXT:     this->m_B_i = (long)(char *)v;
 //CHECK-NEXT:     this->m_B_d = 1.;
 //CHECK-NEXT: }
@@ -1304,7 +1304,7 @@ const clang::FunctionDecl* func_B_k1_name = lookup.findAnyFunction(class_A, "B_k
 printf("func_B_k1_name: 0x%lx\n", (unsigned long) func_B_k1_name);
 //CHECK: func_B_k1_name: 0x{{[1-9a-f][0-9a-f]*$}}
 func_B_k1_name->print(cling::outs());
-//CHECK-NEXT: void B_k(float v) {
+//CHECK-NEXT: template<> void B_k<float>(float v) {
 //CHECK-NEXT:     float x = v;
 //CHECK-NEXT: }
 
@@ -1313,7 +1313,7 @@ const clang::FunctionDecl* func_B_k1_name_2 = lookup.findAnyFunction(class_A, "B
 printf("func_B_k1_name_2: 0x%lx\n", (unsigned long) func_B_k1_name_2);
 //CHECK: func_B_k1_name_2: 0x{{[1-9a-f][0-9a-f]*$}}
 func_B_k1_name_2->print(cling::outs());
-//CHECK-NEXT: void B_k(int v) {
+//CHECK-NEXT: template<> void B_k<int>(int v) {
 //CHECK-NEXT:     int x = v;
 //CHECK-NEXT: }
 

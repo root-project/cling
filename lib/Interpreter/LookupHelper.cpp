@@ -687,7 +687,7 @@ namespace cling {
     //
     //  Now try to parse the name as a type.
     //
-    if (P.TryAnnotateTypeOrScopeToken(false, false)) {
+    if (P.TryAnnotateTypeOrScopeToken()) {
       // error path
       return 0;
     }
@@ -741,7 +741,7 @@ namespace cling {
     //
     //  Now try to parse the name as a type.
     //
-    if (P.TryAnnotateTypeOrScopeToken(false, false)) {
+    if (P.TryAnnotateTypeOrScopeToken()) {
       // error path
       return 0;
     }
@@ -1268,6 +1268,7 @@ namespace cling {
     if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
                              /*AllowDestructorName*/true,
                              /*AllowConstructorName*/true,
+                             /*AllowDeductionGuide*/ false,
                              ParsedType(), TemplateKWLoc,
                              FuncId)) {
       // Failed parse, cleanup.

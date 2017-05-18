@@ -96,9 +96,8 @@ namespace {
 
           if (Node->hasExplicitTemplateArgs())
             TemplateSpecializationType::PrintTemplateArgumentList(OS,
-                                                        Node->getTemplateArgs(),
-                                                     Node->getNumTemplateArgs(),
-                                                                      m_Policy);
+                                                     Node->template_arguments(),
+                                                                  m_Policy);
           if (Node->hasExplicitTemplateArgs())
             assert((Node->getTemplateArgs() || Node->getNumTemplateArgs()) && \
                    "There shouldn't be template paramlist");
@@ -490,8 +489,7 @@ namespace cling {
                                        Inits);
         m_Sema->AddInitializerToDecl(HandlerInstance,
                                      InitExprResult.get(),
-                                     /*DirectInit*/ true,
-                                     /*TypeMayContainAuto*/ false);
+                                     /*DirectInit*/ true);
 
         // 2.5 Register the instance in the enclosing context
         CuredDecl->getDeclContext()->addDecl(HandlerInstance);
@@ -783,8 +781,7 @@ namespace cling {
                                        //valid!
                                        // TODO: Propose a patch in clang
                                        m_NoRange,
-                                       Initializer.get(),
-                                       /*TypeMayContainAuto*/false
+                                       Initializer.get()
                                        ).get();
     return Result;
   }

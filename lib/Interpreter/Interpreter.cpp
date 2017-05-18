@@ -488,7 +488,8 @@ namespace cling {
     if (what.equals("asttree")) {
       std::unique_ptr<clang::ASTConsumer> printer =
           clang::CreateASTDumper(filter, true  /*DumpDecls*/,
-                                         false /*DumpLookups*/ );
+                                         false /*Deserialize*/,
+                                         false /*DumpLookups*/);
       printer->HandleTranslationUnit(getSema().getASTContext());
     } else if (what.equals("ast"))
       getSema().getASTContext().PrintStats();
@@ -654,6 +655,7 @@ namespace cling {
     SourceLocation fileNameLoc;
     PP.LookupFile(fileNameLoc, headerFile, isAngled, FromDir, FromFile, CurDir,
                   /*SearchPath*/0, /*RelativePath*/ 0, &suggestedModule,
+                  0 /*IsMapped*/,
                   /*SkipCache*/false, /*OpenFile*/ false, /*CacheFail*/ false);
     if (!suggestedModule)
       return Interpreter::kFailure;
@@ -1188,7 +1190,7 @@ namespace cling {
     SourceLocation fileNameLoc;
     FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, FromDir, FromFile,
                        CurDir, /*SearchPath*/0, /*RelativePath*/ 0,
-                       /*suggestedModule*/0, /*SkipCache*/false,
+                       /*suggestedModule*/0, 0 /*IsMapped*/, /*SkipCache*/false,
                        /*OpenFile*/ false, /*CacheFail*/ false);
     if (FE)
       return FE->getName();

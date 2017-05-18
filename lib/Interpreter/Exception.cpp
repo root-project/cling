@@ -61,7 +61,7 @@ namespace cling {
     std::runtime_error(What), m_Sema(S) {}
 
   bool InterpreterException::diagnose() const { return false; }
-  InterpreterException::~InterpreterException() LLVM_NOEXCEPT {}
+  InterpreterException::~InterpreterException() noexcept {}
 
 
   InvalidDerefException::InvalidDerefException(clang::Sema* S,
@@ -73,7 +73,7 @@ namespace cling {
       "non-null arguments", S),
     m_Arg(E), m_Type(type) {}
 
-  InvalidDerefException::~InvalidDerefException() LLVM_NOEXCEPT {}
+  InvalidDerefException::~InvalidDerefException() noexcept {}
 
   bool InvalidDerefException::diagnose() const {
     // Construct custom diagnostic: warning for invalid memory address;
@@ -94,7 +94,7 @@ namespace cling {
   CompilationException::CompilationException(const std::string& Reason) :
     InterpreterException(Reason) {}
 
-  CompilationException::~CompilationException() LLVM_NOEXCEPT {}
+  CompilationException::~CompilationException() noexcept {}
 
   void CompilationException::throwingHandler(void * /*user_data*/,
                                              const std::string& reason,

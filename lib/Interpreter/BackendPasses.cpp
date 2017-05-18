@@ -17,7 +17,8 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/IPO/InlinerPass.h"
+#include "llvm/Transforms/IPO/AlwaysInliner.h"
+#include "llvm/Transforms/IPO/Inliner.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Scalar.h"
 
@@ -106,7 +107,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
 
   // Handle disabling of LLVM optimization, where we want to preserve the
   // internal module before any optimization.
-  if (m_CGOpts.DisableLLVMOpts) {
+  if (m_CGOpts.DisableLLVMPasses) {
     OptLevel = 0;
     // Always keep at least ForceInline - NoInlining is deadly for libc++.
     // Inlining = CGOpts.NoInlining;
@@ -120,33 +121,21 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   PMBuilder.LoopVectorize = OptLevel > 1 ? 1 : 0; // m_CGOpts.VectorizeLoop
 
   PMBuilder.DisableTailCalls = m_CGOpts.DisableTailCalls;
-  PMBuilder.DisableUnitAtATime = OptLevel == 2 ? !m_CGOpts.UnitAtATime : 1;
   PMBuilder.DisableUnrollLoops = !m_CGOpts.UnrollLoops;
   PMBuilder.MergeFunctions = m_CGOpts.MergeFunctions;
   PMBuilder.RerollLoops = m_CGOpts.RerollLoops;
 
   PMBuilder.LibraryInfo = new TargetLibraryInfoImpl(m_TM.getTargetTriple());
 
-
-  switch (Inlining) {
-  case CodeGenOptions::OnlyHintInlining: // fall-through:
-    case CodeGenOptions::NoInlining: {
-      assert(0 && "libc++ requires at least OnlyAlwaysInlining!");
-      break;
-    }
-    case CodeGenOptions::NormalInlining: {
-      PMBuilder.Inliner =
-        createFunctionInliningPass(OptLevel, m_CGOpts.OptimizeSize);
-      break;
-    }
-    case CodeGenOptions::OnlyAlwaysInlining:
-      // Respect always_inline.
-      if (OptLevel == 0)
-        // Do not insert lifetime intrinsics at -O0.
-        PMBuilder.Inliner = createAlwaysInlinerPass(false);
-      else
-        PMBuilder.Inliner = createAlwaysInlinerPass();
-      break;
+  // At O0 and O1 we only run the always inliner which is more efficient. At
+  // higher optimization levels we run the normal inliner.
+  if (m_CGOpts.OptimizationLevel <= 1) {
+    bool InsertLifetimeIntrinsics = m_CGOpts.OptimizationLevel != 0;
+    PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
+  } else {
+    PMBuilder.Inliner = createFunctionInliningPass(m_CGOpts.OptimizationLevel,
+                                                   m_CGOpts.OptimizeSize,
+            (!m_CGOpts.SampleProfileFile.empty() && m_CGOpts.EmitSummaryIndex));
   }
 
   // Set up the per-module pass manager.
@@ -156,13 +145,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
                                                    m_TM.getTargetIRAnalysis()));
 
-  // Add target-specific passes that need to run as early as possible.
-  PMBuilder.addExtension(
-                         PassManagerBuilder::EP_EarlyAsPossible,
-                         [&](const PassManagerBuilder &,
-                             legacy::PassManagerBase &PM) {
-                           m_TM.addEarlyAsPossiblePasses(PM);
-                         });
+  m_TM.adjustPassManager(PMBuilder);
 
   PMBuilder.addExtension(PassManagerBuilder::EP_EarlyAsPossible,
                          [&](const PassManagerBuilder &,
