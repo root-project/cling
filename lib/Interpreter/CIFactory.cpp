@@ -412,6 +412,14 @@ namespace {
 #ifdef _REENTRANT
     Opts.POSIXThreads = 1;
 #endif
+#ifdef __STRICT_ANSI__
+    Opts.GNUMode = 0;
+#else
+    Opts.GNUMode = 1;
+#endif
+#ifdef __FAST_MATH__
+    Opts.FastMath = 1;
+#endif
   }
 
   static void SetClingTargetLangOpts(LangOptions& Opts,
