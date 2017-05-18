@@ -700,20 +700,14 @@ namespace cling {
 
     // Create FileID for the current buffer.
     FileID FID;
-    if (CO.CodeCompletionOffset == -1)
-    {
-      FID = SM.createFileID(std::move(MB), SrcMgr::C_User,
-                                 /*LoadedID*/0,
-                                 /*LoadedOffset*/0, NewLoc);
-    } else {
-      // Create FileEntry and FileID for the current buffer.
-      // Enabling the completion point only works on FileEntries.
-      const clang::FileEntry* FE
-        = SM.getFileManager().getVirtualFile("vfile for " + source_name.str(),
-                                             InputSize, 0 /* mod time*/);
-      SM.overrideFileContents(FE, std::move(MB));
-      FID = SM.createFileID(FE, NewLoc, SrcMgr::C_User);
-
+    // Create FileEntry and FileID for the current buffer.
+    // Enabling the completion point only works on FileEntries.
+    const clang::FileEntry* FE
+      = SM.getFileManager().getVirtualFile(source_name.str(), InputSize,
+                                           0 /* mod time*/);
+    SM.overrideFileContents(FE, std::move(MB));
+    FID = SM.createFileID(FE, NewLoc, SrcMgr::C_User);
+    if (CO.CodeCompletionOffset != -1) {
       // The completion point is set one a 1-based line/column numbering.
       // It relies on the implementation to account for the wrapper extra line.
       PP.SetCodeCompletionPoint(FE, 1/* start point 1-based line*/,

@@ -13,10 +13,10 @@
 
 .rawInput 1
 
-BEGIN_NAMESPACE int j; END_NAMESPACE
+BEGIN_NAMESPACE int j; END_NAMESPACE // expected-note {{previous definition is here}}
 
 .storeState "testMacroExpansion"
-BEGIN_NAMESPACE int j; END_NAMESPACE // expected-error {{redefinition of 'j'}} expected-note {{previous definition is here}}
+BEGIN_NAMESPACE int j; END_NAMESPACE // expected-error {{redefinition of 'j'}}
 .compareState "testMacroExpansion"
 .rawInput 0
 // CHECK-NOT: Differences

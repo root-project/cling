@@ -105,5 +105,5 @@ auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling::executePrintVa
 void f(std::string) {}
 .rawInput 0
 f // CHECK: (void (*)(std::string)) Function @0x{{[0-9a-f]+}}
-// CHECK: at :1:
+// CHECK: at input_line_{{[0-9].*}}:1:
 // CHECK: void f(std::string) {}

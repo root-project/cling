@@ -18,9 +18,8 @@ int f = 0;
 int f() {
   printf("Now f is a function\n");
   return 0;
-} int a = f();
+} int a = f(); //CHECK: Now f is a function
 .undo
-//CHECK: Now f is a function
 .compareState "preUnload"
 //CHECK-NOT: Differences
 double f = 3.14

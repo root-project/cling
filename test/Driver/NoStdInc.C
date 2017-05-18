@@ -14,7 +14,7 @@
 // RUN: cat %s | %cling -nostdinc++ -Xclang -verify 2>&1 | FileCheck %s
 // Test nobuiltinincTest
 
-// expected-error@1 {{'new' file not found}}
+// expected-error@input_line_1:1 {{'new' file not found}}
 
 // CHECK: Warning in cling::IncrementalParser::CheckABICompatibility():
 // CHECK:  Possible C++ standard library mismatch, compiled with {{.*$}}

@@ -164,8 +164,11 @@ namespace cling {
     differentContent(m_LookupTablesFile, m_DiffPair->m_LookupTablesFile,
                      "lookup tables", verbose, &builtinNames);
 
+    // We create a virtual file for each input line in the format input_line_N.
+    llvm::SmallVector<llvm::StringRef, 2> input_lines;
+    input_lines.push_back("input_line_[0-9].*");
     differentContent(m_IncludedFilesFile, m_DiffPair->m_IncludedFilesFile,
-                     "included files", verbose);
+                     "included files", verbose, &input_lines);
 
     differentContent(m_ASTFile, m_DiffPair->m_ASTFile, "AST", verbose);
 

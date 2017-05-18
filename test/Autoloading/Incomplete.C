@@ -10,8 +10,7 @@
 // Test incompleteType
 
 .rawInput 1
-class __attribute__((annotate("Def.h"))) C;
-//expected-note + {{}}
+class __attribute__((annotate("Def.h"))) C; //expected-note + {{}}
 .rawInput 0
 
 C c; //expected-error {{variable has incomplete type 'C'}} expected-warning@1 0+ {{Note: 'C' can be found in Def.h}}
