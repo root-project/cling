@@ -371,7 +371,6 @@ namespace {
       Opts.CXXExceptions = 1;
     }
 
-    Opts.Deprecated = 1;
     //Opts.Modules = 1;
 
     // See test/CodeUnloading/PCH/VTables.cpp which implicitly compares clang
