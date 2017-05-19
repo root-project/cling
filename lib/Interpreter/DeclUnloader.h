@@ -104,6 +104,18 @@ namespace cling {
     ///
     bool VisitUsingShadowDecl(clang::UsingShadowDecl* USD);
 
+    ///\brief Removes a using declaration
+    /// This method iterates all of the shadows it is holding and calls
+    /// VisitUsingShadowDecl on them.
+    /// It is provided to fix issues where a declaration is removed
+    /// to many times (see test/CodeUnloading/UsingShadows.C)
+    ///
+    ///\param[in] UD - The using declararion to be removed
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitUsingDecl(clang::UsingDecl* UD);
+
     ///\brief Removes a typedef name decls. A base class for TypedefDecls and
     /// TypeAliasDecls.
     ///\param[in] TND - The declaration to be removed.
@@ -174,6 +186,15 @@ namespace cling {
     ///\returns true on success.
     ///
     bool VisitLinkageSpecDecl(clang::LinkageSpecDecl* LSD);
+
+    ///\brief Removes all friend named declarations. This is needed
+    /// as under some circumstances clang stores the NamedDecl for a
+    /// friend function in a FriendDecl.
+    /// @param[in] FD - The declaration context to be remove.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitFriendDecl(clang::FriendDecl* FD);
 
     ///\brief Removes a Tag (class/union/struct/enum). Most of the other
     /// containers fall back into that case.

@@ -45,34 +45,39 @@ void DeclUnloader::resetDefinitionData(TagDecl *decl) {
   }
 }
 
+// RedeclLink is a protected member, which we need access to in
+// removeRedeclFromChain (and VisitRedeclarable for checking in debug mode)
+template<typename DeclT>
+struct RedeclDerived : public Redeclarable<DeclT> {
+  typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
+  static DeclLink_t& getLink(DeclT* LR) {
+    Redeclarable<DeclT>* D = LR;
+    return ((RedeclDerived*)D)->RedeclLink;
+  }
+  static void setLatest(DeclT* Latest) {
+    // Convert A -> Latest -> B into A -> Latest
+    getLink(Latest->getFirstDecl()).setLatest(Latest);
+  }
+  static void skipPrev(DeclT* Next) {
+    // Convert A -> B -> Next into A -> Next
+    DeclT* Skip = Next->getPreviousDecl();
+    getLink(Next).setPrevious(Skip->getPreviousDecl());
+  }
+  static void setFirst(DeclT* First) {
+    // Convert A -> First -> B into First -> B
+    DeclT* Latest = First->getMostRecentDecl();
+    getLink(First)
+      = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
+    getLink(First).setLatest(Latest);
+  }
+  static DeclT *getNextRedeclaration(DeclT* R) {
+    return getLink(R).getNext(R);
+  }
+};
+
 // Copied and adapted from: ASTReaderDecl.cpp
 template<typename DeclT>
 void DeclUnloader::removeRedeclFromChain(DeclT* R) {
-  //RedeclLink is a protected member.
-  struct RedeclDerived : public Redeclarable<DeclT> {
-    typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
-    static DeclLink_t& getLink(DeclT* LR) {
-      Redeclarable<DeclT>* D = LR;
-      return ((RedeclDerived*)D)->RedeclLink;
-    }
-    static void setLatest(DeclT* Latest) {
-      // Convert A -> Latest -> B into A -> Latest
-      getLink(Latest->getFirstDecl()).setLatest(Latest);
-    }
-    static void skipPrev(DeclT* Next) {
-      // Convert A -> B -> Next into A -> Next
-      DeclT* Skip = Next->getPreviousDecl();
-      getLink(Next).setPrevious(Skip->getPreviousDecl());
-    }
-    static void setFirst(DeclT* First) {
-      // Convert A -> First -> B into First -> B
-      DeclT* Latest = First->getMostRecentDecl();
-      getLink(First)
-        = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
-      getLink(First).setLatest(Latest);
-    }
-  };
-
   assert(R != R->getFirstDecl() && "Cannot remove only redecl from chain");
 
   const bool isdef = isDefinition(R);
@@ -82,7 +87,7 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
   DeclT* Prev = R->getPreviousDecl();
   if (R == R->getMostRecentDecl()) {
     // A -> .. -> R
-    RedeclDerived::setLatest(Prev);
+    RedeclDerived<DeclT>::setLatest(Prev);
   } else {
     // Find the next redecl, starting at the end
     DeclT* Next = R->getMostRecentDecl();
@@ -95,11 +100,11 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
 
     if (R->getPreviousDecl()) {
       // A -> .. -> R -> .. -> Z
-      RedeclDerived::skipPrev(Next);
+      RedeclDerived<DeclT>::skipPrev(Next);
     } else {
       assert(R->getFirstDecl() == R && "Logic error");
       // R -> .. -> Z
-      RedeclDerived::setFirst(Next);
+      RedeclDerived<DeclT>::setFirst(Next);
     }
   }
   // If the decl was the definition, the other decl might have their
@@ -184,15 +189,25 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
 #ifndef NDEBUG
   // Validate redecl chain by iterating through it.
-  std::set<clang::Redeclarable<T>*> CheckUnique;
-  (void)CheckUnique;
-  for (auto RD: MostRecentNotThis->redecls()) {
-    assert(CheckUnique.insert(RD).second && "Dupe redecl chain element");
-    (void)RD;
+  // If we get here and T == clang::UsingShadowDecl
+  // for (auto RD: MostRecentNotThis->redecls()) won't work
+  // as the redecl_iterator has an ambigous isFirstDecl call
+  // So we had to pull the guts out of redecl_iterator into here
+
+  std::set<clang::Redeclarable<T>*> Unique;
+  T* Current = MostRecentNotThis;
+  T* Starter = Current;
+
+  while (Current) {
+    assert(Unique.insert(Current).second && "Dupe redecl chain element");
+    Current = RedeclDerived<T>::getNextRedeclaration(Current);
+    if (Current==Starter)
+      Current = nullptr;
   }
 #else
   (void)MostRecentNotThis; // templated function issues a lot -Wunused-variable
 #endif
+
   return true;
 }
 
@@ -481,8 +496,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
     bool Successful = true;
-    // FIXME: This is needed when we have newest clang:
-    //Successful = VisitRedeclarable(USD, USD->getDeclContext());
+    Successful = VisitRedeclarable(USD, USD->getDeclContext());
     Successful &= VisitNamedDecl(USD);
 
     // Unregister from the using decl that it shadows.
@@ -491,13 +505,24 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  bool DeclUnloader::VisitUsingDecl(UsingDecl* UD) {
+    // UsingDecl: NamedDecl, Mergeable<UsingDecl>
+    bool Success = true;
+    for (UsingShadowDecl *USD : UD->shadows())
+      Success &= VisitUsingShadowDecl(USD);
+
+    // Calling VisitNamedDecl will triger an assert in clang as the decl
+    // has already been removed when the last shadow is gone.
+    // Success &= VisitNamedDecl(UD);
+    return Success;
+  }
+
   bool DeclUnloader::VisitTypedefNameDecl(TypedefNameDecl* TND) {
     // TypedefNameDecl: TypeDecl, Redeclarable
     bool Successful = VisitRedeclarable(TND, TND->getDeclContext());
     Successful &= VisitTypeDecl(TND);
     return Successful;
   }
-
 
   bool DeclUnloader::VisitVarDecl(VarDecl* VD) {
     // llvm::Module cannot contain:
@@ -560,8 +585,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     // We start with the decl context first, because parameters are part of the
     // DeclContext and when trying to remove them we need the full redecl chain
     // still in place.
-    bool Successful = VisitDeclContext(FD);
-    Successful &= VisitRedeclarable(FD, FD->getDeclContext());
+    bool Successful = VisitRedeclarable(FD, FD->getDeclContext());
+    Successful &= VisitDeclContext(FD);
     Successful &= VisitDeclaratorDecl(FD);
 
     // Template instantiation of templated function first creates a canonical
@@ -714,9 +739,42 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
-    bool Successful = VisitDeclContext(NSD);
-    Successful &= VisitRedeclarable(NSD, NSD->getDeclContext());
+
+    // When unloading a NamedDecl within an inline namespace within the
+    // NamedDecl needs to be removed from the parent well.
+    StoredDeclsMap *removeFromParent = nullptr;
+    if (NSD->isInline()) {
+      if (NamespaceDecl *parent = dyn_cast<NamespaceDecl>(NSD->getParent()))
+        removeFromParent = parent->getFirstDecl()->getLookupPtr();
+    }
+
+    bool Successful = VisitRedeclarable(NSD, NSD->getDeclContext());
+
+    // Inlined version of VisitDeclContext so we can check against parent
+    llvm::SmallVector<Decl*, 64> declsToErase;
+    for (Decl *D : NSD->noload_decls())
+      declsToErase.push_back(D);
+
+    for (auto I = declsToErase.rbegin(), E = declsToErase.rend(); I != E; ++I) {
+      Successful = Visit(*I) & Successful;
+      assert(Successful);
+
+      if (removeFromParent) {
+        if (NamedDecl *ND = dyn_cast<NamedDecl>(*I)) {
+          eraseDeclFromMap(removeFromParent, ND);
+#ifndef NDEBUG
+          checkDeclIsGone(removeFromParent, ND);
+#endif
+        }
+      }
+    }
+
     Successful &= VisitNamedDecl(NSD);
+
+    // Get these out of the caches
+    if (NSD == m_Sema->getStdNamespace())
+      m_Sema->StdNamespace = NSD->getPreviousDecl();
+    m_Sema->KnownNamespaces.erase(NSD);
 
     return Successful;
   }
@@ -751,10 +809,69 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     return Successful;
   }
 
+  bool DeclUnloader::VisitFriendDecl(FriendDecl* FD) {
+    // FriendDecl: Decl
+    
+    // Remove the friend declarations
+    bool Successful = true;
+    if (TypeSourceInfo* TI = FD->getFriendType()) {
+      if (const Type* T = TI->getType().getTypePtrOrNull()) {
+        if (const TagType* RT = T->getAs<TagType>()) {
+          TagDecl *F = RT->getDecl();
+          // If the friend is a class and embedded in the parent and not defined
+          // then there is no further declaration so it must be unloaded now.
+          if (F->isEmbeddedInDeclarator() &&  !F->isCompleteDefinition()) {
+            // Avoid recursion: class A { class B { friend class A; } }
+            TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
+            if (!Parent || F != Parent->getDeclContext())
+              Successful &= Visit(F);
+          }
+        }
+      }
+    }
+    else if (NamedDecl* ND = FD->getFriendDecl())
+      Successful &= Visit(ND);
+
+    // Is it possible to unload a friend but not the parent class?
+    // This requires adding DeclUnloader as a friend to FriendDecl
+#if 0
+    // Unlink the FriendDecl from linked list in CXXRecordDecl
+    TagDecl* Parent = dyn_cast_or_null<TagDecl>(FD->getDeclContext());
+    if (CXXRecordDecl* CD = dyn_cast_or_null<CXXRecordDecl>(Parent)) {
+      Successful = false;
+      if (FriendDecl *First = CD->getFirstFriend()) {
+        if (First != FD) {
+          FriendDecl *Prev = First;
+          for (FriendDecl* Cur : CD->friends()) {
+            if (Cur == FD) {
+              Prev->NextFriend = Cur->NextFriend;
+              Successful = true;
+              break;
+            }
+            Prev = Cur;
+          }
+        } else {
+          Successful = true;
+          CD->data().FirstFriend = nullptr;
+        }
+      }
+
+      // Arrived back here through recursion?
+      if (!Successful)
+        return true;
+
+      Successful = true;
+    }
+#endif
+
+    Successful &= VisitDecl(FD);
+    return Successful;
+  }
+
   bool DeclUnloader::VisitTagDecl(TagDecl* TD) {
     // TagDecl: TypeDecl, DeclContext, Redeclarable
-    bool Successful = VisitDeclContext(TD);
-    Successful &= VisitRedeclarable(TD, TD->getDeclContext());
+    bool Successful = VisitRedeclarable(TD, TD->getDeclContext());
+    Successful &= VisitDeclContext(TD);
     Successful &= VisitTypeDecl(TD);
     return Successful;
   }
