@@ -6,6 +6,8 @@
 Cling - The Interactive C++ Interpreter
 =========================================
 
+The main repository is at [https://github.com/root-project/cling](https://github.com/root-project/cling)
+
 
 Overview
 --------
