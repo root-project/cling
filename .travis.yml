@@ -67,11 +67,6 @@ matrix:
           packages: g++-4.8
       compiler: gcc-4.8
 
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode6.4
-      compiler: clang
-
     - os: linux
       env: DIST=pangolin COMPILER=g++-4.9 CCOMPILER=gcc-4.9
       addons:
@@ -87,11 +82,6 @@ matrix:
           sources: *sources
           packages: g++-5
       compiler: gcc-5
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7
-      compiler: clang
 
     - os: linux
       env: DIST=pangolin COMPILER=g++-6 CCOMPILER=gcc-6
@@ -110,11 +100,6 @@ matrix:
           sources: *sources
           packages: g++-4.7
       compiler: gcc-4.7
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7.1
-      compiler: clang
 
     - os: linux
       env: DIST=trusty COMPILER=g++-4.8 CCOMPILER=gcc-4.8
@@ -138,7 +123,7 @@ matrix:
 
     - os: osx
       env: COMPILER=g++-6 CCOMPILER=gcc-6
-      osx_image: xcode7.2
+      osx_image: xcode8.3
       compiler: g++-6
 
     - os: linux
@@ -184,7 +169,7 @@ matrix:
 
     - os: osx
       env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode8
+      osx_image: xcode8.3
       compiler: clang
 
   allow_failures:
