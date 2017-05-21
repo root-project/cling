@@ -214,7 +214,7 @@ namespace cling {
     ///\brief Add a llvm::Module to the JIT.
     ///
     /// @param[in] module - The module to pass to the execution engine.
-    /// @param[in] OptLevel - The optimization level to be used.
+    /// @param[in] optLevel - The optimization level to be used.
     void addModule(llvm::Module* module, int optLevel) {
       if (m_BackendPasses)
         m_BackendPasses->runOnModule(*module, optLevel);
