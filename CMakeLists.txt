@@ -376,8 +376,8 @@ option(ROOT_CLASSIC "Building as part of the ROOT (classic)." OFF)
 if(DEFINED ROOT_BINARY_DIR)
   # Building as part of ROOT (CMake)
   include_directories(BEFORE
-    ${CMAKE_CURRENT_BINARY_DIR}/../llvm/src/tools/clang/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include
+    ${CMAKE_BINARY_DIR}/interpreter/llvm/src/tools/clang/include
+    ${CMAKE_SOURCE_DIR}/interpreter/llvm/src/tools/clang/include
     )
 elseif(ROOT_CLASSIC)
   # Building as part of ROOT (classic)
