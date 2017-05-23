@@ -477,6 +477,10 @@ namespace cling {
     }
   }
 
+  void Interpreter::AddIncludePath(llvm::StringRef PathsStr) {
+    return AddIncludePaths(PathsStr, nullptr);
+  }
+
   void Interpreter::DumpIncludePath(llvm::raw_ostream* S) {
     utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(), S ? *S : cling::outs(),
                             true /*withSystem*/, true /*withFlags*/);
