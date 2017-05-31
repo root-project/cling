@@ -123,7 +123,7 @@ matrix:
 
     - os: osx
       env: COMPILER=g++-6 CCOMPILER=gcc-6
-      osx_image: xcode7.2
+      osx_image: xcode7.3
       compiler: g++-6
 
     - os: linux
@@ -188,7 +188,7 @@ install:
   elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
     brew install ccache python coreutils
     if [[ "$COMPILER" == g++-* ]]; then
-      brew install "gcc${COMPILER##*++-}"
+      brew install "gcc@${COMPILER##*++-}"
       export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
       export CFLAGS="-D__builtin_unreachable=__builtin_trap"
     fi
