@@ -416,7 +416,12 @@ namespace cling {
   }
 
 #ifdef LLVM_UTF8
-
+  using llvm::ConversionResult;
+  using llvm::ConversionFlags;
+  using llvm::lenientConversion;
+  using llvm::UTF8;
+  using llvm::UTF16;
+  using llvm::UTF32;
   template <class T> struct CharTraits;
   template <> struct CharTraits<char16_t> {
     static ConversionResult convert(const char16_t** begin, const char16_t* end,
