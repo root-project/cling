@@ -582,55 +582,42 @@ namespace cling {
 
 namespace {
 
-template<typename T, bool> struct ExecutePrintValue;
+static std::string callPrintValue(const Value& V, const void* Val) {
+  Interpreter *Interp = V.getInterpreter();
+  Value printValueV;
 
-template<typename T>
-struct ExecutePrintValue<T, false> {
-  std::string operator()(const Value &V, const T &val) {
-    Interpreter *Interp = V.getInterpreter();
-    Value printValueV;
+  {
+    // Use an llvm::raw_ostream to prepend '0x' in front of the pointer value.
 
-    {
-      // Use an llvm::raw_ostream to prepend '0x' in front of the pointer value.
+    cling::ostrstream Strm;
+    Strm << "cling::printValue(";
+    Strm << getTypeString(V);
+    Strm << &Val;
+    Strm << ");";
 
-      cling::ostrstream Strm;
-      Strm << "cling::printValue(";
-      Strm << getTypeString(V);
-      Strm << (const void*) &val;
-      Strm << ");";
-
-      // We really don't care about protected types here (ROOT-7426)
-      AccessCtrlRAII_t AccessCtrlRAII(*Interp);
-      clang::DiagnosticsEngine& Diag = Interp->getDiagnostics();
-      bool oldSuppDiags = Diag.getSuppressAllDiagnostics();
-      Diag.setSuppressAllDiagnostics(true);
-      Interp->evaluate(Strm.str(), printValueV);
-      Diag.setSuppressAllDiagnostics(oldSuppDiags);
-    }
-
-    if (printValueV.isValid() && printValueV.getPtr())
-      return *(std::string *) printValueV.getPtr();
-
-    // That didn't work. We probably diagnosed the issue as part of evaluate().
-    cling::errs() <<"ERROR in cling::executePrintValue(): cannot pass value!\n";
-
-    // Check that the issue comes from an unparsable type name: lambdas, unnamed
-    // namespaces, types declared inside functions etc. Assert on everything
-    // else.
-    assert(!canParseTypeName(*Interp, getTypeString(V))
-           && "printValue failed on a valid type name.");
-
-    return "ERROR in cling::executePrintValue(): missing value string.";
+    // We really don't care about protected types here (ROOT-7426)
+    AccessCtrlRAII_t AccessCtrlRAII(*Interp);
+    clang::DiagnosticsEngine& Diag = Interp->getDiagnostics();
+    bool oldSuppDiags = Diag.getSuppressAllDiagnostics();
+    Diag.setSuppressAllDiagnostics(true);
+    Interp->evaluate(Strm.str(), printValueV);
+    Diag.setSuppressAllDiagnostics(oldSuppDiags);
   }
-};
 
+  if (printValueV.isValid() && printValueV.getPtr())
+    return *(std::string *) printValueV.getPtr();
 
-template<typename T>
-struct ExecutePrintValue<T, true> {
-  std::string operator()(const Value &V, const T &val) {
-    return printValue(&val);
-  }
-};
+  // That didn't work. We probably diagnosed the issue as part of evaluate().
+  cling::errs() <<"ERROR in cling::executePrintValue(): cannot pass value!\n";
+
+  // Check that the issue comes from an unparsable type name: lambdas, unnamed
+  // namespaces, types declared inside functions etc. Assert on everything
+  // else.
+  assert(!canParseTypeName(*Interp, getTypeString(V))
+         && "printValue failed on a valid type name.");
+
+  return "ERROR in cling::executePrintValue(): missing value string.";
+}
 
 template <typename T>
 class HasExplicitPrintValue {
@@ -642,9 +629,16 @@ public:
     static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-template <typename T>
-std::string executePrintValue(const Value &V, const T &val) {
-  return ExecutePrintValue<T, HasExplicitPrintValue<const T>::value>()(V, val);
+template <typename T> static
+typename std::enable_if<!HasExplicitPrintValue<const T>::value, std::string>::type
+executePrintValue(const Value& V, const T& val) {
+  return callPrintValue(V, &val);
+}
+
+template <typename T> static
+typename std::enable_if<HasExplicitPrintValue<const T>::value, std::string>::type
+executePrintValue(const Value& V, const T& val) {
+  return printValue(&val);
 }
 
 
@@ -830,7 +824,7 @@ static std::string printUnpackedClingValue(const Value &V) {
   // Print all the other cases by calling into runtime 'cling::printValue()'.
   // Ty->isPointerType() || Ty->isReferenceType() || Ty->isArrayType()
   // Ty->isObjCObjectPointerType()
-  return ExecutePrintValue<void*, false>()(V, V.getPtr());
+  return callPrintValue(V, V.getPtr());
 }
 
 } // anonymous namespace
