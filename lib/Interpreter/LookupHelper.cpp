@@ -1899,8 +1899,12 @@ namespace cling {
   }
 
   const Type* LookupHelper::getStringType() {
-    if (!m_StringTy)
-      m_StringTy = findType("std::string", WithDiagnostics).getTypePtr();
+    const Transaction*& Cache = m_Interpreter->getStdStringTransaction();
+    if (!Cache || !m_StringTy) {
+      QualType Qt = findType("std::string", WithDiagnostics);
+      if ((m_StringTy = Qt.isNull() ? nullptr : Qt.getTypePtr()))
+        Cache = m_Interpreter->getLatestTransaction();
+    }
     return m_StringTy;
   }
 

@@ -1275,6 +1275,14 @@ namespace cling {
       }
     }
 
+    // Clear any cached transaction states.
+    for (unsigned i = 0; i < kNumTransactions; ++i) {
+      if (m_CachedTrns[i] == &T) {
+        m_CachedTrns[i] = nullptr;
+        break;
+      }
+    }
+
     if (InterpreterCallbacks* callbacks = getCallbacks())
       callbacks->TransactionUnloaded(T);
     if (m_Executor) { // we also might be in fsyntax-only mode.
