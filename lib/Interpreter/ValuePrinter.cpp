@@ -776,9 +776,11 @@ static std::string printUnpackedClingValue(const Value &V) {
   } else if (clang::CXXRecordDecl *CXXRD = Ty->getAsCXXRecordDecl()) {
     if (CXXRD->isLambda())
       return printAddress(V.getPtr(), '@');
-    LookupHelper& LH= V.getInterpreter()->getLookupHelper();
-    if (C.hasSameType(CXXRD->getTypeForDecl(), LH.getStringType()))
-      return executePrintValue<std::string>(V, *(std::string*)V.getPtr());
+    if (const clang::Type* StrTy =
+            V.getInterpreter()->getLookupHelper().getStringType()) {
+      if (C.hasSameType(CXXRD->getTypeForDecl(), StrTy))
+        return executePrintValue<std::string>(V, *(std::string*)V.getPtr());
+    }
   } else if (const clang::BuiltinType *BT
       = llvm::dyn_cast<clang::BuiltinType>(Td.getCanonicalType().getTypePtr())) {
     switch (BT->getKind()) {

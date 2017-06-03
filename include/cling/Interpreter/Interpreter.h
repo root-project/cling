@@ -48,6 +48,7 @@ namespace clang {
   class Sema;
   class SourceLocation;
   class SourceManager;
+  class Type;
   class PresumedLoc;
 }
 
@@ -195,6 +196,12 @@ namespace cling {
     ///\brief Information about the last stored states through .storeState
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
+
+    enum {
+      kStdStringTransaction = 0, // Transaction known to contain std::string
+      kNumTransactions
+    };
+    mutable const Transaction* m_CachedTrns[kNumTransactions] = {};
 
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.
@@ -689,6 +696,12 @@ namespace cling {
     ///\brief Returns the current or last Transaction.
     ///
     const Transaction* getLatestTransaction() const;
+
+    ///\brief Returns a reference to a Transaction known to contain std::string.
+    ///
+    const Transaction*& getStdStringTransaction() const {
+      return m_CachedTrns[kStdStringTransaction];
+    }
 
     ///\brief Compile extern "C" function and return its address.
     ///

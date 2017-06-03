@@ -33,6 +33,8 @@ namespace llvm {
 
 namespace cling {
   class Interpreter;
+  class Transaction;
+
   ///\brief Reflection information query interface. The class performs lookups
   /// in the currently loaded information in the AST, using the same Parser,
   /// Sema and Preprocessor objects.
@@ -225,7 +227,6 @@ namespace cling {
 
     ///\brief Retrieve the QualType of `std::string`.
     const clang::Type* getStringType();
-
   };
 
 } // end namespace
