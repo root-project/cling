@@ -38,7 +38,10 @@ namespace cling {
   // pin *tor here so that we can have clang::Parser defined and be able to call
   // the dtor on the OwningPtr
   LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp)
-    : m_Parser(P), m_Interpreter(interp), m_StringTy(nullptr) {}
+    : m_Parser(P), m_Interpreter(interp) {
+    // Always properly initialized in getStringType
+    // ::memset(m_StringTy, 0, sizeof(m_StringTy));
+  }
 
   LookupHelper::~LookupHelper() {}
 
@@ -1898,14 +1901,39 @@ namespace cling {
                                      diagOnOff);
   }
 
-  const Type* LookupHelper::getStringType() {
+  static const clang::Type* getType(LookupHelper* LH, llvm::StringRef Type) {
+    QualType Qt = LH->findType(Type, LookupHelper::WithDiagnostics);
+    assert(!Qt.isNull() && "Type should exist");
+    return Qt.getTypePtr();
+  }
+
+  LookupHelper::StringType
+  LookupHelper::getStringType(const clang::Type* Type) {
+    assert(Type && "Type cannot be null");
     const Transaction*& Cache = m_Interpreter->getStdStringTransaction();
-    if (!Cache || !m_StringTy) {
+    if (!Cache || !m_StringTy[kStdString]) {
+      if (!Cache) ::memset(m_StringTy, 0, sizeof(m_StringTy));
+
       QualType Qt = findType("std::string", WithDiagnostics);
-      if ((m_StringTy = Qt.isNull() ? nullptr : Qt.getTypePtr()))
-        Cache = m_Interpreter->getLatestTransaction();
+      m_StringTy[kStdString] = Qt.isNull() ? nullptr : Qt.getTypePtr();
+      if (!m_StringTy[kStdString]) return kNotAString;
+
+      Cache = m_Interpreter->getLatestTransaction();
+      m_StringTy[kWCharString] = getType(this, "std::wstring");
+
+      const clang::LangOptions& LO = m_Interpreter->getCI()->getLangOpts();
+      if (LO.CPlusPlus11) {
+        m_StringTy[kUTF16Str] = getType(this, "std::u16string");
+        m_StringTy[kUTF32Str] = getType(this, "std::u32string");
+      }
     }
-    return m_StringTy;
+
+    ASTContext& Ctx = m_Interpreter->getSema().getASTContext();
+    for (unsigned I = 0; I < kNumCachedStrings; ++I) {
+      if (m_StringTy[I] && Ctx.hasSameType(Type, m_StringTy[I]))
+        return StringType(I);
+    }
+    return kNotAString;
   }
 
 } // end namespace cling
