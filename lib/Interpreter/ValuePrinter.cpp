@@ -863,12 +863,30 @@ namespace cling {
 
     std::string printValueInternal(const Value &V) {
       assert(V.getInterpreter() && "Invalid cling::Value");
-      static bool includedRuntimePrintValue = false; // initialized only once as a static function variable
+
       // Include "RuntimePrintValue.h" only on the first printing.
       // This keeps the interpreter lightweight and reduces the startup time.
-      if (!includedRuntimePrintValue) {
-        V.getInterpreter()->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
-        includedRuntimePrintValue = true;
+      // But user can undo past the transaction that invoked this, so whether
+      // we are first or not is known by the interpreter.
+      //
+      // Additionally add any transactions that occur in this scope as
+      // children to the transaction that invoked us
+
+      Interpreter* Interp = V.getInterpreter();
+      Interpreter::TransactionMergerRAII M(Interp);
+      const Transaction*& T = Interp->printValueTransaction();
+      if (!T) {
+        // DiagnosticErrorTrap Trap(Interp->getSema().getDiagnostics());
+        Interp->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"",
+                        const_cast<Transaction**>(&T));
+        if (!T) {
+          // Should also check T->getIssuedDiags() == Transaction::kErrors)?
+          
+          // It's redundant, but nicer to see the error at the bottom.
+          // if (!Trap.hasErrorOccurred())
+          cling::errs() << "RuntimePrintValue.h could not be loaded.\n";
+          return kUndefined;
+        }
       }
       return printUnpackedClingValue(V);
     }
