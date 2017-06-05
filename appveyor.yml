@@ -8,6 +8,8 @@ configuration:
 branches:
   only:
     - master
+    - dev
+    - PR/x
 
 cache:
   - builddir
@@ -67,4 +69,4 @@ init:
 on_failure:
 # Your RDP session is limited by overall build time (60 min).
 # On every failing build, we have to wait for hours... Uncomment the next line if remote access to the machine is really needed (e.g. for debugging)
-#- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
