@@ -208,6 +208,18 @@ gCling->evaluate("arrV", V);
 
 V // CHECK-NEXT: (cling::Value &) boxes [(Tracer [3]) { @{{.*}}, @{{.*}}, @{{.*}} }]
 
+// Explicitly destory the copies
+V = cling::Value()
+//CHECK-NEXT: MADE+{10}:dtor
+//CHECK-NEXT: MADE+{9}:dtor
+//CHECK-NEXT: MADE+{8}:dtor
+//CHECK-NEXT: (cling::Value &) <<<invalid>>> @0x{{.*}}
+
+gCling->evaluate("arrV", V);
+//CHECK-NEXT: MADE+{11}:copy
+//CHECK-NEXT: MADE+{12}:copy
+//CHECK-NEXT: MADE+{13}:copy
+
 // Destruct the variables with static storage:
 // Destruct arrV:
 //CHECK-NEXT: MADE{7}:dtor
@@ -217,7 +229,7 @@ V // CHECK-NEXT: (cling::Value &) boxes [(Tracer [3]) { @{{.*}}, @{{.*}}, @{{.*}
 // CHECK-NEXT: VAR{3}:dtor
 // CHECK-NEXT: REF{1}:dtor
 
-//CHECK-NEXT: MADE+{8}:dtor
-//CHECK-NEXT: MADE+{9}:dtor
-//CHECK-NEXT: MADE+{10}:dtor
-
+// V going out of scope
+//CHECK-NEXT: MADE+{13}:dtor
+//CHECK-NEXT: MADE+{12}:dtor
+//CHECK-NEXT: MADE+{11}:dtor
