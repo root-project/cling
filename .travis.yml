@@ -75,6 +75,11 @@ matrix:
           packages: g++-4.9
       compiler: gcc-4.9
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode6.4
+      compiler: clang
+
     - os: linux
       env: DIST=pangolin COMPILER=g++-5 CCOMPILER=gcc-5
       addons:
