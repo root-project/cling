@@ -297,7 +297,7 @@ namespace {
 
     #if defined(__GLIBCXX__)
       // Avoid '__float128 is not supported on this target' errors
-      if (!opts.StdVersion)
+      if (!opts.Language && !opts.StdVersion)
         sArguments.addArgument("-std=c++11");
     #endif //__GLIBCXX__
   #endif // __APPLE__
