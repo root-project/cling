@@ -247,22 +247,24 @@ namespace cling {
 
     // Now that the transactions have been commited, force symbol emission
     // and overrides.
-    if (const Transaction* T = getLastTransaction()) {
-      if (llvm::Module* M = T->getModule()) {
-        for (const llvm::StringRef& Sym : Syms) {
-          const llvm::GlobalValue* GV = M->getNamedValue(Sym);
-#if defined(__GLIBCXX__) && !defined(__APPLE__)
-          // libstdc++ mangles at_quick_exit on Linux when headers from g++ < 5
-          if (!GV && Sym.equals("at_quick_exit"))
-            GV = M->getNamedValue("_Z13at_quick_exitPFvvE");
-#endif
-          if (GV) {
-            if (void* Addr = m_Executor->getPointerToGlobalFromJIT(*GV))
-              m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
-            else
-              cling::errs() << Sym << " not defined\n";
-          } else
-            cling::errs() << Sym << " not in Module!\n";
+    if (!isInSyntaxOnlyMode()) {
+      if (const Transaction* T = getLastTransaction()) {
+        if (llvm::Module* M = T->getModule()) {
+          for (const llvm::StringRef& Sym : Syms) {
+            const llvm::GlobalValue* GV = M->getNamedValue(Sym);
+  #if defined(__GLIBCXX__) && !defined(__APPLE__)
+            // libstdc++ mangles at_quick_exit on Linux when g++ < 5
+            if (!GV && Sym.equals("at_quick_exit"))
+              GV = M->getNamedValue("_Z13at_quick_exitPFvvE");
+  #endif
+            if (GV) {
+              if (void* Addr = m_Executor->getPointerToGlobalFromJIT(*GV))
+                m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
+              else
+                cling::errs() << Sym << " not defined\n";
+            } else
+              cling::errs() << Sym << " not in Module!\n";
+          }
         }
       }
     }
@@ -344,7 +346,7 @@ namespace cling {
                               llvm::SmallVectorImpl<llvm::StringRef>& Globals) {
     largestream Strm;
     const clang::LangOptions& LangOpts = getCI()->getLangOpts();
-    const void* thisP = static_cast<void*>(this);
+    const void* ThisP = static_cast<void*>(this);
 
     // FIXME: gCling should be const so assignemnt is a compile time error.
     // Currently the name mangling is coming up wrong for the const version
@@ -354,84 +356,84 @@ namespace cling {
     // itself? One could use a macro (simillar to __dso_handle) to block
     // assignemnt and get around the mangling issue.
     const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
-    if (!NoRuntime && !SyntaxOnly) {
+    if (!NoRuntime) {
       if (LangOpts.CPlusPlus) {
         Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n"
                 "namespace cling { class Interpreter; namespace runtime { "
-                "Interpreter* gCling=(Interpreter*)" << thisP << "; }}\n";
+                "Interpreter* gCling=(Interpreter*)" << ThisP << ";}}\n";
       } else {
         Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
-                "void* gCling=(void*)" << thisP << ";\n";
+                "void* gCling=(void*)" << ThisP << ";\n";
       }
     }
 
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
-    if (!SyntaxOnly) {
 #if defined(__GLIBCXX__) && !defined(__APPLE__)
-      const char* LinkageCxx = "extern \"C++\"";
-      const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
-      const char* cxa_atexit_is_noexcept = LangOpts.CPlusPlus ? " noexcept" : "";
+    const char* LinkageCxx = "extern \"C++\"";
+    const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
+    const char* cxa_atexit_is_noexcept = LangOpts.CPlusPlus ? " noexcept" : "";
 #else
-      const char* LinkageCxx = Linkage;
-      const char* Attr = "";
-      const char* cxa_atexit_is_noexcept = "";
+    const char* LinkageCxx = Linkage;
+    const char* Attr = "";
+    const char* cxa_atexit_is_noexcept = "";
 #endif
 
-      // While __dso_handle is still overriden in the JIT below,
-      // #define __dso_handle is used to mitigate the following problems:
-      //  1. Type of __dso_handle is void* making assignemnt to it legal
-      //  2. Making it void* const in cling would mean possible type mismatch
-      //  3. Cannot override void* __dso_handle in child Interpreter
-      //  4. On Unix where the symbol actually exists, __dso_handle will be
-      //     linked into the code before the JIT can say otherwise, so:
-      //      [cling] __dso_handle // codegened __dso_handle always printed
-      //      [cling] __cxa_atexit(f, 0, __dso_handle) // seg-fault
-      //  5. Code that actually uses __dso_handle will fail as a declaration is
-      //     needed which is not possible with the macro.
-      //  6. Assuming 4 is sorted out in user code, calling __cxa_atexit through
-      //     atexit below isn't linking to the __dso_handle symbol.
+    // While __dso_handle is still overriden in the JIT below,
+    // #define __dso_handle is used to mitigate the following problems:
+    //  1. Type of __dso_handle is void* making assignemnt to it legal
+    //  2. Making it void* const in cling would mean possible type mismatch
+    //  3. Cannot override void* __dso_handle in child Interpreter
+    //  4. On Unix where the symbol actually exists, __dso_handle will be
+    //     linked into the code before the JIT can say otherwise, so:
+    //      [cling] __dso_handle // codegened __dso_handle always printed
+    //      [cling] __cxa_atexit(f, 0, __dso_handle) // seg-fault
+    //  5. Code that actually uses __dso_handle will fail as a declaration is
+    //     needed which is not possible with the macro.
+    //  6. Assuming 4 is sorted out in user code, calling __cxa_atexit through
+    //     atexit below isn't linking to the __dso_handle symbol.
 
-      Strm << "#define __dso_handle ((void*)" << thisP << ")\n";
+    Strm << "#define __dso_handle ((void*)" << ThisP << ")\n";
 
-      // Use __cxa_atexit to intercept all of the following routines
-      Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*) "
-           << cxa_atexit_is_noexcept << ";\n";
+    // Use __cxa_atexit to intercept all of the following routines
+    Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*) "
+         << cxa_atexit_is_noexcept << ";\n";
 
-      // C atexit, std::atexit
-      Strm << Linkage << " int atexit(void(*f)()) " << Attr << " { return "
-                        "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
-      Globals.push_back("atexit");
+    // C atexit, std::atexit
+    Strm << Linkage << " int atexit(void(*f)()) " << Attr << " { return "
+                      "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+    Globals.push_back("atexit");
 
-      // C++ 11 at_quick_exit, std::at_quick_exit
-      if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
-        Strm << LinkageCxx << " int at_quick_exit(void(*f)()) " << Attr <<
-              " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
-        Globals.push_back("at_quick_exit");
-      }
+    // C++ 11 at_quick_exit, std::at_quick_exit
+    if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
+      Strm << LinkageCxx << " int at_quick_exit(void(*f)()) " << Attr <<
+            " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+      Globals.push_back("at_quick_exit");
+    }
 
 #if defined(LLVM_ON_WIN32)
-      // Windows specific: _onexit, _onexit_m, __dllonexit
- #if !defined(_M_CEE)
-      const char* Spec = "__cdecl";
- #else
-      const char* Spec = "__clrcall";
- #endif
-      Strm << Linkage << " " << Spec << " int (*__dllonexit("
-           << "int (" << Spec << " *f)(void**, void**), void**, void**))"
-           "(void**, void**) { "
-           "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
-           "}\n";
-      Globals.push_back("__dllonexit");
- #if !defined(_M_CEE_PURE)
-      Strm << Linkage << " " << Spec << " int (*_onexit("
-           << "int (" << Spec << 	" *f)()))() { "
-           "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
-           "}\n";
-      Globals.push_back("_onexit");
- #endif
+    // Windows specific: _onexit, _onexit_m, __dllonexit
+#if !defined(_M_CEE)
+    const char* Spec = "__cdecl";
+#else
+    const char* Spec = "__clrcall";
+#endif
+    Strm << Linkage << " " << Spec << " int (*__dllonexit("
+         << "int (" << Spec << " *f)(void**, void**), void**, void**))"
+         "(void**, void**) { "
+         "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
+         "}\n";
+    Globals.push_back("__dllonexit");
+#if !defined(_M_CEE_PURE)
+    Strm << Linkage << " " << Spec << " int (*_onexit("
+         << "int (" << Spec << 	" *f)()))() { "
+         "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
+         "}\n";
+    Globals.push_back("_onexit");
+#endif
 #endif
 
+    if (!SyntaxOnly) {
       // Override the native symbols now, before anything can be emitted.
       m_Executor->addSymbol("__cxa_atexit",
                             utils::FunctionToVoidPtr(&local_cxa_atexit), true);
