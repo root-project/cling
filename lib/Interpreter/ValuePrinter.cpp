@@ -208,9 +208,6 @@ static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
   return ValueTyStr + ")";
 }
 
-} // anonymous namespace
-
-
 static std::string printAddress(const void* Ptr, const char Prfx = 0) {
   if (!Ptr)
     return kNullPtrStr;
@@ -223,6 +220,8 @@ static std::string printAddress(const void* Ptr, const char Prfx = 0) {
     Strm << kInvalidAddr;
   return Strm.str();
 }
+
+} // anonymous namespace
 
 namespace cling {
 
@@ -587,6 +586,7 @@ namespace cling {
   }
 } // end namespace cling
 
+namespace {
 
 template<typename T, bool> struct ExecutePrintValue;
 
@@ -838,6 +838,8 @@ static std::string printUnpackedClingValue(const Value &V) {
   // Ty->isObjCObjectPointerType()
   return ExecutePrintValue<void*, false>()(V, V.getPtr());
 }
+
+} // anonymous namespace
 
 namespace cling {
   // cling::Value
