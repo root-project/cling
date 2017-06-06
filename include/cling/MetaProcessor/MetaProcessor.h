@@ -114,7 +114,7 @@ namespace cling {
     /// have in case of multi input mode.
     ///\returns -1 if quit was requiested.
     ///
-    int process(const char* input_line,
+    int process(llvm::StringRef input_line,
                 Interpreter::CompilationResult& compRes,
                 cling::Value* result = nullptr,
                 bool disableValuePrinting = false);

@@ -120,14 +120,14 @@ int main( int argc, char **argv ) {
           // TODO: Check whether the filename specified after #! is the current
           // executable.
           while (std::getline(File, Line)) {
-            Ui.getMetaProcessor()->process(Line.c_str(), Result, 0);
+            Ui.getMetaProcessor()->process(Line, Result, 0);
           }
           continue;
         }
         Cmd += ".x ";
       }
       Cmd += Input;
-      Ui.getMetaProcessor()->process(Cmd.c_str(), Result, 0);
+      Ui.getMetaProcessor()->process(Cmd, Result, 0);
     }
   }
   else {
