@@ -113,14 +113,17 @@ V // CHECK: (cling::Value &) boxes [(long double) 17.42{{[0-9]*}}L]
 extern "C" int printf(const char*,...);
 struct Tracer {
   std::string Content;
+  int Instance;
   static int InstanceCount;
-  Tracer(const char* str): Content(str) { ++InstanceCount; dump("ctor"); }
-  Tracer(const Tracer& o): Content(o.Content + "+") {
-    ++InstanceCount; dump("copy");
+  Tracer(const char* str): Content(str), Instance(++InstanceCount) {
+    dump("ctor");
   }
-  ~Tracer() {--InstanceCount; dump("dtor");}
+  Tracer(const Tracer& o): Content(o.Content + "+"), Instance(++InstanceCount) {
+    dump("copy");
+  }
+  ~Tracer() { dump("dtor");}
   std::string asStr() const {
-    return Content + "{" + (char)('0' + InstanceCount) + "}";
+    return Content + "{" + std::to_string(Instance) + "}";
   }
   void dump(const char* tag) { printf("%s:%s\n", asStr().c_str(), tag); }
 };
@@ -176,34 +179,46 @@ Tracer RT("VAR"); // CHECK-NEXT: VAR{3}:ctor
 gCling->evaluate("RT", V); // should not call any ctor!
 printf("RT done\n"); //CHECK-NEXT: RT done
 V // CHECK-NEXT: (cling::Value &) boxes [(Tracer &) @{{.*}}]
-dumpTracerSVR(V); // CHECK-NEXT: VAR{2}:dump
+dumpTracerSVR(V); // CHECK-NEXT: VAR{3}:dump
 
 // The following creates a copy, explicitly. This temporary object is then put
 // into the Value.
 //
 gCling->evaluate("(Tracer)RT", V);
 // Copies RT:
-//CHECK-NEXT: VAR+{3}:copy
+//CHECK-NEXT: VAR+{4}:copy
 printf("(Tracer)RT done\n"); //CHECK-NEXT: RT done
 V // CHECK-NEXT: (cling::Value &) boxes [(Tracer) @{{.*}}]
-dumpTracerSVR(V); // CHECK-NEXT: VAR+{3}:dump
+dumpTracerSVR(V); // CHECK-NEXT: VAR+{4}:dump
 
 // Check eval of array var
 Tracer arrV[] = {ObjMaker(), ObjMaker(), ObjMaker()};
 // The array is built:
-//CHECK-NEXT: MADE{4}:ctor
 //CHECK-NEXT: MADE{5}:ctor
 //CHECK-NEXT: MADE{6}:ctor
+//CHECK-NEXT: MADE{7}:ctor
 
 gCling->evaluate("arrV", V);
 // Now V gets destructed...
-//CHECK-NEXT: VAR+{5}:dtor
+//CHECK-NEXT: VAR+{4}:dtor
 // ...and the elements are copied:
-//CHECK-NEXT: MADE+{6}:copy
-//CHECK-NEXT: MADE+{7}:copy
 //CHECK-NEXT: MADE+{8}:copy
+//CHECK-NEXT: MADE+{9}:copy
+//CHECK-NEXT: MADE+{10}:copy
 
 V // CHECK-NEXT: (cling::Value &) boxes [(Tracer [3]) { @{{.*}}, @{{.*}}, @{{.*}} }]
+
+// Explicitly destory the copies
+V = cling::Value()
+//CHECK-NEXT: MADE+{10}:dtor
+//CHECK-NEXT: MADE+{9}:dtor
+//CHECK-NEXT: MADE+{8}:dtor
+//CHECK-NEXT: (cling::Value &) <<<invalid>>> @0x{{.*}}
+
+gCling->evaluate("arrV", V);
+//CHECK-NEXT: MADE+{11}:copy
+//CHECK-NEXT: MADE+{12}:copy
+//CHECK-NEXT: MADE+{13}:copy
 
 // Destruct the variables with static storage:
 // Destruct arrV:
@@ -211,9 +226,10 @@ V // CHECK-NEXT: (cling::Value &) boxes [(Tracer [3]) { @{{.*}}, @{{.*}}, @{{.*}
 //CHECK-NEXT: MADE{6}:dtor
 //CHECK-NEXT: MADE{5}:dtor
 
-// CHECK-NEXT: VAR{4}:dtor
-// CHECK-NEXT: REF{3}:dtor
+// CHECK-NEXT: VAR{3}:dtor
+// CHECK-NEXT: REF{1}:dtor
 
-//CHECK-NEXT: MADE+{2}:dtor
-//CHECK-NEXT: MADE+{1}:dtor
-//CHECK-NEXT: MADE+{0}:dtor
+// V going out of scope
+//CHECK-NEXT: MADE+{13}:dtor
+//CHECK-NEXT: MADE+{12}:dtor
+//CHECK-NEXT: MADE+{11}:dtor

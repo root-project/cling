@@ -86,9 +86,11 @@ namespace {
       assert (m_RefCnt > 0 && "Reference count is already zero.");
       if (--m_RefCnt == 0) {
         if (m_DtorFunc) {
-          char* payload = getPayload();
-          for (size_t el = 0; el < m_NElements; ++el)
-            (*m_DtorFunc)(payload + el * m_AllocSize / m_NElements);
+          assert(m_NElements && "No elements!");
+          char* Payload = getPayload();
+          const auto Skip = m_AllocSize / m_NElements;
+          while (m_NElements-- != 0)
+            (*m_DtorFunc)(Payload + m_NElements * Skip);
         }
         delete [] (char*)this;
       }
