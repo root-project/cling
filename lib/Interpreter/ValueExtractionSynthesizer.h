@@ -90,7 +90,7 @@ public:
 
     // Find and cache cling::runtime::gCling, setValueNoAlloc,
     // setValueWithAlloc on first request.
-    void FindAndCacheRuntimeDecls();
+    bool FindAndCacheRuntimeDecls();
   };
 
 } // namespace cling
