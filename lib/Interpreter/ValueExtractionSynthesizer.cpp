@@ -12,8 +12,8 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
-
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclGroup.h"
@@ -204,8 +204,8 @@ namespace {
 }
 
   Expr* ValueExtractionSynthesizer::SynthesizeSVRInit(Expr* E) {
-    if (!m_gClingVD)
-      FindAndCacheRuntimeDecls();
+    if (!m_gClingVD && !FindAndCacheRuntimeDecls())
+      return nullptr;
 
     // Build a reference to gCling
     ExprResult gClingDRE
@@ -406,34 +406,54 @@ namespace {
     return Call.get();
   }
 
-  void ValueExtractionSynthesizer::FindAndCacheRuntimeDecls() {
+  static bool VSError(const char* err) {
+    cling::errs() << "ValueExtractionSynthesizer error: " << err << ".\n";
+    return false;
+  }
+
+  bool ValueExtractionSynthesizer::FindAndCacheRuntimeDecls() {
     assert(!m_gClingVD && "Called multiple times!?");
     DeclContext* NSD = m_Context->getTranslationUnitDecl();
+    clang::VarDecl* clingVD = nullptr;
     if (m_Sema->getLangOpts().CPlusPlus) {
-      NSD = utils::Lookup::Namespace(m_Sema, "cling");
-      NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
-      m_gClingVD = cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling", NSD));
-      NSD = utils::Lookup::Namespace(m_Sema, "internal",NSD);
+      if (!(NSD = utils::Lookup::Namespace(m_Sema, "cling")))
+        return VSError("cling namespace not defined");
+      if (!(NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD)))
+        return VSError("cling::runtime namespace not defined");
+      if (!(clingVD = cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling",
+                                                            NSD))))
+        return VSError("cling::runtime::gCling not defined");
+      if (!NSD)
+        return VSError("cling::runtime namespace not defined");
+
+      if (!(NSD = utils::Lookup::Namespace(m_Sema, "internal", NSD)))
+        return VSError("cling::runtime::internal namespace not defined");
     }
     LookupResult R(*m_Sema, &m_Context->Idents.get("setValueNoAlloc"),
                    SourceLocation(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
 
     m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty()
-           && "Cannot find cling::runtime::internal::setValueNoAlloc");
+    if (R.empty())
+      return VSError("Cannot find cling::runtime::internal::setValueNoAlloc");
 
+    const bool ADL = false;
     CXXScopeSpec CSS;
-    m_UnresolvedNoAlloc
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
+    m_UnresolvedNoAlloc = m_Sema->BuildDeclarationNameExpr(CSS, R, ADL).get();
+    if (!m_UnresolvedNoAlloc)
+      return VSError("Could not build cling::runtime::internal"
+                     "::setValueNoAlloc");
 
     R.clear();
     R.setLookupName(&m_Context->Idents.get("setValueWithAlloc"));
     m_Sema->LookupQualifiedName(R, NSD);
-    assert(!R.empty()
-           && "Cannot find cling::runtime::internal::setValueWithAlloc");
-    m_UnresolvedWithAlloc
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
+    if (R.empty())
+      return VSError("Cannot find cling::runtime::internal::setValueWithAlloc");
+
+    m_UnresolvedWithAlloc = m_Sema->BuildDeclarationNameExpr(CSS, R, ADL).get();
+    if (!m_UnresolvedWithAlloc)
+      return VSError("Could not build cling::runtime::internal"
+                     "::setValueWithAlloc");
 
     R.clear();
     R.setLookupName(&m_Context->Idents.get("copyArray"));
@@ -444,10 +464,15 @@ namespace {
     // parent interpreter, but it will fail, because this is a template function.
     // Once the import of template functions becomes supported by clang,
     // this check can be de-activated.
-    if (!m_isChildInterpreter)
-      assert(!R.empty() && "Cannot find cling::runtime::internal::copyArray");
-    m_UnresolvedCopyArray
-      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
+    if (!m_isChildInterpreter && R.empty())
+      return VSError("Cannot find cling::runtime::internal::copyArray");
+
+    m_UnresolvedCopyArray = m_Sema->BuildDeclarationNameExpr(CSS, R, ADL).get();
+    if (!m_UnresolvedCopyArray)
+      return VSError("Could not build cling::runtime::internal::copyArray");
+
+    m_gClingVD = clingVD;
+    return true;
   }
 } // end namespace cling
 
