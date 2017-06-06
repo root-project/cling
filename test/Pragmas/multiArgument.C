@@ -8,6 +8,10 @@
 
 // RUN: cat %s | %cling -I%S -Xclang -verify 2>&1 | FileCheck %s
 
+// FIXME: When printing can be properly unloaded don't force it here
+"BEGIN"
+// CHECK: (const char [6]) "BEGIN"
+
 #pragma cling load("P0.h", "P1.h","P2.h")
 
 ValueA
@@ -20,6 +24,11 @@ ValueC
 // CHECK-NEXT: (const char *) "ValueC"
 
 .undo
+.undo
+.undo
+.undo
+
+// FIXME: When print Transactions are properly parenteted remove these
 .undo
 .undo
 .undo
@@ -37,6 +46,11 @@ ValueC
 // CHECK-NEXT: (const char *) "ValueC"
 
 .undo
+.undo
+.undo
+.undo
+
+// FIXME: When print Transactions are properly parenteted remove these
 .undo
 .undo
 .undo
