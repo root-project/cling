@@ -54,8 +54,6 @@ Jupyter
 
 Fixed Bugs
 ----------
-* Coverity static analysis fixes
-
 [ROOT-7016](https://sft.its.cern.ch/jira/browse/ROOT-7016)
 [ROOT-8739](https://sft.its.cern.ch/jira/browse/ROOT-8739)
 [ROOT-8696](https://sft.its.cern.ch/jira/browse/ROOT-8696)
