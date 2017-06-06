@@ -75,6 +75,11 @@ matrix:
           packages: g++-4.9
       compiler: gcc-4.9
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode6.4
+      compiler: clang
+
     - os: linux
       env: DIST=pangolin COMPILER=g++-5 CCOMPILER=gcc-5
       addons:
@@ -101,6 +106,11 @@ matrix:
           packages: g++-4.7
       compiler: gcc-4.7
 
+    - os: osx
+      env: COMPILER=g++-6 CCOMPILER=gcc-6
+      osx_image: xcode7.3
+      compiler: g++-6
+
     - os: linux
       env: DIST=trusty COMPILER=g++-4.8 CCOMPILER=gcc-4.8
       sudo: required
@@ -121,11 +131,6 @@ matrix:
           packages: g++-4.9
       compiler: gcc-4.9
 
-    - os: osx
-      env: COMPILER=g++-6 CCOMPILER=gcc-6
-      osx_image: xcode7.2
-      compiler: g++-6
-
     - os: linux
       env: DIST=trusty COMPILER=g++-5 CCOMPILER=gcc-5
       sudo: required
@@ -136,6 +141,11 @@ matrix:
           packages: g++-5
       compiler: gcc-5
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode7.3
+      compiler: clang
+
     - os: linux
       env: DIST=trusty COMPILER=g++-6 CCOMPILER=gcc-6
       sudo: required
@@ -145,11 +155,6 @@ matrix:
           sources: *sources
           packages: g++-6
       compiler: gcc-6
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7.3
-      compiler: clang
 
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-3.7 CCOMPILER=clang-3.7
@@ -188,7 +193,7 @@ install:
   elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
     brew install ccache python coreutils
     if [[ "$COMPILER" == g++-* ]]; then
-      brew install "gcc${COMPILER##*++-}"
+      brew install "gcc@${COMPILER##*++-}"
       export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
       export CFLAGS="-D__builtin_unreachable=__builtin_trap"
     fi
