@@ -95,7 +95,7 @@ namespace cling {
         }
 
         cling::Interpreter::CompilationResult compRes;
-        const int indent = m_MetaProcessor->process(Line.c_str(), compRes);
+        const int indent = m_MetaProcessor->process(Line, compRes);
 
         // Quit requested?
         if (indent < 0)
