@@ -38,8 +38,8 @@ CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
         llvm/Support/SwapByteOrder.h \
         llvm/Support/type_traits.h
 
-CLINGETCPCH  := $(addprefix etc/cling/Interpreter/,$(CLINGETC_CLING)) \
-	$(addprefix etc/cling/,$(CLINGETC_LLVM))
+#CLINGETCPCH  := $(addprefix etc/cling/Interpreter/,$(CLINGETC_CLING)) \
+#	$(addprefix etc/cling/,$(CLINGETC_LLVM))
 CLINGETC     := $(CLINGETCPCH) $(addprefix etc/cling/cint/,multimap multiset)
 
 CLINGETC_ORIGINALS := $(addprefix $(call stripsrc,$(LLVMDIRI))/include/,$(CLINGETC_LLVM)) \
