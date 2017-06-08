@@ -28,7 +28,7 @@ Cling as a Library
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM rXXX.
+* Upgrade to LLVM r302975.
 
 Misc
 ----
