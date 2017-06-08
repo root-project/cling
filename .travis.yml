@@ -52,14 +52,6 @@ matrix:
     # across all platforms. By interleaving OS X, the hope is to get in the
     # queue faster while not blocking Linux builds from occuring.
     - os: linux
-      env: DIST=pangolin COMPILER=g++-4.7 CCOMPILER=gcc-4.7 NIGHTLY_CRON_SYNC=1
-      addons:
-        apt:
-          sources: *sources
-          packages: g++-4.7
-      compiler: gcc-4.7
-
-    - os: linux
       env: DIST=pangolin COMPILER=g++-4.8 CCOMPILER=gcc-4.8
       addons:
         apt:
@@ -95,16 +87,6 @@ matrix:
           sources: *sources
           packages: g++-6
       compiler: gcc-6
-
-    - os: linux
-      env: DIST=trusty COMPILER=g++-4.7 CCOMPILER=gcc-4.7
-      sudo: required
-      dist: trusty
-      addons:
-        apt:
-          sources: *sources
-          packages: g++-4.7
-      compiler: gcc-4.7
 
     - os: osx
       env: COMPILER=g++-6 CCOMPILER=gcc-6
@@ -164,6 +146,11 @@ matrix:
           packages: ['clang-3.7', 'libstdc++-5-dev']
       compiler: clang-3.7
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode8.3
+      compiler: clang
+
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-3.8 CCOMPILER=clang-3.8
       addons:
@@ -171,11 +158,6 @@ matrix:
           sources: *sources
           packages: ['clang-3.8', 'libstdc++-6-dev']
       compiler: clang-3.8
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode8.3
-      compiler: clang
 
   allow_failures:
     # clang-3.5 crashes compiling clang-3.9 with libc++-3.9
