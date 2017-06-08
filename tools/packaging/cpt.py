@@ -1752,7 +1752,7 @@ if args['current_dev']:
       CLING_BRANCH, CLANG_BRANCH, LLVM_BRANCH = cDev[9:].split(',')
 
 # llvm_revision = urlopen(
-#    "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
+#    "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
 #   'utf-8')
 VERSION = ''
 REVISION = ''
@@ -1915,7 +1915,7 @@ Install/update the required packages by:
 
 if args['current_dev']:
     llvm_revision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
+        "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
@@ -2013,9 +2013,8 @@ if args['last_stable']:
     # FIXME
     assert tag[0] is "v"
     assert CLING_BRANCH == None
-
     llvm_revision = urlopen(
-        'https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt' % tag
+        'https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt' % tag
     ).readline().strip().decode('utf-8')
 
     fetch_llvm(llvm_revision)
@@ -2085,7 +2084,7 @@ if args['last_stable']:
 
 if args['tarball_tag']:
     llvm_revision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
+        "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'tarball_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
@@ -2114,7 +2113,7 @@ if args['tarball_tag']:
 
 if args['deb_tag']:
     llvm_revision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
+        "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'deb_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
@@ -2134,7 +2133,7 @@ if args['deb_tag']:
 
 if args['rpm_tag']:
     llvm_revision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
+        "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'rpm_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
@@ -2154,7 +2153,7 @@ if args['rpm_tag']:
 
 if args['nsis_tag']:
     llvm_revision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
+        "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'nsis_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
@@ -2173,7 +2172,7 @@ if args['nsis_tag']:
 
 if args['dmg_tag']:
     llvm_revision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
+        "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'dmg_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
@@ -2192,7 +2191,7 @@ if args['dmg_tag']:
 
 if args['create_dev_env']:
     llvm_revision = urlopen(
-        "https://raw.githubusercontent.com/vgvassilev/cling/master/LastKnownGoodLLVMSVNRevision.txt"
+        "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt"
     ).readline().strip().decode('utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
