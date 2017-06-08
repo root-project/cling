@@ -16,5 +16,8 @@
 int printf(const char*,...);
 printf("CHECK 123 %p\n", gCling); // CHECK: CHECK 123
 
-// expected-no-diagnostics
+12 // expected-error {{ValueExtractionSynthesizer could not find: 'cling::runtime::internal::setValueNoAlloc'.}}
+
+32 // expected-error {{ValueExtractionSynthesizer could not find: 'cling::runtime::internal::setValueNoAlloc'.}}
+
 .q
