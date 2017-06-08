@@ -89,9 +89,9 @@ matrix:
       compiler: gcc-6
 
     - os: osx
-      env: COMPILER=g++-6 CCOMPILER=gcc-6
+      env: COMPILER=clang++ CCOMPILER=clang
       osx_image: xcode7.3
-      compiler: g++-6
+      compiler: clang
 
     - os: linux
       env: DIST=trusty COMPILER=g++-4.8 CCOMPILER=gcc-4.8
@@ -113,6 +113,11 @@ matrix:
           packages: g++-4.9
       compiler: gcc-4.9
 
+    - os: osx
+      env: COMPILER=g++-6 CCOMPILER=gcc-6
+      osx_image: xcode7.3
+      compiler: gcc-6
+
     - os: linux
       env: DIST=trusty COMPILER=g++-5 CCOMPILER=gcc-5
       sudo: required
@@ -122,11 +127,6 @@ matrix:
           sources: *sources
           packages: g++-5
       compiler: gcc-5
-
-    - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
-      osx_image: xcode7.3
-      compiler: clang
 
     - os: linux
       env: DIST=trusty COMPILER=g++-6 CCOMPILER=gcc-6
@@ -138,6 +138,21 @@ matrix:
           packages: g++-6
       compiler: gcc-6
 
+    - os: osx
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode8.3
+      compiler: clang
+
+    - os: linux
+      env: DIST=trusty COMPILER=g++-7 CCOMPILER=gcc-7
+      sudo: required
+      dist: trusty
+      addons:
+        apt:
+          sources: *sources
+          packages: g++-7
+      compiler: gcc-7
+
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-3.7 CCOMPILER=clang-3.7
       addons:
@@ -147,9 +162,9 @@ matrix:
       compiler: clang-3.7
 
     - os: osx
-      env: COMPILER=clang++ CCOMPILER=clang
+      env: COMPILER=g++-6 CCOMPILER=gcc-6
       osx_image: xcode8.3
-      compiler: clang
+      compiler: gcc-7
 
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-3.8 CCOMPILER=clang-3.8
