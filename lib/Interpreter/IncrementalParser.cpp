@@ -527,22 +527,9 @@ namespace cling {
     if (!T->isNestedTransaction() && hasCodeGenerator()) {
       // The initializers are emitted to the symbol "_GLOBAL__sub_I_" + filename.
       // Make that unique!
-      ASTContext& Context = getCI()->getASTContext();
-      SourceManager &SM = Context.getSourceManager();
-      const FileEntry *MainFile = SM.getFileEntryForID(SM.getMainFileID());
-      FileEntry* NcMainFile = const_cast<FileEntry*>(MainFile);
-      // Hack to temporarily set the file entry's name to a unique name.
-      assert(MainFile->getName() == *(const char**)NcMainFile
-         && "FileEntry does not start with the name");
-      StringRef& FileName = *reinterpret_cast<StringRef*>(NcMainFile);
-      StringRef OldName = FileName;
-      std::string ModName = getCodeGenerator()->GetModule()->getName().str();
-      FileName = ModName;
-
       deserT = beginTransaction(CompilationOptions());
       // Reset the module builder to clean up global initializers, c'tors, d'tors
-      getCodeGenerator()->HandleTranslationUnit(Context);
-      FileName = OldName;
+      getCodeGenerator()->HandleTranslationUnit(getCI()->getASTContext());
       auto PRT = endTransaction(deserT);
       commitTransaction(PRT);
       deserT = PRT.getPointer();
