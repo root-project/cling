@@ -688,7 +688,7 @@ namespace cling {
                                                    source_name.str()));
     char* MBStart = const_cast<char*>(MB->getBufferStart());
     memcpy(MBStart, input.data(), InputSize);
-    memcpy(MBStart + InputSize, "\n", 2);
+    MBStart[InputSize] = '\n';
 
     SourceManager& SM = getCI()->getSourceManager();
 
