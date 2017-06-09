@@ -592,8 +592,34 @@ def install_prefix():
                 shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
 
 
+def runSingleTest(test, Idx = 2, Recurse = True):
+    try:
+        test = os.path.join(CLING_SRC_DIR, 'test', test)
+
+        if os.path.isdir(test):
+            if Recurse:
+                for t in os.listdir(test):
+                    if t.endswith('.C'):
+                        runSingleTest(os.path.join(test, t), Idx, False)
+            return
+
+        cling = os.path.join(LLVM_OBJ_ROOT, 'bin', 'cling')
+        flags = [[''], ['-Xclang -verify']]
+        flags.append([f[0] for f in flags])
+        for flag in flags[Idx]:
+            cmd = 'cat %s | %s --nologo 2>&1 %s' % (test, cling, flag)
+            print('** %s **' % cmd)
+            subprocess.check_call(cmd, cwd=os.path.dirname(test), shell=True)
+
+    except Exception as err:
+        print("Error running '%s': %s" % (test, err))
+        pass
+
 def test_cling():
     box_draw("Run Cling test suite")
+    # Run single tests on CI with this
+    # runSingleTest('Prompt/ValuePrinter/Regression.C')
+    # runSingleTest('Prompt/ValuePrinter')
     build = Build('check-cling')
 
 def tarball():
