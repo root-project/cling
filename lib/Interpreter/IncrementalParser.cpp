@@ -534,10 +534,10 @@ namespace cling {
       // Hack to temporarily set the file entry's name to a unique name.
       assert(MainFile->getName() == *(const char**)NcMainFile
          && "FileEntry does not start with the name");
-      const char* &FileName = *(const char**)NcMainFile;
-      const char* OldName = FileName;
+      StringRef& FileName = *reinterpret_cast<StringRef*>(NcMainFile);
+      StringRef OldName = FileName;
       std::string ModName = getCodeGenerator()->GetModule()->getName().str();
-      FileName = ModName.c_str();
+      FileName = ModName;
 
       deserT = beginTransaction(CompilationOptions());
       // Reset the module builder to clean up global initializers, c'tors, d'tors
