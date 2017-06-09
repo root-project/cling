@@ -162,7 +162,7 @@ matrix:
       compiler: clang-3.7
 
     - os: osx
-      env: COMPILER=g++-6 CCOMPILER=gcc-6
+      env: COMPILER=g++-7 CCOMPILER=gcc-7
       osx_image: xcode8.3
       compiler: gcc-7
 
@@ -191,8 +191,11 @@ install:
     brew install ccache python coreutils
     if [[ "$COMPILER" == g++-* ]]; then
       brew install "gcc@${COMPILER##*++-}"
-      export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
-      export CFLAGS="-D__builtin_unreachable=__builtin_trap"
+      brew link --overwrite "gcc@${COMPILER##*++-}"
+      if [[ "$COMPILER" == "g++-6" ]]; then
+        export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
+        export CFLAGS="-D__builtin_unreachable=__builtin_trap"
+      fi
     fi
     CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
     export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
