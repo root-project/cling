@@ -471,11 +471,11 @@ def compile(arg, build_libcpp):
         shutil.rmtree(prefix)
 
     # Cleanup previous build directory if exists
-    if os.path.isdir(os.path.join(workdir, 'builddir')):
-        print("Using previous build directory: " + os.path.join(workdir, 'builddir'))
+    if os.path.isdir(LLVM_OBJ_ROOT):
+        print("Using previous build directory: " + LLVM_OBJ_ROOT)
     else:
-        print("Creating build directory: " + os.path.join(workdir, 'builddir'))
-        os.makedirs(os.path.join(workdir, 'builddir'))
+        print("Creating build directory: " + LLVM_OBJ_ROOT)
+        os.makedirs(LLVM_OBJ_ROOT)
 
     ### FIX: Target isn't being set properly on Travis OS X
     ### Either because ccache or maybe the virtualization environment
@@ -617,8 +617,8 @@ def cleanup():
         return
 
     box_draw("Clean up")
-    if os.path.isdir(os.path.join(workdir, 'builddir')):
-        print("Skipping build directory: " + os.path.join(workdir, 'builddir'))
+    if os.path.isdir(LLVM_OBJ_ROOT):
+        print("Skipping build directory: " + LLVM_OBJ_ROOT)
 
     if os.path.isdir(prefix):
         print("Remove directory: " + prefix)
