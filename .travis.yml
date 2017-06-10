@@ -184,10 +184,7 @@ install:
   CLING_USER_ROOT=`dirname $TRAVIS_BUILD_DIR`
   export CLING_BUILD_DEPS="$CLING_USER_ROOT/deps"
   export CLING_LOCAL_BIN="$CLING_USER_ROOT/bin"
-  if [ $TRAVIS_OS_NAME == 'linux' ]; then
-    CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz"
-    export CMAKE=$CLING_BUILD_DEPS/cmake/bin/cmake
-  elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
+  if [ $TRAVIS_OS_NAME == 'osx' ]; then
     brew install ccache python coreutils
     if [[ "$COMPILER" == g++-* ]]; then
       brew install "gcc@${COMPILER##*++-}"
@@ -197,8 +194,6 @@ install:
         export CFLAGS="-D__builtin_unreachable=__builtin_trap"
       fi
     fi
-    CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
-    export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
     PATH="/usr/local/opt/ccache/libexec:$PATH"
     # This is where timeout is hiding now, is the above still neccessary?
     PATH="$PATH:/usr/local/opt/coreutils/libexec/gnubin"
@@ -213,9 +208,24 @@ install:
   # Turn this on to get the mapping to the cache.o to delete
   # export CCACHE_LOGFILE="$CLING_USER_ROOT/ccache.log"
 
-  if [ ! -f $CMAKE ]; then
-    mkdir -pv $CLING_BUILD_DEPS/cmake
-    travis_retry curl -k $CMAKE_URL | tar --strip-components=1 -xz -C $CLING_BUILD_DEPS/cmake
+  # Require CMake >= 3.6 
+  CMAKEREQ="3.6"
+  CMKV=( `cmake --version` )
+  CMKV=${CMKV[2]}
+  if [ "${CMKV:0:1}" -lt "${CMAKEREQ:0:1}" ] || [ "${CMKV:2:1}" -lt "${CMAKEREQ:2:1}" ]; then
+    if [ $TRAVIS_OS_NAME == 'linux' ]; then
+      CMAKE_URL="https://cmake.org/files/v${CMAKEREQ}/cmake-${CMAKEREQ}.0-Linux-x86_64.tar.gz"
+      export CMAKE=$CLING_BUILD_DEPS/cmake/bin/cmake
+    else
+      CMAKE_URL="https://cmake.org/files/v${CMAKEREQ}/cmake-${CMAKEREQ}.0-Darwin-x86_64.tar.gz"
+      export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
+    fi
+    if [ ! -f $CMAKE ]; then
+      mkdir -pv $CLING_BUILD_DEPS/cmake
+      travis_retry curl -k $CMAKE_URL | tar --strip-components=1 -xz -C $CLING_BUILD_DEPS/cmake
+    fi
+  else
+    export CMAKE="cmake"
   fi
 
 before_script:
