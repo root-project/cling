@@ -199,6 +199,13 @@ install:
     PATH="$PATH:/usr/local/opt/coreutils/libexec/gnubin"
   fi
 
+  if [ "$COMPILER" == "g++-6" ]; then
+    export CLING_BUILD_FLAGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+    CMAKEREQ="3.8"
+  else
+    CMAKEREQ="3.6"
+  fi
+
   # Containers need to timeout before the buildscript exists
   if [ $TRAVIS_OS_NAME == 'osx' ] || [ "$DIST" == "trusty" ]; then
     TIMEOUT='40m' # Any more and Travis might cancel
@@ -208,8 +215,7 @@ install:
   # Turn this on to get the mapping to the cache.o to delete
   # export CCACHE_LOGFILE="$CLING_USER_ROOT/ccache.log"
 
-  # Require CMake >= 3.6 
-  CMAKEREQ="3.6"
+  # Get installed CMake version and make sure its at least CMAKEREQ
   CMKV=( `cmake --version` )
   CMKV=${CMKV[2]}
   if [ "${CMKV:0:1}" -lt "${CMAKEREQ:0:1}" ] || [ "${CMKV:2:1}" -lt "${CMAKEREQ:2:1}" ]; then
@@ -257,13 +263,15 @@ script:
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
       --with-llvm-url=http://root.cern.ch/git/llvm.git \
+      --with-cmake-flags="$CLING_BUILD_FLAGS" \
       --skip-cleanup
   else
     tools/packaging/cpt.py \
       --tarball-tag=$TRAVIS_TAG \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
-      --with-llvm-url=http://root.cern.ch/git/llvm.git
+      --with-llvm-url=http://root.cern.ch/git/llvm.git \
+      --with-cmake-flags="$CLING_BUILD_FLAGS"
   fi
 
   RESULT="$?"
