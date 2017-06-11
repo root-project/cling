@@ -85,6 +85,30 @@ namespace cling {
     return Result(FD, true);
   }
 
+  bool DeclExtractor::ValidateCXXRecord(VarDecl* VD) const {
+    QualType QT = VD->getType();
+    if (CXXRecordDecl* RD = QT->getAsCXXRecordDecl()) {
+      if (RD->isLambda()) {
+        bool Copy = RD->getLambdaCaptureDefault() == LCD_ByCopy;
+        if (!Copy) {
+          for (auto&& Capture : RD->captures()) {
+            if ((Copy = Capture.getCaptureKind() == LCK_ByCopy)) break;
+          }
+        }
+        if (Copy) {
+          const int ID = m_Context->getDiagnostics().getCustomDiagID(
+              DiagnosticsEngine::Warning,
+              "captures will be by reference, not copy");
+          m_Context->getDiagnostics().Report(VD->getSourceRange().getBegin(),
+                                             ID);
+          // Warning is good enough, no reason to fail over this
+          return true;
+        }
+      }
+    }
+    return true;
+  }
+
   bool DeclExtractor::ExtractDecl(FunctionDecl* FD) {
     llvm::SmallVector<NamedDecl*, 4> TouchedDecls;
     CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
@@ -138,6 +162,8 @@ namespace cling {
           ND->setDeclContext(DC);
 
           if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
+            if (!ValidateCXXRecord(VD))
+              return false;
             VD->setStorageClass(SC_None);
           }
 

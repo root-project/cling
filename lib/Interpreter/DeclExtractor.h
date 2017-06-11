@@ -102,6 +102,16 @@ namespace cling {
     ///
     bool CheckTagDeclaration(clang::TagDecl* NewTD,
                              clang::LookupResult& Previous);
+
+
+    ///\brief Validate a variable that is a CXXRecordDecl
+    ///
+    /// Currently only reports errors if the var is a lamda that captures by
+    /// copy.
+    ///
+    ///\returns whether an error was reported
+    ///
+    bool ValidateCXXRecord(clang::VarDecl* VD) const;
   };
 
 } // namespace cling
