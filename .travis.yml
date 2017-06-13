@@ -162,7 +162,7 @@ matrix:
       compiler: clang-3.7
 
     - os: osx
-      env: COMPILER=g++-6 CCOMPILER=gcc-6
+      env: COMPILER=g++-7 CCOMPILER=gcc-7
       osx_image: xcode8.3
       compiler: gcc-7
 
@@ -184,21 +184,26 @@ install:
   CLING_USER_ROOT=`dirname $TRAVIS_BUILD_DIR`
   export CLING_BUILD_DEPS="$CLING_USER_ROOT/deps"
   export CLING_LOCAL_BIN="$CLING_USER_ROOT/bin"
-  if [ $TRAVIS_OS_NAME == 'linux' ]; then
-    CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz"
-    export CMAKE=$CLING_BUILD_DEPS/cmake/bin/cmake
-  elif [ $TRAVIS_OS_NAME == 'osx' ] ; then
+  if [ $TRAVIS_OS_NAME == 'osx' ]; then
     brew install ccache python coreutils
     if [[ "$COMPILER" == g++-* ]]; then
       brew install "gcc@${COMPILER##*++-}"
-      export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
-      export CFLAGS="-D__builtin_unreachable=__builtin_trap"
+      brew link --overwrite "gcc@${COMPILER##*++-}"
+      if [[ "$COMPILER" == "g++-6" ]]; then
+        export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
+        export CFLAGS="-D__builtin_unreachable=__builtin_trap"
+      fi
     fi
-    CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.0-Darwin-x86_64.tar.gz"
-    export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
     PATH="/usr/local/opt/ccache/libexec:$PATH"
     # This is where timeout is hiding now, is the above still neccessary?
     PATH="$PATH:/usr/local/opt/coreutils/libexec/gnubin"
+  fi
+
+  if [ "$COMPILER" == "g++-6" ]; then
+    export CLING_BUILD_FLAGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+    CMAKEREQ="3.8"
+  else
+    CMAKEREQ="3.6"
   fi
 
   # Containers need to timeout before the buildscript exists
@@ -210,9 +215,23 @@ install:
   # Turn this on to get the mapping to the cache.o to delete
   # export CCACHE_LOGFILE="$CLING_USER_ROOT/ccache.log"
 
-  if [ ! -f $CMAKE ]; then
-    mkdir -pv $CLING_BUILD_DEPS/cmake
-    travis_retry curl -k $CMAKE_URL | tar --strip-components=1 -xz -C $CLING_BUILD_DEPS/cmake
+  # Get installed CMake version and make sure its at least CMAKEREQ
+  CMKV=( `cmake --version` )
+  CMKV=${CMKV[2]}
+  if [ "${CMKV:0:1}" -lt "${CMAKEREQ:0:1}" ] || [ "${CMKV:2:1}" -lt "${CMAKEREQ:2:1}" ]; then
+    if [ $TRAVIS_OS_NAME == 'linux' ]; then
+      CMAKE_URL="https://cmake.org/files/v${CMAKEREQ}/cmake-${CMAKEREQ}.0-Linux-x86_64.tar.gz"
+      export CMAKE=$CLING_BUILD_DEPS/cmake/bin/cmake
+    else
+      CMAKE_URL="https://cmake.org/files/v${CMAKEREQ}/cmake-${CMAKEREQ}.0-Darwin-x86_64.tar.gz"
+      export CMAKE=$CLING_BUILD_DEPS/cmake/CMake.app/Contents/bin/cmake
+    fi
+    if [ ! -f $CMAKE ]; then
+      mkdir -pv $CLING_BUILD_DEPS/cmake
+      travis_retry curl -k $CMAKE_URL | tar --strip-components=1 -xz -C $CLING_BUILD_DEPS/cmake
+    fi
+  else
+    export CMAKE="cmake"
   fi
 
 before_script:
@@ -244,13 +263,15 @@ script:
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
       --with-llvm-url=http://root.cern.ch/git/llvm.git \
+      --with-cmake-flags="$CLING_BUILD_FLAGS" \
       --skip-cleanup
   else
     tools/packaging/cpt.py \
       --tarball-tag=$TRAVIS_TAG \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
-      --with-llvm-url=http://root.cern.ch/git/llvm.git
+      --with-llvm-url=http://root.cern.ch/git/llvm.git \
+      --with-cmake-flags="$CLING_BUILD_FLAGS"
   fi
 
   RESULT="$?"

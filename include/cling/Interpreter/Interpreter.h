@@ -12,6 +12,11 @@
 
 #include "cling/Interpreter/InvocationOptions.h"
 
+// Hide StringRef.h from DynamicLookupRuntimeUniverse.h
+#ifndef CLING_DYNAMIC_LOOKUP_RUNTIME_UNIVERSE_H
+#include "llvm/ADT/StringRef.h"
+#endif
+
 #include <cstdlib>
 #include <memory>
 #include <string>
