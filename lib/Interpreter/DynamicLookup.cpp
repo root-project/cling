@@ -190,6 +190,8 @@ namespace cling {
     m_Sema->LookupQualifiedName(R, NSD);
     m_LifetimeHandlerDecl = R.getAsSingle<CXXRecordDecl>();
     assert(m_LifetimeHandlerDecl && "LifetimeHandler could not be found.");
+    m_LifetimeHandlerDecl = m_LifetimeHandlerDecl->getDefinition();
+    assert(m_LifetimeHandlerDecl && "LifetimeHandler is not defined");
 
     // Find the LifetimeHandler::getMemory declaration
     R.clear();
