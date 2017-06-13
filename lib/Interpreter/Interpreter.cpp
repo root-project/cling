@@ -27,6 +27,7 @@
 #include "cling/Interpreter/ClangInternalState.h"
 #include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/CompilationOptions.h"
+#include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
@@ -1561,6 +1562,14 @@ namespace cling {
     T.setState(Transaction::kCommitted);
   }
 
-
+  namespace runtime {
+    namespace internal {
+      Value cling_Evaluate(Interpreter* interp, DynamicExprInfo* DEI,
+                           clang::DeclContext* DC) {
+        return interp->Evaluate(DEI->getExpr(), DC,
+                                DEI->isValuePrinterRequested());
+      }
+    } // namespace internal
+  }  // namespace runtime
 
 } //end namespace cling

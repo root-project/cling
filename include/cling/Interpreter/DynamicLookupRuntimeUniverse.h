@@ -13,8 +13,6 @@
 #error "This file must not be included by compiled programs."
 #endif
 
-#include "cling/Interpreter/Interpreter.h"
-#include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 #include "cling/Interpreter/Value.h"
 
@@ -27,6 +25,12 @@ namespace runtime {
   /// \brief Provides builtins, which are neccessary for the dynamic scopes
   /// and runtime bindings. These builtins should be used for other purposes.
   namespace internal {
+    class DynamicExprInfo;
+
+    /// \brief Outlined Evaluate() implementation to not
+    ///  `#include "cling/Interpreter.h"` into the runtime.
+    Value cling_Evaluate(Interpreter* interp, DynamicExprInfo* DEI,
+                         clang::DeclContext* DC);
 
     /// \brief EvaluateT is used to replace all invalid source code that
     /// occurs, when cling's dynamic extensions are enabled.
@@ -45,10 +49,7 @@ namespace runtime {
     /// evaluated at runtime.
     template<typename T>
     T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      Value result(
-        cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
-                                         ExprInfo->isValuePrinterRequested())
-                            );
+      Value result(cling_Evaluate(gCling, ExprInfo, DC));
       if (result.isValid())
         // Check whether the expected return type and the actual return type are
         // compatible with Sema::CheckAssingmentConstraints or
@@ -61,8 +62,7 @@ namespace runtime {
     /// void.
     template<>
     void EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      cling::runtime::gCling->Evaluate(ExprInfo->getExpr(), DC,
-                       ExprInfo->isValuePrinterRequested());
+      cling_Evaluate(gCling, ExprInfo, DC);
     }
   } // end namespace internal
 } // end namespace runtime
