@@ -206,10 +206,8 @@ install:
     CMAKEREQ="3.6"
   fi
 
-  # Containers need to timeout before the buildscript exists
-  if [ $TRAVIS_OS_NAME == 'osx' ] || [ "$DIST" == "trusty" ]; then
-    TIMEOUT='40m' # Any more and Travis might cancel
-  fi
+  # Containers need to timeout before the buildscript exits
+  TIMEOUT='37m' # Any more and Travis might cancel
 
   # If we timeout, objects can be corrupted in the cache, causing link errors
   # Turn this on to get the mapping to the cache.o to delete
