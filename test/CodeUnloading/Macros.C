@@ -9,6 +9,10 @@
 // RUN: cat %s | %cling -I%S -Xclang -verify 2>&1 | FileCheck %s
 // Tests undoing of macro definitions
 
+// Invoke the printer to get it in the undo queue early
+"TEST"
+// CHECK: (const char [5]) "TEST"
+
 // Make sure one Transactin can handle redefinitions
 #include "Macros.h"
 // expected-warning@Macros.h:3 {{'TEST' macro redefined}}
@@ -25,6 +29,7 @@ TEST
 
 .undo //print
 .undo //include
+.undo // FIXME: REMOVE once print unloading is merged
 
 TEST // expected-error@2 {{use of undeclared identifier 'TEST'}}
 
@@ -35,6 +40,7 @@ TEST
 // CHECK: (const char [8]) "DEFINED"
 .undo // print
 .undo // define
+.undo // FIXME: REMOVE once print unloading is merged
 
 TEST // expected-error@2 {{use of undeclared identifier 'TEST'}}
 
