@@ -20,7 +20,7 @@ CLINGCOMPDH  := $(call stripsrc,$(MODDIR)/lib/Interpreter/cling-compiledata.h)
 CLINGDEP     := $(CLINGO:.o=.d)
 
 CLINGETC_CLING := DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
-        DynamicLookupLifetimeHandler.h Interpreter.h InvocationOptions.h \
+        DynamicLookupLifetimeHandler.h \
         Exception.h RuntimePrintValue.h RuntimeUniverse.h Value.h
 
 CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
