@@ -53,6 +53,26 @@ using namespace clang;
 using namespace cling;
 
 namespace {
+  static constexpr unsigned CxxStdCompiledWith() {
+    // Extracted from Boost/config/compiler.
+    // SunProCC has no C++11.
+    // VisualC's support is not obvious to extract from Boost...
+
+    // The value of __cplusplus in GCC < 5.0 (e.g. 4.9.3) when
+    // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
+    // the test for C++14 or more (201402L) as previously specified.
+    // I would claim that the check should be relaxed to:
+#if __cplusplus > 201402L
+    return 17;
+#elif __cplusplus > 201103L
+    return 14;
+#elif __cplusplus >= 201103L
+    return 11;
+#else
+#error "Unknown __cplusplus version"
+#endif
+  }
+
   // This function isn't referenced outside its translation unit, but it
   // can't use the "static" keyword because its address is used for
   // GetMainExecutable (since some platforms don't support taking the
@@ -297,8 +317,18 @@ namespace {
 
     #if defined(__GLIBCXX__)
       // Avoid '__float128 is not supported on this target' errors
-      if (!opts.Language && !opts.StdVersion)
-        sArguments.addArgument("-std=c++11");
+      if (!opts.Language && !opts.StdVersion) {
+        switch (CxxStdCompiledWith()) {
+          case 17:
+            // Hopefully -D__float128=void can be removed when -std=c++17 works.
+            sArguments.addArgument("-D__float128=void");
+            sArguments.addArgument("-std=c++1z");
+            break;
+          case 14: sArguments.addArgument("-std=c++14"); break;
+          case 11: sArguments.addArgument("-std=c++11"); break;
+          default: break;
+        }
+      }
     #endif //__GLIBCXX__
   #endif // __APPLE__
 
@@ -390,25 +420,14 @@ namespace {
 
     // C++11 is turned on if cling is built with C++11: it's an interpreter;
     // cross-language compilation doesn't make sense.
-    // Extracted from Boost/config/compiler.
-    // SunProCC has no C++11.
-    // VisualC's support is not obvious to extract from Boost...
-
-    // The value of __cplusplus in GCC < 5.0 (e.g. 4.9.3) when
-    // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
-    // the test for C++14 or more (201402L) as previously specified.
-    // I would claim that the check should be relaxed to:
 
     if (Opts.CPlusPlus) {
-#if __cplusplus > 201402L
-      Opts.CPlusPlus1z = 1;
-#endif
-#if __cplusplus > 201103L
-      Opts.CPlusPlus14 = 1;
-#endif
-#if __cplusplus >= 201103L
-      Opts.CPlusPlus11 = 1;
-#endif
+      switch (CxxStdCompiledWith()) {
+        case 17: Opts.CPlusPlus1z = 1;
+        case 14: Opts.CPlusPlus14 = 1;
+        case 11: Opts.CPlusPlus11 = 1;
+        default: break;
+      }
     }
 
 #ifdef _REENTRANT
