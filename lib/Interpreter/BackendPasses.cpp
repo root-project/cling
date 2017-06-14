@@ -78,9 +78,8 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
 {
   // From BackEndUtil's clang::EmitAssemblyHelper::CreatePasses().
 
-  CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
-
 #if 0
+  CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
   CodeGenOptions& CGOpts_ = const_cast<CodeGenOptions&>(m_CGOpts);
   // DON'T: we will not find our symbols...
   //CGOpts_.CXXCtorDtorAliases = 1;
