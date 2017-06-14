@@ -16,7 +16,7 @@ int Var = 43;
 auto LD = []  { return Var; };
 auto LR = [&] { return Var; };
 
-auto LC = [=] { return Var; } // expected-warning {{capture will be by reference, not copy}}
+auto LC = [=] { return Var; } // expected-warning {{captures will be by reference, not copy}}
 // CHECK: ((lambda) &) @0x{{.*}}
 
 ++Var;
@@ -29,6 +29,6 @@ LD() == LR() && LD() == LC()
 auto LL = [=,&Var] { return Var; };
 // expected-error@input_line_24:2 {{'Var' cannot be captured because it does not have automatic storage duration}}
 // expected-note@input_line_13:2 {{'Var' declared here}}
-// expected-warning@input_line_24:2 {{capture will be by reference, not copy}}
+// expected-warning@input_line_24:2 {{captures will be by reference, not copy}}
 
 .q
