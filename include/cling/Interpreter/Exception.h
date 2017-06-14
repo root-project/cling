@@ -10,7 +10,6 @@
 #ifndef CLING_RUNTIME_EXCEPTION_H
 #define CLING_RUNTIME_EXCEPTION_H
 
-#include "llvm/Support/Compiler.h"
 #include <stdexcept>
 
 namespace clang {
