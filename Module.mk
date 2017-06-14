@@ -23,26 +23,10 @@ CLINGETC_CLING := DynamicExprInfo.h DynamicLookupRuntimeUniverse.h \
         DynamicLookupLifetimeHandler.h \
         Exception.h RuntimePrintValue.h RuntimeUniverse.h Value.h
 
-CLINGETC_LLVM := llvm/ADT/IntrusiveRefCntPtr.h \
-        llvm/ADT/SmallVector.h \
-        llvm/ADT/iterator_range.h \
-        llvm/Config/llvm-config.h \
-        llvm/Support/AlignOf.h \
-        llvm/Support/Allocator.h \
-        llvm/Support/Casting.h \
-        llvm/Support/Compiler.h \
-        llvm/Support/DataTypes.h \
-        llvm/Support/MathExtras.h \
-        llvm/Support/Memory.h \
-        llvm/Support/SwapByteOrder.h \
-        llvm/Support/type_traits.h
-
-CLINGETCPCH  := $(addprefix etc/cling/Interpreter/,$(CLINGETC_CLING)) \
-	$(addprefix etc/cling/,$(CLINGETC_LLVM))
+CLINGETCPCH  := $(addprefix etc/cling/Interpreter/,$(CLINGETC_CLING))
 CLINGETC     := $(CLINGETCPCH) $(addprefix etc/cling/cint/,multimap multiset)
 
-CLINGETC_ORIGINALS := $(addprefix $(call stripsrc,$(LLVMDIRI))/include/,$(CLINGETC_LLVM)) \
-	$(addprefix $(CLINGDIR)/include/cling/,$(CLINGETC_CLING))
+CLINGETC_ORIGINALS := $(addprefix $(CLINGDIR)/include/cling/,$(CLINGETC_CLING))
 
 ifneq ($(LLVMDEV),)
 CLINGEXES    := $(wildcard $(MODDIR)/tools/driver/*.cpp) \
