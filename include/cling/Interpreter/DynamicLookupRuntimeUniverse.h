@@ -13,6 +13,7 @@
 #error "This file must not be included by compiled programs."
 #endif
 
+#include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 #include "cling/Interpreter/Value.h"
 
@@ -25,8 +26,6 @@ namespace runtime {
   /// \brief Provides builtins, which are neccessary for the dynamic scopes
   /// and runtime bindings. These builtins should be used for other purposes.
   namespace internal {
-    class DynamicExprInfo;
-
     /// \brief Outlined Evaluate() implementation to not
     ///  `#include "cling/Interpreter.h"` into the runtime.
     Value cling_Evaluate(Interpreter* interp, DynamicExprInfo* DEI,
