@@ -122,15 +122,15 @@ namespace cling {
     /// \{
     /// \name ASTConsumer overrides
 
-    virtual bool HandleTopLevelDecl(clang::DeclGroupRef DGR);
-    virtual void HandleInterestingDecl(clang::DeclGroupRef DGR);
-    virtual void HandleTagDeclDefinition(clang::TagDecl* TD);
-    virtual void HandleInvalidTagDeclDefinition(clang::TagDecl* TD);
-    virtual void HandleVTable(clang::CXXRecordDecl* RD);
-    virtual void CompleteTentativeDefinition(clang::VarDecl* VD);
-    virtual void HandleTranslationUnit(clang::ASTContext& Ctx);
-    virtual void HandleCXXImplicitFunctionInstantiation(clang::FunctionDecl *D);
-    virtual void HandleCXXStaticMemberVarInstantiation(clang::VarDecl *D);
+    bool HandleTopLevelDecl(clang::DeclGroupRef DGR) final;
+    void HandleInterestingDecl(clang::DeclGroupRef DGR) final;
+    void HandleTagDeclDefinition(clang::TagDecl* TD) final;
+    void HandleInvalidTagDeclDefinition(clang::TagDecl* TD) final;
+    void HandleVTable(clang::CXXRecordDecl* RD) final;
+    void CompleteTentativeDefinition(clang::VarDecl* VD) final;
+    void HandleTranslationUnit(clang::ASTContext& Ctx) final;
+    void HandleCXXImplicitFunctionInstantiation(clang::FunctionDecl *D) final;
+    void HandleCXXStaticMemberVarInstantiation(clang::VarDecl *D) final;
     /// \}
 
     /// \{
