@@ -11,7 +11,6 @@
 #define CLING_DECL_COLLECTOR_H
 
 #include "clang/AST/ASTConsumer.h"
-#include "clang/Lex/PPCallbacks.h"
 
 #include "ASTTransformer.h"
 
@@ -23,6 +22,7 @@ namespace clang {
   class CodeGenerator;
   class Decl;
   class DeclGroupRef;
+  class Preprocessor;
   class Token;
 }
 
@@ -34,36 +34,16 @@ namespace cling {
   class IncrementalParser;
   class Transaction;
 
-  ///\brief Serves as DeclCollector's connector to the PPCallbacks interface.
-  ///
-  class DeclCollectorPPAdapter: public clang::PPCallbacks {
-    DeclCollector* m_parent;
-  public:
-    DeclCollectorPPAdapter(DeclCollector* parent):
-      m_parent(parent)
-    {}
-
-    /// \name PPCallbacks overrides
-    /// Macro support
-    void MacroDefined(const clang::Token &MacroNameTok,
-                      const clang::MacroDirective *MD) final;
-    /// \}
-
-    /// \name PPCallbacks overrides
-    /// Macro support
-    void MacroUndefined(const clang::Token &MacroNameTok,
-                        const clang::MacroDefinition &MD,
-                        const clang::MacroDirective *Undef) final;
-  };
-
   ///\brief Collects declarations and fills them in cling::Transaction.
   ///
   /// cling::Transaction becomes is a main building block in the interpreter.
   /// cling::DeclCollector is responsible for appending all the declarations
   /// seen by clang.
   ///
-  class DeclCollector: public clang::ASTConsumer  {
-  private:
+  class DeclCollector : public clang::ASTConsumer {
+    /// \brief PPCallbacks overrides/ Macro support
+    class PPAdapter;
+
     ///\brief Contains the transaction AST transformers.
     ///
     std::vector<std::unique_ptr<ASTTransformer>> m_TransactionTransformers;
@@ -99,11 +79,6 @@ namespace cling {
 
     virtual ~DeclCollector();
 
-    std::unique_ptr<DeclCollectorPPAdapter> MakePPAdapter() {
-      return std::unique_ptr<DeclCollectorPPAdapter>
-        (new DeclCollectorPPAdapter(this));
-    }
-
     void SetTransformers(std::vector<std::unique_ptr<ASTTransformer>>&& allTT,
                       std::vector<std::unique_ptr<WrapperTransformer>>&& allWT){
       m_TransactionTransformers.swap(allTT);
@@ -114,16 +89,8 @@ namespace cling {
         WT->SetConsumer(this);
     }
 
-    void setContext(IncrementalParser* IncrParser, ASTConsumer* Consumer) {
-      m_IncrParser = IncrParser;
-      m_Consumer = Consumer;
-    }
-
-    /// \name PPCallbacks overrides
-    /// Macro support
-    void MacroDirective(const clang::Token &MacroNameTok,
-                        const clang::MacroDirective *MD);
-    /// \}
+    void Setup(IncrementalParser* IncrParser, ASTConsumer* Consumer,
+               clang::Preprocessor& PP);
 
     /// \{
     /// \name ASTConsumer overrides

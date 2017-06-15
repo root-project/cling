@@ -181,8 +181,6 @@ namespace cling {
       cling::errs() << "No AST consumer available.\n";
       return;
     }
-    // Add the callback keeping track of the macro definitions.
-    m_CI->getPreprocessor().addPPCallbacks(m_Consumer->MakePPAdapter());
 
     DiagnosticsEngine& Diag = m_CI->getDiagnostics();
     if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
@@ -190,10 +188,10 @@ namespace cling {
           Diag, makeModuleName(), m_CI->getHeaderSearchOpts(),
           m_CI->getPreprocessorOpts(), m_CI->getCodeGenOpts(),
           *m_Interpreter->getLLVMContext()));
-      m_Consumer->setContext(this, m_CodeGen.get());
-    } else {
-      m_Consumer->setContext(this, 0);
     }
+
+    // Initialize the DeclCollector and add callbacks keeping track of macros.
+    m_Consumer->Setup(this, m_CodeGen.get(), m_CI->getPreprocessor());
 
     m_DiagConsumer.reset(new FilteringDiagConsumer(Diag, false));
 

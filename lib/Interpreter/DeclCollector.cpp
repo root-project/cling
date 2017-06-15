@@ -18,6 +18,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclGroup.h"
 #include "clang/Lex/MacroInfo.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/Token.h"
 
 using namespace clang;
@@ -59,6 +60,45 @@ namespace {
 }
 
 namespace cling {
+  ///\brief Serves as DeclCollector's connector to the PPCallbacks interface.
+  ///
+  class DeclCollector::PPAdapter : public clang::PPCallbacks {
+    cling::DeclCollector* m_Parent;
+
+    void MacroDirective(const clang::Token& MacroNameTok,
+                        const clang::MacroDirective* MD) {
+      assert(m_Parent->m_CurTransaction && "Missing transction");
+      Transaction::MacroDirectiveInfo MDE(MacroNameTok.getIdentifierInfo(), MD);
+      m_Parent->m_CurTransaction->append(MDE);
+    }
+
+  public:
+    PPAdapter(cling::DeclCollector* P) : m_Parent(P) {}
+
+    /// \name PPCallbacks overrides
+    /// Macro support
+    void MacroDefined(const clang::Token& MacroNameTok,
+                      const clang::MacroDirective* MD) final {
+      MacroDirective(MacroNameTok, MD);
+    }
+
+    /// \name PPCallbacks overrides
+    /// Macro support
+    void MacroUndefined(const clang::Token& MacroNameTok,
+                        const clang::MacroDefinition& MD,
+                        const clang::MacroDirective* Undef) final {
+      if (Undef)
+        MacroDirective(MacroNameTok, Undef);
+    }
+  };
+
+  void DeclCollector::Setup(IncrementalParser* IncrParser, ASTConsumer* Consumer,
+                            clang::Preprocessor& PP) {
+    m_IncrParser = IncrParser;
+    m_Consumer = Consumer;
+    PP.addPPCallbacks(std::unique_ptr<PPCallbacks>(new PPAdapter(this)));
+  }
+  
   bool DeclCollector::comesFromASTReader(DeclGroupRef DGR) const {
     assert(!DGR.isNull() && "DeclGroupRef is Null!");
     assert(m_CurTransaction && "No current transaction when deserializing");
@@ -269,28 +309,6 @@ namespace cling {
         && (!comesFromASTReader(DeclGroupRef(D))
             || !shouldIgnore(D)))
     m_Consumer->HandleCXXStaticMemberVarInstantiation(D);
-  }
-
-  void DeclCollector::MacroDirective(const clang::Token &MacroNameTok,
-                                     const clang::MacroDirective *MD) {
-    assert(m_CurTransaction && "Missing transction");
-    Transaction::MacroDirectiveInfo MDE(MacroNameTok.getIdentifierInfo(), MD);
-    m_CurTransaction->append(MDE);
-  }
-
-  void
-  DeclCollectorPPAdapter::MacroDefined(const clang::Token &MacroNameTok,
-                                       const clang::MacroDirective *MD) {
-    m_parent->MacroDirective(MacroNameTok, MD);
-  }
-
-  void
-  DeclCollectorPPAdapter::MacroUndefined(const clang::Token &MacroNameTok,
-                                         const clang::MacroDefinition &MD,
-                                         const clang::MacroDirective *Undef) {
-    // If Undef is null, the macro was never defined
-    if (Undef)
-      m_parent->MacroDirective(MacroNameTok, Undef);
   }
 
 } // namespace cling
