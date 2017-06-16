@@ -185,11 +185,18 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime,
                            const Interpreter* parentInterp) :
-    m_Opts(argc, argv),
+    m_Opts(argc, argv), m_Parenting(nullptr),
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
     m_OptLevel(parentInterp ? parentInterp->m_OptLevel : -1) {
+
+     if (parentInterp) {
+       m_Parenting = new Interpreter*[2];
+       m_Parenting[0] = this;
+       m_Parenting[1] = const_cast<Interpreter*>(parentInterp);
+     } else
+       m_Parenting = reinterpret_cast<Interpreter**>(this);
 
     if (handleSimpleOptions(m_Opts))
       return;
@@ -340,6 +347,21 @@ namespace cling {
     // explicitly, before the implicit destruction (through the unique_ptr) of
     // the callbacks.
     m_IncrParser.reset(0);
+
+    if (m_Parenting != reinterpret_cast<Interpreter**>(this))
+      delete [] m_Parenting;
+  }
+
+  Interpreter* Interpreter::parent() {
+    if (m_Parenting == reinterpret_cast<Interpreter**>(this))
+      return nullptr;
+    return m_Parenting[1];
+  }
+
+  Interpreter& Interpreter::ancestor() {
+    if (m_Parenting == reinterpret_cast<Interpreter**>(this))
+      return *this;
+    return m_Parenting[1]->ancestor();
   }
 
   Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,

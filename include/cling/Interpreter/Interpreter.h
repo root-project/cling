@@ -142,6 +142,11 @@ namespace cling {
     ///
     InvocationOptions m_Opts;
 
+    ///\brief Back pointer to *this* which stores parent information.
+    /// FIXME: Will also allow to link in gCling rather than runtime define it.
+    ///
+    Interpreter** m_Parenting;
+
     ///\brief The llvm library state, a per-thread object.
     ///
     std::unique_ptr<llvm::LLVMContext> m_LLVMContext;
@@ -331,6 +336,14 @@ namespace cling {
     ///\brief Whether the Interpreter is setup and ready to be used.
     ///
     bool isValid() const;
+
+    ///\brief Returns this interpreter's parent or null: while (P = parent())
+    ///
+    Interpreter* parent();
+
+    ///\brief Returns greatest ancestor of this interpreter. Might be itself.
+    ///
+    Interpreter& ancestor();
 
     const InvocationOptions& getOptions() const { return m_Opts; }
     InvocationOptions& getOptions() { return m_Opts; }
