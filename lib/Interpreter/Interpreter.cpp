@@ -289,6 +289,11 @@ namespace cling {
             std::string Name = !LangOpts.CPlusPlus ? "gCling" :
                                     utils::Analyze::maybeMangleDeclName(gCling);
             if (!Name.empty()) {
+#ifdef LLVM_ON_WIN32
+              // MS mangling is purposely adding a prefix of '\x1'...why?
+              if (Name[0] == '\x1')
+                Name.erase(0, 1);
+#endif
               // gCling gets linked to top-most Interpreter.
               if (!parent())
                 m_Executor->addSymbol(Name.c_str(), &m_Parenting, true);
