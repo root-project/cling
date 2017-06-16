@@ -229,9 +229,12 @@ namespace cling {
         return;
     }
 
+    const CompilerInstance* CI = getCI();
+    const LangOptions& LangOpts = CI->getLangOpts();
+
     // Tell the diagnostic client that we are entering file parsing mode.
-    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
+    DiagnosticConsumer& DClient = CI->getDiagnosticClient();
+    DClient.BeginSourceFile(LangOpts, &PP);
 
     llvm::SmallVector<IncrementalParser::ParseResultTransaction, 2>
       IncrParserTransactions;
@@ -271,6 +274,29 @@ namespace cling {
                 cling::errs() << Sym << " not defined\n";
             } else
               cling::errs() << Sym << " not in Module!\n";
+          }
+
+          const clang::Decl* Scope =
+              LangOpts.CPlusPlus
+                  ? m_LookupHelper->findScope("cling::runtime",
+                                              LookupHelper::NoDiagnostics)
+                  : CI->getSema().getASTContext().getTranslationUnitDecl();
+          if (!Scope) {
+            cling::errs() << "Scope for gCling was not found\n";
+          } else if (const clang::ValueDecl* gCling =
+                         m_LookupHelper->findDataMember(
+                             Scope, "gCling", LookupHelper::NoDiagnostics)) {
+            std::string Name = !LangOpts.CPlusPlus ? "gCling" :
+                                    utils::Analyze::maybeMangleDeclName(gCling);
+            if (!Name.empty()) {
+              // gCling gets linked to top-most Interpreter.
+              if (!parent())
+                m_Executor->addSymbol(Name.c_str(), &m_Parenting, true);
+              else
+                m_Executor->addSymbol(Name.c_str(), &m_Parenting[1], true);
+            }
+          } else {
+            cling::errs() << "gCling was not found\n";
           }
         }
       }
@@ -379,17 +405,8 @@ namespace cling {
     // is undefined in a child Interpreter.  And speaking of children, should
     // gCling actually be thisCling, so a child Interpreter can only access
     // itself?
-    if (!NoRuntime) {
+    if (!NoRuntime)
       Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
-      if (EmitDefinitions) {
-        if (LangOpts.CPlusPlus) {
-          Strm << "namespace cling { class Interpreter; namespace runtime { "
-                  "Interpreter* gCling=(Interpreter*)"
-               << ThisP << ";}}\n";
-        } else
-          Strm << "gCling =(void*)" << ThisP;
-      }
-    }
 
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.

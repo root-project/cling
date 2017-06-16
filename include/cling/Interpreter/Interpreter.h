@@ -142,8 +142,8 @@ namespace cling {
     ///
     InvocationOptions m_Opts;
 
-    ///\brief Back pointer to *this* which stores parent information.
-    /// FIXME: Will also allow to link in gCling rather than runtime define it.
+    ///\brief Storage to hold parenting information, which is also used as a
+    /// a fixed address/location passed to the JIT's linker for gCling.
     ///
     Interpreter** m_Parenting;
 

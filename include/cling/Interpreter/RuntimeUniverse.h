@@ -23,7 +23,7 @@
 
 #ifndef __cplusplus
 
-extern void* gCling;
+extern const void* const gCling;
 
 #else
 
@@ -40,7 +40,7 @@ namespace cling {
     /// \brief The interpreter provides itself as a builtin, i.e. it
     /// interprets itself. This is particularly important for implementing
     /// the dynamic scopes and the runtime bindings
-    extern Interpreter* gCling;
+    extern Interpreter* const gCling;
 
     namespace internal {
       /// \brief Some of clang's routines rely on valid source locations and
