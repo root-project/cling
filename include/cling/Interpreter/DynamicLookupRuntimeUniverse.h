@@ -28,8 +28,8 @@ namespace runtime {
   namespace internal {
     /// \brief Outlined Evaluate() implementation to not
     ///  `#include "cling/Interpreter.h"` into the runtime.
-    Value cling_Evaluate(Interpreter* interp, DynamicExprInfo* DEI,
-                         clang::DeclContext* DC);
+    Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
+                                    clang::DeclContext* DC);
 
     /// \brief EvaluateT is used to replace all invalid source code that
     /// occurs, when cling's dynamic extensions are enabled.
@@ -48,7 +48,7 @@ namespace runtime {
     /// evaluated at runtime.
     template<typename T>
     T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      Value result(cling_Evaluate(gCling, ExprInfo, DC));
+      Value result(EvaluateDynamicExpression(gCling, ExprInfo, DC));
       if (result.isValid())
         // Check whether the expected return type and the actual return type are
         // compatible with Sema::CheckAssingmentConstraints or
@@ -61,7 +61,7 @@ namespace runtime {
     /// void.
     template<>
     void EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
-      cling_Evaluate(gCling, ExprInfo, DC);
+      EvaluateDynamicExpression(gCling, ExprInfo, DC);
     }
   } // end namespace internal
 } // end namespace runtime

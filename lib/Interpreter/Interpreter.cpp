@@ -1564,8 +1564,8 @@ namespace cling {
 
   namespace runtime {
     namespace internal {
-      Value cling_Evaluate(Interpreter* interp, DynamicExprInfo* DEI,
-                           clang::DeclContext* DC) {
+      Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
+                                      clang::DeclContext* DC) {
         return interp->Evaluate(DEI->getExpr(), DC,
                                 DEI->isValuePrinterRequested());
       }
