@@ -8,6 +8,9 @@
 
 cmake_minimum_required(VERSION 3.5)
 
+# Keep symbols for JIT resolution
+set(LLVM_NO_DEAD_STRIP 1)
+
 # Cling needs at least C++11; so does this demo.
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,3 +33,6 @@ target_link_libraries(cling-demo clingInterpreter)
 
 # Provide LLVMDIR to cling-demp.cpp:
 target_compile_options(cling-demo PUBLIC -DLLVMDIR="${LLVM_INSTALL_PREFIX}" -I${LLVM_INSTALL_PREFIX}/include)
+
+set_target_properties(cling-demo
+  PROPERTIES ENABLE_EXPORTS 1)
