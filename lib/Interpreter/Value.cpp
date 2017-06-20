@@ -29,6 +29,8 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/raw_os_ostream.h"
 
+#include <stddef.h> // offsetof
+
 namespace {
 
   ///\brief The allocation starts with this layout; it is followed by the
@@ -68,9 +70,10 @@ namespace {
 
     char* getPayload() { return m_Payload; }
 
-    static unsigned getPayloadOffset() {
-      static const AllocatedValue Dummy(0,0,0);
-      return Dummy.m_Payload - (const char*)&Dummy;
+    static constexpr unsigned getPayloadOffset() {
+      static_assert(std::is_standard_layout<AllocatedValue>::value,
+                    "Cannot use offsetof");
+      return offsetof(AllocatedValue, m_Payload);
     }
 
     static AllocatedValue* getFromPayload(void* payload) {
