@@ -43,37 +43,38 @@ namespace {
     typedef void (*DtorFunc_t)(void*);
 
   private:
-    ///\brief The reference count - once 0, this object will be deallocated.
-    mutable unsigned m_RefCnt;
-
     ///\brief The destructor function.
     DtorFunc_t m_DtorFunc;
 
     ///\brief The size of the allocation (for arrays)
-    unsigned long m_AllocSize;
+    size_t m_AllocSize;
 
     ///\brief The number of elements in the array
-    unsigned long m_NElements;
+    size_t m_NElements;
 
-    ///\brief The start of the allocation.
-    char m_Payload[1];
+    ///\brief The reference count - once 0, this object will be deallocated.
+    size_t m_RefCnt;
 
   public:
     ///\brief Initialize the storage management part of the allocated object.
     ///  The allocator is referencing it, thus initialize m_RefCnt with 1.
     ///\param [in] dtorFunc - the function to be called before deallocation.
-    AllocatedValue(void* dtorFunc, size_t allocSize, size_t nElements):
-      m_RefCnt(1),
+    AllocatedValue(void* dtorFunc, size_t allocSize, size_t nElements) :
       m_DtorFunc(cling::utils::VoidToFunctionPtr<DtorFunc_t>(dtorFunc)),
-      m_AllocSize(allocSize), m_NElements(nElements)
+      m_AllocSize(allocSize), m_NElements(nElements), m_RefCnt(1)
     {}
-
-    char* getPayload() { return m_Payload; }
 
     static constexpr unsigned getPayloadOffset() {
       static_assert(std::is_standard_layout<AllocatedValue>::value,
                     "Cannot use offsetof");
-      return offsetof(AllocatedValue, m_Payload);
+      static_assert(((offsetof(AllocatedValue, m_RefCnt) + sizeof(m_RefCnt)) %
+                            sizeof(size_t)) == 0,
+                    "Buffer may not be machine aligned");
+      return offsetof(AllocatedValue, m_RefCnt) + sizeof(m_RefCnt);
+    }
+
+    char* getPayload() {
+      return reinterpret_cast<char*>(&m_RefCnt) + sizeof(m_RefCnt);
     }
 
     static AllocatedValue* getFromPayload(void* payload) {
