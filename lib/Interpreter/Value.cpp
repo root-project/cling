@@ -32,33 +32,89 @@
 
 namespace {
 
-  ///\brief The allocation starts with this layout; it is followed by the
-  ///  value's object at m_Payload. This class does not inherit from
-  ///  llvm::RefCountedBase because deallocation cannot use this type but must
-  ///  free the character array.
+  ///\brief The layout/usage of memory allocated by AllocatedValue::Create
+  /// is dependent on the the type of object it is representing.  If the type
+  /// has a non-trival destructor then the memory base will point to either
+  /// a full Destructable struct (when it is also an array whose size > 1), or
+  /// a single DtorFunc_t value when the object is a single instance or an array
+  /// with only 1 element.
+  ///
+  /// If neither of these are true (a POD or array to one), or directly follwing
+  /// the prior two cases, is the memory location that can be used to placement
+  /// new an AllocatedValue instance.
+  ///
+  /// The AllocatedValue instance ontains a single union for reference counting
+  /// and flags of how the layout exists in memory.
+  ///
+  /// On 32-bit the reference count will max out a bit before 16.8 million.
+  /// 64 bit limit is still extremely high (2^56)-1
+  ///
+  ///
+  /// General layout of memory allocated by AllocatedValue::Create
+  ///
+  /// +---- Destructable ---+  <- Optional, allocated for arrays
+  /// |                     |      TestFlag(kHasElements)
+  /// |  Size               |
+  /// |  Elements           |
+  /// |  Dtor               |  <- Can exist without prior Destructable members
+  /// |                     |      TestFlag(kHasDestructor)
+  /// |                     |
+  /// +---AllocatedValue ---+  <- This object
+  /// |                     |      TestFlag(kHasElements)
+  /// | union {             |
+  /// |  size_t m_Count     |
+  /// |  char   m_Bytes[8]  |  <- m_Bytes[7] is reserved for AllocatedValue
+  /// | };                  |     & ValueExtractionSynthesizer writing info.
+  /// |                     |
+  /// +~~ Client Payload ~~~+  <- Returned from AllocatedValue::Create
+  /// |                     |
+  /// |                     |
+  /// +---------------------+
+  ///
+  /// It may be possible to ignore the caching of this info all together and
+  /// just figure out what to do in AllocatedValue::Release by passing the
+  /// QualType and Interpreter, but am a bit weary of this for two reasons:
+  ///
+  ///  1. FIXME: There is still a bad lifetime cycle where a Value referencing
+  ///     an Interpreter that has been destroyed is possible.
+  ///  2. How that might interact with decl unloading, and the possibility of
+  ///     a destructor no longer being defined after a cling::Value has been
+  ///     created to represent a fuller state of the type.
 
   class AllocatedValue {
   public:
     typedef void (*DtorFunc_t)(void*);
 
   private:
-    ///\brief The destructor function.
-    DtorFunc_t m_DtorFunc;
 
-    ///\brief The size of the allocation (for arrays)
-    size_t m_AllocSize;
+    struct Destructable {
+      ///\brief Size to skip to get the next element in the array.
+      size_t Size;
 
-    ///\brief The number of elements in the array
-    size_t m_NElements;
+      ///\brief Total number of elements in the array.
+      size_t Elements;
+
+      ///\brief The destructor function.
+      DtorFunc_t Dtor;
+    };
 
     ///\brief The reference count - once 0, this object will be deallocated.
     /// Hopefully 2^55 - 1 references should be enough as the last byte is
     /// used for flag storage.
-    enum { SizeBytes = sizeof(size_t), ConstructedByte = SizeBytes - 1 };
+    enum {
+      SizeBytes = sizeof(size_t),
+      FlagsByte = SizeBytes - 1,
+    
+      kConstructorRan = 1, // Used by ValueExtractionSynthesizer
+      kHasDestructor = 2,
+      kHasElements = 4
+    };
     union {
       size_t m_Count;
       char   m_Bytes[SizeBytes];
     };
+
+    bool TestFlags(unsigned F) const { return (m_Bytes[FlagsByte] & F) == F; }
 
     size_t UpdateRefCount(int Amount) {
       // Bit shift the bytes used in m_Bytes for representing an integer
@@ -73,32 +129,68 @@ namespace {
       return RC.m_Count;
     }
 
-    static AllocatedValue* FromPtr(void* Ptr) {
-      return reinterpret_cast<AllocatedValue*>(reinterpret_cast<char*>(Ptr) -
-                                               sizeof(AllocatedValue));
+    template <class T = AllocatedValue> static T* FromPtr(void* Ptr) {
+      return reinterpret_cast<T*>(reinterpret_cast<char*>(Ptr) - sizeof(T));
     }
 
-    ///\brief Initialize the storage management part of the allocated object.
-    ///  The allocator is referencing it, thus initialize m_RefCnt with 1.
-    ///\param [in] dtorFunc - the function to be called before deallocation.
-    AllocatedValue(size_t Size, size_t NElem, DtorFunc_t Dtor) :
-      m_DtorFunc(Dtor), m_AllocSize(Size), m_NElements(NElem) {
+    ///\brief Initialize the reference count and flag management.
+    /// Everything else is in a Destructable object before -this-
+    AllocatedValue(char Info) {
       m_Count = 0;
+      m_Bytes[FlagsByte] = Info;
       UpdateRefCount(1);
     }
 
   public:
-    ///\brief Create an AllocatedValue whose lifetime is reference counted.
+
+    ///\brief Create an AllocatedValue.
     /// \returns The address of the writeable client data.
     static void* Create(size_t Size, size_t NElem, DtorFunc_t Dtor) {
-      char* Alloc = new char[sizeof(AllocatedValue) + Size];
-      AllocatedValue* AV = new (Alloc) AllocatedValue(Size, NElem, Dtor);
+      size_t AllocSize = sizeof(AllocatedValue) + Size;
+      size_t ExtraSize = 0;
+      char Flags = 0;
+      if (Dtor) {
+        // Only need the elements data for arrays larger than 1.
+        if (NElem > 1) {
+          Flags |= kHasElements;
+          ExtraSize = sizeof(Destructable);
+        } else
+          ExtraSize = sizeof(DtorFunc_t);
 
+        Flags |= kHasDestructor;
+        AllocSize += ExtraSize;
+      }
+
+      char* Alloc = new char[AllocSize];
+
+      if (Dtor) {
+        // Move the Buffer ptr to where AllocatedValue begins
+        Alloc += ExtraSize;
+        // Now back up to get the location of the Destructable members
+        // This is so writing to Destructable::Dtor will work when only
+        // additional space for DtorFunc_t was written.
+        Destructable* DS = FromPtr<Destructable>(Alloc);
+        if (NElem > 1) {
+          DS->Elements = NElem;
+          // Hopefully there won't be any issues with object alignemnt of arrays
+          // If there are, that would have to be dealt with here and write the
+          // proper skip amount in DS->Size.
+          DS->Size = Size / NElem;
+        }
+        DS->Dtor = Dtor;
+      }
+
+      AllocatedValue* AV = new (Alloc) AllocatedValue(Flags);
+
+      // Just make sure alignment is as expected.
+      static_assert(std::is_standard_layout<Destructable>::value, "padding");
+      static_assert((sizeof(Destructable) % SizeBytes) == 0, "alignment");
       static_assert(std::is_standard_layout<AllocatedValue>::value, "padding");
       static_assert(sizeof(m_Count) == sizeof(m_Bytes), "union padding");
       static_assert(((offsetof(AllocatedValue, m_Count) + sizeof(m_Count)) %
                             SizeBytes) == 0,
                     "Buffer may not be machine aligned");
+      // Validate the byte ValueExtractionSynthesizer will write too
       assert(&Alloc[sizeof(AllocatedValue) - 1] == &AV->m_Bytes[SizeBytes - 1]
              && "Padded AllocatedValue");
 
@@ -115,15 +207,27 @@ namespace {
     static void Release(void* Ptr) {
       AllocatedValue* AV = FromPtr(Ptr);
       if (AV->UpdateRefCount(-1) == 0) {
-        if (AV->m_DtorFunc && AV->m_Bytes[ConstructedByte]) {
-          assert(AV->m_NElements && "No elements!");
+        if (AV->TestFlags(kConstructorRan|kHasDestructor)) {
+          Destructable* Dtor = FromPtr<Destructable>(AV);
+          size_t Elements = 1, Size = 0;
+          if (AV->TestFlags(kHasElements)) {
+            Elements = Dtor->Elements;
+            Size = Dtor->Size;
+          }
           char* Payload = reinterpret_cast<char*>(Ptr);
-          const auto Skip = AV->m_AllocSize / AV->m_NElements;
-          while (AV->m_NElements-- != 0)
-            (*AV->m_DtorFunc)(Payload + AV->m_NElements * Skip);
+          while (Elements-- != 0)
+            (*Dtor->Dtor)(Payload + Elements * Size);
         }
-        this->~AllocatedValue();
-        delete [] reinterpret_cast<char*>(AV);
+
+        // Subtract the amount that was over-allocated from the base of -this-
+        char* Allocated = reinterpret_cast<char*>(AV);
+        if (AV->TestFlags(kHasElements))
+          Allocated -= sizeof(Destructable);
+        else if (AV->TestFlags(kHasDestructor))
+          Allocated -= sizeof(DtorFunc_t);
+
+        AV->~AllocatedValue();
+        delete [] Allocated;
       }
     }
   };
