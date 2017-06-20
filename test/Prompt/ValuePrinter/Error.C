@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
+// XFAIL: *
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
