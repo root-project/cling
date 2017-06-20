@@ -524,7 +524,13 @@ namespace cling {
   template <>
   std::string toUTF8<wchar_t>(const wchar_t* const Str, size_t N,
                               const char Prefix) {
-    return utf8Value(Str, N, Prefix, encodeUTF8);
+    static_assert(sizeof(wchar_t) == sizeof(char16_t) ||
+                  sizeof(wchar_t) == sizeof(char32_t), "Bad wchar_t size");
+
+    if (sizeof(wchar_t) == sizeof(char32_t))
+      return toUTF8(reinterpret_cast<const char32_t * const>(Str), N, Prefix);
+
+    return toUTF8(reinterpret_cast<const char16_t * const>(Str), N, Prefix);
   }
 
   template <>

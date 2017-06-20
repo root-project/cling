@@ -27,7 +27,7 @@ namespace cling {
     /// 0 -> Disabled; 1 -> Enabled; 2 -> Auto;
     ///
     unsigned ValuePrinting : 2;
-    enum ValuePrinting { VPDisabled, VPEnabled, VPAuto };
+    enum ValuePrint { VPDisabled, VPEnabled, VPAuto };
 
     ///\brief Whether or not to return result from an execution.
     ///
