@@ -50,6 +50,18 @@ namespace utils {
     ///
     bool IsWrapper(const clang::FunctionDecl* ND);
 
+    ///\brief Get the mangled name of a NamedDecl.
+    ///
+    ///\param [in]  ND - Try to mangle this decl's name.
+    ///\param [in]  GD - Provide the GlobalDecl if what is to be mangled is a
+    /// constructor or destructor.
+    ///
+    ///\returns The mangled or pure name (when ND should not be mangled) on
+    /// success or an empty string on failure.
+    ///
+    std::string maybeMangleDeclName(const clang::NamedDecl* ND,
+                                    const clang::GlobalDecl* GD = nullptr);
+
     ///\brief Get the mangled name of a GlobalDecl.
     ///
     ///\param [in]  GD - try to mangle this decl's name.
@@ -58,6 +70,14 @@ namespace utils {
     void maybeMangleDeclName(const clang::GlobalDecl& GD,
                              std::string& mangledName);
 
+    ///\brief Get the mangled name of a clang::Decl subclass. FunctionDecls and
+    /// VarDecls are currently supported.
+    ///
+    ///\param [in]  Decl - try to mangle this decl's name.
+    ///\param [out] mangledName - put the mangled name in here.
+    ///
+    template <typename T>
+    void maybeMangleDeclName(const T* Decl, std::string& mangledName);
 
     ///\brief Retrieves the last expression of a function body. If it was a
     /// DeclStmt with a variable declaration, creates DeclRefExpr and adds it to
