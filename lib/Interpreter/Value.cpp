@@ -27,9 +27,8 @@
 
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Support/Host.h"
 #include "llvm/Support/raw_os_ostream.h"
-
-#include <stddef.h> // offsetof
 
 namespace {
 
@@ -53,51 +52,78 @@ namespace {
     size_t m_NElements;
 
     ///\brief The reference count - once 0, this object will be deallocated.
-    size_t m_RefCnt;
+    /// Hopefully 2^55 - 1 references should be enough as the last byte is
+    /// used for flag storage.
+    enum { SizeBytes = sizeof(size_t), ConstructedByte = SizeBytes - 1 };
+    union {
+      size_t m_Count;
+      char   m_Bytes[SizeBytes];
+    };
 
-  public:
+    size_t UpdateRefCount(int Amount) {
+      // Bit shift the bytes used in m_Bytes for representing an integer
+      // respecting endian-ness and which of those bytes are significant.
+      assert((Amount == 1 || Amount == -1) && "Invalid amount");
+      union { size_t m_Count; char m_Bytes[SizeBytes]; } RC = { 0 };
+      const size_t NBytes = SizeBytes - sizeof(char);
+      const size_t Endian = llvm::sys::IsBigEndianHost;
+      ::memcpy(&RC.m_Bytes[Endian], &m_Bytes[0], NBytes);
+      RC.m_Count += Amount;
+      ::memcpy(&m_Bytes[0], &RC.m_Bytes[Endian], NBytes);
+      return RC.m_Count;
+    }
+
+    static AllocatedValue* FromPtr(void* Ptr) {
+      return reinterpret_cast<AllocatedValue*>(reinterpret_cast<char*>(Ptr) -
+                                               sizeof(AllocatedValue));
+    }
+
     ///\brief Initialize the storage management part of the allocated object.
     ///  The allocator is referencing it, thus initialize m_RefCnt with 1.
     ///\param [in] dtorFunc - the function to be called before deallocation.
-    AllocatedValue(void* dtorFunc, size_t allocSize, size_t nElements) :
-      m_DtorFunc(cling::utils::VoidToFunctionPtr<DtorFunc_t>(dtorFunc)),
-      m_AllocSize(allocSize), m_NElements(nElements), m_RefCnt(1)
-    {}
+    AllocatedValue(size_t Size, size_t NElem, DtorFunc_t Dtor) :
+      m_DtorFunc(Dtor), m_AllocSize(Size), m_NElements(NElem) {
+      m_Count = 0;
+      UpdateRefCount(1);
+    }
 
-    static constexpr unsigned getPayloadOffset() {
-      static_assert(std::is_standard_layout<AllocatedValue>::value,
-                    "Cannot use offsetof");
-      static_assert(((offsetof(AllocatedValue, m_RefCnt) + sizeof(m_RefCnt)) %
-                            sizeof(size_t)) == 0,
+  public:
+    ///\brief Create an AllocatedValue whose lifetime is reference counted.
+    /// \returns The address of the writeable client data.
+    static void* Create(size_t Size, size_t NElem, DtorFunc_t Dtor) {
+      char* Alloc = new char[sizeof(AllocatedValue) + Size];
+      AllocatedValue* AV = new (Alloc) AllocatedValue(Size, NElem, Dtor);
+
+      static_assert(std::is_standard_layout<AllocatedValue>::value, "padding");
+      static_assert(sizeof(m_Count) == sizeof(m_Bytes), "union padding");
+      static_assert(((offsetof(AllocatedValue, m_Count) + sizeof(m_Count)) %
+                            SizeBytes) == 0,
                     "Buffer may not be machine aligned");
-      return offsetof(AllocatedValue, m_RefCnt) + sizeof(m_RefCnt);
+      assert(&Alloc[sizeof(AllocatedValue) - 1] == &AV->m_Bytes[SizeBytes - 1]
+             && "Padded AllocatedValue");
+
+      // Give back the first client writable byte.
+      return AV->m_Bytes + SizeBytes;
     }
 
-    char* getPayload() {
-      return reinterpret_cast<char*>(&m_RefCnt) + sizeof(m_RefCnt);
+    static void Retain(void* Ptr) {
+      FromPtr(Ptr)->UpdateRefCount(1);
     }
-
-    static AllocatedValue* getFromPayload(void* payload) {
-      return
-        reinterpret_cast<AllocatedValue*>((char*)payload - getPayloadOffset());
-    }
-
-    void Retain() { ++m_RefCnt; }
 
     ///\brief This object must be allocated as a char array. Deallocate it as
     ///   such.
-    void Release() {
-      assert (m_RefCnt > 0 && "Reference count is already zero.");
-      if (--m_RefCnt == 0) {
-        if (m_DtorFunc) {
-          assert(m_NElements && "No elements!");
-          char* Payload = getPayload();
-          const auto Skip = m_AllocSize / m_NElements;
-          while (m_NElements-- != 0)
-            (*m_DtorFunc)(Payload + m_NElements * Skip);
+    static void Release(void* Ptr) {
+      AllocatedValue* AV = FromPtr(Ptr);
+      if (AV->UpdateRefCount(-1) == 0) {
+        if (AV->m_DtorFunc && AV->m_Bytes[ConstructedByte]) {
+          assert(AV->m_NElements && "No elements!");
+          char* Payload = reinterpret_cast<char*>(Ptr);
+          const auto Skip = AV->m_AllocSize / AV->m_NElements;
+          while (AV->m_NElements-- != 0)
+            (*AV->m_DtorFunc)(Payload + AV->m_NElements * Skip);
         }
         this->~AllocatedValue();
-        delete [] (char*)this;
+        delete [] reinterpret_cast<char*>(AV);
       }
     }
   };
@@ -109,7 +135,7 @@ namespace cling {
     m_Storage(other.m_Storage), m_StorageType(other.m_StorageType),
     m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
     if (other.needsManagedAllocation())
-      AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
+      AllocatedValue::Retain(m_Storage.m_Ptr);
   }
 
   Value::Value(clang::QualType clangTy, Interpreter& Interp):
@@ -123,7 +149,7 @@ namespace cling {
   Value& Value::operator =(const Value& other) {
     // Release old value.
     if (needsManagedAllocation())
-      AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Release();
+      AllocatedValue::Release(m_Storage.m_Ptr);
 
     // Retain new one.
     m_Type = other.m_Type;
@@ -131,14 +157,14 @@ namespace cling {
     m_StorageType = other.m_StorageType;
     m_Interpreter = other.m_Interpreter;
     if (needsManagedAllocation())
-      AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
+      AllocatedValue::Retain(m_Storage.m_Ptr);
     return *this;
   }
 
   Value& Value::operator =(Value&& other) {
     // Release old value.
     if (needsManagedAllocation())
-      AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Release();
+      AllocatedValue::Release(m_Storage.m_Ptr);
 
     // Move new one.
     m_Type = other.m_Type;
@@ -153,7 +179,7 @@ namespace cling {
 
   Value::~Value() {
     if (needsManagedAllocation())
-      AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Release();
+      AllocatedValue::Release(m_Storage.m_Ptr);
   }
 
   clang::QualType Value::getType() const {
@@ -211,22 +237,24 @@ namespace cling {
 
   void Value::ManagedAllocate() {
     assert(needsManagedAllocation() && "Does not need managed allocation");
-    void* dtorFunc = 0;
-    clang::QualType DtorType = getType();
-    // For arrays we destruct the elements.
-    if (const clang::ConstantArrayType* ArrTy
-        = llvm::dyn_cast<clang::ConstantArrayType>(DtorType.getTypePtr())) {
-      DtorType = ArrTy->getElementType();
-    }
-    if (const clang::RecordType* RTy = DtorType->getAs<clang::RecordType>())
-      dtorFunc = m_Interpreter->compileDtorCallFor(RTy->getDecl());
+    const clang::QualType Ty = getType();
+    clang::QualType DtorTy = Ty;
 
-    const clang::ASTContext& ctx = getASTContext();
-    const auto payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
-    char* alloc = new char[AllocatedValue::getPayloadOffset() + payloadSize];
-    AllocatedValue* allocVal = new (alloc) AllocatedValue(dtorFunc, payloadSize,
-                                                          GetNumberOfElements());
-    m_Storage.m_Ptr = allocVal->getPayload();
+    // For arrays we destruct the elements.
+    if (const clang::ConstantArrayType* ArrTy =
+            llvm::dyn_cast<clang::ConstantArrayType>(Ty.getTypePtr())) {
+      DtorTy = ArrTy->getElementType();
+    }
+
+    AllocatedValue::DtorFunc_t DtorFunc = nullptr;
+    if (const clang::RecordType* RTy = DtorTy->getAs<clang::RecordType>()) {
+      DtorFunc = cling::utils::VoidToFunctionPtr<AllocatedValue::DtorFunc_t>(
+          m_Interpreter->compileDtorCallFor(RTy->getDecl()));
+    }
+
+    m_Storage.m_Ptr = AllocatedValue::Create(
+        getASTContext().getTypeSizeInChars(Ty).getQuantity(),
+        GetNumberOfElements(), DtorFunc);
   }
 
   void Value::AssertOnUnsupportedTypeCast() const {
