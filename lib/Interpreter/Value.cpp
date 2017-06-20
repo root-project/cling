@@ -96,6 +96,7 @@ namespace {
           while (m_NElements-- != 0)
             (*m_DtorFunc)(Payload + m_NElements * Skip);
         }
+        this->~AllocatedValue();
         delete [] (char*)this;
       }
     }
@@ -221,7 +222,7 @@ namespace cling {
       dtorFunc = m_Interpreter->compileDtorCallFor(RTy->getDecl());
 
     const clang::ASTContext& ctx = getASTContext();
-    unsigned payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
+    const auto payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
     char* alloc = new char[AllocatedValue::getPayloadOffset() + payloadSize];
     AllocatedValue* allocVal = new (alloc) AllocatedValue(dtorFunc, payloadSize,
                                                           GetNumberOfElements());
