@@ -754,6 +754,22 @@ static std::string printFunctionValue(const Value &V, const void *ptr, clang::Qu
   return o.str();
 }
 
+static std::string printStringType(const Value &V, const clang::Type* Type) {
+  switch (V.getInterpreter()->getLookupHelper().getStringType(Type)) {
+    case LookupHelper::kStdString:
+      return executePrintValue<std::string>(V, *(std::string*)V.getPtr());
+    case LookupHelper::kWCharString:
+      return executePrintValue<std::wstring>(V, *(std::wstring*)V.getPtr());
+    case LookupHelper::kUTF16Str:
+      return executePrintValue<std::u16string>(V, *(std::u16string*)V.getPtr());
+    case LookupHelper::kUTF32Str:
+      return executePrintValue<std::u32string>(V, *(std::u32string*)V.getPtr());
+    default:
+      break;
+  }
+  return "";
+}
+
 static std::string printUnpackedClingValue(const Value &V) {
   // Find the Type for `std::string`. We are guaranteed to have that declared
   // when this function is called; RuntimePrintValue.h #includes it.
@@ -776,9 +792,10 @@ static std::string printUnpackedClingValue(const Value &V) {
   } else if (clang::CXXRecordDecl *CXXRD = Ty->getAsCXXRecordDecl()) {
     if (CXXRD->isLambda())
       return printAddress(V.getPtr(), '@');
-    LookupHelper& LH= V.getInterpreter()->getLookupHelper();
-    if (C.hasSameType(CXXRD->getTypeForDecl(), LH.getStringType()))
-      return executePrintValue<std::string>(V, *(std::string*)V.getPtr());
+
+    std::string Str = printStringType(V, CXXRD->getTypeForDecl());
+    if (!Str.empty())
+      return Str;
   } else if (const clang::BuiltinType *BT
       = llvm::dyn_cast<clang::BuiltinType>(Td.getCanonicalType().getTypePtr())) {
     switch (BT->getKind()) {
