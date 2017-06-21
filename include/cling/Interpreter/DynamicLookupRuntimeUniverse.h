@@ -26,8 +26,8 @@ namespace runtime {
   /// \brief Provides builtins, which are neccessary for the dynamic scopes
   /// and runtime bindings. These builtins should be used for other purposes.
   namespace internal {
-    /// \brief Outlined Evaluate() implementation to not
-    ///  `#include "cling/Interpreter.h"` into the runtime.
+    /// \brief Outlined Evaluate() implementation to not include Interpreter.h
+    /// into the runtime.
     Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
                                     clang::DeclContext* DC);
 
