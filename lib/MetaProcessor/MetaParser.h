@@ -15,6 +15,7 @@
 #include "llvm/ADT/SmallVector.h"
 
 #include <memory>
+#include <string>
 
 namespace llvm {
   class StringRef;
@@ -79,6 +80,7 @@ namespace cling {
     void consumeAnyStringToken(tok::TokenKind stopAt = tok::space);
     const Token& lookAhead(unsigned Num);
     void skipWhitespace();
+    std::string tokenAsPath(bool MustExist = false, bool AllowRoot = false);
 
     bool isCommandSymbol();
     bool isCommand(MetaSema::ActionResult& actionResult,
