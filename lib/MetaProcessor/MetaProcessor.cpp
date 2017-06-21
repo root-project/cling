@@ -291,7 +291,7 @@ namespace cling {
   MetaProcessor::~MetaProcessor() {
   }
 
-  int MetaProcessor::process(const char* input_text,
+  int MetaProcessor::process(llvm::StringRef input_line,
                              Interpreter::CompilationResult& compRes,
                              Value* result,
                              bool disableValuePrinting /* = false */) {
@@ -302,14 +302,13 @@ namespace cling {
 
     if (expectedIndent)
       compRes = Interpreter::kMoreInputExpected;
-    if (!input_text || !input_text[0]) {
-      // nullptr / empty string, nothing to do.
+
+    if (input_line.empty() ||
+        (input_line.size() == 1 && input_line.front() == '\n')) {
+      // just a blank line, nothing to do.
       return expectedIndent;
     }
-    std::string input_line(input_text);
-    if (input_line == "\n") { // just a blank line, nothing to do.
-      return expectedIndent;
-    }
+
     //  Check for and handle meta commands.
     m_MetaParser->enterNewInputLine(input_line);
     MetaSema::ActionResult actionResult = MetaSema::AR_Success;
@@ -477,7 +476,7 @@ namespace cling {
       std::string line;
       std::stringstream ss(content);
       while (std::getline(ss, line, '\n')) {
-        rslt = process(line.c_str(), ret, result);
+        rslt = process(line, ret, result);
         if (ret == Interpreter::kFailure)
           break;
       }
