@@ -347,6 +347,9 @@ namespace cling {
     largestream Strm;
     const clang::LangOptions& LangOpts = getCI()->getLangOpts();
     const void* ThisP = static_cast<void*>(this);
+    // PCH/PCM-generation defines syntax-only. If we include definitions,
+    // loading the PCH/PCM will make the runtime barf about dupe definitions.
+    bool EmitDefinitions = !SyntaxOnly;
 
     // FIXME: gCling should be const so assignemnt is a compile time error.
     // Currently the name mangling is coming up wrong for the const version
@@ -358,12 +361,14 @@ namespace cling {
     const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
     if (!NoRuntime) {
       if (LangOpts.CPlusPlus) {
-        Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n"
-                "namespace cling { class Interpreter; namespace runtime { "
-                "Interpreter* gCling=(Interpreter*)" << ThisP << ";}}\n";
+        Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
+        if (EmitDefinitions)
+          Strm << "namespace cling { class Interpreter; namespace runtime { "
+                  "Interpreter* gCling=(Interpreter*)" << ThisP << ";}}\n";
       } else {
-        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
-                "void* gCling=(void*)" << ThisP << ";\n";
+          Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n";
+        if (EmitDefinitions)
+          Strm << "void* gCling=(void*)" << ThisP << ";\n";
       }
     }
 
@@ -393,21 +398,29 @@ namespace cling {
     //  6. Assuming 4 is sorted out in user code, calling __cxa_atexit through
     //     atexit below isn't linking to the __dso_handle symbol.
 
-    Strm << "#define __dso_handle ((void*)" << ThisP << ")\n";
-
     // Use __cxa_atexit to intercept all of the following routines
     Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*) "
          << cxa_atexit_is_noexcept << ";\n";
 
+    if (EmitDefinitions)
+      Strm << "#define __dso_handle ((void*)" << ThisP << ")\n";
+
     // C atexit, std::atexit
-    Strm << Linkage << " int atexit(void(*f)()) " << Attr << " { return "
-                      "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+    Strm << Linkage << " int atexit(void(*f)()) " << Attr;
+    if (EmitDefinitions)
+      Strm << " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+    else
+      Strm << ";\n";
     Globals.push_back("atexit");
 
     // C++ 11 at_quick_exit, std::at_quick_exit
     if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
-      Strm << LinkageCxx << " int at_quick_exit(void(*f)()) " << Attr <<
-            " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+      Strm << LinkageCxx << " int at_quick_exit(void(*f)()) " << Attr;
+      if (EmitDefinitions)
+        Strm
+          << " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+      else
+        Strm << ";\n";
       Globals.push_back("at_quick_exit");
     }
 
@@ -420,15 +433,21 @@ namespace cling {
 #endif
     Strm << Linkage << " " << Spec << " int (*__dllonexit("
          << "int (" << Spec << " *f)(void**, void**), void**, void**))"
-         "(void**, void**) { "
-         "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
-         "}\n";
+         "(void**, void**)"
+      if (EmitDefinitions)
+        Strm << " { __cxa_atexit((void(*)(void*))f, 0, __dso_handle);"
+                " return f; }\n";
+      else
+        Strm << ";\n";
     Globals.push_back("__dllonexit");
 #if !defined(_M_CEE_PURE)
     Strm << Linkage << " " << Spec << " int (*_onexit("
-         << "int (" << Spec << 	" *f)()))() { "
-         "__cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f;"
-         "}\n";
+         << "int (" << Spec << " *f)()))()";
+    if (EmitDefinitions)
+      Strm << " { __cxa_atexit((void(*)(void*))f, 0, __dso_handle);"
+              " return f; }\n";
+    else
+      Strm << ";\n";
     Globals.push_back("_onexit");
 #endif
 #endif
