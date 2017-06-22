@@ -27,7 +27,7 @@ env:
     - CCACHE_MAXSIZE=500M
     - CCACHE_CPP2=1
     - TIMEOUT=0
-    - secure: "DQSDJnYWR7kb2ylcE1e4GIfP9KJadHjG696HelK09zmsTJiRoxg2HhDnm3gHkrPh18AxYJAMW1rZHm0ZsnBKpS09NxOcPVseL+z3iWfBFpgCa2ueUMKHy/YBhNghmLOXVeQzGwol6iCU5xbO4ZMJHpytmQCH6Vm9ws7sg8kiatY="
+    - secure: "MWXnhg939UrLRP7Jg5xLFxxquIgale0crNyP9Y2L2Pg+zINTgSExyykP/+s4uV1mj44uYLr4oEU7Ue72w3yGptanau90BUO+ZN5clC7QEUWsfJUDBc/ytilp+xhNRNLA+MJvaYLNOyXJOf9JKf/IzgRAR0m0PGAl9pMRG2vP5Sg="
 
 # Do not build our sync branch.
 branches:
