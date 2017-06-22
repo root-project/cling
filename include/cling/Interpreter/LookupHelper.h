@@ -57,7 +57,7 @@ namespace cling {
   private:
     std::unique_ptr<clang::Parser> m_Parser;
     Interpreter* m_Interpreter; // we do not own.
-    const clang::Type* m_StringTy[kNumCachedStrings];
+    const clang::Type* m_StringTy[kNumCachedStrings] = {};
 
   public:
     LookupHelper(clang::Parser* P, Interpreter* interp);
