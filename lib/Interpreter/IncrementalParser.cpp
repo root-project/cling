@@ -50,8 +50,6 @@
 #include "llvm/Support/CrashRecoveryContext.h"
 #include "llvm/Support/MemoryBuffer.h"
 
-#include <iostream>
-#include <sstream>
 #include <stdio.h>
 
 using namespace clang;
@@ -666,7 +664,7 @@ namespace cling {
     assert(PP.isIncrementalProcessingEnabled() && "Not in incremental mode!?");
     PP.enableIncrementalProcessing();
 
-    std::ostringstream source_name;
+    smallstream source_name;
     source_name << "input_line_" << (m_MemoryBuffers.size() + 1);
 
     // Create an uninitialized memory buffer, copy code in and append "\n"
