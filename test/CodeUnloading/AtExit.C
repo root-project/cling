@@ -7,7 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
-// RUN: cat %s | %cling -fsyntax-only -Xclang -verify 2>&1
+// FIXME: cat %s | %cling -fsyntax-only -Xclang -verify 2>&1
 
 // Test to check functions registered via atexit are intercepted, and __dso_handle
 // is properly overridden in for child interpreters.

@@ -366,9 +366,11 @@ namespace cling {
           Strm << "namespace cling { class Interpreter; namespace runtime { "
                   "Interpreter* gCling=(Interpreter*)" << ThisP << ";}}\n";
       } else {
-          Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n";
+        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
+             << "void* gCling";
         if (EmitDefinitions)
-          Strm << "void* gCling=(void*)" << ThisP << ";\n";
+          Strm << "=(void*)" << ThisP << ";\n";
+        Strm << ";\n";
       }
     }
 
