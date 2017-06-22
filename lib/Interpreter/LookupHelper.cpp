@@ -39,6 +39,7 @@ namespace cling {
   // the dtor on the OwningPtr
   LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp)
     : m_Parser(P), m_Interpreter(interp) {
+    // m_StringTy is always properly initialized in getStringType
   }
 
   LookupHelper::~LookupHelper() {}
@@ -1910,6 +1911,10 @@ namespace cling {
     assert(Type && "Type cannot be null");
     const Transaction*& Cache = m_Interpreter->getStdStringTransaction();
     if (!Cache || !m_StringTy[kStdString]) {
+      // getStringType can be called multiple times with Cache being null, and
+      // the local cache should be discarded when that occurs.
+      if (!Cache) ::memset(m_StringTy, 0, sizeof(m_StringTy));
+
       QualType Qt = findType("std::string", WithDiagnostics);
       m_StringTy[kStdString] = Qt.isNull() ? nullptr : Qt.getTypePtr();
       if (!m_StringTy[kStdString]) return kNotAString;
