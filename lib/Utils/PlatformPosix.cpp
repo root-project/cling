@@ -41,7 +41,7 @@ namespace {
   private:
     // A simple round-robin cache: what enters first, leaves first.
     // MRU cache wasn't worth the extra CPU cycles.
-    std::array<const void*, 8> lines;
+    std::array<const void*, 8> lines = {};
     std::atomic<unsigned> mostRecent = {0};
     int FD;
 
