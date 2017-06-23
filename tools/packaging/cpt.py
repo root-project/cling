@@ -563,7 +563,7 @@ def install_prefix():
     regex_array = []
     regex_filename = os.path.join(CPT_SRC_DIR, 'dist-files.txt');
     for line in open(regex_filename).read().splitlines():
-      if line not line.startswith('#'):
+      if line and not line.startswith('#'):
         regex_array.append(line)
 
     for root, dirs, files in os.walk(TMP_PREFIX):
