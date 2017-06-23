@@ -435,7 +435,7 @@ namespace cling {
 #endif
     Strm << Linkage << " " << Spec << " int (*__dllonexit("
          << "int (" << Spec << " *f)(void**, void**), void**, void**))"
-         "(void**, void**)"
+         "(void**, void**)";
       if (EmitDefinitions)
         Strm << " { __cxa_atexit((void(*)(void*))f, 0, __dso_handle);"
                 " return f; }\n";
