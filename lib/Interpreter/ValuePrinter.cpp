@@ -154,7 +154,7 @@ bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
     = Interp.declare("namespace { void* cling_printValue_Failure_Typename_check"
                      " = (void*)" + typenam.str() + "nullptr; }");
   if (Res != cling::Interpreter::kSuccess)
-    cling::errs() << "ERROR in cling::executePrintValue(): "
+    cling::errs() << "ERROR in cling::canParseTypeName(): "
                      "this typename cannot be spelled.\n";
   return Res == cling::Interpreter::kSuccess;
 }
@@ -614,7 +614,7 @@ static std::string callPrintValue(const Value& V, const void* Val) {
     return *(std::string *) printValueV.getPtr();
 
   // That didn't work. We probably diagnosed the issue as part of evaluate().
-  cling::errs() <<"ERROR in cling::executePrintValue(): cannot pass value!\n";
+  cling::errs() <<"ERROR in cling's callPrintValue(): cannot pass value!\n";
 
   // Check that the issue comes from an unparsable type name: lambdas, unnamed
   // namespaces, types declared inside functions etc. Assert on everything
@@ -622,7 +622,7 @@ static std::string callPrintValue(const Value& V, const void* Val) {
   assert(!canParseTypeName(*Interp, getTypeString(V))
          && "printValue failed on a valid type name.");
 
-  return "ERROR in cling::executePrintValue(): missing value string.";
+  return "ERROR in cling's callPrintValue(): missing value string.";
 }
 
 template <typename T>
