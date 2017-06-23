@@ -418,6 +418,7 @@ namespace {
     Opts.GNUMode = 0;
 #else
     Opts.GNUMode = 1;
+# warning "For debugging Travis: this build does not have __STRICT_ANSI__ defined!"
 #endif
 #ifdef __FAST_MATH__
     Opts.FastMath = 1;
