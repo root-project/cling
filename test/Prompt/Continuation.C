@@ -67,8 +67,6 @@ CLING_MULTILINE_MACRO("DOWHILE");
   "And A Tab" \		
   " End" // expected-warning@1 {{backslash and newline separated by space}} // expected-warning@2 {{backslash and newline separated by space}}
 
-// Separation by a tab is allowed? Is that a bug in clang?
-
 CLING_MULTILINE_TRAILING_SPACE
 // CHECK-NEXT: (const char [29]) "Trailing Space And A Tab End"
 
