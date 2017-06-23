@@ -316,14 +316,9 @@ namespace {
       }
 
     #if defined(__GLIBCXX__)
-      // Avoid '__float128 is not supported on this target' errors
       if (!opts.Language && !opts.StdVersion) {
         switch (CxxStdCompiledWith()) {
-          case 17:
-            // Hopefully -D__float128=void can be removed when -std=c++17 works.
-            sArguments.addArgument("-D__float128=void");
-            sArguments.addArgument("-std=c++1z");
-            break;
+          case 17: sArguments.addArgument("-std=c++1z"); break;
           case 14: sArguments.addArgument("-std=c++14"); break;
           case 11: sArguments.addArgument("-std=c++11"); break;
           default: break;
