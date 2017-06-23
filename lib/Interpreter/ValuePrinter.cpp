@@ -603,11 +603,7 @@ static std::string callPrintValue(const Value& V, const void* Val) {
 
     // We really don't care about protected types here (ROOT-7426)
     AccessCtrlRAII_t AccessCtrlRAII(*Interp);
-    clang::DiagnosticsEngine& Diag = Interp->getDiagnostics();
-    bool oldSuppDiags = Diag.getSuppressAllDiagnostics();
-    Diag.setSuppressAllDiagnostics(true);
     Interp->evaluate(Strm.str(), printValueV);
-    Diag.setSuppressAllDiagnostics(oldSuppDiags);
   }
 
   if (printValueV.isValid() && printValueV.getPtr())
