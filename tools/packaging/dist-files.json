@@ -24,6 +24,7 @@
     ],
     "LIB": [
       "lib/clang/@CLANG_VERSION@/include"
+      "lib/cmake"
     ]
   },
 

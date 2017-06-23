@@ -52,7 +52,7 @@ matrix:
     # across all platforms. By interleaving OS X, the hope is to get in the
     # queue faster while not blocking Linux builds from occuring.
     - os: linux
-      env: DIST=pangolin COMPILER=g++-4.8 CCOMPILER=gcc-4.8
+      env: DIST=pangolin COMPILER=g++-4.8 CCOMPILER=gcc-4.8 NIGHTLY_CRON_SYNC=1
       addons:
         apt:
           sources: *sources
