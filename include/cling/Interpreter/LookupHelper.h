@@ -13,6 +13,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/SmallVector.h"
 
+#include <array>
 #include <memory>
 
 namespace clang {
@@ -57,7 +58,7 @@ namespace cling {
   private:
     std::unique_ptr<clang::Parser> m_Parser;
     Interpreter* m_Interpreter; // we do not own.
-    const clang::Type* m_StringTy[kNumCachedStrings] = {};
+    std::array<const clang::Type*, kNumCachedStrings> m_StringTy = {};
 
   public:
     LookupHelper(clang::Parser* P, Interpreter* interp);

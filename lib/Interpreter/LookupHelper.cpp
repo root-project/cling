@@ -1910,6 +1910,10 @@ namespace cling {
     assert(Type && "Type cannot be null");
     const Transaction*& Cache = m_Interpreter->getStdStringTransaction();
     if (!Cache || !m_StringTy[kStdString]) {
+      // getStringType can be called multiple times with Cache being null, and
+      // the local cache should be discarded when that occurs.
+      if (!Cache)
+        m_StringTy = {};
       QualType Qt = findType("std::string", WithDiagnostics);
       m_StringTy[kStdString] = Qt.isNull() ? nullptr : Qt.getTypePtr();
       if (!m_StringTy[kStdString]) return kNotAString;
