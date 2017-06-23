@@ -554,42 +554,31 @@ def compile(arg, build_libcpp):
         except Exception as e:
             print(e)
 
-def build_dist_list(file_dict, include=[], ignore=[]):
-    for key, value in file_dict.items():
-        if isinstance(value, dict):
-                build_dist_list(value, include, ignore)
-        else:
-            if key == 'IGNORE':
-                ignore.extend(value)
-            else:
-                include.extend(value)
-
-    return include, ignore
-
 def install_prefix():
+    global prefix
     set_vars()
 
     box_draw("Filtering Cling's libraries and binaries")
 
-    dist_files = json.loads(
-        open(os.path.join(CPT_SRC_DIR, 'dist-files.json')).read()
-    )
-
-    dist_files['BIN'] = [binary.replace('@EXEEXT@', EXEEXT) for binary in dist_files['BIN']]
-    dist_files['CLANG']['LIB'] = [header.replace('@CLANG_VERSION@', CLANG_VERSION) for header in dist_files['CLANG']['LIB']]
-
-    included, ignored = build_dist_list(dist_files)
+    regex_array = []
+    regex_filename = os.path.join(CPT_SRC_DIR, 'dist-files.txt');
+    for line in open(regex_filename).read().splitlines():
+      if line not line.startswith('#'):
+        regex_array.append(line)
 
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
             f = os.path.join(root, file).replace(TMP_PREFIX, '')
             if OS == 'Windows':
                 f = f.replace('\\', '/')
-            if any(map(lambda x: re.search(x, f), included)):
-                print("Filter: " + f)
-                if not os.path.isdir(os.path.join(prefix, os.path.dirname(f))):
-                    os.makedirs(os.path.join(prefix, os.path.dirname(f)))
-                shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
+            for regex in regex_array:
+                if args['verbose']: print ("Applying regex " + regex + " to file " + f)
+                if re.search(regex, f):
+                    print ("Adding to final binary " + f)
+                    if not os.path.isdir(os.path.join(prefix, os.path.dirname(f))):
+                        os.makedirs(os.path.join(prefix, os.path.dirname(f)))
+                    shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
+                    break
 
 
 def runSingleTest(test, Idx = 2, Recurse = True):

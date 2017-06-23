@@ -1,0 +1,7 @@
+^bin/cling
+# Cling resource directory
+^lib/clang/.*
+# Headers enabling accessing different parts of cling
+^include/.*
+# Jupyter, etc.
+^share/cling/.*
