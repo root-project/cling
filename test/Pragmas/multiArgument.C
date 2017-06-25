@@ -28,11 +28,6 @@ ValueC
 .undo
 .undo
 
-// FIXME: When print Transactions are properly parenteted remove these
-.undo
-.undo
-.undo
-
 ValueA // expected-error {{use of undeclared identifier 'ValueA'}}
 
 #pragma cling load "P0.h" "P1.h" "P2.h"
@@ -46,11 +41,6 @@ ValueC
 // CHECK-NEXT: (const char *) "ValueC"
 
 .undo
-.undo
-.undo
-.undo
-
-// FIXME: When print Transactions are properly parenteted remove these
 .undo
 .undo
 .undo
