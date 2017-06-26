@@ -43,7 +43,7 @@ tmplt_out->getQualifiedNameAsString().c_str()
 
 const clang::ClassTemplateDecl* tmplt_inside = lookup.findClassTemplate("OuterClass::TmpltInside", diags);
 
-printf("tmplt_inside: 0x%lx\n", (unsigned long) tmplt_out);
+printf("tmplt_inside: 0x%lx\n", (unsigned long) tmplt_inside);
 //CHECK: tmplt_inside: 0x{{[1-9a-f][0-9a-f]*$}}
 tmplt_inside->getQualifiedNameAsString().c_str()
 //CHECK-NEXT: ({{[^)]+}}) "OuterClass::TmpltInside"
