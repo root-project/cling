@@ -241,6 +241,10 @@ before_script:
    if [ -n "$NIGHTLY_CRON_SYNC" ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
       && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
       && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
+      # Workaround for travis issue: travis-ci/travis-ci#6069
+      git remote set-branches --add origin master
+      git fetch
+
       echo "Syncing repository."
       git remote add alt http://root.cern.ch/git/cling.git
       git pull alt master
