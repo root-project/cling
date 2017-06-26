@@ -441,7 +441,7 @@ namespace {
     }
 #if _GLIBCXX_USE_FLOAT128
     // We are compiling with libstdc++ with __float128 enabled.
-    if (!Target.HasFloat128) {
+    if (!Target.hasFloat128Type()) {
       // clang currently supports native __float128 only on few targets, and
       // this target does not have it. The most visible consequence of this is a
       // specialization
