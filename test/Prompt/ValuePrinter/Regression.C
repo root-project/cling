@@ -89,7 +89,7 @@ auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lam
 
 #include <functional>
 using namespace std::placeholders;
-auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling::executePrintValue(): missing value string.
+auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling's callPrintValue(): missing value string.
 // expected-error {{use of undeclared identifier 'lambda'}}
 // expected-error {{expected expression}}
 // expected-error {{type name requires a specifier or qualifier}}
