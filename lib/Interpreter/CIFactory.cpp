@@ -314,17 +314,6 @@ namespace {
           sArguments.addArgument("-isysroot", std::move(sysRoot));
         }
       }
-
-    #if defined(__GLIBCXX__)
-      if (!opts.Language && !opts.StdVersion) {
-        switch (CxxStdCompiledWith()) {
-          case 17: sArguments.addArgument("-std=c++1z"); break;
-          case 14: sArguments.addArgument("-std=c++14"); break;
-          case 11: sArguments.addArgument("-std=c++11"); break;
-          default: break;
-        }
-      }
-    #endif //__GLIBCXX__
   #endif // __APPLE__
 
 #endif // _MSC_VER
@@ -432,7 +421,6 @@ namespace {
     Opts.GNUMode = 0;
 #else
     Opts.GNUMode = 1;
-# warning "For debugging Travis: this build does not have __STRICT_ANSI__ defined!"
 #endif
 #ifdef __FAST_MATH__
     Opts.FastMath = 1;
@@ -451,6 +439,20 @@ namespace {
     } else {
       Opts.MicrosoftExt = 0;
     }
+#if _GLIBCXX_USE_FLOAT128
+    // We are compiling with libstdc++ with __float128 enabled.
+    if (!Target.HasFloat128) {
+      // clang currently supports native __float128 only on few targets, and
+      // this target does not have it. The most visible consequence of this is a
+      // specialization
+      //    __is_floating_point_helper<__float128>
+      // in include/c++/6.3.0/type_traits:344 that clang then rejects. The
+      // specialization is protected by !if _GLIBCXX_USE_FLOAT128 (which is
+      // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak the
+      // latter by disabling GNUMode:
+# warning "Disabling gnu++: clang has no __float128 support on this target!"
+      Opts.GNUMode = 0;
+#endif //__GLIBCXX__
   }
 
   // This must be a copy of clang::getClangToolFullVersion(). Luckily
