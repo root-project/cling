@@ -452,6 +452,7 @@ namespace {
       // latter by disabling GNUMode:
 # warning "Disabling gnu++: clang has no __float128 support on this target!"
       Opts.GNUMode = 0;
+    }
 #endif //__GLIBCXX__
   }
 
