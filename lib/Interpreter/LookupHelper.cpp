@@ -782,6 +782,21 @@ namespace cling {
           return 0;
         };
       }
+    } else if (P.getCurToken().is(clang::tok::annot_typename)) {
+      // P.getTypeAnnotation() takes a non-const Token& until clang r306291.
+      //auto ParsedTy = P.getTypeAnnotation(P.getCurToken());
+      auto ParsedTy
+        = ParsedType::getFromOpaquePtr(P.getCurToken().getAnnotationValue());
+      if (ParsedTy) {
+        QualType QT = ParsedTy.get();
+        if (const auto *DTST
+            = dyn_cast<DeducedTemplateSpecializationType>(QT.getTypePtr())) {
+          if (auto TD = DTST->getTemplateName().getAsTemplateDecl()) {
+            if (auto CTD = dyn_cast<ClassTemplateDecl>(TD))
+              return CTD;
+          }
+        }
+      }
     } else if (P.getCurToken().is(clang::tok::identifier)) {
       // We have a single indentifier, let's look for it in the
       // the global scope.
