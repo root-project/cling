@@ -36,6 +36,14 @@ namespace cling {
     void Parse(int argc, const char* const argv[],
                std::vector<std::string>* Inputs = nullptr);
 
+    ///\brief By default clang will try to set up an Interpreter with features
+    /// that match how it was compiled.  There are cases; however, where the
+    /// client is asking for something so specific (i.e './cling -std=gnu++11'
+    /// or './cling -x c') that this shouldn't be done.  This will return false
+    /// in those cases.
+    ///
+    bool DefaultLanguage() const { return !Language && !StdVersion; }
+
     unsigned Language : 1;
     unsigned ResourceDir : 1;
     unsigned SysRoot : 1;
