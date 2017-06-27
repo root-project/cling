@@ -643,9 +643,10 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     SetPreprocessorFromBinary(PPOpts);
 
     PPOpts.addMacroDef("__CLING__");
-    if (CI->getLangOpts().CPlusPlus11 == 1) {
+    if (CI->getLangOpts().CPlusPlus11 == 1)
       PPOpts.addMacroDef("__CLING__CXX11");
-    }
+    if (CI->getLangOpts().CPlusPlus14 == 1)
+      PPOpts.addMacroDef("__CLING__CXX14");
 
     if (CI->getDiagnostics().hasErrorOccurred()) {
       cling::errs() << "Compiler error to early in initialization.\n";
