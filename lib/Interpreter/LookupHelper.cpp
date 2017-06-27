@@ -783,14 +783,20 @@ namespace cling {
         };
       }
     } else if (P.getCurToken().is(clang::tok::annot_typename)) {
+      // A deduced template?
+
       // P.getTypeAnnotation() takes a non-const Token& until clang r306291.
       //auto ParsedTy = P.getTypeAnnotation(P.getCurToken());
       auto ParsedTy
         = ParsedType::getFromOpaquePtr(P.getCurToken().getAnnotationValue());
       if (ParsedTy) {
         QualType QT = ParsedTy.get();
+        const Type* TyPtr = QT.getTypePtr();
+        if (const auto *LocInfoTy = dyn_cast<LocInfoType>(TyPtr))
+          TyPtr = LocInfoTy->getType().getTypePtr();
+        TyPtr = TyPtr->getUnqualifiedDesugaredType();
         if (const auto *DTST
-            = dyn_cast<DeducedTemplateSpecializationType>(QT.getTypePtr())) {
+            = dyn_cast<DeducedTemplateSpecializationType>(TyPtr)) {
           if (auto TD = DTST->getTemplateName().getAsTemplateDecl()) {
             if (auto CTD = dyn_cast<ClassTemplateDecl>(TD))
               return CTD;
