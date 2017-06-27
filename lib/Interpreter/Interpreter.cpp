@@ -369,7 +369,7 @@ namespace cling {
         Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
              << "void* gCling";
         if (EmitDefinitions)
-          Strm << "=(void*)" << ThisP << ";\n";
+          Strm << "=(void*)" << ThisP;
         Strm << ";\n";
       }
     }
