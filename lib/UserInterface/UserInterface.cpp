@@ -46,6 +46,27 @@ namespace {
       return true;
     }
   };
+
+  ///\brief Delays ~TextInput until after ~StreamReader and ~TerminalDisplay
+  ///
+  class TextInputHolder {
+    textinput::StreamReader* m_Reader;
+    textinput::TerminalDisplay* m_Display;
+    textinput::TextInput m_Input;
+
+  public:
+    TextInputHolder(llvm::SmallString<512>& Hist)
+        : m_Reader(textinput::StreamReader::Create()),
+          m_Display(textinput::TerminalDisplay::Create()),
+          m_Input(*m_Reader, *m_Display, Hist.empty() ? 0 : Hist.c_str()) {}
+
+    ~TextInputHolder() {
+      delete m_Reader;
+      delete m_Display;
+    }
+
+    textinput::TextInput* operator -> () { return &m_Input; }
+  };
 }
 
 namespace cling {
@@ -69,16 +90,13 @@ namespace cling {
         llvm::sys::path::append(histfilePath, ".cling_history");
     }
 
-    using namespace textinput;
-    std::unique_ptr<StreamReader> R(StreamReader::Create());
-    std::unique_ptr<TerminalDisplay> D(TerminalDisplay::Create());
-    TextInput TI(*R, *D, histfilePath.empty() ? 0 : histfilePath.c_str());
+    TextInputHolder TI(histfilePath);
 
     // Inform text input about the code complete consumer
     // TextInput owns the TabCompletion.
     UITabCompletion* Completion =
                       new UITabCompletion(m_MetaProcessor->getInterpreter());
-    TI.SetCompletion(Completion);
+    TI->SetCompletion(Completion);
 
     bool Done = false;
     std::string Line;
@@ -89,9 +107,9 @@ namespace cling {
         m_MetaProcessor->getOuts().flush();
         {
           MetaProcessor::MaybeRedirectOutputRAII RAII(*m_MetaProcessor);
-          TI.SetPrompt(Prompt.c_str());
-          Done = TI.ReadInput() == TextInput::kRREOF;
-          TI.TakeInput(Line);
+          TI->SetPrompt(Prompt.c_str());
+          Done = TI->ReadInput() == textinput::TextInput::kRREOF;
+          TI->TakeInput(Line);
           if (Done && Line.empty())
             break;
         }
