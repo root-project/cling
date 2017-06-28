@@ -421,7 +421,7 @@ namespace {
     Opts.FastMath = 1;
 #endif
 
-    if (CompilerOpts.DefaultLanguage()) {
+    if (CompilerOpts.DefaultLanguage(Opts)) {
 #ifdef __STRICT_ANSI__
       Opts.GNUMode = 0;
 #else
@@ -445,7 +445,7 @@ namespace {
       Opts.MicrosoftExt = 0;
     }
 
-    if (CompilerOpts.DefaultLanguage()) {
+    if (CompilerOpts.DefaultLanguage(Opts)) {
 #if _GLIBCXX_USE_FLOAT128
       // We are compiling with libstdc++ with __float128 enabled.
       if (!Target.hasFloat128Type()) {
