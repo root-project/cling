@@ -453,7 +453,8 @@ namespace {
         // specialization is protected by !if _GLIBCXX_USE_FLOAT128 (which is
         // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak the
         // latter by disabling GNUMode:
-# warning "Disabling gnu++: clang has no __float128 support on this target!"
+        cling::errs()
+          << "Disabling gnu++: clang has no __float128 support on this target!";
         Opts.GNUMode = 0;
       }
 #endif //_GLIBCXX_USE_FLOAT128
