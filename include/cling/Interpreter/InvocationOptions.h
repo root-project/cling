@@ -15,7 +15,7 @@
 
 namespace clang {
   class LangOptions;
-};
+}
 
 namespace cling {
 
