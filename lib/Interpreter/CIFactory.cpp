@@ -446,13 +446,13 @@ namespace {
       // We are compiling with libstdc++ with __float128 enabled.
       if (!Target.hasFloat128Type()) {
         // clang currently supports native __float128 only on few targets, and
-        // this target does not have it. The most visible consequence of this is a
-        // specialization
+        // this target does not have it. The most visible consequence of this is
+        // a specialization
         //    __is_floating_point_helper<__float128>
         // in include/c++/6.3.0/type_traits:344 that clang then rejects. The
         // specialization is protected by !if _GLIBCXX_USE_FLOAT128 (which is
-        // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak the
-        // latter by disabling GNUMode:
+        // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak
+        // the latter by disabling GNUMode:
         cling::errs()
           << "Disabling gnu++: clang has no __float128 support on this target!";
         Opts.GNUMode = 0;
