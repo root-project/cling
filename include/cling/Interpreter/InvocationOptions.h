@@ -13,6 +13,10 @@
 #include <string>
 #include <vector>
 
+namespace clang {
+  class LangOptions;
+};
+
 namespace cling {
 
   ///\brief Class that stores options that are used by both cling and
@@ -42,7 +46,7 @@ namespace cling {
     /// or './cling -x c') that this shouldn't be done.  This will return false
     /// in those cases.
     ///
-    bool DefaultLanguage() const { return !Language && !StdVersion; }
+    bool DefaultLanguage(const clang::LangOptions&) const;
 
     unsigned Language : 1;
     unsigned ResourceDir : 1;

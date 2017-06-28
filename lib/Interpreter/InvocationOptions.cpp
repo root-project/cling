@@ -11,6 +11,7 @@
 #include "cling/Interpreter/ClingOptions.h"
 #include "cling/Utils/Output.h"
 
+#include "clang/Basic/LangOptions.h"
 #include "clang/Driver/Options.h"
 
 #include "llvm/Option/Arg.h"
@@ -142,6 +143,20 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
         break;
     }
   }
+}
+
+bool CompilerOptions::DefaultLanguage(const LangOptions& LangOpts) const {
+  // When StdVersion is set (-std=c++11, -std=gnu++11, etc.) then definitely
+  // don't setup the defaults, as they may interfere with what the user is doing
+  if (StdVersion)
+    return false;
+
+  // Also don't set up the defaults when language is explicitly set; unless
+  // the language was set to generate a PCH, in which case definitely do.
+  if (Language)
+    return LangOpts.CompilingPCH || HasOutput;
+
+  return true;
 }
 
 InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
