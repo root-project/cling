@@ -200,7 +200,11 @@ install:
   fi
 
   if [ "$COMPILER" == "g++-6" ]; then
-    export CLING_BUILD_FLAGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCXX_EXTENSIONS=OFF"
+    export CLING_BUILD_FLAGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+    # On OS X force the test to reproduce __float128 issues with libstdc++.
+    if [ $TRAVIS_OS_NAME != 'osx' ]; then
+      export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DCXX_EXTENSIONS=OFF"
+    fi
     CMAKEREQ="3.8"
   else
     CMAKEREQ="3.6"
