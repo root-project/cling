@@ -54,10 +54,6 @@ using namespace cling;
 
 namespace {
   static constexpr unsigned CxxStdCompiledWith() {
-    // Extracted from Boost/config/compiler.
-    // SunProCC has no C++11.
-    // VisualC's support is not obvious to extract from Boost...
-
     // The value of __cplusplus in GCC < 5.0 (e.g. 4.9.3) when
     // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
     // the test for C++14 or more (201402L) as previously specified.
@@ -360,7 +356,8 @@ namespace {
     }
   }
 
-  static void SetClingCustomLangOpts(LangOptions& Opts) {
+  static void SetClingCustomLangOpts(LangOptions& Opts,
+                                     const CompilerOptions& CompilerOpts) {
     Opts.EmitAllDecls = 0; // Otherwise if PCH attached will codegen all decls.
 #ifdef _MSC_VER
 #ifdef _DEBUG
@@ -395,7 +392,6 @@ namespace {
     // Except -fexceptions -fcxx-exceptions.
 
     Opts.Deprecated = 1;
-    Opts.GNUKeywords = 0;
 
 #ifdef __APPLE__
     Opts.Blocks = 1;
@@ -417,18 +413,23 @@ namespace {
 #ifdef _REENTRANT
     Opts.POSIXThreads = 1;
 #endif
-#ifdef __STRICT_ANSI__
-    Opts.GNUMode = 0;
-#else
-    Opts.GNUMode = 1;
-#endif
 #ifdef __FAST_MATH__
     Opts.FastMath = 1;
 #endif
+
+    if (CompilerOpts.DefaultLanguage(Opts)) {
+#ifdef __STRICT_ANSI__
+      Opts.GNUMode = 0;
+#else
+      Opts.GNUMode = 1;
+#endif
+      Opts.GNUKeywords = 0;
+    }
   }
 
   static void SetClingTargetLangOpts(LangOptions& Opts,
-                                     const TargetInfo& Target) {
+                                     const TargetInfo& Target,
+                                     const CompilerOptions& CompilerOpts) {
     if (Target.getTriple().getOS() == llvm::Triple::Win32) {
       Opts.MicrosoftExt = 1;
 #ifdef _MSC_VER
@@ -439,21 +440,24 @@ namespace {
     } else {
       Opts.MicrosoftExt = 0;
     }
+
+    if (CompilerOpts.DefaultLanguage(Opts)) {
 #if _GLIBCXX_USE_FLOAT128
-    // We are compiling with libstdc++ with __float128 enabled.
-    if (!Target.hasFloat128Type()) {
-      // clang currently supports native __float128 only on few targets, and
-      // this target does not have it. The most visible consequence of this is a
-      // specialization
-      //    __is_floating_point_helper<__float128>
-      // in include/c++/6.3.0/type_traits:344 that clang then rejects. The
-      // specialization is protected by !if _GLIBCXX_USE_FLOAT128 (which is
-      // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak the
-      // latter by disabling GNUMode:
+      // We are compiling with libstdc++ with __float128 enabled.
+      if (!Target.hasFloat128Type()) {
+        // clang currently supports native __float128 only on few targets, and
+        // this target does not have it. The most visible consequence of this is a
+        // specialization
+        //    __is_floating_point_helper<__float128>
+        // in include/c++/6.3.0/type_traits:344 that clang then rejects. The
+        // specialization is protected by !if _GLIBCXX_USE_FLOAT128 (which is
+        // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak the
+        // latter by disabling GNUMode:
 # warning "Disabling gnu++: clang has no __float128 support on this target!"
-      Opts.GNUMode = 0;
+        Opts.GNUMode = 0;
+      }
+#endif //_GLIBCXX_USE_FLOAT128
     }
-#endif //__GLIBCXX__
   }
 
   // This must be a copy of clang::getClangToolFullVersion(). Luckily
@@ -628,20 +632,21 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   }
 
   static bool
-  SetupCompiler(CompilerInstance* CI, bool Lang = true, bool Targ = true) {
+  SetupCompiler(CompilerInstance* CI, const CompilerOptions& CompilerOpts,
+                bool Lang = true, bool Targ = true) {
     // Set the language options, which cling needs.
     // This may have already been done via a precompiled header
     if (Lang)
-      SetClingCustomLangOpts(CI->getLangOpts());
+      SetClingCustomLangOpts(CI->getLangOpts(), CompilerOpts);
 
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
     SetPreprocessorFromBinary(PPOpts);
 
     PPOpts.addMacroDef("__CLING__");
-    if (CI->getLangOpts().CPlusPlus11 == 1) {
-      // http://llvm.org/bugs/show_bug.cgi?id=13530
+    if (CI->getLangOpts().CPlusPlus11 == 1)
       PPOpts.addMacroDef("__CLING__CXX11");
-    }
+    if (CI->getLangOpts().CPlusPlus14 == 1)
+      PPOpts.addMacroDef("__CLING__CXX14");
 
     if (CI->getDiagnostics().hasErrorOccurred()) {
       cling::errs() << "Compiler error to early in initialization.\n";
@@ -659,7 +664,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     // This may have already been done via a precompiled header
     if (Targ)
-      SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget());
+      SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget(), CompilerOpts);
 
     SetPreprocessorFromTarget(PPOpts, CI->getTarget().getTriple());
     return true;
@@ -816,7 +821,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                         "output is supported.\n";
         return nullptr;
       }
-      if (!SetupCompiler(CI.get()))
+      if (!SetupCompiler(CI.get(), COpts))
         return nullptr;
 
       ProcessWarningOptions(*Diags, DiagOpts);
@@ -895,7 +900,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     Invocation.getFrontendOpts().DisableFree = true;
 
     // Set up compiler language and target
-    if (!SetupCompiler(CI.get(), InitLang, InitTarget))
+    if (!SetupCompiler(CI.get(), COpts, InitLang, InitTarget))
       return nullptr;
 
     // Set up source managers
