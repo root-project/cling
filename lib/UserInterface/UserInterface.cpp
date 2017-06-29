@@ -80,18 +80,20 @@ namespace cling {
                       new UITabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(Completion);
 
+    bool Done = false;
     std::string Line;
     std::string Prompt("[cling]$ ");
 
-    while (true) {
+    while (!Done) {
       try {
         m_MetaProcessor->getOuts().flush();
         {
           MetaProcessor::MaybeRedirectOutputRAII RAII(*m_MetaProcessor);
           TI.SetPrompt(Prompt.c_str());
-          if (TI.ReadInput() == TextInput::kRREOF)
-            break;
+          Done = TI.ReadInput() == TextInput::kRREOF;
           TI.TakeInput(Line);
+          if (Done && Line.empty())
+            break;
         }
 
         cling::Interpreter::CompilationResult compRes;
