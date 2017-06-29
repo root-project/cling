@@ -188,7 +188,10 @@ namespace textinput {
             case ERROR_BROKEN_PIPE:
               break;
           }
+          NRead = 0;
         }
+      }
+      if (NRead == 0) {
         in.SetExtended(InputData::kEIEOF);
         return true;
       }
