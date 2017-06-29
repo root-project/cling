@@ -706,7 +706,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
-               bool OnlyLex, bool HasInput = false) {
+               clang::ASTConsumer* customConsumer, bool OnlyLex,
+               bool HasInput = false) {
     // Follow clang -v convention of printing version on first line
     if (COpts.Verbose)
       cling::log() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
@@ -947,16 +948,15 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CI->createASTContext();
 
     if (OnlyLex) {
+      assert(customConsumer == nullptr && "Can't specify a custom consumer"
+                                          " when in OnlyLex mode");
       class IgnoreConsumer: public clang::ASTConsumer {};
       CI->setASTConsumer(
           std::unique_ptr<clang::ASTConsumer>(new IgnoreConsumer()));
     } else {
-      std::unique_ptr<cling::DeclCollector>
-        stateCollector(new cling::DeclCollector());
-
-      // Add the callback keeping track of the macro definitions
-      PP.addPPCallbacks(stateCollector->MakePPAdapter());
-      CI->setASTConsumer(std::move(stateCollector));
+      assert(customConsumer != nullptr && "Need to specify a custom consumer"
+                                          " when not in OnlyLex mode");
+      CI->setASTConsumer(std::unique_ptr<clang::ASTConsumer>(customConsumer));
     }
 
     // Set up Sema
@@ -1017,17 +1017,20 @@ namespace cling {
 
 CompilerInstance* CIFactory::createCI(llvm::StringRef Code,
                                       const InvocationOptions& Opts,
-                                      const char* LLVMDir) {
-  return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code),
-                      Opts.CompilerOpts, LLVMDir, false /*OnlyLex*/,
+                                      const char* LLVMDir,
+                                      clang::ASTConsumer* consumer) {
+  return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code), Opts.CompilerOpts,
+                      LLVMDir, consumer, false /*OnlyLex*/,
                       !Opts.IsInteractive());
 }
 
 CompilerInstance* CIFactory::createCI(MemBufPtr_t Buffer, int argc,
-                                      const char* const *argv,
-                                      const char* LLVMDir, bool OnlyLex) {
-  return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv),
-                      LLVMDir, OnlyLex);
+                                      const char* const* argv,
+                                      const char* LLVMDir,
+                                      clang::ASTConsumer* consumer,
+                                      bool OnlyLex) {
+  return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv), LLVMDir,
+                      consumer, OnlyLex);
 }
 
 } // namespace cling

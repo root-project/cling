@@ -163,10 +163,11 @@ namespace {
 } // unnamed namespace
 
 namespace cling {
-  IncrementalParser::IncrementalParser(Interpreter* interp, const char* llvmdir):
-    m_Interpreter(interp),
-    m_CI(CIFactory::createCI("", interp->getOptions(), llvmdir)),
-    m_Consumer(nullptr), m_ModuleNo(0) {
+  IncrementalParser::IncrementalParser(Interpreter* interp, const char* llvmdir)
+      : m_Interpreter(interp),
+        m_CI(CIFactory::createCI("", interp->getOptions(), llvmdir,
+                                 m_Consumer = new cling::DeclCollector())),
+        m_ModuleNo(0) {
 
     if (!m_CI) {
       cling::errs() << "Compiler instance could not be created.\n";
@@ -176,11 +177,12 @@ namespace cling {
     if (m_Interpreter->getOptions().CompilerOpts.HasOutput)
       return;
 
-    m_Consumer = dyn_cast<DeclCollector>(&m_CI->getSema().getASTConsumer());
     if (!m_Consumer) {
       cling::errs() << "No AST consumer available.\n";
       return;
     }
+    // Add the callback keeping track of the macro definitions.
+    m_CI->getPreprocessor().addPPCallbacks(m_Consumer->MakePPAdapter());
 
     DiagnosticsEngine& Diag = m_CI->getDiagnostics();
     if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
