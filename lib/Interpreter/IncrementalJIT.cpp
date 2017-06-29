@@ -125,7 +125,7 @@ class Azog: public RTDyldMemoryManager {
   AllocInfo m_ROData;
   AllocInfo m_RWData;
 
-#ifdef LLVM_ON_WIN32
+#ifdef CLING_WIN_SEH_EXCEPTIONS
   uintptr_t getBaseAddr() const {
     if (LLVM_LIKELY(m_Code.m_Start && m_ROData.m_Start && m_RWData.m_Start)) {
       return uintptr_t(std::min(std::min(m_Code.m_Start, m_ROData.m_Start),
@@ -140,6 +140,10 @@ class Azog: public RTDyldMemoryManager {
                          ? std::min(m_ROData.m_Start, m_RWData.m_Start)
                          : std::max(m_ROData.m_Start, m_RWData.m_Start));
   }
+
+  // FIXME: This is directly mirroring a structure in RTDyldMemoryManager that
+  // is private. Get Win64 exceptions into LLVM or add an accessor for it.
+  platform::windows::EHFrameInfos m_EHFrames;
 #endif
 
 public:
@@ -198,16 +202,18 @@ public:
 
   void registerEHFrames(uint8_t *Addr, uint64_t LoadAddr,
                         size_t Size) override {
-#ifdef LLVM_ON_WIN32
-    platform::RegisterEHFrames(Addr, Size, getBaseAddr(), true);
+#ifdef CLING_WIN_SEH_EXCEPTIONS
+    const platform::windows::RuntimePRFunction PRFunc = { Addr, Size };
+    m_EHFrames.emplace_back(PRFunc);
 #else
     return getExeMM()->registerEHFrames(Addr, LoadAddr, Size);
 #endif
   }
 
   void deregisterEHFrames() override {
-#ifdef LLVM_ON_WIN32
-    platform::DeRegisterEHFrames(Addr, Size);
+#ifdef CLING_WIN_SEH_EXCEPTIONS
+    platform::DeRegisterEHFrames(getBaseAddr(), m_EHFrames);
+    platform::windows::EHFrameInfos().swap(m_EHFrames);
 #else
     return getExeMM()->deregisterEHFrames();
 #endif
@@ -245,8 +251,12 @@ public:
     // the fact that we're lazily emitting object files: The only way you can
     // get more than one set of objects loaded but not yet finalized is if
     // they were loaded during relocation of another set.
-    if (m_jit.m_UnfinalizedSections.size() == 1)
+    if (m_jit.m_UnfinalizedSections.size() == 1) {
+#ifdef CLING_WIN_SEH_EXCEPTIONS
+      platform::RegisterEHFrames(getBaseAddr(), m_EHFrames, true);
+#endif
       return getExeMM()->finalizeMemory(ErrMsg);
+    }
     return false;
   };
 

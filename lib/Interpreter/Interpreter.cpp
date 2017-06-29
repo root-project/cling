@@ -461,7 +461,7 @@ namespace cling {
       // __dso_handle is inserted for the link phase, as macro is useless then
       m_Executor->addSymbol("__dso_handle", this, true);
 
-#ifdef LLVM_ON_WIN32
+#ifdef CLING_WIN_SEH_EXCEPTIONS
       // Windows C++ SEH handler
       m_Executor->addSymbol("_CxxThrowException",
           utils::FunctionToVoidPtr(&platform::ClingRaiseSEHException), true);

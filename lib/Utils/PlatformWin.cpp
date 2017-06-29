@@ -701,9 +701,13 @@ std::string Demangle(const std::string& Symbol) {
   return af.Str ? std::string(af.Str) : std::string();
 }
 
+#ifdef CLING_WIN_SEH_EXCEPTIONS
 namespace windows {
 // Use less memory and store the function ranges to watch as a mapping
 // between of BaseAddr to Ranges watched.
+//
+// FIXME: Now that having sibling Interpreters is becoming possible, this
+// data should be held per Interpeter (possibly only by the top-most parent).
 //
 typedef std::vector<std::pair<DWORD, DWORD>> ImageRanges;
 typedef std::map<uintptr_t, ImageRanges> ImageBaseMap;
@@ -735,49 +739,64 @@ static void MergeRanges(ImageRanges &Ranges) {
 static uintptr_t FindEHFrame(uintptr_t Caller) {
   ImageBaseMap& Unwind = getImageBaseMap();
   for (auto&& Itr : Unwind) {
-    const uintptr_t CurAddr = Itr.first;
+    const uintptr_t ImgBase = Itr.first;
     for (auto&& Rng : Itr.second) {
-      if (Caller >=(CurAddr + Rng.first) &&
-          Caller <= (CurAddr + Rng.second)) {
-        return CurAddr;
-      }
+      if (Caller >= (ImgBase + Rng.first) && Caller <= (ImgBase + Rng.second))
+        return ImgBase;
     }
   }
   return 0;
 }
 
-void RegisterEHFrames(uint8_t* A, size_t Size, uintptr_t BaseAddr, bool Block) {
-  assert(getImageBaseMap().find(DWORD64(A)) == getImageBaseMap().end());
+void RegisterEHFrames(uintptr_t ImgBs, const EHFrameInfos& Frames, bool Block) {
+  if (Frames.empty())
+    return;
+  assert(getImageBaseMap().find(ImgBs) == getImageBaseMap().end());
 
-  PRUNTIME_FUNCTION RFunc = reinterpret_cast<PRUNTIME_FUNCTION>(A);
-  const size_t N = Size / sizeof(RUNTIME_FUNCTION);
-  ImageBaseMap::mapped_type &Ranges = getImageBaseMap()[BaseAddr];
+  ImageBaseMap::mapped_type &Ranges = getImageBaseMap()[ImgBs];
+  ImageRanges::value_type* BlockRange = nullptr;
   if (Block) {
     // Merge all unwind adresses into a single contiguous block
     Ranges.emplace_back(std::numeric_limits<DWORD>::max(),
                         std::numeric_limits<DWORD>::min());
-    ImageRanges::value_type& Range = Ranges.front();
-    for (PRUNTIME_FUNCTION It = RFunc, End = RFunc +N; It < End; ++It) {
-      Range.first = std::min(Range.first, It->BeginAddress);
-      Range.second = std::max(Range.second, It->EndAddress);
-    }
-  } else {
-    for (PRUNTIME_FUNCTION It = RFunc, End = RFunc +N; It < End; ++It)
-      Ranges.emplace_back(It->BeginAddress, It->EndAddress);
-
-    // Initial sort and merge
-    MergeRanges(Ranges);
+    BlockRange = &Ranges.back();
   }
 
-  ::RtlAddFunctionTable(RFunc, N, BaseAddr);
+  for (auto&& Frame : Frames) {
+    assert(getImageBaseMap().find(DWORD64(Frame.Addr)) ==
+           getImageBaseMap().end() && "Runtime function should not be a key!");
+
+    PRUNTIME_FUNCTION RFunc = reinterpret_cast<PRUNTIME_FUNCTION>(Frame.Addr);
+    const size_t N = Frame.Size / sizeof(RUNTIME_FUNCTION);
+    if (BlockRange) {
+      for (PRUNTIME_FUNCTION It = RFunc, End = RFunc + N; It < End; ++It) {
+        BlockRange->first = std::min(BlockRange->first, It->BeginAddress);
+        BlockRange->second = std::max(BlockRange->second, It->EndAddress);
+      }
+    } else {
+      for (PRUNTIME_FUNCTION It = RFunc, End = RFunc + N; It < End; ++It)
+        Ranges.emplace_back(It->BeginAddress, It->EndAddress);
+    }
+
+    ::RtlAddFunctionTable(RFunc, N, ImgBs);
+  }
+
+  if (!Block)
+    MergeRanges(Ranges); // Initial sort and merge
 }
 
-void DeRegisterEHFrames(uint8_t* Addr, size_t Size) {
-  assert(getImageBaseMap().find(DWORD64(Addr)) != getImageBaseMap().end());
+void DeRegisterEHFrames(uintptr_t ImgBase, const EHFrameInfos& Frames) {
+  if (Frames.empty())
+    return;
+  assert(getImageBaseMap().find(ImgBase) != getImageBaseMap().end());
 
+  // Remove the ImageBase from lookup
   ImageBaseMap& Unwind = getImageBaseMap();
-  Unwind.erase(Unwind.find(DWORD64(Addr)));
-  ::RtlDeleteFunctionTable(reinterpret_cast<PRUNTIME_FUNCTION>(Addr));
+  Unwind.erase(Unwind.find(ImgBase));
+
+  // Unregister all the PRUNTIME_FUNCTIONs
+  for (auto&& Frame : Frames)
+    ::RtlDeleteFunctionTable(reinterpret_cast<PRUNTIME_FUNCTION>(Frame.Addr));
 }
 
 // Adapted from VisualStudio/VC/crt/src/vcruntime/throw.cpp
@@ -886,6 +905,7 @@ __stdcall ClingRaiseSEHException(void* CxxExcept, void* Info) {
 #endif
 }
 } // namespace windows
+#endif // CLING_WIN_SEH_EXCEPTIONS
 
 } // namespace platform
 } // namespace utils
