@@ -249,7 +249,7 @@ bool getWindowsSDKDir(std::string& WindowsSDK) {
 } // anonymous namespace
 
 bool GetSystemRegistryString(const char *keyPath, const char *valueName,
-                             std::string& outValue) {
+                             std::string& outValue, std::string* phValue) {
   HKEY hRootKey = NULL;
   const char* subKey = NULL;
 
@@ -334,6 +334,8 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
             if (readFullStringValue(hKey, valueName, outValue)) {
               // bestIndex = (int)index;
               bestValue = dvalue;
+              if (phValue)
+                *phValue = bestName;
               returnValue = true;
             }
             ::RegCloseKey(hKey);
@@ -354,6 +356,8 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
                               &hKey);
     if (lResult == ERROR_SUCCESS) {
       returnValue = readFullStringValue(hKey, valueName, outValue);
+      if (phValue)
+        phValue->clear();
       ::RegCloseKey(hKey);
     } else
       ReportError(lResult, "RegOpenKeyEx");

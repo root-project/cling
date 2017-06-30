@@ -131,11 +131,12 @@ inline namespace windows {
   /// \param [in] Key - Key to lookup
   /// \param [in] ValueName - Value to lookup
   /// \param [out] Value - The value of the given key-value pair
+  /// \param [out] VersKey - The value that $VERSION is equal to for Value.
   ///
   /// \returns true if key-value existed and was read into Value
   ///
   bool GetSystemRegistryString(const char* Key, const char* ValueName,
-                               std::string& Value);
+                               std::string& Value, std::string* VersKey = 0);
 
   ///\brief Get a path to an installed VisualStudio directory matching:
   ///  1. Version that cling was compiled
