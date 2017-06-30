@@ -630,6 +630,20 @@ namespace cling {
     return ASTNodeInfo(Node, IsArtificiallyDependent(Node));
   }
 
+
+  ASTNodeInfo
+  EvaluateTSynthesizer::VisitArraySubscriptExpr(ArraySubscriptExpr* Node) {
+    ASTNodeInfo rhs = Visit(Node->getRHS());
+    ASTNodeInfo lhs;
+
+    lhs = Visit(Node->getLHS());
+
+    assert((lhs.hasSingleNode() || rhs.hasSingleNode()) &&
+           "1:N replacements are not implemented yet!");
+
+    return ASTNodeInfo(Node, IsArtificiallyDependent(Node));
+  }
+
   ASTNodeInfo EvaluateTSynthesizer::VisitCallExpr(CallExpr* E) {
     // FIXME: Maybe we need to handle the arguments
     //ASTNodeInfo NewNode = Visit(E->getCallee());
