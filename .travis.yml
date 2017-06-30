@@ -247,7 +247,7 @@ before_script:
       && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
       # Workaround for travis issue: travis-ci/travis-ci#6069
       git remote set-branches --add origin master
-      git fetch
+      git pull origin master
 
       echo "Syncing repository."
       git remote add alt http://root.cern.ch/git/cling.git
