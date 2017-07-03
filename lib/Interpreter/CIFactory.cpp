@@ -177,17 +177,14 @@ namespace {
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
   static void AddHostArguments(llvm::StringRef clingBin,
                                std::vector<const char*>& args,
-                               const char* llvmdir, const CompilerOptions& opts
-#ifdef _MSC_VER
-                               , platform::WindowsSDK& WinSDK
-#endif
-                               ) {
+                               const char* llvmdir, const CompilerOptions& opts,
+                               platform::SDK& Sdk) {
     static AdditionalArgList sArguments;
     if (sArguments.empty()) {
       const bool Verbose = opts.Verbose;
 #ifdef _MSC_VER
 
-      if (!WinSDK.UsingEnv()) {
+      if (!Sdk.UsingEnv()) {
         auto AddPaths = [](llvm::SmallVectorImpl<std::string> &Paths,
                            const char *Log, const char* Flag = "-isystem") {
           for (auto &&Path : Paths) {
@@ -200,12 +197,12 @@ namespace {
         };
 
         // -nostdinc++
-        if (!opts.NoCXXInc && !WinSDK.StdInclude.empty())
-          AddPaths(WinSDK.StdInclude, Verbose ? "VisualStudio" : nullptr);
+        if (!opts.NoCXXInc && !Sdk.StdInclude.empty())
+          AddPaths(Sdk.StdInclude, Verbose ? "VisualStudio" : nullptr);
 
         // -nobuiltininc
-        if (!opts.NoBuiltinInc && !WinSDK.SdkIncludes.empty())
-          AddPaths(WinSDK.SdkIncludes, Verbose ? "Windows SDK" : nullptr);
+        if (!opts.NoBuiltinInc && !Sdk.SdkIncludes.empty())
+          AddPaths(Sdk.SdkIncludes, Verbose ? "Windows SDK" : nullptr);
 
         // Don't let clang do any more setup later.
         sArguments.addArgument("-nostdinc");
@@ -223,7 +220,7 @@ namespace {
       sArguments.addArgument("-Wno-inconsistent-dllimport");
 
       // Assume Windows.h might be included, and don't spew a ton of warnings
-      if (WinSDK.Major) {
+      if (Sdk.Major) {
         sArguments.addArgument("-Wno-ignored-attributes");
         sArguments.addArgument("-Wno-nonportable-include-path");
         sArguments.addArgument("-Wno-microsoft-enum-value");
@@ -311,9 +308,9 @@ namespace {
 
       if (!opts.NoBuiltinInc && !opts.SysRoot) {
         std::string sysRoot;
-        if (platform::GetISysRoot(sysRoot, Verbose)) {
-          if (Verbose)
-            cling::log() << "Using SDK \"" << sysRoot << "\"\n";
+        if (Sdk.getISysRoot(sysRoot)) {
+          if (Sdk.Verbose)
+            (*Sdk.Verbose) << "Using SDK \"" << sysRoot << "\"\n";
           sArguments.addArgument("-isysroot", std::move(sysRoot));
         }
       }
@@ -777,14 +774,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Add host specific includes, -resource-dir if necessary, and -isysroot
     std::string ClingBin = GetExecutablePath(argv[0]);
 
-#ifndef _MSC_VER
-    AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts);
-#else
     // Want the WindowsSDK to fall out of scope at the end of this function.
-    platform::WindowsSDK WinSDK(CLING_VisualStudioEnv,
-                                COpts.Verbose ? &cling::errs() : nullptr);
-    AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts, WinSDK);
-#endif
+    platform::SDK Sdk(CLING_SDKEnv, COpts.Verbose ? &cling::errs() : nullptr);
+    AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts, Sdk);
 
     if (!OnlyLex && !COpts.NoBuiltinInc)
       AddRuntimeIncludePaths(ClingBin, argvCompile, COpts.Verbose);

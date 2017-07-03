@@ -99,11 +99,21 @@ inline namespace osx {
   /// \param [out] SysRoot - The path to the SDK
   /// \param [in] Verbose - Log progress
   ///
-  bool GetISysRoot(std::string& SysRoot, bool Verbose = false);
+  struct MacOSSDK {
+    llvm::raw_ostream* Verbose;
+    MacOSSDK(const char[1], llvm::raw_ostream* V = nullptr) : Verbose(V) {}
+    bool getISysRoot(std::string& SysRoot);
+  };
 
 } // namespace osx
+using SDK = MacOSSDK;
 
-#endif // __APPLE__
+#else  // __linux__
+
+struct EmptySDK { EmptySDK(const char[1], llvm::raw_ostream* = nullptr) {} };
+using SDK = EmptySDK;
+
+#endif // __linux__
 
 #elif defined(LLVM_ON_WIN32)
 
@@ -201,6 +211,7 @@ inline namespace windows {
   void DeRegisterEHFrames(uint8_t* Addr, size_t Size);
 
 } // namespace windows
+using SDK = WindowsSDK;
 #endif // LLVM_ON_WIN32
 
 } // namespace platform
