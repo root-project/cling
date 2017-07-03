@@ -454,7 +454,8 @@ namespace {
         // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak
         // the latter by disabling GNUMode:
         cling::errs()
-          << "Disabling gnu++: clang has no __float128 support on this target!";
+          << "Disabling gnu++: "
+             "clang has no __float128 support on this target!\n";
         Opts.GNUMode = 0;
       }
 #endif //_GLIBCXX_USE_FLOAT128
