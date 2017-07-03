@@ -403,9 +403,9 @@ namespace {
 
     if (Opts.CPlusPlus) {
       switch (CxxStdCompiledWith()) {
-        case 17: Opts.CPlusPlus1z = 1;
-        case 14: Opts.CPlusPlus14 = 1;
-        case 11: Opts.CPlusPlus11 = 1;
+        case 17: Opts.CPlusPlus1z = 1; // intentional fall-through
+        case 14: Opts.CPlusPlus14 = 1; // intentional fall-through
+        case 11: Opts.CPlusPlus11 = 1; break;
         default: break;
       }
     }
