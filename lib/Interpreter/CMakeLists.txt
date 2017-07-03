@@ -293,10 +293,17 @@ if (UNIX)
   endif()
 
 else()
+    string(REPLACE "\\" "\\\\" CLING_VCToolsInstallDir "$ENV{VCToolsInstallDir}"  )
+    string(REPLACE "\\" "\\\\" CLING_VCINSTALLDIR "$ENV{VCINSTALLDIR}")
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
       "
       #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
-      #define CLING_UCRT_VERSION  \"$ENV{UCRTVersion}\"
+      #define CLING_UCRTVersion  \"$ENV{UCRTVersion}\"
+      #define CLING_VisualStudioVersion  \"$ENV{VisualStudioVersion}\"
+      #define CLING_VCINSTALLDIR  \"${CLING_VCINSTALLDIR}\"
+      #define CLING_VCToolsInstallDir  \"${CLING_VCToolsInstallDir}\"
+      #define CLING_VSCMD_VER   \"$ENV{VSCMD_VER}\"
+      #define CLING_VisualStudioEnv  { CLING_UCRTVersion, CLING_VisualStudioVersion, CLING_VCINSTALLDIR, CLING_VCToolsInstallDir, CLING_VSCMD_VER }
     ")
 endif()
 

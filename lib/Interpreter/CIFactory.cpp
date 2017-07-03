@@ -177,49 +177,45 @@ namespace {
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
   static void AddHostArguments(llvm::StringRef clingBin,
                                std::vector<const char*>& args,
-                               const char* llvmdir, const CompilerOptions& opts) {
+                               const char* llvmdir, const CompilerOptions& opts
+#ifdef _MSC_VER
+                               , platform::WindowsSDK& WinSDK
+#endif
+                               ) {
     static AdditionalArgList sArguments;
     if (sArguments.empty()) {
       const bool Verbose = opts.Verbose;
 #ifdef _MSC_VER
-      // When built with access to the proper Windows APIs, try to actually find
-      // the correct include paths first. Init for UnivSDK.empty check below.
-      std::string VSDir, WinSDK,
-                  UnivSDK(opts.NoBuiltinInc ? "" : CLING_UCRT_VERSION);
-      if (platform::GetVisualStudioDirs(VSDir,
-                                        opts.NoBuiltinInc ? nullptr : &WinSDK,
-                                        opts.NoBuiltinInc ? nullptr : &UnivSDK,
-                                        Verbose)) {
-        if (!opts.NoCXXInc) {
-          const std::string VSIncl = VSDir + "\\VC\\include";
-          if (Verbose)
-            cling::log() << "Adding VisualStudio SDK: '" << VSIncl << "'\n";
-          sArguments.addHeaderSearch(std::move(VSIncl));
-        }
-        if (!opts.NoBuiltinInc) {
-          if (!WinSDK.empty()) {
-            WinSDK.append("\\include");
-            if (Verbose)
-              cling::log() << "Adding Windows SDK: '" << WinSDK << "'\n";
-            sArguments.addHeaderSearch(std::move(WinSDK));
-          } else {
-            VSDir.append("\\VC\\PlatformSDK\\Include");
-            if (Verbose)
-              cling::log() << "Adding Platform SDK: '" << VSDir << "'\n";
-            sArguments.addHeaderSearch(std::move(VSDir));
+
+      if (!WinSDK.UsingEnv()) {
+        auto AddPaths = [](llvm::SmallVectorImpl<std::string> &Paths,
+                           const char *Log, const char* Flag = "-isystem") {
+          for (auto &&Path : Paths) {
+            if (Log)
+              cling::log() << "Adding " << Log << " path: '" << Path << "'\n";
+
+            sArguments.addArgument(Flag, std::move(Path));
           }
-        }
-      }
+          Paths.clear(); // entries have been std::move'd
+        };
 
-#if LLVM_MSC_PREREQ(1900)
-      if (!UnivSDK.empty()) {
-        if (Verbose)
-          cling::log() << "Adding UniversalCRT SDK: '" << UnivSDK << "'\n";
-        sArguments.addHeaderSearch(std::move(UnivSDK));
-      }
-#endif
+        // -nostdinc++
+        if (!opts.NoCXXInc && !WinSDK.StdInclude.empty())
+          AddPaths(WinSDK.StdInclude, Verbose ? "VisualStudio" : nullptr);
 
-      // Windows headers use '__declspec(dllexport) __cdecl' for most funcs
+        // -nobuiltininc
+        if (!opts.NoBuiltinInc && !WinSDK.SdkIncludes.empty())
+          AddPaths(WinSDK.SdkIncludes, Verbose ? "Windows SDK" : nullptr);
+
+        // Don't let clang do any more setup later.
+        sArguments.addArgument("-nostdinc");
+      } else {
+        // Don't add the resources directory lib/clang/x.x.x/include, it is
+        // handled at the end of this function.
+        sArguments.addArgument("-nobuiltininc");
+	  }
+
+      // Windows headers use '__declspec(dllexport) __cdecl' for most functions
       // causing a lot of warnings for different redeclarations (eg. coming from
       // the test suite).
       // Do not warn about such cases.
@@ -227,13 +223,19 @@ namespace {
       sArguments.addArgument("-Wno-inconsistent-dllimport");
 
       // Assume Windows.h might be included, and don't spew a ton of warnings
-      sArguments.addArgument("-Wno-ignored-attributes");
-      sArguments.addArgument("-Wno-nonportable-include-path");
-      sArguments.addArgument("-Wno-microsoft-enum-value");
-      sArguments.addArgument("-Wno-expansion-to-defined");
+      if (WinSDK.Major) {
+        sArguments.addArgument("-Wno-ignored-attributes");
+        sArguments.addArgument("-Wno-nonportable-include-path");
+        sArguments.addArgument("-Wno-microsoft-enum-value");
+        sArguments.addArgument("-Wno-expansion-to-defined");
+        //sArguments.addArgument("-Wno-dllimport-static-field-def");
+        //sArguments.addArgument("-Wno-microsoft-template");
+      }
 
-      //sArguments.addArgument("-Wno-dllimport-static-field-def");
-      //sArguments.addArgument("-Wno-microsoft-template");
+      // Force usage of __builtin_ofsetof (otherwise C++ headers will fail)
+      sArguments.addArgument("-D_CRT_USE_BUILTIN_OFFSETOF");
+      // So child interpreters can also include new (vadefs.h, line 121)
+      sArguments.addArgument("-D_CRT_NO_VA_START_VALIDATION");
 
 #else // _MSC_VER
 
@@ -403,10 +405,15 @@ namespace {
     Opts.MathErrno = 0;
 #endif
 
-    // C++11 is turned on if cling is built with C++11: it's an interpreter;
-    // cross-language compilation doesn't make sense.
+    // If the user has specified a language standard, use that, otherwise set
+    // up the language standard to the one cling was compiled with.
 
-    if (Opts.CPlusPlus) {
+    if (!CompilerOpts.StdVersion && Opts.CPlusPlus) {
+      // clang::driver::Compilation may have already chosen what it thought the
+      // best standard was, so clear them out first.
+      Opts.CPlusPlus1z = 0;
+      Opts.CPlusPlus14 = 0;
+      Opts.CPlusPlus11 = 0;
       switch (CxxStdCompiledWith()) {
         case 17: Opts.CPlusPlus1z = 1; // intentional fall-through
         case 14: Opts.CPlusPlus14 = 1; // intentional fall-through
@@ -769,14 +776,23 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     // Add host specific includes, -resource-dir if necessary, and -isysroot
     std::string ClingBin = GetExecutablePath(argv[0]);
+
+#ifndef _MSC_VER
     AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts);
+#else
+    // Want the WindowsSDK to fall out of scope at the end of this function.
+    platform::WindowsSDK WinSDK(CLING_VisualStudioEnv,
+                                COpts.Verbose ? &cling::errs() : nullptr);
+    AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts, WinSDK);
+#endif
+
     if (!OnlyLex && !COpts.NoBuiltinInc)
       AddRuntimeIncludePaths(ClingBin, argvCompile, COpts.Verbose);
 
     // Be explicit about the stdlib on OS X
     // Would be nice on Linux but will warn 'argument unused during compilation'
     // when -nostdinc++ is passed
-#ifdef __APPLE__
+#if defined(__APPLE__)
       if (!COpts.StdLib) {
   #ifdef _LIBCPP_VERSION
         argvCompile.push_back("-stdlib=libc++");
@@ -837,9 +853,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     std::unique_ptr<CompilerInstance> CI(new CompilerInstance());
     CI->setInvocation(InvocationPtr);
     CI->setDiagnostics(Diags.get()); // Diags is ref-counted
+
     if (!OnlyLex)
       CI->getDiagnosticOpts().ShowColors = cling::utils::ColorizeOutput();
-
 
     // Copied from CompilerInstance::createDiagnostics:
     // Chain in -verify checker, if requested.
