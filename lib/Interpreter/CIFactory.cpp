@@ -175,6 +175,7 @@ namespace {
 #endif
   
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
+  /// Request any additional host specific setup via cmd-line flags to clang.
   static void AddHostArguments(llvm::StringRef clingBin,
                                std::vector<const char*>& args,
                                const char* llvmdir, const CompilerOptions& opts,
@@ -233,6 +234,20 @@ namespace {
       sArguments.addArgument("-D_CRT_USE_BUILTIN_OFFSETOF");
       // So child interpreters can also include new (vadefs.h, line 121)
       sArguments.addArgument("-D_CRT_NO_VA_START_VALIDATION");
+
+      // -fms-compatibility-version=19.00
+      const int Major = _MSC_VER / 100, Minor = _MSC_VER - (Major * 100);
+      smallstream CompatVers;
+      CompatVers << "-fms-compatibility-version=" << Major << '.' << Minor;
+      sArguments.addArgument(CompatVers.str());
+
+      // __declspec(dllimport). Do this only in 'if (Sdk.Major)' above?
+      sArguments.addArgument("-fms-extensions");
+
+      // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
+      // No need to add this, -fdelayed-template-parsing is set by default, and
+      // doing it here could override user using -fno-delayed-template-parsing
+      //sArguments.addArgument("-fdelayed-template-parsing");
 
 #else // _MSC_VER
 
@@ -439,18 +454,17 @@ namespace {
   static void SetClingTargetLangOpts(LangOptions& Opts,
                                      const TargetInfo& Target,
                                      const CompilerOptions& CompilerOpts) {
-    if (Target.getTriple().getOS() == llvm::Triple::Win32) {
-      Opts.MicrosoftExt = 1;
-#ifdef _MSC_VER
-      Opts.MSCompatibilityVersion = (_MSC_VER * 100000);
-#endif
-      // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
-      Opts.DelayedTemplateParsing = 1;
-    } else {
-      Opts.MicrosoftExt = 0;
-    }
-
     if (CompilerOpts.DefaultLanguage(Opts)) {
+#if LLVM_ON_WIN32
+      // Sanity check that the base Windows setup is as expected.
+      if (Target.getTriple().getOS() == llvm::Triple::Win32) {
+        assert(Opts.MicrosoftExt && "No Microsoft extensions");
+#if _MSC_VER
+        assert(Opts.MSCompatibilityVersion == (_MSC_VER * 100000));
+#endif
+      }
+#endif
+
 #if _GLIBCXX_USE_FLOAT128
       // We are compiling with libstdc++ with __float128 enabled.
       if (!Target.hasFloat128Type()) {
