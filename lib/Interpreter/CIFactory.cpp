@@ -745,13 +745,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Would be nice on Linux but will warn 'argument unused during compilation'
     // when -nostdinc++ is passed
 #ifdef __APPLE__
-      if (!COpts.StdLib) {
+    if (!COpts.StdLib) {
   #ifdef _LIBCPP_VERSION
-        argvCompile.push_back("-stdlib=libc++");
+      argvCompile.push_back("-stdlib=libc++");
   #elif defined(__GLIBCXX__)
-        argvCompile.push_back("-stdlib=libstdc++");
+      argvCompile.push_back("-stdlib=libstdc++");
   #endif
-      }
+    }
 #endif
 
     if (!COpts.HasOutput || !HasInput) {
