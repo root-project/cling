@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -std=c++14 -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 // FIXME: cat %s | %cling -fsyntax-only -Xclang -verify 2>&1
 
 // Test to check functions registered via atexit are intercepted, and __dso_handle
@@ -46,7 +46,7 @@ cling::Interpreter * gChild = 0;
   ChildInterp.execute("atexit(atexit_c);");
 }
 // ChildInterp
-// CHECK-NEXT: atexit_c 1
+// CHECK: atexit_c 1
 
 static void atexit_f() {
   printf("atexit_f %s\n", gCling==__dso_handle ? "true" : "false");
