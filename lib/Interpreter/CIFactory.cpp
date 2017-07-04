@@ -418,7 +418,7 @@ namespace {
 #endif
 
     if (CompilerOpts.DefaultLanguage(Opts)) {
-#ifdef __STRICT_ANSI__
+#ifdef __STRICT_ANSI__ || defined(LLVM_ON_WIN32)
       Opts.GNUMode = 0;
 #else
       Opts.GNUMode = 1;
