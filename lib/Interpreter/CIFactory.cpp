@@ -624,16 +624,16 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   static bool
   SetupCompiler(CompilerInstance* CI, const CompilerOptions& CompilerOpts,
                 bool Lang = true, bool Targ = true) {
+    LangOptions& LangOpts = CI->getLangOpts();
     // Set the language options, which cling needs.
     // This may have already been done via a precompiled header
     if (Lang)
-      SetClingCustomLangOpts(CI->getLangOpts(), CompilerOpts);
+      SetClingCustomLangOpts(LangOpts, CompilerOpts);
 
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
     SetPreprocessorFromBinary(PPOpts);
 
     // Sanity check that clang delivered the language standard requested
-    const auto& LangOpts = CI->getLangOpts();
     if (CompilerOpts.DefaultLanguage(LangOpts)) {
       switch (CxxStdCompiledWith()) {
         case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
@@ -644,9 +644,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
 
     PPOpts.addMacroDef("__CLING__");
-    if (CI->getLangOpts().CPlusPlus11 == 1)
+    if (LangOpts.CPlusPlus11 == 1)
       PPOpts.addMacroDef("__CLING__CXX11");
-    if (CI->getLangOpts().CPlusPlus14 == 1)
+    if (LangOpts.CPlusPlus14 == 1)
       PPOpts.addMacroDef("__CLING__CXX14");
 
     if (CI->getDiagnostics().hasErrorOccurred()) {
@@ -661,11 +661,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return false;
     }
 
-    CI->getTarget().adjust(CI->getLangOpts());
+    CI->getTarget().adjust(LangOpts);
 
     // This may have already been done via a precompiled header
     if (Targ)
-      SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget(), CompilerOpts);
+      SetClingTargetLangOpts(LangOpts, CI->getTarget(), CompilerOpts);
 
     SetPreprocessorFromTarget(PPOpts, CI->getTarget().getTriple());
     return true;
