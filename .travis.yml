@@ -254,7 +254,7 @@ before_script:
       git pull alt master
       git remote remove origin
       git remote add origin https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG}
-      git push --verbose origin master
+      git push --verbose origin HEAD
 
       # Move the tag to newest master
       git tag --force cling-nightlies HEAD
