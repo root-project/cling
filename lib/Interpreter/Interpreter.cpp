@@ -356,26 +356,22 @@ namespace cling {
     // (on OS X at least, so probably Linux too) and the JIT thinks the symbol
     // is undefined in a child Interpreter.  And speaking of children, should
     // gCling actually be thisCling, so a child Interpreter can only access
-    // itself? One could use a macro (simillar to __dso_handle) to block
-    // assignemnt and get around the mangling issue.
-    const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
+    // itself?
     if (!NoRuntime) {
-      if (LangOpts.CPlusPlus) {
-        Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
-        if (EmitDefinitions)
+      Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
+      if (EmitDefinitions) {
+        if (LangOpts.CPlusPlus) {
           Strm << "namespace cling { class Interpreter; namespace runtime { "
-                  "Interpreter* gCling=(Interpreter*)" << ThisP << ";}}\n";
-      } else {
-        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
-             << "void* gCling";
-        if (EmitDefinitions)
-          Strm << "=(void*)" << ThisP;
-        Strm << ";\n";
+                  "Interpreter* gCling=(Interpreter*)"
+               << ThisP << ";}}\n";
+        } else
+          Strm << "void* gCling =(void*)" << ThisP << ";\n";
       }
     }
 
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
+    const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
 #if defined(__GLIBCXX__) && !defined(__APPLE__)
     const char* LinkageCxx = "extern \"C++\"";
     const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
