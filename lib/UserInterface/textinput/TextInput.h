@@ -88,6 +88,13 @@ namespace textinput {
     void EnableAutoHistAdd(bool enable = true) { fAutoHistAdd = enable; }
     void AddHistoryLine(const char* line);
 
+    // Dumb terminal getter and setter
+    bool IsDumbTerm() const {return fIsDumbTerm;}
+    void SetIsDumbTerm(bool isDumbTerm) { fIsDumbTerm = isDumbTerm; }
+
+  protected:
+    bool fIsDumbTerm; // whether this is a dumb terminal or not
+
   private:
     void EmitSignal(char c, EditorRange& r);
     void ProcessNewInput(const InputData& in, EditorRange& r);

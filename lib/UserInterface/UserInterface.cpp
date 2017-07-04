@@ -79,6 +79,9 @@ namespace cling {
     UITabCompletion* Completion =
                       new UITabCompletion(m_MetaProcessor->getInterpreter());
     TI.SetCompletion(Completion);
+    if (D->GetTERM() &&  strstr(D->GetTERM(), "dumb")) {
+        TI.SetIsDumbTerm(true);
+    }
 
     bool Done = false;
     std::string Line;

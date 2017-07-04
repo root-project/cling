@@ -31,6 +31,7 @@
 namespace textinput {
   TextInput::TextInput(Reader& reader, Display& display,
                        const char* HistFile /* = 0 */):
+  fIsDumbTerm(false),
   fMasked(false),
   fAutoHistAdd(true),
   fLastKey(0),
@@ -61,9 +62,11 @@ namespace textinput {
     }
     fContext->GetEditor()->ResetText();
 
-    // Signal displays that the input got taken.
-    std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-             std::mem_fun(&Display::NotifyResetInput));
+    if (!fIsDumbTerm) {
+        // Signal displays that the input got taken.
+        std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
+                      std::mem_fun(&Display::NotifyResetInput));
+    }
 
     ReleaseInputOutput();
 
@@ -124,7 +127,9 @@ namespace textinput {
              || (*iR)->HaveBufferedInput()) {
         if ((*iR)->ReadInput(nRead, in)) {
           ProcessNewInput(in, R);
-          DisplayNewInput(R, OldCursorPos);
+          if (!IsDumbTerm()) {
+              DisplayNewInput(R, OldCursorPos);
+          }
           if (fLastReadResult == kRREOF
               || fLastReadResult == kRRReadEOLDelimiter)
             break;

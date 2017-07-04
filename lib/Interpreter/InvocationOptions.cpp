@@ -160,8 +160,10 @@ bool CompilerOptions::DefaultLanguage(const LangOptions& LangOpts) const {
 }
 
 InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
+
   MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
   Help(false), NoRuntime(false) {
+
 
   ArrayRef<const char *> ArgStrings(argv, argv + argc);
   unsigned MissingArgIndex, MissingArgCount;

@@ -119,6 +119,7 @@ namespace textinput {
     TerminalConfigUnix::Get().TIOS()->c_lflag |= ECHOCTL|ECHOKE|ECHOE;
 #endif
     const char* TERM = getenv("TERM");
+    SetTERM(TERM);
     if (TERM &&  strstr(TERM, "256")) {
       fNColors = 256;
     }
