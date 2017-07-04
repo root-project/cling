@@ -398,18 +398,6 @@ namespace {
     Opts.MathErrno = 0;
 #endif
 
-    // C++11 is turned on if cling is built with C++11: it's an interpreter;
-    // cross-language compilation doesn't make sense.
-
-    if (Opts.CPlusPlus) {
-      switch (CxxStdCompiledWith()) {
-        case 17: Opts.CPlusPlus1z = 1; // intentional fall-through
-        case 14: Opts.CPlusPlus14 = 1; // intentional fall-through
-        case 11: Opts.CPlusPlus11 = 1; break;
-        default: break;
-      }
-    }
-
 #ifdef _REENTRANT
     Opts.POSIXThreads = 1;
 #endif
@@ -418,7 +406,7 @@ namespace {
 #endif
 
     if (CompilerOpts.DefaultLanguage(Opts)) {
-#ifdef __STRICT_ANSI__ || defined(LLVM_ON_WIN32)
+#ifdef __STRICT_ANSI__
       Opts.GNUMode = 0;
 #else
       Opts.GNUMode = 1;
@@ -644,6 +632,17 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
     SetPreprocessorFromBinary(PPOpts);
 
+    // Sanity check that clang delivered the language standard requested
+    const auto& LangOpts = CI->getLangOpts();
+    if (CompilerOpts.DefaultLanguage(LangOpts)) {
+      switch (CxxStdCompiledWith()) {
+        case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
+        case 14: assert(LangOpts.CPlusPlus14 && "Language version mismatch");
+        case 11: assert(LangOpts.CPlusPlus11 && "Language version mismatch");
+        default: break;
+      }
+    }
+
     PPOpts.addMacroDef("__CLING__");
     if (CI->getLangOpts().CPlusPlus11 == 1)
       PPOpts.addMacroDef("__CLING__CXX11");
@@ -733,6 +732,19 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       // We do C++ by default; append right after argv[0] if no "-x" given
       argvCompile.push_back("-x");
       argvCompile.push_back( "c++");
+
+      if (!COpts.StdVersion) {
+        // By default, set the standard to what cling was compiled with.
+        // clang::driver::Compilation will do various things while initializing
+        // and by enforcing the std version now cling is telling clang what to
+        // do, rather than after clang has dedcuded a default.
+        switch (CxxStdCompiledWith()) {
+          case 17: argvCompile.emplace_back("-std=c++1z"); break;
+          case 14: argvCompile.emplace_back("-std=c++14"); break;
+          case 11: argvCompile.emplace_back("-std=c++11"); break;
+          default: llvm_unreachable("Unrecognized C++ version");
+        }
+      }
     }
     // argv[0] already inserted, get the rest
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
