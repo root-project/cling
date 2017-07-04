@@ -28,20 +28,6 @@
 
 #pragma once
 
-#include <string>
-
-namespace cling {
-namespace utils {
-namespace platform {
-inline namespace windows {
-
-bool FindVCToolChainViaSetupConfig(std::string& Path, const char* MatchVer = 0);
-
-}
-}
-}
-}
-
 #ifdef _MSC_VER
 // Don't support SetupApi on MinGW.
 #define USE_MSVC_SETUP_API
