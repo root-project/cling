@@ -60,9 +60,9 @@ namespace {
     // I would claim that the check should be relaxed to:
 #if __cplusplus > 201402L
     return 17;
-#elif __cplusplus > 201103L || (defined(LLVM_ON_WIN32) && _MSC_VER == 1910)
+#elif __cplusplus > 201103L || (defined(LLVM_ON_WIN32) && _MSC_VER >= 1900)
     return 14;
-#elif __cplusplus >= 201103L || (defined(LLVM_ON_WIN32) && _MSC_VER == 1900)
+#elif __cplusplus
     return 11;
 #else
 #error "Unknown __cplusplus version"
