@@ -415,13 +415,20 @@ namespace cling {
     if (in.fail())
       return reportIOErr(filename, "read");
 
+    static const char whitespace[] = " \t\r\n";
+    if (content.length() > 2 && content[0] == '#' && content[1] == '!') {
+      // Convert shebang line to comment. That's nice because it doesn't
+      // change the content size, leaving posOpenCurly untouched.
+      content[0] = '/';
+      content[1] = '/';
+    }
+
     if (posOpenCurly != (size_t)-1 && !content.empty()) {
       assert(content[posOpenCurly] == '{'
              && "No curly at claimed position of opening curly!");
       // hide the curly brace:
       content[posOpenCurly] = ' ';
       // and the matching closing '}'
-      static const char whitespace[] = " \t\r\n";
       size_t posCloseCurly = content.find_last_not_of(whitespace);
       if (posCloseCurly != std::string::npos) {
         if (content[posCloseCurly] == ';' && content[posCloseCurly-1] == '}') {
