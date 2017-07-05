@@ -405,7 +405,7 @@ namespace {
     Opts.FastMath = 1;
 #endif
 
-    if (CompilerOpts.DefaultLanguage(Opts)) {
+    if (CompilerOpts.DefaultLanguage(&Opts)) {
 #ifdef __STRICT_ANSI__
       Opts.GNUMode = 0;
 #else
@@ -429,7 +429,7 @@ namespace {
       Opts.MicrosoftExt = 0;
     }
 
-    if (CompilerOpts.DefaultLanguage(Opts)) {
+    if (CompilerOpts.DefaultLanguage(&Opts)) {
 #if _GLIBCXX_USE_FLOAT128
       // We are compiling with libstdc++ with __float128 enabled.
       if (!Target.hasFloat128Type()) {
@@ -634,7 +634,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     SetPreprocessorFromBinary(PPOpts);
 
     // Sanity check that clang delivered the language standard requested
-    if (CompilerOpts.DefaultLanguage(LangOpts)) {
+    if (CompilerOpts.DefaultLanguage(&LangOpts)) {
       switch (CxxStdCompiledWith()) {
         case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
         case 14: assert(LangOpts.CPlusPlus14 && "Language version mismatch");
@@ -732,18 +732,17 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       // We do C++ by default; append right after argv[0] if no "-x" given
       argvCompile.push_back("-x");
       argvCompile.push_back( "c++");
-
-      if (!COpts.StdVersion) {
-        // By default, set the standard to what cling was compiled with.
-        // clang::driver::Compilation will do various things while initializing
-        // and by enforcing the std version now cling is telling clang what to
-        // do, rather than after clang has dedcuded a default.
-        switch (CxxStdCompiledWith()) {
-          case 17: argvCompile.emplace_back("-std=c++1z"); break;
-          case 14: argvCompile.emplace_back("-std=c++14"); break;
-          case 11: argvCompile.emplace_back("-std=c++11"); break;
-          default: llvm_unreachable("Unrecognized C++ version");
-        }
+    }
+    if (COpts.DefaultLanguage()) {
+      // By default, set the standard to what cling was compiled with.
+      // clang::driver::Compilation will do various things while initializing
+      // and by enforcing the std version now cling is telling clang what to
+      // do, rather than after clang has dedcuded a default.
+      switch (CxxStdCompiledWith()) {
+        case 17: argvCompile.emplace_back("-std=c++1z"); break;
+        case 14: argvCompile.emplace_back("-std=c++14"); break;
+        case 11: argvCompile.emplace_back("-std=c++11"); break;
+        default: llvm_unreachable("Unrecognized C++ version");
       }
     }
     // argv[0] already inserted, get the rest
