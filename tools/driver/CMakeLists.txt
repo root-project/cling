@@ -81,7 +81,6 @@ if(MSVC)
     ?write@raw_ostream@llvm@@QEAAAEAV12@PEBD_K@Z
     ?castFromDeclContext@Decl@clang@@SAPEAV12@PEBVDeclContext@2@@Z
     ??1raw_ostream@llvm@@UEAA@XZ
-    ?dump@Decl@clang@@QEBAXAEAVraw_ostream@llvm@@@Z
     ??1raw_string_ostream@llvm@@UEAA@XZ
     ?flush_nonempty@raw_ostream@llvm@@AEAAXXZ
     ?getASTContext@Decl@clang@@QEBAAEAVASTContext@2@XZ
