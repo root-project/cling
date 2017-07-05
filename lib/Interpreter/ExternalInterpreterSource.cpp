@@ -217,7 +217,7 @@ namespace cling {
       parentDeclName = DeclarationName(&parentIdentifierInfo);
 
       // Make sure then lookup name is right, this is an issue looking to import
-      // a constructor,  where lookup_result can hold the injected class name.
+      // a constructor, where lookup_result can hold the injected class name.
       // FIXME: Pre-filter childDeclName.getNameKind() and just drop import
       // of any unsupported types (i.e. CXXUsingDirective)
       const DeclarationName::NameKind ChildKind = childDeclName.getNameKind();
@@ -243,8 +243,57 @@ namespace cling {
     if (lookup_result.empty())
       return false;
 
-    return Import(lookup_result, childCurrentDeclContext, childDeclName,
-                  parentDeclName);
+    if (!Import(lookup_result, childCurrentDeclContext, childDeclName,
+                parentDeclName))
+      return false;
+
+    // FIXME: The failure of this to work out of the box seems like a deeper
+    // issue (in ASTImporter::ImportContext or
+    // CXXRecordDecl::getVisibleConversionFunctions for example).
+
+    // Constructing or importing a variable of type CXXRecordDecl.
+    // Import the all constructors, conversion routines, and the destructor.
+
+    const CXXRecordDecl* CXD = dyn_cast<CXXRecordDecl>(childCurrentDeclContext);
+    if (!CXD && isa<VarDecl>(*lookup_result.begin())) {
+      assert(lookup_result.size() == 1 && "More than one VarDecl?!");
+      CXD = cast<VarDecl>(*lookup_result.begin())
+                ->getType()
+                ->getAsCXXRecordDecl();
+      if (CXD)
+        parentDC = cast<DeclContext>(const_cast<CXXRecordDecl*>(CXD));
+    }
+
+    if (!CXD)
+      return true;
+
+    ASTContext& AST = m_ChildInterpreter->getCI()->getASTContext();
+    const auto CanonQT = CXD->getCanonicalDecl()
+                             ->getTypeForDecl()
+                             ->getCanonicalTypeUnqualified();
+    const auto* DM = parentDC->getPrimaryContext()->getLookupPtr();
+    assert(DM && "No lookup map");
+    for (auto&& Entry : *DM) {
+      const DeclarationName& ParentDN = Entry.first;
+      const auto ParentKind = ParentDN.getNameKind();
+      if (ParentKind < DeclarationName::CXXConstructorName ||
+          ParentKind > DeclarationName::CXXConversionFunctionName)
+        continue;
+
+      if (m_ImportedDecls.find(childDeclName) == m_ImportedDecls.end())
+        continue;
+
+      DeclarationName ChildDN =
+          AST.DeclarationNames.getCXXSpecialName(ParentDN.getNameKind(),
+                                                 CanonQT);
+      // FIXME: DeclContext::Import checks if the decl is a DeclContext.
+      // Is that neccessary?
+      DeclContext::lookup_result LR = parentDC->lookup(ParentDN);
+      if (!LR.empty() &&
+          !Import(LR, childCurrentDeclContext, ChildDN, ParentDN))
+        return false;
+    }
+    return true;
   }
 
   ///\brief Make available to child all decls in parent's decl context

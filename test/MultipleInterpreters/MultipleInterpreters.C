@@ -15,7 +15,7 @@
 
 //Declare something in the parent interpreter
 int foo(){ return 42; }
-struct InParent {};
+struct InParent { operator int() const { return 84; } };
 InParent IP;
 
 // OR
@@ -39,6 +39,16 @@ const char* argV[1] = {"cling"};
 
   ChildInterp.echo("InParent FC");
   // CHECK-NEXT: (InParent &) @0x{{.*}}
+
+  ChildInterp.echo("static_cast<int>(IP)");
+  // CHECK-NEXT: (int) 84
+}
+
+{
+  cling::Interpreter ChildInterp(*gCling, 1, argV);
+
+  ChildInterp.echo("static_cast<int>(IP)");
+  // CHECK: (int) 84
 }
 
 // expected-no-diagnostics
