@@ -145,7 +145,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
   }
 }
 
-bool CompilerOptions::DefaultLanguage(const LangOptions& LangOpts) const {
+bool CompilerOptions::DefaultLanguage(const LangOptions* LangOpts) const {
   // When StdVersion is set (-std=c++11, -std=gnu++11, etc.) then definitely
   // don't setup the defaults, as they may interfere with what the user is doing
   if (StdVersion)
@@ -154,7 +154,7 @@ bool CompilerOptions::DefaultLanguage(const LangOptions& LangOpts) const {
   // Also don't set up the defaults when language is explicitly set; unless
   // the language was set to generate a PCH, in which case definitely do.
   if (Language)
-    return LangOpts.CompilingPCH || HasOutput;
+    return HasOutput || (LangOpts && LangOpts->CompilingPCH);
 
   return true;
 }

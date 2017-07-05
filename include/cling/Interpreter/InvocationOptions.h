@@ -46,7 +46,7 @@ namespace cling {
     /// or './cling -x c') that this shouldn't be done.  This will return false
     /// in those cases.
     ///
-    bool DefaultLanguage(const clang::LangOptions&) const;
+    bool DefaultLanguage(const clang::LangOptions* = nullptr) const;
 
     unsigned Language : 1;
     unsigned ResourceDir : 1;
