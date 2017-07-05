@@ -71,16 +71,16 @@ namespace cling {
         bool Import(clang::DeclContext::lookup_result lookupResult,
                     const clang::DeclContext *childCurrentDeclContext,
                     clang::DeclarationName &childDeclName,
-                    clang::DeclarationName &parentDeclName);
+                    const clang::DeclarationName &parentDeclName);
 
         void ImportDeclContext(clang::DeclContext *declContextToImport,
                                clang::DeclarationName &childDeclName,
-                               clang::DeclarationName &parentDeclName,
+                               const clang::DeclarationName &parentDeclName,
                                const clang::DeclContext *childCurrentDeclContext);
 
         void ImportDecl(clang::Decl *declToImport,
                         clang::DeclarationName &childDeclName,
-                        clang::DeclarationName &parentDeclName,
+                        const clang::DeclarationName &parentDeclName,
                         const clang::DeclContext *childCurrentDeclContext);
 
         void addToImportedDecls(clang::DeclarationName child,
