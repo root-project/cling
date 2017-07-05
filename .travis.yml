@@ -245,20 +245,25 @@ before_script:
    if [ -n "$NIGHTLY_CRON_SYNC" ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
       && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
       && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
-      # Workaround for travis issue: travis-ci/travis-ci#6069
-      git remote set-branches --add origin master
-      git pull origin master
+      # Override the default travis clone command to enable sync.
+      cd ../../ && rm -fr ${TRAVIS_REPO_SLUG}
+      git clone https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} ${TRAVIS_REPO_SLUG}
+      cd ${TRAVIS_REPO_SLUG}
+      git checkout -qf ${TRAVIS_COMMIT}
 
       echo "Syncing repository."
       git remote add alt http://root.cern.ch/git/cling.git
       git pull alt master
-      git remote remove origin
-      git remote add origin https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG}
-      git push --verbose origin HEAD
 
       # Move the tag to newest master
-      git tag --force cling-nightlies HEAD
+      git tag --force cling-nightlies master
+
+      # Push to origin
+      git push --verbose origin master
       git push --verbose --force origin cling-nightlies
+
+      # Some debug output.
+      git remote -v && git branch -a
    fi
 
 script:
