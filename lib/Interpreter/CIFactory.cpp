@@ -398,18 +398,6 @@ namespace {
     Opts.MathErrno = 0;
 #endif
 
-    // C++11 is turned on if cling is built with C++11: it's an interpreter;
-    // cross-language compilation doesn't make sense.
-
-    if (Opts.CPlusPlus) {
-      switch (CxxStdCompiledWith()) {
-        case 17: Opts.CPlusPlus1z = 1; // intentional fall-through
-        case 14: Opts.CPlusPlus14 = 1; // intentional fall-through
-        case 11: Opts.CPlusPlus11 = 1; break;
-        default: break;
-      }
-    }
-
 #ifdef _REENTRANT
     Opts.POSIXThreads = 1;
 #endif
@@ -636,18 +624,29 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   static bool
   SetupCompiler(CompilerInstance* CI, const CompilerOptions& CompilerOpts,
                 bool Lang = true, bool Targ = true) {
+    LangOptions& LangOpts = CI->getLangOpts();
     // Set the language options, which cling needs.
     // This may have already been done via a precompiled header
     if (Lang)
-      SetClingCustomLangOpts(CI->getLangOpts(), CompilerOpts);
+      SetClingCustomLangOpts(LangOpts, CompilerOpts);
 
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
     SetPreprocessorFromBinary(PPOpts);
 
+    // Sanity check that clang delivered the language standard requested
+    if (CompilerOpts.DefaultLanguage(LangOpts)) {
+      switch (CxxStdCompiledWith()) {
+        case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
+        case 14: assert(LangOpts.CPlusPlus14 && "Language version mismatch");
+        case 11: assert(LangOpts.CPlusPlus11 && "Language version mismatch");
+        default: break;
+      }
+    }
+
     PPOpts.addMacroDef("__CLING__");
-    if (CI->getLangOpts().CPlusPlus11 == 1)
+    if (LangOpts.CPlusPlus11 == 1)
       PPOpts.addMacroDef("__CLING__CXX11");
-    if (CI->getLangOpts().CPlusPlus14 == 1)
+    if (LangOpts.CPlusPlus14 == 1)
       PPOpts.addMacroDef("__CLING__CXX14");
 
     if (CI->getDiagnostics().hasErrorOccurred()) {
@@ -662,11 +661,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return false;
     }
 
-    CI->getTarget().adjust(CI->getLangOpts());
+    CI->getTarget().adjust(LangOpts);
 
     // This may have already been done via a precompiled header
     if (Targ)
-      SetClingTargetLangOpts(CI->getLangOpts(), CI->getTarget(), CompilerOpts);
+      SetClingTargetLangOpts(LangOpts, CI->getTarget(), CompilerOpts);
 
     SetPreprocessorFromTarget(PPOpts, CI->getTarget().getTriple());
     return true;
@@ -733,6 +732,19 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       // We do C++ by default; append right after argv[0] if no "-x" given
       argvCompile.push_back("-x");
       argvCompile.push_back( "c++");
+
+      if (!COpts.StdVersion) {
+        // By default, set the standard to what cling was compiled with.
+        // clang::driver::Compilation will do various things while initializing
+        // and by enforcing the std version now cling is telling clang what to
+        // do, rather than after clang has dedcuded a default.
+        switch (CxxStdCompiledWith()) {
+          case 17: argvCompile.emplace_back("-std=c++1z"); break;
+          case 14: argvCompile.emplace_back("-std=c++14"); break;
+          case 11: argvCompile.emplace_back("-std=c++11"); break;
+          default: llvm_unreachable("Unrecognized C++ version");
+        }
+      }
     }
     // argv[0] already inserted, get the rest
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
@@ -745,13 +757,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Would be nice on Linux but will warn 'argument unused during compilation'
     // when -nostdinc++ is passed
 #ifdef __APPLE__
-      if (!COpts.StdLib) {
+    if (!COpts.StdLib) {
   #ifdef _LIBCPP_VERSION
-        argvCompile.push_back("-stdlib=libc++");
+      argvCompile.push_back("-stdlib=libc++");
   #elif defined(__GLIBCXX__)
-        argvCompile.push_back("-stdlib=libstdc++");
+      argvCompile.push_back("-stdlib=libstdc++");
   #endif
-      }
+    }
 #endif
 
     if (!COpts.HasOutput || !HasInput) {
