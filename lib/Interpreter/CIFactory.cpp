@@ -633,8 +633,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
     SetPreprocessorFromBinary(PPOpts);
 
-    // Sanity check that clang delivered the language standard requested
-    if (CompilerOpts.DefaultLanguage(&LangOpts)) {
+    // Sanity check that clang delivered the language standard requested.
+    // Only check when Lang is true (i.e. hasn't been set from PCH).
+    if (Lang && CompilerOpts.DefaultLanguage(&LangOpts)) {
       switch (CxxStdCompiledWith()) {
         case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
         case 14: assert(LangOpts.CPlusPlus14 && "Language version mismatch");
