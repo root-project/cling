@@ -397,33 +397,30 @@ namespace cling {
     //     atexit below isn't linking to the __dso_handle symbol.
 
     // Use __cxa_atexit to intercept all of the following routines
-    Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*) "
+    Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*)"
          << cxa_atexit_is_noexcept << ";\n";
 
-    if (EmitDefinitions)
+    const char* FnDef;
+    if (EmitDefinitions) {
       Strm << "#define __dso_handle ((void*)" << ThisP << ")\n";
+      FnDef = " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
+    } else
+      FnDef = ";\n";
 
     // C atexit, std::atexit
-    Strm << Linkage << " int atexit(void(*f)()) " << Attr;
-    if (EmitDefinitions)
-      Strm << " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
-    else
-      Strm << ";\n";
+    Strm << Linkage << " int atexit(void(*f)())" << Attr << FnDef;
     Globals.push_back("atexit");
 
     // C++ 11 at_quick_exit, std::at_quick_exit
     if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
-      Strm << LinkageCxx << " int at_quick_exit(void(*f)()) " << Attr;
-      if (EmitDefinitions)
-        Strm
-          << " { return __cxa_atexit((void(*)(void*))f, 0, __dso_handle); }\n";
-      else
-        Strm << ";\n";
+      Strm << LinkageCxx << " int at_quick_exit(void(*f)())" << Attr << FnDef;
       Globals.push_back("at_quick_exit");
     }
 
 #if defined(LLVM_ON_WIN32)
     // Windows specific: _onexit, _onexit_m, __dllonexit
+    const char* const WinFnDef = !EmitDefinitions ? FnDef :
+      " { __cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f; }\n";
 #if !defined(_M_CEE)
     const char* Spec = "__cdecl";
 #else
@@ -434,24 +431,14 @@ namespace cling {
          << "int (" << Spec << " *f)(void**, void**),"
          << "void**" << (ParamNames ? " a" : "") << ","
          << "void**" << (ParamNames ? " b" : "")
-         << "))(void**, void**)";
-      if (EmitDefinitions)
-        Strm << " { __cxa_atexit((void(*)(void*))f, 0, __dso_handle);"
-                " return f; }\n";
-      else
-        Strm << ";\n";
+         << "))(void**, void**)" << WinFnDef;
     Globals.push_back("__dllonexit");
 #if !defined(_M_CEE_PURE)
     Strm << Linkage << " " << Spec << " int (*_onexit("
-         << "int (" << Spec << " *f)()))()";
-    if (EmitDefinitions)
-      Strm << " { __cxa_atexit((void(*)(void*))f, 0, __dso_handle);"
-              " return f; }\n";
-    else
-      Strm << ";\n";
+         << "int (" << Spec << " *f)()))()" << WinFnDef;
     Globals.push_back("_onexit");
 #endif
-#endif
+#endif // LLVM_ON_WIN32
 
     if (!SyntaxOnly) {
       // Override the native symbols now, before anything can be emitted.
