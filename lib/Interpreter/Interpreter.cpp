@@ -237,8 +237,7 @@ namespace cling {
       return;
     }
 
-    llvm::SmallVector<llvm::StringRef, 6> Syms;
-    Initialize(noRuntime || m_Opts.NoRuntime, isInSyntaxOnlyMode(), Syms);
+    Initialize(noRuntime || m_Opts.NoRuntime, isInSyntaxOnlyMode());
 
     // Commit the transactions, now that gCling is set up. It is needed for
     // static initialization in these transactions through local_cxa_atexit().
@@ -250,20 +249,17 @@ namespace cling {
     if (!isInSyntaxOnlyMode()) {
       if (const Transaction* T = getLastTransaction()) {
         if (llvm::Module* M = T->getModule()) {
-          for (const llvm::StringRef& Sym : Syms) {
-            const llvm::GlobalValue* GV = M->getNamedValue(Sym);
-  #if defined(__GLIBCXX__) && !defined(__APPLE__)
-            // libstdc++ mangles at_quick_exit on Linux when g++ < 5
-            if (!GV && Sym.equals("at_quick_exit"))
-              GV = M->getNamedValue("_Z13at_quick_exitPFvvE");
-  #endif
-            if (GV) {
-              if (void* Addr = m_Executor->getPointerToGlobalFromJIT(*GV))
+          for (llvm::Function &F : M->getFunctionList()) {
+            if (!F.isDeclaration()) {
+              const llvm::StringRef Sym = F.getName();
+              if (m_Opts.Verbose())
+                cling::errs() << "Forcing emission of: " << Sym << "\n";
+              assert(Sym.find("exit") != Sym.npos && "Unexpected function");
+              if (void* Addr = m_Executor->getPointerToGlobalFromJIT(F))
                 m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
               else
                 cling::errs() << Sym << " not defined\n";
-            } else
-              cling::errs() << Sym << " not in Module!\n";
+            }
           }
         }
       }
@@ -342,8 +338,7 @@ namespace cling {
     m_IncrParser.reset(0);
   }
 
-  Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,
-                              llvm::SmallVectorImpl<llvm::StringRef>& Globals) {
+  Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly) {
     largestream Strm;
     const clang::LangOptions& LangOpts = getCI()->getLangOpts();
     const void* ThisP = static_cast<void*>(this);
@@ -409,13 +404,10 @@ namespace cling {
 
     // C atexit, std::atexit
     Strm << Linkage << "int atexit(void(*f)())" << Attr << FnDef;
-    Globals.push_back("atexit");
 
     // C++ 11 at_quick_exit, std::at_quick_exit
-    if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
+    if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11)
       Strm << LinkageCxx << "int at_quick_exit(void(*f)())" << Attr << FnDef;
-      Globals.push_back("at_quick_exit");
-    }
 
 #if defined(LLVM_ON_WIN32)
     // Windows specific: _onexit, _onexit_m, __dllonexit
@@ -432,11 +424,9 @@ namespace cling {
          << "void**" << (ParamNames ? " a" : "") << ","
          << "void**" << (ParamNames ? " b" : "")
          << "))(void**, void**)" << WinFnDef;
-    Globals.push_back("__dllonexit");
 #if !defined(_M_CEE_PURE)
     Strm << Linkage << Spec << "int (*_onexit(int (" << Spec << "*f)()))()"
          << WinFnDef;
-    Globals.push_back("_onexit");
 #endif
 #endif // LLVM_ON_WIN32
 
