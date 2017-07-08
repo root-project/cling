@@ -249,7 +249,6 @@ before_script:
       cd ../../ && rm -fr ${TRAVIS_REPO_SLUG}
       git clone https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} ${TRAVIS_REPO_SLUG}
       cd ${TRAVIS_REPO_SLUG}
-      git checkout -qf ${TRAVIS_COMMIT}
 
       echo "Syncing repository."
       git remote add alt http://root.cern.ch/git/cling.git
