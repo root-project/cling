@@ -382,10 +382,15 @@ namespace {
 //    Opts.StackProtector = 0;
 #endif // _MSC_VER
 
-    Opts.Exceptions = 1;
-    if (Opts.CPlusPlus) {
-      Opts.CXXExceptions = 1;
-    }
+#if defined(_MSC_VER) && !defined(CLING_WIN_SEH_EXCEPTIONS)
+    const bool HasExceptions = false;
+#else
+    const bool HasExceptions = true;
+#endif
+
+    Opts.Exceptions = HasExceptions;
+    if (Opts.CPlusPlus)
+      Opts.CXXExceptions = HasExceptions;
 
     //Opts.Modules = 1;
 
@@ -522,10 +527,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 #endif
 
   /// Set cling's preprocessor defines to match the cling binary.
-  static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts) {
+  static void SetPreprocessorFromBinary(PreprocessorOptions& PPOpts,
+                                        const LangOptions& LOpts) {
 #ifdef _MSC_VER
-// FIXME: Stay consistent with the _HAS_EXCEPTIONS flag settings in SetClingCustomLangOpts
-//    STRINGIFY_PREPROC_SETTING(PPOpts, _HAS_EXCEPTIONS);
+    if (LOpts.CPlusPlus)
+      stringifyPreprocSetting(PPOpts, "_HAS_EXCEPTIONS", LOpts.CXXExceptions);
 #ifdef _DEBUG
     STRINGIFY_PREPROC_SETTING(PPOpts, _DEBUG);
 #endif
@@ -634,7 +640,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       SetClingCustomLangOpts(LangOpts, CompilerOpts);
 
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
-    SetPreprocessorFromBinary(PPOpts);
+    SetPreprocessorFromBinary(PPOpts, LangOpts);
 
     // Sanity check that clang delivered the language standard requested
     if (CompilerOpts.DefaultLanguage(&LangOpts)) {
