@@ -371,9 +371,9 @@ namespace cling {
 
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
-    const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
+    const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\" " : "";
 #if defined(__GLIBCXX__) && !defined(__APPLE__)
-    const char* LinkageCxx = "extern \"C++\"";
+    const char* LinkageCxx = "extern \"C++\" ";
     const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
     const char* cxa_atexit_is_noexcept = LangOpts.CPlusPlus ? " noexcept" : "";
 #else
@@ -397,7 +397,7 @@ namespace cling {
     //     atexit below isn't linking to the __dso_handle symbol.
 
     // Use __cxa_atexit to intercept all of the following routines
-    Strm << Linkage << " int __cxa_atexit(void (*f)(void*), void*, void*)"
+    Strm << Linkage << "int __cxa_atexit(void (*f)(void*), void*, void*)"
          << cxa_atexit_is_noexcept << ";\n";
 
     const char* FnDef;
@@ -408,12 +408,12 @@ namespace cling {
       FnDef = ";\n";
 
     // C atexit, std::atexit
-    Strm << Linkage << " int atexit(void(*f)())" << Attr << FnDef;
+    Strm << Linkage << "int atexit(void(*f)())" << Attr << FnDef;
     Globals.push_back("atexit");
 
     // C++ 11 at_quick_exit, std::at_quick_exit
     if (LangOpts.CPlusPlus && LangOpts.CPlusPlus11) {
-      Strm << LinkageCxx << " int at_quick_exit(void(*f)())" << Attr << FnDef;
+      Strm << LinkageCxx << "int at_quick_exit(void(*f)())" << Attr << FnDef;
       Globals.push_back("at_quick_exit");
     }
 
@@ -422,20 +422,20 @@ namespace cling {
     const char* const WinFnDef = !EmitDefinitions ? FnDef :
       " { __cxa_atexit((void(*)(void*))f, 0, __dso_handle); return f; }\n";
 #if !defined(_M_CEE)
-    const char* Spec = "__cdecl";
+    const char* Spec = "__cdecl ";
 #else
-    const char* Spec = "__clrcall";
+    const char* Spec = "__clrcall ";
 #endif
     const bool ParamNames = LangOpts.C99;
-    Strm << Linkage << " " << Spec << " int (*__dllonexit("
-         << "int (" << Spec << " *f)(void**, void**),"
+    Strm << Linkage << "int (*__dllonexit("
+         << "int (" << Spec << "*f)(void**, void**),"
          << "void**" << (ParamNames ? " a" : "") << ","
          << "void**" << (ParamNames ? " b" : "")
          << "))(void**, void**)" << WinFnDef;
     Globals.push_back("__dllonexit");
 #if !defined(_M_CEE_PURE)
-    Strm << Linkage << " " << Spec << " int (*_onexit("
-         << "int (" << Spec << " *f)()))()" << WinFnDef;
+    Strm << Linkage << Spec << "int (*_onexit(int (" << Spec << "*f)()))()"
+         << WinFnDef;
     Globals.push_back("_onexit");
 #endif
 #endif // LLVM_ON_WIN32
