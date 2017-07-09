@@ -89,6 +89,7 @@ if(MSVC)
     ?write_impl@raw_string_ostream@llvm@@EEAAXPEBD_K@Z
     ?castToDeclContext@Decl@clang@@SAPEAVDeclContext@2@PEBV12@@Z
     ?classof@DeclContext@clang@@SA_NPEBVDecl@2@@Z
+    ?dump@Decl@clang@@QEBAXAEAVraw_ostream@llvm@@_N@Z
   )
 
   if ($<CONFIG:Debug>)
