@@ -189,19 +189,19 @@ namespace {
           const std::string VSIncl = VSDir + "\\VC\\include";
           if (Verbose)
             cling::log() << "Adding VisualStudio SDK: '" << VSIncl << "'\n";
-          sArguments.addArgument("-I", std::move(VSIncl));
+          sArguments.addArgument("-isystem", std::move(VSIncl));
         }
         if (!opts.NoBuiltinInc) {
           if (!WinSDK.empty()) {
             WinSDK.append("\\include");
             if (Verbose)
               cling::log() << "Adding Windows SDK: '" << WinSDK << "'\n";
-            sArguments.addArgument("-I", std::move(WinSDK));
+            sArguments.addArgument("-isystem", std::move(WinSDK));
           } else {
             VSDir.append("\\VC\\PlatformSDK\\Include");
             if (Verbose)
               cling::log() << "Adding Platform SDK: '" << VSDir << "'\n";
-            sArguments.addArgument("-I", std::move(VSDir));
+            sArguments.addArgument("-isystem", std::move(VSDir));
           }
         }
       }
@@ -210,7 +210,7 @@ namespace {
       if (!UnivSDK.empty()) {
         if (Verbose)
           cling::log() << "Adding UniversalCRT SDK: '" << UnivSDK << "'\n";
-        sArguments.addArgument("-I", std::move(UnivSDK));
+        sArguments.addArgument("-isystem", std::move(UnivSDK));
       }
 #endif
 
@@ -230,6 +230,9 @@ namespace {
       //sArguments.addArgument("-Wno-dllimport-static-field-def");
       //sArguments.addArgument("-Wno-microsoft-template");
 
+      // FIXME: This is only necesssary for child Interpreters, which will err:
+      // vadefs.h Line 143: cannot import unsupported AST node FunctionTemplate
+      sArguments.addArgument("-D_CRT_NO_VA_START_VALIDATION");
 #else // _MSC_VER
 
       // Skip LLVM_CXX execution if -nostdinc++ was provided.
