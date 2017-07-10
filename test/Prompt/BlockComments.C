@@ -66,6 +66,16 @@
 // This is a side effect of wrapping, expression is compiled as */; so 2 errors
 */ // expected-error@2 {{expected expression}} expected-error@3 {{expected expression}}
 
+/* // /* */// expected-warning {{within block comment}}
+
+/* // /* *// */
+// expected-warning@input_line_27:2 {{within block comment}}
+// expected-error@input_line_27:2 {{expected expression}}
+// expected-error@input_line_27:2 {{expected expression}}
+// expected-error@input_line_27:3 {{expected expression}}
+
+/* //  *  // */
+
 // Check preprocessor blocked out
 /*
 #if 1
