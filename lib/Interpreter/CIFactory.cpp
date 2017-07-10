@@ -792,7 +792,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
 
     llvm::Triple TheTriple(llvm::sys::getProcessTriple());
-#ifdef LLVM_ON_WIN32
+#if defined(LLVM_ON_WIN32) && !defined(CLING_WIN_COFF_JIT)
     // COFF format currently needs a few changes in LLVM to function properly.
     TheTriple.setObjectFormat(llvm::Triple::ELF);
 #endif
