@@ -134,6 +134,14 @@ A/B
     * :(
 */
 42
-// CHECK_NEXT: (int) 42
+// CHECK-NEXT: (int) 42
+
+(1/1)*1
+// CHECK-NEXT: (int) 1
+
+
+int A = 5, B = 25, *Ap = &A;
+B / *Ap
+// CHECK-NEXT: (int) 5
 
 .q

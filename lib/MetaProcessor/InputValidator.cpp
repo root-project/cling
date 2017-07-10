@@ -148,6 +148,10 @@ namespace cling {
             if (kind != tok::asterik)
               commentTok = tok::asterik;
           }
+        } else if (commentTok == tok::asterik) {
+          // Was wating for an asterik, but found something else.
+          // Go back to looking for a slash.
+          commentTok = tok::slash;
         }
 
         if (kind >= (int)tok::l_square && kind <= (int)tok::r_brace) {
