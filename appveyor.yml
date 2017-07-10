@@ -20,6 +20,8 @@ environment:
   matrix:
     - CMAKE_GEN: Visual Studio 14 2015 Win64
     - CMAKE_GEN: Ninja
+    - CMAKE_GEN: Ninja
+      CLING_CMAKE_FLAGS: -DCLING_WIN_COFF_JIT=ON
 
 # matrix:
 #  set this flag to immediately finish build once one of the jobs fails.
@@ -44,6 +46,7 @@ install:
   - set PATH=C:\projects\deps\ninja;C:\gnuwin32\bin;%PATH%
   - |-
     if exist "C:\projects\deps\ninja\" set GETNINJA=rem
+    if "%Configuration%"=="Debug" set CLING_CMAKE_FLAGS="%CLING_CMAKE_FLAGS% -DLLVM_OPTIMIZED_TABLEGEN=ON"
     if not "%CMAKE_GEN%"=="Ninja" set GETNINJA=rem
     %GETNINJA% appveyor DownloadFile "https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-win.zip" -FileName ninja.zip
     %GETNINJA% 7z x ninja.zip -oC:\projects\deps\ninja > nul
@@ -55,7 +58,7 @@ build_script:
         --with-cling-url=https://github.com/%APPVEYOR_REPO_NAME% ^
         --with-clang-url=http://root.cern.ch/git/clang.git ^
         --with-llvm-url=http://root.cern.ch/git/llvm.git ^
-        --with-cmake-flags="-DLLVM_OPTIMIZED_TABLEGEN=ON -G\"%CMAKE_GEN%\"" ^
+        --with-cmake-flags="%CLING_CMAKE_FLAGS% -G\"%CMAKE_GEN%\"" ^
         --skip-cleanup
 
 init:
