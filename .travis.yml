@@ -35,7 +35,8 @@ branches:
     - /^__internal.*$/
   only:
     - master
-    - cling-nightlies
+    - dev
+    - PR/x
 
 matrix:
   # Abort all builds on a single failing matrix entry.

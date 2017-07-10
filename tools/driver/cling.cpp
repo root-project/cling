@@ -134,9 +134,5 @@ int main( int argc, char **argv ) {
     Ui.runInteractively(Opts.NoLogo);
   }
 
-  // Only for test/OutputRedirect.C, but shouldn't affect performance too much.
-  ::fflush(stdout);
-  ::fflush(stderr);
-
   return checkDiagErrors(Interp.getCI());
 }

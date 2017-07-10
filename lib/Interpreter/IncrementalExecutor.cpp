@@ -97,6 +97,9 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
   m_AtExitFuncs.reserve(256);
 
   std::unique_ptr<TargetMachine> TM(CreateHostTargetMachine(CI));
+
+  TM->Options.EmulatedTLS = 1;
+
   m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
                                           CI.getTargetOpts(),
                                           CI.getLangOpts(),
