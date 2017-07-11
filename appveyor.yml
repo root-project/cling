@@ -44,13 +44,15 @@ build:
 install:
   - C:\"Program Files (x86)"\"%VSTUDIO_VERS%"\VC\vcvarsall.bat %platform%
   - set PATH=C:\projects\deps\ninja;C:\gnuwin32\bin;%PATH%
-  - |-
-    if exist "C:\projects\deps\ninja\" set GETNINJA=rem
-    if "%Configuration%"=="Debug" set CLING_CMAKE_FLAGS="%CLING_CMAKE_FLAGS% -DLLVM_OPTIMIZED_TABLEGEN=ON"
-    if not "%CMAKE_GEN%"=="Ninja" set GETNINJA=rem
-    %GETNINJA% appveyor DownloadFile "https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-win.zip" -FileName ninja.zip
-    %GETNINJA% 7z x ninja.zip -oC:\projects\deps\ninja > nul
-    %GETNINJA% ninja --version
+  - ps: |
+     If ($env:Configuration -Match "Debug") {
+       $env:CLING_CMAKE_FLAGS="$env:CLING_CMAKE_FLAGS -DLLVM_OPTIMIZED_TABLEGEN=ON"
+     }
+     If ($env:CMAKE_GEN -Match "Ninja" -and !(Test-Path "C:\projects\deps\ninja")) {
+       Start-FileDownload 'https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-win.zip'
+       & 7z x ninja-win.zip -oC:\projects\deps\ninja > $null
+       & ninja --version
+     }
 
 build_script:
   - tools\packaging\cpt.py ^
