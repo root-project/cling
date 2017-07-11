@@ -22,6 +22,8 @@ environment:
     - CMAKE_GEN: Ninja
     - CMAKE_GEN: Ninja
       CLING_CMAKE_FLAGS: -DCLING_WIN_COFF_JIT=ON
+    - CMAKE_GEN: Ninja
+      CLING_CMAKE_FLAGS: -DCLING_WIN_COFF_JIT=ON -DCLING_WIN_SEH_EXCEPTIONS=ON
 
 # matrix:
 #  set this flag to immediately finish build once one of the jobs fails.
@@ -53,13 +55,21 @@ install:
        & 7z x ninja-win.zip -oC:\projects\deps\ninja > $null
        & ninja --version
      }
+     If ($env:CLING_CMAKE_FLAGS -Match "-DCLING_WIN_SEH_EXCEPTIONS=ON") {
+       Echo "Exceptions Enabled"
+       $env:CLING_DEV="branches:master,cling-patches,RuntimeDyldCOFFX86_64"
+       $env:LLVM_REPO="https://github.com/marsupial/llvm.git"
+     } else {
+       $env:CLING_DEV="tar"
+       $env:LLVM_REPO="http://root.cern.ch/git/llvm.git"
+     }
 
 build_script:
   - tools\packaging\cpt.py ^
-        --current-dev=tar ^
+        --current-dev=%CLING_DEV% ^
         --with-cling-url=https://github.com/%APPVEYOR_REPO_NAME% ^
         --with-clang-url=http://root.cern.ch/git/clang.git ^
-        --with-llvm-url=http://root.cern.ch/git/llvm.git ^
+        --with-llvm-url=%LLVM_REPO% ^
         --with-cmake-flags="%CLING_CMAKE_FLAGS% -G\"%CMAKE_GEN%\"" ^
         --skip-cleanup
 
