@@ -22,7 +22,7 @@
 #include "llvm/ADT/StringRef.h"
 
 #include <vector>
-#include <set>
+#include <unordered_set>
 #include <map>
 #include <memory>
 #include <atomic>
@@ -126,7 +126,7 @@ namespace cling {
 
     ///\brief Set of the symbols that the JIT couldn't resolve.
     ///
-    std::set<std::string> m_unresolvedSymbols;
+    std::unordered_set<std::string> m_unresolvedSymbols;
 
 #if 0 // See FIXME in IncrementalExecutor.cpp
     ///\brief The diagnostics engine, printing out issues coming from the
