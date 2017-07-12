@@ -16,6 +16,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/Casting.h"
+#include "cling/Utils/OrderedMap.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -73,10 +74,6 @@ namespace cling {
       ///
       void* m_Arg;
 
-      ///\brief The module whose unloading will trigger the call to this atexit
-      /// function.
-      ///
-      const llvm::Module* m_FromM;
     public:
       ///\brief Constructs an element, whose destruction time will be managed by
       /// the interpreter. (By registering a function to be called by exit
@@ -96,12 +93,10 @@ namespace cling {
       ///\param [in] fromT - The unloading of this transaction will trigger the
       ///                    atexit function.
       ///
-      CXAAtExitElement(void (*func) (void*), void* arg,
-                       const llvm::Module* fromM):
-        m_Func(func), m_Arg(arg), m_FromM(fromM) {}
+      CXAAtExitElement(void (*func) (void*), void* arg):
+        m_Func(func), m_Arg(arg) {}
 
       void operator () () const { (*m_Func)(m_Arg); }
-      const llvm::Module* getModule() const { return m_FromM; }
     };
 
     ///\brief Atomic used as a spin lock to protect the access to m_AtExitFuncs
@@ -112,10 +107,11 @@ namespace cling {
     /// again multiple conccurent access.
     std::atomic_flag m_AtExitFuncsSpinLock; // MSVC doesn't support = ATOMIC_FLAG_INIT;
 
-    typedef llvm::SmallVector<CXAAtExitElement, 128> AtExitFunctions;
-    ///\brief Static object, which are bound to unloading of certain declaration
-    /// to be destructed.
+    ///\brief Function registered via __cxa_atexit, atexit, or one of
+    /// it's C++ overloads that should be run when a module is unloaded.
     ///
+    typedef utils::OrderedMap<llvm::Module*, std::vector<CXAAtExitElement>>
+        AtExitFunctions;
     AtExitFunctions m_AtExitFuncs;
 
     ///\brief Modules to emit upon the next call to the JIT.
