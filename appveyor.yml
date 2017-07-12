@@ -18,21 +18,24 @@ clone_depth: 10
 environment:
   VSTUDIO_VERS: Microsoft Visual Studio 14.0
   matrix:
-    - CMAKE_GEN: Visual Studio 14 2015 Win64
-    - CMAKE_GEN: Ninja
-    - CMAKE_GEN: Ninja
-      CLING_CMAKE_FLAGS: -DCLING_WIN_COFF_JIT=ON
     - CMAKE_GEN: Ninja
       CLING_CMAKE_FLAGS: -DCLING_WIN_COFF_JIT=ON -DCLING_WIN_SEH_EXCEPTIONS=ON
+      CLING_DEV: branches:master,cling-patches,RuntimeDyldCOFFX86_64
 
-# matrix:
-#  set this flag to immediately finish build once one of the jobs fails.
-#  fast_finish: true 
-#  allow_failures:
-#  - platform: x86
-#    configuration: Release
-#  - platform: x64
-#    configuration: Release
+    - CMAKE_GEN: Visual Studio 14 2015 Win64
+      CLING_DEV: tar
+
+    - CMAKE_GEN: Ninja
+      CLING_DEV: tar
+
+    - CMAKE_GEN: Ninja
+      CLING_CMAKE_FLAGS: -DCLING_WIN_COFF_JIT=ON
+      CLING_DEV: tar
+
+matrix:
+  allow_failures:
+    - platform: x64
+      CLING_DEV: tar
 
 skip_tags: true
 os:
