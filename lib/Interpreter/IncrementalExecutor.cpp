@@ -358,18 +358,17 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
     return false;
 
   llvm::SmallVector<llvm::Function*, 128> funcsToFree;
-  for (std::set<std::string>::const_iterator i = m_unresolvedSymbols.begin(),
-         e = m_unresolvedSymbols.end(); i != e; ++i) {
+  for (const std::string& sym : m_unresolvedSymbols) {
 #if 0
     // FIXME: This causes a lot of test failures, for some reason it causes
     // the call to HandleMissingFunction to be elided.
     unsigned diagID = m_Diags.getCustomDiagID(clang::DiagnosticsEngine::Error,
                                               "%0 unresolved while jitting %1");
     (void)diagID;
-    //m_Diags.Report(diagID) << *i << funcname; // TODO: demangle the names.
+    //m_Diags.Report(diagID) << sym << funcname; // TODO: demangle the names.
 #endif
 
-    cling::errs() << "IncrementalExecutor::executeFunction: symbol '" << *i
+    cling::errs() << "IncrementalExecutor::executeFunction: symbol '" << sym
                   << "' unresolved while linking ";
     if (trigger.find(utils::Synthesize::UniquePrefix) != llvm::StringRef::npos)
       cling::errs() << "[cling interface function]";
@@ -383,7 +382,7 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
     cling::errs() << "!\n";
 
     // Be helpful, demangle!
-    std::string demangledName = platform::Demangle(*i);
+    std::string demangledName = platform::Demangle(sym);
     if (!demangledName.empty()) {
        cling::errs()
           << "You are probably missing the definition of "
