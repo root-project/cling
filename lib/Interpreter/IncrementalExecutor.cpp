@@ -92,10 +92,6 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
   // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
   std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
 
-  // No need to protect this access of m_AtExitFuncs, since nobody
-  // can use this object yet.
-  m_AtExitFuncs.reserve(256);
-
   std::unique_ptr<TargetMachine> TM(CreateHostTargetMachine(CI));
   m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
                                           CI.getTargetOpts(),
@@ -107,18 +103,33 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
 IncrementalExecutor::~IncrementalExecutor() {}
 
+
 void IncrementalExecutor::shuttingDown() {
-  // No need to protect this access, since hopefully there is no concurrent
-  // shutdown request.
-  for (auto& AtExit : llvm::reverse(m_AtExitFuncs))
-    AtExit();
+  // It is legal to register an atexit handler from within another atexit
+  // handler and furthor-more the standard says they need to run in reverse
+  // order, so this function must be recursion safe.
+  AtExitFunctions Local;
+  {
+    cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
+    // Check this case first, to avoid the swap all-together.
+    if (m_AtExitFuncs.empty())
+      return;
+    Local.swap(m_AtExitFuncs);
+  }
+  for (auto&& Ordered: llvm::reverse(Local.ordered())) {
+    for (auto&& AtExit : llvm::reverse(Ordered->second))
+      AtExit();
+      // The standard says that they need to run in reverse order, which means
+      // anything added from 'AtExit()' must now be run!
+      shuttingDown();
+  }
 }
 
 void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
                                         llvm::Module* M) {
   // Register a CXAAtExit function
   cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
-  m_AtExitFuncs.push_back(CXAAtExitElement(func, arg, M));
+  m_AtExitFuncs[M].emplace_back(func, arg);
 }
 
 void unresolvedSymbol()
@@ -286,23 +297,21 @@ IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
 void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
   assert(T && "Must be set");
   // Collect all the dtors bound to this transaction.
-  AtExitFunctions boundToT;
-
+  AtExitFunctions::mapped_type Local;
   {
     cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
-    for (AtExitFunctions::iterator I = m_AtExitFuncs.begin();
-         I != m_AtExitFuncs.end();)
-      if (I->getModule() == T->getModule()) {
-        boundToT.push_back(*I);
-        I = m_AtExitFuncs.erase(I);
-      }
-      else
-        ++I;
+    auto Itr = m_AtExitFuncs.find(T->getModule());
+    if (Itr == m_AtExitFuncs.end())
+      return;
+    m_AtExitFuncs.erase(Itr, &Local);
   } // end of spin lock lifetime block.
 
-  // 'Unload' the cxa_atexit entities.
-  for (auto&& AtExit : llvm::reverse(boundToT))
+  // 'Unload' the cxa_atexit, atexit entities.
+  for (auto&& AtExit : llvm::reverse(Local)) {
     AtExit();
+    // Run anything that was just registered in 'AtExit()'
+    runAndRemoveStaticDestructors(T);
+  }
 }
 
 void
