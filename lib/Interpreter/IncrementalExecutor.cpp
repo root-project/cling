@@ -110,10 +110,8 @@ IncrementalExecutor::~IncrementalExecutor() {}
 void IncrementalExecutor::shuttingDown() {
   // No need to protect this access, since hopefully there is no concurrent
   // shutdown request.
-  for (size_t I = 0, N = m_AtExitFuncs.size(); I < N; ++I) {
-    const CXAAtExitElement& AEE = m_AtExitFuncs[N - I - 1];
-    (*AEE.m_Func)(AEE.m_Arg);
-  }
+  for (auto& AtExit : llvm::reverse(m_AtExitFuncs))
+    AtExit();
 }
 
 void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
@@ -294,7 +292,7 @@ void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
     cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
     for (AtExitFunctions::iterator I = m_AtExitFuncs.begin();
          I != m_AtExitFuncs.end();)
-      if (I->m_FromM == T->getModule()) {
+      if (I->getModule() == T->getModule()) {
         boundToT.push_back(*I);
         I = m_AtExitFuncs.erase(I);
       }
@@ -303,11 +301,8 @@ void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
   } // end of spin lock lifetime block.
 
   // 'Unload' the cxa_atexit entities.
-  for (AtExitFunctions::reverse_iterator I = boundToT.rbegin(),
-         E = boundToT.rend(); I != E; ++I) {
-    const CXAAtExitElement& AEE = *I;
-    (*AEE.m_Func)(AEE.m_Arg);
-  }
+  for (auto&& AtExit : llvm::reverse(boundToT))
+    AtExit();
 }
 
 void

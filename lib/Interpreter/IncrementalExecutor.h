@@ -64,7 +64,20 @@ namespace cling {
     /// The object is registered first as an CXAAtExitElement and then cling
     /// takes the control of it's destruction.
     ///
-    struct CXAAtExitElement {
+    class CXAAtExitElement {
+      ///\brief The function to be called.
+      ///
+      void (*m_Func)(void*);
+
+      ///\brief The single argument passed to the function.
+      ///
+      void* m_Arg;
+
+      ///\brief The module whose unloading will trigger the call to this atexit
+      /// function.
+      ///
+      const llvm::Module* m_FromM;
+    public:
       ///\brief Constructs an element, whose destruction time will be managed by
       /// the interpreter. (By registering a function to be called by exit
       /// or when a shared library is unloaded.)
@@ -87,18 +100,8 @@ namespace cling {
                        const llvm::Module* fromM):
         m_Func(func), m_Arg(arg), m_FromM(fromM) {}
 
-      ///\brief The function to be called.
-      ///
-      void (*m_Func)(void*);
-
-      ///\brief The single argument passed to the function.
-      ///
-      void* m_Arg;
-
-      ///\brief The module whose unloading will trigger the call to this atexit
-      /// function.
-      ///
-      const llvm::Module* m_FromM;
+      void operator () () const { (*m_Func)(m_Arg); }
+      const llvm::Module* getModule() const { return m_FromM; }
     };
 
     ///\brief Atomic used as a spin lock to protect the access to m_AtExitFuncs
