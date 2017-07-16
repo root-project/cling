@@ -252,7 +252,7 @@ before_script:
 
       echo "Syncing repository."
       git remote add alt http://root.cern.ch/git/cling.git
-      git pull alt/master
+      git pull alt master
 
       # Move the tag to newest master
       git tag --force cling-nightlies master
