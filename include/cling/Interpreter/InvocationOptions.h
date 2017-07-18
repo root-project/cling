@@ -57,6 +57,12 @@ namespace cling {
     unsigned StdLib : 1;
     unsigned HasOutput : 1;
     unsigned Verbose : 1;
+    unsigned CxxModules : 1;
+    /// \brief The output path of any C++ PCMs we're building on demand.
+    /// Equal to ModuleCachePath in the HeaderSearchOptions.
+    std::string CachePath;
+    // If not empty, the name of the module we're currently compiling.
+    std::string ModuleName;
 
     ///\brief The remaining arguments to pass to clang.
     ///
