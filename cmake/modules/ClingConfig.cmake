@@ -6,7 +6,7 @@
 
 # Don't just use any llvm / clang: cling needs its own:
 find_package(LLVM REQUIRED CONFIG NO_DEFAULT_PATH PATHS "${CMAKE_CURRENT_LIST_DIR}/../llvm")
-find_package(clang REQUIRED CONFIG NO_DEFAULT_PATH PATHS "${CMAKE_CURRENT_LIST_DIR}/../clang")
+find_package(Clang REQUIRED CONFIG NO_DEFAULT_PATH PATHS "${CMAKE_CURRENT_LIST_DIR}/../clang")
 
 # Provide all our library targets to users.
 include("${CMAKE_CURRENT_LIST_DIR}/ClingTargets.cmake")
