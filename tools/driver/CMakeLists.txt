@@ -89,6 +89,10 @@ if(MSVC)
     ?castToDeclContext@Decl@clang@@SAPEAVDeclContext@2@PEBV12@@Z
     ?classof@DeclContext@clang@@SA_NPEBVDecl@2@@Z
     ?dump@Decl@clang@@QEBAXAEAVraw_ostream@llvm@@_N@Z
+    ?current_pos@raw_svector_ostream@llvm@@EEBA_KXZ
+    ?write_impl@raw_svector_ostream@llvm@@EEAAXPEBD_K@Z
+    ?pwrite_impl@raw_svector_ostream@llvm@@EEAAXPEBD_K1@Z
+    ?SetBufferAndMode@raw_ostream@llvm@@AEAAXPEAD_KW4BufferKind@12@@Z
   )
 
   if ($<CONFIG:Debug>)
