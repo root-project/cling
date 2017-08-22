@@ -637,9 +637,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     if (CompilerOpts.DefaultLanguage(&LangOpts)) {
       switch (CxxStdCompiledWith()) {
         case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
+          // fall-through!
         case 14: assert(LangOpts.CPlusPlus14 && "Language version mismatch");
+          // fall-through!
         case 11: assert(LangOpts.CPlusPlus11 && "Language version mismatch");
-        default: break;
+          break;
+        default: assert(false && "You have an unhandled C++ standard!");
       }
     }
 
