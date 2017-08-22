@@ -31,6 +31,7 @@ namespace cling {
         case '*':
           if (commentTok == '*')
             return true;
+          // intentional fall-through:
         default:
           commentTok = 0;
           break;
