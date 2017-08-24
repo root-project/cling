@@ -11,8 +11,11 @@
 #define CLING_INCREMENTAL_EXECUTOR_H
 
 #include "IncrementalJIT.h"
-#include "BackendPasses.h"
 
+#include "BackendPasses.h"
+#include "EnterUserCodeRTTI.h"
+
+#include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/Casting.h"
@@ -56,7 +59,10 @@ namespace cling {
     // optimizer etc passes
     std::unique_ptr<BackendPasses> m_BackendPasses;
 
-    ///\brier A pointer to the IncrementalExecutor of the parent Interpreter.
+    ///\brief Whom to call upon invocation of user code.
+    InterpreterCallbacks* m_Callbacks;
+
+    ///\brief A pointer to the IncrementalExecutor of the parent Interpreter.
     ///
     IncrementalExecutor* m_externalIncrementalExecutor;
 
@@ -143,7 +149,8 @@ namespace cling {
     };
 
     IncrementalExecutor(clang::DiagnosticsEngine& diags,
-                        const clang::CompilerInstance& CI);
+                        const clang::CompilerInstance& CI,
+                        InterpreterCallbacks* callbacks);
 
     ~IncrementalExecutor();
 
@@ -193,6 +200,7 @@ namespace cling {
       ExecutionResult res = jitInitOrWrapper(function, fun);
       if (res != kExeSuccess)
         return res;
+      EnterUserCodeRTTI euc(m_Callbacks);
       (*fun)(returnValue);
       return kExeSuccess;
     }
@@ -269,6 +277,7 @@ namespace cling {
       ExecutionResult res = jitInitOrWrapper(function, fun);
       if (res != kExeSuccess)
         return res;
+      EnterUserCodeRTTI euc(m_Callbacks);
       (*fun)();
       return kExeSuccess;
     }

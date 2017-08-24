@@ -217,7 +217,8 @@ namespace cling {
       return;
 
     if (!isInSyntaxOnlyMode()) {
-      m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI()));
+      m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI(),
+                                               m_Callbacks.get()));
       if (!m_Executor)
         return;
     }
