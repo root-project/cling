@@ -190,7 +190,7 @@ namespace cling {
       }
       typedef void (*InitFun_t)(void*);
       InitFun_t fun;
-      ExecutionResult res = executeInitOrWrapper(function, fun);
+      ExecutionResult res = jitInitOrWrapper(function, fun);
       if (res != kExeSuccess)
         return res;
       (*fun)(returnValue);
@@ -266,7 +266,7 @@ namespace cling {
     ExecutionResult executeInit(llvm::StringRef function) {
       typedef void (*InitFun_t)();
       InitFun_t fun;
-      ExecutionResult res = executeInitOrWrapper(function, fun);
+      ExecutionResult res = jitInitOrWrapper(function, fun);
       if (res != kExeSuccess)
         return res;
       (*fun)();
@@ -274,7 +274,7 @@ namespace cling {
     }
 
     template <class T>
-    ExecutionResult executeInitOrWrapper(llvm::StringRef funcname, T& fun) {
+    ExecutionResult jitInitOrWrapper(llvm::StringRef funcname, T& fun) {
       fun = utils::UIntToFunctionPtr<T>(m_JIT->getSymbolAddress(funcname,
                                                               false /*dlsym*/));
 
