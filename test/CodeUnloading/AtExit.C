@@ -32,15 +32,11 @@ atexit(atexit_1);
 
 at_quick_exit(atexit_2);
 .undo
-    // Make sure at_quick_exit is resolved correctly (mangling issues on gcc <
-    // 5)
-    // CHECK-NEXT: atexit_2
+// Make sure at_quick_exit is resolved correctly (mangling issues on gcc < 5)
+// CHECK-NEXT: atexit_2
 
-    // Test reverse ordering in a single transaction.
-    static void
-    atexitA() {
-  printf("atexitA\n");
-}
+// Test reverse ordering in a single transaction.
+static void atexitA() { printf("atexitA\n"); }
 static void atexitB() { printf("atexitB\n"); }
 static void atexitC() { printf("atexitC\n"); }
 {
@@ -49,11 +45,11 @@ static void atexitC() { printf("atexitC\n"); }
   std::atexit(atexitC);
 }
 .undo
-    // CHECK-NEXT: atexitC
-    // CHECK-NEXT: atexitB
-    // CHECK-NEXT: atexitA
+// CHECK-NEXT: atexitC
+// CHECK-NEXT: atexitB
+// CHECK-NEXT: atexitA
 
-    atexit(atexit_3);
+atexit(atexit_3);
 
 cling::Interpreter * gChild = 0;
 {
@@ -71,14 +67,20 @@ static void atexit_f() {
 }
 at_quick_exit(atexit_f);
 
-void atExit0() { printf("atExit0\n"); }
-void atExit1() { printf("atExit1\n"); }
-void atExit2() { printf("atExit2\n"); }
-void atExitA() {
+void atExit0 () {
+  printf("atExit0\n");
+}
+void atExit1 () {
+  printf("atExit1\n");
+}
+void atExit2 () {
+  printf("atExit2\n");
+}
+void atExitA () {
   printf("atExitA\n");
   std::atexit(&atExit0);
 }
-void atExitB() {
+void atExitB () {
   printf("atExitB\n");
   std::atexit(&atExit1);
   std::atexit(&atExit2);
@@ -89,14 +91,14 @@ void atExitB() {
   std::atexit(&atExitB);
 }
 .undo
-    // CHECK-NEXT: atExitB
-    // CHECK-NEXT: atExit2
-    // CHECK-NEXT: atExit1
-    // CHECK-NEXT: atExitA
-    // CHECK-NEXT: atExit0
+// CHECK-NEXT: atExitB
+// CHECK-NEXT: atExit2
+// CHECK-NEXT: atExit1
+// CHECK-NEXT: atExitA
+// CHECK-NEXT: atExit0
 
-    // Recusion at shutdown
-    struct ShutdownRecursion {
+// Recusion at shutdown
+struct ShutdownRecursion {
   static void DtorAtExit0() { printf("ShutdownRecursion0\n"); }
   static void DtorAtExit1() { printf("ShutdownRecursion1\n"); }
   static void DtorAtExit2() { printf("ShutdownRecursion2\n"); }
@@ -111,12 +113,12 @@ void atExitB() {
 // expected-no-diagnostics
 .q
 
-    // Reversed registration order
+// Reversed registration order
 
-    // CHECK-NEXT: ~ShutdownRecursion
-    // CHECK-NEXT: ShutdownRecursion2
-    // CHECK-NEXT: ShutdownRecursion1
-    // CHECK-NEXT: ShutdownRecursion0
+// CHECK-NEXT: ~ShutdownRecursion
+// CHECK-NEXT: ShutdownRecursion2
+// CHECK-NEXT: ShutdownRecursion1
+// CHECK-NEXT: ShutdownRecursion0
 
-    // CHECK-NEXT: atexit_f true
-    // CHECK-NEXT: atexit_3
+// CHECK-NEXT: atexit_f true
+// CHECK-NEXT: atexit_3
