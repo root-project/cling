@@ -22,11 +22,11 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringRef.h"
 
-#include <vector>
-#include <unordered_set>
+#include <atomic>
 #include <map>
 #include <memory>
-#include <atomic>
+#include <unordered_set>
+#include <vector>
 
 namespace clang {
   class DiagnosticsEngine;
@@ -93,10 +93,10 @@ namespace cling {
       ///\param [in] fromT - The unloading of this transaction will trigger the
       ///                    atexit function.
       ///
-      CXAAtExitElement(void (*func) (void*), void* arg):
-        m_Func(func), m_Arg(arg) {}
+      CXAAtExitElement(void (*func)(void*), void* arg)
+          : m_Func(func), m_Arg(arg) {}
 
-      void operator () () const { (*m_Func)(m_Arg); }
+      void operator()() const { (*m_Func)(m_Arg); }
     };
 
     ///\brief Atomic used as a spin lock to protect the access to m_AtExitFuncs

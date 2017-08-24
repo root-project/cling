@@ -10,8 +10,8 @@
 #ifndef CLING_ORDERED_MAP_H
 #define CLING_ORDERED_MAP_H
 
-#include <unordered_map>
 #include <cassert>
+#include <unordered_map>
 
 namespace cling {
 namespace utils {
@@ -23,8 +23,7 @@ namespace utils {
 /// additional parameter to 'erase' so that a mapped value can be moved into
 /// local storage before erasing the iterator occurs.
 ///
-template <typename Key, typename Value>
-class OrderedMap {
+template <typename Key, typename Value> class OrderedMap {
   typedef std::unordered_map<Key, Value> map_t;
   // Would this be faster as a std::unoredered_map<Key, size_t> for erasure?
   typedef std::vector<typename map_t::const_iterator> order_t;

@@ -103,7 +103,6 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
 IncrementalExecutor::~IncrementalExecutor() {}
 
-
 void IncrementalExecutor::shuttingDown() {
   // It is legal to register an atexit handler from within another atexit
   // handler and furthor-more the standard says they need to run in reverse
@@ -116,12 +115,12 @@ void IncrementalExecutor::shuttingDown() {
       return;
     Local.swap(m_AtExitFuncs);
   }
-  for (auto&& Ordered: llvm::reverse(Local.ordered())) {
+  for (auto&& Ordered : llvm::reverse(Local.ordered())) {
     for (auto&& AtExit : llvm::reverse(Ordered->second))
       AtExit();
-      // The standard says that they need to run in reverse order, which means
-      // anything added from 'AtExit()' must now be run!
-      shuttingDown();
+    // The standard says that they need to run in reverse order, which means
+    // anything added from 'AtExit()' must now be run!
+    shuttingDown();
   }
 }
 
@@ -301,8 +300,7 @@ void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
   {
     cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
     auto Itr = m_AtExitFuncs.find(T->getModule());
-    if (Itr == m_AtExitFuncs.end())
-      return;
+    if (Itr == m_AtExitFuncs.end()) return;
     m_AtExitFuncs.erase(Itr, &Local);
   } // end of spin lock lifetime block.
 
