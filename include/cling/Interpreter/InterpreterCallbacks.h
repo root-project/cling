@@ -162,6 +162,20 @@ namespace cling {
     /// for instance when throwing interpreter exceptions.
     virtual void PrintStackTrace() {}
 
+    ///\brief Interface to support locking the interpreter state in case of
+    /// concurrent usage.
+    ///
+    /// Cling assumes that any of its function is invoked in a locked context,
+    /// but before invoking user code (e.g. static initialization or value
+    /// printing) cling will calling `EnteringUserCode()`, and once
+    /// done call `ReturnedFromUserCode()`. Typically the user provided locks
+    /// would be unlock by `EnteringUserCode()` and lock back in
+    /// `ReturnedFromUserCode()`.
+    virtual void EnteringUserCode() {}
+
+    ///\brief See `EnteringFromUserCode()`!
+    virtual void ReturnedFromUserCode() {}
+
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
     ///
