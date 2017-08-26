@@ -217,8 +217,7 @@ namespace cling {
       return;
 
     if (!isInSyntaxOnlyMode()) {
-      m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI(),
-                                               m_Callbacks.get()));
+      m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI()));
       if (!m_Executor)
         return;
     }
@@ -1435,6 +1434,8 @@ namespace cling {
       // FIXME: Move to the InterpreterCallbacks.cpp;
       if (DynamicLibraryManager* DLM = getDynamicLibraryManager())
         DLM->setCallbacks(m_Callbacks.get());
+      if (m_Executor)
+        m_Executor->setCallbacks(m_Callbacks.get());
     }
 
     static_cast<MultiplexInterpreterCallbacks*>(m_Callbacks.get())

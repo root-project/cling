@@ -149,15 +149,14 @@ namespace cling {
     };
 
     IncrementalExecutor(clang::DiagnosticsEngine& diags,
-                        const clang::CompilerInstance& CI,
-                        InterpreterCallbacks* callbacks);
+                        const clang::CompilerInstance& CI);
 
     ~IncrementalExecutor();
 
     void setExternalIncrementalExecutor(IncrementalExecutor *extIncrExec) {
       m_externalIncrementalExecutor = extIncrExec;
     }
-
+    void setCallbacks(InterpreterCallbacks* callbacks) { m_Callbacks = callbacks; }
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
     ///\brief Send all collected modules to the JIT, making their symbols
