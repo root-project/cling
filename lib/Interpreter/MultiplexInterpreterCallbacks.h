@@ -123,6 +123,16 @@ namespace cling {
       for (auto&& cb : m_Callbacks)
         cb->PrintStackTrace();
     }
+
+    void EnteringUserCode() override {
+      for (auto&& cb : m_Callbacks)
+        cb->EnteringUserCode();
+    }
+
+    void ReturnedFromUserCode() override {
+      for (auto&& cb : m_Callbacks)
+        cb->ReturnedFromUserCode();
+    }
   };
 } // end namespace cling
 
