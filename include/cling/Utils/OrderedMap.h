@@ -10,8 +10,10 @@
 #ifndef CLING_ORDERED_MAP_H
 #define CLING_ORDERED_MAP_H
 
+#include <algorithm>
 #include <cassert>
 #include <unordered_map>
+#include <vector>
 
 namespace cling {
 namespace utils {
