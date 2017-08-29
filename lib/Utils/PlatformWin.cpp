@@ -366,6 +366,8 @@ static int GetVisualStudioVersionCompiledWith() {
   return (_MSC_VER / 100) - 6;
 #elif (_MSC_VER < 1910)
   return 14;
+#elif (_MSC_VER < 1920)
+  return 15;
 #else
   #error "Unsupported/Untested _MSC_VER"
   // As of now this is what is should be...have fun!
