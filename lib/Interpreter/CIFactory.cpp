@@ -168,7 +168,31 @@ namespace {
   }
 
 #endif
-  
+
+  static std::string getResourceDir(const char* llvmdir) {
+    if (!llvmdir) {
+      // FIXME: The first arg really does need to be argv[0] on FreeBSD.
+      //
+      // Note: The second arg is not used for Apple, FreeBSD, Linux,
+      //       or cygwin, and can only be used on systems which support
+      //       the use of dladdr().
+      //
+      // Note: On linux and cygwin this uses /proc/self/exe to find the path
+      // Note: On Apple it uses _NSGetExecutablePath().
+      // Note: On FreeBSD it uses getprogpath().
+      // Note: Otherwise it uses dladdr().
+      //
+      return CompilerInvocation::GetResourcesPath(
+          "cling", (void*)intptr_t(GetExecutablePath));
+    } else {
+      std::string resourcePath;
+      llvm::SmallString<512> tmp(llvmdir);
+      llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_STRING);
+      resourcePath.assign(&tmp[0], tmp.size());
+      return resourcePath;
+    }
+  }
+
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
   static void AddHostArguments(llvm::StringRef clingBin,
                                std::vector<const char*>& args,
@@ -315,27 +339,7 @@ namespace {
 #endif // _MSC_VER
 
       if (!opts.ResourceDir && !opts.NoBuiltinInc) {
-        std::string resourcePath;
-        if (!llvmdir) {
-          // FIXME: The first arg really does need to be argv[0] on FreeBSD.
-          //
-          // Note: The second arg is not used for Apple, FreeBSD, Linux,
-          //       or cygwin, and can only be used on systems which support
-          //       the use of dladdr().
-          //
-          // Note: On linux and cygwin this uses /proc/self/exe to find the path
-          // Note: On Apple it uses _NSGetExecutablePath().
-          // Note: On FreeBSD it uses getprogpath().
-          // Note: Otherwise it uses dladdr().
-          //
-          resourcePath
-            = CompilerInvocation::GetResourcesPath("cling",
-                                            (void*)intptr_t(GetExecutablePath));
-        } else {
-          llvm::SmallString<512> tmp(llvmdir);
-          llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_STRING);
-          resourcePath.assign(&tmp[0], tmp.size());
-        }
+        std::string resourcePath = getResourceDir(llvmdir);
 
         // FIXME: Handle cases, where the cling is part of a library/framework.
         // There we can't rely on the find executable logic.
