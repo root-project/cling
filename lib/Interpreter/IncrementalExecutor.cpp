@@ -83,8 +83,7 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
 
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
                                          const clang::CompilerInstance& CI):
-  m_Callbacks(nullptr),
-  m_externalIncrementalExecutor(nullptr)
+  m_Callbacks(nullptr), m_externalIncrementalExecutor(nullptr)
 #if 0
   : m_Diags(diags)
 #endif

@@ -156,7 +156,9 @@ namespace cling {
     void setExternalIncrementalExecutor(IncrementalExecutor *extIncrExec) {
       m_externalIncrementalExecutor = extIncrExec;
     }
-    void setCallbacks(InterpreterCallbacks* callbacks) { m_Callbacks = callbacks; }
+    void setCallbacks(InterpreterCallbacks* callbacks) {
+      m_Callbacks = callbacks;
+    }
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
     ///\brief Send all collected modules to the JIT, making their symbols

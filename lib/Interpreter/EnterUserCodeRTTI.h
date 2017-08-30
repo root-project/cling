@@ -14,24 +14,23 @@
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
 namespace cling {
-  ///\brief Unlocks and then upon destruction locks the interpreter again.
-  struct EnterUserCodeRTTI {
-    InterpreterCallbacks* fCallbacks; // callbacks used to un/lock.
-    void* fStateInfo = nullptr; // info provided to ReturnedFromUserCode().
-    EnterUserCodeRTTI(InterpreterCallbacks* callbacks): fCallbacks(callbacks)
-    {
-      if (fCallbacks)
-        fStateInfo = fCallbacks->EnteringUserCode();
-    }
+///\brief Unlocks and then upon destruction locks the interpreter again.
+struct EnterUserCodeRTTI {
+  InterpreterCallbacks* fCallbacks; // callbacks used to un/lock.
+  void* fStateInfo = nullptr;       // info provided to ReturnedFromUserCode().
+  EnterUserCodeRTTI(InterpreterCallbacks* callbacks): fCallbacks(callbacks) {
+    if (fCallbacks)
+      fStateInfo = fCallbacks->EnteringUserCode();
+  }
 
-    EnterUserCodeRTTI(Interpreter& interp): EnterUserCodeRTTI(interp.getCallbacks())
-    {}
+  EnterUserCodeRTTI(Interpreter& interp):
+    EnterUserCodeRTTI(interp.getCallbacks()) {}
 
-    ~EnterUserCodeRTTI() {
-      if (fCallbacks)
-        fCallbacks->ReturnedFromUserCode(fStateInfo);
-    }
-  };
+  ~EnterUserCodeRTTI() {
+    if (fCallbacks)
+      fCallbacks->ReturnedFromUserCode(fStateInfo);
+  }
+};
 }
 
 #endif // CLING_BACKENDPASSES_H
