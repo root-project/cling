@@ -17,10 +17,11 @@ namespace cling {
   ///\brief Unlocks and then upon destruction locks the interpreter again.
   struct EnterUserCodeRTTI {
     InterpreterCallbacks* fCallbacks; // callbacks used to un/lock.
+    void* fStateInfo = nullptr; // info provided to ReturnedFromUserCode().
     EnterUserCodeRTTI(InterpreterCallbacks* callbacks): fCallbacks(callbacks)
     {
       if (fCallbacks)
-        fCallbacks->EnteringUserCode();
+        fStateInfo = fCallbacks->EnteringUserCode();
     }
 
     EnterUserCodeRTTI(Interpreter& interp): EnterUserCodeRTTI(interp.getCallbacks())
@@ -28,7 +29,7 @@ namespace cling {
 
     ~EnterUserCodeRTTI() {
       if (fCallbacks)
-        fCallbacks->ReturnedFromUserCode();
+        fCallbacks->ReturnedFromUserCode(fStateInfo);
     }
   };
 }

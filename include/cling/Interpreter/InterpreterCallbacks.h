@@ -170,11 +170,13 @@ namespace cling {
     /// printing) cling will calling `EnteringUserCode()`, and once
     /// done call `ReturnedFromUserCode()`. Typically the user provided locks
     /// would be unlock by `EnteringUserCode()` and lock back in
-    /// `ReturnedFromUserCode()`.
-    virtual void EnteringUserCode() {}
+    /// `ReturnedFromUserCode()`. State can be returned from EnteringUserCode
+    /// and made use of in ReturnedFromUserCode(), to identify pairs of these
+    /// calls.
+    virtual void* EnteringUserCode() { return nullptr; }
 
     ///\brief See `EnteringFromUserCode()`!
-    virtual void ReturnedFromUserCode() {}
+    virtual void ReturnedFromUserCode(void*) {}
 
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.

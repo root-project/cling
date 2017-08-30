@@ -124,14 +124,20 @@ namespace cling {
         cb->PrintStackTrace();
     }
 
-    void EnteringUserCode() override {
-      for (auto&& cb : m_Callbacks)
-        cb->EnteringUserCode();
+    void* EnteringUserCode() override {
+      void* ret = nullptr;
+      for (auto&& cb : m_Callbacks) {
+        if (void* myret = cb->EnteringUserCode()) {
+          assert(!ret && "Multiple state infos are not supported!");
+          ret = myret;
+        }
+      }
+      return ret;
     }
 
-    void ReturnedFromUserCode() override {
+    void ReturnedFromUserCode(void* StateInfo) override {
       for (auto&& cb : m_Callbacks)
-        cb->ReturnedFromUserCode();
+        cb->ReturnedFromUserCode(StateInfo);
     }
   };
 } // end namespace cling
