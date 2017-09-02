@@ -14,10 +14,11 @@ To install the kernel with sources in src/tools/cling:
     pip install -e .
     # or: pip3 install -e .
 
-    # register the kernelspec for C++17/C++14/C++11:
+    # register the kernelspec for C++17/C++1z/C++14/C++11:
     # the user can install whichever kernel(s) they
     # wish:
     jupyter-kernelspec install [--user] cling-cpp17
+    jupyter-kernelspec install [--user] cling-cpp1z
     jupyter-kernelspec install [--user] cling-cpp14
     jupyter-kernelspec install [--user] cling-cpp11
 
