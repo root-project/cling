@@ -1004,7 +1004,8 @@ namespace cling {
                                      LookupResult &Result,
                                      DeclarationNameInfo &FuncNameInfo,
                               const TemplateArgumentListInfo* FuncTemplateArgs,
-                                     ASTContext& Context, Parser &P, Sema &S) {
+                                     ASTContext& Context, Parser &P, Sema &S,
+                                          LookupHelper::DiagSetting diagOnOff) {
     //
     //  Our return value.
     //
@@ -1107,9 +1108,19 @@ namespace cling {
           // We prefer to get the canonical decl for consistency and ease
           // of comparison.
           TheDecl = TheDecl->getCanonicalDecl();
-          if (TheDecl->isTemplateInstantiation() && !TheDecl->isDefined())
+          if (TheDecl->isTemplateInstantiation() && !TheDecl->isDefined()) {
+            //
+            //  Tell the diagnostic engine to ignore all diagnostics.
+            //
+            bool OldSuppressAllDiagnostics
+              = S.getDiagnostics().getSuppressAllDiagnostics();
+            S.getDiagnostics().setSuppressAllDiagnostics(
+                diagOnOff == LookupHelper::NoDiagnostics);
+
             S.InstantiateFunctionDefinition(SourceLocation(), TheDecl,
                                             true /*recursive instantiation*/);
+            S.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
+          }
           if (TheDecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
             UnloadDecl(&S, const_cast<FunctionDecl*>(TheDecl));
@@ -1127,7 +1138,8 @@ namespace cling {
                                      LookupResult &Result,
                                      DeclarationNameInfo &FuncNameInfo,
                               const TemplateArgumentListInfo* FuncTemplateArgs,
-                                     ASTContext& Context, Parser &P, Sema &S) {
+                                     ASTContext& Context, Parser &P, Sema &S,
+                                          LookupHelper::DiagSetting diagOnOff) {
     //
     //  Our return value.
     //
@@ -1135,7 +1147,8 @@ namespace cling {
                                                            GivenArgs, Result,
                                                            FuncNameInfo,
                                                            FuncTemplateArgs,
-                                                           Context,P,S);
+                                                           Context,P,S,
+                                                           diagOnOff);
 
     if (TheDecl) {
       if ( IsOverload(Context, FuncTemplateArgs, GivenArgs, TheDecl) ) {
@@ -1311,7 +1324,8 @@ namespace cling {
                                        LookupResult &Result,
                                        DeclarationNameInfo &FuncNameInfo,
                               const TemplateArgumentListInfo* FuncTemplateArgs,
-                                       ASTContext& Context, Parser &P, Sema &S),
+                                       ASTContext& Context, Parser &P, Sema &S,
+                                           LookupHelper::DiagSetting diagOnOff),
                  LookupHelper::DiagSetting diagOnOff
                  ) {
     // Given the correctly types arguments, etc. find the function itself.
@@ -1397,7 +1411,7 @@ namespace cling {
                             Result,
                             FuncNameInfo,
                             FuncTemplateArgs,
-                            Context, P, S);
+                            Context, P, S, diagOnOff);
   }
 
   template <typename DigestArgsInput, typename returnType>
@@ -1413,7 +1427,8 @@ namespace cling {
                                                            LookupResult &Result,
                                               DeclarationNameInfo &FuncNameInfo,
                                const TemplateArgumentListInfo* FuncTemplateArgs,
-                                       ASTContext& Context, Parser &P, Sema &S),
+                                        ASTContext& Context, Parser &P, Sema &S,
+                                           LookupHelper::DiagSetting diagOnOff),
                               LookupHelper::DiagSetting diagOnOff
                               )
   {
@@ -1586,7 +1601,8 @@ namespace cling {
                                                           DeclarationNameInfo &,
                            const TemplateArgumentListInfo* ExplicitTemplateArgs,
                                                           ASTContext&, Parser &,
-                                                           Sema &S) {
+                                                           Sema &S,
+                                          LookupHelper::DiagSetting diagOnOff) {
     //
     //  Check for lookup failure.
     //
@@ -1629,7 +1645,8 @@ namespace cling {
                            LookupResult &Result,
                            DeclarationNameInfo &,
                            const TemplateArgumentListInfo* ExplicitTemplateArgs,
-                           ASTContext&, Parser &, Sema &S) {
+                           ASTContext&, Parser &, Sema &S,
+                           LookupHelper::DiagSetting diagOnOff) {
     //
     //  Check for lookup failure.
     //
@@ -1896,7 +1913,8 @@ namespace cling {
                            LookupResult &Result,
                            DeclarationNameInfo &,
                            const TemplateArgumentListInfo* ,
-                           ASTContext&, Parser &, Sema &) {
+                           ASTContext&, Parser &, Sema &,
+                           LookupHelper::DiagSetting /*diagOnOff*/) {
     //
     //  Check for lookup failure.
     //
