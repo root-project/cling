@@ -784,6 +784,7 @@ namespace cling {
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;
     CO.ResultEvaluation = 1;
+    CO.CheckPointerValidity = 0;
 
     return EvaluateInternal(input, CO, &V);
   }
