@@ -226,9 +226,10 @@ namespace cling {
 
   ASTTransformer::Result
   NullDerefProtectionTransformer::Transform(clang::Decl* D) {
-
-    PointerCheckInjector injector(*m_Interp);
-    injector.TraverseDecl(D);
+    if (getCompilationOpts().CheckPointerValidity) {
+      PointerCheckInjector injector(*m_Interp);
+      injector.TraverseDecl(D);
+    }
     return Result(D, true);
   }
 } // end namespace cling
