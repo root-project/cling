@@ -29,6 +29,7 @@
 #include "cling/Interpreter/CompilationOptions.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLibraryManager.h"
+#include "cling/Interpreter/Exception.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
@@ -1597,8 +1598,13 @@ namespace cling {
     namespace internal {
       Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
                                       clang::DeclContext* DC) {
-        return interp->Evaluate(DEI->getExpr(), DC,
-                                DEI->isValuePrinterRequested());
+        Value ret = interp->Evaluate(DEI->getExpr(), DC,
+                                     DEI->isValuePrinterRequested());
+        if (!ret.isValid()) {
+          std::string msg = "Error evaluating expression ";
+          CompilationException::throwingHandler(nullptr, msg + DEI->getExpr(),
+                                                false /*backtrace*/);
+        }
       }
     } // namespace internal
   }  // namespace runtime
