@@ -232,6 +232,16 @@ namespace Issue_113 {}
 // Keep the blank space after the using clause.
 using namespace Issue_113; 
 
-// CHECK: Nested::~Nested(80)
+// FIXME: Cannot handle `X<int> func()` yet?!
+template <
+  class T> class X {};
+namespace N { template <class T> using X = ::X<T>; }
+N::X<int> funcReturnsXint() {
+  return X<int>{};
+}
+funcReturnsXint()
+// CHECK-NEXT: (N::X<int>) @0x{{.*}}
+
+// CHECK-NEXT: Nested::~Nested(80)
 
 // expected-no-diagnostics
