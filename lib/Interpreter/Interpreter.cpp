@@ -1606,6 +1606,7 @@ namespace cling {
           CompilationException::throwingHandler(nullptr, msg + DEI->getExpr(),
                                                 false /*backtrace*/);
         }
+        return ret;
       }
     } // namespace internal
   }  // namespace runtime
