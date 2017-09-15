@@ -9,7 +9,7 @@
 
 #include "DynamicLookup.h"
 
-#include "EnterUserCodeRTTI.h"
+#include "EnterUserCodeRAII.h"
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"

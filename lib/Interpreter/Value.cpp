@@ -9,7 +9,7 @@
 
 #include "cling/Interpreter/Value.h"
 
-#include "EnterUserCodeRTTI.h"
+#include "EnterUserCodeRAII.h"
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"

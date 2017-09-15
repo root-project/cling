@@ -7,28 +7,28 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#ifndef CLING_ENTERUSERCODERTTI_H
-#define CLING_ENTERUSERCODERTTI_H
+#ifndef CLING_ENTERUSERCODERAII_H
+#define CLING_ENTERUSERCODERAII_H
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
 namespace cling {
 ///\brief Unlocks and then upon destruction locks the interpreter again.
-struct EnterUserCodeRTTI {
+struct EnterUserCodeRAII {
   /// Callbacks used to un/lock.
   InterpreterCallbacks* fCallbacks;
   /// Info provided to ReturnedFromUserCode().
   void* fStateInfo = nullptr;
-  EnterUserCodeRTTI(InterpreterCallbacks* callbacks): fCallbacks(callbacks) {
+  EnterUserCodeRAII(InterpreterCallbacks* callbacks): fCallbacks(callbacks) {
     if (fCallbacks)
       fStateInfo = fCallbacks->EnteringUserCode();
   }
 
-  EnterUserCodeRTTI(Interpreter& interp):
-    EnterUserCodeRTTI(interp.getCallbacks()) {}
+  EnterUserCodeRAII(Interpreter& interp):
+    EnterUserCodeRAII(interp.getCallbacks()) {}
 
-  ~EnterUserCodeRTTI() {
+  ~EnterUserCodeRAII() {
     if (fCallbacks)
       fCallbacks->ReturnedFromUserCode(fStateInfo);
   }
@@ -55,4 +55,4 @@ struct LockCompilationDuringUserCodeExecutionRAII {
 };
 }
 
-#endif // CLING_BACKENDPASSES_H
+#endif // CLING_ENTERUSERCODERAII_H

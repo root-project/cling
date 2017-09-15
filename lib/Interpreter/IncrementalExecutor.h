@@ -13,7 +13,7 @@
 #include "IncrementalJIT.h"
 
 #include "BackendPasses.h"
-#include "EnterUserCodeRTTI.h"
+#include "EnterUserCodeRAII.h"
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
@@ -201,7 +201,7 @@ namespace cling {
       ExecutionResult res = jitInitOrWrapper(function, fun);
       if (res != kExeSuccess)
         return res;
-      EnterUserCodeRTTI euc(m_Callbacks);
+      EnterUserCodeRAII euc(m_Callbacks);
       (*fun)(returnValue);
       return kExeSuccess;
     }
@@ -278,7 +278,7 @@ namespace cling {
       ExecutionResult res = jitInitOrWrapper(function, fun);
       if (res != kExeSuccess)
         return res;
-      EnterUserCodeRTTI euc(m_Callbacks);
+      EnterUserCodeRAII euc(m_Callbacks);
       (*fun)();
       return kExeSuccess;
     }

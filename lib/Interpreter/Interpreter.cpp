@@ -15,7 +15,7 @@
 #include "ClingUtils.h"
 
 #include "DynamicLookup.h"
-#include "EnterUserCodeRTTI.h"
+#include "EnterUserCodeRAII.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
 #include "IncrementalExecutor.h"
