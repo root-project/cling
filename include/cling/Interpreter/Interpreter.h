@@ -102,6 +102,18 @@ namespace cling {
       ~StateDebuggerRAII();
     };
 
+    ///\brief Merge all transactions between construction and destruction
+    /// Use Prev to merge the Transactions with the last Transaction (true)
+    /// or the first Transaction created after instantiation (false).
+    class TransactionMergerRAII {
+      IncrementalParser& m_IncrParser;
+      const Transaction* m_T;
+
+    public:
+      TransactionMergerRAII(Interpreter* Interp);
+      ~TransactionMergerRAII();
+    };
+
     ///\brief Describes the return result of the different routines that do the
     /// incremental compilation.
     ///
@@ -199,6 +211,7 @@ namespace cling {
 
     enum {
       kStdStringTransaction = 0, // Transaction known to contain std::string
+      kPrintValueTransaction, // Transaction that included RuntimePrintValue.h
       kNumTransactions
     };
     mutable const Transaction* m_CachedTrns[kNumTransactions] = {};
@@ -780,6 +793,15 @@ namespace cling {
                           [](const clang::PresumedLoc&) { return false;}) const;
 
     friend class runtime::internal::LifetimeHandler;
+
+    ///\brief Used by valuePrinterInternal::printValueInternal to mark when the
+    /// value printing headers were included.
+    ///
+    ///\returns reference to m_CachedTrns[kPrintValueTransaction]
+    ///
+    const Transaction*& printValueTransaction() {
+      return m_CachedTrns[kPrintValueTransaction];
+    }
   };
 } // namespace cling
 

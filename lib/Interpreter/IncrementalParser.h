@@ -176,6 +176,13 @@ namespace cling {
       return m_Transactions.back();
     }
 
+    ///\brief Merge transactions after the one given.
+    ///
+    ///\param[in] T - transactions after which to merge
+    ///\returns the parent transaction of the merge.
+    ///
+    void mergeTransactionsAfter(const Transaction *T);
+
     ///\brief Returns the currently active transaction.
     ///
     const Transaction* getCurrentTransaction() const;

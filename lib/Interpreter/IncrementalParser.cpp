@@ -280,6 +280,65 @@ namespace cling {
     return m_Consumer->getTransaction();
   }
 
+  void
+  IncrementalParser::mergeTransactionsAfter(const Transaction *T) {
+    bool Found = false;
+    llvm::SmallVector<Transaction*, 8> Merge;
+    for (auto Itr = m_Transactions.rbegin(), End  = m_Transactions.rend();
+         Itr != End; ++Itr) {
+      Transaction *Cur = *Itr;
+      Merge.push_back(Cur);
+      if ((Found = (Cur == T)))
+        break;
+    }
+    if (!Found) {
+      clang::DiagnosticsEngine& Diags = m_Interpreter->getDiagnostics();
+      const auto ID = Diags.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                            "Transaction was not found.");
+      Diags.Report(m_Interpreter->getSourceLocation(), ID);
+      return; // Unused: nullptr
+    }
+    if (Merge.empty()) {
+      // Trying to merge the last Transaction with nothing following.
+      return; // Unused: getCurrentTransaction();
+    }
+    assert(!T->isNestedTransaction() && "New parent cannot be a child.");
+
+    auto Itr = Merge.rbegin();
+    Transaction *Parent = *Itr;
+    ++Itr;
+    for (auto End = Merge.rend(); Itr != End; ++Itr) {
+      Transaction *CurChild = *Itr;
+      // Try to keep everything current
+      if (m_Consumer->getTransaction() == CurChild)
+        m_Consumer->setTransaction(Parent);
+
+      // Keep parents in place
+      while (CurChild->getParent())
+        CurChild = CurChild->getParent();
+
+      // FIXME: Propogate child's error state into parent. Note the CurChild
+      // error state will have to be saved here, as once addNestedTransaction
+      // has finished it can no longer be retrieved.
+      //
+      // Just force diag states to match until there's a decent test case
+      assert((CurChild->getIssuedDiags() != Transaction::kErrors ||
+              Parent->getIssuedDiags() == Transaction::kErrors)
+             && "Cannot merge transactions with different error states");
+      
+      Parent->addNestedTransaction(CurChild);
+
+      // Move whatever the CurChild.Next is into Parent
+      Parent->setNext(const_cast<Transaction*>(CurChild->getNext()));
+      // And make sure the CurChild.Next is empty
+      CurChild->setNext(nullptr);
+
+      m_Transactions.pop_back();
+    }
+    assert(Parent->getNext() == nullptr && "Parent still has next");
+    return; // Unused: parent;
+  }
+  
   SourceLocation IncrementalParser::getLastMemoryBufferEndLoc() const {
     const SourceManager& SM = getCI()->getSourceManager();
     SourceLocation Result = SM.getLocForStartOfFile(m_VirtualFileID);

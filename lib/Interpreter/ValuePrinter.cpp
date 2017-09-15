@@ -23,6 +23,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Type.h"
+#include "clang/Sema/SemaDiagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "llvm/Support/Format.h"
@@ -54,6 +55,8 @@ extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
 namespace cling {
   namespace valuePrinterInternal {
     extern const char* const kEmptyCollection = "{}";
+    extern const char* const kUndefined = "<<<undefined>>>";
+    extern const char* const kInvalid = "<<<invalid>>>";
   }
 }
 
@@ -143,22 +146,6 @@ struct AccessCtrlRAII_t {
   }
 
 };
-
-#ifndef NDEBUG
-/// Is typenam parsable?
-bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
-
-  AccessCtrlRAII_t AccessCtrlRAII(Interp);
-
-  cling::Interpreter::CompilationResult Res
-    = Interp.declare("namespace { void* cling_printValue_Failure_Typename_check"
-                     " = (void*)" + typenam.str() + "nullptr; }");
-  if (Res != cling::Interpreter::kSuccess)
-    cling::errs() << "ERROR in cling::canParseTypeName(): "
-                     "this typename cannot be spelled.\n";
-  return Res == cling::Interpreter::kSuccess;
-}
-#endif
 
 static std::string printDeclType(const clang::QualType& QT,
                                  const clang::NamedDecl* D) {
@@ -609,16 +596,15 @@ static std::string callPrintValue(const Value& V, const void* Val) {
   if (printValueV.isValid() && printValueV.getPtr())
     return *(std::string *) printValueV.getPtr();
 
-  // That didn't work. We probably diagnosed the issue as part of evaluate().
-  cling::errs() <<"ERROR in cling's callPrintValue(): cannot pass value!\n";
+  // Probably diagnosed the issue as part of evaluate(), but make sure to
+  // mark the Sema with an error if not.
+  clang::DiagnosticsEngine& Diag = Interp->getDiagnostics();
+  const unsigned ID = Diag.getCustomDiagID(
+                             clang::DiagnosticsEngine::Level::Error,
+                             "Could not execute cling::printValue with '%0'");
+  Diag.Report(Interp->getSourceLocation(), ID) << getTypeString(V);
 
-  // Check that the issue comes from an unparsable type name: lambdas, unnamed
-  // namespaces, types declared inside functions etc. Assert on everything
-  // else.
-  assert(!canParseTypeName(*Interp, getTypeString(V))
-         && "printValue failed on a valid type name.");
-
-  return "ERROR in cling's callPrintValue(): missing value string.";
+  return valuePrinterInternal::kUndefined;
 }
 
 template <typename T>
@@ -863,7 +849,7 @@ namespace cling {
       }
       strm << "]";
     } else
-      strm << "<<<invalid>>> " << printAddress(value, '@');
+      strm << valuePrinterInternal::kInvalid << ' ' << printAddress(value, '@');
 
     return strm.str();
   }
@@ -871,16 +857,45 @@ namespace cling {
   namespace valuePrinterInternal {
 
     std::string printTypeInternal(const Value &V) {
+      assert(V.getInterpreter() && "Invalid cling::Value");
       return printQualType(V.getASTContext(), V.getType());
     }
 
     std::string printValueInternal(const Value &V) {
-      static bool includedRuntimePrintValue = false; // initialized only once as a static function variable
+      assert(V.getInterpreter() && "Invalid cling::Value");
+
       // Include "RuntimePrintValue.h" only on the first printing.
       // This keeps the interpreter lightweight and reduces the startup time.
-      if (!includedRuntimePrintValue) {
-        V.getInterpreter()->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
-        includedRuntimePrintValue = true;
+      // But user can undo past the transaction that invoked this, so whether
+      // we are first or not is known by the interpreter.
+      //
+      // When printing has already occured once or RuntimePrintValue.h was
+      // explicitly included, then Transaction merging has to occur here.
+      //
+      // Additionally the user could have included RuntimePrintValue.h before
+      // this code is run, so if there is no print transaction, check if
+      // CLING_RUNTIME_PRINT_VALUE_H is defined.
+      // FIXME: Relying on this macro isn't the best, but what's another way?
+
+      Interpreter* Interp = V.getInterpreter();
+      Interpreter::TransactionMergerRAII M(Interp);
+      const Transaction*& T = Interp->printValueTransaction();
+      if (!T && !Interp->getMacro("CLING_RUNTIME_PRINT_VALUE_H")) {
+        // DiagnosticErrorTrap Trap(Interp->getSema().getDiagnostics());
+        Interp->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"",
+                        const_cast<Transaction**>(&T));
+        if (!T) {
+          // Should also check T->getIssuedDiags() == Transaction::kErrors)?
+
+          // It's redundant, but nicer to see the error at the bottom.
+          // if (!Trap.hasErrorOccurred())
+          clang::DiagnosticsEngine& Diag = Interp->getDiagnostics();
+          const unsigned ID = Diag.getCustomDiagID(
+                                     clang::DiagnosticsEngine::Level::Error,
+                                     "RuntimePrintValue.h could not be loaded");
+          Diag.Report(Interp->getSourceLocation(), ID);
+          return kUndefined;
+        }
       }
       return printUnpackedClingValue(V);
     }

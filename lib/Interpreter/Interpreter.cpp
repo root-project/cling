@@ -142,6 +142,13 @@ namespace cling {
     }
   }
 
+  Interpreter::TransactionMergerRAII::TransactionMergerRAII(Interpreter* I) :
+    m_IncrParser(*I->m_IncrParser), m_T(m_IncrParser.getLastTransaction()) {}
+
+  Interpreter::TransactionMergerRAII::~TransactionMergerRAII() {
+    m_IncrParser.mergeTransactionsAfter(m_T);
+  }
+
   const Parser& Interpreter::getParser() const {
     return *m_IncrParser->getParser();
   }
@@ -1195,20 +1202,42 @@ namespace cling {
       return kSuccess;
     }
 
+    const Transaction *printTBefore = m_CachedTrns[kPrintValueTransaction];
+
     Value resultV;
     if (!V)
       V = &resultV;
     if (!lastT->getWrapperFD()) // no wrapper to run
       return Interpreter::kSuccess;
-    else if (RunFunction(lastT->getWrapperFD(), V) < kExeFirstError){
-      if (lastT->getCompilationOpts().ValuePrinting
-          != CompilationOptions::VPDisabled
-          && V->isValid()
-          // the !V->needsManagedAllocation() case is handled by
-          // dumpIfNoStorage.
-          && V->needsManagedAllocation())
-        V->dump();
-      return Interpreter::kSuccess;
+    else {
+      ExecutionResult rslt = RunFunction(lastT->getWrapperFD(), V);
+
+      // If print value Transaction has changed value, then lastT is now
+      // the transaction that holds the transaction(s) of loading up the
+      // value printer and must be recorded as such.
+      if (printTBefore != m_CachedTrns[kPrintValueTransaction]) {
+        assert(m_CachedTrns[kPrintValueTransaction] != nullptr
+               && "Value printer failed to load after success?");
+        // As the stack is unwound from recursive calls to EvaluateInternal
+        // we merge the subsequent transactions into the current one.
+        // Then m_CachedTrns[kPrintValue] is marked as this transaction as it
+        // is the first known Transaction that caused the printer to be loaded.
+        m_IncrParser->mergeTransactionsAfter(lastT);
+        m_CachedTrns[kPrintValueTransaction] = lastT;
+        assert(!m_CachedTrns[kPrintValueTransaction]->isNestedTransaction() &&
+               "Print value transaction is not topmost parent");
+      }
+
+      if ( rslt < kExeFirstError) {
+        if (lastT->getCompilationOpts().ValuePrinting
+            != CompilationOptions::VPDisabled
+            && V->isValid()
+            // the !V->needsManagedAllocation() case is handled by
+            // dumpIfNoStorage.
+            && V->needsManagedAllocation())
+          V->dump();
+        return Interpreter::kSuccess;
+      }
     }
     return Interpreter::kSuccess;
   }
@@ -1357,6 +1386,10 @@ namespace cling {
                       << i << " of " << numberOfTransactions << "\n";
         return;
       }
+      // Mark Interpreter as not having loaded 'RuntimePrintValue.h'
+      if (T == m_CachedTrns[kPrintValueTransaction])
+        m_CachedTrns[kPrintValueTransaction] = nullptr;
+
       unload(*T);
     }
   }
