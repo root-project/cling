@@ -15,6 +15,7 @@
 #include "ClingUtils.h"
 
 #include "DynamicLookup.h"
+#include "EnterUserCodeRTTI.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
 #include "IncrementalExecutor.h"
@@ -1599,8 +1600,12 @@ namespace cling {
     namespace internal {
       Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
                                       clang::DeclContext* DC) {
-        Value ret = interp->Evaluate(DEI->getExpr(), DC,
-                                     DEI->isValuePrinterRequested());
+        Value ret;
+        {
+          LockCompilationDuringUserCodeExecutionRAII LCDUCER(*interp);
+          ret = interp->Evaluate(DEI->getExpr(), DC,
+                                 DEI->isValuePrinterRequested());
+        }
         if (!ret.isValid()) {
           std::string msg = "Error evaluating expression ";
           CompilationException::throwingHandler(nullptr, msg + DEI->getExpr(),
