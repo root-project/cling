@@ -1600,12 +1600,12 @@ namespace cling {
     namespace internal {
       Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
                                       clang::DeclContext* DC) {
-        Value ret;
+        Value ret = [&]
         {
           LockCompilationDuringUserCodeExecutionRAII LCDUCER(*interp);
-          ret = interp->Evaluate(DEI->getExpr(), DC,
-                                 DEI->isValuePrinterRequested());
-        }
+          return interp->Evaluate(DEI->getExpr(), DC,
+                                  DEI->isValuePrinterRequested());
+        }();
         if (!ret.isValid()) {
           std::string msg = "Error evaluating expression ";
           CompilationException::throwingHandler(nullptr, msg + DEI->getExpr(),
