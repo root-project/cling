@@ -144,6 +144,9 @@ namespace cling {
       void* ret = nullptr;
       for (auto&& cb : m_Callbacks) {
         if (void* myret = cb->LockCompilationDuringUserCodeExecution()) {
+          // FIXME: it'd be better to introduce a new Callback interface type
+          // that does not allow multiplexing, and thus enforces that there
+          // is only one single listener.
           assert(!ret && "Multiple state infos are not supported!");
           ret = myret;
         }
