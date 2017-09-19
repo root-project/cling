@@ -651,10 +651,6 @@ namespace cling {
     const CompilationOptions& CO
        = m_Consumer->getTransaction()->getCompilationOpts();
 
-    assert(!(S.getLangOpts().Modules
-             && CO.CodeGenerationForModule)
-           && "CodeGenerationForModule to be removed once PCMs are available!");
-
     // Recover resources if we crash before exiting this method.
     llvm::CrashRecoveryContextCleanupRegistrar<Sema> CleanupSema(&S);
 
