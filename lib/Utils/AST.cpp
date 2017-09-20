@@ -622,23 +622,7 @@ namespace utils {
     // Return true if the class or template is declared directly in the
     // std namespace (modulo inline namespace).
 
-    const clang::DeclContext *ctx = cl.getDeclContext();
-
-    while (ctx && ctx->isInlineNamespace()) {
-      ctx = ctx->getParent();
-    }
-
-    if (ctx && ctx->isNamespace())
-    {
-      const clang::NamedDecl *parent = llvm::dyn_cast<clang::NamedDecl> (ctx);
-      if (parent) {
-        if (parent->getDeclContext()->isTranslationUnit()
-            && parent->getQualifiedNameAsString()=="std") {
-          return true;
-        }
-      }
-    }
-    return false;
+    return cl.getDeclContext()->isStdNamespace();
   }
 
   // See Sema::PushOnScopeChains
