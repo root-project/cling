@@ -285,20 +285,20 @@ namespace {
         }
   #endif // _LIBCPP_VERSION
 
-  // first try the include directory cling was built with
+  // First try the relative path 'g++'
+  #ifdef CLING_CXX_RLTV
+        if (sArguments.empty())
+          ReadCompilerIncludePaths(CLING_CXX_RLTV, buffer, sArguments, Verbose);
+  #endif
+  // Then try the include directory cling was built with
   #ifdef CLING_CXX_INCL
         if (sArguments.empty())
           AddCxxPaths(CLING_CXX_INCL, sArguments, Verbose);
   #endif
-  // Then try the absolute path i.e.: '/usr/bin/g++'
+  // Finally try the absolute path i.e.: '/usr/bin/g++'
   #ifdef CLING_CXX_PATH
         if (sArguments.empty())
           ReadCompilerIncludePaths(CLING_CXX_PATH, buffer, sArguments, Verbose);
-  #endif
-  // Finally try the relative path 'g++'
-  #ifdef CLING_CXX_RLTV
-        if (sArguments.empty())
-          ReadCompilerIncludePaths(CLING_CXX_RLTV, buffer, sArguments, Verbose);
   #endif
 
         if (sArguments.empty()) {
