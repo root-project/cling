@@ -124,8 +124,8 @@ void IncrementalExecutor::shuttingDown() {
   }
 }
 
-void IncrementalExecutor::AddAtExitFunc(void (*func) (void*), void* arg,
-                                        llvm::Module* M) {
+void IncrementalExecutor::AddAtExitFunc(void (*func)(void*), void* arg,
+                                       const std::shared_ptr<llvm::Module>& M) {
   // Register a CXAAtExit function
   cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
   m_AtExitFuncs[M].emplace_back(func, arg);
@@ -203,8 +203,8 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
 
 IncrementalExecutor::ExecutionResult
 IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
-  llvm::Module* m = T.getModule();
-  assert(m && "Module must not be null");
+  auto m = T.getModule();
+  assert(m.get() && "Module must not be null");
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();

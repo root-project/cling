@@ -125,11 +125,9 @@ namespace cling {
       // we need a transaction.
       PushTransactionRAII pushedT(i);
 
-      m_State.reset(new ClangInternalState(CI.getASTContext(),
-                                           CI.getPreprocessor(),
-                                           CG ? CG->GetModule() : 0,
-                                           CG,
-                                           "aName"));
+      m_State.reset(
+          new ClangInternalState(CI.getASTContext(), CI.getPreprocessor(),
+                                 CG ? CG->GetModule() : nullptr, CG, "aName"));
     }
   }
 
@@ -251,7 +249,7 @@ namespace cling {
     // and overrides.
     if (!isInSyntaxOnlyMode()) {
       if (const Transaction* T = getLastTransaction()) {
-        if (llvm::Module* M = T->getModule()) {
+        if (auto M = T->getModule()) {
           for (const llvm::StringRef& Sym : Syms) {
             const llvm::GlobalValue* GV = M->getNamedValue(Sym);
   #if defined(__GLIBCXX__) && !defined(__APPLE__)
@@ -532,11 +530,9 @@ namespace cling {
     // This may induce deserialization
     PushTransactionRAII RAII(this);
     CodeGenerator* CG = m_IncrParser->getCodeGenerator();
-    ClangInternalState* state
-      = new ClangInternalState(getCI()->getASTContext(),
-                               getCI()->getPreprocessor(),
-                               getLastTransaction()->getModule(),
-                               CG, name);
+    ClangInternalState* state = new ClangInternalState(
+        getCI()->getASTContext(), getCI()->getPreprocessor(),
+        getLastTransaction()->getModule().get(), CG, name);
     m_StoredStates.push_back(state);
   }
 
@@ -696,7 +692,7 @@ namespace cling {
 
     // Copied from PPDirectives.cpp
     SmallVector<std::pair<IdentifierInfo *, SourceLocation>, 2> path;
-    for (Module *mod = suggestedModule.getModule(); mod; mod = mod->Parent) {
+    for (auto mod = suggestedModule.getModule(); mod; mod = mod->Parent) {
       IdentifierInfo* II
         = &getSema().getPreprocessor().getIdentifierTable().get(mod->Name);
       path.push_back(std::make_pair(II, fileNameLoc));
@@ -1282,10 +1278,10 @@ namespace cling {
   void Interpreter::unload(Transaction& T) {
     // Clear any stored states that reference the llvm::Module.
     // Do it first in case
-    llvm::Module* const Module = T.getModule();
+    auto Module = T.getModule();
     if (Module && !m_StoredStates.empty()) {
-      const auto Predicate = [&Module](const ClangInternalState *S) {
-        return S->getModule() == Module;
+      const auto Predicate = [&Module](const ClangInternalState* S) {
+        return S->getModule() == Module.get();
       };
       auto Itr =
           std::find_if(m_StoredStates.begin(), m_StoredStates.end(), Predicate);
@@ -1482,13 +1478,13 @@ namespace cling {
     assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
 
-    llvm::Module* const M = T.getModule();
+    std::shared_ptr<const llvm::Module> M = T.getModule();
     if (!M)
       return Interpreter::kExeNoModule;
 
     IncrementalExecutor::ExecutionResult ExeRes
        = IncrementalExecutor::kExeSuccess;
-    if (!isPracticallyEmptyModule(M)) {
+    if (!isPracticallyEmptyModule(M.get())) {
       T.setExeUnloadHandle(m_Executor.get(), m_Executor->emitToJIT());
 
       // Forward to IncrementalExecutor; should not be called by

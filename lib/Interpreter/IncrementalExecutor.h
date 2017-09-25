@@ -116,7 +116,9 @@ namespace cling {
     ///\brief Function registered via __cxa_atexit, atexit, or one of
     /// it's C++ overloads that should be run when a module is unloaded.
     ///
-    typedef utils::OrderedMap<llvm::Module*, std::vector<CXAAtExitElement>>
+    // FIXME: We should probably try using a weak_ptr instead of a shared_ptr.
+    typedef utils::OrderedMap<std::shared_ptr<llvm::Module>,
+                              std::vector<CXAAtExitElement>>
         AtExitFunctions;
     AtExitFunctions m_AtExitFuncs;
 
@@ -171,8 +173,10 @@ namespace cling {
     }
 
     ///\brief Unload a set of JIT symbols.
-    bool unloadFromJIT(llvm::Module* M, Transaction::ExeUnloadHandle H) {
-      auto iMod = std::find(m_ModulesToJIT.begin(), m_ModulesToJIT.end(), M);
+    bool unloadFromJIT(const std::shared_ptr<llvm::Module>& M,
+                       Transaction::ExeUnloadHandle H) {
+      auto iMod =
+          std::find(m_ModulesToJIT.begin(), m_ModulesToJIT.end(), M.get());
       if (iMod != m_ModulesToJIT.end())
         m_ModulesToJIT.erase(iMod);
       else
@@ -256,7 +260,8 @@ namespace cling {
 
     ///\brief Keep track of the entities whose dtor we need to call.
     ///
-    void AddAtExitFunc(void (*func) (void*), void* arg, llvm::Module* M);
+    void AddAtExitFunc(void (*func)(void*), void* arg,
+                       const std::shared_ptr<llvm::Module>& M);
 
     ///\brief Try to resolve a symbol through our LazyFunctionCreators;
     /// print an error message if that fails.

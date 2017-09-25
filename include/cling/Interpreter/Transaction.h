@@ -149,7 +149,7 @@ namespace cling {
 
     ///\brief The llvm Module containing the information that we will revert
     ///
-    std::unique_ptr<llvm::Module> m_Module;
+    std::shared_ptr<llvm::Module> m_Module;
 
     ///\brief The JIT handle allowing a removal of the Transaction's symbols.
     ///
@@ -463,8 +463,8 @@ namespace cling {
         m_NestedTransactions->clear();
     }
 
-    llvm::Module* getModule() const { return m_Module.get(); }
-    void setModule(std::unique_ptr<llvm::Module> M) { m_Module.swap(M); }
+    std::shared_ptr<llvm::Module> getModule() const { return m_Module; }
+    void setModule(std::unique_ptr<llvm::Module> M) { m_Module = std::move(M); }
 
     ExeUnloadHandle getExeUnloadHandle() const { return m_ExeUnload; }
     IncrementalExecutor* getExecutor() const { return m_Exe; }

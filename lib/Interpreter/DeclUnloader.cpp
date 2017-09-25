@@ -867,7 +867,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         }
       }
 
-      llvm::Module* M = m_CurTransaction->getModule();
+      auto M = m_CurTransaction->getModule();
       GlobalValue* GV = M->getNamedValue(mangledName);
       if (GV) { // May be deferred decl and thus 0
         GlobalValueEraser GVEraser(m_CodeGen);
