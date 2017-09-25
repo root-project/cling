@@ -1307,14 +1307,8 @@ namespace cling {
 
     if (InterpreterCallbacks* callbacks = getCallbacks())
       callbacks->TransactionUnloaded(T);
-    if (m_Executor) { // we also might be in fsyntax-only mode.
+    if (m_Executor) // we also might be in fsyntax-only mode.
       m_Executor->runAndRemoveStaticDestructors(&T);
-      if (!T.getExecutor()) {
-        // this transaction might be queued in the executor
-        m_Executor->unloadFromJIT(Module,
-                                  Transaction::ExeUnloadHandle({(void*)(size_t)-1}));
-      }
-    }
 
     // We can revert the most recent transaction or a nested transaction of a
     // transaction that is not in the middle of the transaction collection
@@ -1478,14 +1472,14 @@ namespace cling {
     assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
 
-    std::shared_ptr<const llvm::Module> M = T.getModule();
+    const std::shared_ptr<llvm::Module>& M = T.getModule();
     if (!M)
       return Interpreter::kExeNoModule;
 
     IncrementalExecutor::ExecutionResult ExeRes
        = IncrementalExecutor::kExeSuccess;
     if (!isPracticallyEmptyModule(M.get())) {
-      T.setExeUnloadHandle(m_Executor.get(), m_Executor->emitToJIT());
+      m_Executor->emitModule(M, T.getCompilationOpts().OptLevel);
 
       // Forward to IncrementalExecutor; should not be called by
       // anyone except for IncrementalParser.
@@ -1502,11 +1496,6 @@ namespace cling {
 
     return m_Executor->addSymbol(symbolName, symbolAddress);
   }
-
-  void Interpreter::addModule(llvm::Module* module, int OptLevel) {
-    m_Executor->addModule(module, OptLevel);
-  }
-
 
   void* Interpreter::getAddressOfGlobal(const GlobalDecl& GD,
                                         bool* fromJIT /*=0*/) const {

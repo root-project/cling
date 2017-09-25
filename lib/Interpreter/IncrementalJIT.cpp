@@ -366,12 +366,10 @@ IncrementalJIT::getSymbolAddressWithoutMangling(const std::string& Name,
   return llvm::JITSymbol(nullptr);
 }
 
-size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
+void IncrementalJIT::addModule(const std::shared_ptr<llvm::Module>& module) {
   // If this module doesn't have a DataLayout attached then attach the
   // default.
-  for (auto&& mod: modules) {
-    mod->setDataLayout(m_TMDataLayout);
-  }
+  module->setDataLayout(m_TMDataLayout);
 
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
@@ -403,26 +401,24 @@ size_t IncrementalJIT::addModules(std::vector<llvm::Module*>&& modules) {
       return JITSymbol(addr, llvm::JITSymbolFlags::Weak);
     });
 
-  ModuleSetHandleT MSHandle
-    = m_LazyEmitLayer.addModuleSet(std::move(modules),
-                                   llvm::make_unique<Azog>(*this),
-                                   std::move(Resolver));
-  m_UnloadPoints.push_back(MSHandle);
-  return m_UnloadPoints.size() - 1;
+  std::vector<llvm::Module*> moduleSet;
+  moduleSet.push_back(module.get());
+  ModuleSetHandleT MSHandle =
+     m_LazyEmitLayer.addModuleSet(std::move(moduleSet),
+                                  llvm::make_unique<Azog>(*this),
+                                  std::move(Resolver));
+  m_UnloadPoints[module.get()] = MSHandle;
 }
 
-// void* IncrementalJIT::finalizeMemory() {
-//   for (auto &P : UnfinalizedSections)
-//     if (P.second.count(LocalAddress))
-//       ObjectLayer.mapSectionAddress(P.first, LocalAddress, TargetAddress);
-// }
-
-
-void IncrementalJIT::removeModules(size_t handle) {
-  if (handle == (size_t)-1)
+void IncrementalJIT::removeModule(const std::shared_ptr<llvm::Module>& module) {
+  // FIXME: Track down what calls this routine on a not-yet-added module. Once
+  // this is resolved we can remove this check enabling the assert.
+  if (m_UnloadPoints.find(module.get()) == m_UnloadPoints.end())
     return;
-  auto objSetHandle = m_UnloadPoints[handle];
-  m_LazyEmitLayer.removeModuleSet(objSetHandle);
+  auto Handle = m_UnloadPoints[module.get()];
+  assert(*Handle && "Trying to remove a non existent module!");
+  m_UnloadPoints.erase(module.get());
+  m_LazyEmitLayer.removeModuleSet(Handle);
 }
 
 }// end namespace cling

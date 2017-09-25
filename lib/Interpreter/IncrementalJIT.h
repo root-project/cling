@@ -12,12 +12,6 @@
 
 #include "cling/Utils/Output.h"
 
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
-
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
@@ -28,6 +22,12 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/Target/TargetMachine.h"
+
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace llvm {
 class Module;
@@ -169,10 +169,8 @@ private:
   std::map<ObjectLayerT::ObjSetHandleT, SectionAddrSet, ObjSetHandleCompare>
     m_UnfinalizedSections;
 
-  ///\brief Vector of ModuleSetHandleT. UnloadHandles index into that
-  /// vector.
-  std::vector<ModuleSetHandleT> m_UnloadPoints;
-
+  ///\brief Mapping between \c llvm::Module* and \c ModuleSetHandleT.
+  std::map<llvm::Module*, ModuleSetHandleT> m_UnloadPoints;
 
   std::string Mangle(llvm::StringRef Name) {
     stdstrstream MangledName;
@@ -203,8 +201,8 @@ public:
   llvm::JITSymbol getSymbolAddressWithoutMangling(const std::string& Name,
                                                        bool AlsoInProcess);
 
-  size_t addModules(std::vector<llvm::Module*>&& modules);
-  void removeModules(size_t handle);
+  void addModule(const std::shared_ptr<llvm::Module>& module);
+  void removeModule(const std::shared_ptr<llvm::Module>& module);
 
   IncrementalExecutor& getParent() const { return m_Parent; }
 

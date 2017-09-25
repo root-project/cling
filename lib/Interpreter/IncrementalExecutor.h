@@ -163,24 +163,10 @@ namespace cling {
     }
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
-    ///\brief Send all collected modules to the JIT, making their symbols
-    /// available to jitting (but not necessarily jitting them all).
-    Transaction::ExeUnloadHandle emitToJIT() {
-      size_t handle = m_JIT->addModules(std::move(m_ModulesToJIT));
-      m_ModulesToJIT.clear();
-      //m_JIT->finalizeMemory();
-      return Transaction::ExeUnloadHandle{(void*)handle};
-    }
-
     ///\brief Unload a set of JIT symbols.
-    bool unloadFromJIT(const std::shared_ptr<llvm::Module>& M,
-                       Transaction::ExeUnloadHandle H) {
-      auto iMod =
-          std::find(m_ModulesToJIT.begin(), m_ModulesToJIT.end(), M.get());
-      if (iMod != m_ModulesToJIT.end())
-        m_ModulesToJIT.erase(iMod);
-      else
-        m_JIT->removeModules((size_t)H.m_Opaque);
+    bool unloadModule(const std::shared_ptr<llvm::Module>& M) {
+      m_JIT->removeModule(M);
+      // FIXME: Propagate if we removed a module or not.
       return true;
     }
 
@@ -223,14 +209,15 @@ namespace cling {
     ///
     bool addSymbol(const char* Name, void* Address, bool JIT = false);
 
-    ///\brief Add a llvm::Module to the JIT.
+    ///\brief Emit a llvm::Module to the JIT.
     ///
     /// @param[in] module - The module to pass to the execution engine.
     /// @param[in] optLevel - The optimization level to be used.
-    void addModule(llvm::Module* module, int optLevel) {
+    void emitModule(const std::shared_ptr<llvm::Module>& module, int optLevel) {
       if (m_BackendPasses)
         m_BackendPasses->runOnModule(*module, optLevel);
-      m_ModulesToJIT.push_back(module);
+
+      m_JIT->addModule(module);
     }
 
     ///\brief Tells the execution context that we are shutting down the system.

@@ -542,10 +542,8 @@ namespace cling {
 
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
 
-      if (M) {
-        m_Interpreter->addModule(M.get(), T->getCompilationOpts().OptLevel);
+      if (M)
         T->setModule(std::move(M));
-      }
 
       if (T->getIssuedDiags() != Transaction::kNone) {
         // Module has been released from Codegen, reset the Diags now.
