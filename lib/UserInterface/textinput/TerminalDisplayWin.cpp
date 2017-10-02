@@ -35,13 +35,12 @@ namespace textinput {
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL, NULL);
       ::GetConsoleMode(fOut, &fOldMode);
-
-      CONSOLE_SCREEN_BUFFER_INFO csbi;
-      ::GetConsoleScreenBufferInfo(fOut, &csbi);
-      fDefaultAttributes = csbi.wAttributes;
-      assert(fDefaultAttributes != 0 && "~TerminalDisplayWin broken");
     } else
       ::SetConsoleOutputCP(65001); // Force UTF-8 output
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    ::GetConsoleScreenBufferInfo(fOut, &csbi);
+    fDefaultAttributes = csbi.wAttributes;
+    assert(fDefaultAttributes != 0 && "~TerminalDisplayWin broken");
     fMyMode = fOldMode | ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT;
     HandleResizeEvent();
   }
