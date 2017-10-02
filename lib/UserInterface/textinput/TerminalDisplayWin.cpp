@@ -35,8 +35,9 @@ namespace textinput {
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL, NULL);
       ::GetConsoleMode(fOut, &fOldMode);
-    } else
+    } else {
       ::SetConsoleOutputCP(65001); // Force UTF-8 output
+    }
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     ::GetConsoleScreenBufferInfo(fOut, &csbi);
     fDefaultAttributes = csbi.wAttributes;
