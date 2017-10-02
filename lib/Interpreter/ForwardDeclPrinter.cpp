@@ -176,12 +176,21 @@ namespace cling {
     }
 
      auto &smgr = m_SMgr;
-     auto getIncludeFileName = [&smgr](PresumedLoc loc) {
+     auto getIncludeFileName = [D, &smgr](PresumedLoc loc) {
         clang::SourceLocation includeLoc = smgr.getSpellingLoc(loc.getIncludeLoc());
         bool invalid = true;
         const char* includeText = smgr.getCharacterData(includeLoc, &invalid);
         assert(!invalid && "Invalid source data");
         assert(includeText && "Cannot find #include location");
+        // With C++ modules it's possible that we get 'include <header>'
+        // instead of just '<header>' here. Let's just skip this text at the
+        // start in this case as the '<header>' still has the correct value.
+        // FIXME: Once the C++ modules replaced the forward decls, remove this.
+        if (D->getASTContext().getLangOpts().Modules &&
+            llvm::StringRef(includeText).startswith("include ")) {
+          includeText += strlen("include ");
+        }
+
         assert((includeText[0] == '<' || includeText[0] == '"')
                && "Unexpected #include delimiter");
         char endMarker = includeText[0] == '<' ? '>' : '"';
