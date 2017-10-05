@@ -51,7 +51,8 @@ namespace cling {
   }
 
   Transaction::~Transaction() {
-    assert(m_Module.use_count() <= 1 && "There is still a reference!");
+    // FIXME: Enable this once we have a good control on the ownership.
+    //assert(m_Module.use_count() <= 1 && "There is still a reference!");
     if (hasNestedTransactions())
       for (size_t i = 0; i < m_NestedTransactions->size(); ++i) {
         assert(((*m_NestedTransactions)[i]->getState() == kCommitted
