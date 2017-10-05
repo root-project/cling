@@ -212,7 +212,9 @@ namespace {
                                         opts.NoBuiltinInc ? nullptr : &UnivSDK,
                                         Verbose)) {
         if (!opts.NoCXXInc) {
-          const std::string VSIncl = VSDir + "\\VC\\include";
+          // The Visual Studio 2017 path is very different than the previous versions
+          // (see also GetVisualStudioDirs() in PlatformWin.cpp)
+          const std::string VSIncl = VSDir + "\\include";
           if (Verbose)
             cling::log() << "Adding VisualStudio SDK: '" << VSIncl << "'\n";
           sArguments.addArgument("-I", std::move(VSIncl));
@@ -224,6 +226,7 @@ namespace {
               cling::log() << "Adding Windows SDK: '" << WinSDK << "'\n";
             sArguments.addArgument("-I", std::move(WinSDK));
           } else {
+            // Since Visual Studio 2017, this is not valid anymore...
             VSDir.append("\\VC\\PlatformSDK\\Include");
             if (Verbose)
               cling::log() << "Adding Platform SDK: '" << VSDir << "'\n";
