@@ -48,6 +48,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
 #include "clang/Lex/ExternalPreprocessorSource.h"
+#include "clang/FrontendTool/Utils.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/Parser.h"
@@ -1590,6 +1591,36 @@ namespace cling {
 
     // Avoid assertion in the ~IncrementalParser.
     T.setState(Transaction::kCommitted);
+  }
+
+  int Interpreter::verifyDiagnostics() const {
+    clang::CompilerInstance* CI = getCIOrNull();
+    if (!CI)
+      return -1;
+
+    unsigned Errs = CI->getDiagnostics().getClient()->getNumErrors();
+    if (CI->getDiagnosticOpts().VerifyDiagnostics) {
+      // If there was an error that came from the verifier we must return 1 as
+      // an exit code for the process. This will make the test fail as expected.
+      clang::DiagnosticConsumer* Client = CI->getDiagnostics().getClient();
+      Client->EndSourceFile();
+      Errs = Client->getNumErrors();
+
+      // The interpreter expects BeginSourceFile/EndSourceFiles to be balanced.
+      Client->BeginSourceFile(CI->getLangOpts(), &CI->getPreprocessor());
+    }
+    return Errs;
+  }
+
+  Interpreter::CompilationResult Interpreter::executeInvocation() const {
+    if (!m_Opts.CompilerOpts.HasOutput)
+      return kMoreInputExpected;
+
+    if (clang::CompilerInstance* CI = getCIOrNull()) {
+      if (clang::ExecuteCompilerInvocation(CI))
+        return kSuccess;
+    }
+    return kFailure;
   }
 
   namespace runtime {

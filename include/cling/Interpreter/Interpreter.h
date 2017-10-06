@@ -768,6 +768,23 @@ namespace cling {
     ///
     void addModule(llvm::Module* module, int OptLevel);
 
+    ///\brief Execute compiler invocation for output.
+    /// This should not be called in interactive sessions, rather when cling
+    /// is used to generate output: cling -E <in-file> -o <out-file>
+    /// Safe to call even if Interpreter::isValid() returns false.
+    ///
+    ///\returns Whether execution was successful.
+    ///
+    CompilationResult executeInvocation() const;
+
+    ///\brief Run the diagnostics verifier if cling was invoked with the -verify
+    /// flag.  Of particular importance to the test-suite.
+    /// Safe to call even if Interpreter::isValid() returns false.
+    ///
+    ///\returns The number of errors reported or -1 if Interpreter was invalid.
+    ///
+    int verifyDiagnostics() const;
+
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);
 
