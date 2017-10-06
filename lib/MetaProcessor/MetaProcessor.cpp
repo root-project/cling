@@ -22,6 +22,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
 
+#include "llvm/BinaryFormat/Magic.h"
 #include "llvm/Support/Path.h"
 
 #include <fcntl.h>
@@ -378,9 +379,9 @@ namespace cling {
       // heuristic unreliable.
       if (!in.fail() && readMagic >= 300) {
         llvm::StringRef magicStr(magic,in.gcount());
-        llvm::sys::fs::file_magic fileType
-          = llvm::sys::fs::identify_magic(magicStr);
-        if (fileType != llvm::sys::fs::file_magic::unknown)
+        llvm::file_magic fileType
+          = llvm::identify_magic(magicStr);
+        if (fileType != llvm::file_magic::unknown)
           return reportIOErr(filename, "read from binary");
 
         unsigned printable = 0;

@@ -14,8 +14,8 @@
 #include "cling/Utils/Platform.h"
 #include "cling/Utils/Output.h"
 
+#include "llvm/BinaryFormat/Magic.h"
 #include "llvm/Support/DynamicLibrary.h"
-#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 
 #include <system_error>
@@ -64,7 +64,7 @@ namespace cling {
   DynamicLibraryManager::~DynamicLibraryManager() {}
 
   static bool isSharedLib(llvm::StringRef LibName, bool* exists = 0) {
-    using namespace llvm::sys::fs;
+    using namespace llvm;
     file_magic Magic;
     const std::error_code Error = identify_magic(LibName, Magic);
     if (exists)
