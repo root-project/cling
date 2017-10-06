@@ -115,7 +115,6 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   llvm::PassManagerBuilder PMBuilder;
   PMBuilder.OptLevel = OptLevel;
   PMBuilder.SizeLevel = m_CGOpts.OptimizeSize;
-  PMBuilder.BBVectorize = 0; // m_CGOpts.VectorizeBB;
   PMBuilder.SLPVectorize = OptLevel > 1 ? 1 : 0; // m_CGOpts.VectorizeSLP
   PMBuilder.LoopVectorize = OptLevel > 1 ? 1 : 0; // m_CGOpts.VectorizeLoop
 
