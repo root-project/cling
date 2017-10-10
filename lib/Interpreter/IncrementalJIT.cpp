@@ -413,11 +413,12 @@ void IncrementalJIT::addModule(const std::shared_ptr<llvm::Module>& module) {
 void IncrementalJIT::removeModule(const std::shared_ptr<llvm::Module>& module) {
   // FIXME: Track down what calls this routine on a not-yet-added module. Once
   // this is resolved we can remove this check enabling the assert.
-  if (m_UnloadPoints.find(module.get()) == m_UnloadPoints.end())
+  auto IUnload = m_UnloadPoints.find(module.get());
+  if (IUnload == m_UnloadPoints.end())
     return;
-  auto Handle = m_UnloadPoints[module.get()];
+  auto Handle = IUnload->second;
   assert(*Handle && "Trying to remove a non existent module!");
-  m_UnloadPoints.erase(module.get());
+  m_UnloadPoints.erase(IUnload);
   m_LazyEmitLayer.removeModuleSet(Handle);
 }
 
