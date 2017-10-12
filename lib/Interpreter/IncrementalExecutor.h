@@ -165,8 +165,9 @@ namespace cling {
 
     ///\brief Unload a set of JIT symbols.
     bool unloadModule(const std::shared_ptr<llvm::Module>& M) {
-      m_JIT->removeModule(M);
-      // FIXME: Propagate if we removed a module or not.
+      // FIXME: Propagate the error in a more verbose way.
+      if (auto Err = m_JIT->removeModule(M))
+        return false;
       return true;
     }
 

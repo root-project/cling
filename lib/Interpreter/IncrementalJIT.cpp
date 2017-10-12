@@ -13,6 +13,7 @@
 #include "cling/Utils/Platform.h"
 
 #include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
+#include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/Support/DynamicLibrary.h"
 
 #ifdef __APPLE__
@@ -41,7 +42,7 @@ public:
   class NotifyFinalizedT {
   public:
     NotifyFinalizedT(cling::IncrementalJIT &jit) : m_JIT(jit) {}
-    void operator()(llvm::orc::RTDyldObjectLinkingLayerBase::ObjSetHandleT H) {
+    void operator()(llvm::orc::RTDyldObjectLinkingLayerBase::ObjHandleT H) {
       m_JIT.RemoveUnfinalizedSection(H);
     }
 
@@ -220,9 +221,15 @@ public:
   }
 
   uint64_t getSymbolAddress(const std::string &Name) override {
-    return m_jit.getSymbolAddressWithoutMangling(Name,
-                                                 true /*also use dlsym*/)
-      .getAddress();
+    // FIXME: We should decide if we want to handle the error here or make the
+    // return type of the function llvm::Expected<uint64_t> relying on the
+    // users to decide how to handle the error.
+    if (auto Addr = m_jit.getSymbolAddressWithoutMangling(Name,
+                                                        true /*also use dlsym*/)
+        .getAddress())
+      return *Addr;
+
+    return ~0U;
   }
 
   void *getPointerToNamedFunction(const std::string &Name,
@@ -267,9 +274,10 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   m_Parent(exe),
   m_TM(std::move(TM)),
   m_TMDataLayout(m_TM->createDataLayout()),
-  m_ExeMM(llvm::make_unique<ClingMemoryManager>(m_Parent)),
+  m_ExeMM(std::make_shared<ClingMemoryManager>(m_Parent)),
   m_NotifyObjectLoaded(*this),
-  m_ObjectLayer(m_SymbolMap, m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
+  m_ObjectLayer(m_SymbolMap, [this] () { return this->m_ExeMM; },
+                m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
 
@@ -343,9 +351,12 @@ IncrementalJIT::getSymbolAddressWithoutMangling(const std::string& Name,
     return Sym;
 
   if (AlsoInProcess) {
-    if (llvm::JITSymbol SymInfo = m_ExeMM->findSymbol(Name))
-      return llvm::JITSymbol(SymInfo.getAddress(),
-                             llvm::JITSymbolFlags::Exported);
+    if (llvm::JITSymbol SymInfo = m_ExeMM->findSymbol(Name)) {
+      if (auto AddrOrErr = SymInfo.getAddress())
+        return llvm::JITSymbol(*AddrOrErr, llvm::JITSymbolFlags::Exported);
+      else
+        llvm_unreachable("Handle the error case");
+    }
 #ifdef LLVM_ON_WIN32
     // FIXME: DLSym symbol lookup can overlap m_ExeMM->findSymbol wasting time
     // looking for a symbol in libs where it is already known not to exist.
@@ -374,13 +385,21 @@ void IncrementalJIT::addModule(const std::shared_ptr<llvm::Module>& module) {
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
     [&](const std::string &S) {
-      if (auto Sym = getInjectedSymbols(S))
-        return JITSymbol((uint64_t)Sym.getAddress(), Sym.getFlags());
+      if (auto Sym = getInjectedSymbols(S)) {
+        if (auto AddrOrErr = Sym.getAddress())
+          return JITSymbol((uint64_t)*AddrOrErr, Sym.getFlags());
+        else
+          llvm_unreachable("Handle the error case");
+      }
       return m_ExeMM->findSymbol(S);
     },
     [&](const std::string &Name) {
-      if (auto Sym = getSymbolAddressWithoutMangling(Name, true))
-        return JITSymbol(Sym.getAddress(), Sym.getFlags());
+      if (auto Sym = getSymbolAddressWithoutMangling(Name, true)) {
+        if (auto AddrOrErr = Sym.getAddress())
+          return JITSymbol(*AddrOrErr, Sym.getFlags());
+        else
+          llvm_unreachable("Handle the error case");
+        }
 
       const std::string* NameNP = &Name;
 #ifdef MANGLE_PREFIX
@@ -401,16 +420,14 @@ void IncrementalJIT::addModule(const std::shared_ptr<llvm::Module>& module) {
       return JITSymbol(addr, llvm::JITSymbolFlags::Weak);
     });
 
-  std::vector<llvm::Module*> moduleSet;
-  moduleSet.push_back(module.get());
-  ModuleSetHandleT MSHandle =
-     m_LazyEmitLayer.addModuleSet(std::move(moduleSet),
-                                  llvm::make_unique<Azog>(*this),
-                                  std::move(Resolver));
-  m_UnloadPoints[module.get()] = MSHandle;
+  if (auto H = m_LazyEmitLayer.addModule(module, std::move(Resolver)))
+    m_UnloadPoints[module.get()] = *H;
+  else
+    llvm_unreachable("Handle the error case");
 }
 
-void IncrementalJIT::removeModule(const std::shared_ptr<llvm::Module>& module) {
+llvm::Error
+IncrementalJIT::removeModule(const std::shared_ptr<llvm::Module>& module) {
   // FIXME: Track down what calls this routine on a not-yet-added module. Once
   // this is resolved we can remove this check enabling the assert.
   auto IUnload = m_UnloadPoints.find(module.get());
