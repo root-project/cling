@@ -17,7 +17,7 @@ namespace clingoptions {
     OPT_INVALID = 0, // This is not an option ID.
 #define PREFIX(NAME, VALUE)
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
-               HELPTEXT, METAVAR) OPT_##ID,
+               HELPTEXT, METAVAR, VALUES) OPT_##ID,
 #include "cling/Interpreter/ClingOptions.inc"
     LastOption
 #undef OPTION
