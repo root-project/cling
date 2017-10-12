@@ -211,7 +211,7 @@ namespace cling {
 
       std::vector<std::unique_ptr<ASTConsumer>> Consumers;
       Consumers.push_back(std::move(wrapper));
-      Consumers.push_back(std::move(m_Interpreter->getCI()->takeASTConsumer()));
+      Consumers.push_back(m_Interpreter->getCI()->takeASTConsumer());
 
       std::unique_ptr<clang::MultiplexConsumer> multiConsumer(
           new clang::MultiplexConsumer(std::move(Consumers)));
