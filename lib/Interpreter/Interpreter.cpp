@@ -216,7 +216,7 @@ namespace cling {
 
     // Initialize the opt level to what CodeGenOpts says.
     if (m_OptLevel == -1)
-      m_OptLevel = getCI()->getCodeGenOpts().OptimizationLevel;
+      setDefaultOptLevel(getCI()->getCodeGenOpts().OptimizationLevel);
 
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();
