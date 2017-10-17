@@ -256,6 +256,12 @@ namespace {
       sArguments.addArgument("-Wno-microsoft-enum-value");
       sArguments.addArgument("-Wno-expansion-to-defined");
 
+      // silent many warnings (mostly during ROOT compilation)
+      sArguments.addArgument("-Wno-constant-conversion");
+      sArguments.addArgument("-Wno-unknown-escape-sequence");
+      sArguments.addArgument("-Wno-microsoft-unqualified-friend");
+      sArguments.addArgument("-Wno-deprecated-declarations");
+
       //sArguments.addArgument("-Wno-dllimport-static-field-def");
       //sArguments.addArgument("-Wno-microsoft-template");
 
