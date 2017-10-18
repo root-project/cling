@@ -753,7 +753,7 @@ namespace cling {
                                              P.getCurToken().getAnnotationRange(),
                                              SS);
       if (SS.isValid()) {
-        P.ConsumeToken();
+        P.ConsumeAnyToken();
         if (!P.getCurToken().is(clang::tok::identifier)) {
           return 0;
         }
