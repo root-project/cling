@@ -229,6 +229,7 @@ public:
         .getAddress())
       return *Addr;
 
+    llvm_unreachable("Handle the error case");
     return ~0U;
   }
 
