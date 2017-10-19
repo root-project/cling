@@ -104,13 +104,18 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
     Inlining = CodeGenOptions::NormalInlining;
 #endif
 
-  // Handle disabling of LLVM optimization, where we want to preserve the
-  // internal module before any optimization.
-  if (m_CGOpts.DisableLLVMPasses) {
-    OptLevel = 0;
-    // Always keep at least ForceInline - NoInlining is deadly for libc++.
-    // Inlining = CGOpts.NoInlining;
-  }
+// Revert https://github.com/root-project/root/commit/548eca7 bringing back
+// optimisation level to O0 given the very long time needed to JIT simple
+// pieces of code.
+//   // Handle disabling of LLVM optimization, where we want to preserve the
+//   // internal module before any optimization.
+//   if (m_CGOpts.DisableLLVMPasses) {
+//     OptLevel = 0;
+//     // Always keep at least ForceInline - NoInlining is deadly for libc++.
+//     // Inlining = CGOpts.NoInlining;
+//   }
+
+  OptLevel = 0;
 
   llvm::PassManagerBuilder PMBuilder;
   PMBuilder.OptLevel = OptLevel;

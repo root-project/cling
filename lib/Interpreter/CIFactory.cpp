@@ -1132,14 +1132,17 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CGOpts.EmitCodeView = 1;
     CGOpts.CXXCtorDtorAliases = 1;
 #endif
-    // Reduce amount of emitted symbols by optimizing more.
-    CGOpts.OptimizationLevel = 2;
-    // Taken from a -O2 run of clang:
-    CGOpts.DiscardValueNames = 1;
-    CGOpts.OmitLeafFramePointer = 1;
-    CGOpts.UnrollLoops = 1;
-    CGOpts.VectorizeLoop = 1;
-    CGOpts.VectorizeSLP = 1;
+// Revert https://github.com/root-project/root/commit/548eca7 bringing back
+// optimisation level to O0 given the very long time needed to JIT simple
+// pieces of code.
+//     // Reduce amount of emitted symbols by optimizing more.
+//     CGOpts.OptimizationLevel = 2;
+//     // Taken from a -O2 run of clang:
+//     CGOpts.DiscardValueNames = 1;
+//     CGOpts.OmitLeafFramePointer = 1;
+//     CGOpts.UnrollLoops = 1;
+//     CGOpts.VectorizeLoop = 1;
+//     CGOpts.VectorizeSLP = 1;
 
     // CGOpts.setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
     // CGOpts.EmitDeclMetadata = 1; // For unloading, for later
