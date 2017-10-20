@@ -13,10 +13,10 @@ extern "C" int printf(const char*,...);
 #include "cling/Interpreter/Transaction.h"
 
 gCling->getDefaultOptLevel()
-// CHECK: (int) 2
+// CHECK: (int) 0
 
 (int)gCling->getLatestTransaction()->getCompilationOpts().OptLevel
-// CHECK-NEXT: (int) 2
+// CHECK-NEXT: (int) 0
 
 {
 #pragma cling optimize(0)
