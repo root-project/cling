@@ -21,7 +21,7 @@ namespace cling {
 
 /// \brief Contains declarations for cling's runtime.
 namespace runtime {
-  extern Interpreter* gCling;
+  extern Interpreter* const gCling;
 
   /// \brief Provides builtins, which are neccessary for the dynamic scopes
   /// and runtime bindings. These builtins should be used for other purposes.

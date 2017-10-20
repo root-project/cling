@@ -185,11 +185,18 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/, bool noRuntime,
                            const Interpreter* parentInterp) :
-    m_Opts(argc, argv),
+    m_Opts(argc, argv), m_Parenting(nullptr),
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
     m_OptLevel(parentInterp ? parentInterp->m_OptLevel : -1) {
+
+     if (parentInterp) {
+       m_Parenting = new Interpreter*[2];
+       m_Parenting[0] = this;
+       m_Parenting[1] = const_cast<Interpreter*>(parentInterp);
+     } else
+       m_Parenting = reinterpret_cast<Interpreter**>(this);
 
     if (handleSimpleOptions(m_Opts))
       return;
@@ -222,9 +229,12 @@ namespace cling {
         return;
     }
 
+    const CompilerInstance* CI = getCI();
+    const LangOptions& LangOpts = CI->getLangOpts();
+
     // Tell the diagnostic client that we are entering file parsing mode.
-    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
+    DiagnosticConsumer& DClient = CI->getDiagnosticClient();
+    DClient.BeginSourceFile(LangOpts, &PP);
 
     llvm::SmallVector<IncrementalParser::ParseResultTransaction, 2>
       IncrParserTransactions;
@@ -259,11 +269,39 @@ namespace cling {
   #endif
             if (GV) {
               if (void* Addr = m_Executor->getPointerToGlobalFromJIT(*GV))
-                m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
+                m_Executor->addSymbol(Sym, Addr, true);
               else
                 cling::errs() << Sym << " not defined\n";
             } else
               cling::errs() << Sym << " not in Module!\n";
+          }
+
+          const clang::Decl* Scope =
+              LangOpts.CPlusPlus
+                  ? m_LookupHelper->findScope("cling::runtime",
+                                              LookupHelper::NoDiagnostics)
+                  : CI->getSema().getASTContext().getTranslationUnitDecl();
+          if (!Scope) {
+            cling::errs() << "Scope for gCling was not found\n";
+          } else if (const clang::ValueDecl* gCling =
+                         m_LookupHelper->findDataMember(
+                             Scope, "gCling", LookupHelper::NoDiagnostics)) {
+            std::string Name = !LangOpts.CPlusPlus ? "gCling" :
+                                    utils::Analyze::maybeMangleDeclName(gCling);
+            if (!Name.empty()) {
+#ifdef LLVM_ON_WIN32
+              // MS mangling is purposely adding a prefix of '\x1'...why?
+              if (Name[0] == '\x1')
+                Name.erase(0, 1);
+#endif
+              // gCling gets linked to top-most Interpreter.
+              if (!parent())
+                m_Executor->addSymbol(Name, &m_Parenting, true);
+              else
+                m_Executor->addSymbol(Name, &m_Parenting[1], true);
+            }
+          } else {
+            cling::errs() << "gCling was not found\n";
           }
         }
       }
@@ -340,6 +378,21 @@ namespace cling {
     // explicitly, before the implicit destruction (through the unique_ptr) of
     // the callbacks.
     m_IncrParser.reset(0);
+
+    if (m_Parenting != reinterpret_cast<Interpreter**>(this))
+      delete [] m_Parenting;
+  }
+
+  Interpreter* Interpreter::parent() {
+    if (m_Parenting == reinterpret_cast<Interpreter**>(this))
+      return nullptr;
+    return m_Parenting[1];
+  }
+
+  Interpreter& Interpreter::ancestor() {
+    if (m_Parenting == reinterpret_cast<Interpreter**>(this))
+      return *this;
+    return m_Parenting[1]->ancestor();
   }
 
   Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,
@@ -356,26 +409,13 @@ namespace cling {
     // (on OS X at least, so probably Linux too) and the JIT thinks the symbol
     // is undefined in a child Interpreter.  And speaking of children, should
     // gCling actually be thisCling, so a child Interpreter can only access
-    // itself? One could use a macro (simillar to __dso_handle) to block
-    // assignemnt and get around the mangling issue.
-    const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
-    if (!NoRuntime) {
-      if (LangOpts.CPlusPlus) {
-        Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
-        if (EmitDefinitions)
-          Strm << "namespace cling { class Interpreter; namespace runtime { "
-                  "Interpreter* gCling=(Interpreter*)" << ThisP << ";}}\n";
-      } else {
-        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
-             << "void* gCling";
-        if (EmitDefinitions)
-          Strm << "=(void*)" << ThisP;
-        Strm << ";\n";
-      }
-    }
+    // itself?
+    if (!NoRuntime)
+      Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
 
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
+    const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
 #if defined(__GLIBCXX__) && !defined(__APPLE__)
     const char* LinkageCxx = "extern \"C++\"";
     const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
@@ -942,10 +982,8 @@ namespace cling {
     if (!FD)
       return kExeUnkownFunction;
 
-    std::string mangledNameIfNeeded;
-    utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
     IncrementalExecutor::ExecutionResult ExeRes =
-       m_Executor->executeWrapper(mangledNameIfNeeded, res);
+       m_Executor->executeWrapper(utils::Analyze::maybeMangleDeclName(FD), res);
     return ConvertExecutionResult(ExeRes);
   }
 
@@ -1500,9 +1538,7 @@ namespace cling {
   void* Interpreter::getAddressOfGlobal(const GlobalDecl& GD,
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
-    std::string mangledName;
-    utils::Analyze::maybeMangleDeclName(GD, mangledName);
-    return getAddressOfGlobal(mangledName, fromJIT);
+    return getAddressOfGlobal(utils::Analyze::maybeMangleDeclName(GD), fromJIT);
   }
 
   void* Interpreter::getAddressOfGlobal(llvm::StringRef SymName,

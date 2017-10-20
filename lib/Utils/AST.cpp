@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Output.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclarationName.h"
@@ -57,53 +58,79 @@ namespace utils {
       .startswith(Synthesize::UniquePrefix);
   }
 
-  void Analyze::maybeMangleDeclName(const GlobalDecl& GD,
-                                    std::string& mangledName) {
-    // copied and adapted from CodeGen::CodeGenModule::getMangledName
+  namespace Analyze {
+    std::string maybeMangleDeclName(const NamedDecl *ND, const GlobalDecl* GD) {
+      // copied and adapted from CodeGen::CodeGenModule::getMangledName
 
-    NamedDecl* D
-      = cast<NamedDecl>(const_cast<Decl*>(GD.getDecl()));
-    std::unique_ptr<MangleContext> mangleCtx;
-    mangleCtx.reset(D->getASTContext().createMangleContext());
-    if (!mangleCtx->shouldMangleDeclName(D)) {
-      IdentifierInfo *II = D->getIdentifier();
-      assert(II && "Attempt to mangle unnamed decl.");
-      mangledName = II->getName();
-      return;
-    }
-
-    llvm::raw_string_ostream RawStr(mangledName);
-    switch(D->getKind()) {
-    case Decl::CXXConstructor:
-      //Ctor_Complete,          // Complete object ctor
-      //Ctor_Base,              // Base object ctor
-      //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
-      mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D),
-                               GD.getCtorType(), RawStr);
-      break;
-
-    case Decl::CXXDestructor:
-      //Dtor_Deleting, // Deleting dtor
-      //Dtor_Complete, // Complete object dtor
-      //Dtor_Base      // Base object dtor
-#if defined(LLVM_ON_WIN32)
-      // MicrosoftMangle.cpp:954 calls llvm_unreachable when mangling Dtor_Comdat
-      if (GD.getDtorType() == Dtor_Comdat) {
-        if (const IdentifierInfo* II = D->getIdentifier())
-          RawStr << II->getName();
-      } else
-#endif
-      {
-        mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
-                                 GD.getDtorType(), RawStr);
+      std::unique_ptr<MangleContext> mangleCtx;
+      mangleCtx.reset(ND->getASTContext().createMangleContext());
+      if (!mangleCtx->shouldMangleDeclName(ND)) {
+        IdentifierInfo *II = ND->getIdentifier();
+        assert(II && "Attempt to mangle unnamed decl.");
+        return II->getName();
       }
-      break;
 
-    default :
-      mangleCtx->mangleName(D, RawStr);
-      break;
+      stdstrstream RawStr;
+      switch (ND->getKind()) {
+        case Decl::CXXConstructor:
+          //Ctor_Complete,          // Complete object ctor
+          //Ctor_Base,              // Base object ctor
+          //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
+          if (GD) {
+            mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(ND),
+                                     GD->getCtorType(), RawStr);
+            break;
+          }
+
+        case Decl::CXXDestructor:
+          //Dtor_Deleting, // Deleting dtor
+          //Dtor_Complete, // Complete object dtor
+          //Dtor_Base      // Base object dtor
+          if (GD) {
+  #if defined(LLVM_ON_WIN32)
+            // MicrosoftMangle.cpp:954 calls llvm_unreachable when mangling Dtor_Comdat
+            if (GD->getDtorType() == Dtor_Comdat) {
+              if (const IdentifierInfo* II = ND->getIdentifier())
+                RawStr << II->getName();
+            } else
+  #endif
+            {
+              mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(ND),
+                                       GD->getDtorType(), RawStr);
+            }
+            break;
+          }
+
+        default :
+          mangleCtx->mangleName(ND, RawStr);
+          break;
+      }
+      return RawStr.str();
     }
-    RawStr.flush();
+
+    std::string maybeMangleDeclName(const GlobalDecl& GD) {
+      return maybeMangleDeclName(cast<NamedDecl>(GD.getDecl()), &GD);
+    }
+    
+    template <>
+    std::string maybeMangleDeclName<FunctionDecl>(const FunctionDecl* FD) {
+      return maybeMangleDeclName(GlobalDecl(FD));
+    }
+
+    template <>
+    std::string maybeMangleDeclName<VarDecl>(const VarDecl* VD) {
+      return maybeMangleDeclName(GlobalDecl(VD));
+    }
+
+    template <>
+    std::string maybeMangleDeclName<ValueDecl>(const ValueDecl* VD) {
+      return maybeMangleDeclName(cast<NamedDecl>(VD), nullptr);
+    }
+
+    template <>
+    std::string maybeMangleDeclName<NamedDecl>(const NamedDecl* ND) {
+      return maybeMangleDeclName(ND, nullptr);
+    }
   }
 
   Expr* Analyze::GetOrCreateLastExpr(FunctionDecl* FD,

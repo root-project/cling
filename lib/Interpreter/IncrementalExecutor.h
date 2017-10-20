@@ -207,7 +207,7 @@ namespace cling {
     /// @param[in] JIT - Add to the JIT injected symbol table
     /// @returns true if the symbol is successfully registered, false otherwise.
     ///
-    bool addSymbol(const char* Name, void* Address, bool JIT = false);
+    bool addSymbol(llvm::StringRef Name, void* Address, bool JIT = false);
 
     ///\brief Emit a llvm::Module to the JIT.
     ///

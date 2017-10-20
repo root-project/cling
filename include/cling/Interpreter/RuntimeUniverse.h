@@ -21,7 +21,11 @@
 #define __STDC_CONSTANT_MACROS // needed by System/DataTypes.h
 #endif
 
-#ifdef __cplusplus
+#ifndef __cplusplus
+
+extern const void* const gCling;
+
+#else
 
 #include <new>
 
@@ -36,7 +40,7 @@ namespace cling {
     /// \brief The interpreter provides itself as a builtin, i.e. it
     /// interprets itself. This is particularly important for implementing
     /// the dynamic scopes and the runtime bindings
-    extern Interpreter* gCling;
+    extern Interpreter* const gCling;
 
     namespace internal {
       /// \brief Some of clang's routines rely on valid source locations and
@@ -177,15 +181,20 @@ namespace cling {
 using namespace cling::runtime;
 
 extern "C" {
-  ///\brief a function that throws InvalidDerefException. This allows to 'hide'
-  /// the definition of the exceptions from the RuntimeUniverse and allows us to
-  /// run cling in -no-rtti mode.
-  ///
 
-  void* cling_runtime_internal_throwIfInvalidPointer(void* Sema,
-                                                    void* Expr,
-                                                    const void* Arg);
-}
 #endif // __cplusplus
+
+///\brief a function that throws InvalidDerefException. This allows to 'hide'
+/// the definition of the exceptions from the RuntimeUniverse and allows us to
+/// run cling in -no-rtti mode.
+///
+
+void* cling_runtime_internal_throwIfInvalidPointer(void* Sema,
+                                                   void* Expr,
+                                                   const void* Arg);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // CLING_RUNTIME_UNIVERSE_H
