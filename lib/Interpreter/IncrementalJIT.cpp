@@ -433,11 +433,11 @@ IncrementalJIT::removeModule(const std::shared_ptr<llvm::Module>& module) {
   // this is resolved we can remove this check enabling the assert.
   auto IUnload = m_UnloadPoints.find(module.get());
   if (IUnload == m_UnloadPoints.end())
-    return;
+    return llvm::Error::success();
   auto Handle = IUnload->second;
   assert(*Handle && "Trying to remove a non existent module!");
   m_UnloadPoints.erase(IUnload);
-  m_LazyEmitLayer.removeModuleSet(Handle);
+  return m_LazyEmitLayer.removeModule(Handle);
 }
 
 }// end namespace cling
