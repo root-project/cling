@@ -190,11 +190,14 @@ public:
     // FIXME: We should decide if we want to handle the error here or make the
     // return type of the function llvm::Expected<uint64_t> relying on the
     // users to decide how to handle the error.
-    if (auto Sym = getSymbolAddressWithoutMangling(Mangle(Name), AlsoInProcess))
-      if (auto AddrOrErr = Sym.getAddress())
+    if (auto S = getSymbolAddressWithoutMangling(Mangle(Name), AlsoInProcess)) {
+      if (auto AddrOrErr = S.getAddress())
         return *AddrOrErr;
+      else
+        llvm_unreachable("Handle the error case");
+    }
 
-    return ~0U;
+    return 0;
   }
 
   ///\brief Get the address of a symbol from the JIT or the memory manager.
