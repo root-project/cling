@@ -9,6 +9,8 @@
 
 #include "DynamicLookup.h"
 
+#include "EnterUserCodeRAII.h"
+
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
@@ -952,6 +954,7 @@ namespace cling {
       std::string ctor("new ");
       ctor += type;
       ctor += ExprInfo->getExpr();
+      LockCompilationDuringUserCodeExecutionRAII LCDUCER(*Interp);
       Value res = Interp->Evaluate(ctor.c_str(), DC,
                                    ExprInfo->isValuePrinterRequested()
                                    );
@@ -961,6 +964,7 @@ namespace cling {
     LifetimeHandler::~LifetimeHandler() {
       ostrstream stream;
       stream << "delete (" << m_Type << "*) " << m_Memory << ";";
+      LockCompilationDuringUserCodeExecutionRAII LCDUCER(*m_Interpreter);
       m_Interpreter->execute(stream.str());
     }
   } // end namespace internal

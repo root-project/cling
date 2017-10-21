@@ -32,16 +32,14 @@ namespace cling {
 
     // TODO: Add overload that takes file not MemoryBuffer
 
-    clang::CompilerInstance* createCI(llvm::StringRef Code,
-                                      const InvocationOptions& Opts,
-                                      const char* LLVMDir,
-                                      clang::ASTConsumer* consumer);
+    clang::CompilerInstance*
+    createCI(llvm::StringRef Code, const InvocationOptions& Opts,
+             const char* LLVMDir, std::unique_ptr<clang::ASTConsumer> consumer);
 
-    clang::CompilerInstance* createCI(MemBufPtr_t Buffer, int Argc,
-                                      const char* const* Argv,
-                                      const char* LLVMDir,
-                                      clang::ASTConsumer* consumer,
-                                      bool OnlyLex = false);
+    clang::CompilerInstance*
+    createCI(MemBufPtr_t Buffer, int Argc, const char* const* Argv,
+             const char* LLVMDir, std::unique_ptr<clang::ASTConsumer> consumer,
+             bool OnlyLex = false);
   } // namespace CIFactory
 } // namespace cling
 #endif // CLING_CIFACTORY_H

@@ -111,9 +111,11 @@ public:
   ///\brief Make sure a token is closed/balanced properly
   ///
   bool CheckBalance(Token& Tok) {
-    const tok::TokenKind In = Tok.getKind(), Out = tok::TokenKind(In + 1);
-    assert((In == tok::l_paren || In == tok::l_brace || In == tok::l_square) &&
-           "Invalid balnce token");
+    const tok::TokenKind In = Tok.getKind();
+    const tok::TokenKind Out
+      = In == tok::less ? tok::greater : tok::TokenKind(In + 1);
+    assert((In == tok::l_paren || In == tok::l_brace || In == tok::l_square
+            || In == tok::less) && "Invalid balance token");
     bool atEOF = false;
     int  unBalanced = 1;
     while (unBalanced && !atEOF) {
@@ -153,6 +155,7 @@ public:
       // CLASS::type func()
       // CLASS::NESTED::type Var();
       llvm::StringRef Ident;
+
       do {
         if (!LexClean(Tok))
           return kNONE;
@@ -162,6 +165,13 @@ public:
           Ident = Identifier(Tok);
           if (!LexClean(Tok))
             return kNONE;
+          if (Tok.is(tok::less)) {
+            // A template: Ident <
+            if (!CheckBalance(Tok))
+              return kNONE;
+            if (!LexClean(Tok))
+              return kNONE;
+          }
         }
       } while (Tok.is(tok::coloncolon));
 

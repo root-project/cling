@@ -165,9 +165,11 @@ namespace {
 namespace cling {
   IncrementalParser::IncrementalParser(Interpreter* interp, const char* llvmdir)
       : m_Interpreter(interp),
-        m_CI(CIFactory::createCI("", interp->getOptions(), llvmdir,
-                                 m_Consumer = new cling::DeclCollector())),
         m_ModuleNo(0) {
+    std::unique_ptr<cling::DeclCollector> consumer;
+    consumer.reset(m_Consumer = new cling::DeclCollector());
+    m_CI.reset(CIFactory::createCI("", interp->getOptions(), llvmdir,
+                                   std::move(consumer)));
 
     if (!m_CI) {
       cling::errs() << "Compiler instance could not be created.\n";
@@ -540,10 +542,8 @@ namespace cling {
 
       std::unique_ptr<llvm::Module> M(getCodeGenerator()->ReleaseModule());
 
-      if (M) {
-        m_Interpreter->addModule(M.get(), T->getCompilationOpts().OptLevel);
+      if (M)
         T->setModule(std::move(M));
-      }
 
       if (T->getIssuedDiags() != Transaction::kNone) {
         // Module has been released from Codegen, reset the Diags now.
@@ -648,10 +648,6 @@ namespace cling {
 
     const CompilationOptions& CO
        = m_Consumer->getTransaction()->getCompilationOpts();
-
-    assert(!(S.getLangOpts().Modules
-             && CO.CodeGenerationForModule)
-           && "CodeGenerationForModule to be removed once PCMs are available!");
 
     // Recover resources if we crash before exiting this method.
     llvm::CrashRecoveryContextCleanupRegistrar<Sema> CleanupSema(&S);

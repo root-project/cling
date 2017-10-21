@@ -101,9 +101,7 @@ namespace cling {
 
     bool Successful = true;
     if (getExecutor() && T->getModule()) {
-      Successful = getExecutor()->unloadFromJIT(T->getModule(),
-                                                T->getExeUnloadHandle())
-        && Successful;
+      Successful = getExecutor()->unloadModule(T->getModule()) && Successful;
 
       // Cleanup the module from unused global values.
       // if (T->getModule()) {
@@ -147,7 +145,8 @@ namespace cling {
     return cling::UnloadDecl(m_Sema, m_CodeGen, D);
   }
 
-  bool TransactionUnloader::unloadModule(llvm::Module* M) {
+  bool
+  TransactionUnloader::unloadModule(const std::shared_ptr<llvm::Module>& M) {
     for (auto& Func: M->functions())
       m_CodeGen->forgetGlobal(&Func);
     for (auto& Glob: M->globals())

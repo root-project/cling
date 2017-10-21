@@ -12,12 +12,13 @@
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
-#include "clang/Sema/CodeCompleteConsumer.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/MultiplexConsumer.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Sema/CodeCompleteConsumer.h"
 #include "clang/Sema/Sema.h"
-#include "clang/Serialization/ASTReader.h"
 #include "clang/Serialization/ASTDeserializationListener.h"
+#include "clang/Serialization/ASTReader.h"
 
 using namespace clang;
 
@@ -75,6 +76,19 @@ namespace cling {
     virtual void TypeRead(serialization::TypeIdx, QualType T) {
       if (m_Callbacks)
         m_Callbacks->TypeDeserialized(T.getTypePtr());
+    }
+  };
+
+  /// \brief Wraps an ASTDeserializationListener in an ASTConsumer so that
+  /// it can be used with a MultiplexConsumer.
+  class DeserializationListenerWrapper : public ASTConsumer {
+    ASTDeserializationListener* m_Listener;
+
+  public:
+    DeserializationListenerWrapper(ASTDeserializationListener* Listener)
+        : m_Listener(Listener) {}
+    ASTDeserializationListener* GetASTDeserializationListener() override {
+      return m_Listener;
     }
   };
 
@@ -187,11 +201,24 @@ namespace cling {
     }
 
     if (enableDeserializationListenerCallbacks && Reader) {
-      // FIXME: need to create a multiplexer if a DeserializationListener is
-      // alreday present.
+      // Create a new deserialization listener.
       m_DeserializationListener.
         reset(new InterpreterDeserializationListener(this));
-      Reader->setDeserializationListener(m_DeserializationListener.get());
+
+      // Wrap the deserialization listener in an MultiplexConsumer and then
+      // combine it with the existing Consumer.
+      // FIXME: Maybe it's better to make MultiplexASTDeserializationListener
+      // public instead. See also: https://reviews.llvm.org/D37475
+      std::unique_ptr<DeserializationListenerWrapper> wrapper(
+          new DeserializationListenerWrapper(m_DeserializationListener.get()));
+
+      std::vector<std::unique_ptr<ASTConsumer>> Consumers;
+      Consumers.push_back(std::move(wrapper));
+      Consumers.push_back(std::move(m_Interpreter->getCI()->takeASTConsumer()));
+
+      std::unique_ptr<clang::MultiplexConsumer> multiConsumer(
+          new clang::MultiplexConsumer(std::move(Consumers)));
+      m_Interpreter->getCI()->setASTConsumer(std::move(multiConsumer));
     }
 
     if (enablePPCallbacks) {

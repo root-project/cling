@@ -366,6 +366,8 @@ static int GetVisualStudioVersionCompiledWith() {
   return (_MSC_VER / 100) - 6;
 #elif (_MSC_VER < 1910)
   return 14;
+#elif (_MSC_VER < 1920)
+  return 15;
 #else
   #error "Unsupported/Untested _MSC_VER"
   // As of now this is what is should be...have fun!
@@ -413,6 +415,16 @@ bool GetVisualStudioDirs(std::string& Path, std::string* WinSDK,
   }
 
   const char* Msg = Verbose ? "compiled" : nullptr;
+
+  // The Visual Studio 2017 path is very different than the previous versions,
+  // and even the registry entries are different, so for now let's try the
+  // trivial way first (using the 'VCToolsInstallDir' environment variable)
+  if (const char* VCToolsInstall = ::getenv("VCToolsInstallDir")) {
+    trimString(VCToolsInstall, "\\DUMMY", Path);
+    if (Verbose)
+      cling::errs() << "Using VCToolsInstallDir '" << VCToolsInstall << "'\n";
+    return true;
+  }
 
   // Try for the version compiled with first
   const int VSVersion = GetVisualStudioVersionCompiledWith();

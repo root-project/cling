@@ -42,7 +42,6 @@ namespace cling {
     m_IssuedDiags = kNone;
     m_Opts = CompilationOptions();
     m_Module = 0;
-    m_ExeUnload = {(void*)(size_t)-1};
     m_WrapperFD = 0;
     m_Next = 0;
     //m_Sema = S;
@@ -51,6 +50,8 @@ namespace cling {
   }
 
   Transaction::~Transaction() {
+    // FIXME: Enable this once we have a good control on the ownership.
+    //assert(m_Module.use_count() <= 1 && "There is still a reference!");
     if (hasNestedTransactions())
       for (size_t i = 0; i < m_NestedTransactions->size(); ++i) {
         assert(((*m_NestedTransactions)[i]->getState() == kCommitted

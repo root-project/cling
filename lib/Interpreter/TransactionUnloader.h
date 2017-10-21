@@ -10,6 +10,8 @@
 #ifndef CLING_TRANSACTION_UNLOADER
 #define CLING_TRANSACTION_UNLOADER
 
+#include <memory>
+
 namespace llvm {
   class Module;
 }
@@ -40,7 +42,7 @@ namespace cling {
     bool unloadDeserializedDeclarations(Transaction* T,
                                         DeclUnloader& DeclU);
     bool unloadFromPreprocessor(Transaction* T, DeclUnloader& DeclU);
-    bool unloadModule(llvm::Module* M);
+    bool unloadModule(const std::shared_ptr<llvm::Module>& M);
 
   public:
     TransactionUnloader(cling::Interpreter* I, clang::Sema* Sema,

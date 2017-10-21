@@ -25,14 +25,16 @@
 #include "clang/Driver/Job.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
+#include "clang/Frontend/MultiplexConsumer.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Frontend/VerifyDiagnosticConsumer.h"
-#include "clang/Serialization/SerializationDiagnostic.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "clang/Serialization/ASTReader.h"
+#include "clang/Serialization/ASTWriter.h"
+#include "clang/Serialization/SerializationDiagnostic.h"
 
 #include "llvm/Config/llvm-config.h"
 #include "llvm/IR/LLVMContext.h"
@@ -168,7 +170,31 @@ namespace {
   }
 
 #endif
-  
+
+  static std::string getResourceDir(const char* llvmdir) {
+    if (!llvmdir) {
+      // FIXME: The first arg really does need to be argv[0] on FreeBSD.
+      //
+      // Note: The second arg is not used for Apple, FreeBSD, Linux,
+      //       or cygwin, and can only be used on systems which support
+      //       the use of dladdr().
+      //
+      // Note: On linux and cygwin this uses /proc/self/exe to find the path
+      // Note: On Apple it uses _NSGetExecutablePath().
+      // Note: On FreeBSD it uses getprogpath().
+      // Note: Otherwise it uses dladdr().
+      //
+      return CompilerInvocation::GetResourcesPath(
+          "cling", (void*)intptr_t(GetExecutablePath));
+    } else {
+      std::string resourcePath;
+      llvm::SmallString<512> tmp(llvmdir);
+      llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_STRING);
+      resourcePath.assign(&tmp[0], tmp.size());
+      return resourcePath;
+    }
+  }
+
   ///\brief Adds standard library -I used by whatever compiler is found in PATH.
   static void AddHostArguments(llvm::StringRef clingBin,
                                std::vector<const char*>& args,
@@ -186,7 +212,9 @@ namespace {
                                         opts.NoBuiltinInc ? nullptr : &UnivSDK,
                                         Verbose)) {
         if (!opts.NoCXXInc) {
-          const std::string VSIncl = VSDir + "\\VC\\include";
+          // The Visual Studio 2017 path is very different than the previous
+          // versions (see also GetVisualStudioDirs() in PlatformWin.cpp)
+          const std::string VSIncl = VSDir + "\\include";
           if (Verbose)
             cling::log() << "Adding VisualStudio SDK: '" << VSIncl << "'\n";
           sArguments.addArgument("-I", std::move(VSIncl));
@@ -198,6 +226,7 @@ namespace {
               cling::log() << "Adding Windows SDK: '" << WinSDK << "'\n";
             sArguments.addArgument("-I", std::move(WinSDK));
           } else {
+            // Since Visual Studio 2017, this is not valid anymore...
             VSDir.append("\\VC\\PlatformSDK\\Include");
             if (Verbose)
               cling::log() << "Adding Platform SDK: '" << VSDir << "'\n";
@@ -226,6 +255,12 @@ namespace {
       sArguments.addArgument("-Wno-nonportable-include-path");
       sArguments.addArgument("-Wno-microsoft-enum-value");
       sArguments.addArgument("-Wno-expansion-to-defined");
+
+      // silent many warnings (mostly during ROOT compilation)
+      sArguments.addArgument("-Wno-constant-conversion");
+      sArguments.addArgument("-Wno-unknown-escape-sequence");
+      sArguments.addArgument("-Wno-microsoft-unqualified-friend");
+      sArguments.addArgument("-Wno-deprecated-declarations");
 
       //sArguments.addArgument("-Wno-dllimport-static-field-def");
       //sArguments.addArgument("-Wno-microsoft-template");
@@ -259,20 +294,20 @@ namespace {
         }
   #endif // _LIBCPP_VERSION
 
-  // first try the include directory cling was built with
+  // First try the relative path 'g++'
+  #ifdef CLING_CXX_RLTV
+        if (sArguments.empty())
+          ReadCompilerIncludePaths(CLING_CXX_RLTV, buffer, sArguments, Verbose);
+  #endif
+  // Then try the include directory cling was built with
   #ifdef CLING_CXX_INCL
         if (sArguments.empty())
           AddCxxPaths(CLING_CXX_INCL, sArguments, Verbose);
   #endif
-  // Then try the absolute path i.e.: '/usr/bin/g++'
+  // Finally try the absolute path i.e.: '/usr/bin/g++'
   #ifdef CLING_CXX_PATH
         if (sArguments.empty())
           ReadCompilerIncludePaths(CLING_CXX_PATH, buffer, sArguments, Verbose);
-  #endif
-  // Finally try the relative path 'g++'
-  #ifdef CLING_CXX_RLTV
-        if (sArguments.empty())
-          ReadCompilerIncludePaths(CLING_CXX_RLTV, buffer, sArguments, Verbose);
   #endif
 
         if (sArguments.empty()) {
@@ -315,27 +350,7 @@ namespace {
 #endif // _MSC_VER
 
       if (!opts.ResourceDir && !opts.NoBuiltinInc) {
-        std::string resourcePath;
-        if (!llvmdir) {
-          // FIXME: The first arg really does need to be argv[0] on FreeBSD.
-          //
-          // Note: The second arg is not used for Apple, FreeBSD, Linux,
-          //       or cygwin, and can only be used on systems which support
-          //       the use of dladdr().
-          //
-          // Note: On linux and cygwin this uses /proc/self/exe to find the path
-          // Note: On Apple it uses _NSGetExecutablePath().
-          // Note: On FreeBSD it uses getprogpath().
-          // Note: Otherwise it uses dladdr().
-          //
-          resourcePath
-            = CompilerInvocation::GetResourcesPath("cling",
-                                            (void*)intptr_t(GetExecutablePath));
-        } else {
-          llvm::SmallString<512> tmp(llvmdir);
-          llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_STRING);
-          resourcePath.assign(&tmp[0], tmp.size());
-        }
+        std::string resourcePath = getResourceDir(llvmdir);
 
         // FIXME: Handle cases, where the cling is part of a library/framework.
         // There we can't rely on the find executable logic.
@@ -506,6 +521,47 @@ namespace {
     return &Cmd->getArguments();
   }
 
+  /// \brief Splits the given environment variable by the path separator.
+  /// Can be used to extract the paths from LD_LIBRARY_PATH.
+  static SmallVector<StringRef, 4> getPathsFromEnv(const char* EnvVar) {
+    if (!EnvVar) return {};
+    SmallVector<StringRef, 4> Paths;
+    StringRef(EnvVar).split(Paths, ':', -1, false);
+    return Paths;
+  }
+
+  /// \brief Prepares a file path for string comparison with another file path.
+  /// This easily be tricked by a malicious user with hardlinking directories
+  /// and so on, but for a comparison in good faith this should be enough.
+  static std::string normalizePath(StringRef path) {
+    SmallVector<char, 256> AbsolutePath, Result;
+    AbsolutePath.insert(AbsolutePath.begin(), path.begin(), path.end());
+    llvm::sys::fs::make_absolute(AbsolutePath);
+    llvm::sys::fs::real_path(AbsolutePath, Result, true);
+    return llvm::Twine(Result).str();
+  }
+
+  /// \brief Adds all the paths to the prebuilt module paths of the given
+  /// HeaderSearchOptions.
+  static void addPrebuiltModulePaths(clang::HeaderSearchOptions& Opts,
+                                     const SmallVectorImpl<StringRef>& Paths) {
+    for (StringRef ModulePath : Paths) {
+      // FIXME: If we have a prebuilt module path that is equal to our module
+      // cache we fail to compile the clang builtin modules for some reason.
+      // This can't be reproduced in clang, so I assume we have some strange
+      // error in our interpreter setup where this is causing errors (or maybe
+      // clang is doing the same check in some hidden place).
+      // The error looks like this:
+      //   .../include/stddef.h error: unknown type name '__PTRDIFF_TYPE__'
+      //   typedef __PTRDIFF_TYPE__ ptrdiff_t;
+      //   <similar follow up errors>
+      // For now it is fixed by just checking those two paths are not identical.
+      if (normalizePath(ModulePath) != normalizePath(Opts.ModuleCachePath)) {
+        Opts.AddPrebuiltModulePath(ModulePath);
+      }
+    }
+  }
+
 #if defined(_MSC_VER) || defined(NDEBUG)
 static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                     const char* Name, int Val) {
@@ -637,9 +693,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     if (CompilerOpts.DefaultLanguage(&LangOpts)) {
       switch (CxxStdCompiledWith()) {
         case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
+          // fall-through!
         case 14: assert(LangOpts.CPlusPlus14 && "Language version mismatch");
+          // fall-through!
         case 11: assert(LangOpts.CPlusPlus11 && "Language version mismatch");
-        default: break;
+          break;
+        default: assert(false && "You have an unhandled C++ standard!");
       }
     }
 
@@ -706,7 +765,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
-               clang::ASTConsumer* customConsumer, bool OnlyLex,
+               std::unique_ptr<clang::ASTConsumer> customConsumer, bool OnlyLex,
                bool HasInput = false) {
     // Follow clang -v convention of printing version on first line
     if (COpts.Verbose)
@@ -727,6 +786,42 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     const char* const* argv = &COpts.Remaining[0];
     std::vector<const char*> argvCompile(argv, argv+1);
     argvCompile.reserve(argc+5);
+
+    // Variables for storing the memory of the C-string arguments.
+    // FIXME: We shouldn't use C-strings in the first place, but just use
+    // std::string for clang arguments.
+    std::string overlayArg;
+    std::string cacheArg;
+
+    // If user has enabled C++ modules we add some special module flags to the
+    // compiler invocation.
+    if (COpts.CxxModules) {
+      // Enables modules in clang.
+      argvCompile.push_back("-fmodules");
+      argvCompile.push_back("-fcxx-modules");
+      // We want to use modules in local-submodule-visibility mode. This mode
+      // will probably be the future default mode for C++ modules in clang, so
+      // we want to start using right now.
+      // Maybe we have to remove this flag in the future when clang makes this
+      // mode the default and removes this internal flag.
+      argvCompile.push_back("-Xclang");
+      argvCompile.push_back("-fmodules-local-submodule-visibility");
+      // If we got a cache path, then we are supposed to place any modules
+      // we have to build in this directory.
+      if (!COpts.CachePath.empty()) {
+        cacheArg = std::string("-fmodules-cache-path=") + COpts.CachePath;
+        argvCompile.push_back(cacheArg.c_str());
+      }
+      // Disable the module hash. This gives us a flat file layout in the
+      // modules cache directory. In clang this is used to prevent modules from
+      // different compiler invocations to not collide, but we only have one
+      // compiler invocation in cling, so we don't need this.
+      argvCompile.push_back("-Xclang");
+      argvCompile.push_back("-fdisable-module-hash");
+      // Disable the warning when we import a module from extern C. Some headers
+      // from the STL are doing this and we can't really do anything about this.
+      argvCompile.push_back("-Wno-module-import-in-extern-c");
+    }
 
     if (!COpts.Language) {
       // We do C++ by default; append right after argv[0] if no "-x" given
@@ -913,6 +1008,17 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     Invocation.getFrontendOpts().DisableFree = true;
 
+    // With modules, we now start adding prebuilt module paths to the CI.
+    // Modules from those paths are treated like they are never out of date
+    // and we don't update them on demand.
+    // This mostly helps ROOT where we can't just recompile any out of date
+    // modules because we would miss the annotations that rootcling creates.
+    if (COpts.CxxModules) {
+      auto& HS = CI->getHeaderSearchOpts();
+      addPrebuiltModulePaths(HS, getPathsFromEnv(getenv("LD_LIBRARY_PATH")));
+      addPrebuiltModulePaths(HS, getPathsFromEnv(getenv("DYLD_LIBRARY_PATH")));
+    }
+
     // Set up compiler language and target
     if (!SetupCompiler(CI.get(), COpts, InitLang, InitTarget))
       return nullptr;
@@ -959,21 +1065,64 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Set up the ASTContext
     CI->createASTContext();
 
-    if (OnlyLex) {
-      assert(customConsumer == nullptr && "Can't specify a custom consumer"
-                                          " when in OnlyLex mode");
-      class IgnoreConsumer: public clang::ASTConsumer {};
-      CI->setASTConsumer(
-          std::unique_ptr<clang::ASTConsumer>(new IgnoreConsumer()));
-    } else {
-      assert(customConsumer != nullptr && "Need to specify a custom consumer"
-                                          " when not in OnlyLex mode");
-      CI->setASTConsumer(std::unique_ptr<clang::ASTConsumer>(customConsumer));
+    std::vector<std::unique_ptr<ASTConsumer>> Consumers;
+
+    if (!OnlyLex) {
+      assert(customConsumer && "Need to specify a custom consumer"
+                               " when not in OnlyLex mode");
+      Consumers.push_back(std::move(customConsumer));
     }
+
+    // With C++ modules, we now attach the consumers that will handle the
+    // generation of the PCM file itself.
+    if (COpts.CxxModules) {
+      // Code below from the (private) code in the GenerateModuleAction class.
+      llvm::SmallVector<char, 256> Output;
+      llvm::sys::path::append(Output, COpts.CachePath,
+                              COpts.ModuleName + ".pcm");
+      StringRef ModuleOutputFile = StringRef(Output.data(), Output.size());
+
+      std::unique_ptr<raw_pwrite_stream> OS =
+          CI->createOutputFile(ModuleOutputFile, /*Binary=*/true,
+                               /*RemoveFileOnSignal=*/false, "",
+                               /*Extension=*/"", /*useTemporary=*/true,
+                               /*CreateMissingDirectories=*/true);
+      assert(OS);
+
+      std::string Sysroot;
+
+      auto Buffer = std::make_shared<PCHBuffer>();
+
+      Consumers.push_back(llvm::make_unique<PCHGenerator>(
+          CI->getPreprocessor(), ModuleOutputFile, Sysroot, Buffer,
+          CI->getFrontendOpts().ModuleFileExtensions,
+          /*AllowASTWithErrors=*/false,
+          /*IncludeTimestamps=*/
+          +CI->getFrontendOpts().BuildingImplicitModule));
+      Consumers.push_back(
+          CI->getPCHContainerWriter().CreatePCHContainerGenerator(
+              *CI, "", ModuleOutputFile, std::move(OS), Buffer));
+
+      // Set the current module name for clang. With that clang doesn't start
+      // to build the current module on demand when we include a header
+      // from the current module.
+      CI->getLangOpts().CurrentModule = COpts.ModuleName;
+      CI->getLangOpts().setCompilingModule(LangOptions::CMK_ModuleMap);
+
+      // Push the current module to the build stack so that clang knows when
+      // we have a cyclic dependency.
+      SM->pushModuleBuildStack(COpts.ModuleName,
+                               FullSourceLoc(SourceLocation(), *SM));
+    }
+
+    std::unique_ptr<clang::MultiplexConsumer> multiConsumer(
+        new clang::MultiplexConsumer(std::move(Consumers)));
+    CI->setASTConsumer(std::move(multiConsumer));
 
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;
-    CI->createSema(TU_Complete, CCC);
+    // Make sure we inform Sema we compile a Module.
+    CI->createSema(COpts.ModuleName.empty() ? TU_Complete : TU_Module, CCC);
 
     // Set CodeGen options.
     CodeGenOptions& CGOpts = CI->getCodeGenOpts();
@@ -1027,22 +1176,20 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
 namespace cling {
 
-CompilerInstance* CIFactory::createCI(llvm::StringRef Code,
-                                      const InvocationOptions& Opts,
-                                      const char* LLVMDir,
-                                      clang::ASTConsumer* consumer) {
+CompilerInstance*
+CIFactory::createCI(llvm::StringRef Code, const InvocationOptions& Opts,
+                    const char* LLVMDir,
+                    std::unique_ptr<clang::ASTConsumer> consumer) {
   return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code), Opts.CompilerOpts,
-                      LLVMDir, consumer, false /*OnlyLex*/,
+                      LLVMDir, std::move(consumer), false /*OnlyLex*/,
                       !Opts.IsInteractive());
 }
 
-CompilerInstance* CIFactory::createCI(MemBufPtr_t Buffer, int argc,
-                                      const char* const* argv,
-                                      const char* LLVMDir,
-                                      clang::ASTConsumer* consumer,
-                                      bool OnlyLex) {
+CompilerInstance* CIFactory::createCI(
+    MemBufPtr_t Buffer, int argc, const char* const* argv, const char* LLVMDir,
+    std::unique_ptr<clang::ASTConsumer> consumer, bool OnlyLex) {
   return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv), LLVMDir,
-                      consumer, OnlyLex);
+                      std::move(consumer), OnlyLex);
 }
 
 } // namespace cling

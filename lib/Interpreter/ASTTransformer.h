@@ -95,9 +95,7 @@ namespace cling {
     ///
     Result Transform(clang::Decl* D, Transaction* T) {
       m_Transaction = T;
-      if (getCompilationOpts().CheckPointerValidity)
-        return Transform(D);
-      return Result(D, true);
+      return Transform(D);
     }
 
   protected:

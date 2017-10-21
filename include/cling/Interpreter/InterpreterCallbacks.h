@@ -162,6 +162,51 @@ namespace cling {
     /// for instance when throwing interpreter exceptions.
     virtual void PrintStackTrace() {}
 
+    ///\brief Interface to support locking the interpreter state in case of
+    /// concurrent usage.
+    ///
+    /// Cling assumes that any of its function is invoked in a locked context,
+    /// but before invoking user code (e.g. static initialization or value
+    /// printing) cling will calling `EnteringUserCode()`, and once
+    /// done call `ReturnedFromUserCode()`. Typically the user provided locks
+    /// would be unlock by `EnteringUserCode()` and lock back in
+    /// `ReturnedFromUserCode()`. State can be returned from EnteringUserCode
+    /// and made use of in ReturnedFromUserCode(), to identify pairs of these
+    /// calls.
+    virtual void* EnteringUserCode() { return nullptr; }
+
+    ///\brief See `EnteringFromUserCode()`!
+    virtual void ReturnedFromUserCode(void*) {}
+
+    ///\brief Lock a region of compilation that is executed by the interpreter
+    /// during user code execution.
+    ///
+    /// When cling is used in multi-threaded environments, all calls to cling
+    /// are expected to be locked by the caller. Cling will release that lock
+    /// using `EnteringUserCode()` and re-instate that lock using
+    /// `ReturnedFromUserCode()` for the duration of the execution of the user
+    /// code. But that user code can trigger calls to the interpreter itself.
+    /// These calls are due to instrumented parts of the user code, e.g.
+    /// `printValue()` calls and `cling::runtime::internal::LifetimeHandler`
+    /// calls. For those, cling needs to be locked with a mechanism compatible
+    /// with the mechanism used for `EnteringUserCode()` /
+    /// `ReturnedFromUserCode()` to avoid deadlocks. Before entering compilation
+    /// triggered by user code, cling will call
+    /// `LockCompilationDuringUserCodeExecution()`; after the execution of that
+    /// code has finished it will call
+    /// `UnlockCompilationDuringUserCodeExecution()`.
+    /// Note that after the compilation of that code cling will call
+    /// `EnteringUserCode()` (before executing) and `ReturnedFromUserCode()`
+    /// (after execution that code).
+    ///
+    /// \returns An optional state object needed for the call to
+    /// `UnlockCompilationDuringUserCodeExecution(state)`.
+    virtual void* LockCompilationDuringUserCodeExecution() { return nullptr; }
+
+    /// \brief Unlocks recursive compilation; see the documentation of
+    /// `LockCompilationDuringUserCodeExecution()`.
+    virtual void UnlockCompilationDuringUserCodeExecution(void* /*StateInfo*/) {}
+
     ///\brief DynamicScopes only! Set to true if it is currently evaluating a
     /// dynamic expr.
     ///

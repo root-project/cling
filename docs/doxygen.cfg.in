@@ -31,7 +31,7 @@ PROJECT_NAME           = cling
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = @PACKAGE_VERSION@
+PROJECT_NUMBER         = @CLING_VERSION@
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -114,7 +114,7 @@ FULL_PATH_NAMES        = YES
 # If left blank the directory from which doxygen is run is used as the
 # path to strip.
 
-STRIP_FROM_PATH        = @cling_srcdir@
+STRIP_FROM_PATH        = @abs_srcdir@/..
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of
 # the path mentioned in the documentation of a class, which tells
@@ -123,7 +123,7 @@ STRIP_FROM_PATH        = @cling_srcdir@
 # definition is used. Otherwise one should specify the include paths that
 # are normally passed to the compiler using the -I flag.
 
-STRIP_FROM_INC_PATH    = @cling_srcdir@
+STRIP_FROM_INC_PATH    = @abs_srcdir@/../include
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
 # (but less readable) file names. This can be useful is your file systems
@@ -137,7 +137,7 @@ SHORT_NAMES            = NO
 # comments will behave just like regular Qt-style comments
 # (thus requiring an explicit @brief command for a brief description.)
 
-JAVADOC_AUTOBRIEF      = NO
+JAVADOC_AUTOBRIEF      = YES
 
 # If the QT_AUTOBRIEF tag is set to YES then Doxygen will
 # interpret the first line (until the first dot) of a Qt-style
@@ -145,7 +145,7 @@ JAVADOC_AUTOBRIEF      = NO
 # will behave just like regular Qt-style comments (thus requiring
 # an explicit \brief command for a brief description.)
 
-QT_AUTOBRIEF           = NO
+QT_AUTOBRIEF           = YES
 
 # The MULTILINE_CPP_IS_BRIEF tag can be set to YES to make Doxygen
 # treat a multi-line C++ special comment block (i.e. a block of //! or ///

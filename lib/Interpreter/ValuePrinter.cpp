@@ -9,6 +9,8 @@
 
 #include "cling/Interpreter/Value.h"
 
+#include "EnterUserCodeRAII.h"
+
 #include "cling/Interpreter/CValuePrinter.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/LookupHelper.h"
@@ -149,6 +151,7 @@ struct AccessCtrlRAII_t {
 bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
 
   AccessCtrlRAII_t AccessCtrlRAII(Interp);
+  LockCompilationDuringUserCodeExecutionRAII LCDUCER(Interp);
 
   cling::Interpreter::CompilationResult Res
     = Interp.declare("namespace { void* cling_printValue_Failure_Typename_check"
@@ -603,6 +606,7 @@ static std::string callPrintValue(const Value& V, const void* Val) {
 
     // We really don't care about protected types here (ROOT-7426)
     AccessCtrlRAII_t AccessCtrlRAII(*Interp);
+    LockCompilationDuringUserCodeExecutionRAII LCDUCER(*Interp);
     Interp->evaluate(Strm.str(), printValueV);
   }
 
@@ -879,7 +883,9 @@ namespace cling {
       // Include "RuntimePrintValue.h" only on the first printing.
       // This keeps the interpreter lightweight and reduces the startup time.
       if (!includedRuntimePrintValue) {
-        V.getInterpreter()->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
+        Interpreter* Interp = V.getInterpreter();
+        LockCompilationDuringUserCodeExecutionRAII LCDUCER(*Interp);
+        Interp->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
         includedRuntimePrintValue = true;
       }
       return printUnpackedClingValue(V);

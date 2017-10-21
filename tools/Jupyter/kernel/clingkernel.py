@@ -92,8 +92,8 @@ class ClingKernel(Kernel):
     flush_interval = Float(0.25, config=True)
 
     std = CaselessStrEnum(default_value='c++11',
-            values = ['c++11', 'c++14', 'c++17'],
-            help="C++ standard to use, either c++17, c++14 or c++11").tag(config=True);
+            values = ['c++11', 'c++14', 'c++1z', 'c++17'],
+            help="C++ standard to use, either c++17, c++1z, c++14 or c++11").tag(config=True);
 
     def __init__(self, **kwargs):
         super(ClingKernel, self).__init__(**kwargs)

@@ -9,6 +9,8 @@
 
 #include "cling/Interpreter/Value.h"
 
+#include "EnterUserCodeRAII.h"
+
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/AST.h"
@@ -213,8 +215,10 @@ namespace cling {
         = llvm::dyn_cast<clang::ConstantArrayType>(DtorType.getTypePtr())) {
       DtorType = ArrTy->getElementType();
     }
-    if (const clang::RecordType* RTy = DtorType->getAs<clang::RecordType>())
+    if (const clang::RecordType* RTy = DtorType->getAs<clang::RecordType>()) {
+      LockCompilationDuringUserCodeExecutionRAII LCDUCER(*m_Interpreter);
       dtorFunc = m_Interpreter->compileDtorCallFor(RTy->getDecl());
+    }
 
     const clang::ASTContext& ctx = getASTContext();
     unsigned payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();

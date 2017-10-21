@@ -20,6 +20,7 @@
 #include "clang/Lex/MacroInfo.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/Token.h"
+#include "llvm/Support/Signals.h"
 
 using namespace clang;
 
@@ -57,6 +58,15 @@ namespace {
         return true;
     return false;
   }
+
+  /// \brief Asserts that the given transaction is not null, otherwise prints a
+  /// stack trace to stderr and aborts execution.
+  static void assertHasTransaction(const cling::Transaction* T) {
+    if (!T) {
+      llvm::sys::PrintStackTrace(llvm::errs());
+      llvm_unreachable("Missing transaction during deserialization!");
+    }
+  }
 }
 
 namespace cling {
@@ -67,7 +77,7 @@ namespace cling {
 
     void MacroDirective(const clang::Token& MacroNameTok,
                         const clang::MacroDirective* MD) {
-      assert(m_Parent->m_CurTransaction && "Missing transction");
+      assertHasTransaction(m_Parent->m_CurTransaction);
       Transaction::MacroDirectiveInfo MDE(MacroNameTok.getIdentifierInfo(), MD);
       m_Parent->m_CurTransaction->append(MDE);
     }
@@ -101,7 +111,7 @@ namespace cling {
   
   bool DeclCollector::comesFromASTReader(DeclGroupRef DGR) const {
     assert(!DGR.isNull() && "DeclGroupRef is Null!");
-    assert(m_CurTransaction && "No current transaction when deserializing");
+    assertHasTransaction(m_CurTransaction);
     if (m_CurTransaction->getCompilationOpts().CodeGenerationForModule)
       return true;
 
@@ -183,7 +193,7 @@ namespace cling {
     if (DGR.isNull())
       return true;
 
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
     m_CurTransaction->append(DCI);
     if (!m_Consumer
@@ -222,7 +232,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleInterestingDecl(DeclGroupRef DGR) {
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleInterestingDecl);
     m_CurTransaction->append(DCI);
     if (m_Consumer
@@ -231,7 +241,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleTagDeclDefinition(TagDecl* TD) {
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     Transaction::DelayCallInfo DCI(DeclGroupRef(TD),
                                    Transaction::kCCIHandleTagDeclDefinition);
     m_CurTransaction->append(DCI);
@@ -242,7 +252,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleInvalidTagDeclDefinition(clang::TagDecl *TD){
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     Transaction::DelayCallInfo DCI(DeclGroupRef(TD),
                                    Transaction::kCCIHandleTagDeclDefinition);
     m_CurTransaction->append(DCI);
@@ -254,7 +264,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleVTable(CXXRecordDecl* RD) {
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     Transaction::DelayCallInfo DCI(DeclGroupRef(RD),
                                    Transaction::kCCIHandleVTable);
     m_CurTransaction->append(DCI);
@@ -272,7 +282,7 @@ namespace cling {
   }
 
   void DeclCollector::CompleteTentativeDefinition(VarDecl* VD) {
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     // C has tentative definitions which we might need to deal with when running
     // in C mode.
     Transaction::DelayCallInfo DCI(DeclGroupRef(VD),
@@ -290,7 +300,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleCXXImplicitFunctionInstantiation(FunctionDecl *D) {
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     Transaction::DelayCallInfo DCI(DeclGroupRef(D),
                                    Transaction::kCCIHandleCXXImplicitFunctionInstantiation);
     m_CurTransaction->append(DCI);
@@ -301,7 +311,7 @@ namespace cling {
   }
 
   void DeclCollector::HandleCXXStaticMemberVarInstantiation(VarDecl *D) {
-    assert(m_CurTransaction && "Missing transction");
+    assertHasTransaction(m_CurTransaction);
     Transaction::DelayCallInfo DCI(DeclGroupRef(D),
                                    Transaction::kCCIHandleCXXStaticMemberVarInstantiation);
     m_CurTransaction->append(DCI);
