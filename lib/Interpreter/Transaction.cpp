@@ -382,7 +382,26 @@ namespace cling {
 
     // Take the first/only decl in the group.
     Decl* D = *DGR.begin();
-    return D->isFromASTFile();
+
+    // If D is from an AST file, we can return true.
+    if (D->isFromASTFile()) return true;
+
+    if (m_Sema.getASTContext().getLangOpts().Modules) {
+      // If we currently compile a module and the decl is from a submodule that
+      // we are currently compiling, then we also pretend it's from a AST file.
+      // If we don't do that than our duplicate check in forceAppend will fail
+      // when we try to generate a module that has multiple submodules that
+      // textually include the same declaration (which will cause multiple
+      // entries of the same merged decl to be in this list).
+      if (D->getOwningModule()) {
+        StringRef CurrentModule =
+            D->getASTContext().getLangOpts().CurrentModule;
+        StringRef DeclModule = D->getOwningModule()->getTopLevelModuleName();
+        return CurrentModule == DeclModule;
+      }
+    }
+
+    return false;
   }
 
   SourceLocation
