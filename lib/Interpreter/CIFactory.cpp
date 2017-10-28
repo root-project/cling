@@ -1074,8 +1074,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
 
     // With C++ modules, we now attach the consumers that will handle the
-    // generation of the PCM file itself.
-    if (COpts.CxxModules) {
+    // generation of the PCM file itself in case we want to generate
+    // a C++ module with the current interpreter instance.
+    if (COpts.CxxModules && !COpts.ModuleName.empty()) {
       // Code below from the (private) code in the GenerateModuleAction class.
       llvm::SmallVector<char, 256> Output;
       llvm::sys::path::append(Output, COpts.CachePath,
