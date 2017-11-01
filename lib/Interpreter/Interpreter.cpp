@@ -226,17 +226,6 @@ namespace cling {
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
-    // Disable suggestions for ROOT
-    bool showSuggestions =
-        !llvm::StringRef(ClingStringify(CLING_VERSION)).startswith("ROOT");
-
-    // We need InterpreterCallbacks only if it is a parent Interpreter.
-    if (!parentInterp) {
-      std::unique_ptr<InterpreterCallbacks> AutoLoadCB(
-          new AutoloadCallback(this, showSuggestions));
-      setCallbacks(std::move(AutoLoadCB));
-    }
-
     llvm::SmallVector<IncrementalParser::ParseResultTransaction, 2>
       IncrParserTransactions;
     if (!m_IncrParser->Initialize(IncrParserTransactions, parentInterp)) {
@@ -278,6 +267,16 @@ namespace cling {
           }
         }
       }
+    }
+
+    // Disable suggestions for ROOT
+    bool showSuggestions = !llvm::StringRef(ClingStringify(CLING_VERSION)).startswith("ROOT");
+
+    // We need InterpreterCallbacks only if it is a parent Interpreter.
+    if (!parentInterp) {
+      std::unique_ptr<InterpreterCallbacks>
+         AutoLoadCB(new AutoloadCallback(this, showSuggestions));
+      setCallbacks(std::move(AutoLoadCB));
     }
 
     m_IncrParser->SetTransformers(parentInterp);
