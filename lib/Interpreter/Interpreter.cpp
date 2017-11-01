@@ -226,6 +226,12 @@ namespace cling {
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
+    if (m_IncrParser->getCI()->getLangOpts().Modules) {
+      // Explicitly create the modulemanager now. If we would create it later
+      // implicitly then it would just overwrite our callbacks we set below.
+      m_IncrParser->getCI()->createModuleManager();
+    }
+
     // Disable suggestions for ROOT
     bool showSuggestions =
         !llvm::StringRef(ClingStringify(CLING_VERSION)).startswith("ROOT");
