@@ -277,7 +277,7 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   m_TMDataLayout(m_TM->createDataLayout()),
   m_ExeMM(std::make_shared<ClingMemoryManager>(m_Parent)),
   m_NotifyObjectLoaded(*this),
-  m_ObjectLayer(m_SymbolMap, [this] () { return this->m_ExeMM; },
+  m_ObjectLayer(m_SymbolMap, [this] () { return llvm::make_unique<Azog>(*this); },
                 m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
