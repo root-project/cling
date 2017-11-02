@@ -18,29 +18,19 @@ Some of the major new features and improvements to Cling are listed
 here. Generic improvements to Cling as a whole or to its underlying
 infrastructure are described first.
 
-Major New Features
-------------------
-* ...
-
-Cling as a Library
-------------------
-* ...
-
 External Dependencies
 ---------------------
 * Upgrade to LLVM r302975.
 
 Misc
 ----
-* ...
+* Improve the diagnostics for lambdas copy captures on global scope.
+* Various optimizations in cling runtime such as outlining of `Evaluate`
+  functions.
 
 Experimental Features
 ---------------------
-* ...
-
-Jupyter
--------
-* ...
+* Advance the C++ modules support in cling
 
 Fixed Bugs
 ----------
@@ -72,6 +62,17 @@ This release wouldn't have happened without the efforts of our contributors,
 listed in the form of Firstname Lastname (#contributions):
 
 FirstName LastName (#commits)
+
+Axel Naumann (68)
+Frederich Munch (62)
+Vassil Vassilev (28)
+Raphael Isemann (21)
+Bertrand Bellenot (10)
+Roman Zulak (9)
+Philippe Canal (4)
+Danilo Piparo (3)
+gouarin (1)
+Yuki Yamaura (1)
 
 <!---Find contributor list for this release
 git log --pretty=format:"%an"  v0.4...master | sort | uniq -c | sort -rn
