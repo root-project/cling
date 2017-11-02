@@ -709,7 +709,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       PPOpts.addMacroDef("__CLING__CXX14");
 
     if (CI->getDiagnostics().hasErrorOccurred()) {
-      cling::errs() << "Compiler error to early in initialization.\n";
+      cling::errs() << "Compiler error too early in initialization.\n";
       return false;
     }
 
