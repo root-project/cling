@@ -330,19 +330,19 @@ namespace cling {
   // Reals
   std::string printValue(const float *val) {
     cling::smallstream strm;
-    strm << llvm::format("%.5f", *val) << 'f';
+    strm << llvm::format("%.5g", *val) << 'f';
     return strm.str();
   }
 
   std::string printValue(const double *val) {
     cling::smallstream strm;
-    strm << llvm::format("%.6f", *val);
+    strm << llvm::format("%.6g", *val);
     return strm.str();
   }
 
   std::string printValue(const long double *val) {
     cling::smallstream strm;
-    strm << llvm::format("%.8Lf", *val) << 'L';
+    strm << llvm::format("%.8Lg", *val) << 'L';
     //strm << llvm::format("%Le", *val) << 'L';
     return strm.str();
   }
