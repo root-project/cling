@@ -16,6 +16,7 @@
 #include "clang/Frontend/MultiplexConsumer.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/CodeCompleteConsumer.h"
+#include "clang/Sema/MultiplexExternalSemaSource.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Serialization/ASTDeserializationListener.h"
 #include "clang/Serialization/ASTReader.h"
@@ -89,6 +90,120 @@ namespace cling {
         : m_Listener(Listener) {}
     ASTDeserializationListener* GetASTDeserializationListener() override {
       return m_Listener;
+    }
+  };
+
+  /// \brief wraps an ExternalASTSource in an ExternalSemaSource. No functional
+  /// difference between the original source and this wrapper intended.
+  class ExternalASTSourceWrapper : public ExternalSemaSource {
+    ExternalASTSource* m_Source;
+
+  public:
+    ExternalASTSourceWrapper(ExternalASTSource* Source) : m_Source(Source) {
+      assert(m_Source && "Can't wrap nullptr ExternalASTSource");
+    }
+
+    virtual Decl* GetExternalDecl(uint32_t ID) override {
+      return m_Source->GetExternalDecl(ID);
+    }
+
+    virtual Selector GetExternalSelector(uint32_t ID) override {
+      return m_Source->GetExternalSelector(ID);
+    }
+
+    virtual uint32_t GetNumExternalSelectors() override {
+      return m_Source->GetNumExternalSelectors();
+    }
+
+    virtual Stmt* GetExternalDeclStmt(uint64_t Offset) override {
+      return m_Source->GetExternalDeclStmt(Offset);
+    }
+
+    virtual CXXCtorInitializer**
+    GetExternalCXXCtorInitializers(uint64_t Offset) override {
+      return m_Source->GetExternalCXXCtorInitializers(Offset);
+    }
+
+    virtual CXXBaseSpecifier*
+    GetExternalCXXBaseSpecifiers(uint64_t Offset) override {
+      return m_Source->GetExternalCXXBaseSpecifiers(Offset);
+    }
+
+    virtual void updateOutOfDateIdentifier(IdentifierInfo& II) override {
+      m_Source->updateOutOfDateIdentifier(II);
+    }
+
+    virtual bool FindExternalVisibleDeclsByName(const DeclContext* DC,
+                                                DeclarationName Name) override {
+      return m_Source->FindExternalVisibleDeclsByName(DC, Name);
+    }
+
+    virtual void completeVisibleDeclsMap(const DeclContext* DC) override {
+      m_Source->completeVisibleDeclsMap(DC);
+    }
+
+    virtual Module* getModule(unsigned ID) override {
+      return m_Source->getModule(ID);
+    }
+
+    virtual llvm::Optional<ASTSourceDescriptor>
+    getSourceDescriptor(unsigned ID) override {
+      return m_Source->getSourceDescriptor(ID);
+    }
+
+    virtual ExtKind hasExternalDefinitions(const Decl* D) override {
+      return m_Source->hasExternalDefinitions(D);
+    }
+
+    virtual void
+    FindExternalLexicalDecls(const DeclContext* DC,
+                             llvm::function_ref<bool(Decl::Kind)> IsKindWeWant,
+                             SmallVectorImpl<Decl*>& Result) override {
+      m_Source->FindExternalLexicalDecls(DC, IsKindWeWant, Result);
+    }
+
+    virtual void FindFileRegionDecls(FileID File, unsigned Offset,
+                                     unsigned Length,
+                                     SmallVectorImpl<Decl*>& Decls) override {
+      m_Source->FindFileRegionDecls(File, Offset, Length, Decls);
+    }
+
+    virtual void CompleteRedeclChain(const Decl* D) override {
+      m_Source->CompleteRedeclChain(D);
+    }
+
+    virtual void CompleteType(TagDecl* Tag) override {
+      m_Source->CompleteType(Tag);
+    }
+
+    virtual void CompleteType(ObjCInterfaceDecl* Class) override {
+      m_Source->CompleteType(Class);
+    }
+
+    virtual void ReadComments() override { m_Source->ReadComments(); }
+
+    virtual void StartedDeserializing() override {
+      m_Source->StartedDeserializing();
+    }
+
+    virtual void FinishedDeserializing() override {
+      m_Source->FinishedDeserializing();
+    }
+
+    virtual void StartTranslationUnit(ASTConsumer* Consumer) override {
+      m_Source->StartTranslationUnit(Consumer);
+    }
+
+    virtual void PrintStats() override { m_Source->PrintStats(); }
+
+    virtual bool layoutRecordType(
+        const RecordDecl* Record, uint64_t& Size, uint64_t& Alignment,
+        llvm::DenseMap<const FieldDecl*, uint64_t>& FieldOffsets,
+        llvm::DenseMap<const CXXRecordDecl*, CharUnits>& BaseOffsets,
+        llvm::DenseMap<const CXXRecordDecl*, CharUnits>& VirtualBaseOffsets)
+        override {
+      return m_Source->layoutRecordType(Record, Size, Alignment, FieldOffsets,
+                                        BaseOffsets, VirtualBaseOffsets);
     }
   };
 
@@ -187,14 +302,32 @@ namespace cling {
         m_ExternalSemaSource->InitializeSema(SemaRef);
         m_Interpreter->getSema().addExternalSource(m_ExternalSemaSource);
 
-        // FIXME: We should add a multiplexer in the ASTContext, too.
-        llvm::IntrusiveRefCntPtr<ExternalASTSource>
-          astContextExternalSource(SemaRef.getExternalSource());
+        // Overwrite the ExternalASTSource.
         clang::ASTContext& Ctx = SemaRef.getASTContext();
-        // FIXME: This is a gross hack. We must make multiplexer in the
-        // astcontext or a derived class that extends what we need.
-        Ctx.ExternalSource.resetWithoutRelease();//FIXME: make sure we delete it.
-        Ctx.setExternalSource(astContextExternalSource);
+        auto ExistingSource = Ctx.getExternalSource();
+        // If we already have source, we need to create a multiplexer with the
+        // existing source.
+        if (ExistingSource) {
+          // Make sure the context is not deleting the existing source.
+          // FIXME: We should delete this, but looking at the other TODO's in
+          // the destructor we can't easily free our callbacks from here...
+          Ctx.ExternalSource.resetWithoutRelease();
+
+          // Wrap the existing source in a wrapper so that it becomes an
+          // external sema source. This way we can use the existing multiplexer
+          // for this.
+          auto wrapper = new ExternalASTSourceWrapper(ExistingSource);
+
+          // Wrap both the existing source and our source. We give our own
+          // source preference to the existing one.
+          IntrusiveRefCntPtr<ExternalASTSource> S;
+          S = new MultiplexExternalSemaSource(*m_ExternalSemaSource, *wrapper);
+
+          Ctx.setExternalSource(S);
+        } else {
+          // We don't have an existing source, so just set our own source.
+          Ctx.setExternalSource(m_ExternalSemaSource);
+        }
     }
 
     if (enableDeserializationListenerCallbacks && Reader) {
