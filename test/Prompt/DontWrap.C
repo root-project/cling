@@ -20,7 +20,7 @@ t.methodDefLater()
 class TestDecl2 { public: float methodDefLater(); } b;
 float TestDecl2::methodDefLater() { return 5.f; }
 b.methodDefLater()
-// CHECK: (float) 5.00000f
+// CHECK: (float) 5f
 
 static int staticFunc(int a) {
   printf("staticFunc(%d)\n", a);

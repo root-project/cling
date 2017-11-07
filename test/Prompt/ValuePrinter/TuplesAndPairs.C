@@ -26,7 +26,7 @@ std::make_tuple(2)
 //CHECK: (std::tuple<{{.*int.*}}>) { 2 }
 
 std::make_tuple(1.2f)
-//CHECK: (std::tuple<{{.*float.*}}>) { 1.20000f }
+//CHECK: (std::tuple<{{.*float.*}}>) { 1.2f }
 
 std::make_tuple(1, std::make_tuple(1, 'c'))
 //CHECK: (std::tuple<{{.*int.*,.*std::tuple<.*int,.*char.*>.*}}>) { 1, { 1, 'c' } }

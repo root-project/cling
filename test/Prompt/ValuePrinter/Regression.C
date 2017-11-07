@@ -46,7 +46,7 @@ p // CHECK: (int *) 0x123
 const int *q = (int*)0x123;
 q // CHECK: (const int *) 0x123
 
-0.00001234L // CHECK: (long double) 0.00001234{{[0-9]*}}L
+0.00001234L // CHECK: (long double) 1.234e-05L
 
 // PR ROOT-5467
 &A::someFunc // CHECK: (int (A::*)(float)) Function @0x{{[0-9a-f]+}}
