@@ -14,12 +14,12 @@ extern "C" int printf(const char*,...);
 
 gCling->getDefaultOptLevel() // CHECK: (int) 0
 .O // CHECK-NEXT: Current cling optimization level: 0
-(int)gCling->getLatestTransaction()->getCompilationOpts().OptLevel // CHECK-NEXT: (int) 2
+(int)gCling->getLatestTransaction()->getCompilationOpts().OptLevel // CHECK-NEXT: (int) 0
 
 .O 2
-gCling->getDefaultOptLevel() // CHECK: (int) 2
+gCling->getDefaultOptLevel() // CHECK-NEXT: (int) 2
 .O // CHECK-NEXT: Current cling optimization level: 2
 
-#pragma cling optimize(1)
-gCling->getDefaultOptLevel() // CHECK: (int) 0
-.O // CHECK-NEXT: Current cling optimization level: 0
+#pragma cling optimize(1) // shouldn't change default but only current transaction (which is empty except this pragma)
+gCling->getDefaultOptLevel() // CHECK-NEXT: (int) 2
+.O // CHECK-NEXT: Current cling optimization level: 2
