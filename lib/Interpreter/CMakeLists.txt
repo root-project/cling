@@ -22,6 +22,7 @@ set(LIBS
 
 set( LLVM_LINK_COMPONENTS
   analysis
+  binaryformat
   core
   executionengine
   ipo
