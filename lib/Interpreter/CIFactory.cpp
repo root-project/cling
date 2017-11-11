@@ -821,6 +821,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       // Disable the warning when we import a module from extern C. Some headers
       // from the STL are doing this and we can't really do anything about this.
       argvCompile.push_back("-Wno-module-import-in-extern-c");
+      // Disable the warning when we import a module in a function body. This
+      // is a ROOT-specific issue tracked by ROOT-9088.
+      // FIXME: Remove after merging ROOT's PR1306.
+      argvCompile.push_back("-Wmodules-import-nested-redundant");
+
     }
 
     if (!COpts.Language) {
