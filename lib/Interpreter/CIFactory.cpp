@@ -824,7 +824,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       // Disable the warning when we import a module in a function body. This
       // is a ROOT-specific issue tracked by ROOT-9088.
       // FIXME: Remove after merging ROOT's PR1306.
-      argvCompile.push_back("-Wmodules-import-nested-redundant");
+      argvCompile.push_back("-Wno-modules-import-nested-redundant");
 
     }
 
