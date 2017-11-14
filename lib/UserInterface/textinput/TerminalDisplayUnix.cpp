@@ -105,10 +105,10 @@ namespace textinput {
     TerminalDisplay(TerminalConfigUnix::Get().IsInteractive()),
     fIsAttached(false), fNColors(16), fOutputID(STDOUT_FILENO)
   {
-    if (::isatty(::fileno(stdin)) && !::isatty(fOutputID)) {
-      // Display prompt, even if stdout is going somewhere else
-      fOutputID = ::open("/dev/tty", O_WRONLY);
-      SetIsTTY(true);
+     if (::isatty(fileno(stdin)) && !::isatty(fOutputID)) {
+        // Display prompt, even if stdout is going somewhere else
+        fOutputID = ::open("/dev/tty", O_WRONLY);
+        SetIsTTY(true);
     }
 
     HandleResizeSignal(); // needs fOutputID
