@@ -1703,9 +1703,19 @@ parser.add_argument('--stdlib', help=('C++ Library to use, stdlibc++ or libc++.'
                     default='')
 parser.add_argument('--compiler', help='The compiler being used to make cling (for heuristics only)',
                     default='')
-
+parser.add_argument('-y', help='Non-interactive mode (yes to all)', action='store_true')
 
 args = vars(parser.parse_args())
+
+###############################################################################
+#                           Customized input                                  #
+###############################################################################
+
+def custom_input(prompt, always_yes=False):
+    if always_yes:
+        return 'y'
+    else:
+        input(prompt)
 
 ###############################################################################
 #                           Platform initialization                           #
@@ -1840,9 +1850,9 @@ if args['check_requirements']:
         yes = {'yes', 'y', 'ye', ''}
         no = {'no', 'n'}
 
-        choice = input('''
+        choice = custom_input('''
 CPT will now attempt to update/install the requisite packages automatically.
-Do you want to continue? [yes/no]: ''').lower()
+Do you want to continue? [yes/no]: ''', args['y']).lower()
         while True:
             if choice in yes:
                 # Need to communicate values to the shell. Do not use exec_subprocess_call()
@@ -1865,7 +1875,7 @@ Install/update the required packages by:
 ''')
                 break
             else:
-                choice = input("Please respond with 'yes' or 'no': ")
+                choice = custom_input("Please respond with 'yes' or 'no': ", args['y'])
                 continue
 
     elif OS == 'Windows':
@@ -1889,9 +1899,9 @@ Refer to the documentation of CPT for information on setting up your Windows env
         yes = {'yes', 'y', 'ye', ''}
         no = {'no', 'n'}
 
-        choice = input('''
+        choice = custom_input('''
 CPT will now attempt to update/install the requisite packages automatically.
-Do you want to continue? [yes/no]: ''').lower()
+Do you want to continue? [yes/no]: ''', args['y']).lower()
         while True:
             if choice in yes:
                 # Need to communicate values to the shell. Do not use exec_subprocess_call()
@@ -1908,7 +1918,7 @@ Install/update the required packages by:
 ''')
                 break
             else:
-                choice = input("Please respond with 'yes' or 'no': ")
+                choice = custom_input("Please respond with 'yes' or 'no': ", args['y'])
                 continue
 
     if DIST == 'MacOSX':
@@ -1921,9 +1931,9 @@ Install/update the required packages by:
         yes = {'yes', 'y', 'ye', ''}
         no = {'no', 'n'}
 
-        choice = input('''
+        choice = custom_input('''
 CPT will now attempt to update/install the requisite packages automatically. Make sure you have MacPorts installed.
-Do you want to continue? [yes/no]: ''').lower()
+Do you want to continue? [yes/no]: ''', args['y']).lower()
         while True:
             if choice in yes:
                 # Need to communicate values to the shell. Do not use exec_subprocess_call()
@@ -1946,7 +1956,7 @@ Install/update the required packages by:
 ''')
                 break
             else:
-                choice = input("Please respond with 'yes' or 'no': ")
+                choice = custom_input("Please respond with 'yes' or 'no': ", args['y'])
                 continue
 
 if args['current_dev']:
