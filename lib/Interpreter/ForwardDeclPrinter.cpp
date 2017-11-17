@@ -342,7 +342,9 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       Out() << "__module_private__ ";
     Out() << "enum ";
-    prettyPrintAttributes(D);
+    // For now, do not decorate enums, this leads to some errors, likely
+    // due to incorrect merging.  See https://sft.its.cern.ch/jira/browse/ROOT-9114
+    // prettyPrintAttributes(D);
     if (D->isScoped()) {
       if (D->isScopedUsingClassTag())
         Out() << "class ";
