@@ -825,7 +825,16 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       // is a ROOT-specific issue tracked by ROOT-9088.
       // FIXME: Remove after merging ROOT's PR1306.
       argvCompile.push_back("-Wno-modules-import-nested-redundant");
-
+      // FIXME: We get an error "'cling/module.modulemap' from the precompiled
+      //  header has been overridden". This comes from a bug that rootcling
+      // introduces by adding a lot of garbage in the PCH/PCM files because it
+      // essentially serializes its current state of the AST. That usually
+      // includes a few memory buffers which override their own contents.
+      // We know how to remove this: just implement a callback in clang
+      // which calls back the interpreter when a module file is built. This is
+      // a lot of work as it needs fixing rootcling. See RE-0003.
+      argvCompile.push_back("-Xclang");
+      argvCompile.push_back("-fno-validate-pch");
     }
 
     if (!COpts.Language) {
