@@ -5,5 +5,7 @@
       "-f",
       "{connection_file}",
       "--std=c++1z"
-  ]
+  ],
+  "language": "C++"
+
 }
