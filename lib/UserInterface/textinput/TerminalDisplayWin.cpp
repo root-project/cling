@@ -31,12 +31,14 @@ namespace textinput {
     if (!isConsole) {
       // Prevent redirection from stealing our console handle,
       // simply open our own.
-      fOut = ::CreateFileA("CONOUT$", GENERIC_READ | GENERIC_WRITE,
+      fOut = ::CreateFile("CONOUT$", GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL, NULL);
       ::GetConsoleMode(fOut, &fOldMode);
     } else {
-      ::SetConsoleOutputCP(65001); // Force UTF-8 output
+      // disable unicode (UTF-8) for the time being, since it causes
+      // problems on Windows 10
+      //::SetConsoleOutputCP(65001); // Force UTF-8 output
     }
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     ::GetConsoleScreenBufferInfo(fOut, &csbi);
@@ -51,8 +53,8 @@ namespace textinput {
       ::SetConsoleTextAttribute(fOut, fDefaultAttributes);
       // We allocated CONOUT$:
       CloseHandle(fOut);
-    } else
-      ::SetConsoleOutputCP(fOldCodePage);
+    }
+    ::SetConsoleOutputCP(fOldCodePage);
   }
 
   void
@@ -160,7 +162,7 @@ namespace textinput {
   TerminalDisplayWin::EraseToRight() {
     DWORD NumWritten;
     COORD C = {fWritePos.fCol, fWritePos.fLine + fStartLine};
-    ::FillConsoleOutputCharacterA(fOut, ' ', GetWidth() - C.X, C,
+    ::FillConsoleOutputCharacter(fOut, ' ', GetWidth() - C.X, C,
       &NumWritten);
     // It wraps, so move up and reset WritePos:
     //MoveUp();
@@ -171,7 +173,7 @@ namespace textinput {
   TerminalDisplayWin::WriteRawString(const char *text, size_t len) {
     DWORD NumWritten = 0;
     if (IsTTY()) {
-      WriteConsoleA(fOut, text, (DWORD) len, &NumWritten, NULL);
+      WriteConsole(fOut, text, (DWORD) len, &NumWritten, NULL);
     } else {
       WriteFile(fOut, text, (DWORD) len, &NumWritten, NULL);
     }
@@ -215,9 +217,9 @@ namespace textinput {
   TerminalDisplayWin::ShowError(const char* Where) const {
     DWORD Err = GetLastError();
     LPVOID MsgBuf = 0;
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
       FORMAT_MESSAGE_IGNORE_INSERTS, NULL, Err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      (LPSTR) &MsgBuf, 0, NULL);
+      (LPTSTR) &MsgBuf, 0, NULL);
 
     printf("Error %d in textinput::TerminalDisplayWin %s: %s\n", Err, Where, MsgBuf);
     LocalFree(MsgBuf);
