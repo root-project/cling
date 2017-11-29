@@ -16,8 +16,8 @@
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/Support/DynamicLibrary.h"
 
-#ifdef __APPLE__
-// Apple adds an extra '_'
+#if defined(__APPLE__) || defined (_MSC_VER)
+// Apple and Windows add an extra '_'
 # define MANGLE_PREFIX "_"
 #endif
 

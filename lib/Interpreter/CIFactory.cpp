@@ -894,7 +894,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     llvm::Triple TheTriple(llvm::sys::getProcessTriple());
 #ifdef LLVM_ON_WIN32
     // COFF format currently needs a few changes in LLVM to function properly.
-    TheTriple.setObjectFormat(llvm::Triple::ELF);
+    TheTriple.setObjectFormat(llvm::Triple::COFF);
 #endif
     clang::driver::Driver Drvr(argv[0], TheTriple.getTriple(), *Diags);
     //Drvr.setWarnMissingInput(false);
