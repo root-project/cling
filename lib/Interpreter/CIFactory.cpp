@@ -1043,6 +1043,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                           /*UserFilesAreVolatile*/ true);
     CI->setSourceManager(SM); // CI now owns SM
 
+    if (Invocation.getFrontendOpts().ModulesEmbedAllFiles)
+       CI->getSourceManager().setAllFilesAreTransient(true);
+
     // As main file we want
     // * a virtual file that is claiming to be huge
     // * with an empty memory buffer attached (to bring the content)
