@@ -16,7 +16,6 @@ namespace clang {
 }
 
 namespace cling {
-  class DynamicExprInfo;
   class Interpreter;
 
 /// \brief Contains declarations for cling's runtime.
@@ -25,6 +24,7 @@ namespace runtime {
   /// \brief Provides private definitions for the dynamic scopes and runtime
   /// bindings. These builtins should not be used for other purposes.
   namespace internal {
+    class DynamicExprInfo;
 
     /// \brief LifetimeHandler is used in case of initialization using address
     /// on the automatic store (stack) instead of EvaluateT.
