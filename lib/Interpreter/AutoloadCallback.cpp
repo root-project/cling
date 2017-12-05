@@ -110,7 +110,8 @@ namespace cling {
 
         const FileEntry* FE = 0;
         SourceLocation fileNameLoc;
-        bool isAngled = false;
+        // Remember this file wth full path, not "./File.h" (ROOT-8863).
+        bool isAngled = true;
         const DirectoryLookup* FromDir = 0;
         const FileEntry* FromFile = 0;
         const DirectoryLookup* CurDir = 0;
