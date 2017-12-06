@@ -125,7 +125,7 @@ namespace {
               cling::utils::LogNonExistantDirectory(Path);
           }
           else
-            Args.addArgument("-I", Path.str());
+            Args.addArgument("-cxx-isystem", Path.str());
         }
       }
       ::pclose(PF);
@@ -164,7 +164,7 @@ namespace {
     }
 
     for (llvm::StringRef Path : Paths)
-      Args.addArgument("-I", Path.str());
+      Args.addArgument("-cxx-isystem", Path.str());
 
     return true;
   }
