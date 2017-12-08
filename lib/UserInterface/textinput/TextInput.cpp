@@ -63,7 +63,7 @@ namespace textinput {
 
     // Signal displays that the input got taken.
     std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-             std::mem_fun(&Display::NotifyResetInput));
+             [](Display *D) { return D->NotifyResetInput(); });
 
     ReleaseInputOutput();
 
@@ -157,7 +157,7 @@ namespace textinput {
                && Cmd.GetCommandID() == Editor::kCmdWindowResize) {
       std::for_each(fContext->GetDisplays().begin(),
                     fContext->GetDisplays().end(),
-                    std::mem_fun(&Display::NotifyWindowChange));
+                    [](Display *D) { return D->NotifyWindowChange(); });
     } else {
       if (!in.IsRaw() && in.GetExtendedInput() == InputData::kEIEOF) {
         fLastReadResult = kRREOF;
@@ -168,7 +168,7 @@ namespace textinput {
           // Signal displays that an error has occurred.
           std::for_each(fContext->GetDisplays().begin(),
                         fContext->GetDisplays().end(),
-                        std::mem_fun(&Display::NotifyError));
+                        [](Display *D) { return D->NotifyError(); });
         } else if (Cmd.GetKind() == Editor::kCKCommand
                    && (Cmd.GetCommandID() == Editor::kCmdEnter ||
                        Cmd.GetCommandID() == Editor::kCmdHistReplay)) {
@@ -192,7 +192,7 @@ namespace textinput {
 
     if (oldCursorPos != fContext->GetCursor()) {
       std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-                    std::mem_fun(&Display::NotifyCursorChange));
+                    [](Display *D) { return D->NotifyCursorChange(); });
     }
 
     oldCursorPos = fContext->GetCursor();
@@ -223,7 +223,7 @@ namespace textinput {
     if (!ColModR.fDisplay.IsEmpty()
         || ColModR.fDisplay.fPromptUpdate != Range::kNoPromptUpdate) {
       std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-                    std::bind2nd(std::mem_fun(&Display::NotifyTextChange), ColModR.fDisplay));
+                    [ColModR](Display *D) { return D->NotifyTextChange(ColModR.fDisplay); });
     }
   }
 
@@ -244,8 +244,7 @@ namespace textinput {
     fNeedPromptRedraw = false;
     // Immediate refresh.
     std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-                  std::bind2nd(std::mem_fun(&Display::NotifyTextChange),
-                               R.fDisplay));
+                  [R](Display *D) { return D->NotifyTextChange(R.fDisplay); });
     // Empty range.
     R.fDisplay = Range::Empty();
 
@@ -264,8 +263,7 @@ namespace textinput {
     fNeedPromptRedraw = false;
     std::for_each(fContext->GetDisplays().begin(),
                   fContext->GetDisplays().end(),
-                  std::bind2nd(std::mem_fun(&Display::NotifyTextChange),
-                               Range::AllWithPrompt()));
+                  [](Display *D) { return D->NotifyTextChange(Range::AllWithPrompt()); });
   }
 
   void
@@ -288,10 +286,10 @@ namespace textinput {
     if (fActive) return;
     // Signal readers that we are about to read.
     std::for_each(fContext->GetReaders().begin(), fContext->GetReaders().end(),
-                  std::mem_fun(&Reader::GrabInputFocus));
+                  [](Reader *R) { return R->GrabInputFocus(); });
     // Signal displays that we are about to display.
     std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-                  std::mem_fun(&Display::Attach));
+                  [](Display *D) { return D->Attach(); });
     fActive = true;
   }
 
@@ -300,11 +298,11 @@ namespace textinput {
     // Signal readers that we are done reading.
     if (!fActive) return;
     std::for_each(fContext->GetReaders().begin(), fContext->GetReaders().end(),
-                  std::mem_fun(&Reader::ReleaseInputFocus));
+                  [](Reader *R) { return R->ReleaseInputFocus(); });
 
     // Signal displays that we are done displaying.
     std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-                  std::mem_fun(&Display::Detach));
+                  [](Display *D) { return D->Detach(); });
 
     fActive = false;
   }
@@ -326,7 +324,7 @@ namespace textinput {
   TextInput::HandleResize() {
     // Resize signal was emitted, tell the displays.
     std::for_each(fContext->GetDisplays().begin(), fContext->GetDisplays().end(),
-             std::mem_fun(&Display::NotifyWindowChange));
+                  [](Display *D) { return D->NotifyWindowChange(); });
   }
 
   void
