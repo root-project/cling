@@ -290,7 +290,7 @@ namespace cling {
         if (auto M = T->getModule()) {
           for (const llvm::StringRef& Sym : Syms) {
             const llvm::GlobalValue* GV = M->getNamedValue(Sym);
-  #if defined(__GLIBCXX__) && !defined(__APPLE__)
+  #if defined(__linux__)
             // libstdc++ mangles at_quick_exit on Linux when g++ < 5
             if (!GV && Sym.equals("at_quick_exit"))
               GV = M->getNamedValue("_Z13at_quick_exitPFvvE");
@@ -404,13 +404,17 @@ namespace cling {
 
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
-#if defined(__GLIBCXX__) && !defined(__APPLE__)
+#if defined(__linux__)
     const char* LinkageCxx = "extern \"C++\"";
     const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
-    const char* cxa_atexit_is_noexcept = LangOpts.CPlusPlus ? " noexcept" : "";
 #else
     const char* LinkageCxx = Linkage;
     const char* Attr = "";
+#endif
+
+#if defined(__GLIBCXX__)
+    const char* cxa_atexit_is_noexcept = LangOpts.CPlusPlus ? " noexcept" : "";
+#else
     const char* cxa_atexit_is_noexcept = "";
 #endif
 
