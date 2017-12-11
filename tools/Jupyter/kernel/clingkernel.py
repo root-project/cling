@@ -117,12 +117,17 @@ class ClingKernel(Kernel):
         else:
             raise RuntimeError('Cannot find cling in $PATH. No cling, no fun.')
 
-        for ext in ['so', 'dylib', 'dll']:
-            libFilename = clingInstDir + "/lib/libclingJupyter." + ext
-            if os.access(libFilename, os.R_OK):
-                self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter." + ext,
-                                                   mode = ctypes.RTLD_GLOBAL)
-                break
+        for libFolder in ["/lib/libclingJupyter.", "/libexec/lib/libclingJupyter."]:
+
+            for ext in ['so', 'dylib', 'dll']:
+                libFilename = clingInstDir + libFolder + ext
+                if os.access(libFilename, os.R_OK):
+                    self.libclingJupyter = ctypes.CDLL(clingInstDir + libFolder + ext,
+                                                    mode = ctypes.RTLD_GLOBAL)
+                    break
+            else:
+                continue
+            break
 
         if not getattr(self, 'libclingJupyter', None):
             raise RuntimeError('Cannot find ' + clingInstDir + '/lib/libclingJupyter.{so,dylib,dll}')
