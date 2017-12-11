@@ -99,6 +99,7 @@ class ClingKernel(Kernel):
         super(ClingKernel, self).__init__(**kwargs)
         try:
             whichCling = os.readlink(shutil.which('cling'))
+            whichCling = os.path.join(os.path.dirname(shutil.which("cling")), whichCling)
         except OSError as e:
             #If cling is not a symlink try a regular file
             #readlink returns POSIX error EINVAL (22) if the
@@ -112,7 +113,7 @@ class ClingKernel(Kernel):
             whichCling = find_executable('cling')
 
         if whichCling:
-            clingInstDir = os.path.dirname(os.path.dirname(whichCling))
+            clingInstDir = os.path.abspath(os.path.dirname(os.path.dirname(whichCling)))
             llvmResourceDir = clingInstDir
         else:
             raise RuntimeError('Cannot find cling in $PATH. No cling, no fun.')
