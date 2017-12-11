@@ -123,7 +123,15 @@ class ClingKernel(Kernel):
                 self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter." + ext,
                                                    mode = ctypes.RTLD_GLOBAL)
                 break
-
+                
+        for ext in ['so', 'dylib', 'dll']:
+            libFilename = clingInstDir + "/libexec/lib/libclingJupyter." + ext
+            if os.access(libFilename, os.R_OK):
+                self.libclingJupyter = ctypes.CDLL(
+                    clingInstDir + "/libexec/lib/libclingJupyter." + ext, mode=ctypes.RTLD_GLOBAL
+                )
+                break
+                
         if not getattr(self, 'libclingJupyter', None):
             raise RuntimeError('Cannot find ' + clingInstDir + '/lib/libclingJupyter.{so,dylib,dll}')
 
