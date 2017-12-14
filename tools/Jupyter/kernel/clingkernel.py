@@ -99,6 +99,8 @@ class ClingKernel(Kernel):
         super(ClingKernel, self).__init__(**kwargs)
         try:
             whichCling = os.readlink(shutil.which('cling'))
+            if not os.path.isabs(whichCling):
+                whichCling = os.path.join(os.path.dirname(shutil.which('cling')), whichCling)
         except OSError as e:
             #If cling is not a symlink try a regular file
             #readlink returns POSIX error EINVAL (22) if the
