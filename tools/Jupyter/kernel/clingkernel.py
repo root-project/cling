@@ -99,6 +99,7 @@ class ClingKernel(Kernel):
         super(ClingKernel, self).__init__(**kwargs)
         try:
             whichCling = os.readlink(shutil.which('cling'))
+            whichCling = os.path.join(os.path.dirname(shutil.which("cling")), whichCling)
         except OSError as e:
             #If cling is not a symlink try a regular file
             #readlink returns POSIX error EINVAL (22) if the
@@ -112,17 +113,22 @@ class ClingKernel(Kernel):
             whichCling = find_executable('cling')
 
         if whichCling:
-            clingInstDir = os.path.dirname(os.path.dirname(whichCling))
+            clingInstDir = os.path.abspath(os.path.dirname(os.path.dirname(whichCling)))
             llvmResourceDir = clingInstDir
         else:
             raise RuntimeError('Cannot find cling in $PATH. No cling, no fun.')
 
-        for ext in ['so', 'dylib', 'dll']:
-            libFilename = clingInstDir + "/lib/libclingJupyter." + ext
-            if os.access(libFilename, os.R_OK):
-                self.libclingJupyter = ctypes.CDLL(clingInstDir + "/lib/libclingJupyter." + ext,
-                                                   mode = ctypes.RTLD_GLOBAL)
-                break
+        for libFolder in ["/lib/libclingJupyter.", "/libexec/lib/libclingJupyter."]:
+
+            for ext in ['so', 'dylib', 'dll']:
+                libFilename = clingInstDir + libFolder + ext
+                if os.access(libFilename, os.R_OK):
+                    self.libclingJupyter = ctypes.CDLL(clingInstDir + libFolder + ext,
+                                                    mode = ctypes.RTLD_GLOBAL)
+                    break
+            else:
+                continue
+            break
 
         if not getattr(self, 'libclingJupyter', None):
             raise RuntimeError('Cannot find ' + clingInstDir + '/lib/libclingJupyter.{so,dylib,dll}')
