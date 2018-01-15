@@ -97,26 +97,30 @@ class ClingKernel(Kernel):
 
     def __init__(self, **kwargs):
         super(ClingKernel, self).__init__(**kwargs)
+        clingInPath = shutil.which('cling')
+        if not clingInPath:
+            from distutils.spawn import find_executable
+            clingInPath = find_executable('cling')
+        if not clingInPath:
+            raise RuntimeError('Cannot find cling in $PATH. No cling, no fun.')
+
         try:
-            whichCling = os.readlink(shutil.which('cling'))
-            whichCling = os.path.join(os.path.dirname(shutil.which("cling")), whichCling)
+            whichCling = os.readlink(clingInPath)
+            whichCling = os.path.join(os.path.dirname(clingInPath), whichCling)
         except OSError as e:
             #If cling is not a symlink try a regular file
             #readlink returns POSIX error EINVAL (22) if the
             #argument is not a symlink
             if e.args[0] == 22:
-                whichCling = shutil.which('cling')
+                whichCling = clingInPath
             else:
                 raise e
-        except AttributeError:
-            from distutils.spawn import find_executable
-            whichCling = find_executable('cling')
 
         if whichCling:
             clingInstDir = os.path.abspath(os.path.dirname(os.path.dirname(whichCling)))
             llvmResourceDir = clingInstDir
         else:
-            raise RuntimeError('Cannot find cling in $PATH. No cling, no fun.')
+            raise RuntimeError('cling at ' + clingInPath + ' is unusable. No cling, no fun.')
 
         for libFolder in ["/lib/libclingJupyter.", "/libexec/lib/libclingJupyter."]:
 
