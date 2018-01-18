@@ -590,7 +590,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
         FunctionTemplateDeclExt* This = (FunctionTemplateDeclExt*) self;
         Specializations specializations;
-        const Set& specs = This->getSpecializations();
+        const Set& specs = This->getCommonPtr()->Specializations;
 
         if (!specs.size()) // nothing to remove
           return;
@@ -602,7 +602,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
             specializations.push_back(I->Function);
         }
 
-        This->getSpecializations().clear();
+        This->getCommonPtr()->Specializations.clear();
 
         //Readd the collected specializations.
         void* InsertPos = 0;
@@ -965,7 +965,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
       ClassTemplateDeclExt* This = (ClassTemplateDeclExt*) self;
       Specializations specializations;
-      Set& specs = This->getSpecializations();
+      Set& specs = This->getCommonPtr()->Specializations;
 
       if (!specs.size()) // nothing to remove
         return;
@@ -976,7 +976,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
           specializations.push_back(&*I);
       }
 
-      This->getSpecializations().clear();
+      This->getCommonPtr()->Specializations.clear();
 
       //Readd the collected specializations.
       void* InsertPos = 0;
