@@ -24,7 +24,9 @@
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
 #include "clang/Driver/Tool.h"
+#include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
+#include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Frontend/MultiplexConsumer.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Frontend/VerifyDiagnosticConsumer.h"
@@ -762,6 +764,36 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
   };
 
+
+  static void HandlePlugins(CompilerInstance& CI,
+                         std::vector<std::unique_ptr<ASTConsumer>>& Consumers) {
+    // Copied from Frontend/FrontendAction.cpp.
+    // FIXME: Remove when we switch to the new cling driver.
+    for (const std::string& Path : CI.getFrontendOpts().Plugins) {
+       std::string Error;
+       if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path.c_str(),
+                                                             &Error))
+          CI.getDiagnostics().Report(clang::diag::err_fe_unable_to_load_plugin)
+             << Path << Error;
+    }
+
+    // If there are no registered plugins we don't need to wrap the consumer
+    if (FrontendPluginRegistry::begin() == FrontendPluginRegistry::end())
+      return;
+
+    for (auto it = clang::FrontendPluginRegistry::begin(),
+              ie = clang::FrontendPluginRegistry::end();
+         it != ie; ++it) {
+       std::unique_ptr<clang::PluginASTAction> P(it->instantiate());
+       if (P->ParseArgs(CI, CI.getFrontendOpts().PluginArgs[it->getName()])) {
+         std::unique_ptr<ASTConsumer> PluginConsumer
+           = P->CreateASTConsumer(CI, /*InputFile*/ "");
+         Consumers.push_back(std::move(PluginConsumer));
+       }
+       assert(P->getActionType() != clang::PluginASTAction::ReplaceAction);
+    }
+  }
+
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
@@ -1132,6 +1164,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       SM->pushModuleBuildStack(COpts.ModuleName,
                                FullSourceLoc(SourceLocation(), *SM));
     }
+
+    HandlePlugins(*CI, Consumers);
 
     std::unique_ptr<clang::MultiplexConsumer> multiConsumer(
         new clang::MultiplexConsumer(std::move(Consumers)));
