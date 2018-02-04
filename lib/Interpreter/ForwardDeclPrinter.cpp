@@ -104,7 +104,7 @@ namespace cling {
       }
     }
     if (printMacros) {
-      for (auto m : macrodefs) {
+      for (const auto &m : macrodefs) {
         Out() << "#undef " << m << "\n";
       }
     }
