@@ -395,6 +395,8 @@ namespace cling {
       }
     }
 
+    // Windows requires std::ifstream::binary to properly handle
+    // CRLF and LF line endings
     std::ifstream in(filename.str().c_str(), std::ifstream::binary);
     if (in.fail())
       return reportIOErr(filename, "open");
