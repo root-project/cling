@@ -395,7 +395,11 @@ namespace cling {
       }
     }
 
+#ifdef LLVM_ON_WIN32
+    std::ifstream in(filename.str().c_str(), std::ifstream::binary);
+#else
     std::ifstream in(filename.str().c_str());
+#endif
     if (in.fail())
       return reportIOErr(filename, "open");
 
@@ -473,7 +477,15 @@ namespace cling {
     if (topmost)
       m_TopExecutingFile = m_CurrentlyExecutingFile;
 
-    content.insert(0, "#line 2 \"" + filename.str() + "\" \n");
+    std::string path(filename.str());
+#ifdef LLVM_ON_WIN32
+    std::size_t p = 0;
+    while ((p = path.find('\\', p)) != std::string::npos) {
+      path.insert(p, "\\");
+      p += 2;
+    }
+#endif
+    content.insert(0, "#line 2 \"" + path + "\" \n");
     // We don't want to value print the results of a unnamed macro.
     if (content.back() != ';')
       content.append(";");

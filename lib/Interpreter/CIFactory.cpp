@@ -264,6 +264,8 @@ namespace {
       sArguments.addArgument("-Wno-microsoft-unqualified-friend");
       sArguments.addArgument("-Wno-deprecated-declarations");
 
+      sArguments.addArgument("-fno-threadsafe-statics");
+
       //sArguments.addArgument("-Wno-dllimport-static-field-def");
       //sArguments.addArgument("-Wno-microsoft-template");
 
