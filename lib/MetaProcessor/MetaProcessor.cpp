@@ -395,11 +395,7 @@ namespace cling {
       }
     }
 
-#ifdef LLVM_ON_WIN32
     std::ifstream in(filename.str().c_str(), std::ifstream::binary);
-#else
-    std::ifstream in(filename.str().c_str());
-#endif
     if (in.fail())
       return reportIOErr(filename, "open");
 
