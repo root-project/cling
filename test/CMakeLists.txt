@@ -35,7 +35,6 @@ add_custom_target(cling-test-depends DEPENDS ${CLING_TEST_DEPS})
 
 add_lit_testsuite(check-cling "Running the Cling regression tests"
   ${CMAKE_CURRENT_BINARY_DIR}
-  #LIT ${LLVM_LIT}
   PARAMS ${CLING_TEST_PARAMS}
   DEPENDS ${CLING_TEST_DEPS}
   ARGS ${CLING_TEST_EXTRA_ARGS}
