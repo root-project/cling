@@ -452,7 +452,9 @@ get_property(CLANG_TABLEGEN_TARGETS GLOBAL PROPERTY CLANG_TABLEGEN_TARGETS)
 list(APPEND LLVM_COMMON_DEPENDS ${CLANG_TABLEGEN_TARGETS})
 
 # And llvm-intrinsics.
-list(APPEND LLVM_COMMON_DEPENDS intrinsics_gen)
+if (TARGET intrinsics_gen)
+  list(APPEND LLVM_COMMON_DEPENDS intrinsics_gen)
+endif()
 list(APPEND LLVM_COMMON_DEPENDS clang-headers)
 
 add_subdirectory(lib)
