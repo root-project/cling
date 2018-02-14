@@ -339,7 +339,7 @@ macro(add_cling_library name)
   endif()
 
   if(TARGET ${name})
-    target_link_libraries(${name} ${INTERFACE} ${LLVM_COMMON_LIBS})
+    target_link_libraries(${name} INTERFACE ${LLVM_COMMON_LIBS})
 
     if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY OR ${name} STREQUAL "libcling")
       install(TARGETS ${name}
