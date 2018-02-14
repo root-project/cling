@@ -433,29 +433,12 @@ else()
   set(cling_path_delim ";")
 endif()
 
-#Allow user to prepend to list via cmake -DCLING_INCLUDE_PATHS=
-if(DEFINED ROOT_BINARY_DIR)
-  if( CLING_INCLUDE_TESTS )
-     set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
+if( CLING_INCLUDE_TESTS )
+  set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
 ${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
-${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include${cling_path_delim}\
-${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/include"
-     )
-  endif()
-else()
-  if( CLING_INCLUDE_TESTS )
-    set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
-${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
-${CMAKE_CURRENT_SOURCE_DIR}/../clang/include${cling_path_delim}\
-${CMAKE_CURRENT_SOURCE_DIR}/../../include"
+${CLANG_INCLUDE_DIRS}${cling_path_delim}\
+${LLVM_INCLUDE_DIRS}"
     )
-    if (WIN32)
-      set(cling_include_deflt "${cling_include_deflt}${cling_path_delim}\
-${CMAKE_BINARY_DIR}/include${cling_path_delim}\
-${CMAKE_BINARY_DIR}/tools/clang/include"
-      )
-    endif()
-  endif()
 endif()
 
 if(NOT CLING_INCLUDE_PATHS)
