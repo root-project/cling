@@ -1427,13 +1427,13 @@ namespace utils {
 
   NamedDecl* Lookup::Named(Sema* S, llvm::StringRef Name,
                            const DeclContext* Within) {
-    return Lookup::Named(S, Name.str().data(), Within);
+    DeclarationName DName = &S->Context.Idents.get(Name);
+    return Lookup::Named(S, DName, Within);
   }
 
   NamedDecl* Lookup::Named(Sema* S, const char* Name,
                            const DeclContext* Within) {
-    DeclarationName DName = &S->Context.Idents.get(Name);
-    return Lookup::Named(S, DName, Within);
+    return Lookup::Named(S, llvm::StringRef(Name), Within);
   }
 
   NamedDecl* Lookup::Named(Sema* S, const clang::DeclarationName& Name,
