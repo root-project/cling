@@ -144,13 +144,23 @@ class ClingKernel(Kernel):
         self.log.info("Using {}".format(stdopt.decode('utf-8')))
         #from IPython.utils import io
         #io.rprint("DBG: Using {}".format(stdopt.decode('utf-8')))
-        strarr = ctypes.c_char_p*5
-        argv = strarr(b"clingJupyter",stdopt, b"-I" + clingInstDir.encode('utf-8') + b"/include/",b"",b"")
+        argv = [b"clingJupyter", stdopt, b"-I" + clingInstDir.encode('utf-8') + b"/include/"]
+
+        # Environment variable CLING_OPTS used to pass arguments to cling
+        extra_opts = os.getenv('CLING_OPTS')
+        if extra_opts:
+            for x in extra_opts.split():
+                argv.append(x.encode('utf-8'))
+                self.log.info("Passing extra argument {} to cling".format(x))
+
+        argc = len(argv)
+        CharPtrArrayType = ctypes.c_char_p * argc
+
         llvmResourceDirCP = ctypes.c_char_p(llvmResourceDir.encode('utf8'))
 
         # The sideband_pipe is used by cling::Jupyter::pushOutput() to publish MIME data to Jupyter.
         self.sideband_pipe, pipe_in = os.pipe()
-        self.interp = self.libclingJupyter.cling_create(5, argv, llvmResourceDirCP, pipe_in)
+        self.interp = self.libclingJupyter.cling_create(ctypes.c_int(argc), CharPtrArrayType(*argv), llvmResourceDirCP, pipe_in)
 
         self.libclingJupyter.cling_complete_start.restype = my_void_p
         self.libclingJupyter.cling_complete_next.restype = my_void_p #c_char_p
