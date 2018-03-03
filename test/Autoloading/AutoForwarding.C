@@ -7,10 +7,6 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -I%S -Xclang -verify
-//
-//   XFAIL: *
-//   until enum autoloading is fixed.
-//
 // Test FwdPrinterTest
 
 // Test similar to ROOT-7037
