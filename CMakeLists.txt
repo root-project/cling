@@ -434,11 +434,14 @@ else()
 endif()
 
 if( CLING_INCLUDE_TESTS )
-  set(cling_include_deflt "${CMAKE_INSTALL_PREFIX}/include${cling_path_delim}\
-${CMAKE_CURRENT_SOURCE_DIR}/include${cling_path_delim}\
-${CLANG_INCLUDE_DIRS}${cling_path_delim}\
-${LLVM_INCLUDE_DIRS}"
-    )
+  set(cling_include_deflt ${CMAKE_INSTALL_PREFIX}/include
+                          ${CMAKE_CURRENT_SOURCE_DIR}/include
+                          ${CLANG_INCLUDE_DIRS}
+                          ${LLVM_INCLUDE_DIRS}
+  )
+
+  # CLANG_INCLUDE_DIRS and LLVM_INCLUDE_DIRS can be a semicolon separated lists.
+  string(REPLACE ";" ${cling_path_delim} cling_include_deflt "${cling_include_deflt}")
 endif()
 
 if(NOT CLING_INCLUDE_PATHS)
