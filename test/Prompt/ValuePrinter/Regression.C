@@ -107,3 +107,11 @@ void f(std::string) {}
 f // CHECK: (void (*)(std::string)) Function @0x{{[0-9a-f]+}}
 // CHECK: at input_line_{{[0-9].*}}:1:
 // CHECK: void f(std::string) {}
+
+class notapointer {};
+struct OverloadedAddrOf {
+  notapointer operator&() {
+    return notapointer();
+  }
+};
+OverloadedAddrOf overloadedAddrOf
