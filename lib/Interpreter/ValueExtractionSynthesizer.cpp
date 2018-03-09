@@ -413,10 +413,14 @@ namespace {
       m_gClingVD = cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling", NSD));
       NSD = utils::Lookup::Namespace(m_Sema, "internal", NSD);
 
-      m_Sema->LookupQualifiedName(R, m_Sema->getStdNamespace());
-      assert(!R.empty() && "Cannot find std::addressof");
-      m_UnresolvedStdAddressOf
-        = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
+      // FIXME: We should special case the child interpreter. Having to do that
+      // looks like a design flaw.
+      if (!m_isChildInterpreter) {
+        m_Sema->LookupQualifiedName(R, m_Sema->getStdNamespace());
+        assert(!R.empty() && "Cannot find std::addressof");
+        m_UnresolvedStdAddressOf
+          = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
+      }
     }
 
     R.clear();

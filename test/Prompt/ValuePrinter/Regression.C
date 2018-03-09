@@ -115,3 +115,4 @@ struct OverloadedAddrOf {
   }
 };
 OverloadedAddrOf overloadedAddrOf
+// CHECK: (OverloadedAddrOf &) @0x{{[0-9a-f]+}}
