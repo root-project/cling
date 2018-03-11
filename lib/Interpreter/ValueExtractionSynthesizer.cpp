@@ -346,13 +346,8 @@ namespace {
       }
       else if (desugaredTy->isReferenceType()) {
         // we need to get the address of the references
-        Expr* AddrOfE = nullptr;
-        if (m_UnresolvedStdAddressOf)
-          AddrOfE = m_Sema->ActOnCallExpr(/*Scope*/0, m_UnresolvedStdAddressOf,
-                                          locStart, E, locEnd).get();
-        else
-          AddrOfE = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf,
-                                         E).get();
+        Expr* AddrOfE = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf,
+                                             E).get();
         CallArgs.push_back(AddrOfE);
       }
       else if (desugaredTy->isAnyPointerType()) {
@@ -403,32 +398,21 @@ namespace {
   void ValueExtractionSynthesizer::FindAndCacheRuntimeDecls() {
     assert(!m_gClingVD && "Called multiple times!?");
     DeclContext* NSD = m_Context->getTranslationUnitDecl();
-    LookupResult R(*m_Sema, &m_Context->Idents.get("addressof"),
-                   SourceLocation(), Sema::LookupOrdinaryName,
-                   Sema::ForRedeclaration);
-    CXXScopeSpec CSS;
     if (m_Sema->getLangOpts().CPlusPlus) {
       NSD = utils::Lookup::Namespace(m_Sema, "cling");
       NSD = utils::Lookup::Namespace(m_Sema, "runtime", NSD);
       m_gClingVD = cast<VarDecl>(utils::Lookup::Named(m_Sema, "gCling", NSD));
-      NSD = utils::Lookup::Namespace(m_Sema, "internal", NSD);
-
-      // FIXME: We should special case the child interpreter. Having to do that
-      // looks like a design flaw.
-      if (!m_isChildInterpreter) {
-        m_Sema->LookupQualifiedName(R, m_Sema->getStdNamespace());
-        assert(!R.empty() && "Cannot find std::addressof");
-        m_UnresolvedStdAddressOf
-          = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
-      }
+      NSD = utils::Lookup::Namespace(m_Sema, "internal",NSD);
     }
+    LookupResult R(*m_Sema, &m_Context->Idents.get("setValueNoAlloc"),
+                   SourceLocation(), Sema::LookupOrdinaryName,
+                   Sema::ForRedeclaration);
 
-    R.clear();
-    R.setLookupName(&m_Context->Idents.get("setValueNoAlloc"));
     m_Sema->LookupQualifiedName(R, NSD);
     assert(!R.empty()
            && "Cannot find cling::runtime::internal::setValueNoAlloc");
 
+    CXXScopeSpec CSS;
     m_UnresolvedNoAlloc
       = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
 

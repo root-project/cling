@@ -45,10 +45,6 @@ namespace cling {
     ///
     clang::Expr* m_UnresolvedCopyArray;
 
-    ///\brief std::addressof cache.
-    ///
-    clang::Expr* m_UnresolvedStdAddressOf;
-
     bool m_isChildInterpreter;
 
 public:
