@@ -346,8 +346,7 @@ namespace {
       }
       else if (desugaredTy->isReferenceType()) {
         // we need to get the address of the references
-        Expr* AddrOfE = m_Sema->BuildUnaryOp(/*Scope*/0, noLoc, UO_AddrOf,
-                                             E).get();
+        Expr* AddrOfE  = m_Sema->CreateBuiltinUnaryOp(noLoc, UO_AddrOf, E).get();
         CallArgs.push_back(AddrOfE);
       }
       else if (desugaredTy->isAnyPointerType()) {
