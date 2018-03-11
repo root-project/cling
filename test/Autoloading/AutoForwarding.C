@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | %cling -I%S -Xclang -verify
+// XFAIL: vanilla-cling
 // Test FwdPrinterTest
 
 // Test similar to ROOT-7037
