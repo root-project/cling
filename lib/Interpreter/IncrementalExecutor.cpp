@@ -75,7 +75,11 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
   auto TM = std::unique_ptr<TargetMachine>(TheTarget->createTargetMachine(
       Triple, MCPU, FeaturesStr, llvm::TargetOptions(),
       Optional<Reloc::Model>(), CMModel, OptLevel));
+#if defined(LLVM_ON_WIN32)
+  TM->Options.EmulatedTLS = false;
+#else
   TM->Options.EmulatedTLS = true;
+#endif
   return TM;
 }
 
