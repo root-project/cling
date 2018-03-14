@@ -9,6 +9,7 @@
 set( LLVM_LINK_COMPONENTS
   core
   support
+  BinaryFormat
 )
 
 add_cling_library(clingMetaProcessor OBJECT

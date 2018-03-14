@@ -38,6 +38,7 @@ set( LLVM_LINK_COMPONENTS
   support
   target
   transformutils
+  BinaryFormat
   ${LLVM_TARGETS_TO_BUILD}
 )
 
