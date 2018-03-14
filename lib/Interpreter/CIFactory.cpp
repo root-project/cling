@@ -1116,6 +1116,15 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       Buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/;\n");
     const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(std::move(Buffer));
 
+    // Create TargetInfo for the other side of CUDA and OpenMP compilation.
+    if ((CI->getLangOpts().CUDA || CI->getLangOpts().OpenMPIsDevice) &&
+        !CI->getFrontendOpts().AuxTriple.empty()) {
+          auto TO = std::make_shared<TargetOptions>();
+          TO->Triple = CI->getFrontendOpts().AuxTriple;
+          TO->HostTriple = CI->getTarget().getTriple().str();
+          CI->setAuxTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(), TO));
+    }
+
     // Set up the preprocessor
     CI->createPreprocessor(TU_Complete);
     Preprocessor& PP = CI->getPreprocessor();
