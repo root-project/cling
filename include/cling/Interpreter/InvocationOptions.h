@@ -58,6 +58,7 @@ namespace cling {
     unsigned HasOutput : 1;
     unsigned Verbose : 1;
     unsigned CxxModules : 1;
+    unsigned CUDA : 1;
     /// \brief The output path of any C++ PCMs we're building on demand.
     /// Equal to ModuleCachePath in the HeaderSearchOptions.
     std::string CachePath;

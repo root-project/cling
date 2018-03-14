@@ -885,6 +885,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       argvCompile.push_back("-x");
       argvCompile.push_back( "c++");
     }
+
     if (COpts.DefaultLanguage()) {
       // By default, set the standard to what cling was compiled with.
       // clang::driver::Compilation will do various things while initializing
@@ -897,6 +898,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
         default: llvm_unreachable("Unrecognized C++ version");
       }
     }
+
+    // This argument starts the cling instance with the x86 target. Otherwise,
+    // the first job in the joblist starts the cling instance with the nvptx
+    // target.
+    if(COpts.CUDA)
+      argvCompile.push_back("--cuda-host-only");
+
     // argv[0] already inserted, get the rest
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
