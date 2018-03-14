@@ -257,6 +257,14 @@ namespace cling {
       setupCallbacks(*this, parentInterp);
     }
 
+    if(m_Opts.CompilerOpts.CUDA){
+       if(m_DyLibManager->loadLibrary("libcudart.so", true) ==
+         cling::DynamicLibraryManager::LoadLibResult::kLoadLibNotFound){
+           llvm::errs() << "Error: libcudart.so not found!\n" <<
+             "Please add the cuda lib path to LD_LIBRARY_PATH or set it via -L argument.\n";
+       }
+    }
+
     llvm::SmallVector<IncrementalParser::ParseResultTransaction, 2>
       IncrParserTransactions;
     if (!m_IncrParser->Initialize(IncrParserTransactions, parentInterp)) {
