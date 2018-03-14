@@ -100,7 +100,7 @@ static const char kNoStdInc[] = "-nostdinc";
 CompilerOptions::CompilerOptions(int argc, const char* const* argv)
     : Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
       NoCXXInc(false), StdVersion(false), StdLib(false), HasOutput(false),
-      Verbose(false), CxxModules(false) {
+      Verbose(false), CxxModules(false), CUDA(false) {
   if (argc && argv) {
     // Preserve what's already in Remaining, the user might want to push args
     // to clang while still using main's argc, argv
@@ -126,7 +126,9 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
       // case options::OPT_d_Flag:
       case options::OPT_E:
       case options::OPT_o: HasOutput = true; break;
-      case options::OPT_x: Language = true; break;
+      case options::OPT_x: Language = true;
+                           CUDA = llvm::StringRef(arg->getValue()) == "cuda";
+                           break;
       case options::OPT_resource_dir: ResourceDir = true; break;
       case options::OPT_isysroot: SysRoot = true; break;
       case options::OPT_std_EQ: StdVersion = true; break;
@@ -158,7 +160,7 @@ bool CompilerOptions::DefaultLanguage(const LangOptions* LangOpts) const {
   // Also don't set up the defaults when language is explicitly set; unless
   // the language was set to generate a PCH, in which case definitely do.
   if (Language)
-    return HasOutput || (LangOpts && LangOpts->CompilingPCH);
+    return HasOutput || (LangOpts && LangOpts->CompilingPCH) || CUDA;
 
   return true;
 }
