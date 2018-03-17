@@ -67,7 +67,7 @@ void usePointerLiteral(cling::Interpreter& interp) {
   sstr << "0x";
 #endif
   sstr << &res << ';';
-    sstr << "ref = ref * ref;";
+  sstr << "ref = ref * ref;";
   interp.process(sstr.str());
   std::cout << "The square of 17 is " << res << '\n';
 }
