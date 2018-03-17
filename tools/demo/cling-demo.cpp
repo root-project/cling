@@ -63,7 +63,7 @@ void usePointerLiteral(cling::Interpreter& interp) {
   // Update the value of res by passing it to the interpreter.
   std::ostringstream sstr;
   sstr << "int& ref = *(int*)";
-#ifdef MSVC
+#ifdef _MSC_VER
   sstr << "0x";
 #endif
   sstr << &res << ';';
