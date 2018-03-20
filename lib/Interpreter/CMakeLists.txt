@@ -75,6 +75,7 @@ add_cling_library(clingInterpreter OBJECT
   Exception.cpp
   ExternalInterpreterSource.cpp
   ForwardDeclPrinter.cpp
+  IncrementalCUDADeviceCompiler.cpp
   IncrementalExecutor.cpp
   IncrementalJIT.cpp
   IncrementalParser.cpp

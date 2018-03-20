@@ -20,6 +20,7 @@
 #include "ForwardDeclPrinter.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
+#include "IncrementalCUDADeviceCompiler.h"
 #include "MultiplexInterpreterCallbacks.h"
 #include "TransactionUnloader.h"
 
@@ -56,6 +57,7 @@
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Path.h"
 
 #include <string>
@@ -234,6 +236,33 @@ namespace cling {
       m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI()));
       if (!m_Executor)
         return;
+    }
+
+    if(!isInSyntaxOnlyMode() && m_Opts.CompilerOpts.CUDA){
+        // Create temporary folder for all files, which the CUDA device compiler
+        // will generate.
+        llvm::SmallVector<char, 256> TmpFolder;
+        llvm::StringRef sep = llvm::sys::path::get_separator().data();
+        llvm::sys::path::system_temp_directory(false, TmpFolder);
+        llvm::sys::fs::createUniqueFile(std::string(TmpFolder.data())
+                                        + sep + "cling-%%%%" + sep , TmpFolder);
+        llvm::sys::fs::create_directory(TmpFolder);
+
+        // The CUDA fatbin file is the connection beetween the CUDA device
+        // compiler and the CodeGen of cling. The file will every time reused.
+        if(getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.empty())
+          getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.push_back(
+            std::string(TmpFolder.data()) + "cling.fatbin");
+
+        // Add the cling runtime headers to the CUDA device compiler, that
+        // it can handle the special functions of cling.
+        llvm::SmallVector<std::string, 256> clingHeaders;
+        GetIncludePaths(clingHeaders, false, true);
+
+        m_CUDACompiler.reset(
+          new IncrementalCUDADeviceCompiler(TmpFolder.data(),
+                                            getCI()->getCodeGenOpts().CudaGpuBinaryFileNames[0],
+                                            m_Opts, clingHeaders));
     }
 
     // Tell the diagnostic client that we are entering file parsing mode.
