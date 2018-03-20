@@ -17,6 +17,7 @@
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DynamicLookup.h"
+#include "IncrementalCUDADeviceCompiler.h"
 #include "IncrementalExecutor.h"
 #include "NullDerefProtectionTransformer.h"
 #include "TransactionPool.h"
@@ -735,6 +736,9 @@ namespace cling {
 
     DiagnosticErrorTrap Trap(Diags);
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
+
+    if(m_CI->getLangOpts().CUDA )
+          m_Interpreter->getCUDADeviceCompiler().generateFatbinary(input);
 
     Parser::DeclGroupPtrTy ADecl;
     while (!m_Parser->ParseTopLevelDecl(ADecl)) {
