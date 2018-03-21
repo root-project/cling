@@ -67,8 +67,9 @@ namespace cling {
     ///\brief Path to the NIVDIA tool fatbinary.
     std::string m_FatbinaryPath;
 
-    ///\brief Contains the include commands for the cling runtime headers.
-    llvm::SmallVector<std::string, 256> m_ClingHeaders;
+    ///\brief Contains the include paths, which will set on runtime. Starts with
+    /// the include command (-I)
+    llvm::SmallVector<std::string, 256> m_Headers;
     ///\brief Argument for the fatbinary tool, which is depend, if the OS is
     /// 32 bit or 64 bit.
     std::string m_FatbinArch;
@@ -88,11 +89,10 @@ namespace cling {
     ///\returns True, whether clang and fatbinary was found.
     bool searchCompilingTools(cling::InvocationOptions & invocationOptions);
 
-    ///\brief Add the include path commands (-I...) to a argument list. The path
-    /// points to the cling runtime headers.
+    ///\brief Add the include paths from the interpreter runtime to a argument list.
     ///
     ///\param [in,out] argv - The include commands will append to the argv vector.
-    void addClingHeaders(llvm::SmallVectorImpl<const char*> & argv);
+    void addHeaders(llvm::SmallVectorImpl<const char*> & argv);
 
     ///\brief Start an clang compiler with nvptx backend. Read the content of
     /// cling.cu and compile it to a new PCH file. If predecessor PCH file is
@@ -124,12 +124,9 @@ namespace cling {
     ///       be empty.
     ///\param [in] invocationOptions - Contains values for the arguments of
     ///       clang and the NVIDIA tool fatbinary.
-    ///\param [in] clingHeaders - Contains the paths to the cling runtime
-    ///       headers with include command (-I).
     IncrementalCUDADeviceCompiler(std::string filePath, 
                                   std::string & CudaGpuBinaryFileNames,
-                                  cling::InvocationOptions & invocationOptions,
-                                  const llvm::SmallVectorImpl<std::string> & clingHeaders);
+                                  cling::InvocationOptions & invocationOptions);
 
     ///\brief Generate an new fatbin file with the path in CudaGpuBinaryFileNames.
     /// It will add the content of input, to the existing source code, which was
@@ -141,6 +138,23 @@ namespace cling {
     ///\returns True, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
     bool generateFatbinary(llvm::StringRef input);
+
+    ///\brief Add a new include path to CUDA device compiler.
+    ///
+    ///\param [in] pathStr - Path to the folder, which should used for header
+    ///       search.
+    ///\param [in] leadingIncludeCommand - If it true, the path has to start
+    ///       with the include command (-I)
+    void addIncludePath(llvm::StringRef pathStr, bool leadingIncludeCommand);
+
+    ///\brief Add a vector of new include paths to CUDA device compiler.
+    ///
+    ///\param [in] headers - Vector with paths to the folders, which should used
+    ///       for header search.
+    ///\param [in] leadingIncludeCommand - If it true, the paths have to start
+    ///       with the include command (-I)
+    void addIncludePaths(const llvm::SmallVectorImpl<std::string> & headers,
+                         bool leadingIncludeCommand);
 
     ///\brief Print some information of the IncrementalCUDADeviceCompiler to
     /// llvm::outs(). For Example the paths of the files and tools.
