@@ -11,6 +11,7 @@
 
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Utils/Paths.h"
+#include "clang/Lex/HeaderSearchOptions.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Program.h"
@@ -23,16 +24,19 @@
 namespace cling {
 
 
-  IncrementalCUDADeviceCompiler::IncrementalCUDADeviceCompiler(std::string filePath,
-                                                               std::string & CudaGpuBinaryFileNames,
-                                                               cling::InvocationOptions & invocationOptions)
+  IncrementalCUDADeviceCompiler::IncrementalCUDADeviceCompiler(
+      std::string filePath,
+      std::string & CudaGpuBinaryFileNames,
+      cling::InvocationOptions & invocationOptions,
+      std::shared_ptr<clang::HeaderSearchOptions> headerSearchOptions)
      : m_Counter(0),
        m_FilePath(filePath),
        m_FatbinFilePath(CudaGpuBinaryFileNames),
        // We get for example sm_20 from the cling arguments and have to shrink to
        // 20.
        m_SMLevel(invocationOptions.CompilerOpts.CUDAGpuArch.empty() ? "20" :
-         invocationOptions.CompilerOpts.CUDAGpuArch.substr(3) ) {
+         invocationOptions.CompilerOpts.CUDAGpuArch.substr(3) ),
+       m_HeaderSearchOptions(headerSearchOptions) {
     assert(!CudaGpuBinaryFileNames.empty() && "CudaGpuBinaryFileNames can't be empty");
 
     m_Init = generateHelperFiles();
@@ -95,9 +99,11 @@ namespace cling {
     return true;
   }
 
-  void IncrementalCUDADeviceCompiler::addHeaders(llvm::SmallVectorImpl<const char*> & argv){
-    for(std::string &s : m_Headers){
-      argv.push_back(s.c_str());
+  void IncrementalCUDADeviceCompiler::addHeaders(
+      llvm::SmallVectorImpl<std::string> & argv){
+    for(clang::HeaderSearchOptions::Entry e : m_HeaderSearchOptions->UserEntries){
+      if(e.Group == clang::frontend::IncludeDirGroup::Angled)
+        argv.push_back("-I" + e.Path);
     }
   }
 
@@ -148,7 +154,10 @@ namespace cling {
     argv.push_back("-S");
     argv.push_back("-Xclang");
     argv.push_back("-emit-pch");
-    addHeaders(argv);
+    llvm::SmallVector<std::string, 256> headers;
+    addHeaders(headers);
+    for(std::string & s : headers)
+      argv.push_back(s.c_str());
     // Is necessary for the cling runtime header.
     argv.push_back("-D__CLING__");
     std::string cuFilePath = m_GenericFileName + std::to_string(m_Counter)
