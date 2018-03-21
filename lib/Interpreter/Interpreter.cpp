@@ -254,15 +254,16 @@ namespace cling {
           getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.push_back(
             std::string(TmpFolder.data()) + "cling.fatbin");
 
+        m_CUDACompiler.reset(
+          new IncrementalCUDADeviceCompiler(TmpFolder.data(),
+                                            getCI()->getCodeGenOpts().CudaGpuBinaryFileNames[0],
+                                            m_Opts));
+
         // Add the cling runtime headers to the CUDA device compiler, that
         // it can handle the special functions of cling.
         llvm::SmallVector<std::string, 256> clingHeaders;
         GetIncludePaths(clingHeaders, false, true);
-
-        m_CUDACompiler.reset(
-          new IncrementalCUDADeviceCompiler(TmpFolder.data(),
-                                            getCI()->getCodeGenOpts().CudaGpuBinaryFileNames[0],
-                                            m_Opts, clingHeaders));
+        m_CUDACompiler->addIncludePaths(clingHeaders, true);
     }
 
     // Tell the diagnostic client that we are entering file parsing mode.
@@ -564,6 +565,10 @@ namespace cling {
     // Save the current number of entries
     size_t Idx = HOpts.UserEntries.size();
     utils::AddIncludePaths(PathStr, HOpts, Delm);
+
+    if(m_Opts.CompilerOpts.CUDA){
+      m_CUDACompiler->addIncludePath(PathStr, false);
+    }
 
     Preprocessor& PP = CI->getPreprocessor();
     SourceManager& SM = PP.getSourceManager();

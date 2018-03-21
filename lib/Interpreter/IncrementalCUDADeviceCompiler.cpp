@@ -10,6 +10,7 @@
 #include "IncrementalCUDADeviceCompiler.h"
 
 #include "cling/Interpreter/InvocationOptions.h"
+#include "cling/Utils/Paths.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Program.h"
@@ -24,16 +25,14 @@ namespace cling {
 
   IncrementalCUDADeviceCompiler::IncrementalCUDADeviceCompiler(std::string filePath,
                                                                std::string & CudaGpuBinaryFileNames,
-                                                               cling::InvocationOptions & invocationOptions,
-                                                               const llvm::SmallVectorImpl<std::string> & clingHeaders)
+                                                               cling::InvocationOptions & invocationOptions)
      : m_Counter(0),
        m_FilePath(filePath),
        m_FatbinFilePath(CudaGpuBinaryFileNames),
        // We get for example sm_20 from the cling arguments and have to shrink to
        // 20.
        m_SMLevel(invocationOptions.CompilerOpts.CUDAGpuArch.empty() ? "20" :
-         invocationOptions.CompilerOpts.CUDAGpuArch.substr(3) ),
-       m_ClingHeaders(clingHeaders.begin(), clingHeaders.end()) {
+         invocationOptions.CompilerOpts.CUDAGpuArch.substr(3) ) {
     assert(!CudaGpuBinaryFileNames.empty() && "CudaGpuBinaryFileNames can't be empty");
 
     m_Init = generateHelperFiles();
@@ -96,8 +95,8 @@ namespace cling {
     return true;
   }
 
-  void IncrementalCUDADeviceCompiler::addClingHeaders(llvm::SmallVectorImpl<const char*> & argv){
-    for(std::string &s : m_ClingHeaders){
+  void IncrementalCUDADeviceCompiler::addHeaders(llvm::SmallVectorImpl<const char*> & argv){
+    for(std::string &s : m_Headers){
       argv.push_back(s.c_str());
     }
   }
@@ -149,7 +148,7 @@ namespace cling {
     argv.push_back("-S");
     argv.push_back("-Xclang");
     argv.push_back("-emit-pch");
-    addClingHeaders(argv);
+    addHeaders(argv);
     // Is necessary for the cling runtime header.
     argv.push_back("-D__CLING__");
     std::string cuFilePath = m_GenericFileName + std::to_string(m_Counter)
@@ -256,6 +255,27 @@ namespace cling {
     }
 
     return true;
+  }
+
+  void IncrementalCUDADeviceCompiler::addIncludePath(llvm::StringRef pathStr,
+                                                     bool leadingIncludeCommand){
+    if(leadingIncludeCommand) {
+      m_Headers.push_back(pathStr);
+    } else {
+      m_Headers.push_back("-I" + std::string(pathStr.data()));
+    }
+  }
+
+  void IncrementalCUDADeviceCompiler::addIncludePaths(
+      const llvm::SmallVectorImpl<std::string> & headers,
+      bool leadingIncludeCommand){
+    if(leadingIncludeCommand){
+      m_Headers.append(headers.begin(), headers.end());
+    } else {
+      for(std::string header : headers){
+        m_Headers.push_back("-I" + header);
+      }
+    }
   }
 
   void IncrementalCUDADeviceCompiler::dump(){
