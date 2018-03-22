@@ -256,9 +256,9 @@ namespace cling {
 
         m_CUDACompiler.reset(
           new IncrementalCUDADeviceCompiler(TmpFolder.data(),
-                                            getCI()->getCodeGenOpts().CudaGpuBinaryFileNames[0],
+                                            m_OptLevel,
                                             m_Opts,
-                                            getCI()->getHeaderSearchOptsPtr()));
+                                            getCI()));
     }
 
     // Tell the diagnostic client that we are entering file parsing mode.

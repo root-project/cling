@@ -10,6 +10,7 @@
 #ifndef CLING_INCREMENTAL_CUDA_DEVICE_JIT_H
 #define CLING_INCREMENTAL_CUDA_DEVICE_JIT_H
 
+#include "clang/Frontend/CodeGenOptions.h"
 #include "llvm/ADT/SmallVector.h"
 
 #include <string>
@@ -20,8 +21,9 @@ namespace cling{
 }
 
 namespace clang {
-    class CodeGenOptions;
+    class CompilerInstance;
     class HeaderSearchOptions;
+    class LangOptions;
 }
 
 namespace llvm {
@@ -35,8 +37,45 @@ namespace cling {
   /// llvm::sys::ExecuteAndWait.
   /// 
   class IncrementalCUDADeviceCompiler {
-    /// FIXME : Add handling of new included Headers. The include commands can
-    /// be added by the prompt or via .L .
+
+    static constexpr unsigned CxxStdCompiledWith() {
+      // The value of __cplusplus in GCC < 5.0 (e.g. 4.9.3) when
+      // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
+      // the test for C++14 or more (201402L) as previously specified.
+      // I would claim that the check should be relaxed to:
+#if __cplusplus > 201402L
+      return 17;
+#elif __cplusplus > 201103L || (defined(LLVM_ON_WIN32) && _MSC_VER >= 1900)
+      return 14;
+#elif __cplusplus >= 201103L
+      return 11;
+#else
+#error "Unknown __cplusplus version"
+#endif
+    }
+
+    ///\brief Contains the arguments for the cling nvptx and the nvidia
+    /// fatbinary tool. The arguments are static and will set at the constructor
+    /// of IncrementalCUDADeviceCompiler.
+    struct CUDACompilerArgs {
+      std::string cppStdVersion = "-std=c++" + std::to_string(CxxStdCompiledWith());
+      std::string optLevel = "-O0";
+      std::string ptxSmVersion = "--cuda-gpu-arch=sm_20";
+      std::string fatbinSmVersion = "--image=profile=compute_20";
+      ///\brief Argument for the fatbinary tool, which is depend, if the OS is
+      /// 32 bit or 64 bit.
+      std::string fatbinArch = "-32";
+      ///\brief True, if the flag -v is set.
+      bool verbose = false;
+      ///\brief True, if the flag -g is set.
+      bool debug = false;
+      ///\brief A list Arguments, which will passed to the clang nvptx.
+      std::vector<std::string> additionalPtxOpt;
+      ///\brief A list Arguments, which will passed to the fatbinary tool.
+      std::vector<std::string> fatbinaryOpt;
+    };
+
+    CUDACompilerArgs m_CuArgs;
 
     ///\brief The counter responsible to generate a chain of .cu source files
     /// and .cu.pch files.
@@ -58,19 +97,12 @@ namespace cling {
     std::string m_PTXFilePath;
     ///\brief Will be used to generate .cu and .cu.pch files.
     std::string m_GenericFileName;
-    ///\brief The SM-Level describes, which functions are possible in the code 
-    /// and on the gpu. Just a number [1-7][0-9].
-    std::string m_SMLevel;
 
     ///\brief Path to the clang++ compiler, which will used to compile the pch
     /// files and the PTX code. Should be in same folder, as the cling.
     std::string m_ClangPath;
     ///\brief Path to the NIVDIA tool fatbinary.
     std::string m_FatbinaryPath;
-
-    ///\brief Argument for the fatbinary tool, which is depend, if the OS is
-    /// 32 bit or 64 bit.
-    std::string m_FatbinArch;
 
     ///\brief Contains information about all include paths.
     ///
@@ -116,22 +148,32 @@ namespace cling {
     ///\returns True, if the fatbinary tool returns 0.
     bool generateFatbinaryInternal();
 
+    ///\brief The function set the values of m_CuArgs.
+    ///
+    ///\param [in] langOpts - The LangOptions of the CompilerInstance.
+    ///\param [in] invocationOptions - The invocationOptions of the interpreter.
+    ///\param [in] optLevel - The optimization level of the interpreter.
+    ///\param [in] debugInfo - The debugInfo of the CompilerInstance.
+    void setCuArgs(clang::LangOptions & langOpts,
+                   cling::InvocationOptions & invocationOptions, int & optLevel,
+                   clang::codegenoptions::DebugInfoKind debugInfo);
+
   public:
     ///\brief Constructor for IncrementalCUDADeviceCompiler
     ///
     ///\param [in] filePath - All files will generated in the folder of the
     ///       filePath, except the fatbin file, if it have another path. Have
     ///       to end with a separator. Can be empty.
-    ///\param [in] CudaGpuBinaryFileNames - Path to the fatbin file. Must not
-    ///       be empty.
+    ///\param [in] optLevel - The optimization level of the interpreter instance.
+    ///       The value will be copied, because a change of it is not allowed.
     ///\param [in] invocationOptions - Contains values for the arguments of
     ///       clang and the NVIDIA tool fatbinary.
-    ///\param [in] headerSearchOptions - Contains information about all include
-    ///       paths.
-    IncrementalCUDADeviceCompiler(std::string filePath, 
-                                  std::string & CudaGpuBinaryFileNames,
+    ///\param [in] CompilerInstance - Will be used for m_CuArgs and the include
+    ///       path handling.
+    IncrementalCUDADeviceCompiler(std::string filePath,
+                                  int optLevel,
                                   cling::InvocationOptions & invocationOptions,
-                                  std::shared_ptr<clang::HeaderSearchOptions> headerSearchOptions);
+                                  clang::CompilerInstance * CI);
 
     ///\brief Generate an new fatbin file with the path in CudaGpuBinaryFileNames.
     /// It will add the content of input, to the existing source code, which was
