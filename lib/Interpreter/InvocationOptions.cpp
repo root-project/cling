@@ -144,6 +144,8 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
       case options::OPT_fmodules_cache_path: CachePath = arg->getValue(); break;
       case options::OPT_cuda_path_EQ: CUDAPath = arg->getValue(); break;
       case options::OPT_cuda_gpu_arch_EQ: CUDAGpuArch = arg->getValue(); break;
+      case options::OPT_Xcuda_fatbinary: CUDAFatbinaryArgs.push_back(arg->getValue());
+                                         break;
 
       default:
         if (Inputs && arg->getOption().getKind() == Option::InputClass)
