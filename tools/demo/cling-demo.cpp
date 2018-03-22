@@ -62,7 +62,9 @@ void usePointerLiteral(cling::Interpreter& interp) {
 
   // Update the value of res by passing it to the interpreter.
   std::ostringstream sstr;
-  sstr << "int& ref = *(int*)" << &res << ';';
+  // on Windows, to prefix the hexadecimal value of a pointer with '0x',
+  // one need to write: std::hex << std::showbase << (size_t)pointer
+  sstr << "int& ref = *(int*)" << std::hex << std::showbase << (size_t)&res << ';';
   sstr << "ref = ref * ref;";
   interp.process(sstr.str());
   std::cout << "The square of 17 is " << res << '\n';

@@ -36,3 +36,11 @@ target_compile_options(cling-demo PUBLIC -DLLVMDIR="${LLVM_INSTALL_PREFIX}" -I${
 
 set_target_properties(cling-demo
   PROPERTIES ENABLE_EXPORTS 1)
+
+if(MSVC)
+  set_target_properties(cling-demo PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
+  set_property(TARGET cling-demo APPEND_STRING PROPERTY LINK_FLAGS
+              "/EXPORT:?setValueNoAlloc@internal@runtime@cling@@YAXPEAX00D_K@Z
+               /EXPORT:?setValueNoAlloc@internal@runtime@cling@@YAXPEAX00DM@Z
+               /EXPORT:cling_runtime_internal_throwIfInvalidPointer")
+endif()
