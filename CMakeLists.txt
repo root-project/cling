@@ -441,7 +441,7 @@ if( CLING_INCLUDE_TESTS )
   )
 
   # CLANG_INCLUDE_DIRS and LLVM_INCLUDE_DIRS can be a semicolon separated lists.
-  string(REPLACE ";" ${cling_path_delim} cling_include_deflt "${cling_include_deflt}")
+  string(REPLACE ";" "${cling_path_delim}" cling_include_deflt "${cling_include_deflt}")
 endif()
 
 if(NOT CLING_INCLUDE_PATHS)
