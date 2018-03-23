@@ -885,6 +885,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       argvCompile.push_back("-x");
       argvCompile.push_back( "c++");
     }
+
     if (COpts.DefaultLanguage()) {
       // By default, set the standard to what cling was compiled with.
       // clang::driver::Compilation will do various things while initializing
@@ -897,6 +898,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
         default: llvm_unreachable("Unrecognized C++ version");
       }
     }
+
+    // This argument starts the cling instance with the x86 target. Otherwise,
+    // the first job in the joblist starts the cling instance with the nvptx
+    // target.
+    if(COpts.CUDA)
+      argvCompile.push_back("--cuda-host-only");
+
     // argv[0] already inserted, get the rest
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
@@ -1115,6 +1123,15 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     if (!Buffer)
       Buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/;\n");
     const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(std::move(Buffer));
+
+    // Create TargetInfo for the other side of CUDA and OpenMP compilation.
+    if ((CI->getLangOpts().CUDA || CI->getLangOpts().OpenMPIsDevice) &&
+        !CI->getFrontendOpts().AuxTriple.empty()) {
+          auto TO = std::make_shared<TargetOptions>();
+          TO->Triple = CI->getFrontendOpts().AuxTriple;
+          TO->HostTriple = CI->getTarget().getTriple().str();
+          CI->setAuxTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(), TO));
+    }
 
     // Set up the preprocessor
     CI->createPreprocessor(TU_Complete);

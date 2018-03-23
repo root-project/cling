@@ -36,12 +36,19 @@ COpts.NoBuiltinInc
 // CHECK-NEXT: (unsigned int) 1
 COpts.NoCXXInc
 // CHECK-NEXT: (unsigned int) 0
+COpts.CUDA
+// CHECK-NEXT: (unsigned int) 0
+
+COpts.DefaultLanguage()
+// CHECK-NEXT: false
 
 // library caller options: arguments passed as is
 COpts.Remaining
 // CHECK-NEXT: {{.*}} { "progname", "-", "-xobjective-c", "FileToExecuteA", "-isysroot", "APAth", "-nobuiltininc", "-v", "FileToExecuteB", "-L/Path/To/Libs", "-lTest" }
 
+argv[2] = "-xcuda";
 argv[6] = "-nostdinc++";
+
 cling::InvocationOptions IOpts(argc, argv);
 IOpts.Inputs
 // CHECK-NEXT: {{.*}} { "-", "FileToExecuteA", "FileToExecuteB" }
@@ -60,12 +67,18 @@ IOpts.CompilerOpts.NoBuiltinInc
 // CHECK-NEXT: (unsigned int) 0
 IOpts.CompilerOpts.NoCXXInc
 // CHECK-NEXT: (unsigned int) 1
+IOpts.CompilerOpts.CUDA
+// CHECK-NEXT: (unsigned int) 1
+
+// if the language is cuda, it should set automatically the c++ standard
+IOpts.CompilerOpts.DefaultLanguage()
+// CHECK-NEXT: true
 
 // user options from main: filtered by cling (no '-')
 IOpts.CompilerOpts.Remaining
 
 // Windows translates -nostdinc++ to -nostdinc++. Ignore that fact for the test.
-// CHECK-NEXT: {{.*}} { "progname", "-xobjective-c", "FileToExecuteA", "-isysroot", "APAth", {{.*}}, "-v", "FileToExecuteB" }
+// CHECK-NEXT: {{.*}} { "progname", "-xcuda", "FileToExecuteA", "-isysroot", "APAth", {{.*}}, "-v", "FileToExecuteB" }
 
 // expected-no-diagnostics
 .q
