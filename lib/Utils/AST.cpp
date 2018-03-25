@@ -1614,6 +1614,12 @@ namespace utils {
       return QT;
     }
 
+    // Strip deduced types.
+    if (const AutoType* AutoTy = dyn_cast<AutoType>(QT.getTypePtr())) {
+      if (!AutoTy->getDeducedType().isNull())
+        return GetFullyQualifiedType(AutoTy->getDeducedType(), Ctx);
+    }
+
     // Remove the part of the type related to the type being a template
     // parameter (we won't report it as part of the 'type name' and it is
     // actually make the code below to be more complex (to handle those)

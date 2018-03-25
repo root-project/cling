@@ -116,3 +116,13 @@ struct OverloadedAddrOf {
 };
 OverloadedAddrOf overloadedAddrOf
 // CHECK: (OverloadedAddrOf &) @0x{{[0-9a-f]+}}
+
+namespace PR180 {
+  class base {};
+
+  template <class B>
+  class Derived : public B {};
+  using Foo = Derived<base>;
+}
+auto bar = PR180::Foo()
+// CHECK: (PR180::Foo) @0x{{[0-9a-f]+}}
