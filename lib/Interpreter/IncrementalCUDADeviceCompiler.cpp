@@ -24,6 +24,8 @@
 
 #include <string>
 
+#define PCHMODE 0
+
 namespace cling {
 
   IncrementalCUDADeviceCompiler::IncrementalCUDADeviceCompiler(
@@ -190,6 +192,11 @@ namespace cling {
       return false;
     }
 
+#if PCHMODE == 0
+    llvm::sys::fs::remove(m_GenericFileName + std::to_string(m_Counter)
+                             +".cu.pch");
+#endif
+
     ++m_Counter;
     return true;
   }
@@ -223,12 +230,23 @@ namespace cling {
                              +".cu.pch";
     argv.push_back(outputname.c_str());
     // If a previos file exist, include it.
+#if PCHMODE == 1
     std::string previousFile;
     if(m_Counter){
       previousFile = m_GenericFileName + std::to_string(m_Counter-1) +".cu.pch";
       argv.push_back("-include-pch");
       argv.push_back(previousFile.c_str());
     }
+#else
+    std::vector<std::string> previousFiles;
+    if(m_Counter){
+      for(unsigned int i = 0; i <= m_Counter-1; ++i){
+        previousFiles.push_back(m_GenericFileName + std::to_string(i) +".cu");
+        argv.push_back("-include");
+        argv.push_back(previousFiles[i].c_str());
+      }
+    }
+#endif
     argv.push_back(m_CuArgs.ptxSmVersion.c_str());
     argv.push_back("-pthread");
     argv.push_back("--cuda-device-only");
