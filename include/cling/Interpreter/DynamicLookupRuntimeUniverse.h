@@ -13,7 +13,7 @@
 #error "This file must not be included by compiled programs."
 #endif
 
-#include "cling/Interpreter/DynamicExprInfo.h"
+class DynamicExprInfo;
 #include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 #include "cling/Interpreter/Value.h"
 
