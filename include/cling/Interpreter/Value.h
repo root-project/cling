@@ -10,7 +10,7 @@
 #ifndef CLING_VALUE_H
 #define CLING_VALUE_H
 
-#include <cstddef>
+#include <stddef.h>
 #include <stdint.h>
 #include <type_traits>
 
