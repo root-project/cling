@@ -10,10 +10,13 @@
 #include "IncrementalCUDADeviceCompiler.h"
 
 #include "cling/Interpreter/InvocationOptions.h"
+#include "cling/Interpreter/Transaction.h"
 #include "cling/Utils/Paths.h"
 
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/AST/DeclGroup.h"
+#include "clang/AST/Decl.h"
 
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
@@ -163,7 +166,8 @@ namespace cling {
     }
   }
 
-  bool IncrementalCUDADeviceCompiler::generateFatbinary(llvm::StringRef input){
+  bool IncrementalCUDADeviceCompiler::generateFatbinary(llvm::StringRef input,
+                                                        cling::Transaction * T){
     if(!m_Init){
       llvm::errs() << "Error: Initializiation of CUDA Device Code Compiler failed\n";
       return false;
@@ -177,7 +181,33 @@ namespace cling {
       llvm::errs() << "Could not open file: " << EC.message();
       return false;
     }
-    cuFile << input;
+
+    // This variable prevent, that the input and the code from the transaction
+    // will be written to the .cu-file.
+    bool foundVarDecl = false;
+    // Search after variable declarations. The conditions are, that the
+    // source code comes from the prompt (getWrapperFD()) and has a variable
+    // declaration.
+    if(T != nullptr &&  T->getWrapperFD()){
+      for(auto iDCI = T->decls_begin(), eDCI = T->decls_end();
+          iDCI != eDCI; ++iDCI){
+        for (clang::DeclGroupRef::const_iterator iDecl = iDCI->m_DGR.begin(),
+             eDecl = iDCI->m_DGR.end();
+             iDecl != eDecl; ++iDecl) {
+          if(clang::VarDecl * v = llvm::dyn_cast<clang::VarDecl>(*iDecl)){
+            foundVarDecl = true;
+            v->print(cuFile);
+            // The c++ code has no whitespace and semicolon at the end.
+            cuFile << ";\n";
+          }
+        }
+      }
+    }
+
+    if(!foundVarDecl){
+      cuFile << input;
+    }
+
     cuFile.close();
 
     if(!generatePCH()){
