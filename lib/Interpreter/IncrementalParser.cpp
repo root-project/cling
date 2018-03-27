@@ -737,9 +737,6 @@ namespace cling {
     DiagnosticErrorTrap Trap(Diags);
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
 
-    if(m_CI->getLangOpts().CUDA )
-          m_Interpreter->getCUDADeviceCompiler().generateFatbinary(input);
-
     Parser::DeclGroupPtrTy ADecl;
     while (!m_Parser->ParseTopLevelDecl(ADecl)) {
       // If we got a null return and something *was* parsed, ignore it.  This
@@ -795,6 +792,9 @@ namespace cling {
       return kFailed;
     else if (Diags.getNumWarnings())
       return kSuccessWithWarnings;
+
+    if(m_CI->getLangOpts().CUDA )
+          m_Interpreter->getCUDADeviceCompiler().generateFatbinary(input, m_Consumer->getTransaction());
 
     return kSuccess;
   }

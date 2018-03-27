@@ -18,6 +18,7 @@
 
 namespace cling{
     class InvocationOptions;
+    class Transaction;
 }
 
 namespace clang {
@@ -181,10 +182,11 @@ namespace cling {
     ///
     ///\param [in] input - New source code. The function can select, if code
     ///       is relevant for the device side. Have to be valid CUDA C++ code.
+    ///\param [in] T - Source of c++ code for variable declaration.
     ///
     ///\returns True, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
-    bool generateFatbinary(llvm::StringRef input);
+    bool generateFatbinary(llvm::StringRef input, cling::Transaction * T);
 
     ///\brief Print some information of the IncrementalCUDADeviceCompiler to
     /// llvm::outs(). For Example the paths of the files and tools.
