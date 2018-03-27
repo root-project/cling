@@ -216,21 +216,6 @@ namespace cling {
   std::string printValue(std::tuple<ARGS...> *);
 
   namespace collectionPrinterInternal {
-
-    template <std::size_t N>
-    const char *GetCommaOrEmpty()
-    {
-      static const auto comma = ", ";
-      return comma;
-    }
-
-    template <>
-    const char *GetCommaOrEmpty<0>()
-    {
-      static const auto empty = "";
-      return empty;
-    }
-
     // We loop at compile time from element 0 to element TUPLE_SIZE - 1
     // of the tuple. The running index is N which has as initial value
     // TUPLE_SIZE. We can therefore stop the iteration and account for the
@@ -244,7 +229,8 @@ namespace cling {
         constexpr std::size_t elementNumber = TUPLE_SIZE - N;
         using Element_t = decltype(std::get<elementNumber>(*t));
         std::string ret;
-        ret += GetCommaOrEmpty<elementNumber>();
+        if (elementNumber)
+           ret += ", ";
         ret += cling::printValue(&std::get<elementNumber>(*t));
         // If N+1 is not smaller than the size of the tuple,
         // reroute the call to the printing function to the
