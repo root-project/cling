@@ -7,15 +7,17 @@
 #------------------------------------------------------------------------------
 
 set(LIBS
+  clangAnalysis
+  clangAST
+  clangBasic
+  clangCodeGen
   clangDriver
+  clangEdit
   clangFrontend
+  clangLex
   clangParse
   clangSema
-  clangAST
-  clangLex
   clangSerialization
-  clangCodeGen
-  clangBasic
 
   clingUtils
 )
@@ -23,6 +25,7 @@ set(LIBS
 set( LLVM_LINK_COMPONENTS
   analysis
   core
+  coverage
   executionengine
   ipo
   mc
@@ -72,9 +75,6 @@ add_cling_library(clingInterpreter OBJECT
   Value.cpp
   ValuePrinter.cpp
   ValuePrinterSynthesizer.cpp
-
-  DEPENDS
-  ClangDriverOptions
 
   LINK_LIBS
   ${LIBS}
