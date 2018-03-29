@@ -501,6 +501,11 @@ namespace cling {
       // __dso_handle is inserted for the link phase, as macro is useless then
       m_Executor->addSymbol("__dso_handle", this, true);
 
+#ifdef _MSC_VER
+      static const unsigned long _tls_array = 0x2C;
+      m_Executor->addSymbol("_tls_array", (void *)&_tls_array, true);
+#endif
+
 #ifdef CLING_WIN_SEH_EXCEPTIONS
       // Windows C++ SEH handler
       m_Executor->addSymbol("_CxxThrowException",
