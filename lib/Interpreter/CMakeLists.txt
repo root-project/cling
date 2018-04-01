@@ -41,6 +41,14 @@ set( LLVM_LINK_COMPONENTS
   ${LLVM_TARGETS_TO_BUILD}
 )
 
+# clingInterpreter depends on Options.inc to be tablegen-ed
+# (target ClangDriverOptions) from in-tree builds.
+set(CLING_DEPENDS)
+if(TARGET ClangDriverOptions)
+  set(CLING_DEPENDS ClangDriverOptions)
+endif()
+
+
 add_cling_library(clingInterpreter OBJECT
   AutoSynthesizer.cpp
   AutoloadCallback.cpp
@@ -76,12 +84,13 @@ add_cling_library(clingInterpreter OBJECT
   ValuePrinter.cpp
   ValuePrinterSynthesizer.cpp
 
+  DEPENDS
+  ${CLING_DEPENDS}
+
   LINK_LIBS
   ${LIBS}
-)
+  )
 
-#add_dependencies(clangDriver ClangAttrList ClangDiagnosticDriver
-#                 ClangDriverOptions ClangCC1Options ClangCC1AsOptions)
 
 if (UNIX)
   set_source_files_properties(Exception.cpp COMPILE_FLAGS "-fexceptions -frtti")
