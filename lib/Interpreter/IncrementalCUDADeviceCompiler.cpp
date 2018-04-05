@@ -110,7 +110,8 @@ namespace cling {
     std::error_code EC;
     llvm::raw_fd_ostream dummyCU(m_DummyCUPath, EC, llvm::sys::fs::F_Text);
     if(EC){ 
-      llvm::errs() << "Could not open file: " << EC.message();
+      llvm::errs() << "Could not open " << m_DummyCUPath << ": "
+        << EC.message() << "\n";
       return false;
     }
     dummyCU.close();
@@ -178,7 +179,8 @@ namespace cling {
     llvm::raw_fd_ostream cuFile(m_GenericFileName + std::to_string(m_Counter)
                                 + ".cu", EC, llvm::sys::fs::F_Text);
     if (EC) {
-      llvm::errs() << "Could not open file: " << EC.message();
+      llvm::errs() << "Could not open " << m_GenericFileName
+        + std::to_string(m_Counter) << ".cu: " << EC.message() << "\n";
       return false;
     }
 
