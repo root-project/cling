@@ -502,6 +502,13 @@ namespace cling {
       m_Executor->addSymbol("__dso_handle", this, true);
 
 #ifdef _MSC_VER
+      // According to the PE Format spec, in "The .tls Section"
+      // (http://www.microsoft.com/whdc/system/platform/firmware/PECOFF.mspx):
+      //   2. When a thread is created, the loader communicates the address
+      //   of the thread's TLS array by placing the address of the thread
+      //   environment block (TEB) in the FS register. A pointer to the TLS
+      //   array is at the offset of 0x2C from the beginning of TEB. This
+      //   behavior is Intel x86-specific.
       static const unsigned long _tls_array = 0x2C;
       m_Executor->addSymbol("_tls_array", (void *)&_tls_array, true);
 #endif
