@@ -477,6 +477,7 @@ namespace cling {
       // They will seriously confuse the Parser when entering the next
       // source file. So lex until we are EOF.
       Token Tok;
+      Tok.setKind(tok::eof);
       do {
         getCI()->getSema().getPreprocessor().Lex(Tok);
       } while (Tok.isNot(tok::eof));
@@ -754,6 +755,7 @@ namespace cling {
     // They will seriously confuse the Parser when entering the next
     // source file. So lex until we are EOF.
     Token Tok;
+    Tok.setKind(tok::eof);
     do {
       PP.Lex(Tok);
     } while (Tok.isNot(tok::eof));
