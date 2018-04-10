@@ -62,12 +62,15 @@ namespace {
 #if defined(__GLIBCXX__)
     #define CLING_CXXABI_VERS       std::to_string(__GLIBCXX__)
     const char* CLING_CXXABI_NAME = "__GLIBCXX__";
+    static constexpr bool CLING_CXXABI_BACKWARDCOMP = true;
 #elif defined(_LIBCPP_VERSION)
-    #define CLING_CXXABI_VERS       std::to_string(_LIBCPP_VERSION)
-    const char* CLING_CXXABI_NAME = "_LIBCPP_VERSION";
+    #define CLING_CXXABI_VERS       std::to_string(_LIBCPP_ABI_VERSION)
+    const char* CLING_CXXABI_NAME = "_LIBCPP_ABI_VERSION";
+    static constexpr bool CLING_CXXABI_BACKWARDCOMP = false;
 #elif defined(_CRT_MSVCP_CURRENT)
     #define CLING_CXXABI_VERS        _CRT_MSVCP_CURRENT
     const char* CLING_CXXABI_NAME = "_CRT_MSVCP_CURRENT";
+    static constexpr bool CLING_CXXABI_BACKWARDCOMP = false;
 #else
     #error "Unknown platform for ABI check";
 #endif
@@ -75,10 +78,15 @@ namespace {
     const std::string CurABI = Interp.getMacroValue(CLING_CXXABI_NAME);
     if (CurABI == CLING_CXXABI_VERS)
       return true;
+    if (CLING_CXXABI_BACKWARDCOMP && CurABI < CLING_CXXABI_VERS) {
+       // Backward compatible ABIs allow us to interpret old headers
+       // against a newer stdlib.so.
+       return true;
+    }
 
     cling::errs() <<
       "Warning in cling::IncrementalParser::CheckABICompatibility():\n"
-      "  Possible C++ standard library mismatch, compiled with "
+      "  Possible C++ standard library ABI mismatch, compiled with "
       << CLING_CXXABI_NAME << " '" << CLING_CXXABI_VERS << "'\n"
       "  Extraction of runtime standard library version was: '"
       << CurABI << "'\n";
