@@ -12,6 +12,6 @@
 // expected-error@input_line_1:1 {{'new' file not found}}
 
 //      CHECK: Warning in cling::IncrementalParser::CheckABICompatibility():
-// CHECK-NEXT:  Possible C++ standard library mismatch, compiled with {{.*$}}
+// CHECK-NEXT:  Failed to extract C++ standard library version.
 
 .q
