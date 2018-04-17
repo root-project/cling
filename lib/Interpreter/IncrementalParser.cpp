@@ -78,6 +78,12 @@ namespace {
     const std::string CurABI = Interp.getMacroValue(CLING_CXXABI_NAME);
     if (CurABI == CLING_CXXABI_VERS)
       return true;
+    if (CurABI.empty()) {
+    cling::errs() <<
+      "Warning in cling::IncrementalParser::CheckABICompatibility():\n"
+      "  Failed to extract C++ standard library version.\n";
+    }
+
     if (CLING_CXXABI_BACKWARDCOMP && CurABI < CLING_CXXABI_VERS) {
        // Backward compatible ABIs allow us to interpret old headers
        // against a newer stdlib.so.
@@ -86,7 +92,7 @@ namespace {
 
     cling::errs() <<
       "Warning in cling::IncrementalParser::CheckABICompatibility():\n"
-      "  Possible C++ standard library ABI mismatch, compiled with "
+      "  Possible C++ standard library mismatch, compiled with "
       << CLING_CXXABI_NAME << " '" << CLING_CXXABI_VERS << "'\n"
       "  Extraction of runtime standard library version was: '"
       << CurABI << "'\n";
