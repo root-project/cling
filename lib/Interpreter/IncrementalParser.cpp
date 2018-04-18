@@ -793,8 +793,9 @@ namespace cling {
     else if (Diags.getNumWarnings())
       return kSuccessWithWarnings;
 
-    if(m_CI->getLangOpts().CUDA )
-          m_Interpreter->getCUDADeviceCompiler().generateFatbinary(input, m_Consumer->getTransaction());
+    if(!m_Interpreter->isInSyntaxOnlyMode() && m_CI->getLangOpts().CUDA )
+      m_Interpreter->getCUDADeviceCompiler()
+        .generateFatbinary(input, m_Consumer->getTransaction());
 
     return kSuccess;
   }
