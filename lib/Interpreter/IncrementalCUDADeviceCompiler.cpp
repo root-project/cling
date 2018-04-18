@@ -125,7 +125,12 @@ namespace cling {
       cling::InvocationOptions & invocationOptions){
     // Search after clang in the folder of cling.
     llvm::SmallString<128> cwd;
-    llvm::sys::fs::current_path(cwd);
+    // get folder of the cling executable to find the clang which is contained
+    // in cling
+    // nullptr is ok, if we are the main and not a shared library
+    cwd.append(llvm::sys::path::parent_path(
+      llvm::sys::fs::getMainExecutable(
+        invocationOptions.CompilerOpts.Remaining[0], (void *) &cwd)));
     cwd.append(llvm::sys::path::get_separator());
     cwd.append("clang++");
     m_ClangPath = cwd.c_str();
