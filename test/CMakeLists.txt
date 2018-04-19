@@ -25,7 +25,22 @@ if(CLING_TEST_USE_VG)
   set(CLING_TEST_EXTRA_ARGS ${CLING_TEST_EXTRA_ARGS} "--vg")
 endif ()
 
-list(APPEND CLING_TEST_DEPS cling llvm-config FileCheck clang opt not)
+list(APPEND CLING_TEST_DEPS cling)
+if (TARGET llvm-config)
+  list(APPEND CLING_TEST_DEPS llvm-config)
+endif()
+if (TARGET FileCheck)
+  list(APPEND CLING_TEST_DEPS FileCheck)
+endif()
+if (TARGET opt)
+  list(APPEND CLING_TEST_DEPS opt)
+endif()
+if (TARGET not)
+  list(APPEND CLING_TEST_DEPS not)
+endif()
+if (TARGET clang)
+  list(APPEND CLING_TEST_DEPS clang)
+endif()
 
 set(CLING_TEST_PARAMS
   cling_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
