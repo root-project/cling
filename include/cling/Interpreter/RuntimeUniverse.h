@@ -161,7 +161,7 @@ namespace cling {
       ///
       template <class T, class = T (*)() /*disable for arrays*/>
       void copyArray(T* src, void* placement, std::size_t size) {
-        for (int i = 0; i < size; ++i)
+        for (std::size_t i = 0; i < size; ++i)
           new ((void*)(((T*)placement) + i)) T(src[i]);
       }
 
