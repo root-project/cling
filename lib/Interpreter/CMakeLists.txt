@@ -16,6 +16,8 @@ set(LIBS
   clangFrontend
   clangLex
   clangParse
+  clangRewrite
+  clangRewriteFrontend
   clangSema
   clangSerialization
 
@@ -25,9 +27,11 @@ set(LIBS
 set( LLVM_LINK_COMPONENTS
   analysis
   core
+  coroutines
   coverage
   executionengine
   ipo
+  lto
   mc
   object
   option
