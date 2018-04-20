@@ -17,6 +17,7 @@
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
+#include "cling/Utils/Casting.h"
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Validation.h"
 
@@ -24,11 +25,18 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ExprCXX.h"
+#include "clang/AST/GlobalDecl.h"
+#include "clang/AST/NestedNameSpecifier.h"
+#include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Parse/Parser.h"
+#include "clang/Sema/Lookup.h"
+#include "clang/Sema/Sema.h"
 
 #include "llvm/Support/Format.h"
-#include "llvm/ExecutionEngine/GenericValue.h"
 
 #include <locale>
 #include <string>
@@ -56,6 +64,14 @@ extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
 namespace cling {
   namespace valuePrinterInternal {
     extern const char* const kEmptyCollection = "{}";
+
+    struct OpaqueString{};
+    /// Assign a string to a string*.
+    void AssignToStringFromStringPtr(OpaqueString* to, const OpaqueString& from) {
+      std::string* sTo = reinterpret_cast<std::string*>(to);
+      const std::string& sFrom = reinterpret_cast<const std::string&>(from);
+      *sTo = sFrom;
+    }
   }
 }
 
@@ -82,86 +98,6 @@ static std::string enclose(const clang::QualType& Ty, clang::ASTContext& C,
   return enclose(cling::utils::TypeName::GetFullyQualifiedName(Ty, C),
                  Begin, End, Hint);
 }
-
-static clang::QualType
-getElementTypeAndExtent(const clang::ConstantArrayType *CArrTy,
-                        std::string& extent) {
-  clang::QualType ElementTy = CArrTy->getElementType();
-  const llvm::APInt &APSize = CArrTy->getSize();
-  extent += '[' +  std::to_string(APSize.getZExtValue()) + ']';
-  if (auto CArrElTy
-      = llvm::dyn_cast<clang::ConstantArrayType>(ElementTy.getTypePtr())) {
-    return getElementTypeAndExtent(CArrElTy, extent);
-  }
-  return ElementTy;
-}
-
-static std::string getTypeString(const Value &V) {
-  clang::ASTContext &C = V.getASTContext();
-  clang::QualType Ty = V.getType().getDesugaredType(C).getNonReferenceType();
-
-  if (llvm::dyn_cast<clang::BuiltinType>(Ty.getCanonicalType()))
-    return enclose(Ty, C);
-
-  if (Ty->isPointerType()) {
-    // Print char pointers as strings.
-    if (Ty->getPointeeType()->isCharType())
-      return enclose(Ty, C);
-
-    // Fallback to void pointer for other pointers and print the address.
-    return "(const void**)";
-  }
-  if (Ty->isArrayType()) {
-    if (Ty->isConstantArrayType()) {
-      std::string extent("(*)");
-      clang::QualType InnermostElTy
-        = getElementTypeAndExtent(C.getAsConstantArrayType(Ty), extent);
-      return enclose(InnermostElTy, C, "(", (extent + ")*(void**)").c_str());
-    }
-    return "(void**)";
-  }
-  if (Ty->isObjCObjectPointerType())
-    return "(const void**)";
-
-  // In other cases, dereference the address of the object.
-  // If no overload or specific template matches,
-  // the general template will be used which only prints the address.
-  return enclose(Ty, C, "*(", "**)", 5);
-}
-
-/// RAII object to disable and then re-enable access control in the LangOptions.
-struct AccessCtrlRAII_t {
-  bool savedAccessControl;
-  clang::LangOptions& LangOpts;
-
-  AccessCtrlRAII_t(cling::Interpreter& Interp):
-    LangOpts(const_cast<clang::LangOptions&>(Interp.getCI()->getLangOpts())) {
-    savedAccessControl = LangOpts.AccessControl;
-    LangOpts.AccessControl = false;
-  }
-
-  ~AccessCtrlRAII_t() {
-    LangOpts.AccessControl = savedAccessControl;
-  }
-
-};
-
-#ifndef NDEBUG
-/// Is typenam parsable?
-bool canParseTypeName(cling::Interpreter& Interp, llvm::StringRef typenam) {
-
-  AccessCtrlRAII_t AccessCtrlRAII(Interp);
-  LockCompilationDuringUserCodeExecutionRAII LCDUCER(Interp);
-
-  cling::Interpreter::CompilationResult Res
-    = Interp.declare("namespace { void* cling_printValue_Failure_Typename_check"
-                     " = (void*)" + typenam.str() + "nullptr; }");
-  if (Res != cling::Interpreter::kSuccess)
-    cling::errs() << "ERROR in cling::canParseTypeName(): "
-                     "this typename cannot be spelled.\n";
-  return Res == cling::Interpreter::kSuccess;
-}
-#endif
 
 static std::string printDeclType(const clang::QualType& QT,
                                  const clang::NamedDecl* D) {
@@ -591,36 +527,138 @@ namespace cling {
 
 namespace {
 
+static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
+                                             clang::Sema &S,
+                                             clang::ASTContext &Ctx,
+                                             clang::FunctionDecl *WrapperFD,
+                                             clang::QualType QT,
+                                             const void* Val)
+{
+  const clang::SourceLocation noSrcLoc;
+  clang::Sema::SynthesizedFunctionScope SemaFScope(S, WrapperFD);
+  clang::Parser::ParseScope parseScope(&Interp.getParser(),
+                                        clang::Scope::FnScope
+                                        | clang::Scope::BlockScope);
+  //Build the following AST (where `S` is `std::string`):
+  /*
+`-FunctionDecl 0x7fc7d4812978 <col:22, col:46> col:24 XYZ_callPrintValue 'struct S (void)'
+  `-CompoundStmt 0x7fc7d4812ff8 <col:30, col:46>
+    `-ReturnStmt 0x7fc7d4812fe0 <col:32, col:43>
+      `-ExprWithCleanups 0x7fc7d4812fc8 <col:39, col:43> 'struct S'
+        `-CXXConstructExpr 0x7fc7d4812f90 <col:39, col:43> 'struct S' 'void (const struct S &) throw()' elidable
+          `-MaterializeTemporaryExpr 0x7fc7d4812f20 <col:39, col:43> 'const struct S' lvalue
+            `-ImplicitCastExpr 0x7fc7d4812f08 <col:39, col:43> 'const struct S' <NoOp>
+              `-CallExpr 0x7fc7d4812ad0 <col:39, col:43> 'struct S'
+                `-ImplicitCastExpr 0x7fc7d4812ab8 <col:39> 'struct S (*)(void)' <FunctionToPointerDecay>
+                  `-DeclRefExpr 0x7fc7d4812a68 <col:39> 'struct S (void)' lvalue Function 0x7fc7d4812880 'bar' 'struct S (void)'
+  */
+  clang::NamespaceDecl *clingNS = utils::Lookup::Namespace(&S, "cling");
+  assert(clingNS && "Cannot find namespace cling!");
+  clang::NestedNameSpecifierLocBuilder NNSLBld;
+  NNSLBld.MakeGlobal(Ctx, noSrcLoc);
+  NNSLBld.Extend(Ctx, clingNS, noSrcLoc, noSrcLoc);
+  clang::DeclarationName PVDN = S.PP.getIdentifierInfo("printValue");
+
+  clang::LookupResult R(S, PVDN, noSrcLoc, clang::Sema::LookupOrdinaryName);
+
+  // The subsequent lookup might deserialize or instantiate.
+  Interpreter::PushTransactionRAII ScopedT(&Interp);
+  S.LookupQualifiedName(R, clingNS);
+  clang::Expr *OverldExpr
+    = clang::UnresolvedLookupExpr::Create(Ctx, nullptr /*namingClass*/,
+                                          NNSLBld.getTemporary(),
+                                  clang::DeclarationNameInfo(PVDN, noSrcLoc),
+                                          /*RequiresADL*/false,
+                                          R.isOverloadedResult(),
+                                          R.begin(),
+                                          R.end());
+
+  // Normalize `X*` to `const void*`, invoke `printValue(const void**)`.
+  if (QT->isPointerType()) {
+    QT = Ctx.VoidTy;
+    QT.addConst();
+    QT = Ctx.getPointerType(QT);
+  } else if (auto RTy
+             = llvm::dyn_cast<clang::ReferenceType>(QT.getTypePtr())) {
+    // X& will be printed as X* (the pointer will be added below).
+    QT = RTy->getPointeeType();
+    // Val will be a X**, but we cast this to X*, so dereference here:
+    Val = *(void**)Val;
+  }
+  // `cling::printValue()` takes the *address* of the value to be printed:
+  clang::QualType QTPtr = Ctx.getPointerType(QT);
+  clang::Expr *EVPArg
+    = utils::Synthesize::CStyleCastPtrExpr(&S, QTPtr, (uintptr_t)Val);
+  llvm::SmallVector<clang::Expr*, 1> CallArgs;
+  CallArgs.push_back(EVPArg);
+  clang::ExprResult ExprVP
+    = S.ActOnCallExpr(S.getCurScope(), OverldExpr, noSrcLoc, CallArgs,
+                      noSrcLoc);
+  if (ExprVP.isInvalid())
+    return "ERROR in cling's callPrintValue(): "
+           "cannot build printValue() expression";
+
+  clang::StmtResult RetStmt
+    = S.ActOnReturnStmt(noSrcLoc, ExprVP.get(), S.getCurScope());
+  if (RetStmt.isInvalid())
+    return "ERROR in cling's callPrintValue(): cannot build return expression";
+
+  auto *Body = new (Ctx) clang::CompoundStmt(noSrcLoc);
+  Body->setStmts(Ctx, {RetStmt.get()});
+  WrapperFD->setBody(Body);
+  auto &Consumer = Interp.getCI()->getASTConsumer();
+  Consumer.HandleTopLevelDecl(clang::DeclGroupRef(WrapperFD));
+  return nullptr; // no error message.
+}
+
 static std::string callPrintValue(const Value& V, const void* Val) {
   Interpreter *Interp = V.getInterpreter();
+  assert(Interp && "No cling::Interpreter!");
   Value printValueV;
 
   {
-    // Use an llvm::raw_ostream to prepend '0x' in front of the pointer value.
+    clang::ASTContext &Ctx = V.getASTContext();
+    const clang::SourceLocation noSrcLoc;
+    clang::Sema &S = Interp->getSema();
 
-    cling::ostrstream Strm;
-    Strm << "cling::printValue(";
-    Strm << getTypeString(V);
-    Strm << &Val;
-    Strm << ");";
+    const clang::Decl *StdStringDecl
+      = utils::Lookup::Named(&S, "string",
+                             utils::Lookup::Namespace(&S, "std"));
+    const auto* StdStringTD = clang::dyn_cast<clang::TypeDecl>(StdStringDecl);
+    assert(StdStringTD && "Cannot find type of std::string.");
 
-    // We really don't care about protected types here (ROOT-7426)
-    AccessCtrlRAII_t AccessCtrlRAII(*Interp);
-    LockCompilationDuringUserCodeExecutionRAII LCDUCER(*Interp);
-    Interp->evaluate(Strm.str(), printValueV);
+    std::string name;
+    Interp->createUniqueName(name);
+    name += "_callPrintValue";
+    clang::DeclarationName DeclName = &Ctx.Idents.get(name);
+    clang::QualType FnTy
+      = Ctx.getFunctionType(clang::QualType(StdStringTD->getTypeForDecl(), 0), {},
+                            clang::FunctionProtoType::ExtProtoInfo());
+    clang::FunctionDecl *WrapperFD
+      = clang::FunctionDecl::Create(Ctx,
+                                    Ctx.getTranslationUnitDecl(),
+                                    noSrcLoc,
+                                    noSrcLoc,
+                                    DeclName,
+                                    FnTy,
+                                    Ctx.getTrivialTypeSourceInfo(FnTy),
+                                    /*StorageClass*/ clang::SC_None
+                                    //bool 	isInlineSpecified = false,
+                                    //bool 	hasWrittenPrototype = true,
+                                    //bool 	isConstexprSpecified = false
+                                    );
+    WrapperFD->setIsUsed();
+    if (auto errmsg = BuildAndEmitVPWrapperBody(*Interp, S, Ctx, WrapperFD,
+                                                V.getType(), &Val))
+      return errmsg;
+
+    clang::GlobalDecl WrapperGD(WrapperFD);
+    if (void* addr = Interp->getAddressOfGlobal(WrapperGD)) {
+       auto funptr = cling::utils::VoidToFunctionPtr<std::string(*)()>(addr);
+      LockCompilationDuringUserCodeExecutionRAII LCDUCER(*Interp);
+      return funptr();
+    }
   }
-
-  if (printValueV.isValid() && printValueV.getPtr())
-    return *(std::string *) printValueV.getPtr();
-
-  // That didn't work. We probably diagnosed the issue as part of evaluate().
-  cling::errs() <<"ERROR in cling's callPrintValue(): cannot pass value!\n";
-
-  // Check that the issue comes from an unparsable type name: lambdas, unnamed
-  // namespaces, types declared inside functions etc. Assert on everything
-  // else.
-  assert(!canParseTypeName(*Interp, getTypeString(V))
-         && "printValue failed on a valid type name.");
 
   return "ERROR in cling's callPrintValue(): missing value string.";
 }
