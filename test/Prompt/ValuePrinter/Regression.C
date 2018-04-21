@@ -125,4 +125,4 @@ namespace PR180 {
   using Foo = Derived<base>;
 }
 auto bar = PR180::Foo()
-// CHECK: (PR180::Foo) @0x{{[0-9a-f]+}}
+// CHECK: (PR180::Derived<PR180::base> &) @0x{{[0-9a-f]+}}
