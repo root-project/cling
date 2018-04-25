@@ -585,6 +585,9 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
     // Val will be a X**, but we cast this to X*, so dereference here:
     Val = *(void**)Val;
   }
+  if (QT->isArrayType()) {
+     QT = Ctx.getArrayDecayedType(QT);
+  }
   // `cling::printValue()` takes the *address* of the value to be printed:
   clang::QualType QTPtr = Ctx.getPointerType(QT);
   clang::Expr *EVPArg
