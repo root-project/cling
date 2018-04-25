@@ -573,11 +573,14 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
                                           R.begin(),
                                           R.end());
 
-  // Normalize `X*` to `const void*`, invoke `printValue(const void**)`.
-  if (QT->isPointerType()) {
-    QT = Ctx.VoidTy;
-    QT.addConst();
-    QT = Ctx.getPointerType(QT);
+  if (auto PT = llvm::dyn_cast<clang::PointerType>(QT.getTypePtr())) {
+    if (PT->getPointeeType().getUnqualifiedType() != Ctx.CharTy
+        && PT->getPointeeType().getUnqualifiedType() != Ctx.WCharTy) {
+      // Normalize `X*` to `const void*`, invoke `printValue(const void**)`.
+      QT = Ctx.VoidTy;
+      QT.addConst();
+      QT = Ctx.getPointerType(QT);
+    }
   } else if (auto RTy
              = llvm::dyn_cast<clang::ReferenceType>(QT.getTypePtr())) {
     // X& will be printed as X* (the pointer will be added below).
@@ -586,7 +589,7 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
     Val = *(void**)Val;
   }
   if (QT->isArrayType()) {
-     QT = Ctx.getArrayDecayedType(QT);
+    QT = Ctx.getArrayDecayedType(QT);
   }
   // `cling::printValue()` takes the *address* of the value to be printed:
   clang::QualType QTPtr = Ctx.getPointerType(QT);
