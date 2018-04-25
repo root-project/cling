@@ -664,7 +664,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
         llvm::sys::path::append(P, "clang");
         if (!llvm::sys::fs::is_directory(P.str())) {
           // LLVM is not installed. Try resolving clang from its usual location.
-          P = llvm::sys::path::parent_path(P);
+          llvm::SmallString<512> PParent = llvm::sys::path::parent_path(P);
+          P = PParent;
           llvm::sys::path::append(P, "..", "tools", "clang", "include");
           if (llvm::sys::fs::is_directory(P.str()))
             utils::AddIncludePaths(P.str(), HOpts, nullptr);
