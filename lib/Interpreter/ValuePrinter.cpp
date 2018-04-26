@@ -574,8 +574,8 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
                                           R.end());
 
   if (auto PT = llvm::dyn_cast<clang::PointerType>(QT.getTypePtr())) {
-    if (PT->getPointeeType().getUnqualifiedType() != Ctx.CharTy
-        && PT->getPointeeType().getUnqualifiedType() != Ctx.WCharTy) {
+    if (!Ctx.hasSameType(PT->getPointeeType().getUnqualifiedType(), Ctx.CharTy)
+        && !Ctx.hasSameType(PT->getPointeeType().getUnqualifiedType(), Ctx.WCharTy)) {
       // Normalize `X*` to `const void*`, invoke `printValue(const void**)`.
       QT = Ctx.VoidTy;
       QT.addConst();
