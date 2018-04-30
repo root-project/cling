@@ -27,6 +27,8 @@ setLang("en_US.UTF-8");
 const char* Data = (const char*) 0x01
 // CHECK: (const char *) 0x{{.+}} <invalid memory address>
 
+#include <string>
+
 std::string RawData("\x12""\x13");
 
 cling::printValue(&RawData)[1]
