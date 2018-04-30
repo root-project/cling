@@ -532,7 +532,7 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
                                              clang::ASTContext &Ctx,
                                              clang::FunctionDecl *WrapperFD,
                                              clang::QualType QT,
-                                             const void* Val)
+                                             const void* ValPtr)
 {
   const clang::SourceLocation noSrcLoc;
   clang::Sema::SynthesizedFunctionScope SemaFScope(S, WrapperFD);
@@ -590,15 +590,13 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
     // X& will be printed as X* (the pointer will be added below).
     QT = RTy->getPointeeType();
     // Val will be a X**, but we cast this to X*, so dereference here:
-    Val = *(void**)Val;
+    ValPtr = *(const void* const*)ValPtr;
   }
-  if (QT->isArrayType()) {
-    QT = Ctx.getArrayDecayedType(QT);
-  }
+
   // `cling::printValue()` takes the *address* of the value to be printed:
   clang::QualType QTPtr = Ctx.getPointerType(QT);
   clang::Expr *EVPArg
-    = utils::Synthesize::CStyleCastPtrExpr(&S, QTPtr, (uintptr_t)Val);
+    = utils::Synthesize::CStyleCastPtrExpr(&S, QTPtr, (uintptr_t)ValPtr);
   llvm::SmallVector<clang::Expr*, 1> CallArgs;
   CallArgs.push_back(EVPArg);
   clang::ExprResult ExprVP
@@ -658,8 +656,10 @@ static std::string callPrintValue(const Value& V, const void* Val) {
                                     //bool 	isConstexprSpecified = false
                                     );
     WrapperFD->setIsUsed();
+    const void* ValPtr = V.needsManagedAllocation() ? Val : &Val;
+
     if (auto errmsg = BuildAndEmitVPWrapperBody(*Interp, S, Ctx, WrapperFD,
-                                                V.getType(), &Val))
+                                                V.getType(), ValPtr))
       return errmsg;
 
     clang::GlobalDecl WrapperGD(WrapperFD);
