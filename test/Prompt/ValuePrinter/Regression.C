@@ -85,16 +85,11 @@ Enumer::h
 // CHECK: (Enumer::H) (Enumer::H::h) : (unsigned long{{( long)?}}) 18446744073709551615
 
 // ROOT-7837
-auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lambda) &) @0x
+auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lambda) &) @0x{{[0-9a-f]+}}
 
 #include <functional>
 using namespace std::placeholders;
-auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ERROR in cling's callPrintValue(): missing value string.
-// expected-error {{use of undeclared identifier 'lambda'}}
-// expected-error {{expected expression}}
-// expected-error {{type name requires a specifier or qualifier}}
-// expected-error {{expected ')'}}
-// expected-note  {{to match this '('}}
+auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ({{.*\(lambda\).*}}> &) @0x{{[0-9a-f]+}}
 
 // Make sure cling survives
 12 // CHECK: (int) 12
