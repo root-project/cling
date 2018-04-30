@@ -6,7 +6,7 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-set(LIBS
+set(CLING_DEPEND_LIBS
   clangAnalysis
   clangAST
   clangBasic
@@ -20,11 +20,14 @@ set(LIBS
   clangRewriteFrontend
   clangSema
   clangSerialization
+  CACHE STRING "Dependency Clang libraries for Cling"
+)
 
+set(LIBS
   clingUtils
 )
 
-set( LLVM_LINK_COMPONENTS
+set(LLVM_LINK_COMPONENTS
   analysis
   core
   coroutines
@@ -92,6 +95,7 @@ add_cling_library(clingInterpreter OBJECT
   ${CLING_DEPENDS}
 
   LINK_LIBS
+  ${CLING_DEPEND_LIBS}
   ${LIBS}
   )
 
