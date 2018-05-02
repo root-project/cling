@@ -10,41 +10,57 @@
 // RUN: cat %s | %cling -x cuda -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
+const unsigned int numberOfThreads = 4;
+
 .rawInput 1
 __global__ void gKernel1(int * input, int * output){
   extern __shared__ int s[];
   int i = threadIdx.x;
-  s[i] = input[i];
+  s[(i+1)%blockDim.x] = input[i];
+  __syncthreads();
   output[i] = s[i];
 }
 .rawInput 0
 
-int hostInput[4] = {1,2,3,4};
-int hostOutput[4] = {0,0,0,0};
+int hostInput[numberOfThreads];
+int hostOutput[numberOfThreads];
+for(unsigned int i = 0; i < numberOfThreads; ++i){
+	hostInput[i] = i+1;
+	hostOutput[i] = 0;
+}
 int * deviceInput;
 int * deviceOutput;
-cudaMalloc( (void **) &deviceInput, sizeof(int)*4)
+cudaMalloc( (void **) &deviceInput, sizeof(int)*numberOfThreads)
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
-cudaMalloc( (void **) &deviceOutput, sizeof(int)*4)
+cudaMalloc( (void **) &deviceOutput, sizeof(int)*numberOfThreads)
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
 
-cudaMemcpy(deviceInput, &hostInput, sizeof(int)*4, cudaMemcpyHostToDevice)
+cudaMemcpy(deviceInput, hostInput, sizeof(int)*numberOfThreads, cudaMemcpyHostToDevice)
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
-gKernel1<<<1,4, 4 * sizeof(int)>>>(deviceInput, deviceOutput);
+gKernel1<<<1,numberOfThreads, sizeof(int)*numberOfThreads>>>(deviceInput, deviceOutput);
 cudaGetLastError()
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
-cudaMemcpy(&hostOutput, deviceOutput, sizeof(int)*4, cudaMemcpyDeviceToHost)
+cudaDeviceSynchronize()
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+cudaMemcpy(hostOutput, deviceOutput, sizeof(int)*numberOfThreads, cudaMemcpyDeviceToHost)
+// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+
+int expectedSum = (numberOfThreads*(numberOfThreads+1))/2;
+int cudaSum = 0;
  
-// FIXME: output of the whole static array isn't working at the moment
-hostOutput[0]
-// CHECK: (int) 1
-hostOutput[1]
-// CHECK: (int) 2
-hostOutput[2]
-// CHECK: (int) 3
-hostOutput[3]
-// CHECK: (int) 4
+for(unsigned int i = 0; i < numberOfThreads; ++i){
+	cudaSum += hostOutput[i];
+}
+
+//check, if elements was shifted
+// small workaround, to avoid compiler hint '='
+bool result1 = hostOutput[0] == numberOfThreads
+// CHECK: (bool) true
+bool result2 = hostOutput[numberOfThreads-1] == numberOfThreads-1
+// CHECK: (bool) true
+bool result3 = expectedSum == cudaSum
+// CHECK: (bool) true
+
 
 
 // expected-no-diagnostics
