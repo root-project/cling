@@ -26,6 +26,8 @@ cudaMalloc( (void **) &deviceOutput, sizeof(int))
 gKernel1<<<1,1>>>(deviceOutput);
 cudaGetLastError()
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+cudaDeviceSynchronize()
+// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
 cudaMemcpy(&hostOutput, deviceOutput, sizeof(int), cudaMemcpyDeviceToHost)
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
 hostOutput
@@ -33,6 +35,8 @@ hostOutput
 
 
 // Test, if a parallel kernel with built-in functions.
+const unsigned int numberOfThreads = 4;
+
 .rawInput 1
 __device__ int mul7(int  in){
   return 7*in;
@@ -45,16 +49,32 @@ __global__ void gKernel2(int * out){
 .rawInput 0
 
 int * deviceOutput2;
-int hostOutput2[4] = {0,0,0,0};
-cudaMalloc( (void **) &deviceOutput2, sizeof(int)*4)
+int hostOutput2[numberOfThreads];
+for(unsigned int i = 0; i < numberOfThreads; ++i){
+ hostOutput2[i] = 0;
+}
+cudaMalloc( (void **) &deviceOutput2, sizeof(int)*numberOfThreads)
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
-gKernel2<<<1,4>>>(deviceOutput2);
+
+gKernel2<<<1,numberOfThreads>>>(deviceOutput2);
 cudaGetLastError()
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
-cudaMemcpy(&hostOutput2, deviceOutput2, sizeof(int)*4, cudaMemcpyDeviceToHost)
+cudaDeviceSynchronize()
+// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+cudaMemcpy(hostOutput2, deviceOutput2, sizeof(int)*numberOfThreads, cudaMemcpyDeviceToHost)
 // CHECK:  (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
-hostOutput2[0] + hostOutput2[1] + hostOutput2[2] + hostOutput2[3]
-// CHECK: (int) 42
+
+unsigned int expectedSum = 0;
+unsigned int cudaSum = 0;
+
+for(unsigned int i = 0; i < numberOfThreads; ++i){
+	expectedSum += 7*i;
+	cudaSum += hostOutput2[i];
+}
+
+// small workaround, to avoid compiler hint '='
+bool result = expectedSum == cudaSum
+// CHECK: (bool) true
 
 
 // expected-no-diagnostics

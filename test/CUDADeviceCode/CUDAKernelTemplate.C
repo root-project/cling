@@ -30,6 +30,8 @@ cudaMalloc( (void **) &deviceOutput, sizeof(int))
 gKernel1<<<1,1>>>(deviceOutput);
 cudaGetLastError()
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+cudaDeviceSynchronize()
+// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
 cudaMemcpy(&hostOutput, deviceOutput, sizeof(int), cudaMemcpyDeviceToHost)
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
 hostOutput
@@ -47,6 +49,8 @@ __global__ void gKernel2(int * out){
 hostOutput = 0;
 gKernel2<43><<<1,1>>>(deviceOutput);
 cudaGetLastError()
+// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+cudaDeviceSynchronize()
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
 cudaMemcpy(&hostOutput, deviceOutput, sizeof(int), cudaMemcpyDeviceToHost)
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
