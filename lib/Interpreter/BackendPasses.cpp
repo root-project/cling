@@ -69,6 +69,39 @@ namespace {
 
 char KeepLocalGVPass::ID = 0;
 
+namespace {
+
+  // Add a suffix to the CUDA module ctor/dtor to generate an unique name.
+  // It's necessary for lazy compilation. Without suffix, cling can't
+  // differentiate the ctor/dtor of the first module from the ctor/dtor of the
+  // following modules.
+  class UnqiueCUDACtorDtorName : public ModulePass {
+    static char ID;
+
+    bool runOnGlobal(GlobalValue& GV, StringRef & ModuleName){
+      if(GV.hasName() && (GV.getName() == "__cuda_module_ctor"
+          || GV.getName() == "__cuda_module_dtor") ){
+        GV.setName(GV.getName() + "_" + ModuleName);
+        return true;
+      }
+
+      return false;
+    }
+
+  public:
+    UnqiueCUDACtorDtorName() : ModulePass(ID) {}
+
+    bool runOnModule(Module &M) override {
+      bool ret = false;
+      StringRef ModuleName = M.getName();
+      for (auto &&F: M)
+        ret |= runOnGlobal(F, ModuleName);
+      return ret;
+    }
+  };
+}
+
+char UnqiueCUDACtorDtorName::ID = 0;
 
 BackendPasses::~BackendPasses() {
   //delete m_PMBuilder->Inliner;
@@ -140,6 +173,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel].reset(new legacy::PassManager());
 
   m_MPM[OptLevel]->add(new KeepLocalGVPass());
+  m_MPM[OptLevel]->add(new UnqiueCUDACtorDtorName());
   m_MPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
                                                    m_TM.getTargetIRAnalysis()));
 
