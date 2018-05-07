@@ -25,6 +25,7 @@
 //#include "clang/Basic/LangOptions.h"
 //#include "clang/Basic/TargetOptions.h"
 #include "clang/Frontend/CodeGenOptions.h"
+#include "clang/Basic/CharInfo.h"
 
 using namespace cling;
 using namespace clang;
@@ -81,7 +82,20 @@ namespace {
     bool runOnGlobal(GlobalValue& GV, StringRef & ModuleName){
       if(GV.hasName() && (GV.getName() == "__cuda_module_ctor"
           || GV.getName() == "__cuda_module_dtor") ){
-        GV.setName(GV.getName() + "_" + ModuleName);
+        llvm::SmallString<128> NewFunctionName;
+        NewFunctionName.append(GV.getName());
+        NewFunctionName.append("_");
+        NewFunctionName.append(ModuleName);
+
+        for (size_t i = 0; i < NewFunctionName.size(); ++i) {
+          // Replace everything that's not [a-zA-Z0-9._] with a _. This set happens
+          // to be the set of C preprocessing numbers.
+          if (!isPreprocessingNumberBody(NewFunctionName[i]))
+            NewFunctionName[i] = '_';
+        }
+
+        GV.setName(NewFunctionName);
+
         return true;
       }
 
