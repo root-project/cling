@@ -57,3 +57,7 @@ D: Function call interfaces.
 N: Vassil Vassilev
 E: vvasilev@cern.ch
 D: Main developer of cling.
+
+N: Simeon Ehrig
+E: s.ehrig@hzdr.de
+D: CUDA runtime API support
