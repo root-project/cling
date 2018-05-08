@@ -342,6 +342,7 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       Out() << "__module_private__ ";
     Out() << "enum ";
+    prettyPrintAttributes(D);
     if (D->isScoped()) {
       if (D->isScopedUsingClassTag())
         Out() << "class ";
@@ -351,9 +352,8 @@ namespace cling {
     Out() << *D;
 
 //      if (D->isFixed())
-    Out() << " : " << D->getIntegerType().stream(m_Policy);
-    prettyPrintAttributes(D);
-    Out() << ';' << closeBraces << '\n';
+    Out() << " : " << D->getIntegerType().stream(m_Policy)
+          << ';' << closeBraces << '\n';
   }
 
   void ForwardDeclPrinter::VisitRecordDecl(RecordDecl *D) {
