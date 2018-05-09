@@ -613,6 +613,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
 #if defined(LLVM_ON_WIN32)
     PPOpts.addMacroDef("CLING_EXPORT=__declspec(dllimport)");
+    // prevent compilation error G47C585C4: STL1000: Unexpected compiler
+    // version, expected Clang 6 or newer.
+    PPOpts.addMacroDef("_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH");
 #else
     PPOpts.addMacroDef("CLING_EXPORT=");
 #endif
