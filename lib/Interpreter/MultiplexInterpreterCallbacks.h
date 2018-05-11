@@ -77,6 +77,12 @@ namespace cling {
        }
      }
 
+     void beforeExecuteTransaction(const Transaction& T) override {
+       for (auto&& cb : m_Callbacks) {
+         cb->beforeExecuteTransaction(T);
+       }
+     }
+
      void TransactionUnloaded(const Transaction& T) override {
        for (auto&& cb : m_Callbacks) {
          cb->TransactionUnloaded(T);

@@ -44,6 +44,7 @@
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "clang/Serialization/ASTWriter.h"
+#include "clang/Serialization/ASTReader.h"
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
@@ -225,6 +226,13 @@ namespace cling {
     Transaction* CurT = beginTransaction(CO);
     Preprocessor& PP = m_CI->getPreprocessor();
     DiagnosticsEngine& Diags = m_CI->getSema().getDiagnostics();
+
+    ASTReader* Reader = m_CI->getModuleManager().get();
+    assert(isa<ASTDeserializationListener>(m_Consumer));
+    ASTDeserializationListener* Listener = cast<ASTDeserializationListener>(m_Consumer);
+    // FIXME: We should create a multiplexing deserialization listener if there is one already attached.
+    if (Reader && Listener && !Reader->getDeserializationListener())
+      Reader->setDeserializationListener(Listener);
 
     // Pull in PCH.
     const std::string& PCHFileName

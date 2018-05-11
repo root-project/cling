@@ -132,6 +132,13 @@ namespace cling {
     ///
     virtual void TransactionCommitted(const Transaction&) {}
 
+    ///\brief This callback is invoked before a transaction is executed.
+    /// This event happens after a transaction was committed and LLVM IR was produced.
+    ///
+    ///\param[in] - The transaction to be executed.
+    ///
+    virtual void beforeExecuteTransaction(const Transaction&) {}
+
     ///\brief This callback is invoked whenever interpreter has reverted a
     /// transaction that has been fully committed.
     ///

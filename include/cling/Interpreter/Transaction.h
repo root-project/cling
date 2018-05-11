@@ -31,6 +31,7 @@ namespace clang {
   class Preprocessor;
   struct PrintingPolicy;
   class Sema;
+  class Module;
 }
 
 namespace llvm {
@@ -114,6 +115,11 @@ namespace cling {
     // init.
     typedef llvm::SmallVector<DelayCallInfo, 64> DeclQueue;
     typedef llvm::SmallVector<Transaction*, 2> NestedTransactions;
+
+    ///\brief The list of cxxmodules, which is collected by DeserializationListener
+    /// and will be used to load corresponding libraries.
+    ///
+    std::vector<clang::Module*> m_CxxModules;
 
     ///\brief All seen declarations, except the deserialized ones.
     /// If we collect the declarations by walking the clang::DeclContext we
@@ -266,6 +272,17 @@ namespace cling {
       if (hasNestedTransactions())
         return m_NestedTransactions->rend();
       return const_reverse_nested_iterator(0);
+    }
+
+    void addClangModule(clang::Module* M) {
+      assert(M && "addClangModules: passed clang::Module pointer is null");
+
+      if (std::find(m_CxxModules.rbegin(), m_CxxModules.rend(), M) == m_CxxModules.rend())
+        m_CxxModules.push_back(M);
+    }
+
+    const std::vector<clang::Module*> &getClangModules() const {
+      return m_CxxModules;
     }
 
     /// Macro iteration
