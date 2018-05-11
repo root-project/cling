@@ -95,8 +95,10 @@ static std::string enclose(std::string Mid, const char* Begin,
 static std::string enclose(const clang::QualType& Ty, clang::ASTContext& C,
                            const char* Begin = "(", const char* End = "*)",
                            size_t Hint = 3) {
-  return enclose(cling::utils::TypeName::GetFullyQualifiedName(Ty, C),
-                 Begin, End, Hint);
+  clang::PrintingPolicy Policy(C.getPrintingPolicy());
+  Policy.PolishForDeclaration = true;
+  std::string Name = Ty.getAsString(Policy);
+  return enclose(Name, Begin, End, Hint);
 }
 
 static std::string printDeclType(const clang::QualType& QT,
