@@ -78,11 +78,11 @@ namespace {
   class UniqueCUDAStructorName : public ModulePass {
     static char ID;
 
-    bool runOnGlobal(GlobalValue& GV, const StringRef ModuleName){
-      if(GV.hasName() && (GV.getName() == "__cuda_module_ctor"
-          || GV.getName() == "__cuda_module_dtor") ){
+    bool runOnFunction(Function& F, const StringRef ModuleName){
+      if(F.hasName() && (F.getName() == "__cuda_module_ctor"
+          || F.getName() == "__cuda_module_dtor") ){
         llvm::SmallString<128> NewFunctionName;
-        NewFunctionName.append(GV.getName());
+        NewFunctionName.append(F.getName());
         NewFunctionName.append("_");
         NewFunctionName.append(ModuleName);
 
@@ -93,7 +93,7 @@ namespace {
             NewFunctionName[i] = '_';
         }
 
-        GV.setName(NewFunctionName);
+        F.setName(NewFunctionName);
 
         return true;
       }
@@ -108,7 +108,7 @@ namespace {
       bool ret = false;
       StringRef ModuleName = M.getName();
       for (auto &&F: M)
-        ret |= runOnGlobal(F, ModuleName);
+        ret |= runOnFunction(F, ModuleName);
       return ret;
     }
   };
