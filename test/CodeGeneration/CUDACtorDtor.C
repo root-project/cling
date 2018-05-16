@@ -18,7 +18,7 @@
 #include "llvm/IR/Module.h"
 #include <iostream>
 
-// Compare the the cuda module ctor and dtor of two random modules.
+// Compare the cuda module ctor and dtor of two random modules.
 std::string ctor1, ctor2, dtor1, dtor2;
 
 auto M1 = gCling->getLatestTransaction()->getModule();
@@ -36,7 +36,7 @@ for(auto &I : *M1){
 
 auto M2 = gCling->getLatestTransaction()->getModule();
 
-// The last module should be another, because of the for loop.
+// The two modules should have different names, because of the for loop.
 M1->getName() != M2->getName()
 // CHECK: (bool) true
 

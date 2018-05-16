@@ -87,8 +87,8 @@ namespace {
         NewFunctionName.append(ModuleName);
 
         for (size_t i = 0; i < NewFunctionName.size(); ++i) {
-          // Replace everything that's not [a-zA-Z0-9._] with a _. This set happens
-          // to be the set of C preprocessing numbers.
+          // Replace everything that is not [a-zA-Z0-9._] with a _. This set
+          // happens to be the set of C preprocessing numbers.
           if (!isPreprocessingNumberBody(NewFunctionName[i]))
             NewFunctionName[i] = '_';
         }
@@ -106,7 +106,7 @@ namespace {
 
     bool runOnModule(Module &M) override {
       bool ret = false;
-      StringRef ModuleName = M.getName();
+      const StringRef ModuleName = M.getName();
       for (auto &&F: M)
         ret |= runOnFunction(F, ModuleName);
       return ret;
