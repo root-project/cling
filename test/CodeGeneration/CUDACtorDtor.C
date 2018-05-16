@@ -37,7 +37,7 @@ for(auto &I : *M1){
 auto M2 = gCling->getLatestTransaction()->getModule();
 
 // The two modules should have different names, because of the for loop.
-M1->getName() != M2->getName()
+M1->getName().str() != M2->getName().str()
 // CHECK: (bool) true
 
 for(auto &I : *M2){
