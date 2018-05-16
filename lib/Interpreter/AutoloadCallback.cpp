@@ -68,9 +68,8 @@ namespace cling {
     /// entries, i.e. remember the connection between filename and the declaration
     /// that needs to be updated on #include of the filename.
     /// If false, react on an #include by adjusting the forward decls, e.g. by
-    /// removing the default tremplate arguments (that will now be provided by
-    /// the definition read from the include) and by removing enum declarations
-    /// that would otherwise be duplicates.
+    /// removing the default template arguments (that will now be provided by
+    /// the definition read from the include).
     bool m_IsStoringState;
     bool m_IsAutloadEntry;  // True during the traversal of an explicitly annotated decl.
     AutoloadCallback::FwdDeclsMap* m_Map;
@@ -321,16 +320,6 @@ namespace cling {
         if (D->hasDefaultArg() && D->hasInheritedDefaultArg())
           D->setDefaultArg(nullptr);
       }
-      return true;
-    }
-
-    bool VisitEnumDecl(EnumDecl* D) {
-      if (m_IsStoringState)
-        return true;
-
-      // Now that we will read the full enum, unload the forward decl.
-      if (IsAutoloadEntry(D))
-        UnloadDecl(m_Sema, D);
       return true;
     }
   };
