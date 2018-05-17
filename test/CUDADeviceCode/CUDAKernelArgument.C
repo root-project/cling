@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// The Test checks if a CUDA kernel works with a arguments and built-in 
+// The Test checks if a CUDA kernel works with a arguments and built-in
 // functions.
 // RUN: cat %s | %cling -x cuda -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
@@ -72,10 +72,7 @@ for(unsigned int i = 0; i < numberOfThreads; ++i){
 	cudaSum += hostOutput2[i];
 }
 
-// small workaround, to avoid compiler hint '='
-bool result = expectedSum == cudaSum
+expectedSum == cudaSum // expected-note {{use '=' to turn this equality comparison into an assignment}}
 // CHECK: (bool) true
 
-
-// expected-no-diagnostics
 .q

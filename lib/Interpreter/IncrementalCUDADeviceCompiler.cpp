@@ -109,7 +109,7 @@ namespace cling {
     m_DummyCUPath = m_FilePath + "dummy.cu";
     std::error_code EC;
     llvm::raw_fd_ostream dummyCU(m_DummyCUPath, EC, llvm::sys::fs::F_Text);
-    if(EC){ 
+    if(EC){
       llvm::errs() << "Could not open " << m_DummyCUPath << ": "
         << EC.message() << "\n";
       return false;
@@ -149,7 +149,7 @@ namespace cling {
       }
     }else{
       // Search after fatbinary on the system.
-      if (llvm::ErrorOr<std::string> fatbinary = 
+      if (llvm::ErrorOr<std::string> fatbinary =
             llvm::sys::findProgramByName("fatbinary")) {
         llvm::SmallString<256> fatbinaryAbsolutePath;
         llvm::sys::fs::real_path(*fatbinary, fatbinaryAbsolutePath);
@@ -172,7 +172,7 @@ namespace cling {
     }
   }
 
-  bool IncrementalCUDADeviceCompiler::generateFatbinary(llvm::StringRef input,
+  bool IncrementalCUDADeviceCompiler::generateFatbinary(const llvm::StringRef input,
                                                         cling::Transaction * T){
     if(!m_Init){
       llvm::errs() << "Error: Initializiation of CUDA Device Code Compiler failed\n";
@@ -198,10 +198,8 @@ namespace cling {
     if(T != nullptr &&  T->getWrapperFD()){
       for(auto iDCI = T->decls_begin(), eDCI = T->decls_end();
           iDCI != eDCI; ++iDCI){
-        for (clang::DeclGroupRef::const_iterator iDecl = iDCI->m_DGR.begin(),
-             eDecl = iDCI->m_DGR.end();
-             iDecl != eDecl; ++iDecl) {
-          if(clang::VarDecl * v = llvm::dyn_cast<clang::VarDecl>(*iDecl)){
+        for(clang::Decl * decl : iDCI->m_DGR) {
+          if(clang::VarDecl * v = llvm::dyn_cast<clang::VarDecl>(decl)){
             foundVarDecl = true;
             v->print(cuFile);
             // The c++ code has no whitespace and semicolon at the end.
