@@ -51,11 +51,9 @@ for(auto &I : *M2){
 }
 
 // Check if the ctor and dtor of the two modules are different.
-ctor1 != ctor2
-// expected-note {{use '|=' to turn this inequality comparison into an or-assignment}}
+ctor1 != ctor2 // expected-note {{use '|=' to turn this inequality comparison into an or-assignment}}
 // CHECK: (bool) true
-dtor1 != dtor2
-// expected-note {{use '|=' to turn this inequality comparison into an or-assignment}}
+dtor1 != dtor2 // expected-note {{use '|=' to turn this inequality comparison into an or-assignment}}
 // CHECK: (bool) true
 
 // Check if the ctor symbol starts with the correct prefix.
@@ -68,6 +66,4 @@ std::string expectedDtorPrefix = "__cuda_module_dtor_cling_module_";
 dtor1.compare(0, expectedDtorPrefix.length(), expectedDtorPrefix)
 // CHECK: (int) 0
 
-
-// expected-no-diagnostics
 .q
