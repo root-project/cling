@@ -47,21 +47,17 @@ cudaMemcpy(hostOutput, deviceOutput, sizeof(int)*numberOfThreads, cudaMemcpyDevi
 
 int expectedSum = (numberOfThreads*(numberOfThreads+1))/2;
 int cudaSum = 0;
- 
+
 for(unsigned int i = 0; i < numberOfThreads; ++i){
 	cudaSum += hostOutput[i];
 }
 
 //check, if elements was shifted
-// small workaround, to avoid compiler hint '='
-bool result1 = hostOutput[0] == numberOfThreads
+hostOutput[0] == numberOfThreads // expected-note {{use '=' to turn this equality comparison into an assignment}}
 // CHECK: (bool) true
-bool result2 = hostOutput[numberOfThreads-1] == numberOfThreads-1
+hostOutput[numberOfThreads-1] == numberOfThreads-1 // expected-note {{use '=' to turn this equality comparison into an assignment}}
 // CHECK: (bool) true
-bool result3 = expectedSum == cudaSum
+expectedSum == cudaSum // expected-note {{use '=' to turn this equality comparison into an assignment}}
 // CHECK: (bool) true
 
-
-
-// expected-no-diagnostics
 .q

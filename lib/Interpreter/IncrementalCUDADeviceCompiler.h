@@ -36,7 +36,7 @@ namespace cling {
   ///\brief The class is responsible for generating CUDA device code in
   /// cuda fatbinary form during the runtime. It works with
   /// llvm::sys::ExecuteAndWait.
-  /// 
+  ///
   class IncrementalCUDADeviceCompiler {
 
     static constexpr unsigned CxxStdCompiledWith() {
@@ -82,7 +82,7 @@ namespace cling {
     /// and .cu.pch files.
     unsigned int m_Counter;
 
-    ///\brief Is true if all necessary files have been generated and clang and 
+    ///\brief Is true if all necessary files have been generated and clang and
     /// cuda NVIDIA fatbinary are found.
     bool m_Init;
 
@@ -186,7 +186,7 @@ namespace cling {
     ///
     ///\returns True, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
-    bool generateFatbinary(llvm::StringRef input, cling::Transaction * T);
+    bool generateFatbinary(const llvm::StringRef input, cling::Transaction * T);
 
     ///\brief Print some information of the IncrementalCUDADeviceCompiler to
     /// llvm::outs(). For Example the paths of the files and tools.

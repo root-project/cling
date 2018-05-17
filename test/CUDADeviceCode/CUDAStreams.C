@@ -73,12 +73,9 @@ for(unsigned int i = 0; i < numberOfThreads; ++i){
 	cudaSum2 += hostOutput2[i];
 }
 
-// small workaround, to avoid compiler hint '='
-bool result1 = expectedSum1 == cudaSum1
+expectedSum1 == cudaSum1 // expected-note {{use '=' to turn this equality comparison into an assignment}}
 // CHECK: (bool) true
-bool result2 = expectedSum2 == cudaSum2
+expectedSum2 == cudaSum2 // expected-note {{use '=' to turn this equality comparison into an assignment}}
 // CHECK: (bool) true
 
-
-// expected-no-diagnostics
 .q
