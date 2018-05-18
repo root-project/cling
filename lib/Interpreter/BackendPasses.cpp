@@ -25,6 +25,7 @@
 //#include "clang/Basic/LangOptions.h"
 //#include "clang/Basic/TargetOptions.h"
 #include "clang/Frontend/CodeGenOptions.h"
+#include "clang/Basic/CharInfo.h"
 
 using namespace cling;
 using namespace clang;
@@ -69,6 +70,51 @@ namespace {
 
 char KeepLocalGVPass::ID = 0;
 
+namespace {
+
+  // Add a suffix to the CUDA module ctor/dtor to generate a unique name.
+  // This is necessary for lazy compilation. Without suffix, cling cannot
+  // distinguish ctor/dtor of subsequent modules.
+  class UniqueCUDAStructorName : public ModulePass {
+    static char ID;
+
+    bool runOnFunction(Function& F, const StringRef ModuleName){
+      if(F.hasName() && (F.getName() == "__cuda_module_ctor"
+          || F.getName() == "__cuda_module_dtor") ){
+        llvm::SmallString<128> NewFunctionName;
+        NewFunctionName.append(F.getName());
+        NewFunctionName.append("_");
+        NewFunctionName.append(ModuleName);
+
+        for (size_t i = 0; i < NewFunctionName.size(); ++i) {
+          // Replace everything that is not [a-zA-Z0-9._] with a _. This set
+          // happens to be the set of C preprocessing numbers.
+          if (!isPreprocessingNumberBody(NewFunctionName[i]))
+            NewFunctionName[i] = '_';
+        }
+
+        F.setName(NewFunctionName);
+
+        return true;
+      }
+
+      return false;
+    }
+
+  public:
+    UniqueCUDAStructorName() : ModulePass(ID) {}
+
+    bool runOnModule(Module &M) override {
+      bool ret = false;
+      const StringRef ModuleName = M.getName();
+      for (auto &&F: M)
+        ret |= runOnFunction(F, ModuleName);
+      return ret;
+    }
+  };
+}
+
+char UniqueCUDAStructorName::ID = 0;
 
 BackendPasses::~BackendPasses() {
   //delete m_PMBuilder->Inliner;
@@ -140,6 +186,11 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel].reset(new legacy::PassManager());
 
   m_MPM[OptLevel]->add(new KeepLocalGVPass());
+  // The function __cuda_module_ctor and __cuda_module_dtor will just generated,
+  // if a CUDA fatbinary file exist. Without file path there is no need for the
+  // function pass.
+  if(!m_CGOpts.CudaGpuBinaryFileNames.empty())
+    m_MPM[OptLevel]->add(new UniqueCUDAStructorName());
   m_MPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
                                                    m_TM.getTargetIRAnalysis()));
 
