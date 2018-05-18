@@ -186,7 +186,11 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel].reset(new legacy::PassManager());
 
   m_MPM[OptLevel]->add(new KeepLocalGVPass());
-  m_MPM[OptLevel]->add(new UniqueCUDAStructorName());
+  // The function __cuda_module_ctor and __cuda_module_dtor will just generated,
+  // if a CUDA fatbinary file exist. Without file path there is no need for the
+  // function pass.
+  if(!m_CGOpts.CudaGpuBinaryFileNames.empty())
+    m_MPM[OptLevel]->add(new UniqueCUDAStructorName());
   m_MPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
                                                    m_TM.getTargetIRAnalysis()));
 
