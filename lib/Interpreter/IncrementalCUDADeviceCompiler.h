@@ -159,6 +159,11 @@ namespace cling {
                    cling::InvocationOptions & invocationOptions, int & optLevel,
                    clang::codegenoptions::DebugInfoKind debugInfo);
 
+    ///\brief Save .cu file, if cuda device code compiler failed at translation.
+    ///
+    ///\returns The error code of the rename operation
+    std::error_code saveFaultyCUfile();
+
   public:
     ///\brief Constructor for IncrementalCUDADeviceCompiler
     ///

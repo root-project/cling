@@ -216,14 +216,17 @@ namespace cling {
     cuFile.close();
 
     if(!generatePCH()){
+      saveFaultyCUfile();
       return false;
     }
 
     if(!generatePTX()){
+      saveFaultyCUfile();
       return false;
     }
 
     if(!generateFatbinaryInternal()){
+      saveFaultyCUfile();
       return false;
     }
 
@@ -421,6 +424,26 @@ namespace cling {
        llvm::outs() << s << " ";
      }
      llvm::outs() << "\n";
+  }
+
+  std::error_code IncrementalCUDADeviceCompiler::saveFaultyCUfile(){
+    unsigned int faultFileCounter = 0;
+
+    // Construct the file path of the current .cu file without extension.
+    std::string originalCU = m_GenericFileName + std::to_string(m_Counter);
+
+    // m_Counter will just increased, if the compiling get right. So we need a
+    // second counter, if two or more following files fails.
+    std::string faultyCU;
+    do{
+      faultFileCounter += 1;
+      faultyCU = originalCU + "_fault" + std::to_string(faultFileCounter) + ".cu";
+    } while(llvm::sys::fs::exists(faultyCU));
+
+    // orginial: cling[m_Counter].cu
+    // faulty file: cling[m_Counter]_fault[faultFileCounter].cu
+    return llvm::sys::fs::rename(originalCU + ".cu", faultyCU);
+
   }
 
 } // end namespace cling
