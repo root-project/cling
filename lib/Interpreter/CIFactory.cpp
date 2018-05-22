@@ -571,8 +571,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                     const std::string &Name, int Val) {
   smallstream Strm;
   Strm << Name << "=" << Val;
-  if (PPOpts.Macros.find(std::make_pair(Name, true)) == PPOpts.Macros.end()
-      && PPOpts.Macros.find(std::make_pair(Name, false)) == PPOpts.Macros.end())
+  if (std::find(PPOpts.Macros.begin(), PPOpts.Macros.end(),
+                std::make_pair(Name, true))
+      == PPOpts.Macros.end()
+      && std::find(PPOpts.Macros.begin(), PPOpts.Macros.end(),
+                   std::make_pair(Name, false))
+      == PPOpts.Macros.end())
     PPOpts.addMacroDef(Strm.str());
 }
 
