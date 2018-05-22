@@ -676,6 +676,16 @@ def cleanup():
             shutil.rmtree(os.path.join(workdir, 'Install'))
     gInCleanup = False
 
+def check_version_string_ge(vstring, min_vstring):
+    version_fields = [int(x) for x in vstring.split('.')]
+    min_versions = [int(x) for x in min_vstring.split('.')]
+    for i in range(0,len(min_versions)):
+        if version_fields[i] < min_versions[i]:
+            return False
+        elif version_fields[i] > min_versions[i]:
+            return True
+    return True
+
 
 ###############################################################################
 #            Debian specific functions (ported from debianize.sh)             #
@@ -695,7 +705,7 @@ def check_ubuntu(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "cmake":
         CMAKE = os.environ.get('CMAKE', 'cmake')
-        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+        if not check_version_string_ge(exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1], '3.4.3'):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -975,7 +985,7 @@ def check_redhat(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "cmake":
         CMAKE = os.environ.get('CMAKE', 'cmake')
-        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+        if not check_version_string_ge(exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1], '3.4.3'):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -1477,7 +1487,7 @@ def check_mac(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "cmake":
         CMAKE = os.environ.get('CMAKE', 'cmake')
-        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+        if not check_version_string_ge(exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1], '3.4.3'):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
