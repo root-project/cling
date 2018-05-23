@@ -695,7 +695,7 @@ def check_ubuntu(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "cmake":
         CMAKE = os.environ.get('CMAKE', 'cmake')
-        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+        if tuple(map(int, exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1].split('.'))) < (3, 4, 3):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -975,7 +975,7 @@ def check_redhat(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "cmake":
         CMAKE = os.environ.get('CMAKE', 'cmake')
-        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+        if tuple(map(int, exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1].split('.'))) < (3, 4, 3):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -1477,7 +1477,7 @@ def check_mac(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
     elif pkg == "cmake":
         CMAKE = os.environ.get('CMAKE', 'cmake')
-        if exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1] < '3.4.3':
+        if tuple(map(int, exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1].split('.'))) < (3, 4, 3):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
