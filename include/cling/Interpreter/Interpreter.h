@@ -70,7 +70,6 @@ namespace cling {
   class LookupHelper;
   class Value;
   class Transaction;
-  class IncrementalCUDADeviceCompiler;
 
   ///\brief Class that implements the interpreter-like behavior. It manages the
   /// incremental compilation.
@@ -158,10 +157,6 @@ namespace cling {
     ///\brief Cling's reflection information query.
     ///
     std::unique_ptr<LookupHelper> m_LookupHelper;
-
-    ///\brief Cling's worker class implementing the compilation of CUDA device code
-    ///
-    std::unique_ptr<IncrementalCUDADeviceCompiler> m_CUDACompiler;
 
     ///\brief Cache of compiled destructors wrappers.
     std::unordered_map<const clang::RecordDecl*, void*> m_DtorWrappers;
@@ -347,8 +342,6 @@ namespace cling {
     llvm::LLVMContext* getLLVMContext() { return m_LLVMContext.get(); }
 
     LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
-
-    IncrementalCUDADeviceCompiler& getCUDADeviceCompiler() { return *m_CUDACompiler; }
 
     const clang::Parser& getParser() const;
     clang::Parser& getParser();
