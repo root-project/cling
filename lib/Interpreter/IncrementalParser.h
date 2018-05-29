@@ -43,6 +43,7 @@ namespace cling {
   class Transaction;
   class TransactionPool;
   class ASTTransformer;
+  class IncrementalCUDADeviceCompiler;
 
   ///\brief Responsible for the incremental parsing and compilation of input.
   ///
@@ -93,6 +94,10 @@ namespace cling {
     ///\brief DiagnosticConsumer instance
     ///
     std::unique_ptr<clang::DiagnosticConsumer> m_DiagConsumer;
+
+    ///\brief Cling's worker class implementing the compilation of CUDA device code
+    ///
+    std::unique_ptr<IncrementalCUDADeviceCompiler> m_CUDACompiler;
 
   public:
     enum EParseResult {

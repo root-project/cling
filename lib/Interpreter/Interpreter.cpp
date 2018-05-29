@@ -20,7 +20,6 @@
 #include "ForwardDeclPrinter.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
-#include "IncrementalCUDADeviceCompiler.h"
 #include "MultiplexInterpreterCallbacks.h"
 #include "TransactionUnloader.h"
 
@@ -57,7 +56,6 @@
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Path.h"
 
 #include <string>
@@ -167,7 +165,7 @@ namespace cling {
            m_DyLibManager && m_LookupHelper &&
            (isInSyntaxOnlyMode() || m_Executor);
   }
-  
+
   namespace internal { void symbol_requester(); }
 
   const char* Interpreter::getVersion() {
@@ -236,33 +234,6 @@ namespace cling {
       m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI()));
       if (!m_Executor)
         return;
-    }
-
-    if(!isInSyntaxOnlyMode() && m_Opts.CompilerOpts.CUDA){
-        // Create temporary folder for all files, which the CUDA device compiler
-        // will generate.
-        llvm::SmallString<256> TmpPath;
-        llvm::StringRef sep = llvm::sys::path::get_separator().data();
-        llvm::sys::path::system_temp_directory(false, TmpPath);
-        TmpPath.append(sep.data());
-        TmpPath.append("cling-%%%%");
-        TmpPath.append(sep.data());
-
-        llvm::SmallString<256> TmpFolder;
-        llvm::sys::fs::createUniqueFile(TmpPath.c_str(), TmpFolder);
-        llvm::sys::fs::create_directory(TmpFolder);
-
-        // The CUDA fatbin file is the connection beetween the CUDA device
-        // compiler and the CodeGen of cling. The file will every time reused.
-        if(getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.empty())
-          getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.push_back(
-            std::string(TmpFolder.c_str()) + "cling.fatbin");
-
-        m_CUDACompiler.reset(
-          new IncrementalCUDADeviceCompiler(TmpFolder.c_str(),
-                                            m_OptLevel,
-                                            m_Opts,
-                                            getCI()));
     }
 
     // Tell the diagnostic client that we are entering file parsing mode.
@@ -702,7 +673,7 @@ namespace cling {
     }
     return Value;
   }
-  
+
   ///\brief Maybe transform the input line to implement cint command line
   /// semantics (declarations are global) and compile to produce a module.
   ///
@@ -898,11 +869,11 @@ namespace cling {
     // Ignore diagnostics when we tab complete.
     // This is because we get redefinition errors due to the import of the decls.
     clang::IgnoringDiagConsumer* ignoringDiagConsumer =
-                                            new clang::IgnoringDiagConsumer();                      
+                                            new clang::IgnoringDiagConsumer();
     childSemaRef.getDiagnostics().setClient(ignoringDiagConsumer, true);
     DiagnosticsEngine& parentDiagnostics = this->getCI()->getSema().getDiagnostics();
 
-    std::unique_ptr<DiagnosticConsumer> ownerDiagConsumer = 
+    std::unique_ptr<DiagnosticConsumer> ownerDiagConsumer =
                                                 parentDiagnostics.takeClient();
     auto clientDiagConsumer = parentDiagnostics.getClient();
     parentDiagnostics.setClient(ignoringDiagConsumer, /*owns*/ false);
