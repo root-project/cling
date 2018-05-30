@@ -1529,9 +1529,6 @@ namespace cling {
     assert(!isInSyntaxOnlyMode() && "Running on what?");
     assert(T.getState() == Transaction::kCommitted && "Must be committed");
 
-    if (InterpreterCallbacks* callbacks = getCallbacks())
-      callbacks->beforeExecuteTransaction(T);
-
     const std::shared_ptr<llvm::Module>& M = T.getModule();
     if (!M)
       return Interpreter::kExeNoModule;

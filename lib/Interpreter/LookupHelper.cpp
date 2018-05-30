@@ -1452,9 +1452,9 @@ namespace cling {
 
     DigestArgsInput inputEval;
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    Interpreter::PushTransactionRAII pushedT(Interp);
     if (!inputEval(GivenArgs,funcArgs,diagOnOff,P,Interp)) return 0;
 
+    Interpreter::PushTransactionRAII pushedT(Interp);
     return findFunction(foundDC,
                         funcName, GivenArgs, objectIsConst,
                         Context, Interp, functionSelector,
