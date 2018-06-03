@@ -89,7 +89,7 @@ namespace textinput {
     void AddHistoryLine(const char* line);
 
   private:
-    void EmitSignal(char c, EditorRange& r);
+    void HandleControl(char c, EditorRange& r);
     void ProcessNewInput(const InputData& in, EditorRange& r);
     void DisplayNewInput(EditorRange& r, size_t& oldCursorPos);
 

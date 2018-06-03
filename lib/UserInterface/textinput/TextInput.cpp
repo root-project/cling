@@ -152,12 +152,19 @@ namespace textinput {
         && (Cmd.GetChar() == 3 || Cmd.GetChar() == 26)) {
       // If there are modifications in the queue, process them now.
       UpdateDisplay(R);
-      EmitSignal(Cmd.GetChar(), R);
+      HandleControl(Cmd.GetChar(), R);
     } else if (Cmd.GetKind() == Editor::kCKCommand
                && Cmd.GetCommandID() == Editor::kCmdWindowResize) {
       std::for_each(fContext->GetDisplays().begin(),
                     fContext->GetDisplays().end(),
                     [](Display *D) { return D->NotifyWindowChange(); });
+    } else if (Cmd.GetKind() == Editor::kCKCommand
+      && Cmd.GetCommandID() == Editor::kCmdDel &&
+      !fContext->GetLine().length()) {
+      fContext->SetLine(".q");
+      Redraw();
+      fLastReadResult = kRREOF;
+      return;
     } else {
       if (!in.IsRaw() && in.GetExtendedInput() == InputData::kEIEOF) {
         fLastReadResult = kRREOF;
@@ -228,15 +235,18 @@ namespace textinput {
   }
 
   void
-  TextInput::EmitSignal(char C, EditorRange& R) {
-
-    ReleaseInputOutput();
-    SignalHandler* Signal = fContext->GetSignalHandler();
-
-    if (C == 3)
-      Signal->EmitCtrlC();
-    else if (C == 26)
+  TextInput::HandleControl(char C, EditorRange& R) {
+    if (C == 3) { // Control+C
+      std::string input = fContext->GetLine().GetText();
+      size_t length = input.size();
+      fContext->SetLine(input + "^C");
+      UpdateDisplay(EditorRange(Range(length), Range::AllText()));
+      TakeInput(input, true);
+    } else if (C == 26) { // Control+Z
+      ReleaseInputOutput();
+      SignalHandler* Signal = fContext->GetSignalHandler();
       Signal->EmitCtrlZ();
+    }
 
     GrabInputOutput();
 

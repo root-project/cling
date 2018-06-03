@@ -22,7 +22,6 @@ namespace textinput {
     SignalHandler() {}
     ~SignalHandler() {}
 
-    void EmitCtrlC();
     void EmitCtrlZ();
   };
 }

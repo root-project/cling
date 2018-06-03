@@ -23,11 +23,6 @@ namespace textinput {
   using std::raise;
 
   void
-  SignalHandler::EmitCtrlC() {
-    raise(SIGINT);
-  }
-
-  void
   SignalHandler::EmitCtrlZ() {
 #ifndef _WIN32
     raise(SIGTSTP);
