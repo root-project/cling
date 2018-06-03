@@ -71,7 +71,7 @@ namespace textinput {
 
     Text& operator+=(char C) { insert(length(), C); return *this; }
     Text& operator=(const std::string& S) {
-      // Assing string S to this, initialize with default colors.
+      // Assign string S to this, initialize with default colors.
       fColor.clear();
       fColor.resize(S.length());
       fString = S;
