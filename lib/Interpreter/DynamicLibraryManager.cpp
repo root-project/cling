@@ -206,6 +206,12 @@ namespace cling {
     std::string errMsg;
     DyLibHandle dyLibHandle = platform::DLOpen(canonicalLoadedLib, &errMsg);
     if (!dyLibHandle) {
+      // We emit callback to LibraryLoadingFailed when we get error with error message.
+      if (InterpreterCallbacks* C = getCallbacks()) {
+        if (C->LibraryLoadingFailed(errMsg, libStem, permanent, resolved))
+          return kLoadLibSuccess;
+      }
+
       cling::errs() << "cling::DynamicLibraryManager::loadLibrary(): " << errMsg
                     << '\n';
       return kLoadLibLoadError;
