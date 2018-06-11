@@ -73,8 +73,9 @@ namespace cling {
     std::unique_ptr<CUDACompilerArgs> m_CuArgs;
 
     ///\brief The counter responsible to generate a chain of .cu source files
-    /// and .cu.pch files.
-    unsigned int m_Counter = 0;
+    /// and .cu.pch files. Starts with 1 because the cling0.cu file is reserved
+    /// for internal code.
+    unsigned int m_Counter = 1;
 
     ///\brief Is true if all necessary files have been generated and clang and
     /// cuda NVIDIA fatbinary are found.
