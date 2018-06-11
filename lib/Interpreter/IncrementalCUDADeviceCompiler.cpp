@@ -62,6 +62,27 @@ namespace cling {
 
     m_HeaderSearchOptions = CI.getHeaderSearchOptsPtr();
 
+    // This code will write to the first .cu-file. It is necessary that some
+    // cling generated code can be handled.
+    const std::string initialCUDADeviceCode =
+      "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn, float value);\n"
+      "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn, double value);\n"
+      "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn, long double value);\n"
+      "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn, unsigned long long value);\n"
+      "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn, const void* value);\n";
+
+    std::error_code EC;
+    llvm::raw_fd_ostream cuFile(m_FilePath + "cling0.cu", EC,
+      llvm::sys::fs::F_Text);
+    if (EC) {
+      llvm::errs() << "Could not open " << m_FilePath << "cling0.cu" <<
+        EC.message() << "\n";
+      return;
+    }
+
+    cuFile << initialCUDADeviceCode;
+    cuFile.close();
+
     m_Init = true;
   }
 
@@ -223,10 +244,10 @@ namespace cling {
     if(T != nullptr &&  T->getWrapperFD()){
       for(auto iDCI = T->decls_begin(), eDCI = T->decls_end();
           iDCI != eDCI; ++iDCI){
-        for(clang::Decl * decl : iDCI->m_DGR) {
-          if(clang::VarDecl * v = llvm::dyn_cast<clang::VarDecl>(decl)){
+        if(iDCI->m_Call == Transaction::ConsumerCallInfo::kCCIHandleTopLevelDecl){
+          for(clang::Decl * decl : iDCI->m_DGR) {
             foundVarDecl = true;
-            v->print(cuFile);
+            decl->print(cuFile);
             // The c++ code has no whitespace and semicolon at the end.
             cuFile << ";\n";
           }
@@ -301,6 +322,8 @@ namespace cling {
     for(const std::string & s : m_CuArgs->additionalPtxOpt){
       argv.push_back(s.c_str());
     }
+
+    argv.push_back("-Wno-unused-value");
 
     std::vector<const char *> argvChar;
     argvChar.resize(argv.size()+1);
