@@ -110,7 +110,7 @@ matrix:
 install:
 # If cmake is not in the cache, download it.
 - |
-  @ echo "travis_fold:start:install"
+  echo "travis_fold:start:install"
   CLING_USER_ROOT=`dirname $TRAVIS_BUILD_DIR`
   export CLING_BUILD_DEPS="$CLING_USER_ROOT/deps"
   export CLING_LOCAL_BIN="$CLING_USER_ROOT/bin"
@@ -127,7 +127,7 @@ install:
       export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DCXX_EXTENSIONS=OFF"
     fi
   fi
-  @ echo "travis_fold:end:install"
+  echo "travis_fold:end:install"
 
   # Containers need to timeout before the buildscript exits
   TIMEOUT='37m' # Any more and Travis might cancel
@@ -145,7 +145,7 @@ before_script:
    if [ -n "$NIGHTLY_CRON_SYNC" ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
       && [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] \
       && [ "$TRAVIS_REPO_SLUG" == "vgvassilev/cling" ] ; then
-      @ echo "travis_fold:start:sync-vgvassilev"
+      echo "travis_fold:start:sync-vgvassilev"
       # Override the default travis clone command to enable sync.
       cd ../../ && rm -fr ${TRAVIS_REPO_SLUG}
       git clone https://$OAUTH_TOKEN@github.com/${TRAVIS_REPO_SLUG} ${TRAVIS_REPO_SLUG}
@@ -164,12 +164,12 @@ before_script:
 
       # Some debug output.
       git remote -v && git branch -a
-      @ echo "travis_fold:end:sync-vgvassilev"
+      echo "travis_fold:end:sync-vgvassilev"
    fi
 
 script:
 - |
-  @ echo "travis_fold:start:cpt-build"
+  echo "travis_fold:start:cpt-build"
   if [ -z $TRAVIS_TAG ]; then
     TIMEOUTEXE=timeout;
     if ! `which timeout`; then TIMEOUTEXE=gtimeout; fi
@@ -188,13 +188,13 @@ script:
       --with-llvm-url=http://root.cern.ch/git/llvm.git \
       --with-cmake-flags="$CLING_BUILD_FLAGS"
   fi
-  @ echo "travis_fold:end:cpt-build"
+  echo "travis_fold:end:cpt-build"
 
   RESULT="$?"
   echo "Build Result: $RESULT"
-  @ echo "travis_fold:start:ccache-s"
+  echo "travis_fold:start:ccache-s"
   ccache -s
-  @ echo "travis_fold:end:ccache-s"
+  echo "travis_fold:end:ccache-s"
   if [ $RESULT -ne 124 ]; then
     return $RESULT
   fi
@@ -218,7 +218,7 @@ notifications:
 
 before_deploy:
 - |
-  @ echo "travis_fold:start:before_deploy"
+  echo "travis_fold:start:before_deploy"
   export RELEASE_TARBALL=$(ls $HOME/ci/build/cling*.tar.bz2)
   if [[ $TRAVIS_TAG -eq "cling-nightlies" ]]; then
     NIGHTLY="`dirname $RELEASE_TARBALL`/`date "+%Y-%b-%d-"``basename $RELEASE_TARBALL`"
@@ -227,7 +227,7 @@ before_deploy:
     export RELEASE_TARBALL=$NIGHTLY
   fi
   echo "Deploying $RELEASE_TARBALL to GitHub releases"
-  @ echo "travis_fold:end:before_deploy"
+  echo "travis_fold:end:before_deploy"
 
 
 deploy:
@@ -243,14 +243,14 @@ deploy:
 after_failure:
 - |
   if [ -n "$CCACHE_LOGFILE" ]; then
-    @ echo "travis_fold:begin:ccache_log"
+    echo "travis_fold:begin:ccache_log"
     echo "ccache log stored to:"
     cat "$CCACHE_LOGFILE" | curl -sT - chunk.io
-    @ echo "travis_fold:end:ccache_log"
+    echo "travis_fold:end:ccache_log"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    @ echo "travis_fold:begin:env_dump"
+    echo "travis_fold:begin:env_dump"
     echo "Dumping env."
     find $CLING_LOCAL_BIN -type f -print0 -exec cat {} \;
     cmake --version
@@ -258,25 +258,25 @@ after_failure:
     $CXX --version
     ls -al `which ld` && ld -v
     export
-    @ echo "travis_fold:end:env_dump"
+    echo "travis_fold:end:env_dump"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    @ echo "travis_fold:begin:cmakeoutputlog_dump"
+    echo "travis_fold:begin:cmakeoutputlog_dump"
     echo "Dumping CMakeOutput.log"
     cat /home/travis/ci/build/builddir/CMakeFiles/CMakeOutput.log
-    @ echo "travis_fold:end:cmakeoutputlog_dump"
+    echo "travis_fold:end:cmakeoutputlog_dump"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    @ echo "travis_fold:begin:cmakeerrorlog_dump"
+    echo "travis_fold:begin:cmakeerrorlog_dump"
     echo "Dumping CMakeError.log"
     cat /home/travis/ci/build/builddir/CMakeFiles/CMakeError.log
-    @ echo "travis_fold:end:cmakeerrorlog_dump"
+    echo "travis_fold:end:cmakeerrorlog_dump"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    @ echo "travis_fold:begin:clingcompiledata_dump"
+    echo "travis_fold:begin:clingcompiledata_dump"
     echo "Dumping cling-compiledata.h..."
     COMPILE_DATA_H=$HOME/ci/build/builddir/tools/cling/lib/Interpreter/cling-compiledata.h
     cat $COMPILE_DATA_H
@@ -284,13 +284,13 @@ after_failure:
     echo "Running cling-compiledata compiler..."
     COMPDATA_CXX=$(cat $COMPILE_DATA_H | cut -c 18- | sed "s,\",,g")
     eval echo | LC_ALL=C $COMPDATA_CXX -xc++ -E -v -
-    @ echo "travis_fold:end:clingcompiledata_dump"
+    echo "travis_fold:end:clingcompiledata_dump"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then
-    @ echo "travis_fold:begin:ccache_stats"
+    echo "travis_fold:begin:ccache_stats"
     echo "Dumping `which ccache`"
     ccache -s
     ls -la /usr/lib/ccache/ || ls -la /usr/local/opt/ccache/libexec
-    @ echo "travis_fold:end:ccache_stats"
+    echo "travis_fold:end:ccache_stats"
   fi
