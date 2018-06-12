@@ -124,7 +124,8 @@ install:
 #        export CFLAGS="-D__builtin_unreachable=__builtin_trap"
 #      fi
 #    fi
-#    PATH="/usr/local/opt/ccache/libexec:$PATH"
+
+    PATH="/usr/local/opt/ccache/libexec:$PATH"
     # This is where timeout is hiding now, is the above still neccessary?
 #    PATH="$PATH:/usr/local/opt/coreutils/libexec/gnubin"
   fi
