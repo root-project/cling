@@ -245,14 +245,14 @@ deploy:
 after_failure:
 - |
   if [ -n "$CCACHE_LOGFILE" ]; then
-    echo "travis_fold:begin:ccache_log"
+    echo "travis_fold:start:ccache_log"
     echo "ccache log stored to:"
     cat "$CCACHE_LOGFILE" | curl -sT - chunk.io
     echo "travis_fold:end:ccache_log"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    echo "travis_fold:begin:env_dump"
+    echo "travis_fold:start:env_dump"
     echo "Dumping env."
     find $CLING_LOCAL_BIN -type f -print0 -exec cat {} \;
     cmake --version
@@ -264,21 +264,21 @@ after_failure:
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    echo "travis_fold:begin:cmakeoutputlog_dump"
+    echo "travis_fold:start:cmakeoutputlog_dump"
     echo "Dumping CMakeOutput.log"
     cat /home/travis/ci/build/builddir/CMakeFiles/CMakeOutput.log
     echo "travis_fold:end:cmakeoutputlog_dump"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    echo "travis_fold:begin:cmakeerrorlog_dump"
+    echo "travis_fold:start:cmakeerrorlog_dump"
     echo "Dumping CMakeError.log"
     cat /home/travis/ci/build/builddir/CMakeFiles/CMakeError.log
     echo "travis_fold:end:cmakeerrorlog_dump"
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
-    echo "travis_fold:begin:clingcompiledata_dump"
+    echo "travis_fold:start:clingcompiledata_dump"
     echo "Dumping cling-compiledata.h..."
     COMPILE_DATA_H=$HOME/ci/build/builddir/tools/cling/lib/Interpreter/cling-compiledata.h
     cat $COMPILE_DATA_H
@@ -290,7 +290,7 @@ after_failure:
   fi
 - |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then
-    echo "travis_fold:begin:ccache_stats"
+    echo "travis_fold:start:ccache_stats"
     echo "Dumping `which ccache`"
     ccache -s
     ls -la /usr/lib/ccache/ || ls -la /usr/local/opt/ccache/libexec
