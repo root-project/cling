@@ -171,8 +171,8 @@ script:
 - |
   echo "travis_fold:start:cpt-build"
   if [ -z $TRAVIS_TAG ]; then
-    TIMEOUTEXE=timeout;
-    if ! `which timeout`; then TIMEOUTEXE=gtimeout; fi
+    TIMEOUTEXE=`which timeout`;
+    if [ "x" = "x$TIMEOUTEXE" ] ; then TIMEOUTEXE=gtimeout; fi
     $TIMEOUTEXE -s SIGTERM $TIMEOUT tools/packaging/cpt.py \
       --current-dev=tar \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
