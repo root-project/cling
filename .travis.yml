@@ -73,7 +73,7 @@ matrix:
       env: COMPILER=g++-7 CCOMPILER=gcc-7
       before_install:
         brew cask uninstall oclint
-        brew install --overwrite gcc@7
+        brew install gcc@7
 
     - os: linux
       env: COMPILER=g++-7 CCOMPILER=gcc-7
