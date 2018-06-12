@@ -116,18 +116,8 @@ install:
   export CLING_LOCAL_BIN="$CLING_USER_ROOT/bin"
   if [ $TRAVIS_OS_NAME == 'osx' ]; then
     brew install ccache python coreutils
-#    if [[ "$COMPILER" == g++-* ]]; then
-#      brew install "gcc@${COMPILER##*++-}"
-#      brew link --overwrite "gcc@${COMPILER##*++-}"
-#      if [[ "$COMPILER" == "g++-6" ]]; then
-#        export CXXFLAGS="-D__builtin_unreachable=__builtin_trap"
-#        export CFLAGS="-D__builtin_unreachable=__builtin_trap"
-#      fi
-#    fi
 
     PATH="/usr/local/opt/ccache/libexec:$PATH"
-    # This is where timeout is hiding now, is the above still neccessary?
-#    PATH="$PATH:/usr/local/opt/coreutils/libexec/gnubin"
   fi
 
   if [ "$COMPILER" == "g++-7" ]; then
