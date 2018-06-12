@@ -4,7 +4,7 @@ language: cpp
 
 addons: &addons
   apt:
-    packages: timeout
+    packages: coreutils
 
 cache:
   apt: true
