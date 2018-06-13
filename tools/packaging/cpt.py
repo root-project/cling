@@ -90,6 +90,13 @@ def exec_subprocess_check_output(cmd, cwd):
     finally:
         return out
 
+def travis_fold_start(tag):
+    if TRAVIS_BUILD_DIR:
+       print('travis_fold:start:cpt-%s:' % (tag))
+
+def travis_fold_end(tag):
+   if TRAVIS_BUILD_DIR:
+      print('travis_fold:end:cpt-%s:' % (tag))
 
 def box_draw_header():
     msg = 'cling (' + platform.machine() + ')' + formatdate(time.time(), tzinfo())
@@ -461,6 +468,7 @@ class Build(object):
                                  LLVM_OBJ_ROOT)
 
 def compile(arg, build_libcpp):
+    travis_fold_start("compile")
     global prefix, EXTRA_CMAKE_FLAGS
     prefix = arg
     PYTHON = sys.executable
@@ -553,8 +561,10 @@ def compile(arg, build_libcpp):
                                   + ' -v ".I"', shell=True)
         except Exception as e:
             print(e)
+    travis_fold_start("compile")
 
 def install_prefix():
+    travis_fold_start("install")
     global prefix
     set_vars()
 
@@ -579,6 +589,7 @@ def install_prefix():
                         os.makedirs(os.path.join(prefix, os.path.dirname(f)))
                     shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
                     break
+    travis_fold_end("install")
 
 
 def runSingleTest(test, Idx = 2, Recurse = True):
@@ -1939,6 +1950,7 @@ Install/update the required packages by:
                 continue
 
 if args['current_dev']:
+    travis_fold_start("git-clone")
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
         'utf-8')
@@ -1968,6 +1980,7 @@ if args['current_dev']:
         print('\n')
     else:
         fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
+    travis_fold_end("git-clone")
 
     set_version()
     if args['current_dev'] == 'tar':

@@ -170,7 +170,6 @@ before_script:
 
 script:
 - |
-  echo "travis_fold:start:cpt-build"
   if [ -z $TRAVIS_TAG ]; then
     TIMEOUTEXE=`which timeout`;
     if [ "x" = "x$TIMEOUTEXE" ] ; then TIMEOUTEXE=gtimeout; fi
@@ -189,7 +188,6 @@ script:
       --with-llvm-url=http://root.cern.ch/git/llvm.git \
       --with-cmake-flags="$CLING_BUILD_FLAGS"
   fi
-  echo "travis_fold:end:cpt-build"
 
   RESULT="$?"
   echo "Build Result: $RESULT"
