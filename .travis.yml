@@ -71,6 +71,7 @@ matrix:
 
     - os: osx
       env: COMPILER=g++-7 CCOMPILER=gcc-7
+      osx_image: xcode8.3
       before_install:
         - brew cask uninstall oclint
         - brew install gcc@7
@@ -93,9 +94,9 @@ matrix:
       compiler: clang-3.9
 
     - os: osx
-      env: COMPILER=g++-7 CCOMPILER=gcc-7
-      osx_image: xcode8.3
-      compiler: gcc-7
+      env: COMPILER=clang++ CCOMPILER=clang
+      osx_image: xcode9.3
+      compiler: clang
 
     - os: linux
       env: CXXLIB=libstdc++ COMPILER=clang++-5.0 CCOMPILER=clang-5.0
