@@ -86,7 +86,7 @@ matrix:
       compiler: gcc-7
 
     - os: linux
-      env: CXXLIB=libstdc++ COMPILER=clang++-3.9 CCOMPILER=clang-3.9
+      env: CXXLIB=libstdc++ COMPILER="ccache clang++-3.9" CCOMPILER="ccache clang-3.9"
       addons:
         apt:
           sources: llvm-toolchain-trusty-3.9
