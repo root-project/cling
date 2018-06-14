@@ -80,7 +80,7 @@ or type
 Jupyter
 -------
 Cling comes with a [Jupyter](http://jupyter.org) kernel. After building cling,
-install Jupyter and cling's kernel by following the README.mk in
+install Jupyter and cling's kernel by following the README.md in
 [tools/Jupyter](tools/Jupyter). Make sure cling is in your PATH when you start jupyter!
 
 
