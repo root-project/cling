@@ -561,7 +561,7 @@ def compile(arg, build_libcpp):
                                   + ' -v ".I"', shell=True)
         except Exception as e:
             print(e)
-    travis_fold_start("compile")
+    travis_fold_end("compile")
 
 def install_prefix():
     travis_fold_start("install")
