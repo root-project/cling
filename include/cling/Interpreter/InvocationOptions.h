@@ -37,7 +37,8 @@ namespace cling {
     ///\param [in] argv - arguments
     ///\param [out] Inputs - save all arguments that are inputs/files here
     ///
-    void Parse(int argc, const char* const argv[],
+    void Parse(int argc, 
+               const char* const * argv,
                std::vector<std::string>* Inputs = nullptr);
 
     ///\brief By default clang will try to set up an Interpreter with features
@@ -72,7 +73,7 @@ namespace cling {
 
   class InvocationOptions {
   public:
-    InvocationOptions(int argc, const char* const argv[]);
+    InvocationOptions(int argc = 0, const char* const * argv = nullptr);
 
     /// \brief A line starting with this string is assumed to contain a
     ///        directive for the MetaProcessor. Defaults to "."

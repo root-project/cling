@@ -837,7 +837,11 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     const size_t argc = COpts.Remaining.size();
     const char* const* argv = &COpts.Remaining[0];
-    std::vector<const char*> argvCompile(argv, argv+1);
+    std::vector<const char*> argvCompile;
+    if(argc && argv) {
+        argvCompile = std::vector<const char*>(argv, argv+1);
+    }
+    
     argvCompile.reserve(argc+5);
 
     // Variables for storing the memory of the C-string arguments.
@@ -919,7 +923,10 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
     // Add host specific includes, -resource-dir if necessary, and -isysroot
-    std::string ClingBin = GetExecutablePath(argv[0]);
+    std::string ClingBin;
+    if(argv) {
+        ClingBin = GetExecutablePath(argv[0]);
+    }
     AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts);
 
     // Be explicit about the stdlib on OS X
@@ -957,7 +964,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // COFF format currently needs a few changes in LLVM to function properly.
     TheTriple.setObjectFormat(llvm::Triple::COFF);
 #endif
-    clang::driver::Driver Drvr(argv[0], TheTriple.getTriple(), *Diags);
+    clang::driver::Driver Drvr(ClingBin, TheTriple.getTriple(), *Diags);
     //Drvr.setWarnMissingInput(false);
     Drvr.setCheckInputsExist(false); // think foo.C(12)
     llvm::ArrayRef<const char*>RF(&(argvCompile[0]), argvCompile.size());

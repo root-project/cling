@@ -16,8 +16,8 @@
 
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
-#include "llvm/Option/Option.h"
 #include "llvm/Option/OptTable.h"
+#include "llvm/Option/Option.h"
 
 #include <memory>
 
@@ -40,108 +40,141 @@ namespace {
 static const char kNoStdInc[] = "-nostdinc";
 #endif
 
-#define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+#define PREFIX(NAME, VALUE) const char* const NAME[] = VALUE;
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
                HELPTEXT, METAVAR, VALUES)
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
 #undef PREFIX
 
-  static const OptTable::Info ClingInfoTable[] = {
+static const OptTable::Info ClingInfoTable[] = {
 #define PREFIX(NAME, VALUE)
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
-               HELPTEXT, METAVAR, VALUES)   \
-  { PREFIX, NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, PARAM, \
-    FLAGS, OPT_##GROUP, OPT_##ALIAS, ALIASARGS, VALUES },
+               HELPTEXT, METAVAR, VALUES)                                     \
+  {PREFIX, NAME,  HELPTEXT,    METAVAR,     OPT_##ID,  Option::KIND##Class,   \
+   PARAM,  FLAGS, OPT_##GROUP, OPT_##ALIAS, ALIASARGS, VALUES},
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
 #undef PREFIX
-  };
+};
 
-  class ClingOptTable : public OptTable {
-  public:
-    ClingOptTable()
-      : OptTable(ClingInfoTable) {}
-  };
+class ClingOptTable : public OptTable {
+ public:
+  ClingOptTable() : OptTable(ClingInfoTable) {}
+};
 
-  static OptTable* CreateClingOptTable() {
-    return new ClingOptTable();
-  }
+static OptTable* CreateClingOptTable() { return new ClingOptTable(); }
 
-  static void ParseStartupOpts(cling::InvocationOptions& Opts,
-                               InputArgList& Args) {
-    Opts.ErrorOut = Args.hasArg(OPT__errorout);
-    Opts.NoLogo = Args.hasArg(OPT__nologo);
-    Opts.ShowVersion = Args.hasArg(OPT_version);
-    Opts.Help = Args.hasArg(OPT_help);
-    Opts.NoRuntime = Args.hasArg(OPT_noruntime);
-    if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ)) {
-      Opts.MetaString = MetaStringArg->getValue();
-      if (Opts.MetaString.empty()) {
-        cling::errs() << "ERROR: meta string must be non-empty! Defaulting to '.'.\n";
-        Opts.MetaString = ".";
-      }
+static void ParseStartupOpts(cling::InvocationOptions& Opts,
+                             InputArgList& Args) {
+  Opts.ErrorOut = Args.hasArg(OPT__errorout);
+  Opts.NoLogo = Args.hasArg(OPT__nologo);
+  Opts.ShowVersion = Args.hasArg(OPT_version);
+  Opts.Help = Args.hasArg(OPT_help);
+  Opts.NoRuntime = Args.hasArg(OPT_noruntime);
+  if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ)) {
+    Opts.MetaString = MetaStringArg->getValue();
+    if (Opts.MetaString.empty()) {
+      cling::errs()
+          << "ERROR: meta string must be non-empty! Defaulting to '.'.\n";
+      Opts.MetaString = ".";
     }
-  }
-
-  static void Extend(std::vector<std::string>& A, std::vector<std::string> B) {
-    A.reserve(A.size()+B.size());
-    for (std::string& Val: B)
-      A.push_back(std::move(Val));
-  }
-
-  static void ParseLinkerOpts(cling::InvocationOptions& Opts,
-                              InputArgList& Args /* , Diags */) {
-    Extend(Opts.LibsToLoad, Args.getAllArgValues(OPT_l));
-    Extend(Opts.LibSearchPath, Args.getAllArgValues(OPT_L));
   }
 }
 
+static void Extend(std::vector<std::string>& A, std::vector<std::string> B) {
+  A.reserve(A.size() + B.size());
+  for (std::string& Val : B) A.push_back(std::move(Val));
+}
+
+static void ParseLinkerOpts(cling::InvocationOptions& Opts,
+                            InputArgList& Args /* , Diags */) {
+  Extend(Opts.LibsToLoad, Args.getAllArgValues(OPT_l));
+  Extend(Opts.LibSearchPath, Args.getAllArgValues(OPT_L));
+}
+}  // namespace
+
 CompilerOptions::CompilerOptions(int argc, const char* const* argv)
-    : Language(false), ResourceDir(false), SysRoot(false), NoBuiltinInc(false),
-      NoCXXInc(false), StdVersion(false), StdLib(false), HasOutput(false),
-      Verbose(false), CxxModules(false), CUDA(false) {
+    : Language(false),
+      ResourceDir(false),
+      SysRoot(false),
+      NoBuiltinInc(false),
+      NoCXXInc(false),
+      StdVersion(false),
+      StdLib(false),
+      HasOutput(false),
+      Verbose(false),
+      CxxModules(false),
+      CUDA(false) {
   if (argc && argv) {
     // Preserve what's already in Remaining, the user might want to push args
     // to clang while still using main's argc, argv
     // insert should/usually does call reserve, but its not part of the standard
     Remaining.reserve(Remaining.size() + argc);
-    Remaining.insert(Remaining.end(), argv, argv+argc);
+    Remaining.insert(Remaining.end(), argv, argv + argc);
     Parse(argc, argv);
   }
 }
 
-void CompilerOptions::Parse(int argc, const char* const argv[],
+void CompilerOptions::Parse(int argc, const char* const* argv,
                             std::vector<std::string>* Inputs) {
   unsigned MissingArgIndex, MissingArgCount;
   std::unique_ptr<OptTable> OptsC1(createDriverOptTable());
-  ArrayRef<const char *> ArgStrings(argv+1, argv + argc);
 
-  InputArgList Args(OptsC1->ParseArgs(ArgStrings, MissingArgIndex,
-                    MissingArgCount, 0,
-                    options::NoDriverOption | options::CLOption));
+  ArrayRef<const char*> ArgStrings;
+  if (argc && argv) {
+    ArgStrings = ArrayRef<const char*>(argv + 1, argv + argc);
+  }
+
+  InputArgList Args(
+      OptsC1->ParseArgs(ArgStrings, MissingArgIndex, MissingArgCount, 0,
+                        options::NoDriverOption | options::CLOption));
 
   for (const Arg* arg : Args) {
     switch (arg->getOption().getID()) {
       // case options::OPT_d_Flag:
       case options::OPT_E:
-      case options::OPT_o: HasOutput = true; break;
-      case options::OPT_x: Language = true;
-                           CUDA = llvm::StringRef(arg->getValue()) == "cuda";
-                           break;
-      case options::OPT_resource_dir: ResourceDir = true; break;
-      case options::OPT_isysroot: SysRoot = true; break;
-      case options::OPT_std_EQ: StdVersion = true; break;
-      case options::OPT_stdlib_EQ: StdLib = true; break;
+      case options::OPT_o:
+        HasOutput = true;
+        break;
+      case options::OPT_x:
+        Language = true;
+        CUDA = llvm::StringRef(arg->getValue()) == "cuda";
+        break;
+      case options::OPT_resource_dir:
+        ResourceDir = true;
+        break;
+      case options::OPT_isysroot:
+        SysRoot = true;
+        break;
+      case options::OPT_std_EQ:
+        StdVersion = true;
+        break;
+      case options::OPT_stdlib_EQ:
+        StdLib = true;
+        break;
       // case options::OPT_nostdlib:
-      case options::OPT_nobuiltininc: NoBuiltinInc = true; break;
+      case options::OPT_nobuiltininc:
+        NoBuiltinInc = true;
+        break;
       // case options::OPT_nostdinc:
-      case options::OPT_nostdincxx: NoCXXInc = true; break;
-      case options::OPT_v: Verbose = true; break;
-      case options::OPT_fmodules: CxxModules = true; break;
-      case options::OPT_fmodule_name_EQ: LLVM_FALLTHROUGH;
-      case options::OPT_fmodule_name: ModuleName = arg->getValue(); break;
-      case options::OPT_fmodules_cache_path: CachePath = arg->getValue(); break;
+      case options::OPT_nostdincxx:
+        NoCXXInc = true;
+        break;
+      case options::OPT_v:
+        Verbose = true;
+        break;
+      case options::OPT_fmodules:
+        CxxModules = true;
+        break;
+      case options::OPT_fmodule_name_EQ:
+        LLVM_FALLTHROUGH;
+      case options::OPT_fmodule_name:
+        ModuleName = arg->getValue();
+        break;
+      case options::OPT_fmodules_cache_path:
+        CachePath = arg->getValue();
+        break;
 
       default:
         if (Inputs && arg->getOption().getKind() == Option::InputClass)
@@ -154,8 +187,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
 bool CompilerOptions::DefaultLanguage(const LangOptions* LangOpts) const {
   // When StdVersion is set (-std=c++11, -std=gnu++11, etc.) then definitely
   // don't setup the defaults, as they may interfere with what the user is doing
-  if (StdVersion)
-    return false;
+  if (StdVersion) return false;
 
   // Also don't set up the defaults when language is explicitly set; unless
   // the language was set to generate a PCH, in which case definitely do.
@@ -165,33 +197,38 @@ bool CompilerOptions::DefaultLanguage(const LangOptions* LangOpts) const {
   return true;
 }
 
-InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
-  MetaString("."), ErrorOut(false), NoLogo(false), ShowVersion(false),
-  Help(false), NoRuntime(false) {
-
-  ArrayRef<const char *> ArgStrings(argv, argv + argc);
+InvocationOptions::InvocationOptions(int argc, const char* const* argv)
+    : MetaString("."),
+      ErrorOut(false),
+      NoLogo(false),
+      ShowVersion(false),
+      Help(false),
+      NoRuntime(false) {
+  ArrayRef<const char*> ArgStrings;
+  if (argc && argv) {
+    // fill with arguments
+    ArgStrings = ArrayRef<const char*>(argv, argv + argc);
+  }
   unsigned MissingArgIndex, MissingArgCount;
   std::unique_ptr<OptTable> Opts(CreateClingOptTable());
 
-  InputArgList Args(Opts->ParseArgs(ArgStrings, MissingArgIndex,
-                    MissingArgCount, 0,
-                    options::NoDriverOption | options::CLOption));
+  InputArgList Args(
+      Opts->ParseArgs(ArgStrings, MissingArgIndex, MissingArgCount, 0,
+                      options::NoDriverOption | options::CLOption));
 
   // Forward unknown arguments.
   for (const Arg* arg : Args) {
     switch (arg->getOption().getKind()) {
       case Option::FlagClass:
         // pass -v to clang as well
-        if (arg->getOption().getID() != OPT_v)
-          break;
+        if (arg->getOption().getID() != OPT_v) break;
       case Option::UnknownClass:
       case Option::InputClass:
         // prune "-" we need to control where it appears when invoking clang
         if (!arg->getSpelling().equals("-")) {
           if (const char* Arg = argv[arg->getIndex()]) {
 #ifdef CLING_TRANSLATE_NOSTDINCxx
-            if (!::strcmp(Arg, "-nostdinc++"))
-              Arg = kNoStdInc;
+            if (!::strcmp(Arg, "-nostdinc++")) Arg = kNoStdInc;
 #endif
             CompilerOpts.Remaining.push_back(Arg);
           }
@@ -203,7 +240,6 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
 
   // Get Input list and any compiler specific flags we're interested in
   CompilerOpts.Parse(argc, argv, &Inputs);
-
   ParseStartupOpts(*this, Args);
   ParseLinkerOpts(*this, Args);
 }
