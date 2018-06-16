@@ -31,6 +31,7 @@ add_cling_library(clingUtils OBJECT
   PlatformMac.cpp
   PlatformPosix.cpp
   PlatformWin.cpp
+  Signal.cpp
   SourceNormalization.cpp
   UTF8.cpp
   Validation.cpp

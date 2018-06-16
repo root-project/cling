@@ -131,6 +131,8 @@ namespace cling {
       kExeUnkownFunction,
       ///\brief The Transaction had no module (probably an error in CodeGen).
       kExeNoModule,
+      ///\brief Execution was interrupted (recieved a SIGINT during execution).
+      kExeInterrupted,
 
       ///\brief Number of possible results.
       kNumExeResults

@@ -37,6 +37,7 @@
 #include "cling/Utils/AST.h"
 #include "cling/Utils/Casting.h"
 #include "cling/Utils/Output.h"
+#include "cling/Utils/Signal.h"
 #include "cling/Utils/SourceNormalization.h"
 
 #include "clang/AST/ASTContext.h"
@@ -996,9 +997,13 @@ namespace cling {
 
     std::string mangledNameIfNeeded;
     utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
-    IncrementalExecutor::ExecutionResult ExeRes =
-       m_Executor->executeWrapper(mangledNameIfNeeded, res);
-    return ConvertExecutionResult(ExeRes);
+    if (!setjmp(before_execution)) { // If the user interrupted execution, bail
+      IncrementalExecutor::ExecutionResult ExeRes =
+        m_Executor->executeWrapper(mangledNameIfNeeded, res);
+      return ConvertExecutionResult(ExeRes);
+    } else {
+      return kExeInterrupted;
+    }
   }
 
   const FunctionDecl* Interpreter::DeclareCFunction(StringRef name,

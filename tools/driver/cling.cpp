@@ -10,6 +10,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "cling/UserInterface/UserInterface.h"
+#include "cling/Utils/Signal.h"
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -57,6 +58,7 @@ int main( int argc, char **argv ) {
   llvm::llvm_shutdown_obj shutdownTrigger;
 
   llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
+  llvm::sys::SetInterruptFunction(InterruptHandler);
   llvm::PrettyStackTraceProgram X(argc, argv);
 
 #if defined(_WIN32) && defined(_MSC_VER)
