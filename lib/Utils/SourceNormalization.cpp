@@ -375,11 +375,31 @@ size_t cling::utils::getWrapPoint(std::string& source,
       return std::string::npos;
     }
 
-    const tok::TokenKind kind = Tok.getKind();
     // Prior behavior was to return getFileOffset, which was only used as an
     // in a test against std::string::npos. By returning 0 we preserve prior
     // behavior to pass the test against std::string::npos and wrap everything
     const size_t offset = 0;
+
+    // Check, if a function with c++ attributes should be defined.
+    while (Tok.getKind() == tok::l_square) {
+      Lex.Lex(Tok);
+      // Check, if attribute starts with '[['
+      if (Tok.getKind() != tok::l_square) {
+        return offset;
+      }
+      // Check, if the second '[' is closing.
+      if (!Lex.CheckBalance(Tok)) {
+        return offset;
+      }
+      Lex.Lex(Tok);
+      // Check, if the first '[' is closing.
+      if (Tok.getKind() != tok::r_square) {
+        return offset;
+      }
+      Lex.Lex(Tok);
+    }
+
+    const tok::TokenKind kind = Tok.getKind();
 
     if (kind == tok::raw_identifier && !Tok.needsCleaning()) {
       StringRef keyword(Tok.getRawIdentifier());
