@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <string>
+#include <system_error>
 
 // The clang nvptx jit has an growing AST-Tree. At runtime, continuously new
 // statements will append to the AST. To improve the compiletime, the existing

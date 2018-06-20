@@ -14,6 +14,7 @@
 #include "llvm/ADT/SmallVector.h"
 
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace cling {
