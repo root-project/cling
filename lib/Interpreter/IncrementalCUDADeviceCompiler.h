@@ -16,16 +16,16 @@
 #include <string>
 #include <vector>
 
-namespace cling{
+namespace cling {
   class InvocationOptions;
   class Transaction;
-}
+} // namespace cling
 
 namespace clang {
   class CompilerInstance;
   class HeaderSearchOptions;
   class LangOptions;
-}
+} // namespace clang
 
 namespace llvm {
   class StringRef;
@@ -63,11 +63,10 @@ namespace cling {
                        std::string fatbinArch, bool verbose, bool debug,
                        std::vector<std::string> additionalPtxOpt,
                        std::vector<std::string> fatbinaryOpt)
-      : cppStdVersion(cppStdVersion), optLevel(optLevel),
-        ptxSmVersion(ptxSmVersion), fatbinSmVersion(fatbinSmVersion),
-        fatbinArch(fatbinArch), verbose(verbose), debug(debug),
-        additionalPtxOpt(additionalPtxOpt), fatbinaryOpt(fatbinaryOpt) {}
-
+          : cppStdVersion(cppStdVersion), optLevel(optLevel),
+            ptxSmVersion(ptxSmVersion), fatbinSmVersion(fatbinSmVersion),
+            fatbinArch(fatbinArch), verbose(verbose), debug(debug),
+            additionalPtxOpt(additionalPtxOpt), fatbinaryOpt(fatbinaryOpt) {}
     };
 
     std::unique_ptr<CUDACompilerArgs> m_CuArgs;
@@ -107,7 +106,7 @@ namespace cling {
     ///\brief get copy of m_Counter
     ///
     ///\returns copy of m_Counter
-    unsigned int getCounterCopy(){ return m_Counter;}
+    unsigned int getCounterCopy() { return m_Counter; }
 
     ///\brief Generate the dummy.cu file and set the paths of m_PTXFilePath and
     /// m_GenericFileName.
@@ -122,12 +121,14 @@ namespace cling {
     ///       toolkit
     ///
     ///\returns True, whether clang and fatbinary was found.
-    bool findToolchain(const cling::InvocationOptions & invocationOptions);
+    bool findToolchain(const cling::InvocationOptions& invocationOptions);
 
-    ///\brief Add the include paths from the interpreter runtime to a argument list.
+    ///\brief Add the include paths from the interpreter runtime to a argument
+    ///list.
     ///
-    ///\param [in,out] argv - The include commands will append to the argv vector.
-    void addHeaderSearchPathFlags(llvm::SmallVectorImpl<std::string> & argv);
+    ///\param [in,out] argv - The include commands will append to the argv
+    ///vector.
+    void addHeaderSearchPathFlags(llvm::SmallVectorImpl<std::string>& argv);
 
     ///\brief Start an clang compiler with nvptx backend. Read the content of
     /// cling.cu and compile it to a new PCH file. If predecessor PCH file is
@@ -155,8 +156,8 @@ namespace cling {
     ///\param [in] invocationOptions - The invocationOptions of the interpreter.
     ///\param [in] intprOptLevel - The optimization level of the interpreter.
     ///\param [in] debugInfo - The debugInfo of the CompilerInstance.
-    void setCuArgs(const clang::LangOptions & langOpts,
-                   const cling::InvocationOptions & invocationOptions,
+    void setCuArgs(const clang::LangOptions& langOpts,
+                   const cling::InvocationOptions& invocationOptions,
                    const int intprOptLevel,
                    const clang::codegenoptions::DebugInfoKind debugInfo);
 
@@ -171,18 +172,20 @@ namespace cling {
     ///\param [in] filePath - All files will generated in the folder of the
     ///       filePath, except the fatbin file, if it have another path. Have
     ///       to end with a separator. Can be empty.
-    ///\param [in] optLevel - The optimization level of the interpreter instance.
+    ///\param [in] optLevel - The optimization level of the interpreter
+    ///instance.
     ///       The value will be copied, because a change of it is not allowed.
     ///\param [in] invocationOptions - Contains values for the arguments of
     ///       clang and the NVIDIA tool fatbinary.
     ///\param [in] CompilerInstance - Will be used for m_CuArgs and the include
     ///       path handling.
-    IncrementalCUDADeviceCompiler(const std::string & filePath,
-                                  const int optLevel,
-                                  const cling::InvocationOptions & invocationOptions,
-                                  const clang::CompilerInstance & CI);
+    IncrementalCUDADeviceCompiler(
+        const std::string& filePath, const int optLevel,
+        const cling::InvocationOptions& invocationOptions,
+        const clang::CompilerInstance& CI);
 
-    ///\brief Generate an new fatbin file with the path in CudaGpuBinaryFileNames.
+    ///\brief Generate an new fatbin file with the path in
+    ///CudaGpuBinaryFileNames.
     /// It will add the content of input, to the existing source code, which was
     /// passed to compileDeviceCode, before.
     ///
@@ -193,14 +196,13 @@ namespace cling {
     ///\returns True, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
     bool compileDeviceCode(const llvm::StringRef input,
-                           const cling::Transaction * const T);
+                           const cling::Transaction* const T);
 
     ///\brief Print some information of the IncrementalCUDADeviceCompiler to
     /// llvm::outs(). For Example the paths of the files and tools.
     void dump();
-
   };
 
-} // end cling
+} // namespace cling
 
 #endif // CLING_INCREMENTAL_CUDA_DEVICE_JIT_H
