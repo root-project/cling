@@ -26,6 +26,7 @@
 #include "llvm/ADT/Triple.h"
 
 #include <string>
+#include <algorithm>
 
 // The clang nvptx jit has an growing AST-Tree. At runtime, continuously new
 // statements will append to the AST. To improve the compiletime, the existing
@@ -103,6 +104,9 @@ namespace cling {
     if(langOpts.CPlusPlus2a)
       cppStdVersion = "-std=c++2a";
 
+    if(cppStdVersion.empty())
+      llvm::errs() <<
+        "IncrementalCUDADeviceCompiler: No valid c++ standard is set.\n";
 
     const std::string optLevel = "-O" + std::to_string(intprOptLevel);
 
@@ -234,28 +238,47 @@ namespace cling {
         + std::to_string(counter) << ".cu: " << EC.message() << "\n";
       return false;
     }
-
     // This variable prevent, that the input and the code from the transaction
     // will be written to the .cu-file.
-    bool foundVarDecl = false;
-    // Search after variable declarations. The conditions are, that the
-    // source code comes from the prompt (getWrapperFD()) and has a variable
-    // declaration.
-    if(T != nullptr &&  T->getWrapperFD()){
+    bool foundUnwrappedDecl = false;
+
+    assert(T != nullptr && "transaction can't be missing");
+
+    // Search after statements, which are unwrapped. The conditions are, that the
+    // source code comes from the prompt (getWrapperFD()) and has the type
+    // kCCIHandleTopLevelDecl.
+    if(T->getWrapperFD()){
+      // Template specialization declaration will be save two times at a
+      // transaction. Once with the type kCCIHandleCXXImplicitFunctionInstantiation
+      // and once with the type kCCIHandleTopLevelDecl. To avoid sending a
+      // template specialization to the clang nvptx and causing a
+      // explicit-specialization-after-instantiation-error it have to check,
+      // which kCCIHandleTopLevelDecl declaration is also a
+      // kCCIHandleCXXImplicitFunctionInstantiation declaration.
+      std::vector<clang::Decl *> implFunc;
+      for(auto iDCI = T->decls_begin(), eDCI = T->decls_end();
+          iDCI != eDCI; ++iDCI)
+        if(iDCI->m_Call ==
+          Transaction::ConsumerCallInfo::kCCIHandleCXXImplicitFunctionInstantiation)
+          for(clang::Decl * decl : iDCI->m_DGR)
+            implFunc.push_back(decl);
+
       for(auto iDCI = T->decls_begin(), eDCI = T->decls_end();
           iDCI != eDCI; ++iDCI){
         if(iDCI->m_Call == Transaction::ConsumerCallInfo::kCCIHandleTopLevelDecl){
           for(clang::Decl * decl : iDCI->m_DGR) {
-            foundVarDecl = true;
-            decl->print(cuFile);
-            // The c++ code has no whitespace and semicolon at the end.
-            cuFile << ";\n";
+            if(std::find(implFunc.begin(), implFunc.end(), decl) == implFunc.end()){
+              foundUnwrappedDecl = true;
+              decl->print(cuFile);
+              // The c++ code has no whitespace and semicolon at the end.
+              cuFile << ";\n";
+            }
           }
         }
       }
     }
 
-    if(!foundVarDecl){
+    if(!foundUnwrappedDecl){
       cuFile << input;
     }
 
