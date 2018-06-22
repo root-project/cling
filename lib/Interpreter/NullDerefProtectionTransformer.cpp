@@ -26,15 +26,8 @@
 
 using namespace clang;
 
-namespace cling {
-  NullDerefProtectionTransformer::NullDerefProtectionTransformer(Interpreter* I)
-    : ASTTransformer(&I->getCI()->getSema()), m_Interp(I) {
-  }
-
-  NullDerefProtectionTransformer::~NullDerefProtectionTransformer()
-  { }
-
-  class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
+namespace {
+class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
   private:
     Interpreter& m_Interp;
     Sema& m_Sema;
@@ -223,6 +216,15 @@ namespace cling {
               "Lookup of cling_runtime_internal_throwIfInvalidPointer failed!");
     }
   };
+}
+
+namespace cling {
+  NullDerefProtectionTransformer::NullDerefProtectionTransformer(Interpreter* I)
+    : ASTTransformer(&I->getCI()->getSema()), m_Interp(I) {
+  }
+
+  NullDerefProtectionTransformer::~NullDerefProtectionTransformer()
+  { }
 
   ASTTransformer::Result
   NullDerefProtectionTransformer::Transform(clang::Decl* D) {
