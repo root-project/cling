@@ -188,6 +188,7 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
         // pass -v to clang as well
         if (arg->getOption().getID() != OPT_v)
           break;
+        /* Falls through. */
       case Option::UnknownClass:
       case Option::InputClass:
         // prune "-" we need to control where it appears when invoking clang
