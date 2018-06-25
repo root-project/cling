@@ -243,7 +243,8 @@ namespace cling {
     const std::string Type = valuePrinterInternal::printTypeInternal(*this);
 
     // Get the value string representation, by printValue() method overloading
-    const std::string Val = cling::valuePrinterInternal::printValueInternal(*this);
+    const std::string Val
+      = cling::valuePrinterInternal::printValueInternal(*this);
     if (Escape) {
       const char* Data = Val.data();
       const size_t N = Val.size();
@@ -251,9 +252,10 @@ namespace cling {
         case 'u': case 'U': case 'L':
           if (N < 3 || Data[1] != '\"')
             break;
+          /* Falls through. */
 
-          // Unicode string, encoded as Utf-8
         case '\"':
+          // Unicode string, encoded as Utf-8
           if (N > 2 && Data[N-1] == '\"') {
             // Drop the terminating " so Utf-8 errors can be detected ("\xeA")
             Out << Type << ' ';
