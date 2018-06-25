@@ -112,6 +112,16 @@ struct OverloadedAddrOf {
 OverloadedAddrOf overloadedAddrOf
 // CHECK: (OverloadedAddrOf &) @0x{{[0-9a-f]+}}
 
+// Much more important than what cling prints: cling survives this!
+.rawInput
+auto func() { class X {} x; return x; };
+namespace WithUnnamed { namespace { struct Y {} y; } Y z; }
+.rawInput
+//func
+func()
+WithUnnamed::y
+WithUnnamed::z // CHECK: (WithUnnamed::
+
 namespace PR180 {
   class base {};
 
