@@ -239,6 +239,10 @@ namespace cling {
       return false;
 
     SourceManager& SM = m_Interp->getSema().getSourceManager();
+    auto Characteristic = SM.getFileCharacteristic(Loc);
+    if (Characteristic != clang::SrcMgr::C_User)
+      return false;
+
     auto FID = SM.getFileID(Loc);
     if (FID.isInvalid())
       return false;
