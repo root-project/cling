@@ -125,10 +125,10 @@ namespace cling {
     bool findToolchain(const cling::InvocationOptions& invocationOptions);
 
     ///\brief Add the include paths from the interpreter runtime to a argument
-    ///list.
+    /// list.
     ///
     ///\param [in,out] argv - The include commands will append to the argv
-    ///vector.
+    /// vector.
     void addHeaderSearchPathFlags(llvm::SmallVectorImpl<std::string>& argv);
 
     ///\brief Start an clang compiler with nvptx backend. Read the content of
@@ -174,19 +174,18 @@ namespace cling {
     ///       filePath, except the fatbin file, if it have another path. Have
     ///       to end with a separator. Can be empty.
     ///\param [in] optLevel - The optimization level of the interpreter
-    ///instance.
+    /// instance.
     ///       The value will be copied, because a change of it is not allowed.
     ///\param [in] invocationOptions - Contains values for the arguments of
     ///       clang and the NVIDIA tool fatbinary.
-    ///\param [in] CompilerInstance - Will be used for m_CuArgs and the include
-    ///       path handling.
+    ///\param [in] CI - Will be used for m_CuArgs and the include path handling.
     IncrementalCUDADeviceCompiler(
         const std::string& filePath, const int optLevel,
         const cling::InvocationOptions& invocationOptions,
         const clang::CompilerInstance& CI);
 
     ///\brief Generate an new fatbin file with the path in
-    ///CudaGpuBinaryFileNames.
+    /// CudaGpuBinaryFileNames.
     /// It will add the content of input, to the existing source code, which was
     /// passed to compileDeviceCode, before.
     ///
