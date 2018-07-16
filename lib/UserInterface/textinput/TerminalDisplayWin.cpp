@@ -19,6 +19,12 @@
 
 #include <assert.h>
 
+#ifdef UNICODE
+#define filename L"CONOUT$"
+#else
+#define filename "CONOUT$"
+#endif
+
 namespace textinput {
   TerminalDisplayWin::TerminalDisplayWin():
     TerminalDisplay(false), fStartLine(0), fIsAttached(false),
@@ -31,7 +37,7 @@ namespace textinput {
     if (!isConsole) {
       // Prevent redirection from stealing our console handle,
       // simply open our own.
-      fOut = ::CreateFile("CONOUT$", GENERIC_READ | GENERIC_WRITE,
+      fOut = ::CreateFile(filename, GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL, NULL);
       ::GetConsoleMode(fOut, &fOldMode);
@@ -47,6 +53,8 @@ namespace textinput {
     fMyMode = fOldMode | ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT;
     HandleResizeEvent();
   }
+
+#undef filename
 
   TerminalDisplayWin::~TerminalDisplayWin() {
     if (fDefaultAttributes) {
