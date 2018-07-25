@@ -1235,6 +1235,10 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CGOpts.VectorizeLoop = 1;
     CGOpts.VectorizeSLP = 1;
 
+    CGOpts.setInlining((CGOpts.OptimizationLevel == 0)
+                       ? CodeGenOptions::OnlyAlwaysInlining
+                       : CodeGenOptions::NormalInlining);
+
     // CGOpts.setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
     // CGOpts.EmitDeclMetadata = 1; // For unloading, for later
     // aliasing the complete ctor to the base ctor causes the JIT to crash
