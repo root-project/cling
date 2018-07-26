@@ -27,6 +27,7 @@ namespace llvm {
 }
 
 namespace clang {
+  class ASTConsumer;
   class CodeGenerator;
   class CompilerInstance;
   class DiagnosticConsumer;
@@ -81,11 +82,11 @@ namespace cling {
     std::deque<Transaction*> m_Transactions;
 
     ///\brief Number of created modules.
-    unsigned m_ModuleNo;
+    unsigned m_ModuleNo = 0;
 
     ///\brief Code generator
     ///
-    std::unique_ptr<clang::CodeGenerator> m_CodeGen;
+    clang::CodeGenerator* m_CodeGen = nullptr;
 
     ///\brief Pool of reusable block-allocated transactions.
     ///
@@ -120,8 +121,8 @@ namespace cling {
                     bool isChildInterpreter);
     clang::CompilerInstance* getCI() const { return m_CI.get(); }
     clang::Parser* getParser() const { return m_Parser.get(); }
-    clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen.get(); }
-    bool hasCodeGenerator() const { return m_CodeGen.get(); }
+    clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen; }
+    bool hasCodeGenerator() const { return m_CodeGen; }
     clang::SourceLocation getLastMemoryBufferEndLoc() const;
 
     /// \{

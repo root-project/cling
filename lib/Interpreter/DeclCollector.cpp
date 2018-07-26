@@ -102,13 +102,14 @@ namespace cling {
     }
   };
 
-  void DeclCollector::Setup(IncrementalParser* IncrParser, ASTConsumer* Consumer,
+  void DeclCollector::Setup(IncrementalParser* IncrParser,
+                            std::unique_ptr<ASTConsumer> Consumer,
                             clang::Preprocessor& PP) {
     m_IncrParser = IncrParser;
-    m_Consumer = Consumer;
+    m_Consumer = std::move(Consumer);
     PP.addPPCallbacks(std::unique_ptr<PPCallbacks>(new PPAdapter(this)));
   }
-  
+
   bool DeclCollector::comesFromASTReader(DeclGroupRef DGR) const {
     assert(!DGR.isNull() && "DeclGroupRef is Null!");
     assertHasTransaction(m_CurTransaction);

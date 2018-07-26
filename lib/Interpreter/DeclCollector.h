@@ -52,9 +52,9 @@ namespace cling {
     ///
     std::vector<std::unique_ptr<WrapperTransformer>> m_WrapperTransformers;
 
-    IncrementalParser* m_IncrParser;
-    clang::ASTConsumer* m_Consumer;
-    Transaction* m_CurTransaction;
+    IncrementalParser* m_IncrParser = nullptr;
+    std::unique_ptr<clang::ASTConsumer> m_Consumer;
+    Transaction* m_CurTransaction = nullptr;
 
     /// Whether Transform() is active; prevents recursion.
     bool m_Transforming = false;
@@ -74,8 +74,7 @@ namespace cling {
     ASTTransformer::Result TransformDecl(clang::Decl* D) const;
 
   public:
-    DeclCollector() :
-      m_IncrParser(0), m_Consumer(0), m_CurTransaction(0) {}
+    DeclCollector() {}
 
     virtual ~DeclCollector();
 
@@ -89,7 +88,8 @@ namespace cling {
         WT->SetConsumer(this);
     }
 
-    void Setup(IncrementalParser* IncrParser, ASTConsumer* Consumer,
+    void Setup(IncrementalParser* IncrParser,
+               std::unique_ptr<ASTConsumer> Consumer,
                clang::Preprocessor& PP);
 
     /// \{

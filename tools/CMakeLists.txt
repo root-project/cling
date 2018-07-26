@@ -14,6 +14,4 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../lib/UserInterface/textinput
   add_subdirectory(demo)
 endif()
 
-if(CLING_BUILD_PLUGINS)
-  add_subdirectory(plugins)
-endif()
+add_subdirectory(plugins)

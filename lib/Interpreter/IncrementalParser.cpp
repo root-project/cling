@@ -39,6 +39,9 @@
 #include "clang/Basic/FileManager.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/FrontendDiagnostic.h"
+#include "clang/Frontend/FrontendPluginRegistry.h"
+#include "clang/Frontend/MultiplexConsumer.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Parse/Parser.h"
@@ -179,10 +182,47 @@ namespace {
   };
 } // unnamed namespace
 
+static void HandlePlugins(CompilerInstance& CI,
+                         std::vector<std::unique_ptr<ASTConsumer>>& Consumers) {
+  // Copied from Frontend/FrontendAction.cpp.
+  // FIXME: Remove when we switch to a tools-based cling driver.
+
+  // If the FrontendPluginRegistry has plugins before loading any shared library
+  // this means we have linked our plugins. This is useful when cling runs in
+  // embedded mode (in a shared library). This is the only feasible way to have
+  // plugins if cling is in a single shared library which is dlopen-ed with
+  // RTLD_LOCAL. In that situation plugins can still find the cling, clang and
+  // llvm symbols opened with local visibility.
+  if (FrontendPluginRegistry::begin() == FrontendPluginRegistry::end())
+    for (const std::string& Path : CI.getFrontendOpts().Plugins) {
+      std::string Err;
+      if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path.c_str(), &Err))
+        CI.getDiagnostics().Report(clang::diag::err_fe_unable_to_load_plugin)
+          << Path << Err;
+  }
+
+  for (auto it = clang::FrontendPluginRegistry::begin(),
+         ie = clang::FrontendPluginRegistry::end();
+       it != ie; ++it) {
+    std::unique_ptr<clang::PluginASTAction> P(it->instantiate());
+
+    PluginASTAction::ActionType PluginActionType = P->getActionType();
+    assert(PluginActionType != clang::PluginASTAction::ReplaceAction);
+
+    if (P->ParseArgs(CI, CI.getFrontendOpts().PluginArgs[it->getName()])) {
+      std::unique_ptr<ASTConsumer> PluginConsumer
+        = P->CreateASTConsumer(CI, /*InputFile*/ "");
+      if (PluginActionType == clang::PluginASTAction::AddBeforeMainAction)
+        Consumers.insert(Consumers.begin(), std::move(PluginConsumer));
+      else
+        Consumers.push_back(std::move(PluginConsumer));
+    }
+  }
+}
+
 namespace cling {
   IncrementalParser::IncrementalParser(Interpreter* interp, const char* llvmdir)
-      : m_Interpreter(interp),
-        m_ModuleNo(0) {
+      : m_Interpreter(interp) {
     std::unique_ptr<cling::DeclCollector> consumer;
     consumer.reset(m_Consumer = new cling::DeclCollector());
     m_CI.reset(CIFactory::createCI("", interp->getOptions(), llvmdir,
@@ -201,16 +241,33 @@ namespace cling {
       return;
     }
 
+
+    std::vector<std::unique_ptr<ASTConsumer>> Consumers;
+    HandlePlugins(*m_CI, Consumers);
+    std::unique_ptr<ASTConsumer> WrappedConsumer;
+
     DiagnosticsEngine& Diag = m_CI->getDiagnostics();
     if (m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly) {
-      m_CodeGen.reset(CreateLLVMCodeGen(
-          Diag, makeModuleName(), m_CI->getHeaderSearchOpts(),
-          m_CI->getPreprocessorOpts(), m_CI->getCodeGenOpts(),
-          *m_Interpreter->getLLVMContext()));
+      auto CG
+        = std::unique_ptr<clang::CodeGenerator>(CreateLLVMCodeGen(Diag,
+                                                               makeModuleName(),
+                                                    m_CI->getHeaderSearchOpts(),
+                                                    m_CI->getPreprocessorOpts(),
+                                                         m_CI->getCodeGenOpts(),
+                                               *m_Interpreter->getLLVMContext())
+                                                );
+      m_CodeGen = CG.get();
+      assert(m_CodeGen);
+      if (!Consumers.empty()) {
+        Consumers.push_back(std::move(CG));
+        WrappedConsumer.reset(new MultiplexConsumer(std::move(Consumers)));
+      }
+      else
+        WrappedConsumer = std::move(CG);
     }
 
     // Initialize the DeclCollector and add callbacks keeping track of macros.
-    m_Consumer->Setup(this, m_CodeGen.get(), m_CI->getPreprocessor());
+    m_Consumer->Setup(this, std::move(WrappedConsumer), m_CI->getPreprocessor());
 
     m_DiagConsumer.reset(new FilteringDiagConsumer(Diag, false));
 
