@@ -11,6 +11,7 @@ set(SOURCES
   )
 
 set(LIBS
+  clangAnalysis
   clangDriver
   clangFrontend
   clangParse
@@ -20,6 +21,7 @@ set(LIBS
   clangSerialization
   clangCodeGen
   clangBasic
+  clangEdit
 
   clingUtils
 )
@@ -27,6 +29,7 @@ set(LIBS
 set( LLVM_LINK_COMPONENTS
   analysis
   core
+  coverage
   executionengine
   ipo
   mc
