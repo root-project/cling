@@ -16,7 +16,7 @@ set(CLADDIFFERENTIATOR_LIB
 ExternalProject_Add(
   clad
   GIT_REPOSITORY https://github.com/vgvassilev/clad.git
-  GIT_TAG v0.1
+  GIT_TAG v0.2
   UPDATE_COMMAND ""
   CMAKE_ARGS -G ${CMAKE_GENERATOR}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -26,6 +26,7 @@ ExternalProject_Add(
              -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
              -DCMAKE_INSTALL_PREFIX=${CLING_PLUGIN_INSTALL_PREFIX}
              -DCLAD_PATH_TO_LLVM_BUILD=${LLVM_DIR}
+             -DCLAD_BUILD_STATIC_ONLY=ON
   BUILD_BYPRODUCTS ${CLADDIFFERENTIATOR_LIB}
   # Wrap download, configure and build steps in a script to log output
   LOG_DOWNLOAD ON
