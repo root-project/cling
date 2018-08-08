@@ -35,24 +35,29 @@ namespace cling {
      char fBuffer[sizeof(clang::OpaqueValueExpr)];
   };
 
-  // pin *tor here so that we can have clang::Parser defined and be able to call
-  // the dtor on the OwningPtr
-  LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp)
-    : m_Parser(P), m_Interpreter(interp) {
+  class StartParsingRAII {
+    LookupHelper& m_LH;
+    ParserStateRAII ResetParserState;
+
+    void prepareForParsing(llvm::StringRef code, llvm::StringRef bufferName,
+                           LookupHelper::DiagSetting diagOnOff);
+  public:
+    StartParsingRAII(LookupHelper& LH, llvm::StringRef code,
+                     llvm::StringRef bufferName,
+                     LookupHelper::DiagSetting diagOnOff)
+      : m_LH(LH), ResetParserState(*LH.m_Parser.get(), true /*skipToEOF*/) {
+    prepareForParsing(code, bufferName, diagOnOff);
   }
 
-  LookupHelper::~LookupHelper() {}
+    ~StartParsingRAII() { pop(); }
+    void pop() const {}
+  };
 
-  static
-  DeclContext* getCompleteContext(const Decl* scopeDecl,
-                                  ASTContext& Context, Sema &S);
-
-  static void prepareForParsing(Parser& P,
-                                const Interpreter* Interp,
-                                llvm::StringRef code,
-                                llvm::StringRef bufferName,
-                                LookupHelper::DiagSetting diagOnOff) {
-    //Parser& P = *m_Parser;
+  void StartParsingRAII::prepareForParsing(llvm::StringRef code,
+                                           llvm::StringRef bufferName,
+                                          LookupHelper::DiagSetting diagOnOff) {
+    ++m_LH.m_TotalParseRequests;
+    Parser& P = *m_LH.m_Parser.get();
     Sema& S = P.getActions();
     Preprocessor& PP = P.getPreprocessor();
     //
@@ -81,17 +86,58 @@ namespace cling {
     }
     assert(!code.empty()&&"prepareForParsing should only be called when needd");
 
-    //
-    //  Create a fake file to parse the type name.
-    //
-    std::unique_ptr<llvm::MemoryBuffer>
-      SB = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
-                                                bufferName.str());
-    SourceLocation NewLoc = Interp->getNextAvailableLoc();
-    FileID FID = S.getSourceManager().createFileID(std::move(SB),
-                                                   SrcMgr::C_User,
-                                                   /*LoadedID*/0,
-                                                   /*LoadedOffset*/0, NewLoc);
+    // Create a fake file to parse the type name.
+    FileID FID;
+    llvm::hash_code hashedCode = llvm::hash_value(code);
+    auto cacheItr = m_LH.m_ParseBufferCache.find(hashedCode);
+    SourceLocation NewLoc;
+    SourceManager& SM = S.getSourceManager();
+    bool CacheIsValid = false;
+    if (cacheItr != m_LH.m_ParseBufferCache.end()) {
+      SourceLocation FileStartLoc =
+        SourceLocation::getFromRawEncoding(cacheItr->second);
+      FID = SM.getFileID(FileStartLoc);
+
+      bool Invalid = true;
+      llvm::StringRef FIDContents = SM.getBuffer(FID, &Invalid)->getBuffer();
+
+      // A FileID is a (cached via ContentCache) SourceManager view of a
+      // FileManager::FileEntry (which is a wrapper on the file system file).
+      // In a subtle cases, code unloading can remove the cached region.
+      // However we are safe because it will empty the ContentCache and force
+      // the FileEntry to be re-read. It will keep the FileID intact and valid
+      // by design. When we reprocess the same (but modified) file it will get
+      // a new FileID. Then the Invalid flag will be false but the underlying
+      // buffer content will be empty. It will not compare equal to the lookup
+      // string and we will avoid using (a potentially broken) cache.
+      assert(!Invalid);
+
+      // Compare the contents of the cached buffer and the string we should
+      // process. If there are hash collisions this assert should trigger
+      // making it easier to debug.
+      CacheIsValid = FIDContents.equals(llvm::StringRef(code.str() + "\n"));
+      assert(CacheIsValid && "Hash collision!");
+      if (CacheIsValid) {
+        // We have already included this file once. Reuse the include loc.
+        NewLoc = SM.getIncludeLoc(FID);
+        // The Preprocessor will try to set the NumCreatedFIDs but we are
+        // reparsing and this value was already set. Force reset it to avoid
+        // triggering an assertion in the setNumCreatedFIDsForFileID routine.
+        SM.setNumCreatedFIDsForFileID(FID, 0, /*force*/ true);
+        ++m_LH.m_CacheHits;
+      }
+    }
+    if (!CacheIsValid) {
+      std::unique_ptr<llvm::MemoryBuffer> SB
+        = llvm::MemoryBuffer::getMemBufferCopy(code.str() + "\n",
+                                               bufferName.str());
+      NewLoc = m_LH.m_Interpreter->getNextAvailableLoc();
+      FID = SM.createFileID(std::move(SB), SrcMgr::C_User, /*LoadedID*/0,
+                            /*LoadedOffset*/0, NewLoc);
+      SourceLocation FileStartLoc = SM.getLocForStartOfFile(FID);
+      m_LH.m_ParseBufferCache[hashedCode] = FileStartLoc.getRawEncoding();
+    }
+
     //
     //  Switch to the new file the way #include does.
     //
@@ -100,6 +146,18 @@ namespace cling {
     PP.EnterSourceFile(FID, /*DirLookup*/0, NewLoc);
     PP.Lex(const_cast<Token&>(P.getCurToken()));
   }
+
+  // pin *tor here so that we can have clang::Parser defined and be able to call
+  // the dtor on the OwningPtr
+  LookupHelper::LookupHelper(clang::Parser* P, Interpreter* interp)
+    : m_Parser(P), m_Interpreter(interp) {
+  }
+
+  LookupHelper::~LookupHelper() {}
+
+  static
+  DeclContext* getCompleteContext(const Decl* scopeDecl,
+                                  ASTContext& Context, Sema &S);
 
   static const TagDecl* RequireCompleteDeclContext(Sema& S,
                                                    Preprocessor& PP,
@@ -417,10 +475,10 @@ namespace cling {
 
     // Use P for shortness
     Parser& P = *m_Parser;
-    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
-    prepareForParsing(P,m_Interpreter,
-                      typeName, llvm::StringRef("lookup.type.by.name.file"),
-                      diagOnOff);
+    StartParsingRAII ParseStarted(const_cast<LookupHelper&>(*this),
+                                  typeName,
+                                  llvm::StringRef("lookup.type.by.name.file"),
+                                  diagOnOff);
     //
     //  Try parsing the type name.
     //
@@ -526,10 +584,10 @@ namespace cling {
       }
     }
 
-    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
-    prepareForParsing(P,m_Interpreter,
-                      className.str() + "::",
-                      llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
+    StartParsingRAII ParseStarted(const_cast<LookupHelper&>(*this),
+                                  className.str() + "::",
+                                  llvm::StringRef("lookup.class.by.name.file"),
+                                  diagOnOff);
     //
     //  Our return values.
     //
@@ -722,10 +780,10 @@ namespace cling {
     Parser& P = *m_Parser;
     Sema& S = P.getActions();
     ASTContext& Context = S.getASTContext();
-    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
-    prepareForParsing(P,m_Interpreter,
-                      Name.str(),
-                      llvm::StringRef("lookup.class.by.name.file"), diagOnOff);
+    StartParsingRAII ParseStarted(const_cast<LookupHelper&>(*this),
+                                  Name.str(),
+                                  llvm::StringRef("lookup.class.by.name.file"),
+                                  diagOnOff);
 
     //
     //  Prevent failing on an assert in TryAnnotateCXXScopeToken.
@@ -1417,6 +1475,7 @@ namespace cling {
   template <typename DigestArgsInput, typename returnType>
   returnType execFindFunction(Parser &P,
                               Interpreter* Interp,
+                              LookupHelper &LH,
                               const clang::Decl* scopeDecl,
                               llvm::StringRef funcName,
                               const typename DigestArgsInput::ArgsInput &funcArgs,
@@ -1452,7 +1511,7 @@ namespace cling {
 
     DigestArgsInput inputEval;
     llvm::SmallVector<Expr*, 4> GivenArgs;
-    if (!inputEval(GivenArgs,funcArgs,diagOnOff,P,Interp)) return 0;
+    if (!inputEval(GivenArgs,funcArgs,diagOnOff,P,Interp,LH)) return 0;
 
     Interpreter::PushTransactionRAII pushedT(Interp);
     return findFunction(foundDC,
@@ -1468,7 +1527,8 @@ namespace cling {
     bool operator()(llvm::SmallVectorImpl<Expr*> & /* GivenArgs */,
                     const ArgsInput &/* funcArgs */,
                     LookupHelper::DiagSetting /* diagOnOff */,
-                    Parser & /* P */, const Interpreter* /* Interp */)
+                    Parser & /* P */, const Interpreter* /* Interp */,
+                    const LookupHelper& /* LH */)
     {
       return true;
     }
@@ -1483,7 +1543,8 @@ namespace cling {
     bool operator()(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                     const ArgsInput &GivenTypes,
                     LookupHelper::DiagSetting /* diagOnOff */,
-                    Parser & /* P */, const Interpreter* /* Interp */) {
+                    Parser & /* P */, const Interpreter* /* Interp */,
+                    LookupHelper& /* LH */) {
 
       if (GivenTypes.empty()) return true;
       else return getExprProto(GivenArgs,GivenTypes);
@@ -1526,24 +1587,26 @@ namespace cling {
     bool operator()(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                     const ArgsInput &funcProto,
                     LookupHelper::DiagSetting diagOnOff,
-                    Parser &P, const Interpreter* Interp) {
+                    Parser& P, const Interpreter* Interp,
+                    LookupHelper& LH) {
 
       if (funcProto.empty()) return true;
-      else return Parse(GivenArgs,funcProto,diagOnOff,P,Interp);
+      else return Parse(GivenArgs,funcProto,diagOnOff, P, Interp, LH);
     }
 
     bool Parse(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                const ArgsInput &funcProto,
                LookupHelper::DiagSetting diagOnOff,
-               Parser &P, const Interpreter* Interp) {
+               Parser& P, const Interpreter* Interp,
+               LookupHelper& LH) {
 
       //
       //  Parse the prototype now.
       //
 
-      ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
-      prepareForParsing(P,Interp,
-                        funcProto, llvm::StringRef("func.prototype.file"), diagOnOff);
+      StartParsingRAII ParseStarted(LH, funcProto,
+                                    llvm::StringRef("func.prototype.file"),
+                                    diagOnOff);
 
       unsigned int nargs = 0;
       while (P.getCurToken().isNot(tok::eof)) {
@@ -1631,6 +1694,7 @@ namespace cling {
     // Lookup a function template based on its Decl(Context), name.
 
     return execFindFunction<NoParse>(*m_Parser, m_Interpreter,
+                                     const_cast<LookupHelper&>(*this),
                                      scopeDecl,
                                      templateName, "",
                                      objectIsConst,
@@ -1702,6 +1766,7 @@ namespace cling {
                                                     bool objectIsConst) const {
 
     return execFindFunction<NoParse>(*m_Parser, m_Interpreter,
+                                     const_cast<LookupHelper&>(*this),
                                      scopeDecl,
                                      funcName, "",
                                      objectIsConst,
@@ -1717,6 +1782,7 @@ namespace cling {
     assert(scopeDecl && "Decl cannot be null");
 
     return execFindFunction<ExprFromTypes>(*m_Parser, m_Interpreter,
+                                           const_cast<LookupHelper&>(*this),
                                            scopeDecl,
                                            funcName,
                                            funcProto,
@@ -1733,6 +1799,7 @@ namespace cling {
     assert(scopeDecl && "Decl cannot be null");
 
     return execFindFunction<ParseProto>(*m_Parser, m_Interpreter,
+                                        const_cast<LookupHelper&>(*this),
                                         scopeDecl,
                                         funcName,
                                         funcProto,
@@ -1750,6 +1817,7 @@ namespace cling {
     assert(scopeDecl && "Decl cannot be null");
 
     return execFindFunction<ParseProto>(*m_Parser, m_Interpreter,
+                                        const_cast<LookupHelper&>(*this),
                                         scopeDecl,
                                         funcName,
                                         funcProto,
@@ -1767,6 +1835,7 @@ namespace cling {
     assert(scopeDecl && "Decl cannot be null");
 
     return execFindFunction<ExprFromTypes>(*m_Parser, m_Interpreter,
+                                           const_cast<LookupHelper&>(*this),
                                            scopeDecl,
                                            funcName,
                                            funcProto,
@@ -1782,25 +1851,27 @@ namespace cling {
     bool operator()(llvm::SmallVectorImpl<Expr*> &GivenArgs,
                     const ArgsInput &funcArgs,
                     LookupHelper::DiagSetting diagOnOff,
-                    Parser &P, const Interpreter* Interp) {
+                    Parser &P, const Interpreter* Interp,
+                    LookupHelper& LH) {
 
       if (funcArgs.empty()) return true;
-      else return Parse(GivenArgs,funcArgs,diagOnOff,P,Interp);
+      else return Parse(GivenArgs,funcArgs,diagOnOff, P, Interp, LH);
     }
 
     bool Parse(llvm::SmallVectorImpl<Expr*> &GivenArgs,
-                 llvm::StringRef funcArgs,
-                 LookupHelper::DiagSetting diagOnOff,
-                 Parser &P, const Interpreter* Interp) {
+               llvm::StringRef funcArgs,
+               LookupHelper::DiagSetting diagOnOff,
+               Parser &P, const Interpreter* Interp,
+               LookupHelper& LH) {
 
       //
       //  Parse the arguments now.
       //
 
       Interpreter::PushTransactionRAII TforDeser(Interp);
-      ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
-      prepareForParsing(P,Interp,
-                        funcArgs, llvm::StringRef("func.args.file"), diagOnOff);
+      StartParsingRAII ParseStarted(LH, funcArgs,
+                                    llvm::StringRef("func.args.file"),
+                                    diagOnOff);
 
       Sema& S = P.getActions();
       ASTContext& Context = S.getASTContext();
@@ -1860,6 +1931,7 @@ namespace cling {
     assert(scopeDecl && "Decl cannot be null");
 
     return execFindFunction<ParseArgs>(*m_Parser, m_Interpreter,
+                                       const_cast<LookupHelper&>(*this),
                                        scopeDecl,
                                        funcName,
                                        funcArgs,
@@ -1878,9 +1950,10 @@ namespace cling {
     //
     // Use P for shortness
     Parser& P = *m_Parser;
-    ParserStateRAII ResetParserState(P, true /*skipToEOF*/);
-    prepareForParsing(P,m_Interpreter,
-                      argList, llvm::StringRef("arg.list.file"), diagOnOff);
+    StartParsingRAII ParseStarted(const_cast<LookupHelper&>(*this),
+                                  argList,
+                                  llvm::StringRef("arg.list.file"),
+                                  diagOnOff);
     //
     //  Parse the arguments now.
     //
@@ -1931,6 +2004,7 @@ namespace cling {
                                  DiagSetting diagOnOff) const {
 
     return execFindFunction<NoParse>(*m_Parser, m_Interpreter,
+                                     const_cast<LookupHelper&>(*this),
                                      scopeDecl,
                                      funcName, "",
                                      false /* objectIsConst */,
@@ -1975,4 +2049,9 @@ namespace cling {
     return kNotAString;
   }
 
+  void LookupHelper::printStats() const {
+    llvm::errs() << "Cached entries: " << m_ParseBufferCache.size() << "\n";
+    llvm::errs() << "Total parse requests: " << m_TotalParseRequests << "\n";
+    llvm::errs() << "Cache hits: " << m_CacheHits << "\n";
+  }
 } // end namespace cling

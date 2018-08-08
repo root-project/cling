@@ -14,6 +14,7 @@
 #include "llvm/ADT/SmallVector.h"
 
 #include <array>
+#include <map>
 #include <memory>
 
 namespace clang {
@@ -54,11 +55,22 @@ namespace cling {
       NoDiagnostics,
       WithDiagnostics
     };
-
   private:
     std::unique_ptr<clang::Parser> m_Parser;
     Interpreter* m_Interpreter; // we do not own.
     std::array<const clang::Type*, kNumCachedStrings> m_StringTy = {};
+    /// A map containing the hash of the lookup buffer. This allows us to avoid
+    /// allocating memory for parsing when we know nothing has changed. Used by
+    /// StartParsingRAII.
+    // We do not want to include "clang/Basic/SourceLocation.h" because it makes
+    // the use of this header at runtime significantly slower.
+    // We really need llvm::hash_code->clang::FileID mapping but we put opaque
+    // source location as unsigned to compute the FileID when needed.
+    std::map<llvm::hash_code, unsigned> m_ParseBufferCache;
+    /// Number of times we hit the cache.
+    unsigned m_CacheHits = 0;
+    /// Number of times we missed the cache.
+    unsigned m_TotalParseRequests = 0;
 
   public:
     LookupHelper(clang::Parser* P, Interpreter* interp);
@@ -235,7 +247,10 @@ namespace cling {
                      DiagSetting diagOnOff) const;
 
     ///\brief Retrieve the StringType of given Type.
-     StringType getStringType(const clang::Type* Type);
+    StringType getStringType(const clang::Type* Type);
+
+    void printStats() const;
+    friend class StartParsingRAII;
   };
 
 } // end namespace
