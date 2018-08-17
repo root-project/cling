@@ -26,7 +26,7 @@ if(MSVC)
     UPDATE_COMMAND ""
     CMAKE_ARGS -G ${CMAKE_GENERATOR} -DCLAD_BUILD_STATIC_ONLY=ON
                -DCMAKE_INSTALL_PREFIX=${CLING_PLUGIN_INSTALL_PREFIX}
-               -DCLAD_PATH_TO_LLVM_BUILD=${LLVM_DIR}
+               -DCLAD_PATH_TO_LLVM_BUILD=${LLVM_BINARY_DIR}
     BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${_clad_build_type}
     # Wrap download, configure and build steps in a script to log output
     LOG_DOWNLOAD ON
@@ -52,7 +52,7 @@ else()
                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
                -DCMAKE_INSTALL_PREFIX=${CLING_PLUGIN_INSTALL_PREFIX}
-               -DCLAD_PATH_TO_LLVM_BUILD=${LLVM_DIR}
+               -DCLAD_PATH_TO_LLVM_BUILD=${LLVM_BINARY_DIR}
                -DCLAD_BUILD_STATIC_ONLY=ON
     BUILD_BYPRODUCTS ${CLADDIFFERENTIATOR_LIB}
     # Wrap download, configure and build steps in a script to log output
