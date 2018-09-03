@@ -49,6 +49,9 @@ namespace utils {
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
                                                       NestedNameSpecifier* scope);
 
+  template<typename D>
+  static D* LookupResult2Decl(LookupResult& R);
+
   bool Analyze::IsWrapper(const FunctionDecl* ND) {
     if (!ND)
       return false;
@@ -1425,6 +1428,19 @@ namespace utils {
     return dyn_cast<NamespaceDecl>(R.getFoundDecl());
   }
 
+  template<typename D>
+  static D* LookupResult2Decl(LookupResult& R)
+  {
+    if (R.empty())
+      return 0;
+
+    R.resolveKind();
+
+    if (R.isSingleResult())
+      return dyn_cast<D>(R.getFoundDecl());
+    return (D*)-1;
+  }
+
   NamedDecl* Lookup::Named(Sema* S, llvm::StringRef Name,
                            const DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);
@@ -1441,14 +1457,26 @@ namespace utils {
     LookupResult R(*S, Name, SourceLocation(), Sema::LookupOrdinaryName,
                    Sema::ForRedeclaration);
     Lookup::Named(S, R, Within);
-    if (R.empty())
-      return 0;
+    return LookupResult2Decl<clang::NamedDecl>(R);
+  }
 
-    R.resolveKind();
+  TagDecl* Lookup::Tag(Sema* S, llvm::StringRef Name,
+                           const DeclContext* Within) {
+    DeclarationName DName = &S->Context.Idents.get(Name);
+    return Lookup::Tag(S, DName, Within);
+  }
 
-    if (R.isSingleResult())
-      return R.getFoundDecl();
-    return (clang::NamedDecl*)-1;
+  TagDecl* Lookup::Tag(Sema* S, const char* Name,
+                           const DeclContext* Within) {
+    return Lookup::Tag(S, llvm::StringRef(Name), Within);
+  }
+
+  TagDecl* Lookup::Tag(Sema* S, const clang::DeclarationName& Name,
+               const DeclContext* Within) {
+    LookupResult R(*S, Name, SourceLocation(), Sema::LookupTagName,
+                   Sema::ForRedeclaration);
+    Lookup::Named(S, R, Within);
+    return LookupResult2Decl<clang::TagDecl>(R);
   }
 
   void Lookup::Named(Sema* S, LookupResult& R, const DeclContext* Within) {
