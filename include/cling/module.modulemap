@@ -1,24 +1,13 @@
-// Only included at runtime.
-module Cling_Runtime {
-  module "RuntimeUniverse.h" { header "Interpreter/RuntimeUniverse.h" export * }
-  module "DynamicLookupRuntimeUniverse.h" { header "Interpreter/DynamicLookupRuntimeUniverse.h" export * }
-  module "RuntimePrintValue.h" { header "Interpreter/RuntimePrintValue.h" export * }
-  export *
-}
-
-// Included in both compile time and runtime.
-module Cling_Runtime_Extra {
-  module "DynamicExprInfo.h" { header "Interpreter/DynamicExprInfo.h" export * }
-  module "DynamicLookupLifetimeHandler.h" { header "Interpreter/DynamicLookupLifetimeHandler.h" export * }
-  module "Value.h" { header "Interpreter/Value.h" export * }
-  export *
-}
-
 module Cling_Interpreter {
   requires cplusplus
   umbrella "Interpreter"
 
   textual header "Interpreter/ClingOptions.inc"
+
+  // Only included at runtime.
+  exclude header "Interpreter/RuntimeUniverse.h"
+  exclude header "Interpreter/DynamicLookupRuntimeUniverse.h"
+  exclude header "Interpreter/RuntimePrintValue.h"
 
   module * { export * }
 }
