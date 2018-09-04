@@ -13,32 +13,3 @@ module Cling_Runtime_Extra {
   module "Value.h" { header "Interpreter/Value.h" export * }
   export *
 }
-
-module Cling_Interpreter {
-  requires cplusplus
-  umbrella "Interpreter"
-
-  textual header "Interpreter/ClingOptions.inc"
-
-  module * { export * }
-}
-
-module Cling_MetaProcessor {
-  requires cplusplus
-  umbrella "MetaProcessor"
-  module * { export * }
-
-}
-
-module Cling_UserInterface {
-  requires cplusplus
-  umbrella "UserInterface"
-  module * { export * }
-
-}
-
-module Cling_Utils {
-  requires cplusplus
-  umbrella "Utils"
-  module * { export * }
-}
