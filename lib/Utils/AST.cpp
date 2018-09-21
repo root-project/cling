@@ -25,6 +25,21 @@
 
 using namespace clang;
 
+namespace {
+  template<typename D>
+  static D* LookupResult2Decl(clang::LookupResult& R)
+  {
+    if (R.empty())
+      return 0;
+
+    R.resolveKind();
+
+    if (R.isSingleResult())
+      return dyn_cast<D>(R.getFoundDecl());
+    return (D*)-1;
+  }
+}
+
 namespace cling {
 namespace utils {
 
@@ -48,9 +63,6 @@ namespace utils {
   static
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
                                                       NestedNameSpecifier* scope);
-
-  template<typename D>
-  static D* LookupResult2Decl(LookupResult& R);
 
   bool Analyze::IsWrapper(const FunctionDecl* ND) {
     if (!ND)
@@ -1428,19 +1440,6 @@ namespace utils {
     return dyn_cast<NamespaceDecl>(R.getFoundDecl());
   }
 
-  template<typename D>
-  static D* LookupResult2Decl(LookupResult& R)
-  {
-    if (R.empty())
-      return 0;
-
-    R.resolveKind();
-
-    if (R.isSingleResult())
-      return dyn_cast<D>(R.getFoundDecl());
-    return (D*)-1;
-  }
-
   NamedDecl* Lookup::Named(Sema* S, llvm::StringRef Name,
                            const DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);
@@ -1461,18 +1460,18 @@ namespace utils {
   }
 
   TagDecl* Lookup::Tag(Sema* S, llvm::StringRef Name,
-                           const DeclContext* Within) {
+                       const DeclContext* Within) {
     DeclarationName DName = &S->Context.Idents.get(Name);
     return Lookup::Tag(S, DName, Within);
   }
 
   TagDecl* Lookup::Tag(Sema* S, const char* Name,
-                           const DeclContext* Within) {
+                       const DeclContext* Within) {
     return Lookup::Tag(S, llvm::StringRef(Name), Within);
   }
 
   TagDecl* Lookup::Tag(Sema* S, const clang::DeclarationName& Name,
-               const DeclContext* Within) {
+                       const DeclContext* Within) {
     LookupResult R(*S, Name, SourceLocation(), Sema::LookupTagName,
                    Sema::ForRedeclaration);
     Lookup::Named(S, R, Within);
