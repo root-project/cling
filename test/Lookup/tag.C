@@ -44,7 +44,7 @@ tagdecl = utils::Lookup::Tag(&S, "E", nullptr);
 tagdecl
 //CHECK: (const clang::TagDecl *) 0x{{[1-9a-f][0-9a-f]*$}}
 tagdecl->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{[^)]+}}) "N"
+//CHECK-NEXT: ({{[^)]+}}) "E"
 
 tagdecl = utils::Lookup::Tag(&S, "C", nullptr);
 tagdecl
