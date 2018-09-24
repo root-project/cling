@@ -44,6 +44,14 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
     ///
     LookupResult* m_clingthrowIfInvalidPointerCache;
 
+    bool IsTransparentThis(Expr* E) {
+      if (auto TE = dyn_cast<CXXThisExpr>(E))
+        return true;
+      if (auto ICE = dyn_cast<ImplicitCastExpr>(E))
+        return IsTransparentThis(ICE->getSubExpr());
+      return false;
+    }
+
   public:
     PointerCheckInjector(Interpreter& I)
       : m_Interp(I), m_Sema(I.getCI()->getSema()),
@@ -58,7 +66,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
       Expr* SubExpr = UnOp->getSubExpr();
       VisitStmt(SubExpr);
       if (UnOp->getOpcode() == UO_Deref
-          && !llvm::isa<clang::CXXThisExpr>(SubExpr)
+          && !IsTransparentThis(SubExpr)
           && SubExpr->getType().getTypePtr()->isPointerType())
           UnOp->setSubExpr(SynthesizeCheck(SubExpr));
       return true;
@@ -68,7 +76,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
       Expr* Base = ME->getBase();
       VisitStmt(Base);
       if (ME->isArrow()
-          && !llvm::isa<clang::CXXThisExpr>(Base)
+          && !IsTransparentThis(Base)
           && ME->getMemberDecl()->isCXXInstanceMember())
         ME->setBase(SynthesizeCheck(Base));
       return true;
@@ -86,7 +94,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
             // Get the argument with the nonnull attribute.
             Expr* Arg = CE->getArg(index);
             if (Arg->getType().getTypePtr()->isPointerType()
-                && !llvm::isa<clang::CXXThisExpr>(Arg))
+                && !IsTransparentThis(Arg))
               CE->setArg(index, SynthesizeCheck(Arg));
           }
         }
