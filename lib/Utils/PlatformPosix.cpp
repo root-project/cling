@@ -41,8 +41,8 @@ namespace {
   private:
     // A simple round-robin cache: what enters first, leaves first.
     // MRU cache wasn't worth the extra CPU cycles.
-    std::array<const void*, 8> lines = {};
-    std::atomic<unsigned> mostRecent = {0};
+    static thread_local std::array<const void*, 8> lines;
+    static thread_local unsigned mostRecent;
     int FD;
 
     // Concurrent writes to the same cache element can result in invalid cache
@@ -51,12 +51,8 @@ namespace {
     // slow-down, the cost for keeping the cache thread-local or atomic is
     // much higher (yes, this was measured).
     void push(const void* P) {
-      unsigned acquiredVal = mostRecent;
-      while(!mostRecent.compare_exchange_weak(acquiredVal,
-                                              (acquiredVal+1)%lines.size())) {
-        acquiredVal = mostRecent;
-      }
-      lines[acquiredVal] = P;
+      mostRecent = (mostRecent + 1) % lines.size();
+      lines[mostRecent] = P;
     }
 
   public:
@@ -85,6 +81,8 @@ namespace {
       return true;
     }
   };
+  thread_local std::array<const void*, 8> PointerCheck::lines = {};
+  thread_local unsigned PointerCheck::mostRecent = 0;
 }
 
 bool IsMemoryValid(const void *P) {
