@@ -28,7 +28,7 @@ class C {};
 
 namespace N {
 enum class Inside_E {};
-class C {};
+class Inside_C {};
 }
 
 .rawInput 0
@@ -57,21 +57,21 @@ const clang::NamedDecl *nameddecl{nullptr};
 nameddecl = utils::Lookup::Named(&S, "N", nullptr);
 nameddecl
 //CHECK: (const clang::NamedDecl *) 0x{{[1-9a-f][0-9a-f]*$}}
-decl->getQualifiedNameAsString().c_str()
+nameddecl->getQualifiedNameAsString().c_str()
 //CHECK-NEXT: ({{[^)]+}}) "N"
 
-const clang::DeclContext *context = dyn_cast<clang::DeclContext>(decl);
+const clang::DeclContext *context = dyn_cast<clang::DeclContext>(nameddecl);
 context
 //CHECK: (const clang::DeclContext *) 0x{{[1-9a-f][0-9a-f]*$}}
 
-decl = utils::Lookup::Tag(&S, "E", context);
-decl
+tagdecl = utils::Lookup::Tag(&S, "Inside_E", context);
+tagdecl
 //CHECK: (const clang::TagDecl *) 0x{{[1-9a-f][0-9a-f]*$}}
-decl->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{[^)]+}}) "N::E"
+tagdecl->getQualifiedNameAsString().c_str()
+//CHECK-NEXT: ({{[^)]+}}) "N::Inside_E"
 
-decl = utils::Lookup::Tag(&S, "C", context);
-decl
+tagdecl = utils::Lookup::Tag(&S, "Inside_C", context);
+tagdecl
 //CHECK: (const clang::TagDecl *) 0x{{[1-9a-f][0-9a-f]*$}}
-decl->getQualifiedNameAsString().c_str()
-//CHECK-NEXT: ({{[^)]+}}) "N::C"
+tagdecl->getQualifiedNameAsString().c_str()
+//CHECK-NEXT: ({{[^)]+}}) "N::Inside_C"
