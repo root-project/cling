@@ -226,7 +226,26 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
               "Lookup of cling_runtime_internal_throwIfInvalidPointer failed!");
     }
   };
-}
+
+  static bool hasPtrCheckDisabledInContext(const Decl* D) {
+    if (isa<TranslationUnitDecl>(D))
+      return false;
+    for (const auto *Ann : D->specific_attrs<AnnotateAttr>()) {
+      if (Ann->getAnnotation() == "__cling__ptrcheck(off)")
+        return true;
+      else if (Ann->getAnnotation() == "__cling__ptrcheck(on)")
+        return false;
+    }
+    const Decl* Parent = nullptr;
+    for (auto DC = D->getDeclContext(); !Parent; DC = DC->getParent())
+      Parent = dyn_cast<Decl>(DC);
+
+    assert(Parent && "Decl without context!");
+
+    return hasPtrCheckDisabledInContext(Parent);
+  }
+
+} // unnamed namespace
 
 namespace cling {
   NullDerefProtectionTransformer::NullDerefProtectionTransformer(Interpreter* I)
@@ -240,6 +259,9 @@ namespace cling {
     if (D->isFromASTFile())
       return false;
     if (D->isTemplateDecl())
+      return false;
+
+    if (hasPtrCheckDisabledInContext(D))
       return false;
 
     auto Loc = D->getLocation();
