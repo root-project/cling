@@ -52,7 +52,7 @@ tagdecl
 tagdecl->getQualifiedNameAsString().c_str()
 //CHECK-NEXT: ({{[^)]+}}) "C"
 
-const clang::NamedDeck *nameddecl{nullptr};
+const clang::NamedDecl *nameddecl{nullptr};
 
 nameddecl = utils::Lookup::Named(&S, "N", nullptr);
 nameddecl
