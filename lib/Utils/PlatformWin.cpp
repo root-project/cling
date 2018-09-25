@@ -132,7 +132,10 @@ static bool readFullStringValue(HKEY hkey, const char *valueName,
     }
   }
 
-  ReportError(result, "RegQueryValueEx");
+  std::string prefix("RegQueryValueEx(");
+  prefix += valueName;
+  prefix += ")";
+  ReportError(result, prefix.c_str());
   return false;
 }
 
@@ -189,12 +192,13 @@ static bool getVSEnvironmentString(int VSVersion, std::string& Path,
 
 static bool getVisualStudioVer(int VSVersion, std::string& Path,
                                const char* Verbose) {
-  if (getVSRegistryString("VisualStudio", VSVersion, Path, Verbose))
-    return true;
+  if (VSVersion < 15) {
+    if (getVSRegistryString("VisualStudio", VSVersion, Path, Verbose))
+      return true;
 
-  if (getVSRegistryString("VCExpress", VSVersion, Path, Verbose))
-    return true;
-
+    if (getVSRegistryString("VCExpress", VSVersion, Path, Verbose))
+      return true;
+  }
   if (getVSEnvironmentString(VSVersion, Path, Verbose))
     return true;
 
@@ -282,6 +286,11 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
   long lResult;
   bool returnValue = false;
   HKEY hKey = NULL;
+  std::string prefix("RegOpenKeyEx(");
+  prefix += keyPath;
+  prefix += "\\";
+  prefix += valueName;
+  prefix += ")";
 
   // If we have a $VERSION placeholder, do the highest-version search.
   if (const char *placeHolder = ::strstr(subKey, "$VERSION")) {
@@ -347,7 +356,7 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
       }
       ::RegCloseKey(hTopKey);
     } else
-      ReportError(lResult, "RegOpenKeyEx");
+      ReportError(lResult, prefix.c_str());
   } else {
     // If subKey is empty, then valueName is subkey, and we retreive that
     if (subKey[0]==0) {
@@ -360,7 +369,7 @@ bool GetSystemRegistryString(const char *keyPath, const char *valueName,
       returnValue = readFullStringValue(hKey, valueName, outValue);
       ::RegCloseKey(hKey);
     } else
-      ReportError(lResult, "RegOpenKeyEx");
+      ReportError(lResult, prefix.c_str());
   }
   return returnValue;
 }
@@ -446,6 +455,7 @@ bool GetVisualStudioDirs(std::string& Path, std::string* WinSDK,
     return true;
   }
 
+#if (_MSC_VER < 1910)
   // Try for any other version we can get
   Msg = Verbose ? "highest" : nullptr;
   const int Versions[] = { 14, 12, 11, 10, 9, 8, 0 };
@@ -455,6 +465,7 @@ bool GetVisualStudioDirs(std::string& Path, std::string* WinSDK,
       return true;
     }
   }
+#endif
   return false;
 }
 
