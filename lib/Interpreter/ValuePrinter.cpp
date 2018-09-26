@@ -926,16 +926,20 @@ namespace cling {
       return printQualType(V.getASTContext(), V.getType());
     }
 
-    std::string printValueInternal(const Value &V) {
+    void declarePrintValue(Interpreter &Interp) {
       static bool includedRuntimePrintValue = false; // initialized only once as a static function variable
       // Include "RuntimePrintValue.h" only on the first printing.
       // This keeps the interpreter lightweight and reduces the startup time.
       if (!includedRuntimePrintValue) {
-        Interpreter* Interp = V.getInterpreter();
-        LockCompilationDuringUserCodeExecutionRAII LCDUCER(*Interp);
-        Interp->declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
+        Interp.declare("#include \"cling/Interpreter/RuntimePrintValue.h\"");
         includedRuntimePrintValue = true;
       }
+    }
+
+    std::string printValueInternal(const Value &V) {
+      Interpreter* Interp = V.getInterpreter();
+      LockCompilationDuringUserCodeExecutionRAII LCDUCER(*Interp);
+      declarePrintValue(*Interp);
       return printUnpackedClingValue(V);
     }
   } // end namespace valuePrinterInternal

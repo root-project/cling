@@ -405,6 +405,9 @@ namespace cling {
     void GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
                          bool withSystem, bool withFlags);
 
+    ///\brief Call printValue( "(type*)" + obj ) and return string
+    std::string toString(const char* type, void* obj);
+
     ///\brief Prints the current include paths that are used.
     ///
     ///\param[in] S - stream to dump to or nullptr for default (cling::outs)

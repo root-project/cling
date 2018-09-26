@@ -60,6 +60,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 using namespace clang;
 
@@ -607,6 +608,22 @@ namespace cling {
     ClangInternalState::printIncludedFiles(Out, getCI()->getSourceManager());
   }
 
+  namespace valuePrinterInternal {
+    void declarePrintValue(Interpreter &Interp);
+  }
+
+  std::string Interpreter::toString(const char* type, void* obj) {
+    LockCompilationDuringUserCodeExecutionRAII LCDUCER(*this);
+    cling::valuePrinterInternal::declarePrintValue(*this);
+    std::string ret;
+    std::stringstream ss;
+    ss << "*((std::string*)" << &ret << ") = cling::printValue((" << type << "*)" << obj << ");";
+    CompilationResult result = process(ss.str().c_str());
+    if (result != cling::Interpreter::kSuccess)
+      llvm::errs() << "Error in Interpreter::toString: the input " << ss.str() << " cannot be evaluated";
+
+    return ret;
+  }
 
   void Interpreter::GetIncludePaths(llvm::SmallVectorImpl<std::string>& incpaths,
                                    bool withSystem, bool withFlags) {
