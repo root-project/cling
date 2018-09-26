@@ -28,7 +28,6 @@ add_cling_library(clingUtils OBJECT
   ParserStateRAII.cpp
   Output.cpp
   Paths.cpp
-  PlatformMac.cpp
   PlatformPosix.cpp
   PlatformWin.cpp
   SourceNormalization.cpp

@@ -281,38 +281,34 @@ if (UNIX)
   # we need to know where is ROOT/cling STL.
   set_property(GLOBAL PROPERTY ROOT_CLING_CXX_HEADERS_LOCATION "${CLING_CXX_HEADERS}")
 
-  if (CLING_CXX_PATH)
-    MESSAGE(STATUS "And if not found, will invoke: '${CLING_CXX_PATH}' for them.")
-    if (CLING_CXX_RLTV)
-      MESSAGE(STATUS "And then fallback to: '${CLING_CXX_RLTV}'")
-      # FIXME: We should use file(GENERATE) cmake command.
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
-        "
-        #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
-        #define CLING_CXX_PATH \"${CLING_CXX_PATH} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
-        #define CLING_CXX_RLTV \"${CLING_CXX_RLTV} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
-        #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
-      ")
-    else()
-      file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
-        "
-        #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
-        #define CLING_CXX_PATH \"${CLING_CXX_PATH} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
-        #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
-      ")
-    endif()
-  else()
-    MESSAGE(STATUS "And if not found, will invoke: '${CLING_CXX_RLTV}' for them.")
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+  # FIXME: We should use file(GENERATE) cmake command.
+  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+    "
+    #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
+    #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
+  ")
+  if (CMAKE_OSX_SYSROOT)
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
       "
-      #define CLING_CXX_INCL \"${CLING_CXX_HEADERS}\"
-      #define CLING_CXX_RLTV \"${CLING_CXX_RLTV} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
-      #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
+      #define CLING_OSX_SYSROOT \"${CMAKE_OSX_SYSROOT}\"
     ")
   endif()
-
+  if (CLING_CXX_PATH)
+    MESSAGE(STATUS "And if not found, will invoke: '${CLING_CXX_PATH}' for them.")
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+      "
+      #define CLING_CXX_PATH \"${CLING_CXX_PATH} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
+    ")
+  endif()
+  if (CLING_CXX_RLTV)
+    MESSAGE(STATUS "And then fallback to: '${CLING_CXX_RLTV}'")
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+      "
+      #define CLING_CXX_RLTV \"${CLING_CXX_RLTV} ${CMAKE_CXX_FLAGS_NO_I} ${CMAKE_CXX_FLAGS_${uppercase_CMAKE_BUILD_TYPE}}\"
+    ")
+  endif()
 else()
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
       "
       #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
       #define CLING_UCRT_VERSION  \"$ENV{UCRTVersion}\"

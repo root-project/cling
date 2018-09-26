@@ -339,17 +339,9 @@ namespace {
           sArguments.addArgument("-nostdinc++");
       }
 
-  #if defined(__APPLE__)
-
-      if (!opts.NoBuiltinInc && !opts.SysRoot) {
-        std::string sysRoot;
-        if (platform::GetISysRoot(sysRoot, Verbose)) {
-          if (Verbose)
-            cling::log() << "Using SDK \"" << sysRoot << "\"\n";
-          sArguments.addArgument("-isysroot", std::move(sysRoot));
-        }
-      }
-  #endif // __APPLE__
+  #ifdef CLING_OSX_SYSROOT
+    sArguments.addArgument("-isysroot", CLING_OSX_SYSROOT);
+  #endif
 
 #endif // _MSC_VER
 
