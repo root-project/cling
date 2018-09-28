@@ -22,7 +22,7 @@ if(MSVC)
   ExternalProject_Add(
     clad
     GIT_REPOSITORY https://github.com/vgvassilev/clad.git
-    GIT_TAG v0.2
+    GIT_TAG v0.3
     UPDATE_COMMAND ""
     CMAKE_ARGS -G ${CMAKE_GENERATOR} -DCLAD_BUILD_STATIC_ONLY=ON
                -DCMAKE_INSTALL_PREFIX=${CLING_PLUGIN_INSTALL_PREFIX}
