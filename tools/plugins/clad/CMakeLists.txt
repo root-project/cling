@@ -41,6 +41,12 @@ if(MSVC)
   )
 else()
   set(_clad_build_type ${CMAKE_CFG_INTDIR})
+  if(APPLE)
+    set(_clad_extra_cmake_args
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+    )
+  endif()
+
   ExternalProject_Add(
     clad
     GIT_REPOSITORY https://github.com/vgvassilev/clad.git
@@ -56,6 +62,7 @@ else()
                -DCLAD_PATH_TO_LLVM_BUILD=${LLVM_BINARY_DIR}
                -DCLANG_INCLUDE_DIRS=${CLANG_INCLUDE_DIRS}
                -DCLAD_BUILD_STATIC_ONLY=ON
+               ${_clad_extra_cmake_args}
     BUILD_BYPRODUCTS ${CLADDIFFERENTIATOR_LIB}
     # Wrap download, configure and build steps in a script to log output
     LOG_DOWNLOAD ON
