@@ -536,6 +536,11 @@ std::string NormalizePath(const std::string& Path) {
 }
 
 bool IsMemoryValid(const void *P) {
+  // Calling VirtualQuery() is very expansive. For example, the testUnfold5a
+  // tutorial (interpreted) times out after 3600 seconds, and runs in about
+  // 60 seconds without calling VirtualQuery(). So just bypass it and return
+  // true for the time being
+  return true;
   MEMORY_BASIC_INFORMATION MBI;
   if (::VirtualQuery(P, &MBI, sizeof(MBI)) == 0) {
     ReportLastError("VirtualQuery");
