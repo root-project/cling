@@ -1123,7 +1123,10 @@ void GlobalsPrinter::DisplayGlobals()const
   //Try to print global macro definitions (object-like only).
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
-    auto MI = macro->second.getLatest()->getMacroInfo();
+    auto* MD = macro->second.getLatest();
+    if (!MD)
+      continue;
+    auto MI = MD->getMacroInfo();
     if (MI && MI->isObjectLike())
       DisplayObjectLikeMacro(macro->first, MI);
   }
@@ -1168,7 +1171,10 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
   Interpreter::PushTransactionRAII RAII(const_cast<Interpreter*>(fInterpreter));
   const Preprocessor& pp = compiler->getPreprocessor();
   for (macro_iterator macro = pp.macro_begin(); macro != pp.macro_end(); ++macro) {
-    auto MI = macro->second.getLatest()->getMacroInfo();
+    auto* MD = macro->second.getLatest();
+    if (!MD)
+      continue;
+    auto MI = MD->getMacroInfo();
     if (MI && MI->isObjectLike()) {
       if (name == macro->first->getName().data()) {
         DisplayObjectLikeMacro(macro->first, MI);
