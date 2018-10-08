@@ -218,6 +218,14 @@ static void HandlePlugins(CompilerInstance& CI,
         Consumers.push_back(std::move(PluginConsumer));
     }
   }
+
+  // Copied from Lex/Pragma.cpp
+
+  // Pragmas added by plugins
+  for (PragmaHandlerRegistry::iterator it = PragmaHandlerRegistry::begin(),
+          ie = PragmaHandlerRegistry::end(); it != ie; ++it) {
+     CI.getPreprocessor().AddPragmaHandler(it->instantiate().release());
+  }
 }
 
 namespace cling {

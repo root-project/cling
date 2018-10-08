@@ -6,4 +6,9 @@
 int dummy = 15;
 
 // CHECK-NEXT:PluginConsumer::HandleTopLevelDecl
+
+#pragma demoplugin
+
+// CHECK:DemoPluginPragmaHandler::HandlePragma
+
 .q
