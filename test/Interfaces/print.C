@@ -12,4 +12,4 @@
 
 int a = 21;
 gCling->toString("a");
-// CHECK: "21"
+// CHECK: 21
