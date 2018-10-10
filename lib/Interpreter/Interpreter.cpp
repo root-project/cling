@@ -1020,7 +1020,8 @@ namespace cling {
 
   const FunctionDecl* Interpreter::DeclareCFunction(StringRef name,
                                                     StringRef code,
-                                                    bool withAccessControl) {
+                                                    bool withAccessControl,
+                                                    Transaction*& T) {
     /*
     In CallFunc we currently always (intentionally and somewhat necessarily)
     always fully specify member function template, however this can lead to
@@ -1109,7 +1110,7 @@ namespace cling {
     LangOptions& LO = const_cast<LangOptions&>(getCI()->getLangOpts());
     bool savedAccessControl = LO.AccessControl;
     LO.AccessControl = withAccessControl;
-    cling::Transaction* T = 0;
+    T = nullptr;
     cling::Interpreter::CompilationResult CR = declare(code, &T);
     LO.AccessControl = savedAccessControl;
 
@@ -1154,15 +1155,16 @@ namespace cling {
       }
     }
 
-    const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl);
-    if (!FD)
+    Transaction* T = nullptr;
+    const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl, T);
+    if (!FD || !T)
       return 0;
     //
     //  Get the wrapper function pointer
     //  from the ExecutionEngine (the JIT).
     //
     if (const llvm::GlobalValue* GV
-        = getLastTransaction()->getModule()->getNamedValue(name))
+        = T->getModule()->getNamedValue(name))
       return m_Executor->getPointerToGlobalFromJIT(*GV);
 
     return 0;

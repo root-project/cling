@@ -282,9 +282,11 @@ namespace cling {
     ///\param[in] name - name of the function, used to find its Decl.
     ///\param[in] code - function definition, starting with 'extern "C"'.
     ///\param[in] withAccessControl - whether to enforce access restrictions.
+    ///\param[out] T - The cling::Transaction of the input
     const clang::FunctionDecl* DeclareCFunction(llvm::StringRef name,
                                                 llvm::StringRef code,
-                                                bool withAccessControl);
+                                                bool withAccessControl,
+                                                Transaction*& T);
 
     ///\brief Initialize runtime and C/C++ level overrides
     ///
