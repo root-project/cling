@@ -7,15 +7,14 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "MetaSema.h"
-
-#include "Display.h"
-
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+
+#include "cling/MetaProcessor/Display.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
+#include "cling/MetaProcessor/MetaSema.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
