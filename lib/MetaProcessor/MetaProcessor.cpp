@@ -8,11 +8,11 @@
 //------------------------------------------------------------------------------
 
 #include "cling/MetaProcessor/MetaProcessor.h"
+#include "cling/MetaProcessor/InputValidator.h"
+#include "cling/MetaProcessor/MetaParser.h"
+#include "cling/MetaProcessor/MetaSema.h"
+#include "cling/MetaProcessor/Display.h"
 
-#include "Display.h"
-#include "InputValidator.h"
-#include "MetaParser.h"
-#include "MetaSema.h"
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
 #include "cling/Utils/Output.h"

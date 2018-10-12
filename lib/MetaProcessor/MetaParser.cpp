@@ -7,14 +7,14 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "MetaParser.h"
-
+#include "cling/MetaProcessor/MetaParser.h"
+#include "cling/MetaProcessor/MetaSema.h"
 #include "MetaLexer.h"
-#include "MetaSema.h"
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/Value.h"
+
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 
