@@ -11,5 +11,5 @@
 #include "cling/Interpreter/Interpreter.h"
 
 int a = 21;
-gCling->toString("int", &a);
+gCling->toString("int", &a)
 // CHECK: "21"
