@@ -617,10 +617,12 @@ namespace cling {
     cling::valuePrinterInternal::declarePrintValue(*this);
     std::string ret;
     std::stringstream ss;
-    ss << "*((std::string*)" << &ret << ") = cling::printValue((" << type << "*)" << obj << ");";
+    ss << "*((std::string*)" << &ret << ") = cling::printValue((" << type << "*)"
+       << obj << ");";
     CompilationResult result = process(ss.str().c_str());
     if (result != cling::Interpreter::kSuccess)
-      llvm::errs() << "Error in Interpreter::toString: the input " << ss.str() << " cannot be evaluated";
+      llvm::errs() << "Error in Interpreter::toString: the input " << ss.str()
+                   << " cannot be evaluated";
 
     return ret;
   }
