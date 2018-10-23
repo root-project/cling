@@ -7,7 +7,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#include "MetaLexer.h"
+#include "cling/MetaProcessor/MetaLexer.h"
 
 #include "llvm/ADT/StringRef.h"
 

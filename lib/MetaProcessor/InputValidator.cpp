@@ -9,7 +9,7 @@
 
 #include "cling/MetaProcessor/InputValidator.h"
 
-#include "MetaLexer.h"
+#include "cling/MetaProcessor/MetaLexer.h"
 
 #include <algorithm>
 
