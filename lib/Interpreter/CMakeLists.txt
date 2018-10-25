@@ -54,6 +54,10 @@ set(CLING_DEPENDS)
 if(TARGET ClangDriverOptions)
   set(CLING_DEPENDS ClangDriverOptions)
 endif()
+# clangSema will make sure all of the dependencies of clingInterpreter are met.
+if(TARGET clangSema)
+  set(CLING_DEPENDS "${CLING_DEPENDS};clangSema")
+endif()
 
 
 add_cling_library(clingInterpreter OBJECT
