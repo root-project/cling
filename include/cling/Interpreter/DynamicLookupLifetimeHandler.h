@@ -75,7 +75,7 @@ namespace runtime {
                       Interpreter* Interp);
 
       ///\brief Returns the created object.
-      void* getMemory() const { return m_Memory; }
+      inline void* getMemory() const { return m_Memory; }
 
       /// \brief Clears up the free store, when LifetimeHandler goes out of
       /// scope.

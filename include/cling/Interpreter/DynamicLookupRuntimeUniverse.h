@@ -47,7 +47,7 @@ namespace runtime {
     /// @param[in] DC The declaration context, in which the expression will be
     /// evaluated at runtime.
     template<typename T>
-    T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
+    inline T EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
       Value result(EvaluateDynamicExpression(gCling, ExprInfo, DC));
       if (result.isValid())
         // Check whether the expected return type and the actual return type are
@@ -60,7 +60,7 @@ namespace runtime {
     /// \brief EvaluateT specialization for the case where we instantiate with
     /// void.
     template<>
-    void EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
+    inline void EvaluateT(DynamicExprInfo* ExprInfo, clang::DeclContext* DC ) {
       EvaluateDynamicExpression(gCling, ExprInfo, DC);
     }
   } // end namespace internal

@@ -138,7 +138,7 @@ namespace cling {
     }
 
     // For std::vector<bool> elements
-    std::string printValue(const bool& B, const void* = 0) {
+    inline std::string printValue(const bool& B, const void* = 0) {
       return cling::printValue(&B);
     }
 
