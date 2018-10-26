@@ -1042,7 +1042,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       }
     }
 
-    Invocation.getFrontendOpts().DisableFree = true;
+    FrontendOptions FrontendOpts = Invocation.getFrontendOpts();
+    FrontendOpts.DisableFree = true;
 
     // With modules, we now start adding prebuilt module paths to the CI.
     // Modules from those paths are treated like they are never out of date
@@ -1066,7 +1067,10 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                           /*UserFilesAreVolatile*/ true);
     CI->setSourceManager(SM); // CI now owns SM
 
-    if (Invocation.getFrontendOpts().ModulesEmbedAllFiles)
+    if (FrontendOpts.ShowTimers)
+      CI->createFrontendTimer();
+
+    if (FrontendOpts.ModulesEmbedAllFiles)
        CI->getSourceManager().setAllFilesAreTransient(true);
 
     // As main file we want
