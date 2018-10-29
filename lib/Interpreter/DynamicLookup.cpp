@@ -586,23 +586,19 @@ namespace cling {
   }
 
   ASTNodeInfo EvaluateTSynthesizer::VisitExpr(Expr* Node) {
+    bool NeedsEval = false;
     for (Stmt::child_iterator
            I = Node->child_begin(), E = Node->child_end(); I != E; ++I) {
       if (*I) {
         ASTNodeInfo NewNode = Visit(*I);
         assert(NewNode.hasSingleNode() &&
                "Cannot have more than one stmt at that point");
-        if (NewNode.isForReplacement()) {
-          if (Expr *E = NewNode.getAs<Expr>())
-            // Assume void if still not escaped
-            *I = SubstituteUnknownSymbol(m_Context->VoidTy, E);
-        }
-        else {
-          *I = NewNode.getAsSingleNode();
-        }
+        if (NewNode.isForReplacement())
+          NeedsEval = true;
+        *I = NewNode.getAsSingleNode();
       }
     }
-    return ASTNodeInfo(Node, 0);
+    return ASTNodeInfo(Node, NeedsEval);
   }
 
   ASTNodeInfo EvaluateTSynthesizer::VisitBinaryOperator(BinaryOperator* Node) {
