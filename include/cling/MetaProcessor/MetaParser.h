@@ -10,8 +10,8 @@
 #ifndef CLING_META_PARSER_H
 #define CLING_META_PARSER_H
 
-#include "MetaLexer.h" // for cling::Token
-#include "MetaSema.h" // for ActionResult
+#include "cling/MetaProcessor/MetaLexer.h" // for cling::Token
+#include "cling/MetaProcessor/MetaSema.h" // for ActionResult
 #include "llvm/ADT/SmallVector.h"
 
 #include <memory>
