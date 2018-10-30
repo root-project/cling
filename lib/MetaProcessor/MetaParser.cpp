@@ -9,7 +9,7 @@
 
 #include "cling/MetaProcessor/MetaParser.h"
 #include "cling/MetaProcessor/MetaSema.h"
-#include "cling/MetaProcessor/MetaLexer.h"
+#include "MetaLexer.h"
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
