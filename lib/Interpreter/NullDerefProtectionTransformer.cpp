@@ -45,7 +45,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
     LookupResult* m_clingthrowIfInvalidPointerCache;
 
     bool IsTransparentThis(Expr* E) {
-      if (auto TE = dyn_cast<CXXThisExpr>(E))
+      if (llvm::isa<CXXThisExpr>(E))
         return true;
       if (auto ICE = dyn_cast<ImplicitCastExpr>(E))
         return IsTransparentThis(ICE->getSubExpr());
