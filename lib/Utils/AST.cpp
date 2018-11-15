@@ -1524,6 +1524,10 @@ namespace utils {
           //    vector<_Tp,_Alloc>::size_type
           // Make the situation is 'useable' but looking a bit odd by
           // picking a random instance as the declaring context.
+          // FIXME: We should not use the iterators here to check if we are in
+          // a template specialization. clTempl != cxxdecl already tell us that
+          // is the case. It seems that we rely on a side-effect from triggering
+          // deserializations to support 'some' use-case. See ROOT-9709.
           if (clTempl->spec_begin() != clTempl->spec_end()) {
             decl = *(clTempl->spec_begin());
             outer  = llvm::dyn_cast<NamedDecl>(decl);
