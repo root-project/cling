@@ -193,12 +193,25 @@ static void HandlePlugins(CompilerInstance& CI,
   // plugins if cling is in a single shared library which is dlopen-ed with
   // RTLD_LOCAL. In that situation plugins can still find the cling, clang and
   // llvm symbols opened with local visibility.
-  if (FrontendPluginRegistry::begin() == FrontendPluginRegistry::end())
+  if (FrontendPluginRegistry::begin() == FrontendPluginRegistry::end()) {
     for (const std::string& Path : CI.getFrontendOpts().Plugins) {
       std::string Err;
       if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path.c_str(), &Err))
         CI.getDiagnostics().Report(clang::diag::err_fe_unable_to_load_plugin)
           << Path << Err;
+    }
+    // If we are not statically linked, we should register the pragmas ourselves
+    // because the dlopen happens after creating the clang::Preprocessor which
+    // calls RegisterBuiltinPragmas.
+    // FIXME: This can be avoided by refactoring our routine and moving it to
+    // the CIFactory. This requires an abstraction which allows us to
+    // conditionally create MultiplexingConsumers.
+
+    // Copied from Lex/Pragma.cpp
+    // Pragmas added by plugins
+    for (PragmaHandlerRegistry::iterator it = PragmaHandlerRegistry::begin(),
+           ie = PragmaHandlerRegistry::end(); it != ie; ++it)
+      CI.getPreprocessor().AddPragmaHandler(it->instantiate().release());
   }
 
   for (auto it = clang::FrontendPluginRegistry::begin(),
