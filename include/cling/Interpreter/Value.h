@@ -267,7 +267,7 @@ namespace cling {
     /// casting the value of builtins (except void), enums and pointers.
     /// Values referencing an object are treated as pointers to the object.
     template <typename T>
-    inline T simplisticCastAs() const {
+    T simplisticCastAs() const {
       return CastFwd<T>::cast(*this);
     }
 
