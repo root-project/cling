@@ -249,13 +249,12 @@ namespace cling {
     if (!getCompilationOpts().DynamicScoping)
       return Result(D, true);
 
-    // Find DynamicLookup specific builtins
-    if (!m_EvalDecl) {
-      Initialize();
-    }
-
     if (FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {
       if (FD->hasBody() && ShouldVisit(FD)) {
+	// Find DynamicLookup specific builtins
+	if (!m_EvalDecl)
+	  Initialize();
+
         // Set the decl context, which is needed by Evaluate.
         m_CurDeclContext = FD;
         ASTNodeInfo NewBody = Visit(D->getBody());
