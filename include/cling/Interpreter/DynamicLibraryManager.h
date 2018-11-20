@@ -77,6 +77,14 @@ namespace cling {
     const InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
     void setCallbacks(InterpreterCallbacks* C) { m_Callbacks = C; }
 
+    ///\brief Returns the system include paths.
+    ///
+    ///\returns System include paths.
+    ///
+    llvm::SmallVector<std::string, 32> getSystemSearchPath() {
+       return m_SystemSearchPaths;
+    }
+
     ///\brief Looks up a library taking into account the current include paths
     /// and the system include paths.
     ///\param[in] libStem - The filename being looked up

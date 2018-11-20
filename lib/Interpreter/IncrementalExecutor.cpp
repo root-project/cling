@@ -363,6 +363,14 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
   if (m_unresolvedSymbols.empty())
     return false;
 
+  // Issue callback to TCling!!
+  for (const std::string& sym : m_unresolvedSymbols) {
+    // We emit callback to LibraryLoadingFailed when we get error with error message.
+    if (InterpreterCallbacks* C = m_Callbacks)
+      if (C->LibraryLoadingFailed(sym, "", false, false))
+        return false;
+  }
+
   llvm::SmallVector<llvm::Function*, 128> funcsToFree;
   for (const std::string& sym : m_unresolvedSymbols) {
 #if 0
