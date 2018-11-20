@@ -46,7 +46,7 @@ set(CLING_TEST_PARAMS
   cling_site_config=${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
   )
 
-add_custom_target(cling-test-depends DEPENDS ${CLING_TEST_DEPS})
+add_custom_target(cling-test-depends DEPENDS clingDemoPlugin ${CLING_TEST_DEPS})
 
 add_lit_testsuite(check-cling "Running the Cling regression tests"
   ${CMAKE_CURRENT_BINARY_DIR}
