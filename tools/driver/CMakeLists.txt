@@ -13,12 +13,7 @@ if(BUILD_SHARED_LIBS)
   set(LIBS
     LLVMSupport
 
-    clangARCMigrate
-    clangStaticAnalyzerCheckers
-    clangASTMatchers
     clangFrontendTool
-    clangStaticAnalyzerCore
-    clangStaticAnalyzerFrontend
 
     clingInterpreter
     clingMetaProcessor
@@ -32,12 +27,8 @@ else()
   set(LIBS
     LLVMSupport
 
-    clangARCMigrate
-    clangStaticAnalyzerCheckers
     clangASTMatchers
     clangFrontendTool
-    clangStaticAnalyzerCore
-    clangStaticAnalyzerFrontend
 
     clingUserInterface
   )
