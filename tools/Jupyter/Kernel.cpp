@@ -16,6 +16,7 @@
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "cling/Utils/Output.h"
 
+#include "cling/Interpreter/Exception.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <map>
@@ -133,11 +134,38 @@ char* cling_eval(TheMetaProcessor *metaProc, const char *code) {
   cling::MetaProcessor *M = (cling::MetaProcessor*)metaProc;
   cling::Value V;
   cling::Interpreter::CompilationResult Res;
-  if (M->process(code, Res, &V, /*disableValuePrinting*/ true)) {
-    cling::Jupyter::pushOutput({{"text/html", "Incomplete input! Ignored."}});
-    M->cancelContinuation();
+  bool isExcept = false;
+  try {
+    if (M->process(code, Res, &V, /*disableValuePrinting*/ true)) {
+      cling::Jupyter::pushOutput({{"text/html", "Incomplete input! Ignored."}});
+      M->cancelContinuation();
+      return nullptr;
+    }
+  }
+  catch(cling::InterpreterException& e) {
+    //std::string output (strcat("Caught an interpreter exception:", e.what().c_str())) ;
+    std::string output ("Caught an interpreter exception:");
+    output += e.what();
+    cling::Jupyter::pushOutput({{"text/html", output}});
+    isExcept = true;
+  }
+  catch(std::exception& e) {
+    //std::string output(strcat("Caught a standard exception:" , e.what().c_str())) ;
+    std::string output("Caught a standard exception:") ;
+    output += e.what();
+    cling::Jupyter::pushOutput({{"text/html", output}});
+    isExcept = true;
+  }
+  catch(...) {
+    std::string output = "Exception occurred. Recovering...\n";
+    cling::Jupyter::pushOutput({{"text/html", output}});
+    isExcept = true;
+  }
+
+  if (isExcept) {
     return nullptr;
   }
+
   if (Res != cling::Interpreter::kSuccess)
     return nullptr;
 
