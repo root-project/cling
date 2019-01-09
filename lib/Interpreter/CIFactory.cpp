@@ -1197,6 +1197,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CGOpts.UnrollLoops = 1;
     CGOpts.VectorizeLoop = 1;
     CGOpts.VectorizeSLP = 1;
+    CGOpts.DisableO0ImplyOptNone = 1; // Enable dynamic opt level switching.
 
     CGOpts.setInlining((CGOpts.OptimizationLevel == 0)
                        ? CodeGenOptions::OnlyAlwaysInlining
