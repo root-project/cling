@@ -174,12 +174,12 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   // At O0 and O1 we only run the always inliner which is more efficient. At
   // higher optimization levels we run the normal inliner.
   // See also call to `CGOpts.setInlining()` in CIFactory!
-  if (m_CGOpts.OptimizationLevel <= 1) {
-    bool InsertLifetimeIntrinsics = m_CGOpts.OptimizationLevel != 0;
+  if (PMBuilder.OptLevel <= 1) {
+    bool InsertLifetimeIntrinsics = PMBuilder.OptLevel != 0;
     PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
   } else {
-    PMBuilder.Inliner = createFunctionInliningPass(m_CGOpts.OptimizationLevel,
-                                                   m_CGOpts.OptimizeSize,
+    PMBuilder.Inliner = createFunctionInliningPass(OptLevel,
+                                                   PMBuilder.SizeLevel,
             (!m_CGOpts.SampleProfileFile.empty() && m_CGOpts.EmitSummaryIndex));
   }
 
