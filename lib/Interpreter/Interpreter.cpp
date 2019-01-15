@@ -258,7 +258,7 @@ namespace cling {
       setupCallbacks(*this, parentInterp);
     }
 
-    if(m_Opts.CompilerOpts.CUDA){
+    if(m_Opts.CompilerOpts.CUDAHost){
        if(m_DyLibManager->loadLibrary("libcudart.so", true) ==
          cling::DynamicLibraryManager::LoadLibResult::kLoadLibNotFound){
            llvm::errs() << "Error: libcudart.so not found!\n" <<

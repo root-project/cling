@@ -1025,7 +1025,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // This argument starts the cling instance with the x86 target. Otherwise,
     // the first job in the joblist starts the cling instance with the nvptx
     // target.
-    if(COpts.CUDA)
+    if(COpts.CUDAHost)
       argvCompile.push_back("--cuda-host-only");
 
     // argv[0] already inserted, get the rest

@@ -289,7 +289,7 @@ namespace cling {
     initializeVirtualFile();
 
     if(m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly &&
-      m_Interpreter->getOptions().CompilerOpts.CUDA){
+      m_Interpreter->getOptions().CompilerOpts.CUDAHost){
         // Create temporary folder for all files, which the CUDA device compiler
         // will generate.
         llvm::SmallString<256> TmpPath;
@@ -920,7 +920,8 @@ namespace cling {
     else if (Diags.getNumWarnings())
       return kSuccessWithWarnings;
 
-    if(!m_Interpreter->isInSyntaxOnlyMode() && m_CI->getLangOpts().CUDA )
+    if (!m_Interpreter->isInSyntaxOnlyMode() &&
+        m_Interpreter->getOptions().CompilerOpts.CUDAHost)
       m_CUDACompiler->compileDeviceCode(input, m_Consumer->getTransaction());
 
     return kSuccess;
@@ -935,25 +936,29 @@ namespace cling {
   void IncrementalParser::SetTransformers(bool isChildInterpreter) {
     // Add transformers to the IncrementalParser, which owns them
     Sema* TheSema = &m_CI->getSema();
+    // if the interpreter compiles ptx code, some transformers should not used
+    bool isCUDADevice = m_Interpreter->getOptions().CompilerOpts.CUDADevice;
     // Register the AST Transformers
     typedef std::unique_ptr<ASTTransformer> ASTTPtr_t;
     std::vector<ASTTPtr_t> ASTTransformers;
     ASTTransformers.emplace_back(new AutoSynthesizer(TheSema));
     ASTTransformers.emplace_back(new EvaluateTSynthesizer(TheSema));
     if (hasCodeGenerator() && !m_Interpreter->getOptions().NoRuntime) {
-       // Don't protect against crashes if we cannot run anything.
-       // cling might also be in a PCH-generation mode; don't inject our Sema pointer
-       // into the PCH.
-       ASTTransformers.emplace_back(new NullDerefProtectionTransformer(m_Interpreter));
+      // Don't protect against crashes if we cannot run anything.
+      // cling might also be in a PCH-generation mode; don't inject our Sema
+      // pointer into the PCH.
+      if (!isCUDADevice)
+        ASTTransformers.emplace_back(
+            new NullDerefProtectionTransformer(m_Interpreter));
     }
     ASTTransformers.emplace_back(new DefinitionShadower(*TheSema, *m_Interpreter));
 
     typedef std::unique_ptr<WrapperTransformer> WTPtr_t;
     std::vector<WTPtr_t> WrapperTransformers;
-    if (!m_Interpreter->getOptions().NoRuntime)
+    if (!m_Interpreter->getOptions().NoRuntime && !isCUDADevice)
       WrapperTransformers.emplace_back(new ValuePrinterSynthesizer(TheSema));
     WrapperTransformers.emplace_back(new DeclExtractor(TheSema));
-    if (!m_Interpreter->getOptions().NoRuntime)
+    if (!m_Interpreter->getOptions().NoRuntime && !isCUDADevice)
       WrapperTransformers.emplace_back(new ValueExtractionSynthesizer(TheSema,
                                                            isChildInterpreter));
     WrapperTransformers.emplace_back(new CheckEmptyTransactionTransformer(TheSema));
