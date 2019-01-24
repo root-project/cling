@@ -82,6 +82,9 @@ static const char kNoStdInc[] = "-nostdinc";
         Opts.MetaString = ".";
       }
     }
+
+    if (const Arg* OverlayFileArg = Args.getLastArg(OPT_overlay_EQ))
+      Opts.OverlayFile = OverlayFileArg->getValue();
   }
 
   static void Extend(std::vector<std::string>& A, std::vector<std::string> B) {
