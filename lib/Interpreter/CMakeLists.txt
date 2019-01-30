@@ -74,6 +74,7 @@ add_cling_library(clingInterpreter OBJECT
   DeclExtractor.cpp
   DefinitionShadower.cpp
   DeclUnloader.cpp
+  DeviceKernelInliner.cpp
   DynamicLibraryManager.cpp
   DynamicLookup.cpp
   DynamicExprInfo.cpp

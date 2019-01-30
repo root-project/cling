@@ -17,6 +17,7 @@
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
 #include "DefinitionShadower.h"
+#include "DeviceKernelInliner.h"
 #include "DynamicLookup.h"
 #include "IncrementalCUDADeviceCompiler.h"
 #include "IncrementalExecutor.h"
@@ -950,6 +951,9 @@ namespace cling {
       if (!isCUDADevice)
         ASTTransformers.emplace_back(
             new NullDerefProtectionTransformer(m_Interpreter));
+      else
+        ASTTransformers.emplace_back(
+            new DeviceKernelInliner(TheSema));
     }
     ASTTransformers.emplace_back(new DefinitionShadower(*TheSema, *m_Interpreter));
 
