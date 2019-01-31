@@ -681,8 +681,8 @@ namespace cling {
     cling::valuePrinterInternal::declarePrintValue(*this);
     std::string ret;
     std::stringstream ss;
-    ss << "*((std::string*)" << &ret << ") = cling::printValue((" << type << "*)"
-       << obj << ");";
+    ss << "*((std::string*)" << std::hex << std::showbase << (size_t)&ret << ") = cling::printValue((" << type << "*)"
+       << std::hex << std::showbase << (size_t)obj << ");";
     CompilationResult result = process(ss.str().c_str());
     if (result != cling::Interpreter::kSuccess)
       llvm::errs() << "Error in Interpreter::toString: the input " << ss.str()
