@@ -279,11 +279,14 @@ namespace cling {
       // "/include/c++/" (as stl path is always inferred from gcc path),
       // append this to MOverlay.
       // FIXME: Implement a more sophisticated way to detect stl paths
-      for (auto SystemPath : HSearchPaths) {
-        if (llvm::sys::fs::is_directory(SystemPath) &&
-              (SystemPath.find("/include/c++/") != std::string::npos)) {
+      for (auto &&SystemPath : HSearchPaths) {
+        llvm::StringRef SystemPathSR = SystemPath;
+        if (llvm::sys::fs::is_directory(SystemPathSR) &&
+            llvm::sys::path::filename(SystemPathSR) != "backward" &&
+            SystemPathSR.contains("/include/c++/")) {
           MOverlay += buildModuleMapOverlayEntry(SystemPath, "stl.modulemap",
                 m_Opts.OverlayFile, /*NotLast*/ true);
+          break; // first one wins!
         }
       }
 
