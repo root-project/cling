@@ -285,7 +285,7 @@ namespace cling {
         if (llvm::sys::fs::is_directory(SystemPathSR) &&
             llvm::sys::path::filename(SystemPathSR) != "backward" &&
             SystemPathSR.contains("/include/c++/")) {
-          MOverlay += buildModuleMapOverlayEntry(SystemPath, "stl.modulemap",
+          MOverlay += buildModuleMapOverlayEntry(SystemPath, "std.modulemap",
                 m_Opts.OverlayFile, /*NotLast*/ true);
           break; // first one wins!
         }
