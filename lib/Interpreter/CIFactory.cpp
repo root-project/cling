@@ -450,10 +450,14 @@ namespace {
         // in include/c++/6.3.0/type_traits:344 that clang then rejects. The
         // specialization is protected by !if _GLIBCXX_USE_FLOAT128 (which is
         // unconditionally set in c++config.h) and #if !__STRICT_ANSI__. Tweak
-        // the latter by disabling GNUMode:
-        cling::errs()
-          << "Disabling gnu++: "
-             "clang has no __float128 support on this target!\n";
+        // the latter by disabling GNUMode.
+        // the nvptx backend doesn't support 128 bit float
+        // a error message is not necessary
+        if(!CompilerOpts.CUDADevice) {
+          cling::errs()
+            << "Disabling gnu++: "
+               "clang has no __float128 support on this target!\n";
+        }
         Opts.GNUMode = 0;
       }
 #endif //_GLIBCXX_USE_FLOAT128

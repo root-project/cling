@@ -9,21 +9,21 @@
 
 #include "IncrementalCUDADeviceCompiler.h"
 
+#include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/Transaction.h"
-#include "cling/Utils/Paths.h"
 
-#include "clang/AST/Decl.h"
-#include "clang/AST/DeclGroup.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 
-#include "llvm/ADT/Triple.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/raw_ostream.h"
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
 
 #include <algorithm>
 #include <string>
@@ -47,46 +47,54 @@ namespace cling {
         m_FatbinFilePath(CI.getCodeGenOpts().CudaGpuBinaryFileNames.empty()
                              ? ""
                              : CI.getCodeGenOpts().CudaGpuBinaryFileNames[0]),
-        m_DummyCUPath(m_FilePath + "dummy.cu"),
-        m_PTXFilePath(m_FilePath + "cling.ptx"),
-        m_GenericFileName(m_FilePath + "cling") {
+        m_PTXFilePath(m_FilePath + "cling.ptx") {
     if (m_FatbinFilePath.empty()) {
       llvm::errs() << "Error: CudaGpuBinaryFileNames can't be empty\n";
       return;
     }
 
-    if (!generateHelperFiles()) return;
     if (!findToolchain(invocationOptions)) return;
     setCuArgs(CI.getLangOpts(), invocationOptions, optLevel,
               CI.getCodeGenOpts().getDebugInfo());
 
-    m_HeaderSearchOptions = CI.getHeaderSearchOptsPtr();
+    // cling -std=c++xx -Ox -x cuda -S --cuda-gpu-arch=sm_xx --cuda-device-only
+    // ${include headers} ${-I/paths} [-v] [-g] ${m_CuArgs->additionalPtxOpt}
+    std::vector<std::string> argv = {"cling",
+                                     m_CuArgs->cppStdVersion.c_str(),
+                                     m_CuArgs->optLevel.c_str(),
+                                     "-x",
+                                     "cuda",
+                                     "-S",
+                                     m_CuArgs->ptxSmVersion.c_str(),
+                                     "--cuda-device-only"};
+    addHeaderSearchPathFlags(argv, CI.getHeaderSearchOptsPtr());
+    if (m_CuArgs->verbose) argv.push_back("-v");
+    if (m_CuArgs->debug) argv.push_back("-g");
+    argv.insert(argv.end(), m_CuArgs->additionalPtxOpt.begin(),
+                m_CuArgs->additionalPtxOpt.end());
 
-    // This code will write to the first .cu-file. It is necessary that some
-    // cling generated code can be handled.
-    const std::string initialCUDADeviceCode =
-        "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char "
-        "vpOn, float value);\n"
-        "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char "
-        "vpOn, double value);\n"
-        "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char "
-        "vpOn, long double value);\n"
-        "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char "
-        "vpOn, unsigned long long value);\n"
-        "extern void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char "
-        "vpOn, const void* value);\n";
+    std::vector<const char*> argvChar;
+    argvChar.resize(argv.size() + 1);
 
-    std::error_code EC;
-    llvm::raw_fd_ostream cuFile(m_FilePath + "cling0.cu", EC,
-                                llvm::sys::fs::F_Text);
-    if (EC) {
-      llvm::errs() << "Could not open " << m_FilePath << "cling0.cu"
-                   << EC.message() << "\n";
+    std::transform(argv.begin(), argv.end(), argvChar.begin(),
+                   [&](const std::string& s) { return s.c_str(); });
+
+    // argv list have to finish with a nullptr.
+    argvChar.push_back(nullptr);
+
+    // create incremental compiler instance
+    m_PTX_interp.reset(new Interpreter(argvChar.size(), argvChar.data()));
+
+    if (!m_PTX_interp) {
+      llvm::errs() << "Could not create PTX interpreter instance\n";
       return;
     }
 
-    cuFile << initialCUDADeviceCode;
-    cuFile.close();
+    // initialize NVPTX backend
+    LLVMInitializeNVPTXTargetInfo();
+    LLVMInitializeNVPTXTarget();
+    LLVMInitializeNVPTXTargetMC();
+    LLVMInitializeNVPTXAsmPrinter();
 
     m_Init = true;
   }
@@ -110,9 +118,11 @@ namespace cling {
 
     const std::string optLevel = "-O" + std::to_string(intprOptLevel);
 
+    std::string smVersion = "sm_20";
     std::string ptxSmVersion = "--cuda-gpu-arch=sm_20";
     std::string fatbinSmVersion = "--image=profile=compute_20";
     if (!invocationOptions.CompilerOpts.CUDAGpuArch.empty()) {
+      smVersion = invocationOptions.CompilerOpts.CUDAGpuArch;
       ptxSmVersion =
           "--cuda-gpu-arch=" + invocationOptions.CompilerOpts.CUDAGpuArch;
       fatbinSmVersion = "--image=profile=compute_" +
@@ -144,44 +154,13 @@ namespace cling {
     std::vector<std::string> additionalPtxOpt;
 
     m_CuArgs.reset(new IncrementalCUDADeviceCompiler::CUDACompilerArgs(
-        cppStdVersion, optLevel, ptxSmVersion, fatbinSmVersion, fatbinArch,
-        invocationOptions.Verbose(), debug, additionalPtxOpt,
+        cppStdVersion, optLevel, smVersion, ptxSmVersion, fatbinSmVersion,
+        fatbinArch, invocationOptions.Verbose(), debug, additionalPtxOpt,
         invocationOptions.CompilerOpts.CUDAFatbinaryArgs));
-  }
-
-  bool IncrementalCUDADeviceCompiler::generateHelperFiles() {
-    // Generate an empty dummy.cu file.
-    std::error_code EC;
-    llvm::raw_fd_ostream dummyCU(m_DummyCUPath, EC, llvm::sys::fs::F_Text);
-    if (EC) {
-      llvm::errs() << "Could not open " << m_DummyCUPath << ": " << EC.message()
-                   << "\n";
-      return false;
-    }
-    dummyCU.close();
-
-    return true;
   }
 
   bool IncrementalCUDADeviceCompiler::findToolchain(
       const cling::InvocationOptions& invocationOptions) {
-    // Search after clang in the folder of cling.
-    llvm::SmallString<128> cwd;
-    // get folder of the cling executable to find the clang which is contained
-    // in cling
-    // nullptr is ok, if we are the main and not a shared library
-    cwd.append(llvm::sys::path::parent_path(llvm::sys::fs::getMainExecutable(
-        invocationOptions.CompilerOpts.Remaining[0], (void*)&cwd)));
-    cwd.append(llvm::sys::path::get_separator());
-    cwd.append("clang++");
-    m_ClangPath = cwd.c_str();
-    // Check, if clang is existing and executable.
-    if (!llvm::sys::fs::can_execute(m_ClangPath)) {
-      llvm::errs() << "Error: " << m_ClangPath
-                   << " not existing or executable!\n";
-      return false;
-    }
-
     // Use the custom CUDA toolkit path, if it set via cling argument.
     if (!invocationOptions.CompilerOpts.CUDAPath.empty()) {
       m_FatbinaryPath =
@@ -210,9 +189,10 @@ namespace cling {
   }
 
   void IncrementalCUDADeviceCompiler::addHeaderSearchPathFlags(
-      llvm::SmallVectorImpl<std::string>& argv) {
+      std::vector<std::string>& argv,
+      const std::shared_ptr<clang::HeaderSearchOptions> headerSearchOptions) {
     for (clang::HeaderSearchOptions::Entry e :
-         m_HeaderSearchOptions->UserEntries) {
+         headerSearchOptions->UserEntries) {
       if (e.Group == clang::frontend::IncludeDirGroup::Quoted) {
         argv.push_back("-iquote");
         argv.push_back(e.Path);
@@ -224,216 +204,74 @@ namespace cling {
   }
 
   bool IncrementalCUDADeviceCompiler::compileDeviceCode(
-      const llvm::StringRef input, const cling::Transaction* const T) {
+      const llvm::StringRef input) {
     if (!m_Init) {
       llvm::errs()
           << "Error: Initializiation of CUDA Device Code Compiler failed\n";
       return false;
     }
 
-    const unsigned int counter = getCounterCopy();
+    Interpreter::CompilationResult CR = m_PTX_interp->process(input);
 
-    // Write the (CUDA) C++ source code to a file.
-    std::error_code EC;
-    llvm::raw_fd_ostream cuFile(m_GenericFileName + std::to_string(counter) +
-                                    ".cu",
-                                EC, llvm::sys::fs::F_Text);
-    if (EC) {
-      llvm::errs() << "Could not open "
-                   << m_GenericFileName + std::to_string(counter)
-                   << ".cu: " << EC.message() << "\n";
-      return false;
-    }
-    // This variable prevent, that the input and the code from the transaction
-    // will be written to the .cu-file.
-    bool foundUnwrappedDecl = false;
-
-    assert(T != nullptr && "transaction can't be missing");
-
-    // Search after statements, which are unwrapped. The conditions are, that
-    // the source code comes from the prompt (getWrapperFD()) and has the type
-    // kCCIHandleTopLevelDecl.
-    if (T->getWrapperFD()) {
-      // Template specialization declaration will be save two times at a
-      // transaction. Once with the type
-      // kCCIHandleCXXImplicitFunctionInstantiation and once with the type
-      // kCCIHandleTopLevelDecl. To avoid sending a template specialization to
-      // the clang nvptx and causing a
-      // explicit-specialization-after-instantiation-error it have to check,
-      // which kCCIHandleTopLevelDecl declaration is also a
-      // kCCIHandleCXXImplicitFunctionInstantiation declaration.
-      std::vector<clang::Decl*> implFunc;
-      for (auto iDCI = T->decls_begin(), eDCI = T->decls_end(); iDCI != eDCI;
-           ++iDCI)
-        if (iDCI->m_Call == Transaction::ConsumerCallInfo::
-                                kCCIHandleCXXImplicitFunctionInstantiation)
-          for (clang::Decl* decl : iDCI->m_DGR)
-            implFunc.push_back(decl);
-
-      for (auto iDCI = T->decls_begin(), eDCI = T->decls_end(); iDCI != eDCI;
-           ++iDCI) {
-        if (iDCI->m_Call ==
-            Transaction::ConsumerCallInfo::kCCIHandleTopLevelDecl) {
-          for (clang::Decl* decl : iDCI->m_DGR) {
-            if (std::find(implFunc.begin(), implFunc.end(), decl) ==
-                implFunc.end()) {
-              foundUnwrappedDecl = true;
-              decl->print(cuFile);
-              // The c++ code has no whitespace and semicolon at the end.
-              cuFile << ";\n";
-            }
-          }
-        }
-      }
-    }
-
-    if (!foundUnwrappedDecl) {
-      cuFile << input;
-    }
-
-    cuFile.close();
-
-    if (!generatePCH() || !generatePTX() || !generateFatbinary()) {
-      saveFaultyCUfile();
+    if (CR == Interpreter::CompilationResult::kFailure) {
+      llvm::errs() << "failed at compile ptx code\n";
       return false;
     }
 
-#if PCHMODE == 0
-    llvm::sys::fs::remove(m_GenericFileName + std::to_string(counter) +
-                          ".cu.pch");
-#endif
+    // for example blocks which are not closed
+    if (CR == Interpreter::CompilationResult::kMoreInputExpected) return true;
 
-    ++m_Counter;
-    return true;
-  }
-
-  bool IncrementalCUDADeviceCompiler::generatePCH() {
-    const unsigned int counter = getCounterCopy();
-
-    // clang++ -std=c++xx -Ox -S -Xclang -emit-pch ${clingHeaders} cling[0-9].cu
-    // -D__CLING__ -o cling[0-9].cu.pch [-include-pch cling[0-9].cu.pch]
-    // --cuda-gpu-arch=sm_[1-7][0-9] -pthread --cuda-device-only [-v] [-g]
-    // ${m_CuArgs->additionalPtxOpt}
-    llvm::SmallVector<std::string, 256> argv;
-
-    // First argument have to be the program name.
-    argv.push_back(m_ClangPath);
-
-    argv.push_back(m_CuArgs->cppStdVersion);
-    argv.push_back(m_CuArgs->optLevel);
-    argv.push_back("-S");
-    argv.push_back("-Xclang");
-    argv.push_back("-emit-pch");
-    addHeaderSearchPathFlags(argv);
-    // Is necessary for the cling runtime header.
-    argv.push_back("-D__CLING__");
-    argv.push_back(m_GenericFileName + std::to_string(counter) + ".cu");
-    argv.push_back("-o");
-    argv.push_back(m_GenericFileName + std::to_string(counter) + ".cu.pch");
-    // If a previos file exist, include it.
-#if PCHMODE == 1
-    if (counter) {
-      argv.push_back("-include-pch");
-      argv.push_back(m_GenericFileName + std::to_string(counter - 1) +
-                     ".cu.pch");
-    }
-#else
-    if (counter) {
-      for (unsigned int i = 0; i <= counter - 1; ++i) {
-        argv.push_back("-include");
-        argv.push_back(m_GenericFileName + std::to_string(i) + ".cu");
-      }
-    }
-#endif
-    argv.push_back(m_CuArgs->ptxSmVersion);
-    argv.push_back("-pthread");
-    argv.push_back("--cuda-device-only");
-    if (m_CuArgs->verbose) argv.push_back("-v");
-    if (m_CuArgs->debug) argv.push_back("-g");
-    for (const std::string& s : m_CuArgs->additionalPtxOpt) {
-      argv.push_back(s.c_str());
-    }
-
-    argv.push_back("-Wno-unused-value");
-
-    std::vector<const char*> argvChar;
-    argvChar.resize(argv.size() + 1);
-
-    std::transform(argv.begin(), argv.end(), argvChar.begin(),
-                   [&](const std::string& s) { return s.c_str(); });
-
-    // Argv list have to finish with a nullptr.
-    argvChar.push_back(nullptr);
-
-    std::string executionError;
-    int res = llvm::sys::ExecuteAndWait(m_ClangPath.c_str(), argvChar.data(),
-                                        nullptr, {}, 0, 0, &executionError);
-
-    if (res) {
-      llvm::errs() << "cling::IncrementalCUDADeviceCompiler::generatePCH(): "
-                      "error compiling PCH file:\n"
-                   << m_ClangPath;
-      for (const char* c : argvChar)
-        llvm::errs() << " " << c;
-      llvm::errs() << '\n' << executionError << "\n";
-      return false;
-    }
+    if (!generatePTX() || !generateFatbinary()) return false;
 
     return true;
   }
 
   bool cling::IncrementalCUDADeviceCompiler::generatePTX() {
-    const unsigned int counter = getCounterCopy();
 
-    // clang++ -std=c++xx -Ox -S dummy.cu -o cling.ptx -include-pch
-    // cling[0-9].cu.pch --cuda-gpu-arch=sm_xx -pthread --cuda-device-only [-v]
-    // [-g] ${m_CuArgs->additionalPtxOpt}
-    llvm::SmallVector<std::string, 128> argv;
-
-    // First argument have to be the program name.
-    argv.push_back(m_ClangPath);
-
-    argv.push_back(m_CuArgs->cppStdVersion);
-    argv.push_back(m_CuArgs->optLevel);
-    argv.push_back("-S");
-    argv.push_back(m_DummyCUPath);
-    argv.push_back("-o");
-    argv.push_back(m_PTXFilePath);
-    argv.push_back("-include-pch");
-    argv.push_back(m_GenericFileName + std::to_string(counter) + ".cu.pch");
-    argv.push_back(m_CuArgs->ptxSmVersion);
-    argv.push_back("-pthread");
-    argv.push_back("--cuda-device-only");
-    if (m_CuArgs->verbose) argv.push_back("-v");
-    if (m_CuArgs->debug) argv.push_back("-g");
-    for (const std::string& s : m_CuArgs->additionalPtxOpt) {
-      argv.push_back(s.c_str());
-    }
-
-    std::vector<const char*> argvChar;
-    argvChar.resize(argv.size() + 1);
-
-    std::transform(argv.begin(), argv.end(), argvChar.begin(),
-                   [&](const std::string& s) { return s.c_str(); });
-
-    // Argv list have to finish with a nullptr.
-    argvChar.push_back(nullptr);
-
-    std::string executionError;
-    int res = llvm::sys::ExecuteAndWait(m_ClangPath.c_str(), argvChar.data(),
-                                        nullptr, {}, 0, 0, &executionError);
-
-    if (res) {
-      llvm::errs() << "cling::IncrementalCUDADeviceCompiler::generatePTX(): "
-                      "error compiling PCH file:\n"
-                   << m_ClangPath;
-      for (const char* c : argvChar)
-        llvm::errs() << " " << c;
-      llvm::errs() << '\n' << executionError << "\n";
+    std::error_code EC;
+    llvm::raw_fd_ostream os(m_PTXFilePath, EC, llvm::sys::fs::F_None);
+    if (EC) {
+      llvm::errs() << "ERROR: cannot generate file " << m_PTXFilePath << "\n";
       return false;
     }
 
-    return true;
+    std::shared_ptr<llvm::Module> module =
+        m_PTX_interp->getLastTransaction()->getModule();
+
+    std::string error;
+    auto Target =
+        llvm::TargetRegistry::lookupTarget(module->getTargetTriple(), error);
+
+    if (!Target) {
+      llvm::errs() << error;
+      return 1;
+    }
+
+    // is not important, because PTX does not use any object format
+    llvm::Optional<llvm::Reloc::Model> RM =
+        llvm::Optional<llvm::Reloc::Model>(llvm::Reloc::Model::PIC_);
+
+    llvm::TargetOptions TO = llvm::TargetOptions();
+
+    llvm::TargetMachine* targetMachine =
+        Target->createTargetMachine(module->getTargetTriple(),
+                                    m_CuArgs->smVersion, "", TO, RM);
+    module->setDataLayout(targetMachine->createDataLayout());
+
+    llvm::SmallString<1024> ptx_code;
+    llvm::raw_svector_ostream dest(ptx_code);
+
+    llvm::legacy::PassManager pass;
+    // it's important to use the type assembler
+    // object file is not supported and do not make sense
+    auto FileType = llvm::TargetMachine::CGFT_AssemblyFile;
+
+    if (targetMachine->addPassesToEmitFile(pass, os, FileType)) {
+      llvm::errs() << "TargetMachine can't emit assembler code";
+      return 1;
+    }
+
+    return pass.run(*module);
   }
 
   bool IncrementalCUDADeviceCompiler::generateFatbinary() {
@@ -470,8 +308,8 @@ namespace cling {
 
     if (res) {
       llvm::errs() << "cling::IncrementalCUDADeviceCompiler::generateFatbinary("
-                      "): error compiling PCH file:\n"
-                   << m_ClangPath;
+                      "): error compiling fatbinary file:\n"
+                   << m_FatbinaryPath;
       for (const char* c : argvChar)
         llvm::errs() << " " << c;
       llvm::errs() << '\n' << executionError << "\n";
@@ -482,18 +320,14 @@ namespace cling {
   }
 
   void IncrementalCUDADeviceCompiler::dump() {
-    llvm::outs() << "current counter: " << getCounterCopy() << "\n"
-                 << "CUDA device compiler is valid: " << m_Init << "\n"
+    llvm::outs() << "CUDA device compiler is valid: " << m_Init << "\n"
                  << "file path: " << m_FilePath << "\n"
                  << "fatbin file path: " << m_FatbinFilePath << "\n"
-                 << "dummy.cu file path: " << m_DummyCUPath << "\n"
                  << "cling.ptx file path: " << m_PTXFilePath << "\n"
-                 << "generic file path: " << m_GenericFileName
-                 << "[0-9]*.cu{.pch}\n"
-                 << "clang++ path: " << m_ClangPath << "\n"
                  << "nvidia fatbinary path: " << m_FatbinaryPath << "\n"
                  << "m_CuArgs c++ standard: " << m_CuArgs->cppStdVersion << "\n"
                  << "m_CuArgs opt level: " << m_CuArgs->optLevel << "\n"
+                 << "m_CuArgs SM level general: " << m_CuArgs->smVersion << "\n"
                  << "m_CuArgs SM level for clang nvptx: "
                  << m_CuArgs->ptxSmVersion << "\n"
                  << "m_CuArgs SM level for fatbinary: "
@@ -512,27 +346,6 @@ namespace cling {
       llvm::outs() << s << " ";
     }
     llvm::outs() << "\n";
-  }
-
-  std::error_code IncrementalCUDADeviceCompiler::saveFaultyCUfile() {
-    const unsigned int counter = getCounterCopy();
-    unsigned int faultFileCounter = 0;
-
-    // Construct the file path of the current .cu file without extension.
-    std::string originalCU = m_GenericFileName + std::to_string(counter);
-
-    // counter (= m_Counter) will just increased, if the compiling get right. So
-    // we need a second counter, if two or more following files fails.
-    std::string faultyCU;
-    do {
-      faultFileCounter += 1;
-      faultyCU =
-          originalCU + "_fault" + std::to_string(faultFileCounter) + ".cu";
-    } while (llvm::sys::fs::exists(faultyCU));
-
-    // orginial: cling[counter].cu
-    // faulty file: cling[counter]_fault[faultFileCounter].cu
-    return llvm::sys::fs::rename(originalCU + ".cu", faultyCU);
   }
 
 } // end namespace cling
