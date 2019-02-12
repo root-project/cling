@@ -86,7 +86,7 @@ IOpts.CompilerOpts.Remaining
 
 // this flag allows to compile ptx code with the interpreter instance
 // CUDAHost and CUDADevice must not be true at the same time
-// if --cuda-device-only is set, it isn't important if -xcuda is set
+// --cuda-device-only implies -xcuda
 argv[10] = "--cuda-device-only";
 
 cling::InvocationOptions IOpts2(argc, argv);

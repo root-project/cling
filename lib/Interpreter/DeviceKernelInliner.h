@@ -24,12 +24,11 @@ namespace cling
 // a __global__ kernel uses a __device__ function, this design caused an error.
 // Instead of generating the PTX code of the __device__ kernel in the same file
 // as the __global__ kernel, there is only an external declaration of the
-// __device__ function. However, normal PTX code does not support an external
-// declaration of functions.
+// __device__ function. However, PTX does not support an external declaration of
+// functions.
 
 class DeviceKernelInliner : public ASTTransformer
 {
-
 public:
     DeviceKernelInliner ( clang::Sema* S );
 

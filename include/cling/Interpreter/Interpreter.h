@@ -72,6 +72,7 @@ namespace cling {
   class LookupHelper;
   class Value;
   class Transaction;
+  class IncrementalCUDADeviceCompiler;
 
   ///\brief Class that implements the interpreter-like behavior. It manages the
   /// incremental compilation.
@@ -206,6 +207,11 @@ namespace cling {
     ///\brief Information about the last stored states through .storeState
     ///
     mutable std::vector<ClangInternalState*> m_StoredStates;
+
+    ///\brief Cling's worker class implementing the compilation of CUDA device
+    /// code
+    ///
+    std::unique_ptr<IncrementalCUDADeviceCompiler> m_CUDACompiler;
 
     enum {
       kStdStringTransaction = 0, // Transaction known to contain std::string

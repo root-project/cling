@@ -18,6 +18,7 @@
 #include "EnterUserCodeRAII.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
+#include "IncrementalCUDADeviceCompiler.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
 #include "MultiplexInterpreterCallbacks.h"
@@ -222,6 +223,30 @@ namespace cling {
     if (m_OptLevel == -1)
       setDefaultOptLevel(getCI()->getCodeGenOpts().OptimizationLevel);
 
+    if (!isInSyntaxOnlyMode() && m_Opts.CompilerOpts.CUDAHost) {
+      // Create temporary folder for all files, which the CUDA device compiler
+      // will generate.
+      llvm::SmallString<256> TmpPath;
+      llvm::StringRef sep = llvm::sys::path::get_separator().data();
+      llvm::sys::path::system_temp_directory(false, TmpPath);
+      TmpPath.append(sep.data());
+      TmpPath.append("cling-%%%%");
+      TmpPath.append(sep.data());
+
+      llvm::SmallString<256> TmpFolder;
+      llvm::sys::fs::createUniqueFile(TmpPath.c_str(), TmpFolder);
+      llvm::sys::fs::create_directory(TmpFolder);
+
+      // The CUDA fatbin file is the connection beetween the CUDA device
+      // compiler and the CodeGen of cling. The file will every time reused.
+      if (getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.empty())
+        getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.push_back(
+            std::string(TmpFolder.c_str()) + "cling.fatbin");
+
+      m_CUDACompiler.reset(new IncrementalCUDADeviceCompiler(
+          TmpFolder.c_str(), m_OptLevel, m_Opts, *(getCI())));
+    }
+
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();
     // Enable incremental processing, which prevents the preprocessor destroying
@@ -294,7 +319,7 @@ namespace cling {
 
     // Now that the transactions have been commited, force symbol emission
     // and overrides.
-    if (!isInSyntaxOnlyMode()) {
+    if (!isInSyntaxOnlyMode() && !m_Opts.CompilerOpts.CUDADevice) {
       if (const Transaction* T = getLastTransaction()) {
         if (auto M = T->getModule()) {
           for (const llvm::StringRef& Sym : Syms) {
@@ -706,6 +731,9 @@ namespace cling {
   Interpreter::process(const std::string& input, Value* V /* = 0 */,
                        Transaction** T /* = 0 */,
                        bool disableValuePrinting /* = false*/) {
+    if (!isInSyntaxOnlyMode() && m_Opts.CompilerOpts.CUDAHost)
+      m_CUDACompiler->compileDeviceCode(input);
+
     std::string wrapReadySource = input;
     size_t wrapPoint = std::string::npos;
     if (!isRawInputEnabled())
@@ -1271,7 +1299,8 @@ namespace cling {
     Value resultV;
     if (!V)
       V = &resultV;
-    if (!lastT->getWrapperFD()) // no wrapper to run
+    if (m_Opts.CompilerOpts.CUDADevice ||
+        !lastT->getWrapperFD()) // no wrapper to run
       return Interpreter::kSuccess;
     else {
       ExecutionResult res = RunFunction(lastT->getWrapperFD(), V);

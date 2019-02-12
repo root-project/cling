@@ -20,6 +20,7 @@
 namespace cling {
   class InvocationOptions;
   class Transaction;
+  class Interpreter;
 } // namespace cling
 
 namespace clang {
@@ -35,8 +36,9 @@ namespace llvm {
 namespace cling {
 
   ///\brief The class is responsible for generating CUDA device code in
-  /// cuda fatbinary form during the runtime. It works with
-  /// llvm::sys::ExecuteAndWait.
+  /// cuda fatbinary form during the runtime. The PTX code is compiled by a
+  /// second interpreter instance. The external NVIDIA tool fatbin is used with
+  /// llvm::sys::ExecuteAndWait to generate a fatbinary file.
   ///
   class IncrementalCUDADeviceCompiler {
 
@@ -45,6 +47,7 @@ namespace cling {
     struct CUDACompilerArgs {
       const std::string cppStdVersion;
       const std::string optLevel;
+      const std::string smVersion;
       const std::string ptxSmVersion;
       const std::string fatbinSmVersion;
       ///\brief Argument for the fatbinary tool, which is depend, if the OS is
@@ -60,25 +63,26 @@ namespace cling {
       const std::vector<std::string> fatbinaryOpt;
 
       CUDACompilerArgs(std::string cppStdVersion, std::string optLevel,
-                       std::string ptxSmVersion, std::string fatbinSmVersion,
-                       std::string fatbinArch, bool verbose, bool debug,
+                       std::string smVersion, std::string ptxSmVersion,
+                       std::string fatbinSmVersion, std::string fatbinArch,
+                       bool verbose, bool debug,
                        std::vector<std::string> additionalPtxOpt,
                        std::vector<std::string> fatbinaryOpt)
           : cppStdVersion(cppStdVersion), optLevel(optLevel),
-            ptxSmVersion(ptxSmVersion), fatbinSmVersion(fatbinSmVersion),
-            fatbinArch(fatbinArch), verbose(verbose), debug(debug),
-            additionalPtxOpt(additionalPtxOpt), fatbinaryOpt(fatbinaryOpt) {}
+            smVersion(smVersion), ptxSmVersion(ptxSmVersion),
+            fatbinSmVersion(fatbinSmVersion), fatbinArch(fatbinArch),
+            verbose(verbose), debug(debug), additionalPtxOpt(additionalPtxOpt),
+            fatbinaryOpt(fatbinaryOpt) {}
     };
 
     std::unique_ptr<CUDACompilerArgs> m_CuArgs;
 
-    ///\brief The counter responsible to generate a chain of .cu source files
-    /// and .cu.pch files. Starts with 1 because the cling0.cu file is reserved
-    /// for internal code.
-    unsigned int m_Counter = 1;
+    ///\brief Interpreter instance with target NVPTX which compiles the input to
+    ///LLVM IR. Then the LLVM IR is compiled to PTX via an additional backend.
+    std::unique_ptr<Interpreter> m_PTX_interp;
 
-    ///\brief Is true if all necessary files have been generated and clang and
-    /// cuda NVIDIA fatbinary are found.
+    ///\brief Is true if the second interpreter instance was created and the
+    /// NVIDIA fatbin tool was found.
     bool m_Init = false;
 
     ///\brief Path to the folder, where all files will put in. Ordinary the tmp
@@ -86,42 +90,18 @@ namespace cling {
     const std::string m_FilePath;
     ///\brief Path to the fatbin file, which will used by the CUDACodeGen.
     const std::string m_FatbinFilePath;
-    ///\brief Path to a empty dummy.cu file. The file is necessary to generate
-    /// PTX code from the pch files.
-    const std::string m_DummyCUPath;
-    ///\brief Path to the PTX file. Will be reused for every PTX generation.
+    ///\brief Path to the PTX file.
     const std::string m_PTXFilePath;
-    ///\brief Will be used to generate .cu and .cu.pch files.
-    const std::string m_GenericFileName;
 
-    ///\brief Path to the clang++ compiler, which will used to compile the pch
-    /// files and the PTX code. Should be in same folder, as the cling.
-    std::string m_ClangPath;
     ///\brief Path to the NIVDIA tool fatbinary.
     std::string m_FatbinaryPath;
 
-    ///\brief Contains information about all include paths.
-    ///
-    std::shared_ptr<clang::HeaderSearchOptions> m_HeaderSearchOptions;
-
-    ///\brief get copy of m_Counter
-    ///
-    ///\returns copy of m_Counter
-    unsigned int getCounterCopy() { return m_Counter; }
-
-    ///\brief Generate the dummy.cu file and set the paths of m_PTXFilePath and
-    /// m_GenericFileName.
-    ///
-    ///\returns True, if it created a dummy.cu file.
-    bool generateHelperFiles();
-
-    ///\brief Find the path of the clang and the NIVDIA tool fatbinary. Clang
-    /// have to be in the same folder as cling.
+    ///\brief Find the path of the NIVDIA tool fatbinary.
     ///
     ///\param [in] invocationOptions - Can contains a custom path to the cuda
     ///       toolkit
     ///
-    ///\returns True, whether clang and fatbinary was found.
+    ///\returns True, whether the fatbinary was found.
     bool findToolchain(const cling::InvocationOptions& invocationOptions);
 
     ///\brief Add the include paths from the interpreter runtime to a argument
@@ -129,19 +109,16 @@ namespace cling {
     ///
     ///\param [in,out] argv - The include commands will append to the argv
     /// vector.
-    void addHeaderSearchPathFlags(llvm::SmallVectorImpl<std::string>& argv);
+    ///\param [in] headerSearchOptions - Contains information about all include
+    /// paths.
+    void addHeaderSearchPathFlags(
+        std::vector<std::string>& argv,
+        const std::shared_ptr<clang::HeaderSearchOptions> headerSearchOptions);
 
-    ///\brief Start an clang compiler with nvptx backend. Read the content of
-    /// cling.cu and compile it to a new PCH file. If predecessor PCH file is
-    /// existing, it will included.
+    ///\brief Compiles a PTX file from the current input. The PTX code is
+    /// written to cling.ptx.
     ///
-    ///\returns True, if the clang returns 0.
-    bool generatePCH();
-
-    ///\brief Start an clang compiler with nvptx backend. Generate a PTX file
-    /// from the latest PCH file. The PTX code will write to cling.ptx.
-    ///
-    ///\returns True, if the clang returns 0.
+    ///\returns True, if the new cling.ptx was compiled.
     bool generatePTX();
 
     ///\brief Start the NVIDIA tool fatbinary. Generate a fatbin file
@@ -162,11 +139,6 @@ namespace cling {
                    const int intprOptLevel,
                    const clang::codegenoptions::DebugInfoKind debugInfo);
 
-    ///\brief Save .cu file, if cuda device code compiler failed at translation.
-    ///
-    ///\returns The error code of the rename operation
-    std::error_code saveFaultyCUfile();
-
   public:
     ///\brief Constructor for IncrementalCUDADeviceCompiler
     ///
@@ -177,7 +149,7 @@ namespace cling {
     /// instance.
     ///       The value will be copied, because a change of it is not allowed.
     ///\param [in] invocationOptions - Contains values for the arguments of
-    ///       clang and the NVIDIA tool fatbinary.
+    ///       the interpreter instance and the NVIDIA tool fatbinary.
     ///\param [in] CI - Will be used for m_CuArgs and the include path handling.
     IncrementalCUDADeviceCompiler(
         const std::string& filePath, const int optLevel,
@@ -189,14 +161,12 @@ namespace cling {
     /// It will add the content of input, to the existing source code, which was
     /// passed to compileDeviceCode, before.
     ///
-    ///\param [in] input - New source code. The function can select, if code
-    ///       is relevant for the device side. Have to be valid CUDA C++ code.
-    ///\param [in] T - Source of c++ code for variable declaration.
+    ///\param [in] input - The input directly from the UI. Attention, the string
+    /// must not be wrapped or transformed.
     ///
     ///\returns True, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
-    bool compileDeviceCode(const llvm::StringRef input,
-                           const cling::Transaction* const T);
+    bool compileDeviceCode(const llvm::StringRef input);
 
     ///\brief Print some information of the IncrementalCUDADeviceCompiler to
     /// llvm::outs(). For Example the paths of the files and tools.

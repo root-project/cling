@@ -19,7 +19,6 @@
 #include "DefinitionShadower.h"
 #include "DeviceKernelInliner.h"
 #include "DynamicLookup.h"
-#include "IncrementalCUDADeviceCompiler.h"
 #include "IncrementalExecutor.h"
 #include "NullDerefProtectionTransformer.h"
 #include "TransactionPool.h"
@@ -288,34 +287,6 @@ namespace cling {
     m_DiagConsumer.reset(new FilteringDiagConsumer(Diag, false));
 
     initializeVirtualFile();
-
-    if(m_CI->getFrontendOpts().ProgramAction != frontend::ParseSyntaxOnly &&
-      m_Interpreter->getOptions().CompilerOpts.CUDAHost){
-        // Create temporary folder for all files, which the CUDA device compiler
-        // will generate.
-        llvm::SmallString<256> TmpPath;
-        llvm::StringRef sep = llvm::sys::path::get_separator().data();
-        llvm::sys::path::system_temp_directory(false, TmpPath);
-        TmpPath.append(sep.data());
-        TmpPath.append("cling-%%%%");
-        TmpPath.append(sep.data());
-
-        llvm::SmallString<256> TmpFolder;
-        llvm::sys::fs::createUniqueFile(TmpPath.c_str(), TmpFolder);
-        llvm::sys::fs::create_directory(TmpFolder);
-
-        // The CUDA fatbin file is the connection beetween the CUDA device
-        // compiler and the CodeGen of cling. The file will every time reused.
-        if(getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.empty())
-          getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.push_back(
-            std::string(TmpFolder.c_str()) + "cling.fatbin");
-
-        m_CUDACompiler.reset(
-          new IncrementalCUDADeviceCompiler(TmpFolder.c_str(),
-                                            m_CI->getCodeGenOpts().OptimizationLevel,
-                                            m_Interpreter->getOptions(),
-                                            *m_CI));
-    }
   }
 
   bool
@@ -921,10 +892,6 @@ namespace cling {
     else if (Diags.getNumWarnings())
       return kSuccessWithWarnings;
 
-    if (!m_Interpreter->isInSyntaxOnlyMode() &&
-        m_Interpreter->getOptions().CompilerOpts.CUDAHost)
-      m_CUDACompiler->compileDeviceCode(input, m_Consumer->getTransaction());
-
     return kSuccess;
   }
 
@@ -937,7 +904,8 @@ namespace cling {
   void IncrementalParser::SetTransformers(bool isChildInterpreter) {
     // Add transformers to the IncrementalParser, which owns them
     Sema* TheSema = &m_CI->getSema();
-    // if the interpreter compiles ptx code, some transformers should not used
+    // if the interpreter compiles ptx code, some transformers should not be
+    // used
     bool isCUDADevice = m_Interpreter->getOptions().CompilerOpts.CUDADevice;
     // Register the AST Transformers
     typedef std::unique_ptr<ASTTransformer> ASTTPtr_t;
