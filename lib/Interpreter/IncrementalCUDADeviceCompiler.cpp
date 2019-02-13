@@ -153,6 +153,13 @@ namespace cling {
     */
     std::vector<std::string> additionalPtxOpt;
 
+    // search for defines (-Dmacros=value) in the args and add them to the PTX
+    // compiler args
+    for (const char* arg : invocationOptions.CompilerOpts.Remaining) {
+      std::string s = arg;
+      if (s.compare(0, 2, "-D") == 0) additionalPtxOpt.push_back(s);
+    }
+
     m_CuArgs.reset(new IncrementalCUDADeviceCompiler::CUDACompilerArgs(
         cppStdVersion, optLevel, smVersion, ptxSmVersion, fatbinSmVersion,
         fatbinArch, invocationOptions.Verbose(), debug, additionalPtxOpt,
