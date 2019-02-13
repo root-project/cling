@@ -6,9 +6,9 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// The Test checks whether a define argument (-DTEST=3) is passed to the PTX 
-// compiler. If it works, it should not throw an error.
-// RUN: cat %s | %cling -DTEST=3 -x cuda -Xclang -verify 2>&1 | FileCheck %s
+// The test checks whether setting a new include path at runtime also works for
+// the PTX compiler.
+// RUN: cat %s | %cling -DTEST_PATH="\"%/p/\"" -x cuda -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 #include <iostream>
@@ -25,23 +25,21 @@ cudaGetDeviceCount(&device_count)
 device_count > 0
 // CHECK: (bool) true
 
-TEST
+#include "cling/Interpreter/Interpreter.h"
+gCling->AddIncludePaths(TEST_PATH "include");
+
+#include "foo.h"
+
+foo()
 // CHECK: (int) 3
-
-.rawInput 1
-
-__global__ void g(){
-    int i = TEST;
-}
-
-.rawInput 0
 
 // Runing the kernel is neccessary because FileCheck has problems whith the
 // error output of the PTX compiler. Therefore I need an error message from
 // the host interpreter.
-g<<<1,1>>>();
+bar<<<1,1>>>();
 cudaGetLastError()
 // CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+
 
 // expected-no-diagnostics
 .q

@@ -234,7 +234,6 @@ namespace cling {
   }
 
   bool cling::IncrementalCUDADeviceCompiler::generatePTX() {
-
     std::error_code EC;
     llvm::raw_fd_ostream os(m_PTXFilePath, EC, llvm::sys::fs::F_None);
     if (EC) {

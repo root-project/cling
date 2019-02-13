@@ -156,6 +156,12 @@ namespace cling {
         const cling::InvocationOptions& invocationOptions,
         const clang::CompilerInstance& CI);
 
+    ///\brief Returns a reference to the PTX interpreter
+    ///
+    ///\return std::unique_ptr< cling::Interpreter >&
+    ///
+    std::unique_ptr<Interpreter>& getPTXInterpreter() { return m_PTX_interp; }
+
     ///\brief Generate an new fatbin file with the path in
     /// CudaGpuBinaryFileNames.
     /// It will add the content of input, to the existing source code, which was
