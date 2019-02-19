@@ -803,9 +803,66 @@ namespace cling {
     return DeclareInternal(input, CO, T);
   }
 
-  Interpreter::CompilationResult
-  Interpreter::loadModuleForHeader(const std::string& headerFile) {
+  ///\returns true if the module was loaded.
+  bool Interpreter::loadModule(const std::string& moduleName,
+                               bool complain /*= true*/) {
+    assert(getCI()->getLangOpts().Modules
+           && "Function only relevant when C++ modules are turned on!");
+
     Preprocessor& PP = getCI()->getPreprocessor();
+    HeaderSearch &HS = PP.getHeaderSearchInfo();
+
+    if (Module *M = HS.lookupModule(moduleName, /*AllowSearch*/true,
+                                    /*AllowExtraSearch*/ true))
+      return loadModule(M, complain);
+
+   if (complain)
+     llvm::errs() << "Module " << moduleName << " not found.\n";
+
+
+   return false;
+  }
+
+  bool Interpreter::loadModule(clang::Module* M, bool complain /* = true*/) {
+    assert(getCI()->getLangOpts().Modules
+           && "Function only relevant when C++ modules are turned on!");
+    assert(M && "Module missing");
+    if (getSema().isModuleVisible(M))
+      return true;
+
+    Preprocessor& PP = getCI()->getPreprocessor();
+
+    IdentifierInfo *II = PP.getIdentifierInfo(M->Name);
+    SourceLocation ValidLoc = M->DefinitionLoc;
+    Interpreter::PushTransactionRAII RAII(this);
+    bool success = !getCI()->getSema().ActOnModuleImport(ValidLoc, ValidLoc,
+                                      std::make_pair(II, ValidLoc)).isInvalid();
+    if (success) {
+      // Also make the module visible in the preprocessor to export its macros.
+      PP.makeModuleVisible(M, ValidLoc);
+      return success;
+    }
+    if (complain) {
+      if (M->IsSystem)
+        llvm::errs() << "Failed to load module " << M->Name << "\n";
+      else
+        llvm::outs() << "Failed to load module " << M->Name << "\n";
+    }
+
+   return false;
+  }
+
+  ///\brief Looks for a already generated PCM for the given header file and
+  /// loads it.
+  ///
+  ///\param[in] headerFile - The header file for which a module should be
+  ///                        loaded.
+  ///
+  ///\returns Whether the operation was fully successful.
+  ///
+  static Interpreter::CompilationResult
+  loadModuleForHeader(Interpreter& interp, const std::string& headerFile) {
+    Preprocessor& PP = interp.getCI()->getPreprocessor();
     //Copied from clang's PPDirectives.cpp
     bool isAngled = false;
     // Clang doc says:
@@ -828,8 +885,7 @@ namespace cling {
     // Copied from PPDirectives.cpp
     SmallVector<std::pair<IdentifierInfo *, SourceLocation>, 2> path;
     for (auto mod = suggestedModule.getModule(); mod; mod = mod->Parent) {
-      IdentifierInfo* II
-        = &getSema().getPreprocessor().getIdentifierTable().get(mod->Name);
+      IdentifierInfo* II = &PP.getIdentifierTable().get(mod->Name);
       path.push_back(std::make_pair(II, fileNameLoc));
     }
 
@@ -839,10 +895,10 @@ namespace cling {
     // will create an implicit import declaration to capture it in the AST.
     bool isInclude = true;
     SourceLocation includeLoc;
-    if (getCI()->loadModule(includeLoc, path, Module::AllVisible, isInclude)) {
+    if (interp.getCI()->loadModule(includeLoc, path, Module::AllVisible, isInclude)) {
       // After module load we need to "force" Sema to generate the code for
       // things like dynamic classes.
-      getSema().ActOnEndOfTranslationUnit();
+      interp.getSema().ActOnEndOfTranslationUnit();
       return Interpreter::kSuccess;
     }
 
@@ -1599,7 +1655,7 @@ namespace cling {
     if (!m_DynamicLookupDeclared && value) {
       // No dynlookup for the dynlookup header!
       m_DynamicLookupEnabled = false;
-      if (loadModuleForHeader("cling/Interpreter/DynamicLookupRuntimeUniverse.h")
+      if (loadModuleForHeader(*this, "cling/Interpreter/DynamicLookupRuntimeUniverse.h")
           != kSuccess)
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
     }

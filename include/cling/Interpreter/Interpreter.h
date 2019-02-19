@@ -40,6 +40,7 @@ namespace clang {
   class FunctionDecl;
   class GlobalDecl;
   class MacroInfo;
+  class Module;
   class NamedDecl;
   class Parser;
   class Preprocessor;
@@ -479,16 +480,23 @@ namespace cling {
     ///
     CompilationResult parse(const std::string& input,
                             Transaction** T = 0) const;
+    /// Loads a C++ Module with a given name by synthesizing an Import decl.
+    /// This routine checks if there is a modulemap in the current directory
+    /// and loads it.
+    ///
+    /// This is useful when we start up the interpreter and programatically,
+    /// later generate a modulemap.
+    ///
+    ///\returns true if the module was loaded.
+    ///
+    bool loadModule(const std::string& moduleName, bool complain = true);
 
-    ///\brief Looks for a already generated PCM for the given header file and
-    /// loads it.
+    /// Loads a C++ Module with a given name by synthesizing an Import decl.
+    /// This routine checks if there is a modulemap in the current directory
+    /// and loads it.
     ///
-    ///\param[in] headerFile - The header file for which a module should be
-    ///                        loaded.
-    ///
-    ///\returns Whether the operation was fully successful.
-    ///
-    CompilationResult loadModuleForHeader(const std::string& headerFile);
+    ///\returns true if the module was loaded or already visible.
+    bool loadModule(clang::Module* M, bool complain = true);
 
     ///\brief Parses input line, which doesn't contain statements. Code
     /// generation needed to make the module functional.
