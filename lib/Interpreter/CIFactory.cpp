@@ -547,17 +547,15 @@ namespace {
     for (StringRef ModulePath : Paths) {
       // FIXME: If we have a prebuilt module path that is equal to our module
       // cache we fail to compile the clang builtin modules for some reason.
-      // This can't be reproduced in clang, so I assume we have some strange
-      // error in our interpreter setup where this is causing errors (or maybe
-      // clang is doing the same check in some hidden place).
-      // The error looks like this:
-      //   .../include/stddef.h error: unknown type name '__PTRDIFF_TYPE__'
-      //   typedef __PTRDIFF_TYPE__ ptrdiff_t;
-      //   <similar follow up errors>
+      // This makes clang to think it failed to build a dependency module, i.e.
+      // if we are building module C, clang goes off and builds B and A first.
+      // If the module cache points to the same location as the prebuilt module
+      // path, clang errors out on building module A, however, it builds it.
+      // Next time we run, it will build module B and issue diagnostics.
+      // If we run third time, it'd build successfully C and continue.
       // For now it is fixed by just checking those two paths are not identical.
-      if (normalizePath(ModulePath) != normalizePath(Opts.ModuleCachePath)) {
+      if (normalizePath(ModulePath) != normalizePath(Opts.ModuleCachePath))
         Opts.AddPrebuiltModulePath(ModulePath);
-      }
     }
   }
 
