@@ -852,59 +852,6 @@ namespace cling {
    return false;
   }
 
-  ///\brief Looks for a already generated PCM for the given header file and
-  /// loads it.
-  ///
-  ///\param[in] headerFile - The header file for which a module should be
-  ///                        loaded.
-  ///
-  ///\returns Whether the operation was fully successful.
-  ///
-  static Interpreter::CompilationResult
-  loadModuleForHeader(Interpreter& interp, const std::string& headerFile) {
-    Preprocessor& PP = interp.getCI()->getPreprocessor();
-    //Copied from clang's PPDirectives.cpp
-    bool isAngled = false;
-    // Clang doc says:
-    // "LookupFrom is set when this is a \#include_next directive, it specifies
-    // the file to start searching from."
-    const DirectoryLookup* FromDir = 0;
-    const FileEntry* FromFile = 0;
-    const DirectoryLookup* CurDir = 0;
-
-    ModuleMap::KnownHeader suggestedModule;
-    // PP::LookupFile uses it to issue 'nice' diagnostic
-    SourceLocation fileNameLoc;
-    PP.LookupFile(fileNameLoc, headerFile, isAngled, FromDir, FromFile, CurDir,
-                  /*SearchPath*/0, /*RelativePath*/ 0, &suggestedModule,
-                  0 /*IsMapped*/,
-                  /*SkipCache*/false, /*OpenFile*/ false, /*CacheFail*/ false);
-    if (!suggestedModule)
-      return Interpreter::kFailure;
-
-    // Copied from PPDirectives.cpp
-    SmallVector<std::pair<IdentifierInfo *, SourceLocation>, 2> path;
-    for (auto mod = suggestedModule.getModule(); mod; mod = mod->Parent) {
-      IdentifierInfo* II = &PP.getIdentifierTable().get(mod->Name);
-      path.push_back(std::make_pair(II, fileNameLoc));
-    }
-
-    std::reverse(path.begin(), path.end());
-
-    // Pretend that the module came from an inclusion directive, so that clang
-    // will create an implicit import declaration to capture it in the AST.
-    bool isInclude = true;
-    SourceLocation includeLoc;
-    if (interp.getCI()->loadModule(includeLoc, path, Module::AllVisible, isInclude)) {
-      // After module load we need to "force" Sema to generate the code for
-      // things like dynamic classes.
-      interp.getSema().ActOnEndOfTranslationUnit();
-      return Interpreter::kSuccess;
-    }
-
-    return Interpreter::kFailure;
-  }
-
   Interpreter::CompilationResult
   Interpreter::parseForModule(const std::string& input) {
     CompilationOptions CO = makeDefaultCompilationOpts();
@@ -1655,8 +1602,6 @@ namespace cling {
     if (!m_DynamicLookupDeclared && value) {
       // No dynlookup for the dynlookup header!
       m_DynamicLookupEnabled = false;
-      if (loadModuleForHeader(*this, "cling/Interpreter/DynamicLookupRuntimeUniverse.h")
-          != kSuccess)
       declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
     }
     m_DynamicLookupDeclared = true;
