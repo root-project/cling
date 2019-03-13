@@ -33,6 +33,8 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
 
+#include <iostream>
+
 using namespace llvm;
 
 namespace cling {
@@ -314,6 +316,31 @@ void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
     // Run anything that was just registered in 'AtExit()'
     runAndRemoveStaticDestructors(T);
   }
+}
+
+static void flushOutBuffers() {
+  // Force-flush as we might be printing on screen with printf.
+  std::cout.flush();
+  fflush(stdout);
+}
+
+IncrementalExecutor::ExecutionResult
+IncrementalExecutor::executeWrapper(llvm::StringRef function,
+                                    Value* returnValue/* =0*/) {
+  // Set the value to cling::invalid.
+  if (returnValue)
+    *returnValue = Value();
+
+  typedef void (*InitFun_t)(void*);
+  InitFun_t fun;
+  ExecutionResult res = jitInitOrWrapper(function, fun);
+  if (res != kExeSuccess)
+    return res;
+  EnterUserCodeRAII euc(m_Callbacks);
+  (*fun)(returnValue);
+
+  flushOutBuffers();
+  return kExeSuccess;
 }
 
 void

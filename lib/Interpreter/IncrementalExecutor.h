@@ -182,21 +182,7 @@ namespace cling {
 
     ///\brief Runs a wrapper function.
     ExecutionResult executeWrapper(llvm::StringRef function,
-                                   Value* returnValue = 0) {
-      // Set the value to cling::invalid.
-      if (returnValue) {
-        *returnValue = Value();
-      }
-      typedef void (*InitFun_t)(void*);
-      InitFun_t fun;
-      ExecutionResult res = jitInitOrWrapper(function, fun);
-      if (res != kExeSuccess)
-        return res;
-      EnterUserCodeRAII euc(m_Callbacks);
-      (*fun)(returnValue);
-      return kExeSuccess;
-    }
-
+                                   Value* returnValue = 0);
     ///\brief Adds a symbol (function) to the execution engine.
     ///
     /// Allows runtime declaration of a function passing its pointer for being
