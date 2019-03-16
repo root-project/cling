@@ -463,7 +463,6 @@ if (TARGET clang-headers)
 endif()
 
 add_subdirectory(lib)
-add_subdirectory(tools)
 
 if( CLING_INCLUDE_TESTS )
   add_subdirectory(test)
@@ -484,6 +483,8 @@ if( CLING_INCLUDE_TESTS )
       )
   endif()
 endif()
+
+add_subdirectory(tools)
 
 option(CLING_INCLUDE_DOCS "Generate build targets for the Cling docs."
   ${LLVM_INCLUDE_DOCS})

@@ -7,6 +7,10 @@
 #-------------------------------------------------------------------------------
 
 add_cling_library(clingDemoPlugin SHARED DemoPlugin.cpp)
+if (TARGET check-cling)
+  # Make sure if we are running the testsuite to build clingDemoPlugin before.
+  add_dependencies(check-cling clingDemoPlugin)
+endif()
 
 set_target_properties(clingDemoPlugin PROPERTIES  LIBRARY_OUTPUT_DIRECTORY ".")
 if(APPLE)
