@@ -15,6 +15,8 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Value.h"
 #include <stdio.h>
+#include <iostream>
+
 gCling->declare("int print() { printf(\"print is run.\\n\"); return 1; }");
 cling::Value V;
 gCling->process("int a = print();",&V);
@@ -83,9 +85,9 @@ MyClass* my = cl.getMyClass();
 //
 printf("Auto flush printf\n");
 //CHECK-NEXT: Auto flush printf
-cout << "Auto flush cout\n";
+std::cout << "Auto flush cout\n";
 //CHECK-NEXT: Auto flush cout
-printf("Must flush print\n"); cout.flush();
+printf("Must flush printf\n"); std::cout.flush();
 //CHECK-NEXT: Must flush printf
 
 .q
