@@ -59,7 +59,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Path.h"
 
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1088,10 +1087,6 @@ namespace cling {
     utils::Analyze::maybeMangleDeclName(FD, mangledNameIfNeeded);
     IncrementalExecutor::ExecutionResult ExeRes =
        m_Executor->executeWrapper(mangledNameIfNeeded, res);
-
-    // Force-flush as we might be printing on screen with printf.
-    std::cout.flush();
-
     return ConvertExecutionResult(ExeRes);
   }
 
