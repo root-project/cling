@@ -148,8 +148,8 @@ void unresolvedSymbol()
   // throw exception instead?
 }
 
-void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name)
-{
+void*
+IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name) const {
   // Not found in the map, add the symbol in the list of unresolved symbols
   if (m_unresolvedSymbols.insert(mangled_name).second) {
     //cling::errs() << "IncrementalExecutor: use of undefined symbol '"
@@ -159,10 +159,9 @@ void* IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name
   return utils::FunctionToVoidPtr(&unresolvedSymbol);
 }
 
-void* IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name)
-{
-  for (std::vector<LazyFunctionCreatorFunc_t>::iterator it
-         = m_lazyFuncCreator.begin(), et = m_lazyFuncCreator.end();
+void*
+IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name) const {
+  for (auto it = m_lazyFuncCreator.begin(), et = m_lazyFuncCreator.end();
        it != et; ++it) {
     void* ret = (void*)((LazyFunctionCreatorFunc_t)*it)(mangled_name);
     if (ret)
@@ -208,7 +207,7 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
 #endif
 
 IncrementalExecutor::ExecutionResult
-IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) {
+IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) const {
   auto m = T.getModule();
   assert(m.get() && "Module must not be null");
 
@@ -326,7 +325,7 @@ static void flushOutBuffers() {
 
 IncrementalExecutor::ExecutionResult
 IncrementalExecutor::executeWrapper(llvm::StringRef function,
-                                    Value* returnValue/* =0*/) {
+                                    Value* returnValue/* =0*/) const {
   // Set the value to cling::invalid.
   if (returnValue)
     *returnValue = Value();
@@ -351,12 +350,12 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 
 bool
 IncrementalExecutor::addSymbol(const char* Name,  void* Addr,
-                               bool Jit) {
+                               bool Jit) const {
   return m_JIT->lookupSymbol(Name, Addr, Jit).second;
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
-                                              bool* fromJIT /*=0*/) {
+                                              bool* fromJIT /*=0*/) const {
   // Return a symbol's address, and whether it was jitted.
   void* address = m_JIT->lookupSymbol(symbolName).first;
 
@@ -371,7 +370,7 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
 }
 
 void*
-IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
+IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const {
   // Get the function / variable pointer referenced by GV.
 
   // We don't care whether something was unresolved before.
@@ -386,7 +385,7 @@ IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) {
 }
 
 bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
-                                                    llvm::StringRef title) {
+                                                  llvm::StringRef title) const {
   if (m_unresolvedSymbols.empty())
     return false;
 

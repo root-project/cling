@@ -133,7 +133,7 @@ namespace cling {
 
     ///\brief Set of the symbols that the JIT couldn't resolve.
     ///
-    std::unordered_set<std::string> m_unresolvedSymbols;
+    mutable std::unordered_set<std::string> m_unresolvedSymbols;
 
 #if 0 // See FIXME in IncrementalExecutor.cpp
     ///\brief The diagnostics engine, printing out issues coming from the
@@ -164,7 +164,7 @@ namespace cling {
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
     ///\brief Unload a set of JIT symbols.
-    bool unloadModule(const std::shared_ptr<llvm::Module>& M) {
+    bool unloadModule(const std::shared_ptr<llvm::Module>& M) const {
       // FIXME: Propagate the error in a more verbose way.
       if (auto Err = m_JIT->removeModule(M))
         return false;
@@ -172,7 +172,7 @@ namespace cling {
     }
 
     ///\brief Run the static initializers of all modules collected to far.
-    ExecutionResult runStaticInitializersOnce(const Transaction& T);
+    ExecutionResult runStaticInitializersOnce(const Transaction& T) const;
 
     ///\brief Runs all destructors bound to the given transaction and removes
     /// them from the list.
@@ -182,7 +182,7 @@ namespace cling {
 
     ///\brief Runs a wrapper function.
     ExecutionResult executeWrapper(llvm::StringRef function,
-                                   Value* returnValue = 0);
+                                   Value* returnValue = 0) const;
     ///\brief Adds a symbol (function) to the execution engine.
     ///
     /// Allows runtime declaration of a function passing its pointer for being
@@ -194,13 +194,14 @@ namespace cling {
     /// @param[in] JIT - Add to the JIT injected symbol table
     /// @returns true if the symbol is successfully registered, false otherwise.
     ///
-    bool addSymbol(const char* Name, void* Address, bool JIT = false);
+    bool addSymbol(const char* Name, void* Address, bool JIT = false) const;
 
     ///\brief Emit a llvm::Module to the JIT.
     ///
     /// @param[in] module - The module to pass to the execution engine.
     /// @param[in] optLevel - The optimization level to be used.
-    void emitModule(const std::shared_ptr<llvm::Module>& module, int optLevel) {
+    void
+    emitModule(const std::shared_ptr<llvm::Module>& module, int optLevel) const {
       if (m_BackendPasses)
         m_BackendPasses->runOnModule(*module, optLevel);
 
@@ -223,14 +224,15 @@ namespace cling {
     ///\param[in]  mangledName - the globa's name
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
-    void* getAddressOfGlobal(llvm::StringRef mangledName, bool* fromJIT = 0);
+    void*
+    getAddressOfGlobal(llvm::StringRef mangledName, bool* fromJIT = 0) const;
 
     ///\brief Return the address of a global from the JIT (as
     /// opposed to dynamic libraries). Forces the emission of the symbol if
     /// it has not happened yet.
     ///
     ///param[in] GV - global value for which the address will be returned.
-    void* getPointerToGlobalFromJIT(const llvm::GlobalValue& GV);
+    void* getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const;
 
     ///\brief Keep track of the entities whose dtor we need to call.
     ///
@@ -239,19 +241,19 @@ namespace cling {
 
     ///\brief Try to resolve a symbol through our LazyFunctionCreators;
     /// print an error message if that fails.
-    void* NotifyLazyFunctionCreators(const std::string&);
+    void* NotifyLazyFunctionCreators(const std::string&) const;
 
   private:
     ///\brief Report and empty m_unresolvedSymbols.
     ///\return true if m_unresolvedSymbols was non-empty.
     bool diagnoseUnresolvedSymbols(llvm::StringRef trigger,
-                                   llvm::StringRef title = llvm::StringRef());
+                               llvm::StringRef title = llvm::StringRef()) const;
 
     ///\brief Remember that the symbol could not be resolved by the JIT.
-    void* HandleMissingFunction(const std::string& symbol);
+    void* HandleMissingFunction(const std::string& symbol) const;
 
     ///\brief Runs an initializer function.
-    ExecutionResult executeInit(llvm::StringRef function) {
+    ExecutionResult executeInit(llvm::StringRef function) const {
       typedef void (*InitFun_t)();
       InitFun_t fun;
       ExecutionResult res = jitInitOrWrapper(function, fun);
@@ -263,7 +265,7 @@ namespace cling {
     }
 
     template <class T>
-    ExecutionResult jitInitOrWrapper(llvm::StringRef funcname, T& fun) {
+    ExecutionResult jitInitOrWrapper(llvm::StringRef funcname, T& fun) const {
       fun = utils::UIntToFunctionPtr<T>(m_JIT->getSymbolAddress(funcname,
                                                               false /*dlsym*/));
 
