@@ -260,9 +260,9 @@ namespace cling {
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
 
-    bool usingCxxModules = getSema().getLangOpts().Modules;
-
-    if (usingCxxModules) {
+    if (!m_Opts.OverlayFile.empty()) {
+      assert(getSema().getLangOpts().Modules
+             && "Using overlay without -fmodules");
       HeaderSearch& HSearch = getCI()->getPreprocessor().getHeaderSearchInfo();
 
       // Get system include paths
@@ -310,18 +310,19 @@ namespace cling {
       clang::CompilerInvocation &CInvo = getCI()->getInvocation();
       // Load virtual modulemap overlay file
       CInvo.addOverlay(FS);
+    }
 
+    bool usingCxxModules = getSema().getLangOpts().Modules;
+    if (usingCxxModules) {
       // Explicitly create the modulemanager now. If we would create it later
       // implicitly then it would just overwrite our callbacks we set below.
       m_IncrParser->getCI()->createModuleManager();
-    }
 
-    // When using C++ modules, we setup the callbacks now that we have them
-    // ready before we parse code for the first time. Without C++ modules
-    // we can't setup the calls now because the clang PCH currently just
-    // overwrites it in the Initialize method and we have no simple way to
-    // initialize them earlier. We handle the non-modules case below.
-    if (usingCxxModules) {
+      // When using C++ modules, we setup the callbacks now that we have them
+      // ready before we parse code for the first time. Without C++ modules
+      // we can't setup the calls now because the clang PCH currently just
+      // overwrites it in the Initialize method and we have no simple way to
+      // initialize them earlier. We handle the non-modules case below.
       setupCallbacks(*this, parentInterp);
     }
 
