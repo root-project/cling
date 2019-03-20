@@ -346,7 +346,7 @@ namespace cling {
     }
 
     // When not using C++ modules, we now have a PCH and we can safely setup
-    // our callbacks without fearing that they get ovewritten by clang code.
+    // our callbacks without fearing that they get overwritten by clang code.
     // The modules setup is handled above.
     if (!usingCxxModules) {
       setupCallbacks(*this, parentInterp);
