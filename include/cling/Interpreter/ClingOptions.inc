@@ -31,7 +31,7 @@ OPTION(prefix_2, "metastr=", _metastr_EQ, Joined, INVALID, INVALID, 0, 0, 0,
        "Set the meta command tag, default '.'", 0, 0)
 OPTION(prefix_2, "metastr", _metastr, Separate, INVALID, INVALID, 0, 0, 0,
        "Set the meta command tag, default '.'", 0, 0)
-OPTION(prefix_1, "modulemap_overlay=", overlay_EQ, Joined, INVALID, INVALID, 0, 0, 0,
+OPTION(prefix_1, "includedir_loc=", overlay_EQ, Joined, INVALID, INVALID, 0, 0, 0,
        "Set the Modules overlay file", 0, 0)
 OPTION(prefix_2, "nologo", _nologo, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not show startup-banner", 0, 0)
