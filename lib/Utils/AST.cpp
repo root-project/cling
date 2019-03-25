@@ -67,9 +67,10 @@ namespace utils {
   bool Analyze::IsWrapper(const FunctionDecl* ND) {
     if (!ND)
       return false;
+    if (!ND->getDeclName().isIdentifier())
+      return false;
 
-    return StringRef(ND->getNameAsString())
-      .startswith(Synthesize::UniquePrefix);
+    return ND->getName().startswith(Synthesize::UniquePrefix);
   }
 
   void Analyze::maybeMangleDeclName(const GlobalDecl& GD,
