@@ -1588,22 +1588,18 @@ namespace cling {
       //
       //  Create the array of Expr from the array of Types.
       //
-
-      typedef llvm::SmallVectorImpl<QualType>::const_iterator iterator;
-      for(iterator iter = GivenTypes.begin(), end = GivenTypes.end();
-          iter != end;
-          ++iter) {
-        const clang::QualType QT = iter->getCanonicalType();
+      assert(!ExprMemory.size() && "Size must be 0");
+      ExprMemory.resize(GivenTypes.size() + 1);
+      for(size_t i = 0, e = GivenTypes.size(); i < e; ++i) {
+        const clang::QualType QT = GivenTypes[i].getCanonicalType();
         {
           ExprValueKind VK = VK_RValue;
           if (QT->getAs<LValueReferenceType>()) {
             VK = VK_LValue;
           }
           clang::QualType NonRefQT(QT.getNonReferenceType());
-          unsigned int slot = ExprMemory.size();
-          ExprMemory.resize(slot+1);
-          Expr* val = new (&ExprMemory[slot]) OpaqueValueExpr(SourceLocation(),
-                                                              NonRefQT, VK);
+          Expr* val = new (&ExprMemory[i]) OpaqueValueExpr(SourceLocation(),
+                                                           NonRefQT, VK);
           GivenArgs.push_back(val);
         }
       }
@@ -1656,6 +1652,9 @@ namespace cling {
           if (QT->getAs<LValueReferenceType>()) {
             VK = VK_LValue;
           }
+          // FIXME: This is potentially dangerous because if the capacity exceeds
+          // the reserved capacity of ExprMemory, it will reallocate and cause
+          // memory corruption on the OpaqueValueExpr. See ROOT-7749.
           clang::QualType NonRefQT(QT.getNonReferenceType());
           ExprMemory.resize(++nargs);
           new (&ExprMemory[nargs-1]) OpaqueValueExpr(TSI->getTypeLoc().getLocStart(),
