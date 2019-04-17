@@ -1715,7 +1715,7 @@ def custom_input(prompt, always_yes=False):
     if always_yes:
         return 'y'
     else:
-        input(prompt)
+        return input(prompt)
 
 ###############################################################################
 #                           Platform initialization                           #
