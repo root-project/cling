@@ -23,6 +23,8 @@ OPTION(prefix_2, "errorout", _errorout, Flag, INVALID, INVALID, 0, 0, 0,
 // Re-implement to forward to our help
 OPTION(prefix_3, "help", help, Flag, INVALID, INVALID, 0, 0, 0,
        "Print this help text", 0, 0)
+OPTION(prefix_1, "includedir_loc=", overlay_EQ, Joined, INVALID, INVALID, 0, 0, 0,
+       "Set the Modules overlay file", 0, 0)
 OPTION(prefix_1, "L", L, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
        "Add directory to library search path", "<directory>", 0)
 OPTION(prefix_1, "l", l, JoinedOrSeparate, INVALID, INVALID, 0, 0, 0,
@@ -31,8 +33,6 @@ OPTION(prefix_2, "metastr=", _metastr_EQ, Joined, INVALID, INVALID, 0, 0, 0,
        "Set the meta command tag, default '.'", 0, 0)
 OPTION(prefix_2, "metastr", _metastr, Separate, INVALID, INVALID, 0, 0, 0,
        "Set the meta command tag, default '.'", 0, 0)
-OPTION(prefix_1, "includedir_loc=", overlay_EQ, Joined, INVALID, INVALID, 0, 0, 0,
-       "Set the Modules overlay file", 0, 0)
 OPTION(prefix_2, "nologo", _nologo, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not show startup-banner", 0, 0)
 OPTION(prefix_3, "noruntime", noruntime, Flag, INVALID, INVALID, 0, 0, 0,
