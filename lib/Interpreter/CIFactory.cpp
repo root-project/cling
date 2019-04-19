@@ -1054,7 +1054,6 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       auto& HS = CI->getHeaderSearchOpts();
       addPrebuiltModulePaths(HS, getPathsFromEnv(getenv("LD_LIBRARY_PATH")));
       addPrebuiltModulePaths(HS, getPathsFromEnv(getenv("DYLD_LIBRARY_PATH")));
-      HS.AddPrebuiltModulePath(".");
     }
 
     // Set up compiler language and target
