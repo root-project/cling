@@ -14,6 +14,7 @@
 #error "This file must not be included by compiled programs."
 #endif
 
+#include <memory>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -280,6 +281,21 @@ namespace cling {
       return cling::printValue(V);
     }
   }
+
+  // unique_ptr<T>:
+  template <class T>
+  inline std::string printValue(std::unique_ptr<T> *val)
+  {
+     return "std::unique_ptr - " + printValue(val->get());
+  }
+
+  // shared_ptr<T>:
+  template <class T>
+  inline std::string printValue(std::shared_ptr<T> *val)
+  {
+     return "std::shared_ptr - " + printValue(val->get());
+  }
+
 }
 
 #endif
