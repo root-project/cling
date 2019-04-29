@@ -286,14 +286,14 @@ namespace cling {
   template <class T>
   inline std::string printValue(std::unique_ptr<T> *val)
   {
-     return "std::unique_ptr - " + printValue(val->get());
+     return "std::unique_ptr -> " + printValue(val->get());
   }
 
   // shared_ptr<T>:
   template <class T>
   inline std::string printValue(std::shared_ptr<T> *val)
   {
-     return "std::shared_ptr - " + printValue(val->get());
+     return "std::shared_ptr -> " + printValue(val->get());
   }
 
 }
