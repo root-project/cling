@@ -296,6 +296,13 @@ namespace cling {
      return "std::shared_ptr -> " + printValue(val->get());
   }
 
+  // weak_ptr<T>:
+  template <class T>
+  inline std::string printValue(std::weak_ptr<T> *val)
+  {
+     return "std::weak_ptr -> " + printValue(val->lock().get());
+  }
+
 }
 
 #endif
