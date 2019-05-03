@@ -36,6 +36,7 @@ namespace cling {
     bool OldSuppressAllDiagnostics;
     bool OldPPSuppressAllDiagnostics;
     bool OldSpellChecking;
+    clang::Token OldTok;
     clang::SourceLocation OldPrevTokLocation;
     unsigned short OldParenCount, OldBracketCount, OldBraceCount;
     unsigned OldTemplateParameterDepth;

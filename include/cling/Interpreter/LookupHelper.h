@@ -71,6 +71,8 @@ namespace cling {
     unsigned m_CacheHits = 0;
     /// Number of times we missed the cache.
     unsigned m_TotalParseRequests = 0;
+    /// If we are called recursively.
+    bool IsRecursivelyRunning = false;
 
   public:
     LookupHelper(clang::Parser* P, Interpreter* interp);

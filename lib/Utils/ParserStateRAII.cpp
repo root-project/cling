@@ -24,7 +24,7 @@ cling::ParserStateRAII::ParserStateRAII(Parser& p, bool skipToEOF)
     OldPPSuppressAllDiagnostics(p.getPreprocessor().getDiagnostics()
                                 .getSuppressAllDiagnostics()),
     OldSpellChecking(p.getPreprocessor().getLangOpts().SpellChecking),
-  OldPrevTokLocation(p.PrevTokLocation),
+  OldTok(p.Tok), OldPrevTokLocation(p.PrevTokLocation),
   OldParenCount(p.ParenCount), OldBracketCount(p.BracketCount),
   OldBraceCount(p.BraceCount),
   OldTemplateParameterDepth(p.TemplateParameterDepth),
@@ -54,6 +54,8 @@ cling::ParserStateRAII::~ParserStateRAII() {
   P->TemplateIds.swap(OldTemplateIds);
   if (SkipToEOF)
     P->SkipUntil(tok::eof);
+  else
+    P->Tok = OldTok;
   PP.enableIncrementalProcessing(ResetIncrementalProcessing);
   if (!SemaDiagHadErrors) {
     // Doesn't reset the diagnostic mappings

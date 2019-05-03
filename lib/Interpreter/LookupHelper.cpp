@@ -37,17 +37,20 @@ namespace cling {
 
   class StartParsingRAII {
     LookupHelper& m_LH;
+    llvm::SaveAndRestore<bool> SaveIsRecursivelyRunning;
     ParserStateRAII ResetParserState;
-
     void prepareForParsing(llvm::StringRef code, llvm::StringRef bufferName,
                            LookupHelper::DiagSetting diagOnOff);
   public:
     StartParsingRAII(LookupHelper& LH, llvm::StringRef code,
                      llvm::StringRef bufferName,
                      LookupHelper::DiagSetting diagOnOff)
-      : m_LH(LH), ResetParserState(*LH.m_Parser.get(), true /*skipToEOF*/) {
-    prepareForParsing(code, bufferName, diagOnOff);
-  }
+        : m_LH(LH), SaveIsRecursivelyRunning(LH.IsRecursivelyRunning),
+          ResetParserState(*LH.m_Parser.get(),
+                           !LH.IsRecursivelyRunning /*skipToEOF*/) {
+      LH.IsRecursivelyRunning = true;
+      prepareForParsing(code, bufferName, diagOnOff);
+    }
 
     ~StartParsingRAII() { pop(); }
     void pop() const {}
@@ -84,7 +87,8 @@ namespace cling {
     if (!PP.isIncrementalProcessingEnabled()) {
       PP.enableIncrementalProcessing();
     }
-    assert(!code.empty()&&"prepareForParsing should only be called when needd");
+    assert(!code.empty() &&
+           "prepareForParsing should only be called when need");
 
     // Create a fake file to parse the type name.
     FileID FID;
