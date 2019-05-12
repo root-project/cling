@@ -297,7 +297,9 @@ namespace cling {
     if (IsValid) {
       // If we're gonnd do this, better make sure the end is valid too
       // FIXME: getpagesize() & GetSystemInfo().dwPageSize might be better
+#if !defined(PAGE_SIZE)
       enum { PAGE_SIZE = 1024 };
+#endif
       while (!(IsValid = utils::isAddressValid(End)) && N > 1024) {
         N -= PAGE_SIZE;
         End = Start + N;
