@@ -1042,7 +1042,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       }
     }
 
-    FrontendOptions FrontendOpts = Invocation.getFrontendOpts();
+    FrontendOptions& FrontendOpts = Invocation.getFrontendOpts();
     FrontendOpts.DisableFree = true;
 
     // With modules, we now start adding prebuilt module paths to the CI.
