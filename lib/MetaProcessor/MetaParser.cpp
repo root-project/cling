@@ -285,6 +285,11 @@ namespace cling {
       llvm::StringRef file(getCurTok().getBufStart());
       while (!lookAhead(forward).is(tok::eof))
 	++forward;
+
+      // Skip any trailing ';':
+      if (lookAhead(forward - 1).is(tok::semicolon))
+	--forward;
+
       // Now track back to find the opening '('.
       if (lookAhead(forward - 1).is(tok::r_paren)) {
 	// Trailing ')' - we interpret that as an argument.
