@@ -49,6 +49,12 @@ namespace cling {
                                       SearchPath, RelativePath, Imported);
     }
 
+    void EnteredSubmodule(clang::Module* M,
+                          clang::SourceLocation ImportLoc,
+                          bool ForPragma) override {
+      m_Callbacks->EnteredSubmodule(M, ImportLoc, ForPragma);
+    }
+
     virtual bool FileNotFound(llvm::StringRef FileName,
                               llvm::SmallVectorImpl<char>& RecoveryPath) {
       if (m_Callbacks)

@@ -1236,6 +1236,13 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                       PP.getTargetInfo().getTriple());
     }
 
+    for (const auto& Filename : FrontendOpts.ModuleMapFiles) {
+      if (auto* File = FM.getFile(Filename))
+        PP.getHeaderSearchInfo().loadModuleMapFile(File, /*IsSystem*/ false);
+      else
+        CI->getDiagnostics().Report(diag::err_module_map_not_found) << Filename;
+    }
+
     return CI.release(); // Passes over the ownership to the caller.
   }
 

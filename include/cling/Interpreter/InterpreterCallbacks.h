@@ -110,6 +110,9 @@ namespace cling {
                                    llvm::StringRef /*SearchPath*/,
                                    llvm::StringRef /*RelativePath*/,
                                    const clang::Module* /*Imported*/) {}
+    virtual void EnteredSubmodule(clang::Module* M,
+                                  clang::SourceLocation ImportLoc,
+                                  bool ForPragma) {}
 
     virtual bool FileNotFound(llvm::StringRef FileName,
                               llvm::SmallVectorImpl<char>& RecoveryPath);
