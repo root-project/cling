@@ -217,8 +217,9 @@ namespace cling {
   }
 
   Interpreter::Interpreter(int argc, const char* const *argv,
-                           const char* llvmdir /*= 0*/, bool noRuntime,
-                           const Interpreter* parentInterp) :
+                           const char* llvmdir /*= 0*/,
+                           const ModuleFileExtensions& moduleExtensions,
+                           bool noRuntime, const Interpreter* parentInterp) :
     m_Opts(argc, argv),
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
@@ -230,7 +231,7 @@ namespace cling {
 
     m_LLVMContext.reset(new llvm::LLVMContext);
     m_DyLibManager.reset(new DynamicLibraryManager(getOptions()));
-    m_IncrParser.reset(new IncrementalParser(this, llvmdir));
+    m_IncrParser.reset(new IncrementalParser(this, llvmdir, moduleExtensions));
     if (!m_IncrParser->isValid(false))
       return;
 
@@ -399,8 +400,11 @@ namespace cling {
   ///
   Interpreter::Interpreter(const Interpreter &parentInterpreter, int argc,
                            const char* const *argv,
-                           const char* llvmdir /*= 0*/, bool noRuntime) :
-    Interpreter(argc, argv, llvmdir, noRuntime, &parentInterpreter) {
+                           const char* llvmdir /*= 0*/,
+                           const ModuleFileExtensions& moduleExtensions/*={}*/,
+                           bool noRuntime /*= true*/) :
+    Interpreter(argc, argv, llvmdir, moduleExtensions, noRuntime,
+                &parentInterpreter) {
     // Do the "setup" of the connection between this interpreter and
     // its parent interpreter.
     if (CompilerInstance* CI = getCIOrNull()) {
@@ -1674,7 +1678,8 @@ namespace cling {
     // FIXME: CIFactory appends extra 3 folders to the llvmdir.
     std::string llvmdir
       = getCI()->getHeaderSearchOpts().ResourceDir + "/../../../";
-    cling::Interpreter fwdGen(1, &dummy, llvmdir.c_str(), true);
+    cling::Interpreter fwdGen(1, &dummy, llvmdir.c_str(),
+                              /*moduleExtensions*/ {}, /*noRuntime=*/true);
 
     // Copy the same header search options to the new instance.
     Preprocessor& fwdGenPP = fwdGen.getCI()->getPreprocessor();

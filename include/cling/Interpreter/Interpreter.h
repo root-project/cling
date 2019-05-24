@@ -41,6 +41,7 @@ namespace clang {
   class GlobalDecl;
   class MacroInfo;
   class Module;
+  class ModuleFileExtension;
   class NamedDecl;
   class Parser;
   class Preprocessor;
@@ -136,6 +137,10 @@ namespace cling {
       ///\brief Number of possible results.
       kNumExeResults
     };
+
+  public:
+    using ModuleFileExtensions =
+        std::vector<std::shared_ptr<clang::ModuleFileExtension>>;
 
   private:
 
@@ -303,8 +308,8 @@ namespace cling {
     ///\brief The target constructor to be called from both the delegating
     /// constructors. parentInterp might be nullptr.
     ///
-    Interpreter(int argc, const char* const *argv,
-                const char* llvmdir, bool noRuntime,
+    Interpreter(int argc, const char* const* argv, const char* llvmdir,
+                const ModuleFileExtensions& moduleExtensions, bool noRuntime,
                 const Interpreter* parentInterp);
 
   public:
@@ -315,9 +320,11 @@ namespace cling {
     ///\param[in] llvmdir - ???
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
-    Interpreter(int argc, const char* const *argv, const char* llvmdir = 0,
-                bool noRuntime = false) :
-      Interpreter(argc, argv, llvmdir, noRuntime, nullptr) { }
+    Interpreter(int argc, const char* const* argv, const char* llvmdir = 0,
+                const ModuleFileExtensions& moduleExtensions = {},
+                bool noRuntime = false)
+        : Interpreter(argc, argv, llvmdir, moduleExtensions, noRuntime,
+                      nullptr) {}
 
     ///\brief Constructor for child Interpreter.
     ///\param[in] parentInterpreter - the  parent interpreter of this interpreter
@@ -326,8 +333,10 @@ namespace cling {
     ///\param[in] llvmdir - ???
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
-    Interpreter(const Interpreter &parentInterpreter,int argc, const char* const *argv,
-                const char* llvmdir = 0, bool noRuntime = true);
+    Interpreter(const Interpreter& parentInterpreter, int argc,
+                const char* const* argv, const char* llvmdir = 0,
+                const ModuleFileExtensions& moduleExtensions = {},
+                bool noRuntime = true);
 
     virtual ~Interpreter();
 

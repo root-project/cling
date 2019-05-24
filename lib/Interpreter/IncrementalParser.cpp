@@ -234,12 +234,13 @@ static void HandlePlugins(CompilerInstance& CI,
 }
 
 namespace cling {
-  IncrementalParser::IncrementalParser(Interpreter* interp, const char* llvmdir)
+  IncrementalParser::IncrementalParser(Interpreter* interp, const char* llvmdir,
+                                   const ModuleFileExtensions& moduleExtensions)
       : m_Interpreter(interp) {
     std::unique_ptr<cling::DeclCollector> consumer;
     consumer.reset(m_Consumer = new cling::DeclCollector());
     m_CI.reset(CIFactory::createCI("", interp->getOptions(), llvmdir,
-                                   std::move(consumer)));
+                                   std::move(consumer), moduleExtensions));
 
     if (!m_CI) {
       cling::errs() << "Compiler instance could not be created.\n";

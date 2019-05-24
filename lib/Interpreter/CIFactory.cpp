@@ -780,8 +780,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
                const CompilerOptions& COpts, const char* LLVMDir,
-               std::unique_ptr<clang::ASTConsumer> customConsumer, bool OnlyLex,
-               bool HasInput = false) {
+               std::unique_ptr<clang::ASTConsumer> customConsumer,
+               const CIFactory::ModuleFileExtensions& moduleExtensions,
+               bool OnlyLex, bool HasInput = false) {
     // Follow clang -v convention of printing version on first line
     if (COpts.Verbose)
       cling::log() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
@@ -1043,6 +1044,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
 
     FrontendOptions& FrontendOpts = Invocation.getFrontendOpts();
+
+    // Register the externally constructed extensions.
+    assert(FrontendOpts.ModuleFileExtensions.empty() && "Extensions exist!");
+    for (auto& E : moduleExtensions)
+      FrontendOpts.ModuleFileExtensions.push_back(E);
+
     FrontendOpts.DisableFree = true;
 
     // With modules, we now start adding prebuilt module paths to the CI.
@@ -1240,17 +1247,20 @@ namespace cling {
 CompilerInstance*
 CIFactory::createCI(llvm::StringRef Code, const InvocationOptions& Opts,
                     const char* LLVMDir,
-                    std::unique_ptr<clang::ASTConsumer> consumer) {
+                    std::unique_ptr<clang::ASTConsumer> consumer,
+                    const ModuleFileExtensions& moduleExtensions) {
   return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code), Opts.CompilerOpts,
-                      LLVMDir, std::move(consumer), false /*OnlyLex*/,
+                      LLVMDir, std::move(consumer), moduleExtensions,
+                      false /*OnlyLex*/,
                       !Opts.IsInteractive());
 }
 
 CompilerInstance* CIFactory::createCI(
     MemBufPtr_t Buffer, int argc, const char* const* argv, const char* LLVMDir,
-    std::unique_ptr<clang::ASTConsumer> consumer, bool OnlyLex) {
+    std::unique_ptr<clang::ASTConsumer> consumer,
+    const ModuleFileExtensions& moduleExtensions, bool OnlyLex /*false*/) {
   return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv), LLVMDir,
-                      std::move(consumer), OnlyLex);
+                      std::move(consumer), moduleExtensions, OnlyLex);
 }
 
 } // namespace cling
