@@ -122,6 +122,15 @@ namespace cling {
     static void ExposeHiddenSharedLibrarySymbols(void* handle);
 
     static std::string normalizePath(llvm::StringRef path);
+
+    /// Returns true if file is a shared library.
+    ///
+    ///\param[in] libFullPath - the full path to file.
+    ///
+    ///\param[out] exists - sets if the file exists. Useful to distinguish if it
+    ///            is a library but of incompatible file format.
+    ///
+    static bool isSharedLibrary(llvm::StringRef libFullPath, bool* exists = 0);
   };
 } // end namespace cling
 #endif // CLING_DYNAMIC_LIBRARY_MANAGER_H
