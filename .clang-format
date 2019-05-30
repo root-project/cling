@@ -12,7 +12,6 @@ PointerAlignment: Left
 AlignAfterOpenBracket: Align
 PenaltyBreakBeforeFirstCallParameter: 50
 AlignOperands: true
-AllowShortIfStatementsOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
 IndentCaseLabels: true
 
