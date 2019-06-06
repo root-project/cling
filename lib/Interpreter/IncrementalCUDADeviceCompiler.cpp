@@ -13,6 +13,7 @@
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/Transaction.h"
 
+#include "clang/Basic/TargetOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 
@@ -26,16 +27,9 @@
 #include <llvm/Target/TargetOptions.h>
 
 #include <algorithm>
+#include <bitset>
 #include <string>
 #include <system_error>
-
-// The clang nvptx jit has an growing AST-Tree. At runtime, continuously new
-// statements will append to the AST. To improve the compiletime, the existing
-// AST will save as PCH-file. The new statements will append via source code
-// files. A bug in clang avoids, that more than 4 statements can append to the
-// PCH. If the flag is true, it improves the compiletime but it crash after the
-// fifth iteration. https://bugs.llvm.org/show_bug.cgi?id=37167
-#define PCHMODE 0
 
 namespace cling {
 
@@ -46,30 +40,35 @@ namespace cling {
       : m_FilePath(filePath),
         m_FatbinFilePath(CI.getCodeGenOpts().CudaGpuBinaryFileNames.empty()
                              ? ""
-                             : CI.getCodeGenOpts().CudaGpuBinaryFileNames[0]),
-        m_PTXFilePath(m_FilePath + "cling.ptx") {
+                             : CI.getCodeGenOpts().CudaGpuBinaryFileNames[0]) {
     if (m_FatbinFilePath.empty()) {
       llvm::errs() << "Error: CudaGpuBinaryFileNames can't be empty\n";
       return;
     }
 
-    if (!findToolchain(invocationOptions)) return;
     setCuArgs(CI.getLangOpts(), invocationOptions, optLevel,
-              CI.getCodeGenOpts().getDebugInfo());
+              CI.getCodeGenOpts().getDebugInfo(),
+              llvm::Triple(CI.getTargetOpts().Triple));
 
     // cling -std=c++xx -Ox -x cuda -S --cuda-gpu-arch=sm_xx --cuda-device-only
     // ${include headers} ${-I/paths} [-v] [-g] ${m_CuArgs->additionalPtxOpt}
-    std::vector<std::string> argv = {"cling",
-                                     m_CuArgs->cppStdVersion.c_str(),
-                                     m_CuArgs->optLevel.c_str(),
-                                     "-x",
-                                     "cuda",
-                                     "-S",
-                                     m_CuArgs->ptxSmVersion.c_str(),
-                                     "--cuda-device-only"};
+    std::vector<std::string> argv = {
+        "cling",
+        m_CuArgs->cppStdVersion.c_str(),
+        m_CuArgs->optLevel.c_str(),
+        "-x",
+        "cuda",
+        "-S",
+        std::string("--cuda-gpu-arch=sm_")
+            .append(std::to_string(m_CuArgs->smVersion)),
+        "--cuda-device-only"};
+
     addHeaderSearchPathFlags(argv, CI.getHeaderSearchOptsPtr());
-    if (m_CuArgs->verbose) argv.push_back("-v");
-    if (m_CuArgs->debug) argv.push_back("-g");
+
+    if (m_CuArgs->verbose)
+      argv.push_back("-v");
+    if (m_CuArgs->debug)
+      argv.push_back("-g");
     argv.insert(argv.end(), m_CuArgs->additionalPtxOpt.begin(),
                 m_CuArgs->additionalPtxOpt.end());
 
@@ -103,14 +102,18 @@ namespace cling {
       const clang::LangOptions& langOpts,
       const cling::InvocationOptions& invocationOptions,
       const int intprOptLevel,
-      const clang::codegenoptions::DebugInfoKind debugInfo) {
-
+      const clang::codegenoptions::DebugInfoKind debugInfo,
+      const llvm::Triple hostTriple) {
     std::string cppStdVersion;
     // Set the c++ standard. Just one condition is possible.
-    if (langOpts.CPlusPlus11) cppStdVersion = "-std=c++11";
-    if (langOpts.CPlusPlus14) cppStdVersion = "-std=c++14";
-    if (langOpts.CPlusPlus1z) cppStdVersion = "-std=c++1z";
-    if (langOpts.CPlusPlus2a) cppStdVersion = "-std=c++2a";
+    if (langOpts.CPlusPlus11)
+      cppStdVersion = "-std=c++11";
+    if (langOpts.CPlusPlus14)
+      cppStdVersion = "-std=c++14";
+    if (langOpts.CPlusPlus1z)
+      cppStdVersion = "-std=c++1z";
+    if (langOpts.CPlusPlus2a)
+      cppStdVersion = "-std=c++2a";
 
     if (cppStdVersion.empty())
       llvm::errs()
@@ -118,21 +121,12 @@ namespace cling {
 
     const std::string optLevel = "-O" + std::to_string(intprOptLevel);
 
-    std::string smVersion = "sm_20";
-    std::string ptxSmVersion = "--cuda-gpu-arch=sm_20";
-    std::string fatbinSmVersion = "--image=profile=compute_20";
+    uint32_t smVersion = 20;
     if (!invocationOptions.CompilerOpts.CUDAGpuArch.empty()) {
-      smVersion = invocationOptions.CompilerOpts.CUDAGpuArch;
-      ptxSmVersion =
-          "--cuda-gpu-arch=" + invocationOptions.CompilerOpts.CUDAGpuArch;
-      fatbinSmVersion = "--image=profile=compute_" +
-                        invocationOptions.CompilerOpts.CUDAGpuArch.substr(3);
+      llvm::StringRef(invocationOptions.CompilerOpts.CUDAGpuArch)
+          .drop_front(3 /* sm_ */)
+          .getAsInteger(10, smVersion);
     }
-
-    // The generating of the fatbin file is depend of the architecture of the
-    // host.
-    llvm::Triple hostTarget(llvm::sys::getDefaultTargetTriple());
-    const std::string fatbinArch = hostTarget.isArch64Bit() ? "-64" : "-32";
 
     // FIXME : Should not reduce the fine granulated debug options to a simple.
     // -g
@@ -157,42 +151,36 @@ namespace cling {
     // compiler args
     for (const char* arg : invocationOptions.CompilerOpts.Remaining) {
       std::string s = arg;
-      if (s.compare(0, 2, "-D") == 0) additionalPtxOpt.push_back(s);
+      if (s.compare(0, 2, "-D") == 0)
+        additionalPtxOpt.push_back(s);
     }
+
+    enum FatBinFlags {
+      AddressSize64 = 0x01,
+      HasDebugInfo = 0x02,
+      ProducerCuda = 0x04,
+      HostLinux = 0x10,
+      HostMac = 0x20,
+      HostWindows = 0x40
+    };
+
+    uint32_t fatbinFlags = FatBinFlags::ProducerCuda;
+    if (debug)
+      fatbinFlags |= FatBinFlags::HasDebugInfo;
+
+    if (hostTriple.isArch64Bit())
+      fatbinFlags |= FatBinFlags::AddressSize64;
+
+    if (hostTriple.isOSWindows())
+      fatbinFlags |= FatBinFlags::HostWindows;
+    else if (hostTriple.isOSDarwin())
+      fatbinFlags |= FatBinFlags::HostMac;
+    else
+      fatbinFlags |= FatBinFlags::HostLinux;
 
     m_CuArgs.reset(new IncrementalCUDADeviceCompiler::CUDACompilerArgs(
-        cppStdVersion, optLevel, smVersion, ptxSmVersion, fatbinSmVersion,
-        fatbinArch, invocationOptions.Verbose(), debug, additionalPtxOpt,
-        invocationOptions.CompilerOpts.CUDAFatbinaryArgs));
-  }
-
-  bool IncrementalCUDADeviceCompiler::findToolchain(
-      const cling::InvocationOptions& invocationOptions) {
-    // Use the custom CUDA toolkit path, if it set via cling argument.
-    if (!invocationOptions.CompilerOpts.CUDAPath.empty()) {
-      m_FatbinaryPath =
-          invocationOptions.CompilerOpts.CUDAPath + "/bin/fatbinary";
-      if (!llvm::sys::fs::can_execute(m_FatbinaryPath)) {
-        llvm::errs() << "Error: " << m_FatbinaryPath
-                     << " not existing or executable!\n";
-        return false;
-      }
-    } else {
-      // Search after fatbinary on the system.
-      if (llvm::ErrorOr<std::string> fatbinary =
-              llvm::sys::findProgramByName("fatbinary")) {
-        llvm::SmallString<256> fatbinaryAbsolutePath;
-        llvm::sys::fs::real_path(*fatbinary, fatbinaryAbsolutePath);
-        m_FatbinaryPath = fatbinaryAbsolutePath.c_str();
-      } else {
-        llvm::errs() << "Error: nvidia tool fatbinary not found!\n"
-                     << "Please add the cuda /bin path to PATH or set the "
-                        "toolkit path via --cuda-path argument.\n";
-        return false;
-      }
-    }
-
-    return true;
+        cppStdVersion, optLevel, hostTriple, smVersion, fatbinFlags,
+        invocationOptions.Verbose(), debug, additionalPtxOpt));
   }
 
   void IncrementalCUDADeviceCompiler::addHeaderSearchPathFlags(
@@ -234,12 +222,8 @@ namespace cling {
   }
 
   bool cling::IncrementalCUDADeviceCompiler::generatePTX() {
-    std::error_code EC;
-    llvm::raw_fd_ostream os(m_PTXFilePath, EC, llvm::sys::fs::F_None);
-    if (EC) {
-      llvm::errs() << "ERROR: cannot generate file " << m_PTXFilePath << "\n";
-      return false;
-    }
+    // delete compiled PTX code of last input
+    m_PTX_code = "";
 
     std::shared_ptr<llvm::Module> module =
         m_PTX_interp->getLastTransaction()->getModule();
@@ -259,20 +243,20 @@ namespace cling {
 
     llvm::TargetOptions TO = llvm::TargetOptions();
 
-    llvm::TargetMachine* targetMachine =
-        Target->createTargetMachine(module->getTargetTriple(),
-                                    m_CuArgs->smVersion, "", TO, RM);
+    llvm::TargetMachine* targetMachine = Target->createTargetMachine(
+        module->getTargetTriple(),
+        std::string("sm_").append(std::to_string(m_CuArgs->smVersion)), "", TO,
+        RM);
     module->setDataLayout(targetMachine->createDataLayout());
 
-    llvm::SmallString<1024> ptx_code;
-    llvm::raw_svector_ostream dest(ptx_code);
+    llvm::raw_svector_ostream dest(m_PTX_code);
 
     llvm::legacy::PassManager pass;
     // it's important to use the type assembler
     // object file is not supported and do not make sense
     auto FileType = llvm::TargetMachine::CGFT_AssemblyFile;
 
-    if (targetMachine->addPassesToEmitFile(pass, os, FileType)) {
+    if (targetMachine->addPassesToEmitFile(pass, dest, FileType)) {
       llvm::errs() << "TargetMachine can't emit assembler code";
       return 1;
     }
@@ -281,46 +265,85 @@ namespace cling {
   }
 
   bool IncrementalCUDADeviceCompiler::generateFatbinary() {
-    // fatbinary --cuda [-32 | -64] --create cling.fatbin
-    // --image=profile=compute_xx,file=cling.ptx [-g] ${m_CuArgs->fatbinaryOpt}
-    llvm::SmallVector<std::string, 128> argv;
-
-    // First argument have to be the program name.
-    argv.push_back(m_FatbinaryPath);
-
-    argv.push_back("--cuda");
-    argv.push_back(m_CuArgs->fatbinArch);
-    argv.push_back("--create");
-    argv.push_back(m_FatbinFilePath);
-    argv.push_back(m_CuArgs->fatbinSmVersion + ",file=" + m_PTXFilePath);
-    if (m_CuArgs->debug) argv.push_back("-g");
-    for (const std::string& s : m_CuArgs->fatbinaryOpt) {
-      argv.push_back(s.c_str());
-    }
-
-    std::vector<const char*> argvChar;
-    argvChar.resize(argv.size() + 1);
-
-    std::transform(argv.begin(), argv.end(), argvChar.begin(),
-                   [&](const std::string& s) { return s.c_str(); });
-
-    // Argv list have to finish with a nullptr.
-    argvChar.push_back(nullptr);
-
-    std::string executionError;
-    int res =
-        llvm::sys::ExecuteAndWait(m_FatbinaryPath.c_str(), argvChar.data(),
-                                  nullptr, {}, 0, 0, &executionError);
-
-    if (res) {
-      llvm::errs() << "cling::IncrementalCUDADeviceCompiler::generateFatbinary("
-                      "): error compiling fatbinary file:\n"
-                   << m_FatbinaryPath;
-      for (const char* c : argvChar)
-        llvm::errs() << " " << c;
-      llvm::errs() << '\n' << executionError << "\n";
+    // FIXME: At the moment the fatbin code must be writen to a file so that
+    // CodeGen can use it. This should be replaced by a in-memory solution
+    // (e.g. virtual file).
+    std::error_code EC;
+    llvm::raw_fd_ostream os(m_FatbinFilePath, EC, llvm::sys::fs::F_None);
+    if (EC) {
+      llvm::errs() << "ERROR: cannot generate file " << m_FatbinFilePath
+                   << "\n";
       return false;
     }
+
+    // implementation ist copied from clangJIT
+    // (https://github.com/hfinkel/llvm-project-cxxjit/)
+
+    // The outer header of the fat binary is documented in the CUDA
+    // fatbinary.h header. As mentioned there, the overall size must be a
+    // multiple of eight, and so we must make sure that the PTX is.
+    while (m_PTX_code.size() % 7)
+      m_PTX_code += ' ';
+    m_PTX_code += '\0';
+
+    // NVIDIA, unfortunatly, does not provide full documentation on their
+    // fatbin format. There is some information on the outer header block in
+    // the CUDA fatbinary.h header. Also, it is possible to figure out more
+    // about the format by creating fatbins using the provided utilities
+    // and then observing what cuobjdump reports about the resulting files.
+    // There are some other online references which shed light on the format,
+    // including https://reviews.llvm.org/D8397 and FatBinaryContext.{cpp,h}
+    // from the GPU Ocelot project (https://github.com/gtcasl/gpuocelot).
+
+    struct FatBinHeader {
+      uint32_t Magic;      // 0x00
+      uint16_t Version;    // 0x04
+      uint16_t HeaderSize; // 0x06
+      uint32_t DataSize;   // 0x08
+      uint32_t unknown0c;  // 0x0c
+    public:
+      FatBinHeader(uint32_t DataSize)
+          : Magic(0xba55ed50), Version(1), HeaderSize(sizeof(*this)),
+            DataSize(DataSize), unknown0c(0) {}
+    };
+
+    struct FatBinFileHeader {
+      uint16_t Kind;             // 0x00
+      uint16_t unknown02;        // 0x02
+      uint32_t HeaderSize;       // 0x04
+      uint32_t DataSize;         // 0x08
+      uint32_t unknown0c;        // 0x0c
+      uint32_t CompressedSize;   // 0x10
+      uint32_t SubHeaderSize;    // 0x14
+      uint16_t VersionMinor;     // 0x18
+      uint16_t VersionMajor;     // 0x1a
+      uint32_t CudaArch;         // 0x1c
+      uint32_t unknown20;        // 0x20
+      uint32_t unknown24;        // 0x24
+      uint32_t Flags;            // 0x28
+      uint32_t unknown2c;        // 0x2c
+      uint32_t unknown30;        // 0x30
+      uint32_t unknown34;        // 0x34
+      uint32_t UncompressedSize; // 0x38
+      uint32_t unknown3c;        // 0x3c
+      uint32_t unknown40;        // 0x40
+      uint32_t unknown44;        // 0x44
+      FatBinFileHeader(uint32_t DataSize, uint32_t CudaArch, uint32_t Flags)
+          : Kind(1 /*PTX*/), unknown02(0x0101), HeaderSize(sizeof(*this)),
+            DataSize(DataSize), unknown0c(0), CompressedSize(0),
+            SubHeaderSize(HeaderSize - 8), VersionMinor(2), VersionMajor(4),
+            CudaArch(CudaArch), unknown20(0), unknown24(0), Flags(Flags),
+            unknown2c(0), unknown30(0), unknown34(0), UncompressedSize(0),
+            unknown3c(0), unknown40(0), unknown44(0) {}
+    };
+
+    FatBinFileHeader fatBinFileHeader(m_PTX_code.size(), m_CuArgs->smVersion,
+                                      m_CuArgs->fatbinFlags);
+    FatBinHeader fatBinHeader(m_PTX_code.size() + fatBinFileHeader.HeaderSize);
+
+    os.write((char*)&fatBinHeader, fatBinHeader.HeaderSize);
+    os.write((char*)&fatBinFileHeader, fatBinFileHeader.HeaderSize);
+    os << m_PTX_code;
 
     return true;
   }
@@ -329,26 +352,19 @@ namespace cling {
     llvm::outs() << "CUDA device compiler is valid: " << m_Init << "\n"
                  << "file path: " << m_FilePath << "\n"
                  << "fatbin file path: " << m_FatbinFilePath << "\n"
-                 << "cling.ptx file path: " << m_PTXFilePath << "\n"
-                 << "nvidia fatbinary path: " << m_FatbinaryPath << "\n"
                  << "m_CuArgs c++ standard: " << m_CuArgs->cppStdVersion << "\n"
                  << "m_CuArgs opt level: " << m_CuArgs->optLevel << "\n"
-                 << "m_CuArgs SM level general: " << m_CuArgs->smVersion << "\n"
-                 << "m_CuArgs SM level for clang nvptx: "
-                 << m_CuArgs->ptxSmVersion << "\n"
-                 << "m_CuArgs SM level for fatbinary: "
-                 << m_CuArgs->fatbinSmVersion << "\n"
-                 << "m_CuArgs fatbinary architectur: " << m_CuArgs->fatbinArch
+                 << "m_CuArgs host triple: " << m_CuArgs->hostTriple.str()
                  << "\n"
+                 << "m_CuArgs Nvidia SM Version: " << m_CuArgs->smVersion
+                 << "\n"
+                 << "m_CuArgs Fatbin Flags (see "
+                    "IncrementalCUDADeviceCompiler::setCuArgs()): "
+                 << std::bitset<7>(m_CuArgs->fatbinFlags).to_string() << "\n"
                  << "m_CuArgs verbose: " << m_CuArgs->verbose << "\n"
                  << "m_CuArgs debug: " << m_CuArgs->debug << "\n";
     llvm::outs() << "m_CuArgs additional clang nvptx options: ";
     for (const std::string& s : m_CuArgs->additionalPtxOpt) {
-      llvm::outs() << s << " ";
-    }
-    llvm::outs() << "\n";
-    llvm::outs() << "m_CuArgs additional fatbinary options: ";
-    for (const std::string& s : m_CuArgs->fatbinaryOpt) {
       llvm::outs() << s << " ";
     }
     llvm::outs() << "\n";
