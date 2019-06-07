@@ -629,9 +629,12 @@ namespace cling {
     }
     T->setState(Transaction::kCommitted);
 
-    if (InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks())
-      callbacks->TransactionCommitted(*T);
-
+    {
+      Transaction* prevConsumerT = m_Consumer->getTransaction();
+      if (InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks())
+        callbacks->TransactionCommitted(*T);
+      m_Consumer->setTransaction(prevConsumerT);
+    }
   }
 
   void IncrementalParser::emitTransaction(Transaction* T) {
