@@ -450,6 +450,7 @@ namespace cling {
     ///
     void clear() {
       m_DeclQueue.clear();
+      m_DeserializedDeclQueue.clear();
       if (m_NestedTransactions)
         m_NestedTransactions->clear();
     }
