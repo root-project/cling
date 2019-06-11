@@ -217,7 +217,7 @@ def fetch_llvm(llvm_revision):
             exec_subprocess_call('git checkout %s' % LLVM_BRANCH, srcdir)
         else:
             exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, srcdir)
-    
+
     def get_fresh_llvm():
         if LLVM_BRANCH:
             exec_subprocess_call('git clone --depth=10 --branch %s %s %s'
@@ -494,7 +494,7 @@ def compile(arg, build_libcpp):
 
     build = Build()
     cmake_config_flags = (srcdir + ' -DLLVM_BUILD_TOOLS=Off -DCMAKE_BUILD_TYPE={0} -DCMAKE_INSTALL_PREFIX={1} '
-                          .format(build.buildType, TMP_PREFIX) + ' -DLLVM_TARGETS_TO_BUILD=host ' +
+                          .format(build.buildType, TMP_PREFIX) + ' -DLLVM_TARGETS_TO_BUILD="host;NVPTX" ' +
                           EXTRA_CMAKE_FLAGS)
 
     libcxx = ''
@@ -634,7 +634,7 @@ def cleanup():
     global gInCleanup
     if gInCleanup:
         print('Failure in cleanup lead to recursion\n')
-        return 
+        return
 
     gInCleanup = True
     print('\n')
@@ -1885,7 +1885,7 @@ if args['check_requirements']:
                 install_line += pkg + ' '
         yes = {'yes', 'y', 'ye', ''}
         no = {'no', 'n'}
-        
+
         if install_line != '':
             choice = custom_input('''
     CPT will now attempt to update/install the requisite packages automatically.
