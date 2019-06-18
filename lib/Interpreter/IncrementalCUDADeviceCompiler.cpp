@@ -72,6 +72,13 @@ namespace cling {
     argv.insert(argv.end(), m_CuArgs->additionalPtxOpt.begin(),
                 m_CuArgs->additionalPtxOpt.end());
 
+    // add included files to the cling ptx
+    for (const char* c : invocationOptions.CompilerOpts.Remaining) {
+      std::string s(c);
+      if (s.find("-include") == 0)
+        argv.push_back(s);
+    }
+
     std::vector<const char*> argvChar;
     argvChar.resize(argv.size() + 1);
 
