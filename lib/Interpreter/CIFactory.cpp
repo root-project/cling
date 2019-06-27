@@ -8,7 +8,6 @@
 //------------------------------------------------------------------------------
 
 #include "ClingUtils.h"
-#include "DeclCollector.h"
 #include <cling-compiledata.h>
 
 #include "cling/Interpreter/CIFactory.h"
