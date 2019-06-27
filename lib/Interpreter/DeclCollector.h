@@ -74,8 +74,6 @@ namespace cling {
     ASTTransformer::Result TransformDecl(clang::Decl* D) const;
 
   public:
-    DeclCollector() {}
-
     virtual ~DeclCollector();
 
     void SetTransformers(std::vector<std::unique_ptr<ASTTransformer>>&& allTT,
