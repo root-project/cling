@@ -194,11 +194,15 @@ namespace cling {
     if (DGR.isNull())
       return true;
 
+    if (!m_Consumer)
+      return true;
+
     assertHasTransaction(m_CurTransaction);
+
     Transaction::DelayCallInfo DCI(DGR, Transaction::kCCIHandleTopLevelDecl);
     m_CurTransaction->append(DCI);
-    if (!m_Consumer
-        || getTransaction()->getIssuedDiags() == Transaction::kErrors)
+
+    if (getTransaction()->getIssuedDiags() == Transaction::kErrors)
       return true;
 
     if (comesFromASTReader(DGR)) {
