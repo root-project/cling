@@ -409,6 +409,15 @@ namespace cling {
 
   Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,
                               llvm::SmallVectorImpl<llvm::StringRef>& Globals) {
+    // initialization is done by the host interpreter
+    // the host interpreter runs the code itself and at the device compiler
+    // using the declare() function
+    if (m_Opts.CompilerOpts.CUDADevice) {
+      Transaction* T;
+      declare("", &T);
+      return T;
+    }
+
     largestream Strm;
     const clang::LangOptions& LangOpts = getCI()->getLangOpts();
     const void* ThisP = static_cast<void*>(this);
@@ -735,7 +744,7 @@ namespace cling {
                        Transaction** T /* = 0 */,
                        bool disableValuePrinting /* = false*/) {
     if (!isInSyntaxOnlyMode() && m_Opts.CompilerOpts.CUDAHost)
-      m_CUDACompiler->compileDeviceCode(input);
+      m_CUDACompiler->process(input);
 
     std::string wrapReadySource = input;
     size_t wrapPoint = std::string::npos;
@@ -768,6 +777,8 @@ namespace cling {
 
   Interpreter::CompilationResult
   Interpreter::parse(const std::string& input, Transaction** T /*=0*/) const {
+    if (!isInSyntaxOnlyMode() && m_Opts.CompilerOpts.CUDAHost)
+      m_CUDACompiler->parse(input);
     CompilationOptions CO = makeDefaultCompilationOpts();
     CO.CodeGeneration = 0;
     CO.DeclarationExtraction = 0;
@@ -867,6 +878,9 @@ namespace cling {
 
   Interpreter::CompilationResult
   Interpreter::declare(const std::string& input, Transaction** T/*=0 */) {
+    if (!isInSyntaxOnlyMode() && m_Opts.CompilerOpts.CUDAHost)
+      m_CUDACompiler->declare(input);
+
     CompilationOptions CO = makeDefaultCompilationOpts();
     CO.DeclarationExtraction = 0;
     CO.ValuePrinting = 0;

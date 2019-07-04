@@ -205,8 +205,10 @@ namespace cling {
     }
   }
 
-  bool IncrementalCUDADeviceCompiler::compileDeviceCode(
-      const llvm::StringRef input) {
+  // FIXME: add the same arguments as the cling::Interpreter class -> need some
+  // modifications in the cling::Transaction class to store information from the
+  // device compiler
+  bool IncrementalCUDADeviceCompiler::process(const llvm::StringRef input) {
     if (!m_Init) {
       llvm::errs()
           << "Error: Initializiation of CUDA Device Code Compiler failed\n";
@@ -216,14 +218,62 @@ namespace cling {
     Interpreter::CompilationResult CR = m_PTX_interp->process(input);
 
     if (CR == Interpreter::CompilationResult::kFailure) {
-      llvm::errs() << "failed at compile ptx code\n";
+      llvm::errs() << "IncrementalCUDADeviceCompiler::process()\n"
+                   << "failed at compile ptx code\n";
       return false;
     }
 
     // for example blocks which are not closed
-    if (CR == Interpreter::CompilationResult::kMoreInputExpected) return true;
+    if (CR == Interpreter::CompilationResult::kMoreInputExpected)
+      return true;
 
-    if (!generatePTX() || !generateFatbinary()) return false;
+    if (!generatePTX() || !generateFatbinary())
+      return false;
+
+    return true;
+  }
+
+  // FIXME: see process()
+  bool IncrementalCUDADeviceCompiler::declare(const llvm::StringRef input) {
+    if (!m_Init) {
+      llvm::errs()
+          << "Error: Initializiation of CUDA Device Code Compiler failed\n";
+      return false;
+    }
+
+    Interpreter::CompilationResult CR = m_PTX_interp->declare(input);
+
+    if (CR == Interpreter::CompilationResult::kFailure) {
+      llvm::errs() << "IncrementalCUDADeviceCompiler::declare()\n"
+                   << "failed at compile ptx code\n";
+      return false;
+    }
+
+    // for example blocks which are not closed
+    if (CR == Interpreter::CompilationResult::kMoreInputExpected)
+      return true;
+
+    if (!generatePTX() || !generateFatbinary())
+      return false;
+
+    return true;
+  }
+
+  // FIXME: see process()
+  bool IncrementalCUDADeviceCompiler::parse(const std::string& input) const {
+    if (!m_Init) {
+      llvm::errs()
+          << "Error: Initializiation of CUDA Device Code Compiler failed\n";
+      return false;
+    }
+
+    Interpreter::CompilationResult CR = m_PTX_interp->parse(input);
+
+    if (CR == Interpreter::CompilationResult::kFailure) {
+      llvm::errs() << "IncrementalCUDADeviceCompiler::parse()"
+                   << "failed at compile ptx code\n";
+      return false;
+    }
 
     return true;
   }
