@@ -150,15 +150,44 @@ namespace cling {
 
     ///\brief Generate an new fatbin file with the path in
     /// CudaGpuBinaryFileNames.
-    /// It will add the content of input, to the existing source code, which was
-    /// passed to compileDeviceCode, before.
+    ///
+    /// This interface helps to run everything that the device compiler can run.
+    /// Note that this should be used when there is no idea of what kind of
+    /// input is going to be processed. Otherwise if is known, for example
+    /// only header files are going to be processed it is much faster to run the
+    /// specific interface for doing that - in the particular case - declare().
     ///
     ///\param [in] input - The input directly from the UI. Attention, the string
     /// must not be wrapped or transformed.
     ///
-    ///\returns True, if all stages of generating fatbin runs right and a new
+    ///\returns true, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
-    bool compileDeviceCode(const llvm::StringRef input);
+    bool process(const llvm::StringRef input);
+
+    ///\brief Generate an new fatbin file with the path in
+    /// CudaGpuBinaryFileNames from input line, which doesn't contain
+    /// statements.
+    ///
+    /// The interface circumvents the most of the extra work necessary to
+    /// compile and run statements.
+    ///
+    /// @param[in] input - The input containing only declarations (aka
+    ///                    Top Level Declarations)
+    ///
+    ///\returns true, if all stages of generating fatbin runs right and a new
+    /// fatbin file is written.
+    bool declare(const llvm::StringRef input);
+
+    ///\brief Parses input line, which doesn't contain statements. No code
+    /// generation is done.
+    ///
+    /// Same as declare without codegening. Useful when a library is loaded and
+    /// the header files need to be imported.
+    ///
+    ///\param[in] input - The input containing the declarations.
+    ///
+    ///\returns true if parsing of the input was correct
+    bool parse(const std::string& input) const;
 
     ///\brief Print some information of the IncrementalCUDADeviceCompiler to
     /// llvm::outs().
