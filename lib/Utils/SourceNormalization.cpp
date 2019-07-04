@@ -375,6 +375,25 @@ size_t cling::utils::getWrapPoint(std::string& source,
       return std::string::npos;
     }
 
+    // detect the attribute (__global__, __device__ and __host__) of CUDA
+    // kernels at the beginning of a function definition
+    // FIXME: should replaced by a generic solution
+    if (LangOpts.CUDA) {
+      do {
+        if (Tok.getKind() == tok::raw_identifier) {
+          StringRef keyword(Tok.getRawIdentifier());
+          if (keyword.equals("__global__") || keyword.equals("__device__") ||
+              keyword.equals("__host__"))
+            // if attribute was found, skip the token and use the function
+            // detection later
+            Lex.Lex(Tok);
+          else
+            break;
+        } else
+          break;
+      } while (true);
+    }
+
     // Prior behavior was to return getFileOffset, which was only used as an
     // in a test against std::string::npos. By returning 0 we preserve prior
     // behavior to pass the test against std::string::npos and wrap everything
