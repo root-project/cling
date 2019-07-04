@@ -141,6 +141,20 @@ namespace cling {
     ///
     virtual void TransactionCommitted(const Transaction&) {}
 
+    /// This callback is invoked whenever interpreter has started code
+    /// generation for the transaction.
+    ///
+    ///\param[in] - The transaction that is being codegen-ed.
+    ///
+    virtual void TransactionCodeGenStarted(const Transaction&) {}
+
+    /// This callback is invoked whenever interpreter has finished code
+    /// generation for the transaction.
+    ///
+    ///\param[in] - The transaction that is being codegen-ed.
+    ///
+    virtual void TransactionCodeGenFinished(const Transaction&) {}
+
     ///\brief This callback is invoked whenever interpreter has reverted a
     /// transaction that has been fully committed.
     ///
