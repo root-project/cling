@@ -34,6 +34,16 @@ namespace cling {
       kLoadLibNumResults
     };
 
+    /// Describes the library search paths.
+    struct SearchPathInfo {
+      /// The search path.
+      ///
+      std::string Path;
+
+      /// True if the Path is on the LD_LIBRARY_PATH.
+      ///
+      bool IsUser;
+    };
   private:
     typedef const void* DyLibHandle;
     typedef llvm::DenseMap<DyLibHandle, std::string> DyLibs;
@@ -48,7 +58,7 @@ namespace cling {
 
     ///\brief System's include path, get initialized at construction time.
     ///
-    llvm::SmallVector<std::string, 32> m_SystemSearchPaths;
+    llvm::SmallVector<SearchPathInfo, 32> m_SearchPaths;
 
     InterpreterCallbacks* m_Callbacks;
 
@@ -81,8 +91,8 @@ namespace cling {
     ///
     ///\returns System include paths.
     ///
-    llvm::SmallVector<std::string, 32> getSystemSearchPath() {
-       return m_SystemSearchPaths;
+    const llvm::SmallVectorImpl<SearchPathInfo>& getSearchPath() {
+       return m_SearchPaths;
     }
 
     ///\brief Looks up a library taking into account the current include paths

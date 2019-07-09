@@ -50,28 +50,34 @@ namespace cling {
         SplitPaths(Env, CurPaths, utils::kPruneNonExistant, platform::kEnvDelim,
                    Opts.Verbose());
         for (const auto& Path : CurPaths)
-          m_SystemSearchPaths.push_back(Path.str());
+          m_SearchPaths.push_back({Path.str(), /*IsUser*/true});
       }
     }
 
-    platform::GetSystemLibraryPaths(m_SystemSearchPaths);
+    llvm::SmallVector<std::string, 64> SysPaths;
+    platform::GetSystemLibraryPaths(SysPaths);
+
+    for (const std::string& P : SysPaths)
+      m_SearchPaths.push_back({P, /*IsUser*/false});
 
     // This will currently be the last path searched, should it be pushed to
     // the front of the line, or even to the front of user paths?
-    m_SystemSearchPaths.push_back(".");
+    m_SearchPaths.push_back({".", /*IsUser*/true});
   }
 
   DynamicLibraryManager::~DynamicLibraryManager() {}
 
   std::string
   DynamicLibraryManager::lookupLibInPaths(llvm::StringRef libStem) const {
-    llvm::SmallVector<std::string, 128>
-      Paths(m_Opts.LibSearchPath.begin(), m_Opts.LibSearchPath.end());
-    Paths.append(m_SystemSearchPaths.begin(), m_SystemSearchPaths.end());
+    llvm::SmallVector<SearchPathInfo, 128> Paths;
+    for (const std::string &P : m_Opts.LibSearchPath)
+      Paths.push_back({P, /*IsUser*/true});
 
-    for (llvm::SmallVectorImpl<std::string>::const_iterator
-           IPath = Paths.begin(), E = Paths.end();IPath != E; ++IPath) {
-      llvm::SmallString<512> ThisPath(*IPath); // FIXME: move alloc outside loop
+    Paths.append(m_SearchPaths.begin(), m_SearchPaths.end());
+
+    llvm::SmallString<512> ThisPath;
+    for (const SearchPathInfo& Info : Paths) {
+      ThisPath = Info.Path;
       llvm::sys::path::append(ThisPath, libStem);
       bool exists;
       if (isSharedLibrary(ThisPath.str(), &exists))
