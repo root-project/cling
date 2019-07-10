@@ -31,6 +31,8 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Support/raw_os_ostream.h"
 
+#include <cstring>
+
 namespace {
 
   ///\brief The allocation starts with this layout; it is followed by the
@@ -58,7 +60,17 @@ namespace {
     ///\brief The start of the allocation.
     char m_Payload[1];
 
-  public:
+    static const unsigned char kCanaryUnconstructedObject[8];
+
+    ///\brief Return whether the contained object has been constructed,
+    /// or rather, whether the canary has been changed.
+    bool IsAlive() const
+    {
+      // If the canary values are still there
+      return (std::memcmp(getPayload(), kCanaryUnconstructedObject,
+                          sizeof(kCanaryUnconstructedObject)) != 0);
+    }
+
     ///\brief Initialize the storage management part of the allocated object.
     ///  The allocator is referencing it, thus initialize m_RefCnt with 1.
     ///\param [in] dtorFunc - the function to be called before deallocation.
@@ -68,6 +80,23 @@ namespace {
       m_AllocSize(allocSize), m_NElements(nElements)
     {}
 
+  public:
+    ///\brief Allocate the memory needed by the AllocatedValue managing
+    /// an object of payloadSize bytes, and return the address of the
+    /// payload object.
+    static char* CreatePayload(unsigned payloadSize, void* dtorFunc,
+                               size_t nElements) {
+      if (payloadSize < sizeof(kCanaryUnconstructedObject))
+        payloadSize = sizeof(kCanaryUnconstructedObject);
+      char* alloc = new char[AllocatedValue::getPayloadOffset() + payloadSize];
+      AllocatedValue* allocVal
+        = new (alloc) AllocatedValue(dtorFunc, payloadSize, nElements);
+      std::memcpy(allocVal->getPayload(), kCanaryUnconstructedObject,
+                  sizeof(kCanaryUnconstructedObject));
+      return allocVal->getPayload();
+    }
+
+    const char* getPayload() const { return m_Payload; }
     char* getPayload() { return m_Payload; }
 
     static unsigned getPayloadOffset() {
@@ -87,7 +116,7 @@ namespace {
     void Release() {
       assert (m_RefCnt > 0 && "Reference count is already zero.");
       if (--m_RefCnt == 0) {
-        if (m_DtorFunc) {
+        if (m_DtorFunc && IsAlive()) {
           assert(m_NElements && "No elements!");
           char* Payload = getPayload();
           const auto Skip = m_AllocSize / m_NElements;
@@ -98,6 +127,9 @@ namespace {
       }
     }
   };
+
+  const unsigned char AllocatedValue::kCanaryUnconstructedObject[8]
+    = {0x4c, 0x37, 0xad, 0x8f, 0x2d, 0x23, 0x95, 0x91};
 }
 
 namespace cling {
@@ -222,10 +254,8 @@ namespace cling {
 
     const clang::ASTContext& ctx = getASTContext();
     unsigned payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
-    char* alloc = new char[AllocatedValue::getPayloadOffset() + payloadSize];
-    AllocatedValue* allocVal = new (alloc) AllocatedValue(dtorFunc, payloadSize,
-                                                          GetNumberOfElements());
-    m_Storage.m_Ptr = allocVal->getPayload();
+    m_Storage.m_Ptr = AllocatedValue::CreatePayload(payloadSize, dtorFunc,
+                                                    GetNumberOfElements());
   }
 
   void Value::AssertOnUnsupportedTypeCast() const {
