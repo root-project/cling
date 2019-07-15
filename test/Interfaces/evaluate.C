@@ -78,6 +78,7 @@ V // CHECK-NEXT: (cling::Value &) boxes [(int [2][3][4]) { { { 1, 2, 3, 4 }, { 1
 // Check lifetime of objects in Value
 .rawInput 1
 struct WithDtor {
+   char mem = 0;
    static int fgCount;
    WithDtor() { ++fgCount; }
    WithDtor(const WithDtor&) { ++fgCount; }

@@ -14,7 +14,7 @@
 extern "C" int printf(const char*,...);
 
 class A {
-  int m_A[2];
+  int m_A[2] = 0;
 public:
   A() {}
   ~A() { printf("A::~A()\n"); }
@@ -43,6 +43,7 @@ public:
 int gTest = 0;
 
 class E {
+  char mem = 0;
 public:
   ~E() { gTest = 101; }
 };
