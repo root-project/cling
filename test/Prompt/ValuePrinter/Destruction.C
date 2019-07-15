@@ -14,7 +14,7 @@
 extern "C" int printf(const char*,...);
 
 class A {
-  int m_A[2] = 0;
+  int m_A[2] = {};
 public:
   A() {}
   ~A() { printf("A::~A()\n"); }
