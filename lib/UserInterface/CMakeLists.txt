@@ -48,6 +48,11 @@ add_cling_library(clingUserInterface
   clingUtils
 )
 
+if( MSVC )
+  # Don't use Unicode in the User Interface (command prompt)
+  remove_definitions(-DUNICODE -D_UNICODE)
+endif()
+
 if(UNIX)
   set_source_files_properties(UserInterface.cpp COMPILE_FLAGS "-fexceptions")
 endif()
