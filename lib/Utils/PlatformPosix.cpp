@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 // PATH_MAX
 #ifdef __APPLE__
@@ -43,7 +44,7 @@ namespace {
     // MRU cache wasn't worth the extra CPU cycles.
     static thread_local std::array<const void*, 8> lines;
     static thread_local unsigned mostRecent;
-    int FD;
+    size_t page_size;
 
     // Concurrent writes to the same cache element can result in invalid cache
     // elements, causing pointer address not being available in the cache even
@@ -56,16 +57,11 @@ namespace {
     }
 
   public:
-    PointerCheck() : FD(::open("/dev/random", O_WRONLY)) {
-      if (FD == -1) ::perror("open('/dev/random')");
-    }
-    ~PointerCheck() {
-      if (FD != -1) ::close(FD);
+    PointerCheck() {
+      page_size = ::sysconf(_SC_PAGESIZE);
     }
 
     bool operator () (const void* P) {
-      if (FD == -1)
-        return false;
       // std::find is considerably slower, do manual search instead.
       if (P == lines[0] || P == lines[1] || P == lines[2] || P == lines[3]
           || P == lines[4] || P == lines[5] || P == lines[6] || P == lines[7])
@@ -73,7 +69,8 @@ namespace {
 
       // There is a POSIX way of finding whether an address
       // can be accessed for reading.
-      if (::write(FD, P, 1/*byte*/) != 1) {
+      void *base = (void *)((((const size_t)P) / page_size) * page_size);
+      if (::msync(base, page_size, 0) != 0) {
         assert(errno == EFAULT && "unexpected write error at address");
         return false;
       }
