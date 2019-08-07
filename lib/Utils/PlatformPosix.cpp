@@ -67,13 +67,15 @@ namespace {
           || P == lines[4] || P == lines[5] || P == lines[6] || P == lines[7])
         return true;
 
-      // There is a POSIX way of finding whether an address
-      // can be accessed for reading.
-      void *base = (void *)((((const size_t)P) / page_size) * page_size);
-      if (::msync(base, page_size, 0) != 0) {
-        assert(errno == EFAULT && "unexpected write error at address");
+      // Address of page containing P, assuming page_size is a power of 2
+      void *base = (void *)(((const size_t)P) & ~(page_size - 1));
+
+      // P is invalid only when msync returns -1 and sets errno to ENOMEM
+      if (::msync(base, page_size, MS_ASYNC) != 0) {
+        assert(errno == ENOMEM && "Unexpected error in call to msync()");
         return false;
       }
+
       push(P);
       return true;
     }
