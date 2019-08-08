@@ -58,9 +58,9 @@ namespace {
     }
 
   public:
-    PointerCheck() {
-      page_size = ::sysconf(_SC_PAGESIZE);
-      page_mask = ~(page_size - 1);
+    PointerCheck() : page_size(::sysconf(_SC_PAGESIZE)), page_mask(~(page_size - 1))
+    {
+       assert(IsPowerOfTwo(page_size));
     }
 
     bool operator () (const void* P) {
@@ -80,6 +80,13 @@ namespace {
 
       push(P);
       return true;
+    }
+  private:
+    bool IsPowerOfTwo(size_t n) {
+       /* While n is even and larger than 1, divide by 2 */
+       while (((n & 1) == 0) && n > 1)
+         n >>= 1;
+       return n == 1;
     }
   };
   thread_local std::array<const void*, 8> PointerCheck::lines = {};
