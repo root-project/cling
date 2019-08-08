@@ -45,6 +45,7 @@ namespace {
     static thread_local std::array<const void*, 8> lines;
     static thread_local unsigned mostRecent;
     size_t page_size;
+    size_t page_mask;
 
     // Concurrent writes to the same cache element can result in invalid cache
     // elements, causing pointer address not being available in the cache even
@@ -59,6 +60,7 @@ namespace {
   public:
     PointerCheck() {
       page_size = ::sysconf(_SC_PAGESIZE);
+      page_mask = ~(page_size - 1);
     }
 
     bool operator () (const void* P) {
@@ -68,7 +70,7 @@ namespace {
         return true;
 
       // Address of page containing P, assuming page_size is a power of 2
-      void *base = (void *)(((const size_t)P) & ~(page_size - 1));
+      void *base = (void *)(((const size_t)P) & page_mask);
 
       // P is invalid only when msync returns -1 and sets errno to ENOMEM
       if (::msync(base, page_size, MS_ASYNC) != 0) {
