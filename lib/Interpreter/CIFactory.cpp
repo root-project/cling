@@ -104,12 +104,10 @@ namespace {
                                        llvm::SmallVectorImpl<char>& Buf,
                                        AdditionalArgList& Args,
                                        bool Verbose) {
-    std::string CppInclQuery("LC_ALL=C ");
-    CppInclQuery.append(Compiler);
-    CppInclQuery.append(" -xc++ -E -v /dev/null 2>&1 >/dev/null "
-                        "| awk '/^#include </,/^End of search"
-                        "/{if (!/^#include </ && !/^End of search/){ print }}' "
-                        "| GREP_OPTIONS= grep -E \"(c|g)\\+\\+\"");
+    std::string CppInclQuery(Compiler);
+
+    CppInclQuery.append(" -xc++ -E -v /dev/null 2>&1 |"
+                        " sed -n -e '/^.include/,${' -e '/^ \\/.*++/p' -e '}'");
 
     if (Verbose)
       cling::log() << "Looking for C++ headers with:\n  " << CppInclQuery << "\n";

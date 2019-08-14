@@ -252,8 +252,7 @@ if (UNIX)
 
     execute_process(
       COMMAND echo ${CLING_CXX_HEADERS}
-      COMMAND awk "/^#include </,/^End of search/{if (!/^#include </ && !/^End of search/){ print }}"
-      COMMAND grep -E "(c|g)\\+\\+"
+      COMMAND sed -n -e /^.include/,\$\{ -e /^\\\ \\\/.*++/p -e \}
       OUTPUT_VARIABLE CLING_CXX_HEADERS)
 
     stripNewLine("${CLING_CXX_HEADERS}" CLING_CXX_HEADERS)
