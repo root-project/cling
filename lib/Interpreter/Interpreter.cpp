@@ -637,6 +637,8 @@ namespace cling {
   // FIXME: Add stream argument and move DumpIncludePath path here.
   void Interpreter::dump(llvm::StringRef what, llvm::StringRef filter) {
     llvm::raw_ostream &where = cling::log();
+    // `.stats decl' and `.stats asttree FILTER' cause deserialization; force transaction
+    PushTransactionRAII RAII(this);
     if (what.equals("asttree")) {
       std::unique_ptr<clang::ASTConsumer> printer =
           clang::CreateASTDumper(filter, true  /*DumpDecls*/,
