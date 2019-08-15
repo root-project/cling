@@ -16,6 +16,7 @@
 #include "ClingPragmas.h"
 #include "DeclCollector.h"
 #include "DeclExtractor.h"
+#include "DefinitionShadowing.h"
 #include "DynamicLookup.h"
 #include "IncrementalCUDADeviceCompiler.h"
 #include "IncrementalExecutor.h"
@@ -945,6 +946,7 @@ namespace cling {
        // into the PCH.
        ASTTransformers.emplace_back(new NullDerefProtectionTransformer(m_Interpreter));
     }
+    ASTTransformers.emplace_back(new DefinitionShadowing(TheSema));
 
     typedef std::unique_ptr<WrapperTransformer> WTPtr_t;
     std::vector<WTPtr_t> WrapperTransformers;

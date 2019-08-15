@@ -72,6 +72,7 @@ add_cling_library(clingInterpreter OBJECT
   ClingPragmas.cpp
   DeclCollector.cpp
   DeclExtractor.cpp
+  DefinitionShadowing.cpp
   DeclUnloader.cpp
   DynamicLibraryManager.cpp
   DynamicLookup.cpp

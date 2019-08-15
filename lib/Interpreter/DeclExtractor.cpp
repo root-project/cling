@@ -113,9 +113,9 @@ namespace cling {
     llvm::SmallVector<NamedDecl*, 4> TouchedDecls;
     CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
     assert(CS && "Function body not a CompoundStmt?");
-    DeclContext* DC = m_Context->getTranslationUnitDecl();
+    DeclContext* DC = FD->getLexicalDeclContext();
     Scope* TUScope = m_Sema->TUScope;
-    assert(TUScope == m_Sema->getScopeForContext(DC) && "TU scope from DC?");
+    //assert(TUScope == m_Sema->getScopeForContext(DC) && "TU scope from DC?");
     llvm::SmallVector<Stmt*, 4> Stmts;
 
     for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
@@ -154,12 +154,13 @@ namespace cling {
           // In the particular context this definition is inside a function
           // already, but clang thinks it as a lambda, so we need to ignore the
           // check decl context vs lexical decl context.
+          DeclContext *NewDC = isa<TagDecl>(ND) ? TUScope->getEntity() : DC;
           if (ND->getDeclContext() == ND->getLexicalDeclContext()
               || isa<FunctionDecl>(ND))
-            ND->setLexicalDeclContext(DC);
+            ND->setLexicalDeclContext(NewDC);
           else
             assert(0 && "Not implemented: Decl with different lexical context");
-          ND->setDeclContext(DC);
+          ND->setDeclContext(NewDC);
 
           if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
             if (!ValidateCXXRecord(VD))
@@ -183,9 +184,12 @@ namespace cling {
         if (!TouchedDecls[i]->getDeclName())
           continue;
 
+        TouchedDecls[i]->getLexicalDeclContext()->addDecl(TouchedDecls[i]);
+#if 0
         m_Sema->PushOnScopeChains(TouchedDecls[i],
                                   m_Sema->getScopeForContext(DC),
                     /*AddCurContext*/!isa<UsingDirectiveDecl>(TouchedDecls[i]));
+#endif
 
         // The transparent DeclContexts (eg. scopeless enum) doesn't have
         // scopes. While extracting their contents we need to update the
