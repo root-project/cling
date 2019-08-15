@@ -438,7 +438,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     bool Successful = VisitDecl(ND);
 
     DeclContext* DC = ND->getDeclContext();
-    while (DC->isTransparentContext())
+    while (DC->isTransparentContext() || DC->isInlineNamespace())
       DC = DC->getLookupParent();
 
     // if the decl was anonymous we are done.
