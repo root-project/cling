@@ -187,6 +187,11 @@ namespace cling {
       return m_Transactions.back();
     }
 
+    ///\brief Returns the most recent transaction with an input line wrapper,
+    /// which could well be the current one.
+    ///
+    const Transaction* getLastWrapperTransaction() const;
+
     ///\brief Returns the currently active transaction.
     ///
     const Transaction* getCurrentTransaction() const;

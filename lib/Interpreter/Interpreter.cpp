@@ -1598,6 +1598,9 @@ namespace cling {
     return m_IncrParser->getLastTransaction();
   }
 
+  const Transaction* Interpreter::getLastWrapperTransaction() const {
+    return m_IncrParser->getLastWrapperTransaction();
+  }
   const Transaction* Interpreter::getCurrentTransaction() const {
     return m_IncrParser->getCurrentTransaction();
   }

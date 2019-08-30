@@ -713,6 +713,7 @@ namespace cling {
 
     const Transaction* getFirstTransaction() const;
     const Transaction* getLastTransaction() const;
+    const Transaction* getLastWrapperTransaction() const;
     const Transaction* getCurrentTransaction() const;
 
     ///\brief Returns the current or last Transaction.

@@ -392,6 +392,28 @@ namespace cling {
            && (!initialized || (m_TransactionPool && m_Parser));
   }
 
+  namespace {
+    template <class T>
+    struct Reversed {
+      const T &m_orig;
+      auto begin() -> decltype(m_orig.rbegin()) { return m_orig.rbegin(); }
+      auto end() -> decltype (m_orig.rend()) { return m_orig.rend(); }
+    };
+    template <class T>
+    Reversed<T> reverse(const T& orig) { return {orig}; }
+  }
+
+  const Transaction* IncrementalParser::getLastWrapperTransaction() const {
+    if (auto *T = getCurrentTransaction())
+      if (T->getWrapperFD())
+        return T;
+
+    for (auto T: reverse(m_Transactions))
+      if (T->getWrapperFD())
+        return T;
+    return nullptr;
+  }
+
   const Transaction* IncrementalParser::getCurrentTransaction() const {
     return m_Consumer->getTransaction();
   }
