@@ -72,10 +72,10 @@ matrix:
 
     - os: osx
       env: COMPILER=g++-7 CCOMPILER=gcc-7
-      osx_image: xcode8.3
-      before_install:
-        - brew cask uninstall oclint
-        - brew install gcc@7
+      addon:
+        homebrew:
+          packages:
+          - gcc@7
       compiler: gcc-7
 
     - os: linux
