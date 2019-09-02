@@ -45,6 +45,7 @@ matrix:
     # run across all platforms. By interleaving OS X, the hope is to get in the
     # queue faster while not blocking Linux builds from occuring.
     - os: linux
+      dist: trusty
       env: COMPILER=g++-4.8 CCOMPILER=gcc-4.8 NIGHTLY_CRON_SYNC=1
       compiler: gcc-4.8
 
