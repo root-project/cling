@@ -152,13 +152,13 @@ if (UNIX)
           elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             execute_process(
               COMMAND echo ${_cling_cxx_path}
-              COMMAND grep "/${_name}\" -cc1"
+              COMMAND grep "/${_name}.*\" -cc1"
               OUTPUT_VARIABLE _cling_clng_path)
 
             if(NOT _cling_clng_path)
               execute_process(
                 COMMAND echo ${_cling_cxx_path}
-                COMMAND grep "/clang\" -cc1"
+                COMMAND grep "/clang.*\" -cc1"
                 OUTPUT_VARIABLE _cling_clng_path)
             endif()
 
