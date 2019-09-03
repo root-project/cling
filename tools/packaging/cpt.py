@@ -2044,11 +2044,20 @@ if args['current_dev']:
             test_cling()
         make_dmg()
         cleanup()
+
     elif args['current_dev'].startswith('branch'):
         compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')), libcpp)
         #install_prefix()
         if not args['no_test']:
             test_cling()
+        cleanup()
+
+    elif args['current_dev'] == 'pkg':
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
+        install_prefix()
+        if not args['no_test']:
+            test_cling()
+        tarball()
         cleanup()
 
 if args['last_stable']:
@@ -2128,6 +2137,15 @@ if args['last_stable']:
         if not args['no_test']:
             test_cling()
         make_dmg()
+        cleanup()
+
+    elif args['last_stable'] == 'pkg':
+        set_version()
+        compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION), libcpp)
+        install_prefix()
+        if not args['no_test']:
+            test_cling()
+        tarball()
         cleanup()
 
 if args['tarball_tag']:
