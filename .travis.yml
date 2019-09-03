@@ -72,6 +72,7 @@ matrix:
 
     - os: osx
       env: COMPILER=g++-7 CCOMPILER=gcc-7
+      osx_image: xcode10.1
       addons:
         homebrew:
           packages: gcc@7
