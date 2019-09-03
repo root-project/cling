@@ -72,7 +72,7 @@ matrix:
 
     - os: osx
       env: COMPILER=g++-7 CCOMPILER=gcc-7
-      addon:
+      addons:
         homebrew:
           packages:
           - gcc@7
