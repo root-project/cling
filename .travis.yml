@@ -74,8 +74,8 @@ matrix:
       env: COMPILER=g++-7 CCOMPILER=gcc-7
       addons:
         homebrew:
-          packages:
-          - gcc@7
+          packages: gcc@7
+          update: true
       compiler: gcc-7
 
     - os: linux
