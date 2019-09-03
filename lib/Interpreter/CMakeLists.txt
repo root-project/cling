@@ -141,6 +141,7 @@ if (UNIX)
           find_program(_cling_cxx_path "${_name}")
           execute_process(COMMAND ${_cling_cxx_path} -xc++ -E -v /dev/null
                           OUTPUT_QUIET ERROR_VARIABLE _cling_cxx_path)
+message(WARNING "AXEL: `${_cling_cxx_path} -xc++ -E -v /dev/null` OUTPUT ---${_cling_cxx_path}---${CMAKE_CXX_COMPILER_ID}--")
 
           if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             execute_process(
@@ -154,17 +155,20 @@ if (UNIX)
               COMMAND echo ${_cling_cxx_path}
               COMMAND grep "/${_name}\" -cc1"
               OUTPUT_VARIABLE _cling_clng_path)
+message(WARNING "AXEL2: ---`grep /${_name}\" -cc1`--- OUTPUT:${_cling_clng_path}")
 
             if(NOT _cling_clng_path)
               execute_process(
                 COMMAND echo ${_cling_cxx_path}
                 COMMAND grep "/clang\" -cc1"
                 OUTPUT_VARIABLE _cling_clng_path)
+message(WARNING "AXEL3: ---`grep /clang\" -cc1`--- OUTPUT:${_cling_clng_path}")
             endif()
 
             separate_arguments(_arg_list UNIX_COMMAND "${_cling_clng_path}")
             if (_arg_list)
               list(GET _arg_list 0 _cling_cxx_path)
+message(WARNING "AXEL4: ---list GET--- OUTPUT:${_cling_cxx_path}")
             endif()
           endif()
 
