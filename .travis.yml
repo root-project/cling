@@ -130,6 +130,8 @@ install:
       export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DCXX_EXTENSIONS=OFF"
     fi
   fi
+  # Only care about cling warnings.
+  export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DLLVM_ENABLE_WARNINGS=OFF -DCLING_ENABLE_WARNINGS=ON"
   echo "travis_fold:""end:install"
 
   # Containers need to timeout before the buildscript exits
