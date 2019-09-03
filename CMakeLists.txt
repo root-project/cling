@@ -194,6 +194,70 @@ function(cling_add_cxx_flag var flag)
   endif()
 endfunction()
 
+if(CLING_ENABLE_WARNINGS AND NOT LLVM_ENABLE_WARNINGS AND (LLVM_COMPILER_IS_GCC_COMPATIBLE OR CLANG_CL))
+  # from HandleLLCMOptions.cmake:
+  append("-Wall -W -Wno-unused-parameter -Wwrite-strings" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  append("-Wcast-qual" CMAKE_CXX_FLAGS)
+
+  # Turn off missing field initializer warnings for gcc to avoid noise from
+  # false positives with empty {}. Turn them on otherwise (they're off by
+  # default for clang).
+  check_cxx_compiler_flag("-Wmissing-field-initializers" CXX_SUPPORTS_MISSING_FIELD_INITIALIZERS_FLAG)
+  if (CXX_SUPPORTS_MISSING_FIELD_INITIALIZERS_FLAG)
+    if (CMAKE_COMPILER_IS_GNUCXX)
+      append("-Wno-missing-field-initializers" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+    else()
+      append("-Wmissing-field-initializers" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+    endif()
+  endif()
+
+  if (LLVM_ENABLE_PEDANTIC AND LLVM_COMPILER_IS_GCC_COMPATIBLE)
+    append("-pedantic" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+    append("-Wno-long-long" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  endif()
+
+  add_flag_if_supported("-Wcovered-switch-default" COVERED_SWITCH_DEFAULT_FLAG)
+  append_if(USE_NO_UNINITIALIZED "-Wno-uninitialized" CMAKE_CXX_FLAGS)
+  append_if(USE_NO_MAYBE_UNINITIALIZED "-Wno-maybe-uninitialized" CMAKE_CXX_FLAGS)
+
+  # Check if -Wnon-virtual-dtor warns even though the class is marked final.
+  # If it does, don't add it. So it won't be added on clang 3.4 and older.
+  # This also catches cases when -Wnon-virtual-dtor isn't supported by
+  # the compiler at all.  This flag is not activated for gcc since it will
+  # incorrectly identify a protected non-virtual base when there is a friend
+  # declaration. Don't activate this in general on Windows as this warning has
+  # too many false positives on COM-style classes, which are destroyed with
+  # Release() (PR32286).
+  if (NOT CMAKE_COMPILER_IS_GNUCXX AND NOT WIN32)
+    set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -std=c++11 -Werror=non-virtual-dtor")
+    CHECK_CXX_SOURCE_COMPILES("class base {public: virtual void anchor();protected: ~base();};
+                               class derived final : public base { public: ~derived();};
+                               int main() { return 0; }"
+                              CXX_WONT_WARN_ON_FINAL_NONVIRTUALDTOR)
+    set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+    append_if(CXX_WONT_WARN_ON_FINAL_NONVIRTUALDTOR
+              "-Wnon-virtual-dtor" CMAKE_CXX_FLAGS)
+  endif()
+
+  # Enable -Wdelete-non-virtual-dtor if available.
+  add_flag_if_supported("-Wdelete-non-virtual-dtor" DELETE_NON_VIRTUAL_DTOR_FLAG)
+
+  # Check if -Wcomment is OK with an // comment ending with '\' if the next
+  # line is also a // comment.
+  set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wcomment")
+  CHECK_C_SOURCE_COMPILES("// \\\\\\n//\\nint main() {return 0;}"
+                          C_WCOMMENT_ALLOWS_LINE_WRAP)
+  set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+  if (NOT C_WCOMMENT_ALLOWS_LINE_WRAP)
+    append("-Wno-comment" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  endif()
+
+  # Enable -Wstring-conversion to catch misuse of string literals.
+  add_flag_if_supported("-Wstring-conversion" STRING_CONVERSION_FLAG)
+endif()
+
 # Add appropriate flags for GCC
 if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual")
