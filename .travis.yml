@@ -100,12 +100,10 @@ matrix:
       compiler: clang
 
     - os: linux
-      env: CXXLIB=libstdc++ COMPILER=clang++-5.0 CCOMPILER=clang-5.0
+      env: CXXLIB=libstdc++ COMPILER=clang++ CCOMPILER=clang
       addons:
         apt:
-          sources: llvm-toolchain-trusty-5.0
-          packages: clang-5.0
-      compiler: clang-5.0
+      compiler: clang
 
 #  allow_failures:
 #    # clang-3.5 crashes compiling clang-3.9 with libc++-3.9
