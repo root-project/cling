@@ -840,18 +840,10 @@ namespace cling {
     if (getSema().isModuleVisible(M))
       return true;
 
-    Preprocessor& PP = getCI()->getPreprocessor();
-
-    IdentifierInfo *II = PP.getIdentifierInfo(M->Name);
-    SourceLocation ValidLoc = M->DefinitionLoc;
     Interpreter::PushTransactionRAII RAII(this);
-    bool success = !getCI()->getSema().ActOnModuleImport(ValidLoc, ValidLoc,
-                                      std::make_pair(II, ValidLoc)).isInvalid();
-    if (success) {
-      // Also make the module visible in the preprocessor to export its macros.
-      PP.makeModuleVisible(M, ValidLoc);
-      return success;
-    }
+    if (declare("#pragma clang module import " + M->Name) == kSuccess)
+      return true;
+
     if (complain) {
       if (M->IsSystem)
         llvm::errs() << "Failed to load module " << M->Name << "\n";
