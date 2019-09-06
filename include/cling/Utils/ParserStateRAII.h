@@ -47,6 +47,9 @@ namespace cling {
     ParserStateRAII(clang::Parser& p, bool skipToEOF);
     ~ParserStateRAII();
 
+    void SetSkipToEOF(bool newvalue) {
+      SkipToEOF = newvalue;
+    }
 };
 
 } // end namespace cling
