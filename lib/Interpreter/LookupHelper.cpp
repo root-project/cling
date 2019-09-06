@@ -39,10 +39,10 @@ namespace cling {
     LookupHelper& m_LH;
     llvm::SaveAndRestore<bool> SaveIsRecursivelyRunning;
     // Save and restore the state of the Parser and lexer.
-    // Note: ROOT::Internal::ParsingStateRAII also save and restore the state of Sema,
-    // including pending instantiation for example.  It is not clear whether we need
-    // to do so here too or whether we need to also see the "on-going" semantic information ...
-    // For now, we leave Sema untouched.
+    // Note: ROOT::Internal::ParsingStateRAII also save and restore the state of
+    // Sema, including pending instantiation for example.  It is not clear
+    // whether we need to do so here too or whether we need to also see the
+    // "on-going" semantic information ... For now, we leave Sema untouched.
     clang::Preprocessor::CleanupAndRestoreCacheRAII fCleanupRAII;
     clang::Parser::ParserCurTokRestoreRAII fSavedCurToken;
     ParserStateRAII ResetParserState;
@@ -52,11 +52,11 @@ namespace cling {
     StartParsingRAII(LookupHelper& LH, llvm::StringRef code,
                      llvm::StringRef bufferName,
                      LookupHelper::DiagSetting diagOnOff)
-        : m_LH(LH), SaveIsRecursivelyRunning(LH.IsRecursivelyRunning)
-          , fCleanupRAII(LH.m_Parser.get()->getPreprocessor())
-          , fSavedCurToken(*LH.m_Parser.get())
-          , ResetParserState(*LH.m_Parser.get(), !LH.IsRecursivelyRunning /*skipToEOF*/)
-    {
+        : m_LH(LH), SaveIsRecursivelyRunning(LH.IsRecursivelyRunning),
+          fCleanupRAII(LH.m_Parser.get()->getPreprocessor()),
+          fSavedCurToken(*LH.m_Parser.get()),
+          ResetParserState(*LH.m_Parser.get(),
+                           !LH.IsRecursivelyRunning /*skipToEOF*/) {
       LH.IsRecursivelyRunning = true;
       prepareForParsing(code, bufferName, diagOnOff);
     }
@@ -1422,8 +1422,8 @@ namespace cling {
 
     UnqualifiedId FuncId;
     ParserStateRAII ResetParserState(P, false /*skipToEOF*/);
-    if (!ParseWithShortcuts(foundDC, Context, funcName, Interp,
-                            FuncId, diagOnOff, ResetParserState)) {
+    if (!ParseWithShortcuts(foundDC, Context, funcName, Interp, FuncId,
+                            diagOnOff, ResetParserState)) {
       // Failed parse, cleanup.
       // Destroy the scope we created first, and
       // restore the original.
