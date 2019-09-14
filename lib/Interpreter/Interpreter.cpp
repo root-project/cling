@@ -840,7 +840,9 @@ namespace cling {
     if (getSema().isModuleVisible(M))
       return true;
 
-    if (declare("#pragma clang module import " + M->Name) == kSuccess)
+    // FIXME: What about importing submodules such as std.blah. This disables
+    // this functionality.
+    if (declare("#pragma clang module import \"" + M->Name + "\"") == kSuccess)
       return true;
 
     if (complain) {
