@@ -33,11 +33,12 @@ namespace cling {
            && (SM.getFileID(SM.getIncludeLoc(FID)) == SM.getMainFileID());
   }
 
-  /// \brief Returns whether the given {Function,Tag,Var}Decl is a definition.
+  /// \brief Returns whether the given {Function,Tag,Var}Decl/TemplateDecl is a definition.
   static bool isDefinition(const Decl *D) {
     if (auto FD = dyn_cast<FunctionDecl>(D)) return FD->isThisDeclarationADefinition();
     if (auto TD = dyn_cast<TagDecl>(D)) return TD->isThisDeclarationADefinition();
     if (auto VD = dyn_cast<VarDecl>(D)) return VD->isThisDeclarationADefinition();
+    if (auto TD = dyn_cast<TemplateDecl>(D)) return isDefinition(TD->getTemplatedDecl());
     return true;
   }
 
@@ -79,14 +80,22 @@ namespace cling {
       if (isDefinition(Prev)
           && (!isDefinition(D) || !isClingShadowNamespace(Prev->getDeclContext())))
         continue;
+      // If the found declaration is a function overload, do not invalidate it.
+      // For templated functions, Sema::IsOverload() does the right thing as per
+      // C++ [temp.over.link]p4.
       if (isa<FunctionDecl>(Prev) && isa<FunctionDecl>(D)
           && m_Sema->IsOverload(cast<FunctionDecl>(D),
                                 cast<FunctionDecl>(Prev), /*IsForUsingDecl=*/false))
         continue;
+      if (isa<FunctionTemplateDecl>(Prev) && isa<FunctionTemplateDecl>(D)
+          && m_Sema->IsOverload(cast<FunctionTemplateDecl>(D)->getTemplatedDecl(),
+                                cast<FunctionTemplateDecl>(Prev)->getTemplatedDecl(),
+                                /*IsForUsingDecl=*/false))
+        continue;
 
       hideDecl(Prev);
 
-      // For unscoped enumerations, also invalidate all enumerators
+      // For unscoped enumerations, also invalidate all enumerators.
       if (EnumDecl *ED = dyn_cast<EnumDecl>(Prev)) {
         if (!ED->isTransparentContext())
           continue;
@@ -129,6 +138,8 @@ namespace cling {
       invalidatePreviousDefinitions(TD);
     else if (auto FD = dyn_cast<FunctionDecl>(D))
       invalidatePreviousDefinitions(FD);
+    else if (auto TD = dyn_cast<TemplateDecl>(D))
+      invalidatePreviousDefinitions(TD);
   }
 
   ASTTransformer::Result DefinitionShadower::Transform(Decl* D) {
@@ -138,23 +149,29 @@ namespace cling {
     if (!CO.EnableShadowing
         || D->getLexicalDeclContext() != m_TU || D->isInvalidDecl()
         || isa<UsingDirectiveDecl>(D)
-        // FIXME: NamespaceDecl/FunctionTemplateDecl require additional processing (TBD)
-        || isa<NamespaceDecl>(D) || isa<FunctionTemplateDecl>(D)
+        // FIXME: NamespaceDecl requires additional processing (TBD)
+        || isa<NamespaceDecl>(D)
         || (isa<FunctionDecl>(D) && cast<FunctionDecl>(D)->isTemplateInstantiation())
         || !typedInClingPrompt(FullSourceLoc{D->getLocation(),
                                              m_Context.getSourceManager()}))
       return Result(D, true);
 
-    NamespaceDecl *NS = NamespaceDecl::Create(m_Context, m_TU, /*inline=*/true, 
+    NamespaceDecl *NS = NamespaceDecl::Create(m_Context, m_TU, /*inline=*/true,
                                               SourceLocation(), SourceLocation(),
                                               &m_Context.Idents.get("__cling_N5"
                                                 + std::to_string(m_UniqueNameCounter++)),
                                               nullptr);
     m_TU->removeDecl(D);
+
     if (isa<CXXRecordDecl>(D->getDeclContext()))
       D->setLexicalDeclContext(NS);
     else
       D->setDeclContext(NS);
+    // An instantiated function template inherits the declaration context of the
+    // templated decl. This is used for name mangling; fix it to avoid clashing.
+    if (auto FTD = dyn_cast<FunctionTemplateDecl>(D))
+      FTD->getTemplatedDecl()->setDeclContext(NS);
+
     NS->addDecl(D);
     m_TU->addDecl(NS);
     //NS->setImplicit();
