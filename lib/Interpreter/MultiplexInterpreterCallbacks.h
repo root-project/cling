@@ -104,6 +104,12 @@ namespace cling {
         }
      }
 
+     void DefinitionShadowed(const clang::NamedDecl* D) override {
+       for (auto&& cb : m_Callbacks) {
+         cb->DefinitionShadowed(D);
+       }
+     }
+
      void DeclDeserialized(const clang::Decl* D) override {
        for (auto&& cb : m_Callbacks) {
          cb->DeclDeserialized(D);

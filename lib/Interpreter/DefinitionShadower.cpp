@@ -42,7 +42,7 @@ namespace cling {
     return true;
   }
 
-	DefinitionShadower::DefinitionShadower(Sema& S, Interpreter& I)
+  DefinitionShadower::DefinitionShadower(Sema& S, Interpreter& I)
 	  : ASTTransformer(&S), m_Interp(I), m_Context(S.getASTContext()),
 	    m_TU(S.getASTContext().getTranslationUnitDecl()),
 	    m_UniqueNameCounter(0)
@@ -67,6 +67,9 @@ namespace cling {
     clang::StoredDeclsList &SDL = (*m_TU->getLookupPtr())[D->getDeclName()];
     if (SDL.getAsVector() || SDL.getAsDecl() == D)
       SDL.remove(D);
+
+    if (InterpreterCallbacks *IC = m_Interp.getCallbacks())
+      IC->DefinitionShadowed(D);
   }
 
   void DefinitionShadower::invalidatePreviousDefinitions(NamedDecl *D) const {
@@ -124,7 +127,6 @@ namespace cling {
         auto DS = dyn_cast<DeclStmt>(I);
         if (!DS)
           continue;
-
         for (auto &J : DS->decls())
           if (auto ND = dyn_cast<NamedDecl>(J))
             invalidatePreviousDefinitions(ND);

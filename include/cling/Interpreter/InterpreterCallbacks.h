@@ -154,6 +154,11 @@ namespace cling {
     ///
     virtual void TransactionRollback(const Transaction&) {}
 
+    /// \brief This callback is invoked if a previous definition has been shadowed.
+    ///
+    ///\param[in] - The declaration that has been shadowed.
+    virtual void DefinitionShadowed(const clang::NamedDecl*) {}
+
     /// \brief Used to inform client about a new decl read by the ASTReader.
     ///
     ///\param[in] - The Decl read by the ASTReader.
