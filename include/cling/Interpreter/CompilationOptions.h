@@ -22,6 +22,11 @@ namespace cling {
     ///
     unsigned DeclarationExtraction : 1;
 
+    ///\brief Whether or not to allow global declarations to be enclosed in a
+    /// `__cling_N5xxx' inline namespace (for definition shadowing).
+    ///
+    unsigned EnableShadowing : 1;
+
     ///\brief Whether or not to print the result of the run input
     ///
     /// 0 -> Disabled; 1 -> Enabled; 2 -> Auto;
@@ -73,6 +78,7 @@ namespace cling {
 
     CompilationOptions() {
       DeclarationExtraction = 0;
+      EnableShadowing = 0;
       ValuePrinting = VPDisabled;
       ResultEvaluation = 0;
       DynamicScoping = 0;
@@ -87,6 +93,7 @@ namespace cling {
     bool operator==(CompilationOptions Other) const {
       return
         DeclarationExtraction == Other.DeclarationExtraction &&
+        EnableShadowing       == Other.EnableShadowing &&
         ValuePrinting         == Other.ValuePrinting &&
         ResultEvaluation      == Other.ResultEvaluation &&
         DynamicScoping        == Other.DynamicScoping &&
@@ -102,6 +109,7 @@ namespace cling {
     bool operator!=(CompilationOptions Other) const {
       return
         DeclarationExtraction != Other.DeclarationExtraction ||
+        EnableShadowing       != Other.EnableShadowing ||
         ValuePrinting         != Other.ValuePrinting ||
         ResultEvaluation      != Other.ResultEvaluation ||
         DynamicScoping        != Other.DynamicScoping ||

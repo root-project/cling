@@ -726,6 +726,7 @@ namespace cling {
   CompilationOptions Interpreter::makeDefaultCompilationOpts() const {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
+    CO.EnableShadowing = 0;
     CO.ValuePrinting = CompilationOptions::VPDisabled;
     CO.CodeGeneration = m_IncrParser->hasCodeGenerator();
     CO.DynamicScoping = isDynamicLookupEnabled();
@@ -779,15 +780,16 @@ namespace cling {
     if (!isRawInputEnabled())
       wrapPoint = utils::getWrapPoint(wrapReadySource, getCI()->getLangOpts());
 
+    CompilationOptions CO = makeDefaultCompilationOpts();
+    CO.EnableShadowing = !isRawInputEnabled();
+
     if (isRawInputEnabled() || wrapPoint == std::string::npos) {
-      CompilationOptions CO = makeDefaultCompilationOpts();
       CO.DeclarationExtraction = 0;
       CO.ValuePrinting = 0;
       CO.ResultEvaluation = 0;
       return DeclareInternal(input, CO, T);
     }
 
-    CompilationOptions CO = makeDefaultCompilationOpts();
     CO.DeclarationExtraction = 1;
     CO.ValuePrinting = disableValuePrinting ? CompilationOptions::VPDisabled
       : CompilationOptions::VPAuto;

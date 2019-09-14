@@ -110,6 +110,19 @@ static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
   using namespace clang;
   const QualType QTNonRef = QT.getNonReferenceType();
 
+  PrintingPolicy Policy(Ctx.getPrintingPolicy());
+  // DefinitionShadower: do not prepend `__cling_N5xxx::` to qualified names
+  Policy.SuppressUnwrittenScope = true;
+  class LocalPrintingPolicyRAII {
+  public:
+    LocalPrintingPolicyRAII(ASTContext& Ctx, PrintingPolicy& PPol)
+      : Context(Ctx), Policy(Ctx.getPrintingPolicy()) { Context.setPrintingPolicy(PPol); }
+    ~LocalPrintingPolicyRAII() { Context.setPrintingPolicy(Policy); }
+  private:
+    ASTContext& Context;
+    PrintingPolicy Policy;
+  } RAII(Ctx, Policy);
+
   std::string ValueTyStr("(");
   if (const TagType *TTy = dyn_cast<TagType>(QTNonRef))
     ValueTyStr += printDeclType(QTNonRef, TTy->getDecl());

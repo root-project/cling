@@ -113,9 +113,10 @@ namespace cling {
     llvm::SmallVector<NamedDecl*, 4> TouchedDecls;
     CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
     assert(CS && "Function body not a CompoundStmt?");
-    DeclContext* DC = FD->getLexicalDeclContext();
+    assert(utils::Analyze::IsWrapper(FD) && "FD not a Cling wrapper?");
+    // DC is the internal `__cling_N5xxx' namespace or (if decl shadowing if off), the TU
+    DeclContext* WrapperDC = FD->getDeclContext();
     Scope* TUScope = m_Sema->TUScope;
-    //assert(TUScope == m_Sema->getScopeForContext(DC) && "TU scope from DC?");
     llvm::SmallVector<Stmt*, 4> Stmts;
 
     for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
@@ -154,7 +155,8 @@ namespace cling {
           // In the particular context this definition is inside a function
           // already, but clang thinks it as a lambda, so we need to ignore the
           // check decl context vs lexical decl context.
-          DeclContext *NewDC = isa<TagDecl>(ND) ? TUScope->getEntity() : DC;
+          DeclContext *NewDC = isa<TagDecl>(ND) ? m_Context->getTranslationUnitDecl()
+		                                : WrapperDC;
           if (ND->getDeclContext() == ND->getLexicalDeclContext()
               || isa<FunctionDecl>(ND))
             ND->setLexicalDeclContext(NewDC);
@@ -176,7 +178,7 @@ namespace cling {
         }
       }
     }
-    bool hasNoErrors = !CheckForClashingNames(TouchedDecls, DC, TUScope);
+    bool hasNoErrors = !CheckForClashingNames(TouchedDecls, WrapperDC, TUScope);
     if (hasNoErrors) {
       for (size_t i = 0; i < TouchedDecls.size(); ++i) {
         // We should skip the checks for annonymous decls and we should not
@@ -184,12 +186,10 @@ namespace cling {
         if (!TouchedDecls[i]->getDeclName())
           continue;
 
-        TouchedDecls[i]->getLexicalDeclContext()->addDecl(TouchedDecls[i]);
-#if 0
+        Sema::ContextRAII RAII(*m_Sema, TouchedDecls[i]->getDeclContext());
         m_Sema->PushOnScopeChains(TouchedDecls[i],
-                                  m_Sema->getScopeForContext(DC),
+                                  TUScope,
                     /*AddCurContext*/!isa<UsingDirectiveDecl>(TouchedDecls[i]));
-#endif
 
         // The transparent DeclContexts (eg. scopeless enum) doesn't have
         // scopes. While extracting their contents we need to update the
@@ -214,8 +214,8 @@ namespace cling {
 
     if (hasNoErrors && !TouchedDecls.empty()) {
       // Put the wrapper after its declarations. (Nice when AST dumping)
-      DC->removeDecl(FD);
-      DC->addDecl(FD);
+      WrapperDC->removeDecl(FD);
+      WrapperDC->addDecl(FD);
     }
 
     return hasNoErrors ? FD : 0;
