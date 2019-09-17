@@ -54,7 +54,7 @@ namespace cling {
     Interpreter                &m_Interp;
     clang::TranslationUnitDecl *m_TU;
 
-    unsigned long long m_UniqueNameCounter;
+    unsigned long long m_UniqueNameCounter = 0;
 
     /// \brief Hide a global declaration from SemaLookup; internally used in
     /// `invalidatePreviousDefinitions()'. This directly manipulates lookup

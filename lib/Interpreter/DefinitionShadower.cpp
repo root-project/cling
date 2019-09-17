@@ -35,17 +35,20 @@ namespace cling {
 
   /// \brief Returns whether the given {Function,Tag,Var}Decl/TemplateDecl is a definition.
   static bool isDefinition(const Decl *D) {
-    if (auto FD = dyn_cast<FunctionDecl>(D)) return FD->isThisDeclarationADefinition();
-    if (auto TD = dyn_cast<TagDecl>(D)) return TD->isThisDeclarationADefinition();
-    if (auto VD = dyn_cast<VarDecl>(D)) return VD->isThisDeclarationADefinition();
-    if (auto TD = dyn_cast<TemplateDecl>(D)) return isDefinition(TD->getTemplatedDecl());
+    if (auto FD = dyn_cast<FunctionDecl>(D))
+      return FD->isThisDeclarationADefinition();
+    if (auto TD = dyn_cast<TagDecl>(D))
+      return TD->isThisDeclarationADefinition();
+    if (auto VD = dyn_cast<VarDecl>(D))
+      return VD->isThisDeclarationADefinition();
+    if (auto TD = dyn_cast<TemplateDecl>(D))
+      return isDefinition(TD->getTemplatedDecl());
     return true;
   }
 
   DefinitionShadower::DefinitionShadower(Sema& S, Interpreter& I)
-	  : ASTTransformer(&S), m_Interp(I), m_Context(S.getASTContext()),
-	    m_TU(S.getASTContext().getTranslationUnitDecl()),
-	    m_UniqueNameCounter(0)
+          : ASTTransformer(&S), m_Interp(I), m_Context(S.getASTContext()),
+            m_TU(S.getASTContext().getTranslationUnitDecl())
   {}
 
   bool DefinitionShadower::isClingShadowNamespace(const DeclContext *DC) {
@@ -121,7 +124,7 @@ namespace cling {
         return;
 
       // DeclExtractor shall move local declarations to the TU. Invalidate all
-      // previous definitions (that may clash) before it runs.  
+      // previous definitions (that may clash) before it runs.
       auto CS = dyn_cast<CompoundStmt>(D->getBody());
       for (auto &I : CS->body()) {
         auto DS = dyn_cast<DeclStmt>(I);
@@ -136,21 +139,20 @@ namespace cling {
   }
 
   void DefinitionShadower::invalidatePreviousDefinitions(Decl *D) const {
-    if (auto TD = dyn_cast<TagDecl>(D))
-      invalidatePreviousDefinitions(TD);
-    else if (auto FD = dyn_cast<FunctionDecl>(D))
+    if (auto FD = dyn_cast<FunctionDecl>(D))
       invalidatePreviousDefinitions(FD);
-    else if (auto TD = dyn_cast<TemplateDecl>(D))
-      invalidatePreviousDefinitions(TD);
+    else if (auto ND = dyn_cast<NamedDecl>(D))
+      invalidatePreviousDefinitions(ND);
   }
 
   ASTTransformer::Result DefinitionShadower::Transform(Decl* D) {
-    const CompilationOptions &CO = getTransaction()->getCompilationOpts();
+    Transaction *T = getTransaction();
+    const CompilationOptions &CO = T->getCompilationOpts();
     // Global declarations whose origin is the Cling prompt are subject to be
     // nested in a `__cling_N5' namespace.
     if (!CO.EnableShadowing
         || D->getLexicalDeclContext() != m_TU || D->isInvalidDecl()
-        || isa<UsingDirectiveDecl>(D)
+        || isa<UsingDirectiveDecl>(D) || isa<UsingDecl>(D)
         // FIXME: NamespaceDecl requires additional processing (TBD)
         || isa<NamespaceDecl>(D)
         || (isa<FunctionDecl>(D) && cast<FunctionDecl>(D)->isTemplateInstantiation())
@@ -158,13 +160,21 @@ namespace cling {
                                              m_Context.getSourceManager()}))
       return Result(D, true);
 
-    NamespaceDecl *NS = NamespaceDecl::Create(m_Context, m_TU, /*inline=*/true,
-                                              SourceLocation(), SourceLocation(),
-                                              &m_Context.Idents.get("__cling_N5"
-                                                + std::to_string(m_UniqueNameCounter++)),
-                                              nullptr);
-    m_TU->removeDecl(D);
+    // Each transaction gets at most a `__cling_N5xxx' namespace. If `T' already
+    // has one, reuse it.
+    auto NS = T->getDefinitionShadowNS();
+    if (!NS) {
+      NS = NamespaceDecl::Create(m_Context, m_TU, /*inline=*/true,
+                                 SourceLocation(), SourceLocation(),
+                                 &m_Context.Idents.get("__cling_N5"
+                                       + std::to_string(m_UniqueNameCounter++)),
+                                 nullptr);
+      //NS->setImplicit();
+      m_TU->addDecl(NS);
+      T->setDefinitionShadowNS(NS);
+    }
 
+    m_TU->removeDecl(D);
     if (isa<CXXRecordDecl>(D->getDeclContext()))
       D->setLexicalDeclContext(NS);
     else
@@ -173,17 +183,11 @@ namespace cling {
     // templated decl. This is used for name mangling; fix it to avoid clashing.
     if (auto FTD = dyn_cast<FunctionTemplateDecl>(D))
       FTD->getTemplatedDecl()->setDeclContext(NS);
-
     NS->addDecl(D);
-    m_TU->addDecl(NS);
-    //NS->setImplicit();
 
     // Invalidate previous definitions so that LookupResult::resolveKind() does not
     // mark resolution as ambiguous.
     invalidatePreviousDefinitions(D);
-
-    // Ensure `NS` is unloaded from the AST on transaction rollback, e.g. '.undo X'
-    getTransaction()->append(NS);
     return Result(D, true);
   }
 } // end namespace cling

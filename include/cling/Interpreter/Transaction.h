@@ -27,6 +27,7 @@ namespace clang {
   class FunctionDecl;
   class IdentifierInfo;
   class NamedDecl;
+  class NamespaceDecl;
   class MacroDirective;
   class Preprocessor;
   struct PrintingPolicy;
@@ -141,6 +142,11 @@ namespace cling {
     ///\brief Options controlling the transformers and code generator.
     ///
     CompilationOptions m_Opts;
+
+    ///\brief If DefinitionShadower is enabled, the `__cling_N5xxx' namespace
+    /// in which to nest global definitions (if any).
+    ///
+    clang::NamespaceDecl* m_DefinitionShadowNS = nullptr;
 
     ///\brief The llvm Module containing the information that we will revert
     ///
@@ -315,6 +321,11 @@ namespace cling {
       assert(getState() == kCollecting && "Something wrong with you?");
       m_Opts = CO;
     }
+
+    clang::NamespaceDecl* getDefinitionShadowNS() const
+    { return m_DefinitionShadowNS; }
+
+    void setDefinitionShadowNS(clang::NamespaceDecl* NS);
 
     ///\brief Returns the first declaration of the transaction.
     ///
