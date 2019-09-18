@@ -224,6 +224,7 @@ namespace cling {
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
+    m_RedefinitionAllowed(false),
     m_OptLevel(parentInterp ? parentInterp->m_OptLevel : -1) {
 
     if (handleSimpleOptions(m_Opts))
@@ -781,7 +782,7 @@ namespace cling {
       wrapPoint = utils::getWrapPoint(wrapReadySource, getCI()->getLangOpts());
 
     CompilationOptions CO = makeDefaultCompilationOpts();
-    CO.EnableShadowing = !isRawInputEnabled();
+    CO.EnableShadowing = m_RedefinitionAllowed && !isRawInputEnabled();
 
     if (isRawInputEnabled() || wrapPoint == std::string::npos) {
       CO.DeclarationExtraction = 0;

@@ -187,6 +187,10 @@ namespace cling {
     ///
     bool m_RawInputEnabled;
 
+    ///\brief Whether to allow decl redefinition, i.e. enable the DefinitionShadower.
+    ///
+    bool m_RedefinitionAllowed;
+
     ///\brief Flag toggling the optimization level to be used.
     ///
     int m_OptLevel;
@@ -666,6 +670,9 @@ namespace cling {
 
     bool isRawInputEnabled() const { return m_RawInputEnabled; }
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
+
+    bool isRedefinitionAllowed() const { return m_RedefinitionAllowed; }
+    void allowRedefinition(bool b = true) { m_RedefinitionAllowed = b; }
 
     int getDefaultOptLevel() const { return m_OptLevel; }
     void setDefaultOptLevel(int optLevel) { m_OptLevel = optLevel; }
