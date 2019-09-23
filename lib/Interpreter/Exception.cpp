@@ -99,6 +99,8 @@ namespace cling {
   void CompilationException::throwingHandler(void * /*user_data*/,
                                              const std::string& reason,
                                              bool /*gen_crash_diag*/) {
+#ifndef _MSC_VER
     throw cling::CompilationException(reason);
+#endif
   }
 } // end namespace cling
