@@ -177,7 +177,8 @@ script:
   if [ -z $TRAVIS_TAG ]; then
     TIMEOUTEXE=`which timeout`;
     if [ "x" = "x$TIMEOUTEXE" ] ; then TIMEOUTEXE=gtimeout; fi
-    $TIMEOUTEXE -s SIGTERM $TIMEOUT tools/packaging/cpt.py \
+    $TIMEOUTEXE -s SIGTERM $TIMEOUT echo yes | tools/packaging/cpt.py \
+      --check-requirements \
       --current-dev=tar \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
@@ -185,7 +186,8 @@ script:
       --with-cmake-flags="$CLING_BUILD_FLAGS" \
       --skip-cleanup
   else
-    tools/packaging/cpt.py \
+    echo yes | tools/packaging/cpt.py \
+      --check-requirements \
       --tarball-tag=$([[ $TRAVIS_TAG = cling-nightlies ]] && echo "master" || echo "$TRAVIS_TAG") \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
