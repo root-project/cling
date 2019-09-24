@@ -148,6 +148,10 @@ namespace textinput {
     fLastKey = in.GetRaw(); // rough approximation
     Editor::Command Cmd = fContext->GetKeyBinding()->ToCommand(in);
 
+    // Translate Ctrl-D to delete if input line is not empty, as GNU readline does.
+    if (!fContext->GetLine().empty() && Cmd.isCtrlD())
+      Cmd = Editor::Command(Editor::kCmdDel);
+
     if (Cmd.GetKind() == Editor::kCKControl
         && (Cmd.GetChar() == 3 || Cmd.GetChar() == 26)) {
       // If there are modifications in the queue, process them now.
@@ -158,11 +162,8 @@ namespace textinput {
       std::for_each(fContext->GetDisplays().begin(),
                     fContext->GetDisplays().end(),
                     [](Display *D) { return D->NotifyWindowChange(); });
-    } else if (Cmd.GetKind() == Editor::kCKCommand
-      && Cmd.GetCommandID() == Editor::kCmdDel &&
-      !fContext->GetLine().length()) {
-      fContext->SetLine(".q");
-      Redraw();
+    } else if (Cmd.isCtrlD()) {
+      fContext->SetLine(".q"), Redraw();
       fLastReadResult = kRREOF;
       return;
     } else {

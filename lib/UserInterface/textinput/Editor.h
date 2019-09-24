@@ -110,6 +110,8 @@ namespace textinput {
       EMoveID GetMoveID() const { return fMove;}
       char GetChar() const { return fChar;}
 
+      bool isCtrlD() const { return fKind == kCKControl
+                                    && (fChar == 'd'-0x60); }
     private:
       ECommandKind fKind; // discriminator for union
       union {

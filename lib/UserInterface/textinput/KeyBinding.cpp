@@ -48,9 +48,8 @@ namespace textinput {
     switch (In) {
       case 'a' - 0x60: return C(Editor::kMoveFront);
       case 'b' - 0x60: return C(Editor::kMoveLeft);
-      case 'c' - 0x60:
-        return C(In, Editor::kCKControl);
-      case 'd' - 0x60: return C(Editor::kCmdDel);
+      case 'c' - 0x60: return C(In, Editor::kCKControl);
+      case 'd' - 0x60: return C(In, Editor::kCKControl);
       case 'e' - 0x60: return C(Editor::kMoveEnd);
       case 'f' - 0x60: return C(Editor::kMoveRight);
       case 'g' - 0x60: return C(Editor::kMoveRight);
