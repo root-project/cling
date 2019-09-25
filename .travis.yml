@@ -52,6 +52,10 @@ matrix:
     - os: osx
       env: COMPILER=clang++ CCOMPILER=clang
       osx_image: xcode11
+      before_install:
+        - brew install swig;
+          curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci;
+          source ./macports-ci install
       compiler: clang
 
     - os: linux
@@ -77,6 +81,10 @@ matrix:
         homebrew:
           packages: gcc@7
           update: true
+      before_install:
+          - brew install swig;
+            curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci;
+            source ./macports-ci install
       compiler: gcc-7
 
     - os: linux
@@ -98,6 +106,10 @@ matrix:
     - os: osx
       env: COMPILER=clang++ CCOMPILER=clang
       osx_image: xcode9.3
+      before_install:
+        - brew install swig;
+          curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci;
+          source ./macports-ci install
       compiler: clang
 
     - os: linux
