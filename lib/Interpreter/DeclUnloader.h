@@ -54,13 +54,13 @@ namespace cling {
       : m_Sema(S), m_CodeGen(CG), m_CurTransaction(T) { }
     ~DeclUnloader();
 
-    ///\brief Interface with nice name, forwarding to Visit.
-    ///
-    ///\param[in] D - The declaration to forward.
+    ///\brief Forwards to Visit(), excluding PCH declarations (known to cause
+    /// problems).  If unsure, call this function instead of plain `Visit()'.
+    ///\param[in] D - The declaration to unload
     ///\returns true on success.
     ///
     bool UnloadDecl(clang::Decl* D) {
-      if (D->isFromASTFile())
+      if (D->isFromASTFile() || isInstantiatedInPCH(D))
         return true;
       return Visit(D);
     }
@@ -263,6 +263,8 @@ namespace cling {
     ///\param[in] Loc - The source location of the unloaded declaration.
     ///
     void CollectFilesToUncache(clang::SourceLocation Loc);
+
+    bool isInstantiatedInPCH(const clang::Decl *D);
 
     constexpr static bool isDefinition(void*) { return false; }
     static bool isDefinition(clang::TagDecl* R);

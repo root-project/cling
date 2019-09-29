@@ -85,10 +85,9 @@ namespace cling {
       const DeclGroupRef& DGR = (*I).m_DGR;
       for (DeclGroupRef::const_iterator
              Di = DGR.end() - 1, E = DGR.begin() - 1; Di != E; --Di) {
-        // We only want to revert all that came through parseForModule, and
-        // not the PCH.
-        if (!(*Di)->isFromASTFile())
-          Successful = DeclU.UnloadDecl(*Di) && Successful;
+        // UnloadDecl() shall unload decls that came through `parseForModule()',
+        // but not those that came from the PCH.
+        Successful = DeclU.UnloadDecl(*Di) && Successful;
 #ifndef NDEBUG
         assert(Successful && "Cannot handle that yet!");
 #endif
