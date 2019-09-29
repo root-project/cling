@@ -12,11 +12,14 @@
 #include "cling/Interpreter/Interpreter.h"
 cling::runtime::gCling->allowRedefinition();
 
-// DefinitionShadower should leave Using{Directive,}Decl untouched.
+// ==== Test UsingDirectiveDecl/UsingDecl
+// These should not be nested into a `__cling_N5xxx' namespace (but placed at
+// the TU scope) so that the declaration they name is globally available.
 using namespace std;
-using ::strtol;
-strtol("0x33", NULL, 0)
-//CHECK: (long) 51
+namespace NS { string baz("Cling"); }
+using NS::baz;
+baz
+//CHECK: (std::string &) "Cling"
 
 // ==== Redeclare `i' with a different type
 int i = 1
