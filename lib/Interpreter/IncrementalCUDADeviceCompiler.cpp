@@ -46,7 +46,7 @@ namespace cling {
       return;
     }
 
-    setCuArgs(CI.getLangOpts(), invocationOptions, optLevel,
+    setCuArgs(CI.getLangOpts(), invocationOptions,
               CI.getCodeGenOpts().getDebugInfo(),
               llvm::Triple(CI.getTargetOpts().Triple));
 
@@ -55,7 +55,7 @@ namespace cling {
     std::vector<std::string> argv = {
         "cling",
         m_CuArgs->cppStdVersion.c_str(),
-        m_CuArgs->optLevel.c_str(),
+        "-O" + std::to_string(optLevel),
         "-x",
         "cuda",
         "-S",
@@ -108,7 +108,6 @@ namespace cling {
   void IncrementalCUDADeviceCompiler::setCuArgs(
       const clang::LangOptions& langOpts,
       const cling::InvocationOptions& invocationOptions,
-      const int intprOptLevel,
       const clang::codegenoptions::DebugInfoKind debugInfo,
       const llvm::Triple hostTriple) {
     std::string cppStdVersion;
@@ -125,8 +124,6 @@ namespace cling {
     if (cppStdVersion.empty())
       llvm::errs()
           << "IncrementalCUDADeviceCompiler: No valid c++ standard is set.\n";
-
-    const std::string optLevel = "-O" + std::to_string(intprOptLevel);
 
     uint32_t smVersion = 20;
     if (!invocationOptions.CompilerOpts.CUDAGpuArch.empty()) {
@@ -186,13 +183,13 @@ namespace cling {
       fatbinFlags |= FatBinFlags::HostLinux;
 
     m_CuArgs.reset(new IncrementalCUDADeviceCompiler::CUDACompilerArgs(
-        cppStdVersion, optLevel, hostTriple, smVersion, fatbinFlags,
+        cppStdVersion, hostTriple, smVersion, fatbinFlags,
         invocationOptions.Verbose(), debug, additionalPtxOpt));
   }
 
   void IncrementalCUDADeviceCompiler::addHeaderSearchPathFlags(
       std::vector<std::string>& argv,
-      const std::shared_ptr<clang::HeaderSearchOptions> headerSearchOptions) {
+      const std::shared_ptr<clang::HeaderSearchOptions> &headerSearchOptions) {
     for (clang::HeaderSearchOptions::Entry e :
          headerSearchOptions->UserEntries) {
       if (e.Group == clang::frontend::IncludeDirGroup::Quoted) {
@@ -208,7 +205,7 @@ namespace cling {
   // FIXME: add the same arguments as the cling::Interpreter class -> need some
   // modifications in the cling::Transaction class to store information from the
   // device compiler
-  bool IncrementalCUDADeviceCompiler::process(const llvm::StringRef input) {
+  bool IncrementalCUDADeviceCompiler::process(const std::string& input) {
     if (!m_Init) {
       llvm::errs()
           << "Error: Initializiation of CUDA Device Code Compiler failed\n";
@@ -234,7 +231,7 @@ namespace cling {
   }
 
   // FIXME: see process()
-  bool IncrementalCUDADeviceCompiler::declare(const llvm::StringRef input) {
+  bool IncrementalCUDADeviceCompiler::declare(const std::string& input) {
     if (!m_Init) {
       llvm::errs()
           << "Error: Initializiation of CUDA Device Code Compiler failed\n";
@@ -333,8 +330,10 @@ namespace cling {
       return false;
     }
 
-    // implementation ist copied from clangJIT
-    // (https://github.com/hfinkel/llvm-project-cxxjit/)
+    // implementation is adapted from clangJIT
+    // (https://github.com/hfinkel/llvm-project-cxxjit/blob/cxxjit/clang/lib/CodeGen/JIT.cpp)
+    // void *resolveFunction(const void *NTTPValues, const char **TypeStrings,
+    //                       unsigned Idx)
 
     // The outer header of the fat binary is documented in the CUDA
     // fatbinary.h header. As mentioned there, the overall size must be a
@@ -410,7 +409,6 @@ namespace cling {
                  << "file path: " << m_FilePath << "\n"
                  << "fatbin file path: " << m_FatbinFilePath << "\n"
                  << "m_CuArgs c++ standard: " << m_CuArgs->cppStdVersion << "\n"
-                 << "m_CuArgs opt level: " << m_CuArgs->optLevel << "\n"
                  << "m_CuArgs host triple: " << m_CuArgs->hostTriple.str()
                  << "\n"
                  << "m_CuArgs Nvidia SM Version: " << m_CuArgs->smVersion

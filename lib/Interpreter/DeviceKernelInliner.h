@@ -7,8 +7,8 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-#ifndef DEVICEKERNELINLINER_H
-#define DEVICEKERNELINLINER_H
+#ifndef CLING_DEVICEKERNELINLINER_H
+#define CLING_DEVICEKERNELINLINER_H
 
 #include "ASTTransformer.h"
 
@@ -30,11 +30,11 @@ namespace cling
 class DeviceKernelInliner : public ASTTransformer
 {
 public:
-    DeviceKernelInliner ( clang::Sema* S );
+    DeviceKernelInliner(clang::Sema* S);
 
-    ASTTransformer::Result Transform ( clang::Decl * D ) override;
+    ASTTransformer::Result Transform(clang::Decl * D) override;
 };
 
 }
 
-#endif // DEVICEKERNELINLINER_H
+#endif // CLING_DEVICEKERNELINLINER_H
