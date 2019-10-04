@@ -409,9 +409,18 @@ namespace cling {
 
   Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,
                               llvm::SmallVectorImpl<llvm::StringRef>& Globals) {
-    // initialization is done by the host interpreter
-    // the host interpreter runs the code itself and at the device compiler
-    // using the declare() function
+    // The Initialize() function is called twice in CUDA mode. The first time
+    // the host interpreter is initialized and the second time the device
+    // interpreter is initialized. Without this if statement, a redefinition
+    // error would occur because process(), declare(), and parse() are designed
+    // to process the code in the host and device interpreter when called by the
+    // host interpreter instance. This means that first the Initialize()
+    // function of the host interpreter is called and the initialization code is
+    // processed in the host and device interpreter. It then calls the
+    // Initialize() function of the device interpreter and throws an error
+    // because the code was already processed in the host Initialize() function.
+    //
+    // declare() is only used to generate a valid Transaction object
     if (m_Opts.CompilerOpts.CUDADevice) {
       Transaction* T;
       declare("", &T);

@@ -1,12 +1,13 @@
 //------------------------------------------------------------------------------
 // CLING - the C++ LLVM-based InterpreterG :)
+// author: Simeon Ehrig <s.ehrig@hzdr.de>
 //
 // This file is dual-licensed: you can choose to license it under the University
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// The Test checks whether a define argument (-DTEST=3) is passed to the PTX 
+// The Test checks whether a define argument (-DTEST=3) is passed to the PTX
 // compiler. If it works, it should not throw an error.
 // RUN: cat %s | %cling -DTEST=3 -x cuda -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime

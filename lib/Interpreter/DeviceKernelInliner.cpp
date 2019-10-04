@@ -18,9 +18,8 @@ namespace cling {
 DeviceKernelInliner::DeviceKernelInliner(clang::Sema *S) : ASTTransformer(S) {}
 
 ASTTransformer::Result DeviceKernelInliner::Transform(clang::Decl *D) {
-  clang::FunctionDecl *F = llvm::dyn_cast<clang::FunctionDecl>(D);
-  if (F && F->hasAttr<clang::CUDADeviceAttr>()) {
-    if (!F->isInlineSpecified()) {
+  if (clang::FunctionDecl* F = llvm::dyn_cast<clang::FunctionDecl>(D)) {
+    if (F->hasAttr<clang::CUDADeviceAttr>()) {
       F->setInlineSpecified(true);
     }
   }

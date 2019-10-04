@@ -45,7 +45,6 @@ namespace cling {
     /// generation
     struct CUDACompilerArgs {
       const std::string cppStdVersion;
-      const std::string optLevel;
       ///\brief contains information about host architecture
       const llvm::Triple hostTriple;
       const uint32_t smVersion;
@@ -59,12 +58,11 @@ namespace cling {
       const std::vector<std::string> additionalPtxOpt;
 
       CUDACompilerArgs(const std::string cppStdVersion,
-                       const std::string optLevel,
                        const llvm::Triple hostTriple, const uint32_t smVersion,
                        const uint32_t fatbinFlags, const bool verbose,
                        const bool debug,
                        const std::vector<std::string> additionalPtxOpt)
-          : cppStdVersion(cppStdVersion), optLevel(optLevel),
+          : cppStdVersion(cppStdVersion),
             hostTriple(hostTriple), smVersion(smVersion),
             fatbinFlags(fatbinFlags), verbose(verbose), debug(debug),
             additionalPtxOpt(additionalPtxOpt) {}
@@ -98,7 +96,7 @@ namespace cling {
     /// paths.
     void addHeaderSearchPathFlags(
         std::vector<std::string>& argv,
-        const std::shared_ptr<clang::HeaderSearchOptions> headerSearchOptions);
+        const std::shared_ptr<clang::HeaderSearchOptions> &headerSearchOptions);
 
     ///\brief Compiles a PTX file from the current input. The PTX code is
     /// written to cling.ptx.
@@ -116,12 +114,10 @@ namespace cling {
     ///
     ///\param [in] langOpts - The LangOptions of the CompilerInstance.
     ///\param [in] invocationOptions - The invocationOptions of the interpreter.
-    ///\param [in] intprOptLevel - The optimization level of the interpreter.
     ///\param [in] debugInfo - The debugInfo of the CompilerInstance.
     ///\param [in] hostTriple - The llvm triple of the host system
     void setCuArgs(const clang::LangOptions& langOpts,
                    const cling::InvocationOptions& invocationOptions,
-                   const int intprOptLevel,
                    const clang::codegenoptions::DebugInfoKind debugInfo,
                    const llvm::Triple hostTriple);
 
@@ -146,7 +142,7 @@ namespace cling {
     ///
     ///\return std::unique_ptr< cling::Interpreter >&
     ///
-    std::unique_ptr<Interpreter>& getPTXInterpreter() { return m_PTX_interp; }
+    Interpreter *getPTXInterpreter() { return m_PTX_interp.get(); }
 
     ///\brief Generate an new fatbin file with the path in
     /// CudaGpuBinaryFileNames.
@@ -162,7 +158,7 @@ namespace cling {
     ///
     ///\returns true, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
-    bool process(const llvm::StringRef input);
+    bool process(const std::string& input);
 
     ///\brief Generate an new fatbin file with the path in
     /// CudaGpuBinaryFileNames from input line, which doesn't contain
@@ -176,7 +172,7 @@ namespace cling {
     ///
     ///\returns true, if all stages of generating fatbin runs right and a new
     /// fatbin file is written.
-    bool declare(const llvm::StringRef input);
+    bool declare(const std::string& input);
 
     ///\brief Parses input line, which doesn't contain statements. No code
     /// generation is done.
