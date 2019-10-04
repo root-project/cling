@@ -286,21 +286,30 @@ namespace cling {
   template <class T>
   inline std::string printValue(std::unique_ptr<T> *val)
   {
-     return "std::unique_ptr -> " + printValue(val->get());
+     auto ptr = val->get();
+     // printValue dereference its argument. use cast to 'const void**' to get
+     // the same printout as a regular pointer.
+     return "std::unique_ptr -> " + printValue((const void**)&ptr);
   }
 
   // shared_ptr<T>:
   template <class T>
   inline std::string printValue(std::shared_ptr<T> *val)
   {
-     return "std::shared_ptr -> " + printValue(val->get());
+     auto ptr = val->get();
+     // printValue dereference its argument. use cast to 'const void**' to get
+     // the same printout as a regular pointer.
+     return "std::shared_ptr -> " + printValue((const void**)&ptr);
   }
 
   // weak_ptr<T>:
   template <class T>
   inline std::string printValue(std::weak_ptr<T> *val)
   {
-     return "std::weak_ptr -> " + printValue(val->lock().get());
+     auto ptr = val->lock().get();
+     // printValue dereference its argument. use cast to 'const void**' to get
+     // the same printout as a regular pointer.
+     return "std::weak_ptr -> " + printValue((const void**)&ptr);
   }
 
 }
