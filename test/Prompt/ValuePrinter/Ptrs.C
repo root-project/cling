@@ -24,7 +24,7 @@ std::shared_ptr<int> i_sptr
 std::weak_ptr<int> i_wptr
 //CHECK: (std::weak_ptr<int> &) std::weak_ptr -> nullptr
 
-i_uptr = std::make_unique<int>(3)
+i_uptr = std::unique_ptr<int>(new int (3))
 //CHECK: (std::unique_ptr &) std::unique_ptr -> 0x{{[0-9a-f]+}} 
 
 i_uptr
