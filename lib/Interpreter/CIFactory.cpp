@@ -430,6 +430,8 @@ namespace {
       Opts.MicrosoftExt = 1;
 #ifdef _MSC_VER
       Opts.MSCompatibilityVersion = (_MSC_VER * 100000);
+      Opts.MSVCCompat = 1;
+      Opts.ThreadsafeStatics = 0; // FIXME: this is removing the thread guard around static init!
 #endif
       // Should fix http://llvm.org/bugs/show_bug.cgi?id=10528
       Opts.DelayedTemplateParsing = 1;
