@@ -557,6 +557,114 @@ namespace {
     }
   }
 
+  // Construct a column of modulemap overlay file, given System filename,
+  // Location + Filename (modulemap to be overlayed). If NotLast is true,
+  // append ",".
+  static std::string buildModuleMapOverlayEntry(const std::string& System,
+                                                const std::string& Filename,
+                                                const std::string& Location,
+                                                bool NotLast) {
+    std::string modulemap_overlay;
+    modulemap_overlay += "{ 'name': '";
+    modulemap_overlay += System;
+    modulemap_overlay += "', 'type': 'directory',\n";
+    modulemap_overlay += "'contents': [\n   { 'name': 'module.modulemap', ";
+    modulemap_overlay += "'type': 'file',\n  'external-contents': '";
+    modulemap_overlay += Location + "/" + Filename + "'\n";
+    modulemap_overlay += "}\n ]\n }";
+    if (NotLast)
+      modulemap_overlay += ",\n";
+
+    return modulemap_overlay;
+  }
+
+  static void addOverlays(clang::CompilerInvocation& Invocation,
+                          const HeaderSearch& HS, llvm::StringRef OverlayFileLoc,
+                          llvm::SmallVectorImpl<std::string> &ModuleMapFiles) {
+    assert(Invocation.getLangOpts()->Modules
+           && "Using overlay without -fmodules");
+
+    if (OverlayFileLoc.empty())
+      return;
+
+    // FIXME: Diagnose the case where we have an overlay file but we also have
+    // modulemap files at the location where we want to insert virtual
+    // modulemaps.
+
+    // Get system include paths
+    llvm::SmallVector<std::string, 3> HSearchPaths;
+    for (auto I = HS.system_dir_begin(), E = HS.system_dir_end(); I != E; ++I)
+      HSearchPaths.push_back((*I).getName());
+
+    // Virtual modulemap overlay file
+    std::string MOverlay = "{\n 'version': 0,\n 'roots': [\n";
+
+    // FIXME: Support system which doesn't have /usr/include as libc path.
+    // We need to find out how to identify the correct libc path on such
+    // system, we cannot add random include path to overlay file.
+    MOverlay += buildModuleMapOverlayEntry("/usr/include", "libc.modulemap",
+                                           OverlayFileLoc,
+                                           /*NotLast*/ true);
+
+    ModuleMapFiles.push_back("/usr/include/module.modulemap");
+
+    // Check if the system path exists. If it does and it contains
+    // "/include/c++/" (as stl path is always inferred from gcc path),
+    // append this to MOverlay.
+    // FIXME: Implement a more sophisticated way to detect stl paths
+    for (auto &&SystemPath : HSearchPaths) {
+      llvm::StringRef SystemPathSR = SystemPath;
+      if (llvm::sys::fs::is_directory(SystemPathSR) &&
+          llvm::sys::path::filename(SystemPathSR) != "backward" &&
+          SystemPathSR.contains("/include/c++/")) {
+        MOverlay += buildModuleMapOverlayEntry(SystemPath, "std.modulemap",
+                                               OverlayFileLoc,
+                                               /*NotLast*/ false);
+        ModuleMapFiles.push_back(SystemPath + "/module.modulemap");
+        break; // first one wins!
+      }
+    }
+
+    MOverlay += "]\n }\n ]\n }\n";
+
+    // Set up the virtual modulemap overlay file
+    std::unique_ptr<llvm::MemoryBuffer> Buffer =
+      llvm::MemoryBuffer::getMemBuffer(MOverlay);
+
+    IntrusiveRefCntPtr<clang::vfs::FileSystem> FS =
+      vfs::getVFSFromYAML(std::move(Buffer), nullptr, "modulemap.overlay.yaml");
+    if (!FS.get())
+      llvm::errs() << "Error in modulemap.overlay!\n";
+
+    // Load virtual modulemap overlay file
+    Invocation.addOverlay(FS);
+  }
+
+  static void setupCxxModules(clang::CompilerInvocation& Invocation,
+                              const HeaderSearch &HS,
+                              llvm::StringRef OverlayFileLoc) {
+    assert(Invocation.getLangOpts()->Modules);
+    clang::HeaderSearchOptions& HSOpts = HS.getHeaderSearchOpts();
+    // Register prebuilt module paths where we will lookup module files.
+    addPrebuiltModulePaths(HSOpts,
+                           getPathsFromEnv(getenv("CLING_PREBUILT_MODULE_PATH")));
+
+    // Register all modulemaps necessary for cling to run. If we have specified
+    // -fno-implicit-module-maps then we have to add them explicitly to the list
+    // of modulemap files to load.
+    llvm::SmallVector<std::string, 4> ModuleMaps;
+    FrontendOptions& FrontendOpts = Invocation.getFrontendOpts();
+    if (!HSOpts.ImplicitModuleMaps)
+      ModuleMaps.push_back(HSOpts.ResourceDir + "/include/module.modulemap");
+
+    addOverlays(Invocation, HS, OverlayFileLoc, ModuleMaps);
+
+    // Prepend the modulemap files we attached so that they will be loaded.
+    if (!HSOpts.ImplicitModuleMaps)
+      FrontendOpts.ModuleMapFiles.insert(FrontendOpts.ModuleMapFiles.begin(),
+                                         ModuleMaps.begin(), ModuleMaps.end());
+  }
+
 #if defined(_MSC_VER) || defined(NDEBUG)
 static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                     const std::string &Name, int Val) {
@@ -778,7 +886,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
-               const CompilerOptions& COpts, const char* LLVMDir,
+               const CompilerOptions& COpts, const std::string& ModuleMapLoc,
+               const char* LLVMDir,
                std::unique_ptr<clang::ASTConsumer> customConsumer,
                const CIFactory::ModuleFileExtensions& moduleExtensions,
                bool OnlyLex, bool HasInput = false) {
@@ -1051,16 +1160,6 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     FrontendOpts.DisableFree = true;
 
-    // With modules, we now start adding prebuilt module paths to the CI.
-    // Modules from those paths are treated like they are never out of date
-    // and we don't update them on demand.
-    // This mostly helps ROOT where we can't just recompile any out of date
-    // modules because we would miss the annotations that rootcling creates.
-    if (COpts.CxxModules) {
-      auto& HS = CI->getHeaderSearchOpts();
-      addPrebuiltModulePaths(HS, getPathsFromEnv(getenv("CLING_PREBUILT_MODULE_PATH")));
-    }
-
     // Set up compiler language and target
     if (!SetupCompiler(CI.get(), COpts, InitLang, InitTarget))
       return nullptr;
@@ -1116,6 +1215,17 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Set up the preprocessor
     CI->createPreprocessor(TU_Complete);
     Preprocessor& PP = CI->getPreprocessor();
+
+    // With modules, we now start adding prebuilt module paths to the CI.
+    // Modules from those paths are treated like they are never out of date
+    // and we don't update them on demand.
+    // This mostly helps ROOT where we can't just recompile any out of date
+    // modules because we would miss the annotations that rootcling creates.
+    if (COpts.CxxModules) {
+      setupCxxModules(Invocation, PP.getHeaderSearchInfo(), ModuleMapLoc);
+    }
+
+
     PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(),
                                            PP.getLangOpts());
 
@@ -1255,6 +1365,7 @@ CIFactory::createCI(llvm::StringRef Code, const InvocationOptions& Opts,
                     std::unique_ptr<clang::ASTConsumer> consumer,
                     const ModuleFileExtensions& moduleExtensions) {
   return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code), Opts.CompilerOpts,
+                      Opts.OverlayFile,
                       LLVMDir, std::move(consumer), moduleExtensions,
                       false /*OnlyLex*/,
                       !Opts.IsInteractive());
@@ -1264,7 +1375,8 @@ CompilerInstance* CIFactory::createCI(
     MemBufPtr_t Buffer, int argc, const char* const* argv, const char* LLVMDir,
     std::unique_ptr<clang::ASTConsumer> consumer,
     const ModuleFileExtensions& moduleExtensions, bool OnlyLex /*false*/) {
-  return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv), LLVMDir,
+  return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv),
+                      /*OverlayLoc*/"", LLVMDir,
                       std::move(consumer), moduleExtensions, OnlyLex);
 }
 

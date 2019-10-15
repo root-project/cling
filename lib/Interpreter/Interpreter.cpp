@@ -198,24 +198,6 @@ namespace cling {
     Interp.setCallbacks(std::move(AutoLoadCB));
   }
 
-  // Construct a column of modulemap overlay file, given System filename,
-  // Location + Filename (modulemap to be overlayed). If NotLast is true,
-  // append ",".
-  static std::string buildModuleMapOverlayEntry(const std::string& System,
-        const std::string& Filename, const std::string& Location, bool NotLast) {
-    std::string modulemap_overlay;
-    modulemap_overlay += "{ 'name': '";
-    modulemap_overlay += System;
-    modulemap_overlay += "', 'type': 'directory',\n";
-    modulemap_overlay += "'contents': [\n   { 'name': 'module.modulemap', ";
-    modulemap_overlay += "'type': 'file',\n  'external-contents': '";
-    modulemap_overlay += Location + "/" + Filename + "'\n";
-    modulemap_overlay += "}\n ]\n }";
-    if (NotLast)
-      modulemap_overlay += ",\n";
-    return modulemap_overlay;
-  }
-
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/,
                            const ModuleFileExtensions& moduleExtensions,
@@ -261,58 +243,6 @@ namespace cling {
     // Tell the diagnostic client that we are entering file parsing mode.
     DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
     DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
-
-    if (!m_Opts.OverlayFile.empty()) {
-      assert(getSema().getLangOpts().Modules
-             && "Using overlay without -fmodules");
-      HeaderSearch& HSearch = getCI()->getPreprocessor().getHeaderSearchInfo();
-
-      // Get system include paths
-      llvm::SmallVector<std::string, 3> HSearchPaths;
-      for (auto Path = HSearch.system_dir_begin();
-            Path < HSearch.system_dir_end(); Path++) {
-        HSearchPaths.push_back((*Path).getName());
-      }
-
-      // Virtual modulemap overlay file
-      std::string MOverlay = "{\n 'version': 0,\n 'roots': [\n";
-
-      // Check if the system path exists. If it does and it contains
-      // "/include/c++/" (as stl path is always inferred from gcc path),
-      // append this to MOverlay.
-      // FIXME: Implement a more sophisticated way to detect stl paths
-      for (auto &&SystemPath : HSearchPaths) {
-        llvm::StringRef SystemPathSR = SystemPath;
-        if (llvm::sys::fs::is_directory(SystemPathSR) &&
-            llvm::sys::path::filename(SystemPathSR) != "backward" &&
-            SystemPathSR.contains("/include/c++/")) {
-          MOverlay += buildModuleMapOverlayEntry(SystemPath, "std.modulemap",
-                m_Opts.OverlayFile, /*NotLast*/ true);
-          break; // first one wins!
-        }
-      }
-
-      // FIXME: Support system which doesn't have /usr/include as libc path.
-      // We need to find out how to identify the correct libc path on such
-      // system, we cannot add random include path to overlay file.
-      MOverlay += buildModuleMapOverlayEntry("/usr/include", "libc.modulemap",
-            m_Opts.OverlayFile, /*NotLast*/ false);
-
-      MOverlay += "]\n }\n ]\n }\n";
-
-      // Set up the virtual modulemap overlay file
-      std::unique_ptr<llvm::MemoryBuffer> Buffer =
-         llvm::MemoryBuffer::getMemBuffer(MOverlay);
-
-      IntrusiveRefCntPtr<clang::vfs::FileSystem> FS =
-         vfs::getVFSFromYAML(std::move(Buffer), nullptr, "modulemap.overlay.yaml");
-      if (!FS.get())
-        llvm::errs() << "Error in modulemap.overlay!\n";
-
-      clang::CompilerInvocation &CInvo = getCI()->getInvocation();
-      // Load virtual modulemap overlay file
-      CInvo.addOverlay(FS);
-    }
 
     bool usingCxxModules = getSema().getLangOpts().Modules;
     if (usingCxxModules) {
