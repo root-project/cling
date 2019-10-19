@@ -46,7 +46,6 @@ from email.utils import formatdate
 from datetime import tzinfo
 import time
 import multiprocessing
-import fileinput
 import stat
 import json
 
@@ -435,7 +434,6 @@ def set_vars():
 
 class Build(object):
     def __init__(self, target=None):
-        super(Build, self).__init__()
         if args.get('create_dev_env'):
             if args.get('create_dev_env') is None:
                 self.buildType = 'Debug'
@@ -471,7 +469,6 @@ def compile(arg, build_libcpp):
     travis_fold_start("compile")
     global prefix, EXTRA_CMAKE_FLAGS
     prefix = arg
-    PYTHON = sys.executable
 
     # Cleanup previous installation directory if any
     if os.path.isdir(prefix):
