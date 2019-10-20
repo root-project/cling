@@ -245,6 +245,23 @@ def fetch_llvm(llvm_revision):
     else:
         get_fresh_llvm()
 
+def fetch_llvm_binary():
+    box_draw("Fetching LLVM binary")
+    print('Current working directory is: ' + workdir + '\n')
+    if (DIST=='Ubuntu' and REV=='16.04' and is_os_64bit()):
+        download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
+        exec_subprocess_call('wget %s' % download_link, workdir)
+        exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz', workdir)
+        exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04 %s' % srcdir, workdir)
+        return True
+    if (DIST=='Ubuntu' and REV=='14.04' and is_os_64bit()):
+        download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
+        exec_subprocess_call('wget %s' % download_link, workdir)
+        exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
+        exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz %s' % srcdir, workdir)
+        return True
+    return False
+
 # TODO Refactor all fetch_ functions to use this class will remove a lot of dup
 class RepoCache(object):
     def __init__(self, url, rootDir, depth=10):
@@ -341,6 +358,48 @@ def fetch_clang(llvm_revision):
     else:
         get_fresh_clang()
 
+def fetch_clang_for_binary(llvm_revision):
+    if "github.com" in CLANG_GIT_URL and args['create_dev_env'] is None and args['use_wget']:
+        _, _, _, user, repo = CLANG_GIT_URL.split('/')
+        print('Fetching Clang ...')
+        wget(url='https://github.com/%s/%s' % (user, repo.replace('.git', '')) +
+                 '/archive/cling-patches-r%s.tar.gz' % llvm_revision,
+             out_dir=workdir)
+
+        print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+        tar = tarfile.open(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+        tar.extractall(path=os.path.join(srcdir, 'tools'))
+        tar.close()
+
+        os.rename(os.path.join(srcdir, 'tools', 'clang-cling-patches-r%s' % llvm_revision),
+                  os.path.join(srcdir, 'tools', 'clang'))
+
+        if os.path.isfile(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision)):
+            print("Remove file: " + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+            os.remove(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
+
+        print()
+        return
+
+    global clangdir
+    clangdir = os.path.join(workdir, 'clang')
+
+    def checkout():
+       if CLANG_BRANCH:
+           exec_subprocess_call('git checkout %s' % CLANG_BRANCH, clangdir)
+       else:
+           exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, clangdir)
+
+    def get_fresh_clang():
+        if CLANG_BRANCH:
+            exec_subprocess_call('git clone --depth=10 --branch %s %s'
+                                 % (CLANG_BRANCH, CLANG_GIT_URL), workdir)
+        else:
+            exec_subprocess_call('git clone %s' % CLANG_GIT_URL, workdir)
+
+        checkout()
+    
+    get_fresh_clang()
 
 def fetch_cling(arg):
     def get_fresh_cling():
@@ -386,6 +445,29 @@ def fetch_cling(arg):
     else:
         get_fresh_cling()
 
+def fetch_cling_for_binary(arg):
+
+    CLING_SRC_DIR = os.path.join(clangdir, 'tools', 'cling')
+
+    def get_fresh_cling():
+        if CLING_BRANCH:
+            exec_subprocess_call('git clone --depth=10 --branch %s %s'
+                                 % (CLING_BRANCH, CLING_GIT_URL), os.path.join(clangdir, 'tools'))
+        else:
+            exec_subprocess_call('git clone %s' % CLING_GIT_URL, os.path.join(clangdir, 'tools'))
+
+        # if arg == 'last-stable':
+        #    checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1',
+        #                                                   CLING_SRC_DIR)
+
+        if arg == 'master':
+            checkout_branch = 'master'
+        else:
+            checkout_branch = arg
+
+        exec_subprocess_call('git checkout %s' % checkout_branch, CLING_SRC_DIR)
+
+    get_fresh_cling()
 
 def set_version():
     global VERSION
@@ -431,6 +513,10 @@ def set_vars():
     print('EXEEXT: ' + EXEEXT)
     print('SHLIBEXT: ' + SHLIBEXT)
     print('CLANG_VERSION: ' + CLANG_VERSION)
+
+def allow_clang_tool():
+    with open(os.path.join(workdir, 'clang', 'tools', 'CMakeLists.txt'), 'a') as file:
+        file.writelines('add_llvm_external_project(cling)')
 
 class Build(object):
     def __init__(self, target=None):
@@ -559,6 +645,37 @@ def compile(arg, build_libcpp):
         except Exception as e:
             print(e)
     travis_fold_end("compile")
+
+def compile_for_binary(arg):
+    travis_fold_start("compile")
+    global prefix, EXTRA_CMAKE_FLAGS
+    prefix = arg
+    PYTHON = sys.executable
+
+    # Cleanup previous installation directory if any
+    if os.path.isdir(prefix):
+        print("Remove directory: " + prefix)
+        shutil.rmtree(prefix)
+
+    # Cleanup previous build directory if exists
+    if os.path.isdir(LLVM_OBJ_ROOT):
+        print("Using previous build directory: " + LLVM_OBJ_ROOT)
+    else:
+        print("Creating build directory: " + LLVM_OBJ_ROOT)
+        os.makedirs(LLVM_OBJ_ROOT)
+    
+    build = Build()
+    llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
+                  -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(srcdir, os.path.join(srcdir, 'bin', 'llvm-config'), os.path.join(srcdir, 'lib'),
+                  os.path.join(srcdir, 'include'), os.path.join(srcdir, 'bin', 'llvm-tblgen'), os.path.join(srcdir, 'bin'))
+    cmake_config_flags = (clangdir + ' -DCMAKE_BUILD_TYPE={0} -DCMAKE_INSTALL_PREFIX={1} '
+                          .format(build.buildType, TMP_PREFIX) + llvm_flags +
+                          ' -DLLVM_TARGETS_TO_BUILD=host -DCLING_CXX_HEADERS=ON -DCLING_INCLUDE_TESTS=ON' + 
+                          EXTRA_CMAKE_FLAGS)
+    box_draw('Configure Cling with CMake ' + cmake_config_flags)
+    exec_subprocess_call('%s %s' % (CMAKE, cmake_config_flags), LLVM_OBJ_ROOT, True)
+    box_draw('Building %s (using %d cores)' % ("cling", 1))
+    exec_subprocess_call('make -j%d %s' % (1, "cling"), LLVM_OBJ_ROOT)
 
 def install_prefix():
     travis_fold_start("install")
@@ -1718,6 +1835,8 @@ parser.add_argument('--with-clang-url', action='store', help='Specify an alterna
                     default='http://root.cern.ch/git/clang.git')
 parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo',
                     default='https://github.com/root-project/cling.git')
+parser.add_argument('--get-llvm', action='store', help='Download LLVM binary and use it to build Cling', 
+                    default=True)
 
 parser.add_argument('--no-test', help='Do not run test suite of Cling', action='store_true')
 parser.add_argument('--skip-cleanup', help='Do not clean up after a build', action='store_true')
@@ -2103,9 +2222,20 @@ if args['last_stable']:
     # FIXME
     assert tag[0] is "v"
     assert CLING_BRANCH == None
+
     llvm_revision = urlopen(
         'https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt' % tag
     ).readline().strip().decode('utf-8')
+
+    if args["get_llvm"]:
+        if (fetch_llvm_binary()):
+            fetch_clang_for_binary(llvm_revision)
+            print("Last stable Cling release detected: ", tag)
+            fetch_cling_for_binary(tag)
+            allow_clang_tool()
+            compile_for_binary(os.path.join(workdir,
+                                     'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            raise Exception
 
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
