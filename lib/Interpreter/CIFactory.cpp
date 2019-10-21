@@ -563,7 +563,7 @@ namespace {
   static std::string buildModuleMapOverlayEntry(const std::string& System,
                                                 const std::string& Filename,
                                                 const std::string& Location,
-                                                bool NotLast) {
+                                                bool Last = false) {
     std::string modulemap_overlay;
     modulemap_overlay += "{ 'name': '";
     modulemap_overlay += System;
@@ -572,7 +572,7 @@ namespace {
     modulemap_overlay += "'type': 'file',\n  'external-contents': '";
     modulemap_overlay += Location + "/" + Filename + "'\n";
     modulemap_overlay += "}\n ]\n }";
-    if (NotLast)
+    if (!Last)
       modulemap_overlay += ",\n";
 
     return modulemap_overlay;
@@ -603,8 +603,7 @@ namespace {
     // We need to find out how to identify the correct libc path on such
     // system, we cannot add random include path to overlay file.
     MOverlay += buildModuleMapOverlayEntry("/usr/include", "libc.modulemap",
-                                           OverlayFileLoc,
-                                           /*NotLast*/ true);
+                                           OverlayFileLoc);
 
     ModuleMapFiles.push_back("/usr/include/module.modulemap");
 
@@ -619,7 +618,7 @@ namespace {
           SystemPathSR.contains("/include/c++/")) {
         MOverlay += buildModuleMapOverlayEntry(SystemPath, "std.modulemap",
                                                OverlayFileLoc,
-                                               /*NotLast*/ false);
+                                               /*Last*/ true);
         ModuleMapFiles.push_back(SystemPath + "/module.modulemap");
         break; // first one wins!
       }
