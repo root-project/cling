@@ -557,54 +557,17 @@ namespace {
     }
   }
 
-  // Construct a column of modulemap overlay file, given System filename,
-  // Location + Filename (modulemap to be overlayed). If NotLast is true,
-  // append ",".
-  static std::string buildModuleMapOverlayEntry(const std::string& System,
-                                                const std::string& Filename,
-                                                const std::string& Location,
-                                                bool Last = false) {
-    std::string modulemap_overlay;
-    modulemap_overlay += "{ 'name': '";
-    modulemap_overlay += System;
-    modulemap_overlay += "', 'type': 'directory',\n";
-    modulemap_overlay += "'contents': [\n   { 'name': 'module.modulemap', ";
-    modulemap_overlay += "'type': 'file',\n  'external-contents': '";
-    modulemap_overlay += Location + "/" + Filename + "'\n";
-    modulemap_overlay += "}\n ]\n }";
-    if (!Last)
-      modulemap_overlay += ",\n";
-
-    return modulemap_overlay;
+  static void locateLibC(llvm::SmallVectorImpl<char>& loc) {
+    // FIXME: Support system which doesn't have /usr/include as libc path.
+    // We need to find out how to identify the correct libc path on such system.
+    llvm::sys::path::append(loc, llvm::sys::path::get_separator(),
+                            "usr", "include");
   }
 
-  static void addOverlays(clang::CompilerInvocation& Invocation,
-                          const HeaderSearch& HS, llvm::StringRef OverlayFileLoc,
-                          llvm::SmallVectorImpl<std::string> &ModuleMapFiles) {
-    assert(Invocation.getLangOpts()->Modules
-           && "Using overlay without -fmodules");
-
-    if (OverlayFileLoc.empty())
-      return;
-
-    // FIXME: Diagnose the case where we have an overlay file but we also have
-    // modulemap files at the location where we want to insert virtual
-    // modulemaps.
-
-    // Virtual modulemap overlay file
-    std::string MOverlay = "{\n 'version': 0,\n 'roots': [\n";
-
-    // FIXME: Support system which doesn't have /usr/include as libc path.
-    // We need to find out how to identify the correct libc path on such
-    // system, we cannot add random include path to overlay file.
-    MOverlay += buildModuleMapOverlayEntry("/usr/include", "libc.modulemap",
-                                           OverlayFileLoc);
-
-    ModuleMapFiles.push_back("/usr/include/module.modulemap");
-
+  static void locateLibStd(llvm::SmallString<256>& loc,
+                           const HeaderSearch& HS) {
     // Check if the system path exists. If it does and it contains
-    // "/include/c++/" (as stl path is always inferred from gcc path),
-    // append this to MOverlay.
+    // "/include/c++/" (as stl path is always inferred from gcc path).
     // FIXME: Implement a more sophisticated way to detect stl paths
     for (auto I = HS.system_dir_begin(), E = HS.system_dir_end(); I != E; ++I) {
       if (!I->getDir())
@@ -614,26 +577,95 @@ namespace {
       if (!I->getName().contains("/include/c++/"))
         continue;
 
-      MOverlay += buildModuleMapOverlayEntry(I->getName(), "std.modulemap",
+      loc = I->getName();
+      break;
+    }
+    assert(loc.size() && "Failed to locate std.");
+  }
+
+  static void collectModuleMaps(clang::CompilerInvocation& Invocation,
+                                const HeaderSearch& HS,
+                                llvm::StringRef OverlayFileLoc,
+                           llvm::SmallVectorImpl<std::string> &ModuleMapFiles) {
+    assert(Invocation.getLangOpts()->Modules &&
+           "Using overlay without -fmodules");
+
+    llvm::SmallString<128> libCLoc;
+    locateLibC(libCLoc);
+
+    llvm::SmallString<256> libStdLoc;
+    locateLibStd(libStdLoc, HS);
+
+    if (!OverlayFileLoc.empty()) {
+
+      // Construct a column of modulemap overlay file, given System filename,
+      // Location + Filename (modulemap to be overlayed). If NotLast is true,
+      // append ",".
+      auto buildModuleMapOverlayEntry = [](llvm::StringRef SystemDir,
+                                           const std::string& Filename,
+                                           const std::string& Location,
+                                           bool Last = false) {
+        llvm::SmallString<512> originalLoc(Location);
+        llvm::sys::path::append(originalLoc, Filename);
+
+        llvm::SmallString<512> systemLoc(SystemDir);
+        llvm::sys::path::append(systemLoc, "module.modulemap");
+        // Check if we have already a modulemap at the location where we will
+        // create a virtual modulemap file. This can happen when we are on
+        // linux but using libc++.
+        if (llvm::sys::fs::exists(systemLoc.str())) {
+          llvm::errs() << "Modulemap " << systemLoc.str()
+                       << " already exists! Replacing it with "
+                       << originalLoc.str();
+        }
+
+        std::string overlay;
+        overlay += "{ 'name': '" + SystemDir.str() + "', 'type': 'directory',\n";
+        overlay += "'contents': [\n   { 'name': 'module.modulemap', ";
+        overlay += "'type': 'file',\n  'external-contents': '";
+        overlay += originalLoc.str().str() + "'\n";
+        overlay += "}\n ]\n }";
+        if (!Last)
+          overlay += ",\n";
+
+        return overlay;
+      };
+
+      // Virtual modulemap overlay file
+      std::string MOverlay = "{\n 'version': 0,\n 'roots': [\n";
+
+      MOverlay += buildModuleMapOverlayEntry(libCLoc, "libc.modulemap",
+                                             OverlayFileLoc);
+      MOverlay += buildModuleMapOverlayEntry(libStdLoc, "std.modulemap",
                                              OverlayFileLoc,
                                              /*Last*/ true);
-      ModuleMapFiles.push_back(I->getName().str() + "/module.modulemap");
-      break; // first one wins!
+      MOverlay += "]\n }\n ]\n }\n";
+
+      // Set up the virtual modulemap overlay file
+      std::unique_ptr<llvm::MemoryBuffer> Buffer =
+        llvm::MemoryBuffer::getMemBuffer(MOverlay);
+
+      IntrusiveRefCntPtr<clang::vfs::FileSystem> FS =
+        vfs::getVFSFromYAML(std::move(Buffer), nullptr, "modulemap.overlay.yaml");
+      if (!FS.get())
+        llvm::errs() << "Error in modulemap.overlay!\n";
+
+      // Load virtual modulemap overlay file
+      Invocation.addOverlay(FS);
     }
 
-    MOverlay += "]\n }\n ]\n }\n";
+    clang::HeaderSearchOptions& HSOpts = HS.getHeaderSearchOpts();
+    if (HSOpts.ImplicitModuleMaps)
+      return;
 
-    // Set up the virtual modulemap overlay file
-    std::unique_ptr<llvm::MemoryBuffer> Buffer =
-      llvm::MemoryBuffer::getMemBuffer(MOverlay);
-
-    IntrusiveRefCntPtr<clang::vfs::FileSystem> FS =
-      vfs::getVFSFromYAML(std::move(Buffer), nullptr, "modulemap.overlay.yaml");
-    if (!FS.get())
-      llvm::errs() << "Error in modulemap.overlay!\n";
-
-    // Load virtual modulemap overlay file
-    Invocation.addOverlay(FS);
+    // Register the modulemap files.
+    llvm::SmallString<512> resourceDirLoc(HSOpts.ResourceDir);
+    llvm::sys::path::append(resourceDirLoc, "include", "module.modulemap");
+    ModuleMapFiles.push_back(resourceDirLoc.str().str());
+    llvm::sys::path::append(libCLoc, "module.modulemap");
+    ModuleMapFiles.push_back(libCLoc.str().str());
+    llvm::sys::path::append(libStdLoc, "module.modulemap");
+    ModuleMapFiles.push_back(libStdLoc.str().str());
   }
 
   static void setupCxxModules(clang::CompilerInvocation& Invocation,
@@ -649,16 +681,17 @@ namespace {
     // -fno-implicit-module-maps then we have to add them explicitly to the list
     // of modulemap files to load.
     llvm::SmallVector<std::string, 4> ModuleMaps;
-    FrontendOptions& FrontendOpts = Invocation.getFrontendOpts();
-    if (!HSOpts.ImplicitModuleMaps)
-      ModuleMaps.push_back(HSOpts.ResourceDir + "/include/module.modulemap");
 
-    addOverlays(Invocation, HS, OverlayFileLoc, ModuleMaps);
+    collectModuleMaps(Invocation, HS, OverlayFileLoc, ModuleMaps);
 
+    assert(HSOpts.ImplicitModuleMaps == ModuleMaps.empty() &&
+           "We must have register the modulemaps by hand!");
     // Prepend the modulemap files we attached so that they will be loaded.
-    if (!HSOpts.ImplicitModuleMaps)
+    if (!HSOpts.ImplicitModuleMaps) {
+      FrontendOptions& FrontendOpts = Invocation.getFrontendOpts();
       FrontendOpts.ModuleMapFiles.insert(FrontendOpts.ModuleMapFiles.begin(),
                                          ModuleMaps.begin(), ModuleMaps.end());
+    }
   }
 
 #if defined(_MSC_VER) || defined(NDEBUG)
