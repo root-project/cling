@@ -591,11 +591,6 @@ namespace {
     // modulemap files at the location where we want to insert virtual
     // modulemaps.
 
-    // Get system include paths
-    llvm::SmallVector<std::string, 3> HSearchPaths;
-    for (auto I = HS.system_dir_begin(), E = HS.system_dir_end(); I != E; ++I)
-      HSearchPaths.push_back((*I).getName());
-
     // Virtual modulemap overlay file
     std::string MOverlay = "{\n 'version': 0,\n 'roots': [\n";
 
@@ -611,17 +606,19 @@ namespace {
     // "/include/c++/" (as stl path is always inferred from gcc path),
     // append this to MOverlay.
     // FIXME: Implement a more sophisticated way to detect stl paths
-    for (auto &&SystemPath : HSearchPaths) {
-      llvm::StringRef SystemPathSR = SystemPath;
-      if (llvm::sys::fs::is_directory(SystemPathSR) &&
-          llvm::sys::path::filename(SystemPathSR) != "backward" &&
-          SystemPathSR.contains("/include/c++/")) {
-        MOverlay += buildModuleMapOverlayEntry(SystemPath, "std.modulemap",
-                                               OverlayFileLoc,
-                                               /*Last*/ true);
-        ModuleMapFiles.push_back(SystemPath + "/module.modulemap");
-        break; // first one wins!
-      }
+    for (auto I = HS.system_dir_begin(), E = HS.system_dir_end(); I != E; ++I) {
+      if (!I->getDir())
+        continue;
+      if (llvm::sys::path::filename(I->getName()) == "backward")
+        continue;
+      if (!I->getName().contains("/include/c++/"))
+        continue;
+
+      MOverlay += buildModuleMapOverlayEntry(I->getName(), "std.modulemap",
+                                             OverlayFileLoc,
+                                             /*Last*/ true);
+      ModuleMapFiles.push_back(I->getName().str() + "/module.modulemap");
+      break; // first one wins!
     }
 
     MOverlay += "]\n }\n ]\n }\n";
