@@ -350,7 +350,7 @@ namespace textinput {
         R.fDisplay.Extend(Range(Cursor - 1, Cursor));
         char tmp = Line.GetText()[Cursor];
         Line[Cursor] = Line[Cursor - 1];
-        Line[Cursor] = tmp;
+        Line[Cursor - 1] = tmp;
         // optional:
         ProcessMove(kMoveRight, R);
         return kPRSuccess;
