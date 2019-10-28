@@ -1,0 +1,14 @@
+module "cuda" [system] {
+  export *
+  module "cuda.h" { textual header "cuda.h" export * }
+  module "cuda_runtime.h" { header "cuda_runtime.h" export * }
+  //explicit module "curand_kernel_h" { header "curand_kernel.h" export * }
+  module "curand_poisson.h" { header "curand_poisson.h" export * }
+  module "curand.h" {
+    export *
+    //export curand_kernel_h
+    header "curand.h"
+    header "curand_poisson.h"
+    header "curand_discrete2.h"
+  }
+}

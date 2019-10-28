@@ -590,6 +590,7 @@ namespace {
 
     llvm::SmallString<256> stdIncLoc(getIncludePathForHeader(HSOpts, "cassert"));
 
+    llvm::SmallString<256> cudaIncLoc(getIncludePathForHeader(HSOpts, "cuda.h"));
     llvm::SmallString<256> clingIncLoc(getIncludePathForHeader(HSOpts,
                                         "cling/Interpreter/RuntimeUniverse.h"));
 
@@ -601,10 +602,12 @@ namespace {
                                              const std::string& Filename,
                                              const std::string& Location,
                                              std::string& overlay) {
+
       llvm::SmallString<512> originalLoc(Location);
       llvm::sys::path::append(originalLoc, Filename);
 
       assert(llvm::sys::fs::exists(originalLoc.str()) && "Must exist!");
+      assert(llvm::sys::fs::exists(SystemDir) && "Must exist!");
 
       llvm::SmallString<512> systemLoc(SystemDir);
       llvm::sys::path::append(systemLoc, "module.modulemap");
@@ -633,6 +636,9 @@ namespace {
                             MOverlay);
     maybeAppendOverlayEntry(stdIncLoc.str(), "std.modulemap", clingIncLoc.str(),
                             MOverlay);
+    if (!cudaIncLoc.empty())
+      maybeAppendOverlayEntry(cudaIncLoc.str(), "cuda.modulemap",
+                              clingIncLoc.str(), MOverlay);
 
     if (/*needsOverlay*/!MOverlay.empty()) {
       // Virtual modulemap overlay file
@@ -660,10 +666,15 @@ namespace {
     llvm::SmallString<512> resourceDirLoc(HSOpts.ResourceDir);
     llvm::sys::path::append(resourceDirLoc, "include", "module.modulemap");
     ModuleMapFiles.push_back(resourceDirLoc.str().str());
+    // FIXME: Move these calls in maybeAppendOverlayEntry.
     llvm::sys::path::append(cIncLoc, "module.modulemap");
     ModuleMapFiles.push_back(cIncLoc.str().str());
     llvm::sys::path::append(stdIncLoc, "module.modulemap");
     ModuleMapFiles.push_back(stdIncLoc.str().str());
+    if (!cudaIncLoc.empty()) {
+      llvm::sys::path::append(cudaIncLoc, "module.modulemap");
+      ModuleMapFiles.push_back(cudaIncLoc.str().str());
+    }
     llvm::sys::path::append(clingIncLoc, "module.modulemap");
     ModuleMapFiles.push_back(clingIncLoc.str().str());
   }
