@@ -646,12 +646,16 @@ namespace {
 
       MOverlay += "]\n }\n ]\n }\n";
 
+      const std::string VfsOverlayFileName = "modulemap.overlay.yaml";
+      if (HSOpts.Verbose)
+        cling::log() << VfsOverlayFileName << "\n" << MOverlay;
+
       // Set up the virtual modulemap overlay file
       std::unique_ptr<llvm::MemoryBuffer> Buffer =
         llvm::MemoryBuffer::getMemBuffer(MOverlay);
 
       IntrusiveRefCntPtr<clang::vfs::FileSystem> FS =
-        vfs::getVFSFromYAML(std::move(Buffer), nullptr, "modulemap.overlay.yaml");
+        vfs::getVFSFromYAML(std::move(Buffer), nullptr, VfsOverlayFileName);
       if (!FS.get())
         llvm::errs() << "Error in modulemap.overlay!\n";
 
