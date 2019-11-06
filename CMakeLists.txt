@@ -174,6 +174,11 @@ else()
   set(BACKEND_PACKAGE_STRING "${PACKAGE_STRING}")
 endif()
 
+if( NOT "NVPTX" IN_LIST LLVM_TARGETS_TO_BUILD)
+  message(FATAL_ERROR "NVPTX backend is not activated\n"
+    "Please enable it via -DLLVM_TARGETS_TO_BUILD=\"host;NVPTX\"")
+endif()
+
 set(CLING_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CLING_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
