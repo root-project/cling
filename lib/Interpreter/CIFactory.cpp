@@ -873,13 +873,15 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
   }
 
   static llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
-  SetupDiagnostics(DiagnosticOptions& DiagOpts) {
+  SetupDiagnostics(DiagnosticOptions& DiagOpts, std::string ExeName) {
     // The compiler invocation is the owner of the diagnostic options.
     // Everything else points to them.
     llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagIDs(new DiagnosticIDs());
 
     std::unique_ptr<TextDiagnosticPrinter>
       DiagnosticPrinter(new TextDiagnosticPrinter(cling::errs(), &DiagOpts));
+
+    DiagnosticPrinter->setPrefix(ExeName);
 
     llvm::IntrusiveRefCntPtr<DiagnosticsEngine>
       Diags(new DiagnosticsEngine(DiagIDs, &DiagOpts,
@@ -1333,7 +1335,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Everything else points to them.
     DiagnosticOptions& DiagOpts = InvocationPtr->getDiagnosticOpts();
     llvm::IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
-        SetupDiagnostics(DiagOpts);
+        SetupDiagnostics(DiagOpts, COpts.CUDADevice ? "cling-ptx" : "cling");
     if (!Diags) {
       cling::errs() << "Could not setup diagnostic engine.\n";
       return nullptr;
