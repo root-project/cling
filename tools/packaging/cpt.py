@@ -943,6 +943,7 @@ cling (%s-1) unstable; urgency=low
     f.write(template.lstrip())
     f.close()
 
+    STABLE_FLAG = '0'
     if '~dev' in VERSION:
         TAG = str(float(VERSION[:VERSION.find('~')]) - 0.1)
         template = exec_subprocess_check_output('git log v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR)
