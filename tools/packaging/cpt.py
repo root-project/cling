@@ -21,17 +21,7 @@
 
 # Python 2 and Python 3 compatibility
 from __future__ import print_function
-
 import sys
-
-if sys.version_info < (3, 0):
-    # Python 2.x
-    from urllib2 import urlopen
-    input = raw_input
-else:
-    # Python 3.x
-    from urllib.request import urlopen
-
 import argparse
 import os
 import platform
@@ -46,9 +36,15 @@ from email.utils import formatdate
 from datetime import tzinfo
 import time
 import multiprocessing
-import fileinput
 import stat
 import json
+if sys.version_info < (3, 0):
+    # Python 2.x
+    from urllib2 import urlopen
+    input = raw_input
+else:
+    # Python 3.x
+    from urllib.request import urlopen
 
 
 ###############################################################################
@@ -471,7 +467,6 @@ def compile(arg, build_libcpp):
     travis_fold_start("compile")
     global prefix, EXTRA_CMAKE_FLAGS
     prefix = arg
-    PYTHON = sys.executable
 
     # Cleanup previous installation directory if any
     if os.path.isdir(prefix):
@@ -620,7 +615,7 @@ def test_cling():
     # Run single tests on CI with this
     # runSingleTest('Prompt/ValuePrinter/Regression.C')
     # runSingleTest('Prompt/ValuePrinter')
-    build = Build('check-cling')
+    Build('check-cling')
 
 def tarball():
     box_draw("Compress binaries into a bzip2 tarball")
@@ -923,7 +918,7 @@ Comment: Cling can also be licensed under University of Illinois/NCSA
 # -*- makefile -*-
 
 %:
-	dh $@
+\tdh $@
 
 override_dh_auto_build:
 
@@ -1575,7 +1570,7 @@ def check_mac(pkg):
 def make_dmg():
     box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
-    DMG_BACKGROUND_IMG = 'graphic.png'
+    # DMG_BACKGROUND_IMG = 'graphic.png'  # TODO: use
     APP_EXE = '%s.app/Contents/MacOS/bin/%s' % (APP_NAME, APP_NAME.lower())
     VOL_NAME = "%s-%s" % (APP_NAME.lower(), VERSION)
     DMG_TMP = "%s-temp.dmg" % (VOL_NAME)
