@@ -643,7 +643,7 @@ def compile_for_binary(arg):
                   os.path.join(srcdir, 'bin'))
     cmake_config_flags = (clangdir + ' -DCMAKE_BUILD_TYPE={0} -DCMAKE_INSTALL_PREFIX={1} '
                           .format(build.buildType, TMP_PREFIX) + llvm_flags +
-                          ' -DLLVM_TARGETS_TO_BUILD=host -DCLING_CXX_HEADERS=ON -DCLING_INCLUDE_TESTS=ON' + 
+                          ' -DLLVM_TARGETS_TO_BUILD=host;NVPTX -DCLING_CXX_HEADERS=ON -DCLING_INCLUDE_TESTS=ON' +
                           EXTRA_CMAKE_FLAGS)
     box_draw('Configure Cling with CMake ' + cmake_config_flags)
     exec_subprocess_call('%s %s' % (CMAKE, cmake_config_flags), LLVM_OBJ_ROOT, True)
