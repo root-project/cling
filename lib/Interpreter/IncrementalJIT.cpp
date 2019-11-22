@@ -432,8 +432,22 @@ void IncrementalJIT::addModule(const std::shared_ptr<llvm::Module>& module) {
       /// that could not be resolved by getSymbolAddress() or by resolving
       /// possible weak symbols by the ExecutionEngine.
       /// It is used to resolve symbols during module linking.
-
+      ///
+      /// This might trigger autoloading and in turn jitting during static
+      /// initialization. That jitted initialization must be run before
+      /// NotifyLazyFunctionCreators() returns. The nested jitting must thus
+      /// finalize its memory without finalizing the current (outer) JIT
+      /// memory. To separate the outer and inner levels' memory, create a
+      /// dedicated ExeMM (with its CodeMem etc) and unfinalizedSection (used
+      /// to book-keep emitted sections in the IncrementalJIT). (ROOT-10426)
+      decltype(m_ExeMM) outerExeMM;
+      swap(outerExeMM, m_ExeMM);
+      m_ExeMM = std::make_shared<ClingMemoryManager>(m_Parent);
+      decltype(m_UnfinalizedSections) outerUnfinalizedSections;
+      swap(m_UnfinalizedSections, outerUnfinalizedSections);
       uint64_t addr = uint64_t(getParent().NotifyLazyFunctionCreators(*NameNP));
+      swap(outerExeMM, m_ExeMM);
+      swap(m_UnfinalizedSections, outerUnfinalizedSections);
       return JITSymbol(addr, llvm::JITSymbolFlags::Weak);
     });
 
