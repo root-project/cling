@@ -246,28 +246,46 @@ def fetch_llvm(llvm_revision):
         get_fresh_llvm()
 
 def is_llvm_binary_compatible():
-    if (DIST == 'Ubuntu' and REV == '16.04' and is_os_64bit()):
-        return True
-    elif (DIST == 'Ubuntu' and REV == '14.04' and is_os_64bit()):
+    if DIST == 'Ubuntu':
         return True
     # FIXME: Add macOS, Fedora and SUSE support
     return False
 
-def download_llvm_binary():
+
+def download_llvm_binary(tar_required):
+    global llvm_flags
     box_draw("Fetching LLVM binary")
     print('Current working directory is: ' + workdir + '\n')
-    if (DIST=='Ubuntu' and REV=='16.04' and is_os_64bit()):
-        download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
-        exec_subprocess_call('wget %s' % download_link, workdir)
-        exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz', workdir)
-        exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04 %s' % srcdir, workdir)
+    if DIST=="Ubuntu":
         subprocess.call("sudo -H pip install lit", shell=True)
-    elif (DIST=='Ubuntu' and REV=='14.04' and is_os_64bit()):
-        download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
-        exec_subprocess_call('wget %s' % download_link, workdir)
-        exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
-        exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz %s' % srcdir, workdir)
-        subprocess.call("sudo -H pip install lit", shell=True)
+        llvm_config_path = exec_subprocess_check_output("which llvm-config-{0}".format(llvm_vers), workdir)
+        if llvm_config_path != '' and tar_required is False:
+            llvm_dir = os.path.join("/usr", "lib", "llvm-"+llvm_vers)
+            if llvm_config_path[-1:] == "\n":
+                llvm_config_path = llvm_config_path[:-1]
+            llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
+                          -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
+                           os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
+                           os.path.join(llvm_dir, 'bin'))
+        else:
+            tar_required = True
+    if tar_required:
+        llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
+                      -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(srcdir, os.path.join(srcdir, 'bin', 'llvm-config'),
+                       os.path.join(srcdir, 'lib'), os.path.join(srcdir, 'include'), os.path.join(srcdir, 'bin', 'llvm-tblgen'),
+                       os.path.join(srcdir, 'bin'))
+        if DIST=="Ubuntu" and REV=='16.04' and is_os_64bit():
+            download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
+            exec_subprocess_call('wget %s' % download_link, workdir)
+            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz', workdir)
+            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04 %s' % srcdir, workdir)
+        elif DIST=="Ubuntu" and REV=='14.04' and is_os_64bit():
+            download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
+            exec_subprocess_call('wget %s' % download_link, workdir)
+            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
+            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz %s' % srcdir, workdir)
+        else:
+            raise Exception("Building clang using LLVM binary not possible")
     # FIXME: Add macOS, Fedora and SUSE support
 
 # TODO Refactor all fetch_ functions to use this class will remove a lot of dup
@@ -637,10 +655,6 @@ def compile_for_binary(arg):
         os.makedirs(LLVM_OBJ_ROOT)
     
     build = Build()
-    llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
-                  -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(srcdir, os.path.join(srcdir, 'bin', 'llvm-config'),
-                  os.path.join(srcdir, 'lib'), os.path.join(srcdir, 'include'), os.path.join(srcdir, 'bin', 'llvm-tblgen'),
-                  os.path.join(srcdir, 'bin'))
     cmake_config_flags = (clangdir + ' -DCMAKE_BUILD_TYPE={0} -DCMAKE_INSTALL_PREFIX={1} '
                           .format(build.buildType, TMP_PREFIX) + llvm_flags +
                           ' -DLLVM_TARGETS_TO_BUILD=host;NVPTX -DCLING_CXX_HEADERS=ON -DCLING_INCLUDE_TESTS=ON' +
@@ -879,35 +893,55 @@ def check_ubuntu(pkg):
             # Python 3.x
             print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
             return True
-
+    elif pkg == "gcc":
+        if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
+            print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
+            return False
+        else:
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+    elif pkg == "g++":
+        if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
+            print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
+            return False
+        else:
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+    elif pkg == "python-pip":
+        if exec_subprocess_check_output('pip --version', workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
+    elif pkg == "svn":
+        if exec_subprocess_check_output('which svn', workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
+    elif pkg == "lit":
+        if exec_subprocess_check_output('which lit', workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
+    elif pkg == 'llvm-'+llvm_vers+'-dev':
+        if exec_subprocess_check_output('which llvm-config-{0}'.format(llvm_vers), workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
     elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'" % (pkg),
                                       '/').strip() == '0':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
         return False
     else:
-        if pkg == "gcc":
-            if float(exec_subprocess_check_output('gcc -dumpversion', '/')[:3].strip()) <= 4.7:
-                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
-                return False
-            else:
-                print(pkg.ljust(20) + '[OK]'.ljust(30))
-                return True
-        elif pkg == "g++":
-            if float(exec_subprocess_check_output('g++ -dumpversion', '/')[:3].strip()) <= 4.7:
-                print(pkg.ljust(20) + '[UNSUPPORTED VERSION (<4.7)]'.ljust(30))
-                return False
-            else:
-                print(pkg.ljust(20) + '[OK]'.ljust(30))
-                return True
-        elif pkg == "pip":
-            try:
-                subprocess.run("pip --version", shell=True)
-            except:
-                return False
-            return True
-        else:
-            print(pkg.ljust(20) + '[OK]'.ljust(30))
-            return True
+        print(pkg.ljust(20) + '[OK]'.ljust(30))
+        return True
 
 
 def tarball_deb():
@@ -1958,6 +1992,10 @@ CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
 CPT_SRC_DIR = os.path.join(CLING_SRC_DIR, 'tools', 'packaging')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
+llvm_revision = urlopen(
+                "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
+                'utf-8')
+llvm_vers = "{0}.{1}".format(llvm_revision[-2], llvm_revision[-1])
 LLVM_GIT_URL = ""
 CLANG_GIT_URL = args['with_clang_url']
 CLING_GIT_URL = args['with_cling_url']
@@ -2029,16 +2067,25 @@ else:
     LLVM_GIT_URL = "http://root.cern.ch/git/llvm.git"
 
 if args['check_requirements']:
+    llvm_binary_name = ""
+    tar_required = False
     box_draw('Check availability of required softwares')
     if DIST == 'Ubuntu':
         install_line = ""
-        prerequisite = ['git', 'cmake', 'gcc', 'g++', 'debhelper', 'devscripts', 'gnupg', 'python', 'SSL', 'python-pip', 'svn']
+        prerequisite = ['git', 'cmake', 'gcc', 'g++', 'debhelper', 'devscripts', 'gnupg', 'python', 'SSL']
+        if is_llvm_binary_compatible():
+            prerequisite.extend(['svn', 'zlib*'])
+            if check_ubuntu('lit') is False:
+                prerequisite.extend(['python-pip'])
+            if check_ubuntu('llvm-'+llvm_vers+'-dev') is False:
+                llvm_binary_name = 'llvm-{0}-dev'.format(llvm_vers)
         for pkg in prerequisite:
             if check_ubuntu(pkg) is False:
                 install_line += pkg + ' '
         yes = {'yes', 'y', 'ye', ''}
         no = {'no', 'n'}
 
+        no_install = False
         if install_line != '':
             choice = custom_input('''
     CPT will now attempt to update/install the requisite packages automatically.
@@ -2061,12 +2108,22 @@ if args['check_requirements']:
                     print('''
     Install/update the required packages by:
     sudo apt-get update
-    sudo apt-get install git cmake gcc g++ debhelper devscripts gnupg python python-pip svn
-    ''')
+    sudo apt-get install {0} {1}
+    '''.format(install_line, llvm_binary_name))
+                    no_install = True
                     break
                 else:
                     choice = custom_input("Please respond with 'yes' or 'no': ", args['y'])
                     continue
+        if no_install is False and llvm_binary_name != "":
+            try:
+                subprocess.Popen(['sudo apt-get install llvm-{0}-dev'.format(llvm_vers)],
+                                 shell=True,
+                                 stdin=subprocess.PIPE,
+                                 stdout=None,
+                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+            except:
+                tar_required = True
 
     elif OS == 'Windows':
         check_win('git')
@@ -2149,7 +2206,7 @@ Refer to the documentation of CPT for information on setting up your Windows env
                     continue
 
     if is_llvm_binary_compatible():
-        download_llvm_binary()
+        download_llvm_binary(tar_required)
 
 if args['current_dev']:
     travis_fold_start("git-clone")
