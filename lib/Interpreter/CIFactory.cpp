@@ -561,41 +561,32 @@ namespace {
     }
   }
 
-  static std::string getIncludePathForHeader(clang::HeaderSearchOptions& Opts,
+  static std::string getIncludePathForHeader(const clang::HeaderSearch& HS,
                                              llvm::StringRef header) {
-    for (unsigned i = 0, e = Opts.UserEntries.size(); i != e; ++i) {
-      // FIXME: We should compare against the -cxx-isystem, however, that can
-      // only happen if we go through the clang toolchain infrastructure.
-      // Currently we ask the system compiler about the include paths and we
-      // do not have information what is -cxx-isystem and -c-isystem...
-      // if (Opts.UserEntries[i].Group != Group)
-      //   continue;
-
-      llvm::SmallString<512> headerPath(Opts.UserEntries[i].Path);
+    for (auto Dir = HS.search_dir_begin(), E = HS.search_dir_end();
+         Dir != E; ++Dir) {
+      llvm::SmallString<512> headerPath(Dir->getName());
       llvm::sys::path::append(headerPath, header);
       if (llvm::sys::fs::exists(headerPath.str()))
-         return Opts.UserEntries[i].Path;
+        return Dir->getName().str();
     }
     return {};
   }
 
   static void collectModuleMaps(clang::CompilerInstance& CI,
                            llvm::SmallVectorImpl<std::string> &ModuleMapFiles) {
-    assert(CI.getLangOpts().Modules &&
-           "Using overlay without -fmodules");
+    assert(CI.getLangOpts().Modules && "Using overlay without -fmodules");
 
+    const clang::HeaderSearch& HS = CI.getPreprocessor().getHeaderSearchInfo();
     clang::HeaderSearchOptions& HSOpts = CI.getHeaderSearchOpts();
 
-    // FIXME: Implement CLING_C_INCL similar to CLING_CXX_INCL and then we can
-    // be more independent on the location of libc.
-    //llvm::SmallString<128> libCLoc(getIncludePathForHeader(HSOpts, "assert.h"));
+    // We can't use "assert.h" because it is defined in the resource dir, too.
+    llvm::SmallString<128> cIncLoc(getIncludePathForHeader(HS, "time.h"));
 
-    llvm::SmallString<128> cIncLoc("/usr/include");
+    llvm::SmallString<256> stdIncLoc(getIncludePathForHeader(HS, "cassert"));
 
-    llvm::SmallString<256> stdIncLoc(getIncludePathForHeader(HSOpts, "cassert"));
-
-    llvm::SmallString<256> cudaIncLoc(getIncludePathForHeader(HSOpts, "cuda.h"));
-    llvm::SmallString<256> clingIncLoc(getIncludePathForHeader(HSOpts,
+    llvm::SmallString<256> cudaIncLoc(getIncludePathForHeader(HS, "cuda.h"));
+    llvm::SmallString<256> clingIncLoc(getIncludePathForHeader(HS,
                                         "cling/Interpreter/RuntimeUniverse.h"));
 
     // Re-add cling as the modulemap are in cling/*modulemap
@@ -1128,15 +1119,6 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return CI.release();
     }
 
-    // With modules, we now start adding prebuilt module paths to the CI.
-    // Modules from those paths are treated like they are never out of date
-    // and we don't update them on demand.
-    // This mostly helps ROOT where we can't just recompile any out of date
-    // modules because we would miss the annotations that rootcling creates.
-    if (COpts.CxxModules) {
-      setupCxxModules(*CI);
-    }
-
     CI->createFileManager();
     clang::CompilerInvocation& Invocation = CI->getInvocation();
     std::string& PCHFile = Invocation.getPreprocessorOpts().ImplicitPCHInclude;
@@ -1269,6 +1251,16 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
     // Set up the preprocessor
     CI->createPreprocessor(TU_Complete);
+
+    // With modules, we now start adding prebuilt module paths to the CI.
+    // Modules from those paths are treated like they are never out of date
+    // and we don't update them on demand.
+    // This mostly helps ROOT where we can't just recompile any out of date
+    // modules because we would miss the annotations that rootcling creates.
+    if (COpts.CxxModules) {
+      setupCxxModules(*CI);
+    }
+
     Preprocessor& PP = CI->getPreprocessor();
 
     PP.getBuiltinInfo().initializeBuiltins(PP.getIdentifierTable(),
