@@ -6,19 +6,8 @@ addons: &addons
   apt:
     packages: coreutils
 
-cache:
-  apt: true
-  ccache: true
-  directories:
-    - $HOME/.ccache
-    - $CLING_BUILD_DEPS
-
 env:
   global:
-    - USE_CCACHE=1
-    - CCACHE_COMPRESS=1
-    - CCACHE_MAXSIZE=500M
-    - CCACHE_CPP2=1
     - TIMEOUT=0
     - secure: "MWXnhg939UrLRP7Jg5xLFxxquIgale0crNyP9Y2L2Pg+zINTgSExyykP/+s4uV1mj44uYLr4oEU7Ue72w3yGptanau90BUO+ZN5clC7QEUWsfJUDBc/ytilp+xhNRNLA+MJvaYLNOyXJOf9JKf/IzgRAR0m0PGAl9pMRG2vP5Sg="
 
@@ -122,9 +111,7 @@ install:
   export CLING_BUILD_DEPS="$CLING_USER_ROOT/deps"
   export CLING_LOCAL_BIN="$CLING_USER_ROOT/bin"
   if [ $TRAVIS_OS_NAME == 'osx' ]; then
-    brew install ccache python coreutils
-
-    PATH="/usr/local/opt/ccache/libexec:$PATH"
+    brew install python coreutils
   fi
 
   if [ "$COMPILER" == "g++-7" ]; then
@@ -141,14 +128,10 @@ install:
   # Containers need to timeout before the buildscript exits
   TIMEOUT='37m' # Any more and Travis might cancel
 
-  # If we timeout, objects can be corrupted in the cache, causing link errors
-  # Turn this on to get the mapping to the cache.o to delete
-  # export CCACHE_LOGFILE="$CLING_USER_ROOT/ccache.log"
-
 before_script:
  - cmake --version
- - export CXX="ccache $COMPILER"
- - export CC="ccache $CCOMPILER"
+ - export CXX="$COMPILER"
+ - export CC="$CCOMPILER"
  - |
    # If we are running our nightly cron job, sync.
    if [ -n "$NIGHTLY_CRON_SYNC" ] && [ "$TRAVIS_EVENT_TYPE" = "cron" ] \
@@ -201,9 +184,6 @@ script:
 
   RESULT="$?"
   echo "Build Result: $RESULT"
-  echo "travis_fold:""start:ccache-s"
-  ccache -s
-  echo "travis_fold:""end:ccache-s"
   if [ $RESULT -ne 124 ]; then
     return $RESULT
   fi
@@ -251,13 +231,6 @@ deploy:
 
 after_failure:
 - |
-  if [ -n "$CCACHE_LOGFILE" ]; then
-    echo "travis_fold:""start:ccache_log"
-    echo "ccache log stored to:"
-    cat "$CCACHE_LOGFILE" | curl -sT - chunk.io
-    echo "travis_fold:""end:ccache_log"
-  fi
-- |
   if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then  
     echo "travis_fold:""start:env_dump"
     echo "Dumping env."
@@ -294,12 +267,4 @@ after_failure:
     COMPDATA_CXX=$(cat $COMPILE_DATA_H | cut -c 18- | sed "s,\",,g")
     eval echo | LC_ALL=C $COMPDATA_CXX -xc++ -E -v -
     echo "travis_fold:""end:clingcompiledata_dump"
-  fi
-- |
-  if [ "$CLING_BUILD_TIMEOUT" != "1" ]; then
-    echo "travis_fold:""start:ccache_stats"
-    echo "Dumping `which ccache`"
-    ccache -s
-    ls -la /usr/lib/ccache/ || ls -la /usr/local/opt/ccache/libexec
-    echo "travis_fold:""end:ccache_stats"
   fi
