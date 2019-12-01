@@ -487,12 +487,8 @@ def set_vars():
     print('SHLIBEXT: ' + SHLIBEXT)
     print('CLANG_VERSION: ' + CLANG_VERSION)
 
-def set_vars_for_binary():
-    global EXEEXT
-    global SHLIBEXT
-    global CLANG_VERSION
+def set_vars_for_lit():
     global tar_required
-    box_draw("Set variables")
 
     with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
         lines = file.readlines()
@@ -512,9 +508,6 @@ def set_vars_for_binary():
                 break
         with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
             file.writelines(lines)
-
-    print('EXEEXT: ' + EXEEXT)
-    print('SHLIBEXT: ' + SHLIBEXT)
 
 def allow_clang_tool():
     with open(os.path.join(workdir, 'clang', 'tools', 'CMakeLists.txt'), 'a') as file:
@@ -720,7 +713,7 @@ def install_prefix_for_binary():
     travis_fold_start("install")
     global prefix
     CPT_SRC_DIR = os.path.join(clangdir, 'tools', 'cling', 'tools', 'packaging')
-    set_vars_for_binary()
+    set_vars_for_lit()
 
     box_draw("Filtering Cling's libraries and binaries")
 
