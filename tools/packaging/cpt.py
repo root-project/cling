@@ -252,8 +252,8 @@ def is_llvm_binary_compatible():
     return False
 
 
-def download_llvm_binary(tar_required):
-    global llvm_flags
+def download_llvm_binary():
+    global llvm_flags, tar_required
     box_draw("Fetching LLVM binary")
     print('Current working directory is: ' + workdir + '\n')
     if DIST=="Ubuntu":
@@ -491,6 +491,7 @@ def set_vars_for_binary():
     global EXEEXT
     global SHLIBEXT
     global CLANG_VERSION
+    global tar_required
     box_draw("Set variables")
 
     with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
@@ -501,6 +502,16 @@ def set_vars_for_binary():
             break
     with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
         file.writelines(lines)
+
+    if tar_required:
+        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
+            lines = file.readlines()
+        for i in range(len(lines)):
+            if lines[i].startswith("config.llvm_src_root ="):
+                lines[i] = 'config.llvm_src_root = "{0}"\n'.format(srcdir)
+                break
+        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
+            file.writelines(lines)
 
     print('EXEEXT: ' + EXEEXT)
     print('SHLIBEXT: ' + SHLIBEXT)
@@ -1992,6 +2003,7 @@ CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
 CPT_SRC_DIR = os.path.join(CLING_SRC_DIR, 'tools', 'packaging')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
+tar_required = False
 llvm_revision = urlopen(
                 "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
                 'utf-8')
@@ -2067,8 +2079,8 @@ else:
     LLVM_GIT_URL = "http://root.cern.ch/git/llvm.git"
 
 if args['check_requirements']:
+    global tar_required
     llvm_binary_name = ""
-    tar_required = False
     box_draw('Check availability of required softwares')
     if DIST == 'Ubuntu':
         install_line = ""
@@ -2206,7 +2218,7 @@ Refer to the documentation of CPT for information on setting up your Windows env
                     continue
 
     if is_llvm_binary_compatible():
-        download_llvm_binary(tar_required)
+        download_llvm_binary()
 
 if args['current_dev']:
     travis_fold_start("git-clone")
