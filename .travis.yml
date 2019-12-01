@@ -144,7 +144,7 @@ install:
   echo "travis_fold:""end:install"
 
   # Containers need to timeout before the buildscript exits
-  TIMEOUT='37m' # Any more and Travis might cancel
+  TIMEOUT='47m' # Any more and Travis might cancel
 
   # If we timeout, objects can be corrupted in the cache, causing link errors
   # Turn this on to get the mapping to the cache.o to delete
