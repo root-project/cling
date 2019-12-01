@@ -44,11 +44,6 @@ matrix:
     # There seems to be a hard limit to how many machines a Travis build will
     # run across all platforms. By interleaving OS X, the hope is to get in the
     # queue faster while not blocking Linux builds from occuring.
-    - os: linux
-      dist: trusty
-      env: COMPILER=g++-4.8 CCOMPILER=gcc-4.8 NIGHTLY_CRON_SYNC=1
-      compiler: gcc-4.8
-
     - os: osx
       env: COMPILER=clang++ CCOMPILER=clang
       osx_image: xcode11
@@ -58,7 +53,7 @@ matrix:
       compiler: clang
 
     - os: linux
-      env: COMPILER=g++-5 CCOMPILER=gcc-5
+      env: COMPILER=g++-5 CCOMPILER=gcc-5 NIGHTLY_CRON_SYNC=1
       addons:
         apt:
           sources: ubuntu-toolchain-r-test
