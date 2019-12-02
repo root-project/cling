@@ -248,7 +248,8 @@ def fetch_llvm(llvm_revision):
 def is_llvm_binary_compatible():
     if DIST == 'Ubuntu':
         return True
-    # FIXME: Add macOS, Fedora and SUSE support
+    if DIST == 'MacOSX':
+        return True
     return False
 
 
@@ -269,6 +270,16 @@ def download_llvm_binary():
                            os.path.join(llvm_dir, 'bin'))
         else:
             tar_required = True
+    if DIST == 'MacOSX':
+        subprocess.call("sudo -H pip install lit", shell=True)
+        llvm_dir = os.path.join("/opt", "local", "libexec", "llvm-"+llvm_vers)
+        llvm_config_path = os.path.join(llvm_dir, "bin", "llvm-config")
+        if llvm_config_path[-1:] == "\n":
+            llvm_config_path = llvm_config_path[:-1]
+        llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
+                      -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
+                      os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
+                      os.path.join(llvm_dir, 'bin'))
     if tar_required:
         llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
                       -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(srcdir, os.path.join(srcdir, 'bin', 'llvm-config'),
@@ -286,7 +297,7 @@ def download_llvm_binary():
             exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz %s' % srcdir, workdir)
         else:
             raise Exception("Building clang using LLVM binary not possible")
-    # FIXME: Add macOS, Fedora and SUSE support
+    # FIXME: Add Fedora and SUSE support
 
 # TODO Refactor all fetch_ functions to use this class will remove a lot of dup
 class RepoCache(object):
@@ -1731,7 +1742,27 @@ def check_mac(pkg):
             # Python 3.x
             print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
             return True
-
+    elif pkg == "python-pip":
+        if exec_subprocess_check_output('pip --version', workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
+    elif pkg == "svn":
+        if exec_subprocess_check_output('which svn', workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
+    elif pkg == "lit":
+        if exec_subprocess_check_output('which lit', workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
     elif exec_subprocess_check_output("type -p %s" % (pkg), '/').strip() == '':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
         return False
@@ -2177,14 +2208,18 @@ Refer to the documentation of CPT for information on setting up your Windows env
                     continue
 
     if DIST == 'MacOSX':
-        prerequisite = ['git', 'cmake', 'clang', 'clang++', 'python', 'SSL']
+        prerequisite = ['git', 'cmake', 'clang', 'clang++', 'python', 'SSL', 'svn', 'zlib*']
         install_line = ''
+        if check_mac('lit') is False:
+            prerequisite.extend(['python-pip'])
+        llvm_binary_name = 'llvm-' + llvm_vers
         for pkg in prerequisite:
             if check_mac(pkg) is False:
                 install_line += pkg + ' '
         yes = {'yes', 'y', 'ye', ''}
         no = {'no', 'n'}
 
+        no_install = False
         if install_line != '':
             choice = custom_input('''
     CPT will now attempt to update/install the requisite packages automatically. Make sure you have MacPorts installed.
@@ -2207,12 +2242,19 @@ Refer to the documentation of CPT for information on setting up your Windows env
                     print('''
     Install/update the required packages by:
     sudo port -v selfupdate
-    sudo port install git clang++ python
-    ''')
+    sudo port install {0} {1}
+    '''.format(install_line, llvm_binary_name))
+                    no_install = True
                     break
                 else:
                     choice = custom_input("Please respond with 'yes' or 'no': ", args['y'])
                     continue
+        if no_install is False and llvm_binary_name != "":
+            subprocess.Popen(['sudo port install {0}'.format(llvm_binary_name)],
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=None,
+                             stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
 
     if is_llvm_binary_compatible():
         download_llvm_binary()
@@ -2293,6 +2335,40 @@ if args['current_dev']:
                 test_cling()
             tarball_deb()
             debianize()
+            cleanup()
+            exit()
+        elif args['current_dev'] == 'dmg' or (args['current_dev'] == 'pkg' and OS == 'Darwin'):
+            fetch_clang(llvm_revision)
+
+            if TRAVIS_BUILD_DIR or APPVEYOR_BUILD_FOLDER:
+                ciCloned = TRAVIS_BUILD_DIR if TRAVIS_BUILD_DIR else APPVEYOR_BUILD_FOLDER
+                clingDir = os.path.join(clangdir, 'tools', 'cling')
+                if TRAVIS_BUILD_DIR:
+                    os.rename(ciCloned, clingDir)
+                    TRAVIS_BUILD_DIR = clingDir
+                else:
+                    # Cannot move the directory: it is being used by another process
+                    os.mkdir(clingDir)
+                    for f in os.listdir(APPVEYOR_BUILD_FOLDER):
+                        shutil.move(os.path.join(APPVEYOR_BUILD_FOLDER, f), clingDir)
+                    APPVEYOR_BUILD_FOLDER = clingDir
+
+                # Check validity and show some info
+                box_draw("Using CI clone, last 5 commits:")
+                exec_subprocess_call('git log -5 --pretty="format:%h <%ae> %<(60,trunc)%s"', CLING_SRC_DIR)
+                print('\n')
+            else:
+                fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
+            travis_fold_end("git-clone")
+
+            allow_clang_tool()
+            set_version()
+            compile_for_binary(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            install_prefix_for_binary()
+            if not args['no_test']:
+                build_filecheck()
+                test_cling()
+            make_dmg()
             cleanup()
             exit()
 
@@ -2437,6 +2513,20 @@ if args['last_stable']:
                 test_cling()
             tarball_deb()
             debianize()
+            cleanup()
+            exit()
+        elif args['current_dev'] == 'dmg' or (args['current_dev'] == 'pkg' and OS == 'Darwin'):
+            fetch_clang(llvm_revision)
+            print("Last stable Cling release detected: ", tag)
+            fetch_cling(tag)
+            allow_clang_tool()
+            set_version()
+            compile_for_binary(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
+            install_prefix_for_binary()
+            if not args['no_test']:
+                build_filecheck()
+                test_cling()
+            make_dmg()
             cleanup()
             exit()
 
