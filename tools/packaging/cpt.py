@@ -520,6 +520,17 @@ def set_vars_for_lit():
         with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
             file.writelines(lines)
 
+    if DIST == 'MacOSX':
+        llvm_dir = os.path.join("/opt", "local", "libexec", "llvm-" + llvm_vers)
+        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
+            lines = file.readlines()
+        for i in range(len(lines)):
+            if lines[i].startswith("config.llvm_src_root ="):
+                lines[i] = 'config.llvm_src_root = "{0}"\n'.format(llvm_dir)
+                break
+        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
+            file.writelines(lines)
+
 def allow_clang_tool():
     with open(os.path.join(workdir, 'clang', 'tools', 'CMakeLists.txt'), 'a') as file:
         file.writelines('add_llvm_external_project(cling)')
