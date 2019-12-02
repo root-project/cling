@@ -126,7 +126,7 @@ install:
   echo "travis_fold:""end:install"
 
   # Containers need to timeout before the buildscript exits
-  TIMEOUT='37m' # Any more and Travis might cancel
+  TIMEOUT='50m' # Any more and Travis might cancel
 
 before_script:
  - cmake --version
