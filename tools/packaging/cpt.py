@@ -1906,6 +1906,7 @@ parser.add_argument('--with-cling-url', action='store', help='Specify an alterna
                     default='https://github.com/root-project/cling.git')
 
 parser.add_argument('--with-binary-llvm', help='Download LLVM binary and use it to build Cling in dev mode', action='store_true')
+parser.add_argument('--with-llvm-tar', help='Download and use LLVM binary release tar to build Cling for debugging', action='store_true')
 parser.add_argument('--no-test', help='Do not run test suite of Cling', action='store_true')
 parser.add_argument('--skip-cleanup', help='Do not clean up after a build', action='store_true')
 parser.add_argument('--use-wget', help='Do not use Git to fetch sources', action='store_true')
@@ -2121,14 +2122,17 @@ if args['check_requirements']:
                     choice = custom_input("Please respond with 'yes' or 'no': ", args['y'])
                     continue
         if no_install is False and llvm_binary_name != "":
-            try:
-                subprocess.Popen(['sudo apt-get install llvm-{0}-dev'.format(llvm_vers)],
-                                 shell=True,
-                                 stdin=subprocess.PIPE,
-                                 stdout=None,
-                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
-            except:
+            if args["with_llvm_tar"]:
                 tar_required = True
+            else:
+                try:
+                    subprocess.Popen(['sudo apt-get install llvm-{0}-dev'.format(llvm_vers)],
+                                     shell=True,
+                                     stdin=subprocess.PIPE,
+                                     stdout=None,
+                                     stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+                except:
+                    tar_required = True
 
     elif OS == 'Windows':
         check_win('git')

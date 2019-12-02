@@ -168,6 +168,7 @@ script:
       --check-requirements \
       --current-dev=tar \
       --with-binary-llvm \
+      --with-llvm-tar \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
       --with-cmake-flags="$CLING_BUILD_FLAGS" \
@@ -176,6 +177,7 @@ script:
     tools/packaging/cpt.py -y \
       --check-requirements \
       --with-binary-llvm \
+      --with-llvm-tar \
       --tarball-tag=$([[ $TRAVIS_TAG = cling-nightlies ]] && echo "master" || echo "$TRAVIS_TAG") \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
