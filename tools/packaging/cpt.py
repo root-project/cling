@@ -295,7 +295,7 @@ def download_llvm_binary():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
             exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
-            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz %s' % srcdir, workdir)
+            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04 %s' % srcdir, workdir)
         elif DIST=='MacOSX' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
@@ -2120,7 +2120,6 @@ else:
     LLVM_GIT_URL = "http://root.cern.ch/git/llvm.git"
 
 if args['check_requirements']:
-    global tar_required
     llvm_binary_name = ""
     box_draw('Check availability of required softwares')
     if DIST == 'Ubuntu':
