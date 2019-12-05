@@ -272,14 +272,15 @@ def download_llvm_binary():
             tar_required = True
     if DIST == 'MacOSX':
         subprocess.call("sudo -H pip install lit", shell=True)
-        llvm_dir = os.path.join("/opt", "local", "libexec", "llvm-"+llvm_vers)
-        llvm_config_path = os.path.join(llvm_dir, "bin", "llvm-config")
-        if llvm_config_path[-1:] == "\n":
-            llvm_config_path = llvm_config_path[:-1]
-        llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
-                      -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
-                      os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
-                      os.path.join(llvm_dir, 'bin'))
+        if tar_required is False:
+            llvm_dir = os.path.join("/opt", "local", "libexec", "llvm-"+llvm_vers)
+            llvm_config_path = os.path.join(llvm_dir, "bin", "llvm-config")
+            if llvm_config_path[-1:] == "\n":
+                llvm_config_path = llvm_config_path[:-1]
+            llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
+                          -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
+                          os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
+                          os.path.join(llvm_dir, 'bin'))
     if tar_required:
         llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
                       -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(srcdir, os.path.join(srcdir, 'bin', 'llvm-config'),
@@ -295,6 +296,11 @@ def download_llvm_binary():
             exec_subprocess_call('wget %s' % download_link, workdir)
             exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
             exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz %s' % srcdir, workdir)
+        elif DIST=='MacOSX' and is_os_64bit():
+            download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
+            exec_subprocess_call('wget %s' % download_link, workdir)
+            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz', workdir)
+            exec_subprocess_call('sudo mv clang+llvm-5.0.2-x86_64-apple-darwin %s' % srcdir, workdir)
         else:
             raise Exception("Building clang using LLVM binary not possible")
     # FIXME: Add Fedora and SUSE support
@@ -499,7 +505,7 @@ def set_vars():
     print('CLANG_VERSION: ' + CLANG_VERSION)
 
 def set_vars_for_lit():
-    global tar_required
+    global tar_required, srcdir
 
     with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
         lines = file.readlines()
@@ -519,8 +525,7 @@ def set_vars_for_lit():
                 break
         with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
             file.writelines(lines)
-
-    if DIST == 'MacOSX':
+    elif DIST == 'MacOSX' and tar_required is False:
         llvm_dir = os.path.join("/opt", "local", "libexec", "llvm-" + llvm_vers)
         with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
             lines = file.readlines()
@@ -2223,7 +2228,10 @@ Refer to the documentation of CPT for information on setting up your Windows env
         install_line = ''
         if check_mac('lit') is False:
             prerequisite.extend(['python-pip'])
-        llvm_binary_name = 'llvm-' + llvm_vers
+        if args['with_llvm_tar']:
+            tar_required = True
+        else:
+            llvm_binary_name = 'llvm-' + llvm_vers
         for pkg in prerequisite:
             if check_mac(pkg) is False:
                 install_line += pkg + ' '
