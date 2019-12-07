@@ -393,12 +393,11 @@ namespace cling {
     if (m_Executor)
       m_Executor->shuttingDown();
 
-    if (CompilerInstance* CI = getCIOrNull())
-      CI->getDiagnostics().getClient()->EndSourceFile();
-
     // LookupHelper's ~Parser needs the PP from IncrParser's CI, so do this
     // first:
     m_LookupHelper.reset();
+
+    ShutDown();
 
     // We want to keep the callback alive during the shutdown of Sema, CodeGen
     // and the ASTContext. For that to happen we shut down the IncrementalParser
@@ -573,6 +572,56 @@ namespace cling {
     Transaction *T;
     declare(Strm.str(), &T);
     return T;
+  }
+
+  void Interpreter::ShutDown() {
+    // Model the shutdown actions done in FrontendAction::EndSourceFile
+    if (CompilerInstance* CI = getCIOrNull()) {
+      CI->getDiagnostics().getClient()->EndSourceFile();
+
+      if (CI->hasPreprocessor())
+        CI->getPreprocessor().EndSourceFile();
+
+      bool DisableFree = CI->getFrontendOpts().DisableFree;
+      if (DisableFree) {
+        CI->resetAndLeakSema();
+        CI->resetAndLeakASTContext();
+        BuryPointer(CI->takeASTConsumer().get());
+      } else {
+        CI->setSema(nullptr);
+        CI->setASTContext(nullptr);
+        CI->setASTConsumer(nullptr);
+      }
+
+      if (CI->getFrontendOpts().ShowStats) {
+        llvm::errs() << "\nSTATISTICS \n";
+        CI->getPreprocessor().PrintStats();
+        CI->getPreprocessor().getIdentifierTable().PrintStats();
+        CI->getPreprocessor().getHeaderSearchInfo().PrintStats();
+        CI->getSourceManager().PrintStats();
+        llvm::errs() << "\n";
+      }
+
+      // Cleanup the output streams, and erase the output files if instructed by
+      // the FrontendAction.
+      bool shouldEraseOutputFiles = CI->getDiagnostics().hasErrorOccurred();
+      CI->clearOutputFiles(/*EraseFiles=*/shouldEraseOutputFiles);
+
+      LangOptions& LO = CI->getLangOpts();
+      if (!LO.getCompilingModule() != clang::LangOptions::CMK_None) {
+        if (DisableFree) {
+          CI->resetAndLeakPreprocessor();
+          CI->resetAndLeakSourceManager();
+          CI->resetAndLeakFileManager();
+        } else {
+          CI->setPreprocessor(nullptr);
+          CI->setSourceManager(nullptr);
+          CI->setFileManager(nullptr);
+        }
+      }
+
+      LO.setCompilingModule(clang::LangOptions::CMK_None);
+    }
   }
 
   void Interpreter::AddIncludePaths(llvm::StringRef PathStr, const char* Delm) {
