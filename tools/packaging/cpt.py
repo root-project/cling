@@ -2226,120 +2226,23 @@ if args['current_dev']:
         'utf-8')
 
     if is_llvm_binary_compatible() and args['with_binary_llvm']:
-        if args['current_dev'] == 'tar' or args['current_dev'] == 'pkg':
-            fetch_clang(llvm_revision)
-
-            if TRAVIS_BUILD_DIR or APPVEYOR_BUILD_FOLDER:
-                ciCloned = TRAVIS_BUILD_DIR if TRAVIS_BUILD_DIR else APPVEYOR_BUILD_FOLDER
-                clingDir = os.path.join(clangdir, 'tools', 'cling')
-                if TRAVIS_BUILD_DIR:
-                    os.rename(ciCloned, clingDir)
-                    TRAVIS_BUILD_DIR = clingDir
-                else:
-                    # Cannot move the directory: it is being used by another process
-                    os.mkdir(clingDir)
-                    for f in os.listdir(APPVEYOR_BUILD_FOLDER):
-                        shutil.move(os.path.join(APPVEYOR_BUILD_FOLDER, f), clingDir)
-                    APPVEYOR_BUILD_FOLDER = clingDir
-
-                # Check validity and show some info
-                box_draw("Using CI clone, last 5 commits:")
-                CLING_SRC_DIR = os.path.join(clangdir, 'tools', 'cling')
-                exec_subprocess_call('git log -5 --pretty="format:%h <%ae> %<(60,trunc)%s"', CLING_SRC_DIR)
-                print('\n')
-            else:
-                fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
-            travis_fold_end("git-clone")
-
-            allow_clang_tool()
-            set_version()
-            compile_for_binary(os.path.join(workdir,
-                                    'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
-            install_prefix_for_binary()
-            if not args['no_test']:
-                build_filecheck()
-                test_cling()
-            tarball()
-            cleanup()
-            exit()
-        elif args['current_dev'] == 'deb' or (args['current_dev'] == 'pkg' and DIST == 'Ubuntu'):
-            fetch_clang(llvm_revision)
-
-            if TRAVIS_BUILD_DIR or APPVEYOR_BUILD_FOLDER:
-                ciCloned = TRAVIS_BUILD_DIR if TRAVIS_BUILD_DIR else APPVEYOR_BUILD_FOLDER
-                clingDir = os.path.join(clangdir, 'tools', 'cling')
-                if TRAVIS_BUILD_DIR:
-                    os.rename(ciCloned, clingDir)
-                    TRAVIS_BUILD_DIR = clingDir
-                else:
-                    # Cannot move the directory: it is being used by another process
-                    os.mkdir(clingDir)
-                    for f in os.listdir(APPVEYOR_BUILD_FOLDER):
-                        shutil.move(os.path.join(APPVEYOR_BUILD_FOLDER, f), clingDir)
-                    APPVEYOR_BUILD_FOLDER = clingDir
-
-                # Check validity and show some info
-                box_draw("Using CI clone, last 5 commits:")
-                exec_subprocess_call('git log -5 --pretty="format:%h <%ae> %<(60,trunc)%s"', CLING_SRC_DIR)
-                print('\n')
-            else:
-                fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
-            travis_fold_end("git-clone")
-
-            allow_clang_tool()
-            set_version()
-            compile_for_binary(os.path.join(workdir, 'cling-' + VERSION))
-            install_prefix_for_binary()
-            if not args['no_test']:
-                build_filecheck()
-                test_cling()
-            tarball_deb()
-            debianize()
-            cleanup()
-            exit()
-        elif args['current_dev'] == 'dmg' or (args['current_dev'] == 'pkg' and OS == 'Darwin'):
-            fetch_clang(llvm_revision)
-
-            if TRAVIS_BUILD_DIR or APPVEYOR_BUILD_FOLDER:
-                ciCloned = TRAVIS_BUILD_DIR if TRAVIS_BUILD_DIR else APPVEYOR_BUILD_FOLDER
-                clingDir = os.path.join(clangdir, 'tools', 'cling')
-                if TRAVIS_BUILD_DIR:
-                    os.rename(ciCloned, clingDir)
-                    TRAVIS_BUILD_DIR = clingDir
-                else:
-                    # Cannot move the directory: it is being used by another process
-                    os.mkdir(clingDir)
-                    for f in os.listdir(APPVEYOR_BUILD_FOLDER):
-                        shutil.move(os.path.join(APPVEYOR_BUILD_FOLDER, f), clingDir)
-                    APPVEYOR_BUILD_FOLDER = clingDir
-
-                # Check validity and show some info
-                box_draw("Using CI clone, last 5 commits:")
-                exec_subprocess_call('git log -5 --pretty="format:%h <%ae> %<(60,trunc)%s"', CLING_SRC_DIR)
-                print('\n')
-            else:
-                fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
-            travis_fold_end("git-clone")
-
-            allow_clang_tool()
-            set_version()
-            compile_for_binary(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
-            install_prefix_for_binary()
-            if not args['no_test']:
-                build_filecheck()
-                test_cling()
-            make_dmg()
-            cleanup()
-            exit()
-
-    fetch_llvm(llvm_revision)
-    fetch_clang(llvm_revision)
+        compile = compile_for_binary
+        install_prefix = install_prefix_for_binary
+        fetch_clang(llvm_revision)
+        clingDir = os.path.join(clangdir, 'tools', 'cling')
+        CLING_SRC_DIR = os.path.join(clangdir, 'tools', 'cling')
+        dir = CLING_SRC_DIR
+        allow_clang_tool()
+    else:
+        fetch_llvm(llvm_revision)
+        fetch_clang(llvm_revision)
+        clingDir = os.path.join(srcdir, 'tools', 'cling')
+        dir = clingDir
 
     # Travis has already cloned the repo out, so don;t do it again
     # Particularly important for building a pull-request
     if TRAVIS_BUILD_DIR or APPVEYOR_BUILD_FOLDER:
         ciCloned = TRAVIS_BUILD_DIR if TRAVIS_BUILD_DIR else APPVEYOR_BUILD_FOLDER
-        clingDir = os.path.join(srcdir, 'tools', 'cling')
         if TRAVIS_BUILD_DIR:
             os.rename(ciCloned, clingDir)
             TRAVIS_BUILD_DIR = clingDir
@@ -2352,7 +2255,7 @@ if args['current_dev']:
 
         # Check validity and show some info
         box_draw("Using CI clone, last 5 commits:")
-        exec_subprocess_call('git log -5 --pretty="format:%h <%ae> %<(60,trunc)%s"', clingDir)
+        exec_subprocess_call('git log -5 --pretty="format:%h <%ae> %<(60,trunc)%s"', dir)
         print('\n')
     else:
         fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
@@ -2371,6 +2274,8 @@ if args['current_dev']:
                                      'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         tarball()
         cleanup()
@@ -2379,6 +2284,8 @@ if args['current_dev']:
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         tarball_deb()
         debianize()
@@ -2407,6 +2314,8 @@ if args['current_dev']:
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         make_dmg()
         cleanup()
@@ -2422,6 +2331,8 @@ if args['current_dev']:
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         tarball()
         cleanup()
@@ -2443,53 +2354,13 @@ if args['last_stable']:
     args["with_binary_llvm"] = True
 
     if is_llvm_binary_compatible() and args["with_binary_llvm"]:
-        if args['last_stable'] == 'tar' or args['last_stable'] == 'pkg':
-            fetch_clang(llvm_revision)
-            print("Last stable Cling release detected: ", tag)
-            fetch_cling(tag)
-            allow_clang_tool()
-            set_version()
-            compile_for_binary(os.path.join(workdir,
-                                    'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
-            install_prefix_for_binary()
-            if not args['no_test']:
-                build_filecheck()
-                test_cling()
-            tarball()
-            cleanup()
-            exit()
-        elif args['last_stable'] == 'deb' or (args['last_stable'] == 'pkg' and DIST == 'Ubuntu'):
-            fetch_clang(llvm_revision)
-            print("Last stable Cling release detected: ", tag)
-            fetch_cling(tag)
-            allow_clang_tool()
-            set_version()
-            compile_for_binary(os.path.join(workdir, 'cling-' + VERSION))
-            install_prefix_for_binary()
-            if not args['no_test']:
-                build_filecheck()
-                test_cling()
-            tarball_deb()
-            debianize()
-            cleanup()
-            exit()
-        elif args['current_dev'] == 'dmg' or (args['current_dev'] == 'pkg' and OS == 'Darwin'):
-            fetch_clang(llvm_revision)
-            print("Last stable Cling release detected: ", tag)
-            fetch_cling(tag)
-            allow_clang_tool()
-            set_version()
-            compile_for_binary(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
-            install_prefix_for_binary()
-            if not args['no_test']:
-                build_filecheck()
-                test_cling()
-            make_dmg()
-            cleanup()
-            exit()
-
-    fetch_llvm(llvm_revision)
-    fetch_clang(llvm_revision)
+        compile = compile_for_binary
+        install_prefix = install_prefix_for_binary
+        fetch_clang(llvm_revision)
+        allow_clang_tool()
+    else:
+        fetch_llvm(llvm_revision)
+        fetch_clang(llvm_revision)
 
     print("Last stable Cling release detected: ", tag)
     fetch_cling(tag)
@@ -2507,6 +2378,8 @@ if args['last_stable']:
                                      'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         tarball()
         cleanup()
@@ -2516,6 +2389,8 @@ if args['last_stable']:
         compile(os.path.join(workdir, 'cling-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         tarball_deb()
         debianize()
@@ -2547,6 +2422,8 @@ if args['last_stable']:
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         make_dmg()
         cleanup()
@@ -2556,6 +2433,8 @@ if args['last_stable']:
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
         install_prefix()
         if not args['no_test']:
+            if is_llvm_binary_compatible() and args['with_binary_llvm']:
+                build_filecheck()
             test_cling()
         tarball()
         cleanup()
