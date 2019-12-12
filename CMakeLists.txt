@@ -311,6 +311,9 @@ string(REGEX REPLACE "[0-9].([0-9]+)~[a-zA-Z]+" "\\1" CLING_VERSION_MINOR ${CLIN
 if(DEFINED ROOT_BINARY_DIR)
   # Building as part of ROOT.
   set(CLING_VERSION ROOT_${CLING_VERSION})
+  set(CMAKE_CXX_VISIBILITY_PRESET default)
+  set(CMAKE_C_VISIBILITY_PRESET default)
+  set(CMAKE_VISIBILITY_INLINES_HIDDEN "ON")
 endif()
 message(STATUS "Cling version (from VERSION file): ${CLING_VERSION}")
 
