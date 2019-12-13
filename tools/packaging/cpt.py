@@ -1949,9 +1949,11 @@ if OS == 'Windows':
     TMP_PREFIX = 'C:\\Windows\\Temp\\cling-obj\\'
 
 elif OS == 'Linux':
-    DIST = platform.linux_distribution()[0]
-    RELEASE = platform.linux_distribution()[2]
-    REV = platform.linux_distribution()[1]
+    subprocess.call("sudo pip install distro", shell=True)
+    import distro
+    DIST = distro.linux_distribution()[0]
+    RELEASE = distro.linux_distribution()[2]
+    REV = distro.linux_distribution()[1]
 
     EXEEXT = ''
     SHLIBEXT = '.so'
