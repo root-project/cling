@@ -2347,7 +2347,7 @@ if args['last_stable']:
     tag = str(tag)
 
     # FIXME
-    assert tag[0] is "v"
+    assert tag[0] == "v"
     assert CLING_BRANCH == None
     llvm_revision = urlopen(
         'https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt' % tag
