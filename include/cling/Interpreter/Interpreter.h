@@ -804,6 +804,12 @@ namespace cling {
     ///
     void AddAtExitFunc(void (*Func) (void*), void* Arg);
 
+    ///\brief Run once the list of registered atexit functions. This is useful
+    /// when an external process wants to control carefully the teardown because
+    /// the registered atexit functions require alive interpreter service.
+    ///
+    void runAtExitFuncs();
+
     void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);
 

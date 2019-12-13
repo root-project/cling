@@ -109,7 +109,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
 IncrementalExecutor::~IncrementalExecutor() {}
 
-void IncrementalExecutor::shuttingDown() {
+void IncrementalExecutor::runAtExitFuncs() {
   // It is legal to register an atexit handler from within another atexit
   // handler and furthor-more the standard says they need to run in reverse
   // order, so this function must be recursion safe.
@@ -126,7 +126,7 @@ void IncrementalExecutor::shuttingDown() {
       AtExit();
     // The standard says that they need to run in reverse order, which means
     // anything added from 'AtExit()' must now be run!
-    shuttingDown();
+    runAtExitFuncs();
   }
 }
 

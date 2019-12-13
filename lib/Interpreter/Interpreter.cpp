@@ -1718,6 +1718,11 @@ namespace cling {
     m_Executor->AddAtExitFunc(Func, Arg, getLatestTransaction()->getModule());
   }
 
+  void Interpreter::runAtExitFuncs() {
+    assert(!isInSyntaxOnlyMode() && "Must have JIT");
+    m_Executor->runAtExitFuncs();
+  }
+
   void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
                                            llvm::StringRef outFile,
                                            bool enableMacros,

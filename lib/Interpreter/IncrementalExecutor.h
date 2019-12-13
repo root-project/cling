@@ -208,13 +208,19 @@ namespace cling {
       m_JIT->addModule(module);
     }
 
-    ///\brief Tells the execution context that we are shutting down the system.
+    ///\brief Tells the execution to run all registered atexit functions once.
     ///
-    /// This that notification is needed because the execution context needs to
-    /// perform extra actions like delete all managed by it symbols, which might
-    /// still require alive system.
+    /// This rountine should be used with caution only when an external process
+    /// wants to carefully control the teardown. For example, if the process
+    /// has registered its own atexit functions which need the interpreter
+    /// service to be available when they are being executed.
     ///
-    void shuttingDown();
+    void runAtExitFuncs();
+
+    ///\brief A more meaningful synonym of runAtExitFuncs when used in a more
+    /// standard teardown.
+    ///
+    void shuttingDown() { runAtExitFuncs(); }
 
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///
