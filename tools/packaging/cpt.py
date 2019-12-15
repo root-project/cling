@@ -572,7 +572,7 @@ def compile(arg):
         os.makedirs(LLVM_OBJ_ROOT)
 
     ### FIX: Target isn't being set properly on Travis OS X
-    ### Either because ccache or maybe the virtualization environment
+    ### Either because ccache(when enabled) or maybe the virtualization environment
     if TRAVIS_BUILD_DIR and OS == 'Darwin':
         triple = exec_subprocess_check_output('sh %s/cmake/config.guess' % srcdir, srcdir)
         if triple:
@@ -583,17 +583,8 @@ def compile(arg):
                           .format(build.buildType, TMP_PREFIX) + ' -DLLVM_TARGETS_TO_BUILD="host;NVPTX" ' +
                           EXTRA_CMAKE_FLAGS)
 
-    # Don't pollute the CCACHE_LOGFILE with CMake config
-    CCACHE_LOGFILE = os.environ.get('CCACHE_LOGFILE', None)
-    if CCACHE_LOGFILE:
-        del os.environ['CCACHE_LOGFILE']
-
     # configure cling
     build.config(cmake_config_flags)
-
-    # Start the logging, we currently don't log libcpp being built above
-    if CCACHE_LOGFILE:
-        os.environ['CCACHE_LOGFILE'] = CCACHE_LOGFILE
 
     build.make('clang cling' if CLING_BRANCH else 'cling')
 
