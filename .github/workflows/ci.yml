@@ -1,0 +1,100 @@
+name: Cling CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+
+        include:
+          - name: ubuntu-16.04-gcc
+            os: ubuntu-16.04
+            compiler: gcc
+
+          - name: ubuntu-16.04-clang
+            os: ubuntu-16.04
+            compiler: clang
+
+          - name: ubuntu-18.04-gcc
+            os: ubuntu-18.04
+            compiler: gcc
+
+          - name: ubuntu-18.04-clang
+            os: ubuntu-18.04
+            compiler: clang
+
+          - name: ubuntu-20.04-gcc-compile
+            os: ubuntu-20.04
+            compiler: gcc
+
+          - name: ubuntu-20.04-clang-compile
+            os: ubuntu-20.04
+            compiler: clang
+
+          - name: macos-10.15-xcode-11.2.1-fromtar
+            os: macOS-10.15
+            compiler: clang
+            xcode-version: "11.2.1"
+
+          - name: macos-10.15-gcc-9-compile
+            os: macOS-10.15
+            compiler: gcc
+            version: "9"
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup compiler on Linux
+      run: |
+        sudo apt-get update
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "CXX=g++" >> $GITHUB_ENV
+        else
+          sudo apt-get install -y clang
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+        fi
+      if: runner.os == 'Linux'
+      shell: bash
+    - name: Setup compiler on OS X
+      run: |
+        curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci; source ./macports-ci install
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          brew install gcc@${{ matrix.version }}
+          echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
+          echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+        else
+          sudo xcode-select -switch /Applications/Xcode_${{ matrix.xcode-version }}.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+        fi
+      if: runner.os == 'macOS'
+    - name: Display compiler version
+      run: $CC --version
+    - name: Execute cpt
+      run: |
+        if [[ "${{ matrix.compiler }}" = "gcc" && "${{ matrix.version }}" = "7" ]]; then
+          export CLING_BUILD_FLAGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+          if [ "${{ matrix.os }}" != "macOS-11.0" ] | [ "${{ matrix.os }}" != "macOS-10.15" ]; then
+            export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DCXX_EXTENSIONS=OFF"
+          fi
+        fi
+        export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_ENABLE_WARNINGS=OFF -DCLING_ENABLE_WARNINGS=ON"
+        if [[ ${{ matrix.name }} == *"compile"* ]]; then
+          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$GITHUB_REPOSITORY --cling-branch=${{ github.head_ref }}
+        elif [[ ${{ matrix.name }} == *"fromtar"* ]]; then
+          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$GITHUB_REPOSITORY --cling-branch=${{ github.head_ref }} --with-binary-llvm --with-llvm-tar
+        else
+          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$GITHUB_REPOSITORY --cling-branch=${{ github.head_ref }} --with-binary-llvm
+        fi
+      working-directory: tools/packaging/
