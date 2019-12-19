@@ -57,18 +57,6 @@ matrix:
           packages: g++-6
       compiler: gcc-6
 
-    - os: osx
-      env: COMPILER=g++-7 CCOMPILER=gcc-7
-      osx_image: xcode10.1
-      addons:
-        homebrew:
-          packages: gcc@7
-          update: true
-      before_install:
-          - curl -LO https://raw.githubusercontent.com/GiovanniBussi/macports-ci/master/macports-ci;
-            source ./macports-ci install
-      compiler: gcc-7
-
     - os: linux
       env: COMPILER=g++-7 CCOMPILER=gcc-7
       addons:
