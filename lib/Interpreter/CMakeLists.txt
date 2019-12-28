@@ -76,6 +76,7 @@ add_cling_library(clingInterpreter OBJECT
   DeclUnloader.cpp
   DeviceKernelInliner.cpp
   DynamicLibraryManager.cpp
+  DynamicLibraryManagerSymbol.cpp
   DynamicLookup.cpp
   DynamicExprInfo.cpp
   Exception.cpp
