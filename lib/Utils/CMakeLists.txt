@@ -5,16 +5,41 @@
 # of Illinois Open Source License or the GNU Lesser General Public License. See
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
-set( LLVM_LINK_COMPONENTS
+set(LLVM_LINK_COMPONENTS
+  analysis
+  core
+  coroutines
+  coverage
+  executionengine
+  ipo
+  lto
+  mc
+  object
+  option
+  orcjit
+  runtimedyld
+  scalaropts
   support
+  target
+  transformutils
+  binaryformat
+  ${LLVM_TARGETS_TO_BUILD}
 )
 
-set( LIBS
-  clangSema
-  clangAST
-  clangLex
-  clangBasic
+set(LIBS
+  clangCodeGen
+  clangDriver
+  clangFrontend
   clangParse
+  clangSema
+  clangAnalysis
+  clangEdit
+  clangRewrite
+  clangRewriteFrontend
+  clangSerialization
+  clangAST
+  clangBasic
+  clangLex
 )
 
 find_library(DL_LIBRARY_PATH dl)
