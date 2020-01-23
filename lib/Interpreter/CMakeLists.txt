@@ -109,6 +109,7 @@ add_cling_library(clingInterpreter OBJECT
 
 if (UNIX)
   set_source_files_properties(Exception.cpp COMPILE_FLAGS "-fexceptions -frtti")
+  set_source_files_properties(Interpreter.cpp COMPILE_FLAGS "-fexceptions")
 
   # Remove all -I from CMAKE_CXX_FLAGS
   string(REPLACE ";" " " __flags "${CMAKE_CXX_FLAGS}")
