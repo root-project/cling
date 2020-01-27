@@ -338,9 +338,11 @@ namespace cling {
     // The outer header of the fat binary is documented in the CUDA
     // fatbinary.h header. As mentioned there, the overall size must be a
     // multiple of eight, and so we must make sure that the PTX is.
-    while (m_PTX_code.size() % 7)
-      m_PTX_code += ' ';
+    // We also need to make sure that the buffer is explicitly null
+    // terminated (cuobjdump, at least, seems to assume that it is).
     m_PTX_code += '\0';
+    while (m_PTX_code.size() % 8)
+      m_PTX_code += '\0';
 
     // NVIDIA, unfortunatly, does not provide full documentation on their
     // fatbin format. There is some information on the outer header block in
