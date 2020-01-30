@@ -72,6 +72,7 @@ static void GetErrorAsString(DWORD Err, std::string& ErrStr, const char* Prefix)
     Strm << ": " << CharStr;
     ::LocalFree(Message);
     ErrStr = llvm::StringRef(Strm.str()).rtrim().str();
+    delete [] CharStr;
   }
 }
 
@@ -651,7 +652,7 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   }
   Paths.push_back(Buf);
   Buf[0] = 0; // Reset Buf.
-  
+
   // Generic form of C:\Windows
   result = ::SHGetFolderPathA(NULL, CSIDL_FLAG_CREATE | CSIDL_WINDOWS,
                               NULL, SHGFP_TYPE_CURRENT, Buf);
@@ -731,7 +732,7 @@ bool Popen(const std::string& Cmd, llvm::SmallVectorImpl<char>& Buf, bool RdE) {
   CloseHandle(hOutputWrite);
   if (RdE)
     CloseHandle(hErrorWrite);
-  
+
   if (Result != 0) {
     DWORD dwRead;
     const size_t Chunk = Buf.capacity_in_bytes();
