@@ -584,7 +584,8 @@ namespace {
     llvm::SmallString<128> cIncLoc(getIncludePathForHeader(HS, "time.h"));
 
     llvm::SmallString<256> stdIncLoc(getIncludePathForHeader(HS, "cassert"));
-
+    llvm::SmallString<256> boostIncLoc(getIncludePathForHeader(HS, "boost/version.hpp"));
+    llvm::SmallString<256> tinyxml2IncLoc(getIncludePathForHeader(HS, "tinyxml2.h"));
     llvm::SmallString<256> cudaIncLoc(getIncludePathForHeader(HS, "cuda.h"));
     llvm::SmallString<256> clingIncLoc(getIncludePathForHeader(HS,
                                         "cling/Interpreter/RuntimeUniverse.h"));
@@ -631,8 +632,14 @@ namespace {
                             MOverlay);
     maybeAppendOverlayEntry(stdIncLoc.str(), "std.modulemap", clingIncLoc.str(),
                             MOverlay);
+    if (!tinyxml2IncLoc.empty())
+      maybeAppendOverlayEntry(tinyxml2IncLoc.str(), "tinyxml2.modulemap",
+                              clingIncLoc.str(), MOverlay);
     if (!cudaIncLoc.empty())
       maybeAppendOverlayEntry(cudaIncLoc.str(), "cuda.modulemap",
+                              clingIncLoc.str(), MOverlay);
+    if (!boostIncLoc.empty())
+      maybeAppendOverlayEntry(boostIncLoc.str(), "boost.modulemap",
                               clingIncLoc.str(), MOverlay);
 
     if (/*needsOverlay*/!MOverlay.empty()) {
@@ -670,6 +677,14 @@ namespace {
     ModuleMapFiles.push_back(cIncLoc.str().str());
     llvm::sys::path::append(stdIncLoc, "module.modulemap");
     ModuleMapFiles.push_back(stdIncLoc.str().str());
+    if (!tinyxml2IncLoc.empty()) {
+      llvm::sys::path::append(tinyxml2IncLoc, "module.modulemap");
+      ModuleMapFiles.push_back(tinyxml2IncLoc.str().str());
+    }
+    if (!boostIncLoc.empty()) {
+      llvm::sys::path::append(boostIncLoc, "module.modulemap");
+      ModuleMapFiles.push_back(boostIncLoc.str().str());
+    }
     if (!cudaIncLoc.empty()) {
       llvm::sys::path::append(cudaIncLoc, "module.modulemap");
       ModuleMapFiles.push_back(cudaIncLoc.str().str());
