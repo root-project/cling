@@ -30,7 +30,8 @@ cling::ParserStateRAII::ParserStateRAII(Parser& p, bool skipToEOF)
   OldTemplateParameterDepth(p.TemplateParameterDepth),
   OldInNonInstantiationSFINAEContext(P->getActions()
                                      .InNonInstantiationSFINAEContext),
-  SkipToEOF(skipToEOF)
+  SkipToEOF(skipToEOF),
+  ResetExprEvalCtx(p.getActions(), clang::Sema::ExpressionEvaluationContext::PotentiallyEvaluated)
 {
   // Set to defaults, reset to previous values by ~ParserStateRAII().
   OldTemplateIds.swap(P->TemplateIds);

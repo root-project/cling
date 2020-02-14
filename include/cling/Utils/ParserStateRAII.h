@@ -42,6 +42,7 @@ namespace cling {
     unsigned OldTemplateParameterDepth;
     bool OldInNonInstantiationSFINAEContext;
     bool SkipToEOF;
+    clang::EnterExpressionEvaluationContext ResetExprEvalCtx;
 
   public:
     ParserStateRAII(clang::Parser& p, bool skipToEOF);
