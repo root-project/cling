@@ -810,7 +810,7 @@ namespace cling {
     ///
     void runAtExitFuncs();
 
-    void GenerateAutoloadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
+    void GenerateAutoLoadingMap(llvm::StringRef inFile, llvm::StringRef outFile,
                                 bool enableMacros = false, bool enableLogs = true);
 
     void forwardDeclare(Transaction& T, clang::Preprocessor& P,

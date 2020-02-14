@@ -1723,7 +1723,7 @@ namespace cling {
     m_Executor->runAtExitFuncs();
   }
 
-  void Interpreter::GenerateAutoloadingMap(llvm::StringRef inFile,
+  void Interpreter::GenerateAutoLoadingMap(llvm::StringRef inFile,
                                            llvm::StringRef outFile,
                                            bool enableMacros,
                                            bool enableLogs) {

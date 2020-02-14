@@ -22,7 +22,7 @@ A<int> ai2;
 #include "fwd_Def2c.h"
 #include "Def2c.h"
 
-// In some implementations the AutoloadingVisitor was stripping the default
+// In some implementations the AutoLoadingVisitor was stripping the default
 // template parameter value from the class template definition leading to
 // compilation error at this next line:
 A<float> af2;
@@ -36,7 +36,7 @@ template <typename T> class WithDefaultAndFwd;
 .T Def2.h fwd_Def2.h
 #include "fwd_Def2.h"
 
-// In some implementation the AutoloadingVisitor, when called upon by the next
+// In some implementation the AutoLoadingVisitor, when called upon by the next
 // #includes, was not properly removing default value that was attached to
 // this following class template forward declaration (the default comes from
 // the forward declaration in fwd_Def2.h). See ROOT-8443.
@@ -59,11 +59,11 @@ TemplateWithAllDefault<> twad;
 WithDefaultInH1<> wdh1;
 WithDefaultInH2<> wdh2;
 
-// In some implementation the AutoloadingVisitor was not when Def2sub.h, which
+// In some implementation the AutoLoadingVisitor was not when Def2sub.h, which
 // contains the definition for CtorWithDefault, and then the implementation
 // was also looping over all element of the decl chain without skipping definition,
 // resulting in a loss of the default parameter values for the method/functions of
-// CtorWithDefault when AutoloadingVisitor was called upon because of the inclusion
+// CtorWithDefault when AutoLoadingVisitor was called upon because of the inclusion
 // Def2.h
 CtorWithDefault c;
 M::N::A mna;
