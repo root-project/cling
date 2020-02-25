@@ -888,11 +888,9 @@ namespace cling {
     IdentifierInfo* II = PP.getIdentifierInfo(M->Name);
     SourceLocation ValidLoc = getNextAvailableLoc();
     Interpreter::PushTransactionRAII RAII(this);
-    bool success = !getCI()
-                        ->getSema()
-                        .ActOnModuleImport(ValidLoc, ValidLoc,
-                                           std::make_pair(II, ValidLoc))
-                        .isInvalid();
+    bool success =
+       !getSema().ActOnModuleImport(ValidLoc, ValidLoc,
+                                    std::make_pair(II, ValidLoc)).isInvalid();
 
     if (success) {
       // Also make the module visible in the preprocessor to export its macros.
