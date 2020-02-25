@@ -153,7 +153,7 @@ namespace cling {
   }
 
   clang::SourceLocation Interpreter::getNextAvailableLoc() const {
-    return m_IncrParser->getLastMemoryBufferEndLoc().getLocWithOffset(1);
+    return m_IncrParser->getNextAvailableUniqueSourceLoc();
   }
 
   bool Interpreter::isInSyntaxOnlyMode() const {
@@ -886,7 +886,7 @@ namespace cling {
     // this functionality.
     Preprocessor& PP = getCI()->getPreprocessor();
     IdentifierInfo* II = PP.getIdentifierInfo(M->Name);
-    SourceLocation ValidLoc = M->DefinitionLoc;
+    SourceLocation ValidLoc = getNextAvailableLoc();
     Interpreter::PushTransactionRAII RAII(this);
     bool success = !getCI()
                         ->getSema()

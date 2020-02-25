@@ -391,10 +391,10 @@ namespace cling {
     return m_Consumer->getTransaction();
   }
 
-  SourceLocation IncrementalParser::getLastMemoryBufferEndLoc() const {
+  SourceLocation IncrementalParser::getNextAvailableUniqueSourceLoc() {
     const SourceManager& SM = getCI()->getSourceManager();
     SourceLocation Result = SM.getLocForStartOfFile(m_VirtualFileID);
-    return Result.getLocWithOffset(m_MemoryBuffers.size() + 1);
+    return Result.getLocWithOffset(m_VirtualFileLocOffset++);
   }
 
   IncrementalParser::~IncrementalParser() {
@@ -809,7 +809,7 @@ namespace cling {
 
     // Create SourceLocation, which will allow clang to order the overload
     // candidates for example
-    SourceLocation NewLoc = getLastMemoryBufferEndLoc().getLocWithOffset(1);
+    SourceLocation NewLoc = getNextAvailableUniqueSourceLoc();
 
     llvm::MemoryBuffer* MBNonOwn = MB.get();
 
