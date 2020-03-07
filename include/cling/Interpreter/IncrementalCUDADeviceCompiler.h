@@ -10,7 +10,7 @@
 #ifndef CLING_INCREMENTAL_CUDA_DEVICE_JIT_H
 #define CLING_INCREMENTAL_CUDA_DEVICE_JIT_H
 
-#include "clang/Frontend/CodeGenOptions.h"
+#include "clang/Basic/CodeGenOptions.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/Triple.h"
 
