@@ -163,8 +163,8 @@ namespace utils {
               QualType VDTy = VD->getType().getNonReferenceType();
               // Get the location of the place we will insert.
               SourceLocation Loc
-                = newBody[indexOfLastExpr]->getLocEnd().getLocWithOffset(1);
-              Expr* DRE = S->BuildDeclRefExpr(VD, VDTy,VK_LValue, Loc).get();
+                = newBody[indexOfLastExpr]->getEndLoc().getLocWithOffset(1);
+              DeclRefExpr* DRE = S->BuildDeclRefExpr(VD, VDTy,VK_LValue, Loc);
               assert(DRE && "Cannot be null");
               indexOfLastExpr++;
               newBody.insert(newBody.begin() + indexOfLastExpr, DRE);

@@ -508,7 +508,7 @@ namespace cling {
                                      HandlerTy,
                                      VK_LValue,
                                      m_NoSLoc
-                                     ).getAs<DeclRefExpr>();
+                                     );
         // 3.2 Create a MemberExpr to getMemory from its declaration.
         CXXScopeSpec SS;
         LookupResult MemberLookup(*m_Sema, m_LHgetMemoryDecl->getDeclName(),
@@ -877,7 +877,7 @@ namespace cling {
                                                 FnTy,
                                                 VK_RValue,
                                                 m_NoSLoc
-                                                ).getAs<DeclRefExpr>();
+                                                );
 #if 0
     getTransaction()->setState(oldState);
 #endif
