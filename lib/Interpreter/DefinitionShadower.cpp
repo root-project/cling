@@ -86,7 +86,7 @@ namespace cling {
 
   void DefinitionShadower::invalidatePreviousDefinitions(NamedDecl *D) const {
     LookupResult Previous(*m_Sema, D->getDeclName(), D->getLocation(),
-                   Sema::LookupOrdinaryName, Sema::ForRedeclaration);
+                   Sema::LookupOrdinaryName, Sema::ForVisibleRedeclaration);
     m_Sema->LookupQualifiedName(Previous, m_TU);
 
     for (auto Prev : Previous) {

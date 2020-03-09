@@ -1455,7 +1455,7 @@ namespace utils {
   NamedDecl* Lookup::Named(Sema* S, const clang::DeclarationName& Name,
                            const DeclContext* Within) {
     LookupResult R(*S, Name, SourceLocation(), Sema::LookupOrdinaryName,
-                   Sema::ForRedeclaration);
+                   Sema::ForVisibleRedeclaration);
     Lookup::Named(S, R, Within);
     return LookupResult2Decl<clang::NamedDecl>(R);
   }
@@ -1474,7 +1474,7 @@ namespace utils {
   TagDecl* Lookup::Tag(Sema* S, const clang::DeclarationName& Name,
                        const DeclContext* Within) {
     LookupResult R(*S, Name, SourceLocation(), Sema::LookupTagName,
-                   Sema::ForRedeclaration);
+                   Sema::ForVisibleRedeclaration);
     Lookup::Named(S, R, Within);
     return LookupResult2Decl<clang::TagDecl>(R);
   }

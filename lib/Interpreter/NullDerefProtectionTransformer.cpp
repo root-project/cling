@@ -219,7 +219,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
       SourceLocation noLoc;
       m_clingthrowIfInvalidPointerCache = new LookupResult(m_Sema, Name, noLoc,
                                         Sema::LookupOrdinaryName,
-                                        Sema::ForRedeclaration);
+                                        Sema::ForVisibleRedeclaration);
       m_Sema.LookupQualifiedName(*m_clingthrowIfInvalidPointerCache,
                                  m_Context.getTranslationUnitDecl());
       assert(!m_clingthrowIfInvalidPointerCache->empty() &&
