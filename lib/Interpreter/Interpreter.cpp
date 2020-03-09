@@ -239,9 +239,9 @@ namespace cling {
 
       // The CUDA fatbin file is the connection beetween the CUDA device
       // compiler and the CodeGen of cling. The file will every time reused.
-      if (getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.empty())
-        getCI()->getCodeGenOpts().CudaGpuBinaryFileNames.push_back(
-            std::string(TmpFolder.c_str()) + "cling.fatbin");
+      if (getCI()->getCodeGenOpts().CudaGpuBinaryFileName.empty())
+        getCI()->getCodeGenOpts().CudaGpuBinaryFileName
+          = std::string(TmpFolder.c_str()) + "cling.fatbin";
 
       m_CUDACompiler.reset(new IncrementalCUDADeviceCompiler(
           TmpFolder.c_str(), m_OptLevel, m_Opts, *(getCI())));

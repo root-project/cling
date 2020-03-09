@@ -37,9 +37,7 @@ namespace cling {
       const cling::InvocationOptions& invocationOptions,
       const clang::CompilerInstance& CI)
       : m_FilePath(filePath),
-        m_FatbinFilePath(CI.getCodeGenOpts().CudaGpuBinaryFileNames.empty()
-                             ? ""
-                             : CI.getCodeGenOpts().CudaGpuBinaryFileNames[0]) {
+        m_FatbinFilePath(CI.getCodeGenOpts().CudaGpuBinaryFileName) {
     if (m_FatbinFilePath.empty()) {
       llvm::errs() << "Error: CudaGpuBinaryFileNames can't be empty\n";
       return;

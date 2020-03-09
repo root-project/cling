@@ -191,7 +191,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   // The function __cuda_module_ctor and __cuda_module_dtor will just generated,
   // if a CUDA fatbinary file exist. Without file path there is no need for the
   // function pass.
-  if(!m_CGOpts.CudaGpuBinaryFileNames.empty())
+  if(!m_CGOpts.CudaGpuBinaryFileName.empty())
     m_MPM[OptLevel]->add(new UniqueCUDAStructorName());
   m_MPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
                                                    m_TM.getTargetIRAnalysis()));
