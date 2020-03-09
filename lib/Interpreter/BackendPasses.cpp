@@ -181,7 +181,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   } else {
     PMBuilder.Inliner = createFunctionInliningPass(OptLevel,
                                                    PMBuilder.SizeLevel,
-            (!m_CGOpts.SampleProfileFile.empty() && m_CGOpts.EmitSummaryIndex));
+            (!m_CGOpts.SampleProfileFile.empty() && m_CGOpts.PrepareForThinLTO));
   }
 
   // Set up the per-module pass manager.
