@@ -25,7 +25,7 @@ namespace cling {
   public:
     ClingCodeCompleteConsumer(const CodeCompleteOptions &CodeCompleteOpts,
                               std::vector<std::string> &completions)
-      : CodeCompleteConsumer(CodeCompleteOpts, false),
+      : CodeCompleteConsumer(CodeCompleteOpts),
         m_CCTUInfo(std::make_shared<GlobalCodeCompletionAllocator>()),
         m_Completions(completions) {}
     ~ClingCodeCompleteConsumer() {}
