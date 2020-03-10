@@ -34,7 +34,7 @@ namespace {
                   MinimalImport), m_Source(source) {}
     virtual ~ClingASTImporter() = default;
 
-    Decl *Imported(Decl *From, Decl *To) override {
+    void Imported(Decl *From, Decl *To) override {
       ASTImporter::Imported(From, To);
 
       if (clang::TagDecl* toTagDecl = dyn_cast<TagDecl>(To)) {
@@ -60,7 +60,6 @@ namespace {
         DeclContext *fromDeclContext = llvm::dyn_cast<DeclContext>(From);
         m_Source.addToImportedDeclContexts(toDeclContext, fromDeclContext);
       }
-      return To;
     }
   };
 }
@@ -109,7 +108,9 @@ namespace cling {
       utils::DiagnosticsStore DS(
         m_Importer->getFromContext().getDiagnostics(), false, false, true);
 
-      assert((m_Importer->Import(declToImport)==nullptr) && "Import worked!");
+      Decl* To = nullptr;
+      m_Importer->Import(declToImport, To);
+      assert(To && "Import did not work!");
       assert(!DS.empty() &&
              DS[0].getID() == clang::diag::err_unsupported_ast_node &&
              "Import may be supported");
