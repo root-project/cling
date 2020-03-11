@@ -717,8 +717,9 @@ namespace {
       std::unique_ptr<llvm::MemoryBuffer> Buffer =
         llvm::MemoryBuffer::getMemBuffer(MOverlay);
 
-      IntrusiveRefCntPtr<clang::vfs::FileSystem> FS =
-        vfs::getVFSFromYAML(std::move(Buffer), nullptr, VfsOverlayFileName);
+      IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS =
+        llvm::vfs::getVFSFromYAML(std::move(Buffer), nullptr,
+                                  VfsOverlayFileName);
       if (!FS.get())
         llvm::errs() << "Error in modulemap.overlay!\n";
 
