@@ -108,9 +108,8 @@ namespace cling {
       utils::DiagnosticsStore DS(
         m_Importer->getFromContext().getDiagnostics(), false, false, true);
 
-      Decl* To = nullptr;
-      m_Importer->Import(declToImport, To);
-      assert(To && "Import did not work!");
+      llvm::Expected<const Decl *> To = m_Importer->Import(declToImport);
+      assert(To.get() && "Import did not work!");
       assert(!DS.empty() &&
              DS[0].getID() == clang::diag::err_unsupported_ast_node &&
              "Import may be supported");
@@ -118,8 +117,8 @@ namespace cling {
       return;
     }
 
-    if (Decl *importedDecl = m_Importer->Import(declToImport)) {
-      if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(importedDecl)) {
+    if (auto toOrErr = m_Importer->Import(declToImport)) {
+      if (NamedDecl *importedNamedDecl = llvm::dyn_cast<NamedDecl>(*toOrErr)) {
         SetExternalVisibleDeclsForName(childCurrentDeclContext,
                                        importedNamedDecl->getDeclName(),
                                        importedNamedDecl);
@@ -127,6 +126,9 @@ namespace cling {
       // Put the name of the Decl imported with the
       // DeclarationName coming from the parent, in  my map.
       m_ImportedDecls[childDeclName] = parentDeclName;
+    } else {
+      logAllUnhandledErrors(toOrErr.takeError(), llvm::errs(),
+                            "Error importing decl");
     }
   }
 
@@ -136,15 +138,14 @@ namespace cling {
                                   DeclarationName &parentDeclName,
                                   const DeclContext *childCurrentDeclContext) {
 
-    if (DeclContext *importedDeclContext =
-                                m_Importer->ImportContext(declContextToImport)) {
+    if (auto toOrErr = m_Importer->ImportContext(declContextToImport)) {
 
-      importedDeclContext->setHasExternalVisibleStorage(true);
-      if (NamedDecl *importedNamedDecl = 
-                            llvm::dyn_cast<NamedDecl>(importedDeclContext)) {
+      DeclContext *importedDC = *toOrErr;
+      importedDC->setHasExternalVisibleStorage(true);
+      if (NamedDecl *importedND = llvm::dyn_cast<NamedDecl>(importedDC)) {
         SetExternalVisibleDeclsForName(childCurrentDeclContext,
-                                       importedNamedDecl->getDeclName(),
-                                       importedNamedDecl);
+                                       importedND->getDeclName(),
+                                       importedND);
       }
 
       // Put the name of the DeclContext imported with the
@@ -153,7 +154,10 @@ namespace cling {
 
       // And also put the declaration context I found from the parent Interpreter
       // in the map of the child Interpreter to have it for the future.
-      m_ImportedDeclContexts[importedDeclContext] = declContextToImport;
+      m_ImportedDeclContexts[importedDC] = declContextToImport;
+    } else {
+      logAllUnhandledErrors(toOrErr.takeError(), llvm::errs(),
+                            "Error importing decl context");
     }
   }
 
