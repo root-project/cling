@@ -1368,7 +1368,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       return nullptr;
     }
 
-    const driver::ArgStringList* CC1Args = GetCC1Arguments(Compilation.get());
+    const llvm::opt::ArgStringList* CC1Args = GetCC1Arguments(Compilation.get());
     if (!CC1Args) {
       cling::errs() << "Could not get cc1 arguments.\n";
       return nullptr;
