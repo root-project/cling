@@ -62,7 +62,9 @@ namespace {
     // either -std=c++1y or -std=c++14 is specified is 201300L, which fails
     // the test for C++14 or more (201402L) as previously specified.
     // I would claim that the check should be relaxed to:
-#if __cplusplus > 201402L
+#if __cplusplus >  201703L
+    return 20;
+#elif __cplusplus > 201402L
     return 17;
 #elif __cplusplus > 201103L || (defined(LLVM_ON_WIN32) && _MSC_VER >= 1900)
     return 14;
@@ -906,10 +908,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // Sanity check that clang delivered the language standard requested
     if (CompilerOpts.DefaultLanguage(&LangOpts)) {
       switch (CxxStdCompiledWith()) {
-        case 17: assert(LangOpts.CPlusPlus1z && "Language version mismatch");
-          // fall-through!
+        case 20: assert(LangOpts.CPlusPlus2a && "Language version mismatch");
+          LLVM_FALLTHROUGH;
+        case 17: assert(LangOpts.CPlusPlus17 && "Language version mismatch");
+          LLVM_FALLTHROUGH;
         case 14: assert(LangOpts.CPlusPlus14 && "Language version mismatch");
-          // fall-through!
+          LLVM_FALLTHROUGH;
         case 11: assert(LangOpts.CPlusPlus11 && "Language version mismatch");
           break;
         default: assert(false && "You have an unhandled C++ standard!");
@@ -1291,7 +1295,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       // and by enforcing the std version now cling is telling clang what to
       // do, rather than after clang has dedcuded a default.
       switch (CxxStdCompiledWith()) {
-        case 17: argvCompile.emplace_back("-std=c++1z"); break;
+        case 20: argvCompile.emplace_back("-std=c++2a"); break;
+        case 17: argvCompile.emplace_back("-std=c++17"); break;
         case 14: argvCompile.emplace_back("-std=c++14"); break;
         case 11: argvCompile.emplace_back("-std=c++11"); break;
         default: llvm_unreachable("Unrecognized C++ version");

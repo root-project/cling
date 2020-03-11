@@ -112,7 +112,7 @@ namespace cling {
       cppStdVersion = "-std=c++11";
     if (langOpts.CPlusPlus14)
       cppStdVersion = "-std=c++14";
-    if (langOpts.CPlusPlus1z)
+    if (langOpts.CPlusPlus17)
       cppStdVersion = "-std=c++1z";
     if (langOpts.CPlusPlus2a)
       cppStdVersion = "-std=c++2a";
