@@ -216,7 +216,8 @@ namespace cling {
        FE = PP.LookupFile(fileNameLoc, FileName, isAngled, FromDir, FromFile,
                           CurDir, /*SearchPath*/ 0,
                           /*RelativePath*/ 0, /*suggestedModule*/ 0,
-                          /*IsMapped*/ 0, /*SkipCache*/ false,
+                          /*IsMapped*/ 0, /*IsFramework*/ nullptr,
+                          /*SkipCache*/ false,
                           /*OpenFile*/ false, /*CacheFail*/ true);
        // Return true if we can '#include' the given filename
        return FE != nullptr;

@@ -1430,7 +1430,8 @@ namespace cling {
     SourceLocation fileNameLoc;
     FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, FromDir, FromFile,
                        CurDir, /*SearchPath*/0, /*RelativePath*/ 0,
-                       /*suggestedModule*/0, 0 /*IsMapped*/, /*SkipCache*/false,
+                       /*suggestedModule*/0, 0 /*IsMapped*/,
+                       /*IsFrameworkFound*/ nullptr, /*SkipCache*/false,
                        /*OpenFile*/ false, /*CacheFail*/ false);
     if (FE)
       return FE->getName();
