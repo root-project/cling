@@ -44,7 +44,7 @@ class DemoPluginPragmaHandler : public clang::PragmaHandler {
 public:
   DemoPluginPragmaHandler() : clang::PragmaHandler("demoplugin") { }
   void HandlePragma(clang::Preprocessor &PP,
-                    clang::PragmaIntroducerKind Introducer,
+                    clang::PragmaIntroducer Introducer,
                     clang::Token &PragmaTok) {
     llvm::outs() << "DemoPluginPragmaHandler::HandlePragma\n";
     // Handle the pragma

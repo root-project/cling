@@ -190,7 +190,7 @@ namespace {
       PragmaHandler("cling"), m_Interp(interp) {}
 
     void HandlePragma(Preprocessor& PP,
-                      PragmaIntroducerKind Introducer,
+                      PragmaIntroducer Introducer,
                       Token& FirstToken) override {
 
       Token Tok;
