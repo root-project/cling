@@ -83,10 +83,10 @@ namespace cling {
       unsigned DiagID =
         Diags.getCustomDiagID(clang::DiagnosticsEngine::Warning,
                                  "invalid memory pointer passed to a callee:");
-      Diags.Report(m_Arg->getLocStart(), DiagID) << m_Arg->getSourceRange();
+      Diags.Report(m_Arg->getBeginLoc(), DiagID) << m_Arg->getSourceRange();
     }
     else
-      m_Sema->Diag(m_Arg->getLocStart(), clang::diag::warn_null_arg)
+      m_Sema->Diag(m_Arg->getBeginLoc(), clang::diag::warn_null_arg)
         << m_Arg->getSourceRange();
     return true;
   }

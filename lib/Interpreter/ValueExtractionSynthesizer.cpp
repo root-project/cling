@@ -222,8 +222,8 @@ namespace {
 
     // Build a reference to Value* in the wrapper, should be
     // the only argument of the wrapper.
-    SourceLocation locStart = (E) ? E->getLocStart() : FD->getLocStart();
-    SourceLocation locEnd = (E) ? E->getLocEnd() : FD->getLocEnd();
+    SourceLocation locStart = (E) ? E->getBeginLoc() : FD->getBeginLoc();
+    SourceLocation locEnd = (E) ? E->getEndLoc() : FD->getEndLoc();
     ExprResult wrapperSVRDRE
       = m_Sema->BuildDeclRefExpr(FD->getParamDecl(0), m_Context->VoidPtrTy,
                                  VK_RValue, locStart);
@@ -332,7 +332,7 @@ namespace {
                                    /*initializer*/E
                                    );
         if (Call.isInvalid()) {
-          m_Sema->Diag(E->getLocStart(), diag::err_undeclared_var_use)
+          m_Sema->Diag(E->getBeginLoc(), diag::err_undeclared_var_use)
             << "operator new";
           return Call.get();
         }
@@ -407,7 +407,7 @@ namespace {
 
   static bool VSError(clang::Sema* Sema, clang::Expr* E, llvm::StringRef Err) {
     DiagnosticsEngine& Diags = Sema->getDiagnostics();
-    Diags.Report(E->getLocStart(),
+    Diags.Report(E->getBeginLoc(),
                  Diags.getCustomDiagID(
                      clang::DiagnosticsEngine::Level::Error,
                      "ValueExtractionSynthesizer could not find: '%0'."))

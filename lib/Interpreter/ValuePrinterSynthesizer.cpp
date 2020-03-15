@@ -130,7 +130,7 @@ namespace cling {
 
     // Find cling_PrintValue
     if (!m_LookupResult)
-      FindAndCacheRuntimeLookupResult(E->getLocStart());
+      FindAndCacheRuntimeLookupResult(E->getBeginLoc());
 
 
     Expr* VoidEArg = utils::Synthesize::CStyleCastPtrExpr(m_Sema,
@@ -158,8 +158,8 @@ namespace cling {
       = m_Sema->BuildDeclarationNameExpr(CSS, *m_LookupResult,
                                          /*ADL*/ false).get();
 
-    Expr* Result = m_Sema->ActOnCallExpr(S, unresolvedLookup, E->getLocStart(),
-                                         CallArgs, E->getLocEnd()).get();
+    Expr* Result = m_Sema->ActOnCallExpr(S, unresolvedLookup, E->getBeginLoc(),
+                                         CallArgs, E->getEndLoc()).get();
     assert(Result && "Cannot create value printer!");
 
     return Result;

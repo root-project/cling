@@ -97,9 +97,7 @@ namespace {
           OS << ")@)";
 
           if (Node->hasExplicitTemplateArgs())
-            TemplateSpecializationType::PrintTemplateArgumentList(OS,
-                                                     Node->template_arguments(),
-                                                                  m_Policy);
+            printTemplateArgumentList(OS, Node->template_arguments(), m_Policy);
           if (Node->hasExplicitTemplateArgs())
             assert((Node->getTemplateArgs() || Node->getNumTemplateArgs()) && \
                    "There shouldn't be template paramlist");
@@ -264,7 +262,7 @@ namespace cling {
           unsigned diagID
           = Diags.getCustomDiagID(DiagnosticsEngine::Error,
                                   "Syntax error");
-          Diags.Report(NewBody.getAsSingleNode()->getLocStart(), diagID);
+          Diags.Report(NewBody.getAsSingleNode()->getBeginLoc(), diagID);
           D->dump();
           if (NewBody.hasSingleNode())
             NewBody.getAs<Expr>()->dump();
@@ -465,7 +463,7 @@ namespace cling {
         // Build Arg3 cling::Interpreter
         CXXScopeSpec CXXSS;
         DeclarationNameInfo NameInfo(m_gCling->getDeclName(),
-                                     m_gCling->getLocStart());
+                                     m_gCling->getBeginLoc());
         Expr* gClingDRE
           = m_Sema->BuildDeclarationNameExpr(CXXSS, NameInfo ,m_gCling).get();
         Inits.push_back(gClingDRE);
@@ -727,7 +725,7 @@ namespace cling {
     for (unsigned int i = 0; i < Addresses.size(); ++i) {
 
       Expr* UnOp
-        = m_Sema->BuildUnaryOp(S, Addresses[i]->getLocStart(), UO_AddrOf,
+        = m_Sema->BuildUnaryOp(S, Addresses[i]->getBeginLoc(), UO_AddrOf,
                                Addresses[i]).get();
       if (!UnOp) {
         // Not good, return what we had.
@@ -888,9 +886,9 @@ namespace cling {
     Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
     CallExpr* EvalCall = m_Sema->ActOnCallExpr(S,
                                                DRE,
-                                               SubTree->getLocStart(),
+                                               SubTree->getBeginLoc(),
                                                CallArgs,
-                                               SubTree->getLocEnd()
+                                               SubTree->getEndLoc()
                                                ).getAs<CallExpr>();
     assert (EvalCall && "Cannot create call to Eval");
 

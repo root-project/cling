@@ -223,7 +223,7 @@ namespace cling {
        return FE != nullptr;
      };
 
-     SourceLocation spellingLoc = m_SMgr.getSpellingLoc(D->getLocStart());
+     SourceLocation spellingLoc = m_SMgr.getSpellingLoc(D->getBeginLoc());
      // Walk up the include chain.
      PresumedLoc PLoc = m_SMgr.getPresumedLoc(spellingLoc);
      llvm::SmallVector<PresumedLoc, 16> PLocs;

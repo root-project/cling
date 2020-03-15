@@ -36,8 +36,8 @@ namespace cling {
           Sema::DeclGroupPtrTy VDPtrTy
             = m_Sema->ConvertDeclToDeclGroup(m_FoundDRE->getDecl());
           StmtResult DS = m_Sema->ActOnDeclStmt(VDPtrTy,
-                                                m_FoundDRE->getLocStart(),
-                                                m_FoundDRE->getLocEnd());
+                                                m_FoundDRE->getBeginLoc(),
+                                                m_FoundDRE->getEndLoc());
           assert(!DS.isInvalid() && "Invalid DeclStmt.");
           I = Stmts.insert(I, DS.get());
           m_HandledDecls.insert(m_FoundDRE->getDecl());

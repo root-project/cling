@@ -537,7 +537,7 @@ namespace cling {
                                   isExplicitSpecialization)) {
           // Make sure that this wasn't declared as an enum and now used as a
           // struct or something similar.
-          SourceLocation KWLoc = NewTD->getLocStart();
+          SourceLocation KWLoc = NewTD->getBeginLoc();
           if (!m_Sema->isAcceptableTagRedeclaration(PrevTagDecl, Kind,
                                           NewTD->isThisDeclarationADefinition(),
                                                     KWLoc, Name)) {

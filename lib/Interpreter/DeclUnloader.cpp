@@ -385,7 +385,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitDecl(Decl* D) {
     assert(D && "The Decl is null");
-    CollectFilesToUncache(D->getLocStart());
+    CollectFilesToUncache(D->getBeginLoc());
 
     DeclContext* DC = D->getLexicalDeclContext();
 

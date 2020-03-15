@@ -125,7 +125,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
       if(!m_clingthrowIfInvalidPointerCache)
         FindAndCacheRuntimeLookupResult();
 
-      SourceLocation Loc = Arg->getLocStart();
+      SourceLocation Loc = Arg->getBeginLoc();
       Expr* VoidSemaArg = utils::Synthesize::CStyleCastPtrExpr(&m_Sema,
                                                             m_Context.VoidPtrTy,
                                                             (uintptr_t)&m_Interp);
