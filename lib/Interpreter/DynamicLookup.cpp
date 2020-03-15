@@ -249,9 +249,9 @@ namespace cling {
 
     if (FunctionDecl* FD = dyn_cast<FunctionDecl>(D)) {
       if (FD->hasBody() && ShouldVisit(FD)) {
-	// Find DynamicLookup specific builtins
-	if (!m_EvalDecl)
-	  Initialize();
+        // Find DynamicLookup specific builtins
+        if (!m_EvalDecl)
+          Initialize();
 
         // Set the decl context, which is needed by Evaluate.
         m_CurDeclContext = FD;
