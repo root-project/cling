@@ -611,9 +611,9 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
         // Collect all the specializations without the one to remove.
         for(Set::const_iterator I = specs.begin(),E = specs.end(); I != E; ++I){
-          assert(I->Function && "Must have a specialization.");
-          if (I->Function != specialization)
-            specializations.push_back(I->Function);
+          assert(I->getFunction() && "Must have a specialization.");
+          if (I->getFunction() != specialization)
+            specializations.push_back(I->getFunction());
         }
 
         This->getCommonPtr()->Specializations.clear();
