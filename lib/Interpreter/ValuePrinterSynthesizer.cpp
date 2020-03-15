@@ -172,7 +172,7 @@ namespace cling {
       if (!isa<NullStmt>(child))
         FBody.push_back(child);
 
-    CS->setStmts(*m_Context, FBody);
+    CS->replaceStmts(*m_Context, FBody);
     return FBody.size();
   }
 

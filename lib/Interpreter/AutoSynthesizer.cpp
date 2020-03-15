@@ -43,7 +43,7 @@ namespace cling {
           m_HandledDecls.insert(m_FoundDRE->getDecl());
         }
       }
-      CS->setStmts(m_Sema->getASTContext(), Stmts);
+      CS->replaceStmts(m_Sema->getASTContext(), Stmts);
     }
 
     void Fix(CXXTryStmt* TS) {

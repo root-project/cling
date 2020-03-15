@@ -359,7 +359,7 @@ namespace cling {
           for(unsigned i = 0; i < NewStmts.size(); ++i)
             NewChildren.push_back(NewStmts[i]);
 
-          Node->setStmts(*m_Context, NewChildren);
+          Node->replaceStmts(*m_Context, NewChildren);
           // Resolve all 1:n replacements
           Visit(Node);
         }
@@ -388,7 +388,7 @@ namespace cling {
       }
     }
 
-    Node->setStmts(*m_Context, NewChildren);
+    Node->replaceStmts(*m_Context, NewChildren);
 
     --m_NestedCompoundStmts;
     return ASTNodeInfo(Node, 0);

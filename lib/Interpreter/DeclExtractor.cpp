@@ -210,7 +210,7 @@ namespace cling {
       }
     }
 
-    CS->setStmts(*m_Context, Stmts);
+    CS->replaceStmts(*m_Context, Stmts);
 
     if (hasNoErrors && !TouchedDecls.empty()) {
       // Put the wrapper after its declarations. (Nice when AST dumping)
@@ -261,8 +261,7 @@ namespace cling {
 
       // Wrap Stmts into a function body.
       llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
-      CompoundStmt* CS = new (*m_Context)CompoundStmt(*m_Context, StmtsRef,
-                                                      Loc, Loc);
+      CompoundStmt* CS = CompoundStmt::Create(*m_Context, StmtsRef, Loc, Loc);
       FD->setBody(CS);
       Emit(FD);
 
