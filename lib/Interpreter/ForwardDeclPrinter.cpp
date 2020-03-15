@@ -410,7 +410,7 @@ namespace cling {
       if (D->isModulePrivate())    Out() << "__module_private__ ";
       if (D->isConstexpr() && !D->isExplicitlyDefaulted())
         Out() << "constexpr ";
-      if ((CDecl && CDecl->isExplicitSpecified()) ||
+      if ((CDecl && CDecl->hasExplicitSpecifier()) ||
           (ConversionDecl && ConversionDecl->isExplicit()))
         Out() << "explicit ";
     }
