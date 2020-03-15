@@ -1592,8 +1592,8 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
       auto Buffer = std::make_shared<PCHBuffer>();
 
       Consumers.push_back(llvm::make_unique<PCHGenerator>(
-          CI->getPreprocessor(), ModuleOutputFile, Sysroot, Buffer,
-          CI->getFrontendOpts().ModuleFileExtensions,
+          CI->getPreprocessor(), CI->getModuleCache(), ModuleOutputFile,
+          Sysroot, Buffer, CI->getFrontendOpts().ModuleFileExtensions,
           /*AllowASTWithErrors=*/false,
           /*IncludeTimestamps=*/
           +CI->getFrontendOpts().BuildingImplicitModule));
