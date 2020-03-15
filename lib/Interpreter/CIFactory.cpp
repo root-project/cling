@@ -1526,11 +1526,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     FileID MainFileID = SM->createFileID(FE, SourceLocation(), SrcMgr::C_User);
     SM->setMainFileID(MainFileID);
     const SrcMgr::SLocEntry& MainFileSLocE = SM->getSLocEntry(MainFileID);
-    const SrcMgr::ContentCache* MainFileCC
-      = MainFileSLocE.getFile().getContentCache();
+    const SrcMgr::FileInfo& MainFileFI = MainFileSLocE.getFile();
+    SrcMgr::ContentCache* MainFileCC
+      = const_cast<SrcMgr::ContentCache*>(MainFileFI.getContentCache());
     if (!Buffer)
       Buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/;\n");
-    const_cast<SrcMgr::ContentCache*>(MainFileCC)->setBuffer(std::move(Buffer));
+    MainFileCC->replaceBuffer(Buffer.release(), /*DoNotFree*/ false);
 
     // Create TargetInfo for the other side of CUDA and OpenMP compilation.
     if ((CI->getLangOpts().CUDA || CI->getLangOpts().OpenMPIsDevice) &&
