@@ -311,7 +311,8 @@ namespace cling {
     // object file is not supported and do not make sense
     auto FileType = llvm::TargetMachine::CGFT_AssemblyFile;
 
-    if (targetMachine->addPassesToEmitFile(pass, dest, FileType)) {
+    if (targetMachine->addPassesToEmitFile(pass, dest, /*DwoOut*/ nullptr,
+                                           FileType)) {
       llvm::errs() << "TargetMachine can't emit assembler code";
       return 1;
     }
