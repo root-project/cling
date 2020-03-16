@@ -379,6 +379,22 @@ namespace cling {
 //    }
   }
 
+  static void printExplicitSpecifier(ExplicitSpecifier ES,
+                                     llvm::raw_ostream &Out,
+                                     PrintingPolicy &Policy,
+                                     unsigned Indentation) {
+    std::string Proto = "explicit";
+    llvm::raw_string_ostream EOut(Proto);
+    if (ES.getExpr()) {
+      EOut << "(";
+      ES.getExpr()->printPretty(EOut, nullptr, Policy, Indentation);
+      EOut << ")";
+    }
+    EOut << " ";
+    EOut.flush();
+    Out << EOut.str();
+  }
+
   void ForwardDeclPrinter::VisitFunctionDecl(FunctionDecl *D) {
     bool hasTrailingReturn = false;
 
@@ -410,9 +426,10 @@ namespace cling {
       if (D->isModulePrivate())    Out() << "__module_private__ ";
       if (D->isConstexpr() && !D->isExplicitlyDefaulted())
         Out() << "constexpr ";
-      if ((CDecl && CDecl->hasExplicitSpecifier()) ||
-          (ConversionDecl && ConversionDecl->isExplicit()))
-        Out() << "explicit ";
+
+      ExplicitSpecifier ExplicitSpec = ExplicitSpecifier::getFromDecl(D);
+      if (ExplicitSpec.isSpecified())
+        printExplicitSpecifier(ExplicitSpec, Out(), m_Policy, /*Indentation*/ 0);
     }
 
     PrintingPolicy SubPolicy(m_Policy);
