@@ -780,7 +780,7 @@ static std::string printFunctionValue(const Value &V, const void *ptr,
       if (SRange.isValid()) {
         clang::SourceManager &SM = C.getSourceManager();
         clang::SourceLocation LocBegin = SRange.getBegin();
-        LocBegin = SM.getExpansionRange(LocBegin).first;
+        LocBegin = SM.getExpansionRange(LocBegin).getBegin();
         o << "  at " << SM.getFilename(LocBegin);
         unsigned LineNo = SM.getSpellingLineNumber(LocBegin, &Invalid);
         if (!Invalid)
@@ -790,7 +790,7 @@ static std::string printFunctionValue(const Value &V, const void *ptr,
         cBegin = SM.getCharacterData(LocBegin, &Invalid);
         if (!Invalid) {
           clang::SourceLocation LocEnd = SRange.getEnd();
-          LocEnd = SM.getExpansionRange(LocEnd).second;
+          LocEnd = SM.getExpansionRange(LocEnd).getEnd();
           cEnd = SM.getCharacterData(LocEnd, &Invalid);
           if (Invalid)
             cBegin = 0;
