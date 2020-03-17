@@ -583,7 +583,7 @@ namespace cling {
       if (DisableFree) {
         CI->resetAndLeakSema();
         CI->resetAndLeakASTContext();
-        BuryPointer(CI->takeASTConsumer().get());
+        llvm::BuryPointer(CI->takeASTConsumer().get());
       } else {
         CI->setSema(nullptr);
         CI->setASTContext(nullptr);
