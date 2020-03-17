@@ -10,6 +10,8 @@
 #ifndef CLING_BACKENDPASSES_H
 #define CLING_BACKENDPASSES_H
 
+#include "llvm/IR/LegacyPassManager.h"
+
 #include <array>
 #include <memory>
 
