@@ -198,9 +198,8 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
              E = FDecl->specific_attr_end<NonNullAttr>(); I != E; ++I) {
 
         NonNullAttr *NonNull = *I;
-        for (NonNullAttr::args_iterator i = NonNull->args_begin(),
-               e = NonNull->args_end(); i != e; ++i) {
-          ArgIndexs.set(*i);
+        for (const auto &Idx : NonNull->args()) {
+          ArgIndexs.set(Idx.getASTIndex());
         }
       }
 
