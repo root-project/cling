@@ -326,14 +326,15 @@ namespace cling {
   };
 
   void AutoloadCallback::InclusionDirective(clang::SourceLocation HashLoc,
-                          const clang::Token &IncludeTok,
-                          llvm::StringRef FileName,
-                          bool IsAngled,
-                          clang::CharSourceRange FilenameRange,
-                          const clang::FileEntry *File,
-                          llvm::StringRef SearchPath,
-                          llvm::StringRef RelativePath,
-                          const clang::Module *Imported) {
+                                            const clang::Token &IncludeTok,
+                                            llvm::StringRef FileName,
+                                            bool IsAngled,
+                                           clang::CharSourceRange FilenameRange,
+                                            const clang::FileEntry *File,
+                                            llvm::StringRef SearchPath,
+                                            llvm::StringRef RelativePath,
+                                            const clang::Module *Imported,
+                                   clang::SrcMgr::CharacteristicKind FileType) {
     // If File is 0 this means that the #included file doesn't exist.
     if (!File)
       return;

@@ -35,18 +35,20 @@ namespace cling {
     InterpreterPPCallbacks(InterpreterCallbacks* C) : m_Callbacks(C) { }
     ~InterpreterPPCallbacks() { }
 
-    virtual void InclusionDirective(clang::SourceLocation HashLoc,
-                                    const clang::Token &IncludeTok,
-                                    llvm::StringRef FileName,
-                                    bool IsAngled,
-                                    clang::CharSourceRange FilenameRange,
-                                    const clang::FileEntry *File,
-                                    llvm::StringRef SearchPath,
-                                    llvm::StringRef RelativePath,
-                                    const clang::Module *Imported) {
+    void InclusionDirective(clang::SourceLocation HashLoc,
+                            const clang::Token &IncludeTok,
+                            llvm::StringRef FileName,
+                            bool IsAngled,
+                            clang::CharSourceRange FilenameRange,
+                            const clang::FileEntry *File,
+                            llvm::StringRef SearchPath,
+                            llvm::StringRef RelativePath,
+                            const clang::Module *Imported,
+                            SrcMgr::CharacteristicKind FileType) override {
       m_Callbacks->InclusionDirective(HashLoc, IncludeTok, FileName,
                                       IsAngled, FilenameRange, File,
-                                      SearchPath, RelativePath, Imported);
+                                      SearchPath, RelativePath, Imported,
+                                      FileType);
     }
 
     void EnteredSubmodule(clang::Module* M,
@@ -55,8 +57,8 @@ namespace cling {
       m_Callbacks->EnteredSubmodule(M, ImportLoc, ForPragma);
     }
 
-    virtual bool FileNotFound(llvm::StringRef FileName,
-                              llvm::SmallVectorImpl<char>& RecoveryPath) {
+    bool FileNotFound(llvm::StringRef FileName,
+                      llvm::SmallVectorImpl<char>& RecoveryPath) override {
       if (m_Callbacks)
         return m_Callbacks->FileNotFound(FileName, RecoveryPath);
 

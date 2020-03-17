@@ -55,7 +55,8 @@ namespace cling {
                             const clang::FileEntry *File,
                             llvm::StringRef SearchPath,
                             llvm::StringRef RelativePath,
-                            const clang::Module *Imported);
+                            const clang::Module *Imported,
+                            clang::SrcMgr::CharacteristicKind FileType);
     void TransactionCommitted(const Transaction& T);
 
   private:

@@ -12,6 +12,7 @@
 
 #include "clang/AST/DeclarationName.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 
 #include "llvm/ADT/ArrayRef.h"
 
@@ -109,7 +110,8 @@ namespace cling {
                                    const clang::FileEntry* /*File*/,
                                    llvm::StringRef /*SearchPath*/,
                                    llvm::StringRef /*RelativePath*/,
-                                   const clang::Module* /*Imported*/) {}
+                                   const clang::Module* /*Imported*/,
+                              clang::SrcMgr::CharacteristicKind /*FileType*/) {}
     virtual void EnteredSubmodule(clang::Module* M,
                                   clang::SourceLocation ImportLoc,
                                   bool ForPragma) {}
