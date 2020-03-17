@@ -19,7 +19,6 @@
 
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/TargetOptions.h"
-#include "clang/Frontend/CodeGenOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "llvm/IR/Constants.h"
