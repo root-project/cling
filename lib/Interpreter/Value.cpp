@@ -282,8 +282,7 @@ namespace cling {
         case 'u': case 'U': case 'L':
           if (N < 3 || Data[1] != '\"')
             break;
-          /* Falls through. */
-
+          LLVM_FALLTHROUGH;
         case '\"':
           // Unicode string, encoded as Utf-8
           if (N > 2 && Data[N-1] == '\"') {
@@ -292,6 +291,7 @@ namespace cling {
             utils::utf8::EscapeSequence().encode(Data, N-1, Out) << "\"\n";
             return;
           }
+          LLVM_FALLTHROUGH;
         default:
           break;
       }
