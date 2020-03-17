@@ -500,9 +500,9 @@ namespace cling {
     //  Try parsing the type name.
     //
     clang::ParsedAttributes Attrs(P.getAttrFactory());
-
-    TypeResult Res(P.ParseTypeName(0,Declarator::TypeNameContext,clang::AS_none,
-                                   0,&Attrs));
+    // FIXME: All arguments to ParseTypeName are the default arguments. Remove.
+    TypeResult Res(P.ParseTypeName(0, DeclaratorContext::TypeNameContext,
+                                   clang::AS_none, 0, &Attrs));
     if (Res.isUsable()) {
       // Accept it only if the whole name was parsed.
       if (P.NextToken().getKind() == clang::tok::eof) {
