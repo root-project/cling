@@ -59,7 +59,7 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
 #if defined(__powerpc64__) || defined(__PPC64__)
   CodeModel::Model CMModel = CodeModel::Large;
 #else
-  CodeModel::Model CMModel = CodeModel::JITDefault;
+  CodeModel::Model CMModel;
 #endif
   CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
   switch (CGOpt.OptimizationLevel) {
