@@ -664,9 +664,11 @@ namespace cling {
     PushTransactionRAII RAII(this);
     if (what.equals("asttree")) {
       std::unique_ptr<clang::ASTConsumer> printer =
-          clang::CreateASTDumper(filter, true  /*DumpDecls*/,
-                                         false /*Deserialize*/,
-                                         false /*DumpLookups*/);
+        clang::CreateASTDumper(nullptr /*Dump to stdout.*/,
+                               filter, true  /*DumpDecls*/,
+                               false /*Deserialize*/,
+                               false /*DumpLookups*/,
+                               ADOF_Default /*DumpFormat*/);
       printer->HandleTranslationUnit(getSema().getASTContext());
     } else if (what.equals("ast"))
       getSema().getASTContext().PrintStats();
