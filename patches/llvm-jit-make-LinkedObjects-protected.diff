@@ -1,0 +1,14 @@
+diff --git a/include/llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h b/include/llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h
+index d9535ce5f21..4c688c3da84 100644
+--- a/include/llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h
++++ b/include/llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h
+@@ -472,7 +472,9 @@ private:
+ 
+   // NB!  `LinkedObjects` needs to be destroyed before `NotifyFreed` because
+   // `~ConcreteLinkedObject` calls `NotifyFreed`
++protected:
+   std::map<VModuleKey, std::unique_ptr<LinkedObject>> LinkedObjects;
++private:
+   bool ProcessAllSections = false;
+ };
+ 

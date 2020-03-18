@@ -280,8 +280,7 @@ namespace cling {
     // delete compiled PTX code of last input
     m_PTX_code = "";
 
-    std::shared_ptr<llvm::Module> module =
-        m_PTX_interp->getLastTransaction()->getModule();
+    llvm::Module* module = m_PTX_interp->getLastTransaction()->getModule();
 
     std::string error;
     auto Target =

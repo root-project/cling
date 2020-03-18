@@ -139,6 +139,9 @@ namespace cling {
 
     unsigned m_IssuedDiags : 2;
 
+    /// If we still own the llvm::Module (m_Module) or it was taken by the EE.
+    unsigned m_OwnedLLVMModule : 1;
+
     ///\brief Options controlling the transformers and code generator.
     ///
     CompilationOptions m_Opts;
@@ -150,7 +153,7 @@ namespace cling {
 
     ///\brief The llvm Module containing the information that we will revert
     ///
-    std::shared_ptr<llvm::Module> m_Module;
+    llvm::Module* m_Module;
 
     ///\brief The Executor to use m_ExeUnload on.
     ///
@@ -466,8 +469,20 @@ namespace cling {
         m_NestedTransactions->clear();
     }
 
-    std::shared_ptr<llvm::Module> getModule() const { return m_Module; }
-    void setModule(std::unique_ptr<llvm::Module> M) { m_Module = std::move(M); }
+    llvm::Module* getModule() const { return m_Module; }
+    std::unique_ptr<llvm::Module> takeModule() {
+      assert(m_Module && "No module");
+      assert(m_OwnedLLVMModule && "No ownership to take");
+      m_OwnedLLVMModule = false;
+      return std::unique_ptr<llvm::Module>(m_Module);
+    }
+    void setModule(std::unique_ptr<llvm::Module> M) {
+      if (m_Module && m_OwnedLLVMModule) {
+        delete m_Module;
+      }
+      m_Module = M.release();
+      m_OwnedLLVMModule = true;
+    }
 
     IncrementalExecutor* getExecutor() const { return m_Exe; }
 

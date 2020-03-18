@@ -1,0 +1,13 @@
+diff --git a/include/llvm/ExecutionEngine/Orc/LazyEmittingLayer.h b/include/llvm/ExecutionEngine/Orc/LazyEmittingLayer.h
+index ea3d46348c9..20cdc992dcd 100644
+--- a/include/llvm/ExecutionEngine/Orc/LazyEmittingLayer.h
++++ b/include/llvm/ExecutionEngine/Orc/LazyEmittingLayer.h
+@@ -220,7 +220,7 @@ public:
+   Error removeModule(VModuleKey K) {
+     auto I = ModuleMap.find(K);
+     assert(I != ModuleMap.end() && "VModuleKey K not valid here");
+-    auto EDM = std::move(I.second);
++    auto EDM = std::move(I->second);
+     ModuleMap.erase(I);
+     return EDM->removeModuleFromBaseLayer(BaseLayer);
+   }

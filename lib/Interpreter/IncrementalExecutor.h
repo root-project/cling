@@ -117,7 +117,7 @@ namespace cling {
     /// it's C++ overloads that should be run when a module is unloaded.
     ///
     // FIXME: We should probably try using a weak_ptr instead of a shared_ptr.
-    typedef utils::OrderedMap<std::shared_ptr<llvm::Module>,
+    typedef utils::OrderedMap<const llvm::Module*,
                               std::vector<CXAAtExitElement>>
         AtExitFunctions;
     AtExitFunctions m_AtExitFuncs;
@@ -164,7 +164,7 @@ namespace cling {
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
     ///\brief Unload a set of JIT symbols.
-    bool unloadModule(const std::shared_ptr<llvm::Module>& M) const {
+    bool unloadModule(const llvm::Module* M) const {
       // FIXME: Propagate the error in a more verbose way.
       if (auto Err = m_JIT->removeModule(M))
         return false;
@@ -201,11 +201,11 @@ namespace cling {
     /// @param[in] module - The module to pass to the execution engine.
     /// @param[in] optLevel - The optimization level to be used.
     void
-    emitModule(const std::shared_ptr<llvm::Module>& module, int optLevel) const {
+    emitModule(std::unique_ptr<llvm::Module> module, int optLevel) const {
       if (m_BackendPasses)
         m_BackendPasses->runOnModule(*module, optLevel);
 
-      m_JIT->addModule(module);
+      m_JIT->addModule(std::move(module));
     }
 
     ///\brief Tells the execution to run all registered atexit functions once.
@@ -242,8 +242,7 @@ namespace cling {
 
     ///\brief Keep track of the entities whose dtor we need to call.
     ///
-    void AddAtExitFunc(void (*func)(void*), void* arg,
-                       const std::shared_ptr<llvm::Module>& M);
+    void AddAtExitFunc(void (*func)(void*), void* arg, const llvm::Module* M);
 
     ///\brief Try to resolve a symbol through our LazyFunctionCreators;
     /// print an error message if that fails.

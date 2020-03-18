@@ -40,6 +40,7 @@ namespace cling {
     m_Parent = 0;
     m_State = kCollecting;
     m_IssuedDiags = kNone;
+    m_OwnedLLVMModule = false;
     m_Opts = CompilationOptions();
     m_DefinitionShadowNS = 0;
     m_Module = 0;

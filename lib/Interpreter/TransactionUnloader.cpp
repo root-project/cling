@@ -145,7 +145,7 @@ namespace cling {
   }
 
   bool
-  TransactionUnloader::unloadModule(const std::shared_ptr<llvm::Module>& M) {
+  TransactionUnloader::unloadModule(llvm::Module* M) {
     for (auto& Func: M->functions())
       m_CodeGen->forgetGlobal(&Func);
     for (auto& Glob: M->globals())
