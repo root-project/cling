@@ -265,10 +265,6 @@ namespace cling {
         return;
     }
 
-    // Tell the diagnostic client that we are entering file parsing mode.
-    DiagnosticConsumer& DClient = getCI()->getDiagnosticClient();
-    DClient.BeginSourceFile(getCI()->getLangOpts(), &PP);
-
     bool usingCxxModules = getSema().getLangOpts().Modules;
     if (usingCxxModules) {
       // Explicitly create the modulemanager now. If we would create it later

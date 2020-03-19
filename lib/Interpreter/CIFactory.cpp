@@ -1594,6 +1594,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                                       PP.getTargetInfo().getTriple());
     }
 
+    // Tell the diagnostic client that we are entering file parsing mode as the
+    // handling of modulemap files may issue diagnostics.
+    // FIXME: Consider moving in SetupDiagnostics.
+    DiagnosticConsumer& DClient = CI->getDiagnosticClient();
+    DClient.BeginSourceFile(CI->getLangOpts(), &PP);
+
     for (const auto& Filename : FrontendOpts.ModuleMapFiles) {
       if (auto* File = FM.getFile(Filename))
         PP.getHeaderSearchInfo().loadModuleMapFile(File, /*IsSystem*/ false);
