@@ -581,8 +581,10 @@ namespace {
       assert(llvm::sys::fs::exists(originalLoc.str()) && "Must exist!");
       assert(llvm::sys::fs::exists(SystemDir) && "Must exist!");
 
+      std::string modulemapFilename
+        = HSOpts.ImplicitModuleMaps ? "module.modulemap" : Filename;
       llvm::SmallString<512> systemLoc(SystemDir);
-      llvm::sys::path::append(systemLoc, "module.modulemap");
+      llvm::sys::path::append(systemLoc, modulemapFilename);
       // Check if we need to mount a custom modulemap. We may have it, for
       // instance when we are on osx or using libc++.
       if (llvm::sys::fs::exists(systemLoc.str())) {
@@ -597,7 +599,7 @@ namespace {
         overlay += ",\n";
 
       overlay += "{ 'name': '" + SystemDir.str() + "', 'type': 'directory',\n";
-      overlay += "'contents': [\n   { 'name': 'module.modulemap', ";
+      overlay += "'contents': [\n   { 'name': '" + modulemapFilename + "', ";
       overlay += "'type': 'file',\n  'external-contents': '";
       overlay += originalLoc.str().str() + "'\n";
       overlay += "}\n ]\n }";
@@ -649,21 +651,21 @@ namespace {
     llvm::sys::path::append(resourceDirLoc, "include", "module.modulemap");
     ModuleMapFiles.push_back(resourceDirLoc.str().str());
     // FIXME: Move these calls in maybeAppendOverlayEntry.
-    llvm::sys::path::append(cIncLoc, "module.modulemap");
+    llvm::sys::path::append(cIncLoc, "libc.modulemap");
     ModuleMapFiles.push_back(cIncLoc.str().str());
-    llvm::sys::path::append(stdIncLoc, "module.modulemap");
+    llvm::sys::path::append(stdIncLoc, "std.modulemap");
     ModuleMapFiles.push_back(stdIncLoc.str().str());
+    if (!cudaIncLoc.empty()) {
+      llvm::sys::path::append(cudaIncLoc, "cuda.modulemap");
+      ModuleMapFiles.push_back(cudaIncLoc.str().str());
+    }
     if (!tinyxml2IncLoc.empty()) {
-      llvm::sys::path::append(tinyxml2IncLoc, "module.modulemap");
+      llvm::sys::path::append(tinyxml2IncLoc, "tinyxml2.modulemap");
       ModuleMapFiles.push_back(tinyxml2IncLoc.str().str());
     }
     if (!boostIncLoc.empty()) {
-      llvm::sys::path::append(boostIncLoc, "module.modulemap");
+      llvm::sys::path::append(boostIncLoc, "boost.modulemap");
       ModuleMapFiles.push_back(boostIncLoc.str().str());
-    }
-    if (!cudaIncLoc.empty()) {
-      llvm::sys::path::append(cudaIncLoc, "module.modulemap");
-      ModuleMapFiles.push_back(cudaIncLoc.str().str());
     }
     llvm::sys::path::append(clingIncLoc, "module.modulemap");
     ModuleMapFiles.push_back(clingIncLoc.str().str());
