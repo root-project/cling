@@ -570,15 +570,26 @@ namespace {
     llvm::sys::path::append(clingIncLoc, "cling");
 
     // Construct a column of modulemap overlay file if needed.
-    auto maybeAppendOverlayEntry = [&HSOpts](llvm::StringRef SystemDir,
-                                             const std::string& Filename,
-                                             const std::string& Location,
-                                             std::string& overlay) {
+    auto maybeAppendOverlayEntry
+       = [&HSOpts, &ModuleMapFiles](llvm::StringRef SystemDir,
+                                    const std::string& Filename,
+                                    const std::string& Location,
+                                    std::string& overlay) -> void {
 
       llvm::SmallString<512> originalLoc(Location);
+      assert(llvm::sys::fs::exists(originalLoc.str()) && "Must exist!");
       llvm::sys::path::append(originalLoc, Filename);
 
-      assert(llvm::sys::fs::exists(originalLoc.str()) && "Must exist!");
+      // The build system might have decided not to provide modulemaps, in cases
+      // it found ones which come with the library.
+      if (!llvm::sys::fs::exists(originalLoc.str())) {
+        if (HSOpts.Verbose)
+          cling::log() << originalLoc.str()
+                       << " does not exists! Nothing to mount in "
+                       << " '" << SystemDir << "'";
+        return;
+      }
+
       assert(llvm::sys::fs::exists(SystemDir) && "Must exist!");
 
       std::string modulemapFilename
@@ -587,7 +598,7 @@ namespace {
       llvm::sys::path::append(systemLoc, modulemapFilename);
       // Check if we need to mount a custom modulemap. We may have it, for
       // instance when we are on osx or using libc++.
-      if (llvm::sys::fs::exists(systemLoc.str())) {
+      if (llvm::sys::fs::exists(systemLoc.str()) ) {
         if (HSOpts.Verbose)
           cling::log() << systemLoc.str()
                        << " already exists! Skip replacing it with "
@@ -603,7 +614,22 @@ namespace {
       overlay += "'type': 'file',\n  'external-contents': '";
       overlay += originalLoc.str().str() + "'\n";
       overlay += "}\n ]\n }";
+
+      if (HSOpts.ImplicitModuleMaps)
+         return;
+
+      ModuleMapFiles.push_back(systemLoc.str().str());
     };
+
+    if (!HSOpts.ImplicitModuleMaps) {
+      // Register the modulemap files.
+      llvm::SmallString<512> resourceDirLoc(HSOpts.ResourceDir);
+      llvm::sys::path::append(resourceDirLoc, "include", "module.modulemap");
+      ModuleMapFiles.push_back(resourceDirLoc.str().str());
+      llvm::SmallString<512> clingModuleMap(clingIncLoc);
+      llvm::sys::path::append(clingModuleMap, "module.modulemap");
+      ModuleMapFiles.push_back(clingModuleMap.str().str());
+    }
 
     std::string MOverlay;
     maybeAppendOverlayEntry(cIncLoc.str(), "libc.modulemap", clingIncLoc.str(),
@@ -642,33 +668,6 @@ namespace {
       // Load virtual modulemap overlay file
       CI.getInvocation().addOverlay(FS);
     }
-
-    if (HSOpts.ImplicitModuleMaps)
-      return;
-
-    // Register the modulemap files.
-    llvm::SmallString<512> resourceDirLoc(HSOpts.ResourceDir);
-    llvm::sys::path::append(resourceDirLoc, "include", "module.modulemap");
-    ModuleMapFiles.push_back(resourceDirLoc.str().str());
-    // FIXME: Move these calls in maybeAppendOverlayEntry.
-    llvm::sys::path::append(cIncLoc, "libc.modulemap");
-    ModuleMapFiles.push_back(cIncLoc.str().str());
-    llvm::sys::path::append(stdIncLoc, "std.modulemap");
-    ModuleMapFiles.push_back(stdIncLoc.str().str());
-    if (!cudaIncLoc.empty()) {
-      llvm::sys::path::append(cudaIncLoc, "cuda.modulemap");
-      ModuleMapFiles.push_back(cudaIncLoc.str().str());
-    }
-    if (!tinyxml2IncLoc.empty()) {
-      llvm::sys::path::append(tinyxml2IncLoc, "tinyxml2.modulemap");
-      ModuleMapFiles.push_back(tinyxml2IncLoc.str().str());
-    }
-    if (!boostIncLoc.empty()) {
-      llvm::sys::path::append(boostIncLoc, "boost.modulemap");
-      ModuleMapFiles.push_back(boostIncLoc.str().str());
-    }
-    llvm::sys::path::append(clingIncLoc, "module.modulemap");
-    ModuleMapFiles.push_back(clingIncLoc.str().str());
   }
 
   static void setupCxxModules(clang::CompilerInstance& CI) {
