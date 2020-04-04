@@ -1,0 +1,14 @@
+module "libc" [system] [extern_c] [no_undeclared_includes] {
+  requires msvc
+
+  export *
+  module "assert.h" {
+    export *
+    textual header "assert.h"
+  }
+  module "string.h" {
+    export *
+    header "string.h"
+  }
+  // FIXME: Add the rest of the headers
+}

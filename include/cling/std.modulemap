@@ -1,4 +1,6 @@
 module "std" [system] {
+  requires !msvc
+
   export *
   module "algorithm" {
     export *

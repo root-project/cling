@@ -1,0 +1,14 @@
+module "std" [system] {
+  requires msvc
+
+  export *
+  module "algorithm" {
+    export *
+    header "algorithm"
+  }
+  module "array" {
+    export *
+    header "array"
+  }
+  // FIXME: Add the rest of the headers
+}

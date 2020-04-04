@@ -632,10 +632,18 @@ namespace {
     }
 
     std::string MOverlay;
+#ifdef LLVM_ON_WIN32
+    maybeAppendOverlayEntry(cIncLoc.str(), "libc_msvc.modulemap",
+                            clingIncLoc.str(), MOverlay);
+    maybeAppendOverlayEntry(stdIncLoc.str(), "std_msvc.modulemap",
+                            clingIncLoc.str(), MOverlay);
+#else
     maybeAppendOverlayEntry(cIncLoc.str(), "libc.modulemap", clingIncLoc.str(),
                             MOverlay);
     maybeAppendOverlayEntry(stdIncLoc.str(), "std.modulemap", clingIncLoc.str(),
                             MOverlay);
+#endif // LLVM_ON_WIN32
+
     if (!tinyxml2IncLoc.empty())
       maybeAppendOverlayEntry(tinyxml2IncLoc.str(), "tinyxml2.modulemap",
                               clingIncLoc.str(), MOverlay);
