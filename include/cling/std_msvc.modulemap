@@ -10,5 +10,358 @@ module "std" [system] {
     export *
     header "array"
   }
-  // FIXME: Add the rest of the headers
+  module "atomic" {
+    export *
+    header "atomic"
+  }
+  module "bitset" {
+    export *
+    header "bitset"
+  }
+  // no module for cassert to stay consistent with the OS X modulemap
+  module "ccomplex" {
+    export *
+    header "ccomplex"
+  }
+  module "cctype" {
+    export *
+    header "cctype"
+  }
+  module "cerrno" {
+    export *
+    header "cerrno"
+  }
+  module "cfenv" {
+    export *
+    header "cfenv"
+  }
+  module "cfloat" {
+    export *
+    header "cfloat"
+  }
+  module "chrono" {
+    export *
+    header "chrono"
+  }
+  module "cinttypes" {
+    export *
+    header "cinttypes"
+  }
+  module "ciso646" {
+    export *
+    header "ciso646"
+  }
+  module "climits" {
+    export *
+    header "climits"
+  }
+  module "clocale" {
+    export *
+    header "clocale"
+  }
+  module "cmath" {
+    export *
+    header "cmath"
+  }
+  module "complex" {
+    export *
+    header "complex"
+  }
+    module "condition_variable" {
+    export *
+    header "condition_variable"
+  }
+  module "csetjmp" {
+    export *
+    header "csetjmp"
+  }
+  module "csignal" {
+    export *
+    header "csignal"
+  }
+  module "cstdalign" {
+    requires !cplusplus17, !header_existence
+    export *
+    header "cstdalign"
+  }
+  module "cstdarg" {
+    export *
+    header "cstdarg"
+  }
+  module "cstdbool" {
+    export *
+    header "cstdbool"
+  }
+  module "cstddef" {
+    export *
+    header "cstddef"
+  }
+  module "cstdint" {
+    export *
+    header "cstdint"
+  }
+  module "cstdio" {
+    export *
+    header "cstdio"
+  }
+  // Causes a cycle between clang's builtin modules
+  // and the STL as clang's builtin modules include
+  // this header (and in turn, the STL also includes
+  // clang's builtin headers).
+  // See the include for stdlib.h (which is forwarded
+  // to this C++ header) in clang's mm_malloc.h for the
+  // problematic code which we can't fix.
+  module "cstdlib" {
+    export *
+    textual header "cstdlib"
+  }
+  module "cstring" {
+    export *
+    header "cstring"
+  }
+  module "ctgmath" {
+    export *
+    header "ctgmath"
+  }
+  module "ctime" {
+    export *
+    header "ctime"
+  }
+//  module "ctype.h" {
+//    export *
+//    header "ctype.h"
+//  }
+  module "cwchar" {
+    export *
+    header "cwchar"
+  }
+  module "cwctype" {
+    export *
+    header "cwctype"
+  }
+  module "deque" {
+    export *
+    header "deque"
+  }
+  module "exception" {
+    export *
+    header "exception"
+  }
+  module "forward_list" {
+    export *
+    header "forward_list"
+  }
+  module "fstream" {
+    export *
+    header "fstream"
+  }
+  module "functional" {
+    export *
+    header "functional"
+  }
+  module "future" {
+    export *
+    header "future"
+  }
+/*  module "hash_map" {
+    export *
+    header "hash_map"
+  }
+  module "hash_set" {
+    export *
+    header "hash_set"
+  }
+  */
+  module "initializer_list" {
+    export *
+    header "initializer_list"
+  }
+  module "iomanip" {
+    export *
+    header "iomanip"
+  }
+  module "ios" {
+    export *
+    header "ios"
+  }
+  module "iosfwd" {
+    export *
+    header "iosfwd"
+  }
+  module "iostream" {
+    export *
+    header "iostream"
+  }
+//  module "iostream.h" {
+//    export *
+//    header "iostream.h"
+//  }
+  module "istream" {
+    export *
+    header "istream"
+  }
+  module "iterator" {
+    export *
+    header "iterator"
+  }
+  module "limits" {
+    export *
+    header "limits"
+  }
+  module "list" {
+    export *
+    header "list"
+  }
+  module "locale" {
+    export *
+    header "locale"
+  }
+//  module "locale.h" {
+//    export *
+//    header "locale.h"
+//  }
+  module "map" {
+    export *
+    header "map"
+  }
+//  module "math.h" {
+//    export *
+//    header "math.h"
+//  }
+  module "memory" {
+    export *
+    header "memory"
+  }
+  module "mutex" {
+    export *
+    header "mutex"
+  }
+  module "new" {
+    export *
+    header "new"
+  }
+  module "numeric" {
+    export *
+    header "numeric"
+  }
+  module "ostream" {
+    export *
+    header "ostream"
+  }
+  module "queue" {
+    export *
+    header "queue"
+  }
+  module "random" {
+    export *
+    header "random"
+  }
+  module "ratio" {
+    export *
+    header "ratio"
+  }
+  module "regex" {
+    export *
+    header "regex"
+  }
+  module "scoped_allocator" {
+    export *
+    header "scoped_allocator"
+  }
+  module "set" {
+    export *
+    header "set"
+  }
+//  module "setjmp.h" {
+//    export *
+//    header "setjmp.h"
+//  }
+  module "sstream" {
+    export *
+    header "sstream"
+  }
+  module "stack" {
+    export *
+    header "stack"
+  }
+  module "stdexcept" {
+    export *
+    header "stdexcept"
+  }
+  module "streambuf" {
+    export *
+    header "streambuf"
+  }
+  module "string" {
+    export *
+    header "string"
+  }
+  module "string_view" {
+    requires !header_existence
+    export *
+    textual header "string_view"
+  }
+//  module "string.h" {
+//    export *
+//    header "string.h"
+// }
+  module "system_error" {
+    export *
+    header "system_error"
+  }
+//  module "tgmath.h" {
+//    export *
+//    header "tgmath.h"
+//  }
+  module "thread" {
+    export *
+    header "thread"
+  }
+  module "tuple" {
+    export *
+    header "tuple"
+  }
+  module "type_traits" {
+    export *
+    header "type_traits"
+  }
+  module "typeindex" {
+    export *
+    header "typeindex"
+  }
+  module "typeinfo" {
+    export *
+    header "typeinfo"
+  }
+  module "unordered_map" {
+    export *
+    header "unordered_map"
+  }
+  module "unordered_set" {
+    export *
+    header "unordered_set"
+  }
+  module "utility" {
+    export *
+    header "utility"
+  }
+  module "valarray" {
+    export *
+    header "valarray"
+  }
+  module "vector" {
+    export *
+    header "vector"
+  }
+  module "codecvt" {
+    requires !header_existence
+    export *
+    header "codecvt"
+  }
+  module "cuchar" {
+    requires !header_existence
+    export *
+    header "cuchar"
+  }
+
 }
