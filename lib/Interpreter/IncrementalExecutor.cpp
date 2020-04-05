@@ -54,13 +54,6 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
     return std::unique_ptr<TargetMachine>();
   }
 
-// We have to use large code model for PowerPC64 because TOC and text sections
-// can be more than 2GB apart.
-#if defined(__powerpc64__) || defined(__PPC64__)
-  CodeModel::Model CMModel = CodeModel::Large;
-#else
-  CodeModel::Model CMModel;
-#endif
   CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
   switch (CGOpt.OptimizationLevel) {
     case 0: OptLevel = CodeGenOpt::None; break;
@@ -69,19 +62,26 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
     case 3: OptLevel = CodeGenOpt::Aggressive; break;
     default: OptLevel = CodeGenOpt::Default;
   }
+  using namespace llvm::orc;
+  auto JTMB = JITTargetMachineBuilder::detectHost();
+  if (!JTMB)
+    logAllUnhandledErrors(JTMB.takeError(), llvm::errs(),
+                          "Error detecting host");
 
-  std::string MCPU;
-  std::string FeaturesStr;
+  JTMB->setCodeGenOptLevel(OptLevel);
+#ifdef LLVM_ON_WIN32
+  JTMB->getOptions().EmulatedTLS = false;
+#endif // LLVM_ON_WIN32
 
-  auto TM = std::unique_ptr<TargetMachine>(TheTarget->createTargetMachine(
-      Triple, MCPU, FeaturesStr, llvm::TargetOptions(),
-      Optional<Reloc::Model>(), CMModel, OptLevel));
-#if defined(LLVM_ON_WIN32)
-  TM->Options.EmulatedTLS = false;
-#else
-  TM->Options.EmulatedTLS = true;
+  std::unique_ptr<TargetMachine> TM = cantFail(JTMB->createTargetMachine());
+
+#if defined(__powerpc64__) || defined(__PPC64__)
+  // We have to use large code model for PowerPC64 because TOC and text sections
+  // can be more than 2GB apart.
+  assert(TM->getCodeModel() >= CodeModel::Large);
 #endif
-  return TM;
+
+    return TM;
 }
 
 } // anonymous namespace
