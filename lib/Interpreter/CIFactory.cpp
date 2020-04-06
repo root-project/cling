@@ -629,6 +629,14 @@ namespace {
       llvm::SmallString<512> clingModuleMap(clingIncLoc);
       llvm::sys::path::append(clingModuleMap, "module.modulemap");
       ModuleMapFiles.push_back(clingModuleMap.str().str());
+#ifdef __APPLE__
+      llvm::SmallString<512> libcModuleMap(cIncLoc);
+      llvm::sys::path::append(libcModuleMap, "module.modulemap");
+      ModuleMapFiles.push_back(libcModuleMap.str().str());
+      llvm::SmallString<512> stdModuleMap(stdIncLoc);
+      llvm::sys::path::append(stdModuleMap, "module.modulemap");
+      ModuleMapFiles.push_back(stdModuleMap.str().str());
+#endif // __APPLE__
     }
 
     std::string MOverlay;
