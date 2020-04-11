@@ -327,7 +327,7 @@ namespace {
                                    /*TypeIdParens*/ SourceRange(),
                                    /*allocType*/ ETSI->getType(),
                                    /*allocTypeInfo*/ETSI,
-                                   /*arraySize*/0,
+                                   /*arraySize*/{},
                                    /*directInitRange*/E->getSourceRange(),
                                    /*initializer*/E
                                    );
