@@ -576,34 +576,38 @@ namespace {
                                     const std::string& Location,
                                     std::string& overlay) -> void {
 
-      llvm::SmallString<512> originalLoc(Location);
-      assert(llvm::sys::fs::exists(originalLoc.str()) && "Must exist!");
-      llvm::sys::path::append(originalLoc, Filename);
-
-      // The build system might have decided not to provide modulemaps, in cases
-      // it found ones which come with the library.
-      if (!llvm::sys::fs::exists(originalLoc.str())) {
-        if (HSOpts.Verbose)
-          cling::log() << originalLoc.str()
-                       << " does not exists! Nothing to mount in "
-                       << " '" << SystemDir << "'";
-        return;
-      }
-
       assert(llvm::sys::fs::exists(SystemDir) && "Must exist!");
 
-      std::string modulemapFilename
-        = HSOpts.ImplicitModuleMaps ? "module.modulemap" : Filename;
+      std::string modulemapFilename = "module.modulemap";
       llvm::SmallString<512> systemLoc(SystemDir);
       llvm::sys::path::append(systemLoc, modulemapFilename);
       // Check if we need to mount a custom modulemap. We may have it, for
       // instance when we are on osx or using libc++.
-      if (llvm::sys::fs::exists(systemLoc.str()) ) {
+      if (llvm::sys::fs::exists(systemLoc.str())) {
         if (HSOpts.Verbose)
-          cling::log() << systemLoc.str()
-                       << " already exists! Skip replacing it with "
-                       << originalLoc.str();
+          cling::log() << "Loading '" << systemLoc.str() << "'\n";
+
+        // If the library had its own modulemap file, use it. This should handle
+        // the case where we use libc++ on Unix.
+        if (!HSOpts.ImplicitModuleMaps)
+           ModuleMapFiles.push_back(systemLoc.str().str());
+
         return;
+      }
+
+      llvm::SmallString<512> originalLoc(Location);
+      assert(llvm::sys::fs::exists(originalLoc.str()) && "Must exist!");
+      llvm::sys::path::append(originalLoc, Filename);
+      assert(llvm::sys::fs::exists(originalLoc.str()));
+
+      if (HSOpts.Verbose)
+        cling::log() << "'" << systemLoc << "' does not exist. Mounting '"
+                     << originalLoc.str() << "' as '" << systemLoc << "'\n";
+
+      if (!HSOpts.ImplicitModuleMaps) {
+         modulemapFilename = Filename;
+         llvm::sys::path::remove_filename(systemLoc);
+         llvm::sys::path::append(systemLoc, modulemapFilename);
       }
 
       if (!overlay.empty())
