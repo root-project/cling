@@ -112,9 +112,7 @@ if(MSVC)
 
 endif(MSVC)
 
-target_link_libraries(cling
-  ${LIBS}
-  )
+target_link_libraries(cling PUBLIC ${LIBS})
 
 install(TARGETS cling
   RUNTIME DESTINATION bin)
