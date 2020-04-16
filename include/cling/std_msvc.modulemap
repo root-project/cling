@@ -1,5 +1,5 @@
 module "std" [system] {
-  requires msvc
+  requires windows
 
   export *
   module "algorithm" {
@@ -232,6 +232,10 @@ module "std" [system] {
     export *
     header "memory"
   }
+  module "xmemory" {
+    export *
+    header "xmemory"
+  }
   module "mutex" {
     export *
     header "mutex"
@@ -363,5 +367,12 @@ module "std" [system] {
     export *
     header "cuchar"
   }
-
+  module "yvals_core.h" {
+    export *
+    header "yvals_core.h"
+  }
+  module "yvals.h" {
+    export *
+    header "yvals.h"
+  }
 }
