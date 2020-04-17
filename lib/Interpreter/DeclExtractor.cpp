@@ -241,6 +241,7 @@ namespace cling {
     SourceLocation Loc;
     NamedDecl* ND = m_Sema->ImplicitlyDefineFunction(Loc, IIFD, TUScope);
     if (FunctionDecl* FD = dyn_cast_or_null<FunctionDecl>(ND)) {
+      Sema::SynthesizedFunctionScope Scope(*m_Sema, FD);
       FD->setImplicit(false); // Better for debugging
 
       // Add a return statement if it doesn't exist
