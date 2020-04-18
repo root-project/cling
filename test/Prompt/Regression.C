@@ -47,7 +47,7 @@ int step = 10 // CHECK: (int) 10
 step // CHECK: (int) 10
 
 gCling->process("#ifdef __UNDEFINED__\n42\n#endif")
-//CHECK: (cling::Interpreter::CompilationResult) (cling::Interpreter::CompilationResult::kSuccess) : ({{(unsigned )?}}int) 0
+//CHECK: (cling::Interpreter::CompilationResult) (cling::Interpreter::kSuccess) : ({{(unsigned )?}}int) 0
 
 // User input variants of above:
 #ifdef NOTDEFINED
@@ -56,7 +56,7 @@ gCling->process("#ifdef __UNDEFINED__\n42\n#endif")
  gCling->echo("12")
 #endif
 //CHECK: (int) 12
-//CHECK: (cling::Interpreter::CompilationResult) (cling::Interpreter::CompilationResult::kSuccess) : ({{(unsigned )?}}int) 0
+//CHECK: (cling::Interpreter::CompilationResult) (cling::Interpreter::kSuccess) : ({{(unsigned )?}}int) 0
 
 #ifdef __CLING__
  gCling->echo("19");

@@ -82,7 +82,7 @@ struct Enumer {
 #endif
 };
 Enumer::h
-// CHECK: (Enumer::H) (Enumer::H::h) : (unsigned long{{( long)?}}) 18446744073709551615
+// CHECK: (Enumer::H) (Enumer::h) : (unsigned long{{( long)?}}) 18446744073709551615
 
 // ROOT-7837
 auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lambda) &) @0x{{[0-9a-f]+}}

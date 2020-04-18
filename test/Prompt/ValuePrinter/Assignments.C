@@ -34,16 +34,16 @@ public:
   };
 };
 Outer::Inner::C
-// CHECK: (Outer::Inner::E::B) ? (Outer::Inner::E::C) : (int) 2
+// CHECK: (Outer::Inner::B) ? (Outer::Inner::C) : (int) 2
 Outer::Inner::D
-// CHECK: (Outer::Inner::E::D) : (int) -{{[0-9].*}}
+// CHECK: (Outer::Inner::D) : (int) -{{[0-9].*}}
 
 // Put an enum on the global scope
 enum E{ e1 = -12, e2, e3=33, e4, e5 = 33};
 e2
-// CHECK: (E::e2) : (int) -11
+// CHECK: (e2) : (int) -11
 ::e1
-// CHECK: (E::e1) : (int) -12
+// CHECK: (e1) : (int) -12
 
 
 // Arrays:
