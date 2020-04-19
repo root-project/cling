@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
 // This file should be used as regression test for the value printing subsystem
 // Reproducers of fixed bugs should be put here
@@ -57,9 +57,9 @@ true // CHECK: (bool) true
 false // CHECK: (bool) false
 
 unordered_multiset<float> {1} // ROOT-7310
-// expected-error@2 {{use of undeclared identifier 'unordered_multiset'}}
-// expected-error@2 {{expected '(' for function-style cast or type construction}}
-// expected-error@2 {{initializer list cannot be used on the right hand side of operator '>'}}
+// expected-error@input_line_42:2 {{expected ';' after expression}}
+// expected-error@input_line_42:2 {{use of undeclared identifier 'unordered_multiset'}}
+// expected-error@input_line_42:2 {{expected ';' after expression}}
 
 #include <unordered_set>
 std::unordered_multiset<float> {1}
