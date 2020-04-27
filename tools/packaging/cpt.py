@@ -2092,6 +2092,9 @@ elif args['with_binary_llvm'] is False and args['with_llvm_url']:
 else:
     LLVM_GIT_URL = "http://root.cern.ch/git/llvm.git"
 
+if args['with_llvm_tar']:
+    tar_required = True
+
 if args['check_requirements']:
     llvm_binary_name = ""
     box_draw('Check availability of required softwares')
@@ -2140,18 +2143,15 @@ if args['check_requirements']:
                 else:
                     choice = custom_input("Please respond with 'yes' or 'no': ", args['y'])
                     continue
-        if no_install is False and llvm_binary_name != "":
-            if args["with_llvm_tar"]:
+        if no_install is False and llvm_binary_name != "" and tar_required is False:
+            try:
+                subprocess.Popen(['sudo apt-get install llvm-{0}-dev'.format(llvm_vers)],
+                                 shell=True,
+                                 stdin=subprocess.PIPE,
+                                 stdout=None,
+                                 stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+            except:
                 tar_required = True
-            else:
-                try:
-                    subprocess.Popen(['sudo apt-get install llvm-{0}-dev'.format(llvm_vers)],
-                                     shell=True,
-                                     stdin=subprocess.PIPE,
-                                     stdout=None,
-                                     stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
-                except:
-                    tar_required = True
 
     elif OS == 'Windows':
         check_win('git')
