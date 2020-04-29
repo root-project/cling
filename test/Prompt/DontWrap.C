@@ -59,6 +59,45 @@ localFun(0)
 localFun(5, 6, 7)
 // CHECK: localFun(5, 6, 7)
 // CHECK: (int) 3
+
+
+unsigned uFun(int a) {
+  printf("uFun(%d)\n", a);
+  return 7;
+}
+
+unsigned int uiFun(int a, int b) {
+  printf("uiFun(%d, %d)\n", a, b);
+  return 9;
+}
+
+uFun(6)
+// CHECK: uFun(6)
+// CHECK: (unsigned int) 7
+
+uiFun(7, 8)
+// CHECK: uiFun(7, 8)
+// CHECK: (unsigned int) 9
+
+
+static unsigned suFun(int a) {
+  printf("suFun(%d)\n", a);
+  return 11;
+}
+
+static unsigned int suiFun(int a, int b) {
+  printf("suiFun(%d, %d)\n", a, b);
+  return 13;
+}
+
+suFun(10)
+// CHECK: suFun(10)
+// CHECK: (unsigned int) 11
+
+suiFun(11, 12)
+// CHECK: suiFun(11, 12)
+// CHECK: (unsigned int) 13
+
   
 class Test {
 public:
