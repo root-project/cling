@@ -885,7 +885,7 @@ def check_ubuntu(pkg):
         else:
             print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
             return False
-    elif pkg == "svn":
+    elif pkg == "subversion":
         if exec_subprocess_check_output('which svn', workdir) != '':
             print(pkg.ljust(20) + '[OK]'.ljust(30))
             return True
@@ -2098,7 +2098,7 @@ if args['check_requirements']:
         install_line = ""
         prerequisite = ['git', 'cmake', 'gcc', 'g++', 'debhelper', 'devscripts', 'gnupg', 'python', 'SSL']
         if is_llvm_binary_compatible():
-            prerequisite.extend(['svn', 'zlib*'])
+            prerequisite.extend(['subversion', 'zlib*'])
             if check_ubuntu('lit') is False:
                 prerequisite.extend(['python-pip'])
             if check_ubuntu('llvm-'+llvm_vers+'-dev') is False:
