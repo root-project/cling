@@ -838,7 +838,8 @@ def check_ubuntu(pkg):
             return True
     elif pkg == "cmake":
         CMAKE = os.environ.get('CMAKE', 'cmake')
-        if not check_version_string_ge(exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()[-1], '3.4.3'):
+        output = exec_subprocess_check_output('{cmake} --version'.format(cmake=CMAKE), '/').strip().split('\n')[0].split()
+        if (output == []) or (not check_version_string_ge(output[-1], '3.4.3')):
             print(pkg.ljust(20) + '[OUTDATED VERSION (<3.4.3)]'.ljust(30))
             return False
         else:
