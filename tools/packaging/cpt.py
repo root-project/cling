@@ -878,6 +878,13 @@ def check_ubuntu(pkg):
         else:
             print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
             return False
+    elif pkg == "python3-pip":
+        if exec_subprocess_check_output('pip --version', workdir) != '':
+            print(pkg.ljust(20) + '[OK]'.ljust(30))
+            return True
+        else:
+            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
+            return False
     elif pkg == "svn":
         if exec_subprocess_check_output('which svn', workdir) != '':
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -1923,6 +1930,16 @@ def custom_input(prompt, always_yes=False):
         return input(prompt)
 
 ###############################################################################
+#                           Directory Initialization                          #
+###############################################################################
+
+workdir = os.path.abspath(os.path.expanduser(args['with_workdir']))
+srcdir = os.path.join(workdir, 'cling-src')
+CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
+CPT_SRC_DIR = os.path.join(CLING_SRC_DIR, 'tools', 'packaging')
+LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
+
+###############################################################################
 #                           Platform initialization                           #
 ###############################################################################
 
@@ -1940,8 +1957,33 @@ if OS == 'Windows':
     TMP_PREFIX = 'C:\\Windows\\Temp\\cling-obj\\'
 
 elif OS == 'Linux':
-    subprocess.call("sudo pip install distro", shell=True)
-    import distro
+    try:
+        import distro
+    except:
+        yes = {'yes', 'y', 'ye', ''}
+        choice = custom_input('''
+            CPT will now attempt to install the distro (and pip) package automatically.
+            Do you want to continue? [yes/no]: ''', args['y']).lower()
+        if choice in yes:
+            if sys.version_info[0] == 3:
+                pipver = 'python3-pip'
+            else:
+                pipver = 'python2-pip'
+            if check_ubuntu(pipver) is False:
+                subprocess.Popen(['sudo apt-get install {0}'.format(pipver)],
+                                shell=True,
+                                stdin=subprocess.PIPE,
+                                stdout=None,
+                                stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+            if sys.version_info[0] == 3:
+                subprocess.call("sudo pip3 install distro", shell=True)
+            else:
+                subprocess.call("sudo pip install distro", shell=True)
+            import distro
+        else:
+            print('Install/update the distro package from pip')
+            import distro
+
     DIST = distro.linux_distribution()[0]
     RELEASE = distro.linux_distribution()[2]
     REV = distro.linux_distribution()[1]
@@ -1973,11 +2015,6 @@ else:
 #                               Global variables                              #
 ###############################################################################
 
-workdir = os.path.abspath(os.path.expanduser(args['with_workdir']))
-srcdir = os.path.join(workdir, 'cling-src')
-CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
-CPT_SRC_DIR = os.path.join(CLING_SRC_DIR, 'tools', 'packaging')
-LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 prefix = ''
 tar_required = False
 llvm_revision = urlopen(
