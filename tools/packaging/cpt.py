@@ -33,6 +33,7 @@ else:
     from urllib.request import urlopen
 
 import argparse
+import copy
 import os
 import platform
 import subprocess
@@ -691,16 +692,76 @@ def runSingleTest(test, Idx = 2, Recurse = True):
         print("Error running '%s': %s" % (test, err))
         pass
 
-def build_filecheck():
+def setup_tests():
+    global tar_required
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
         'utf-8')
-    exec_subprocess_call("svn export http://llvm.org/svn/llvm-project/llvm/branches/{0}/utils/FileCheck FileCheck".format(llvm_revision),
-                         os.path.join(CLING_SRC_DIR, "tools"))
+    assert llvm_revision[:-2] == "release_"
+    branch_vers = llvm_revision[-2]
+    branch_ref = subprocess.check_output(
+        [
+            "git",
+            "ls-remote",
+            "https://github.com/llvm/llvm-project.git",
+            "release/{0}.x".format(branch_vers),
+        ],
+        stderr=subprocess.STDOUT,
+    ).decode()
+    commit = branch_ref[: branch_ref.find("\trefs/heads")]
+    # We get zip instead of git clone to not download git history
+    subprocess.Popen(
+        [
+            'sudo wget https://github.com/llvm/llvm-project/archive/{0}.zip && sudo unzip {0}.zip "llvm-project-{0}/llvm/utils/*"'.format(
+                commit
+            )
+        ],
+        cwd=os.path.join(CLING_SRC_DIR, "tools"),
+        shell=True,
+        stdin=subprocess.PIPE,
+        stdout=None,
+        stderr=subprocess.STDOUT,
+    ).communicate("yes".encode("utf-8"))
+    subprocess.Popen(
+        ["sudo cp -r llvm-project-{0}/llvm/utils/FileCheck FileCheck".format(commit)],
+        cwd=os.path.join(CLING_SRC_DIR, "tools"),
+        shell=True,
+        stdin=subprocess.PIPE,
+        stdout=None,
+        stderr=subprocess.STDOUT,
+    ).communicate("yes".encode("utf-8"))
     with open(os.path.join(CLING_SRC_DIR, 'tools', 'CMakeLists.txt'), 'a') as file:
         file.writelines('add_subdirectory(\"FileCheck\")')
     exec_subprocess_call("cmake {0}".format(LLVM_OBJ_ROOT), CLING_SRC_DIR)
     exec_subprocess_call("cmake --build . --target FileCheck -- -j{0}".format(multiprocessing.cpu_count()), LLVM_OBJ_ROOT)
+    if not os.path.exists(os.path.join(CLING_SRC_DIR, "..", "clang", "test")):
+        llvm_dir = exec_subprocess_check_output("llvm-config --src-root", ".").strip()
+        if llvm_dir == "":
+            if tar_required:
+                llvm_dir = copy.copy(srcdir)
+            else:
+                llvm_dir = os.path.join("/usr", "lib", "llvm-" + llvm_vers, "build")
+        subprocess.Popen(
+            ["sudo mkdir {1}/utils/".format(commit, llvm_dir)],
+            cwd=os.path.join(CLING_SRC_DIR, "tools"),
+            shell=True,
+            stdin=subprocess.PIPE,
+            stdout=None,
+            stderr=subprocess.STDOUT,
+        ).communicate("yes".encode("utf-8"))
+        subprocess.Popen(
+            [
+                "sudo mv llvm-project-{0}/llvm/utils/lit/ {1}/utils/".format(
+                    commit, llvm_dir
+                )
+            ],
+            cwd=os.path.join(CLING_SRC_DIR, "tools"),
+            shell=True,
+            stdin=subprocess.PIPE,
+            stdout=None,
+            stderr=subprocess.STDOUT,
+        ).communicate("yes".encode("utf-8"))
+
 
 def test_cling():
     box_draw("Run Cling test suite")
@@ -850,13 +911,6 @@ def check_ubuntu(pkg):
             return False
     elif pkg == "python3-pip":
         if exec_subprocess_check_output('pip --version', workdir) != '':
-            print(pkg.ljust(20) + '[OK]'.ljust(30))
-            return True
-        else:
-            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
-            return False
-    elif pkg == "subversion":
-        if exec_subprocess_check_output('which svn', workdir) != '':
             print(pkg.ljust(20) + '[OK]'.ljust(30))
             return True
         else:
@@ -1675,13 +1729,6 @@ def check_mac(pkg):
         else:
             print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
             return False
-    elif pkg == "svn":
-        if exec_subprocess_check_output('which svn', workdir) != '':
-            print(pkg.ljust(20) + '[OK]'.ljust(30))
-            return True
-        else:
-            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
-            return False
     elif pkg == "lit":
         if exec_subprocess_check_output('which lit', workdir) != '':
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -2161,7 +2208,7 @@ Refer to the documentation of CPT for information on setting up your Windows env
                     continue
 
     if DIST == 'MacOSX':
-        prerequisite = ['git', 'cmake', 'clang', 'clang++', 'python', 'SSL', 'svn', 'zlib*']
+        prerequisite = ['git', 'cmake', 'clang', 'clang++', 'python', 'SSL', 'zlib*']
         install_line = ''
         if check_mac('lit') is False:
             prerequisite.extend(['python-pip'])
@@ -2271,7 +2318,7 @@ if args['current_dev']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         tarball()
         cleanup()
@@ -2281,7 +2328,7 @@ if args['current_dev']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         tarball_deb()
         debianize()
@@ -2311,7 +2358,7 @@ if args['current_dev']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         make_dmg()
         cleanup()
@@ -2321,7 +2368,7 @@ if args['current_dev']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         tarball()
         cleanup()
@@ -2368,7 +2415,7 @@ if args['last_stable']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         tarball()
         cleanup()
@@ -2379,7 +2426,7 @@ if args['last_stable']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         tarball_deb()
         debianize()
@@ -2412,7 +2459,7 @@ if args['last_stable']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         make_dmg()
         cleanup()
@@ -2423,7 +2470,7 @@ if args['last_stable']:
         install_prefix()
         if not args['no_test']:
             if args['with_binary_llvm']:
-                build_filecheck()
+                setup_tests()
             test_cling()
         tarball()
         cleanup()
@@ -2458,7 +2505,7 @@ if args['tarball_tag']:
     install_prefix()
     if not args['no_test']:
         if args['with_binary_llvm']:
-            build_filecheck()
+            setup_tests()
         test_cling()
     tarball()
     cleanup()
