@@ -104,7 +104,8 @@ namespace {
                                        llvm::SmallVectorImpl<char>& Buf,
                                        AdditionalArgList& Args,
                                        bool Verbose) {
-    std::string CppInclQuery(Compiler);
+    std::string CppInclQuery("LC_ALL=C ");
+    CppInclQuery.append(Compiler);
 
     CppInclQuery.append(" -xc++ -E -v /dev/null 2>&1 |"
                         " sed -n -e '/^.include/,${' -e '/^ \\/.*++/p' -e '}'");
