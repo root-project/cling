@@ -164,7 +164,6 @@ struct LibraryPath {
   }
 
   void InitializeBloomFilter(uint32_t newSymbolsCount) {
-    assert(isBloomFilterEmpty() && "Cannot re-initialize non-empty filter!");
     assert(!m_Filter.m_IsInitialized &&
            "Cannot re-initialize non-empty filter!");
     m_Filter.m_IsInitialized = true;
@@ -486,7 +485,7 @@ void Dyld::BuildBloomFilter(LibraryPath* Lib,
                             llvm::object::ObjectFile *BinObjFile,
                             unsigned IgnoreSymbolFlags /*= 0*/) const {
   assert(m_UseBloomFilter && "Bloom filter is disabled");
-  assert(Lib->hasBloomFilter() && "Already built!");
+  assert(!Lib->hasBloomFilter() && "Already built!");
 
   using namespace llvm;
   using namespace llvm::object;
