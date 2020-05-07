@@ -557,6 +557,8 @@ void Dyld::BuildBloomFilter(LibraryPath* Lib,
     }
   }
 
+  Lib->InitializeBloomFilter(SymbolsCount);
+
   if (!SymbolsCount) {
      if (DEBUG > 7)
         cling::errs() << "Dyld::BuildBloomFilter: No symbols!\n";
@@ -569,7 +571,6 @@ void Dyld::BuildBloomFilter(LibraryPath* Lib,
       cling::errs() << "Dyld::BuildBloomFilter" <<  "- " <<  it << "\n";
   }
 
-  Lib->InitializeBloomFilter(SymbolsCount);
   // Generate BloomFilter
   for (const auto &S : symbols) {
     if (m_UseHashTable)
