@@ -154,6 +154,10 @@ struct LibraryPath {
     return it.first->getKey();
   }
 
+  bool hasBloomFilter() const {
+    return m_Filter.m_IsInitialized;
+  }
+
   bool isBloomFilterEmpty() const {
     assert(m_Filter.m_IsInitialized && "Bloom filter not initialized!");
     return m_Filter.m_SymbolsCount == 0;
@@ -482,7 +486,7 @@ void Dyld::BuildBloomFilter(LibraryPath* Lib,
                             llvm::object::ObjectFile *BinObjFile,
                             unsigned IgnoreSymbolFlags /*= 0*/) const {
   assert(m_UseBloomFilter && "Bloom filter is disabled");
-  assert(Lib->isBloomFilterEmpty() && "Already built!");
+  assert(Lib->hasBloomFilter() && "Already built!");
 
   using namespace llvm;
   using namespace llvm::object;
@@ -660,7 +664,7 @@ bool Dyld::ContainsSymbol(const LibraryPath* Lib,
 
   if (m_UseBloomFilter) {
     // Use our bloom filters and create them if necessary.
-    if (Lib->isBloomFilterEmpty())
+    if (!Lib->hasBloomFilter())
       BuildBloomFilter(const_cast<LibraryPath*>(Lib), BinObjFile,
                        IgnoreSymbolFlags);
 
