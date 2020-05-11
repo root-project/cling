@@ -1,0 +1,14 @@
+module "vcruntime" [system] {
+  requires windows
+  
+  module "vcruntime.h" {
+    export *
+    header "vcruntime.h"
+  }
+  
+  module "vcruntime_string.h" {
+    export *
+    header "vcruntime_string.h"
+  }
+  
+}
