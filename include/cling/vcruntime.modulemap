@@ -1,14 +1,37 @@
 module "vcruntime" [system] {
   requires windows
   
+  module "sal.h" {
+    export *
+    header "sal.h"
+  }
+  module "vadefs.h" {
+    export *
+    header "vadefs.h"
+  }
   module "vcruntime.h" {
     export *
     header "vcruntime.h"
   }
-  
+  module "vcruntime_new.h" {
+    export *
+    header "vcruntime_new.h"
+  }
+  module "vcruntime_new_debug.h" {
+    export *
+    header "vcruntime_new_debug.h"
+  }
+  module "vcruntime_startup.h" {
+    export *
+    header "vcruntime_startup.h"
+  }
   module "vcruntime_string.h" {
     export *
     header "vcruntime_string.h"
   }
-  
+  module "vcruntime_typeinfo.h" {
+    export *
+    textual header "vcruntime_typeinfo.h"
+  }
+
 }

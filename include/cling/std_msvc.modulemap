@@ -2,9 +2,14 @@ module "std" [system] {
   requires windows
 
   export *
+
   module "algorithm" {
     export *
     header "algorithm"
+  }
+  module "any" {
+    export *
+    header "any"
   }
   module "array" {
     export *
@@ -14,11 +19,19 @@ module "std" [system] {
     export *
     header "atomic"
   }
+  module "bit" {
+    requires cplusplus20, !header_existence
+    export *
+    header "bit"
+  }
   module "bitset" {
     export *
     header "bitset"
   }
-  // no module for cassert to stay consistent with the OS X modulemap
+  module "cassert" {
+    export *
+    header "cassert"
+  }
   module "ccomplex" {
     export *
     header "ccomplex"
@@ -38,6 +51,11 @@ module "std" [system] {
   module "cfloat" {
     export *
     header "cfloat"
+  }
+  module "charconv" {
+    requires cplusplus17, !header_existence
+    export *
+    header "charconv"
   }
   module "chrono" {
     export *
@@ -63,11 +81,25 @@ module "std" [system] {
     export *
     header "cmath"
   }
+  module "codecvt" {
+    export *
+    header "codecvt"
+  }
+  module "compare" {
+    requires cplusplus20, !header_existence
+    export *
+    header "compare"
+  }
   module "complex" {
     export *
     header "complex"
   }
-    module "condition_variable" {
+  module "concepts" {
+    requires cplusplus20, !header_existence
+    export *
+    header "concepts"
+  }
+  module "condition_variable" {
     export *
     header "condition_variable"
   }
@@ -80,7 +112,6 @@ module "std" [system] {
     header "csignal"
   }
   module "cstdalign" {
-    requires !cplusplus17, !header_existence
     export *
     header "cstdalign"
   }
@@ -104,16 +135,9 @@ module "std" [system] {
     export *
     header "cstdio"
   }
-  // Causes a cycle between clang's builtin modules
-  // and the STL as clang's builtin modules include
-  // this header (and in turn, the STL also includes
-  // clang's builtin headers).
-  // See the include for stdlib.h (which is forwarded
-  // to this C++ header) in clang's mm_malloc.h for the
-  // problematic code which we can't fix.
   module "cstdlib" {
     export *
-    textual header "cstdlib"
+    header "cstdlib"
   }
   module "cstring" {
     export *
@@ -127,10 +151,10 @@ module "std" [system] {
     export *
     header "ctime"
   }
-//  module "ctype.h" {
-//    export *
-//    header "ctype.h"
-//  }
+  module "cuchar" {
+    export *
+    header "cuchar"
+  }
   module "cwchar" {
     export *
     header "cwchar"
@@ -146,6 +170,16 @@ module "std" [system] {
   module "exception" {
     export *
     header "exception"
+  }
+  module "execution" {
+    requires cplusplus17, !header_existence
+    export *
+    header "execution"
+  }
+  module "filesystem" {
+    requires cplusplus17, !header_existence
+    export *
+    header "filesystem"
   }
   module "forward_list" {
     export *
@@ -163,15 +197,6 @@ module "std" [system] {
     export *
     header "future"
   }
-/*  module "hash_map" {
-    export *
-    header "hash_map"
-  }
-  module "hash_set" {
-    export *
-    header "hash_set"
-  }
-  */
   module "initializer_list" {
     export *
     header "initializer_list"
@@ -192,10 +217,10 @@ module "std" [system] {
     export *
     header "iostream"
   }
-//  module "iostream.h" {
-//    export *
-//    header "iostream.h"
-//  }
+  module "iso646.h" {
+    export *
+    header "iso646.h"
+  }
   module "istream" {
     export *
     header "istream"
@@ -216,25 +241,18 @@ module "std" [system] {
     export *
     header "locale"
   }
-//  module "locale.h" {
-//    export *
-//    header "locale.h"
-//  }
   module "map" {
     export *
     header "map"
   }
-//  module "math.h" {
-//    export *
-//    header "math.h"
-//  }
   module "memory" {
     export *
     header "memory"
   }
-  module "xmemory" {
+  module "memory_resource" {
+    requires cplusplus17, !header_existence
     export *
-    header "xmemory"
+    header "memory_resource"
   }
   module "mutex" {
     export *
@@ -244,9 +262,19 @@ module "std" [system] {
     export *
     header "new"
   }
+  module "numbers" {
+    requires cplusplus20, !header_existence
+    export *
+    header "numbers"
+  }
   module "numeric" {
     export *
     header "numeric"
+  }
+  module "optional" {
+    requires cplusplus17, !header_existence
+    export *
+    header "optional"
   }
   module "ostream" {
     export *
@@ -260,6 +288,11 @@ module "std" [system] {
     export *
     header "random"
   }
+  module "ranges" {
+    requires cplusplus20, !header_existence
+    export *
+    header "ranges"
+  }
   module "ratio" {
     export *
     header "ratio"
@@ -272,14 +305,18 @@ module "std" [system] {
     export *
     header "scoped_allocator"
   }
+  module "setjmp.h" {
+    export *
+    header "setjmp.h"
+  }
   module "set" {
     export *
     header "set"
   }
-//  module "setjmp.h" {
-//    export *
-//    header "setjmp.h"
-//  }
+  module "shared_mutex" {
+    export *
+    header "shared_mutex"
+  }
   module "sstream" {
     export *
     header "sstream"
@@ -301,22 +338,18 @@ module "std" [system] {
     header "string"
   }
   module "string_view" {
-    requires !header_existence
+    requires cplusplus17, !header_existence
     export *
     textual header "string_view"
   }
-//  module "string.h" {
-//    export *
-//    header "string.h"
-// }
+  module "strstream" {
+    export *
+    header "strstream"
+  }
   module "system_error" {
     export *
     header "system_error"
   }
-//  module "tgmath.h" {
-//    export *
-//    header "tgmath.h"
-//  }
   module "thread" {
     export *
     header "thread"
@@ -345,6 +378,10 @@ module "std" [system] {
     export *
     header "unordered_set"
   }
+  module "use_ansi.h" {
+    export *
+    header "use_ansi.h"
+  }
   module "utility" {
     export *
     header "utility"
@@ -353,26 +390,131 @@ module "std" [system] {
     export *
     header "valarray"
   }
+  module "variant" {
+    requires cplusplus17, !header_existence
+    export *
+    header "variant"
+  }
   module "vector" {
     export *
     header "vector"
   }
-  module "codecvt" {
+  module "version" {
+    export *
+    header "version"
+  }
+  module "xatomic.h" {
+    export *
+    header "xatomic.h"
+  }
+  module "xbit_ops.h" {
+    export *
+    header "xbit_ops.h"
+  }
+  module "xerrc.h" {
+    export *
+    header "xerrc.h"
+  }
+  module "xfacet" {
+    export *
+    header "xfacet"
+  }
+  module "xhash" {
+    export *
+    header "xhash"
+  }
+  module "xiosbase" {
+    export *
+    header "xiosbase"
+  }
+  module "xkeycheck.h" {
+    export *
+    header "xkeycheck.h"
+  }
+  module "xlocale" {
+    export *
+    header "xlocale"
+  }
+  module "xlocbuf" {
+    export *
+    header "xlocbuf"
+  }
+  module "xlocinfo" {
+    export *
+    header "xlocinfo"
+  }
+  module "xlocinfo.h" {
+    export *
+    header "xlocinfo.h"
+  }
+  module "xlocmes" {
+    export *
+    header "xlocmes"
+  }
+  module "xlocmon" {
+    export *
+    header "xlocmon"
+  }
+  module "xlocnum" {
+    export *
+    header "xlocnum"
+  }
+  module "xloctime" {
+    export *
+    header "xloctime"
+  }
+  module "xmemory" {
+    export *
+    header "xmemory"
+  }
+  module "xpolymorphic_allocator.h" {
+    export *
+    header "xpolymorphic_allocator.h"
+  }
+  module "xsmf_control.h" {
+    export *
+    header "xsmf_control.h"
+  }
+  module "xstddef" {
+    export *
+    header "xstddef"
+  }
+  module "xstring" {
+    export *
+    header "xstring"
+  }
+  module "xthreads.h" {
     requires !header_existence
     export *
-    header "codecvt"
+    header "xthreads.h"
   }
-  module "cuchar" {
+  module "xtimec.h" {
     requires !header_existence
     export *
-    header "cuchar"
+    header "xtimec.h"
   }
-  module "yvals_core.h" {
+  module "xtr1common" {
     export *
-    header "yvals_core.h"
+    header "xtr1common"
+  }
+  module "xtree" {
+    export *
+    header "xtree"
+  }
+  module "xutility" {
+    export *
+    header "xutility"
+  }
+  module "ymath.h" {
+    export *
+    header "ymath.h"
   }
   module "yvals.h" {
     export *
     header "yvals.h"
+  }
+  module "yvals_core.h" {
+    export *
+    header "yvals_core.h"
   }
 }
