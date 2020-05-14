@@ -486,12 +486,12 @@ module "std" [system] {
   module "xthreads.h" {
     requires !header_existence
     export *
-    header "xthreads.h"
+    textual header "xthreads.h"
   }
   module "xtimec.h" {
     requires !header_existence
     export *
-    header "xtimec.h"
+    textual header "xtimec.h"
   }
   module "xtr1common" {
     export *
