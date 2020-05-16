@@ -176,6 +176,10 @@ module "std" [system] {
     export *
     header "execution"
   }
+  module "float.h" {
+    export *
+    header "float.h"
+  }
   module "filesystem" {
     requires cplusplus17, !header_existence
     export *
