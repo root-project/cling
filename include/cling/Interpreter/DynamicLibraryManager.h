@@ -18,6 +18,7 @@
 #include "llvm/Support/Path.h"
 
 namespace cling {
+  class Dyld;
   class InterpreterCallbacks;
   class InvocationOptions;
 
@@ -66,7 +67,9 @@ namespace cling {
     ///
     SearchPathInfos m_SearchPaths;
 
-    InterpreterCallbacks* m_Callbacks;
+    InterpreterCallbacks* m_Callbacks = nullptr;
+
+    Dyld* m_Dyld = nullptr;
 
     ///\brief Concatenates current include paths and the system include paths
     /// and performs a lookup for the filename.
@@ -146,8 +149,7 @@ namespace cling {
     ///            dangerous libraries such as the ones overriding malloc.
     ///
     void
-    initializeDyld(std::function<bool(llvm::StringRef)> shouldPermanentlyIgnore)
-      const;
+    initializeDyld(std::function<bool(llvm::StringRef)> shouldPermanentlyIgnore);
 
     /// Find the first not-yet-loaded shared object that contains the symbol
     ///
@@ -158,6 +160,16 @@ namespace cling {
     ///
     std::string searchLibrariesForSymbol(const std::string& mangledName,
                                          bool searchSystem = true) const;
+
+    /// On a success returns to full path to a shared object that holds the
+    /// symbol pointed by func.
+    ///
+    template <class T>
+    static std::string getSymbolLocation(T func) {
+      static_assert(std::is_pointer<T>::value, "Must be a function pointer!");
+      return getSymbolLocation(reinterpret_cast<void*>(func));
+    }
+
 
     ///\brief Explicitly tell the execution engine to use symbols from
     ///       a shared library that would otherwise not be used for symbol
@@ -176,15 +188,6 @@ namespace cling {
     ///            is a library but of incompatible file format.
     ///
     static bool isSharedLibrary(llvm::StringRef libFullPath, bool* exists = 0);
-
-    /// On a success returns to full path to a shared object that holds the
-    /// symbol pointed by func.
-    ///
-    template <class T>
-    static std::string getSymbolLocation(T func) {
-      static_assert(std::is_pointer<T>::value, "Must be a function pointer!");
-      return getSymbolLocation(reinterpret_cast<void*>(func));
-    }
   };
 } // end namespace cling
 #endif // CLING_DYNAMIC_LIBRARY_MANAGER_H

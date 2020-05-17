@@ -128,21 +128,24 @@ struct BloomFilter {
 struct LibraryPath {
   const BasePath& m_Path;
   std::string m_LibName;
+  std::string m_FullName;
   BloomFilter m_Filter;
   llvm::StringSet<> m_Symbols;
 
   LibraryPath(const BasePath& Path, const std::string& LibName)
-    : m_Path(Path), m_LibName(LibName) { }
+    : m_Path(Path), m_LibName(LibName) {
+    llvm::SmallString<512> Vec(m_Path);
+    llvm::sys::path::append(Vec, llvm::StringRef(m_LibName));
+    m_FullName = Vec.str().str();
+  }
 
   bool operator==(const LibraryPath &other) const {
     return (&m_Path == &other.m_Path || m_Path == other.m_Path) &&
       m_LibName == other.m_LibName;
   }
 
-  std::string GetFullName() const {
-    llvm::SmallString<512> Vec(m_Path);
-    llvm::sys::path::append(Vec, llvm::StringRef(m_LibName));
-    return Vec.str().str();
+  const std::string& GetFullName() const {
+    return m_FullName;
   }
 
   void AddBloom(llvm::StringRef symbol) {
@@ -229,357 +232,11 @@ public:
   }
 };
 
-class Dyld {
-
-  struct BasePathHashFunction {
-    size_t operator()(const BasePath& item) const {
-      return std::hash<std::string>()(item);
-    }
-  };
-
-  struct BasePathEqFunction {
-    size_t operator()(const BasePath& l, const BasePath& r) const {
-      return &l == &r || l == r;
-    }
-  };
-  /// A memory efficient llvm::VectorSet. The class provides O(1) search
-  /// complexity. It is tuned to compare BasePaths first by checking the
-  /// address and then the representation which models the base path reuse.
-  class BasePaths {
-    std::unordered_set<BasePath, BasePathHashFunction,
-                       BasePathEqFunction> m_Paths;
-
-  public:
-    const BasePath& RegisterBasePath(const std::string& Path,
-                                     bool* WasInserted = nullptr) {
-      auto it = m_Paths.insert(Path);
-      if (WasInserted)
-        *WasInserted = it.second;
-
-      return *it.first;
-    }
-
-    bool Contains (const std::string& Path) {
-      return m_Paths.count(Path);
-    }
-  };
-
-  bool m_FirstRun = true;
-  bool m_FirstRunSysLib = true;
-  bool m_UseBloomFilter = true;
-  bool m_UseHashTable = true;
-
-  const cling::DynamicLibraryManager& m_DynamicLibraryManager;
-
-  /// The basename of `/home/.../lib/libA.so`,
-  /// m_BasePaths will contain `/home/.../lib/`
-  BasePaths m_BasePaths;
-
-  LibraryPaths m_Libraries;
-  LibraryPaths m_SysLibraries;
-  /// Contains a set of libraries which we gave to the user via ResolveSymbol
-  /// call and next time we should check if the user loaded them to avoid
-  /// useless iterations.
-  std::vector<LibraryPath> m_QueriedLibraries;
-
-  /// Scan for shared objects which are not yet loaded. They are a our symbol
-  /// resolution candidate sources.
-  /// NOTE: We only scan not loaded shared objects.
-  /// \param[in] searchSystemLibraries - whether to decent to standard system
-  ///            locations for shared objects.
-  void ScanForLibraries(bool searchSystemLibraries = false);
-
-  /// Builds a bloom filter lookup optimization.
-  void BuildBloomFilter(LibraryPath* Lib, llvm::object::ObjectFile *BinObjFile,
-                        unsigned IgnoreSymbolFlags = 0) const;
-
-
-  /// Looks up symbols from a an object file, representing the library.
-  ///\param[in] Lib - full path to the library.
-  ///\param[in] mangledName - the mangled name to look for.
-  ///\param[in] IgnoreSymbolFlags - The symbols to ignore upon a match.
-  ///\returns true on success.
-  bool ContainsSymbol(const LibraryPath* Lib, const std::string &mangledName,
-                      unsigned IgnoreSymbolFlags = 0) const;
-
-protected:
-  Dyld(const cling::DynamicLibraryManager &DLM)
-    : m_DynamicLibraryManager(DLM) { }
-
-  ~Dyld() = default;
-
-public:
-  static Dyld& getInstance(const cling::DynamicLibraryManager &DLM) {
-    static Dyld instance(DLM);
-
-#ifndef NDEBUG
-    auto &NewSearchPaths = DLM.getSearchPaths();
-    auto &OldSearchPaths = instance.m_DynamicLibraryManager.getSearchPaths();
-    // FIXME: Move the Dyld logic to the cling::DynamicLibraryManager itself!
-    assert(std::equal(OldSearchPaths.begin(), OldSearchPaths.end(),
-                      NewSearchPaths.begin()) && "Path was added/removed!");
-#endif
-
-    return instance;
-  }
-
-  // delete copy and move constructors and assign operators
-  Dyld(Dyld const&) = delete;
-  Dyld(Dyld&&) = delete;
-  Dyld& operator=(Dyld const&) = delete;
-  Dyld& operator=(Dyld &&) = delete;
-
-  std::string searchLibrariesForSymbol(const std::string& mangledName,
-                                       bool searchSystem);
-};
-
-
-static bool s_IsDyldInitialized = false;
-static std::function<bool(llvm::StringRef)> s_ShouldPermanentlyIgnoreCallback;
-
-
 static std::string getRealPath(llvm::StringRef path) {
   llvm::SmallString<512> realPath;
   llvm::sys::fs::real_path(path, realPath, /*expandTilde*/true);
   return realPath.str().str();
 }
-
-static llvm::StringRef s_ExecutableFormat;
-
-static bool shouldPermanentlyIgnore(const std::string& FileName,
-                            const cling::DynamicLibraryManager& dyLibManager) {
-  assert(FileName == getRealPath(FileName));
-  assert(!s_ExecutableFormat.empty() && "Failed to find the object format!");
-
-  if (llvm::sys::fs::is_directory(FileName))
-    return true;
-
-  if (!cling::DynamicLibraryManager::isSharedLibrary(FileName))
-    return true;
-
-  // No need to check linked libraries, as this function is only invoked
-  // for symbols that cannot be found (neither by dlsym nor in the JIT).
-  if (dyLibManager.isLibraryLoaded(FileName.c_str()))
-    return true;
-
-
-  auto ObjF = llvm::object::ObjectFile::createObjectFile(FileName);
-  if (!ObjF) {
-    if (DEBUG > 1)
-      cling::errs() << "[DyLD] Failed to read object file "
-                    << FileName << "\n";
-    return true;
-  }
-
-  llvm::object::ObjectFile *file = ObjF.get().getBinary();
-
-  if (DEBUG > 1)
-     cling::errs() << "Current executable format: " << s_ExecutableFormat
-                   << ". Executable format of " << FileName << " : "
-                   << file->getFileFormatName() << "\n";
-
-  // Ignore libraries with different format than the executing one.
-  if (s_ExecutableFormat != file->getFileFormatName())
-    return true;
-
-  if (llvm::isa<llvm::object::ELFObjectFileBase>(*file)) {
-    for (auto S : file->sections()) {
-      llvm::StringRef name;
-      S.getName(name);
-      if (name == ".text") {
-        // Check if the library has only debug symbols, usually when
-        // stripped with objcopy --only-keep-debug. This check is done by
-        // reading the manual of objcopy and inspection of stripped with
-        // objcopy libraries.
-        auto SecRef = static_cast<llvm::object::ELFSectionRef&>(S);
-        if (SecRef.getType() == llvm::ELF::SHT_NOBITS)
-          return true;
-
-        return (SecRef.getFlags() & llvm::ELF::SHF_ALLOC) == 0;
-      }
-    }
-    return true;
-  }
-
-  //FIXME: Handle osx using isStripped after upgrading to llvm9.
-
-  return s_ShouldPermanentlyIgnoreCallback(FileName);
-}
-
-void Dyld::ScanForLibraries(bool searchSystemLibraries/* = false*/) {
-
-  // #ifndef NDEBUG
-  //   if (!m_FirstRun && !m_FirstRunSysLib)
-  //     assert(0 && "Already initialized");
-  //   if (m_FirstRun && !m_Libraries->size())
-  //     assert(0 && "Not initialized but m_Libraries is non-empty!");
-  //   // assert((m_FirstRun || m_FirstRunSysLib) && (m_Libraries->size() ||
-  //             m_SysLibraries.size())
-  //   //        && "Already scanned and initialized!");
-  // #endif
-
-  const auto &searchPaths = m_DynamicLibraryManager.getSearchPaths();
-  for (const cling::DynamicLibraryManager::SearchPathInfo &Info : searchPaths) {
-    if (Info.IsUser || searchSystemLibraries) {
-      // Examples which we should handle.
-      // File                      Real
-      // /lib/1/1.so               /lib/1/1.so  // file
-      // /lib/1/2.so->/lib/1/1.so  /lib/1/1.so  // file local link
-      // /lib/1/3.so->/lib/3/1.so  /lib/3/1.so  // file external link
-      // /lib/2->/lib/1                         // path link
-      // /lib/2/1.so               /lib/1/1.so  // path link, file
-      // /lib/2/2.so->/lib/1/1.so  /lib/1/1.so  // path link, file local link
-      // /lib/2/3.so->/lib/3/1.so  /lib/3/1.so  // path link, file external link
-      //
-      // /lib/3/1.so
-      // /lib/3/2.so->/system/lib/s.so
-      // /lib/3/3.so
-      // /system/lib/1.so
-      //
-      // Paths = /lib/1 : /lib/2 : /lib/3
-
-      // m_BasePaths = ["/lib/1", "/lib/3", "/system/lib"]
-      // m_*Libraries  = [<0,"1.so">, <1,"1.so">, <2,"s.so">, <1,"3.so">]
-      std::string RealPath = getRealPath(Info.Path);
-      llvm::StringRef DirPath(RealPath);
-
-      if (!llvm::sys::fs::is_directory(DirPath) || DirPath.empty())
-        continue;
-
-      // Already searched?
-      bool WasInserted;
-      m_BasePaths.RegisterBasePath(RealPath, &WasInserted);
-
-      if (!WasInserted)
-        continue;
-
-      std::error_code EC;
-      for (llvm::sys::fs::directory_iterator DirIt(DirPath, EC), DirEnd;
-           DirIt != DirEnd && !EC; DirIt.increment(EC)) {
-
-        // FIXME: Use a StringRef here!
-        std::string FileName = getRealPath(DirIt->path());
-        assert(!llvm::sys::fs::is_symlink_file(FileName));
-
-        if (shouldPermanentlyIgnore(FileName, m_DynamicLibraryManager))
-          continue;
-
-        std::string FileRealPath = llvm::sys::path::parent_path(FileName);
-        FileName = llvm::sys::path::filename(FileName);
-        const BasePath& BaseP = m_BasePaths.RegisterBasePath(FileRealPath);
-        LibraryPath LibPath(BaseP, FileName);
-        if (m_SysLibraries.HasRegisteredLib(LibPath) ||
-            m_Libraries.HasRegisteredLib(LibPath))
-          continue;
-
-        if (searchSystemLibraries)
-          m_SysLibraries.RegisterLib(LibPath);
-        else
-          m_Libraries.RegisterLib(LibPath);
-      }
-    }
-  }
-}
-
-void Dyld::BuildBloomFilter(LibraryPath* Lib,
-                            llvm::object::ObjectFile *BinObjFile,
-                            unsigned IgnoreSymbolFlags /*= 0*/) const {
-  assert(m_UseBloomFilter && "Bloom filter is disabled");
-  assert(!Lib->hasBloomFilter() && "Already built!");
-
-  using namespace llvm;
-  using namespace llvm::object;
-
-  // If BloomFilter is empty then build it.
-  // Count Symbols and generate BloomFilter
-  uint32_t SymbolsCount = 0;
-  std::list<std::string> symbols;
-  for (const llvm::object::SymbolRef &S : BinObjFile->symbols()) {
-    uint32_t Flags = S.getFlags();
-    // Do not insert in the table symbols flagged to ignore.
-    if (Flags & IgnoreSymbolFlags)
-      continue;
-
-    // Note, we are at last resort and loading library based on a weak
-    // symbol is allowed. Otherwise, the JIT will issue an unresolved
-    // symbol error.
-    //
-    // There are other weak symbol kinds (marked as 'V') to denote
-    // typeinfo and vtables. It is unclear whether we should load such
-    // libraries or from which library we should resolve the symbol.
-    // We seem to not have a way to differentiate it from the symbol API.
-
-    llvm::Expected<llvm::StringRef> SymNameErr = S.getName();
-    if (!SymNameErr) {
-      cling::errs()<< "Dyld::BuildBloomFilter: Failed to read symbol "
-                   << SymNameErr.get() << "\n";
-      continue;
-    }
-
-    if (SymNameErr.get().empty())
-      continue;
-
-    ++SymbolsCount;
-    symbols.push_back(SymNameErr.get());
-  }
-
-  if (BinObjFile->isELF()) {
-    // ELF file format has .dynstr section for the dynamic symbol table.
-    const auto *ElfObj = cast<llvm::object::ELFObjectFileBase>(BinObjFile);
-
-    for (const object::SymbolRef &S : ElfObj->getDynamicSymbolIterators()) {
-      uint32_t Flags = S.getFlags();
-      // DO NOT insert to table if symbol was undefined
-      if (Flags & llvm::object::SymbolRef::SF_Undefined)
-        continue;
-
-      // Note, we are at last resort and loading library based on a weak
-      // symbol is allowed. Otherwise, the JIT will issue an unresolved
-      // symbol error.
-      //
-      // There are other weak symbol kinds (marked as 'V') to denote
-      // typeinfo and vtables. It is unclear whether we should load such
-      // libraries or from which library we should resolve the symbol.
-      // We seem to not have a way to differentiate it from the symbol API.
-
-      llvm::Expected<StringRef> SymNameErr = S.getName();
-      if (!SymNameErr) {
-        cling::errs() << "Dyld::BuildBloomFilter: Failed to read symbol "
-                      <<SymNameErr.get() << "\n";
-        continue;
-      }
-
-      if (SymNameErr.get().empty())
-        continue;
-
-      ++SymbolsCount;
-      symbols.push_back(SymNameErr.get());
-    }
-  }
-
-  Lib->InitializeBloomFilter(SymbolsCount);
-
-  if (!SymbolsCount) {
-     if (DEBUG > 7)
-        cling::errs() << "Dyld::BuildBloomFilter: No symbols!\n";
-     return;
-  }
-
-  if (DEBUG > 7) {
-    cling::errs() << "Dyld::BuildBloomFilter: Symbols:\n";
-    for (auto it : symbols)
-      cling::errs() << "Dyld::BuildBloomFilter" <<  "- " <<  it << "\n";
-  }
-
-  // Generate BloomFilter
-  for (const auto &S : symbols) {
-    if (m_UseHashTable)
-      Lib->AddBloom(Lib->AddSymbol(S));
-    else
-      Lib->AddBloom(S);
-  }
-}
-
 
 static llvm::StringRef GetGnuHashSection(llvm::object::ObjectFile *file) {
   for (auto S : file->sections()) {
@@ -594,7 +251,7 @@ static llvm::StringRef GetGnuHashSection(llvm::object::ObjectFile *file) {
   return "";
 }
 
-/// Bloom filter in a stohastic data structure which can tell us if a symbol
+/// Bloom filter is a stochastic data structure which can tell us if a symbol
 /// name does not exist in a library with 100% certainty. If it tells us it
 /// exists this may not be true:
 /// https://blogs.oracle.com/solaris/gnu-hash-elf-sections-v2
@@ -630,247 +287,6 @@ static bool MayExistInElfObjectFile(llvm::object::ObjectFile *soFile,
   return  (bitmask & word) == bitmask;
 }
 
-bool Dyld::ContainsSymbol(const LibraryPath* Lib,
-                          const std::string &mangledName,
-                          unsigned IgnoreSymbolFlags /*= 0*/) const {
-  const std::string library_filename = Lib->GetFullName();
-
-  if (DEBUG > 7) {
-    cling::errs() << "Dyld::ContainsSymbol: Find symbol: lib="
-                  << library_filename << ", mangled="
-                  << mangledName << "\n";
-  }
-
-  auto ObjF = llvm::object::ObjectFile::createObjectFile(library_filename);
-  if (llvm::Error Err = ObjF.takeError()) {
-    if (DEBUG > 1) {
-      std::string Message;
-      handleAllErrors(std::move(Err), [&](llvm::ErrorInfoBase &EIB) {
-          Message += EIB.message() + "; ";
-        });
-      cling::errs() << "Dyld::ContainsSymbol: Failed to read object file "
-                    << library_filename << " Errors: " << Message << "\n";
-    }
-    return false;
-  }
-
-  llvm::object::ObjectFile *BinObjFile = ObjF.get().getBinary();
-
-  uint32_t hashedMangle = GNUHash(mangledName);
-  // Check for the gnu.hash section if ELF.
-  // If the symbol doesn't exist, exit early.
-  if (BinObjFile->isELF() && !MayExistInElfObjectFile(BinObjFile, hashedMangle))
-    return false;
-
-  if (m_UseBloomFilter) {
-    // Use our bloom filters and create them if necessary.
-    if (!Lib->hasBloomFilter())
-      BuildBloomFilter(const_cast<LibraryPath*>(Lib), BinObjFile,
-                       IgnoreSymbolFlags);
-
-    // If the symbol does not exist, exit early. In case it may exist, iterate.
-    if (!Lib->MayExistSymbol(hashedMangle)) {
-      if (DEBUG > 7)
-        cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Skip symbol.\n";
-      return false;
-    }
-    if (DEBUG > 7)
-      cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Symbol May exist."
-                    << " Search for it.";
-  }
-
-  if (m_UseHashTable) {
-    bool result = Lib->ExistSymbol(mangledName);
-    if (DEBUG > 7)
-      cling::errs() << "Dyld::ContainsSymbol: HashTable: Symbol "
-                    << (result ? "Exist" : "Not exist") << "\n";
-    return result;
-  }
-
-  // Symbol may exist. Iterate.
-
-  // If no hash symbol then iterate to detect symbol
-  // We Iterate only if BloomFilter and/or SymbolHashTable are not supported.
-  for (const llvm::object::SymbolRef &S : BinObjFile->symbols()) {
-    uint32_t Flags = S.getFlags();
-    // Do not insert in the table symbols flagged to ignore.
-    if (Flags & IgnoreSymbolFlags)
-      continue;
-
-    // Note, we are at last resort and loading library based on a weak
-    // symbol is allowed. Otherwise, the JIT will issue an unresolved
-    // symbol error.
-    //
-    // There are other weak symbol kinds (marked as 'V') to denote
-    // typeinfo and vtables. It is unclear whether we should load such
-    // libraries or from which library we should resolve the symbol.
-    // We seem to not have a way to differentiate it from the symbol API.
-
-    llvm::Expected<llvm::StringRef> SymNameErr = S.getName();
-    if (!SymNameErr) {
-      cling::errs() << "Dyld::ContainsSymbol: Failed to read symbol "
-                    << mangledName << "\n";
-      continue;
-    }
-
-    if (SymNameErr.get().empty())
-      continue;
-
-    if (SymNameErr.get() == mangledName) {
-      if (DEBUG > 1) {
-        cling::errs() << "Dyld::ContainsSymbol: Symbol "
-                      << mangledName << " found in "
-                      << library_filename << "\n";
-        return true;
-      }
-    }
-  }
-
-  if (!BinObjFile->isELF())
-    return false;
-
-  // ELF file format has .dynstr section for the dynamic symbol table.
-  const auto *ElfObj = llvm::cast<llvm::object::ELFObjectFileBase>(BinObjFile);
-
-  for (const llvm::object::SymbolRef &S : ElfObj->getDynamicSymbolIterators()) {
-    uint32_t Flags = S.getFlags();
-    // DO NOT insert to table if symbol was undefined
-    if (Flags & llvm::object::SymbolRef::SF_Undefined)
-      continue;
-
-    // Note, we are at last resort and loading library based on a weak
-    // symbol is allowed. Otherwise, the JIT will issue an unresolved
-    // symbol error.
-    //
-    // There are other weak symbol kinds (marked as 'V') to denote
-    // typeinfo and vtables. It is unclear whether we should load such
-    // libraries or from which library we should resolve the symbol.
-    // We seem to not have a way to differentiate it from the symbol API.
-
-    llvm::Expected<llvm::StringRef> SymNameErr = S.getName();
-    if (!SymNameErr) {
-      cling::errs() << "Dyld::ContainsSymbol: Failed to read symbol "
-                    << mangledName << "\n";
-      continue;
-    }
-
-    if (SymNameErr.get().empty())
-      continue;
-
-    if (SymNameErr.get() == mangledName)
-      return true;
-  }
-  return false;
-}
-
-std::string Dyld::searchLibrariesForSymbol(const std::string& mangledName,
-                                           bool searchSystem/* = true*/) {
-  assert(!llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(mangledName) &&
-         "Library already loaded, please use dlsym!");
-  assert(!mangledName.empty());
-  using namespace llvm::sys::path;
-  using namespace llvm::sys::fs;
-
-  if (m_FirstRun) {
-    ScanForLibraries(/* SearchSystemLibraries= */ false);
-    m_FirstRun = false;
-  }
-
-  if (!m_QueriedLibraries.empty()) {
-    // Last call we were asked if a library contains a symbol. Usually, the
-    // caller wants to load this library. Check if was loaded and remove it
-    // from our lists of not-yet-loaded libs.
-
-    if (DEBUG > 7) {
-      cling::errs() << "Dyld::ResolveSymbol: m_QueriedLibraries:\n";
-      size_t x = 0;
-      for (auto item : m_QueriedLibraries) {
-        cling::errs() << "Dyld::ResolveSymbol - [" << x++ << "]:"
-                      << &item << ": " << item.m_Path << ", "
-                      << item.m_LibName << "\n";
-      }
-    }
-
-    for (const LibraryPath& P : m_QueriedLibraries) {
-      const std::string LibName = P.GetFullName();
-      if (!m_DynamicLibraryManager.isLibraryLoaded(LibName))
-        continue;
-
-      m_Libraries.UnregisterLib(P);
-      m_SysLibraries.UnregisterLib(P);
-    }
-  }
-
-  // Iterate over files under this path. We want to get each ".so" files
-  for (const LibraryPath* P : m_Libraries.GetLibraries()) {
-    const std::string LibName = P->GetFullName();
-
-    if (ContainsSymbol(P, mangledName, /*ignore*/
-                       llvm::object::SymbolRef::SF_Undefined)) {
-      m_QueriedLibraries.push_back(*P);
-      return LibName;
-    }
-  }
-
-  if (!searchSystem)
-    return "";
-
-  if (DEBUG > 7)
-    cling::errs() << "Dyld::ResolveSymbol: SearchSystem!\n";
-
-  // Lookup in non-system libraries failed. Expand the search to the system.
-  if (m_FirstRunSysLib) {
-    ScanForLibraries(/* SearchSystemLibraries= */ true);
-    m_FirstRunSysLib = false;
-  }
-
-  for (const LibraryPath* P : m_SysLibraries.GetLibraries()) {
-    const std::string LibName = P->GetFullName();
-    if (ContainsSymbol(P, mangledName, /*ignore*/
-                       llvm::object::SymbolRef::SF_Undefined |
-                       llvm::object::SymbolRef::SF_Weak)) {
-      m_QueriedLibraries.push_back(*P);
-      return LibName;
-    }
-  }
-
-  if (DEBUG > 7)
-    cling::errs() << "Dyld::ResolveSymbol: Search found no match!\n";
-
-  /*
-    if (DEBUG > 7) {
-    cling::errs() << "Dyld::ResolveSymbol: Structs after ResolveSymbol:\n");
-
-    cling::errs() << "Dyld::ResolveSymbol - sPaths:\n");
-    size_t x = 0;
-    for (const auto &item : sPaths.GetPaths())
-    cling::errs() << "Dyld::ResolveSymbol << [" x++ << "]: " << item << "\n";
-
-    cling::errs() << "Dyld::ResolveSymbol - sLibs:\n");
-    x = 0;
-    for (const auto &item : sLibraries.GetLibraries())
-    cling::errs() << "Dyld::ResolveSymbol ["
-    << x++ << "]: " << item->Path << ", "
-    << item->LibName << "\n";
-
-    cling::errs() << "Dyld::ResolveSymbol - sSysLibs:");
-    x = 0;
-    for (const auto &item : sSysLibraries.GetLibraries())
-    cling::errs() << "Dyld::ResolveSymbol ["
-    << x++ << "]: " << item->Path << ", "
-    << item->LibName << "\n";
-
-    Info("Dyld::ResolveSymbol", "- sQueriedLibs:");
-    x = 0;
-    for (const auto &item : sQueriedLibraries)
-    cling::errs() << "Dyld::ResolveSymbol ["
-    << x++ << "]: " << item->Path << ", "
-    << item->LibName << "\n";
-    }
-  */
-
-  return ""; // Search found no match.
-}
 } // anon namespace
 
 // This function isn't referenced outside its translation unit, but it
@@ -885,25 +301,576 @@ std::string GetExecutablePath() {
 }
 
 namespace cling {
+  DynamicLibraryManager::~DynamicLibraryManager() {
+    delete m_Dyld;
+  }
+
+  class Dyld {
+    struct BasePathHashFunction {
+      size_t operator()(const BasePath& item) const {
+        return std::hash<std::string>()(item);
+      }
+    };
+
+    struct BasePathEqFunction {
+      size_t operator()(const BasePath& l, const BasePath& r) const {
+        return &l == &r || l == r;
+      }
+    };
+    /// A memory efficient llvm::VectorSet. The class provides O(1) search
+    /// complexity. It is tuned to compare BasePaths first by checking the
+    /// address and then the representation which models the base path reuse.
+    class BasePaths {
+      std::unordered_set<BasePath, BasePathHashFunction,
+                         BasePathEqFunction> m_Paths;
+
+    public:
+      const BasePath& RegisterBasePath(const std::string& Path,
+                                       bool* WasInserted = nullptr) {
+        auto it = m_Paths.insert(Path);
+        if (WasInserted)
+          *WasInserted = it.second;
+
+        return *it.first;
+      }
+
+      bool Contains (const std::string& Path) {
+        return m_Paths.count(Path);
+      }
+    };
+
+    bool m_FirstRun = true;
+    bool m_FirstRunSysLib = true;
+    bool m_UseBloomFilter = true;
+    bool m_UseHashTable = true;
+
+    const cling::DynamicLibraryManager& m_DynamicLibraryManager;
+
+    /// The basename of `/home/.../lib/libA.so`,
+    /// m_BasePaths will contain `/home/.../lib/`
+    BasePaths m_BasePaths;
+
+    LibraryPaths m_Libraries;
+    LibraryPaths m_SysLibraries;
+    /// Contains a set of libraries which we gave to the user via ResolveSymbol
+    /// call and next time we should check if the user loaded them to avoid
+    /// useless iterations.
+    std::vector<LibraryPath> m_QueriedLibraries;
+
+    using PermanentlyIgnoreCallbackProto = std::function<bool(llvm::StringRef)>;
+    const PermanentlyIgnoreCallbackProto m_ShouldPermanentlyIgnoreCallback;
+    const llvm::StringRef m_ExecutableFormat;
+
+    /// Scan for shared objects which are not yet loaded. They are a our symbol
+    /// resolution candidate sources.
+    /// NOTE: We only scan not loaded shared objects.
+    /// \param[in] searchSystemLibraries - whether to decent to standard system
+    ///            locations for shared objects.
+    void ScanForLibraries(bool searchSystemLibraries = false);
+
+    /// Builds a bloom filter lookup optimization.
+    void BuildBloomFilter(LibraryPath* Lib, llvm::object::ObjectFile *BinObjFile,
+                          unsigned IgnoreSymbolFlags = 0) const;
+
+
+    /// Looks up symbols from a an object file, representing the library.
+    ///\param[in] Lib - full path to the library.
+    ///\param[in] mangledName - the mangled name to look for.
+    ///\param[in] IgnoreSymbolFlags - The symbols to ignore upon a match.
+    ///\returns true on success.
+    bool ContainsSymbol(const LibraryPath* Lib, const std::string &mangledName,
+                        unsigned IgnoreSymbolFlags = 0) const;
+
+    bool ShouldPermanentlyIgnore(const std::string& FileName) const;
+  public:
+    Dyld(const cling::DynamicLibraryManager &DLM,
+         PermanentlyIgnoreCallbackProto shouldIgnore,
+         llvm::StringRef execFormat)
+      : m_DynamicLibraryManager(DLM),
+        m_ShouldPermanentlyIgnoreCallback(shouldIgnore),
+        m_ExecutableFormat(execFormat) { }
+
+    ~Dyld(){};
+
+    std::string searchLibrariesForSymbol(const std::string& mangledName,
+                                         bool searchSystem);
+  };
+
+  void Dyld::ScanForLibraries(bool searchSystemLibraries/* = false*/) {
+    // #ifndef NDEBUG
+    //   if (!m_FirstRun && !m_FirstRunSysLib)
+    //     assert(0 && "Already initialized");
+    //   if (m_FirstRun && !m_Libraries->size())
+    //     assert(0 && "Not initialized but m_Libraries is non-empty!");
+    //   // assert((m_FirstRun || m_FirstRunSysLib) && (m_Libraries->size() ||
+    //             m_SysLibraries.size())
+    //   //        && "Already scanned and initialized!");
+    // #endif
+
+    const auto &searchPaths = m_DynamicLibraryManager.getSearchPaths();
+    for (const DynamicLibraryManager::SearchPathInfo &Info : searchPaths) {
+      if (Info.IsUser || searchSystemLibraries) {
+        // Examples which we should handle.
+        // File                      Real
+        // /lib/1/1.so               /lib/1/1.so  // file
+        // /lib/1/2.so->/lib/1/1.so  /lib/1/1.so  // file local link
+        // /lib/1/3.so->/lib/3/1.so  /lib/3/1.so  // file external link
+        // /lib/2->/lib/1                         // path link
+        // /lib/2/1.so               /lib/1/1.so  // path link, file
+        // /lib/2/2.so->/lib/1/1.so  /lib/1/1.so  // path link, file local link
+        // /lib/2/3.so->/lib/3/1.so  /lib/3/1.so  // path link, file external link
+        //
+        // /lib/3/1.so
+        // /lib/3/2.so->/system/lib/s.so
+        // /lib/3/3.so
+        // /system/lib/1.so
+        //
+        // Paths = /lib/1 : /lib/2 : /lib/3
+
+        // m_BasePaths = ["/lib/1", "/lib/3", "/system/lib"]
+        // m_*Libraries  = [<0,"1.so">, <1,"1.so">, <2,"s.so">, <1,"3.so">]
+        std::string RealPath = getRealPath(Info.Path);
+        llvm::StringRef DirPath(RealPath);
+
+        if (!llvm::sys::fs::is_directory(DirPath) || DirPath.empty())
+          continue;
+
+        // Already searched?
+        bool WasInserted;
+        m_BasePaths.RegisterBasePath(RealPath, &WasInserted);
+
+        if (!WasInserted)
+          continue;
+
+        std::error_code EC;
+        for (llvm::sys::fs::directory_iterator DirIt(DirPath, EC), DirEnd;
+             DirIt != DirEnd && !EC; DirIt.increment(EC)) {
+
+          // FIXME: Use a StringRef here!
+          std::string FileName = getRealPath(DirIt->path());
+          assert(!llvm::sys::fs::is_symlink_file(FileName));
+
+          if (ShouldPermanentlyIgnore(FileName))
+            continue;
+
+          std::string FileRealPath = llvm::sys::path::parent_path(FileName);
+          FileName = llvm::sys::path::filename(FileName);
+          const BasePath& BaseP = m_BasePaths.RegisterBasePath(FileRealPath);
+          LibraryPath LibPath(BaseP, FileName);
+          if (m_SysLibraries.HasRegisteredLib(LibPath) ||
+              m_Libraries.HasRegisteredLib(LibPath))
+            continue;
+
+          if (searchSystemLibraries)
+            m_SysLibraries.RegisterLib(LibPath);
+          else
+            m_Libraries.RegisterLib(LibPath);
+        }
+      }
+    }
+  }
+
+  void Dyld::BuildBloomFilter(LibraryPath* Lib,
+                              llvm::object::ObjectFile *BinObjFile,
+                              unsigned IgnoreSymbolFlags /*= 0*/) const {
+    assert(m_UseBloomFilter && "Bloom filter is disabled");
+    assert(!Lib->hasBloomFilter() && "Already built!");
+
+    using namespace llvm;
+    using namespace llvm::object;
+
+    // If BloomFilter is empty then build it.
+    // Count Symbols and generate BloomFilter
+    uint32_t SymbolsCount = 0;
+    std::list<llvm::StringRef> symbols;
+    for (const llvm::object::SymbolRef &S : BinObjFile->symbols()) {
+      uint32_t Flags = S.getFlags();
+      // Do not insert in the table symbols flagged to ignore.
+      if (Flags & IgnoreSymbolFlags)
+        continue;
+
+      // Note, we are at last resort and loading library based on a weak
+      // symbol is allowed. Otherwise, the JIT will issue an unresolved
+      // symbol error.
+      //
+      // There are other weak symbol kinds (marked as 'V') to denote
+      // typeinfo and vtables. It is unclear whether we should load such
+      // libraries or from which library we should resolve the symbol.
+      // We seem to not have a way to differentiate it from the symbol API.
+
+      llvm::Expected<llvm::StringRef> SymNameErr = S.getName();
+      if (!SymNameErr) {
+        cling::errs()<< "Dyld::BuildBloomFilter: Failed to read symbol "
+                     << SymNameErr.get() << "\n";
+        continue;
+      }
+
+      if (SymNameErr.get().empty())
+        continue;
+
+      ++SymbolsCount;
+      symbols.push_back(SymNameErr.get());
+    }
+
+    if (BinObjFile->isELF()) {
+      // ELF file format has .dynstr section for the dynamic symbol table.
+      const auto *ElfObj = cast<llvm::object::ELFObjectFileBase>(BinObjFile);
+
+      for (const object::SymbolRef &S : ElfObj->getDynamicSymbolIterators()) {
+        uint32_t Flags = S.getFlags();
+        // DO NOT insert to table if symbol was undefined
+        if (Flags & llvm::object::SymbolRef::SF_Undefined)
+          continue;
+
+        // Note, we are at last resort and loading library based on a weak
+        // symbol is allowed. Otherwise, the JIT will issue an unresolved
+        // symbol error.
+        //
+        // There are other weak symbol kinds (marked as 'V') to denote
+        // typeinfo and vtables. It is unclear whether we should load such
+        // libraries or from which library we should resolve the symbol.
+        // We seem to not have a way to differentiate it from the symbol API.
+
+        llvm::Expected<StringRef> SymNameErr = S.getName();
+        if (!SymNameErr) {
+          cling::errs() << "Dyld::BuildBloomFilter: Failed to read symbol "
+                        <<SymNameErr.get() << "\n";
+          continue;
+        }
+
+        if (SymNameErr.get().empty())
+          continue;
+
+        ++SymbolsCount;
+        symbols.push_back(SymNameErr.get());
+      }
+    }
+
+    Lib->InitializeBloomFilter(SymbolsCount);
+
+    if (!SymbolsCount) {
+      if (DEBUG > 7)
+        cling::errs() << "Dyld::BuildBloomFilter: No symbols!\n";
+      return;
+    }
+
+    if (DEBUG > 7) {
+      cling::errs() << "Dyld::BuildBloomFilter: Symbols:\n";
+      for (auto it : symbols)
+        cling::errs() << "Dyld::BuildBloomFilter" <<  "- " <<  it << "\n";
+    }
+
+    // Generate BloomFilter
+    for (const auto &S : symbols) {
+      if (m_UseHashTable)
+        Lib->AddBloom(Lib->AddSymbol(S));
+      else
+        Lib->AddBloom(S);
+    }
+  }
+
+  bool Dyld::ContainsSymbol(const LibraryPath* Lib,
+                            const std::string &mangledName,
+                            unsigned IgnoreSymbolFlags /*= 0*/) const {
+    const std::string library_filename = Lib->GetFullName();
+
+    if (DEBUG > 7) {
+      cling::errs() << "Dyld::ContainsSymbol: Find symbol: lib="
+                    << library_filename << ", mangled="
+                    << mangledName << "\n";
+    }
+
+    auto ObjF = llvm::object::ObjectFile::createObjectFile(library_filename);
+    if (llvm::Error Err = ObjF.takeError()) {
+      if (DEBUG > 1) {
+        std::string Message;
+        handleAllErrors(std::move(Err), [&](llvm::ErrorInfoBase &EIB) {
+            Message += EIB.message() + "; ";
+          });
+        cling::errs() << "Dyld::ContainsSymbol: Failed to read object file "
+                      << library_filename << " Errors: " << Message << "\n";
+      }
+      return false;
+    }
+
+    llvm::object::ObjectFile *BinObjFile = ObjF.get().getBinary();
+
+    uint32_t hashedMangle = GNUHash(mangledName);
+    // Check for the gnu.hash section if ELF.
+    // If the symbol doesn't exist, exit early.
+    if (BinObjFile->isELF() &&
+        !MayExistInElfObjectFile(BinObjFile, hashedMangle))
+      return false;
+
+    if (m_UseBloomFilter) {
+      // Use our bloom filters and create them if necessary.
+      if (!Lib->hasBloomFilter())
+        BuildBloomFilter(const_cast<LibraryPath*>(Lib), BinObjFile,
+                         IgnoreSymbolFlags);
+
+      // If the symbol does not exist, exit early. In case it may exist, iterate.
+      if (!Lib->MayExistSymbol(hashedMangle)) {
+        if (DEBUG > 7)
+          cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Skip symbol.\n";
+        return false;
+      }
+      if (DEBUG > 7)
+        cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Symbol May exist."
+                      << " Search for it.";
+    }
+
+    if (m_UseHashTable) {
+      bool result = Lib->ExistSymbol(mangledName);
+      if (DEBUG > 7)
+        cling::errs() << "Dyld::ContainsSymbol: HashTable: Symbol "
+                      << (result ? "Exist" : "Not exist") << "\n";
+      return result;
+    }
+
+    auto ForeachSymbol =
+      [&library_filename](llvm::iterator_range<llvm::object::symbol_iterator> range,
+         unsigned IgnoreSymbolFlags, llvm::StringRef mangledName) -> bool {
+      for (const llvm::object::SymbolRef &S : range) {
+        uint32_t Flags = S.getFlags();
+        // Do not insert in the table symbols flagged to ignore.
+        if (Flags & IgnoreSymbolFlags)
+          continue;
+
+        // Note, we are at last resort and loading library based on a weak
+        // symbol is allowed. Otherwise, the JIT will issue an unresolved
+        // symbol error.
+        //
+        // There are other weak symbol kinds (marked as 'V') to denote
+        // typeinfo and vtables. It is unclear whether we should load such
+        // libraries or from which library we should resolve the symbol.
+        // We seem to not have a way to differentiate it from the symbol API.
+
+        llvm::Expected<llvm::StringRef> SymNameErr = S.getName();
+        if (!SymNameErr) {
+          cling::errs() << "Dyld::ContainsSymbol: Failed to read symbol "
+                        << mangledName << "\n";
+          continue;
+        }
+
+        if (SymNameErr.get().empty())
+          continue;
+
+        if (SymNameErr.get() == mangledName) {
+          if (DEBUG > 1) {
+            cling::errs() << "Dyld::ContainsSymbol: Symbol "
+                          << mangledName << " found in "
+                          << library_filename << "\n";
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    // If no hash symbol then iterate to detect symbol
+    // We Iterate only if BloomFilter and/or SymbolHashTable are not supported.
+
+    // Symbol may exist. Iterate.
+    if (ForeachSymbol(BinObjFile->symbols(), IgnoreSymbolFlags, mangledName))
+      return true;
+
+
+    if (!BinObjFile->isELF())
+      return false;
+
+    // ELF file format has .dynstr section for the dynamic symbol table.
+    const auto *ElfObj =
+      llvm::cast<llvm::object::ELFObjectFileBase>(BinObjFile);
+
+    return ForeachSymbol(ElfObj->getDynamicSymbolIterators(),
+                         IgnoreSymbolFlags, mangledName);
+  }
+
+  bool Dyld::ShouldPermanentlyIgnore(const std::string& FileName) const {
+    assert(FileName == getRealPath(FileName));
+    assert(!m_ExecutableFormat.empty() && "Failed to find the object format!");
+
+    if (llvm::sys::fs::is_directory(FileName))
+      return true;
+
+    if (!cling::DynamicLibraryManager::isSharedLibrary(FileName))
+      return true;
+
+    // No need to check linked libraries, as this function is only invoked
+    // for symbols that cannot be found (neither by dlsym nor in the JIT).
+    if (m_DynamicLibraryManager.isLibraryLoaded(FileName.c_str()))
+      return true;
+
+
+    auto ObjF = llvm::object::ObjectFile::createObjectFile(FileName);
+    if (!ObjF) {
+      if (DEBUG > 1)
+        cling::errs() << "[DyLD] Failed to read object file "
+                      << FileName << "\n";
+      return true;
+    }
+
+    llvm::object::ObjectFile *file = ObjF.get().getBinary();
+
+    if (DEBUG > 1)
+      cling::errs() << "Current executable format: " << m_ExecutableFormat
+                    << ". Executable format of " << FileName << " : "
+                    << file->getFileFormatName() << "\n";
+
+    // Ignore libraries with different format than the executing one.
+    if (m_ExecutableFormat != file->getFileFormatName())
+      return true;
+
+    if (llvm::isa<llvm::object::ELFObjectFileBase>(*file)) {
+      for (auto S : file->sections()) {
+        llvm::StringRef name;
+        S.getName(name);
+        if (name == ".text") {
+          // Check if the library has only debug symbols, usually when
+          // stripped with objcopy --only-keep-debug. This check is done by
+          // reading the manual of objcopy and inspection of stripped with
+          // objcopy libraries.
+          auto SecRef = static_cast<llvm::object::ELFSectionRef&>(S);
+          if (SecRef.getType() == llvm::ELF::SHT_NOBITS)
+            return true;
+
+          return (SecRef.getFlags() & llvm::ELF::SHF_ALLOC) == 0;
+        }
+      }
+      return true;
+    }
+
+    //FIXME: Handle osx using isStripped after upgrading to llvm9.
+
+    return m_ShouldPermanentlyIgnoreCallback(FileName);
+  }
+
+  std::string Dyld::searchLibrariesForSymbol(const std::string& mangledName,
+                                             bool searchSystem/* = true*/) {
+    assert(!llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(mangledName) &&
+           "Library already loaded, please use dlsym!");
+    assert(!mangledName.empty());
+    using namespace llvm::sys::path;
+    using namespace llvm::sys::fs;
+
+    if (m_FirstRun) {
+      ScanForLibraries(/* SearchSystemLibraries= */ false);
+      m_FirstRun = false;
+    }
+
+    if (!m_QueriedLibraries.empty()) {
+      // Last call we were asked if a library contains a symbol. Usually, the
+      // caller wants to load this library. Check if was loaded and remove it
+      // from our lists of not-yet-loaded libs.
+
+      if (DEBUG > 7) {
+        cling::errs() << "Dyld::ResolveSymbol: m_QueriedLibraries:\n";
+        size_t x = 0;
+        for (auto item : m_QueriedLibraries) {
+          cling::errs() << "Dyld::ResolveSymbol - [" << x++ << "]:"
+                        << &item << ": " << item.m_Path << ", "
+                        << item.m_LibName << "\n";
+        }
+      }
+
+      for (const LibraryPath& P : m_QueriedLibraries) {
+        const std::string LibName = P.GetFullName();
+        if (!m_DynamicLibraryManager.isLibraryLoaded(LibName))
+          continue;
+
+        m_Libraries.UnregisterLib(P);
+        m_SysLibraries.UnregisterLib(P);
+      }
+    }
+
+    // Iterate over files under this path. We want to get each ".so" files
+    for (const LibraryPath* P : m_Libraries.GetLibraries()) {
+      const std::string LibName = P->GetFullName();
+
+      if (ContainsSymbol(P, mangledName, /*ignore*/
+                         llvm::object::SymbolRef::SF_Undefined)) {
+        m_QueriedLibraries.push_back(*P);
+        return LibName;
+      }
+    }
+
+    if (!searchSystem)
+      return "";
+
+    if (DEBUG > 7)
+      cling::errs() << "Dyld::ResolveSymbol: SearchSystem!\n";
+
+    // Lookup in non-system libraries failed. Expand the search to the system.
+    if (m_FirstRunSysLib) {
+      ScanForLibraries(/* SearchSystemLibraries= */ true);
+      m_FirstRunSysLib = false;
+    }
+
+    for (const LibraryPath* P : m_SysLibraries.GetLibraries()) {
+      const std::string LibName = P->GetFullName();
+      if (ContainsSymbol(P, mangledName, /*ignore*/
+                         llvm::object::SymbolRef::SF_Undefined |
+                         llvm::object::SymbolRef::SF_Weak)) {
+        m_QueriedLibraries.push_back(*P);
+        return LibName;
+      }
+    }
+
+    if (DEBUG > 7)
+      cling::errs() << "Dyld::ResolveSymbol: Search found no match!\n";
+
+    /*
+      if (DEBUG > 7) {
+      cling::errs() << "Dyld::ResolveSymbol: Structs after ResolveSymbol:\n");
+
+      cling::errs() << "Dyld::ResolveSymbol - sPaths:\n");
+      size_t x = 0;
+      for (const auto &item : sPaths.GetPaths())
+      cling::errs() << "Dyld::ResolveSymbol << [" x++ << "]: " << item << "\n";
+
+      cling::errs() << "Dyld::ResolveSymbol - sLibs:\n");
+      x = 0;
+      for (const auto &item : sLibraries.GetLibraries())
+      cling::errs() << "Dyld::ResolveSymbol ["
+      << x++ << "]: " << item->Path << ", "
+      << item->LibName << "\n";
+
+      cling::errs() << "Dyld::ResolveSymbol - sSysLibs:");
+      x = 0;
+      for (const auto &item : sSysLibraries.GetLibraries())
+      cling::errs() << "Dyld::ResolveSymbol ["
+      << x++ << "]: " << item->Path << ", "
+      << item->LibName << "\n";
+
+      Info("Dyld::ResolveSymbol", "- sQueriedLibs:");
+      x = 0;
+      for (const auto &item : sQueriedLibraries)
+      cling::errs() << "Dyld::ResolveSymbol ["
+      << x++ << "]: " << item->Path << ", "
+      << item->LibName << "\n";
+      }
+    */
+
+    return ""; // Search found no match.
+  }
+
   void DynamicLibraryManager::initializeDyld(
-           std::function<bool(llvm::StringRef)> shouldPermanentlyIgnore) const {
-    assert(!s_IsDyldInitialized);
-    s_ShouldPermanentlyIgnoreCallback = shouldPermanentlyIgnore;
+                 std::function<bool(llvm::StringRef)> shouldPermanentlyIgnore) {
+    assert(!m_Dyld && "Already initialized!");
 
     std::string exeP = GetExecutablePath();
     auto ObjF =
       cantFail(llvm::object::ObjectFile::createObjectFile(exeP));
-       s_ExecutableFormat = ObjF.getBinary()->getFileFormatName();
 
-    s_IsDyldInitialized = true;
+    m_Dyld = new Dyld(*this, shouldPermanentlyIgnore,
+                      ObjF.getBinary()->getFileFormatName());
   }
 
   std::string
   DynamicLibraryManager::searchLibrariesForSymbol(const std::string& mangledName,
                                            bool searchSystem/* = true*/) const {
-    assert(s_IsDyldInitialized && "Must call initialize dyld before!");
-    static Dyld& dyld = Dyld::getInstance(*this);
-    return dyld.searchLibrariesForSymbol(mangledName, searchSystem);
+    assert(m_Dyld && "Must call initialize dyld before!");
+    return m_Dyld->searchLibrariesForSymbol(mangledName, searchSystem);
   }
 
   std::string DynamicLibraryManager::getSymbolLocation(void *func) {

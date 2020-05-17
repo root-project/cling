@@ -23,7 +23,7 @@
 
 namespace cling {
   DynamicLibraryManager::DynamicLibraryManager(const InvocationOptions& Opts)
-    : m_Opts(Opts), m_Callbacks(0) {
+    : m_Opts(Opts) {
     const llvm::SmallVector<const char*, 10> kSysLibraryEnv = {
       "LD_LIBRARY_PATH",
   #if __APPLE__
@@ -64,8 +64,6 @@ namespace cling {
     // the front of the line, or even to the front of user paths?
     m_SearchPaths.push_back({".", /*IsUser*/true});
   }
-
-  DynamicLibraryManager::~DynamicLibraryManager() {}
 
   std::string
   DynamicLibraryManager::lookupLibInPaths(llvm::StringRef libStem) const {
