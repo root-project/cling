@@ -46,6 +46,7 @@ namespace cling {
     clang::Preprocessor::CleanupAndRestoreCacheRAII fCleanupRAII;
     clang::Parser::ParserCurTokRestoreRAII fSavedCurToken;
     ParserStateRAII ResetParserState;
+    clang::Sema::SFINAETrap fSFINAETrap;
     void prepareForParsing(llvm::StringRef code, llvm::StringRef bufferName,
                            LookupHelper::DiagSetting diagOnOff);
   public:
@@ -56,7 +57,8 @@ namespace cling {
           fCleanupRAII(LH.m_Parser->getPreprocessor()),
           fSavedCurToken(*LH.m_Parser),
           ResetParserState(*LH.m_Parser,
-                           !LH.IsRecursivelyRunning /*skipToEOF*/) {
+                           !LH.IsRecursivelyRunning /*skipToEOF*/),
+          fSFINAETrap(m_LH.m_Parser->getActions()) {
       LH.IsRecursivelyRunning = true;
       prepareForParsing(code, bufferName, diagOnOff);
     }
@@ -81,7 +83,9 @@ namespace cling {
                                       diagOnOff == LookupHelper::NoDiagnostics);
     //
     //  Tell Sema we are not in the process of doing an instantiation.
-    //
+    //  fSFINAETrap will reset any SFINAE error count of a SFINAE context from "above".
+    //  fSFINAETrap will reset this value to the previous one; the line below is overwriting
+    //  the value set by fSFINAETrap.
     P.getActions().InNonInstantiationSFINAEContext = true;
     //
     //  Tell the parser to not attempt spelling correction.
