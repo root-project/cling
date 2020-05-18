@@ -53,9 +53,9 @@ namespace cling {
                      llvm::StringRef bufferName,
                      LookupHelper::DiagSetting diagOnOff)
         : m_LH(LH), SaveIsRecursivelyRunning(LH.IsRecursivelyRunning),
-          fCleanupRAII(LH.m_Parser.get()->getPreprocessor()),
-          fSavedCurToken(*LH.m_Parser.get()),
-          ResetParserState(*LH.m_Parser.get(),
+          fCleanupRAII(LH.m_Parser->getPreprocessor()),
+          fSavedCurToken(*LH.m_Parser),
+          ResetParserState(*LH.m_Parser,
                            !LH.IsRecursivelyRunning /*skipToEOF*/) {
       LH.IsRecursivelyRunning = true;
       prepareForParsing(code, bufferName, diagOnOff);
@@ -69,7 +69,7 @@ namespace cling {
                                            llvm::StringRef bufferName,
                                           LookupHelper::DiagSetting diagOnOff) {
     ++m_LH.m_TotalParseRequests;
-    Parser& P = *m_LH.m_Parser.get();
+    Parser& P = *m_LH.m_Parser;
     Sema& S = P.getActions();
     Preprocessor& PP = P.getPreprocessor();
     //
