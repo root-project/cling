@@ -129,7 +129,6 @@ if (UNIX)
     # Remove absolute path from CMAKE_CXX_COMPILER
     get_filename_component(_name ${CMAKE_CXX_COMPILER} NAME)
     get_filename_component(_path ${CMAKE_CXX_COMPILER} PATH)
-
     # This should probably be more general...but how?
     if(_name STREQUAL "ccache" OR _name STREQUAL "distcc")
       separate_arguments(_arg_list UNIX_COMMAND "${CMAKE_CXX_COMPILER_ARG1}")
@@ -249,7 +248,9 @@ if (UNIX)
       set(CLING_CXX_PATH "${CLING_CXX_PATH} ${CLING_CXX_PATH_ARGS}")
     else()
       # convert CMAKE_CXX_FLAGS to a list for execute_process
-      string(REPLACE " " ";" cling_tmp_arg_list ${CMAKE_CXX_FLAGS})
+      string(REPLACE "-fdiagnostics-color=always" "" cling_tmp_arg_list ${CMAKE_CXX_FLAGS})
+      string(REPLACE "-fcolor-diagnosics" "" cling_tmp_arg_list ${cling_tmp_arg_list})
+      string(REPLACE " " ";" cling_tmp_arg_list ${cling_tmp_arg_list})
       execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} ${cling_tmp_arg_list} -xc++ -E -v /dev/null
                       OUTPUT_QUIET ERROR_VARIABLE CLING_CXX_HEADERS)
     endif()
