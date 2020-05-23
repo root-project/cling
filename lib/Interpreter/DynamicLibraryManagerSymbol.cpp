@@ -687,7 +687,6 @@ namespace cling {
   }
 
   bool Dyld::ShouldPermanentlyIgnore(const std::string& FileName) const {
-    assert(FileName == getRealPath(FileName));
     assert(!m_ExecutableFormat.empty() && "Failed to find the object format!");
 
     if (llvm::sys::fs::is_directory(FileName))
