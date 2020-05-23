@@ -560,6 +560,7 @@ namespace {
     // We can't use "assert.h" because it is defined in the resource dir, too.
 #ifdef LLVM_ON_WIN32
     llvm::SmallString<256> vcIncLoc(getIncludePathForHeader(HS, "vcruntime.h"));
+    llvm::SmallString<256> servIncLoc(getIncludePathForHeader(HS, "windows.h"));
 #endif
     llvm::SmallString<128> cIncLoc(getIncludePathForHeader(HS, "time.h"));
 
@@ -650,6 +651,8 @@ namespace {
     std::string MOverlay;
 #ifdef LLVM_ON_WIN32
     maybeAppendOverlayEntry(vcIncLoc.str(), "vcruntime.modulemap",
+                            clingIncLoc.str(), MOverlay);
+    maybeAppendOverlayEntry(servIncLoc.str(), "services_msvc.modulemap",
                             clingIncLoc.str(), MOverlay);
     maybeAppendOverlayEntry(cIncLoc.str(), "libc_msvc.modulemap",
                             clingIncLoc.str(), MOverlay);

@@ -1,0 +1,14 @@
+module "services" [system] {
+    requires windows
+    export *
+
+    module "minwinbase.h" {
+        export *
+        textual header "minwinbase.h"
+    }
+
+    module "windows.h" {
+        export *
+        header "windows.h"
+    }
+}
