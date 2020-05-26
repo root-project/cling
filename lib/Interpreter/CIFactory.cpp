@@ -671,9 +671,12 @@ namespace {
     if (!cudaIncLoc.empty())
       maybeAppendOverlayEntry(cudaIncLoc.str(), "cuda.modulemap",
                               clingIncLoc.str(), MOverlay);
-    if (!boostIncLoc.empty())
+    if (!boostIncLoc.empty()) {
+      // Add the modulemap in the include/boost folder not in include.
+      llvm::sys::path::append(boostIncLoc, "boost");
       maybeAppendOverlayEntry(boostIncLoc.str(), "boost.modulemap",
                               clingIncLoc.str(), MOverlay);
+    }
 
     if (/*needsOverlay*/!MOverlay.empty()) {
       // Virtual modulemap overlay file
