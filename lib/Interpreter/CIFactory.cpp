@@ -579,7 +579,8 @@ namespace {
        = [&HSOpts, &ModuleMapFiles](llvm::StringRef SystemDir,
                                     const std::string& Filename,
                                     const std::string& Location,
-                                    std::string& overlay) -> void {
+                                    std::string& overlay,
+                                    bool RegisterModuleMap = true) -> void {
 
       assert(llvm::sys::fs::exists(SystemDir) && "Must exist!");
 
@@ -625,9 +626,9 @@ namespace {
       overlay += "}\n ]\n }";
 
       if (HSOpts.ImplicitModuleMaps)
-         return;
-
-      ModuleMapFiles.push_back(systemLoc.str().str());
+        return;
+      if (RegisterModuleMap)
+        ModuleMapFiles.push_back(systemLoc.str().str());
     };
 
     if (!HSOpts.ImplicitModuleMaps) {
@@ -667,7 +668,8 @@ namespace {
 
     if (!tinyxml2IncLoc.empty())
       maybeAppendOverlayEntry(tinyxml2IncLoc.str(), "tinyxml2.modulemap",
-                              clingIncLoc.str(), MOverlay);
+                              clingIncLoc.str(), MOverlay,
+                              /*RegisterModuleMap=*/ false);
     if (!cudaIncLoc.empty())
       maybeAppendOverlayEntry(cudaIncLoc.str(), "cuda.modulemap",
                               clingIncLoc.str(), MOverlay);
@@ -675,7 +677,8 @@ namespace {
       // Add the modulemap in the include/boost folder not in include.
       llvm::sys::path::append(boostIncLoc, "boost");
       maybeAppendOverlayEntry(boostIncLoc.str(), "boost.modulemap",
-                              clingIncLoc.str(), MOverlay);
+                              clingIncLoc.str(), MOverlay,
+                              /*RegisterModuleMap=*/ false);
     }
 
     if (/*needsOverlay*/!MOverlay.empty()) {
