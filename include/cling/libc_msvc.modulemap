@@ -19,6 +19,10 @@ module "libc" [system] [extern_c] [no_undeclared_includes] {
     export *
     header "fenv.h"
   }
+  module "float.h" {
+    export *
+    header "float.h"
+  }
   module "memory.h" {
     export *
     header "memory.h"
