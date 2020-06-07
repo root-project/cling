@@ -23,12 +23,6 @@ matrix:
   # Abort all builds on a single failing matrix entry.
   fast_finish: true
 
-  exclude:
-    # Note: Workaround travis-ci/travis-ci#4681
-    # Exclude default job which lacks our included environment variables.
-    - os: osx
-    - os: linux
-
   include:
     # There seems to be a hard limit to how many machines a Travis build will
     # run across all platforms. By interleaving OS X, the hope is to get in the
