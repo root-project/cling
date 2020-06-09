@@ -1931,7 +1931,7 @@ def custom_input(prompt, always_yes=False):
         return input(prompt)
 
 ###############################################################################
-#                           Directory Initialization                          #
+#                               Global variables                              #
 ###############################################################################
 
 workdir = os.path.abspath(os.path.expanduser(args['with_workdir']))
@@ -1939,6 +1939,30 @@ srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
 CPT_SRC_DIR = os.path.join(CLING_SRC_DIR, 'tools', 'packaging')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
+
+prefix = ''
+tar_required = False
+llvm_revision = urlopen(
+                "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
+                'utf-8')
+llvm_vers = "{0}.{1}".format(llvm_revision[-2], llvm_revision[-1])
+LLVM_GIT_URL = ""
+CLANG_GIT_URL = args['with_clang_url']
+CLING_GIT_URL = args['with_cling_url']
+EXTRA_CMAKE_FLAGS = args.get('with_cmake_flags')
+CMAKE = os.environ.get('CMAKE', None)
+
+# llvm_revision = urlopen(
+#    "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
+#   'utf-8')
+VERSION = ''
+REVISION = ''
+# Travis needs some special behaviour
+TRAVIS_BUILD_DIR = os.environ.get('TRAVIS_BUILD_DIR', None)
+APPVEYOR_BUILD_FOLDER = os.environ.get('APPVEYOR_BUILD_FOLDER', None)
+
+# Make sure git log is invoked without a pager.
+os.environ['GIT_PAGER']=''
 
 ###############################################################################
 #                           Platform initialization                           #
@@ -2012,21 +2036,7 @@ else:
     # TODO: Need to test this in other platforms
     TMP_PREFIX = os.path.join(os.sep, 'tmp', 'cling-obj' + os.sep)
 
-###############################################################################
-#                               Global variables                              #
-###############################################################################
 
-prefix = ''
-tar_required = False
-llvm_revision = urlopen(
-                "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
-                'utf-8')
-llvm_vers = "{0}.{1}".format(llvm_revision[-2], llvm_revision[-1])
-LLVM_GIT_URL = ""
-CLANG_GIT_URL = args['with_clang_url']
-CLING_GIT_URL = args['with_cling_url']
-EXTRA_CMAKE_FLAGS = args.get('with_cmake_flags')
-CMAKE = os.environ.get('CMAKE', None)
 if not CMAKE:
     if platform.system() == 'Windows':
         CMAKE = os.path.join(TMP_PREFIX, 'bin', 'cmake', 'bin', 'cmake.exe')
@@ -2046,18 +2056,6 @@ if args['current_dev']:
       CLING_BRANCH = CLANG_BRANCH = LLVM_BRANCH = cDev[7:]
     elif cDev.startswith('branches:'):
       CLING_BRANCH, CLANG_BRANCH, LLVM_BRANCH = cDev[9:].split(',')
-
-# llvm_revision = urlopen(
-#    "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
-#   'utf-8')
-VERSION = ''
-REVISION = ''
-# Travis needs some special behaviour
-TRAVIS_BUILD_DIR = os.environ.get('TRAVIS_BUILD_DIR', None)
-APPVEYOR_BUILD_FOLDER = os.environ.get('APPVEYOR_BUILD_FOLDER', None)
-
-# Make sure git log is invoked without a pager.
-os.environ['GIT_PAGER']=''
 
 print('Cling Packaging Tool (CPT)')
 print('Arguments vector: ' + str(sys.argv))
