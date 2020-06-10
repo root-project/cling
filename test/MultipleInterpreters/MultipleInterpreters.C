@@ -6,18 +6,17 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
 // Test to check the functionality of the multiple interpreters.
 // Create a "child" interpreter and use gCling as its "parent".
 
 #include "cling/Interpreter/Interpreter.h"
-#include "cling/MetaProcessor/MetaProcessor.h"
-// #include "cling/Utils/Output.h"
-
 
 //Declare something in the parent interpreter
 int foo(){ return 42; }
+struct InParent { operator int() const { return 84; } };
+InParent IP;
 
 // OR
 //gCling->declare("void foo(){ cling::outs() << \"foo(void)\\n\"; }");
@@ -31,7 +30,27 @@ const char* argV[1] = {"cling"};
 {
   cling::Interpreter ChildInterp(*gCling, 1, argV);
   ChildInterp.declare("void foo(int i){ printf(\"foo(int) = %d\\n\", i); }\n");
-  ChildInterp.echo("foo()"); //CHECK: (int) 42
-  ChildInterp.echo("foo(1)"); //CHECK: foo(int) = 1
+
+  ChildInterp.echo("foo()");
+  //      CHECK: (int) 42
+
+  ChildInterp.echo("foo(1)");
+  // CHECK-NEXT: foo(int) = 1
+
+  ChildInterp.echo("InParent FC");
+  // CHECK-NEXT: (InParent &) @0x{{.*}}
+
+  ChildInterp.echo("static_cast<int>(IP)");
+  // CHECK-NEXT: (int) 84
 }
+
+{
+  cling::Interpreter ChildInterp(*gCling, 1, argV);
+
+  ChildInterp.echo("static_cast<int>(IP)");
+  // CHECK: (int) 84
+}
+
+// expected-no-diagnostics
+
 .q

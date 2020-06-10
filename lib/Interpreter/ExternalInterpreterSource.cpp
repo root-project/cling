@@ -14,6 +14,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTDiagnostic.h"
 #include "clang/AST/ASTImporter.h"
+#include "clang/AST/DeclContextInternals.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
@@ -78,7 +79,7 @@ namespace cling {
       m_ChildInterpreter->getCI()->getASTContext().getTranslationUnitDecl();
 
     // Also keep in the map of Decl Contexts the Translation Unit Decl Context
-    m_ImportedDeclContexts[childTUDeclContext] = parentTUDeclContext;
+    m_ImportedDeclContexts.emplace(childTUDeclContext, parentTUDeclContext);
 
     FileManager &childFM = m_ChildInterpreter->getCI()->getFileManager();
     FileManager &parentFM = m_ParentInterpreter->getCI()->getFileManager();
@@ -95,7 +96,7 @@ namespace cling {
 
   void ExternalInterpreterSource::ImportDecl(Decl *declToImport,
                                    DeclarationName &childDeclName,
-                                   DeclarationName &parentDeclName,
+                                   const DeclarationName &parentDeclName,
                                    const DeclContext *childCurrentDeclContext) {
 
     // Don't do the import if we have a Function Template or using decls. They
@@ -104,6 +105,7 @@ namespace cling {
     // supports their import.
     if ((declToImport->isFunctionOrFunctionTemplate()
          && declToImport->isTemplateDecl()) || dyn_cast<UsingDecl>(declToImport)
+         || dyn_cast<UsingDirectiveDecl>(declToImport)
          || dyn_cast<UsingShadowDecl>(declToImport)) {
 #ifndef NDEBUG
       utils::DiagnosticsStore DS(
@@ -125,14 +127,14 @@ namespace cling {
       }
       // Put the name of the Decl imported with the
       // DeclarationName coming from the parent, in  my map.
-      m_ImportedDecls[childDeclName] = parentDeclName;
+      m_ImportedDecls.emplace(childDeclName, parentDeclName);
     }
   }
 
   void ExternalInterpreterSource::ImportDeclContext(
                                   DeclContext *declContextToImport,
                                   DeclarationName &childDeclName,
-                                  DeclarationName &parentDeclName,
+                                  const DeclarationName &parentDeclName,
                                   const DeclContext *childCurrentDeclContext) {
 
     if (DeclContext *importedDeclContext =
@@ -148,32 +150,31 @@ namespace cling {
 
       // Put the name of the DeclContext imported with the
       // DeclarationName coming from the parent, in  my map.
-      m_ImportedDecls[childDeclName] = parentDeclName;
+      m_ImportedDecls.emplace(childDeclName, parentDeclName);
 
       // And also put the declaration context I found from the parent Interpreter
       // in the map of the child Interpreter to have it for the future.
-      m_ImportedDeclContexts[importedDeclContext] = declContextToImport;
+      m_ImportedDeclContexts.emplace(importedDeclContext, declContextToImport);
     }
   }
 
   bool ExternalInterpreterSource::Import(DeclContext::lookup_result lookup_result,
                                 const DeclContext *childCurrentDeclContext,
                                 DeclarationName &childDeclName,
-                                DeclarationName &parentDeclName) {
+                                const DeclarationName &parentDeclName) {
 
 
 
-    for (DeclContext::lookup_iterator I = lookup_result.begin(),
-          E = lookup_result.end(); I != E; ++I) {
+    for (NamedDecl* ND : lookup_result) {
       // Check if this Name we are looking for is
       // a DeclContext (for example a Namespace, function etc.).
-      if (DeclContext *declContextToImport = llvm::dyn_cast<DeclContext>(*I)) {
+      if (DeclContext *declContextToImport = llvm::dyn_cast<DeclContext>(ND)) {
 
         ImportDeclContext(declContextToImport, childDeclName,
                           parentDeclName, childCurrentDeclContext);
 
       }
-      ImportDecl(*I, childDeclName, parentDeclName, childCurrentDeclContext);
+      ImportDecl(ND, childDeclName, parentDeclName, childCurrentDeclContext);
     }
     return true;
   }
@@ -190,45 +191,109 @@ namespace cling {
     assert(childCurrentDeclContext->hasExternalVisibleStorage() &&
            "DeclContext has no visible decls in storage");
 
+    // Search in the map of the stored Decl Contexts for this
+    // Decl Context.
+    auto IDeclContext = m_ImportedDeclContexts.find(childCurrentDeclContext);
+    // If childCurrentDeclContext was found before and is already in the map,
+    // then do the lookup using the stored pointer.
+    if (IDeclContext == m_ImportedDeclContexts.end())
+      return false;
+
+    DeclContext *parentDC = IDeclContext->second;
+
     //Check if we have already found this declaration Name before
     DeclarationName parentDeclName;
-    std::map<clang::DeclarationName,
-             clang::DeclarationName>::iterator IDecl =
-                                            m_ImportedDecls.find(childDeclName);
+    auto IDecl = m_ImportedDecls.find(childDeclName);
     if (IDecl != m_ImportedDecls.end()) {
       parentDeclName = IDecl->second;
     } else {
       // Get the identifier info from the parent interpreter
       // for this Name.
-      std::string name = childDeclName.getAsString();
+      const std::string name = childDeclName.getAsString();
       IdentifierTable &parentIdentifierTable =
                             m_ParentInterpreter->getCI()->getASTContext().Idents;
       IdentifierInfo &parentIdentifierInfo =
                             parentIdentifierTable.get(name);
       parentDeclName = DeclarationName(&parentIdentifierInfo);
+
+      // Make sure then lookup name is right, this is an issue looking to import
+      // a constructor, where lookup_result can hold the injected class name.
+      // FIXME: Pre-filter childDeclName.getNameKind() and just drop import
+      // of any unsupported types (i.e. CXXUsingDirective)
+      const DeclarationName::NameKind ChildKind = childDeclName.getNameKind();
+      if (parentDeclName.getNameKind() != ChildKind) {
+        (void)parentDC->lookup(parentDeclName);
+        const auto* DM = parentDC->getPrimaryContext()->getLookupPtr();
+        assert(DM && "No lookup map");
+        for (auto&& Entry : *DM) {
+          const DeclarationName& DN = Entry.first;
+          if (DN.getNameKind() == ChildKind) {
+            if (DN.getAsString() == name) {
+              parentDeclName = DN;
+              break;
+            }
+          }
+        }
+      }
     }
 
-    // Search in the map of the stored Decl Contexts for this
-    // Decl Context.
-    std::map<const clang::DeclContext *, clang::DeclContext *>::iterator
-          IDeclContext = m_ImportedDeclContexts.find(childCurrentDeclContext);
-    // If childCurrentDeclContext was found before and is already in the map,
-    // then do the lookup using the stored pointer.
-    if (IDeclContext == m_ImportedDeclContexts.end()) return false;
-
-    DeclContext *parentDeclContext = IDeclContext->second;
-
-    DeclContext::lookup_result lookup_result =
-                                    parentDeclContext->lookup(parentDeclName);
+    DeclContext::lookup_result lookup_result = parentDC->lookup(parentDeclName);
 
     // Check if we found this Name in the parent interpreter
-    if (!lookup_result.empty()) {
-      if (Import(lookup_result,
-                 childCurrentDeclContext, childDeclName, parentDeclName))
-        return true;
+    if (lookup_result.empty())
+      return false;
+
+    if (!Import(lookup_result, childCurrentDeclContext, childDeclName,
+                parentDeclName))
+      return false;
+
+    // FIXME: The failure of this to work out of the box seems like a deeper
+    // issue (in ASTImporter::ImportContext or
+    // CXXRecordDecl::getVisibleConversionFunctions for example).
+
+    // Constructing or importing a variable of type CXXRecordDecl.
+    // Import the all constructors, conversion routines, and the destructor.
+
+    const CXXRecordDecl* CXD = dyn_cast<CXXRecordDecl>(childCurrentDeclContext);
+    if (!CXD && isa<VarDecl>(*lookup_result.begin())) {
+      assert(lookup_result.size() == 1 && "More than one VarDecl?!");
+      CXD = cast<VarDecl>(*lookup_result.begin())
+                ->getType()
+                ->getAsCXXRecordDecl();
+      if (CXD)
+        parentDC = cast<DeclContext>(const_cast<CXXRecordDecl*>(CXD));
     }
 
-    return false;
+    if (!CXD)
+      return true;
+
+    ASTContext& AST = m_ChildInterpreter->getCI()->getASTContext();
+    const auto CanonQT = CXD->getCanonicalDecl()
+                             ->getTypeForDecl()
+                             ->getCanonicalTypeUnqualified();
+    const auto* DM = parentDC->getPrimaryContext()->getLookupPtr();
+    assert(DM && "No lookup map");
+    for (auto&& Entry : *DM) {
+      const DeclarationName& ParentDN = Entry.first;
+      const auto ParentKind = ParentDN.getNameKind();
+      if (ParentKind < DeclarationName::CXXConstructorName ||
+          ParentKind > DeclarationName::CXXConversionFunctionName)
+        continue;
+
+      if (m_ImportedDecls.find(childDeclName) == m_ImportedDecls.end())
+        continue;
+
+      DeclarationName ChildDN =
+          AST.DeclarationNames.getCXXSpecialName(ParentDN.getNameKind(),
+                                                 CanonQT);
+      // FIXME: DeclContext::Import checks if the decl is a DeclContext.
+      // Is that neccessary?
+      DeclContext::lookup_result LR = parentDC->lookup(ParentDN);
+      if (!LR.empty() &&
+          !Import(LR, childCurrentDeclContext, ChildDN, ParentDN))
+        return false;
+    }
+    return true;
   }
 
   ///\brief Make available to child all decls in parent's decl context
@@ -242,8 +307,7 @@ namespace cling {
 
     // Search in the map of the stored Decl Contexts for this
     // Decl Context.
-    std::map<const clang::DeclContext *, clang::DeclContext *>::iterator
-                  IDeclContext = m_ImportedDeclContexts.find(childDeclContext);
+    auto IDeclContext = m_ImportedDeclContexts.find(childDeclContext);
     // If childCurrentDeclContext was found before and is already in the map,
     // then do the lookup using the stored pointer.
     if (IDeclContext == m_ImportedDeclContexts.end()) return ;
@@ -254,12 +318,8 @@ namespace cling {
     // stored in Sema.
     StringRef filter =
       m_ChildInterpreter->getCI()->getPreprocessor().getCodeCompletionFilter();
-    for (DeclContext::decl_iterator IDeclContext =
-                                      parentDeclContext->decls_begin(),
-                                    EDeclContext =
-                                      parentDeclContext->decls_end();
-                              IDeclContext != EDeclContext; ++IDeclContext) {
-      if (NamedDecl* parentDecl = llvm::dyn_cast<NamedDecl>(*IDeclContext)) {
+    for (Decl* D : parentDeclContext->decls()) {
+      if (NamedDecl* parentDecl = llvm::dyn_cast<NamedDecl>(D)) {
         DeclarationName childDeclName = parentDecl->getDeclName();
         if (auto II = childDeclName.getAsIdentifierInfo()) {
           StringRef name = II->getName();
