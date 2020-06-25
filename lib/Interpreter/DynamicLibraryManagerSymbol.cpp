@@ -25,15 +25,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "llvm/Config/config.h" // Get configuration settings
-
-#if defined(HAVE_DLFCN_H) && defined(HAVE_DLOPEN)
+#ifdef LLVM_ON_UNIX
 #include <dlfcn.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif // HAVE_UNISTD_H
+#endif // LLVM_ON_UNIX
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
