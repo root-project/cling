@@ -526,7 +526,7 @@ namespace {
   static SmallVector<StringRef, 4> getPathsFromEnv(const char* EnvVar) {
     if (!EnvVar) return {};
     SmallVector<StringRef, 4> Paths;
-    StringRef(EnvVar).split(Paths, ':', -1, false);
+    StringRef(EnvVar).split(Paths, llvm::sys::EnvPathSeparator, -1, false);
     return Paths;
   }
 
