@@ -39,7 +39,8 @@ namespace textinput {
     // Indices are reverse! I.e. 0 is newest!
     const std::string& GetLine(size_t Idx) const {
       static const std::string sEmpty;
-      if (Idx == (size_t)-1) return sEmpty;
+      if (Idx == (size_t)-1 || fEntries.empty())
+         return sEmpty;
       return fEntries[fEntries.size() - 1 - Idx];
     }
     size_t GetSize() const { return fEntries.size(); }
