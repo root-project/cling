@@ -282,22 +282,6 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
 
-  // Force the JIT to query for symbols local to itself, i.e. if it resides in a
-  // shared library it will resolve symbols from there first. This is done to
-  // implement our proto symbol versioning protection. Namely, if some other
-  // library provides llvm symbols, we want out JIT to avoid looking at them.
-  //
-  // FIXME: In general, this approach causes numerous issues when cling is
-  // embedded and the framework needs to provide its own set of symbols which
-  // exist in llvm. Most notably if the framework links against different
-  // versions of linked against llvm libraries. For instance, if we want to provide
-  // a custom zlib in the framework the JIT will still resolve to llvm's version
-  // of libz causing hard-to-debug bugs. In order to work around such cases we
-  // need to swap the llvm system libraries, which can be tricky for two
-  // reasons: (a) llvm's cmake doesn't really support it; (b) only works if we
-  // build llvm from sources.
-  llvm::sys::DynamicLibrary::SearchOrder
-    = llvm::sys::DynamicLibrary::SO_LoadedFirst;
   // Enable JIT symbol resolution from the binary.
   llvm::sys::DynamicLibrary::LoadLibraryPermanently(0, 0);
 
