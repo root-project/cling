@@ -281,6 +281,11 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
                 m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
+  // Libraries might get exposed through ExposeHiddenSharedLibrarySymbols(),
+  // make them available to the JIT, even though their symbols cannot be
+  // resolved through the process.
+  llvm::sys::DynamicLibrary::SearchOrder
+    = llvm::sys::DynamicLibrary::SO_LoadedLast;
 
   // Enable JIT symbol resolution from the binary.
   llvm::sys::DynamicLibrary::LoadLibraryPermanently(0, 0);
