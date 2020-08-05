@@ -18,7 +18,6 @@
 #include "EnterUserCodeRAII.h"
 #include "ExternalInterpreterSource.h"
 #include "ForwardDeclPrinter.h"
-#include "IncrementalCUDADeviceCompiler.h"
 #include "IncrementalExecutor.h"
 #include "IncrementalParser.h"
 #include "MultiplexInterpreterCallbacks.h"
@@ -32,6 +31,7 @@
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Exception.h"
+#include "cling/Interpreter/IncrementalCUDADeviceCompiler.h"
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
@@ -744,6 +744,10 @@ namespace cling {
 
   DiagnosticsEngine& Interpreter::getDiagnostics() const {
     return getCI()->getDiagnostics();
+  }
+
+  IncrementalCUDADeviceCompiler* Interpreter::getCUDACompiler() const {
+    return m_CUDACompiler.get();
   }
 
   CompilationOptions Interpreter::makeDefaultCompilationOpts() const {
