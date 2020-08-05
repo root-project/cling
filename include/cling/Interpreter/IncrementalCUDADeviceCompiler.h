@@ -87,6 +87,9 @@ namespace cling {
     ///\brief Contains the PTX code of the current input
     llvm::SmallString<1024> m_PTX_code;
 
+    ///\brief Keep the ptx compiler args for reflection during runtime.
+    std::vector<std::string> argv;
+
     ///\brief Add the include paths from the interpreter runtime to a argument
     /// list.
     ///
