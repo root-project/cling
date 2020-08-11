@@ -66,6 +66,7 @@ for (int i = 0; i < 1 /*includePaths.size()*/; ++i) { // We know STL is first.
           printf("fail: %s\n", (nestedCling + sourceCode).c_str());
         //printf("%s\n", ent->d_name);
         else puts("pass\n");
+        unlink(fwdDeclFile.c_str());
       }
     }
     closedir(dir);
