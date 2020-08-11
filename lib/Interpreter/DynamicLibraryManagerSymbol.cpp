@@ -14,6 +14,7 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSet.h"
+#include "llvm/Object/COFF.h"
 #include "llvm/Object/ELFObjectFile.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/DynamicLibrary.h"
@@ -538,6 +539,25 @@ namespace cling {
 
         ++SymbolsCount;
         symbols.push_back(SymNameErr.get());
+      }
+    }
+    else if (BinObjFile->isCOFF()) { // On Windows, the symbols are present in COFF format.
+      llvm::object::COFFObjectFile* CoffObj = cast<llvm::object::COFFObjectFile>(BinObjFile);
+
+      // In COFF, the symbols are not present in the SymbolTable section
+      // of the Object file. They are present in the ExportDirectory section.
+      for (auto I=CoffObj->export_directory_begin(), 
+                E=CoffObj->export_directory_end(); I != E; I = ++I) {
+        // All the symbols are already flagged as exported. 
+        // We cannot really ignore symbols based on flags as we do on unix.
+        StringRef Name;
+        if (I->getSymbolName(Name))
+          continue;
+        if (Name.empty())
+          continue;
+
+        ++SymbolsCount;
+        symbols.push_back(Name);
       }
     }
 
