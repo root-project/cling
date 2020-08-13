@@ -68,26 +68,27 @@ def _perror(e):
     sys.exit(e.returncode)
 
 
-def exec_subprocess_call(cmd, cwd, showCMD=False):
+def exec_subprocess(cmd, cwd, showCMD, mustSucceed=False):
     if showCMD: print(cmd)
     cmd = _convert_subprocess_cmd(cmd)
     try:
-        subprocess.check_call(cmd, cwd=cwd, shell=False,
-                              stdin=subprocess.PIPE, stdout=None, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(cmd, cwd=cwd, shell=False,
+                                         stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return (0, output)
     except subprocess.CalledProcessError as e:
-        _perror(e)
+        if mustSucceed:
+            _perror(e)
+        return (e.returncode, e.output)
 
 
-def exec_subprocess_check_output(cmd, cwd):
-    cmd = _convert_subprocess_cmd(cmd)
-    out = ''
-    try:
-        out = subprocess.check_output(cmd, cwd=cwd, shell=False,
-                                      stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('utf-8')
-    except subprocess.CalledProcessError as e:
-        _perror(e)
-    finally:
-        return out
+def exec_subprocess_call(cmd, cwd, showCMD=False):
+    exec_subprocess(cmd, cwd, showCMD, mustSucceed=True)
+
+def exec_subprocess_check_output(cmd, cwd, showCMD=False):
+    return exec_subprocess(cmd, cwd, showCMD, mustSucceed=True)[1]
+
+def exec_subprocess_check_return_code(cmd, cwd, showCMD=False):
+    return exec_subprocess(cmd, cwd, showCMD)[0]
 
 def travis_fold_start(tag):
     if os.environ.get('TRAVIS_BUILD_DIR', None):
@@ -1179,7 +1180,7 @@ def check_redhat(pkg):
             print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
             return True
 
-    elif exec_subprocess_check_output("rpm -qa | grep -w %s" % (pkg), '/').strip() == '':
+    elif exec_subprocess_check_return_code("rpm -q %s" % (pkg), '/') != 0:
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
         return False
     else:
