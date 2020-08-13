@@ -1,6 +1,5 @@
 module boost_accumulators [system] {
   export *
-
   module "accumulators__accumulators_fwd" { header "accumulators/accumulators_fwd.hpp" export * }
   module "accumulators__accumulators" { header "accumulators/accumulators.hpp" export * }
   module "accumulators__framework__accumulator_base" { header "accumulators/framework/accumulator_base.hpp" export * }
@@ -310,7 +309,7 @@ In file included from /home/travis/build/Teemperor/boost-compile/inc/boost/asio.
   module "asio__yield" { header "asio/yield.hpp" export * }
 }
 module boost_assert {
-  module "assert" { header "assert.hpp" export * }
+  module "assert" { textual header "assert.hpp" export * }
 }
 module boost_assign {
   module "assign__assignment_exception" { header "assign/assignment_exception.hpp" export * }
@@ -823,16 +822,10 @@ module boost_dynamic_bitset_fwd {
   module "dynamic_bitset_fwd" { header "dynamic_bitset_fwd.hpp" export * }
 }
 module boost_endian {
-  module "endian__arithmetic" { header "endian/arithmetic.hpp" export * }
-  module "endian__buffers" { header "endian/buffers.hpp" export * }
-  module "endian__conversion" { header "endian/conversion.hpp" export * }
-  module "endian__detail__config" { header "endian/detail/config.hpp" export * }
-  module "endian__detail__cover_operators" { header "endian/detail/cover_operators.hpp" export * }
-  module "endian__detail__disable_warnings" { header "endian/detail/disable_warnings.hpp" export * }
-  module "endian__detail__disable_warnings_pop" { header "endian/detail/disable_warnings_pop.hpp" export * }
-  module "endian__detail__intrinsic" { header "endian/detail/intrinsic.hpp" export * }
-  module "endian__detail__lightweight_test" { header "endian/detail/lightweight_test.hpp" export * }
-  module "endian__std_pair" { header "endian/std_pair.hpp" export * }
+  export *
+  exclude header "endian/endian.hpp"
+  umbrella "endian"
+  module * { export * }
 }
 module boost_fiber {
   module "fiber__algo__algorithm" { header "fiber/algo/algorithm.hpp" export * }
@@ -5340,9 +5333,16 @@ module boost_date_time {
   exclude header "date_time/gregorian/gregorian_io.hpp"
   // Likely fixed by the the same commit:
   exclude header "date_time/posix_time/time_formatters.hpp"
+  exclude header "date_time/posix_time/time_formatters_limited.hpp"
   //error: too many template arguments for class template 'date_formatter'
   //  std::basic_string<charT> s(date_time::date_formatter<date,date_time::iso_format<charT>,charT>::date_to_string(d.begin()));
+  exclude header "date_time/posix_time/posix_time_types.hpp"
+  exclude header "date_time/dst_rules.hpp"
   exclude header "date_time/gregorian/formatters.hpp"
+  exclude header "date_time/gregorian/gregorian.hpp"
+  exclude header "date_time/gregorian/formatters_limited.hpp"
+  exclude header "date_time/date_formatting.hpp"
+  exclude header "date_time/date_formatting_limited.hpp"
   // Disentangle from boost_serialization. Fixed by boostorg/date_time@356c5c2
   exclude header "date_time/gregorian/greg_serialize.hpp"
   exclude header "date_time/posix_time/time_serialize.hpp"
@@ -5588,6 +5588,10 @@ module boost_numeric {
     umbrella "numeric/interval"
     module * { export * }
   }*/
+  //exclude opencl
+  exclude header "numeric/ublas/opencl/library.hpp"
+  exclude header "numeric/ublas/opencl/elementwise.hpp"
+
   // intentionally do not include conversion; it leads to cycles mostly via boost_cast
   //module odeint_odeint { header "numeric/odeint.hpp" export * }
   module odeint {
@@ -5655,6 +5659,9 @@ module boost_variant {
 
 module boost_thread {
   module "thread" { header "thread.hpp" export * }
+  exclude header "thread/thread_time.hpp"
+  // Broken and seems never included.
+  exclude header "thread/detail/function_wrapper.hpp"
   umbrella "thread" module * { export * }
 }
 
