@@ -5358,6 +5358,9 @@ module boost_archive_and_serialization { export *
     exclude header "archive/detail/abi_suffix.hpp"
     // Depends on spirit and brings a lot of other dependencies
     exclude header "archive/impl/basic_xml_grammar.hpp"
+    // FIXME: This is due to an error:
+    // c++/8.4.0/bits/stl_iterator.h:497:7: error: 'std::back_insert_iterator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >::operator=' from module 'std.algorithm' is not present in definition of 'std::back_insert_iterator<basic_string<char> >' in module 'boost_archive_and_serialization.boost_archive.dinkumware'
+    exclude header "archive/dinkumware.hpp"
     umbrella "archive"
     module * { export * }
   }
