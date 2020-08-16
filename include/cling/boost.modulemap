@@ -5392,7 +5392,12 @@ module boost_math_and_lexical_cast { export *
   module boost_math {
     export *
 
-    module math_interpolators { export * umbrella "math/interpolators" module * { export * } }
+    module math_interpolators {
+      export *
+      // Depends on fftw3
+      exclude header "math/interpolators/detail/cardinal_trigonometric_detail.hpp"
+      umbrella "math/interpolators" module * { export * }
+     }
     // Intentionally disabled due to pulling content from math/tools.
     //module math_bindings { export * umbrella "math/bindings" module * { export * } }
     module math_complex { export * umbrella "math/complex" module * { export * } }
@@ -5661,11 +5666,40 @@ module boost_variant {
 }
 
 module boost_thread {
-  module "thread" { header "thread.hpp" export * }
+  module "thread_once" { header "thread/once.hpp" export * }
+  module "thread_thread" { header "thread/thread.hpp" export * }
+  // Included in the middle of source code includes "thread/detail/atomic_undef_macros.hpp"
+  module "thread_future" { textual header "thread/future.hpp" export * }
+  module "thread_lock_options" { header "thread/lock_options.hpp" export * }
+
   exclude header "thread/thread_time.hpp"
+  // Logically goes together with thread_only.hpp and thread.hpp due to thread_data_base
+  exclude header "thread/detail/thread_group.hpp"
   // Broken and seems never included.
   exclude header "thread/detail/function_wrapper.hpp"
-  umbrella "thread" module * { export * }
+
+  module thread_concurrent_queues {
+    umbrella "thread/concurrent_queues"
+    // error: use of undeclared identifier 'sync_deque_is_closed'
+    exclude header "thread/concurrent_queues/detail/sync_deque_base.hpp"
+    module * { export * }
+ }
+  module thread_csbl { umbrella "thread/csbl" module * { export * } }
+  module thread_detail {
+
+    umbrella "thread/detail" module * { export * }
+  }
+  //module thread_executors { umbrella "thread/executors" module * { export * } }
+  //module thread_experimental { umbrella "thread/experimental" module * { export * } }
+  module thread_futures { umbrella "thread/futures" module * { export * } }
+  module thread_pthread {
+    // error: no member named 'storage' in 'boost::once_flag'
+    exclude header "thread/pthread/once_atomic.hpp"
+    exclude header "thread/pthread/once.hpp"
+    umbrella "thread/pthread" module * { export * }
+  }
+  module thread_v2 { umbrella "thread/v2" module * { export * } }
+  //module thread_win32 { umbrella "thread/win32" module * { export * } }
 }
 
 module boost_units {
@@ -5682,332 +5716,6 @@ module boost_foreach_fwd {
   module "foreach_fwd" { header "foreach_fwd.hpp" export * }
 }
 
-
-// This modules form a cycle, so we want to create a wrapper module for them
-module boost_modules_wrapper {
-
-  module boost_iostreams {
-    module "iostreams__categories" { header "iostreams/categories.hpp" export * }
-    module "iostreams__chain" { header "iostreams/chain.hpp" export * }
-    module "iostreams__char_traits" { header "iostreams/char_traits.hpp" export * }
-    module "iostreams__checked_operations" { header "iostreams/checked_operations.hpp" export * }
-    module "iostreams__close" { header "iostreams/close.hpp" export * }
-    module "iostreams__code_converter" { header "iostreams/code_converter.hpp" export * }
-    module "iostreams__combine" { header "iostreams/combine.hpp" export * }
-    module "iostreams__compose" { header "iostreams/compose.hpp" export * }
-    module "iostreams__concepts" { header "iostreams/concepts.hpp" export * }
-    module "iostreams__constants" { header "iostreams/constants.hpp" export * }
-    module "iostreams__copy" { header "iostreams/copy.hpp" export * }
-    module "iostreams__detail__absolute_path" { header "iostreams/detail/absolute_path.hpp" export * }
-    module "iostreams__detail__access_control" { header "iostreams/detail/access_control.hpp" export * }
-    module "iostreams__detail__adapter__concept_adapter" { header "iostreams/detail/adapter/concept_adapter.hpp" export * }
-    module "iostreams__detail__adapter__device_adapter" { header "iostreams/detail/adapter/device_adapter.hpp" export * }
-    module "iostreams__detail__adapter__direct_adapter" { header "iostreams/detail/adapter/direct_adapter.hpp" export * }
-    module "iostreams__detail__adapter__filter_adapter" { header "iostreams/detail/adapter/filter_adapter.hpp" export * }
-    module "iostreams__detail__adapter__mode_adapter" { header "iostreams/detail/adapter/mode_adapter.hpp" export * }
-    module "iostreams__detail__adapter__non_blocking_adapter" { header "iostreams/detail/adapter/non_blocking_adapter.hpp" export * }
-    module "iostreams__detail__adapter__output_iterator_adapter" { header "iostreams/detail/adapter/output_iterator_adapter.hpp" export * }
-    module "iostreams__detail__adapter__range_adapter" { header "iostreams/detail/adapter/range_adapter.hpp" export * }
-    module "iostreams__detail__bool_trait_def" { header "iostreams/detail/bool_trait_def.hpp" export * }
-    module "iostreams__detail__buffer" { header "iostreams/detail/buffer.hpp" export * }
-    module "iostreams__detail__call_traits" { header "iostreams/detail/call_traits.hpp" export * }
-    module "iostreams__detail__char_traits" { header "iostreams/detail/char_traits.hpp" export * }
-    module "iostreams__detail__codecvt_helper" { header "iostreams/detail/codecvt_helper.hpp" export * }
-    module "iostreams__detail__codecvt_holder" { header "iostreams/detail/codecvt_holder.hpp" export * }
-    module "iostreams__detail__config__auto_link" { header "iostreams/detail/config/auto_link.hpp" export * }
-    module "iostreams__detail__config__bzip2" { header "iostreams/detail/config/bzip2.hpp" export * }
-    module "iostreams__detail__config__codecvt" { header "iostreams/detail/config/codecvt.hpp" export * }
-    module "iostreams__detail__config__disable_warnings" { header "iostreams/detail/config/disable_warnings.hpp" export * }
-    module "iostreams__detail__config__dyn_link" { header "iostreams/detail/config/dyn_link.hpp" export * }
-    module "iostreams__detail__config__fpos" { header "iostreams/detail/config/fpos.hpp" export * }
-    module "iostreams__detail__config__gcc" { header "iostreams/detail/config/gcc.hpp" export * }
-    module "iostreams__detail__config__limits" { header "iostreams/detail/config/limits.hpp" export * }
-    module "iostreams__detail__config__overload_resolution" { header "iostreams/detail/config/overload_resolution.hpp" export * }
-    module "iostreams__detail__config__rtl" { header "iostreams/detail/config/rtl.hpp" export * }
-    module "iostreams__detail__config__unreachable_return" { header "iostreams/detail/config/unreachable_return.hpp" export * }
-    module "iostreams__detail__config__wide_streams" { header "iostreams/detail/config/wide_streams.hpp" export * }
-    module "iostreams__detail__config__windows_posix" { header "iostreams/detail/config/windows_posix.hpp" export * }
-    module "iostreams__detail__config__zlib" { header "iostreams/detail/config/zlib.hpp" export * }
-    module "iostreams__detail__counted_array" { header "iostreams/detail/counted_array.hpp" export * }
-    module "iostreams__detail__current_directory" { header "iostreams/detail/current_directory.hpp" export * }
-    module "iostreams__detail__default_arg" { header "iostreams/detail/default_arg.hpp" export * }
-    module "iostreams__detail__dispatch" { header "iostreams/detail/dispatch.hpp" export * }
-    module "iostreams__detail__double_object" { header "iostreams/detail/double_object.hpp" export * }
-    module "iostreams__detail__error" { header "iostreams/detail/error.hpp" export * }
-    module "iostreams__detail__execute" { header "iostreams/detail/execute.hpp" export * }
-    module "iostreams__detail__file_handle" { header "iostreams/detail/file_handle.hpp" export * }
-    module "iostreams__detail__forward" { header "iostreams/detail/forward.hpp" export * }
-    module "iostreams__detail__fstream" { header "iostreams/detail/fstream.hpp" export * }
-    module "iostreams__detail__functional" { header "iostreams/detail/functional.hpp" export * }
-    module "iostreams__detail__ios" { header "iostreams/detail/ios.hpp" export * }
-    module "iostreams__detail__iostream" { header "iostreams/detail/iostream.hpp" export * }
-    module "iostreams__detail__is_iterator_range" { header "iostreams/detail/is_iterator_range.hpp" export * }
-    module "iostreams__detail__optional" { header "iostreams/detail/optional.hpp" export * }
-    module "iostreams__detail__param_type" { header "iostreams/detail/param_type.hpp" export * }
-    module "iostreams__detail__path" { header "iostreams/detail/path.hpp" export * }
-    module "iostreams__detail__push" { header "iostreams/detail/push.hpp" export * }
-    module "iostreams__detail__push_params" { header "iostreams/detail/push_params.hpp" export * }
-    module "iostreams__detail__resolve" { header "iostreams/detail/resolve.hpp" export * }
-    module "iostreams__detail__restrict_impl" { header "iostreams/detail/restrict_impl.hpp" export * }
-    module "iostreams__detail__select_by_size" { header "iostreams/detail/select_by_size.hpp" export * }
-    module "iostreams__detail__select" { header "iostreams/detail/select.hpp" export * }
-    module "iostreams__detail__streambuf__chainbuf" { header "iostreams/detail/streambuf/chainbuf.hpp" export * }
-    module "iostreams__detail__streambuf__direct_streambuf" { header "iostreams/detail/streambuf/direct_streambuf.hpp" export * }
-    module "iostreams__detail__streambuf" { header "iostreams/detail/streambuf.hpp" export * }
-    module "iostreams__detail__streambuf__indirect_streambuf" { header "iostreams/detail/streambuf/indirect_streambuf.hpp" export * }
-    module "iostreams__detail__streambuf__linked_streambuf" { header "iostreams/detail/streambuf/linked_streambuf.hpp" export * }
-    module "iostreams__detail__system_failure" { header "iostreams/detail/system_failure.hpp" export * }
-    module "iostreams__detail__template_params" { header "iostreams/detail/template_params.hpp" export * }
-    module "iostreams__detail__translate_int_type" { header "iostreams/detail/translate_int_type.hpp" export * }
-    module "iostreams__detail__wrap_unwrap" { header "iostreams/detail/wrap_unwrap.hpp" export * }
-    module "iostreams__device__array" { header "iostreams/device/array.hpp" export * }
-    module "iostreams__device__back_inserter" { header "iostreams/device/back_inserter.hpp" export * }
-    module "iostreams__device__file_descriptor" { header "iostreams/device/file_descriptor.hpp" export * }
-    module "iostreams__device__file" { header "iostreams/device/file.hpp" export * }
-    module "iostreams__device__mapped_file" { header "iostreams/device/mapped_file.hpp" export * }
-    module "iostreams__device__null" { header "iostreams/device/null.hpp" export * }
-    module "iostreams__filter__aggregate" { header "iostreams/filter/aggregate.hpp" export * }
-    module "iostreams__filter__bzip2" { header "iostreams/filter/bzip2.hpp" export * }
-    module "iostreams__filter__counter" { header "iostreams/filter/counter.hpp" export * }
-    module "iostreams__filter__grep" { header "iostreams/filter/grep.hpp" export * }
-    module "iostreams__filter__gzip" { header "iostreams/filter/gzip.hpp" export * }
-    module "iostreams__filtering_streambuf" { header "iostreams/filtering_streambuf.hpp" export * }
-    module "iostreams__filtering_stream" { header "iostreams/filtering_stream.hpp" export * }
-    module "iostreams__filter__line" { header "iostreams/filter/line.hpp" export * }
-    module "iostreams__filter__newline" { header "iostreams/filter/newline.hpp" export * }
-    module "iostreams__filter__regex" { header "iostreams/filter/regex.hpp" export * }
-    module "iostreams__filter__stdio" { header "iostreams/filter/stdio.hpp" export * }
-    module "iostreams__filter__symmetric" { header "iostreams/filter/symmetric.hpp" export * }
-    module "iostreams__filter__zlib" { header "iostreams/filter/zlib.hpp" export * }
-    module "iostreams__flush" { header "iostreams/flush.hpp" export * }
-    module "iostreams__get" { header "iostreams/get.hpp" export * }
-    module "iostreams__imbue" { header "iostreams/imbue.hpp" export * }
-    module "iostreams__input_sequence" { header "iostreams/input_sequence.hpp" export * }
-    module "iostreams__invert" { header "iostreams/invert.hpp" export * }
-    module "iostreams__operations_fwd" { header "iostreams/operations_fwd.hpp" export * }
-    module "iostreams__operations" { header "iostreams/operations.hpp" export * }
-    module "iostreams__optimal_buffer_size" { header "iostreams/optimal_buffer_size.hpp" export * }
-    module "iostreams__output_sequence" { header "iostreams/output_sequence.hpp" export * }
-    module "iostreams__pipeline" { header "iostreams/pipeline.hpp" export * }
-    module "iostreams__positioning" { header "iostreams/positioning.hpp" export * }
-    module "iostreams__putback" { header "iostreams/putback.hpp" export * }
-    module "iostreams__put" { header "iostreams/put.hpp" export * }
-    module "iostreams__read" { header "iostreams/read.hpp" export * }
-    module "iostreams__restrict" { header "iostreams/restrict.hpp" export * }
-    module "iostreams__seek" { header "iostreams/seek.hpp" export * }
-    module "iostreams__skip" { header "iostreams/skip.hpp" export * }
-    module "iostreams__slice" { header "iostreams/slice.hpp" export * }
-    module "iostreams__stream_buffer" { header "iostreams/stream_buffer.hpp" export * }
-    module "iostreams__stream" { header "iostreams/stream.hpp" export * }
-    module "iostreams__tee" { header "iostreams/tee.hpp" export * }
-    module "iostreams__traits_fwd" { header "iostreams/traits_fwd.hpp" export * }
-    module "iostreams__traits" { header "iostreams/traits.hpp" export * }
-    module "iostreams__write" { header "iostreams/write.hpp" export * }
-  }
-  module boost_proto {
-    module "proto__args" { header "proto/args.hpp" export * }
-    module "proto__context__callable" { header "proto/context/callable.hpp" export * }
-    module "proto__context__default" { header "proto/context/default.hpp" export * }
-    module "proto__context" { header "proto/context.hpp" export * }
-    module "proto__context__null" { header "proto/context/null.hpp" export * }
-    module "proto__core" { header "proto/core.hpp" export * }
-    module "proto__debug" { header "proto/debug.hpp" export * }
-    module "proto__deep_copy" { header "proto/deep_copy.hpp" export * }
-    module "proto__detail__any" { header "proto/detail/any.hpp" export * }
-    module "proto__detail__as_expr" { header "proto/detail/as_expr.hpp" export * }
-    module "proto__detail__as_lvalue" { header "proto/detail/as_lvalue.hpp" export * }
-    module "proto__detail__decltype" { header "proto/detail/decltype.hpp" export * }
-    module "proto__detail__deduce_domain" { header "proto/detail/deduce_domain.hpp" export * }
-    module "proto__detail__deprecated" { header "proto/detail/deprecated.hpp" export * }
-    module "proto__detail__dont_care" { header "proto/detail/dont_care.hpp" export * }
-    module "proto__detail__ignore_unused" { header "proto/detail/ignore_unused.hpp" export * }
-    module "proto__detail__is_noncopyable" { header "proto/detail/is_noncopyable.hpp" export * }
-    module "proto__detail__poly_function" { header "proto/detail/poly_function.hpp" export * }
-    module "proto__detail__remove_typename" { header "proto/detail/remove_typename.hpp" export * }
-    module "proto__detail__static_const" { header "proto/detail/static_const.hpp" export * }
-    module "proto__detail__template_arity" { header "proto/detail/template_arity.hpp" export * }
-    module "proto__domain" { header "proto/domain.hpp" export * }
-    module "proto__eval" { header "proto/eval.hpp" export * }
-    module "proto__expr" { header "proto/expr.hpp" export * }
-    module "proto__extends" { header "proto/extends.hpp" export * }
-    module "proto__functional__fusion__at" { header "proto/functional/fusion/at.hpp" export * }
-    module "proto__functional__fusion" { header "proto/functional/fusion.hpp" export * }
-    module "proto__functional__fusion__pop_back" { header "proto/functional/fusion/pop_back.hpp" export * }
-    module "proto__functional__fusion__pop_front" { header "proto/functional/fusion/pop_front.hpp" export * }
-    module "proto__functional__fusion__push_back" { header "proto/functional/fusion/push_back.hpp" export * }
-    module "proto__functional__fusion__push_front" { header "proto/functional/fusion/push_front.hpp" export * }
-    module "proto__functional__fusion__reverse" { header "proto/functional/fusion/reverse.hpp" export * }
-    module "proto__functional" { header "proto/functional.hpp" export * }
-    module "proto__functional__range__begin" { header "proto/functional/range/begin.hpp" export * }
-    module "proto__functional__range__empty" { header "proto/functional/range/empty.hpp" export * }
-    module "proto__functional__range__end" { header "proto/functional/range/end.hpp" export * }
-    module "proto__functional__range" { header "proto/functional/range.hpp" export * }
-    module "proto__functional__range__rbegin" { header "proto/functional/range/rbegin.hpp" export * }
-    module "proto__functional__range__rend" { header "proto/functional/range/rend.hpp" export * }
-    module "proto__functional__range__size" { header "proto/functional/range/size.hpp" export * }
-    module "proto__functional__std" { header "proto/functional/std.hpp" export * }
-    module "proto__functional__std__iterator" { header "proto/functional/std/iterator.hpp" export * }
-    module "proto__functional__std__utility" { header "proto/functional/std/utility.hpp" export * }
-    module "proto__fusion" { header "proto/fusion.hpp" export * }
-    module "proto__generate" { header "proto/generate.hpp" export * }
-    module "proto__literal" { header "proto/literal.hpp" export * }
-    module "proto__make_expr" { header "proto/make_expr.hpp" export * }
-    module "proto__matches" { header "proto/matches.hpp" export * }
-    module "proto__operators" { header "proto/operators.hpp" export * }
-    module "proto__proto_fwd" { header "proto/proto_fwd.hpp" export * }
-    module "proto__proto" { header "proto/proto.hpp" export * }
-    module "proto__proto_typeof" { header "proto/proto_typeof.hpp" export * }
-    module "proto__repeat" { header "proto/repeat.hpp" export * }
-    module "proto__tags" { header "proto/tags.hpp" export * }
-    module "proto__traits" { header "proto/traits.hpp" export * }
-    module "proto__transform__arg" { header "proto/transform/arg.hpp" export * }
-    module "proto__transform__call" { header "proto/transform/call.hpp" export * }
-    module "proto__transform__detail__pack" { header "proto/transform/detail/pack.hpp" export * }
-    module "proto__transform__env" { header "proto/transform/env.hpp" export * }
-    module "proto__transform__fold" { header "proto/transform/fold.hpp" export * }
-    module "proto__transform__fold_tree" { header "proto/transform/fold_tree.hpp" export * }
-    module "proto__transform__impl" { header "proto/transform/impl.hpp" export * }
-    module "proto__transform__integral_c" { header "proto/transform/integral_c.hpp" export * }
-    module "proto__transform__lazy" { header "proto/transform/lazy.hpp" export * }
-    module "proto__transform__make" { header "proto/transform/make.hpp" export * }
-    module "proto__transform__pass_through" { header "proto/transform/pass_through.hpp" export * }
-    module "proto__transform__when" { header "proto/transform/when.hpp" export * }
-  }
-  module boost_phoenix {
-    module "phoenix__bind__bind_function" { header "phoenix/bind/bind_function.hpp" export * }
-    module "phoenix__bind__bind_function_object" { header "phoenix/bind/bind_function_object.hpp" export * }
-    module "phoenix__bind__bind_member_function" { header "phoenix/bind/bind_member_function.hpp" export * }
-    module "phoenix__bind__bind_member_variable" { header "phoenix/bind/bind_member_variable.hpp" export * }
-    module "phoenix__bind" { header "phoenix/bind.hpp" export * }
-    module "phoenix__config" { header "phoenix/config.hpp" export * }
-    module "phoenix__core__actor" { header "phoenix/core/actor.hpp" export * }
-    module "phoenix__core__argument" { header "phoenix/core/argument.hpp" export * }
-    module "phoenix__core__arity" { header "phoenix/core/arity.hpp" export * }
-    module "phoenix__core__as_actor" { header "phoenix/core/as_actor.hpp" export * }
-    module "phoenix__core__call" { header "phoenix/core/call.hpp" export * }
-    module "phoenix__core__debug" { header "phoenix/core/debug.hpp" export * }
-    module "phoenix__core__detail__expression" { header "phoenix/core/detail/expression.hpp" export * }
-    module "phoenix__core__detail__function_eval" { header "phoenix/core/detail/function_eval.hpp" export * }
-    module "phoenix__core__detail__index_sequence" { header "phoenix/core/detail/index_sequence.hpp" export * }
-    /*
-     *                           ^
-While building module 'boost_modules_wrapper' imported from /home/teemperor/llvm/boost-compile/cms.cpp:2:
-In file included from <module-includes>:737:
-In file included from /home/teemperor/llvm/boost-compile/inc-cms/boost/phoenix/bind/bind_function.hpp:18:
-In file included from /home/teemperor/llvm/boost-compile/inc-cms/boost/phoenix/core/detail/function_eval.hpp:17:
-/home/teemperor/llvm/boost-compile/inc-cms/boost/phoenix/core/detail/phx2_result.hpp:40:20: error: declaration of 'eval_if' must be imported from module 'boost_mpl.mpl__bind'
-      before it is required
-            : mpl::eval_if<
-            */
-    //module "phoenix__core__detail__phx2_result" { header "phoenix/core/detail/phx2_result.hpp" export * }
-    module "phoenix__core__domain" { header "phoenix/core/domain.hpp" export * }
-    module "phoenix__core__environment" { header "phoenix/core/environment.hpp" export * }
-    module "phoenix__core__expression" { header "phoenix/core/expression.hpp" export * }
-    module "phoenix__core__function_equal" { header "phoenix/core/function_equal.hpp" export * }
-    module "phoenix__core" { header "phoenix/core.hpp" export * }
-    module "phoenix__core__is_actor" { header "phoenix/core/is_actor.hpp" export * }
-    module "phoenix__core__is_nullary" { header "phoenix/core/is_nullary.hpp" export * }
-    module "phoenix__core__is_value" { header "phoenix/core/is_value.hpp" export * }
-    module "phoenix__core__limits" { header "phoenix/core/limits.hpp" export * }
-    module "phoenix__core__meta_grammar" { header "phoenix/core/meta_grammar.hpp" export * }
-    module "phoenix__core__nothing" { header "phoenix/core/nothing.hpp" export * }
-    module "phoenix__core__reference" { header "phoenix/core/reference.hpp" export * }
-    module "phoenix__core__terminal_fwd" { header "phoenix/core/terminal_fwd.hpp" export * }
-    module "phoenix__core__terminal" { header "phoenix/core/terminal.hpp" export * }
-    module "phoenix__core__v2_eval" { header "phoenix/core/v2_eval.hpp" export * }
-    module "phoenix__core__value" { header "phoenix/core/value.hpp" export * }
-    module "phoenix__core__visit_each" { header "phoenix/core/visit_each.hpp" export * }
-    module "phoenix__function__adapt_callable" { header "phoenix/function/adapt_callable.hpp" export * }
-    module "phoenix__function__adapt_function" { header "phoenix/function/adapt_function.hpp" export * }
-    module "phoenix__function__function" { header "phoenix/function/function.hpp" export * }
-    module "phoenix__function" { header "phoenix/function.hpp" export * }
-    // Redefine 'equal', so we shouldn't precompile them:
-    /*
-    /home/travis/build/Teemperor/boost-compile/inc/boost/phoenix/support/detail/iterate.hpp:75:1: fatal error: import of module 'boost_modules_wrapper.boost_phoenix.phoenix__support__detail__iterate_undef' appears within namespace 'boost::phoenix::result_of'
-#include <boost/phoenix/support/detail/iterate_undef.hpp>
-^
-/home/travis/build/Teemperor/boost-compile/inc/boost/phoenix/operator/member.hpp:62:5: note: namespace 'boost::phoenix::result_of' begins here
-    namespace result_of
-    ^
-    */
-    //module "phoenix__function__lazy_operator" { header "phoenix/function/lazy_operator.hpp" export * }
-    //module "phoenix__function__lazy_prelude" { header "phoenix/function/lazy_prelude.hpp" export * }
-    module "phoenix__fusion__at" { header "phoenix/fusion/at.hpp" export * }
-    module "phoenix__fusion" { header "phoenix/fusion.hpp" export * }
-    module "phoenix" { header "phoenix.hpp" export * }
-    module "phoenix__object__const_cast" { header "phoenix/object/const_cast.hpp" export * }
-    module "phoenix__object__construct" { header "phoenix/object/construct.hpp" export * }
-    module "phoenix__object__delete" { header "phoenix/object/delete.hpp" export * }
-    module "phoenix__object__dynamic_cast" { header "phoenix/object/dynamic_cast.hpp" export * }
-    module "phoenix__object" { header "phoenix/object.hpp" export * }
-    module "phoenix__object__new" { header "phoenix/object/new.hpp" export * }
-    module "phoenix__object__reinterpret_cast" { header "phoenix/object/reinterpret_cast.hpp" export * }
-    module "phoenix__object__static_cast" { header "phoenix/object/static_cast.hpp" export * }
-    module "phoenix__operator__arithmetic" { header "phoenix/operator/arithmetic.hpp" export * }
-    module "phoenix__operator__bitwise" { header "phoenix/operator/bitwise.hpp" export * }
-    module "phoenix__operator__comparison" { header "phoenix/operator/comparison.hpp" export * }
-    //module "phoenix__operator__detail__define_operator" { header "phoenix/operator/detail/define_operator.hpp" export * }
-    //module "phoenix__operator__detail__undef_operator" { header "phoenix/operator/detail/undef_operator.hpp" export * }
-    module "phoenix__operator" { header "phoenix/operator.hpp" export * }
-    module "phoenix__operator__if_else" { header "phoenix/operator/if_else.hpp" export * }
-    module "phoenix__operator__io" { header "phoenix/operator/io.hpp" export * }
-    module "phoenix__operator__logical" { header "phoenix/operator/logical.hpp" export * }
-    module "phoenix__operator__member" { header "phoenix/operator/member.hpp" export * }
-    module "phoenix__operator__self" { header "phoenix/operator/self.hpp" export * }
-    module "phoenix__phoenix" { header "phoenix/phoenix.hpp" export * }
-    module "phoenix__scope__dynamic" { header "phoenix/scope/dynamic.hpp" export * }
-    module "phoenix__scope" { header "phoenix/scope.hpp" export * }
-    module "phoenix__scope__lambda" { header "phoenix/scope/lambda.hpp" export * }
-    module "phoenix__scope__let" { header "phoenix/scope/let.hpp" export * }
-    module "phoenix__scope__local_variable" { header "phoenix/scope/local_variable.hpp" export * }
-    module "phoenix__scope__scoped_environment" { header "phoenix/scope/scoped_environment.hpp" export * }
-    module "phoenix__scope__this" { header "phoenix/scope/this.hpp" export * }
-    module "phoenix__statement__do_while" { header "phoenix/statement/do_while.hpp" export * }
-    module "phoenix__statement__for" { header "phoenix/statement/for.hpp" export * }
-    module "phoenix__statement" { header "phoenix/statement.hpp" export * }
-    module "phoenix__statement__if" { header "phoenix/statement/if.hpp" export * }
-    module "phoenix__statement__sequence" { header "phoenix/statement/sequence.hpp" export * }
-    module "phoenix__statement__switch" { header "phoenix/statement/switch.hpp" export * }
-    module "phoenix__statement__throw" { header "phoenix/statement/throw.hpp" export * }
-    module "phoenix__statement__try_catch" { header "phoenix/statement/try_catch.hpp" export * }
-    module "phoenix__statement__while" { header "phoenix/statement/while.hpp" export * }
-    module "phoenix__stl__algorithm__detail__begin" { header "phoenix/stl/algorithm/detail/begin.hpp" export * }
-    module "phoenix__stl__algorithm__detail__decay_array" { header "phoenix/stl/algorithm/detail/decay_array.hpp" export * }
-    module "phoenix__stl__algorithm__detail__end" { header "phoenix/stl/algorithm/detail/end.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_equal_range" { header "phoenix/stl/algorithm/detail/has_equal_range.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_find" { header "phoenix/stl/algorithm/detail/has_find.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_lower_bound" { header "phoenix/stl/algorithm/detail/has_lower_bound.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_remove" { header "phoenix/stl/algorithm/detail/has_remove.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_remove_if" { header "phoenix/stl/algorithm/detail/has_remove_if.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_reverse" { header "phoenix/stl/algorithm/detail/has_reverse.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_sort" { header "phoenix/stl/algorithm/detail/has_sort.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_unique" { header "phoenix/stl/algorithm/detail/has_unique.hpp" export * }
-    module "phoenix__stl__algorithm__detail__has_upper_bound" { header "phoenix/stl/algorithm/detail/has_upper_bound.hpp" export * }
-    module "phoenix__stl__algorithm__detail__is_std_hash_map" { header "phoenix/stl/algorithm/detail/is_std_hash_map.hpp" export * }
-    module "phoenix__stl__algorithm__detail__is_std_hash_set" { header "phoenix/stl/algorithm/detail/is_std_hash_set.hpp" export * }
-    module "phoenix__stl__algorithm__detail__is_std_list" { header "phoenix/stl/algorithm/detail/is_std_list.hpp" export * }
-    module "phoenix__stl__algorithm__detail__is_std_map" { header "phoenix/stl/algorithm/detail/is_std_map.hpp" export * }
-    module "phoenix__stl__algorithm__detail__is_std_set" { header "phoenix/stl/algorithm/detail/is_std_set.hpp" export * }
-    module "phoenix__stl__algorithm__detail__is_unordered_set_or_map" { header "phoenix/stl/algorithm/detail/is_unordered_set_or_map.hpp" export * }
-    module "phoenix__stl__algorithm" { header "phoenix/stl/algorithm.hpp" export * }
-    module "phoenix__stl__algorithm__iteration" { header "phoenix/stl/algorithm/iteration.hpp" export * }
-    module "phoenix__stl__algorithm__querying" { header "phoenix/stl/algorithm/querying.hpp" export * }
-    module "phoenix__stl__algorithm__transformation" { header "phoenix/stl/algorithm/transformation.hpp" export * }
-    module "phoenix__stl__cmath" { header "phoenix/stl/cmath.hpp" export * }
-    module "phoenix__stl__container__container" { header "phoenix/stl/container/container.hpp" export * }
-    module "phoenix__stl__container__detail__container" { header "phoenix/stl/container/detail/container.hpp" export * }
-    module "phoenix__stl__container" { header "phoenix/stl/container.hpp" export * }
-    module "phoenix__stl" { header "phoenix/stl.hpp" export * }
-    //preprocessor magic
-    /*
-    module "phoenix__support__detail__iterate_define" { header "phoenix/support/detail/iterate_define.hpp" export * }
-    module "phoenix__support__detail__iterate_undef" { header "phoenix/support/detail/iterate_undef.hpp" export * }
-    module "phoenix__support__iterate" { header "phoenix/support/iterate.hpp" export * }
-    module "phoenix__support__preprocessor__round" { header "phoenix/support/preprocessor/round.hpp" export * }
-    */
-    module "phoenix__support__vector" { header "phoenix/support/vector.hpp" export * }
-    module "phoenix__version" { header "phoenix/version.hpp" export * }
-  }
   module boost_spirit {
     module "spirit__home__classic__actor__assign_actor" { header "spirit/home/classic/actor/assign_actor.hpp" export * }
     module "spirit__home__classic__actor__assign_key_actor" { header "spirit/home/classic/actor/assign_key_actor.hpp" export * }
@@ -6054,7 +5762,8 @@ In file included from /home/teemperor/llvm/boost-compile/inc-cms/boost/phoenix/c
     module "spirit__home__classic__core__match" { header "spirit/home/classic/core/match.hpp" export * }
     module "spirit__home__classic__core__nil" { header "spirit/home/classic/core/nil.hpp" export * }
     module "spirit__home__classic__core__non_terminal__grammar" { header "spirit/home/classic/core/non_terminal/grammar.hpp" export * }
-    module "spirit__home__classic__core__non_terminal__impl__static" { header "spirit/home/classic/core/non_terminal/impl/static.hpp" export * }
+    //once_atomic.hpp:99:52: error: no member named 'storage' in 'boost::once_flag'
+    //module "spirit__home__classic__core__non_terminal__impl__static" { header "spirit/home/classic/core/non_terminal/impl/static.hpp" export * }
     module "spirit__home__classic__core__non_terminal__rule" { header "spirit/home/classic/core/non_terminal/rule.hpp" export * }
     module "spirit__home__classic__core__non_terminal__subrule_fwd" { header "spirit/home/classic/core/non_terminal/subrule_fwd.hpp" export * }
     module "spirit__home__classic__core__non_terminal__subrule" { header "spirit/home/classic/core/non_terminal/subrule.hpp" export * }
@@ -6939,7 +6648,218 @@ In file included from /home/teemperor/llvm/boost-compile/inc-cms/boost/spirit/ho
     module "spirit__repository__include__qi_seek" { header "spirit/repository/include/qi_seek.hpp" export * }
     module "spirit__version" { header "spirit/version.hpp" export * }
   }
+
+module boost_iostreams {
+  export *
+  umbrella "iostreams"
+  module * { export * }
 }
+
+  module boost_proto {
+    module "proto__args" { header "proto/args.hpp" export * }
+    module "proto__context__callable" { header "proto/context/callable.hpp" export * }
+    module "proto__context__default" { header "proto/context/default.hpp" export * }
+    module "proto__context" { header "proto/context.hpp" export * }
+    module "proto__context__null" { header "proto/context/null.hpp" export * }
+    module "proto__core" { header "proto/core.hpp" export * }
+    module "proto__debug" { header "proto/debug.hpp" export * }
+    module "proto__deep_copy" { header "proto/deep_copy.hpp" export * }
+    module "proto__detail__any" { header "proto/detail/any.hpp" export * }
+    module "proto__detail__as_expr" { header "proto/detail/as_expr.hpp" export * }
+    module "proto__detail__as_lvalue" { header "proto/detail/as_lvalue.hpp" export * }
+    module "proto__detail__decltype" { header "proto/detail/decltype.hpp" export * }
+    module "proto__detail__deduce_domain" { header "proto/detail/deduce_domain.hpp" export * }
+    module "proto__detail__deprecated" { header "proto/detail/deprecated.hpp" export * }
+    module "proto__detail__dont_care" { header "proto/detail/dont_care.hpp" export * }
+    module "proto__detail__ignore_unused" { header "proto/detail/ignore_unused.hpp" export * }
+    module "proto__detail__is_noncopyable" { header "proto/detail/is_noncopyable.hpp" export * }
+    module "proto__detail__poly_function" { header "proto/detail/poly_function.hpp" export * }
+    module "proto__detail__remove_typename" { header "proto/detail/remove_typename.hpp" export * }
+    module "proto__detail__static_const" { header "proto/detail/static_const.hpp" export * }
+    module "proto__detail__template_arity" { header "proto/detail/template_arity.hpp" export * }
+    module "proto__domain" { header "proto/domain.hpp" export * }
+    module "proto__eval" { header "proto/eval.hpp" export * }
+    module "proto__expr" { header "proto/expr.hpp" export * }
+    module "proto__extends" { header "proto/extends.hpp" export * }
+    module "proto__functional__fusion__at" { header "proto/functional/fusion/at.hpp" export * }
+    module "proto__functional__fusion" { header "proto/functional/fusion.hpp" export * }
+    module "proto__functional__fusion__pop_back" { header "proto/functional/fusion/pop_back.hpp" export * }
+    module "proto__functional__fusion__pop_front" { header "proto/functional/fusion/pop_front.hpp" export * }
+    module "proto__functional__fusion__push_back" { header "proto/functional/fusion/push_back.hpp" export * }
+    module "proto__functional__fusion__push_front" { header "proto/functional/fusion/push_front.hpp" export * }
+    module "proto__functional__fusion__reverse" { header "proto/functional/fusion/reverse.hpp" export * }
+    module "proto__functional" { header "proto/functional.hpp" export * }
+    module "proto__functional__range__begin" { header "proto/functional/range/begin.hpp" export * }
+    module "proto__functional__range__empty" { header "proto/functional/range/empty.hpp" export * }
+    module "proto__functional__range__end" { header "proto/functional/range/end.hpp" export * }
+    module "proto__functional__range" { header "proto/functional/range.hpp" export * }
+    module "proto__functional__range__rbegin" { header "proto/functional/range/rbegin.hpp" export * }
+    module "proto__functional__range__rend" { header "proto/functional/range/rend.hpp" export * }
+    module "proto__functional__range__size" { header "proto/functional/range/size.hpp" export * }
+    module "proto__functional__std" { header "proto/functional/std.hpp" export * }
+    module "proto__functional__std__iterator" { header "proto/functional/std/iterator.hpp" export * }
+    module "proto__functional__std__utility" { header "proto/functional/std/utility.hpp" export * }
+    module "proto__fusion" { header "proto/fusion.hpp" export * }
+    module "proto__generate" { header "proto/generate.hpp" export * }
+    module "proto__literal" { header "proto/literal.hpp" export * }
+    module "proto__make_expr" { header "proto/make_expr.hpp" export * }
+    module "proto__matches" { header "proto/matches.hpp" export * }
+    module "proto__operators" { header "proto/operators.hpp" export * }
+    module "proto__proto_fwd" { header "proto/proto_fwd.hpp" export * }
+    module "proto__proto" { header "proto/proto.hpp" export * }
+    module "proto__proto_typeof" { header "proto/proto_typeof.hpp" export * }
+    module "proto__repeat" { header "proto/repeat.hpp" export * }
+    module "proto__tags" { header "proto/tags.hpp" export * }
+    module "proto__traits" { header "proto/traits.hpp" export * }
+    module "proto__transform__arg" { header "proto/transform/arg.hpp" export * }
+    module "proto__transform__call" { header "proto/transform/call.hpp" export * }
+    module "proto__transform__detail__pack" { header "proto/transform/detail/pack.hpp" export * }
+    module "proto__transform__env" { header "proto/transform/env.hpp" export * }
+    module "proto__transform__fold" { header "proto/transform/fold.hpp" export * }
+    module "proto__transform__fold_tree" { header "proto/transform/fold_tree.hpp" export * }
+    module "proto__transform__impl" { header "proto/transform/impl.hpp" export * }
+    module "proto__transform__integral_c" { header "proto/transform/integral_c.hpp" export * }
+    module "proto__transform__lazy" { header "proto/transform/lazy.hpp" export * }
+    module "proto__transform__make" { header "proto/transform/make.hpp" export * }
+    module "proto__transform__pass_through" { header "proto/transform/pass_through.hpp" export * }
+    module "proto__transform__when" { header "proto/transform/when.hpp" export * }
+  }
+  module boost_phoenix {
+    module "phoenix__bind__bind_function" { header "phoenix/bind/bind_function.hpp" export * }
+    module "phoenix__bind__bind_function_object" { header "phoenix/bind/bind_function_object.hpp" export * }
+    module "phoenix__bind__bind_member_function" { header "phoenix/bind/bind_member_function.hpp" export * }
+    module "phoenix__bind__bind_member_variable" { header "phoenix/bind/bind_member_variable.hpp" export * }
+    module "phoenix__bind" { header "phoenix/bind.hpp" export * }
+    module "phoenix__config" { header "phoenix/config.hpp" export * }
+    module "phoenix__core__actor" { header "phoenix/core/actor.hpp" export * }
+    module "phoenix__core__argument" { header "phoenix/core/argument.hpp" export * }
+    module "phoenix__core__arity" { header "phoenix/core/arity.hpp" export * }
+    module "phoenix__core__as_actor" { header "phoenix/core/as_actor.hpp" export * }
+    module "phoenix__core__call" { header "phoenix/core/call.hpp" export * }
+    module "phoenix__core__debug" { header "phoenix/core/debug.hpp" export * }
+    module "phoenix__core__detail__expression" { header "phoenix/core/detail/expression.hpp" export * }
+    module "phoenix__core__detail__function_eval" { header "phoenix/core/detail/function_eval.hpp" export * }
+    module "phoenix__core__detail__index_sequence" { header "phoenix/core/detail/index_sequence.hpp" export * }
+    /*
+     *                           ^
+While building module 'boost_modules_wrapper' imported from /home/teemperor/llvm/boost-compile/cms.cpp:2:
+In file included from <module-includes>:737:
+In file included from /home/teemperor/llvm/boost-compile/inc-cms/boost/phoenix/bind/bind_function.hpp:18:
+In file included from /home/teemperor/llvm/boost-compile/inc-cms/boost/phoenix/core/detail/function_eval.hpp:17:
+/home/teemperor/llvm/boost-compile/inc-cms/boost/phoenix/core/detail/phx2_result.hpp:40:20: error: declaration of 'eval_if' must be imported from module 'boost_mpl.mpl__bind'
+      before it is required
+            : mpl::eval_if<
+            */
+    //module "phoenix__core__detail__phx2_result" { header "phoenix/core/detail/phx2_result.hpp" export * }
+    module "phoenix__core__domain" { header "phoenix/core/domain.hpp" export * }
+    module "phoenix__core__environment" { header "phoenix/core/environment.hpp" export * }
+    module "phoenix__core__expression" { header "phoenix/core/expression.hpp" export * }
+    module "phoenix__core__function_equal" { header "phoenix/core/function_equal.hpp" export * }
+    module "phoenix__core" { header "phoenix/core.hpp" export * }
+    module "phoenix__core__is_actor" { header "phoenix/core/is_actor.hpp" export * }
+    module "phoenix__core__is_nullary" { header "phoenix/core/is_nullary.hpp" export * }
+    module "phoenix__core__is_value" { header "phoenix/core/is_value.hpp" export * }
+    module "phoenix__core__limits" { header "phoenix/core/limits.hpp" export * }
+    module "phoenix__core__meta_grammar" { header "phoenix/core/meta_grammar.hpp" export * }
+    module "phoenix__core__nothing" { header "phoenix/core/nothing.hpp" export * }
+    module "phoenix__core__reference" { header "phoenix/core/reference.hpp" export * }
+    module "phoenix__core__terminal_fwd" { header "phoenix/core/terminal_fwd.hpp" export * }
+    module "phoenix__core__terminal" { header "phoenix/core/terminal.hpp" export * }
+    module "phoenix__core__v2_eval" { header "phoenix/core/v2_eval.hpp" export * }
+    module "phoenix__core__value" { header "phoenix/core/value.hpp" export * }
+    module "phoenix__core__visit_each" { header "phoenix/core/visit_each.hpp" export * }
+    module "phoenix__function__adapt_callable" { header "phoenix/function/adapt_callable.hpp" export * }
+    module "phoenix__function__adapt_function" { header "phoenix/function/adapt_function.hpp" export * }
+    module "phoenix__function__function" { header "phoenix/function/function.hpp" export * }
+    module "phoenix__function" { header "phoenix/function.hpp" export * }
+    // Redefine 'equal', so we shouldn't precompile them:
+    /*
+    /home/travis/build/Teemperor/boost-compile/inc/boost/phoenix/support/detail/iterate.hpp:75:1: fatal error: import of module 'boost_modules_wrapper.boost_phoenix.phoenix__support__detail__iterate_undef' appears within namespace 'boost::phoenix::result_of'
+#include <boost/phoenix/support/detail/iterate_undef.hpp>
+^
+/home/travis/build/Teemperor/boost-compile/inc/boost/phoenix/operator/member.hpp:62:5: note: namespace 'boost::phoenix::result_of' begins here
+    namespace result_of
+    ^
+    */
+    //module "phoenix__function__lazy_operator" { header "phoenix/function/lazy_operator.hpp" export * }
+    //module "phoenix__function__lazy_prelude" { header "phoenix/function/lazy_prelude.hpp" export * }
+    module "phoenix__fusion__at" { header "phoenix/fusion/at.hpp" export * }
+    module "phoenix__fusion" { header "phoenix/fusion.hpp" export * }
+    module "phoenix" { header "phoenix.hpp" export * }
+    module "phoenix__object__const_cast" { header "phoenix/object/const_cast.hpp" export * }
+    module "phoenix__object__construct" { header "phoenix/object/construct.hpp" export * }
+    module "phoenix__object__delete" { header "phoenix/object/delete.hpp" export * }
+    module "phoenix__object__dynamic_cast" { header "phoenix/object/dynamic_cast.hpp" export * }
+    module "phoenix__object" { header "phoenix/object.hpp" export * }
+    module "phoenix__object__new" { header "phoenix/object/new.hpp" export * }
+    module "phoenix__object__reinterpret_cast" { header "phoenix/object/reinterpret_cast.hpp" export * }
+    module "phoenix__object__static_cast" { header "phoenix/object/static_cast.hpp" export * }
+    module "phoenix__operator__arithmetic" { header "phoenix/operator/arithmetic.hpp" export * }
+    module "phoenix__operator__bitwise" { header "phoenix/operator/bitwise.hpp" export * }
+    module "phoenix__operator__comparison" { header "phoenix/operator/comparison.hpp" export * }
+    //module "phoenix__operator__detail__define_operator" { header "phoenix/operator/detail/define_operator.hpp" export * }
+    //module "phoenix__operator__detail__undef_operator" { header "phoenix/operator/detail/undef_operator.hpp" export * }
+    module "phoenix__operator" { header "phoenix/operator.hpp" export * }
+    module "phoenix__operator__if_else" { header "phoenix/operator/if_else.hpp" export * }
+    module "phoenix__operator__io" { header "phoenix/operator/io.hpp" export * }
+    module "phoenix__operator__logical" { header "phoenix/operator/logical.hpp" export * }
+    module "phoenix__operator__member" { header "phoenix/operator/member.hpp" export * }
+    module "phoenix__operator__self" { header "phoenix/operator/self.hpp" export * }
+    module "phoenix__phoenix" { header "phoenix/phoenix.hpp" export * }
+    module "phoenix__scope__dynamic" { header "phoenix/scope/dynamic.hpp" export * }
+    module "phoenix__scope" { header "phoenix/scope.hpp" export * }
+    module "phoenix__scope__lambda" { header "phoenix/scope/lambda.hpp" export * }
+    module "phoenix__scope__let" { header "phoenix/scope/let.hpp" export * }
+    module "phoenix__scope__local_variable" { header "phoenix/scope/local_variable.hpp" export * }
+    module "phoenix__scope__scoped_environment" { header "phoenix/scope/scoped_environment.hpp" export * }
+    module "phoenix__scope__this" { header "phoenix/scope/this.hpp" export * }
+    module "phoenix__statement__do_while" { header "phoenix/statement/do_while.hpp" export * }
+    module "phoenix__statement__for" { header "phoenix/statement/for.hpp" export * }
+    module "phoenix__statement" { header "phoenix/statement.hpp" export * }
+    module "phoenix__statement__if" { header "phoenix/statement/if.hpp" export * }
+    module "phoenix__statement__sequence" { header "phoenix/statement/sequence.hpp" export * }
+    module "phoenix__statement__switch" { header "phoenix/statement/switch.hpp" export * }
+    module "phoenix__statement__throw" { header "phoenix/statement/throw.hpp" export * }
+    module "phoenix__statement__try_catch" { header "phoenix/statement/try_catch.hpp" export * }
+    module "phoenix__statement__while" { header "phoenix/statement/while.hpp" export * }
+    module "phoenix__stl__algorithm__detail__begin" { header "phoenix/stl/algorithm/detail/begin.hpp" export * }
+    module "phoenix__stl__algorithm__detail__decay_array" { header "phoenix/stl/algorithm/detail/decay_array.hpp" export * }
+    module "phoenix__stl__algorithm__detail__end" { header "phoenix/stl/algorithm/detail/end.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_equal_range" { header "phoenix/stl/algorithm/detail/has_equal_range.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_find" { header "phoenix/stl/algorithm/detail/has_find.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_lower_bound" { header "phoenix/stl/algorithm/detail/has_lower_bound.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_remove" { header "phoenix/stl/algorithm/detail/has_remove.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_remove_if" { header "phoenix/stl/algorithm/detail/has_remove_if.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_reverse" { header "phoenix/stl/algorithm/detail/has_reverse.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_sort" { header "phoenix/stl/algorithm/detail/has_sort.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_unique" { header "phoenix/stl/algorithm/detail/has_unique.hpp" export * }
+    module "phoenix__stl__algorithm__detail__has_upper_bound" { header "phoenix/stl/algorithm/detail/has_upper_bound.hpp" export * }
+    module "phoenix__stl__algorithm__detail__is_std_hash_map" { header "phoenix/stl/algorithm/detail/is_std_hash_map.hpp" export * }
+    module "phoenix__stl__algorithm__detail__is_std_hash_set" { header "phoenix/stl/algorithm/detail/is_std_hash_set.hpp" export * }
+    module "phoenix__stl__algorithm__detail__is_std_list" { header "phoenix/stl/algorithm/detail/is_std_list.hpp" export * }
+    module "phoenix__stl__algorithm__detail__is_std_map" { header "phoenix/stl/algorithm/detail/is_std_map.hpp" export * }
+    module "phoenix__stl__algorithm__detail__is_std_set" { header "phoenix/stl/algorithm/detail/is_std_set.hpp" export * }
+    module "phoenix__stl__algorithm__detail__is_unordered_set_or_map" { header "phoenix/stl/algorithm/detail/is_unordered_set_or_map.hpp" export * }
+    module "phoenix__stl__algorithm" { header "phoenix/stl/algorithm.hpp" export * }
+    module "phoenix__stl__algorithm__iteration" { header "phoenix/stl/algorithm/iteration.hpp" export * }
+    module "phoenix__stl__algorithm__querying" { header "phoenix/stl/algorithm/querying.hpp" export * }
+    module "phoenix__stl__algorithm__transformation" { header "phoenix/stl/algorithm/transformation.hpp" export * }
+    module "phoenix__stl__cmath" { header "phoenix/stl/cmath.hpp" export * }
+    module "phoenix__stl__container__container" { header "phoenix/stl/container/container.hpp" export * }
+    module "phoenix__stl__container__detail__container" { header "phoenix/stl/container/detail/container.hpp" export * }
+    module "phoenix__stl__container" { header "phoenix/stl/container.hpp" export * }
+    module "phoenix__stl" { header "phoenix/stl.hpp" export * }
+    //preprocessor magic
+    /*
+    module "phoenix__support__detail__iterate_define" { header "phoenix/support/detail/iterate_define.hpp" export * }
+    module "phoenix__support__detail__iterate_undef" { header "phoenix/support/detail/iterate_undef.hpp" export * }
+    module "phoenix__support__iterate" { header "phoenix/support/iterate.hpp" export * }
+    module "phoenix__support__preprocessor__round" { header "phoenix/support/preprocessor/round.hpp" export * }
+    */
+    module "phoenix__support__vector" { header "phoenix/support/vector.hpp" export * }
+    module "phoenix__version" { header "phoenix/version.hpp" export * }
+  }
+
 module boost_ratio {
   module "ratio__config" { header "ratio/config.hpp" export * }
   module "ratio__detail__mpl__abs" { header "ratio/detail/mpl/abs.hpp" export * }
