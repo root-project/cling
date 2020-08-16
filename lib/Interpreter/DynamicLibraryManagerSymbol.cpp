@@ -240,9 +240,7 @@ static llvm::StringRef GetGnuHashSection(llvm::object::ObjectFile *file) {
     llvm::StringRef name;
     S.getName(name);
     if (name == ".gnu.hash") {
-      llvm::StringRef content;
-      S.getContents(content);
-      return content;
+      return llvm::cantFail(S.getContents());
     }
   }
   return "";
