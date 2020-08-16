@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.4.3)
 
+find_package(LLVM 5 REQUIRED CONFIG)
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
 # If we are not building as a part of LLVM, build Cling as an
 # standalone project, using LLVM as an external library:
 if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
