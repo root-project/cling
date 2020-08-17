@@ -108,11 +108,11 @@ namespace cling {
       utils::DiagnosticsStore DS(
         m_Importer->getFromContext().getDiagnostics(), false, false, true);
 
-      llvm::Expected<const Decl *> To = m_Importer->Import(declToImport);
-      assert(To.get() && "Import did not work!");
-      assert(!DS.empty() &&
-             DS[0].getID() == clang::diag::err_unsupported_ast_node &&
-             "Import may be supported");
+      const Decl* To = llvm::cantFail(m_Importer->Import(declToImport));
+      assert(To && "Import did not work!");
+      assert((DS.empty() ||
+              DS[0].getID() == clang::diag::err_unsupported_ast_node) &&
+             "Import not supported!");
 #endif
       return;
     }
