@@ -105,6 +105,7 @@ add_cling_library(clingInterpreter OBJECT
   LINK_LIBS
   ${CLING_DEPEND_LIBS}
   ${LIBS}
+  ${CMAKE_DL_LIBS}
   )
 
 
