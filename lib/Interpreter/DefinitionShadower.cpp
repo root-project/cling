@@ -47,7 +47,7 @@ namespace cling {
   }
 
   DefinitionShadower::DefinitionShadower(Sema& S, Interpreter& I)
-          : ASTTransformer(&S), m_Interp(I), m_Context(S.getASTContext()),
+          : ASTTransformer(&S), m_Context(S.getASTContext()), m_Interp(I),
             m_TU(S.getASTContext().getTranslationUnitDecl())
   {}
 

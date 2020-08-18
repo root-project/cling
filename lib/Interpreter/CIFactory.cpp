@@ -580,8 +580,8 @@ namespace {
                                     const std::string& Filename,
                                     const std::string& Location,
                                     std::string& overlay,
-                                    bool RegisterModuleMap = true,
-                                    bool AllowModulemapOverride = false)
+                                    bool RegisterModuleMap,
+                                    bool AllowModulemapOverride)
        -> void {
 
       assert(llvm::sys::fs::exists(SystemDir) && "Must exist!");
@@ -654,13 +654,21 @@ namespace {
     std::string MOverlay;
 #ifdef LLVM_ON_WIN32
     maybeAppendOverlayEntry(vcIncLoc.str(), "vcruntime.modulemap",
-                            clingIncLoc.str(), MOverlay);
+                            clingIncLoc.str(), MOverlay,
+                            /*RegisterModuleMap=*/ true,
+                            /*AllowModulemapOverride=*/ false);
     maybeAppendOverlayEntry(servIncLoc.str(), "services_msvc.modulemap",
-                            clingIncLoc.str(), MOverlay);
+                            clingIncLoc.str(), MOverlay,
+                            /*RegisterModuleMap=*/ true,
+                            /*AllowModulemapOverride=*/ false);
     maybeAppendOverlayEntry(cIncLoc.str(), "libc_msvc.modulemap",
-                            clingIncLoc.str(), MOverlay);
+                            clingIncLoc.str(), MOverlay,
+                            /*RegisterModuleMap=*/ true,
+                            /*AllowModulemapOverride=*/ false);
     maybeAppendOverlayEntry(stdIncLoc.str(), "std_msvc.modulemap",
-                            clingIncLoc.str(), MOverlay);
+                            clingIncLoc.str(), MOverlay,
+                            /*RegisterModuleMap=*/ true,
+                            /*AllowModulemapOverride=*/ false);
 #else
     maybeAppendOverlayEntry(cIncLoc.str(), "libc.modulemap", clingIncLoc.str(),
                             MOverlay, /*RegisterModuleMap=*/ true,
@@ -673,16 +681,20 @@ namespace {
     if (!tinyxml2IncLoc.empty())
       maybeAppendOverlayEntry(tinyxml2IncLoc.str(), "tinyxml2.modulemap",
                               clingIncLoc.str(), MOverlay,
-                              /*RegisterModuleMap=*/ false);
+                              /*RegisterModuleMap=*/ false,
+                              /*AllowModulemapOverride=*/ false);
     if (!cudaIncLoc.empty())
       maybeAppendOverlayEntry(cudaIncLoc.str(), "cuda.modulemap",
-                              clingIncLoc.str(), MOverlay);
+                              clingIncLoc.str(), MOverlay,
+                              /*RegisterModuleMap=*/ true,
+                              /*AllowModulemapOverride=*/ false);
     if (!boostIncLoc.empty()) {
       // Add the modulemap in the include/boost folder not in include.
       llvm::sys::path::append(boostIncLoc, "boost");
       maybeAppendOverlayEntry(boostIncLoc.str(), "boost.modulemap",
                               clingIncLoc.str(), MOverlay,
-                              /*RegisterModuleMap=*/ false);
+                              /*RegisterModuleMap=*/ false,
+                              /*AllowModulemapOverride=*/ false);
     }
 
     if (/*needsOverlay*/!MOverlay.empty()) {
