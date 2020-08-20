@@ -788,6 +788,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     PPOpts.addMacroDef("__CLING__GNUC_MINOR__=" ClingStringify(__GNUC_MINOR__));
 #elif defined(_MSC_VER)
     PPOpts.addMacroDef("__CLING__MSVC__=" ClingStringify(_MSC_VER));
+#if (_MSC_VER >= 1926)
+    // FIXME: Silly workaround for cling not being able to parse the STL
+    //        headers anymore after the update of Visual Studio v16.7.0
+    //        To be checked/removed after the upgrade of LLVM & Clang
+    PPOpts.addMacroDef("__CUDACC__");
+#endif
 #endif
 
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
