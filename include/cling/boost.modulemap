@@ -82,11 +82,7 @@ module boost_accumulators [system] {
 }
 module boost_align {
   export *
-  module align_aligned_storage { export * header "aligned_storage.hpp" }
   module align_align { export * header "align.hpp" }
-
-  umbrella "align"
-  module * { export * }
 }
 module boost_any { export * module "any" { header "any.hpp" export * } }
 module boost_array { export * module "array" { header "array.hpp" export * } }
@@ -4977,8 +4973,6 @@ module boost_ptr_container {
 module boost_python {
   export *
   module python_python { export * header "python.hpp" }
-  umbrella "python"
-  module * { export * }
 }
 module boost_qvm {
   export *
