@@ -6370,6 +6370,12 @@ In file included from /home/teemperor/llvm/boost-compile/inc-cms/boost/spirit/ho
 
 module boost_iostreams {
   export *
+  // FIXME: Brings boost_random which is currently broken.
+  exclude header "iostreams/filter/test.hpp"
+  // error: unknown template name 'stream_base'
+  exclude header "iostreams/detail/broken_overload_resolution/stream.hpp"
+  // error: redefinition of 'stream_buffer'
+  exclude header "iostreams/detail/broken_overload_resolution/stream_buffer.hpp"
   umbrella "iostreams"
   module * { export * }
 }
