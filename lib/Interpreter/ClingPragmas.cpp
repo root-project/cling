@@ -126,19 +126,23 @@ namespace {
         return;
 
       // Need to parse them all until the end to handle the possible
-      // #include stements that will be generated
-      std::vector<std::string> Files;
-      Files.push_back(std::move(Literal));
+      // #include statements that will be generated
+      struct LibraryFileInfo {
+        std::string FileName;
+        SourceLocation StartLoc;
+      };
+      std::vector<LibraryFileInfo> FileInfos;
+      FileInfos.push_back({std::move(Literal), Tok.getLocation()});
       while (GetNextLiteral(PP, Tok, Literal, kLoadFile))
-        Files.push_back(std::move(Literal));
-      
+        FileInfos.push_back({std::move(Literal), Tok.getLocation()});
+
       clang::Parser& P = m_Interp.getParser();
       Parser::ParserCurTokRestoreRAII savedCurToken(P);
       // After we have saved the token reset the current one to something
       // which is safe (semi colon usually means empty decl)
       Token& CurTok = const_cast<Token&>(P.getCurToken());
       CurTok.setKind(tok::semi);
-      
+
       Preprocessor::CleanupAndRestoreCacheRAII cleanupRAII(PP);
       // We can't PushDeclContext, because we go up and the routine that
       // pops the DeclContext assumes that we drill down always.
@@ -150,9 +154,15 @@ namespace {
                                             TU, m_Interp.getSema().TUScope);
       Interpreter::PushTransactionRAII pushedT(&m_Interp);
 
-      for (std::string& File : Files) {
-        if (m_Interp.loadFile(File, true) != Interpreter::kSuccess)
+      for (const LibraryFileInfo& FI : FileInfos) {
+        // FIXME: Consider the case where the library static init section has
+        // a call to interpreter parsing header file. It will suffer the same
+        // issue as if we included the file within the pragma.
+        if (m_Interp.loadLibrary(FI.FileName, true) != Interpreter::kSuccess) {
+          PP.Diag(FI.StartLoc, diag::err_expected)
+            << "is not a library; did you mean #include \"" + FI.FileName + "\"";
           return;
+        }
       }
     }
 

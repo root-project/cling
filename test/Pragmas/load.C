@@ -10,6 +10,7 @@
 // RUN: cat %s | %cling -L %T -Xclang -verify 2>&1 | FileCheck %s
 
 #pragma cling load("DoesNotExistPleaseRecover")
+// expected-error@input_line_13:1{{expected is not a library; did you mean #include "DoesNotExistPleaseRecover"}}
 // expected-error@input_line_13:1{{'DoesNotExistPleaseRecover' file not found}}
 
 #pragma cling load("libcall_lib")
