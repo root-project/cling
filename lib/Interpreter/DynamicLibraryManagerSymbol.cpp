@@ -36,6 +36,7 @@
 #endif // __APPLE__
 
 #ifdef LLVM_ON_WIN32
+#include <windows.h>
 #include <libloaderapi.h> // For GetModuleFileNameA
 #include <memoryapi.h> // For VirtualQuery
 #endif
