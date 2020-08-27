@@ -95,6 +95,11 @@ if(MSVC)
     ?write_impl@raw_string_ostream@llvm@@EEAAXPEBD_K@Z
     ?castToDeclContext@Decl@clang@@SAPEAVDeclContext@2@PEBV12@@Z
     ?classof@DeclContext@clang@@SA_NPEBVDecl@2@@Z
+    ?field_begin@RecordDecl@clang@@QEBA?AV?pecific_decl_iterator@VFieldDecl@clang@@@DeclContext@2@XZ
+    ?getAsString@QualType@clang@@SA?AV?asic_string@DU?har_traits@D@std@@V?llocator@D@2@@std@@PEBVType@2@VQualifiers@2@@Z
+    ?getAsStringInternal@QualType@clang@@SAXPEBVType@2@VQualifiers@2@AEAV?asic_string@DU?har_traits@D@std@@V?llocator@D@2@@std@@AEBUPrintingPolicy@2@@Z
+    ?getQualifiedNameAsString@NamedDecl@clang@@QEBA?AV?asic_string@DU?har_traits@D@std@@V?llocator@D@2@@std@@XZ
+    ?insert_imp_big@SmallPtrSetImplBase@llvm@@AEAA?AU?air@PEBQEBX_N@std@@PEBX@Z
   )
 
   if ($<CONFIG:Debug>)
