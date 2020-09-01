@@ -5,11 +5,9 @@ The Cling Packaging Tool is a command-line utility written in Python to build
 Cling from source and generate installer bundles for a wide range of platforms.
 
 Cling maintains its own vendor clones of LLVM and Clang (part of ROOT's trunk)
-on which it is based. Due to some policy restrictions we do not distribute
-Cling on official repositories of Debian and others. Therefore this tool is the
-easiest way to build Cling for your favorite platorm and bundle it into an
-installer. If you want to manually compile Cling from source, go through the
-[README] of Cling or the build instructions [here].
+on which it is based. This tool is the easiest way to build Cling for your favorite
+platorm and bundle it into an installer. If you want to manually compile Cling
+from source, go through the [README] of Cling or the build instructions [here].
 
 [README]:https://github.com/root-project/cling/blob/master/README.md
 [here]:http://root.cern.ch/drupal/content/cling-build-instructions
