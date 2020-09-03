@@ -490,7 +490,7 @@ namespace cling {
         Proto += ")";
       } else if (FT && isNoexceptExceptionSpec(FT->getExceptionSpecType())) {
         Proto += " noexcept";
-        if (FT->getExceptionSpecType() == EST_ComputedNoexcept) {
+        if (isComputedNoexcept(FT->getExceptionSpecType())) {
           Proto += "(";
           llvm::raw_string_ostream EOut(Proto);
           FT->getNoexceptExpr()->printPretty(EOut, 0, SubPolicy,
