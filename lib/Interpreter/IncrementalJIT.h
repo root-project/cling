@@ -175,7 +175,8 @@ private:
 
 public:
   IncrementalJIT(IncrementalExecutor& exe,
-                 std::unique_ptr<llvm::TargetMachine> TM);
+                 std::unique_ptr<llvm::TargetMachine> TM,
+                 CompileLayerT::NotifyCompiledCallback NCF);
 
   ///\brief Get the address of a symbol from the JIT or the memory manager,
   /// mangling the name as needed. Use this to resolve symbols as coming
@@ -203,7 +204,7 @@ public:
   llvm::JITSymbol getSymbolAddressWithoutMangling(const std::string& Name,
                                                   bool AlsoInProcess);
 
-  void addModule(std::unique_ptr<llvm::Module> module);
+  llvm::orc::VModuleKey addModule(std::unique_ptr<llvm::Module> module);
   llvm::Error removeModule(const llvm::Module* module);
 
   IncrementalExecutor& getParent() const { return m_Parent; }

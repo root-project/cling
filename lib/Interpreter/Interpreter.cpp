@@ -88,10 +88,6 @@ namespace {
     }
     return cling::Interpreter::kExeSuccess;
   }
-
-  static bool isPracticallyEmptyModule(const llvm::Module* M) {
-    return M->empty() && M->global_empty() && M->alias_empty();
-  }
 } // unnamed namespace
 
 namespace cling {
@@ -316,25 +312,13 @@ namespace cling {
     // Now that the transactions have been commited, force symbol emission
     // and overrides.
     if (!isInSyntaxOnlyMode() && !m_Opts.CompilerOpts.CUDADevice) {
-      if (const Transaction* T = getLastTransaction()) {
-        if (auto M = T->getModule()) {
-          for (const llvm::StringRef& Sym : Syms) {
-            const llvm::GlobalValue* GV = M->getNamedValue(Sym);
-  #if defined(__linux__)
-            // libstdc++ mangles at_quick_exit on Linux when g++ < 5
-            if (!GV && Sym.equals("at_quick_exit"))
-              GV = M->getNamedValue("_Z13at_quick_exitPFvvE");
-  #endif
-            if (GV) {
-              if (void* Addr = m_Executor->getPointerToGlobalFromJIT(*GV))
-                m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
-              else
-                cling::errs() << Sym << " not defined\n";
-            } else
-              cling::errs() << Sym << " not in Module!\n";
-          }
-        }
-      }
+      if (void* Addr = m_Executor->getPointerToGlobalFromJIT("at_quick_exit"))
+        m_Executor->addSymbol("at_quick_exit", Addr, true);
+      // libstdc++ mangles at_quick_exit on Linux when g++ < 5
+      else if (void* Addr = m_Executor->getPointerToGlobalFromJIT("_Z13at_quick_exitPFvvE"))
+        m_Executor->addSymbol("_Z13at_quick_exitPFvvE", Addr, true);
+      else
+        cling::errs() << "'at_quick_exit' not defined\n";
     }
 
     m_IncrParser->SetTransformers(parentInterp);
@@ -1285,15 +1269,9 @@ namespace cling {
     const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl, T);
     if (!FD || !T)
       return 0;
-    //
-    //  Get the wrapper function pointer
-    //  from the ExecutionEngine (the JIT).
-    //
-    if (const llvm::GlobalValue* GV
-        = T->getModule()->getNamedValue(name))
-      return m_Executor->getPointerToGlobalFromJIT(*GV);
 
-    return 0;
+    //  Get the wrapper function pointer from the ExecutionEngine (the JIT).
+    return m_Executor->getPointerToGlobalFromJIT(name);
   }
 
   void*
@@ -1685,13 +1663,10 @@ namespace cling {
 
     IncrementalExecutor::ExecutionResult ExeRes
        = IncrementalExecutor::kExeSuccess;
-    if (!isPracticallyEmptyModule(T.getModule())) {
-      m_Executor->emitModule(T.takeModule(), T.getCompilationOpts().OptLevel);
 
-      // Forward to IncrementalExecutor; should not be called by
-      // anyone except for IncrementalParser.
-      ExeRes = m_Executor->runStaticInitializersOnce(T);
-    }
+    // Forward to IncrementalExecutor; should not be called by
+    // anyone except for IncrementalParser.
+    ExeRes = m_Executor->runStaticInitializersOnce(T);
 
     return ConvertExecutionResult(ExeRes);
   }
@@ -1736,7 +1711,7 @@ namespace cling {
   }
 
   void Interpreter::AddAtExitFunc(void (*Func) (void*), void* Arg) {
-    m_Executor->AddAtExitFunc(Func, Arg, getLatestTransaction()->getModule());
+    m_Executor->AddAtExitFunc(Func, Arg, getLatestTransaction());
   }
 
   void Interpreter::runAtExitFuncs() {

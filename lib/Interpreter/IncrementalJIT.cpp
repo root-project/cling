@@ -272,7 +272,8 @@ public:
 }; // class Azog
 
 IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
-                               std::unique_ptr<TargetMachine> TM):
+                               std::unique_ptr<TargetMachine> TM,
+                               CompileLayerT::NotifyCompiledCallback NCC):
   m_Parent(exe),
   m_TM(std::move(TM)),
   m_TMDataLayout(m_TM->createDataLayout()),
@@ -341,6 +342,9 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
                 m_NotifyObjectLoaded, NotifyFinalizedT(*this)),
   m_CompileLayer(m_ObjectLayer, llvm::orc::SimpleCompiler(*m_TM)),
   m_LazyEmitLayer(m_CompileLayer) {
+
+  m_CompileLayer.setNotifyCompiled(NCC);
+
   // Libraries might get exposed through ExposeHiddenSharedLibrarySymbols(),
   // make them available to the JIT, even though their symbols cannot be
   // resolved through the process.
@@ -443,7 +447,8 @@ IncrementalJIT::getSymbolAddressWithoutMangling(const std::string& Name,
   return llvm::JITSymbol(nullptr);
 }
 
-void IncrementalJIT::addModule(std::unique_ptr<llvm::Module> module) {
+llvm::orc::VModuleKey
+IncrementalJIT::addModule(std::unique_ptr<llvm::Module> module) {
   // If this module doesn't have a DataLayout attached then attach the
   // default.
   module->setDataLayout(m_TMDataLayout);
@@ -466,6 +471,7 @@ void IncrementalJIT::addModule(std::unique_ptr<llvm::Module> module) {
   llvm::orc::VModuleKey K = m_ES.allocateVModule();
   llvm::cantFail(m_LazyEmitLayer.addModule(K, std::move(module)));
   m_UnloadPoints[module.get()] = K;
+  return K;
 }
 
 llvm::Error

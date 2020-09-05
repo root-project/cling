@@ -102,7 +102,13 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& diags,
                                           CI.getTargetOpts(),
                                           CI.getLangOpts(),
                                           *TM));
-  m_JIT.reset(new IncrementalJIT(*this, std::move(TM)));
+  auto RetainOwnership =
+    [this](llvm::orc::VModuleKey K, std::unique_ptr<Module> M) -> void {
+    assert (m_PendingModules.count(K) && "Unable to find the module");
+    m_PendingModules[K]->setModule(std::move(M));
+    m_PendingModules.erase(K);
+  };
+  m_JIT.reset(new IncrementalJIT(*this, std::move(TM), RetainOwnership));
 }
 
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
@@ -130,10 +136,10 @@ void IncrementalExecutor::runAtExitFuncs() {
 }
 
 void IncrementalExecutor::AddAtExitFunc(void (*func)(void*), void* arg,
-                                       const llvm::Module* M) {
+                                        const Transaction* T) {
   // Register a CXAAtExit function
   cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
-  m_AtExitFuncs[M].emplace_back(func, arg);
+  m_AtExitFuncs[T].emplace_back(func, arg);
 }
 
 void unresolvedSymbol()
@@ -205,10 +211,23 @@ freeCallersOfUnresolvedSymbols(llvm::SmallVectorImpl<llvm::Function*>&
 }
 #endif
 
+static bool isPracticallyEmptyModule(const llvm::Module* M) {
+  return M->empty() && M->global_empty() && M->alias_empty();
+}
+
+
 IncrementalExecutor::ExecutionResult
-IncrementalExecutor::runStaticInitializersOnce(const Transaction& T) const {
+IncrementalExecutor::runStaticInitializersOnce(Transaction& T) {
   llvm::Module* m = T.getModule();
   assert(m && "Module must not be null");
+
+  if (isPracticallyEmptyModule(m))
+    return kExeSuccess;
+
+  llvm::orc::VModuleKey K =
+    emitModule(T.takeModule(), T.getCompilationOpts().OptLevel);
+  m_PendingModules[K] = &T;
+
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
@@ -303,7 +322,7 @@ void IncrementalExecutor::runAndRemoveStaticDestructors(Transaction* T) {
   AtExitFunctions::mapped_type Local;
   {
     cling::internal::SpinLockGuard slg(m_AtExitFuncsSpinLock);
-    auto Itr = m_AtExitFuncs.find(T->getModule());
+    auto Itr = m_AtExitFuncs.find(T);
     if (Itr == m_AtExitFuncs.end()) return;
     m_AtExitFuncs.erase(Itr, &Local);
   } // end of spin lock lifetime block.
@@ -369,16 +388,15 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
 }
 
 void*
-IncrementalExecutor::getPointerToGlobalFromJIT(const llvm::GlobalValue& GV) const {
-  // Get the function / variable pointer referenced by GV.
+IncrementalExecutor::getPointerToGlobalFromJIT(llvm::StringRef name) const {
+  // Get the function / variable pointer referenced by name.
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
-  void* addr = (void*)m_JIT->getSymbolAddress(GV.getName(),
-                                              false /*no dlsym*/);
+  void* addr = (void*)m_JIT->getSymbolAddress(name, false /*no dlsym*/);
 
-  if (diagnoseUnresolvedSymbols(GV.getName(), "symbol"))
+  if (diagnoseUnresolvedSymbols(name, "symbol"))
     return 0;
   return addr;
 }
