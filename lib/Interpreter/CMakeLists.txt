@@ -6,7 +6,8 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-set(CLING_DEPEND_LIBS
+set(LIBS
+  clingUtils
   clangCodeGen
   clangDriver
   clangFrontend
@@ -20,11 +21,6 @@ set(CLING_DEPEND_LIBS
   clangAST
   clangBasic
   clangLex
-  CACHE STRING "Dependency Clang libraries for Cling"
-)
-
-set(LIBS
-  clingUtils
 )
 
 set(LLVM_LINK_COMPONENTS
@@ -103,7 +99,6 @@ add_cling_library(clingInterpreter OBJECT
   ${CLING_DEPENDS}
 
   LINK_LIBS
-  ${CLING_DEPEND_LIBS}
   ${LIBS}
   ${CMAKE_DL_LIBS}
   )

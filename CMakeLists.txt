@@ -330,6 +330,8 @@ macro(set_cling_windows_version_resource_properties name)
   endif()
 endmacro()
 
+include_directories(BEFORE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+
 macro(add_cling_library name)
   cmake_parse_arguments(ARG
     "SHARED"
@@ -446,28 +448,6 @@ macro(add_cling_executable name)
 endmacro(add_cling_executable)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-option(ROOT_CLASSIC "Building as part of the ROOT (classic)." OFF)
-
-if(DEFINED ROOT_BINARY_DIR)
-  # Building as part of ROOT (CMake)
-  include_directories(BEFORE
-    ${CMAKE_BINARY_DIR}/interpreter/llvm/src/tools/clang/include
-    ${CMAKE_SOURCE_DIR}/interpreter/llvm/src/tools/clang/include
-    )
-elseif(ROOT_CLASSIC)
-  # Building as part of ROOT (classic)
-  include_directories(BEFORE
-    ${CMAKE_CURRENT_BINARY_DIR}/../llvm/obj/tools/clang/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../llvm/src/tools/clang/include
-    )
-else()
-  # and this when building Cling standalone:
-  include_directories(BEFORE
-    ${CMAKE_CURRENT_BINARY_DIR}/../clang/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include
-    )
-endif()
 
 include_directories(BEFORE
   ${CMAKE_CURRENT_BINARY_DIR}/include
