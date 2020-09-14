@@ -44,6 +44,7 @@ if(MSVC)
     LOG_CONFIGURE ON
     LOG_BUILD ON
     LOG_INSTALL ON
+    LOG_OUTPUT_ON_FAILURE ON
     # We need the target clangBasic to be built before building clad. However, we
     # support building prebuilt clang and adding clangBasic breaks this case.
     # Delegate the dependency resolution to the clingInterpreter target (which
