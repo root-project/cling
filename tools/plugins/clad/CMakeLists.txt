@@ -32,11 +32,20 @@ if(MSVC)
     GIT_TAG v0.7
     UPDATE_COMMAND ""
     CMAKE_ARGS -G ${CMAKE_GENERATOR}
-               -DCLAD_BUILD_STATIC_ONLY=ON
                -DCMAKE_INSTALL_PREFIX=${clad_install_dir}/plugins
-               -DClang_DIR=${Clang_DIR}
                -DCLAD_PATH_TO_LLVM_BUILD=${LLVM_BINARY_DIR}
+
+               -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+               -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+               -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+               -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+               -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+               -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
+               -DLLVM_DIR=${LLVM_DIR}
+               -DClang_DIR=${Clang_DIR}
                -DCLANG_INCLUDE_DIRS=${CLANG_INCLUDE_DIRS}
+               -DCLAD_BUILD_STATIC_ONLY=ON
+
     BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${_clad_build_type}
     INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config ${_clad_build_type} --target install
     # Wrap download, configure and build steps in a script to log output
