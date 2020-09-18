@@ -6,6 +6,8 @@
 # LICENSE.TXT for details.
 #-------------------------------------------------------------------------------
 
+include(ExternalProject)
+
 set(clad_install_dir ${CMAKE_BINARY_DIR}/etc/cling/)
 # Specify include dirs for clad
 set(CLAD_INCLUDE_DIRS ${clad_install_dir})
