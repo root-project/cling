@@ -1,0 +1,20 @@
+# This file allows users to call find_package(Cling) and pick up our targets.
+
+@CLING_CONFIG_CODE@
+
+find_package(Clang REQUIRED CONFIG
+             HINTS "@CLING_CONFIG_CLANG_CMAKE_DIR@")
+
+set(CLING_EXPORTED_TARGETS "@CLING_EXPORTS@")
+set(CLING_CMAKE_DIR "@CLING_CONFIG_CMAKE_DIR@")
+set(CLING_INCLUDE_DIRS "@CLING_CONFIG_INCLUDE_DIRS@")
+
+# Provide all our library targets to users.
+include("@CLING_CONFIG_EXPORTS_FILE@")
+
+# By creating cling-tablegen-targets here, subprojects that depend on Cling's
+# tablegen-generated headers can always depend on this target whether building
+# in-tree with Cling or not.
+if(NOT TARGET cling-tablegen-targets)
+  add_custom_target(cling-tablegen-targets)
+endif()

@@ -576,31 +576,4 @@ endif()
 set(CLING_ORDER_FILE "" CACHE FILEPATH
   "Order file to use when compiling cling in order to improve startup time.")
 
-if (CLING_BUILT_STANDALONE OR CMAKE_VERSION VERSION_EQUAL 3 OR
-    CMAKE_VERSION VERSION_GREATER 3)
-  # Generate a list of CMake library targets so that other CMake projects can
-  # link against them. LLVM calls its version of this file LLVMExports.cmake, but
-  # the usual CMake convention seems to be ${Project}Targets.cmake.
-  set(CLING_INSTALL_PACKAGE_DIR lib${LLVM_LIBDIR_SUFFIX}/cmake/cling)
-  set(cling_cmake_builddir "${CMAKE_BINARY_DIR}/${CLING_INSTALL_PACKAGE_DIR}")
-  get_property(CLING_EXPORTS GLOBAL PROPERTY CLING_EXPORTS)
-  export(TARGETS ${CLING_EXPORTS} FILE ${cling_cmake_builddir}/ClingTargets.cmake)
-
-  # Install a <prefix>/lib/cmake/cling/ClingConfig.cmake file so that
-  # find_package(Cling) works. Install the target list with it.
-  install(EXPORT ClingTargets DESTINATION ${CLING_INSTALL_PACKAGE_DIR})
-
-  install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/ClingConfig.cmake
-    DESTINATION lib${LLVM_LIBDIR_SUFFIX}/cmake/cling)
-
-  install(DIRECTORY tools/Jupyter/kernel DESTINATION share/cling/Jupyter)
-
-
-  # Also copy ClingConfig.cmake to the build directory so that dependent projects
-  # can build against a build directory of Cling more easily.
-  configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/ClingConfig.cmake
-    ${CLING_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}/cmake/cling/ClingConfig.cmake
-    COPYONLY)
-endif ()
+add_subdirectory(cmake/modules)
