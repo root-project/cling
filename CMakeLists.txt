@@ -330,7 +330,7 @@ macro(set_cling_windows_version_resource_properties name)
   endif()
 endmacro()
 
-include_directories(BEFORE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
+include_directories(BEFORE SYSTEM ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS})
 
 macro(add_cling_library name)
   cmake_parse_arguments(ARG
