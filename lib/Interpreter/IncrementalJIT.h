@@ -45,8 +45,6 @@ public:
 private:
   friend class Azog;
 
-  ///\brief The IncrementalExecutor who owns us.
-  IncrementalExecutor& m_Parent;
   llvm::JITEventListener* m_GDBListener; // owned by llvm::ManagedStaticBase
 
   SymbolMapT m_SymbolMap;
@@ -206,8 +204,6 @@ public:
 
   llvm::orc::VModuleKey addModule(std::unique_ptr<llvm::Module> module);
   llvm::Error removeModule(const llvm::Module* module);
-
-  IncrementalExecutor& getParent() const { return m_Parent; }
 
   void RemoveUnfinalizedSection(llvm::orc::VModuleKey K) {
     m_UnfinalizedSections.erase(K);

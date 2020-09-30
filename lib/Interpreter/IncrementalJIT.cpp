@@ -29,7 +29,7 @@ namespace {
 /// IncrementalExecutor, handles missing or special / replaced symbols.
 class ClingMemoryManager: public SectionMemoryManager {
 public:
-  ClingMemoryManager(cling::IncrementalExecutor& Exe) {}
+  ClingMemoryManager() {}
 
   ///\brief Simply wraps the base class's function setting AbortOnFailure
   /// to false and instead using the error handling mechanism to report it.
@@ -274,7 +274,6 @@ public:
 IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
                                std::unique_ptr<TargetMachine> TM,
                                CompileLayerT::NotifyCompiledCallback NCC):
-  m_Parent(exe),
   m_TM(std::move(TM)),
   m_TMDataLayout(m_TM->createDataLayout()),
   m_Resolver(llvm::orc::createSymbolResolver(
@@ -323,10 +322,10 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
           /// to book-keep emitted sections in the IncrementalJIT). (ROOT-10426)
           decltype(m_ExeMM) outerExeMM;
           swap(outerExeMM, m_ExeMM);
-          m_ExeMM = std::make_shared<ClingMemoryManager>(m_Parent);
+          m_ExeMM = std::make_shared<ClingMemoryManager>();
           decltype(m_UnfinalizedSections) outerUnfinalizedSections;
           swap(m_UnfinalizedSections, outerUnfinalizedSections);
-          uint64_t addr = uint64_t(getParent().NotifyLazyFunctionCreators(*NameNP));
+          uint64_t addr = uint64_t(exe.NotifyLazyFunctionCreators(*NameNP));
           swap(outerExeMM, m_ExeMM);
           swap(m_UnfinalizedSections, outerUnfinalizedSections);
           return JITSymbol(addr, llvm::JITSymbolFlags::Weak);
