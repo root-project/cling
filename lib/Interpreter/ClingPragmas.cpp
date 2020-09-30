@@ -200,8 +200,8 @@ namespace {
       PragmaHandler("cling"), m_Interp(interp) {}
 
     void HandlePragma(Preprocessor& PP,
-                      PragmaIntroducer Introducer,
-                      Token& FirstToken) override {
+                      PragmaIntroducer /*Introducer*/,
+                      Token& /*FirstToken*/) override {
 
       Token Tok;
       PP.Lex(Tok);

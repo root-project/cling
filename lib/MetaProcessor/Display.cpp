@@ -1160,7 +1160,7 @@ void GlobalsPrinter::DisplayGlobals()const
   //It's obviously that for objects we can have one definition and any number
   //of declarations, should I print them?
 
-  DisplayDCDecls(tuDecl, [] (NamedDecl *D) { return true; });
+  DisplayDCDecls(tuDecl, [] (NamedDecl *) { return true; });
 }
 
 //______________________________________________________________________________

@@ -99,7 +99,7 @@ namespace cling {
     void LexConstant(char C, Token& Tok);
     void LexIdentifier(char C, Token& Tok);
     void LexEndOfFile(char C, Token& Tok);
-    void LexWhitespace(char C, Token& Tok);
+    void LexWhitespace(Token& Tok);
     void SkipWhitespace();
     const char* getLocation() const { return curPos; }
   };

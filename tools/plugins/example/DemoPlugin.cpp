@@ -11,7 +11,7 @@
 #include "clang/Lex/Preprocessor.h"
 
 struct PluginConsumer : public clang::ASTConsumer {
-  virtual bool HandleTopLevelDecl(clang::DeclGroupRef DGR) {
+  virtual bool HandleTopLevelDecl(clang::DeclGroupRef /*DGR*/) {
     llvm::outs() << "PluginConsumer::HandleTopLevelDecl\n";
     return true; // Happiness
   }
@@ -43,9 +43,9 @@ protected:
 class DemoPluginPragmaHandler : public clang::PragmaHandler {
 public:
   DemoPluginPragmaHandler() : clang::PragmaHandler("demoplugin") { }
-  void HandlePragma(clang::Preprocessor &PP,
-                    clang::PragmaIntroducer Introducer,
-                    clang::Token &PragmaTok) {
+  void HandlePragma(clang::Preprocessor &/*PP*/,
+                    clang::PragmaIntroducer /*Introducer*/,
+                    clang::Token &/*PragmaTok*/) {
     llvm::outs() << "DemoPluginPragmaHandler::HandlePragma\n";
     // Handle the pragma
   }

@@ -178,7 +178,7 @@ namespace cling {
         }
       }
     }
-    bool hasNoErrors = !CheckForClashingNames(TouchedDecls, WrapperDC, TUScope);
+    bool hasNoErrors = !CheckForClashingNames(TouchedDecls, WrapperDC);
     if (hasNoErrors) {
       for (size_t i = 0; i < TouchedDecls.size(); ++i) {
         // We should skip the checks for annonymous decls and we should not
@@ -296,7 +296,7 @@ namespace cling {
   ///\returns true if there is another declaration with the same name
   bool DeclExtractor::CheckForClashingNames(
                                   const llvm::SmallVector<NamedDecl*, 4>& Decls,
-                                            DeclContext* DC, Scope* S) {
+                                            DeclContext* DC) {
     for (size_t i = 0; i < Decls.size(); ++i) {
       NamedDecl* ND = Decls[i];
 

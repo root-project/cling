@@ -633,7 +633,7 @@ namespace cling {
     Out() << ';' << closeBraces << '\n';
   }
 
-  void ForwardDeclPrinter::VisitFriendDecl(FriendDecl *D) {
+  void ForwardDeclPrinter::VisitFriendDecl(FriendDecl *) {
   }
 
   void ForwardDeclPrinter::VisitFieldDecl(FieldDecl *D) {
@@ -853,7 +853,7 @@ namespace cling {
       skipDecl(D, "target decl failed.");
   }
 
-  void ForwardDeclPrinter::VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl *D) {
+  void ForwardDeclPrinter::VisitTypeAliasTemplateDecl(TypeAliasTemplateDecl *) {
   }
 
   void ForwardDeclPrinter::VisitNamespaceAliasDecl(NamespaceAliasDecl *D) {
@@ -865,7 +865,7 @@ namespace cling {
     Out() << *D->getAliasedNamespace() << ';' << closeBraces << '\n';
   }
 
-  void ForwardDeclPrinter::VisitEmptyDecl(EmptyDecl *D) {
+  void ForwardDeclPrinter::VisitEmptyDecl(EmptyDecl *) {
 //    prettyPrintAttributes(D);
   }
 

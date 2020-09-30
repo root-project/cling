@@ -88,7 +88,7 @@ namespace cling {
     ///
     bool CheckForClashingNames(
                            const llvm::SmallVector<clang::NamedDecl*, 4>& Decls,
-                               clang::DeclContext* DC, clang::Scope* S);
+                               clang::DeclContext* DC);
 
     ///\brief Performs semantic checking on a newly-extracted tag declaration.
     ///

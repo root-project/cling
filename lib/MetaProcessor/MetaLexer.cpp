@@ -86,7 +86,7 @@ namespace cling {
     case '_':
       return LexIdentifier(C, Tok);
     case ' ': case '\t':
-      return LexWhitespace(C, Tok);
+      return LexWhitespace(Tok);
     case '\0':
       return LexEndOfFile(C, Tok);
     }
@@ -232,7 +232,7 @@ namespace cling {
       C = *(++curPos);
   }
 
-  void MetaLexer::LexWhitespace(char C, Token& Tok) {
+  void MetaLexer::LexWhitespace(Token& Tok) {
     SkipWhitespace();
 
     Tok.setLength(curPos - Tok.getBufStart());

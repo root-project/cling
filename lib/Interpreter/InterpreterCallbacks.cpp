@@ -387,8 +387,8 @@ namespace cling {
     return m_DeserializationListener.get();
   }
 
-  bool InterpreterCallbacks::FileNotFound(llvm::StringRef FileName,
-                                    llvm::SmallVectorImpl<char>& RecoveryPath) {
+  bool InterpreterCallbacks::FileNotFound(llvm::StringRef,
+                                          llvm::SmallVectorImpl<char>&) {
     // Default implementation is no op.
     return false;
   }

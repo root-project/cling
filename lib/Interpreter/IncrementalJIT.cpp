@@ -42,8 +42,8 @@ public:
   class NotifyFinalizedT {
   public:
     NotifyFinalizedT(cling::IncrementalJIT &jit) : m_JIT(jit) {}
-    void operator()(llvm::orc::VModuleKey K, const object::ObjectFile &Obj,
-                    const RuntimeDyld::LoadedObjectInfo &Info) {
+    void operator()(llvm::orc::VModuleKey K, const object::ObjectFile &/*Obj*/,
+                    const RuntimeDyld::LoadedObjectInfo &/*Info*/) {
       m_JIT.RemoveUnfinalizedSection(K);
     }
 
@@ -332,10 +332,10 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
           return JITSymbol(addr, llvm::JITSymbolFlags::Weak);
         });
       })),
-  m_ExeMM(std::make_shared<ClingMemoryManager>(m_Parent)),
+  m_ExeMM(std::make_shared<ClingMemoryManager>()),
   m_NotifyObjectLoaded(*this),
   m_ObjectLayer(m_SymbolMap, m_ES,
-                [this] (llvm::orc::VModuleKey K) {
+                [this] (llvm::orc::VModuleKey) {
                   return ObjectLayerT::Resources{llvm::make_unique<Azog>(*this),
                       this->m_Resolver};
                 },

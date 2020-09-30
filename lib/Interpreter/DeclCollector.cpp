@@ -96,7 +96,7 @@ namespace cling {
     /// \name PPCallbacks overrides
     /// Macro support
     void MacroUndefined(const clang::Token& MacroNameTok,
-                        const clang::MacroDefinition& MD,
+                        const clang::MacroDefinition& /*MD*/,
                         const clang::MacroDirective* Undef) final {
       if (Undef)
         MacroDirective(MacroNameTok, Undef);
@@ -312,7 +312,7 @@ namespace cling {
     m_Consumer->CompleteTentativeDefinition(VD);
   }
 
-  void DeclCollector::HandleTranslationUnit(ASTContext& Ctx) {
+  void DeclCollector::HandleTranslationUnit(ASTContext& /*Ctx*/) {
     //if (m_Consumer)
     //  m_Consumer->HandleTranslationUnit(Ctx);
   }

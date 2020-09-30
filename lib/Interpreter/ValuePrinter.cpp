@@ -53,7 +53,7 @@
 using namespace cling;
 
 // Implements the CValuePrinter interface.
-extern "C" void cling_PrintValue(void * /*cling::Value**/ V) {
+extern "C" void cling_PrintValue(void * /*cling::Value* V*/) {
   //Value* value = (Value*)V;
 
   //std::string typeStr = printTypeInternal(*value);
@@ -706,7 +706,7 @@ executePrintValue(const Value& V, const T& val) {
 
 template <typename T> static
 typename std::enable_if<HasExplicitPrintValue<const T>::value, std::string>::type
-executePrintValue(const Value& V, const T& val) {
+executePrintValue(const Value& /*V*/, const T& val) {
   return printValue(&val);
 }
 
