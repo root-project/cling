@@ -42,22 +42,20 @@ namespace {
     BreakProtection::resetCachedLinkage(ND);
     if (const CXXRecordDecl* CXXRD = dyn_cast<CXXRecordDecl>(ND))
       clearLinkageForClass(CXXRD);
-    else
-    if (ClassTemplateDecl *temp = dyn_cast<ClassTemplateDecl>(ND)) {
+    else if (ClassTemplateDecl *CTD = dyn_cast<ClassTemplateDecl>(ND)) {
       // Clear linkage for the template pattern.
-      CXXRecordDecl *record = temp->getTemplatedDecl();
+      CXXRecordDecl *record = CTD->getTemplatedDecl();
       clearLinkageForClass(record);
 
       // We need to clear linkage for specializations, too.
       for (ClassTemplateDecl::spec_iterator
-             i = temp->spec_begin(), e = temp->spec_end(); i != e; ++i)
+             i = CTD->spec_begin(), e = CTD->spec_end(); i != e; ++i)
         clearLinkage(*i);
-    } else
+    } else if (FunctionTemplateDecl *FTD= dyn_cast<FunctionTemplateDecl>(ND)) {
       // Clear cached linkage for function template decls, too.
-    if (FunctionTemplateDecl *temp = dyn_cast<FunctionTemplateDecl>(ND)) {
-      clearLinkage(temp->getTemplatedDecl());
+      clearLinkage(FTD->getTemplatedDecl());
       for (FunctionTemplateDecl::spec_iterator
-             i = temp->spec_begin(), e = temp->spec_end(); i != e; ++i)
+             i = FTD->spec_begin(), e = FTD->spec_end(); i != e; ++i)
         clearLinkage(*i);
     }
   }

@@ -87,8 +87,8 @@ class MinimalPPLexer: public Lexer {
 
 public:
   ///\brief Construct a Lexer from LangOpts and source.
-  MinimalPPLexer(const LangOptions &LangOpts, llvm::StringRef source):
-    Lexer(SourceLocation(), LangOpts,
+  MinimalPPLexer(const LangOptions &LOpts, llvm::StringRef source):
+    Lexer(SourceLocation(), LOpts,
           source.begin(), source.begin(), source.end()) {}
 
   bool inPPDirective() const { return ParsingPreprocessorDirective; }
@@ -473,7 +473,7 @@ size_t cling::utils::getWrapPoint(std::string& source,
 
         const size_t rBrace = getFileOffset(Tok);
         // Wrap everything after '}'
-        bool atEOF = !Lex.LexClean(Tok);
+        atEOF = !Lex.LexClean(Tok);
         bool hadSemi = Tok.is(tok::semi);
         size_t wrapPoint = getFileOffset(Tok);
         if (!atEOF) {

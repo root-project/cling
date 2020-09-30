@@ -55,8 +55,8 @@ namespace cling {
         bool is_displayed() const { return m_Colorize; }
       public:
 
-        ColoredOutput(std::ostream& OS, bool Unbufferd = true)
-            : raw_os_ostream(OS) {
+        ColoredOutput(std::ostream& Out, bool Unbufferd = true)
+            : raw_os_ostream(Out) {
           if (Unbufferd) SetUnbuffered();
         }
         

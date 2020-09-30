@@ -470,18 +470,19 @@ private:
     //Extract the type of declaration and process it.
     assert(decl != 0 && "ProcessTypeOfMember, 'decl' parameter is null");
 
-    if (const RecordType* const recordType = decl->getType()->template getAs<RecordType>()) {
-      if (const CXXRecordDecl* const classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition())) {
-        if (fSeenDecls.find(classDecl) == fSeenDecls.end())
-          DisplayDataMembers(classDecl, nSpaces);
-      }
-    } else if (const ArrayType* const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
+    if (const ArrayType* const arrayType = decl->getType()->getAsArrayTypeUnsafe()) {
       if (const Type* const elType = arrayType->getBaseElementTypeUnsafe()) {
         if (const RecordType* const recordType = elType->getAs<RecordType>()) {
           if (const CXXRecordDecl* classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition()))
             if (fSeenDecls.find(classDecl) == fSeenDecls.end())
               DisplayDataMembers(classDecl, nSpaces);
         }
+      }
+    }
+    else if (const RecordType* const recordType = decl->getType()->template getAs<RecordType>()) {
+      if (const CXXRecordDecl* const classDecl = cast_or_null<CXXRecordDecl>(recordType->getDecl()->getDefinition())) {
+        if (fSeenDecls.find(classDecl) == fSeenDecls.end())
+          DisplayDataMembers(classDecl, nSpaces);
       }
     }
   }

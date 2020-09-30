@@ -992,7 +992,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
         llvm::raw_ostream &Out;
 
       public:
-        DumpModuleInfoListener(llvm::raw_ostream &Out) : Out(Out) { }
+        DumpModuleInfoListener(llvm::raw_ostream &OS) : Out(OS) { }
 
 #define DUMP_BOOLEAN(Value, Text)                                       \
         Out.indent(4) << Text << ": " << (Value? "Yes" : "No") << "\n"
@@ -1591,17 +1591,17 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 
       std::string Sysroot;
 
-      auto Buffer = std::make_shared<PCHBuffer>();
+      auto PCHBuff = std::make_shared<PCHBuffer>();
 
       Consumers.push_back(llvm::make_unique<PCHGenerator>(
           CI->getPreprocessor(), CI->getModuleCache(), ModuleOutputFile,
-          Sysroot, Buffer, CI->getFrontendOpts().ModuleFileExtensions,
+          Sysroot, PCHBuff, CI->getFrontendOpts().ModuleFileExtensions,
           /*AllowASTWithErrors=*/false,
           /*IncludeTimestamps=*/
           +CI->getFrontendOpts().BuildingImplicitModule));
       Consumers.push_back(
           CI->getPCHContainerWriter().CreatePCHContainerGenerator(
-              *CI, "", ModuleOutputFile, std::move(OS), Buffer));
+              *CI, "", ModuleOutputFile, std::move(OS), PCHBuff));
 
       // Set the current module name for clang. With that clang doesn't start
       // to build the current module on demand when we include a header
@@ -1683,11 +1683,12 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     DiagnosticConsumer& DClient = CI->getDiagnosticClient();
     DClient.BeginSourceFile(CI->getLangOpts(), &PP);
 
-    for (const auto& Filename : FrontendOpts.ModuleMapFiles) {
-      if (auto* File = FM.getFile(Filename))
+    for (const auto& ModuleMapFile : FrontendOpts.ModuleMapFiles) {
+      if (auto* File = FM.getFile(ModuleMapFile))
         PP.getHeaderSearchInfo().loadModuleMapFile(File, /*IsSystem*/ false);
       else
-        CI->getDiagnostics().Report(diag::err_module_map_not_found) << Filename;
+        CI->getDiagnostics().Report(diag::err_module_map_not_found)
+           << ModuleMapFile;
     }
 
     HandleProgramActions(*CI);

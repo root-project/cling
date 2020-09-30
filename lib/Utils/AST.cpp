@@ -395,8 +395,8 @@ namespace utils {
     } else if (const NamespaceDecl* NS = scope->getAsNamespace()) {
       return TypeName::CreateNestedNameSpecifier(Ctx, NS);
     } else if (const NamespaceAliasDecl* alias = scope->getAsNamespaceAlias()) {
-      const NamespaceDecl* NS = alias->getNamespace()->getCanonicalDecl();
-      return TypeName::CreateNestedNameSpecifier(Ctx, NS);
+      const NamespaceDecl* CanonNS = alias->getNamespace()->getCanonicalDecl();
+      return TypeName::CreateNestedNameSpecifier(Ctx, CanonNS);
     }
 
     return scope;
