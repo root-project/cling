@@ -185,7 +185,7 @@ namespace cling {
     /// TransactionPool needs direct access to m_State as setState asserts
     friend class TransactionPool;
 
-    void Initialize(clang::Sema& S);
+    void Initialize();
 
   public:
     enum State {

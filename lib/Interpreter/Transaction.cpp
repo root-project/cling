@@ -26,16 +26,16 @@ using namespace clang;
 namespace cling {
 
   Transaction::Transaction(Sema& S) : m_Sema(S) {
-    Initialize(S);
+    Initialize();
   }
 
   Transaction::Transaction(const CompilationOptions& Opts, Sema& S)
     : m_Sema(S) {
-    Initialize(S);
+    Initialize();
     m_Opts = Opts; // intentional copy.
   }
 
-  void Transaction::Initialize(Sema& S) {
+  void Transaction::Initialize() {
     m_NestedTransactions.reset(0);
     m_Parent = 0;
     m_State = kCollecting;
@@ -45,7 +45,6 @@ namespace cling {
     m_Module = 0;
     m_WrapperFD = 0;
     m_Next = 0;
-    //m_Sema = S;
     m_BufferFID = FileID(); // sets it to invalid.
     m_Exe = 0;
   }
