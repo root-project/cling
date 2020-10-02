@@ -357,15 +357,15 @@ namespace utils {
         // Ignore inline namespace;
         NS = dyn_cast_or_null<NamespaceDecl>(NS->getDeclContext());
       }
-      if (NS->getDeclName())
+      if (NS && NS->getDeclName())
         return TypeName::CreateNestedNameSpecifier(Ctx, NS);
-      return 0; // no starting '::', no anonymous
+      return nullptr; // no starting '::', no anonymous
     } else if (const TagDecl* TD = dyn_cast<TagDecl>(DC)) {
       return TypeName::CreateNestedNameSpecifier(Ctx, TD, FullyQualify);
     } else if (const TypedefNameDecl* TDD = dyn_cast<TypedefNameDecl>(DC)) {
       return TypeName::CreateNestedNameSpecifier(Ctx, TDD, FullyQualify);
     }
-    return 0; // no starting '::'
+    return nullptr; // no starting '::'
   }
 
   static
