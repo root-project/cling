@@ -40,7 +40,7 @@ namespace cling {
                                          CodeGenerator* CG,
                                          const std::string& name)
     : m_ASTContext(AC), m_Preprocessor(PP), m_CodeGen(CG), m_Module(M),
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
       m_DiffCommand("diff.exe -u --text "),
 #else
       m_DiffCommand("diff -u --text "),

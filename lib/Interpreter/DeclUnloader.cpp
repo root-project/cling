@@ -10,7 +10,7 @@
 #include "DeclUnloader.h"
 
 #include "cling/Utils/AST.h"
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
 #include "cling/Utils/Diagnostics.h"
 #endif
 
@@ -857,7 +857,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
       std::string mangledName;
       {
-#if LLVM_ON_WIN32
+#if _WIN32
         // clang cannot mangle everything in the ms-abi.
 #ifndef NDEBUG
         utils::DiagnosticsStore Errors(m_Sema->getDiagnostics(), false, false);

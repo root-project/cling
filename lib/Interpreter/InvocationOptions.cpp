@@ -34,7 +34,7 @@ namespace {
 
 // MSVC C++ backend currently does not support -nostdinc++. Translate it to
 // -nostdinc so users scripts are insulated from mundane implementation details.
-#if defined(LLVM_ON_WIN32) && !defined(_LIBCPP_VERSION)
+#if defined(_WIN32) && !defined(_LIBCPP_VERSION)
 #define CLING_TRANSLATE_NOSTDINCxx
 // Likely to be string-pooled, but make sure it's valid after func exit.
 static const char kNoStdInc[] = "-nostdinc";

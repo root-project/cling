@@ -582,7 +582,7 @@ namespace cling {
       Transaction* nestedT = beginTransaction(T->getCompilationOpts());
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
       // Microsoft-specific:
       // Late parsed templates can leave unswallowed "macro"-like tokens.
       // They will seriously confuse the Parser when entering the next
@@ -869,7 +869,7 @@ namespace cling {
       return kSuccess;
     }
 
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
     // Microsoft-specific:
     // Late parsed templates can leave unswallowed "macro"-like tokens.
     // They will seriously confuse the Parser when entering the next

@@ -13,7 +13,7 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/Format.h"
 
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
 #include <Shlwapi.h>
 #define strcasestr StrStrIA
 #pragma comment(lib, "Shlwapi.lib")
@@ -159,7 +159,7 @@ class EscapeSequence::ByteDumper {
   bool (* const isPrintable)(char32_t, const std::locale&);
 
   static bool stdIsPrintU(char32_t C, const std::locale& L) {
-#if !defined(LLVM_ON_WIN32)
+#if !defined(_WIN32)
     static_assert(sizeof(wchar_t) == sizeof(char32_t), "Sizes don't match");
     return std::isprint(wchar_t(C), L);
 #else
@@ -169,7 +169,7 @@ class EscapeSequence::ByteDumper {
   }
 
   static bool stdIsPrintA(char32_t C, const std::locale& L) {
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
     // Windows Debug does not like being sent values > 255!
     if (C > 0xff)
       return false;
@@ -256,7 +256,7 @@ public:
 };
 
 EscapeSequence::EscapeSequence() : m_Utf8Out(false) {
-#if !defined(LLVM_ON_WIN32)
+#if !defined(_WIN32)
   if (!::strcasestr(m_Loc.name().c_str(), "utf-8")) {
     if (const char* LANG = ::getenv("LANG")) {
       if (::strcasestr(LANG, "utf-8")) {

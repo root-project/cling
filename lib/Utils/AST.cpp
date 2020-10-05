@@ -102,7 +102,7 @@ namespace utils {
       //Dtor_Deleting, // Deleting dtor
       //Dtor_Complete, // Complete object dtor
       //Dtor_Base      // Base object dtor
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
       // MicrosoftMangle.cpp:954 calls llvm_unreachable when mangling Dtor_Comdat
       if (GD.getDtorType() == Dtor_Comdat) {
         if (const IdentifierInfo* II = D->getIdentifier())

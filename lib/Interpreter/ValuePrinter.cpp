@@ -431,7 +431,7 @@ namespace cling {
 #else // !LLVM_UTF8
 
   template <class T> struct CharTraits { typedef T value_type; };
-#if defined(LLVM_ON_WIN32) // Likely only to be needed when _MSC_VER < 19??
+#if defined(_WIN32) // Likely only to be needed when _MSC_VER < 19??
   template <> struct CharTraits<char16_t> { typedef unsigned short value_type; };
   template <> struct CharTraits<char32_t> { typedef unsigned int value_type; };
 #endif

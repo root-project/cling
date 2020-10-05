@@ -394,7 +394,7 @@ IncrementalJIT::getInjectedSymbols(const std::string& Name) const {
 std::pair<void*, bool>
 IncrementalJIT::lookupSymbol(llvm::StringRef Name, void *InAddr, bool Jit) {
   // FIXME: See comments on DLSym below.
-#if !defined(LLVM_ON_WIN32)
+#if !defined(_WIN32)
   void* Addr = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(Name);
 #else
   void* Addr = const_cast<void*>(platform::DLSym(Name));
@@ -427,7 +427,7 @@ IncrementalJIT::getSymbolAddressWithoutMangling(const std::string& Name,
       else
         llvm_unreachable("Handle the error case");
     }
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
     // FIXME: DLSym symbol lookup can overlap m_ExeMM->findSymbol wasting time
     // looking for a symbol in libs where it is already known not to exist.
     // Perhaps a better solution would be to have IncrementalJIT own the

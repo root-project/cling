@@ -35,7 +35,7 @@ namespace cling {
       "DYLD_FALLBACK_FRAMEWORK_PATH",
       "DYLD_VERSIONED_FRAMEWORK_PATH",
       */
-  #elif defined(LLVM_ON_WIN32)
+  #elif defined(_WIN32)
       "PATH",
   #endif
     };
@@ -100,7 +100,7 @@ namespace cling {
       llvm::SmallString<512>::iterator IStemEnd = filenameWithExt.end() - 1;
 #endif
       static const char* DyLibExt = ".so";
-#elif defined(LLVM_ON_WIN32)
+#elif defined(_WIN32)
       static const char* DyLibExt = ".dll";
 #else
 # error "Unsupported platform."
@@ -266,7 +266,7 @@ namespace cling {
 #else
       (Magic == file_magic::elf_shared_object)
 #endif
-#elif defined(LLVM_ON_WIN32)
+#elif defined(_WIN32)
       (Magic == file_magic::pecoff_executable
        || platform::IsDLL(libFullPath.str()))
 #else

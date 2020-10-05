@@ -21,7 +21,7 @@ namespace utils {
 namespace platform {
 #if defined(LLVM_ON_UNIX)
   const char* const kEnvDelim = ":";
-#elif defined(LLVM_ON_WIN32)
+#elif defined(_WIN32)
   const char* const kEnvDelim = ";";
 #else
   #error "Unknown platform (environmental delimiter)"
@@ -216,7 +216,7 @@ bool SplitPaths(llvm::StringRef PathStr,
                 SplitMode Mode, llvm::StringRef Delim, bool Verbose) {
   assert(Delim.size() && "Splitting without a delimiter");
 
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
   // Support using a ':' delimiter on Windows.
   const bool WindowsColon = Delim.equals(":");
 #endif
@@ -228,7 +228,7 @@ bool SplitPaths(llvm::StringRef PathStr,
     if (!Split.first.empty()) {
       bool Exists = llvm::sys::fs::is_directory(Split.first);
 
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
     // Because drive letters will have a colon we have to make sure the split
     // occurs at a colon not followed by a path separator.
     if (!Exists && WindowsColon && Split.first.size()==1) {

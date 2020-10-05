@@ -9,7 +9,7 @@
 
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/Paths.h"
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
 #include "cling/Utils/Platform.h"
 #endif
 #include "ClingUtils.h"
@@ -493,7 +493,7 @@ namespace cling {
       Globals.push_back("at_quick_exit");
     }
 
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
     // Windows specific: _onexit, _onexit_m, __dllonexit
 #if !defined(_M_CEE)
     const char* Spec = "__cdecl";
@@ -1684,7 +1684,7 @@ namespace cling {
     // Return a symbol's address, and whether it was jitted.
     std::string mangledName;
     utils::Analyze::maybeMangleDeclName(GD, mangledName);
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
     // For some unknown reason, Clang 5.0 adds a special symbol ('\01') in front
     // of the mangled names on Windows, making them impossible to find
     // TODO: remove this piece of code and try again when updating Clang

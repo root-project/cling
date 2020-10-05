@@ -66,7 +66,7 @@ namespace {
     return 20;
 #elif __cplusplus > 201402L
     return 17;
-#elif __cplusplus > 201103L || (defined(LLVM_ON_WIN32) && _MSC_VER >= 1900)
+#elif __cplusplus > 201103L || (defined(_WIN32) && _MSC_VER >= 1900)
     return 14;
 #elif __cplusplus >= 201103L
     return 11;
@@ -564,7 +564,7 @@ namespace {
     clang::HeaderSearchOptions& HSOpts = CI.getHeaderSearchOpts();
 
     // We can't use "assert.h" because it is defined in the resource dir, too.
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
     llvm::SmallString<256> vcIncLoc(getIncludePathForHeader(HS, "vcruntime.h"));
     llvm::SmallString<256> servIncLoc(getIncludePathForHeader(HS, "windows.h"));
 #endif
@@ -658,7 +658,7 @@ namespace {
     }
 
     std::string MOverlay;
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
     maybeAppendOverlayEntry(vcIncLoc.str(), "vcruntime.modulemap",
                             clingIncLoc.str(), MOverlay,
                             /*RegisterModuleMap=*/ true,
@@ -682,7 +682,7 @@ namespace {
     maybeAppendOverlayEntry(stdIncLoc.str(), "std.modulemap", clingIncLoc.str(),
                             MOverlay, /*RegisterModuleMap=*/ true,
                             /*AllowModulemapOverride=*/true);
-#endif // LLVM_ON_WIN32
+#endif // _WIN32
 
     if (!tinyxml2IncLoc.empty())
       maybeAppendOverlayEntry(tinyxml2IncLoc.str(), "tinyxml2.modulemap",
@@ -809,7 +809,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
                        ClingStringify(_GLIBCXX_USE_CXX11_ABI));
 #endif
 
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
     PPOpts.addMacroDef("CLING_EXPORT=__declspec(dllimport)");
     // prevent compilation error G47C585C4: STL1000: Unexpected compiler
     // version, expected Clang 6 or newer.
@@ -1353,7 +1353,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     }
 
     llvm::Triple TheTriple(llvm::sys::getProcessTriple());
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
     // COFF format currently needs a few changes in LLVM to function properly.
     TheTriple.setObjectFormat(llvm::Triple::COFF);
 #endif

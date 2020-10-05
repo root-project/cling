@@ -22,7 +22,7 @@
 #include <map>
 #include <string>
 #include <cstring>
-#ifndef LLVM_ON_WIN32
+#ifndef _WIN32
 # include <unistd.h>
 #else
 # include <io.h>

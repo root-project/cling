@@ -35,7 +35,7 @@
 #include <mach-o/dyld.h>
 #endif // __APPLE__
 
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <libloaderapi.h> // For GetModuleFileNameA
 #include <memoryapi.h> // For VirtualQuery
@@ -890,7 +890,7 @@ namespace cling {
   std::string DynamicLibraryManager::getSymbolLocation(void *func) {
 #if defined(__CYGWIN__) && defined(__GNUC__)
     return {};
-#elif defined(LLVM_ON_WIN32)
+#elif defined(_WIN32)
     MEMORY_BASIC_INFORMATION mbi;
     if (!VirtualQuery (func, &mbi, sizeof (mbi)))
       return {};

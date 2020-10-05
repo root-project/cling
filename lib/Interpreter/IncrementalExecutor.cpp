@@ -69,9 +69,9 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
                           "Error detecting host");
 
   JTMB->setCodeGenOptLevel(OptLevel);
-#ifdef LLVM_ON_WIN32
+#ifdef _WIN32
   JTMB->getOptions().EmulatedTLS = false;
-#endif // LLVM_ON_WIN32
+#endif // _WIN32
 
   std::unique_ptr<TargetMachine> TM = cantFail(JTMB->createTargetMachine());
 

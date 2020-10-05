@@ -101,7 +101,7 @@ inline namespace osx {
 
 #endif // __APPLE__
 
-#elif defined(LLVM_ON_WIN32)
+#elif defined(_WIN32)
 
 inline namespace windows {
 
@@ -182,7 +182,7 @@ inline namespace windows {
 #endif // CLING_WIN_SEH_EXCEPTIONS
 
 } // namespace windows
-#endif // LLVM_ON_WIN32
+#endif // _WIN32
 
 } // namespace platform
 } // namespace utils

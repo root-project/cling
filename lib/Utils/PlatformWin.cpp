@@ -9,7 +9,7 @@
 
 #include "cling/Utils/Platform.h"
 
-#if defined(LLVM_ON_WIN32)
+#if defined(_WIN32)
 
 #include "cling/Utils/Output.h"
 
@@ -982,4 +982,4 @@ __stdcall ClingRaiseSEHException(void* CxxExcept, void* Info) {
 } // namespace utils
 } // namespace cling
 
-#endif // LLVM_ON_WIN32
+#endif // _WIN32
