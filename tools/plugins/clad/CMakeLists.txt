@@ -65,6 +65,7 @@ ExternalProject_Add(
              -DClang_DIR=${Clang_DIR}
              -DCLANG_INCLUDE_DIRS=${CLANG_INCLUDE_DIRS}
              -DCLAD_BUILD_STATIC_ONLY=ON
+             -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=${LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN}
              ${_clad_extra_cmake_args}
   BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${_clad_build_type}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config ${_clad_build_type} --target install
