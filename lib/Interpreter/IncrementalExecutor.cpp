@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 
 #include "IncrementalExecutor.h"
+#include "BackendPasses.h"
 #include "IncrementalJIT.h"
 #include "Threading.h"
 
@@ -25,7 +26,6 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/Host.h"
