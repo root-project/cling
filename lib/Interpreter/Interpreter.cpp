@@ -162,8 +162,7 @@ namespace cling {
   bool Interpreter::isValid() const {
     // Should we also check m_IncrParser->getFirstTransaction() ?
     // not much can be done without it (its the initializing transaction)
-    return m_IncrParser && m_IncrParser->isValid() &&
-           m_DyLibManager && m_LookupHelper &&
+    return m_IncrParser && m_IncrParser->isValid() && m_LookupHelper &&
            (isInSyntaxOnlyMode() || m_Executor);
   }
 
@@ -212,7 +211,6 @@ namespace cling {
       return;
 
     m_LLVMContext.reset(new llvm::LLVMContext);
-    m_DyLibManager.reset(new DynamicLibraryManager(getOptions()));
     m_IncrParser.reset(new IncrementalParser(this, llvmdir, moduleExtensions));
     if (!m_IncrParser->isValid(false))
       return;
@@ -259,8 +257,12 @@ namespace cling {
 
     if (!isInSyntaxOnlyMode()) {
       m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI()));
+
       if (!m_Executor)
         return;
+
+      for (const std::string &P : m_Opts.LibSearchPath)
+        getDynamicLibraryManager()->addSearchPath(P);
     }
 
     bool usingCxxModules = getSema().getLangOpts().Modules;
@@ -278,10 +280,10 @@ namespace cling {
     }
 
     if(m_Opts.CompilerOpts.CUDAHost){
-       if(m_DyLibManager->loadLibrary("libcudart.so", true) ==
-         cling::DynamicLibraryManager::LoadLibResult::kLoadLibNotFound){
-           llvm::errs() << "Error: libcudart.so not found!\n" <<
-             "Please add the cuda lib path to LD_LIBRARY_PATH or set it via -L argument.\n";
+      if (getDynamicLibraryManager()->loadLibrary("libcudart.so", true) ==
+          cling::DynamicLibraryManager::LoadLibResult::kLoadLibNotFound){
+        llvm::errs() << "Error: libcudart.so not found!\n" <<
+          "Please add the cuda lib path to LD_LIBRARY_PATH or set it via -L argument.\n";
        }
     }
 
@@ -644,9 +646,15 @@ namespace cling {
     return AddIncludePaths(PathsStr, nullptr);
   }
 
-  void Interpreter::DumpIncludePath(llvm::raw_ostream* S) {
-    utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(), S ? *S : cling::outs(),
+  void Interpreter::DumpIncludePath(llvm::raw_ostream* S) const {
+    utils::DumpIncludePaths(getCI()->getHeaderSearchOpts(),
+                            S ? *S : cling::outs(),
                             true /*withSystem*/, true /*withFlags*/);
+  }
+
+  void Interpreter::DumpDynamicLibraryInfo(llvm::raw_ostream* S) const {
+    if (auto DLM = getDynamicLibraryManager())
+      DLM->dump(S);
   }
 
   // FIXME: Add stream argument and move DumpIncludePath path here.
@@ -1624,15 +1632,21 @@ namespace cling {
     // We need it to enable LookupObject callback.
     if (!m_Callbacks) {
       m_Callbacks.reset(new MultiplexInterpreterCallbacks(this));
-      // FIXME: Move to the InterpreterCallbacks.cpp;
-      if (DynamicLibraryManager* DLM = getDynamicLibraryManager())
-        DLM->setCallbacks(m_Callbacks.get());
       if (m_Executor)
         m_Executor->setCallbacks(m_Callbacks.get());
     }
 
     static_cast<MultiplexInterpreterCallbacks*>(m_Callbacks.get())
       ->addCallback(std::move(C));
+  }
+
+  const DynamicLibraryManager* Interpreter::getDynamicLibraryManager() const {
+    assert(m_Executor.get() && "We must have an executor");
+    return &m_Executor->getDynamicLibraryManager();
+  }
+  DynamicLibraryManager* Interpreter::getDynamicLibraryManager() {
+    return const_cast<DynamicLibraryManager*>(const_cast<const Interpreter*>(
+                                             this)->getDynamicLibraryManager());
   }
 
   const Transaction* Interpreter::getFirstTransaction() const {

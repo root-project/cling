@@ -59,7 +59,8 @@ namespace cling {
     const Interpreter& getInterpreter() const { return m_Interpreter; }
     bool isQuitRequested() const { return m_IsQuitRequested; }
 
-    ///\brief L command includes the given file or loads the given library.
+    ///\brief L command includes the given file or loads the given library. If
+    /// \c file is empty print the list of library paths.
     ///
     ///\param[in] file - The file/library to be loaded.
     ///\param[out] transaction - Transaction containing the loaded file.
@@ -139,7 +140,8 @@ namespace cling {
     ActionResult actOnUCommand(llvm::StringRef file);
 
     ///\brief Actions to be performed on add include path. It registers new
-    /// folder where header files can be searched.
+    /// folder where header files can be searched. If \c path is empty print the
+    /// list of include paths.
     ///
     ///\param[in] path - The path to add to header search.
     ///

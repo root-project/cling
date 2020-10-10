@@ -133,21 +133,22 @@ namespace cling {
   // FilePath := AnyString
   // AnyString := .*^('\t' Comment)
   bool MetaParser::isLCommand(MetaSema::ActionResult& actionResult) {
-    bool result = false;
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("L")) {
       consumeAnyStringToken(tok::comment);
+      llvm::StringRef filePath;
       if (getCurTok().is(tok::raw_ident)) {
-        result = true;
-        actionResult = m_Actions.actOnLCommand(getCurTok().getIdent());
+        filePath = getCurTok().getIdent();
         consumeToken();
         if (getCurTok().is(tok::comment)) {
           consumeAnyStringToken(tok::eof);
           m_Actions.actOnComment(getCurTok().getIdent());
         }
       }
+      actionResult = m_Actions.actOnLCommand(filePath);
+      return true;
     }
     // TODO: Some fine grained diagnostics
-    return result;
+    return false;
   }
 
   // T := 'T' FilePath Comment

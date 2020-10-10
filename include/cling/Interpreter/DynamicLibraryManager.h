@@ -20,7 +20,6 @@
 namespace cling {
   class Dyld;
   class InterpreterCallbacks;
-  class InvocationOptions;
 
   ///\brief A helper class managing dynamic shared objects.
   ///
@@ -59,10 +58,6 @@ namespace cling {
     DyLibs m_DyLibs;
     llvm::StringSet<> m_LoadedLibraries;
 
-    ///\brief Contains the list of the current include paths.
-    ///
-    const InvocationOptions& m_Opts;
-
     ///\brief System's include path, get initialized at construction time.
     ///
     SearchPathInfos m_SearchPaths;
@@ -95,7 +90,7 @@ namespace cling {
     ///
     static std::string getSymbolLocation(void* func);
   public:
-    DynamicLibraryManager(const InvocationOptions& Opts);
+    DynamicLibraryManager();
     ~DynamicLibraryManager();
     DynamicLibraryManager(const DynamicLibraryManager&) = delete;
     DynamicLibraryManager& operator=(const DynamicLibraryManager&) = delete;
@@ -112,8 +107,10 @@ namespace cling {
        return m_SearchPaths;
     }
 
-    void addSearchPath(llvm::StringRef dir) {
-      m_SearchPaths.emplace_back(SearchPathInfo{dir, /*IsUser*/ true});
+    void addSearchPath(llvm::StringRef dir, bool isUser = true,
+                       bool prepend = false) {
+      auto pos = prepend ? m_SearchPaths.begin() : m_SearchPaths.end();
+      m_SearchPaths.insert(pos, SearchPathInfo{dir, isUser});
     }
 
     ///\brief Looks up a library taking into account the current include paths
@@ -163,6 +160,8 @@ namespace cling {
     ///
     std::string searchLibrariesForSymbol(const std::string& mangledName,
                                          bool searchSystem = true) const;
+
+    void dump(llvm::raw_ostream* S = nullptr) const;
 
     /// On a success returns to full path to a shared object that holds the
     /// symbol pointed by func.

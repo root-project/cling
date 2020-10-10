@@ -12,8 +12,9 @@
 #include "IncrementalJIT.h"
 #include "Threading.h"
 
-#include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/Transaction.h"
+#include "cling/Interpreter/Value.h"
 #include "cling/Utils/AST.h"
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Platform.h"
@@ -112,6 +113,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
   : m_Diags(diags)
 #endif
 {
+  m_DyLibManager.initializeDyld([](llvm::StringRef){/*ignore*/ return false;});
 
   // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
   std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
@@ -379,6 +381,11 @@ IncrementalExecutor::executeWrapper(llvm::StringRef function,
   return kExeSuccess;
 }
 
+void IncrementalExecutor::setCallbacks(InterpreterCallbacks* callbacks) {
+  m_Callbacks = callbacks;
+  m_DyLibManager.setCallbacks(callbacks);
+}
+
 void
 IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
 {
@@ -465,6 +472,22 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
           << demangledName << "\n"
           << "Maybe you need to load the corresponding shared library?\n";
     }
+
+#ifdef __APPLE__
+    // The JIT gives us a mangled name which has only one leading underscore on
+    // all platforms, for instance _ZN8TRandom34RndmEv. However, on OSX the
+    // linker stores this symbol as __ZN8TRandom34RndmEv (adding an extra _).
+    assert(!llvm::StringRef(sym).startswith("__") && "Already added!");
+    std::string libName = m_DyLibManager.searchLibrariesForSymbol('_' + sym,
+                                                        /*searchSystem=*/ true);
+#else
+    std::string libName = m_DyLibManager.searchLibrariesForSymbol(sym,
+                                                        /*searchSystem=*/ true);
+#endif //__APPLE__
+    if (!libName.empty())
+      cling::errs() << "Symbol found in '" << libName << "';"
+                    << " did you mean to load it with '.L "
+                    << libName << "'?\n";
 
     //llvm::Function *ff = m_engine->FindFunctionNamed(i->c_str());
     // i could also reference a global variable, in which case ff == 0.

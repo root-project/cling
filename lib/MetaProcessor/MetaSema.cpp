@@ -41,6 +41,11 @@ namespace cling {
 
   MetaSema::ActionResult MetaSema::actOnLCommand(llvm::StringRef file,
                                              Transaction** transaction /*= 0*/){
+    if (file.empty()) {
+      m_Interpreter.DumpDynamicLibraryInfo();
+      return AR_Success;
+    }
+
     ActionResult result = actOnUCommand(file);
     if (result != AR_Success)
       return result;

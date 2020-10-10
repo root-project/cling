@@ -15,6 +15,7 @@
 #include "BackendPasses.h"
 #include "EnterUserCodeRAII.h"
 
+#include "cling/Interpreter/DynamicLibraryManager.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
@@ -44,6 +45,7 @@ namespace llvm {
 }
 
 namespace cling {
+  class DynamicLibraryManager;
   class IncrementalJIT;
   class Value;
 
@@ -142,6 +144,11 @@ namespace cling {
     ///\brief The list of llvm::Module-s to return the transaction
     /// after the JIT has emitted them.
     std::map<llvm::orc::VModuleKey, Transaction*> m_PendingModules;
+
+    /// Dynamic library manager object.
+    ///
+    DynamicLibraryManager m_DyLibManager;
+
   public:
     enum ExecutionResult {
       kExeSuccess,
@@ -158,9 +165,15 @@ namespace cling {
     void setExternalIncrementalExecutor(IncrementalExecutor *extIncrExec) {
       m_externalIncrementalExecutor = extIncrExec;
     }
-    void setCallbacks(InterpreterCallbacks* callbacks) {
-      m_Callbacks = callbacks;
+    void setCallbacks(InterpreterCallbacks* callbacks);
+
+    const DynamicLibraryManager& getDynamicLibraryManager() const {
+      return const_cast<IncrementalExecutor*>(this)->m_DyLibManager;
     }
+    DynamicLibraryManager& getDynamicLibraryManager() {
+      return m_DyLibManager;
+    }
+
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
     ///\brief Unload a set of JIT symbols.
