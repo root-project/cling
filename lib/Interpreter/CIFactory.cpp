@@ -50,6 +50,7 @@
 
 #include <cstdio>
 #include <ctime>
+#include <limits>
 #include <memory>
 
 using namespace clang;
@@ -463,6 +464,9 @@ namespace {
       }
 #endif //_GLIBCXX_USE_FLOAT128
     }
+    // Set char signedness to match how this file is built, i.e. flags like
+    // -f(no-)(un)signed-char.
+    Opts.CharIsSigned = std::numeric_limits<char>::is_signed;
   }
 
   // This must be a copy of clang::getClangToolFullVersion(). Luckily
