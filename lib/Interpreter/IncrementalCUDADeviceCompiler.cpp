@@ -157,6 +157,11 @@ namespace cling {
         additionalPtxOpt.push_back(s);
     }
 
+    // add manual path to CUDA SDK
+    if(!invocationOptions.CompilerOpts.CUDAPath.empty()){
+      additionalPtxOpt.push_back("--cuda-path=" + invocationOptions.CompilerOpts.CUDAPath);
+    }
+
     enum FatBinFlags {
       AddressSize64 = 0x01,
       HasDebugInfo = 0x02,
