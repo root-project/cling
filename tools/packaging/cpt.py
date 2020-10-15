@@ -212,18 +212,10 @@ def fetch_llvm(llvm_revision):
         return
 
     def checkout():
-        if LLVM_BRANCH:
-            exec_subprocess_call('git checkout %s' % LLVM_BRANCH, srcdir)
-        else:
-            exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, srcdir)
+        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, srcdir)
 
     def get_fresh_llvm():
-        if LLVM_BRANCH:
-            exec_subprocess_call('git clone --depth=10 --branch %s %s %s'
-                                 % (LLVM_BRANCH, LLVM_GIT_URL, srcdir), workdir)
-        else:
-            exec_subprocess_call('git clone %s %s' % (LLVM_GIT_URL, srcdir), workdir)
-
+        exec_subprocess_call('git clone %s %s' % (LLVM_GIT_URL, srcdir), workdir)
         checkout()
 
     def update_old_llvm():
@@ -232,13 +224,9 @@ def fetch_llvm(llvm_revision):
         # exec_subprocess_call('git clean -f -x -d', srcdir)
 
         checkout()
-
-        if LLVM_BRANCH:
-            exec_subprocess_call('git pull origin %s' % LLVM_BRANCH, srcdir)
-        else:
-            exec_subprocess_call('git fetch --tags', srcdir)
-            exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s'
-                                 % llvm_revision, srcdir)
+        exec_subprocess_call('git fetch --tags', srcdir)
+        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s'
+                                % llvm_revision, srcdir)
 
     if os.path.isdir(srcdir):
         update_old_llvm()
@@ -346,18 +334,10 @@ def fetch_clang(llvm_revision):
     global clangdir
     clangdir = os.path.join(dir, 'clang')
     def checkout():
-       if CLANG_BRANCH:
-           exec_subprocess_call('git checkout %s' % CLANG_BRANCH, clangdir)
-       else:
-           exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, clangdir)
+        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, clangdir)
 
     def get_fresh_clang():
-        if CLANG_BRANCH:
-            exec_subprocess_call('git clone --depth=10 --branch %s %s'
-                                 % (CLANG_BRANCH, CLANG_GIT_URL), dir)
-        else:
-            exec_subprocess_call('git clone %s' % CLANG_GIT_URL, dir)
-
+        exec_subprocess_call('git clone %s' % CLANG_GIT_URL, dir)
         checkout()
 
     def update_old_clang():
@@ -368,12 +348,9 @@ def fetch_clang(llvm_revision):
         exec_subprocess_call('git fetch --tags', clangdir)
 
         checkout()
-        if CLANG_BRANCH:
-            exec_subprocess_call('git pull origin %s' % CLANG_BRANCH, clangdir)
-        else:
-            exec_subprocess_call('git fetch --tags', clangdir)
-            exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s' % llvm_revision,
-                                  clangdir)
+        exec_subprocess_call('git fetch --tags', clangdir)
+        exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s' % llvm_revision,
+                                clangdir)
 
     if os.path.isdir(clangdir):
         update_old_clang()
@@ -582,9 +559,8 @@ def compile(arg):
 
     build.make('clang cling' if CLING_BRANCH else 'cling')
 
-    if not CLING_BRANCH:
-        box_draw("Install compiled binaries to prefix (using %d cores)" % build.cores)
-        build.make('install')
+    box_draw("Install compiled binaries to prefix (using %d cores)" % build.cores)
+    build.make('install')
 
     if TRAVIS_BUILD_DIR:
         ### Run cling once, dumping the include paths, helps debug issues
@@ -622,9 +598,8 @@ def compile_for_binary(arg):
     box_draw('Building %s (using %d cores)' % ("cling", multiprocessing.cpu_count()))
     exec_subprocess_call('make -j%d %s' % (multiprocessing.cpu_count(), "cling"), LLVM_OBJ_ROOT)
 
-    if not CLING_BRANCH:
-        box_draw("Install compiled binaries to prefix (using %d cores)" % build.cores)
-        build.make('install')
+    box_draw("Install compiled binaries to prefix (using %d cores)" % build.cores)
+    build.make('install')
 
     if TRAVIS_BUILD_DIR:
         ### Run cling once, dumping the include paths, helps debug issues
@@ -1886,6 +1861,7 @@ parser.add_argument('--with-clang-url', action='store', help='Specify an alterna
                     default='http://root.cern.ch/git/clang.git')
 parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo',
                     default='https://github.com/root-project/cling.git')
+parser.add_argument('--cling-branch', help='Specify a particular Cling branch')
 
 parser.add_argument('--with-binary-llvm', help='Download LLVM binary and use it to build Cling in dev mode', action='store_true')
 parser.add_argument('--with-llvm-tar', help='Download and use LLVM binary release tar to build Cling for debugging', action='store_true')
@@ -2043,13 +2019,9 @@ if args.get('stdlib') and EXTRA_CMAKE_FLAGS.find('-DLLVM_ENABLE_LIBCXX=') != -1:
     parser.print_help()
     raise SystemExit
 
-CLING_BRANCH = CLANG_BRANCH = LLVM_BRANCH = None
-if args['current_dev']:
-    cDev = args['current_dev']
-    if cDev.startswith('branch:'):
-      CLING_BRANCH = CLANG_BRANCH = LLVM_BRANCH = cDev[7:]
-    elif cDev.startswith('branches:'):
-      CLING_BRANCH, CLANG_BRANCH, LLVM_BRANCH = cDev[9:].split(',')
+CLING_BRANCH = None
+if args['current_dev'] and args['cling_branch']:
+    CLING_BRANCH = args['cling_branch']
 
 print('Cling Packaging Tool (CPT)')
 print('Arguments vector: ' + str(sys.argv))
@@ -2342,13 +2314,6 @@ if args['current_dev']:
                 build_filecheck()
             test_cling()
         make_dmg()
-        cleanup()
-
-    elif args['current_dev'].startswith('branch'):
-        compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')))
-        #install_prefix()
-        if not args['no_test']:
-            test_cling()
         cleanup()
 
     elif args['current_dev'] == 'pkg':
