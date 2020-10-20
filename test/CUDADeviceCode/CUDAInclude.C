@@ -9,7 +9,7 @@
 
 // The test checks whether setting a new include path at runtime also works for
 // the PTX compiler.
-// RUN: cat %s | %cling -DTEST_PATH="\"%/p/\"" -x cuda -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -DTEST_PATH="\"%/p/\"" -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 #include <iostream>

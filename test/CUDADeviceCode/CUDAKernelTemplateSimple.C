@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 
 // The Test checks if templated CUDA kernel works.
-// RUN: cat %s | %cling -x cuda -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 // Check if template device side resoultion works.

@@ -9,7 +9,7 @@
 
 // The Test checks if a CUDA compatible device is available and checks, if simple
 // __global__ and __device__ kernels are running.
-// RUN: cat %s | %cling -x cuda -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 // Check if cuda driver is available
