@@ -9,7 +9,7 @@
 
 // The test checks if the interface functions process(), declare() and parse()
 // of cling::Interpreter also work in the cuda mode.
-// RUN: cat %s | %cling -DTEST_PATH="\"%/p/\"" -x cuda -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -DTEST_PATH="\"%/p/\"" -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 #include "cling/Interpreter/Interpreter.h"

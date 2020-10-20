@@ -9,7 +9,7 @@
 
 // The Test checks if a CUDA kernel works with a arguments and built-in
 // functions.
-// RUN: cat %s | %cling -x cuda -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 // Test, if a simple kernel with arguments works.
