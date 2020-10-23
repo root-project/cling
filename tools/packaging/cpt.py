@@ -132,10 +132,7 @@ def box_draw(msg):
 
 
 def pip_install(package):
-    # Needs brew install python. We should only install if we need the
-    # functionality
-    import pip
-    pip.main(['install', '--ignore-installed', '--prefix', os.path.join(workdir, 'pip'), '--upgrade', package])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
 
 
 def wget(url, out_dir, rename_file=None, retries=3):
@@ -841,20 +838,6 @@ def check_ubuntu(pkg):
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
             return True
-    elif pkg == "python-pip":
-        if exec_subprocess_check_output('pip --version', workdir) != '':
-            print(pkg.ljust(20) + '[OK]'.ljust(30))
-            return True
-        else:
-            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
-            return False
-    elif pkg == "python3-pip":
-        if exec_subprocess_check_output('pip --version', workdir) != '':
-            print(pkg.ljust(20) + '[OK]'.ljust(30))
-            return True
-        else:
-            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
-            return False
     elif pkg == "subversion":
         if exec_subprocess_check_output('which svn', workdir) != '':
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -1668,13 +1651,6 @@ def check_mac(pkg):
             # Python 3.x
             print(pkg.ljust(20) + '[SUPPORTED]'.ljust(30))
             return True
-    elif pkg == "python-pip":
-        if exec_subprocess_check_output('pip --version', workdir) != '':
-            print(pkg.ljust(20) + '[OK]'.ljust(30))
-            return True
-        else:
-            print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
-            return False
     elif pkg == "svn":
         if exec_subprocess_check_output('which svn', workdir) != '':
             print(pkg.ljust(20) + '[OK]'.ljust(30))
@@ -1957,23 +1933,10 @@ elif OS == 'Linux':
     except:
         yes = {'yes', 'y', 'ye', ''}
         choice = custom_input('''
-            CPT will now attempt to install the distro (and pip) package automatically.
+            CPT will now attempt to install the distro package automatically.
             Do you want to continue? [yes/no]: ''', args['y']).lower()
         if choice in yes:
-            if sys.version_info[0] == 3:
-                pipver = 'python3-pip'
-            else:
-                pipver = 'python2-pip'
-            if check_ubuntu(pipver) is False:
-                subprocess.Popen(['sudo apt-get install {0}'.format(pipver)],
-                                shell=True,
-                                stdin=subprocess.PIPE,
-                                stdout=None,
-                                stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
-            if sys.version_info[0] == 3:
-                subprocess.call("sudo pip3 install distro", shell=True)
-            else:
-                subprocess.call("sudo pip install distro", shell=True)
+            pip_install("distro")
             import distro
         else:
             print('Install/update the distro package from pip')
