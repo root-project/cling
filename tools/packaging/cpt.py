@@ -368,10 +368,10 @@ def fetch_cling(arg):
 
     def get_fresh_cling():
         if CLING_BRANCH:
-            exec_subprocess_call('git clone --depth=10 --branch %s %s'
+            exec_subprocess_call('git clone --depth=10 --branch %s %s cling'
                                  % (CLING_BRANCH, CLING_GIT_URL), os.path.join(dir, 'tools'))
         else:
-            exec_subprocess_call('git clone %s' % CLING_GIT_URL, os.path.join(dir, 'tools'))
+            exec_subprocess_call('git clone %s cling' % CLING_GIT_URL, os.path.join(dir, 'tools'))
 
         # if arg == 'last-stable':
         #    checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1',
