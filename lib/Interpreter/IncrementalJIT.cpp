@@ -277,7 +277,20 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   m_TM(std::move(TM)),
   m_TMDataLayout(m_TM->createDataLayout()),
   m_Resolver(llvm::orc::createSymbolResolver(
-    [&](const llvm::orc::SymbolNameSet &Symbols) { return Symbols; },
+    [&](const llvm::orc::SymbolNameSet &Symbols) {
+      llvm::orc::SymbolNameSet ret(Symbols);
+      for (auto I = ret.begin(), E = ret.end(); I != E; ++I) {
+        std::string symName = (**I).str();
+        if (auto Sym = getInjectedSymbols(symName)) {
+          if (!Sym.getAddress())
+            llvm_unreachable("Handle the error case");
+          ret.erase(I);
+        } else if (m_ExeMM->findSymbol(symName)) {
+          ret.erase(I);
+        }
+      }
+      return ret;
+    },
     [&](std::shared_ptr<llvm::orc::AsynchronousSymbolQuery> Q,
         llvm::orc::SymbolNameSet Symbols) {
       return llvm::orc::lookupWithLegacyFn(m_ES, *Q, Symbols,
