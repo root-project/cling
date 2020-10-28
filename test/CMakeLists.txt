@@ -38,6 +38,9 @@ endif()
 if (TARGET not)
   list(APPEND CLING_TEST_DEPS not)
 endif()
+if (TARGET count)
+  list(APPEND CLING_TEST_DEPS count)
+endif()
 if (TARGET clang)
   list(APPEND CLING_TEST_DEPS clang)
 endif()
@@ -48,6 +51,7 @@ set(CLING_TEST_PARAMS
 
 add_custom_target(cling-test-depends DEPENDS clingDemoPlugin ${CLING_TEST_DEPS})
 
+set(LLVM_LIT_OUTPUT_DIR "${LLVM_BINARY_DIR}/bin")
 add_lit_testsuite(check-cling "Running the Cling regression tests"
   ${CMAKE_CURRENT_BINARY_DIR}
   PARAMS ${CLING_TEST_PARAMS}
