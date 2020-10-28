@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %built_cling -fno-rtti | FileCheck %s
+// RUN: cat %s | %cling -fno-rtti | FileCheck %s
 
 // The test verifies the expected behavior in cling::utils::Transform class,
 // which is supposed to provide different transformation of AST nodes and types.

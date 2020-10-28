@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %built_cling -I%p 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -I%p 2>&1 | FileCheck %s
 
 // Test failures of dynamic lookups.
 

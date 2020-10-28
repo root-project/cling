@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %built_cling -fno-rtti -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -fno-rtti -Xclang -verify 2>&1 | FileCheck %s
 
 // Test that user can override the DiagnosicsClient without error
 

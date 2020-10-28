@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %built_cling -I%p | FileCheck %s
+// RUN: cat %s | %cling -I%p | FileCheck %s
 
 // The tests shows the basic control flow structures that contain dynamic
 // expressions. There are several cases that could be distinguished.

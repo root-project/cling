@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %built_cling -I%p | FileCheck %s
+// RUN: cat %s | %cling -I%p | FileCheck %s
 // We should revise the destruction of the LifetimeHandlers, because
 // its destructor uses gCling and the CompilerInstance, which are
 // already gone

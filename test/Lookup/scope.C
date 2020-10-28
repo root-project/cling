@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %built_cling -fno-rtti 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -fno-rtti 2>&1 | FileCheck %s
 // Test findScope, which is essentially is a DeclContext.
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/LookupHelper.h"
