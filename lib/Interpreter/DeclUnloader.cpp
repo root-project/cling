@@ -389,14 +389,12 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
     DeclContext* DC = D->getLexicalDeclContext();
 
-    bool Successful = true;
     if (DC->containsDecl(D))
       DC->removeDecl(D);
 
-    // With the bump allocator this is nop.
-    if (Successful)
-      m_Sema->getASTContext().Deallocate(D);
-    return Successful;
+    // With the bump allocator this is a no-op.
+    m_Sema->getASTContext().Deallocate(D);
+    return true;
   }
 
   // Remove a decl and possibly it's parent entry in lookup tables.
