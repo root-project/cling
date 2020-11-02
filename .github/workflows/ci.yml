@@ -20,39 +20,58 @@ jobs:
           - name: ubuntu-16.04-gcc
             os: ubuntu-16.04
             compiler: gcc
+            python-version: 3.8
 
           - name: ubuntu-16.04-clang
             os: ubuntu-16.04
             compiler: clang
+            python-version: 3.8
 
           - name: ubuntu-18.04-gcc
             os: ubuntu-18.04
             compiler: gcc
+            python-version: 3.8
 
           - name: ubuntu-18.04-clang
             os: ubuntu-18.04
             compiler: clang
+            python-version: 3.8
 
           - name: ubuntu-20.04-gcc-compile
             os: ubuntu-20.04
             compiler: gcc
+            python-version: 3.8
+
+          - name: ubuntu-20.04-gcc-compile-py2
+            os: ubuntu-20.04
+            compiler: gcc
+            python-version: 2.7
 
           - name: ubuntu-20.04-clang-compile
             os: ubuntu-20.04
             compiler: clang
+            python-version: 3.8
 
           - name: macos-10.15-xcode-11.2.1-fromtar
             os: macOS-10.15
             compiler: clang
             xcode-version: "11.2.1"
+            python-version: 3.8
 
           - name: macos-10.15-gcc-9-compile
             os: macOS-10.15
             compiler: gcc
             version: "9"
+            python-version: 3.8
 
     steps:
     - uses: actions/checkout@v2
+    - name: Setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Display Python version
+      run: python -V
     - name: Setup compiler on Linux
       run: |
         sudo apt-get update
@@ -96,10 +115,10 @@ jobs:
         fi
         export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_ENABLE_WARNINGS=OFF -DCLING_ENABLE_WARNINGS=ON"
         if [[ ${{ matrix.name }} == *"compile"* ]]; then
-          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }}
+          python cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }}
         elif [[ ${{ matrix.name }} == *"fromtar"* ]]; then
-          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }} --with-binary-llvm --with-llvm-tar
+          python cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }} --with-binary-llvm --with-llvm-tar
         else
-          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }} --with-binary-llvm
+          python cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }} --with-binary-llvm
         fi
       working-directory: tools/packaging/
