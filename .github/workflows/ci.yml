@@ -83,6 +83,11 @@ jobs:
       run: $CC --version
     - name: Execute cpt
       run: |
+        if [ ${{ github.event_name }} = 'pull_request' ]; then
+          REPO="${{ github.event.pull_request.head.repo.full_name }}"
+        else
+          REPO="$GITHUB_REPOSITORY"
+        fi
         if [[ "${{ matrix.compiler }}" = "gcc" && "${{ matrix.version }}" = "7" ]]; then
           export CLING_BUILD_FLAGS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
           if [ "${{ matrix.os }}" != "macOS-11.0" ] | [ "${{ matrix.os }}" != "macOS-10.15" ]; then
@@ -91,10 +96,10 @@ jobs:
         fi
         export CLING_BUILD_FLAGS="$CLING_BUILD_FLAGS -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_ENABLE_WARNINGS=OFF -DCLING_ENABLE_WARNINGS=ON"
         if [[ ${{ matrix.name }} == *"compile"* ]]; then
-          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$GITHUB_REPOSITORY --cling-branch=${{ github.head_ref }}
+          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }}
         elif [[ ${{ matrix.name }} == *"fromtar"* ]]; then
-          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$GITHUB_REPOSITORY --cling-branch=${{ github.head_ref }} --with-binary-llvm --with-llvm-tar
+          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }} --with-binary-llvm --with-llvm-tar
         else
-          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$GITHUB_REPOSITORY --cling-branch=${{ github.head_ref }} --with-binary-llvm
+          ./cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }} --with-binary-llvm
         fi
       working-directory: tools/packaging/
