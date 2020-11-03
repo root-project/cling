@@ -870,9 +870,15 @@ namespace cling {
     Preprocessor& PP = getCI()->getPreprocessor();
     IdentifierInfo* II = PP.getIdentifierInfo(M->Name);
     SourceLocation ValidLoc = getNextAvailableLoc();
+
+    // Don't push the ImportDecl into a ClassDecl or whatever - who knows which
+    // context triggered this import!
+    DeclContext *OldDC = getSema().CurContext;
+    getSema().CurContext = getSema().getASTContext().getTranslationUnitDecl();
     bool success =
       !getSema().ActOnModuleImport(ValidLoc, /*ExportLoc*/ {}, ValidLoc,
                                    std::make_pair(II, ValidLoc)).isInvalid();
+    getSema().CurContext = OldDC;
 
     if (success) {
       // Also make the module visible in the preprocessor to export its macros.
