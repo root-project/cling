@@ -811,8 +811,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   }
 
   void DeclUnloader::MaybeRemoveDeclFromModule(GlobalDecl& GD) const {
-    if (!m_CurTransaction
-        || !m_CurTransaction->getModule()) // syntax-only mode exit
+    if (!m_CurTransaction || !m_CodeGen) // syntax-only mode exit
       return;
 
     using namespace llvm;
@@ -879,12 +878,14 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
         }
       }
 
-      auto M = m_CurTransaction->getModule();
-      GlobalValue* GV = M->getNamedValue(mangledName);
-      if (GV) { // May be deferred decl and thus 0
-        GlobalValueEraser GVEraser(m_CodeGen);
-        GVEraser.EraseGlobalValue(GV);
+      if (auto M = m_CurTransaction->getModule()) {
+        GlobalValue* GV = M->getNamedValue(mangledName);
+        if (GV) { // May be deferred decl and thus 0
+          GlobalValueEraser GVEraser(m_CodeGen);
+          GVEraser.EraseGlobalValue(GV);
+        }
       }
+      // DeferredDecls exist even without Module.
       m_CodeGen->forgetDecl(GD, mangledName);
     }
   }
