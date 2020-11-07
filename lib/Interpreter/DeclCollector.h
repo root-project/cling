@@ -96,7 +96,6 @@ namespace cling {
     bool HandleTopLevelDecl(clang::DeclGroupRef DGR) final;
     void HandleInterestingDecl(clang::DeclGroupRef DGR) final;
     void HandleTagDeclDefinition(clang::TagDecl* TD) final;
-    void HandleInvalidTagDeclDefinition(clang::TagDecl* TD) final;
     void HandleVTable(clang::CXXRecordDecl* RD) final;
     void CompleteTentativeDefinition(clang::VarDecl* VD) final;
     void HandleTranslationUnit(clang::ASTContext& Ctx) final;

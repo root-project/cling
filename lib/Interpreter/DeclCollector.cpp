@@ -263,22 +263,14 @@ namespace cling {
     Transaction::DelayCallInfo DCI(DeclGroupRef(TD),
                                    Transaction::kCCIHandleTagDeclDefinition);
     m_CurTransaction->append(DCI);
+    if (TD->isInvalidDecl()) {
+       m_CurTransaction->setIssuedDiags(Transaction::kErrors);
+       return;
+    }
     if (m_Consumer
         && (!comesFromASTReader(DeclGroupRef(TD))
             || !shouldIgnore(TD)))
       m_Consumer->HandleTagDeclDefinition(TD);
-  }
-
-  void DeclCollector::HandleInvalidTagDeclDefinition(clang::TagDecl *TD){
-    assertHasTransaction(m_CurTransaction);
-    Transaction::DelayCallInfo DCI(DeclGroupRef(TD),
-                                   Transaction::kCCIHandleTagDeclDefinition);
-    m_CurTransaction->append(DCI);
-    m_CurTransaction->setIssuedDiags(Transaction::kErrors);
-    if (m_Consumer
-        && (!comesFromASTReader(DeclGroupRef(TD))
-            || !shouldIgnore(TD)))
-      m_Consumer->HandleInvalidTagDeclDefinition(TD);
   }
 
   void DeclCollector::HandleVTable(CXXRecordDecl* RD) {
