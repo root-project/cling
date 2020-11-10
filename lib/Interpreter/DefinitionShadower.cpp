@@ -46,6 +46,18 @@ namespace cling {
     return true;
   }
 
+  /// \brief Returns whether the given declaration is a template instantiation
+  /// or specialization.
+  static bool isInstantiationOrSpecialization(const Decl *D) {
+    if (auto FD = dyn_cast<FunctionDecl>(D))
+      return FD->isTemplateInstantiation() || FD->isFunctionTemplateSpecialization();
+    if (auto CTSD = dyn_cast<ClassTemplateSpecializationDecl>(D))
+      return CTSD->getSpecializationKind() != TSK_Undeclared;
+    if (auto VTSD = dyn_cast<VarTemplateSpecializationDecl>(D))
+      return VTSD->getSpecializationKind() != TSK_Undeclared;
+    return false;
+  }
+
   DefinitionShadower::DefinitionShadower(Sema& S, Interpreter& I)
           : ASTTransformer(&S), m_Context(S.getASTContext()), m_Interp(I),
             m_TU(S.getASTContext().getTranslationUnitDecl())
@@ -57,9 +69,6 @@ namespace cling {
   }
 
   void DefinitionShadower::hideDecl(clang::NamedDecl *D) const {
-    assert(isClingShadowNamespace(D->getDeclContext())
-             && "D not in a __cling_N5xxx namespace?");
-
     // FIXME: this hides a decl from SemaLookup (there is no unloading). For
     // (large) L-values, this might be a memory leak. Should this be fixed?
     if (Scope* S = m_Sema->getScopeForContext(m_TU)) {
@@ -82,8 +91,6 @@ namespace cling {
 
     for (auto Prev : Previous) {
       if (Prev == D)
-        continue;
-      if (!isClingShadowNamespace(Prev->getDeclContext()))
         continue;
       if (isDefinition(Prev) && !isDefinition(D))
         continue;
@@ -148,15 +155,19 @@ namespace cling {
 
   ASTTransformer::Result DefinitionShadower::Transform(Decl* D) {
     Transaction *T = getTransaction();
-    const CompilationOptions &CO = T->getCompilationOpts();
-    // Global declarations whose origin is the Cling prompt are subject to be
-    // nested in a `__cling_N5' namespace.
-    if (!CO.EnableShadowing
-        || D->getLexicalDeclContext() != m_TU || D->isInvalidDecl()
-        || isa<UsingDirectiveDecl>(D) || isa<UsingDecl>(D)
-        // FIXME: NamespaceDecl requires additional processing (TBD)
-        || isa<NamespaceDecl>(D)
-        || (isa<FunctionDecl>(D) && cast<FunctionDecl>(D)->isTemplateInstantiation())
+    if (!T->getCompilationOpts().EnableShadowing)
+      return Result(D, true);
+
+    // For variable templates, Transform() is invoked with a VarDecl; get the
+    // corresponding VarTemplateDecl.
+    if (auto VD = dyn_cast<VarDecl>(D))
+      if (auto VTD = VD->getDescribedVarTemplate())
+        D = VTD;
+
+    // Disable definition shadowing for some specific cases.
+    if (D->getLexicalDeclContext() != m_TU || D->isInvalidDecl()
+        || isa<UsingDirectiveDecl>(D) || isa<UsingDecl>(D) || isa<NamespaceDecl>(D)
+        || isInstantiationOrSpecialization(D)
         || !typedInClingPrompt(FullSourceLoc{D->getLocation(),
                                              m_Context.getSourceManager()}))
       return Result(D, true);
