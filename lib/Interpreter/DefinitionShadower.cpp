@@ -19,6 +19,8 @@
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Sema.h"
 
+#include <algorithm>
+
 using namespace clang;
 
 namespace cling {
@@ -77,8 +79,15 @@ namespace cling {
         m_Sema->IdResolver.RemoveDecl(D);
     }
     clang::StoredDeclsList &SDL = (*m_TU->getLookupPtr())[D->getDeclName()];
-    if (SDL.getAsVector() || SDL.getAsDecl() == D)
-      SDL.remove(D);
+    if (SDL.getAsDecl() == D) {
+      SDL.setOnlyValue(nullptr);
+    }
+    if (auto Vec = SDL.getAsVector()) {
+      // FIXME: investigate why StoredDeclList has duplicated entries coming from PCM.
+      Vec->erase(std::remove_if(Vec->begin(), Vec->end(),
+                                [D](Decl *Other) { return cast<Decl>(D) == Other; }),
+                 Vec->end());
+    }
 
     if (InterpreterCallbacks *IC = m_Interp.getCallbacks())
       IC->DefinitionShadowed(D);
