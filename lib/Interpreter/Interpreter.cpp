@@ -207,7 +207,7 @@ namespace cling {
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
     m_DynamicLookupEnabled(false), m_RawInputEnabled(false),
-    m_RedefinitionAllowed(false),
+    m_RuntimeOptions{},
     m_OptLevel(parentInterp ? parentInterp->m_OptLevel : -1) {
 
     if (handleSimpleOptions(m_Opts))
@@ -442,7 +442,8 @@ namespace cling {
         Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
         if (EmitDefinitions)
           Strm << "namespace cling { class Interpreter; namespace runtime { "
-                  "Interpreter* gCling=(Interpreter*)" << ThisP << ";}}\n";
+                  "Interpreter* gCling=(Interpreter*)" << ThisP << ";\n"
+                  "RuntimeOptions* gClingOpts=(RuntimeOptions*)" << &this->m_RuntimeOptions << ";}}\n";
       } else {
         Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
              << "void* gCling";
@@ -806,7 +807,7 @@ namespace cling {
       wrapPoint = utils::getWrapPoint(wrapReadySource, getCI()->getLangOpts());
 
     CompilationOptions CO = makeDefaultCompilationOpts();
-    CO.EnableShadowing = m_RedefinitionAllowed && !isRawInputEnabled();
+    CO.EnableShadowing = m_RuntimeOptions.AllowRedefinition && !isRawInputEnabled();
 
     if (isRawInputEnabled() || wrapPoint == std::string::npos) {
       CO.DeclarationExtraction = 0;

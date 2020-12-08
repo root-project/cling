@@ -6,6 +6,7 @@ module Cling_Interpreter {
 
   // Only included at runtime.
   exclude header "Interpreter/RuntimeUniverse.h"
+  exclude header "Interpreter/RuntimeOptions.h"
   exclude header "Interpreter/DynamicLookupRuntimeUniverse.h"
   exclude header "Interpreter/RuntimePrintValue.h"
 

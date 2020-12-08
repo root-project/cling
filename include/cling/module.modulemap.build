@@ -1,6 +1,7 @@
 // Only included at runtime.
 module Cling_Runtime {
   module "RuntimeUniverse.h" { header "Interpreter/RuntimeUniverse.h" export * }
+  module "RuntimeOptions.h" { header "Interpreter/RuntimeOptions.h" export * }
   module "DynamicLookupRuntimeUniverse.h" { header "Interpreter/DynamicLookupRuntimeUniverse.h" export * }
   module "RuntimePrintValue.h" { header "Interpreter/RuntimePrintValue.h" export * }
   export *

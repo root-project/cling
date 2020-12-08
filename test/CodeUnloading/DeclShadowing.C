@@ -9,8 +9,7 @@
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
 #include <type_traits>
 #include <cstdlib>
-#include "cling/Interpreter/Interpreter.h"
-cling::runtime::gCling->allowRedefinition();
+cling::runtime::gClingOpts->AllowRedefinition = 1;
 
 // ==== Test UsingDirectiveDecl/UsingDecl
 // These should not be nested into a `__cling_N5xxx' namespace (but placed at

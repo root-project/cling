@@ -23,6 +23,7 @@
 
 #ifdef __cplusplus
 
+#include <cling/Interpreter/RuntimeOptions.h>
 #include <new>
 
 namespace cling {
@@ -37,6 +38,9 @@ namespace cling {
     /// interprets itself. This is particularly important for implementing
     /// the dynamic scopes and the runtime bindings
     extern Interpreter* gCling;
+
+    /// \brief Configuration bits for the parent interpreter.
+    extern RuntimeOptions* gClingOpts;
 
     namespace internal {
       /// \brief Some of clang's routines rely on valid source locations and
