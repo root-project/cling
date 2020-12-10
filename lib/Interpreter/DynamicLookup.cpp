@@ -734,9 +734,12 @@ namespace cling {
         cling::errs() << "Error while creating dynamic expression for:\n  ";
         SubTree->printPretty(cling::errs(), 0 /*PrinterHelper*/,
                              m_Context->getPrintingPolicy(), 2);
+        cling::errs() << "\n";
+#ifndef NDEBUG
         cling::errs() <<
-          "\nwith internal representation (look for <dependent type>):\n";
+          "with internal representation (look for <dependent type>):\n";
         SubTree->dump(cling::errs(), m_Sema->getSourceManager());
+#endif
         return SubTree;
       }
       m_Sema->ImpCastExprToType(UnOp,
