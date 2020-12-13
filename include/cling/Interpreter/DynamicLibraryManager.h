@@ -97,6 +97,9 @@ namespace cling {
   public:
     DynamicLibraryManager(const InvocationOptions& Opts);
     ~DynamicLibraryManager();
+    DynamicLibraryManager(const DynamicLibraryManager&) = delete;
+    DynamicLibraryManager& operator=(const DynamicLibraryManager&) = delete;
+
     InterpreterCallbacks* getCallbacks() { return m_Callbacks; }
     const InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
     void setCallbacks(InterpreterCallbacks* C) { m_Callbacks = C; }
