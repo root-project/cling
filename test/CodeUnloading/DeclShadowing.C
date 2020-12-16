@@ -9,6 +9,8 @@
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
 #include <type_traits>
 #include <cstdlib>
+#include <string>
+
 cling::runtime::gClingOpts->AllowRedefinition = 1;
 
 // ==== Test UsingDirectiveDecl/UsingDecl
