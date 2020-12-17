@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -fno-rtti 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -Xclang -verify -fno-rtti 2>&1 | FileCheck %s
 // Test findClassTemplate, which is esentially is a DeclContext.
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/LookupHelper.h"
@@ -56,3 +56,25 @@ printf("tmplt_vec: 0x%lx\n", (unsigned long) tmplt_vec);
 tmplt_vec->getQualifiedNameAsString().c_str()
 //CHECK-NEXT: ({{[^)]+}}) "std::{{(__1::)?}}vector"
 
+
+// "Error recovery": do not unload an existing template specialization.
+.rawInput 1
+template <class T, int I> class TheTemplate;
+// Add a typedef which continues to need the template specialization above.
+typedef TheTemplate<float, 2> TheTypedef;
+.rawInput 0
+ // This will *fail* because it requires a *definition* of the specialization.
+lookup.findScope("TheTemplate<float, 2>", cling::LookupHelper::NoDiagnostics);
+// This is the test: can we re-declare this?
+// If there's an error
+//    typedef redefinition with different types
+//      ('TheTemplate<...>' vs 'TheTemplate<...>')
+// then Lookup unloaded the specialization, and it gets re-instantiated
+// due to the second typedef, whose type now doesn't match that of the
+// previous typedef, because their ClassTemplateSpecializationDecls are
+// not the same.
+.rawInput 1
+typedef TheTemplate<float, 2> TheTypedef;
+.rawInput 0
+
+ //expected-no-diagnostics

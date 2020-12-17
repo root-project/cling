@@ -716,8 +716,13 @@ namespace cling {
                         }
                       } else {
                         // NOTE: We cannot instantiate the scope: not a valid decl.
-                        // Need to rollback transaction.
-                        UnloadDecl(&S, TD);
+                        // Need to unload it if this decl is a definition.
+                        // But do not unload pre-existing fwd decls. Note that this might have failed
+                        // because several other Decls failed to instantiate, leaving several Decls
+                        // in invalid state. We should be unloading all of them, i.e. inload the
+                        // current (possibly nested) transaction.
+                        auto *T = const_cast<Transaction*>(m_Interpreter->getCurrentTransaction());
+                        m_Interpreter->unload(*T);
                         *setResultType = nullptr;
                         return 0;
                       }
