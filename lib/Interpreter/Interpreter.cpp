@@ -106,6 +106,8 @@ namespace cling {
   }
 
   void Interpreter::PushTransactionRAII::pop() const {
+    if (m_Transaction->getState() == Transaction::kRolledBack)
+      return;
     IncrementalParser::ParseResultTransaction PRT
       = m_Interpreter->m_IncrParser->endTransaction(m_Transaction);
     if (PRT.getPointer()) {
