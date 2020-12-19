@@ -9,16 +9,26 @@
 //------------------------------------------------------------------------------
 
 #include "cling/Interpreter/DynamicLibraryManager.h"
+#include "cling/Utils/Paths.h"
+#include "cling/Utils/Platform.h"
 #include "cling/Utils/Output.h"
 
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/StringSet.h"
+#include "llvm/ADT/StringMap.h"
+#include "llvm/BinaryFormat/MachO.h"
 #include "llvm/Object/COFF.h"
+#include "llvm/Object/ELF.h"
 #include "llvm/Object/ELFObjectFile.h"
+#include "llvm/Object/MachO.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/Error.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/Program.h"
+#include "llvm/Support/Format.h"
+#include "llvm/Support/WithColor.h"
 
 #include <algorithm>
 #include <list>
@@ -26,13 +36,18 @@
 #include <unordered_set>
 #include <vector>
 
+
 #ifdef LLVM_ON_UNIX
 #include <dlfcn.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #endif // LLVM_ON_UNIX
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#include <sys/stat.h>
+#undef LC_LOAD_DYLIB
+#undef LC_RPATH
 #endif // __APPLE__
 
 #ifdef _WIN32
@@ -113,7 +128,6 @@ struct BloomFilter {
 
 };
 
-
 /// An efficient representation of a full path to a library which does not
 /// duplicate common path patterns reducing the overall memory footprint.
 ///
@@ -125,15 +139,12 @@ struct BloomFilter {
 struct LibraryPath {
   const BasePath& m_Path;
   std::string m_LibName;
-  std::string m_FullName;
   BloomFilter m_Filter;
   llvm::StringSet<> m_Symbols;
+  //std::vector<const LibraryPath*> m_LibDeps;
 
   LibraryPath(const BasePath& Path, const std::string& LibName)
     : m_Path(Path), m_LibName(LibName) {
-    llvm::SmallString<512> Vec(m_Path);
-    llvm::sys::path::append(Vec, llvm::StringRef(m_LibName));
-    m_FullName = Vec.str().str();
   }
 
   bool operator==(const LibraryPath &other) const {
@@ -141,8 +152,10 @@ struct LibraryPath {
       m_LibName == other.m_LibName;
   }
 
-  const std::string& GetFullName() const {
-    return m_FullName;
+  const std::string GetFullName() const {
+    llvm::SmallString<512> Vec(m_Path);
+    llvm::sys::path::append(Vec, llvm::StringRef(m_LibName));
+    return Vec.str().str();
   }
 
   void AddBloom(llvm::StringRef symbol) {
@@ -204,10 +217,18 @@ public:
     return m_LibsH.count(Lib);
   }
 
-  void RegisterLib(const LibraryPath& Lib) {
+  const LibraryPath* GetRegisteredLib(const LibraryPath& Lib) const {
+    auto search = m_LibsH.find(Lib);
+    if (search != m_LibsH.end())
+      return &(*search);
+    return nullptr;
+  }
+
+  const LibraryPath* RegisterLib(const LibraryPath& Lib) {
     auto it = m_LibsH.insert(Lib);
     assert(it.second && "Already registered!");
     m_Libs.push_back(&*it.first);
+    return &*it.first;
   }
 
   void UnregisterLib(const LibraryPath& Lib) {
@@ -229,10 +250,155 @@ public:
   }
 };
 
-static std::string getRealPath(llvm::StringRef path) {
-  llvm::SmallString<512> realPath;
-  llvm::sys::fs::real_path(path, realPath, /*expandTilde*/true);
-  return realPath.str().str();
+#ifndef _WIN32
+// Cached version of system function lstat
+static inline mode_t cached_lstat(const char *path) {
+  static llvm::StringMap<mode_t> lstat_cache;
+
+  // If already cached - retun cached result
+  auto it = lstat_cache.find(path);
+  if (it != lstat_cache.end())
+    return it->second;
+
+  // If result not in cache - call system function and cache result
+  struct stat buf;
+  mode_t st_mode = (lstat(path, &buf) == -1) ? 0 : buf.st_mode;
+  lstat_cache.insert(std::pair<llvm::StringRef, mode_t>(path, st_mode));
+  return st_mode;
+}
+
+// Cached version of system function readlink
+static inline llvm::StringRef cached_readlink(const char* pathname) {
+  static llvm::StringMap<std::string> readlink_cache;
+
+  // If already cached - retun cached result
+  auto it = readlink_cache.find(pathname);
+  if (it != readlink_cache.end())
+    return llvm::StringRef(it->second);
+
+  // If result not in cache - call system function and cache result
+  char buf[PATH_MAX] = "\0";
+  (void)readlink(pathname, buf, sizeof(buf));
+  std::string sym(buf);
+  readlink_cache.insert(std::pair<llvm::StringRef, std::string>(pathname, sym));
+  return readlink_cache[pathname];
+}
+#endif
+
+// Cached version of system function realpath
+std::string cached_realpath(llvm::StringRef path, llvm::StringRef base_path = "",
+                            bool is_base_path_real = false,
+                            long symlooplevel = 40) {
+  if (path.empty()) {
+    errno = ENOENT;
+    return "";
+  }
+
+  if (!symlooplevel) {
+    errno = ELOOP;
+    return "";
+  }
+
+  // If already cached - retun cached result
+  static llvm::StringMap<std::string> cache;
+  auto it = cache.find(path);
+  if (it != cache.end())
+    return it->second;
+
+  // If result not in cache - call system function and cache result
+
+  llvm::StringRef sep(llvm::sys::path::get_separator());
+  llvm::SmallString<256> result(sep);
+#ifndef _WIN32
+  llvm::SmallVector<llvm::StringRef, 16> p;
+
+  // Relative or absolute path
+  if (llvm::sys::path::is_relative(path)) {
+    if (is_base_path_real) {
+      result.assign(base_path);
+    } else {
+      if (path[0] == '~' && (path.size() == 1 || llvm::sys::path::is_separator(path[1]))) {
+        static llvm::SmallString<128> home;
+        if (home.str().empty())
+          llvm::sys::path::home_directory(home);
+        llvm::StringRef(home).split(p, sep, /*MaxSplit*/ -1, /*KeepEmpty*/ false);
+      } else if (base_path.empty()) {
+        static llvm::SmallString<256> current_path;
+        if (current_path.str().empty())
+          llvm::sys::fs::current_path(current_path);
+        llvm::StringRef(current_path).split(p, sep, /*MaxSplit*/ -1, /*KeepEmpty*/ false);
+      } else {
+        base_path.split(p, sep, /*MaxSplit*/ -1, /*KeepEmpty*/ false);
+      }
+    }
+  }
+  path.split(p, sep, /*MaxSplit*/ -1, /*KeepEmpty*/ false);
+
+  // Handle path list items
+  for (auto item : p) {
+    if (item.startswith(".")) {
+      if (item == "..") {
+        size_t s = result.rfind(sep);
+        if (s != llvm::StringRef::npos) result.resize(s);
+        if (result.empty()) result = sep;
+      }
+      continue;
+    } else if (item == "~") {
+      continue;
+    }
+
+    size_t old_size = result.size();
+    llvm::sys::path::append(result, item);
+    mode_t st_mode = cached_lstat(result.c_str());
+    if (S_ISLNK(st_mode)) {
+      llvm::StringRef symlink = cached_readlink(result.c_str());
+      if (llvm::sys::path::is_relative(symlink)) {
+        result.set_size(old_size);
+        result = cached_realpath(symlink, result, true, symlooplevel - 1);
+      } else {
+        result = cached_realpath(symlink, "", true, symlooplevel - 1);
+      }
+    } else if (st_mode == 0) {
+      cache.insert(std::pair<llvm::StringRef, llvm::StringRef>(path, ""));
+      return "";
+    }
+  }
+#else
+  llvm::sys::fs::real_path(path, result);
+#endif
+  cache.insert(std::pair<llvm::StringRef, std::string>(path, result.str().str()));
+  return result.str().str();
+}
+
+using namespace llvm;
+using namespace llvm::object;
+
+template <class ELFT>
+static Expected<StringRef> getDynamicStrTab(const ELFFile<ELFT>* Elf) {
+  auto DynamicEntriesOrError = Elf->dynamicEntries();
+  if (!DynamicEntriesOrError)
+    return DynamicEntriesOrError.takeError();
+
+  for (const typename ELFT::Dyn& Dyn : *DynamicEntriesOrError) {
+    if (Dyn.d_tag == ELF::DT_STRTAB) {
+      auto MappedAddrOrError = Elf->toMappedAddr(Dyn.getPtr());
+      if (!MappedAddrOrError)
+        return MappedAddrOrError.takeError();
+      return StringRef(reinterpret_cast<const char *>(*MappedAddrOrError));
+    }
+  }
+
+  // If the dynamic segment is not present, we fall back on the sections.
+  auto SectionsOrError = Elf->sections();
+  if (!SectionsOrError)
+    return SectionsOrError.takeError();
+
+  for (const typename ELFT::Shdr &Sec : *SectionsOrError) {
+    if (Sec.sh_type == ELF::SHT_DYNSYM)
+      return Elf->getStringTableForSymtab(Sec);
+  }
+
+  return createError("dynamic string table not found");
 }
 
 static llvm::StringRef GetGnuHashSection(llvm::object::ObjectFile *file) {
@@ -256,7 +422,7 @@ static llvm::StringRef GetGnuHashSection(llvm::object::ObjectFile *file) {
 ///
 ///\returns true if the symbol may be in the library.
 static bool MayExistInElfObjectFile(llvm::object::ObjectFile *soFile,
-                                 uint32_t hash) {
+                                    uint32_t hash) {
   assert(soFile->isELF() && "Not ELF");
 
   // Compute the platform bitness -- either 64 or 32.
@@ -312,9 +478,9 @@ namespace cling {
     /// complexity. It is tuned to compare BasePaths first by checking the
     /// address and then the representation which models the base path reuse.
     class BasePaths {
+    public:
       std::unordered_set<BasePath, BasePathHashFunction,
                          BasePathEqFunction> m_Paths;
-
     public:
       const BasePath& RegisterBasePath(const std::string& Path,
                                        bool* WasInserted = nullptr) {
@@ -325,7 +491,7 @@ namespace cling {
         return *it.first;
       }
 
-      bool Contains (const std::string& Path) {
+      bool Contains(StringRef Path) {
         return m_Paths.count(Path);
       }
     };
@@ -346,7 +512,7 @@ namespace cling {
     /// Contains a set of libraries which we gave to the user via ResolveSymbol
     /// call and next time we should check if the user loaded them to avoid
     /// useless iterations.
-    std::vector<LibraryPath> m_QueriedLibraries;
+    LibraryPaths m_QueriedLibraries;
 
     using PermanentlyIgnoreCallbackProto = std::function<bool(llvm::StringRef)>;
     const PermanentlyIgnoreCallbackProto m_ShouldPermanentlyIgnoreCallback;
@@ -369,10 +535,11 @@ namespace cling {
     ///\param[in] mangledName - the mangled name to look for.
     ///\param[in] IgnoreSymbolFlags - The symbols to ignore upon a match.
     ///\returns true on success.
-    bool ContainsSymbol(const LibraryPath* Lib, const std::string &mangledName,
+    bool ContainsSymbol(const LibraryPath* Lib, StringRef mangledName,
                         unsigned IgnoreSymbolFlags = 0) const;
 
-    bool ShouldPermanentlyIgnore(const std::string& FileName) const;
+    bool ShouldPermanentlyIgnore(StringRef FileName) const;
+    void dumpDebugInfo() const;
   public:
     Dyld(const cling::DynamicLibraryManager &DLM,
          PermanentlyIgnoreCallbackProto shouldIgnore,
@@ -383,24 +550,73 @@ namespace cling {
 
     ~Dyld(){};
 
-    std::string searchLibrariesForSymbol(const std::string& mangledName,
+    std::string searchLibrariesForSymbol(StringRef mangledName,
                                          bool searchSystem);
   };
 
+  std::string RPathToStr(llvm::SmallVector<llvm::StringRef,2> V) {
+    std::string result;
+    for (auto item : V)
+      result += item.str() + ",";
+    if (!result.empty())
+      result.pop_back();
+    return result;
+  }
+
+  void CombinePaths(std::string& P1, const char* P2) {
+    if (!P2 || !P2[0]) return;
+    if (!P1.empty())
+      P1 += llvm::sys::EnvPathSeparator;
+    P1 += P2;
+  }
+
+  template <class ELFT>
+  void HandleDynTab(const ELFFile<ELFT>* Elf, llvm::StringRef FileName,
+                    llvm::SmallVector<llvm::StringRef,2>& RPath,
+                    llvm::SmallVector<llvm::StringRef,2>& RunPath,
+                    std::vector<StringRef>& Deps) {
+    const char *Data = "";
+    if (Expected<StringRef> StrTabOrErr = getDynamicStrTab(Elf))
+      Data = StrTabOrErr.get().data();
+
+    auto DynamicEntriesOrError = Elf->dynamicEntries();
+    if (!DynamicEntriesOrError) {
+       cling::errs() << "Dyld: failed to read dynamic entries in"
+                     << "'" << FileName.str() << "'\n";
+       return;
+    }
+
+    for (const typename ELFT::Dyn& Dyn : *DynamicEntriesOrError) {
+      switch (Dyn.d_tag) {
+        case ELF::DT_NEEDED:
+          Deps.push_back(Data + Dyn.d_un.d_val);
+          break;
+        case ELF::DT_RPATH:
+          SplitPaths(Data + Dyn.d_un.d_val, RPath, utils::kAllowNonExistant, platform::kEnvDelim, false);
+          break;
+        case ELF::DT_RUNPATH:
+          SplitPaths(Data + Dyn.d_un.d_val, RunPath, utils::kAllowNonExistant, platform::kEnvDelim, false);
+          break;
+        // (Dyn.d_tag == ELF::DT_NULL) continue;
+        // (Dyn.d_tag == ELF::DT_AUXILIARY || Dyn.d_tag == ELF::DT_FILTER)
+      }
+    }
+  }
+
   void Dyld::ScanForLibraries(bool searchSystemLibraries/* = false*/) {
-    // #ifndef NDEBUG
-    //   if (!m_FirstRun && !m_FirstRunSysLib)
-    //     assert(0 && "Already initialized");
-    //   if (m_FirstRun && !m_Libraries->size())
-    //     assert(0 && "Not initialized but m_Libraries is non-empty!");
-    //   // assert((m_FirstRun || m_FirstRunSysLib) && (m_Libraries->size() ||
-    //             m_SysLibraries.size())
-    //   //        && "Already scanned and initialized!");
-    // #endif
 
     const auto &searchPaths = m_DynamicLibraryManager.getSearchPaths();
+
+    if (DEBUG > 7) {
+      cling::errs() << "Dyld::ScanForLibraries: system=" << (searchSystemLibraries?"true":"false") << "\n";
+      for (const DynamicLibraryManager::SearchPathInfo &Info : searchPaths)
+        cling::errs() << ">>>" << Info.Path << ", " << (Info.IsUser?"user\n":"system\n");
+    }
+
+    llvm::SmallSet<const BasePath*, 32> ScannedPaths;
+
     for (const DynamicLibraryManager::SearchPathInfo &Info : searchPaths) {
-      if (Info.IsUser || searchSystemLibraries) {
+      if (Info.IsUser != searchSystemLibraries) {
         // Examples which we should handle.
         // File                      Real
         // /lib/1/1.so               /lib/1/1.so  // file
@@ -416,47 +632,182 @@ namespace cling {
         // /lib/3/3.so
         // /system/lib/1.so
         //
+        // libL.so NEEDED/RPATH libR.so    /lib/some-rpath/libR.so  // needed/dependedt library in libL.so RPATH/RUNPATH or other (in)direct dep
+        //
         // Paths = /lib/1 : /lib/2 : /lib/3
 
         // m_BasePaths = ["/lib/1", "/lib/3", "/system/lib"]
         // m_*Libraries  = [<0,"1.so">, <1,"1.so">, <2,"s.so">, <1,"3.so">]
-        std::string RealPath = getRealPath(Info.Path);
+
+        if (DEBUG > 7) {
+          cling::errs() << "Dyld::ScanForLibraries Iter:" << Info.Path << " -> ";
+        }
+        std::string RealPath = cached_realpath(Info.Path);
+
         llvm::StringRef DirPath(RealPath);
+        if (DEBUG > 7) {
+          cling::errs() << RealPath << "\n";
+        }
 
         if (!llvm::sys::fs::is_directory(DirPath) || DirPath.empty())
           continue;
 
         // Already searched?
-        bool WasInserted;
-        m_BasePaths.RegisterBasePath(RealPath, &WasInserted);
-
-        if (!WasInserted)
+        const BasePath &ScannedBPath = m_BasePaths.RegisterBasePath(RealPath);
+        if (ScannedPaths.count(&ScannedBPath)) {
+          if (DEBUG > 7) {
+            cling::errs() << "Dyld::ScanForLibraries Already scanned: " << RealPath << "\n";
+          }
           continue;
+        }
 
-        std::error_code EC;
-        for (llvm::sys::fs::directory_iterator DirIt(DirPath, EC), DirEnd;
-             DirIt != DirEnd && !EC; DirIt.increment(EC)) {
+        // FileName must be always full/absolute/resolved file name.
+        std::function<void(llvm::StringRef, unsigned)> HandleLib =
+          [&](llvm::StringRef FileName, unsigned level) {
 
-          // FIXME: Use a StringRef here!
-          std::string FileName = getRealPath(DirIt->path());
-          assert(!llvm::sys::fs::is_symlink_file(FileName));
+          if (DEBUG > 7) {
+            cling::errs() << "Dyld::ScanForLibraries HandleLib:" << FileName.str()
+               << ", level=" << level << " -> ";
+          }
 
-          if (ShouldPermanentlyIgnore(FileName))
-            continue;
+          llvm::StringRef FileRealPath = llvm::sys::path::parent_path(FileName);
+          llvm::StringRef FileRealName = llvm::sys::path::filename(FileName);
+          const BasePath& BaseP = m_BasePaths.RegisterBasePath(FileRealPath.str());
+          LibraryPath LibPath(BaseP, FileRealName); //bp, str
 
-          std::string FileRealPath = llvm::sys::path::parent_path(FileName);
-          FileName = llvm::sys::path::filename(FileName);
-          const BasePath& BaseP = m_BasePaths.RegisterBasePath(FileRealPath);
-          LibraryPath LibPath(BaseP, FileName);
-          if (m_SysLibraries.HasRegisteredLib(LibPath) ||
-              m_Libraries.HasRegisteredLib(LibPath))
-            continue;
+          if (m_SysLibraries.GetRegisteredLib(LibPath) ||
+              m_Libraries.GetRegisteredLib(LibPath)) {
+            if (DEBUG > 7) {
+              cling::errs() << "Already handled!!!\n";
+            }
+            return;
+          }
+
+          if (ShouldPermanentlyIgnore(FileName)) {
+            if (DEBUG > 7) {
+              cling::errs() << "PermanentlyIgnored!!!\n";
+            }
+            return;
+          }
 
           if (searchSystemLibraries)
             m_SysLibraries.RegisterLib(LibPath);
           else
             m_Libraries.RegisterLib(LibPath);
+
+          // Handle lib dependencies
+          llvm::SmallVector<llvm::StringRef, 2> RPath;
+          llvm::SmallVector<llvm::StringRef, 2> RunPath;
+          std::vector<StringRef> Deps;
+          auto ObjFileOrErr =
+            llvm::object::ObjectFile::createObjectFile(FileName);
+          if (llvm::Error Err = ObjFileOrErr.takeError()) {
+            if (DEBUG > 1) {
+              std::string Message;
+              handleAllErrors(std::move(Err), [&](llvm::ErrorInfoBase &EIB) {
+                Message += EIB.message() + "; ";
+              });
+              cling::errs()
+                << "Dyld::ScanForLibraries: Failed to read object file "
+                << FileName.str() << " Errors: " << Message << "\n";
+            }
+            return;
+          }
+          llvm::object::ObjectFile *BinObjF = ObjFileOrErr.get().getBinary();
+          if (BinObjF->isELF()) {
+            if (const auto* ELF = dyn_cast<ELF32LEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
+            else if (const auto* ELF = dyn_cast<ELF32BEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
+            else if (const auto* ELF = dyn_cast<ELF64LEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
+            else if (const auto* ELF = dyn_cast<ELF64BEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
+
+          } else if (BinObjF->isMachO()) {
+            MachOObjectFile *Obj = (MachOObjectFile*)BinObjF;
+            for (const auto &Command : Obj->load_commands()) {
+              if (Command.C.cmd == MachO::LC_LOAD_DYLIB) {
+                  //Command.C.cmd == MachO::LC_ID_DYLIB ||
+                  //Command.C.cmd == MachO::LC_LOAD_WEAK_DYLIB ||
+                  //Command.C.cmd == MachO::LC_REEXPORT_DYLIB ||
+                  //Command.C.cmd == MachO::LC_LAZY_LOAD_DYLIB ||
+                  //Command.C.cmd == MachO::LC_LOAD_UPWARD_DYLIB ||
+                MachO::dylib_command dylibCmd =
+                  Obj->getDylibIDLoadCommand(Command);
+                Deps.push_back(StringRef(Command.Ptr + dylibCmd.dylib.name));
+              }
+              else if (Command.C.cmd == MachO::LC_RPATH) {
+                MachO::rpath_command rpathCmd = Obj->getRpathCommand(Command);
+                SplitPaths(Command.Ptr + rpathCmd.path, RPath, utils::kAllowNonExistant, platform::kEnvDelim, false);
+              }
+            }
+          } else if (BinObjF->isCOFF()) {
+            // TODO: COFF support
+          }
+
+          if (DEBUG > 7) {
+            cling::errs() << "Dyld::ScanForLibraries: Deps Info:\n";
+            cling::errs() << "Dyld::ScanForLibraries:   RPATH=" << RPathToStr(RPath) << "\n";
+            cling::errs() << "Dyld::ScanForLibraries:   RUNPATH=" << RPathToStr(RunPath) << "\n";
+            int x = 0;
+            for (StringRef dep : Deps)
+              cling::errs() << "Dyld::ScanForLibraries:   Deps[" << x++ << "]=" << dep.str() << "\n";
+          }
+
+          // Heuristics for workaround performance problems:
+          // (H1) If RPATH and RUNPATH == "" -> skip handling Deps
+          if (RPath.empty() && RunPath.empty()) {
+            if (DEBUG > 7) {
+              cling::errs() << "Dyld::ScanForLibraries: Skip all deps by Heuristic1: " << FileName.str() << "\n";
+            }
+            return;
+          };
+          // (H2) If RPATH subset of LD_LIBRARY_PATH &&
+          //         RUNPATH subset of LD_LIBRARY_PATH  -> skip handling Deps
+          if (std::all_of(RPath.begin(), RPath.end(), [&](StringRef item){ return std::any_of(searchPaths.begin(), searchPaths.end(), [&](DynamicLibraryManager::SearchPathInfo item1){ return item==item1.Path; }); }) &&
+              std::all_of(RunPath.begin(), RunPath.end(), [&](StringRef item){ return std::any_of(searchPaths.begin(), searchPaths.end(), [&](DynamicLibraryManager::SearchPathInfo item1){ return item==item1.Path; }); }) ) {
+            if (DEBUG > 7) {
+              cling::errs() << "Dyld::ScanForLibraries: Skip all deps by Heuristic2: " << FileName.str() << "\n";
+            }
+            return;
+          }
+
+          // Handle dependencies
+          for (StringRef dep : Deps) {
+            std::string dep_full =
+              m_DynamicLibraryManager.lookupLibrary(dep, RPath, RunPath, FileName, false);
+              HandleLib(dep_full, level + 1);
+          }
+
+        };
+
+        if (DEBUG > 7) {
+          cling::errs() << "Dyld::ScanForLibraries: Iterator: " << DirPath << "\n";
         }
+        std::error_code EC;
+        for (llvm::sys::fs::directory_iterator DirIt(DirPath, EC), DirEnd;
+             DirIt != DirEnd && !EC; DirIt.increment(EC)) {
+
+          if (DEBUG > 7) {
+            cling::errs() << "Dyld::ScanForLibraries: Iterator >>> " <<
+              DirIt->path() << ", type=" << (short)(DirIt->type()) << "\n";
+          }
+
+          const llvm::sys::fs::file_type ft = DirIt->type();
+          if (ft == llvm::sys::fs::file_type::regular_file) {
+              HandleLib(DirIt->path(), 0);
+          } else if (ft == llvm::sys::fs::file_type::symlink_file) {
+              std::string DepFileName_str = cached_realpath(DirIt->path());
+              llvm::StringRef DepFileName = DepFileName_str;
+              assert(!llvm::sys::fs::is_symlink_file(DepFileName));
+              if (!llvm::sys::fs::is_directory(DepFileName))
+                HandleLib(DepFileName, 0);
+          }
+        }
+
+        // Register the DirPath as fully scanned.
+        ScannedPaths.insert(&ScannedBPath);
       }
     }
   }
@@ -469,6 +820,11 @@ namespace cling {
 
     using namespace llvm;
     using namespace llvm::object;
+
+    if (DEBUG > 7) {
+      cling::errs()<< "Dyld::BuildBloomFilter: Start building Bloom filter for: "
+        << Lib->GetFullName() << "\n";
+    }
 
     // If BloomFilter is empty then build it.
     // Count Symbols and generate BloomFilter
@@ -580,14 +936,14 @@ namespace cling {
   }
 
   bool Dyld::ContainsSymbol(const LibraryPath* Lib,
-                            const std::string &mangledName,
+                            StringRef mangledName,
                             unsigned IgnoreSymbolFlags /*= 0*/) const {
     const std::string library_filename = Lib->GetFullName();
 
     if (DEBUG > 7) {
       cling::errs() << "Dyld::ContainsSymbol: Find symbol: lib="
                     << library_filename << ", mangled="
-                    << mangledName << "\n";
+                    << mangledName.str() << "\n";
     }
 
     auto ObjF = llvm::object::ObjectFile::createObjectFile(library_filename);
@@ -609,8 +965,11 @@ namespace cling {
     // Check for the gnu.hash section if ELF.
     // If the symbol doesn't exist, exit early.
     if (BinObjFile->isELF() &&
-        !MayExistInElfObjectFile(BinObjFile, hashedMangle))
+        !MayExistInElfObjectFile(BinObjFile, hashedMangle)) {
+      if (DEBUG > 7)
+        cling::errs() << "Dyld::ContainsSymbol: ELF BloomFilter: Skip symbol <" << mangledName.str() << ">.\n";
       return false;
+    }
 
     if (m_UseBloomFilter) {
       // Use our bloom filters and create them if necessary.
@@ -621,12 +980,12 @@ namespace cling {
       // If the symbol does not exist, exit early. In case it may exist, iterate.
       if (!Lib->MayExistSymbol(hashedMangle)) {
         if (DEBUG > 7)
-          cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Skip symbol.\n";
+          cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Skip symbol <" << mangledName.str() << ">.\n";
         return false;
       }
       if (DEBUG > 7)
-        cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Symbol May exist."
-                      << " Search for it.";
+        cling::errs() << "Dyld::ContainsSymbol: BloomFilter: Symbol <" << mangledName.str() << "> May exist."
+                      << " Search for it. ";
     }
 
     if (m_UseHashTable) {
@@ -658,7 +1017,7 @@ namespace cling {
         llvm::Expected<llvm::StringRef> SymNameErr = S.getName();
         if (!SymNameErr) {
           cling::errs() << "Dyld::ContainsSymbol: Failed to read symbol "
-                        << mangledName << "\n";
+                        << mangledName.str() << "\n";
           continue;
         }
 
@@ -668,7 +1027,7 @@ namespace cling {
         if (SymNameErr.get() == mangledName) {
           if (DEBUG > 1) {
             cling::errs() << "Dyld::ContainsSymbol: Symbol "
-                          << mangledName << " found in "
+                          << mangledName.str() << " found in "
                           << library_filename << "\n";
             return true;
           }
@@ -680,34 +1039,44 @@ namespace cling {
     // If no hash symbol then iterate to detect symbol
     // We Iterate only if BloomFilter and/or SymbolHashTable are not supported.
 
+    if (DEBUG > 7)
+      cling::errs() << "Dyld::ContainsSymbol: Iterate all for <"
+                    << mangledName.str() << ">";
+
     // Symbol may exist. Iterate.
-    if (ForeachSymbol(BinObjFile->symbols(), IgnoreSymbolFlags, mangledName))
+    if (ForeachSymbol(BinObjFile->symbols(), IgnoreSymbolFlags, mangledName)) {
+      if (DEBUG > 7)
+        cling::errs() << " -> found.\n";
       return true;
+    }
 
 
-    if (!BinObjFile->isELF())
+    if (!BinObjFile->isELF()) {
+      if (DEBUG > 7)
+        cling::errs() << " -> not found.\n";
       return false;
+    }
 
     // ELF file format has .dynstr section for the dynamic symbol table.
     const auto *ElfObj =
       llvm::cast<llvm::object::ELFObjectFileBase>(BinObjFile);
 
-    return ForeachSymbol(ElfObj->getDynamicSymbolIterators(),
-                         IgnoreSymbolFlags, mangledName);
+    bool result = ForeachSymbol(ElfObj->getDynamicSymbolIterators(),
+                           IgnoreSymbolFlags, mangledName);
+    if (DEBUG > 7)
+        cling::errs() << (result ? " -> found.\n" : " -> not found.\n");
+    return result;
   }
 
-  bool Dyld::ShouldPermanentlyIgnore(const std::string& FileName) const {
+  bool Dyld::ShouldPermanentlyIgnore(StringRef FileName) const {
     assert(!m_ExecutableFormat.empty() && "Failed to find the object format!");
-
-    if (llvm::sys::fs::is_directory(FileName))
-      return true;
 
     if (!cling::DynamicLibraryManager::isSharedLibrary(FileName))
       return true;
 
     // No need to check linked libraries, as this function is only invoked
     // for symbols that cannot be found (neither by dlsym nor in the JIT).
-    if (m_DynamicLibraryManager.isLibraryLoaded(FileName.c_str()))
+    if (m_DynamicLibraryManager.isLibraryLoaded(FileName))
       return true;
 
 
@@ -754,20 +1123,59 @@ namespace cling {
     return m_ShouldPermanentlyIgnoreCallback(FileName);
   }
 
-  std::string Dyld::searchLibrariesForSymbol(const std::string& mangledName,
+  void Dyld::dumpDebugInfo() const {
+    cling::errs() << "Dyld: m_BasePaths:\n";
+    cling::errs() << "---\n";
+    size_t x = 0;
+    for (auto const &item : m_BasePaths.m_Paths) {
+      cling::errs() << "Dyld: - m_BasePaths[" << x++ << "]:"
+                << &item << ": " << item << "\n";
+    }
+    cling::errs() << "---\n";
+    x = 0;
+    for (auto const &item : m_Libraries.GetLibraries()) {
+      cling::errs() << "Dyld: - m_Libraries[" << x++ << "]:"
+                    << &item << ": " << item->m_Path << ", "
+                    << item->m_LibName << "\n";
+    }
+    x = 0;
+    for (auto const &item : m_SysLibraries.GetLibraries()) {
+      cling::errs() << "Dyld: - m_SysLibraries[" << x++ << "]:"
+                    << &item << ": " << item->m_Path << ", "
+                    << item->m_LibName << "\n";
+    }
+  }
+
+  std::string Dyld::searchLibrariesForSymbol(StringRef mangledName,
                                              bool searchSystem/* = true*/) {
     assert(!llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(mangledName) &&
            "Library already loaded, please use dlsym!");
     assert(!mangledName.empty());
+
     using namespace llvm::sys::path;
     using namespace llvm::sys::fs;
 
     if (m_FirstRun) {
+      if (DEBUG > 7) {
+        cling::errs() << "Dyld::searchLibrariesForSymbol:" << mangledName.str() <<
+          ", searchSystem=" << (searchSystem ? "true" : "false") << ", FirstRun(user)... scanning\n";
+      }
+
+      if (DEBUG > 7) {
+        cling::errs() << "Dyld::searchLibrariesForSymbol: Before first ScanForLibraries\n";
+        dumpDebugInfo();
+      }
+
       ScanForLibraries(/* SearchSystemLibraries= */ false);
       m_FirstRun = false;
+
+      if (DEBUG > 7) {
+        cling::errs() << "Dyld::searchLibrariesForSymbol: After first ScanForLibraries\n";
+        dumpDebugInfo();
+      }
     }
 
-    if (!m_QueriedLibraries.empty()) {
+    if (m_QueriedLibraries.size() > 0) {
       // Last call we were asked if a library contains a symbol. Usually, the
       // caller wants to load this library. Check if was loaded and remove it
       // from our lists of not-yet-loaded libs.
@@ -775,31 +1183,35 @@ namespace cling {
       if (DEBUG > 7) {
         cling::errs() << "Dyld::ResolveSymbol: m_QueriedLibraries:\n";
         size_t x = 0;
-        for (auto item : m_QueriedLibraries) {
+        for (auto item : m_QueriedLibraries.GetLibraries()) {
           cling::errs() << "Dyld::ResolveSymbol - [" << x++ << "]:"
-                        << &item << ": " << item.m_Path << ", "
-                        << item.m_LibName << "\n";
+                        << &item << ": " << item->GetFullName() << "\n";
         }
       }
 
-      for (const LibraryPath& P : m_QueriedLibraries) {
-        const std::string LibName = P.GetFullName();
+      for (const LibraryPath* P : m_QueriedLibraries.GetLibraries()) {
+        const std::string LibName = P->GetFullName();
         if (!m_DynamicLibraryManager.isLibraryLoaded(LibName))
           continue;
 
-        m_Libraries.UnregisterLib(P);
-        m_SysLibraries.UnregisterLib(P);
+        m_Libraries.UnregisterLib(*P);
+        m_SysLibraries.UnregisterLib(*P);
       }
+      // TODO:  m_QueriedLibraries.clear ?
     }
 
     // Iterate over files under this path. We want to get each ".so" files
     for (const LibraryPath* P : m_Libraries.GetLibraries()) {
-      const std::string LibName = P->GetFullName();
-
       if (ContainsSymbol(P, mangledName, /*ignore*/
                          llvm::object::SymbolRef::SF_Undefined)) {
-        m_QueriedLibraries.push_back(*P);
-        return LibName;
+        if (!m_QueriedLibraries.HasRegisteredLib(*P))
+          m_QueriedLibraries.RegisterLib(*P);
+
+        if (DEBUG > 7)
+          cling::errs() << "Dyld::ResolveSymbol: Search found match in [user lib]: "
+                        << P->GetFullName() << "!\n";
+
+        return P->GetFullName();
       }
     }
 
@@ -807,58 +1219,46 @@ namespace cling {
       return "";
 
     if (DEBUG > 7)
-      cling::errs() << "Dyld::ResolveSymbol: SearchSystem!\n";
+      cling::errs() << "Dyld::searchLibrariesForSymbol: SearchSystem!!!\n";
 
     // Lookup in non-system libraries failed. Expand the search to the system.
     if (m_FirstRunSysLib) {
+      if (DEBUG > 7) {
+        cling::errs() << "Dyld::searchLibrariesForSymbol:" << mangledName.str() <<
+          ", searchSystem=" << (searchSystem ? "true" : "false") << ", FirstRun(system)... scanning\n";
+      }
+
+      if (DEBUG > 7) {
+        cling::errs() << "Dyld::searchLibrariesForSymbol: Before first system ScanForLibraries\n";
+        dumpDebugInfo();
+      }
+
       ScanForLibraries(/* SearchSystemLibraries= */ true);
       m_FirstRunSysLib = false;
+
+      if (DEBUG > 7) {
+        cling::errs() << "Dyld::searchLibrariesForSymbol: After first system ScanForLibraries\n";
+        dumpDebugInfo();
+      }
     }
 
     for (const LibraryPath* P : m_SysLibraries.GetLibraries()) {
-      const std::string LibName = P->GetFullName();
       if (ContainsSymbol(P, mangledName, /*ignore*/
                          llvm::object::SymbolRef::SF_Undefined |
                          llvm::object::SymbolRef::SF_Weak)) {
-        m_QueriedLibraries.push_back(*P);
-        return LibName;
+        if (!m_QueriedLibraries.HasRegisteredLib(*P))
+          m_QueriedLibraries.RegisterLib(*P);
+
+        if (DEBUG > 7)
+          cling::errs() << "Dyld::ResolveSymbol: Search found match in [system lib]: "
+                        << P->GetFullName() << "!\n";
+
+        return P->GetFullName();
       }
     }
 
     if (DEBUG > 7)
       cling::errs() << "Dyld::ResolveSymbol: Search found no match!\n";
-
-    /*
-      if (DEBUG > 7) {
-      cling::errs() << "Dyld::ResolveSymbol: Structs after ResolveSymbol:\n");
-
-      cling::errs() << "Dyld::ResolveSymbol - sPaths:\n");
-      size_t x = 0;
-      for (const auto &item : sPaths.GetPaths())
-      cling::errs() << "Dyld::ResolveSymbol << [" x++ << "]: " << item << "\n";
-
-      cling::errs() << "Dyld::ResolveSymbol - sLibs:\n");
-      x = 0;
-      for (const auto &item : sLibraries.GetLibraries())
-      cling::errs() << "Dyld::ResolveSymbol ["
-      << x++ << "]: " << item->Path << ", "
-      << item->LibName << "\n";
-
-      cling::errs() << "Dyld::ResolveSymbol - sSysLibs:");
-      x = 0;
-      for (const auto &item : sSysLibraries.GetLibraries())
-      cling::errs() << "Dyld::ResolveSymbol ["
-      << x++ << "]: " << item->Path << ", "
-      << item->LibName << "\n";
-
-      Info("Dyld::ResolveSymbol", "- sQueriedLibs:");
-      x = 0;
-      for (const auto &item : sQueriedLibraries)
-      cling::errs() << "Dyld::ResolveSymbol ["
-      << x++ << "]: " << item->Path << ", "
-      << item->LibName << "\n";
-      }
-    */
 
     return ""; // Search found no match.
   }
@@ -883,7 +1283,7 @@ namespace cling {
   }
 
   std::string
-  DynamicLibraryManager::searchLibrariesForSymbol(const std::string& mangledName,
+  DynamicLibraryManager::searchLibrariesForSymbol(StringRef mangledName,
                                            bool searchSystem/* = true*/) const {
     assert(m_Dyld && "Must call initialize dyld before!");
     return m_Dyld->searchLibrariesForSymbol(mangledName, searchSystem);
@@ -903,7 +1303,8 @@ namespace cling {
     if (!GetModuleFileNameA (hMod, moduleName, sizeof (moduleName)))
       return {};
 
-    return getRealPath(moduleName);
+    return cached_realpath(moduleName);
+
 #else
     // assume we have  defined HAVE_DLFCN_H and HAVE_DLADDR
     Dl_info info;
@@ -912,7 +1313,8 @@ namespace cling {
       return {};
     } else {
       if (strchr(info.dli_fname, '/'))
-        return getRealPath(info.dli_fname);
+        return cached_realpath(info.dli_fname);
+
       // Else absolute path. For all we know that's a binary.
       // Some people have dictionaries in binaries, this is how we find their
       // path: (see also https://stackoverflow.com/a/1024937/6182509)
@@ -920,23 +1322,23 @@ namespace cling {
       char buf[PATH_MAX] = { 0 };
       uint32_t bufsize = sizeof(buf);
       if (_NSGetExecutablePath(buf, &bufsize) >= 0)
-        return getRealPath(buf);
-      return getRealPath(info.dli_fname);
+        return cached_realpath(buf);
+      return cached_realpath(info.dli_fname);
 # elif defined(LLVM_ON_UNIX)
       char buf[PATH_MAX] = { 0 };
       // Cross our fingers that /proc/self/exe exists.
       if (readlink("/proc/self/exe", buf, sizeof(buf)) > 0)
-        return getRealPath(buf);
+        return cached_realpath(buf);
       std::string pipeCmd = std::string("which \"") + info.dli_fname + "\"";
       FILE* pipe = popen(pipeCmd.c_str(), "r");
       if (!pipe)
-        return getRealPath(info.dli_fname);
+        return cached_realpath(info.dli_fname);
       std::string result;
       while (fgets(buf, sizeof(buf), pipe))
          result += buf;
 
       pclose(pipe);
-      return getRealPath(result);
+      return cached_realpath(result);
 # else
 #  error "Unsupported platform."
 # endif
