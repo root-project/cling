@@ -575,6 +575,7 @@ namespace {
     llvm::SmallString<256> boostIncLoc(getIncludePathForHeader(HS, "boost/version.hpp"));
     llvm::SmallString<256> tinyxml2IncLoc(getIncludePathForHeader(HS, "tinyxml2.h"));
     llvm::SmallString<256> cudaIncLoc(getIncludePathForHeader(HS, "cuda.h"));
+    llvm::SmallString<256> vcVcIncLoc(getIncludePathForHeader(HS, "Vc/Vc"));
     llvm::SmallString<256> clingIncLoc(getIncludePathForHeader(HS,
                                         "cling/Interpreter/RuntimeUniverse.h"));
 
@@ -692,6 +693,11 @@ namespace {
                               /*AllowModulemapOverride=*/ false);
     if (!cudaIncLoc.empty())
       maybeAppendOverlayEntry(cudaIncLoc.str(), "cuda.modulemap",
+                              clingIncLoc.str(), MOverlay,
+                              /*RegisterModuleMap=*/ true,
+                              /*AllowModulemapOverride=*/ false);
+    if (!vcVcIncLoc.empty())
+      maybeAppendOverlayEntry(vcVcIncLoc.str(), "vc.modulemap",
                               clingIncLoc.str(), MOverlay,
                               /*RegisterModuleMap=*/ true,
                               /*AllowModulemapOverride=*/ false);

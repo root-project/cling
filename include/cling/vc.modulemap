@@ -1,0 +1,4 @@
+module Vc {
+  header "Vc/Vc"
+  export *
+}
