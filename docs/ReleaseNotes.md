@@ -20,37 +20,23 @@ infrastructure are described first.
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM r0000000.
+* Upgrade to LLVM-5.
 
 Major New Features
 ------------------
-* A major new feature
 
 Misc
 ----
-* A misc feature
-
-Experimental Features
----------------------
-* An experimental feature
-
-Jupyter
--------
-* A Jupyter feature
+* Improve in the C++ modules support
+* Fix issues in the definition shadowing
+* Improve the integration with clad
 
 
 Fixed Bugs
 ----------
-[ROOT-XXXX](https://sft.its.cern.ch/jira/browse/ROOT-XXXX)
 
-<!---Get release bugs
-git log v0.7..master | grep 'ROOT-' | sed -E \
-  's,^.*(ROOT-[0-9]+).*$,[\1]\(https://sft.its.cern.ch/jira/browse/\1\),' | \
-  sort | uniq
---->
-<!---Standard MarkDown doesn't support neither variables nor <base>
-[ROOT-XXX](https://sft.its.cern.ch/jira/browse/ROOT-XXX)
---->
+[ROOT-10886](https://sft.its.cern.ch/jira/browse/ROOT-10886)
+[ROOT-7199](https://sft.its.cern.ch/jira/browse/ROOT-7199)
 
 <!---Additional Information
 ----------------------
@@ -71,7 +57,11 @@ listed in the form of Firstname Lastname (#contributions):
 
 FirstName LastName (#commits)
 
-<!---Find contributor list for this release
-git log --pretty=format:"%an"  v0.7...master | sort | uniq -c | sort -rn |\
-  sed -E 's,^ *([0-9]+) (.*)$,\2 \(\1\),'
---->
+Vassil Vassilev (7)
+Pratyush Das (4)
+Javier Lopez-Gomez (4)
+Axel Naumann (4)
+Philippe Canal (2)
+Vaibhav Garg (1)
+Sylvain Corlay (1)
+Henry Schreiner (1)
