@@ -2,7 +2,7 @@ Introduction
 ============
 
 This document contains the release notes for the interactive C++ interpreter
-Cling, release 0.8. Cling is built on top of [Clang](http://clang.llvm.org) and
+Cling, release 0.9. Cling is built on top of [Clang](http://clang.llvm.org) and
 [LLVM](http://llvm.org>) compiler infrastructure. Here we
 describe the status of Cling in some detail, including major
 improvements from the previous release and new feature work.
@@ -11,7 +11,7 @@ Note that if you are reading this file from a git checkout or the main
 [Cling web page](https://rawgit.com/root-project/cling/master/www/index.html),
 this document applies to the *next* release, not the current one.
 
-What's New in Cling 0.8?
+What's New in Cling 0.9?
 ========================
 
 Some of the major new features and improvements to Cling are listed
@@ -20,23 +20,37 @@ infrastructure are described first.
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM-5.
+* Upgrade to LLVM r0000000.
 
 Major New Features
 ------------------
+* A major new feature
 
 Misc
 ----
-* Improve in the C++ modules support
-* Fix issues in the definition shadowing
-* Improve the integration with clad
+* A misc feature
+
+Experimental Features
+---------------------
+* An experimental feature
+
+Jupyter
+-------
+* A Jupyter feature
 
 
 Fixed Bugs
 ----------
+[ROOT-XXXX](https://sft.its.cern.ch/jira/browse/ROOT-XXXX)
 
-[ROOT-10886](https://sft.its.cern.ch/jira/browse/ROOT-10886)
-[ROOT-7199](https://sft.its.cern.ch/jira/browse/ROOT-7199)
+<!---Get release bugs
+git log v0.8..master | grep 'ROOT-' | sed -E \
+  's,^.*(ROOT-[0-9]+).*$,[\1]\(https://sft.its.cern.ch/jira/browse/\1\),' | \
+  sort | uniq
+--->
+<!---Standard MarkDown doesn't support neither variables nor <base>
+[ROOT-XXX](https://sft.its.cern.ch/jira/browse/ROOT-XXX)
+--->
 
 <!---Additional Information
 ----------------------
@@ -57,11 +71,7 @@ listed in the form of Firstname Lastname (#contributions):
 
 FirstName LastName (#commits)
 
-Vassil Vassilev (7)
-Pratyush Das (4)
-Javier Lopez-Gomez (4)
-Axel Naumann (4)
-Philippe Canal (2)
-Vaibhav Garg (1)
-Sylvain Corlay (1)
-Henry Schreiner (1)
+<!---Find contributor list for this release
+git log --pretty=format:"%an"  v0.8...master | sort | uniq -c | sort -rn |\
+  sed -E 's,^ *([0-9]+) (.*)$,\2 \(\1\),'
+--->
