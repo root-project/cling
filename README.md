@@ -140,8 +140,10 @@ Our release steps to follow when cutting a new release:
   3. Add a new entry in the news section of our [website](www/news.html)
   4. Commit the changes.
   5. `git tag -a v0.x -m "Tagging release v0.x"`
-  6. Create a draft release in github and copy the contents of the release notes.
-  7. Wait for green builds.
-  8. Upload binaries to github (Travis should do this automatically).
-  9. Publish the tag and announce it on the mailing list.
-  10. Increment the current version and append `~dev`.
+  6. Tag `cling-patches` of `clang.git`:
+     `git tag -a cling-v0.x -m "Tagging clang for cling v0.x"`
+  7. Create a draft release in github and copy the contents of the release notes.
+  8. Wait for green builds.
+  9. Upload binaries to github (Travis should do this automatically).
+  10. Publish the tag and announce it on the mailing list.
+  11. Increment the current version and append `~dev`.
