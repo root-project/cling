@@ -2034,7 +2034,7 @@ print('Revision: ' + REV)
 print('Architecture: ' + platform.machine())
 if args['compiler']:
   cInfo = None
-  cInfo = exec_subprocess_check_output(args['compiler'] + ' --version', srcdir).decode('utf-8')
+  cInfo = exec_subprocess_check_output(args['compiler'] + ' --version', srcdir)
   print("Compiler: '%s' : %s" % (args['compiler'], cInfo.split('\n',1)[0] if cInfo else ''))
 
 if len(sys.argv) == 1:
