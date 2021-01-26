@@ -388,6 +388,21 @@ void IncrementalJIT::addModule(const std::shared_ptr<llvm::Module>& module) {
   // default.
   module->setDataLayout(m_TMDataLayout);
 
+  // Reset the sections of all functions so that they end up in the same text
+  // section. This is important for TCling on macOS to catch exceptions raised
+  // by constructors, which requires unwinding information. The addresses in
+  // the __eh_frame table are relocated against a single __text section when
+  // loading the MachO binary, which breaks if the call sites of constructors
+  // end up in a separate init section.
+  // (see clang::TargetInfo::getStaticInitSectionSpecifier())
+  for (auto &Fn : module->functions()) {
+    if (Fn.hasSection()) {
+      // dbgs() << "Resetting section '" << Fn.getSection() << "' of function "
+      //        << Fn.getName() << "\n";
+      Fn.setSection("");
+    }
+  }
+
   // LLVM MERGE FIXME: update this to use new interfaces.
   auto Resolver = llvm::orc::createLambdaResolver(
     [&](const std::string &S) {

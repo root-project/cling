@@ -9,20 +9,25 @@
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
 extern "C" int printf(const char*,...);
 
-struct TheStruct {
-  char m_Storage[100];
-};
+// When interpreting code, raised exceptions can be catched by the call site.
 
-// CHECK: About to throw "ABC"
-printf("About to throw \"ABC\"\n");
-TheStruct getStructButThrows() { throw "ABC!"; }
-// CHECK: Exception occurred. Recovering...
-getStructButThrows()
+#include "cling/Interpreter/Interpreter.h"
+
+try {
+  gCling->process("throw 1;");
+} catch (...) {
+  // CHECK: Caught exception from throw statement
+  printf("Caught exception from throw statement\n");
+}
 
 struct ThrowInConstructor {
   ThrowInConstructor() { throw 1; }
 };
-// CHECK: About to throw in constructor
-printf("About to throw in constructor\n");
-// CHECK: Exception occurred. Recovering...
-ThrowInConstructor t;
+try {
+  gCling->process("ThrowInConstructor t;");
+} catch (...) {
+  // CHECK: Caught exception from constructor
+  printf("Caught exception from constructor\n");
+}
+
+.q
