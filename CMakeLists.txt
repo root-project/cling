@@ -463,10 +463,17 @@ elseif(ROOT_CLASSIC)
     )
 else()
   # and this when building Cling standalone:
-  include_directories(BEFORE
-    ${CMAKE_CURRENT_BINARY_DIR}/../clang/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include
-    )
+  if (LLVM_EXTERNAL_CLANG_SOURCE_DIR)
+     include_directories(BEFORE
+       ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include
+       ${CMAKE_CURRENT_BINARY_DIR}/../clang/include
+       )
+  else()
+    include_directories(BEFORE
+      ${CMAKE_CURRENT_BINARY_DIR}/../clang/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/../clang/include
+      )
+  endif()
 endif()
 
 include_directories(BEFORE
