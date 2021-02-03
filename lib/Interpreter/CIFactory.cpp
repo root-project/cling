@@ -1655,11 +1655,6 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CGOpts.EmitCodeView = 1;
     CGOpts.CXXCtorDtorAliases = 1;
 #endif
-    // Reduce amount of emitted symbols by optimizing more.
-    // FIXME: We have a bug when we switch to -O2, for some cases it takes
-    // several minutes to optimize, while the same code compiled by clang -O2
-    // takes only a few seconds.
-    CGOpts.OptimizationLevel = 0;
     // Taken from a -O2 run of clang:
     CGOpts.DiscardValueNames = 1;
     CGOpts.OmitLeafFramePointer = 1;
@@ -1668,9 +1663,10 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     CGOpts.VectorizeSLP = 1;
     CGOpts.DisableO0ImplyOptNone = 1; // Enable dynamic opt level switching.
 
-    CGOpts.setInlining((CGOpts.OptimizationLevel == 0)
-                       ? CodeGenOptions::OnlyAlwaysInlining
-                       : CodeGenOptions::NormalInlining);
+    // Set up inlining, even if we switch to O0 later: some transactions' code
+    // might pass `#pragma cling optimize` levels that require it. This is
+    // adjusted per transaction in IncrementalParser::codeGenTransaction().
+    CGOpts.setInlining(CodeGenOptions::NormalInlining);
 
     // CGOpts.setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
     // CGOpts.EmitDeclMetadata = 1; // For unloading, for later

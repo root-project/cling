@@ -722,6 +722,14 @@ namespace cling {
       if (InterpreterCallbacks* callbacks = m_Interpreter->getCallbacks())
         callbacks->TransactionCodeGenStarted(*T);
 
+      // Update CodeGen to current optimization level, which might be different
+      // from what it had when constructed.
+      auto &CGOpts = m_CI->getCodeGenOpts();
+      CGOpts.OptimizationLevel = T->getCompilationOpts().OptLevel;
+      CGOpts.setInlining((CGOpts.OptimizationLevel == 0)
+                         ? CodeGenOptions::OnlyAlwaysInlining
+                         : CodeGenOptions::NormalInlining);
+
       // The initializers are emitted to the symbol "_GLOBAL__sub_I_" + filename.
       // Make that unique!
       deserT = beginTransaction(CompilationOptions());
