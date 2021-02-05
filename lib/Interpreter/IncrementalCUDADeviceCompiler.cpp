@@ -157,7 +157,7 @@ namespace cling {
         additionalPtxOpt.push_back(s);
     }
 
-    // add manual path to CUDA SDK
+    // use custom CUDA SDK path
     if(!invocationOptions.CompilerOpts.CUDAPath.empty()){
       additionalPtxOpt.push_back("--cuda-path=" + invocationOptions.CompilerOpts.CUDAPath);
     }

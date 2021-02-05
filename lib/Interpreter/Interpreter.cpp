@@ -746,10 +746,6 @@ namespace cling {
     return getCI()->getDiagnostics();
   }
 
-  IncrementalCUDADeviceCompiler* Interpreter::getCUDACompiler() const {
-    return m_CUDACompiler.get();
-  }
-
   CompilationOptions Interpreter::makeDefaultCompilationOpts() const {
     CompilationOptions CO;
     CO.DeclarationExtraction = 0;
