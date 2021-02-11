@@ -21,7 +21,10 @@
 // Compare the cuda module ctor and dtor of two random modules.
 std::string ctor1, ctor2, dtor1, dtor2;
 
-auto M1 = gCling->getLatestTransaction()->getModule();
+auto T1 = gCling->getLatestTransaction();
+// only __global__ CUDA kernel definitions has the cuda module ctor and dtor
+__global__ void g1() { int i = 1; }
+auto M1 = T1->getNext()->getModule();
 
 for(auto &I : *M1){
   // The trailing '_' identify the function name as modified name.
@@ -34,7 +37,9 @@ for(auto &I : *M1){
   }
 }
 
-auto M2 = gCling->getLatestTransaction()->getModule();
+auto T2 = gCling->getLatestTransaction();
+__global__ void g2() { int i = 2; }
+auto M2 = T2->getNext()->getModule();
 
 // The two modules should have different names, because of the for loop.
 M1->getName().str() != M2->getName().str()

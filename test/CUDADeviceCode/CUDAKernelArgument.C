@@ -22,15 +22,15 @@ __global__ void gKernel1(int * out){
 int * deviceOutput;
 int hostOutput = 0;
 cudaMalloc( (void **) &deviceOutput, sizeof(int))
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 gKernel1<<<1,1>>>(deviceOutput);
 cudaGetLastError()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaDeviceSynchronize()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaMemcpy(&hostOutput, deviceOutput, sizeof(int), cudaMemcpyDeviceToHost)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 hostOutput
 // CHECK: (int) 42
 
@@ -55,15 +55,15 @@ for(unsigned int i = 0; i < numberOfThreads; ++i){
  hostOutput2[i] = 0;
 }
 cudaMalloc( (void **) &deviceOutput2, sizeof(int)*numberOfThreads)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 gKernel2<<<1,numberOfThreads>>>(deviceOutput2);
 cudaGetLastError()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaDeviceSynchronize()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaMemcpy(hostOutput2, deviceOutput2, sizeof(int)*numberOfThreads, cudaMemcpyDeviceToHost)
-// CHECK:  (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK:  (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 unsigned int expectedSum = 0;
 unsigned int cudaSum = 0;

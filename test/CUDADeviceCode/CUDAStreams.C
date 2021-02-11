@@ -22,9 +22,9 @@ __global__ void gKernel1(int * a, int b){
 
 cudaStream_t stream1, stream2;
 cudaStreamCreate(&stream1)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaStreamCreate(&stream2)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 int hostInput1[numberOfThreads];
 int hostInput2[numberOfThreads];
@@ -37,30 +37,30 @@ for(unsigned int i = 0; i < numberOfThreads; ++i){
 int * device1;
 int * device2;
 cudaMalloc( (void **) &device1, sizeof(int)*numberOfThreads)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaMalloc( (void **) &device2, sizeof(int)*numberOfThreads)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 cudaMemcpyAsync(device1, hostInput1, sizeof(int)*numberOfThreads, cudaMemcpyHostToDevice, stream1)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaMemcpyAsync(device2, hostInput2, sizeof(int)*numberOfThreads, cudaMemcpyHostToDevice, stream2)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 gKernel1<<<1,numberOfThreads,0,stream2>>>(device2, 2);
 cudaGetLastError()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaDeviceSynchronize()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 gKernel1<<<1,numberOfThreads,0,stream1>>>(device1, 1);
 cudaGetLastError()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaDeviceSynchronize()
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 cudaMemcpyAsync(hostOutput2, device2, sizeof(int)*numberOfThreads, cudaMemcpyDeviceToHost, stream2)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 cudaMemcpyAsync(hostOutput1, device1, sizeof(int)*numberOfThreads, cudaMemcpyDeviceToHost, stream1)
-// CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 unsigned int expectedSum1 = 0;
 unsigned int cudaSum1 = 0;

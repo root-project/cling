@@ -16,7 +16,7 @@
 
 // if process() works, the general input also works
 gCling->process("cudaGetLastError()");
-//CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+//CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 // declare a cuda kernel with with a define
 // do not this in real code ;-)
@@ -27,16 +27,16 @@ gCling->declare("__global__ void g1(int * out){ *out = FOO;}");
 int *d1;
 int h1 = 0;
 cudaMalloc((void**)&d1, sizeof(int))
-//CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+//CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 // run kernel
 g1<<<1,1>>>(d1);
 cudaGetLastError()
-//CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+//CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 // check result
 cudaMemcpy(&h1, d1, sizeof(int), cudaMemcpyDeviceToHost)
-//CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+//CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 h1
 //CHECK: (int) 42
 
@@ -49,10 +49,10 @@ gCling->parse("__global__ void g2(int * out){ *out = 52;}");
 
 g2<<<1,1>>>(d1);
 cudaGetLastError()
-//CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+//CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 
 cudaMemcpy(&h1, d1, sizeof(int), cudaMemcpyDeviceToHost)
-//CHECK: (cudaError_t) (cudaError::cudaSuccess) : (unsigned int) 0
+//CHECK: (cudaError_t) (cudaSuccess) : (unsigned int) 0
 h1
 //CHECK: (int) 52
 

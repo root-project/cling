@@ -1339,7 +1339,10 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 #endif
 
     if (!COpts.HasOutput || !HasInput) {
-      argvCompile.push_back("-c");
+      // suppress the warning "argument unused during compilation: -c" of the
+      // device interpreter instance
+      if (!COpts.CUDADevice)
+        argvCompile.push_back("-c");
       argvCompile.push_back("-");
     }
 

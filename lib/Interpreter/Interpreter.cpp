@@ -1670,9 +1670,12 @@ namespace cling {
     IncrementalExecutor::ExecutionResult ExeRes
        = IncrementalExecutor::kExeSuccess;
 
-    // Forward to IncrementalExecutor; should not be called by
-    // anyone except for IncrementalParser.
-    ExeRes = m_Executor->runStaticInitializersOnce(T);
+    // CUDA device code is not direct executable
+    // the code is executed by a CUDA library function in the host code
+    if (!m_Opts.CompilerOpts.CUDADevice)
+      // Forward to IncrementalExecutor; should not be called by
+      // anyone except for IncrementalParser.
+      ExeRes = m_Executor->runStaticInitializersOnce(T);
 
     return ConvertExecutionResult(ExeRes);
   }

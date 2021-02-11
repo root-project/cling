@@ -19,7 +19,7 @@ __global__ void foo(){ int i = 3; }
 .rawInput 0
 
 cudaError error
-// CHECK: (cudaError) (cudaError::cudaSuccess) : (unsigned int) 0
+// CHECK: (cudaError) (cudaSuccess) : (unsigned int) 0
 
 // expected-no-diagnostics
 .q
