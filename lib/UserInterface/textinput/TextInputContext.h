@@ -34,8 +34,8 @@ namespace textinput {
   // Context for textinput library. Collection of internal objects.
   class TextInputContext {
   private:
-     TextInputContext(const TextInputContext&); // not implemented
-     TextInputContext& operator=(const TextInputContext&); // not implemented
+     TextInputContext(const TextInputContext&) = delete;
+     TextInputContext& operator=(const TextInputContext&) = delete;
   public:
     TextInputContext(TextInput* ti, const char* histFile);
     ~TextInputContext();

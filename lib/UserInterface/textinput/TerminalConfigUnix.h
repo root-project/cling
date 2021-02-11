@@ -36,8 +36,8 @@ typedef void (*sig_t)(int);
 
 class TerminalConfigUnix {
 private:
-   TerminalConfigUnix(const TerminalConfigUnix&); // not implemented
-   TerminalConfigUnix& operator=(const TerminalConfigUnix&); // not implemented
+   TerminalConfigUnix(const TerminalConfigUnix&) = delete;
+   TerminalConfigUnix& operator=(const TerminalConfigUnix&) = delete;
 public:
   ~TerminalConfigUnix();
 
