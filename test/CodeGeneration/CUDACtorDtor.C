@@ -9,7 +9,7 @@
 // The Test checks, if the symbols __cuda_module_ctor and __cuda_module_dtor are
 // unique for every module. Attention, for a working test case, a cuda
 // fatbinary is necessary.
-// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath %cudasmlevel -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 #include "cling/Interpreter/Interpreter.h"

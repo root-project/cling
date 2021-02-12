@@ -9,7 +9,7 @@
 
 // The Test checks whether a define argument (-DTEST=3) is passed to the PTX
 // compiler. If it works, it should not throw an error.
-// RUN: cat %s | %cling -DTEST=3 -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -DTEST=3 -x cuda --cuda-path=%cudapath %cudasmlevel -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
 #include <iostream>

@@ -9,8 +9,8 @@
 
 // The Test starts the cling with the arg -xcuda and checks if the cuda mode
 // is enabled.
-// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath -Xclang -verify 2>&1 | FileCheck %s
-// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath -fsyntax-only -Xclang -verify 2>&1
+// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath %cudasmlevel -Xclang -verify 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -x cuda --cuda-path=%cudapath %cudasmlevel -fsyntax-only -Xclang -verify 2>&1
 // REQUIRES: cuda-runtime
 
 
