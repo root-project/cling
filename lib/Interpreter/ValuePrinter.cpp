@@ -481,9 +481,9 @@ namespace cling {
                   sizeof(wchar_t) == sizeof(char32_t), "Bad wchar_t size");
 
     if (sizeof(wchar_t) == sizeof(char32_t))
-      return toUTF8(reinterpret_cast<const char32_t * const>(Str), N, Prefix);
+      return toUTF8(reinterpret_cast<const char32_t *>(Str), N, Prefix);
 
-    return toUTF8(reinterpret_cast<const char16_t * const>(Str), N, Prefix);
+    return toUTF8(reinterpret_cast<const char16_t *>(Str), N, Prefix);
   }
 
   template <>

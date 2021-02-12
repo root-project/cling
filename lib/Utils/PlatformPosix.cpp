@@ -70,7 +70,7 @@ namespace {
         return true;
 
       // Address of page containing P, assuming page_size is a power of 2
-      void *base = (void *)(((const size_t)P) & page_mask);
+      void *base = (void *)(((size_t)P) & page_mask);
 
       // P is invalid only when msync returns -1 and sets errno to ENOMEM
       if (::msync(base, page_size, MS_ASYNC) != 0) {
