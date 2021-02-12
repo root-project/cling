@@ -43,11 +43,6 @@ bool DeclUnloader::isInstantiatedInPCH(const Decl *D) {
   return false;
 }
 
-bool DeclUnloader::isDefinition(TagDecl* R) {
-  return R->isCompleteDefinition() && isa<CXXRecordDecl>(R);
-}
-
-
 void DeclUnloader::resetDefinitionData(TagDecl *decl) {
   auto canon = dyn_cast<CXXRecordDecl>(decl->getCanonicalDecl());
   assert(canon && "Only CXXRecordDecl have DefinitionData");
@@ -59,11 +54,21 @@ void DeclUnloader::resetDefinitionData(TagDecl *decl) {
   }
 }
 
+constexpr static bool isDefinition(void*) { return false; }
+static bool isDefinition(TagDecl* R) {
+  return R->isCompleteDefinition() && isa<CXXRecordDecl>(R);
+}
+
 // Copied and adapted from: ASTReaderDecl.cpp
 template<typename DeclT>
-void DeclUnloader::removeRedeclFromChain(DeclT* R) {
+static void removeRedeclFromChain(DeclT* R) {
   //RedeclLink is a protected member.
   struct RedeclDerived : public Redeclarable<DeclT> {
+     // FIXME: Report this false positive diagnostic to clang.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#endif // __clang__
     typedef typename Redeclarable<DeclT>::DeclLink DeclLink_t;
     static DeclLink_t& getLink(DeclT* LR) {
       Redeclarable<DeclT>* D = LR;
@@ -85,6 +90,9 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
         = DeclLink_t(DeclLink_t::LatestLink, First->getASTContext());
       getLink(First).setLatest(Latest);
     }
+#ifdef __clang__
+#pragma clang diagnostic push
+#endif // __clang__
   };
 
   assert(R != R->getFirstDecl() && "Cannot remove only redecl from chain");
@@ -120,7 +128,7 @@ void DeclUnloader::removeRedeclFromChain(DeclT* R) {
   // DefinitionData pointing to it.
   // This is really need only if DeclT is a TagDecl or derived.
   if (isdef) {
-    resetDefinitionData(Prev);
+     DeclUnloader::resetDefinitionData(Prev);
   }
 }
 

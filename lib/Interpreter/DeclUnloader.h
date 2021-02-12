@@ -255,6 +255,12 @@ namespace cling {
     }
     /// @}
 
+    static void resetDefinitionData(void*) {
+      llvm_unreachable("resetDefinitionData on non-cxx record declaration");
+    }
+
+    static void resetDefinitionData(clang::TagDecl *decl);
+
   private:
     ///\brief Function that collects the files which we must reread from disk.
     ///
@@ -265,22 +271,6 @@ namespace cling {
     void CollectFilesToUncache(clang::SourceLocation Loc);
 
     bool isInstantiatedInPCH(const clang::Decl *D);
-
-    constexpr static bool isDefinition(void*) { return false; }
-    static bool isDefinition(clang::TagDecl* R);
-
-    static void resetDefinitionData(void*) {
-      llvm_unreachable("resetDefinitionData on non-cxx record declaration");
-    }
-
-    static void resetDefinitionData(clang::TagDecl *decl);
-
-    template<typename DeclT>
-    static void removeRedeclFromChain(DeclT* R);
-
-    static void removeRedeclFromChain(void*) {
-      llvm_unreachable("setLatestDeclImpl on non-redeclarable declaration");
-    }
 
     template <typename T>
     bool VisitRedeclarable(clang::Redeclarable<T>* R, clang::DeclContext* DC);
