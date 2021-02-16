@@ -117,6 +117,9 @@ namespace cling {
     Scope* TUScope = m_Sema->TUScope;
     llvm::SmallVector<Stmt*, 4> Stmts;
 
+    if (CS->body_empty())
+      return FD;
+
     for (CompoundStmt::body_iterator I = CS->body_begin(), EI = CS->body_end();
          I != EI; ++I) {
       DeclStmt* DS = dyn_cast<DeclStmt>(*I);
