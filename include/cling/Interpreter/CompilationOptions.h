@@ -86,7 +86,7 @@ namespace cling {
       CodeGeneration = 1;
       CodeGenerationForModule = 0;
       IgnorePromptDiags = 0;
-      OptLevel = 2;
+      OptLevel = 1;
       CheckPointerValidity = 1;
     }
 
