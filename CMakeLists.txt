@@ -170,15 +170,18 @@ Please install Python or specify the PYTHON_EXECUTABLE CMake variable.")
 
   set( CLING_BUILT_STANDALONE 1 )
   set(BACKEND_PACKAGE_STRING "LLVM ${LLVM_PACKAGE_VERSION}")
-else()
+else() # Building as part of LLVM
   set(BACKEND_PACKAGE_STRING "${PACKAGE_STRING}")
+  # Try finding the LLVMConfig.cmake if we build against prebuilt LLVM
   set(LLVM_CMAKE_PATH "${LLVM_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}/cmake/llvm")
   set(LLVMCONFIG_FILE "${LLVM_CMAKE_PATH}/LLVMConfig.cmake")
   if(EXISTS ${LLVMCONFIG_FILE})
     list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_PATH}")
     include(${LLVMCONFIG_FILE})
-  else()
-    message(FATAL_ERROR "Not found: ${LLVMCONFIG_FILE}")
+  endif()
+  if (NOT CLANG_INCLUDE_DIRS)
+    set (CLANG_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/tools/clang/include"
+      "${CMAKE_BINARY_DIR}/tools/clang/include")
   endif()
 endif()
 
