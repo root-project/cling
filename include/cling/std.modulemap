@@ -309,7 +309,7 @@ module "std" [system] {
     header "string"
   }
   module "string_view" {
-    requires !header_existence
+    requires cplusplus17, !header_existence
     export *
     textual header "string_view"
   }
