@@ -114,6 +114,7 @@ namespace cling {
     QT = utils::TypeName::GetFullyQualifiedType(QT, m_Ctx);
     Visit(QT.getTypePtr());
   }
+
   void ForwardDeclPrinter::Visit(clang::Decl *D) {
     auto Insert = m_Visited.insert(std::pair<const clang::Decl*, bool>(
                                              getCanonicalOrNamespace(D), true));
@@ -971,6 +972,10 @@ namespace cling {
                dyn_cast<TemplateTemplateParmDecl>(Param)) {
         Visit(TTPD);
         // FIXME: print the default argument, if present.
+        if (m_SkipFlag) {
+          skipDecl(TTPD, "template template param decl failed");
+          return;
+        }
       }
     }
 
@@ -1080,6 +1085,10 @@ namespace cling {
     for (const TemplateArgument& TA: iargs.asArray()) {
        VisitTemplateArgument(TA);
     }
+    if (m_SkipFlag) {
+      skipDecl(D, "template arguments failed");
+      return;
+    }
 
 //    Out() << "template <> ";
 //    VisitCXXRecordDecl(D->getCanonicalDecl());
@@ -1098,6 +1107,10 @@ namespace cling {
     Visit(D->getSpecializedTemplate());
     //Above code doesn't work properly
     //Must find better and more general way to print specializations
+    if (m_SkipFlag) {
+      skipDecl(D, "template specialization failed");
+      return;
+    }
   }
 
 
@@ -1107,6 +1120,10 @@ namespace cling {
 #define VISIT_DECL(WHAT, HOW) \
       case clang::Type::WHAT: \
         Visit(static_cast<const clang::WHAT##Type*>(typ)->HOW().getTypePtr()); \
+        if (m_SkipFlag) { \
+          skipDecl(nullptr, #WHAT " type failed"); \
+          return; \
+        } \
      break
       VISIT_DECL(ConstantArray, getElementType);
       VISIT_DECL(DependentSizedArray, getElementType);
@@ -1136,6 +1153,10 @@ namespace cling {
         const MemberPointerType* MPT
           = static_cast<const MemberPointerType*>(typ);
         Visit(MPT->getPointeeType().getTypePtr());
+        if (m_SkipFlag) {
+          skipDecl(nullptr, "pointee type failed");
+          return;
+        }
         Visit(MPT->getClass());
       }
       break;
@@ -1152,8 +1173,16 @@ namespace cling {
           = static_cast<const TemplateSpecializationType*>(typ);
         for (const TemplateArgument& TA: *TST) {
           VisitTemplateArgument(TA);
+          if (m_SkipFlag) {
+            skipDecl(nullptr, "template argument failed");
+            return;
+          }
         }
         VisitTemplateName(TST->getTemplateName());
+        if (m_SkipFlag) {
+          skipDecl(nullptr, "template specialization type failed");
+          return;
+        }
       }
       break;
 
