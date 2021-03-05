@@ -1205,11 +1205,22 @@ namespace cling {
             return;
           }
         }
+        else {
+          std::string buf;
+          {
+            llvm::raw_string_ostream osbuf(buf);
+            TAExpr->printPretty(osbuf, nullptr, m_Policy);
+          }
+          Log() << "Visit(Type*): cannot forward declare template argument expression: "
+            << buf;
+          skipDecl(nullptr, nullptr);
+        }
       }
       break;
     default:
       Log() << "Visit(Type*): Unexpected TemplateSpecializationType "
             << TA.getKind() << '\n';
+      skipDecl(nullptr, nullptr);
       break;
     }
   }
