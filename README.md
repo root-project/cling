@@ -45,7 +45,7 @@ Our nightly binary snapshots can be found
 ### Building from Source with Cling Packaging Tool
 Cling's tree has a user-friendly, command-line utility written in Python called
 Cling Packaging Tool (CPT) which can build Cling from source and generate
-installer bundles for a wide range of platforms. CPT requires Python 2.7 or
+installer bundles for a wide range of platforms. CPT requires Python 3 or
 later.
 
 If you have Cling's source cloned locally, you can find the tool in
