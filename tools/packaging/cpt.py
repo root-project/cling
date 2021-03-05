@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # coding:utf-8
 
 ###############################################################################
@@ -585,7 +585,7 @@ def compile_for_binary(arg):
     else:
         print("Creating build directory: " + LLVM_OBJ_ROOT)
         os.makedirs(LLVM_OBJ_ROOT)
-    
+
     build = Build()
     cmake_config_flags = (clangdir + ' -DCMAKE_BUILD_TYPE={0} -DCMAKE_INSTALL_PREFIX={1} '
                           .format(build.buildType, TMP_PREFIX) + llvm_flags +
@@ -1989,7 +1989,7 @@ if args['check_requirements']:
         prerequisite = ['git', 'cmake', 'gcc', 'g++', 'debhelper', 'devscripts', 'gnupg', 'zlib1g-dev']
         if args["with_binary_llvm"] or args["with_llvm_tar"]:
             prerequisite.extend(['subversion'])
-        if args["with_binary_llvm"] and not args["with_llvm_tar"]:        
+        if args["with_binary_llvm"] and not args["with_llvm_tar"]:
             if check_ubuntu('llvm-'+llvm_vers+'-dev') is False:
                 llvm_binary_name = 'llvm-{0}-dev'.format(llvm_vers)
         for pkg in prerequisite:
