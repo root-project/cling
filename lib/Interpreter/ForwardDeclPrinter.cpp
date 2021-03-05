@@ -1228,7 +1228,7 @@ namespace cling {
         Expr* TAExpr = TA.getAsExpr();
         if (CastExpr* CastExpr = dyn_cast<clang::CastExpr>(TAExpr))
           TAExpr = CastExpr->getSubExpr();
-        else if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(TAExpr)) {
+        if (DeclRefExpr* DRE = dyn_cast<DeclRefExpr>(TAExpr)) {
           Visit(DRE->getFoundDecl());
           if (m_SkipFlag) {
             return;
