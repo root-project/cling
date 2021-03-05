@@ -1355,7 +1355,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     // e.g. in CUDA mode
     std::string ExeName = "";
     if (COpts.CUDAHost)
-      ExeName = COpts.CUDADevice ? "cling-ptx" : "cling";
+      ExeName = "cling";
+    if (COpts.CUDADevice)
+      ExeName = "cling-ptx";
     llvm::IntrusiveRefCntPtr<DiagnosticsEngine> Diags =
         SetupDiagnostics(DiagOpts, ExeName);
     if (!Diags) {
