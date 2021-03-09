@@ -81,7 +81,26 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
   assert(TM->getCodeModel() >= CodeModel::Large);
 #endif
 
-    return TM;
+  // Forcefully disable GlobalISel, it might be enabled on AArch64 without
+  // optimizations. In tests on an Apple M1 after the upgrade to LLVM 9, this
+  // new instruction selection framework emits branches / calls that expect all
+  // code to be reachable in +/- 128 MB. This cannot be guaranteed during JIT,
+  // which generates code into allocated pages on the heap and could span the
+  // entire address space of the process.
+  //
+  // TODO:
+  // 1. Try to reproduce the problem with vanilla lli of LLVM 9 to check that
+  //    this is not related to the way Cling incrementally JITs and executes.
+  // 2. Figure out exactly why GlobalISel emits different branch instructions,
+  //    and whether this is a problem in the framework or of the generated IR.
+  // 3. Verify if the same happens with LLVM 11/12 (whatever Cling will move to
+  //    next), and possibly fix the underlying issue in LLVM upstream's `main`.
+  //
+  // FIXME: Lift this restriction and allow the target to enable GlobalISel,
+  // if deemed ready by upstream developers.
+  TM->setGlobalISel(false);
+
+  return TM;
 }
 
 } // anonymous namespace
