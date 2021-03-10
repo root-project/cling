@@ -90,7 +90,6 @@ TerminalConfigUnix::HandleSignal(int signum) {
   // Process has received a fatal signal, detach.
   bool sSignalHandlerActive = false;
   if (!sSignalHandlerActive) {
-    sSignalHandlerActive = true;
     Detach();
     // find previous signal handler index:
     for (int i = 0; i < kNumHandledSignals; ++i) {
@@ -99,7 +98,6 @@ TerminalConfigUnix::HandleSignal(int signum) {
         if (fPrevHandler[i]) {
           fPrevHandler[i](signum);
           // should not end up here...
-          sSignalHandlerActive = false;
           return;
         } else break;
       }
