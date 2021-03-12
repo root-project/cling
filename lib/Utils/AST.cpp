@@ -169,8 +169,11 @@ namespace utils {
               indexOfLastExpr++;
               newBody.insert(newBody.begin() + indexOfLastExpr, DRE);
 
-              // Attach the new body (note: it does dealloc/alloc of all nodes)
-              CS->replaceStmts(S->getASTContext(), newBody);
+              // Attach a new body.
+              auto newCS = CompoundStmt::Create(S->getASTContext(), newBody,
+                                                CS->getLBracLoc(),
+                                                CS->getRBracLoc());
+              FD->setBody(newCS);
               if (FoundAt)
                 *FoundAt = indexOfLastExpr;
               return DRE;

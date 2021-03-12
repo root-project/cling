@@ -16,7 +16,6 @@
 
 namespace clang {
   class ASTContext;
-  class CompoundStmt;
   class Decl;
   class FunctionDecl;
   class Expr;
@@ -63,7 +62,7 @@ public:
     /// critical error.
     bool tryAttachVP(clang::FunctionDecl* FD);
     clang::Expr* SynthesizeVP(clang::Expr* E);
-    unsigned ClearNullStmts(clang::CompoundStmt* CS);
+    unsigned ClearNullStmts(clang::FunctionDecl* FD);
 
     // Find and cache cling::runtime on first request.
     void FindAndCacheRuntimeLookupResult(clang::SourceLocation SourceLoc);

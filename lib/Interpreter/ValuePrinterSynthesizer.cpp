@@ -105,7 +105,7 @@ namespace cling {
           *(CS->body_begin()+indexOfLastExpr) = Result;
       }
       // Clear the artificial NullStmt-s
-      if (!ClearNullStmts(CS)) {
+      if (!ClearNullStmts(FD)) {
         // FIXME: Why it is here? Shouldn't it be in DeclExtractor?
         // if no body remove the wrapper
         DeclContext* DC = FD->getDeclContext();
@@ -166,14 +166,24 @@ namespace cling {
   }
 
 
-  unsigned ValuePrinterSynthesizer::ClearNullStmts(CompoundStmt* CS) {
+  unsigned ValuePrinterSynthesizer::ClearNullStmts(FunctionDecl* FD) {
+    CompoundStmt* CS = cast<CompoundStmt>(FD->getBody());
+    assert(CS && "Missing body?");
+
     llvm::SmallVector<Stmt*, 8> FBody;
     for (auto&& child: CS->children())
       if (!isa<NullStmt>(child))
         FBody.push_back(child);
 
-    if (CS->size() != FBody.size())
-      CS->replaceStmts(*m_Context, FBody);
+    // If body would be empty, return early - the function will be removed.
+    if (FBody.empty())
+      return 0;
+
+    if (CS->size() != FBody.size()) {
+      auto BodyCS = CompoundStmt::Create(*m_Context, FBody, CS->getLBracLoc(),
+                                         CS->getRBracLoc());
+      FD->setBody(BodyCS);
+    }
 
     return FBody.size();
   }

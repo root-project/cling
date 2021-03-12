@@ -289,12 +289,12 @@ namespace cling {
                "Cannot have more than one stmt at that point");
 
         if (NewNode.isForReplacement()) {
-          if (Expr* E = NewNode.getAs<Expr>())
+          if (Expr* E = NewNode.getAs<Expr>()) {
             // Assume void if still not escaped
             *I = SubstituteUnknownSymbol(m_Context->VoidTy, E);
-        }
-        else {
-          *I = NewNode.getAsSingleNode();
+          } else {
+            *I = NewNode.getAsSingleNode();
+          }
         }
       }
     }
@@ -328,14 +328,21 @@ namespace cling {
     // where we know what to do. For Stmt, though, we need to substitute here,
     // knowing the "target" type.
     ASTNodeInfo thenInfo = Visit(Node->getThen());
-    if (thenInfo.isForReplacement())
-      Node->setThen(SubstituteUnknownSymbol(m_Context->VoidTy,
-                                            thenInfo.getAs<Expr>()));
+    if (thenInfo.isForReplacement()) {
+      Stmt* thenReplacement = thenInfo.getAsSingleNode();
+      if (Expr* thenExpr = dyn_cast<Expr>(thenReplacement))
+        thenReplacement = SubstituteUnknownSymbol(m_Context->VoidTy, thenExpr);
+      Node->setThen(thenReplacement);
+    }
     if (Stmt* ElseExpr = Node->getElse()) {
       ASTNodeInfo elseInfo = Visit(ElseExpr);
-      if (elseInfo.isForReplacement())
-        Node->setElse(SubstituteUnknownSymbol(m_Context->VoidTy,
-                                              elseInfo.getAs<Expr>()));
+      if (elseInfo.isForReplacement()) {
+        Stmt* elseReplacement = elseInfo.getAsSingleNode();
+        if (Expr* elseExpr = dyn_cast<Expr>(elseReplacement))
+          elseReplacement =
+            SubstituteUnknownSymbol(m_Context->VoidTy, elseExpr);
+        Node->setElse(elseReplacement);
+      }
     }
 
     return ASTNodeInfo(Node, false);
@@ -382,10 +389,12 @@ namespace cling {
       }
     }
 
-    Node->replaceStmts(*m_Context, NewChildren);
+    auto* NewCS = CompoundStmt::Create(*m_Context, NewChildren,
+                                       Node->getLBracLoc(),
+                                       Node->getRBracLoc());
 
     --m_NestedCompoundStmts;
-    return ASTNodeInfo(Node, 0);
+    return ASTNodeInfo(NewCS, true);
   }
 
   ASTNodeInfo EvaluateTSynthesizer::VisitDeclStmt(DeclStmt* Node) {
