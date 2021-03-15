@@ -17,8 +17,10 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TokenKinds.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/HeaderSearch.h"
+#include "clang/Lex/LexDiagnostic.h"
 #include "clang/Lex/LiteralSupport.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/Token.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Parse/ParseDiagnostic.h"
@@ -159,8 +161,19 @@ namespace {
         // a call to interpreter parsing header file. It will suffer the same
         // issue as if we included the file within the pragma.
         if (m_Interp.loadLibrary(FI.FileName, true) != Interpreter::kSuccess) {
-          PP.Diag(FI.StartLoc, diag::err_expected)
-            << "is not a library; did you mean #include \"" + FI.FileName + "\"";
+          const clang::DirectoryLookup *CurDir = nullptr;
+          if (PP.getHeaderSearchInfo().LookupFile(FI.FileName, FI.StartLoc,
+              /*isAngled*/ false, /*fromDir*/ nullptr, /*CurDir*/ CurDir, /*Includers*/ {},
+              /*SearchPath*/ nullptr, /*RelativePath*/ nullptr, /*RequestingModule*/ nullptr,
+              /*suggestedModule*/ nullptr, /*IsMapped*/ nullptr,
+              /*IsFrameworkFound*/ nullptr, /*SkipCache*/ true, /*BuildSystemModule*/ false,
+              /*OpenFile*/ false, /*CacheFailures*/ false)) {
+            PP.Diag(FI.StartLoc, diag::err_expected)
+              << FI.FileName + " to be a library, but it is not. If this is a source file, use `#include \"" + FI.FileName + "\"`";
+          } else {
+            PP.Diag(FI.StartLoc, diag::err_pp_file_not_found)
+              << FI.FileName;
+          }
           return;
         }
       }
