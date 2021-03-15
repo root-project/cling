@@ -8,6 +8,6 @@
 
 // RUN: cat %s | %cling -I%S -Xclang -verify 2>&1
 
-#pragma cling load("P0.h", "P1.h","P2.h") //expected-error {{expected is not a library; did you mean #include "P0.h"}}
+#pragma cling load("P0.h", "P1.h","P2.h") //expected-error {{expected P0.h to be a library, but it is not. If this is a source file, use `#include "P0.h"`}}
 
 .q
