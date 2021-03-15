@@ -1,4 +1,4 @@
-// RUN: cd "%testexecdir/../../clang/test" && python "%llvmsrcdir/utils/lit/lit.py" -v -sv --param clang_site_config="%testexecdir/../../clang/test/lit.site.cfg" "%/p/../../../clang/test/Sema/address-constant.c"
+// RUN: cd "%cling_obj_root/../clang/test" && python "%src_include_dir/../../../utils/lit/lit.py" -v -sv --param clang_site_config="%cling_obj_root/../clang/test/lit.site.cfg" "%/p/../../../clang/test/Sema/address-constant.c"
 
 // REQUIRES: vanilla-cling
 
