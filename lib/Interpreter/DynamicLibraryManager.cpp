@@ -249,6 +249,15 @@ namespace cling {
   bool DynamicLibraryManager::isSharedLibrary(llvm::StringRef libFullPath,
                                               bool* exists /*=0*/) {
     using namespace llvm;
+    auto filetype = sys::fs::get_file_type(libFullPath, /*Follow*/ true);
+    if (filetype != sys::fs::file_type::regular_file) {
+      if (exists) {
+        // get_file_type returns status_error also in case of file_not_found.
+        *exists = filetype != sys::fs::file_type::status_error;
+      }
+      return false;
+    }
+
     file_magic Magic;
     const std::error_code Error = identify_magic(libFullPath, Magic);
     if (exists)
