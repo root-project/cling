@@ -1817,8 +1817,6 @@ parser.add_argument('--stdlib', help=('C++ Library to use, stdlibc++ or libc++.'
                                      '  To build a spcific llvm <tag> of libc++ with cling '
                                      'specify libc++,<tag>'),
                     default='')
-parser.add_argument('--compiler', help='The compiler being used to make cling (for heuristics only)',
-                    default='')
 parser.add_argument('-y', help='Non-interactive mode (yes to all)', action='store_true')
 
 args = vars(parser.parse_args())
@@ -1954,10 +1952,6 @@ print('Distribution: ' + DIST)
 print('Release: ' + RELEASE)
 print('Revision: ' + REV)
 print('Architecture: ' + platform.machine())
-if args['compiler']:
-  cInfo = None
-  cInfo = exec_subprocess_check_output(args['compiler'] + ' --version', srcdir).decode('utf-8')
-  print("Compiler: '%s' : %s" % (args['compiler'], cInfo.split('\n',1)[0] if cInfo else ''))
 
 if len(sys.argv) == 1:
     print("Error: no options passed")
