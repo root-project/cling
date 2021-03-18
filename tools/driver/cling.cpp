@@ -19,6 +19,7 @@
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/Support/ManagedStatic.h"
 
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -106,6 +107,31 @@ int main( int argc, char **argv ) {
     Interp.loadFile(Lib);
 
   cling::UserInterface Ui(Interp);
+
+  // Get the home directory
+  std::string HomeDir;
+#ifdef __unix__
+  HomeDir = getenv("HOME");
+  HomeDir += "/";
+#elif defined(_WIN32)
+  HomeDir = getenv("DRIVE");
+  const char *HomePath = getenv("HOMEPATH");
+  HomeDir += HomePath;
+  HomeDir += "\\";
+#endif
+
+  // Look for .clinginit in the home directory and if found process it like a cling script
+  std::string CLingInit = HomeDir + ".clinginit";
+  const std::string Filepath = Interp.lookupFileOrLibrary(CLingInit);
+  if (!Filepath.empty()) {
+    std::ifstream File(Filepath);
+    std::string Line;
+    cling::Interpreter::CompilationResult Result;
+    while (std::getline(File, Line)) {
+      Ui.getMetaProcessor()->process(Line, Result, 0);
+    }
+  }
+
   // If we are not interactive we're supposed to parse files
   if (!Opts.IsInteractive()) {
     for (const std::string &Input : Opts.Inputs) {
