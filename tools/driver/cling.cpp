@@ -114,9 +114,7 @@ int main( int argc, char **argv ) {
   HomeDir = getenv("HOME");
   HomeDir += "/";
 #elif defined(_WIN32)
-  HomeDir = getenv("DRIVE");
-  const char *HomePath = getenv("HOMEPATH");
-  HomeDir += HomePath;
+  HomeDir = getenv("USERPROFILE");
   HomeDir += "\\";
 #endif
 
