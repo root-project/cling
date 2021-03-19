@@ -19,7 +19,6 @@
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/Support/ManagedStatic.h"
 
-#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
