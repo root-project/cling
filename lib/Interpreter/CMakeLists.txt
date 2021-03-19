@@ -292,9 +292,22 @@ if (UNIX)
     #define CLING_INCLUDE_PATHS \"${CLING_INCLUDE_PATHS}\"
   ")
   if (CMAKE_OSX_SYSROOT)
+    # CMAKE_OSX_SYSROOT hardcodes the concrete version of the sdk
+    # (eg .../MacOSX11.1.sdk) which changes after every update of XCode. We use
+    # the assumption that in the parent folder there is a symlink MacOSX.sdk
+    # which points to the current active sdk. This change allows releases
+    # to work when the users update their sdks.
+    # FIXME: That is a horrible hack and we should teach CIFactory to pick up
+    # the SDK directory at runtime, just as we do for the include paths to C++.
+    set (OSX_SYSROOT_DEFAULT_SDK ${CMAKE_OSX_SYSROOT})
+    if (${OSX_SYSROOT_DEFAULT_SDK} MATCHES "MacOSX[.0-9]+\.sdk")
+      get_filename_component(OSX_SYSROOT_DEFAULT_SDK ${OSX_SYSROOT_DEFAULT_SDK} DIRECTORY)
+      set (OSX_SYSROOT_DEFAULT_SDK ${OSX_SYSROOT_DEFAULT_SDK}/MacOSX.sdk/)
+    endif()
+
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h.in
       "
-      #define CLING_OSX_SYSROOT \"${CMAKE_OSX_SYSROOT}\"
+      #define CLING_OSX_SYSROOT \"${OSX_SYSROOT_DEFAULT_SDK}\"
     ")
   endif()
   if (CLING_CXX_PATH)
