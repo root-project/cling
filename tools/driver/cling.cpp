@@ -109,25 +109,16 @@ int main( int argc, char **argv ) {
   cling::UserInterface Ui(Interp);
 
   // Get the home directory
-  std::string HomeDir;
-#ifdef __unix__
-  HomeDir = getenv("HOME");
-  HomeDir += "/";
-#elif defined(_WIN32)
-  HomeDir = getenv("USERPROFILE");
-  HomeDir += "\\";
-#endif
+  llvm::SmallString<32> HomeDir;
+  llvm::sys::path::home_directory(HomeDir);
 
-  // Look for .clinginit in the home directory and if found process it like a cling script
-  std::string CLingInit = HomeDir + ".clinginit";
-  const std::string Filepath = Interp.lookupFileOrLibrary(CLingInit);
-  if (!Filepath.empty()) {
-    std::ifstream File(Filepath);
-    std::string Line;
-    cling::Interpreter::CompilationResult Result;
-    while (std::getline(File, Line)) {
-      Ui.getMetaProcessor()->process(Line, Result, 0);
-    }
+  // Look for .cling_init in the home directory and if found process it like a cling script
+  llvm::SmallString<128> ClingInit(HomeDir.c_str());
+
+  llvm::sys::path::append(ClingInit, ".cling_init");
+
+  if(llvm::sys::fs::exists(ClingInit)) {
+    Ui.getMetaProcessor()->readInputFromFile(ClingInit.c_str(), nullptr, -1, true);
   }
 
   // If we are not interactive we're supposed to parse files
