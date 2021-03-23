@@ -74,7 +74,6 @@ if(MSVC)
 
   # Most (if not all) of these MSVC decided are inlines that aren't exported
   set(cling_exports ${cling_exports} ?print@Decl@clang@@QEBAXAEAVraw_ostream@llvm@@I_N@Z
-    ?getAsString@QualType@clang@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBVType@2@VQualifiers@2@@Z
     ??6raw_ostream@llvm@@QEAAAEAV01@PEBX@Z
     ?getQualifiedNameAsString@NamedDecl@clang@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ
     ?insert_imp_big@SmallPtrSetImplBase@llvm@@AEAA?AU?$pair@PEBQEBX_N@std@@PEBX@Z
@@ -90,7 +89,6 @@ if(MSVC)
     ??1raw_string_ostream@llvm@@UEAA@XZ
     ?flush_nonempty@raw_ostream@llvm@@AEAAXXZ
     ?getASTContext@Decl@clang@@QEBAAEAVASTContext@2@XZ
-    ?handle@raw_ostream@llvm@@EEAAXXZ
     ?preferred_buffer_size@raw_ostream@llvm@@MEBA_KXZ
     ?write_impl@raw_string_ostream@llvm@@EEAAXPEBD_K@Z
     ?castToDeclContext@Decl@clang@@SAPEAVDeclContext@2@PEBV12@@Z
