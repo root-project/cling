@@ -107,12 +107,9 @@ int main( int argc, char **argv ) {
 
   cling::UserInterface Ui(Interp);
 
-  // Get the home directory
-  llvm::SmallString<32> HomeDir;
-  llvm::sys::path::home_directory(HomeDir);
-
   // Look for .cling_init in the home directory and if found process it like a cling script
-  llvm::SmallString<128> ClingInit(HomeDir.c_str());
+  llvm::SmallString<128> ClingInit;
+  llvm::sys::path::home_directory(ClingInit);
 
   llvm::sys::path::append(ClingInit, ".cling_init");
 
