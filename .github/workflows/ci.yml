@@ -17,19 +17,15 @@ jobs:
       matrix:
 
         include:
-          - name: ubuntu-16.04-gcc
+          - name: ubuntu-16.04-gcc-compile
             os: ubuntu-16.04
             compiler: gcc
 
-          - name: ubuntu-16.04-clang
-            os: ubuntu-16.04
-            compiler: clang
-
-          - name: ubuntu-18.04-gcc
+          - name: ubuntu-18.04-gcc-compile
             os: ubuntu-18.04
             compiler: gcc
 
-          - name: ubuntu-18.04-clang
+          - name: ubuntu-18.04-clang-compile
             os: ubuntu-18.04
             compiler: clang
 
@@ -41,7 +37,7 @@ jobs:
             os: ubuntu-20.04
             compiler: clang
 
-          - name: macos-10.15-xcode-11.2.1-fromtar
+          - name: macos-10.15-xcode-11.2.1-compile
             os: macOS-10.15
             compiler: clang
             xcode-version: "11.2.1"
@@ -103,3 +99,7 @@ jobs:
           python3 cpt.py -y --check-requirements --current-dev=tar --with-cmake-flags="$CLING_BUILD_FLAGS" --with-cling-url=https://github.com/$REPO --cling-branch=${{ github.head_ref }} --with-binary-llvm
         fi
       working-directory: tools/packaging/
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+      timeout-minutes: 1 # When debugging increase to a suitable value!
