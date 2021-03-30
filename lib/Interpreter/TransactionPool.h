@@ -48,10 +48,9 @@ namespace cling {
 
     Transaction* takeTransaction(clang::Sema& S) {
       Transaction *T;
-      if (kDebugMode || m_Transactions.empty()) {
-        T = (Transaction*) ::operator new(sizeof(Transaction));
-        new(T) Transaction(S);
-      } else
+      if (kDebugMode || m_Transactions.empty())
+        T = new Transaction(S);
+      else
         T = new (m_Transactions.pop_back_val()) Transaction(S);
 
       return T;
@@ -63,7 +62,7 @@ namespace cling {
       if (reuse) {
         assert((T->getState() == Transaction::kCompleted ||
                 T->getState() == Transaction::kRolledBack)
-               && "Transaction must completed!");
+               && "Transaction must be completed!");
         // Force reuse to off when not in Debug mode
         if (kDebugMode)
           reuse = false;
@@ -73,15 +72,14 @@ namespace cling {
       if (T->getParent())
         T->getParent()->removeNestedTransaction(T);
 
-      T->~Transaction();
-
       // don't overflow the pool
       if (reuse && (m_Transactions.size() < kPoolSize)) {
         T->m_State = Transaction::kNumStates;
+        T->~Transaction();
         m_Transactions.push_back(T);
       }
       else
-       ::operator delete(T);
+       delete T;
     }
   };
 
