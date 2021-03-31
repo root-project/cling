@@ -26,8 +26,7 @@ namespace cling {
 #else
       kDebugMode           = 1, // Always use a new Transaction
 #endif
-      kTransactionsInBlock = 8,
-      kPoolSize            = 2 * kTransactionsInBlock
+      kPoolSize            = 16
     };
 
     // It is twice the size of the block because there might be easily around 8
