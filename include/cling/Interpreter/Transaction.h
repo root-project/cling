@@ -139,6 +139,11 @@ namespace cling {
 
     unsigned m_IssuedDiags : 2;
 
+    ///\brief the Transaction is currently being unloaded. Currently,
+    /// used for ensuring system consistency when unloading transactions.
+    ///
+    bool m_Unloading : 1;
+
     ///\brief Options controlling the transformers and code generator.
     ///
     CompilationOptions m_Opts;
@@ -307,6 +312,8 @@ namespace cling {
              && "Transaction already returned in the pool");
       m_State = val;
     }
+
+    void setUnloading() { m_Unloading = true; }
 
     IssuedDiags getIssuedDiags() const {
       return static_cast<IssuedDiags>(getTopmostParent()->m_IssuedDiags);
