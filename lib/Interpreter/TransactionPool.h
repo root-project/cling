@@ -58,6 +58,8 @@ namespace cling {
     // Transaction T must be from call to TransactionPool::takeTransaction
     //
     void releaseTransaction(Transaction* T, bool reuse = true) {
+      assert((m_Transactions.empty() || m_Transactions.back() != T) \
+             && "Transaction already in pool");
       if (reuse) {
         assert((T->getState() == Transaction::kCompleted ||
                 T->getState() == Transaction::kRolledBack)
