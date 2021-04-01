@@ -722,7 +722,11 @@ namespace cling {
                         // in invalid state. We should be unloading all of them, i.e. inload the
                         // current (possibly nested) transaction.
                         auto *T = const_cast<Transaction*>(m_Interpreter->getCurrentTransaction());
-                        m_Interpreter->unload(*T);
+                        // Must not unload the Transaction, which might delete
+                        // it: the RAII above still points to it! Instead, just
+                        // mark it as "erroneous" which causes the RAII to
+                        // unload it in due time.
+                        T->setIssuedDiags(Transaction::kErrors);
                         *setResultType = nullptr;
                         return 0;
                       }
