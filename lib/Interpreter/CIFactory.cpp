@@ -1238,8 +1238,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     argvCompile.reserve(argc+32);
 
 #if __APPLE__ && __arm64__
-    argvCompile.push_back("-Xclang");
-    argvCompile.push_back("-triple=arm64-apple-macosx11.0.0");
+    argvCompile.push_back("--target=arm64-apple-darwin20.3.0");
 #endif
 
     // Variables for storing the memory of the C-string arguments.
