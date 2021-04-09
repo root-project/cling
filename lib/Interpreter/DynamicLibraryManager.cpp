@@ -276,8 +276,10 @@ namespace cling {
       (Magic == file_magic::elf_shared_object)
 #endif
 #elif defined(_WIN32)
-      (Magic == file_magic::pecoff_executable
-       || platform::IsDLL(libFullPath.str()))
+      // We should only include dll libraries without including executables,
+      // object code and others...
+      (Magic == file_magic::pecoff_executable &&
+       platform::IsDLL(libFullPath.str()))
 #else
 # error "Unsupported platform."
 #endif
