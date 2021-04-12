@@ -190,10 +190,12 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   const std::size_t LD = Result.find("(LD_LIBRARY_PATH)");
   std::size_t From = Result.find("search path=", LD == NPos ? 0 : LD);
   if (From != NPos) {
-    const std::size_t To = Result.find("(system search path)", From);
+    std::size_t To = Result.find("(system search path)", From);
     if (To != NPos) {
       From += 12;
-      std::string SysPath = Result.substr(From, To-From);
+      while (To > From && isspace(Result[To - 1]))
+        --To;
+      std::string SysPath = Result.substr(From, To - From);
       SysPath.erase(std::remove_if(SysPath.begin(), SysPath.end(), isspace),
                     SysPath.end());
 
