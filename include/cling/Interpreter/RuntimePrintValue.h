@@ -154,8 +154,8 @@ namespace cling {
     inline auto printValue_impl(
         const CollectionType* obj,
         typename std::enable_if<
-            std::is_reference<decltype(*(obj->begin()))>::value>::type* = 0)
-        -> decltype(++(obj->begin()), obj->end(), std::string()) {
+            std::is_reference<decltype(*std::begin(*obj))>::value>::type* = 0)
+        -> decltype(std::end(*obj), std::string()) {
       auto iter = obj->begin(), iterEnd = obj->end();
       if (iter == iterEnd) return valuePrinterInternal::kEmptyCollection;
 
