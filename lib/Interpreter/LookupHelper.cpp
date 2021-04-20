@@ -1112,6 +1112,23 @@ namespace cling {
     }
 
     //
+    //  Tell the diagnostic engine to ignore all diagnostics.
+    //
+    bool OldSuppressAllDiagnostics
+      = S.getDiagnostics().getSuppressAllDiagnostics();
+    S.getDiagnostics().setSuppressAllDiagnostics(
+        diagOnOff == LookupHelper::NoDiagnostics);
+
+    struct ResetDiagSuppression {
+      bool _Old;
+      Sema& _S;
+      ResetDiagSuppression(Sema &S, bool Old): _Old(Old), _S(S) {}
+      ~ResetDiagSuppression() {
+        _S.getDiagnostics().setSuppressAllDiagnostics();
+      }
+    } DiagSuppressionRAII(S, OldSuppressAllDiagnostics);
+
+    //
     //  Construct the overload candidate set.
     //
     OverloadCandidateSet Candidates(FuncNameInfo.getLoc(),
@@ -1192,17 +1209,8 @@ namespace cling {
           // of comparison.
           TheDecl = TheDecl->getCanonicalDecl();
           if (TheDecl->isTemplateInstantiation() && !TheDecl->isDefined()) {
-            //
-            //  Tell the diagnostic engine to ignore all diagnostics.
-            //
-            bool OldSuppressAllDiagnostics
-              = S.getDiagnostics().getSuppressAllDiagnostics();
-            S.getDiagnostics().setSuppressAllDiagnostics(
-                diagOnOff == LookupHelper::NoDiagnostics);
-
             S.InstantiateFunctionDefinition(SourceLocation(), TheDecl,
                                             true /*recursive instantiation*/);
-            S.getDiagnostics().setSuppressAllDiagnostics(OldSuppressAllDiagnostics);
           }
           if (TheDecl->isInvalidDecl()) {
             // if the decl is invalid try to clean up
