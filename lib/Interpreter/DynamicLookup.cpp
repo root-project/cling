@@ -356,10 +356,6 @@ namespace cling {
           ASTNodes& NewStmts(NewNode.getNodes());
           for(unsigned i = 0; i < NewStmts.size(); ++i)
             NewChildren.push_back(NewStmts[i]);
-
-          Node->replaceStmts(*m_Context, NewChildren);
-          // Resolve all 1:n replacements
-          Visit(Node);
         }
         else {
           if (NewNode.isForReplacement()) {
