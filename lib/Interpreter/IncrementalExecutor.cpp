@@ -74,13 +74,13 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
   JTMB->getOptions().EmulatedTLS = false;
 #endif // _WIN32
 
-  std::unique_ptr<TargetMachine> TM = cantFail(JTMB->createTargetMachine());
-
 #if defined(__powerpc64__) || defined(__PPC64__)
   // We have to use large code model for PowerPC64 because TOC and text sections
   // can be more than 2GB apart.
-  assert(TM->getCodeModel() >= CodeModel::Large);
+  JTMB->setCodeModel(CodeModel::Large);
 #endif
+
+  std::unique_ptr<TargetMachine> TM = cantFail(JTMB->createTargetMachine());
 
   // Forcefully disable GlobalISel, it might be enabled on AArch64 without
   // optimizations. In tests on an Apple M1 after the upgrade to LLVM 9, this
