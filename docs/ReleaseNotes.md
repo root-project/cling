@@ -20,48 +20,30 @@ infrastructure are described first.
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM r0000000.
+* Upgrade to LLVM 9. LLVM 9 brings to cling better stability, full C++17 support
+  and CUDA 10 support.
 
-Major New Features
-------------------
-* A major new feature
 
 Misc
 ----
-* A misc feature
-
-Experimental Features
----------------------
-* An experimental feature
-
-Jupyter
--------
-* A Jupyter feature
+* Improve CUDA device compiler such as enabling sm level configuration and
+  and add `--cuda-path` option.
+* Improve the DefinitionShadower with respect to C++ Modules
+* Embed [Vc](https://github.com/VcDevel/Vc) modulemap file
+* Build the available cling plugins by default.
+* Reduce dependence on custom clang patches.
 
 
 Fixed Bugs
 ----------
-[ROOT-XXXX](https://sft.its.cern.ch/jira/browse/ROOT-XXXX)
-
-<!---Get release bugs
-git log v0.8..master | grep 'ROOT-' | sed -E \
-  's,^.*(ROOT-[0-9]+).*$,[\1]\(https://sft.its.cern.ch/jira/browse/\1\),' | \
-  sort | uniq
---->
-<!---Standard MarkDown doesn't support neither variables nor <base>
-[ROOT-XXX](https://sft.its.cern.ch/jira/browse/ROOT-XXX)
---->
-
-<!---Additional Information
-----------------------
-A wide variety of additional information is available on the
-[Cling web page](http://root.cern/cling). The web page contains versions of
-the API documentation which are up-to-date with the git version of the source
-code. You can access versions of these documents specific to this release by
-going into the “clang/docs/” directory in the Cling source tree.
-
-If you have any questions or comments about Cling, please feel free to contact
-us via the mailing list.--->
+[ROOT-10962](https://sft.its.cern.ch/jira/browse/ROOT-10962)
+[ROOT-7775](https://sft.its.cern.ch/jira/browse/ROOT-7775)
+[ROOT-10703](https://sft.its.cern.ch/jira/browse/ROOT-10703)
+[ROOT-10962](https://sft.its.cern.ch/jira/browse/ROOT-10962)
+[ROOT-GH-7021](https://github.com/root-project/root/issues/7021)
+[ROOT-GH-7090](https://github.com/root-project/root/issues/7090)
+[ROOT-GH-7657](https://github.com/root-project/root/issues/7657)
+[CLING-GH-399](https://github.com/root-project/cling/issues/399)
 
 
 Special Kudos
@@ -71,7 +53,12 @@ listed in the form of Firstname Lastname (#contributions):
 
 FirstName LastName (#commits)
 
-<!---Find contributor list for this release
-git log --pretty=format:"%an"  v0.8...master | sort | uniq -c | sort -rn |\
-  sed -E 's,^ *([0-9]+) (.*)$,\2 \(\1\),'
---->
+Vassil Vassilev (80)
+Axel Naumann (29)
+Simeon Ehrig (9)
+Pratyush Das (7)
+Jonas Hahnfeld (7)
+Javier Lopez-Gomez (1)
+Enrico Guiraud (1)
+David (1)
+Bertrand Bellenot (1)
