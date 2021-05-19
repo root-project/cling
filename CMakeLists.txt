@@ -290,10 +290,6 @@ if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
   endforeach ()
 endif ()
 
-# Lots of cling is needed at runtime (e.g. Value, or Interpreter::Evaluate()).
-# The JIT needs to be able to resolve these symbols from cling; unhide them.
-string(REPLACE "-fvisibility=hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-
 # The package needs to be compiler without RTTI information
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
@@ -324,8 +320,11 @@ string(REGEX REPLACE "([0-9]).[0-9]+~[a-zA-Z]+" "\\1" CLING_VERSION_MAJOR ${CLIN
 string(REGEX REPLACE "[0-9].([0-9]+)~[a-zA-Z]+" "\\1" CLING_VERSION_MINOR ${CLING_VERSION})
 
 if(DEFINED ROOT_BINARY_DIR)
-  # Building as part of ROOT.
+  # Building as part of ROOT; visibility is "inherited" from ROOT/interpreter.
   set(CLING_VERSION ROOT_${CLING_VERSION})
+else()
+  # Lots of cling is needed at runtime (e.g. Value, or Interpreter::Evaluate()).
+  # The JIT needs to be able to resolve these symbols from cling; unhide them.
   set(CMAKE_CXX_VISIBILITY_PRESET default)
   set(CMAKE_C_VISIBILITY_PRESET default)
   set(CMAKE_VISIBILITY_INLINES_HIDDEN "ON")
