@@ -9,9 +9,13 @@
 
 #ifndef CLING_VALUEPRINTERC_H
 #define CLING_VALUEPRINTERC_H
+
+#include <cling/Interpreter/Visibility.h>
+
 #ifdef __cplusplus
 extern "C"
 #endif
+CLING_LIB_EXPORT
 void cling_PrintValue(void* /*cling::Value**/ V);
 
 #endif // CLING_VALUEPRINTERC_H

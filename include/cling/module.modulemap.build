@@ -12,5 +12,6 @@ module Cling_Runtime_Extra {
   module "DynamicExprInfo.h" { header "Interpreter/DynamicExprInfo.h" export * }
   module "DynamicLookupLifetimeHandler.h" { header "Interpreter/DynamicLookupLifetimeHandler.h" export * }
   module "Value.h" { header "Interpreter/Value.h" export * }
+  module "Visibility.h" { header "Interpreter/Visibility.h" export * }
   export *
 }

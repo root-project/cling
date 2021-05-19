@@ -10,6 +10,8 @@
 #ifndef CLING_VALUE_H
 #define CLING_VALUE_H
 
+#include "cling/Interpreter/Visibility.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <type_traits>
@@ -37,7 +39,7 @@ namespace cling {
   /// clang::QualType. Use-cases are expression evaluation, value printing
   /// and parameters for function calls.
   ///
-  class Value {
+  class CLING_LIB_EXPORT Value {
   protected:
     ///\brief Multi-purpose storage.
     ///

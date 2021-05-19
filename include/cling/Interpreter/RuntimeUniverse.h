@@ -24,6 +24,7 @@
 #ifdef __cplusplus
 
 #include <cling/Interpreter/RuntimeOptions.h>
+#include "cling/Interpreter/Visibility.h"
 #include <new>
 
 namespace cling {
@@ -58,6 +59,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
+      CLING_LIB_EXPORT
       void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn);
 
       ///\brief Set the value of the GenericValue for the expression
@@ -69,6 +71,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
+      CLING_LIB_EXPORT
       void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            float value);
 
@@ -81,6 +84,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
+      CLING_LIB_EXPORT
       void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            double value);
 
@@ -94,6 +98,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
+      CLING_LIB_EXPORT
       void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            long double value);
 
@@ -108,6 +113,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpSVR - The Value that is created.
       ///
+      CLING_LIB_EXPORT
       void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            unsigned long long value);
 
@@ -120,6 +126,7 @@ namespace cling {
       ///\param [in] vpT - The opaque ptr for the cling::Transaction.
       ///\param [out] vpV - The Value that is created.
       ///
+      CLING_LIB_EXPORT
       void setValueNoAlloc(void* vpI, void* vpV, void* vpQT, char vpOn,
                            const void* value);
 
@@ -132,6 +139,7 @@ namespace cling {
       ///
       ///\returns the address where the value should be put.
       ///
+      CLING_LIB_EXPORT
       void* setValueWithAlloc(void* vpI, void* vpV, void* vpQT, char vpOn);
 
       ///\brief Placement new doesn't work for arrays. It needs to be called on
@@ -185,7 +193,7 @@ extern "C" {
   /// the definition of the exceptions from the RuntimeUniverse and allows us to
   /// run cling in -no-rtti mode.
   ///
-
+  CLING_LIB_EXPORT
   void* cling_runtime_internal_throwIfInvalidPointer(void* Sema,
                                                     void* Expr,
                                                     const void* Arg);

@@ -35,6 +35,7 @@
 #include "cling/Interpreter/LookupHelper.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/Visibility.h"
 #include "cling/Utils/AST.h"
 #include "cling/Utils/Casting.h"
 #include "cling/Utils/Output.h"
@@ -1818,6 +1819,7 @@ namespace cling {
 
   namespace runtime {
     namespace internal {
+      CLING_LIB_EXPORT
       Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
                                       clang::DeclContext* DC) {
         Value ret = [&]

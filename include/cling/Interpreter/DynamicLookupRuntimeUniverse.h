@@ -16,6 +16,7 @@
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLookupLifetimeHandler.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/Visibility.h"
 
 namespace cling {
 
@@ -28,6 +29,7 @@ namespace runtime {
   namespace internal {
     /// \brief Outlined Evaluate() implementation to not include Interpreter.h
     /// into the runtime.
+    CLING_LIB_EXPORT
     Value EvaluateDynamicExpression(Interpreter* interp, DynamicExprInfo* DEI,
                                     clang::DeclContext* DC);
 

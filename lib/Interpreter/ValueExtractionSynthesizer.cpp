@@ -12,6 +12,7 @@
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Interpreter/Transaction.h"
 #include "cling/Interpreter/Value.h"
+#include "cling/Interpreter/Visibility.h"
 #include "cling/Utils/AST.h"
 
 #include "clang/AST/ASTContext.h"
@@ -513,38 +514,51 @@ namespace {
 namespace cling {
 namespace runtime {
   namespace internal {
+    CLING_LIB_EXPORT
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn) {
       // In cases of void we 'just' need to change the type of the value.
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT);
     }
+
+    CLING_LIB_EXPORT
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          float value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<float>() = value;
       dumpIfNoStorage(vpSVR, vpOn);
     }
+
+    CLING_LIB_EXPORT
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<double>() = value;
       dumpIfNoStorage(vpSVR, vpOn);
     }
+
+    CLING_LIB_EXPORT
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          long double value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<long double>()
         = value;
       dumpIfNoStorage(vpSVR, vpOn);
     }
+
+    CLING_LIB_EXPORT
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          unsigned long long value) {
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT)
         .getAs<unsigned long long>() = value;
       dumpIfNoStorage(vpSVR, vpOn);
     }
+
+    CLING_LIB_EXPORT
     void setValueNoAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn,
                          const void* value){
       allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>()
         = const_cast<void*>(value);
       dumpIfNoStorage(vpSVR, vpOn);
     }
+
+    CLING_LIB_EXPORT
     void* setValueWithAlloc(void* vpI, void* vpSVR, void* vpQT, char vpOn) {
       return allocateStoredRefValueAndGetGV(vpI, vpSVR, vpQT).getAs<void*>();
     }

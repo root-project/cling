@@ -12,6 +12,7 @@
 
 #include "cling/Interpreter/InterpreterCallbacks.h"
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/Visibility.h"
 #include "cling/Utils/Validation.h"
 
 #include "clang/Frontend/CompilerInstance.h"
@@ -27,6 +28,7 @@ extern "C" {
 ///\returns void*, const-cast from Arg, to reduce the complexity in the
 /// calling AST nodes, at the expense of possibly doing a
 /// T* -> const void* -> const_cast<void*> -> T* round trip.
+CLING_LIB_EXPORT
 void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
                                                    const void* Arg) {
 

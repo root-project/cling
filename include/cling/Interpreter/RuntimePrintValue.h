@@ -14,6 +14,8 @@
 #error "This file must not be included by compiled programs."
 #endif
 
+#include <cling/Interpreter/Visibility.h>
+
 #include <memory>
 #include <string>
 #include <tuple>
@@ -24,6 +26,7 @@ namespace cling {
   class Value;
 
   // General fallback - prints the address
+  CLING_LIB_EXPORT
   std::string printValue(const void *ptr);
 
   // Fallback for e.g. vector<bool>'s bit iterator:
@@ -32,64 +35,90 @@ namespace cling {
   inline std::string printValue(const T& val) { return "{not representable}"; }
 
   // void pointer
+  CLING_LIB_EXPORT
   std::string printValue(const void **ptr);
 
   // Bool
+  CLING_LIB_EXPORT
   std::string printValue(const bool *val);
 
   // Chars
+  CLING_LIB_EXPORT
   std::string printValue(const char *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const signed char *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const unsigned char *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const char16_t *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const char32_t *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const wchar_t *val);
 
   // Ints
+  CLING_LIB_EXPORT
   std::string printValue(const short *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const unsigned short *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const int *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const unsigned int *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const long *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const unsigned long *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const long long *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const unsigned long long *val);
 
   // Reals
+  CLING_LIB_EXPORT
   std::string printValue(const float *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const double *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const long double *val);
 
   // Char pointers
+  CLING_LIB_EXPORT
   std::string printValue(const char *const *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const char **val);
 
   // std::string
+  CLING_LIB_EXPORT
   std::string printValue(const std::string *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const std::wstring *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const std::u16string *val);
 
+  CLING_LIB_EXPORT
   std::string printValue(const std::u32string *val);
 
   // constant unicode strings, i.e. u"String"
   template <typename T>
+  CLING_LIB_EXPORT
   std::string toUTF8(const T* const Src, size_t N, const char Prefix = 0);
 
   template <size_t N>
@@ -113,9 +142,11 @@ namespace cling {
   }
 
   // cling::Value
+  CLING_LIB_EXPORT
   std::string printValue(const Value *value);
 
   namespace valuePrinterInternal {
+    CLING_LIB_EXPORT
     extern const char* const kEmptyCollection;
   }
 
@@ -123,7 +154,9 @@ namespace cling {
   namespace collectionPrinterInternal {
 
     // Forward declaration, so recursion of containers possible.
-    template <typename T> std::string printValue(const T* V, const void* = 0);
+    template <typename T>
+    CLING_LIB_EXPORT
+    std::string printValue(const T* V, const void* = 0);
 
     template <typename T> inline std::string
     printValue(const T& V, typename std::enable_if<
