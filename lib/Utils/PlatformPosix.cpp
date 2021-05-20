@@ -89,7 +89,7 @@ namespace {
        return n == 1;
     }
   };
-  thread_local std::array<const void*, 8> PointerCheck::lines = {};
+  thread_local std::array<const void*, 8> PointerCheck::lines = {{}};
   thread_local unsigned PointerCheck::mostRecent = 0;
 }
 

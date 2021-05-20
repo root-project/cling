@@ -58,7 +58,7 @@ namespace cling {
   private:
     std::unique_ptr<clang::Parser> m_Parser;
     Interpreter* m_Interpreter; // we do not own.
-    std::array<const clang::Type*, kNumCachedStrings> m_StringTy = {};
+    std::array<const clang::Type*, kNumCachedStrings> m_StringTy = {{}};
     /// A map containing the hash of the lookup buffer. This allows us to avoid
     /// allocating memory for parsing when we know nothing has changed. Used by
     /// StartParsingRAII.

@@ -2094,7 +2094,7 @@ namespace cling {
       // getStringType can be called multiple times with Cache being null, and
       // the local cache should be discarded when that occurs.
       if (!Cache)
-        m_StringTy = {};
+        m_StringTy = {{}};
       QualType Qt = findType("std::string", WithDiagnostics);
       m_StringTy[kStdString] = Qt.isNull() ? nullptr : Qt.getTypePtr();
       if (!m_StringTy[kStdString]) return kNotAString;
