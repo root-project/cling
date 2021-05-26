@@ -24,7 +24,7 @@
 # else
 #  define CLING_LIB_EXPORT __declspec(dllexport)
 # endif
-#elif (__has_attribute(visibility))
+#elif (__has_attribute(visibility)) || defined(__GNUC__)
 # define CLING_LIB_EXPORT __attribute__ ((visibility("default")))
 #else
 # define CLING_LIB_EXPORT
