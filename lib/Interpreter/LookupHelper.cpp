@@ -519,7 +519,7 @@ namespace cling {
 
   const Decl* LookupHelper::findScope(llvm::StringRef className,
                                       DiagSetting diagOnOff,
-                                      const Type** resultType /* = 0 */,
+                                      const Type** resultType /* = nullptr */,
                                       bool instantiateTemplate/*=true*/) const {
 
     //
