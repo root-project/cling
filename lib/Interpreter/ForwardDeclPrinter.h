@@ -79,6 +79,7 @@ namespace clang {
   class TranslationUnitDecl;
   class TypeAliasDecl;
   class TypedefDecl;
+  class TypedefNameDecl;
   class VarDecl;
   class UsingDirectiveDecl;
 }
@@ -108,6 +109,8 @@ namespace cling {
     std::stack<llvm::raw_ostream*> m_StreamStack;
     std::set<const char*> m_BuiltinNames;
     IgnoreFilesFunc_t m_IgnoreFile; // Call back to ignore some top level files.
+
+    void printTypedefOrAliasDecl(clang::TypedefNameDecl* D);
 
   public:
     ForwardDeclPrinter(llvm::raw_ostream& OutS,

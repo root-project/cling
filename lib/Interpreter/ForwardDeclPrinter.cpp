@@ -298,7 +298,7 @@ namespace cling {
     }
   }
 
-  void ForwardDeclPrinter::VisitTypedefDecl(TypedefDecl *D) {
+  void ForwardDeclPrinter::printTypedefOrAliasDecl(TypedefNameDecl *D) {
     QualType q = D->getTypeSourceInfo()->getType();
     Visit(q);
     if (m_SkipFlag) {
@@ -308,34 +308,45 @@ namespace cling {
 
     std::string closeBraces = PrintEnclosingDeclContexts(Out(),
                                                          D->getDeclContext());
-    if (!m_Policy.SuppressSpecifiers)
-      Out() << "typedef ";
-    if (D->isModulePrivate())
-      Out() << "__module_private__ ";
+    auto printUnderying = [&]() {
+      QualType qNoRestrict = q;
+      if (qNoRestrict.isRestrictQualified())
+        qNoRestrict.removeLocalRestrict();
+      qNoRestrict.print(Out(), m_Policy);
+    };
+    auto printDeclName = [&]() {
+      if (D->isModulePrivate())
+        Out() << "__module_private__ ";
 
-    if (q.isRestrictQualified()){
-      q.removeLocalRestrict();
-      q.print(Out(), m_Policy, "");
-      Out() << " __restrict " << D->getName(); //TODO: Find some policy that does this automatically
+      if (q.isRestrictQualified()) {
+        Out() << " __restrict "; // TODO: Find some policy that does this automatically
+      }
+      Out() << D->getName();
+      prettyPrintAttributes(D);
+    };
+
+    if (llvm::isa<TypedefDecl>(D)) {
+      Out() << "typedef ";
+      printUnderying();
+      Out() << " ";
+      printDeclName();
+    } else if (llvm::isa<TypeAliasDecl>(D)) {
+      Out() << "using ";
+      printDeclName();
+      Out() << " = ";
+      printUnderying();
+    } else {
+      skipDecl(D, "Neither a typedef nor a type alias!");
     }
-    else {
-      q.print(Out(), m_Policy, D->getName());
-    }
-    prettyPrintAttributes(D);
     Out() << ';' << closeBraces << '\n';
+ }
+
+  void ForwardDeclPrinter::VisitTypedefDecl(TypedefDecl *D) {
+    printTypedefOrAliasDecl(D);
   }
 
   void ForwardDeclPrinter::VisitTypeAliasDecl(TypeAliasDecl *D) {
-      /*FIXME: Ugly Hack*/
-//      if(!D->getLexicalDeclContext()->isNamespace()
-//              && !D->getLexicalDeclContext()->isFileContext())
-//          return;
-    std::string closeBraces = PrintEnclosingDeclContexts(Out(),
-                                                         D->getDeclContext());
-    Out() << "using " << *D;
-    prettyPrintAttributes(D);
-    Out() << " = " << D->getTypeSourceInfo()->getType().getAsString(m_Policy)
-          << ';' << closeBraces << '\n';
+    printTypedefOrAliasDecl(D);
   }
 
   void ForwardDeclPrinter::VisitEnumDecl(EnumDecl *D) {
