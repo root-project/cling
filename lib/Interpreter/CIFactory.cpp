@@ -1310,6 +1310,9 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
         default: llvm_unreachable("Unrecognized C++ version");
       }
     }
+    // Warn on redundant parentheses surrounding declarator, e.g. `bool(i)`,
+    // whose parsing might not match the user intent.
+    argvCompile.push_back("-Wredundant-parens");
 
     // This argument starts the cling instance with the x86 target. Otherwise,
     // the first job in the joblist starts the cling instance with the nvptx
