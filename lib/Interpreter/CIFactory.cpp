@@ -802,7 +802,7 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
     PPOpts.addMacroDef("__CLING__GNUC_MINOR__=" ClingStringify(__GNUC_MINOR__));
 #elif defined(_MSC_VER)
     PPOpts.addMacroDef("__CLING__MSVC__=" ClingStringify(_MSC_VER));
-#if (_MSC_VER >= 1926)
+#if (_MSC_VER >= 1926 AND _MSC_VER <= 1928)
     // FIXME: Silly workaround for cling not being able to parse the STL
     //        headers anymore after the update of Visual Studio v16.7.0
     //        To be checked/removed after the upgrade of LLVM & Clang
