@@ -300,10 +300,15 @@ std::string cached_realpath(llvm::StringRef path, llvm::StringRef base_path = ""
   }
 
   // If already cached - retun cached result
-  static llvm::StringMap<std::string> cache;
-  auto it = cache.find(path);
-  if (it != cache.end())
-    return it->second;
+  static llvm::StringMap<std::pair<std::string,int>> cache;
+  bool relative_path = llvm::sys::path::is_relative(path);
+  if (!relative_path) {
+    auto it = cache.find(path);
+    if (it != cache.end()) {
+      errno = it->second.second;
+      return it->second.first;
+    }
+  }
 
   // If result not in cache - call system function and cache result
 
@@ -313,7 +318,7 @@ std::string cached_realpath(llvm::StringRef path, llvm::StringRef base_path = ""
   llvm::SmallVector<llvm::StringRef, 16> p;
 
   // Relative or absolute path
-  if (llvm::sys::path::is_relative(path)) {
+  if (relative_path) {
     if (is_base_path_real) {
       result.assign(base_path);
     } else {
@@ -359,14 +364,21 @@ std::string cached_realpath(llvm::StringRef path, llvm::StringRef base_path = ""
         result = cached_realpath(symlink, "", true, symlooplevel - 1);
       }
     } else if (st_mode == 0) {
-      cache.insert(std::pair<llvm::StringRef, llvm::StringRef>(path, ""));
+      cache.insert(std::pair<llvm::StringRef, std::pair<std::string,int>>(
+        path,
+        std::pair<std::string,int>("",ENOENT))
+      );
+      errno = ENOENT;
       return "";
     }
   }
 #else
   llvm::sys::fs::real_path(path, result);
 #endif
-  cache.insert(std::pair<llvm::StringRef, std::string>(path, result.str().str()));
+  cache.insert(std::pair<llvm::StringRef, std::pair<std::string,int>>(
+    path,
+    std::pair<std::string,int>(result.str().str(),errno))
+  );
   return result.str().str();
 }
 
@@ -1312,8 +1324,9 @@ namespace cling {
       // Not in a known shared library, let's give up
       return {};
     } else {
-      if (strchr(info.dli_fname, '/'))
-        return cached_realpath(info.dli_fname);
+      std::string result = cached_realpath(info.dli_fname);
+      if (!result.empty())
+        return result;
 
       // Else absolute path. For all we know that's a binary.
       // Some people have dictionaries in binaries, this is how we find their
@@ -1333,7 +1346,6 @@ namespace cling {
       FILE* pipe = popen(pipeCmd.c_str(), "r");
       if (!pipe)
         return cached_realpath(info.dli_fname);
-      std::string result;
       while (fgets(buf, sizeof(buf), pipe))
          result += buf;
 
