@@ -106,8 +106,23 @@ namespace {
     return false;
   }
 
+  /// \brief Overrides the current DiagnosticConsumer to supress many warnings
+  /// issued as a result of incremental compilation (see `HandleDiagnostic()`).
+  ///
+  /// Diagnostics passing the filter are, by default, forwarded to the previous
+  /// DiagnosticConsumer instance.  A different consumer may be specified via
+  /// `setTargetConsumer()`.
+  /// In that case, given that internal state might be updated as part of
+  /// `{Begin,End}SourceFile` (e.g. in TextDiagnosticPrinter), calls to such
+  /// functions will be forwarded to both, the user-specified and the original
+  /// consumer; however `HandleDiagnostic()` calls shall only be seen by the
+  /// former.
+  ///
+  /// On destruction, the original (i.e. overridden consumer) is restored.
+  ///
   class FilteringDiagConsumer : public cling::utils::DiagnosticsOverride {
     std::stack<bool> m_IgnorePromptDiags;
+    llvm::PointerIntPair<DiagnosticConsumer*, 1, bool /*Own*/> m_Target{};
 
     void SyncDiagCountWithTarget() {
       NumWarnings = m_PrevClient.getNumWarnings();
@@ -117,20 +132,28 @@ namespace {
     void BeginSourceFile(const LangOptions &LangOpts,
                          const Preprocessor *PP=nullptr) override {
       m_PrevClient.BeginSourceFile(LangOpts, PP);
+      if (auto C = m_Target.getPointer())
+        C->BeginSourceFile(LangOpts, PP);
     }
 
     void EndSourceFile() override {
       m_PrevClient.EndSourceFile();
+      if (auto C = m_Target.getPointer())
+        C->EndSourceFile();
       SyncDiagCountWithTarget();
     }
 
     void finish() override {
       m_PrevClient.finish();
+      if (auto C = m_Target.getPointer())
+        C->finish();
       SyncDiagCountWithTarget();
     }
 
     void clear() override {
       m_PrevClient.clear();
+      if (auto C = m_Target.getPointer())
+        C->clear();
       SyncDiagCountWithTarget();
     }
 
@@ -158,7 +181,19 @@ namespace {
           return; // ignore!
         }
       }
-      m_PrevClient.HandleDiagnostic(DiagLevel, Info);
+
+      // In principle, for simplicity, we preserve the old behavior of
+      // delivering diagnostics to just one consumer (that is why we don't emit
+      // to both), but we allow the "sink" to be changed.
+      // Note, however, that consumers might update their internal state in
+      // calls to, e.g. `BeginSourceFile()` or `EndSourceFile()` (actually,
+      // `TextDiagnosticPrinter` is an example of this), so in order to be able
+      // to restore the original consumer, we need to keep forwarding these
+      // calls also to `m_PrevClient` (see above).
+      if (auto C = m_Target.getPointer())
+        C->HandleDiagnostic(DiagLevel, Info);
+      else
+        m_PrevClient.HandleDiagnostic(DiagLevel, Info);
       SyncDiagCountWithTarget();
     }
 
@@ -167,9 +202,26 @@ namespace {
     }
 
   public:
-    FilteringDiagConsumer(DiagnosticsEngine& Diags, bool Own) :
-      DiagnosticsOverride(Diags, Own) {
+    FilteringDiagConsumer(DiagnosticsEngine& Diags, bool Own)
+      : DiagnosticsOverride(Diags, Own) {}
+    virtual ~FilteringDiagConsumer() { setTargetConsumer(nullptr); }
+
+    /// \brief Sets the DiagnosticConsumer that sees `HandleDiagnostic()` calls.
+    /// \param[in] Consumer - The target DiagnosticConsumer, or `nullptr` to
+    ///    revert to original client.
+    /// \param[in] Own - Whether we own the pointee
+    ///
+    void setTargetConsumer(DiagnosticConsumer* Consumer, bool Own = false) {
+      if (m_Target.getInt())
+        if (auto C = m_Target.getPointer())
+          delete C;
+
+      m_Target.setPointer(Consumer);
+      m_Target.setInt(Own);
     }
+
+    DiagnosticConsumer* getTargetConsumer() const
+    { return m_Target.getPointer(); }
 
     struct RAAI {
       FilteringDiagConsumer& m_Client;
@@ -388,6 +440,17 @@ namespace cling {
 
   const Transaction* IncrementalParser::getCurrentTransaction() const {
     return m_Consumer->getTransaction();
+  }
+
+  void IncrementalParser::setDiagnosticConsumer(DiagnosticConsumer* Consumer,
+						bool Own) {
+    static_cast<
+      FilteringDiagConsumer&>(*m_DiagConsumer).setTargetConsumer(Consumer, Own);
+  }
+
+  DiagnosticConsumer* IncrementalParser::getDiagnosticConsumer() const {
+    return static_cast<
+      FilteringDiagConsumer&>(*m_DiagConsumer).getTargetConsumer();
   }
 
   SourceLocation IncrementalParser::getNextAvailableUniqueSourceLoc() {

@@ -371,6 +371,9 @@ namespace cling {
       // Give my IncrementalExecutor a pointer to the Incremental executor of the
       // parent Interpreter.
       m_Executor->setExternalIncrementalExecutor(parentInterpreter.m_Executor.get());
+
+      if (auto C = parentInterpreter.m_IncrParser->getDiagnosticConsumer())
+        m_IncrParser->setDiagnosticConsumer(C, /*Own=*/false);
     }
   }
 
@@ -747,6 +750,15 @@ namespace cling {
 
   DiagnosticsEngine& Interpreter::getDiagnostics() const {
     return getCI()->getDiagnostics();
+  }
+
+  void Interpreter::replaceDiagnosticConsumer(clang::DiagnosticConsumer* Consumer,
+					      bool Own) {
+    m_IncrParser->setDiagnosticConsumer(Consumer, Own);
+  }
+
+  bool Interpreter::hasReplacedDiagnosticConsumer() const {
+    return m_IncrParser->getDiagnosticConsumer() != nullptr;
   }
 
   CompilationOptions Interpreter::makeDefaultCompilationOpts() const {

@@ -37,6 +37,7 @@ namespace clang {
   class CompilerInstance;
   class Decl;
   class DeclContext;
+  class DiagnosticConsumer;
   class DiagnosticsEngine;
   class FunctionDecl;
   class GlobalDecl;
@@ -338,6 +339,8 @@ namespace cling {
                       nullptr) {}
 
     ///\brief Constructor for child Interpreter.
+    /// If the parent Interpreter has a replacement DiagnosticConsumer, it is
+    /// inherited by the child (not owned).
     ///\param[in] parentInterpreter - the  parent interpreter of this interpreter
     ///\param[in] argc - no. of args.
     ///\param[in] argv - arguments passed when driver is invoked.
@@ -694,6 +697,13 @@ namespace cling {
     clang::CompilerInstance* getCIOrNull() const;
     clang::Sema& getSema() const;
     clang::DiagnosticsEngine& getDiagnostics() const;
+
+    /// \brief Replaces the default DiagnosticConsumer.
+    /// \param[in] Consumer - The replacement `clang::DiagnosticConsumer`
+    /// \param[in] Own - Whether the pointee is owned by this instance.
+    ///
+    void replaceDiagnosticConsumer(clang::DiagnosticConsumer* Consumer, bool Own = false);
+    bool hasReplacedDiagnosticConsumer() const;
 
     IncrementalCUDADeviceCompiler* getCUDACompiler() const {
       return m_CUDACompiler.get();

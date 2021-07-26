@@ -127,6 +127,9 @@ namespace cling {
     clang::CodeGenerator* getCodeGenerator() const { return m_CodeGen; }
     bool hasCodeGenerator() const { return m_CodeGen; }
 
+    void setDiagnosticConsumer(clang::DiagnosticConsumer* Consumer, bool Own);
+    clang::DiagnosticConsumer* getDiagnosticConsumer() const;
+
     /// Returns the next available unique source location. It is an offset into
     /// the limitless virtual file. Each time this interface is used it bumps
     /// an internal counter. This is very useful for using the various API in
