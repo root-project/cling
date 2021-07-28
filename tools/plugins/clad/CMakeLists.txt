@@ -40,7 +40,7 @@ if (CMAKE_CXX_STANDARD)
 endif(CMAKE_CXX_STANDARD)
 
 if (Clang_DIR)
-  list(APPEND _clad_extra_cmake_args -DClang_DIR=${Clang_DIR})
+  list(APPEND _clad_extra_cmake_args -DClang_DIR=${Clang_DIR} -DClang_CONFIG_EXTRA_PATH_HINTS=${Clang_Config_ExtraPathHints})
 endif(Clang_DIR)
 
 if (LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN)
