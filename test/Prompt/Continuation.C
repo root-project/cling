@@ -23,6 +23,13 @@ Bc
 Cc
 // CHECK-NEXT: (int) 35
 
+// Should not enter line continuation mode here (ROOT-9202) 
+unsigned u1 = 45, u2
+// CHECK-NEXT: (unsigned int) {{[[:digit:]]+}}
+u1
+// CHECK-NEXT: (unsigned int) 45
+int i1 \ i2 // expected-error {{expected ';' at end of declaration}}
+
 static void InvokeTest(int A,
                        int B) { printf("Invoke: %d, %d\n", A, B); }
 InvokeTest(Ac,
