@@ -118,8 +118,6 @@ namespace cling {
     void ReadToEndOfLine(Token& Tok, tok::TokenKind K = tok::unknown);
 
     static void LexPunctuator(const char* C, Token& Tok);
-    // TODO: Revise. We might not need that.
-    static bool LexPunctuatorAndAdvance(const char*& curPos, Token& Tok);
     static void LexQuotedStringAndAdvance(const char*& curPos, Token& Tok);
     void LexConstant(char C, Token& Tok);
     void LexIdentifier(char C, Token& Tok);

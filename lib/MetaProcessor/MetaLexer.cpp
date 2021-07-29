@@ -101,12 +101,10 @@ namespace cling {
 
   void MetaLexer::LexAnyString(Token& Tok) {
     Tok.startToken(curPos);
-
     // consume until we reach one of the "AnyString" delimiters or EOF.
     while(*curPos != ' ' && *curPos != '\t' && *curPos != '\0') {
       curPos++;
     }
-
     assert(Tok.getBufStart() != curPos && "It must consume at least on char");
 
     Tok.setKind(tok::raw_ident);
@@ -153,32 +151,9 @@ namespace cling {
     }
   }
 
-  bool MetaLexer::LexPunctuatorAndAdvance(const char*& curPos, Token& Tok) {
-    Tok.startToken(curPos);
-    bool nextWasPunct = true;
-    while (true) {
-      // On comment skip until the eof token.
-      if (curPos[0] == '/' && curPos[1] == '/') {
-        while (*curPos != '\0' && *curPos != '\r' && *curPos != '\n')
-          ++curPos;
-        if (*curPos == '\0') {
-          Tok.setBufStart(curPos);
-          Tok.setKind(tok::eof);
-          Tok.setLength(0);
-          return nextWasPunct;
-        }
-      }
-      MetaLexer::LexPunctuator(curPos++, Tok);
-      if (Tok.isNot(tok::unknown))
-        return nextWasPunct;
-      nextWasPunct = false;
-    }
-  }
-
   void MetaLexer::LexQuotedStringAndAdvance(const char*& curPos, Token& Tok) {
     // curPos must be right after the starting quote (single or double),
     // and we will lex until the next one or the end of the line.
-
     assert((curPos[-1] == '"' || curPos[-1] == '\'')
            && "Not a string / character literal!");
     if (curPos[-1] == '"')
@@ -195,7 +170,6 @@ namespace cling {
         curPos += 2;
         continue;
       }
-
       if (*curPos == '\0') {
         Tok.setBufStart(curPos);
         Tok.setKind(tok::eof);
