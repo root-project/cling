@@ -57,15 +57,22 @@ namespace cling {
     case '"': case '\'':
       return LexQuotedStringAndAdvance(curPos, Tok);
     case '[': case ']': case '(': case ')': case '{': case '}':
-    case '\\': case ',': case '.': case '!': case '?': case '>':
-    case '&': case '#': case '@': case '*': case ';':
+    case '\\': case ',': case '.': case '!': case '?': case '<': case '>':
+    case '&': case '#': case '@': case ';':
       // INTENTIONAL FALL THROUGHs
       return LexPunctuator(curPos - 1, Tok);
 
     case '/':
+      if (*curPos == '/' || *curPos == '*') {
+        Tok.setKind((*curPos++ == '/') ? tok::comment : tok::l_comment);
+        Tok.setLength(2);
+        return;
+      }
+      return LexPunctuator(curPos - 1, Tok);
+    case '*':
       if (*curPos == '/') {
         ++curPos;
-        Tok.setKind(tok::comment);
+        Tok.setKind(tok::r_comment);
         Tok.setLength(2);
         return;
       }
@@ -106,6 +113,16 @@ namespace cling {
     Tok.setLength(curPos - Tok.getBufStart());
   }
 
+  void MetaLexer::ReadToEndOfLine(Token& Tok, tok::TokenKind K) {
+    Tok.startToken(curPos);
+    while (*curPos != '\r' && *curPos != '\n'
+           && *curPos != '\0')
+      curPos++;
+
+    Tok.setKind(K);
+    Tok.setLength(curPos - Tok.getBufStart());
+  }
+
   void MetaLexer::LexPunctuator(const char* C, Token& Tok) {
     Tok.startToken(C);
     Tok.setLength(1);
@@ -124,8 +141,9 @@ namespace cling {
     case '?'  : Tok.setKind(tok::quest_mark); break;
     case '/'  : Tok.setKind(tok::slash); break;
     case '\\' : Tok.setKind(tok::backslash); break;
+    case '<'  : Tok.setKind(tok::less); break;
     case '>'  : Tok.setKind(tok::greater); break;
-    case '@' : Tok.setKind(tok::at); break;
+    case '@'  : Tok.setKind(tok::at); break;
     case '&'  : Tok.setKind(tok::ampersand); break;
     case '#'  : Tok.setKind(tok::hash); break;
     case '*'  : Tok.setKind(tok::asterik); break;
