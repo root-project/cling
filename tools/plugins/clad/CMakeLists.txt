@@ -61,10 +61,7 @@ set(_clad_cmake_logging_settings
   LOG_INSTALL ON
 )
 
-# Newer CMake can report the issue with Clad directly to stdout
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.14)
-  list(APPEND _clad_cmake_logging_settings LOG_OUTPUT_ON_FAILURE ON)
-endif()
+list(APPEND _clad_cmake_logging_settings LOG_OUTPUT_ON_FAILURE ON)
 
 ExternalProject_Add(
   clad
