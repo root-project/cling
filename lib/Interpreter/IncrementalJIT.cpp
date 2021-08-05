@@ -285,8 +285,6 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
           if (!Sym.getAddress())
             llvm_unreachable("Handle the error case");
           ret.erase(I);
-        } else if (m_ExeMM->findSymbol(symName)) {
-          ret.erase(I);
         }
       }
       return ret;

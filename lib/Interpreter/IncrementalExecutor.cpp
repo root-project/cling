@@ -119,10 +119,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
   std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
 
   std::unique_ptr<TargetMachine> TM(CreateHostTargetMachine(CI));
-  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
-                                          CI.getTargetOpts(),
-                                          CI.getLangOpts(),
-                                          *TM));
+  auto &TMRef = *TM;
   auto RetainOwnership =
     [this](llvm::orc::VModuleKey K, std::unique_ptr<Module> M) -> void {
     assert (m_PendingModules.count(K) && "Unable to find the module");
@@ -130,6 +127,12 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
     m_PendingModules.erase(K);
   };
   m_JIT.reset(new IncrementalJIT(*this, std::move(TM), RetainOwnership));
+
+  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
+                                          CI.getTargetOpts(),
+                                          CI.getLangOpts(),
+                                          TMRef,
+                                          *m_JIT));
 }
 
 // Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT

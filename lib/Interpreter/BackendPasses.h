@@ -35,6 +35,8 @@ namespace clang {
 }
 
 namespace cling {
+  class IncrementalJIT;
+
   ///\brief Runs passes on IR. Remove once we can migrate from ModuleBuilder to
   /// what's in clang's CodeGen/BackendUtil.
   class BackendPasses {
@@ -45,6 +47,7 @@ namespace cling {
     const clang::CodeGenOptions &m_CGOpts;
     //const clang::TargetOptions &m_TOpts;
     //const clang::LangOptions &m_LOpts;
+    IncrementalJIT &m_JIT;
 
     void CreatePasses(llvm::Module& M, int OptLevel);
 
@@ -52,7 +55,8 @@ namespace cling {
     BackendPasses(const clang::CodeGenOptions &CGOpts,
                   const clang::TargetOptions & /*TOpts*/,
                   const clang::LangOptions & /*LOpts*/,
-                  llvm::TargetMachine& TM);
+                  llvm::TargetMachine& TM,
+                  cling::IncrementalJIT& JIT);
     ~BackendPasses();
 
     void runOnModule(llvm::Module& M, int OptLevel);
