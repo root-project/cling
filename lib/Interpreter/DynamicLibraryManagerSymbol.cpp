@@ -277,11 +277,15 @@ static inline llvm::StringRef cached_readlink(const char* pathname) {
     return llvm::StringRef(it->second);
 
   // If result not in cache - call system function and cache result
-  char buf[PATH_MAX] = "\0";
-  (void)readlink(pathname, buf, sizeof(buf));
-  std::string sym(buf);
-  readlink_cache.insert(std::pair<llvm::StringRef, std::string>(pathname, sym));
-  return readlink_cache[pathname];
+  char buf[PATH_MAX];
+  ssize_t len;
+  if ((len = readlink(pathname, buf, sizeof(buf))) != -1) {
+    buf[len] = '\0';
+    std::string s(buf);
+    readlink_cache.insert(std::pair<llvm::StringRef, std::string>(pathname, s));
+    return readlink_cache[pathname];
+  }
+  return "";
 }
 #endif
 
