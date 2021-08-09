@@ -140,9 +140,14 @@ namespace {
 
       // Find the symbol in JIT or shared libraries.
       if (m_JIT.getSymbolAddress(GV.getName(), /*AlsoInProcess*/ true)) {
+#if !defined(_WIN32)
+        // Heuristically, Windows cannot handle cross-library variables; they
+        // must be library-local.
         if (auto *Var = dyn_cast<GlobalVariable>(&GV)) {
           Var->setInitializer(nullptr); // make this a declaration
-        } else if (auto *Func = dyn_cast<Function>(&GV)) {
+        } else
+#endif
+        if (auto *Func = dyn_cast<Function>(&GV)) {
           Func->deleteBody(); // make this a declaration
         } else {
           llvm_unreachable("What is this?");
