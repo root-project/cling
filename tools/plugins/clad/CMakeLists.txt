@@ -66,7 +66,7 @@ list(APPEND _clad_cmake_logging_settings LOG_OUTPUT_ON_FAILURE ON)
 ExternalProject_Add(
   clad
   GIT_REPOSITORY https://github.com/vgvassilev/clad.git
-  GIT_TAG v0.8
+  GIT_TAG v0.9
   UPDATE_COMMAND ""
   CMAKE_ARGS -G ${CMAKE_GENERATOR}
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
