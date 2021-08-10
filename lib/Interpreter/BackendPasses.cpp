@@ -149,8 +149,6 @@ namespace {
 #endif
         if (auto *Func = dyn_cast<Function>(&GV)) {
           Func->deleteBody(); // make this a declaration
-        } else {
-          llvm_unreachable("What is this?");
         }
         return true; // a change!
       }
