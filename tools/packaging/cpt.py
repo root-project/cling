@@ -62,21 +62,23 @@ def _perror(e):
     sys.exit(e.returncode)
 
 
-def exec_subprocess_call(cmd, cwd, showCMD=False):
+def exec_subprocess_call(cmd, cwd, showCMD=False, shell=False):
     if showCMD: print(cmd)
-    cmd = _convert_subprocess_cmd(cmd)
+    if not shell:
+        cmd = _convert_subprocess_cmd(cmd)
     try:
-        subprocess.check_call(cmd, cwd=cwd, shell=False,
+        subprocess.check_call(cmd, cwd=cwd, shell=shell,
                               stdin=subprocess.PIPE, stdout=None, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         _perror(e)
 
 
-def exec_subprocess_check_output(cmd, cwd):
-    cmd = _convert_subprocess_cmd(cmd)
+def exec_subprocess_check_output(cmd, cwd, shell=False):
+    if not shell:
+        cmd = _convert_subprocess_cmd(cmd)
     out = ''
     try:
-        out = subprocess.check_output(cmd, cwd=cwd, shell=False,
+        out = subprocess.check_output(cmd, cwd=cwd, shell=shell,
                                       stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('utf-8')
     except subprocess.CalledProcessError as e:
         _perror(e)
@@ -848,7 +850,7 @@ def check_version_string_ge(vstring, min_vstring):
 
 def check_ubuntu(pkg):
     if pkg == "gnupg":
-        SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', '/').strip()
+        SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g', '/', shell=True).strip()
         if SIGNING_USER == '':
             print(pkg.ljust(20) + '[INSTALLED - NOT SETUP]'.ljust(30))
             return True
@@ -892,7 +894,7 @@ def check_ubuntu(pkg):
             print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
             return False
     elif exec_subprocess_check_output("dpkg-query -W -f='${Status}' %s 2>/dev/null | grep -c 'ok installed'" % (pkg),
-                                      '/').strip() == '0':
+                                      '/', shell=True).strip() == '0':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
         return False
     else:
@@ -909,7 +911,7 @@ def tarball_deb():
 
 def debianize():
     SIGNING_USER = exec_subprocess_check_output('gpg --fingerprint | grep uid | sed s/"uid *"//g',
-                                                CLING_SRC_DIR).strip()
+                                                CLING_SRC_DIR, shell=True).strip()
 
     box_draw("Set up the debian directory")
     print("Create directory: debian")
@@ -1081,7 +1083,7 @@ cling (%s-1) unstable; urgency=low
 
     if '~dev' in VERSION:
         TAG = str(float(VERSION[:VERSION.find('~')]) - 0.1)
-        template = exec_subprocess_check_output('git log v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR)
+        template = exec_subprocess_check_output('git log v' + TAG + '...HEAD --format="  * %s" | fmt -s', CLING_SRC_DIR, shell=True)
 
         f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
         f.write(template)
@@ -1107,7 +1109,7 @@ cling (%s-1) unstable; urgency=low
             f.close()
             STABLE_FLAG = '1'
             template = exec_subprocess_check_output('git log v' + CMP + '...v' + TAG + '--format="  * %s" | fmt -s',
-                                                    CLING_SRC_DIR)
+                                                    CLING_SRC_DIR, shell=True)
 
             f = open(os.path.join(prefix, 'debian', 'changelog'), 'a+')
             f.write(template)
@@ -1144,7 +1146,7 @@ def check_redhat(pkg):
             return False
         else:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
-    elif exec_subprocess_check_output("rpm -qa | grep -w %s" % (pkg), '/').strip() == '':
+    elif exec_subprocess_check_output("rpm -qa | grep -w %s" % (pkg), '/', shell=True).strip() == '':
         print(pkg.ljust(20) + '[NOT INSTALLED]'.ljust(30))
         return False
     else:
