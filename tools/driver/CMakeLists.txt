@@ -9,23 +9,13 @@
 # Keep symbols for JIT resolution
 set(LLVM_NO_DEAD_STRIP 1)
 
-if(BUILD_SHARED_LIBS)
-  set(LIBS
-    LLVMSupport
-
-    clangFrontendTool
-
-    clingInterpreter
-    clingMetaProcessor
-    clingUserInterface
-    clingUtils
-  )
+if(LLVM_LIB_IS_SHARED)
+  set(LIBS clang-cpp clingUserInterface)
   add_cling_executable(cling
     cling.cpp
   )
 else()
   set(LIBS
-    LLVMSupport
 
     clangASTMatchers
     clangFrontendTool
@@ -38,7 +28,7 @@ else()
     $<TARGET_OBJECTS:obj.clingMetaProcessor>
     $<TARGET_OBJECTS:obj.clingUtils>
   )
-endif(BUILD_SHARED_LIBS)
+endif(LLVM_LIB_IS_SHARED)
 
 set_target_properties(cling
   PROPERTIES ENABLE_EXPORTS 1)

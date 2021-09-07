@@ -39,6 +39,14 @@ else()
    endif()
 endif()
 
+if (LLVM_LIB_IS_SHARED)
+    set(LIBS
+        clang-cpp
+        clingUserInterface
+        clingMetaProcessor
+        ${INTERPRETER}
+        clingUtils)
+else()
 set(LIBS
         clangAST
         clangBasic
@@ -54,7 +62,8 @@ set(LIBS
         clingMetaProcessor
         ${INTERPRETER}
         clingUtils
-    )
+        )
+endif()
 
 if( LLVM_ENABLE_PIC )
     set(ENABLE_SHARED SHARED)

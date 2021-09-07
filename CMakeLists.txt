@@ -23,6 +23,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
       "--libdir"
       "--includedir"
       "--prefix"
+      "--shared-mode"
       "--src-root")
     execute_process(
       COMMAND ${CONFIG_COMMAND}
@@ -47,7 +48,8 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
   list(GET CONFIG_OUTPUT 2 LIBRARY_DIR)
   list(GET CONFIG_OUTPUT 3 INCLUDE_DIR)
   list(GET CONFIG_OUTPUT 4 LLVM_OBJ_ROOT)
-  list(GET CONFIG_OUTPUT 5 MAIN_SRC_DIR)
+  list(GET CONFIG_OUTPUT 5 LLVM_LIB_IS_SHARED)
+  list(GET CONFIG_OUTPUT 6 MAIN_SRC_DIR)
 
   if(NOT MSVC_IDE)
     set(LLVM_ENABLE_ASSERTIONS ${ENABLE_ASSERTIONS}
@@ -427,7 +429,11 @@ macro(add_cling_library name)
   endif()
 
   if(TARGET ${name})
-    target_link_libraries(${name} INTERFACE ${LLVM_COMMON_LIBS})
+      if(LLVM_LIB_IS_SHARED)
+          target_link_libraries(${name} PUBLIC LLVM)
+      else()
+          target_link_libraries(${name} INTERFACE ${LLVM_COMMON_LIBS})
+      endif()
 
     if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY OR ${name} STREQUAL "libcling")
       install(TARGETS ${name}

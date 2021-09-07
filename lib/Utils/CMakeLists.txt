@@ -26,21 +26,25 @@ set(LLVM_LINK_COMPONENTS
   ${LLVM_TARGETS_TO_BUILD}
 )
 
-set(LIBS
-  clangCodeGen
-  clangDriver
-  clangFrontend
-  clangParse
-  clangSema
-  clangAnalysis
-  clangEdit
-  clangRewrite
-  clangRewriteFrontend
-  clangSerialization
-  clangAST
-  clangBasic
-  clangLex
-)
+if (LLVM_LIB_IS_SHARED)
+    set(LIBS clang-cpp)
+else()
+    set(LIBS
+        clangCodeGen
+        clangDriver
+        clangFrontend
+        clangParse
+        clangSema
+        clangAnalysis
+        clangEdit
+        clangRewrite
+        clangRewriteFrontend
+        clangSerialization
+        clangAST
+        clangBasic
+        clangLex
+        )
+endif()
 
 find_library(DL_LIBRARY_PATH dl)
 if (DL_LIBRARY_PATH)
