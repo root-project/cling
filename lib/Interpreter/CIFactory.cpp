@@ -1393,9 +1393,7 @@ namespace {
       return nullptr;
     }
 
-    clang::CompilerInvocation::CreateFromArgs(*InvocationPtr, CC1Args->data() + 1,
-                                              CC1Args->data() + CC1Args->size(),
-                                              *Diags);
+    clang::CompilerInvocation::CreateFromArgs(*InvocationPtr, *CC1Args, *Diags);
     // We appreciate the error message about an unknown flag (or do we? if not
     // we should switch to a different DiagEngine for parsing the flags).
     // But in general we'll happily go on.
