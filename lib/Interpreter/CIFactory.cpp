@@ -1651,7 +1651,7 @@ namespace {
 #endif
     // Taken from a -O2 run of clang:
     CGOpts.DiscardValueNames = 1;
-    CGOpts.OmitLeafFramePointer = 1;
+    CGOpts.setFramePointer(CodeGenOptions::FramePointerKind::All);
     CGOpts.UnrollLoops = 1;
     CGOpts.VectorizeLoop = 1;
     CGOpts.VectorizeSLP = 1;
