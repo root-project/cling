@@ -1698,11 +1698,13 @@ namespace {
     DClient.BeginSourceFile(CI->getLangOpts(), &PP);
 
     for (const auto& ModuleMapFile : FrontendOpts.ModuleMapFiles) {
-      if (auto* File = FM.getFile(ModuleMapFile))
-        PP.getHeaderSearchInfo().loadModuleMapFile(File, /*IsSystem*/ false);
-      else
+      auto File = FM.getFile(ModuleMapFile);
+      if (!File) {
         CI->getDiagnostics().Report(diag::err_module_map_not_found)
            << ModuleMapFile;
+        continue;
+      }
+      PP.getHeaderSearchInfo().loadModuleMapFile(*File, /*IsSystem*/ false);
     }
 
     HandleProgramActions(*CI);
