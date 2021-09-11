@@ -1002,6 +1002,7 @@ namespace utils {
         if (newQT == arr->getElementType()) return QT;
         QT = Ctx.getConstantArrayType (newQT,
                                        arr->getSize(),
+                                       arr->getSizeExpr(),
                                        arr->getSizeModifier(),
                                        arr->getIndexTypeCVRQualifiers());
 

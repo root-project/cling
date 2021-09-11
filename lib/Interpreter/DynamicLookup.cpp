@@ -810,8 +810,9 @@ namespace cling {
     unsigned bitSize = m_Context->getTypeSize(m_Context->VoidPtrTy);
     llvm::APInt ArraySize(bitSize, Value.size() + 1);
     const QualType CCArray = m_Context->getConstantArrayType(CChar,
-                                                            ArraySize,
-                                                            ArrayType::Normal,
+                                                             ArraySize,
+                                                           /*SizeExpr=*/nullptr,
+                                                             ArrayType::Normal,
                                                           /*IndexTypeQuals=*/0);
 
     StringLiteral::StringKind Kind = StringLiteral::Ascii;
