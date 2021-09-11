@@ -17,6 +17,7 @@
 #include "cling/Utils/Platform.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/Version.h"
 #include "clang/Driver/Compilation.h"

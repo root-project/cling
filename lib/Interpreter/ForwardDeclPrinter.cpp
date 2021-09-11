@@ -11,6 +11,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/Type.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/Sema.h"
 
