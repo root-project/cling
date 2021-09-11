@@ -1602,8 +1602,8 @@ namespace {
 
       std::unique_ptr<raw_pwrite_stream> OS =
           CI->createOutputFile(ModuleOutputFile, /*Binary=*/true,
-                               /*RemoveFileOnSignal=*/false, "",
-                               /*Extension=*/"", /*useTemporary=*/true,
+                               /*RemoveFileOnSignal=*/false,
+                               /*useTemporary=*/true,
                                /*CreateMissingDirectories=*/true);
       assert(OS);
 
