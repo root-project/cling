@@ -84,41 +84,21 @@ namespace utils {
     if (!mangleCtx->shouldMangleDeclName(D)) {
       IdentifierInfo *II = D->getIdentifier();
       assert(II && "Attempt to mangle unnamed decl.");
-      mangledName = II->getName();
+      mangledName = II->getName().str();
       return;
     }
 
     llvm::raw_string_ostream RawStr(mangledName);
-    switch(D->getKind()) {
-    case Decl::CXXConstructor:
-      //Ctor_Complete,          // Complete object ctor
-      //Ctor_Base,              // Base object ctor
-      //Ctor_CompleteAllocating // Complete object allocating ctor (unused)
-      mangleCtx->mangleCXXCtor(cast<CXXConstructorDecl>(D),
-                               GD.getCtorType(), RawStr);
-      break;
 
-    case Decl::CXXDestructor:
-      //Dtor_Deleting, // Deleting dtor
-      //Dtor_Complete, // Complete object dtor
-      //Dtor_Base      // Base object dtor
 #if defined(_WIN32)
-      // MicrosoftMangle.cpp:954 calls llvm_unreachable when mangling Dtor_Comdat
-      if (GD.getDtorType() == Dtor_Comdat) {
-        if (const IdentifierInfo* II = D->getIdentifier())
-          RawStr << II->getName();
-      } else
+    // MicrosoftMangle.cpp:954 calls llvm_unreachable when mangling Dtor_Comdat
+    if (isa<CXXDestructorDecl>(GD.getDecl()) &&
+        GD.getDtorType() == Dtor_Comdat) {
+      if (const IdentifierInfo* II = D->getIdentifier())
+        RawStr << II->getName();
+    } else
 #endif
-      {
-        mangleCtx->mangleCXXDtor(cast<CXXDestructorDecl>(D),
-                                 GD.getDtorType(), RawStr);
-      }
-      break;
-
-    default :
-      mangleCtx->mangleName(D, RawStr);
-      break;
-    }
+      mangleCtx->mangleName(GD, RawStr);
     RawStr.flush();
   }
 
