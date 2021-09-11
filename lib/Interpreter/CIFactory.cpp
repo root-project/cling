@@ -923,7 +923,7 @@ namespace {
     // Sanity check that clang delivered the language standard requested
     if (CompilerOpts.DefaultLanguage(&LangOpts)) {
       switch (CxxStdCompiledWith()) {
-        case 20: assert(LangOpts.CPlusPlus2a && "Language version mismatch");
+        case 20: assert(LangOpts.CPlusPlus20 && "Language version mismatch");
           LLVM_FALLTHROUGH;
         case 17: assert(LangOpts.CPlusPlus17 && "Language version mismatch");
           LLVM_FALLTHROUGH;
@@ -1310,7 +1310,7 @@ namespace {
       // and by enforcing the std version now cling is telling clang what to
       // do, rather than after clang has dedcuded a default.
       switch (CxxStdCompiledWith()) {
-        case 20: argvCompile.emplace_back("-std=c++2a"); break;
+        case 20: argvCompile.emplace_back("-std=c++20"); break;
         case 17: argvCompile.emplace_back("-std=c++17"); break;
         case 14: argvCompile.emplace_back("-std=c++14"); break;
         case 11: argvCompile.emplace_back("-std=c++11"); break;

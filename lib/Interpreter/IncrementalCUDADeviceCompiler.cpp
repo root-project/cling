@@ -114,8 +114,8 @@ namespace cling {
       cppStdVersion = "-std=c++14";
     if (langOpts.CPlusPlus17)
       cppStdVersion = "-std=c++1z";
-    if (langOpts.CPlusPlus2a)
-      cppStdVersion = "-std=c++2a";
+    if (langOpts.CPlusPlus20)
+      cppStdVersion = "-std=c++20";
 
     if (cppStdVersion.empty())
       llvm::errs()
