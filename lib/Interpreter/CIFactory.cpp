@@ -1518,7 +1518,7 @@ namespace {
                                           /*UserFilesAreVolatile*/ true);
     CI->setSourceManager(SM); // CI now owns SM
 
-    if (FrontendOpts.ShowTimers)
+    if (CI->getCodeGenOpts().TimePasses)
       CI->createFrontendTimer();
 
     if (FrontendOpts.ModulesEmbedAllFiles)
