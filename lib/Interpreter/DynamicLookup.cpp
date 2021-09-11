@@ -966,7 +966,7 @@ namespace cling {
       ostrstream stream;
       stream << "delete (" << m_Type << "*) " << m_Memory << ";";
       LockCompilationDuringUserCodeExecutionRAII LCDUCER(*m_Interpreter);
-      m_Interpreter->execute(stream.str());
+      m_Interpreter->execute(stream.str().str());
     }
   } // end namespace internal
   } // end namespace runtime

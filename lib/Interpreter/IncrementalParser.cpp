@@ -274,7 +274,7 @@ static void HandlePlugins(CompilerInstance& CI,
     PluginASTAction::ActionType PluginActionType = P->getActionType();
     assert(PluginActionType != clang::PluginASTAction::ReplaceAction);
 
-    if (P->ParseArgs(CI, CI.getFrontendOpts().PluginArgs[it->getName()])) {
+    if (P->ParseArgs(CI, CI.getFrontendOpts().PluginArgs[it->getName().str()])) {
       std::unique_ptr<ASTConsumer> PluginConsumer
         = P->CreateASTConsumer(CI, /*InputFile*/ "");
       if (PluginActionType == clang::PluginASTAction::AddBeforeMainAction)

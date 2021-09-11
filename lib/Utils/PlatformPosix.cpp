@@ -195,7 +195,7 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
       From += 12;
       while (To > From && isspace(Result[To - 1]))
         --To;
-      std::string SysPath = Result.substr(From, To - From);
+      std::string SysPath = Result.substr(From, To-From).str();
       SysPath.erase(std::remove_if(SysPath.begin(), SysPath.end(), isspace),
                     SysPath.end());
 

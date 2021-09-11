@@ -73,7 +73,7 @@ namespace {
           SmallVector<Token, 1> StrToks(1, Tok);
           StringLiteralParser LitParse(StrToks, PP);
           if (!LitParse.hadError)
-            Literal = LitParse.GetString();
+            Literal = LitParse.GetString().str();
         } else {
           llvm::SmallString<64> Buffer;
           Literal = PP.getSpelling(Tok, Buffer).str();

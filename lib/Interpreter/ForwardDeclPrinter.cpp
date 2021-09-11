@@ -69,7 +69,7 @@ namespace cling {
           for (unsigned i = 0, e = MI->getNumTokens(); i != e; ++i) {
             const Token &Tok = MI->getReplacementToken(i);
             Out() << Tok.getName() << ' ';
-            macrodefs.push_back(macro.m_II->getName());
+            macrodefs.push_back(macro.m_II->getName().str());
           }
           Out() << '\n';
         }
@@ -1053,7 +1053,7 @@ namespace cling {
         skipDecl(D, "specialization failed");
         return;
       }
-      std::string output = stream.take(true);
+      std::string output = stream.take(true).str();
       Out() << output;
     }
 
@@ -1077,7 +1077,7 @@ namespace cling {
           skipDecl(D, "template instance failed");
           return;
         }
-        std::string output = stream.take(true);
+        std::string output = stream.take(true).str();
         Out() << output;
         Out() << '\n';
       }

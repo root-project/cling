@@ -110,7 +110,7 @@ static void AppendAnyDeclLocation(const CompilerInstance* compiler,
     const SourceManager &sourceManager = compiler->getSourceManager();
     if (loc.isValid() && sourceManager.isLoadedSourceLocation(loc)) {
       // No line numbers as they would touich disk.
-      baseName = llvm::sys::path::filename(sourceManager.getFilename(loc));
+      baseName = llvm::sys::path::filename(sourceManager.getFilename(loc)).str();
       lineNo = -1;
     } else {
       PresumedLoc ploc(sourceManager.getPresumedLoc(loc));

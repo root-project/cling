@@ -509,7 +509,7 @@ namespace cling {
       }
 
       bool Contains(StringRef Path) {
-        return m_Paths.count(Path);
+        return m_Paths.count(Path.str());
       }
     };
 
@@ -697,8 +697,9 @@ namespace cling {
 
           llvm::StringRef FileRealPath = llvm::sys::path::parent_path(FileName);
           llvm::StringRef FileRealName = llvm::sys::path::filename(FileName);
-          const BasePath& BaseP = m_BasePaths.RegisterBasePath(FileRealPath.str());
-          LibraryPath LibPath(BaseP, FileRealName); //bp, str
+          const BasePath& BaseP =
+            m_BasePaths.RegisterBasePath(FileRealPath.str());
+          LibraryPath LibPath(BaseP, FileRealName.str()); //bp, str
 
           if (m_SysLibraries.GetRegisteredLib(LibPath) ||
               m_Libraries.GetRegisteredLib(LibPath)) {
@@ -967,7 +968,7 @@ namespace cling {
     // Generate BloomFilter
     for (const auto &S : symbols) {
       if (m_UseHashTable)
-        Lib->AddBloom(Lib->AddSymbol(S));
+        Lib->AddBloom(Lib->AddSymbol(S.str()));
       else
         Lib->AddBloom(S);
     }
@@ -1186,7 +1187,7 @@ namespace cling {
 
   std::string Dyld::searchLibrariesForSymbol(StringRef mangledName,
                                              bool searchSystem/* = true*/) {
-    assert(!llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(mangledName) &&
+    assert(!llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(mangledName.data()) &&
            "Library already loaded, please use dlsym!");
     assert(!mangledName.empty());
 

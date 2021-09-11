@@ -159,11 +159,11 @@ namespace cling {
     if (getCurTok().is(tok::ident) && getCurTok().getIdent().equals("T")) {
       consumeAnyStringToken();
       if (getCurTok().is(tok::raw_ident)) {
-        std::string inputFile = getCurTok().getIdent();
+        std::string inputFile = getCurTok().getIdent().str();
         consumeAnyStringToken(tok::eof);
         if (getCurTok().is(tok::raw_ident)) {
           result = true;
-          std::string outputFile = getCurTok().getIdent();
+          std::string outputFile = getCurTok().getIdent().str();
           actionResult = m_Actions.actOnTCommand(inputFile, outputFile);
         }
       }
@@ -235,7 +235,7 @@ namespace cling {
       if (!lookAhead(1).is(tok::eof) && !(stream & MetaProcessor::kSTDSTRM)) {
         consumeAnyStringToken(tok::eof);
         if (getCurTok().is(tok::raw_ident)) {
-          EnvExpand = getCurTok().getIdent();
+          EnvExpand = getCurTok().getIdent().str();
           // Quoted path, no expansion and strip quotes
           if (EnvExpand.size() > 3 && EnvExpand.front() == '"' &&
               EnvExpand.back() == '"') {
@@ -461,7 +461,7 @@ namespace cling {
       skipWhitespace();
       if (!getCurTok().is(tok::stringlit))
         return false; // FIXME: Issue proper diagnostics
-      std::string ident = getCurTok().getIdentNoQuotes();
+      std::string ident = getCurTok().getIdentNoQuotes().str();
       consumeToken();
       m_Actions.actOnstoreStateCommand(ident);
       return true;
@@ -477,7 +477,7 @@ namespace cling {
       skipWhitespace();
       if (!getCurTok().is(tok::stringlit))
         return false; // FIXME: Issue proper diagnostics
-      std::string ident = getCurTok().getIdentNoQuotes();
+      std::string ident = getCurTok().getIdentNoQuotes().str();
       consumeToken();
       m_Actions.actOncompareStateCommand(ident);
       return true;

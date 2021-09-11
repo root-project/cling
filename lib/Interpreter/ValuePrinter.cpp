@@ -173,7 +173,7 @@ static std::string printAddress(const void* Ptr, const char Prfx = 0) {
   Strm << Ptr;
   if (!utils::isAddressValid(Ptr))
     Strm << kInvalidAddr;
-  return Strm.str();
+  return Strm.str().str();
 }
 
 } // anonymous namespace
@@ -217,7 +217,7 @@ namespace cling {
     else
       Strm << Val;
     Strm << "'";
-    return Strm.str();
+    return Strm.str().str();
   }
 
   CLING_LIB_EXPORT
@@ -240,56 +240,56 @@ namespace cling {
   std::string printValue(const short *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const unsigned short *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const int *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const unsigned int *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const long *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const unsigned long *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const long long *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const unsigned long long *val) {
     cling::smallstream strm;
     strm << *val;
-    return strm.str();
+    return strm.str().str();
   }
 
   // Reals
@@ -297,14 +297,14 @@ namespace cling {
   std::string printValue(const float *val) {
     cling::smallstream strm;
     strm << llvm::format("%#.6g", *val) << 'f';
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
   std::string printValue(const double *val) {
     cling::smallstream strm;
     strm << llvm::format("%#.8g", *val);
-    return strm.str();
+    return strm.str().str();
   }
 
   CLING_LIB_EXPORT
@@ -312,7 +312,7 @@ namespace cling {
     cling::smallstream strm;
     strm << llvm::format("%#.8Lg", *val) << 'L';
     //strm << llvm::format("%Le", *val) << 'L';
-    return strm.str();
+    return strm.str().str();
   }
 
   // Char pointers
@@ -340,7 +340,7 @@ namespace cling {
     if (!IsValid) {
       cling::smallstream Strm;
       Strm << static_cast<const void*>(Start) << kInvalidAddr;
-      return Strm.str();
+      return Strm.str().str();
     }
 
     if (*Start == 0)
@@ -354,7 +354,7 @@ namespace cling {
       Strm << *Start++;
     Strm << "\"";
 
-    return Strm.str();
+    return Strm.str().str();
   }
 
   CLING_LIB_EXPORT
@@ -554,7 +554,7 @@ namespace cling {
     llvm::raw_svector_ostream Strm(Buf);
     Strm << Prefix << "'\\" << Esc
          << llvm::format_hex_no_prefix(unsigned(*Src), sizeof(T)*2) << "'";
-    return Strm.str();
+    return Strm.str().str();
   }
 
   CLING_LIB_EXPORT
@@ -773,7 +773,7 @@ static std::string printEnumValue(const Value &V) {
   }
   enumString << " : " << printQualType(C, ED->getIntegerType()) << " "
     << ValAsAPSInt.toString(/*Radix = */10);
-  return enumString.str();
+  return enumString.str().str();
 }
 
 static std::string printFunctionValue(const Value &V, const void *ptr,
@@ -784,7 +784,7 @@ static std::string printFunctionValue(const Value &V, const void *ptr,
   Interpreter &Interp = *const_cast<Interpreter *>(V.getInterpreter());
   const Transaction *T = Interp.getLastWrapperTransaction();
   if (!T)
-    return o.str();
+    return o.str().str();
 
   if (clang::FunctionDecl *WrapperFD = T->getWrapperFD()) {
     clang::ASTContext &C = V.getASTContext();
@@ -853,7 +853,7 @@ static std::string printFunctionValue(const Value &V, const void *ptr,
       o << '\n';
     }
   }
-  return o.str();
+  return o.str().str();
 }
 
 static std::string printStringType(const Value &V, const clang::Type* Type) {
@@ -972,7 +972,7 @@ namespace cling {
     } else
       strm << "<<<invalid>>> " << printAddress(value, '@');
 
-    return strm.str();
+    return strm.str().str();
   }
 
   namespace valuePrinterInternal {

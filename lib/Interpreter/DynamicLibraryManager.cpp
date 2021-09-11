@@ -72,7 +72,7 @@ namespace cling {
       return original.str();
     llvm::SmallString<512> result(replacement);
     result.append(original.drop_front(pattern.size()));
-    return result.str();
+    return result.str().str();
   }
 
   ///\returns substitution of all known linker variables in \c original
@@ -167,7 +167,7 @@ namespace cling {
         if (DEBUG > 7) {
           cling::errs() << " ... Found (in RPATH)!\n";
         }
-        return ThisPath.str();
+        return ThisPath.str().str();
       }
     }
     // m_SearchPaths
@@ -182,7 +182,7 @@ namespace cling {
         if (DEBUG > 7) {
           cling::errs() << " ... Found (in SearchPaths)!\n";
         }
-        return ThisPath.str();
+        return ThisPath.str().str();
       }
     }
     // RUNPATH
@@ -197,7 +197,7 @@ namespace cling {
         if (DEBUG > 7) {
           cling::errs() << " ... Found (in RUNPATH)!\n";
         }
-        return ThisPath.str();
+        return ThisPath.str().str();
       }
     }
 

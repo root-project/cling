@@ -31,9 +31,9 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Basic/SourceManager.h"
 
-#include <cstdlib>
-#include <cctype>
 #include <algorithm>
+#include <cctype>
+#include <cstdlib>
 
 namespace {
   ///\brief Make a valid C++ identifier, replacing illegal characters in `S'
@@ -75,7 +75,7 @@ namespace cling {
 
     std::string pathname(m_Interpreter.lookupFileOrLibrary(file));
     if (pathname.empty())
-      pathname = file;
+      pathname = file.str();
     if (m_Interpreter.loadFile(pathname, /*allowSharedLib=*/true, transaction)
         == Interpreter::kSuccess) {
       registerUnloadPoint(unloadPoint, pathname);
@@ -113,7 +113,7 @@ namespace cling {
 
   void MetaSema::actOnComment(llvm::StringRef comment) const {
     // Some of the comments are meaningful for the cling::Interpreter
-    m_Interpreter.declare(comment);
+    m_Interpreter.declare(comment.str());
   }
 
   MetaSema::ActionResult MetaSema::actOnxCommand(llvm::StringRef file,
@@ -148,7 +148,7 @@ namespace cling {
 
     // First, try function named after `file`; add any alternatives below.
     const std::string tryCallThese[] = {
-      makeValidCXXIdentifier(llvm::sys::path::stem(file)),
+      makeValidCXXIdentifier(llvm::sys::path::stem(file).str()),
       // FIXME: this provides an entry point that is independent from the macro
       // filename (and still works if file is renamed); should we enable this?
       //"__main__",
@@ -288,11 +288,11 @@ namespace cling {
   }
 
   void MetaSema::actOnstoreStateCommand(llvm::StringRef name) const {
-    m_Interpreter.storeInterpreterState(name);
+    m_Interpreter.storeInterpreterState(name.str());
   }
 
   void MetaSema::actOncompareStateCommand(llvm::StringRef name) const {
-    m_Interpreter.compareInterpreterState(name);
+    m_Interpreter.compareInterpreterState(name.str());
   }
 
   void MetaSema::actOnstatsCommand(llvm::StringRef name,
@@ -479,7 +479,7 @@ namespace cling {
                                      llvm::StringRef filename) {
     std::string pathname(m_Interpreter.lookupFileOrLibrary(filename));
     if (pathname.empty())
-      pathname = filename;
+      pathname = filename.str();
 
     clang::FileManager& FM = m_Interpreter.getSema().getSourceManager().getFileManager();
     const clang::FileEntry* FE = FM.getFile(pathname, /*OpenFile=*/false,

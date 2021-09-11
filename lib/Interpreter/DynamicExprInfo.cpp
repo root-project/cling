@@ -24,7 +24,7 @@ namespace runtime {
         Buf.resize(0);
         llvm::raw_svector_ostream Strm(Buf);
         Strm << m_Addresses[i];
-        m_Result = m_Result.insert(found + 1, Strm.str());
+        m_Result = m_Result.insert(found + 1, Strm.str().str());
         m_Result = m_Result.erase(found, 1);
         ++i;
       }

@@ -163,11 +163,11 @@ namespace cling {
 
       if ( (cacheUpdate = addFile(FileNames.first,true)) ) {
         m_PrevFE.first = cacheUpdate;
-        m_PrevFileName.first = FileNames.first;
+        m_PrevFileName.first = FileNames.first.str();
       }
       if ( (cacheUpdate = addFile(FileNames.second,false)) ) {
         m_PrevFE.second = cacheUpdate;
-        m_PrevFileName.second = FileNames.second;
+        m_PrevFileName.second = FileNames.second.str();
       }
 
 
