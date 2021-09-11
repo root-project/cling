@@ -298,7 +298,7 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
         for (unsigned i = 0, e = Inits->getNumOperands(); i != e; ++i) {
           llvm::Value *Operand
-            = Inits->getOperand(i)->stripPointerCastsNoFollowAliases();
+            = Inits->getOperand(i)->stripPointerCasts();
           VisitedGlobals.erase(cast<llvm::GlobalValue>(Operand));
         }
 
