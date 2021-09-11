@@ -207,21 +207,21 @@ namespace cling {
 
      auto& PP = m_PP;
      auto isDirectlyReacheable = [&PP](llvm::StringRef FileName) {
-       const FileEntry* FE = nullptr;
        SourceLocation fileNameLoc;
        bool isAngled = false;
        const DirectoryLookup* FromDir = nullptr;
        const FileEntry* FromFile = nullptr;
        const DirectoryLookup* CurDir = nullptr;
 
-       FE = PP.LookupFile(fileNameLoc, FileName, isAngled, FromDir, FromFile,
-                          CurDir, /*SearchPath*/ 0,
-                          /*RelativePath*/ 0, /*suggestedModule*/ 0,
-                          /*IsMapped*/ 0, /*IsFramework*/ nullptr,
-                          /*SkipCache*/ false,
-                          /*OpenFile*/ false, /*CacheFail*/ true);
+       auto FE = PP.LookupFile(fileNameLoc, FileName, isAngled, FromDir,
+                               FromFile,
+                               CurDir, /*SearchPath*/ 0,
+                               /*RelativePath*/ 0, /*suggestedModule*/ 0,
+                               /*IsMapped*/ 0, /*IsFramework*/ nullptr,
+                               /*SkipCache*/ false,
+                               /*OpenFile*/ false, /*CacheFail*/ true);
        // Return true if we can '#include' the given filename
-       return FE != nullptr;
+       return FE.hasValue();
      };
 
      SourceLocation spellingLoc = m_SMgr.getSpellingLoc(D->getBeginLoc());

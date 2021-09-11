@@ -121,12 +121,14 @@ namespace cling {
         else if (FileName.equals(m_PrevFileName.second))
           FE = m_PrevFE.second;
         else {
-          FE = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
-                                FromDir, FromFile, CurDir, /*SearchPath*/0,
-                                /*RelativePath*/ 0, /*suggestedModule*/0,
-                                /*IsMapped*/0, /*IsFrameworkFound*/ nullptr,
-                                /*SkipCache*/ false,
-                                /*OpenFile*/ false, /*CacheFail*/ true);
+          auto FERef = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
+                                        FromDir, FromFile, CurDir,
+                                        /*SearchPath*/0, /*RelativePath*/ 0,
+                                        /*suggestedModule*/0, /*IsMapped*/0,
+                                        /*IsFrameworkFound*/ nullptr,
+                                        /*SkipCache*/ false,
+                                        /*OpenFile*/ false, /*CacheFail*/ true);
+          FE = &FERef->getFileEntry();
           needCacheUpdate = true;
         }
 
