@@ -870,7 +870,7 @@ namespace cling {
     uint32_t SymbolsCount = 0;
     std::list<llvm::StringRef> symbols;
     for (const llvm::object::SymbolRef &S : BinObjFile->symbols()) {
-      uint32_t Flags = S.getFlags();
+      uint32_t Flags = llvm::cantFail(S.getFlags());
       // Do not insert in the table symbols flagged to ignore.
       if (Flags & IgnoreSymbolFlags)
         continue;
@@ -903,7 +903,7 @@ namespace cling {
       const auto *ElfObj = cast<llvm::object::ELFObjectFileBase>(BinObjFile);
 
       for (const object::SymbolRef &S : ElfObj->getDynamicSymbolIterators()) {
-        uint32_t Flags = S.getFlags();
+        uint32_t Flags = llvm::cantFail(S.getFlags());
         // DO NOT insert to table if symbol was undefined
         if (Flags & llvm::object::SymbolRef::SF_Undefined)
           continue;
@@ -1039,7 +1039,7 @@ namespace cling {
       [&library_filename](llvm::iterator_range<llvm::object::symbol_iterator> range,
          unsigned IgnoreSymbolFlags, llvm::StringRef mangledName) -> bool {
       for (const llvm::object::SymbolRef &S : range) {
-        uint32_t Flags = S.getFlags();
+        uint32_t Flags = llvm::cantFail(S.getFlags());
         // Do not insert in the table symbols flagged to ignore.
         if (Flags & IgnoreSymbolFlags)
           continue;
