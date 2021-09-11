@@ -1406,7 +1406,9 @@ namespace {
     CI->setInvocation(InvocationPtr);
     CI->setDiagnostics(Diags.get()); // Diags is ref-counted
     if (!OnlyLex)
-      CI->getDiagnosticOpts().ShowColors = cling::utils::ColorizeOutput();
+      CI->getDiagnosticOpts().ShowColors =
+        llvm::sys::Process::StandardOutIsDisplayed() ||
+        llvm::sys::Process::StandardErrIsDisplayed();
 
     // Copied from CompilerInstance::createDiagnostics:
     // Chain in -verify checker, if requested.

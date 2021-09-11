@@ -16,19 +16,6 @@
 
 namespace cling {
   namespace utils {
-    ///\brief setup colorization of the output streams below
-    ///
-    ///\param[in] Which - Ored value of streams to colorize: 0 means none.
-    /// 0 = Don't colorize any output
-    /// 1 = Colorize cling::outs
-    /// 2 = Colorize cling::errs
-    /// 4 = Colorize cling::log (currently always the same as cling::errs)
-    /// 8 = Colorize based on whether stdout/err are dsiplayed on tty or not.
-    ///
-    ///\returns Whether any output stream was colorized.
-    ///
-    bool ColorizeOutput(unsigned Which = 8);
-    
     ///\brief The 'stdout' stream. llvm::raw_ostream wrapper of std::cout
     ///
     llvm::raw_ostream& outs();
