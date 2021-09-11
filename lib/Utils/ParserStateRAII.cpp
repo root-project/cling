@@ -9,6 +9,7 @@
 
 #include "cling/Utils/ParserStateRAII.h"
 
+#include "clang/Parse/Parser.h"
 #include "clang/Parse/RAIIObjectsForParser.h"
 
 using namespace clang;
@@ -50,7 +51,7 @@ cling::ParserStateRAII::~ParserStateRAII() {
   //
   {
     // Cleanup the TemplateIds before swapping the previous set back.
-    DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds(*P);
+    Parser::DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds(*P);
   }
   P->TemplateIds.swap(OldTemplateIds);
   if (SkipToEOF)
