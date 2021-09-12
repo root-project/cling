@@ -740,7 +740,7 @@ namespace cling {
 #ifndef NDEBUG
         cling::errs() <<
           "with internal representation (look for <dependent type>):\n";
-        SubTree->dump(cling::errs(), m_Sema->getSourceManager());
+        SubTree->dump(cling::errs(), m_Sema->getASTContext());
 #endif
         return SubTree;
       }
