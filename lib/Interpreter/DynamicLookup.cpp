@@ -621,8 +621,7 @@ namespace cling {
         if (!IsArtificiallyDependent(LHSExpr)) {
           const QualType LHSTy = LHSExpr->getType();
           Node->setRHS(SubstituteUnknownSymbol(LHSTy, rhs.castTo<Expr>()));
-          Node->setTypeDependent(false);
-          Node->setValueDependent(false);
+          assert(Node->getDependence() == ExprDependence::None);
           return ASTNodeInfo(Node, /*needs eval*/false);
         }
     }
