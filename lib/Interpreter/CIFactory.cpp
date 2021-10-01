@@ -570,6 +570,10 @@ namespace {
     llvm::SmallString<256> servIncLoc(getIncludePathForHeader(HS, "windows.h"));
 #endif
     llvm::SmallString<128> cIncLoc(getIncludePathForHeader(HS, "time.h"));
+    // FIXME: Diagnose this until we teach cling how to work without libc.
+    if (!llvm::sys::fs::exists(cIncLoc))
+      llvm::errs()
+         << "C system headers (glibc/Xcode/Windows SDK) must be installed.\n";
 
     llvm::SmallString<256> stdIncLoc(getIncludePathForHeader(HS, "cassert"));
     llvm::SmallString<256> boostIncLoc(getIncludePathForHeader(HS, "boost/version.hpp"));
