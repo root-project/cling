@@ -39,8 +39,7 @@ set_target_properties(cling-demo
 
 if(MSVC)
   set_target_properties(cling-demo PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
-  set_property(TARGET cling-demo APPEND_STRING PROPERTY LINK_FLAGS
-              "/EXPORT:?setValueNoAlloc@internal@runtime@cling@@YAXPEAX00D_K@Z
-               /EXPORT:?setValueNoAlloc@internal@runtime@cling@@YAXPEAX00DM@Z
-               /EXPORT:cling_runtime_internal_throwIfInvalidPointer")
+  set_property(TARGET cling-demo APPEND_STRING PROPERTY LINK_FLAGS " /EXPORT:?setValueNoAlloc@internal@runtime@cling@@YAXPEAX00D_K@Z")
+  set_property(TARGET cling-demo APPEND_STRING PROPERTY LINK_FLAGS " /EXPORT:?setValueNoAlloc@internal@runtime@cling@@YAXPEAX00DM@Z")
+  set_property(TARGET cling-demo APPEND_STRING PROPERTY LINK_FLAGS " /EXPORT:cling_runtime_internal_throwIfInvalidPointer")
 endif()
