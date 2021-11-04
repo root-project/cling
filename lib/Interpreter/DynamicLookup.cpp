@@ -761,7 +761,6 @@ namespace cling {
                                                            TSI,
                                                            m_NoELoc,
                                                            ILE).get();
-    assert (ExprAddresses && "Could not build the void* array");
     if (!ExprAddresses)
        return SubTree;
 
