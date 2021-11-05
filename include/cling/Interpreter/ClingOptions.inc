@@ -18,6 +18,12 @@ PREFIX(prefix_2, {"--" COMMA 0})
 
 OPTION(prefix_0, "<input>", INPUT, Input, INVALID, INVALID, 0, 0, 0, 0, 0, 0)
 OPTION(prefix_0, "<unknown>", UNKNOWN, Unknown, INVALID, INVALID, 0, 0, 0, 0, 0, 0)
+#ifndef NDEBUG
+OPTION(prefix_2, "debug-only=", _debugFlags_EQ, Joined, INVALID, INVALID, 0, 0, 0,
+       "Debug flags to enable", 0, 0)
+OPTION(prefix_2, "debug-only", _debugFlags, Separate, INVALID, INVALID, 0, 0, 0,
+       "Debug flags to enable", 0, 0)
+#endif
 OPTION(prefix_2, "errorout", _errorout, Flag, INVALID, INVALID, 0, 0, 0,
        "Do not recover from input errors", 0, 0)
 // Re-implement to forward to our help

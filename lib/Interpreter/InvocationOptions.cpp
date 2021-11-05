@@ -19,6 +19,7 @@
 #include "llvm/Option/Option.h"
 #include "llvm/Option/OptTable.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Debug.h"
 
 #include <memory>
 
@@ -69,6 +70,27 @@ static const char kNoStdInc[] = "-nostdinc";
     return new ClingOptTable();
   }
 
+#ifndef NDEBUG
+  void setDebugOnlyTypes(const char *FlagsStr) {
+    llvm::SmallString<64> MutFlagsStr(FlagsStr);
+
+    // Collect single flags and replace seperators with null-terminators
+    std::vector<const char *> DebugTypes;
+    char *Flag = MutFlagsStr.data();
+    do {
+      DebugTypes.push_back(Flag);
+      while (*Flag != ',' && *Flag != ';' && *Flag != '\0')
+        ++Flag;
+      if (*Flag == '\0')
+        break;
+      *(Flag++) = '\0';
+    } while (true);
+
+    DebugFlag = true;
+    setCurrentDebugTypes(DebugTypes.data(), DebugTypes.size());
+  }
+#endif
+
   static void ParseStartupOpts(cling::InvocationOptions& Opts,
                                InputArgList& Args) {
     Opts.ErrorOut = Args.hasArg(OPT__errorout);
@@ -84,6 +106,16 @@ static const char kNoStdInc[] = "-nostdinc";
         Opts.MetaString = ".";
       }
     }
+#ifndef NDEBUG
+    if (Arg* DebugFlagsArg = Args.getLastArg(OPT__debugFlags, OPT__debugFlags_EQ)) {
+      const char *FlagsStr = DebugFlagsArg->getValue();
+      if (*FlagsStr == '\0') {
+        cling::errs() << "ERROR: --debug-only argument must be non-empty! Ignoring it.\n";
+      } else {
+        setDebugOnlyTypes(FlagsStr);
+      }
+    }
+#endif
   }
 
   static void Extend(std::vector<std::string>& A, std::vector<std::string> B) {
