@@ -1409,11 +1409,11 @@ namespace cling {
         !lastT->getWrapperFD()) // no wrapper to run
       return Interpreter::kSuccess;
     else {
+      bool WantValuePrinting = lastT->getCompilationOpts().ValuePrinting
+        != CompilationOptions::VPDisabled;
       ExecutionResult res = RunFunction(lastT->getWrapperFD(), V);
       if (res < kExeFirstError) {
-         if (lastT->getCompilationOpts().ValuePrinting
-            != CompilationOptions::VPDisabled
-            && V->isValid()
+         if (WantValuePrinting && V->isValid()
             // the !V->needsManagedAllocation() case is handled by
             // dumpIfNoStorage.
             && V->needsManagedAllocation())
