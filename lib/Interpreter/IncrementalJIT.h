@@ -209,6 +209,11 @@ public:
     m_UnfinalizedSections.erase(K);
   }
 
+  /// Check whether the symbol name was emitted by the JIT.
+  bool isEmittedSymbol(llvm::StringRef Name) {
+    return m_SymbolMap.count(Name);
+  }
+
   ///\brief Get the address of a symbol from the process' loaded libraries.
   /// \param Name - symbol to look for
   /// \param Addr - known address of the symbol that can be cached later use
