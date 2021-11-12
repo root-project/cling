@@ -453,7 +453,7 @@ namespace cling {
 
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
-#if defined(__linux__)
+#if defined(__GLIBC__)
     const char* LinkageCxx = "extern \"C++\"";
     const char* Attr = LangOpts.CPlusPlus ? " throw () " : "";
 #else
