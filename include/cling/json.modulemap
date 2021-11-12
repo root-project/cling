@@ -1,4 +1,0 @@
-module Json {
-  header "nlohmann/json.hpp"
-  export *
-}

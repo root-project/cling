@@ -580,7 +580,6 @@ namespace {
     llvm::SmallString<256> tinyxml2IncLoc(getIncludePathForHeader(HS, "tinyxml2.h"));
     llvm::SmallString<256> cudaIncLoc(getIncludePathForHeader(HS, "cuda.h"));
     llvm::SmallString<256> vcVcIncLoc(getIncludePathForHeader(HS, "Vc/Vc"));
-    llvm::SmallString<256> jsonIncLoc(getIncludePathForHeader(HS, "nlohmann/json.hpp"));
     llvm::SmallString<256> clingIncLoc(getIncludePathForHeader(HS,
                                         "cling/Interpreter/RuntimeUniverse.h"));
 
@@ -703,11 +702,6 @@ namespace {
                               /*AllowModulemapOverride=*/ false);
     if (!vcVcIncLoc.empty())
       maybeAppendOverlayEntry(vcVcIncLoc.str(), "vc.modulemap",
-                              clingIncLoc.str(), MOverlay,
-                              /*RegisterModuleMap=*/ true,
-                              /*AllowModulemapOverride=*/ false);
-    if (!jsonIncLoc.empty())
-      maybeAppendOverlayEntry(jsonIncLoc.str(), "json.modulemap",
                               clingIncLoc.str(), MOverlay,
                               /*RegisterModuleMap=*/ true,
                               /*AllowModulemapOverride=*/ false);
