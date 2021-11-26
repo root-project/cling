@@ -18,6 +18,7 @@
 #include "llvm/Option/ArgList.h"
 #include "llvm/Option/Option.h"
 #include "llvm/Option/OptTable.h"
+#include "llvm/Support/CommandLine.h"
 
 #include <memory>
 
@@ -121,6 +122,9 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
                     MissingArgCount, 0,
                     options::NoDriverOption | options::CLOption));
 
+  std::vector<const char*> LLVMArgs;
+  LLVMArgs.push_back("cling (LLVM option parsing)");
+
   for (const Arg* arg : Args) {
     switch (arg->getOption().getID()) {
       // case options::OPT_d_Flag:
@@ -152,11 +156,21 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
         CUDAHost = false;
         break;
 
+      case options::OPT_mllvm:
+        LLVMArgs.push_back(arg->getValue());
+        break;
+
       default:
         if (Inputs && arg->getOption().getKind() == Option::InputClass)
           Inputs->push_back(arg->getValue());
         break;
     }
+  }
+
+  // Check that there were LLVM arguments, other than the first dummy entry.
+  if (LLVMArgs.size() > 1) {
+    LLVMArgs.push_back(nullptr);
+    llvm::cl::ParseCommandLineOptions(LLVMArgs.size() - 1, LLVMArgs.data());
   }
 }
 
