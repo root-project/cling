@@ -308,7 +308,7 @@ namespace cling {
     llvm::legacy::PassManager pass;
     // it's important to use the type assembler
     // object file is not supported and do not make sense
-    auto FileType = llvm::TargetMachine::CGFT_AssemblyFile;
+    llvm::CodeGenFileType FileType = llvm::CGFT_AssemblyFile;
 
     if (targetMachine->addPassesToEmitFile(pass, dest, /*DwoOut*/ nullptr,
                                            FileType)) {
