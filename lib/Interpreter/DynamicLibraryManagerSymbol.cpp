@@ -590,10 +590,13 @@ namespace cling {
   void HandleDynTab(const ELFFile<ELFT>* Elf, llvm::StringRef FileName,
                     llvm::SmallVector<llvm::StringRef,2>& RPath,
                     llvm::SmallVector<llvm::StringRef,2>& RunPath,
-                    std::vector<StringRef>& Deps) {
+                    std::vector<StringRef>& Deps,
+                    bool& isPIEExecutable) {
     const char *Data = "";
     if (Expected<StringRef> StrTabOrErr = getDynamicStrTab(Elf))
       Data = StrTabOrErr.get().data();
+
+    isPIEExecutable = false;
 
     auto DynamicEntriesOrError = Elf->dynamicEntries();
     if (!DynamicEntriesOrError) {
@@ -612,6 +615,11 @@ namespace cling {
           break;
         case ELF::DT_RUNPATH:
           SplitPaths(Data + Dyn.d_un.d_val, RunPath, utils::kAllowNonExistant, platform::kEnvDelim, false);
+          break;
+        case ELF::DT_FLAGS_1:
+          // Check if this is not a pie executable.
+          if (Dyn.d_un.d_val & llvm::ELF::DF_1_PIE)
+            isPIEExecutable = true;
           break;
         // (Dyn.d_tag == ELF::DT_NULL) continue;
         // (Dyn.d_tag == ELF::DT_AUXILIARY || Dyn.d_tag == ELF::DT_FILTER)
@@ -731,15 +739,28 @@ namespace cling {
           }
           llvm::object::ObjectFile *BinObjF = ObjFileOrErr.get().getBinary();
           if (BinObjF->isELF()) {
-            if (const auto* ELF = dyn_cast<ELF32LEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
-            else if (const auto* ELF = dyn_cast<ELF32BEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
-            else if (const auto* ELF = dyn_cast<ELF64LEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
-            else if (const auto* ELF = dyn_cast<ELF64BEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps);
+            bool isPIEExecutable = false;
 
+            if (const auto* ELF = dyn_cast<ELF32LEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+                           isPIEExecutable);
+            else if (const auto* ELF = dyn_cast<ELF32BEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+                           isPIEExecutable);
+            else if (const auto* ELF = dyn_cast<ELF64LEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+                           isPIEExecutable);
+            else if (const auto* ELF = dyn_cast<ELF64BEObjectFile>(BinObjF))
+              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+                           isPIEExecutable);
+
+            if ((level == 0) && isPIEExecutable) {
+              if (searchSystemLibraries)
+                m_SysLibraries.UnregisterLib(LibPath);
+              else
+                m_Libraries.UnregisterLib(LibPath);
+              return;
+            }
           } else if (BinObjF->isMachO()) {
             MachOObjectFile *Obj = (MachOObjectFile*)BinObjF;
             for (const auto &Command : Obj->load_commands()) {
