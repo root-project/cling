@@ -8,6 +8,7 @@
 
 // REQUIRES: not_system-windows
 
+// RUN: %mkdir %t-dir
 // RUN: cd %t-dir
 
 // RUN: %mkdir %t-dir/dir1/dir11/dir111

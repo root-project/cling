@@ -26,6 +26,5 @@ cling_testlibrary_function()
 .L libcall_lib_L_AB
 cling_testlibrary_function()
 // CHECK: (int) 91749
-357
 
 .q
