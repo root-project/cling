@@ -116,10 +116,10 @@ CompilerOptions::CompilerOptions(int argc, const char* const* argv)
 void CompilerOptions::Parse(int argc, const char* const argv[],
                             std::vector<std::string>* Inputs) {
   unsigned MissingArgIndex, MissingArgCount;
-  std::unique_ptr<OptTable> OptsC1(createDriverOptTable());
+  const OptTable& OptsC1 = getDriverOptTable();
   ArrayRef<const char *> ArgStrings(argv+1, argv + argc);
 
-  InputArgList Args(OptsC1->ParseArgs(ArgStrings, MissingArgIndex,
+  InputArgList Args(OptsC1.ParseArgs(ArgStrings, MissingArgIndex,
                     MissingArgCount, 0,
                     options::NoDriverOption | options::CLOption));
 
@@ -242,7 +242,7 @@ void InvocationOptions::PrintHelp() {
 
   cling::outs() << "\n\n";
 
-  std::unique_ptr<OptTable> OptsC1(createDriverOptTable());
-  OptsC1->PrintHelp(cling::outs(), "clang -cc1",
-                    "LLVM 'Clang' Compiler: http://clang.llvm.org");
+  const OptTable& OptsC1 = getDriverOptTable();
+  OptsC1.PrintHelp(cling::outs(), "clang -cc1",
+                   "LLVM 'Clang' Compiler: http://clang.llvm.org");
 }
