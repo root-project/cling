@@ -82,15 +82,14 @@ namespace cling {
       if (utils::Analyze::isOnScopeChains(D, *m_Sema))
         m_Sema->IdResolver.RemoveDecl(D);
     }
-    clang::StoredDeclsList &SDL = (*m_TU->getLookupPtr())[D->getDeclName()];
-    if (SDL.getAsDecl() == D) {
-      SDL.setOnlyValue(nullptr);
-    }
-    if (auto Vec = SDL.getAsVector()) {
-      // FIXME: investigate why StoredDeclList has duplicated entries coming from PCM.
-      Vec->erase(std::remove_if(Vec->begin(), Vec->end(),
-                                [D](Decl *Other) { return cast<Decl>(D) == Other; }),
-                 Vec->end());
+    if (StoredDeclsMap* Map = m_TU->getLookupPtr()) {
+      StoredDeclsMap::iterator Pos = Map->find(D->getDeclName());
+      if (Pos != Map->end() && !Pos->second.isNull()) {
+       StoredDeclsList &List = Pos->second;
+       List.remove(D);
+       if (List.isNull())
+         Map->erase(Pos);
+     }
     }
 
     if (InterpreterCallbacks *IC = m_Interp.getCallbacks())
