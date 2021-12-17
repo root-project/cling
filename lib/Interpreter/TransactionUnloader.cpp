@@ -109,7 +109,8 @@ namespace cling {
   bool TransactionUnloader::RevertTransaction(Transaction* T) {
 
     bool Successful = true;
-    if (getExecutor() && T->getModule()) {
+    const llvm::Module *UnownedModule = T->getUnownedModule();
+    if (getExecutor() && UnownedModule) {
       Successful = getExecutor()->unloadModule(T->getModule()) && Successful;
 
       // Cleanup the module from unused global values.
@@ -118,7 +119,8 @@ namespace cling {
       //   globalDCE->runOnModule(*T->getModule());
       // }
 
-      Successful = unloadModule(T->getModule()) && Successful;
+      Successful =
+          unloadModule(const_cast<llvm::Module *>(UnownedModule)) && Successful;
     }
 
     // Clean up the pending instantiations

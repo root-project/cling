@@ -157,6 +157,16 @@ namespace cling {
     ///
     std::unique_ptr<llvm::Module> m_Module;
 
+    ///\brief This is a hack to get code unloading to work with ORCv2
+    ///
+    /// ORCv2 introduces resource trackers that allow code unloading from any
+    /// materialization state. ORCv2 IncrementalJIT reports modules as non-
+    /// pending immediately, which sets this raw pointer. TransactionUnloader
+    /// now checks this one instead of the unique pointer above. This is not
+    /// nice, but it works and keeps the current infrastrucutre intact.
+    ///
+    const llvm::Module *m_UnownedModule{nullptr};
+
     ///\brief The Executor to use m_ExeUnload on.
     ///
     IncrementalExecutor* m_Exe;
@@ -479,6 +489,12 @@ namespace cling {
       return std::move(m_Module);
     }
     void setModule(std::unique_ptr<llvm::Module> M) { m_Module = std::move(M); }
+
+    const llvm::Module* getUnownedModule() const { return m_UnownedModule; }
+    void setUnownedModule(const llvm::Module *M) {
+      assert(m_UnownedModule == nullptr && "Module are emitted only once");
+      m_UnownedModule = M;
+    }
 
     IncrementalExecutor* getExecutor() const { return m_Exe; }
 

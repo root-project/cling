@@ -138,9 +138,8 @@ namespace {
       if (!GV.isDiscardableIfUnused(LT) || !GV.isWeakForLinker(LT))
         return false;
 
-      // Find the symbol in shared libraries.
-      if (m_JIT.isEmittedSymbol(GV.getName())
-          || m_JIT.lookupSymbol(GV.getName()).first) {
+      // Find the symbol in JIT or shared libraries.
+      if (m_JIT.getSymbolAddress(GV.getName(), /*ExcludeHostSymbols*/ false)) {
 #if !defined(_WIN32)
         // Heuristically, Windows cannot handle cross-library variables; they
         // must be library-local.

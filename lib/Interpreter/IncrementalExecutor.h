@@ -143,7 +143,7 @@ namespace cling {
 
     ///\brief The list of llvm::Module-s to return the transaction
     /// after the JIT has emitted them.
-    std::map<llvm::orc::VModuleKey, Transaction*> m_PendingModules;
+    std::map<const llvm::Module*, Transaction*> m_PendingModules;
 
     /// Dynamic library manager object.
     ///
@@ -177,11 +177,9 @@ namespace cling {
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
     ///\brief Unload a set of JIT symbols.
-    bool unloadModule(const llvm::Module* M) const {
-      // FIXME: Propagate the error in a more verbose way.
-      if (auto Err = m_JIT->removeModule(M))
-        return false;
-      return true;
+    llvm::Expected<std::unique_ptr<llvm::Module>>
+    unloadModule(const llvm::Module* M) const {
+      return m_JIT->removeModule(M);
     }
 
     ///\brief Run the static initializers of all modules collected to far.
@@ -207,7 +205,7 @@ namespace cling {
     /// @param[in] JIT - Add to the JIT injected symbol table
     /// @returns true if the symbol is successfully registered, false otherwise.
     ///
-    bool addSymbol(const char* Name, void* Address, bool JIT = false) const;
+    void addSymbol(const char* Name, void* Address, bool JIT = false) const;
 
     ///\brief Tells the execution to run all registered atexit functions once.
     ///
@@ -254,12 +252,11 @@ namespace cling {
     ///
     /// @param[in] module - The module to pass to the execution engine.
     /// @param[in] optLevel - The optimization level to be used.
-    llvm::orc::VModuleKey
-    emitModule(std::unique_ptr<llvm::Module> module, int optLevel) const {
+    void emitModule(std::unique_ptr<llvm::Module> module, int optLevel) const {
       if (m_BackendPasses)
         m_BackendPasses->runOnModule(*module, optLevel);
 
-      return m_JIT->addModule(std::move(module));
+      m_JIT->addModule(std::move(module));
     }
 
     ///\brief Report and empty m_unresolvedSymbols.
@@ -284,13 +281,13 @@ namespace cling {
 
     template <class T>
     ExecutionResult jitInitOrWrapper(llvm::StringRef funcname, T& fun) const {
-      fun = utils::UIntToFunctionPtr<T>(m_JIT->getSymbolAddress(funcname,
-                                                              false /*dlsym*/));
+      void* fun_ptr = m_JIT->getSymbolAddress(funcname, false /*dlsym*/);
 
       // check if there is any unresolved symbol in the list
-      if (diagnoseUnresolvedSymbols(funcname, "function") || !fun)
+      if (diagnoseUnresolvedSymbols(funcname, "function") || !fun_ptr)
         return IncrementalExecutor::kExeUnresolvedSymbols;
 
+      fun = reinterpret_cast<T>(fun_ptr);
       return IncrementalExecutor::kExeSuccess;
     }
   };

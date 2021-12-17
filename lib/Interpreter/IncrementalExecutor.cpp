@@ -23,6 +23,7 @@
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
 
+#include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
@@ -120,13 +121,18 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
 
   std::unique_ptr<TargetMachine> TM(CreateHostTargetMachine(CI));
   auto &TMRef = *TM;
-  auto RetainOwnership =
-    [this](llvm::orc::VModuleKey K, std::unique_ptr<Module> M) -> void {
-    assert (m_PendingModules.count(K) && "Unable to find the module");
-    m_PendingModules[K]->setModule(std::move(M));
-    m_PendingModules.erase(K);
+  auto SetReadyForUnloading = [this](const llvm::Module* M) {
+    assert (m_PendingModules.count(M) && "Unable to find the module");
+    m_PendingModules[M]->setUnownedModule(M);
+    m_PendingModules.erase(M);
   };
-  m_JIT.reset(new IncrementalJIT(*this, std::move(TM), RetainOwnership));
+  llvm::Error Err = llvm::Error::success();
+  auto EPC = llvm::cantFail(llvm::orc::SelfExecutorProcessControl::Create());
+  m_JIT.reset(new IncrementalJIT(*this, std::move(TM), std::move(EPC), SetReadyForUnloading, Err));
+  if (Err) {
+    llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "Fatal: ");
+    llvm_unreachable("Propagate this error and exit gracefully");
+  }
 
   m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
                                           CI.getTargetOpts(),
@@ -248,10 +254,8 @@ IncrementalExecutor::runStaticInitializersOnce(Transaction& T) {
   if (isPracticallyEmptyModule(m))
     return kExeSuccess;
 
-  llvm::orc::VModuleKey K =
-    emitModule(T.takeModule(), T.getCompilationOpts().OptLevel);
-  m_PendingModules[K] = &T;
-
+  m_PendingModules[T.getModule()] = &T;
+  emitModule(T.takeModule(), T.getCompilationOpts().OptLevel);
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
@@ -391,25 +395,22 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
   m_lazyFuncCreator.push_back(fp);
 }
 
-bool
-IncrementalExecutor::addSymbol(const char* Name,  void* Addr,
-                               bool Jit) const {
-  return m_JIT->lookupSymbol(Name, Addr, Jit).second;
+void IncrementalExecutor::addSymbol(const char* Name, void* Addr,
+                                    bool Jit) const {
+  m_JIT->addDefinition(Name, llvm::pointerToJITTargetAddress(Addr), Jit);
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) const {
-  // Return a symbol's address, and whether it was jitted.
-  void* address = m_JIT->lookupSymbol(symbolName).first;
+  constexpr bool excludeHostSymbols = true;
+  if (void* addr = m_JIT->getSymbolAddress(symbolName, excludeHostSymbols)) {
+    // It's not from the JIT if it's in a dylib.
+    if (fromJIT)
+      *fromJIT = true;
+    return addr;
+  }
 
-  // It's not from the JIT if it's in a dylib.
-  if (fromJIT)
-    *fromJIT = !address;
-
-  if (!address)
-    return (void*)m_JIT->getSymbolAddress(symbolName, false /*no dlsym*/);
-
-  return address;
+  return m_JIT->getSymbolAddress(symbolName, !excludeHostSymbols);
 }
 
 void*
@@ -419,7 +420,7 @@ IncrementalExecutor::getPointerToGlobalFromJIT(llvm::StringRef name) const {
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();
 
-  void* addr = (void*)m_JIT->getSymbolAddress(name, false /*no dlsym*/);
+  void* addr = m_JIT->getSymbolAddress(name, false /*no dlsym*/);
 
   if (diagnoseUnresolvedSymbols(name, "symbol"))
     return 0;

@@ -1721,7 +1721,8 @@ namespace cling {
     if (!symbolName || !symbolAddress )
       return false;
 
-    return m_Executor->addSymbol(symbolName, symbolAddress);
+    m_Executor->addSymbol(symbolName, symbolAddress);
+    return true;
   }
 
   void* Interpreter::getAddressOfGlobal(const GlobalDecl& GD,
