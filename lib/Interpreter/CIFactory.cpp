@@ -1611,7 +1611,7 @@ namespace {
 
       auto PCHBuff = std::make_shared<PCHBuffer>();
 
-      Consumers.push_back(llvm::make_unique<PCHGenerator>(
+      Consumers.push_back(std::make_unique<PCHGenerator>(
           CI->getPreprocessor(), CI->getModuleCache(), ModuleOutputFile,
           Sysroot, PCHBuff, CI->getFrontendOpts().ModuleFileExtensions,
           /*AllowASTWithErrors=*/false,
