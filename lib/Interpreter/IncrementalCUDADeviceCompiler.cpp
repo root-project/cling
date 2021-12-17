@@ -324,7 +324,7 @@ namespace cling {
     // CodeGen can use it. This should be replaced by a in-memory solution
     // (e.g. virtual file).
     std::error_code EC;
-    llvm::raw_fd_ostream os(m_FatbinFilePath, EC, llvm::sys::fs::F_None);
+    llvm::raw_fd_ostream os(m_FatbinFilePath, EC, llvm::sys::fs::OF_None);
     if (EC) {
       llvm::errs() << "ERROR: cannot generate file " << m_FatbinFilePath
                    << "\n";
