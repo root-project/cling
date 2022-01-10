@@ -763,19 +763,19 @@ namespace {
     }
   }
 
-#if defined(_MSC_VER) || defined(NDEBUG)
-static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
-                                    const std::string &Name, int Val) {
-  smallstream Strm;
-  Strm << Name << "=" << Val;
-  if (std::find(PPOpts.Macros.begin(), PPOpts.Macros.end(),
-                std::make_pair(Name, true))
-      == PPOpts.Macros.end()
-      && std::find(PPOpts.Macros.begin(), PPOpts.Macros.end(),
-                   std::make_pair(Name, false))
-      == PPOpts.Macros.end())
-    PPOpts.addMacroDef(Strm.str());
-}
+#if defined(_MSC_VER)
+  static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
+                                      const std::string &Name, int Val) {
+    smallstream Strm;
+    Strm << Name << "=" << Val;
+    if (std::find(PPOpts.Macros.begin(), PPOpts.Macros.end(),
+                  std::make_pair(Name, true))
+        == PPOpts.Macros.end()
+        && std::find(PPOpts.Macros.begin(), PPOpts.Macros.end(),
+                    std::make_pair(Name, false))
+        == PPOpts.Macros.end())
+      PPOpts.addMacroDef(Strm.str());
+  }
 
 #define STRINGIFY_PREPROC_SETTING(PP, name) \
   stringifyPreprocSetting(PP, #name, name)
@@ -791,9 +791,10 @@ static void stringifyPreprocSetting(PreprocessorOptions& PPOpts,
 #endif
 #endif
 
-#ifdef NDEBUG
-    STRINGIFY_PREPROC_SETTING(PPOpts, NDEBUG);
-#endif
+    // cling wants to JIT O1 by default. Might want to revisit once we have
+    // debug symbols.
+    PPOpts.addMacroDef("NDEBUG=1");
+
     // Since cling, uses clang instead, macros always sees __CLANG__ defined
     // In addition, clang also defined __GNUC__, we add the following two macros
     // to allow scripts, and more important, dictionary generation to know which
