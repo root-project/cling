@@ -13,7 +13,7 @@ concept, in order to leverage rapid application development. Implemented as a
 small extension to LLVM and Clang, the interpreter reuses their strengths such
 as the praised concise and expressive compiler diagnostics.
 
-See also [cling's web page.](https://raw.githack.com/root-project/cling/master/www/index.html)
+See also [cling's web page.](https://rawcdn.githack.com/root-project/cling/d59d27ad61f2f3a78cd46e652cd9fb8adb893565/www/index.html)
 
 Please note that some of the resources are rather old and most of the stated
 limitations are outdated.
