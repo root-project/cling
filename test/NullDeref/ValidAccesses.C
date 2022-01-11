@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -Xclang -verify
+// RUN: cat %s | %cling --ptrcheck -Xclang -verify
 // This test verifies that we do not produce a warning when
 // - an iterator is derefed;
 // - a lambda function is derefed.

@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -Xclang -verify
+// RUN: cat %s | %cling --ptrcheck -Xclang -verify
 // XFAIL: powerpc64
 
 // We must be able to handle cases where, there is a custom function that has

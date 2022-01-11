@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -Xclang -verify
+// RUN: cat %s | %cling --ptrcheck -Xclang -verify
 // XFAIL: powerpc64
 //This file checks a pointer load operation for null prt dereference.
 int *p;

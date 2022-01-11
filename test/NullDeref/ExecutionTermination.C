@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -Xclang -verify
+// RUN: cat %s | %cling --ptrcheck -Xclang -verify
 // XFAIL: powerpc64
 //This file checks that the execution ends after a null prt dereference.
 
