@@ -49,14 +49,16 @@ void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
     cling::Interpreter* I = (cling::Interpreter*)Interp;
     clang::Sema& S = I->getCI()->getSema();
     // Print a nice backtrace.
-    I->getCallbacks()->PrintStackTrace();
+    // FIXME: re-enable once we have JIT debug symbols!
+    //I->getCallbacks()->PrintStackTrace();
     throw cling::InvalidDerefException(&S, E,
           cling::InvalidDerefException::DerefType::NULL_DEREF);
   } else if (!cling::utils::isAddressValid(Arg)) {
     cling::Interpreter* I = (cling::Interpreter*)Interp;
     clang::Sema& S = I->getCI()->getSema();
     // Print a nice backtrace.
-    I->getCallbacks()->PrintStackTrace();
+    // FIXME: re-enable once we have JIT debug symbols!
+    //I->getCallbacks()->PrintStackTrace();
     throw cling::InvalidDerefException(&S, E,
           cling::InvalidDerefException::DerefType::INVALID_MEM);
   }
