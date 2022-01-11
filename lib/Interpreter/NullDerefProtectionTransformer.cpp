@@ -226,14 +226,22 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
     }
   };
 
-  static bool hasPtrCheckDisabledInContext(const Decl* D) {
+  static bool hasPtrCheckDisabledInContext(Sema *S, const Decl* D) {
     if (isa<TranslationUnitDecl>(D))
       return false;
-    for (const auto *Ann : D->specific_attrs<AnnotateAttr>()) {
+    for (const auto *Ann : D->specific_attrs<clang::AnnotateAttr>()) {
       if (Ann->getAnnotation() == "__cling__ptrcheck(off)")
         return true;
       else if (Ann->getAnnotation() == "__cling__ptrcheck(on)")
         return false;
+      else if (Ann->getAnnotation().startswith("__cling__ptrcheck(")) {
+        DiagnosticsEngine& Diags = S->getDiagnostics();
+        Diags.Report(Ann->getLocation(),
+                    Diags.getCustomDiagID(
+                        clang::DiagnosticsEngine::Level::Warning,
+                        "NullDerefProtectionTransformer: invalid annotation: '%0'. Must be `on` or `off`."))
+            << Ann->getAnnotation();
+      }
     }
     const Decl* Parent = nullptr;
     for (auto DC = D->getDeclContext(); !Parent; DC = DC->getParent())
@@ -241,7 +249,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
 
     assert(Parent && "Decl without context!");
 
-    return hasPtrCheckDisabledInContext(Parent);
+    return hasPtrCheckDisabledInContext(S, Parent);
   }
 
 } // unnamed namespace
@@ -260,7 +268,7 @@ namespace cling {
     if (D->isTemplateDecl())
       return false;
 
-    if (hasPtrCheckDisabledInContext(D))
+    if (hasPtrCheckDisabledInContext(getSemaPtr(), D))
       return false;
 
     auto Loc = D->getLocation();
