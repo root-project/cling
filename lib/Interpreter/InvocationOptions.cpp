@@ -76,6 +76,7 @@ static const char kNoStdInc[] = "-nostdinc";
     Opts.ShowVersion = Args.hasArg(OPT_version);
     Opts.Help = Args.hasArg(OPT_help);
     Opts.NoRuntime = Args.hasArg(OPT_noruntime);
+    Opts.PtrCheck = Args.hasArg(OPT__ptrcheck);
     if (Arg* MetaStringArg = Args.getLastArg(OPT__metastr, OPT__metastr_EQ)) {
       Opts.MetaString = MetaStringArg->getValue();
       if (Opts.MetaString.empty()) {
