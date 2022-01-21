@@ -125,7 +125,7 @@ namespace textinput {
   /// \param[in] text text to write out
   /// \param[in] TextOffset where to begin writing out text from
   /// \param[in] WriteOffset where to begin writing out text at the display
-  /// \param[in] Requested number of text characters requested for output
+  /// \param[in] NumRequested number of text characters requested for output
   size_t
   TerminalDisplay::WriteWrappedTextPart(const Text &text, size_t TextOffset,
                                         size_t WriteOffset, size_t NumRequested) {
