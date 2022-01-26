@@ -50,13 +50,15 @@ namespace cling {
     }
 
     CXXTryStmt* Fix(CXXTryStmt* TS) {
+      ASTContext &Context = m_Sema->getASTContext();
       CompoundStmt *TryBlock = TS->getTryBlock();
       if (CompoundStmt *NewTryBlock = Fix(TryBlock))
         TryBlock = NewTryBlock;
 
       llvm::SmallVector<Stmt*, 4> Handlers(TS->getNumHandlers());
       for (unsigned int h = 0; h < TS->getNumHandlers(); ++h) {
-        Stmt *HandlerBlock = TS->getHandler(h)->getHandlerBlock();
+        CXXCatchStmt *Handler = TS->getHandler(h);
+        Stmt *HandlerBlock = Handler->getHandlerBlock();
         if (CompoundStmt *HandlerCS = dyn_cast_or_null<CompoundStmt>(HandlerBlock)) {
           if (CompoundStmt *NewHandlerCS = Fix(HandlerCS))
             HandlerBlock = NewHandlerCS;
@@ -64,10 +66,12 @@ namespace cling {
           if (CXXTryStmt *NewHandlerTS = Fix(HandlerTS))
             HandlerBlock = NewHandlerTS;
         }
+        Handlers[h] = new (Context)
+            CXXCatchStmt(Handler->getCatchLoc(), Handler->getExceptionDecl(),
+                         HandlerBlock);
       }
 
-      return CXXTryStmt::Create(m_Sema->getASTContext(), TS->getTryLoc(),
-                                TryBlock, Handlers);
+      return CXXTryStmt::Create(Context, TS->getTryLoc(), TryBlock, Handlers);
     }
 
     bool VisitDeclRefExpr(DeclRefExpr* DRE) {
