@@ -348,6 +348,11 @@ namespace cling {
     m_InputValidator->reset();
   }
 
+  bool MetaProcessor::awaitingMoreInput() const {
+    return m_InputValidator->getLastResult() ==
+           InputValidator::ValidationResult::kIncomplete;
+  }
+
   int MetaProcessor::getExpectedIndent() const {
     return m_InputValidator->getExpectedIndent();
   }

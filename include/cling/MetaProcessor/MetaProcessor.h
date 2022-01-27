@@ -123,6 +123,11 @@ namespace cling {
     /// input, resetting the continuation to a new line.
     void cancelContinuation() const;
 
+    ///\brief Returns whether we are waiting for more input, either because the
+    /// input contains imbalanced braces or a backslash-newline was seen (i.e.,
+    /// the last token was a `\`).
+    bool awaitingMoreInput() const;
+
     ///\brief Returns the number of imbalanced tokens seen in the current input.
     ///
     int getExpectedIndent() const;
