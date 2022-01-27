@@ -26,6 +26,15 @@ namespace cling {
   /// are balanced.
   ///
   class InputValidator {
+  public:
+    ///\brief Brace balance validation could encounter.
+    ///
+    enum ValidationResult {
+      kIncomplete, ///< There is dangling brace.
+      kComplete,   ///< All braces are in balance.
+      kMismatch    ///< Closing brace doesn't match to opening. Eg: void f(};
+    };
+
   private:
     ///\brief The input being collected.
     ///
@@ -35,17 +44,13 @@ namespace cling {
     ///
     std::deque<int> m_ParenStack;
 
+    ///\brief Last validation result from `validate()`.
+    ///
+    ValidationResult m_LastResult = kComplete;
+
   public:
     InputValidator() {}
     ~InputValidator() {}
-
-    ///\brief Brace balance validation could encounter.
-    ///
-    enum ValidationResult {
-      kIncomplete, ///< There is dangling brace.
-      kComplete, ///< All braces are in balance.
-      kMismatch ///< Closing brace doesn't match to opening. Eg: void f(};
-    };
 
     ///\brief Checks whether the input contains balanced number of braces
     ///
@@ -54,10 +59,15 @@ namespace cling {
     ///
     ValidationResult validate(llvm::StringRef line);
 
+    ///\brief Get the last validation result returned by a `validate()` call,
+    /// which indicates the current state of the collected input.
+    ///
+    ValidationResult getLastResult() const { return m_LastResult; }
+
     ///\brief Retrieves the number of spaces that the next input line should be
     /// indented.
     ///
-    int getExpectedIndent() { return m_ParenStack.size(); }
+    int getExpectedIndent() const { return m_ParenStack.size(); }
 
     ///\brief Resets the collected input and its corresponding brace stack.
     ///

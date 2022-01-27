@@ -8,7 +8,6 @@
 //------------------------------------------------------------------------------
 
 #include "cling/MetaProcessor/InputValidator.h"
-
 #include "cling/MetaProcessor/MetaLexer.h"
 
 #include <algorithm>
@@ -106,6 +105,7 @@ namespace cling {
       m_Input.append("\n");
     }
     m_Input.append(line);
+    m_LastResult = Res;
     return Res;
   }
 
@@ -117,5 +117,6 @@ namespace cling {
       std::string().swap(m_Input);
 
     std::deque<int>().swap(m_ParenStack);
+    m_LastResult = kComplete;
   }
 } // end namespace cling
