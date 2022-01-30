@@ -37,7 +37,8 @@ namespace textinput {
       return C(In.GetRaw());
     }
     // else
-    return ToCommandExtended(In.GetExtendedInput(), HadEscPending);
+    return ToCommandExtended(In.GetExtendedInput(), In.GetModifier(),
+                             HadEscPending);
   }
 
   Editor::Command
@@ -113,6 +114,7 @@ namespace textinput {
 
   Editor::Command
   KeyBinding::ToCommandExtended(InputData::EExtendedInput EI,
+                                unsigned char modifier,
                                 bool HadEscPending) {
     // Convert extended input into the corresponding Command.
     typedef Editor::Command C;
@@ -122,8 +124,12 @@ namespace textinput {
       case InputData::kEIEnd: return C(Editor::kMoveEnd);
       case InputData::kEIUp: return C(Editor::kCmdHistOlder);
       case InputData::kEIDown: return C(Editor::kCmdHistNewer);
-      case InputData::kEILeft: return C(Editor::kMoveLeft);
-      case InputData::kEIRight: return C(Editor::kMoveRight);
+      case InputData::kEILeft:
+        return (modifier & InputData::kModCtrl)
+               ? C(Editor::kMovePrevWord) : C(Editor::kMoveLeft);
+      case InputData::kEIRight:
+        return (modifier & InputData::kModCtrl)
+               ? C(Editor::kMoveNextWord) : C(Editor::kMoveRight);
       case InputData::kEIPgUp: return C(Editor::kCmdIgnore);
       case InputData::kEIPgDown: return C(Editor::kCmdIgnore);
       case InputData::kEIBackSpace:

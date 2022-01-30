@@ -42,6 +42,7 @@ namespace textinput {
     Editor::Command ToCommandCtrl(char In, bool HadEscPending);
     Editor::Command ToCommandEsc(char In);
     Editor::Command ToCommandExtended(InputData::EExtendedInput EI,
+                                      unsigned char modifier,
                                       bool HadEscPending);
     bool fEscPending; // Dangling ESC is waiting to be processed
     bool fEscCmdEnabled; // Single ESC has a meaning
