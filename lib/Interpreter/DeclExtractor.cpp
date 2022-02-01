@@ -112,7 +112,7 @@ namespace cling {
     CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody());
     assert(CS && "Function body not a CompoundStmt?");
     assert(utils::Analyze::IsWrapper(FD) && "FD not a Cling wrapper?");
-    // DC is the internal `__cling_N5xxx' namespace or (if decl shadowing if off), the TU
+    // DC is the internal `__cling_N5xxx' namespace or (if decl shadowing is off), the TU
     DeclContext* WrapperDC = FD->getDeclContext();
     Scope* TUScope = m_Sema->TUScope;
     llvm::SmallVector<Stmt*, 4> Stmts;
@@ -156,14 +156,12 @@ namespace cling {
           // In the particular context this definition is inside a function
           // already, but clang thinks it as a lambda, so we need to ignore the
           // check decl context vs lexical decl context.
-          DeclContext *NewDC = isa<TagDecl>(ND) ? m_Context->getTranslationUnitDecl()
-		                                : WrapperDC;
           if (ND->getDeclContext() == ND->getLexicalDeclContext()
               || isa<FunctionDecl>(ND))
-            ND->setLexicalDeclContext(NewDC);
+            ND->setLexicalDeclContext(WrapperDC);
           else
             assert(0 && "Not implemented: Decl with different lexical context");
-          ND->setDeclContext(NewDC);
+          ND->setDeclContext(WrapperDC);
 
           if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
             if (!ValidateCXXRecord(VD))
