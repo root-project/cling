@@ -182,19 +182,9 @@ namespace cling {
     bool hasNoErrors = !CheckForClashingNames(TouchedDecls, WrapperDC);
     if (hasNoErrors) {
       for (size_t i = 0; i < TouchedDecls.size(); ++i) {
-        // We should skip the checks for annonymous decls and we should not
-        // register them in the lookup.
-        if (!TouchedDecls[i]->getDeclName())
-          continue;
-
-        Sema::ContextRAII RAII(*m_Sema, TouchedDecls[i]->getDeclContext());
-        m_Sema->PushOnScopeChains(TouchedDecls[i],
-                                  TUScope,
-                    /*AddCurContext*/!isa<UsingDirectiveDecl>(TouchedDecls[i]));
-
         // The transparent DeclContexts (eg. scopeless enum) doesn't have
         // scopes. While extracting their contents we need to update the
-        // lookup tables and telling them to pick up the new possitions
+        // lookup tables and telling them to pick up the new positions
         // in the AST.
         if (DeclContext* InnerDC = dyn_cast<DeclContext>(TouchedDecls[i])) {
           if (InnerDC->isTransparentContext()) {
@@ -208,6 +198,16 @@ namespace cling {
             }
           }
         }
+
+        // We should skip the checks for anonymous decls and we should not
+        // register them in the lookup. Their inner decls have been added above.
+        if (!TouchedDecls[i]->getDeclName())
+          continue;
+
+        Sema::ContextRAII RAII(*m_Sema, TouchedDecls[i]->getDeclContext());
+        m_Sema->PushOnScopeChains(TouchedDecls[i],
+                                  TUScope,
+                    /*AddCurContext*/!isa<UsingDirectiveDecl>(TouchedDecls[i]));
       }
     }
 
