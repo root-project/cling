@@ -53,6 +53,7 @@ namespace cling {
     clang::ASTContext          &m_Context;
     Interpreter                &m_Interp;
     clang::TranslationUnitDecl *m_TU;
+    unsigned                    m_ShadowsDeclInStdDiagID;
 
     unsigned long long m_UniqueNameCounter = 0;
 
