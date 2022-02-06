@@ -141,6 +141,26 @@ namespace cling {
       kNumExeResults
     };
 
+    ///\brief Flags that provide additional information about the context in
+    /// which parsing occurs. These flags can be bitwise-OR'ed together.
+    enum InputFlags {
+      ///\brief Input comes from an external file
+      kInputFromFile = 0x01,
+      ///\brief If `kInputFromFile == 1`, whether `Interpreter::process()` is
+      /// called once per line
+      kIFFLineByLine = 0x02
+    };
+
+    ///\brief A RAII object that temporarily sets `Interpreter::m_InputFlags`
+    /// and restores it on destruction.
+    struct InputFlagsRAII {
+      Interpreter &m_Interp;
+      unsigned m_OldFlags;
+      InputFlagsRAII(Interpreter &I, unsigned F)
+        : m_Interp(I), m_OldFlags(I.m_InputFlags) { I.m_InputFlags = F; }
+      ~InputFlagsRAII() { m_Interp.m_InputFlags = m_OldFlags; }
+    };
+
   public:
     using ModuleFileExtensions =
         std::vector<std::shared_ptr<clang::ModuleFileExtension>>;
@@ -189,6 +209,10 @@ namespace cling {
     ///\brief Flag toggling the raw input on or off.
     ///
     bool m_RawInputEnabled;
+
+    ///\brief Flags that provide additional information about the context in
+    /// which parsing occurs (see `InputFlags`).
+    unsigned m_InputFlags{};
 
     ///\brief Configuration bits that can be changed at runtime. This allows the
     /// user to enable/disable specific interpreter extensions.
@@ -689,6 +713,9 @@ namespace cling {
 
     bool isRawInputEnabled() const { return m_RawInputEnabled; }
     void enableRawInput(bool raw = true) { m_RawInputEnabled = raw; }
+
+    unsigned getInputFlags() const { return m_InputFlags; }
+    void setInputFlags(unsigned value) { m_InputFlags = value; }
 
     int getDefaultOptLevel() const { return m_OptLevel; }
     void setDefaultOptLevel(int optLevel) { m_OptLevel = optLevel; }
