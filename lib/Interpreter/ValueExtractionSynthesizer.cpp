@@ -137,7 +137,7 @@ namespace cling {
           lastExprTy = m_Context->getPointerType(lastExprTy);
           lastExpr = m_Sema->ImpCastExprToType(lastExpr, lastExprTy,
                                                CK_FunctionToPointerDecay,
-                                               VK_RValue).get();
+                                               VK_PRValue).get();
         }
 
         //
@@ -210,7 +210,7 @@ namespace {
     // Build a reference to gCling
     ExprResult gClingDRE
       = m_Sema->BuildDeclRefExpr(m_gClingVD, m_Context->VoidPtrTy,
-                                 VK_RValue, SourceLocation());
+                                 VK_PRValue, SourceLocation());
     // We have the wrapper as Sema's CurContext
     FunctionDecl* FD = cast<FunctionDecl>(m_Sema->CurContext);
 
@@ -227,7 +227,7 @@ namespace {
     SourceLocation locEnd = (E) ? E->getEndLoc() : FD->getEndLoc();
     ExprResult wrapperSVRDRE
       = m_Sema->BuildDeclRefExpr(FD->getParamDecl(0), m_Context->VoidPtrTy,
-                                 VK_RValue, locStart);
+                                 VK_PRValue, locStart);
     QualType ETy = (E) ? E->getType() : m_Context->VoidTy;
     QualType desugaredTy = ETy.getDesugaredType(*m_Context);
 
