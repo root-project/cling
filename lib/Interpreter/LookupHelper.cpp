@@ -777,12 +777,13 @@ namespace cling {
       return 0;
     }
     if (P.getCurToken().getKind() == tok::annot_typename) {
-      ParsedType T = P.getTypeAnnotation(const_cast<Token&>(P.getCurToken()));
+      TypeResult T = P.getTypeAnnotation(const_cast<Token&>(P.getCurToken()));
       // Only accept the parse if we consumed all of the name.
       if (P.NextToken().getKind() == clang::tok::eof)
-        if (!T.get().isNull()) {
+        if (!T.get().get().isNull()) {
           TypeSourceInfo *TSI = 0;
-          clang::QualType QT = clang::Sema::GetTypeFromParser(T, &TSI);
+          clang::QualType QT =
+            clang::Sema::GetTypeFromParser(T.get(), &TSI);
           if (const TagType* TT = QT->getAs<TagType>()) {
             TheDecl = TT->getDecl()->getDefinition();
             *setResultType = QT.getTypePtr();
