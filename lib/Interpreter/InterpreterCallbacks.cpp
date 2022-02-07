@@ -300,7 +300,7 @@ namespace cling {
     : m_Interpreter(interp), m_ExternalSemaSource(0), m_PPCallbacks(0),
       m_IsRuntime(false) {
     Sema& SemaRef = interp->getSema();
-    ASTReader* Reader = m_Interpreter->getCI()->getModuleManager().get();
+    ASTReader* Reader = m_Interpreter->getCI()->getASTReader().get();
     ExternalSemaSource* externalSemaSrc = SemaRef.getExternalSource();
     if (enableExternalSemaSourceCallbacks)
       if (!externalSemaSrc || externalSemaSrc == Reader) {

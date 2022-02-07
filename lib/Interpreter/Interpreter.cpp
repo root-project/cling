@@ -270,7 +270,7 @@ namespace cling {
     if (usingCxxModules) {
       // Explicitly create the modulemanager now. If we would create it later
       // implicitly then it would just overwrite our callbacks we set below.
-      m_IncrParser->getCI()->createModuleManager();
+      m_IncrParser->getCI()->createASTReader();
 
       // When using C++ modules, we setup the callbacks now that we have them
       // ready before we parse code for the first time. Without C++ modules

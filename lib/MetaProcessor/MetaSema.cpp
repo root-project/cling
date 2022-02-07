@@ -411,11 +411,11 @@ namespace cling {
     }
 #if 0
     // Only available in clang's trunk:
-    clang::ASTReader* Reader = m_Interpreter.getCI()->getModuleManager();
-    const clang::serialization::ModuleManager& ModMan
-      = Reader->getModuleManager();
-    for (clang::serialization::ModuleManager::ModuleConstIterator I
-           = ModMan.begin(), E = ModMan.end(); I != E; ++I) {
+    clang::ASTReader* Reader = m_Interpreter.getCI()->getASTReader();
+    const clang::serialization::ASTReader& ASTRead
+      = Reader->getASTReader();
+    for (clang::serialization::ASTReader::ModuleConstIterator I
+           = ASTRead.begin(), E = ASTRead.end(); I != E; ++I) {
       typedef
         std::vector<llvm::PointerIntPair<const clang::FileEntry*, 1, bool> >
         InputFiles_t;
