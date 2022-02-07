@@ -116,7 +116,7 @@ namespace cling {
       FID = SM.getFileID(FileStartLoc);
 
       bool Invalid = true;
-      llvm::StringRef FIDContents = SM.getBuffer(FID, &Invalid)->getBuffer();
+      llvm::StringRef FIDContents = SM.getBufferData(FID, &Invalid);
 
       // A FileID is a (cached via ContentCache) SourceManager view of a
       // FileManager::FileEntry (which is a wrapper on the file system file).
