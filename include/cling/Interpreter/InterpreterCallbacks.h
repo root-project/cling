@@ -275,7 +275,8 @@ namespace cling {
       ~SymbolResolverCallback();
 
       bool LookupObject(clang::LookupResult& R, clang::Scope* S) override;
-      bool LookupObject(const clang::DeclContext*, clang::DeclarationName) override {
+      bool
+      LookupObject(const clang::DeclContext*, clang::DeclarationName) override {
         return false;
       }
       bool LookupObject(clang::TagDecl*) override {
