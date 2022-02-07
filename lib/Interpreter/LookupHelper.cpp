@@ -501,7 +501,7 @@ namespace cling {
     //
     clang::ParsedAttributes Attrs(P.getAttrFactory());
     // FIXME: All arguments to ParseTypeName are the default arguments. Remove.
-    TypeResult Res(P.ParseTypeName(0, DeclaratorContext::TypeNameContext,
+    TypeResult Res(P.ParseTypeName(0, DeclaratorContext::TypeName,
                                    clang::AS_none, 0, &Attrs));
     if (Res.isUsable()) {
       // Accept it only if the whole name was parsed.
