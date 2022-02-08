@@ -359,7 +359,7 @@ namespace cling {
       Transaction* PchT = beginTransaction(CO);
       DiagnosticErrorTrap Trap(Diags);
       m_CI->createPCHExternalASTSource(PCHFileName,
-                                       true /*DisablePCHValidation*/,
+                                       DisableValidationForModuleKind::All,
                                        true /*AllowPCHWithCompilerErrors*/,
                                        0 /*DeserializationListener*/,
                                        true /*OwnsDeserializationListener*/);
