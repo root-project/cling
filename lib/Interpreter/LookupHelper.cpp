@@ -79,8 +79,6 @@ namespace cling {
     //
     P.getActions().getDiagnostics().setSuppressAllDiagnostics(
                                       diagOnOff == LookupHelper::NoDiagnostics);
-    PP.getDiagnostics().setSuppressAllDiagnostics(
-                                      diagOnOff == LookupHelper::NoDiagnostics);
     //
     //  Tell Sema we are not in the process of doing an instantiation.
     //  fSFINAETrap will reset any SFINAE error count of a SFINAE context from "above".
@@ -1125,7 +1123,7 @@ namespace cling {
       Sema& _S;
       ResetDiagSuppression(Sema &S, bool Old): _Old(Old), _S(S) {}
       ~ResetDiagSuppression() {
-        _S.getDiagnostics().setSuppressAllDiagnostics();
+        _S.getDiagnostics().setSuppressAllDiagnostics(_Old);
       }
     } DiagSuppressionRAII(S, OldSuppressAllDiagnostics);
 
