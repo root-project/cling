@@ -1392,11 +1392,13 @@ namespace cling {
       Decl *decl = llvm::dyn_cast<Decl>(foundDC);
       getContextAndSpec(SS,decl,Context,S);
     }
-    if (P.ParseUnqualifiedId(SS, /*EnteringContext*/false,
+    if (P.ParseUnqualifiedId(SS, ParsedType(),
+                             /*ObjectHadErrors=*/false,
+                             /*EnteringContext*/false,
                              /*AllowDestructorName*/true,
                              /*AllowConstructorName*/true,
                              /*AllowDeductionGuide*/ false,
-                             ParsedType(), &TemplateKWLoc,
+                             &TemplateKWLoc,
                              FuncId)) {
       // Failed parse, cleanup.
       return false;
