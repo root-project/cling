@@ -671,6 +671,7 @@ namespace cling {
                                filter, true  /*DumpDecls*/,
                                false /*Deserialize*/,
                                false /*DumpLookups*/,
+                               false /*DumpDeclTypes*/,
                                ADOF_Default /*DumpFormat*/);
       printer->HandleTranslationUnit(getSema().getASTContext());
     } else if (what.equals("ast"))
