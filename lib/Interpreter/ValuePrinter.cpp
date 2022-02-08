@@ -772,7 +772,7 @@ static std::string printEnumValue(const Value &V) {
     }
   }
   enumString << " : " << printQualType(C, ED->getIntegerType()) << " "
-    << ValAsAPSInt.toString(/*Radix = */10);
+             << toString(ValAsAPSInt, /*Radix = */10);
   return enumString.str().str();
 }
 
