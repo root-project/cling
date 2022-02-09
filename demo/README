@@ -1,7 +1,0 @@
-AUTHOR: Vassil Vassilev <vvasilev@cern.ch>
-
-Here are tiny examples of the strengths of cling and the underlying compiler
-clang.
-
-If you want to see them start cling and do .x filename or .L filename,
-unless this README is overriden by another, deeper in the folders.
