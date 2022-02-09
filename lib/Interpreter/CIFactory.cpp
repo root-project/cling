@@ -942,19 +942,20 @@ namespace {
     if (LangOpts.CPlusPlus14 == 1)
       PPOpts.addMacroDef("__CLING__CXX14");
 
-    if (CI->getDiagnostics().hasErrorOccurred()) {
+    DiagnosticsEngine& Diags = CI->getDiagnostics();
+    if (Diags.hasErrorOccurred()) {
       cling::errs() << "Compiler error too early in initialization.\n";
       return false;
     }
 
-    CI->setTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(),
+    CI->setTarget(TargetInfo::CreateTargetInfo(Diags,
                                                CI->getInvocation().TargetOpts));
     if (!CI->hasTarget()) {
       cling::errs() << "Could not determine compiler target.\n";
       return false;
     }
 
-    CI->getTarget().adjust(LangOpts);
+    CI->getTarget().adjust(Diags, LangOpts);
 
     // This may have already been done via a precompiled header
     if (Targ)
