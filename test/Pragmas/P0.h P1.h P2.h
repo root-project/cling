@@ -1,1 +1,0 @@
-const char* ValueD = "ValueD";
