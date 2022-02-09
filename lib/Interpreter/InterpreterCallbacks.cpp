@@ -525,9 +525,7 @@ namespace test {
     // Annotate the decl to give a hint in cling. FIXME: Current implementation
     // is a gross hack, because TClingCallbacks shouldn't know about
     // EvaluateTSynthesizer at all!
-    SourceRange invalidRange;
-    TopmostFunc->addAttr(new (C) AnnotateAttr(invalidRange, C,
-                                              "__ResolveAtRuntime", 0));
+    TopmostFunc->addAttr(AnnotateAttr::CreateImplicit(C, "__ResolveAtRuntime"));
     R.addDecl(Res);
     DC->addDecl(Res);
     // Say that we can handle the situation. Clang should try to recover
