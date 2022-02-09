@@ -1430,7 +1430,6 @@ namespace cling {
     std::string canonicalFile = DynamicLibraryManager::normalizePath(file);
     if (canonicalFile.empty())
       canonicalFile = file.str();
-    const FileEntry* FE = 0;
 
     //Copied from clang's PPDirectives.cpp
     bool isAngled = false;
@@ -1443,11 +1442,12 @@ namespace cling {
     Preprocessor& PP = getCI()->getPreprocessor();
     // PP::LookupFile uses it to issue 'nice' diagnostic
     SourceLocation fileNameLoc;
-    FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, FromDir, FromFile,
-                       CurDir, /*SearchPath*/0, /*RelativePath*/ 0,
-                       /*suggestedModule*/0, 0 /*IsMapped*/,
-                       /*IsFrameworkFound*/ nullptr, /*SkipCache*/false,
-                       /*OpenFile*/ false, /*CacheFail*/ false);
+    auto FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, FromDir,
+                            FromFile, CurDir, /*SearchPath*/0,
+                            /*RelativePath*/ 0, /*suggestedModule*/0,
+                            0 /*IsMapped*/, /*IsFrameworkFound*/ nullptr,
+                            /*SkipCache*/ false, /*OpenFile*/ false,
+                            /*CacheFail*/ false);
     if (FE)
       return FE->getName().str();
     return getDynamicLibraryManager()->lookupLibrary(canonicalFile);
