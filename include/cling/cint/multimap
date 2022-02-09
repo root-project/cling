@@ -1,5 +1,0 @@
-#ifdef __CINT__
-#include <map>
-#else
-#error "This header (multimap) is only expected to be used when emulating CINT"
-#endif

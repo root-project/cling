@@ -1,1 +1,0 @@
-module tinyxml2 [system] { header "tinyxml2.h" export * }
