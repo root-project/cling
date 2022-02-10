@@ -66,7 +66,7 @@ namespace cling {
             m_ShadowsDeclInStdDiagID(S.getDiagnostics().getCustomDiagID(
                 DiagnosticsEngine::Warning,
                 "'%0' shadows a declaration with the same name in the 'std' "
-                "namespace; consider using '::%0' to reference this declaration"))
+                "namespace; use '::%0' to reference this declaration"))
   {}
 
   bool DefinitionShadower::isClingShadowNamespace(const DeclContext *DC) {
@@ -103,7 +103,7 @@ namespace cling {
                    Sema::LookupOrdinaryName, Sema::NotForRedeclaration);
     Previous.suppressDiagnostics();
     m_Sema->LookupQualifiedName(Previous, m_TU);
-    bool shadowsDeclInStd{};
+    bool shadowsDeclInStd = false;
 
     for (auto Prev : Previous) {
       if (Prev == D)
