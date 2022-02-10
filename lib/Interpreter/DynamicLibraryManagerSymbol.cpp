@@ -744,16 +744,16 @@ namespace cling {
             bool isPIEExecutable = false;
 
             if (const auto* ELF = dyn_cast<ELF32LEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+              HandleDynTab(&ELF->getELFFile(), FileName, RPath, RunPath, Deps,
                            isPIEExecutable);
             else if (const auto* ELF = dyn_cast<ELF32BEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+              HandleDynTab(&ELF->getELFFile(), FileName, RPath, RunPath, Deps,
                            isPIEExecutable);
             else if (const auto* ELF = dyn_cast<ELF64LEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+              HandleDynTab(&ELF->getELFFile(), FileName, RPath, RunPath, Deps,
                            isPIEExecutable);
             else if (const auto* ELF = dyn_cast<ELF64BEObjectFile>(BinObjF))
-              HandleDynTab(ELF->getELFFile(), FileName, RPath, RunPath, Deps,
+              HandleDynTab(&ELF->getELFFile(), FileName, RPath, RunPath, Deps,
                            isPIEExecutable);
 
             if ((level == 0) && isPIEExecutable) {
