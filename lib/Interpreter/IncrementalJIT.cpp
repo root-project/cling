@@ -9,6 +9,9 @@
 
 #include "IncrementalJIT.h"
 
+// FIXME: Merge IncrementalExecutor and IncrementalJIT.
+#include "IncrementalExecutor.h"
+
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
 #include "llvm/IR/LLVMContext.h"
@@ -41,6 +44,26 @@ public:
 private:
   std::unique_ptr<DefinitionGenerator> DefGenerator;
   SharedAtomicFlag SkipFlag;
+};
+
+class NotifyLazyFunctionCreatorsGenerator : public DefinitionGenerator {
+  const IncrementalExecutor & m_IncrExecutor;
+public:
+  NotifyLazyFunctionCreatorsGenerator(const IncrementalExecutor &Exe)
+    : m_IncrExecutor(Exe) { }
+
+  Error tryToGenerate(LookupState& LS, LookupKind K, JITDylib& JD,
+                      JITDylibLookupFlags JDLookupFlags,
+                      const SymbolLookupSet& LookupSet) override {
+    SymbolNameSet Missing;
+    for (llvm::orc::SymbolStringPtr Name : LookupSet.getSymbolNames())
+      if (!m_IncrExecutor.NotifyLazyFunctionCreators((*Name).str()))
+        Missing.insert(Name);
+
+    if (!Missing.empty())
+      return make_error<SymbolsNotFound>(std::move(Missing));
+    return llvm::Error::success();
+  }
 };
 
 IncrementalJIT::IncrementalJIT(
@@ -99,9 +122,12 @@ IncrementalJIT::IncrementalJIT(
     return;
   }
 
-  Jit->getMainJITDylib().addGenerator(
-      std::make_unique<SkippableDefinitionGeneratorWrapper>(
-          std::move(*HostProcessLookup), SkipHostProcessLookup));
+  // Jit->getMainJITDylib().addGenerator(
+  //     std::make_unique<SkippableDefinitionGeneratorWrapper>(
+  //         std::move(*HostProcessLookup), SkipHostProcessLookup));
+  Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
+  auto Notifier = std::make_unique<NotifyLazyFunctionCreatorsGenerator>(Executor);
+  Jit->getMainJITDylib().addGenerator(std::move(Notifier));
 }
 
 void IncrementalJIT::addModule(std::unique_ptr<Module> M) {
