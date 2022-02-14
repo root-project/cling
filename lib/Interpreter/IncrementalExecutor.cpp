@@ -275,10 +275,6 @@ IncrementalExecutor::runStaticInitializersOnce(Transaction& T) {
   llvm::ConstantArray *InitList
     = llvm::dyn_cast<llvm::ConstantArray>(GV->getInitializer());
 
-  // We need to delete it here just in case we have recursive inits, otherwise
-  // it will call inits multiple times.
-  GV->eraseFromParent();
-
   if (InitList == 0)
     return kExeSuccess;
 
