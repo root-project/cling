@@ -32,8 +32,6 @@ CLING_LIB_EXPORT
 void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
                                                    const void* Arg) {
 
-  const clang::Expr* const E = (const clang::Expr*)Expr;
-
 #if defined(__APPLE__) && defined(__arm64__)
   // See https://github.com/root-project/root/issues/7541 and
   // https://bugs.llvm.org/show_bug.cgi?id=49692 :
@@ -42,6 +40,8 @@ void* cling_runtime_internal_throwIfInvalidPointer(void* Interp, void* Expr,
   (void)Interp;
   (void)Expr;
 #else
+  const clang::Expr* const E = (const clang::Expr*)Expr;
+
   // The isValidAddress function return true even when the pointer is
   // null thus the checks have to be done before returning successfully from the
   // function in this specific order.
