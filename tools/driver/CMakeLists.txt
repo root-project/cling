@@ -46,14 +46,10 @@ set_target_properties(cling
 if(MSVC)
   set_target_properties(cling PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
 
-  # Internal string
-  set(cling_exports ?kEmptyCollection@valuePrinterInternal@cling@@3QEBDEB)
-
   # RTTI/C++ symbols
   set(cling_exports ${cling_exports} ??_7type_info@@6B@
     ?__type_info_root_node@@3U__type_info_node@@A
     ?nothrow@std@@3Unothrow_t@1@B
-    ?_Facet_Register@std@@YAXPEAV_Facet_base@1@@Z
   )
 
   # Compiler added symbols for static variables. NOT for VStudio < 2015
@@ -61,43 +57,39 @@ if(MSVC)
     _Init_thread_footer _Init_thread_header _tls_index
   )
 
-  # new/delete variants needed when linking to static msvc runtime (esp. Debug)
-  set(cling_exports ${cling_exports}
-    #??2@YAPEAX_KPEBDH@Z  ## not used in cling
-    #??_U@YAPEAX_KPEBDH@Z ## not used in cling
-    ??2@YAPEAX_K@Z
-    ??3@YAXPEAX@Z
-    ??_U@YAPEAX_K@Z
-    ??_V@YAXPEAX@Z
-    ??3@YAXPEAX_K@Z
-  )
-
-  # Most (if not all) of these MSVC decided are inlines that aren't exported
-  set(cling_exports ${cling_exports} ?print@Decl@clang@@QEBAXAEAVraw_ostream@llvm@@I_N@Z
-    ??6raw_ostream@llvm@@QEAAAEAV01@PEBX@Z
-    ?getQualifiedNameAsString@NamedDecl@clang@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ
-    ?insert_imp_big@SmallPtrSetImplBase@llvm@@AEAA?AU?$pair@PEBQEBX_N@std@@PEBX@Z
-    ?getAsStringInternal@QualType@clang@@SAXPEBVType@2@VQualifiers@2@AEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBUPrintingPolicy@2@@Z
-    ?decls_begin@DeclContext@clang@@QEBA?AVdecl_iterator@12@XZ
-    ?field_begin@RecordDecl@clang@@QEBA?AV?$specific_decl_iterator@VFieldDecl@clang@@@DeclContext@2@XZ
-    ?errs@llvm@@YAAEAVraw_ostream@1@XZ
-    ?grow_pod@SmallVectorBase@llvm@@IEAAXPEAX_K1@Z
-    ?write@raw_ostream@llvm@@QEAAAEAV12@E@Z
-    ?write@raw_ostream@llvm@@QEAAAEAV12@PEBD_K@Z
-    ?castFromDeclContext@Decl@clang@@SAPEAV12@PEBVDeclContext@2@@Z
-    ??1raw_ostream@llvm@@UEAA@XZ
-    ??1raw_string_ostream@llvm@@UEAA@XZ
-    ?flush_nonempty@raw_ostream@llvm@@AEAAXXZ
-    ?getASTContext@Decl@clang@@QEBAAEAVASTContext@2@XZ
-    ?preferred_buffer_size@raw_ostream@llvm@@MEBA_KXZ
-    ?write_impl@raw_string_ostream@llvm@@EEAAXPEBD_K@Z
-    ?castToDeclContext@Decl@clang@@SAPEAVDeclContext@2@PEBV12@@Z
-    ?classof@DeclContext@clang@@SA_NPEBVDecl@2@@Z
-  )
-
-  if ($<CONFIG:Debug>)
+  if("${CMAKE_GENERATOR_PLATFORM}" MATCHES "x64")
+    # new/delete variants needed when linking to static msvc runtime (esp. Debug)
     set(cling_exports ${cling_exports}
-      ??$dyn_cast@VValueDecl@clang@@$$CBVDecl@2@@llvm@@YAPEBVValueDecl@clang@@PEBVDecl@2@@Z
+      ??2@YAPEAX_K@Z
+      ??3@YAXPEAX@Z
+      ??_U@YAPEAX_K@Z
+      ??_V@YAXPEAX@Z
+      ??3@YAXPEAX_K@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@H@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@M@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@N@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@PEBX@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@P6AAEAV01@AEAV01@@Z@Z
+      ??$?6U?$char_traits@D@std@@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@D@Z
+      ??$?6U?$char_traits@D@std@@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@PEBD@Z
+      ?_Facet_Register@std@@YAXPEAV_Facet_base@1@@Z
+    )
+  else()
+    set(cling_exports ${cling_exports}
+      ??2@YAPAXI@Z
+      ??3@YAXPAX@Z
+      ??3@YAXPAXI@Z
+      ??_U@YAPAXI@Z
+      ??_V@YAXPAX@Z
+      ??_V@YAXPAXI@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@H@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@M@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@N@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@PBX@Z
+      ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@P6AAAV01@AAV01@@Z@Z
+      ??$?6U?$char_traits@D@std@@@std@@YAAAV?$basic_ostream@DU?$char_traits@D@std@@@0@AAV10@D@Z
+      ??$?6U?$char_traits@D@std@@@std@@YAAAV?$basic_ostream@DU?$char_traits@D@std@@@0@AAV10@PBD@Z
+      ?_Facet_Register@std@@YAXPAV_Facet_base@1@@Z
     )
   endif()
 
