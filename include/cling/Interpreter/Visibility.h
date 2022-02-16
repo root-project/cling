@@ -10,8 +10,6 @@
 #ifndef CLING_VISIBILITY_H
 #define CLING_VISIBILITY_H
 
-#include <new>
-
 // Adapted from llvm/Support/Compiler.h
 #ifndef __has_attribute
 # define __has_attribute(x) 0
