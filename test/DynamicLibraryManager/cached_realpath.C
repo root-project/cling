@@ -8,6 +8,7 @@
 
 // REQUIRES: not_system-windows
 
+// RUN: %rm -fr %t-dir
 // RUN: %mkdir %t-dir
 // RUN: cd %t-dir
 
