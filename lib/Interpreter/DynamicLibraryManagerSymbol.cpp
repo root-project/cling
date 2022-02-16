@@ -345,15 +345,13 @@ std::string cached_realpath(llvm::StringRef path, llvm::StringRef base_path = ""
 
   // Handle path list items
   for (auto item : p) {
-    if (item.startswith(".")) {
-      if (item == "..") {
-        size_t s = result.rfind(sep);
-        if (s != llvm::StringRef::npos) result.resize(s);
-        if (result.empty()) result = sep;
-      }
-      continue;
-    } else if (item == "~") {
-      continue;
+    if (item == ".")
+      continue; // skip "." element in "abc/./def"
+    if (item == "..") {
+      // collapse "a/b/../c" to "a/c"
+      size_t s = result.rfind(sep);
+      if (s != llvm::StringRef::npos) result.resize(s);
+      if (result.empty()) result = sep;
     }
 
     size_t old_size = result.size();
