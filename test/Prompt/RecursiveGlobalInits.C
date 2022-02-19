@@ -19,6 +19,7 @@ MyClass *My = new MyClass(); // CHECK: (const char *) "{{.*}}"
 
 extern "C" int printf(const char*...);
 
+// from https://sft.its.cern.ch/jira/browse/ROOT-5856?focusedCommentId=30869&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-30869
 struct S {
   S() {
     printf("Exec\n");
