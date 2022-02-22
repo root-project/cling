@@ -638,9 +638,7 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
         && !Ctx.hasSameType(QTPointeeUnqual, Ctx.WCharTy)
         && !Ctx.hasSameType(QTPointeeUnqual, Ctx.Char16Ty)
         && !Ctx.hasSameType(QTPointeeUnqual, Ctx.Char32Ty)) {
-      QT = Ctx.VoidTy;
-      QT.addConst();
-      QT = Ctx.getPointerType(QT);
+      QT = Ctx.getPointerType(Ctx.VoidTy.withConst());
     }
   } else if (auto RTy
              = llvm::dyn_cast<clang::ReferenceType>(QT.getTypePtr())) {
