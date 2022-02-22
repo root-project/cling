@@ -33,6 +33,10 @@ N: Lukasz Janyst
 E: ljanyst@cern.ch
 D: Initial prototype of cling.
 
+N: Javier Lopez-Gomez
+E: javier.lopez.gomez@cern.ch
+D: Support for entity redefinition (shadowing), general improvements, bug fixes
+
 N: Roman Zulak (aka Frederich Munch)
 E: machtyrtle@gmail.com
 D: Various contributions.
