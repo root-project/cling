@@ -15,6 +15,13 @@
 int *i_ptr = nullptr
 //CHECK: (int *) nullptr
 
+// For `auto`, the deduced type should be used (ROOT-9687)
+int i = 0;
+&i
+//CHECK: (int *) [[PTR:0x[0-9a-f]+]] 
+auto p = &i
+//CHECK: (int *) [[PTR]]
+
 std::unique_ptr<int> i_uptr
 //CHECK: (std::unique_ptr<int> &) std::unique_ptr -> nullptr 
 
