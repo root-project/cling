@@ -350,8 +350,10 @@ std::string cached_realpath(llvm::StringRef path, llvm::StringRef base_path = ""
     if (item == "..") {
       // collapse "a/b/../c" to "a/c"
       size_t s = result.rfind(sep);
-      if (s != llvm::StringRef::npos) result.resize(s);
-      if (result.empty()) result = sep;
+      if (s != llvm::StringRef::npos)
+        result.resize(s);
+      if (result.empty())
+        result = sep;
       continue;
     }
 
