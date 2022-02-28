@@ -23,3 +23,8 @@ macro() // CHECK: version 1
 .L macro2.h
 macro() // CHECK: 2.version 2
 //CHECK: (int) 2
+
+.x unnamedns.h
+//CHECK: 13
+.x unnamedns.h
+//CHECK-NEXT: 13

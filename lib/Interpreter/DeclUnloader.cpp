@@ -733,6 +733,22 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
   }
 
   bool DeclUnloader::VisitNamespaceDecl(NamespaceDecl* NSD) {
+    // The first declaration of an unnamed namespace, creates an implicit
+    // UsingDirectiveDecl that makes the names available in the parent DC (see
+    // `Sema::ActOnStartNamespaceDef()`).
+    // If we are reverting such first declaration, make sure we reset the
+    // anonymous namespace for the parent DeclContext so that the
+    // implicit UsingDirectiveDecl is created again when parsing the next
+    // anonymous namespace.
+    if (NSD->isAnonymousNamespace() && NSD->isFirstDecl()) {
+      auto Parent = NSD->getParent();
+      if (auto TU = dyn_cast<TranslationUnitDecl>(Parent)) {
+        TU->setAnonymousNamespace(nullptr);
+      } else if (auto NS = dyn_cast<NamespaceDecl>(Parent)) {
+        NS->setAnonymousNamespace(nullptr);
+      }
+    }
+
     // NamespaceDecl: NamedDecl, DeclContext, Redeclarable
     bool Successful = VisitDeclContext(NSD);
     Successful &= VisitRedeclarable(NSD, NSD->getDeclContext());
