@@ -35,13 +35,23 @@ namespace cling {
 
       if (Call == Transaction::kCCIHandleVTable)
         continue;
+
+      // The documentation for `ASTConsumer::HandleCXXImplicitFunctionInstantiation()`
+      // states that implicit function instantiations come through both
+      // `HandleCXXImplicitFunctionInstantiation` (before the body is intantiated)
+      // and `HandleTopLevelDecl` (after).
+      // Therefore, the same decl is duplicated in the transaction differing in the ConsumerCallInfo. `UnloadDecl()` should be called only once.
+      if (Call == Transaction::kCCIHandleCXXImplicitFunctionInstantiation)
+        continue;
+
       // The non templated classes come through HandleTopLevelDecl and
       // HandleTagDeclDefinition, this is why we need to filter.
-      if (Call == Transaction::kCCIHandleTagDeclDefinition)
-      if (const CXXRecordDecl* D
-        = dyn_cast<CXXRecordDecl>(DGR.getSingleDecl()))
-      if (D->getTemplateSpecializationKind() == TSK_Undeclared)
-        continue;
+      if (Call == Transaction::kCCIHandleTagDeclDefinition) {
+        if (const CXXRecordDecl* D
+            = dyn_cast<CXXRecordDecl>(DGR.getSingleDecl()))
+          if (D->getTemplateSpecializationKind() == TSK_Undeclared)
+            continue;
+      }
 
       if (Call == Transaction::kCCINone)
         m_Interp->unload(*(*T->rnested_begin()));

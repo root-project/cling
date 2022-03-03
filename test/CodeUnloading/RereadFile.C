@@ -28,3 +28,8 @@ macro() // CHECK: 2.version 2
 //CHECK: 13
 .x unnamedns.h
 //CHECK-NEXT: 13
+
+.x templatedfunc.h
+//CHECK: 4
+.x templatedfunc.h
+//CHECK-NEXT: 4
