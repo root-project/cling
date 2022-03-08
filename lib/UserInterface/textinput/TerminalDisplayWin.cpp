@@ -75,6 +75,14 @@ namespace textinput {
   }
 
   void
+  TerminalDisplayWin::Clear() {
+    static const char text[] = "\033[2J\033[H";
+    if (!IsTTY()) return;
+    EnableVTProcessingRAII RAII(fOut);
+    WriteRawString(text, sizeof(text));
+  }
+
+  void
   TerminalDisplayWin::SetColor(char CIdx, const Color& C) {
     WORD Attribs = 0;
     // There is no underline since DOS has died.

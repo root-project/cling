@@ -27,6 +27,7 @@ namespace textinput {
     ~TerminalDisplayWin();
 
     void HandleResizeEvent();
+    void Clear() override;
 
     void Attach();
     void Detach();
@@ -55,6 +56,17 @@ namespace textinput {
     DWORD fMyMode; // console configuration when active
     WORD fDefaultAttributes; // attributes to restore on destruction
     const UINT fOldCodePage; // saved codepage of console
+
+    /// RAII object that temporarily enables VT sequences for the given console
+    struct EnableVTProcessingRAII {
+      HANDLE fConsole;
+      DWORD fMode;
+      EnableVTProcessingRAII(HANDLE con) : fConsole(con) {
+        ::GetConsoleMode(fConsole, &fMode);
+        ::SetConsoleMode(fConsole, fMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+      }
+      ~EnableVTProcessingRAII() { ::SetConsoleMode(fConsole, fMode); }
+    };
   };
 }
 #endif // TEXTINPUT_TERMINALDISPLAYWIN_H

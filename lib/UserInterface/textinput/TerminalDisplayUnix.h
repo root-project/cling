@@ -29,6 +29,7 @@ namespace textinput {
     ~TerminalDisplayUnix();
 
     void HandleResizeSignal();
+    void Clear() override;
 
     void Attach();
     void Detach();

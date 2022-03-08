@@ -46,6 +46,8 @@ namespace textinput {
     const TextInputContext* GetContext() const { return fContext; }
     void SetContext(TextInputContext* C) { fContext = C; }
 
+    /// If is a TTY, clear the terminal screen
+    virtual void Clear() {}
     virtual void Redraw() { NotifyTextChange(Range::AllWithPrompt()); }
 
     virtual void NotifyTextChange(Range r) = 0; // Update the displayed text

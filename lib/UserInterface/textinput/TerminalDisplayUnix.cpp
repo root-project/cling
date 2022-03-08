@@ -164,6 +164,13 @@ namespace textinput {
   }
 
   void
+  TerminalDisplayUnix::Clear() {
+    static const char text[] = "\033[2J\033[H";
+    if (!IsTTY()) return;
+    WriteRawString(text, sizeof(text));
+  }
+
+  void
   TerminalDisplayUnix::SetColor(char CIdx, const Color& C) {
     if (!IsTTY()) return;
 
