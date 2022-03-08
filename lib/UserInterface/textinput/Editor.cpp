@@ -18,6 +18,7 @@
 #include <cctype>
 #include <vector>
 #include "textinput/Callbacks.h"
+#include "textinput/Display.h"
 #include "textinput/History.h"
 #include "textinput/KeyBinding.h"
 #include "textinput/StreamReaderUnix.h"
@@ -438,6 +439,11 @@ namespace textinput {
         fReplayHistEntry = fCurHistEntry;
         return kPRSuccess;
       case kCmdClearScreen:
+        for (auto *D : fContext->GetDisplays()) {
+          D->Clear();
+          D->Redraw();
+        }
+        return kPRSuccess;
       case kCmd_END_TEXT_MODIFYING_CMDS:
         return kPRError;
       case kCmdEsc:
