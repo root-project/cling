@@ -29,21 +29,21 @@ namespace textinput {
     void HandleResizeEvent();
     void Clear() override;
 
-    void Attach();
-    void Detach();
+    void Attach() override;
+    void Detach() override;
 
   protected:
-    void Move(Pos p);
+    void Move(Pos p) override;
     void MoveInternal(Pos p);
-    void MoveUp(size_t nLines = 1);
-    void MoveDown(size_t nLines = 1);
-    void MoveLeft(size_t nCols = 1);
-    void MoveRight(size_t nCols = 1);
-    void MoveFront();
-    void SetColor(char CIdx, const Color& C);
-    void WriteRawString(const char* text, size_t len);
+    void MoveUp(size_t nLines = 1) override;
+    void MoveDown(size_t nLines = 1) override;
+    void MoveLeft(size_t nCols = 1) override;
+    void MoveRight(size_t nCols = 1) override;
+    void MoveFront() override;
+    void SetColor(char CIdx, const Color& C) override;
+    void WriteRawString(const char* text, size_t len) override;
 
-    void EraseToRight();
+    void EraseToRight() override;
     void CheckCursorPos();
 
     void ShowError(const char* Where) const;

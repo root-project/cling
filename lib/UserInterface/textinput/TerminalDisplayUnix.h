@@ -31,20 +31,20 @@ namespace textinput {
     void HandleResizeSignal();
     void Clear() override;
 
-    void Attach();
-    void Detach();
+    void Attach() override;
+    void Detach() override;
 
   protected:
-    void MoveUp(size_t nLines = 1);
-    void MoveDown(size_t nLines = 1);
-    void MoveLeft(size_t nCols = 1);
-    void MoveRight(size_t nCols = 1);
+    void MoveUp(size_t nLines = 1) override;
+    void MoveDown(size_t nLines = 1) override;
+    void MoveLeft(size_t nCols = 1) override;
+    void MoveRight(size_t nCols = 1) override;
     void MoveInternal(char What, size_t n);
-    void MoveFront();
-    void SetColor(char CIdx, const Color& C);
-    void WriteRawString(const char* text, size_t len);
-    void ActOnEOL();
-    void EraseToRight();
+    void MoveFront() override;
+    void SetColor(char CIdx, const Color& C) override;
+    void WriteRawString(const char* text, size_t len) override;
+    void ActOnEOL() override;
+    void EraseToRight() override;
     int GetClosestColorIdx256(const Color& C);
     int GetClosestColorIdx16(const Color& C);
 
