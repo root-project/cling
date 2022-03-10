@@ -224,6 +224,8 @@ namespace textinput {
                                          InputData::kModCtrl);
       gExtKeyMap['[']['1'][';']['5']['D'].Set(InputData::kEILeft,
                                          InputData::kModCtrl);
+      gExtKeyMap['[']['3'][';']['5']['~'].Set(InputData::kEIDel,
+                                         InputData::kModCtrl);
 
       // MacOS
       gExtKeyMap['O']['A'] = InputData::kEIUp;

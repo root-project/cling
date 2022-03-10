@@ -142,7 +142,8 @@ namespace textinput {
         if (HadEscPending) {
           return C(Editor::kCmdCutPrevWord);
         } else {
-          return C(Editor::kCmdDel);
+          return (modifier & InputData::kModCtrl)
+                 ? C(Editor::kCmdCutNextWord) : C(Editor::kCmdDel);
         }
       case InputData::kEIIns: return C(Editor::kCmdToggleOverwriteMode);
       case InputData::kEITab: return C(Editor::kCmdComplete);
