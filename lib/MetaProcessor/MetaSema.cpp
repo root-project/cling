@@ -372,7 +372,7 @@ namespace cling {
                              "\t\t\t\t  'decl' dump ast declarations\n"
                              "\t\t\t\t  'undo' show undo stack\n"
       "\n"
-      "   " << metaString << "help\t\t\t- Shows this information\n"
+      "   " << metaString << "help\t\t\t- Shows this information (also .?)\n"
       "\n"
       "   " << metaString << "q\t\t\t\t- Exit the program\n"
       "\n";
