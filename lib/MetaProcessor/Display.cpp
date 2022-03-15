@@ -1416,7 +1416,7 @@ void TypedefPrinter::DisplayTypedefs()const
   const TranslationUnitDecl* const tuDecl = compiler->getASTContext().getTranslationUnitDecl();
   assert(tuDecl != 0 && "DisplayTypedefs, translation unit is empty");
 
-  fOut.Print("List of typedefs");
+  fOut.Print("List of typedefs\n");
   ProcessNestedDeclarations(tuDecl);
 }
 
