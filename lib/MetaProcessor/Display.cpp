@@ -1505,6 +1505,7 @@ void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
     llvm::raw_string_ostream out(textLine);
     typedefDecl->getUnderlyingType().
        getDesugaredType(typedefDecl->getASTContext()).print(out,printingPolicy);
+    out << ' ';
     //Name for diagnostic will include template arguments if any.
     typedefDecl->getNameForDiagnostic(out,
                                       printingPolicy,/*qualified=*/true);
