@@ -163,7 +163,7 @@ namespace textinput {
                     fContext->GetDisplays().end(),
                     [](Display *D) { return D->NotifyWindowChange(); });
     } else if (Cmd.isCtrlD()) {
-      fContext->SetLine(".q"), Redraw();
+      fContext->SetLine(".q\n"), Redraw();
       fLastReadResult = kRREOF;
       return;
     } else {
