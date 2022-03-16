@@ -371,15 +371,15 @@ namespace textinput {
         size_t posWord = FindWordBoundary(1);
         if (M == kCmdWordToUpper) {
           for (size_t i = Cursor; i < posWord; ++i) {
-            Line[Cursor] =  toupper(Line[Cursor]);
+            Line[i] =  toupper(Line[i]);
           }
         } else {
           for (size_t i = Cursor; i < posWord; ++i) {
-            Line[Cursor] =  tolower(Line[Cursor]);
+            Line[i] =  tolower(Line[i]);
           }
         }
-        R.fEdit.Extend(Range(Cursor, posWord - Cursor));
-        R.fDisplay.Extend(Range(Cursor, posWord - Cursor));
+        R.fEdit.Extend(Range(Cursor, posWord));
+        R.fDisplay.Extend(Range(Cursor, posWord));
         fContext->SetCursor(posWord);
         return kPRSuccess;
       }
