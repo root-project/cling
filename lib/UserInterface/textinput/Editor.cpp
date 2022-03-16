@@ -347,12 +347,12 @@ namespace textinput {
       case kCmdSwapThisAndLeftThenMoveRight:
       {
         if (Cursor < 1) return kPRError;
-        R.fEdit.Extend(Range(Cursor - 1, Cursor));
-        R.fDisplay.Extend(Range(Cursor - 1, Cursor));
-        char tmp = Line.GetText()[Cursor];
-        Line[Cursor] = Line[Cursor - 1];
-        Line[Cursor - 1] = tmp;
-        // optional:
+        size_t posSwap = Cursor < Line.length() ? Cursor : Line.length() - 1;
+        R.fEdit.Extend(Range(posSwap - 1, posSwap));
+        R.fDisplay.Extend(Range(posSwap - 1, Range::End()));
+        char tmp = Line.GetText()[posSwap];
+        Line[posSwap] = Line[posSwap - 1];
+        Line[posSwap - 1] = tmp;
         ProcessMove(kMoveRight, R);
         return kPRSuccess;
       }
