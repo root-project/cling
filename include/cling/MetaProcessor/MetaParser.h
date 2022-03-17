@@ -25,43 +25,43 @@ namespace cling {
   class MetaSema;
   class Value;
 
-  // Command syntax: MetaCommand := <CommandSymbol><Command>
-  //                 CommandSymbol := '.' | '//.'
-  //                 Command := LCommand | XCommand | qCommand | UCommand |
-  //                            ICommand | OCommand | RawInputCommand |
-  //                            PrintDebugCommand | DynamicExtensionsCommand |
-  //                            HelpCommand | FileExCommand | FilesCommand |
-  //                            ClassCommand | GCommand | StoreStateCommand |
-  //                            CompareStateCommand | StatsCommand | undoCommand
-  //                 LCommand := 'L' [FilePath]
-  //                 TCommand := 'T' FilePath FilePath
-  //                 >Command := '>' FilePath
-  //                 qCommand := 'q'
-  //                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
-  //                 UCommand := 'U' FilePath
-  //                 ICommand := 'I' [FilePath]
-  //                 OCommand := 'O'[' ']Constant
-  //                 RawInputCommand := 'rawInput' [Constant]
-  //                 PrintDebugCommand := 'printDebug' [Constant]
-  //                 DebugCommand := 'debug' [Constant]
-  //                 StoreStateCommand := 'storeState' "Ident"
-  //                 CompareStateCommand := 'compareState' "Ident"
-  //                 StatsCommand := 'stats' ['ast']
-  //                 traceCommand := 'trace' ['ast'] ["Ident"]
-  //                 undoCommand := 'undo' [Constant]
-  //                 DynamicExtensionsCommand := 'dynamicExtensions' [Constant]
-  //                 HelpCommand := 'help'
-  //                 FileExCommand := 'fileEx'
-  //                 FilesCommand := 'files'
-  //                 ClassCommand := 'class' AnyString | 'Class'
-  //                 GCommand := 'g' [Ident]
-  //                 FilePath := AnyString
-  //                 ArgList := (ExtraArgList) ' ' [ArgList]
-  //                 ExtraArgList := AnyString [, ExtraArgList]
-  //                 AnyString := *^(' ' | '\t')
-  //                 Constant := {0-9}
-  //                 Ident := a-zA-Z{a-zA-Z0-9}
-  //
+  /// Command syntax: MetaCommand := < CommandSymbol >< Command >
+  ///                 CommandSymbol := '.' | '//.'
+  ///                 Command := LCommand | XCommand | qCommand | UCommand |
+  ///                            ICommand | OCommand | RawInputCommand |
+  ///                            PrintDebugCommand | DynamicExtensionsCommand |
+  ///                            HelpCommand | FileExCommand | FilesCommand |
+  ///                            ClassCommand | GCommand | StoreStateCommand |
+  ///                            CompareStateCommand | StatsCommand | undoCommand
+  ///                 LCommand := 'L' [FilePath]
+  ///                 TCommand := 'T' FilePath FilePath
+  ///                 >Command := '>' FilePath
+  ///                 qCommand := 'q'
+  ///                 XCommand := 'x' FilePath[ArgList] | 'X' FilePath[ArgList]
+  ///                 UCommand := 'U' FilePath
+  ///                 ICommand := 'I' [FilePath]
+  ///                 OCommand := 'O'[' ']Constant
+  ///                 RawInputCommand := 'rawInput' [Constant]
+  ///                 PrintDebugCommand := 'printDebug' [Constant]
+  ///                 DebugCommand := 'debug' [Constant]
+  ///                 StoreStateCommand := 'storeState' "Ident"
+  ///                 CompareStateCommand := 'compareState' "Ident"
+  ///                 StatsCommand := 'stats' ['ast']
+  ///                 traceCommand := 'trace' ['ast'] ["Ident"]
+  ///                 undoCommand := 'undo' [Constant]
+  ///                 DynamicExtensionsCommand := 'dynamicExtensions' [Constant]
+  ///                 HelpCommand := 'help'
+  ///                 FileExCommand := 'fileEx'
+  ///                 FilesCommand := 'files'
+  ///                 ClassCommand := 'class' AnyString | 'Class'
+  ///                 GCommand := 'g' [Ident]
+  ///                 FilePath := AnyString
+  ///                 ArgList := (ExtraArgList) ' ' [ArgList]
+  ///                 ExtraArgList := AnyString [, ExtraArgList]
+  ///                 AnyString := *^(' ' | '\t')
+  ///                 Constant := {0-9}
+  ///                 Ident := a-zA-Z{a-zA-Z0-9}
+  ///
   class MetaParser {
   private:
     MetaLexer m_Lexer;
@@ -115,7 +115,7 @@ namespace cling {
   public:
     MetaParser(MetaSema &Actions, llvm::StringRef Line);
 
-    ///\brief Drives the recursive decendent parsing.
+    ///\brief Drives the recursive descendent parsing.
     ///
     ///\returns true if it was meta command.
     ///
