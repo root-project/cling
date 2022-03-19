@@ -43,6 +43,8 @@ namespace {
       if (GV.isDeclaration())
         return false; // no change.
 
+      if (GV.getName().startswith(".str"))
+        return false;
       // GV is a definition.
 
       llvm::GlobalValue::LinkageTypes LT = GV.getLinkage();
