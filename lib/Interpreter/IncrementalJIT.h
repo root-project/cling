@@ -72,6 +72,9 @@ public:
                                        llvm::JITTargetAddress KnownAddr,
                                        bool AcceptExisting = false);
 
+  llvm::Error runCtors() const {
+    return Jit->initialize(Jit->getMainJITDylib());
+  }
 private:
   std::unique_ptr<llvm::orc::LLJIT> Jit;
   llvm::orc::SymbolMap m_InjectedSymbols;

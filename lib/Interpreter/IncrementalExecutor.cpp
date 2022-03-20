@@ -257,79 +257,10 @@ IncrementalExecutor::runStaticInitializersOnce(Transaction& T) {
   if (diagnoseUnresolvedSymbols("static initializers"))
     return kExeUnresolvedSymbols;
 
-  llvm::GlobalVariable* GV
-     = m->getGlobalVariable("llvm.global_ctors", true);
-  // Nothing to do is good, too.
-  if (!GV) return kExeSuccess;
-
-  // Close similarity to
-  // m_engine->runStaticConstructorsDestructors(false) aka
-  // llvm::ExecutionEngine::runStaticConstructorsDestructors()
-  // is intentional; we do an extra pass to check whether the JIT
-  // managed to collect all the symbols needed by the niitializers.
-  // Should be an array of '{ i32, void ()* }' structs.  The first value is
-  // the init priority, which we ignore.
-  llvm::ConstantArray *InitList
-    = llvm::dyn_cast<llvm::ConstantArray>(GV->getInitializer());
-
-  if (InitList == 0)
-    return kExeSuccess;
-
-  //SmallVector<Function*, 2> initFuncs;
-
-  for (unsigned i = 0, e = InitList->getNumOperands(); i != e; ++i) {
-    llvm::ConstantStruct *CS
-      = llvm::dyn_cast<llvm::ConstantStruct>(InitList->getOperand(i));
-    if (CS == 0) continue;
-
-    llvm::Constant *FP = CS->getOperand(1);
-    if (FP->isNullValue())
-      continue;  // Found a sentinal value, ignore.
-
-    // Strip off constant expression casts.
-    if (llvm::ConstantExpr *CE = llvm::dyn_cast<llvm::ConstantExpr>(FP))
-      if (CE->isCast())
-        FP = CE->getOperand(0);
-
-    // Execute the ctor/dtor function!
-    if (llvm::Function *F = llvm::dyn_cast<llvm::Function>(FP)) {
-      const llvm::StringRef fName = F->getName();
-      executeInit(fName);
-/*
-      initFuncs.push_back(F);
-      if (fName.startswith("_GLOBAL__sub_I_")) {
-        BasicBlock& BB = F->getEntryBlock();
-        for (BasicBlock::iterator I = BB.begin(), E = BB.end(); I != E; ++I)
-          if (CallInst* call = dyn_cast<CallInst>(I))
-            initFuncs.push_back(call->getCalledFunction());
-      }
-*/
-    }
+  if (llvm::Error Err = m_JIT->runCtors()) {
+    llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(),
+                                "[runStaticInitializersOnce]: ");
   }
-
-/*
-  for (SmallVector<Function*,2>::iterator I = initFuncs.begin(),
-         E = initFuncs.end(); I != E; ++I) {
-    // Cleanup also the dangling init functions. They are in the form:
-    // define internal void @_GLOBAL__I_aN() section "..."{
-    // entry:
-    //   call void @__cxx_global_var_init(N-1)()
-    //   call void @__cxx_global_var_initM()
-    //   ret void
-    // }
-    //
-    // define internal void @__cxx_global_var_init(N-1)() section "..." {
-    // entry:
-    //   call void @_ZN7MyClassC1Ev(%struct.MyClass* @n)
-    //   ret void
-    // }
-
-    // Erase __cxx_global_var_init(N-1)() first.
-    (*I)->removeDeadConstantUsers();
-    (*I)->eraseFromParent();
-  }
-*/
-
   return kExeSuccess;
 }
 
@@ -423,6 +354,8 @@ IncrementalExecutor::getPointerToGlobalFromJIT(llvm::StringRef name) const {
 bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
                                                   llvm::StringRef title) const {
   if (m_unresolvedSymbols.empty())
+    return false;
+  if (m_unresolvedSymbols.size() == 1 && *m_unresolvedSymbols.begin() == trigger)
     return false;
 
   // Issue callback to TCling!!
