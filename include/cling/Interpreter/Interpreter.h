@@ -311,10 +311,6 @@ namespace cling {
     ExecutionResult RunFunction(const clang::FunctionDecl* FD,
                                 Value* res = 0);
 
-    ///\brief Forwards to cling::IncrementalExecutor::addSymbol.
-    ///
-    bool addSymbol(const char* symbolName,  void* symbolAddress);
-
     ///\brief Compile the function definition and return its Decl.
     ///
     ///\param[in] name - name of the function, used to find its Decl.

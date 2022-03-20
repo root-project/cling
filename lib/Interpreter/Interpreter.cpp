@@ -1716,15 +1716,6 @@ namespace cling {
     return ConvertExecutionResult(ExeRes);
   }
 
-  bool Interpreter::addSymbol(const char* symbolName,  void* symbolAddress) {
-    // Forward to IncrementalExecutor;
-    if (!symbolName || !symbolAddress )
-      return false;
-
-    m_Executor->addSymbol(symbolName, symbolAddress);
-    return true;
-  }
-
   void* Interpreter::getAddressOfGlobal(const GlobalDecl& GD,
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
