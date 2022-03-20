@@ -17,34 +17,12 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <mutex>
+#include <sstream>
 
 using namespace llvm;
 using namespace llvm::orc;
 
 namespace cling {
-
-/// Allows to skip the wrapped definition generator based on a shared flag in
-/// a single-threaded context.
-class SkippableDefinitionGeneratorWrapper : public DefinitionGenerator {
-public:
-  SkippableDefinitionGeneratorWrapper(
-      std::unique_ptr<DefinitionGenerator> DefGenerator,
-      SharedAtomicFlag SkipFlag)
-      : DefGenerator(std::move(DefGenerator)), SkipFlag(std::move(SkipFlag)) {}
-
-  Error tryToGenerate(LookupState& LS, LookupKind K, JITDylib& JD,
-                      JITDylibLookupFlags JDLookupFlags,
-                      const SymbolLookupSet& LookupSet) override {
-    if (SkipFlag)
-      return Error::success();
-    return DefGenerator->tryToGenerate(LS, K, JD, JDLookupFlags, LookupSet);
-  }
-
-private:
-  std::unique_ptr<DefinitionGenerator> DefGenerator;
-  SharedAtomicFlag SkipFlag;
-};
 
 class NotifyLazyFunctionCreatorsGenerator : public DefinitionGenerator {
   const IncrementalExecutor & m_IncrExecutor;
@@ -118,9 +96,6 @@ IncrementalJIT::IncrementalJIT(
     return;
   }
 
-  // Jit->getMainJITDylib().addGenerator(
-  //     std::make_unique<SkippableDefinitionGeneratorWrapper>(
-  //         std::move(*HostProcessLookup), SkipHostProcessLookup));
   Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
   auto Notifier = std::make_unique<NotifyLazyFunctionCreatorsGenerator>(Executor);
   Jit->getMainJITDylib().addGenerator(std::move(Notifier));
@@ -159,34 +134,27 @@ llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
 JITTargetAddress IncrementalJIT::addDefinition(StringRef LinkerMangledName,
                                                JITTargetAddress KnownAddr,
                                                bool AcceptExisting) {
-  Expected<JITEvaluatedSymbol> Symbol =
-      Jit->lookupLinkerMangled(LinkerMangledName);
-  if (!Symbol && !KnownAddr) {
-    logAllUnhandledErrors(Symbol.takeError(), errs(),
-                          "[IncrementalJIT] lookup failed: ");
-    return JITTargetAddress{};
-  }
+  void* Symbol = getSymbolAddress(LinkerMangledName, /*ExcludeFromHost=*/false);
 
-  if (KnownAddr && Symbol && !AcceptExisting) {
-    errs() << "[IncrementalJIT] cannot redefine existing symbol"
-            << " '" << LinkerMangledName << "'\n";
-    return JITTargetAddress{};
-  }
-
-  if (Symbol)
-    return Symbol->getAddress();
+  // Nothing to define, we are redefining the same function. FIXME: Diagnose.
+  if (Symbol && (JITTargetAddress)Symbol == KnownAddr)
+    return KnownAddr;
 
   // Let's inject it
-  consumeError(Symbol.takeError());
-
   bool Inserted;
   SymbolMap::iterator It;
-  std::tie(It, Inserted) = InjectedSymbols.try_emplace(
+  std::tie(It, Inserted) = m_InjectedSymbols.try_emplace(
       Jit->getExecutionSession().intern(LinkerMangledName),
       JITEvaluatedSymbol(KnownAddr, JITSymbolFlags::Exported));
   assert(Inserted && "Why wasn't this found in the initial Jit lookup?");
 
-  if (Error Err = Jit->getMainJITDylib().define(absoluteSymbols({*It}))) {
+  JITDylib& DyLib = Jit->getMainJITDylib();
+  // We want to replace a symbol with a custom provided one.
+  if (Symbol && KnownAddr)
+     // The symbol be in the DyLib or in-process.
+     llvm::consumeError(DyLib.remove({It->first}));
+
+  if (Error Err = DyLib.define(absoluteSymbols({*It}))) {
     logAllUnhandledErrors(std::move(Err), errs(),
                           "[IncrementalJIT] define() failed: ");
     return JITTargetAddress{};

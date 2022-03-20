@@ -74,7 +74,7 @@ public:
 
 private:
   std::unique_ptr<llvm::orc::LLJIT> Jit;
-  llvm::orc::SymbolMap InjectedSymbols;
+  llvm::orc::SymbolMap m_InjectedSymbols;
   SharedAtomicFlag SkipHostProcessLookup;
 
   /// FIXME: If the relation between modules and transactions is a bijection, the
