@@ -164,8 +164,8 @@ namespace cling {
     /// pending immediately, which sets this raw pointer. TransactionUnloader
     /// now checks this one instead of the unique pointer above. This is not
     /// nice, but it works and keeps the current infrastrucutre intact.
-    ///
-    const llvm::Module *m_UnownedModule{nullptr};
+    /// See TransactionUnloader::unloadModule
+    const llvm::Module *m_CompiledModule{nullptr};
 
     ///\brief The Executor to use m_ExeUnload on.
     ///
@@ -199,6 +199,7 @@ namespace cling {
 
     /// TransactionPool needs direct access to m_State as setState asserts
     friend class TransactionPool;
+    friend class IncrementalJIT;
 
     void Initialize();
 
@@ -490,11 +491,7 @@ namespace cling {
     }
     void setModule(std::unique_ptr<llvm::Module> M) { m_Module = std::move(M); }
 
-    const llvm::Module* getUnownedModule() const { return m_UnownedModule; }
-    void setUnownedModule(const llvm::Module *M) {
-      assert(m_UnownedModule == nullptr && "Module are emitted only once");
-      m_UnownedModule = M;
-    }
+    const llvm::Module* getCompiledModule() const { return m_CompiledModule; }
 
     IncrementalExecutor* getExecutor() const { return m_Exe; }
 

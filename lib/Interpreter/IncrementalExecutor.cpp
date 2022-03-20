@@ -121,14 +121,9 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
 
   std::unique_ptr<TargetMachine> TM(CreateHostTargetMachine(CI));
   auto &TMRef = *TM;
-  auto SetReadyForUnloading = [this](const llvm::Module* M) {
-    assert (m_PendingModules.count(M) && "Unable to find the module");
-    m_PendingModules[M]->setUnownedModule(M);
-    m_PendingModules.erase(M);
-  };
   llvm::Error Err = llvm::Error::success();
   auto EPC = llvm::cantFail(llvm::orc::SelfExecutorProcessControl::Create());
-  m_JIT.reset(new IncrementalJIT(*this, std::move(TM), std::move(EPC), SetReadyForUnloading, Err));
+  m_JIT.reset(new IncrementalJIT(*this, std::move(TM), std::move(EPC), Err));
   if (Err) {
     llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "Fatal: ");
     llvm_unreachable("Propagate this error and exit gracefully");
@@ -141,7 +136,6 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
                                           *m_JIT));
 }
 
-// Keep in source: ~unique_ptr<ClingJIT> needs ClingJIT
 IncrementalExecutor::~IncrementalExecutor() {}
 
 void IncrementalExecutor::runAtExitFuncs() {
@@ -254,8 +248,7 @@ IncrementalExecutor::runStaticInitializersOnce(Transaction& T) {
   if (isPracticallyEmptyModule(m))
     return kExeSuccess;
 
-  m_PendingModules[T.getModule()] = &T;
-  emitModule(T.takeModule(), T.getCompilationOpts().OptLevel);
+  emitModule(T);
 
   // We don't care whether something was unresolved before.
   m_unresolvedSymbols.clear();

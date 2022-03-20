@@ -177,9 +177,8 @@ namespace cling {
     void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
 
     ///\brief Unload a set of JIT symbols.
-    llvm::Expected<std::unique_ptr<llvm::Module>>
-    unloadModule(const llvm::Module* M) const {
-      return m_JIT->removeModule(M);
+    llvm::Error unloadModule(const Transaction& T) const {
+      return m_JIT->removeModule(T);
     }
 
     ///\brief Run the static initializers of all modules collected to far.
@@ -252,11 +251,12 @@ namespace cling {
     ///
     /// @param[in] module - The module to pass to the execution engine.
     /// @param[in] optLevel - The optimization level to be used.
-    void emitModule(std::unique_ptr<llvm::Module> module, int optLevel) const {
+    void emitModule(Transaction &T) const {
       if (m_BackendPasses)
-        m_BackendPasses->runOnModule(*module, optLevel);
+        m_BackendPasses->runOnModule(*T.getModule(),
+                                     T.getCompilationOpts().OptLevel);
 
-      m_JIT->addModule(std::move(module));
+      m_JIT->addModule(T);
     }
 
     ///\brief Report and empty m_unresolvedSymbols.

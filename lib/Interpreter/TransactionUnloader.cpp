@@ -106,21 +106,33 @@ namespace cling {
     return Successful;
   }
 
+  static bool isPracticallyEmptyModule(const llvm::Module* M) {
+    return M->empty() && M->global_empty() && M->alias_empty();
+  }
+
   bool TransactionUnloader::RevertTransaction(Transaction* T) {
 
     bool Successful = true;
-    const llvm::Module *UnownedModule = T->getUnownedModule();
-    if (getExecutor() && UnownedModule) {
-      Successful = getExecutor()->unloadModule(T->getModule()) && Successful;
+    if (getExecutor()) {
+      if (llvm::Error Err = getExecutor()->unloadModule(*T)) {
+        llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "Unload: ");
+        Successful = false;
+      }
+
+      if (T->getState() == Transaction::kCommitted && !T->isNestedTransaction()) {
+        if (const llvm::Module *CompiledM = T->getCompiledModule())
+          Successful = unloadModule(const_cast<llvm::Module*>(CompiledM)) &&
+            Successful;
+        else
+          assert((!T->getModule() || isPracticallyEmptyModule(T->getModule()))
+                 && "Must have already compiled this module");
+      }
 
       // Cleanup the module from unused global values.
       // if (T->getModule()) {
       //   llvm::ModulePass* globalDCE = llvm::createGlobalDCEPass();
       //   globalDCE->runOnModule(*T->getModule());
       // }
-
-      Successful =
-          unloadModule(const_cast<llvm::Module *>(UnownedModule)) && Successful;
     }
 
     // Clean up the pending instantiations

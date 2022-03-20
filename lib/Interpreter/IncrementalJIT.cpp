@@ -68,10 +68,8 @@ public:
 
 IncrementalJIT::IncrementalJIT(
     IncrementalExecutor& Executor, std::unique_ptr<TargetMachine> TM,
-    std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC,
-    ReadyForUnloadingCallback NotifyReadyForUnloading, Error& Err)
+    std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err)
     : SkipHostProcessLookup(false),
-      NotifyReadyForUnloading(std::move(NotifyReadyForUnloading)),
       TM(std::move(TM)),
       SingleThreadedContext(std::make_unique<LLVMContext>()) {
   ErrorAsOutParameter _(&Err);
@@ -102,16 +100,14 @@ IncrementalJIT::IncrementalJIT(
     return;
   }
 
-  Jit->getIRCompileLayer().setNotifyCompiled(
-      [this](auto &MR, ThreadSafeModule TSM) {
-        // FIXME: Don't store them mapped by raw pointers.
-        const Module *Unsafe = TSM.getModuleUnlocked();
-        assert(!CompiledModules.count(Unsafe) && "Modules are compiled once");
-        assert((!Unsafe->getName().startswith("cling-module-") ||
-                ResourceTrackers.count(Unsafe)) &&
-               "All cling-modules are tracked");
-        CompiledModules[Unsafe] = std::move(TSM);
-      });
+  // We use this callback to transfer the ownership of the ThreadSafeModule,
+  // which owns the Transaction's llvm::Module, to m_CompiledModules.
+  Jit->getIRCompileLayer().setNotifyCompiled([this](auto &MR, ThreadSafeModule TSM) {
+      // FIXME: Don't store them mapped by raw pointers.
+      const Module *Unsafe = TSM.getModuleUnlocked();
+      assert(!m_CompiledModules.count(Unsafe) && "Modules are compiled once");
+      m_CompiledModules[Unsafe] = std::move(TSM);
+    });
 
   // FIXME: Make host process symbol lookup optional on a per-query basis
   char LinkerPrefix = this->TM->createDataLayout().getGlobalPrefix();
@@ -130,27 +126,33 @@ IncrementalJIT::IncrementalJIT(
   Jit->getMainJITDylib().addGenerator(std::move(Notifier));
 }
 
-void IncrementalJIT::addModule(std::unique_ptr<Module> M) {
-  const Module *RawModulePtr = M.get();
+void IncrementalJIT::addModule(Transaction& T) {
   ResourceTrackerSP RT = Jit->getMainJITDylib().createResourceTracker();
-  ResourceTrackers[RawModulePtr] = RT;
+  m_ResourceTrackers[&T] = RT;
 
-  ThreadSafeModule TSM(std::move(M), SingleThreadedContext);
+  std::ostringstream sstr;
+  sstr << T.getModule()->getModuleIdentifier() << '-' << std::hex
+       << std::showbase << (size_t)&T;
+  ThreadSafeModule TSM(T.takeModule(), SingleThreadedContext);
+
+  const Module *Unsafe = TSM.getModuleUnlocked();
+  T.m_CompiledModule = Unsafe;
+
   if (Error Err = Jit->addIRModule(RT, std::move(TSM))) {
     logAllUnhandledErrors(std::move(Err), errs(),
                           "[IncrementalJIT] addModule() failed: ");
     return;
   }
-
-  NotifyReadyForUnloading(RawModulePtr);
 }
 
-llvm::Error IncrementalJIT::removeModule(const Module* M) {
-  ResourceTrackerSP RT = std::move(ResourceTrackers[M]);
-  ResourceTrackers.erase(M);
+llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
+  ResourceTrackerSP RT = std::move(m_ResourceTrackers[&T]);
+  if (!RT)
+    return llvm::Error::success();
+
+  m_ResourceTrackers.erase(&T);
   if (Error Err = RT->remove())
     return std::move(Err);
-  CompiledModules.erase(M);
   return llvm::Error::success();
 }
 

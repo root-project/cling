@@ -28,9 +28,7 @@
 namespace cling {
 
 class IncrementalExecutor;
-
-using ReadyForUnloadingCallback =
-    llvm::unique_function<void(const llvm::Module* M)>;
+class Transaction;
 
 class SharedAtomicFlag {
 public:
@@ -54,15 +52,14 @@ public:
   IncrementalJIT(IncrementalExecutor& Executor,
                  std::unique_ptr<llvm::TargetMachine> TM,
                  std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC,
-                 ReadyForUnloadingCallback NotifyReadyForUnloading,
                  llvm::Error &Err);
 
   // FIXME: Accept a LLVMContext as well, e.g. the one that was used for the
   // particular module in Interpreter, CIFactory or BackendPasses (would be
   // more efficient)
-  void addModule(std::unique_ptr<llvm::Module> M);
+  void addModule(Transaction& T);
 
-  llvm::Error removeModule(const llvm::Module* M);
+  llvm::Error removeModule(const Transaction& T);
 
   /// Get the address of a symbol based on its IR name (as coming from clang's
   /// mangler). The ExcludeHostSymbols parameter controls whether the lookup
@@ -84,11 +81,8 @@ private:
   /// mapping via module pointers here is unnecessary. The transaction should
   /// store the resource tracker directly and pass it to `remove()` for
   /// unloading.
-  std::map<const llvm::Module *, llvm::orc::ResourceTrackerSP> ResourceTrackers;
-  std::map<const llvm::Module *, llvm::orc::ThreadSafeModule> CompiledModules;
-
-  // FIXME: Remove this once we simplified code unloading with ORCv2
-  ReadyForUnloadingCallback NotifyReadyForUnloading;
+  std::map<const Transaction*, llvm::orc::ResourceTrackerSP> m_ResourceTrackers;
+  std::map<const llvm::Module *, llvm::orc::ThreadSafeModule> m_CompiledModules;
 
   // FIXME: Move TargetMachine ownership to BackendPasses
   std::unique_ptr<llvm::TargetMachine> TM;
