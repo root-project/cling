@@ -202,9 +202,10 @@ void* IncrementalJIT::getSymbolAddress(StringRef Name, bool ExcludeHostSymbols) 
 
   Expected<JITEvaluatedSymbol> Symbol = Jit->lookup(Name);
   if (!Symbol) {
-    logAllUnhandledErrors(Symbol.takeError(), errs(),
-                          "[IncrementalJIT] getSymbolAddress() failed: ");
-    return 0;
+    // This interface is allowed to return nullptr on a missing symbol without
+    // diagnostics.
+    consumeError(Symbol.takeError());
+    return nullptr;
   }
 
   return jitTargetAddressToPointer<void*>(Symbol->getAddress());
