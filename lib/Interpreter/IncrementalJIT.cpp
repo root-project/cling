@@ -87,11 +87,11 @@ IncrementalJIT::IncrementalJIT(
   Builder.setExecutorProcessControl(std::move(EPC));
 
   // FIXME: In LLVM 13 this only works for ELF and MachO platforms
-  Builder.setObjectLinkingLayerCreator(
-      [&](ExecutionSession &ES, const Triple &TT) {
-        return std::make_unique<ObjectLinkingLayer>(
-            ES, std::make_unique<jitlink::InProcessMemoryManager>());
-      });
+  // Builder.setObjectLinkingLayerCreator(
+  //     [&](ExecutionSession &ES, const Triple &TT) {
+  //       return std::make_unique<ObjectLinkingLayer>(
+  //           ES, std::make_unique<jitlink::InProcessMemoryManager>());
+  //     });
 
   if (Expected<std::unique_ptr<LLJIT>> JitInstance = Builder.create()) {
     Jit = std::move(*JitInstance);
