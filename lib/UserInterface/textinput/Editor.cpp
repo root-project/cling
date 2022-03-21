@@ -384,6 +384,7 @@ namespace textinput {
         return kPRSuccess;
       }
       case kCmdUndo:
+        if (fUndoBuf.empty()) return kPRSuccess;
         Line = fUndoBuf.back().first;
         fContext->SetCursor(fUndoBuf.back().second);
         fUndoBuf.pop_back();
