@@ -88,6 +88,7 @@ namespace textinput {
     fContext->SetCursor(0);
     ClearPasteBuf();
     fSearch.clear();
+    fUndoBuf.clear();
     CancelSpecialInputMode(R);
     if (fReplayHistEntry != (size_t) -1) {
       --fReplayHistEntry; // intentional overflow to -1
