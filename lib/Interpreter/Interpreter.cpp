@@ -320,7 +320,7 @@ namespace cling {
       for (const llvm::StringRef& Sym : Syms) {
         void* Addr = m_Executor->getPointerToGlobalFromJIT(Sym);
 #if defined(__linux__)
-        // libstdc++ mangles at_quick_exit on Linux when g++ < 5
+        // We need to look for the mangled name of at_quick_exit on linux.
         if (!Addr && Sym.equals("at_quick_exit"))
           Addr = m_Executor->getPointerToGlobalFromJIT("_Z13at_quick_exitPFvvE");
 #endif
