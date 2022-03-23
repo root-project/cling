@@ -56,6 +56,7 @@ namespace textinput {
       kCmdToUpperMoveNextWord,
 
       kCmdReverseSearch,
+      kCmdForwardSearch,
       kCmdHistOlder,
       kCmdHistNewer,
       kCmdHistReplay,
@@ -144,14 +145,15 @@ namespace textinput {
     void AddToPasteBuf(int Dir, const std::string& T);
     void AddToPasteBuf(int Dir, char T);
     void ClearPasteBuf() { fCutDirection = 0; }
-    void SetReverseHistSearchPrompt(Range& RDisplay);
+    void SetHistSearchModePrompt(Range& RDisplay);
     bool UpdateHistSearch(EditorRange& R);
 
     // The editor can be in special modes, e.g. when searching
     // in history.
     enum EEditMode {
       kInputMode, // regular input mode
-      kHistSearchMode, // searching in history
+      kHistRevSearchMode, // rev searching in history
+      kHistFwdSearchMode, // fwd searching in history
       kNumEditModes
     };
 
@@ -159,7 +161,7 @@ namespace textinput {
     Text fEditorPrompt; // for special modes, e.g. reverse search
     std::string fLineNotInHist; // current input line, not pushed to hist yet
     std::string fPasteBuf; // cut strings that can be pasted
-    std::string fSearch; // for backward hist search
+    std::string fSearch; // for forward / backward hist search
     size_t fCurHistEntry; // the current line stems from a hist entry, -1 if not
     size_t fReplayHistEntry; // set next line to this hist entry, kCmdHistReplay
     EEditMode fMode; // current input mode

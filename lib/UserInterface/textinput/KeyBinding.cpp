@@ -70,7 +70,7 @@ namespace textinput {
       case 'p' - 0x60: return C(Editor::kCmdHistOlder);
       case 'q' - 0x60: return C(In, Editor::kCKError);
       case 'r' - 0x60: return C(Editor::kCmdReverseSearch);
-      case 's' - 0x60: return C(In, Editor::kCKError);
+      case 's' - 0x60: return C(Editor::kCmdForwardSearch);
       case 't' - 0x60: return C(Editor::kCmdSwapThisAndLeftThenMoveRight);
       case 'u' - 0x60: return C(Editor::kCmdCutToFront);
       case 'v' - 0x60: return C(In, Editor::kCKError);

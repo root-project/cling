@@ -15,7 +15,9 @@
 
 #include "textinput/Editor.h"
 
+#include <cassert>
 #include <cctype>
+#include <cstddef>
 #include <vector>
 #include "textinput/Callbacks.h"
 #include "textinput/Display.h"
@@ -78,7 +80,7 @@ namespace textinput {
       && fContext->GetTextInput()->IsAutoHistAddEnabled();
     if (addToHist) {
       fContext->GetHistory()->AddLine(fContext->GetLine().GetText());
-      if (fReplayHistEntry != (size_t) -1) {
+      if (fReplayHistEntry != static_cast<size_t>(-1)) {
         // Added a line, thus renumber
         ++fReplayHistEntry;
       }
@@ -90,7 +92,7 @@ namespace textinput {
     fSearch.clear();
     fUndoBuf.clear();
     CancelSpecialInputMode(R);
-    if (fReplayHistEntry != (size_t) -1) {
+    if (fReplayHistEntry != static_cast<size_t>(-1)) {
       --fReplayHistEntry; // intentional overflow to -1
       fContext->SetLine(fContext->GetHistory()->GetLine(fReplayHistEntry));
     }
@@ -98,9 +100,10 @@ namespace textinput {
   }
 
   void
-  Editor::SetReverseHistSearchPrompt(Range& RDisplay) {
-    std::string P("[bkw'");
-    SetEditorPrompt(Text(P + fSearch + "'] "));
+  Editor::SetHistSearchModePrompt(Range& RDisplay) {
+    assert(fMode == kHistFwdSearchMode || fMode == kHistRevSearchMode);
+    const std::string direction(fMode == kHistFwdSearchMode ? "fwd" : "bkw");
+    SetEditorPrompt(Text("[" + direction + "'" + fSearch + "'] "));
     RDisplay.ExtendPromptUpdate(Range::kUpdateEditorPrompt);
   }
 
@@ -108,24 +111,26 @@ namespace textinput {
   Editor::UpdateHistSearch(EditorRange& R) {
     History* Hist = fContext->GetHistory();
     Text& Line = fContext->GetLine();
-    size_t NewHistEntry = (size_t) -1;
-    if (fSearch.empty()) {
-      NewHistEntry = 0;
-    } else {
-      size_t startAt = fCurHistEntry;
-      if (startAt == (size_t) -1) {
-        startAt = 0;
-      }
-      for (size_t i = startAt, n = Hist->GetSize(); i < n; ++i) {
-        if (Hist->GetLine(i).find(fSearch) != std::string::npos) {
-          NewHistEntry = i;
-          break;
-        }
+    std::ptrdiff_t NewHistEntry = -1;
+    if (fSearch.empty())
+      return true;
+    std::ptrdiff_t startAt = fCurHistEntry;
+    if (startAt == -1) {
+      startAt = 0;
+    }
+    const std::ptrdiff_t stopAt = (fMode == kHistFwdSearchMode)
+                                    ? -1 : static_cast<std::ptrdiff_t>(Hist->GetSize());
+    const std::ptrdiff_t step = (fMode == kHistFwdSearchMode ? -1 : 1);
+    for (std::ptrdiff_t i = startAt; i != stopAt; i += step) {
+      if (Hist->GetLine(i).find(fSearch) != std::string::npos) {
+        NewHistEntry = i;
+        break;
       }
     }
-    if (NewHistEntry != (size_t) -1) {
+
+    if (NewHistEntry != -1) {
       // No, even if they are unchanged: we might have
-      // subsequent ^R updates triggered by faking a different
+      // subsequent ^R or ^S updates triggered by faking a different
       // fCurHistEntry.
       // if (NewHistEntry != fCurHistEntry) {
       fCurHistEntry = NewHistEntry;
@@ -138,7 +143,7 @@ namespace textinput {
       return true;
     }
 
-    fCurHistEntry = (size_t) -1;
+    fCurHistEntry = static_cast<size_t>(-1);
     return false;
   }
 
@@ -167,9 +172,9 @@ namespace textinput {
   Editor::ProcessChar(char C, EditorRange& R) {
     if (C < 32) return kPRError;
 
-    if (fMode == kHistSearchMode) {
+    if (fMode == kHistRevSearchMode || fMode == kHistFwdSearchMode) {
       fSearch += C;
-      SetReverseHistSearchPrompt(R.fDisplay);
+      SetHistSearchModePrompt(R.fDisplay);
       if (UpdateHistSearch(R)) return kPRSuccess;
       return kPRError;
     }
@@ -199,7 +204,7 @@ namespace textinput {
 
   Editor::EProcessResult
   Editor::ProcessMove(EMoveID M, EditorRange &R) {
-    if (fMode == kHistSearchMode) {
+    if (fMode == kHistRevSearchMode || fMode == kHistFwdSearchMode) {
        if (M == kMoveRight) {
           // ^G, i.e. cancel hist search and revert original line.
           CancelAndRevertSpecialInputMode(R);
@@ -243,11 +248,19 @@ namespace textinput {
     if (M < kCmd_END_TEXT_MODIFYING_CMDS) {
       PushUndo();
     }
-    if (fMode == kHistSearchMode) {
+    if (fMode == kHistRevSearchMode || fMode == kHistFwdSearchMode) {
+      if (M == kCmdForwardSearch || M == kCmdReverseSearch) {
+        const auto previousMode = fMode;
+        fMode = (M == kCmdReverseSearch ? kHistRevSearchMode : kHistFwdSearchMode);
+        if (previousMode != fMode) { // changed from fwd to bkw or viceversa, just update label
+          SetHistSearchModePrompt(R.fDisplay);
+          return kPRSuccess;
+        }
+      }
       if (M == kCmdDelLeft) {
         if (fSearch.empty()) return kPRError;
         fSearch.erase(fSearch.length() - 1);
-        SetReverseHistSearchPrompt(R.fDisplay);
+        SetHistSearchModePrompt(R.fDisplay);
         if (UpdateHistSearch(R)) return kPRSuccess;
         return kPRError;
       } else if (M == kCmdReverseSearch) {
@@ -257,7 +270,7 @@ namespace textinput {
         if (fCurHistEntry + 1 >= fContext->GetHistory()->GetSize()) {
           return kPRError;
         }
-        if (fCurHistEntry == (size_t)-1) {
+        if (fCurHistEntry == static_cast<size_t>(-1)) {
           fCurHistEntry = 0;
         } else {
           ++fCurHistEntry;
@@ -265,6 +278,20 @@ namespace textinput {
         if (UpdateHistSearch(R)) return kPRSuccess;
         fCurHistEntry = prevHistEntry;
         return kPRError;
+      } else if (M == kCmdForwardSearch) {
+         // Search again. Move to newer hist entry:
+         size_t prevHistEntry = fCurHistEntry;
+         if (fCurHistEntry == 0) {
+            return kPRError;
+         }
+         if (fCurHistEntry == static_cast<size_t>(-1)) {
+           fCurHistEntry = 0;
+         } else {
+            --fCurHistEntry;
+         }
+         if (UpdateHistSearch(R)) return kPRSuccess;
+         fCurHistEntry = prevHistEntry;
+         return kPRError;
       } else {
         CancelSpecialInputMode(R.fDisplay);
         return kPRError;
@@ -279,8 +306,8 @@ namespace textinput {
       case kCmdIgnore:
         return kPRSuccess;
       case kCmdEnter:
-        fReplayHistEntry = (size_t) -1;
-        fCurHistEntry = (size_t) -1;
+        fReplayHistEntry = static_cast<size_t>(-1);
+        fCurHistEntry = static_cast<size_t>(-1);
         CancelSpecialInputMode(R.fDisplay);
         return kPRSuccess;
       case kCmdDelLeft:
@@ -394,7 +421,7 @@ namespace textinput {
         return kPRSuccess;
       case kCmdHistNewer:
         // already newest?
-        if (fCurHistEntry == (size_t)-1) {
+        if (fCurHistEntry == static_cast<size_t>(-1)) {
           // not a history line ("newer" doesn't mean anything)?
           return kPRError;
         }
@@ -402,7 +429,7 @@ namespace textinput {
           Hist->ModifyLine(fCurHistEntry, Line.GetText().c_str());
           Line = fLineNotInHist;
           fLineNotInHist.clear();
-          fCurHistEntry = (size_t)-1; // not in hist
+          fCurHistEntry = static_cast<size_t>(-1); // not in hist
         } else {
           --fCurHistEntry;
           Line = Hist->GetLine(fCurHistEntry);
@@ -416,7 +443,7 @@ namespace textinput {
         if (fCurHistEntry + 1 >= Hist->GetSize()) {
           return kPRError;
         }
-        if (fCurHistEntry == (size_t)-1) {
+        if (fCurHistEntry == static_cast<size_t>(-1)) {
           fLineNotInHist = Line.GetText();
           fCurHistEntry = 0;
         } else {
@@ -429,15 +456,16 @@ namespace textinput {
         ProcessMove(kMoveEnd, R);
         return kPRSuccess;
       case kCmdReverseSearch:
+      case kCmdForwardSearch:
         PushUndo();
-        fMode = kHistSearchMode;
         fSearch.clear();
-        SetReverseHistSearchPrompt(R.fDisplay);
+        fMode = (M == kCmdReverseSearch ? kHistRevSearchMode : kHistFwdSearchMode);
+        SetHistSearchModePrompt(R.fDisplay);
         fContext->GetKeyBinding()->EnableEscCmd(true);
         if (UpdateHistSearch(R)) return kPRSuccess;
         return kPRError;
       case kCmdHistReplay:
-        if (fCurHistEntry == (size_t) -1) return kPRError;
+        if (fCurHistEntry == static_cast<size_t>(-1)) return kPRError;
         fReplayHistEntry = fCurHistEntry;
         return kPRSuccess;
       case kCmdClearScreen:
