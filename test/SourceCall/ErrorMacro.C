@@ -8,7 +8,7 @@
 
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
-int example() { } // expected-error {{control reaches end of non-void function}}
+int example() { } // expected-error {{non-void function does not return a value}}
 
 // Make FileCheck happy with having at least one positive rule:
 int a = 5
