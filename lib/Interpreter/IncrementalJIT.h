@@ -62,9 +62,9 @@ public:
   llvm::Error removeModule(const Transaction& T);
 
   /// Get the address of a symbol based on its IR name (as coming from clang's
-  /// mangler). The ExcludeHostSymbols parameter controls whether the lookup
-  /// should include symbols from the host process or not.
-  void* getSymbolAddress(llvm::StringRef Name, bool ExcludeHostSymbols);
+  /// mangler). The IncludeHostSymbols parameter controls whether the lookup
+  /// should include symbols from the host process (via dlsym) or not.
+  void* getSymbolAddress(llvm::StringRef Name, bool IncludeHostSymbols);
 
   /// Inject a symbol with a known address.
   llvm::JITTargetAddress addOrReplaceDefinition(llvm::StringRef LinkerMangledName,

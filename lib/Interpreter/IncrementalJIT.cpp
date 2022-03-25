@@ -133,6 +133,7 @@ llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
 
 JITTargetAddress IncrementalJIT::addOrReplaceDefinition(StringRef LinkerMangledName,
                                                         JITTargetAddress KnownAddr) {
+  void* Symbol = getSymbolAddress(LinkerMangledName, /*IncludeFromHost=*/true);
 
   // Nothing to define, we are redefining the same function. FIXME: Diagnose.
   if (Symbol && (JITTargetAddress)Symbol == KnownAddr)
@@ -161,9 +162,9 @@ JITTargetAddress IncrementalJIT::addOrReplaceDefinition(StringRef LinkerMangledN
   return KnownAddr;
 }
 
-void* IncrementalJIT::getSymbolAddress(StringRef Name, bool ExcludeHostSymbols) {
+void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols) {
   std::unique_lock<SharedAtomicFlag> G(SkipHostProcessLookup, std::defer_lock);
-  if (ExcludeHostSymbols)
+  if (!IncludeHostSymbols)
     G.lock();
 
   Expected<JITEvaluatedSymbol> Symbol = Jit->lookup(Name);

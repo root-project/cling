@@ -329,15 +329,36 @@ void IncrementalExecutor::replaceSymbol(const char* Name, void* Addr) const {
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
                                               bool* fromJIT /*=0*/) const {
-  constexpr bool excludeHostSymbols = true;
-  if (void* addr = m_JIT->getSymbolAddress(symbolName, excludeHostSymbols)) {
-    // It's not from the JIT if it's in a dylib.
-    if (fromJIT)
-      *fromJIT = true;
-    return addr;
+  constexpr bool includeHostSymbols = true;
+
+  void* address = m_JIT->getSymbolAddress(symbolName, includeHostSymbols);
+
+  // FIXME: If we split the loaded libraries into a separate JITDylib we should
+  // be able to delete this code and use something like:
+  //   if (IncludeHostSymbols) {
+  //   if (auto Sym = lookup(<HostSymbolsJD>, Name)) {
+  //     fromJIT = false;
+  //     return Sym;
+  //   }
+  // }
+  // if (auto Sym = lookup(<REPLJD>, Name)) {
+  //   fromJIT = true;
+  //   return Sym;
+  // }
+  // fromJIT = false;
+  // return nullptr;
+  if (fromJIT) {
+    // FIXME: See comments on DLSym below.
+    // We use dlsym to just tell if somethings was from the jit or not.
+#if !defined(_WIN32)
+    void* Addr = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName.str());
+#else
+    void* Addr = const_cast<void*>(platform::DLSym(Name));
+#endif
+    *fromJIT = !Addr;
   }
 
-  return m_JIT->getSymbolAddress(symbolName, !excludeHostSymbols);
+  return address;
 }
 
 void*
