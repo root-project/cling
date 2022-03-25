@@ -66,11 +66,9 @@ public:
   /// should include symbols from the host process or not.
   void* getSymbolAddress(llvm::StringRef Name, bool ExcludeHostSymbols);
 
-  /// Inject a symbol with a known address. Collisions will cause an error
-  /// unless AcceptExisting = true.
-  llvm::JITTargetAddress addDefinition(llvm::StringRef LinkerMangledName,
-                                       llvm::JITTargetAddress KnownAddr,
-                                       bool AcceptExisting = false);
+  /// Inject a symbol with a known address.
+  llvm::JITTargetAddress addOrReplaceDefinition(llvm::StringRef LinkerMangledName,
+                                                llvm::JITTargetAddress KnownAddr);
 
   llvm::Error runCtors() const {
     return Jit->initialize(Jit->getMainJITDylib());

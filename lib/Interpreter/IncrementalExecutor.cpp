@@ -319,9 +319,12 @@ IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
   m_lazyFuncCreator.push_back(fp);
 }
 
-void IncrementalExecutor::addSymbol(const char* Name, void* Addr,
-                                    bool Jit) const {
-  m_JIT->addDefinition(Name, llvm::pointerToJITTargetAddress(Addr), Jit);
+void IncrementalExecutor::replaceSymbol(const char* Name, void* Addr) const {
+  assert(Addr);
+  // FIXME: Look at the registration of at_quick_exit and uncomment.
+  // assert(m_JIT->getSymbolAddress(Name, /*IncludeHostSymbols*/true) &&
+  //        "The symbol must exist");
+  m_JIT->addOrReplaceDefinition(Name, llvm::pointerToJITTargetAddress(Addr));
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,

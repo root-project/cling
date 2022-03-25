@@ -327,7 +327,7 @@ namespace cling {
         if (!Addr) {
           cling::errs() << "Replaced symbol " << Sym << " cannot be found in JIT!\n";
         } else {
-          m_Executor->addSymbol(Sym.str().c_str(), Addr, true);
+          m_Executor->replaceSymbol(Sym.str().c_str(), Addr);
         }
       }
     }
@@ -537,10 +537,10 @@ namespace cling {
 
     if (!SyntaxOnly) {
       // Override the native symbols now, before anything can be emitted.
-      m_Executor->addSymbol("__cxa_atexit",
-                            utils::FunctionToVoidPtr(&local_cxa_atexit), true);
+      m_Executor->replaceSymbol("__cxa_atexit",
+                            utils::FunctionToVoidPtr(&local_cxa_atexit));
       // __dso_handle is inserted for the link phase, as macro is useless then
-      m_Executor->addSymbol("__dso_handle", this, true);
+      m_Executor->replaceSymbol("__dso_handle", this);
 
 #ifdef _MSC_VER
       // According to the PE Format spec, in "The .tls Section"
@@ -551,13 +551,13 @@ namespace cling {
       //   array is at the offset of 0x2C from the beginning of TEB. This
       //   behavior is Intel x86-specific.
       static const unsigned long _tls_array = 0x2C;
-      m_Executor->addSymbol("_tls_array", (void *)&_tls_array, true);
+      m_Executor->replaceSymbol("_tls_array", (void *)&_tls_array);
 #endif
 
 #ifdef CLING_WIN_SEH_EXCEPTIONS
       // Windows C++ SEH handler
-      m_Executor->addSymbol("_CxxThrowException",
-          utils::FunctionToVoidPtr(&platform::ClingRaiseSEHException), true);
+      m_Executor->replaceSymbol("_CxxThrowException",
+          utils::FunctionToVoidPtr(&platform::ClingRaiseSEHException));
 #endif
     }
 

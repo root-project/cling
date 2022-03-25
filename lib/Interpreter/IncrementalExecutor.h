@@ -193,7 +193,7 @@ namespace cling {
     ///\brief Runs a wrapper function.
     ExecutionResult executeWrapper(llvm::StringRef function,
                                    Value* returnValue = 0) const;
-    ///\brief Adds a symbol (function) to the execution engine.
+    ///\brief Replaces a symbol (function) to the execution engine.
     ///
     /// Allows runtime declaration of a function passing its pointer for being
     /// used by JIT generated code.
@@ -201,10 +201,7 @@ namespace cling {
     /// @param[in] Name - The name of the symbol as required by the
     ///                         linker (mangled if needed)
     /// @param[in] Address - The function pointer to register
-    /// @param[in] JIT - Add to the JIT injected symbol table
-    /// @returns true if the symbol is successfully registered, false otherwise.
-    ///
-    void addSymbol(const char* Name, void* Address, bool JIT = false) const;
+    void replaceSymbol(const char* Name, void* Address) const;
 
     ///\brief Tells the execution to run all registered atexit functions once.
     ///

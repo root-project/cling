@@ -131,10 +131,8 @@ llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
   return llvm::Error::success();
 }
 
-JITTargetAddress IncrementalJIT::addDefinition(StringRef LinkerMangledName,
-                                               JITTargetAddress KnownAddr,
-                                               bool AcceptExisting) {
-  void* Symbol = getSymbolAddress(LinkerMangledName, /*ExcludeFromHost=*/false);
+JITTargetAddress IncrementalJIT::addOrReplaceDefinition(StringRef LinkerMangledName,
+                                                        JITTargetAddress KnownAddr) {
 
   // Nothing to define, we are redefining the same function. FIXME: Diagnose.
   if (Symbol && (JITTargetAddress)Symbol == KnownAddr)
