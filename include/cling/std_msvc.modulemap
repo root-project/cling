@@ -20,7 +20,7 @@ module "std" [system] {
     header "atomic"
   }
   module "bit" {
-    requires cplusplus20, !header_existence
+    requires cplusplus20
     export *
     header "bit"
   }
@@ -53,7 +53,7 @@ module "std" [system] {
     header "cfloat"
   }
   module "charconv" {
-    requires cplusplus17, !header_existence
+    requires cplusplus17
     export *
     header "charconv"
   }
@@ -86,7 +86,7 @@ module "std" [system] {
     header "codecvt"
   }
   module "compare" {
-    requires cplusplus20, !header_existence
+    requires cplusplus20
     export *
     header "compare"
   }
@@ -95,7 +95,7 @@ module "std" [system] {
     header "complex"
   }
   module "concepts" {
-    requires cplusplus20, !header_existence
+    requires cplusplus20
     export *
     header "concepts"
   }
@@ -172,12 +172,12 @@ module "std" [system] {
     header "exception"
   }
   module "execution" {
-    requires cplusplus17, !header_existence
+    requires cplusplus17
     export *
     header "execution"
   }
   module "filesystem" {
-    requires cplusplus17, !header_existence
+    requires cplusplus17
     export *
     header "filesystem"
   }
@@ -250,7 +250,7 @@ module "std" [system] {
     header "memory"
   }
   module "memory_resource" {
-    requires cplusplus17, !header_existence
+    requires cplusplus17
     export *
     header "memory_resource"
   }
@@ -263,7 +263,7 @@ module "std" [system] {
     header "new"
   }
   module "numbers" {
-    requires cplusplus20, !header_existence
+    requires cplusplus20
     export *
     header "numbers"
   }
@@ -272,7 +272,7 @@ module "std" [system] {
     header "numeric"
   }
   module "optional" {
-    requires cplusplus17, !header_existence
+    requires cplusplus17
     export *
     header "optional"
   }
@@ -289,7 +289,7 @@ module "std" [system] {
     header "random"
   }
   module "ranges" {
-    requires cplusplus20, !header_existence
+    requires cplusplus20
     export *
     header "ranges"
   }
@@ -338,7 +338,7 @@ module "std" [system] {
     header "string"
   }
   module "string_view" {
-    requires cplusplus17, !header_existence
+    requires cplusplus17
     export *
     textual header "string_view"
   }
@@ -391,7 +391,7 @@ module "std" [system] {
     header "valarray"
   }
   module "variant" {
-    requires cplusplus17, !header_existence
+    requires cplusplus17
     export *
     header "variant"
   }
@@ -484,12 +484,10 @@ module "std" [system] {
     header "xstring"
   }
   module "xthreads.h" {
-    requires !header_existence
     export *
     textual header "xthreads.h"
   }
   module "xtimec.h" {
-    requires !header_existence
     export *
     textual header "xtimec.h"
   }
