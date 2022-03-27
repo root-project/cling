@@ -53,10 +53,8 @@ set(CLING_CONFIG_CMAKE_DIR)
 set(CLING_CONFIG_EXPORTS_FILE)
 
 if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
-  if(CLING_EXPORTS)
-    install(EXPORT ClingTargets DESTINATION ${CLING_INSTALL_PACKAGE_DIR}
-            COMPONENT cling-cmake-exports)
-  endif()
+  install(EXPORT ClingTargets DESTINATION ${CLING_INSTALL_PACKAGE_DIR}
+    COMPONENT cling-cmake-exports)
 
   install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/ClingConfig.cmake
