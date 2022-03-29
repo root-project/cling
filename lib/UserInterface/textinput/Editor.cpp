@@ -152,7 +152,6 @@ namespace textinput {
     // Stop incremental history search, leaving text at the
     // history line currently selected.
     if (fMode == kInputMode) return;
-    fContext->GetKeyBinding()->EnableEscCmd(false);
     SetEditorPrompt(Text());
     DisplayR.ExtendPromptUpdate(Range::kUpdateEditorPrompt);
     fMode = kInputMode;
@@ -461,7 +460,6 @@ namespace textinput {
         fSearch.clear();
         fMode = (M == kCmdReverseSearch ? kHistRevSearchMode : kHistFwdSearchMode);
         SetHistSearchModePrompt(R.fDisplay);
-        fContext->GetKeyBinding()->EnableEscCmd(true);
         if (UpdateHistSearch(R)) return kPRSuccess;
         return kPRError;
       case kCmdHistReplay:
