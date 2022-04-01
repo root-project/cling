@@ -480,8 +480,11 @@ namespace {
 #ifdef CLANG_VENDOR
     OS << CLANG_VENDOR;
 #endif
-    OS << ToolName << " version " CLANG_VERSION_STRING " "
-       << getClangFullRepositoryVersion();
+    OS << ToolName << " version " CLANG_VERSION_STRING;
+    std::string repo = getClangFullRepositoryVersion();
+    if (!repo.empty()) {
+       OS << " " << repo;
+    }
 
     // If vendor supplied, include the base LLVM version as well.
 #ifdef CLANG_VENDOR
