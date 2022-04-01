@@ -82,7 +82,7 @@ namespace textinput {
       case 'z' - 0x60:
         return C(In, Editor::kCKControl);
       case 0x1f: return C(Editor::kCmdUndo);
-      case 0x7f: // MacOS
+      case 0x7f: // Backspace key (with Alt, or no modifier) on Unix, Del on MacOS
         if (HadEscPending) {
           return C(Editor::kCmdCutPrevWord);
         } else {
