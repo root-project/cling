@@ -24,18 +24,58 @@ using namespace llvm::orc;
 
 namespace cling {
 
-class NotifyLazyFunctionCreatorsGenerator : public DefinitionGenerator {
+/// This class is a combination of the logic in DynamicLibrarySearchGenerator,
+/// falling back to our symbol resolution logic.
+class HostLookupLazyFallbackGenerator : public DefinitionGenerator {
   const IncrementalExecutor & m_IncrExecutor;
+  char m_GlobalPrefix;
 public:
-  NotifyLazyFunctionCreatorsGenerator(const IncrementalExecutor &Exe)
-    : m_IncrExecutor(Exe) { }
+  HostLookupLazyFallbackGenerator(const IncrementalExecutor &Exe,
+                                  char GlobalPrefix)
+    : m_IncrExecutor(Exe), m_GlobalPrefix(GlobalPrefix) { }
 
   Error tryToGenerate(LookupState& LS, LookupKind K, JITDylib& JD,
                       JITDylibLookupFlags JDLookupFlags,
-                      const SymbolLookupSet& LookupSet) override {
+                      const SymbolLookupSet& Symbols) override {
+
+    // FIXME: Uncomment when we figure out how to not load weak symbols from
+    // m_IncrExecutor.NotifyLazyFunctionCreators
+
+    // orc::SymbolMap NewSymbols;
+
+    // bool HasGlobalPrefix = (m_GlobalPrefix != '\0');
+
+    // for (auto &KV : Symbols) {
+    //   auto &Name = KV.first;
+
+    //   if ((*Name).empty())
+    //     continue;
+
+    //   if (HasGlobalPrefix && (*Name).front() != m_GlobalPrefix)
+    //     continue;
+
+    //   std::string Tmp((*Name).data() + HasGlobalPrefix,
+    //                   (*Name).size() - HasGlobalPrefix);
+    //   void *Addr = sys::DynamicLibrary::SearchForAddressOfSymbol(Tmp.c_str());
+    //   // FIXME: Here we will load random libraries due to weak symbols which is
+    //   // suboptimal. We should let the JIT create them.
+    //   if (!Addr)
+    //     Addr = m_IncrExecutor.NotifyLazyFunctionCreators(Tmp.c_str());
+    //   if (Addr) {
+    //     NewSymbols[Name] = JITEvaluatedSymbol(
+    //         static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(Addr)),
+    //         JITSymbolFlags::Exported);
+    //   }
+    // }
+
+    // if (NewSymbols.empty())
+    //   return Error::success();
+
+    // return JD.define(absoluteSymbols(std::move(NewSymbols)));
     SymbolNameSet Missing;
-    for (llvm::orc::SymbolStringPtr Name : LookupSet.getSymbolNames())
-      if (!m_IncrExecutor.NotifyLazyFunctionCreators((*Name).str()))
+    for (llvm::orc::SymbolStringPtr Name : Symbols.getSymbolNames())
+      if (!sys::DynamicLibrary::SearchForAddressOfSymbol((*Name).str()) &&
+        !m_IncrExecutor.NotifyLazyFunctionCreators((*Name).str()))
         Missing.insert(Name);
 
     if (!Missing.empty())
@@ -88,17 +128,33 @@ IncrementalJIT::IncrementalJIT(
     });
 
   // FIXME: Make host process symbol lookup optional on a per-query basis
+
   char LinkerPrefix = this->TM->createDataLayout().getGlobalPrefix();
+
+  // Process symbol resolution
   Expected<std::unique_ptr<DynamicLibrarySearchGenerator>> HostProcessLookup =
+    DynamicLibrarySearchGenerator::GetForCurrentProcess(LinkerPrefix);
+  if (!HostProcessLookup) {
+    Err = HostProcessLookup.takeError();
+    return;
+  }
+  Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
+
+  // Lazy symbol generation callback
+  auto Notifier =
+    std::make_unique<HostLookupLazyFallbackGenerator>(Executor, LinkerPrefix);
+  Jit->getMainJITDylib().addGenerator(std::move(Notifier));
+
+  // Process symbol resolution after the callback.
+  // FIXME: if we resolve the FIXME in HostLookupLazyFallbackGenerator, we will
+  // need just one generator.
+  HostProcessLookup =
       DynamicLibrarySearchGenerator::GetForCurrentProcess(LinkerPrefix);
   if (!HostProcessLookup) {
     Err = HostProcessLookup.takeError();
     return;
   }
-
   Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
-  auto Notifier = std::make_unique<NotifyLazyFunctionCreatorsGenerator>(Executor);
-  Jit->getMainJITDylib().addGenerator(std::move(Notifier));
 }
 
 void IncrementalJIT::addModule(Transaction& T) {
