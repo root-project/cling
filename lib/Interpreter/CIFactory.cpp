@@ -1567,7 +1567,8 @@ namespace {
     }
 
     // Set up the preprocessor
-    CI->createPreprocessor(TU_Complete);
+    auto TUKind = COpts.ModuleName.empty() ? TU_Complete : TU_Module;
+    CI->createPreprocessor(TUKind);
 
     // With modules, we now start adding prebuilt module paths to the CI.
     // Modules from those paths are treated like they are never out of date
@@ -1644,7 +1645,7 @@ namespace {
     // Set up Sema
     CodeCompleteConsumer* CCC = 0;
     // Make sure we inform Sema we compile a Module.
-    CI->createSema(COpts.ModuleName.empty() ? TU_Complete : TU_Module, CCC);
+    CI->createSema(TUKind, CCC);
 
     // Set CodeGen options.
     CodeGenOptions& CGOpts = CI->getCodeGenOpts();
