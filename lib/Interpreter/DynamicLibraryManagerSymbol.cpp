@@ -1186,7 +1186,7 @@ namespace cling {
 
   std::string Dyld::searchLibrariesForSymbol(StringRef mangledName,
                                              bool searchSystem/* = true*/) {
-    assert(!llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(mangledName.data()) &&
+    assert(!llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(mangledName.str()) &&
            "Library already loaded, please use dlsym!");
     assert(!mangledName.empty());
 
