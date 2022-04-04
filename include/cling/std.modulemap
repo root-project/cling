@@ -84,7 +84,6 @@ module "std" [system] {
     header "csignal"
   }
   module "cstdalign" {
-    requires !cplusplus17
     export *
     header "cstdalign"
   }
@@ -309,6 +308,8 @@ module "std" [system] {
     header "string"
   }
   module "string_view" {
+    requires cplusplus17
+
     export *
     textual header "string_view"
   }
@@ -369,6 +370,7 @@ module "std" [system] {
     header "codecvt"
   }
   module "cuchar" {
+    requires cplusplus17
     export *
     header "cuchar"
   }
