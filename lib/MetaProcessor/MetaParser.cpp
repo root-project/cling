@@ -581,17 +581,14 @@ namespace cling {
   bool MetaParser::isClassCommand() {
     const Token& Tok = getCurTok();
     if (Tok.is(tok::ident)) {
-      if (Tok.getIdent().equals("class")) {
+      if (Tok.getIdent().equals("class") || Tok.getIdent().equals("Class")) {
+        const bool verbose = Tok.getIdent().equals("Class");
         consumeAnyStringToken(tok::eof);
         const Token& NextTok = getCurTok();
         llvm::StringRef className;
         if (NextTok.is(tok::raw_ident))
           className = NextTok.getIdent();
-        m_Actions.actOnclassCommand(className);
-        return true;
-      }
-      else if (Tok.getIdent().equals("Class")) {
-        m_Actions.actOnClassCommand();
+        m_Actions.actOnClassCommand(className, verbose);
         return true;
       }
     }

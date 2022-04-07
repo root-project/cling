@@ -19,8 +19,6 @@ namespace llvm {
 namespace cling {
 class Interpreter;
 
-void DisplayClasses(llvm::raw_ostream &stream,
-                    const Interpreter *interpreter, bool verbose);
 void DisplayClass(llvm::raw_ostream &stream,
                   const Interpreter *interpreter, const char *className,
                   bool verbose);

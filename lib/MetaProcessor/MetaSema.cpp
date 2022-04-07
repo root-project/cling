@@ -430,16 +430,9 @@ namespace cling {
     m_Interpreter.printIncludedFiles(m_MetaProcessor.getOuts());
   }
 
-  void MetaSema::actOnclassCommand(llvm::StringRef className) const {
-    if (!className.empty())
+  void MetaSema::actOnClassCommand(llvm::StringRef className, bool verbose) const {
       DisplayClass(m_MetaProcessor.getOuts(),
-                   &m_Interpreter, className.str().c_str(), true);
-    else
-      DisplayClasses(m_MetaProcessor.getOuts(), &m_Interpreter, false);
-  }
-
-  void MetaSema::actOnClassCommand() const {
-    DisplayClasses(m_MetaProcessor.getOuts(), &m_Interpreter, true);
+                   &m_Interpreter, className.str().c_str(), verbose);
   }
 
   void MetaSema::actOnNamespaceCommand() const {

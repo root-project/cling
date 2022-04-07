@@ -204,12 +204,10 @@ namespace cling {
     ///\brief Prints out class CINT-like style.
     ///
     ///\param[in] className - the specific class to be printed.
+    ///\param[in] verbose - set to true for more verbosity
+    ///\note if empty class name, all classes are printed
     ///
-    void actOnclassCommand(llvm::StringRef className) const;
-
-    ///\brief Prints out class CINT-like style more verbosely.
-    ///
-    void actOnClassCommand() const;
+    void actOnClassCommand(llvm::StringRef className, bool verbose) const;
 
     ///\brief Prints out namespace names.
     ///

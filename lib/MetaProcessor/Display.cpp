@@ -1517,33 +1517,18 @@ void TypedefPrinter::DisplayTypedefDecl(TypedefNameDecl* typedefDecl)const
 }//unnamed namespace
 
 //______________________________________________________________________________
-void DisplayClasses(llvm::raw_ostream& stream, const Interpreter* interpreter,
-                    bool verbose)
-{
-  assert(interpreter != 0 && "DisplayClasses, 'interpreter' parameter is null");
-
-  ClassPrinter printer(stream, interpreter);
-  printer.SetVerbose(verbose);
-  printer.DisplayAllClasses();
-}
-
-//______________________________________________________________________________
 void DisplayClass(llvm::raw_ostream& stream, const Interpreter* interpreter,
                   const char* className, bool verbose)
 {
   assert(interpreter != 0 && "DisplayClass, 'interpreter' parameter is null");
-  assert(className != 0 && "DisplayClass, 'className' parameter is null");
-
-  while (std::isspace(*className))
-    ++className;
 
   ClassPrinter printer(stream, interpreter);
-
-  if (*className) {
-    printer.SetVerbose(verbose);
+  printer.SetVerbose(verbose);
+  if (className && *className) {
+    while (std::isspace(*className))
+      ++className;
     printer.DisplayClass(className);
   } else {
-    printer.SetVerbose(true);//?
     printer.DisplayAllClasses();
   }
 }
