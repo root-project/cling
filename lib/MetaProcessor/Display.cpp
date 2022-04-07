@@ -766,15 +766,15 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
     fOut.Print("\n");
 
     if (classDecl->bases_begin() != classDecl->bases_end())
-      fOut.Print("Base classes: --------------------------------------------------------\n");
+      fOut.Print("Base classes: -------------------------------------------------------------\n");
 
     DisplayBasesAsTree(classDecl, 0);
     //now list all members.40963410
 
-    fOut.Print("List of member variables --------------------------------------------------\n");
+    fOut.Print("List of member variables: -------------------------------------------------\n");
     DisplayDataMembers(classDecl, 0);
 
-    fOut.Print("List of member functions :---------------------------------------------------\n");
+    fOut.Print("List of member functions: -------------------------------------------------\n");
     //CINT has a format like %-15s blah-blah.
     fOut.Print("filename     line:size busy function type and name\n");
     DisplayMemberFunctions(classDecl);
