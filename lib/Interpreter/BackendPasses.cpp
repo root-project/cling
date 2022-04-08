@@ -43,9 +43,15 @@ namespace {
       if (GV.isDeclaration())
         return false; // no change.
 
+      // GV is a definition.
+
+      // It doesn't make sense to keep unnamed constants, we wouldn't know how
+      // to reference them anyway.
+      if (!GV.hasName())
+        return false;
+
       if (GV.getName().startswith(".str"))
         return false;
-      // GV is a definition.
 
       llvm::GlobalValue::LinkageTypes LT = GV.getLinkage();
       if (!GV.isDiscardableIfUnused(LT))
