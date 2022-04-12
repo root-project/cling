@@ -106,9 +106,11 @@ namespace cling {
     return Successful;
   }
 
+#ifndef NDEBUG
   static bool isPracticallyEmptyModule(const llvm::Module* M) {
     return M->empty() && M->global_empty() && M->alias_empty();
   }
+#endif
 
   bool TransactionUnloader::RevertTransaction(Transaction* T) {
 

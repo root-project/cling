@@ -28,11 +28,11 @@ namespace cling {
 /// falling back to our symbol resolution logic.
 class HostLookupLazyFallbackGenerator : public DefinitionGenerator {
   const IncrementalExecutor & m_IncrExecutor;
-  char m_GlobalPrefix;
+  // char m_GlobalPrefix;
 public:
   HostLookupLazyFallbackGenerator(const IncrementalExecutor &Exe,
                                   char GlobalPrefix)
-    : m_IncrExecutor(Exe), m_GlobalPrefix(GlobalPrefix) { }
+    : m_IncrExecutor(Exe)/*, m_GlobalPrefix(GlobalPrefix)*/ { }
 
   Error tryToGenerate(LookupState& LS, LookupKind K, JITDylib& JD,
                       JITDylibLookupFlags JDLookupFlags,
@@ -183,7 +183,7 @@ llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
 
   m_ResourceTrackers.erase(&T);
   if (Error Err = RT->remove())
-    return std::move(Err);
+    return Err;
   return llvm::Error::success();
 }
 
