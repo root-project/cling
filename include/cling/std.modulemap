@@ -419,13 +419,26 @@ module "std" [system] {
     export *
     header "bits/locale_facets.h"
   }
+  module "bits/stl_algobase.h" {
+    export *
+    header "bits/stl_algobase.h"
+  }
   module "bits/stl_map.h" {
     export *
     export bits_stl_tree_h
     header "bits/stl_map.h"
   }
+  module "bits/stl_pair.h" {
+    export *
+    header "bits/stl_pair.h"
+  }
   explicit module "bits_stl_tree_h" {
     export *
     header "bits/stl_tree.h"
+  }
+  module "bits/utility.h" {
+    requires cplusplus17
+    export *
+    header "bits/utility.h"
   }
 }
