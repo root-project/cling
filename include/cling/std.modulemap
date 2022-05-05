@@ -436,9 +436,4 @@ module "std" [system] {
     export *
     header "bits/stl_tree.h"
   }
-  module "bits/utility.h" {
-    requires cplusplus17
-    export *
-    header "bits/utility.h"
-  }
 }
