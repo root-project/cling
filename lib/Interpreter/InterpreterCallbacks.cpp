@@ -77,12 +77,12 @@ namespace cling {
     InterpreterDeserializationListener(InterpreterCallbacks* C)
       : m_Callbacks(C) {}
 
-    virtual void DeclRead(serialization::DeclID, const Decl *D) {
+    void DeclRead(serialization::DeclID, const Decl *D) override {
       if (m_Callbacks)
         m_Callbacks->DeclDeserialized(D);
     }
 
-    virtual void TypeRead(serialization::TypeIdx, QualType T) {
+    void TypeRead(serialization::TypeIdx, QualType T) override {
       if (m_Callbacks)
         m_Callbacks->TypeDeserialized(T.getTypePtr());
     }
@@ -245,11 +245,11 @@ namespace cling {
       }
     }
 
-    virtual void InitializeSema(Sema& S) {
+    void InitializeSema(Sema& S) override {
       m_Sema = &S;
     }
 
-    virtual void ForgetSema() {
+    void ForgetSema() override {
       m_Sema = 0;
     }
 
@@ -264,7 +264,7 @@ namespace cling {
     ///
     ///\returns true if a suitable declaration is found.
     ///
-    virtual bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S) {
+    bool LookupUnqualified(clang::LookupResult& R, clang::Scope* S) override {
       if (m_Callbacks) {
         return m_Callbacks->LookupObject(R, S);
       }
@@ -272,8 +272,8 @@ namespace cling {
       return false;
     }
 
-    virtual bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
-                                                clang::DeclarationName Name) {
+    bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
+                                        clang::DeclarationName Name) override {
       if (m_Callbacks)
         return m_Callbacks->LookupObject(DC, Name);
 
@@ -282,7 +282,7 @@ namespace cling {
 
     // Silence warning virtual function was hidden.
     using ExternalASTSource::CompleteType;
-    virtual void CompleteType(TagDecl* Tag) {
+    void CompleteType(TagDecl* Tag) override {
       if (m_Callbacks)
         m_Callbacks->LookupObject(Tag);
     }

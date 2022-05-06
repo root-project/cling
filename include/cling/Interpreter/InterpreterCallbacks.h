@@ -274,11 +274,11 @@ namespace cling {
       SymbolResolverCallback(Interpreter* interp, bool resolve = true);
       ~SymbolResolverCallback();
 
-      bool LookupObject(clang::LookupResult& R, clang::Scope* S);
-      bool LookupObject(const clang::DeclContext*, clang::DeclarationName) {
+      bool LookupObject(clang::LookupResult& R, clang::Scope* S) override;
+      bool LookupObject(const clang::DeclContext*, clang::DeclarationName) override {
         return false;
       }
-      bool LookupObject(clang::TagDecl*) {
+      bool LookupObject(clang::TagDecl*) override {
         return false;
       }
       bool ShouldResolveAtRuntime(clang::LookupResult& R, clang::Scope* S);

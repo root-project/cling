@@ -54,7 +54,7 @@ namespace {
     // * CallExpr
     // * MemberExpr
     // * CXXDependentScopeMemberExpr
-    virtual bool handledStmt(Stmt* S, llvm::raw_ostream& OS) {
+    bool handledStmt(Stmt* S, llvm::raw_ostream& OS) override {
       if (DeclRefExpr* Node = dyn_cast<DeclRefExpr>(S))
         // Exclude the artificially dependent DeclRefExprs, created by the
         // Lookup
@@ -939,7 +939,7 @@ namespace cling {
          << m_UniqueNameCounter++;
     return Strm.str();
   }
-  
+
 
   // end Helpers
 
