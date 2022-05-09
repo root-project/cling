@@ -357,13 +357,13 @@ namespace cling {
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       Out() << "__module_private__ ";
     Out() << "enum ";
-    prettyPrintAttributes(D);
     if (D->isScoped()) {
       if (D->isScopedUsingClassTag())
         Out() << "class ";
       else
         Out() << "struct ";
     }
+    prettyPrintAttributes(D);
     Out() << *D;
 
 //      if (D->isFixed())
