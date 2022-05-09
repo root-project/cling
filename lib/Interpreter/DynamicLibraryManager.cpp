@@ -356,12 +356,17 @@ namespace cling {
     }
 
     std::string lResolved;
-    const std::string& canonicalLoadedLib = resolved ? libStem.str() : lResolved;
     if (!resolved) {
       lResolved = lookupLibrary(libStem);
       if (lResolved.empty())
         return kLoadLibNotFound;
     }
+
+    // For reasons that are not clear, canonicalLoadedLib is a copy of lResolved and not 
+    // a reference if resolved is false.
+    // Therefore the type of canonicalLoadedLib const std::string and not a reference 
+    // to make it clear.
+    const std::string canonicalLoadedLib = resolved ? libStem.str() : lResolved;
 
     if (m_LoadedLibraries.find(canonicalLoadedLib) != m_LoadedLibraries.end())
       return kLoadLibAlreadyLoaded;
