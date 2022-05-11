@@ -10,7 +10,7 @@
 // RUN: mkdir -p %t-dir/lib
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_A.c -o%t-dir/rlib/libcall_lib_A%shlibext
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_B.c -o%t-dir/rlib/libcall_lib_B%shlibext
-// RUN: %clang %fPIC -shared -DCLING_EXPORT=%dllexport %S/call_lib_L_AB.c -o%t-dir/lib/libcall_lib_L_AB%shlibext -L %t-dir/rlib -l%t-dir/rlib/libcall_lib_A.so -l%t-dir/rlib/libcall_lib_B.so
+// RUN: %clang %fPIC -shared -DCLING_EXPORT=%dllexport %S/call_lib_L_AB.c -o%t-dir/lib/libcall_lib_L_AB%shlibext %t-dir/rlib/libcall_lib_A%shlibext %t-dir/rlib/libcall_lib_B%shlibext
 // RUN: cat %s | %cling -L%t-dir/lib 2>&1 | FileCheck %s
 
 // Test: Lookup and load library Lib_L_AB that depends on two libraries Lib_A
