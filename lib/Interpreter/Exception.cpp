@@ -112,7 +112,11 @@ namespace cling {
   void CompilationException::throwingHandler(void * /*user_data*/,
                                              const std::string& reason,
                                              bool /*gen_crash_diag*/) {
-#ifndef _MSC_VER
+    // See https://github.com/root-project/root/issues/7541 and
+    // https://bugs.llvm.org/show_bug.cgi?id=49692 :
+    // We cannot catch exceptions that traverse JITted code on M1, so let's throw less.
+    // This might still better than `terminate`...
+#if !defined(_MSC_VER) && (!defined(__APPLE__) || !defined(__arm64__))
     throw cling::CompilationException(reason);
 #endif
   }
