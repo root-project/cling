@@ -116,6 +116,8 @@ static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
   PrintingPolicy Policy(Ctx.getPrintingPolicy());
   // DefinitionShadower: do not prepend `__cling_N5xxx::` to qualified names
   Policy.SuppressUnwrittenScope = true;
+  // Print 'a<b<c> >' rather than 'a<b<c>>'.
+  Policy.SplitTemplateClosers = true;
   class LocalPrintingPolicyRAII {
   public:
     LocalPrintingPolicyRAII(ASTContext& Ctx, PrintingPolicy& PPol)
