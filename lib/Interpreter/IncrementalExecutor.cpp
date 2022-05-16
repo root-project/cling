@@ -423,17 +423,8 @@ bool IncrementalExecutor::diagnoseUnresolvedSymbols(llvm::StringRef trigger,
           << "Maybe you need to load the corresponding shared library?\n";
     }
 
-#ifdef __APPLE__
-    // The JIT gives us a mangled name which has only one leading underscore on
-    // all platforms, for instance _ZN8TRandom34RndmEv. However, on OSX the
-    // linker stores this symbol as __ZN8TRandom34RndmEv (adding an extra _).
-    assert(!llvm::StringRef(sym).startswith("__") && "Already added!");
-    std::string libName = m_DyLibManager.searchLibrariesForSymbol('_' + sym,
-                                                        /*searchSystem=*/ true);
-#else
     std::string libName = m_DyLibManager.searchLibrariesForSymbol(sym,
                                                         /*searchSystem=*/ true);
-#endif //__APPLE__
     if (!libName.empty())
       cling::errs() << "Symbol found in '" << libName << "';"
                     << " did you mean to load it with '.L "

@@ -74,9 +74,8 @@ public:
     // return JD.define(absoluteSymbols(std::move(NewSymbols)));
     SymbolNameSet Missing;
     for (llvm::orc::SymbolStringPtr Name : Symbols.getSymbolNames())
-      if (!sys::DynamicLibrary::SearchForAddressOfSymbol((*Name).str()) &&
-        !m_IncrExecutor.NotifyLazyFunctionCreators((*Name).str()))
-        Missing.insert(Name);
+       if (!m_IncrExecutor.NotifyLazyFunctionCreators((*Name).str()))
+          Missing.insert(Name);
 
     if (!Missing.empty())
       return make_error<SymbolsNotFound>(std::move(Missing));
