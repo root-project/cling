@@ -355,11 +355,12 @@ namespace cling {
         (resolved ? "resolved" : "not-resolved") << "\n";
     }
 
-    std::string lResolved;
-    const std::string& canonicalLoadedLib = resolved ? libStem.str() : lResolved;
-    if (!resolved) {
-      lResolved = lookupLibrary(libStem);
-      if (lResolved.empty())
+    std::string canonicalLoadedLib;
+    if (resolved) {
+      canonicalLoadedLib = libStem.str();
+    } else {
+      canonicalLoadedLib = lookupLibrary(libStem);
+      if (canonicalLoadedLib.empty())
         return kLoadLibNotFound;
     }
 
