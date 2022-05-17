@@ -353,7 +353,7 @@ void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,
 #if !defined(_WIN32)
     void* Addr = llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(symbolName.str());
 #else
-    void* Addr = const_cast<void*>(platform::DLSym(Name));
+    void* Addr = const_cast<void*>(platform::DLSym(symbolName.str()));
 #endif
     *fromJIT = !Addr;
   }
