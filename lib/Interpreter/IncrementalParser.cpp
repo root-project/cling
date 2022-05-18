@@ -642,6 +642,8 @@ namespace cling {
       Transaction* prevConsumerT = m_Consumer->getTransaction();
       m_Consumer->setTransaction(T);
       Transaction* nestedT = beginTransaction(T->getCompilationOpts());
+      // Process used vtables and generate implicit bodies.
+      getCI()->getSema().DefineUsedVTables();
       // Pull all template instantiations in that came from the consumers.
       getCI()->getSema().PerformPendingInstantiations();
 #ifdef _WIN32
