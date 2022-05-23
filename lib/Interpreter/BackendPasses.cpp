@@ -59,7 +59,12 @@ namespace {
 
       if (LT == llvm::GlobalValue::InternalLinkage
           || LT == llvm::GlobalValue::PrivateLinkage) {
-        GV.setLinkage(llvm::GlobalValue::ExternalLinkage);
+        // We want to keep this GlobalValue around, but have to tell the JIT
+        // linker that it should not error on duplicate symbols.
+        // FIXME: Ideally the frontend would never emit duplicate symbols and
+        // we could just use the old version of saying:
+        // GV.setLinkage(llvm::GlobalValue::ExternalLinkage);
+        GV.setLinkage(llvm::GlobalValue::WeakAnyLinkage);
         return true; // a change!
       }
       return false;
