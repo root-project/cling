@@ -114,6 +114,8 @@ static std::string printQualType(clang::ASTContext& Ctx, clang::QualType QT) {
   const QualType QTNonRef = QT.getNonReferenceType();
 
   PrintingPolicy Policy(Ctx.getPrintingPolicy());
+  // Print the Allocator in STL containers, for instance.
+  Policy.SuppressDefaultTemplateArgs = false;
   // DefinitionShadower: do not prepend `__cling_N5xxx::` to qualified names
   Policy.SuppressUnwrittenScope = true;
   // Print 'a<b<c> >' rather than 'a<b<c>>'.

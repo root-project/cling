@@ -196,7 +196,9 @@ void AppendClassName(const CXXRecordDecl* classDecl, std::string& name)
   assert(classDecl != 0 && "AppendClassName, 'classDecl' parameter is null");
 
   const LangOptions langOpts;
-  const PrintingPolicy printingPolicy(langOpts);
+  PrintingPolicy printingPolicy(langOpts);
+  // Print the default template arguments when asking for a class name.
+  printingPolicy.SuppressDefaultTemplateArgs = false;
   std::string tmp;
   //Name for diagnostic will include template arguments if any.
   llvm::raw_string_ostream stream(tmp);
@@ -277,6 +279,7 @@ void AppendMemberFunctionSignature(const Decl* methodDecl, std::string& name)
   const LangOptions langOpts;
   PrintingPolicy printingPolicy(langOpts);
   printingPolicy.TerseOutput = true;//Do not print the body of an inlined function.
+  printingPolicy.SuppressDefaultTemplateArgs = false;
   printingPolicy.SuppressSpecifiers = false; //Show 'static', 'inline', etc.
 
   methodDecl->print(out, printingPolicy, 0, false);
