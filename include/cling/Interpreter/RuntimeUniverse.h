@@ -50,7 +50,7 @@ namespace cling {
       ///
       /// Use instead of SourceLocation() and SourceRange(). This might help,
       /// when clang emits diagnostics on artificially inserted AST node.
-      int InterpreterGeneratedCodeDiagnosticsMaybeIncorrect;
+      static int InterpreterGeneratedCodeDiagnosticsMaybeIncorrect;
 
 
       ///\brief Set the type of a void expression evaluated at the prompt.
