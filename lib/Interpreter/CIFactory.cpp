@@ -49,6 +49,7 @@
 #include "llvm/Target/TargetOptions.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <limits>
 #include <memory>
@@ -1322,6 +1323,12 @@ namespace {
     if(COpts.CUDAHost)
       argvCompile.push_back("--cuda-host-only");
 
+#ifdef __linux__
+    // Keep frame pointer to make JIT stack unwinding reliable for profiling
+    if (std::getenv("CLING_PROFILE"))
+      argvCompile.push_back("-fno-omit-frame-pointer");
+#endif
+
     // argv[0] already inserted, get the rest
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
@@ -1660,7 +1667,10 @@ namespace {
     // adjusted per transaction in IncrementalParser::codeGenTransaction().
     CGOpts.setInlining(CodeGenOptions::NormalInlining);
 
-    // CGOpts.setDebugInfo(clang::CodeGenOptions::FullDebugInfo);
+    // Add debugging info when debugging or profiling
+    if (std::getenv("CLING_DEBUG") || std::getenv("CLING_PROFILE"))
+      CGOpts.setDebugInfo(clang::codegenoptions::FullDebugInfo);
+
     // CGOpts.EmitDeclMetadata = 1; // For unloading, for later
     // aliasing the complete ctor to the base ctor causes the JIT to crash
     CGOpts.CXXCtorDtorAliases = 0;

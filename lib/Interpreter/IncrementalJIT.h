@@ -45,7 +45,8 @@ public:
 private:
   friend class Azog;
 
-  llvm::JITEventListener* m_GDBListener; // owned by llvm::ManagedStaticBase
+  // owned by llvm::ManagedStaticBase
+  std::vector<llvm::JITEventListener*> m_Listeners;
 
   SymbolMapT m_SymbolMap;
 
@@ -53,21 +54,14 @@ private:
   public:
     NotifyObjectLoadedT(IncrementalJIT &jit) : m_JIT(jit) {}
     void operator()(llvm::orc::VModuleKey K,
-                    const llvm::object::ObjectFile &Object,
-                    const llvm::LoadedObjectInfo &/*Info*/) const {
+                    const llvm::object::ObjectFile& Object,
+                    const llvm::RuntimeDyld::LoadedObjectInfo& Info) const {
       m_JIT.m_UnfinalizedSections[K]
         = std::move(m_JIT.m_SectionsAllocatedSinceLastLoad);
       m_JIT.m_SectionsAllocatedSinceLastLoad = SectionAddrSet();
 
-      // FIXME: NotifyObjectEmitted requires a RuntimeDyld::LoadedObjectInfo
-      // object. In order to get it one should call
-      // RTDyld.loadObject(*ObjToLoad->getBinary()) according to r306058.
-      // Moreover this should be done in the finalizer. Currently we are
-      // disabling this since we have globally disabled this functionality in
-      // IncrementalJIT.cpp (m_GDBListener = 0).
-      //
-      // if (auto GDBListener = m_JIT.m_GDBListener)
-      //   GDBListener->NotifyObjectEmitted(*Object->getBinary(), Info);
+      for (auto listener : m_JIT.m_Listeners)
+        listener->notifyObjectLoaded(K, Object, Info);
 
       for (const auto &Symbol: Object.symbols()) {
         auto Flags = Symbol.getFlags();

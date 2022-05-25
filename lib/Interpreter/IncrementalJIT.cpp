@@ -55,6 +55,9 @@ public:
 
 namespace cling {
 
+///\brief Creates JIT event listener to allow profiling of JITted code with perf
+llvm::JITEventListener* createPerfJITEventListener();
+
 ///\brief Memory manager for the OrcJIT layers to resolve symbols from the
 /// common IncrementalJIT. I.e. the master of the Orcs.
 /// Each ObjectLayer instance has one Azog object.
@@ -355,8 +358,15 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   // Enable JIT symbol resolution from the binary.
   llvm::sys::DynamicLibrary::LoadLibraryPermanently(0, 0);
 
-  // Make debug symbols available.
-  m_GDBListener = 0; // JITEventListener::createGDBRegistrationListener();
+  // Enable GDB JIT listener for debugging if CLING_DEBUG is set
+  if (std::getenv("CLING_DEBUG"))
+    m_Listeners.push_back(JITEventListener::createGDBRegistrationListener());
+
+#ifdef __linux__
+  // Enable perf profiling of JITted code on Linux if CLING_PROFILE is set
+  if (std::getenv("CLING_PROFILE"))
+    m_Listeners.push_back(cling::createPerfJITEventListener());
+#endif
 
 // #if MCJIT
 //   llvm::EngineBuilder builder(std::move(m));
