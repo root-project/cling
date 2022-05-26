@@ -1342,7 +1342,7 @@ def get_win_dep():
     tmp_bin_dir = os.path.join(TMP_PREFIX, 'bin')
     zip.extractall(tmp_bin_dir)
     print('Remove file: ' + os.path.join(TMP_PREFIX, 'cmake-3.6.2.zip'))
-
+    cmakeDir = TMP_PREFIX + "\\bin\\cmake"
     if is_os_64bit():
         os.rename(os.path.join(tmp_bin_dir, 'cmake-3.6.2-win64-x64'), cmakeDir)
     else:
