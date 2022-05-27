@@ -268,19 +268,46 @@ def download_llvm_binary():
                        os.path.join(srcdir, 'bin'))
         if DIST=="Ubuntu" and REV=='16.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
-            exec_subprocess_call('wget %s' % download_link, workdir)
-            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz', workdir)
-            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04 %s' % srcdir, workdir)
+            file_exists = os.path.exists(srcdir + "/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04")
+            if(not file_exists):
+                exec_subprocess_call('wget %s' % download_link, workdir)
+                exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz', workdir)
+                exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04 %s' % srcdir, workdir)
         elif DIST=="Ubuntu" and REV=='14.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
-            exec_subprocess_call('wget %s' % download_link, workdir)
-            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
-            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04 %s' % srcdir, workdir)
+            file_exists = os.path.exists(srcdir + "/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04")
+            if(not file_exists):
+                exec_subprocess_call('wget %s' % download_link, workdir)
+                exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
+                exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04 %s' % srcdir, workdir)
+        elif DIST=="Ubuntu" and REV=="18.04" and is_os_64bit():
+            download_link = 'https://releases.llvm.org/7.0.1/clang%2bllvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz'
+            file_exists = os.path.exists(srcdir + "/clang%2bllvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04")
+            if(not file_exists):
+                exec_subprocess_call('wget %s' % download_link, workdir)
+                exec_subprocess_call('tar xvf clang%2bllvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz', workdir)
+                exec_subprocess_call('mv clang%2bllvm-7.0.1-x86_64-linux-gnu-ubuntu-18.04 %s' % srcdir, workdir)
+        elif DIST=="Ubuntu" and REV=="20.04" and is_os_64bit():
+            download_link = "https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz"
+            file_exists = os.path.exists(srcdir + "/clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04")
+            if(not file_exists):
+                exec_subprocess_call('wget %s' % download_link, workdir)
+                exec_subprocess_call('tar xvf clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz', workdir)
+                exec_subprocess_call('mv clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04 %s' % srcdir, workdir)
+        elif DIST=="Ubuntu" and REV=="22.04" and is_os_64bit():
+            download_link = "https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.4/clang+llvm-14.0.4-aarch64-linux-gnu.tar.xz"
+            file_exists = os.path.exists(srcdir + "/clang+llvm-14.0.4-aarch64-linux-gnu")
+            if(not file_exists):
+                exec_subprocess_call('wget %s' % download_link, workdir)
+                exec_subprocess_call('tar xvf clang+llvm-14.0.4-aarch64-linux-gnu.tar.xz', workdir)
+                exec_subprocess_call('mv clang+llvm-14.0.4-aarch64-linux-gnu %s' % srcdir, workdir)
         elif DIST=='MacOSX' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
-            exec_subprocess_call('wget %s' % download_link, workdir)
-            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz', workdir)
-            exec_subprocess_call('sudo mv clang+llvm-5.0.2-x86_64-apple-darwin %s' % srcdir, workdir)
+            file_exists = os.path.exists(srcdir + "/clang+llvm-5.0.2-x86_64-apple-darwin")
+            if(not file_exists):
+                exec_subprocess_call('wget %s' % download_link, workdir)
+                exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz', workdir)
+                exec_subprocess_call('sudo mv clang+llvm-5.0.2-x86_64-apple-darwin %s' % srcdir, workdir)
         else:
             raise Exception("Building clang using LLVM binary not possible. Please invoke cpt without --with-binary-llvm and --with-llvm-tar flags")
     # FIXME: Add Fedora and SUSE support
@@ -2251,6 +2278,7 @@ if args['last_stable']:
     args["with_binary_llvm"] = True
 
     if args["with_binary_llvm"]:
+        download_llvm_binary()
         compile = compile_for_binary
         install_prefix = install_prefix_for_binary
         fetch_clang(llvm_revision)
