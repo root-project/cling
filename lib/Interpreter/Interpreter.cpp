@@ -280,7 +280,7 @@ namespace cling {
       setupCallbacks(*this, parentInterp);
     }
 
-    if(m_Opts.CompilerOpts.CUDAHost){
+    if (m_Opts.CompilerOpts.CUDAHost && !isInSyntaxOnlyMode()) {
       if (getDynamicLibraryManager()->loadLibrary("libcudart.so", true) ==
           cling::DynamicLibraryManager::LoadLibResult::kLoadLibNotFound){
         llvm::errs() << "Error: libcudart.so not found!\n" <<
