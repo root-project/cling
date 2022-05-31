@@ -87,6 +87,45 @@ namespace {
 char KeepLocalGVPass::ID = 0;
 
 namespace {
+  class WeakTypeinfoVTablePass: public ModulePass {
+    static char ID;
+
+    bool runOnGlobalVariable(GlobalVariable& GV) {
+      // Only need to consider symbols with external linkage because only
+      // these could be reported as duplicate.
+      if (GV.getLinkage() != llvm::GlobalValue::ExternalLinkage)
+        return false;
+
+      if (GV.getName().startswith("_ZT")) {
+        // Currently, if Cling sees the "key function" of a virtual class, it
+        // emits typeinfo and vtable variables in every transaction llvm::Module
+        // that reference them. Turn them into weak linkage to avoid duplicate
+        // symbol errors from the JIT linker.
+        // FIXME: This is a hack, we should teach the frontend to emit these
+        // only once, or mark all duplicates as available_externally (if that
+        // improves performance due to optimizations).
+        GV.setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+        return true; // a change!
+      }
+
+      return false;
+    }
+
+  public:
+    WeakTypeinfoVTablePass() : ModulePass(ID) {}
+
+    bool runOnModule(Module &M) override {
+      bool ret = false;
+      for (auto &&GV : M.globals())
+        ret |= runOnGlobalVariable(GV);
+      return ret;
+    }
+  };
+}
+
+char WeakTypeinfoVTablePass::ID = 0;
+
+namespace {
 
   // Add a suffix to the CUDA module ctor/dtor to generate a unique name.
   // This is necessary for lazy compilation. Without suffix, cling cannot
@@ -270,6 +309,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel].reset(new legacy::PassManager());
 
   m_MPM[OptLevel]->add(new KeepLocalGVPass());
+  m_MPM[OptLevel]->add(new WeakTypeinfoVTablePass());
   m_MPM[OptLevel]->add(new ReuseExistingWeakSymbols(m_JIT));
 
   // The function __cuda_module_ctor and __cuda_module_dtor will just generated,
