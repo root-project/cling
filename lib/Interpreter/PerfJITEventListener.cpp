@@ -17,7 +17,6 @@
 
 #ifdef __linux__
 
-#include "llvm/Config/config.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Object/SymbolSize.h"
