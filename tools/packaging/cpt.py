@@ -518,8 +518,8 @@ class Build(object):
                 exec_subprocess_call('%s --build . --target %s %s'
                                      % (CMAKE, target, flags), LLVM_OBJ_ROOT)
         else:
-            if args['verbose']: flags += ' VERBOSE=1'
-            exec_subprocess_call('make -j%d %s %s' % (self.cores, targets, flags),
+            if args['verbose']: exec_subprocess_call('cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON', LLVM_OBJ_ROOT)
+            exec_subprocess_call('make -j %d %s %s' % (self.cores, targets, flags),
                                  LLVM_OBJ_ROOT)
 
 def compile(arg):
