@@ -2252,6 +2252,7 @@ if args['last_stable']:
     args["with_binary_llvm"] = True
 
     if args["with_binary_llvm"]:
+        download_llvm_binary()
         compile = compile_for_binary
         install_prefix = install_prefix_for_binary
         fetch_clang(llvm_revision)
