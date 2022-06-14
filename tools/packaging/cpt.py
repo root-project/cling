@@ -272,7 +272,7 @@ def download_llvm_binary():
                            os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
                            os.path.join(llvm_dir, 'bin'))
         if args['verbose']:
-                llvm_flags += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
+            llvm_flags += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
         if DIST=="Ubuntu" and REV=='16.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
