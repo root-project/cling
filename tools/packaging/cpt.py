@@ -245,7 +245,7 @@ def download_llvm_binary():
                            os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
                            os.path.join(llvm_dir, 'bin'))
             if args['verbose']:
-                llvm_flags = "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
+                llvm_flags += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
         else:
             tar_required = True
     elif DIST == 'MacOSX':
