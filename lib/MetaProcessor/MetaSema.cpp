@@ -207,7 +207,7 @@ namespace cling {
       return AR_Failure;
 
     auto TI = m_FEToTransaction.find(*FE);
-    if (!FE || TI == m_FEToTransaction.end())
+    if (TI == m_FEToTransaction.end())
       return AR_Success;
 
     const Transaction* unloadPoint = (*TI).second;
