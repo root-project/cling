@@ -227,6 +227,15 @@ def fetch_llvm(llvm_revision):
     else:
         get_fresh_llvm()
 
+def llvm_flag_setter(llvm_dir, llvm_config_path):
+    flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
+                  -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
+                  os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
+                  os.path.join(llvm_dir, 'bin'))
+    if args['verbose']:
+        flags += " -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
+    return flags
+
 def download_llvm_binary():
     global llvm_flags, tar_required
     box_draw("Fetching LLVM binary")
@@ -239,13 +248,8 @@ def download_llvm_binary():
         if llvm_config_path != '' and tar_required is False:
             llvm_dir = os.path.join("/usr", "lib", "llvm-"+llvm_vers)
             if llvm_config_path[-1:] == "\n":
-                llvm_config_path = llvm_config_path[:-1]            
-            llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
-                          -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
-                           os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
-                           os.path.join(llvm_dir, 'bin'))
-            if args['verbose']:
-                llvm_flags += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
+                llvm_config_path = llvm_config_path[:-1]
+            llvm_flags = llvm_flag_setter(llvm_dir, llvm_config_path)
         else:
             tar_required = True
     elif DIST == 'MacOSX':
@@ -257,22 +261,11 @@ def download_llvm_binary():
             llvm_config_path = os.path.join(llvm_dir, "bin", "llvm-config")
             if llvm_config_path[-1:] == "\n":
                 llvm_config_path = llvm_config_path[:-1]
-            llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
-                          -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
-                           os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
-                           os.path.join(llvm_dir, 'bin'))
-            if args['verbose']:
-                llvm_flags +=  "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
+            llvm_flags = llvm_flag_setter(llvm_dir, llvm_config_path)
     else:
         raise Exception("Building clang using LLVM binary not possible. Please invoke cpt without --with-binary-llvm and --with-llvm-tar flags")
     if tar_required:
-
-        llvm_flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
-                          -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
-                           os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
-                           os.path.join(llvm_dir, 'bin'))
-        if args['verbose']:
-            llvm_flags += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
+        llvm_flags = llvm_flag_setter(llvm_dir, llvm_config_path)
         if DIST=="Ubuntu" and REV=='16.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
