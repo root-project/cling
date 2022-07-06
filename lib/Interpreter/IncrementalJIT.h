@@ -52,7 +52,7 @@ public:
   IncrementalJIT(IncrementalExecutor& Executor,
                  std::unique_ptr<llvm::TargetMachine> TM,
                  std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC,
-                 llvm::Error &Err);
+                 llvm::Error &Err, bool Verbose = false);
 
   // FIXME: Accept a LLVMContext as well, e.g. the one that was used for the
   // particular module in Interpreter, CIFactory or BackendPasses (would be

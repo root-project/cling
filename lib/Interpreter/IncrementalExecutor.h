@@ -158,7 +158,8 @@ namespace cling {
     };
 
     IncrementalExecutor(clang::DiagnosticsEngine& diags,
-                        const clang::CompilerInstance& CI);
+                        const clang::CompilerInstance& CI,
+                        bool Verbose);
 
     ~IncrementalExecutor();
 

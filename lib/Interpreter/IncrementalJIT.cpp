@@ -83,9 +83,22 @@ public:
   }
 };
 
+namespace {
+  // This replaces llvm::orc::ExecutionSession::logErrorsToStdErr:
+  // IncrementalExecutor has its own diagnostics (for now); these
+  // diagnostics here might be superior as they show *all* unresolved
+  // symbols, so show them in case of "verbose" nonetheless.
+  static void silenceJITErrors(Error Err) {
+    if (!Err || Err.isA<SymbolsNotFound>())
+      return;
+    logAllUnhandledErrors(std::move(Err), errs(), "cling JIT session error: ");
+  }
+}
+
 IncrementalJIT::IncrementalJIT(
     IncrementalExecutor& Executor, std::unique_ptr<TargetMachine> TM,
-    std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err)
+    std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err,
+    bool Verbose)
     : SkipHostProcessLookup(false),
       TM(std::move(TM)),
       SingleThreadedContext(std::make_unique<LLVMContext>()) {
@@ -154,6 +167,9 @@ IncrementalJIT::IncrementalJIT(
     return;
   }
   Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
+
+  if (!Verbose)
+    Jit->getExecutionSession().setErrorReporter(silenceJITErrors);
 }
 
 void IncrementalJIT::addModule(Transaction& T) {
