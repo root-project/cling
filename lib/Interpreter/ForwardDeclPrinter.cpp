@@ -52,9 +52,12 @@ namespace cling {
 
     // Suppress some unfixable warnings.
     // TODO: Find proper fix for these issues
-    Out() << "#pragma clang diagnostic ignored \"-Wkeyword-compat\"" << "\n";
-    Out() << "#pragma clang diagnostic ignored \"-Wignored-attributes\"" <<"\n";
-    Out() << "#pragma clang diagnostic ignored \"-Wreturn-type-c-linkage\"" <<"\n";
+    Out() << R"(
+#pragma diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-compat"
+#pragma clang diagnostic ignored "-Wignored-attributes"
+#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
+)";
     // Inject a special marker:
     Out() << "extern int __Cling_AutoLoading_Map;\n";
 
@@ -110,6 +113,7 @@ namespace cling {
         Out() << "#undef " << m << "\n";
       }
     }
+    Out() << "#pragma diagnostic pop\n";
   }
 
   void ForwardDeclPrinter::Visit(clang::QualType QT) {
