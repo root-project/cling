@@ -29,6 +29,9 @@ namespace llvm {
   class StringRef;
   class Type;
   template <typename T> class SmallVectorImpl;
+  namespace orc {
+    class DefinitionGenerator;
+  }
 }
 
 namespace clang {
@@ -735,8 +738,9 @@ namespace cling {
     ///\brief Create suitable default compilation options.
     CompilationOptions makeDefaultCompilationOpts() const;
 
-    //FIXME: This must be in InterpreterCallbacks.
-    void installLazyFunctionCreator(void* (*fp)(const std::string&));
+    /// Register a DefinitionGenerator to dynamically provide symbols for
+    /// generated code that are not already available within the process.
+    void addGenerator(std::unique_ptr<llvm::orc::DefinitionGenerator> G);
 
     //FIXME: Lets the IncrementalParser run static inits on transaction
     // completed. Find a better way.

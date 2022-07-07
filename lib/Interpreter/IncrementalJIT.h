@@ -13,6 +13,7 @@
 #include "llvm/ADT/FunctionExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/IR/Module.h"
+#include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
@@ -53,6 +54,12 @@ public:
                  std::unique_ptr<llvm::TargetMachine> TM,
                  std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC,
                  llvm::Error &Err, bool Verbose = false);
+
+  /// Register a DefinitionGenerator to dynamically provide symbols for
+  /// generated code that are not already available within the process.
+  void addGenerator(std::unique_ptr<llvm::orc::DefinitionGenerator> G) {
+    Jit->getMainJITDylib().addGenerator(std::move(G));
+  }
 
   // FIXME: Accept a LLVMContext as well, e.g. the one that was used for the
   // particular module in Interpreter, CIFactory or BackendPasses (would be

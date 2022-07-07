@@ -24,77 +24,6 @@ using namespace llvm::orc;
 
 namespace cling {
 
-/// This class is a combination of the logic in DynamicLibrarySearchGenerator,
-/// falling back to our symbol resolution logic.
-class HostLookupLazyFallbackGenerator : public DefinitionGenerator {
-  const IncrementalExecutor & m_IncrExecutor;
-  // char m_GlobalPrefix;
-public:
-  HostLookupLazyFallbackGenerator(const IncrementalExecutor &Exe,
-                                  char GlobalPrefix)
-    : m_IncrExecutor(Exe)/*, m_GlobalPrefix(GlobalPrefix)*/ { }
-
-  Error tryToGenerate(LookupState& LS, LookupKind K, JITDylib& JD,
-                      JITDylibLookupFlags JDLookupFlags,
-                      const SymbolLookupSet& Symbols) override {
-
-    // FIXME: Uncomment when we figure out how to not load weak symbols from
-    // m_IncrExecutor.NotifyLazyFunctionCreators
-
-    // orc::SymbolMap NewSymbols;
-
-    // bool HasGlobalPrefix = (m_GlobalPrefix != '\0');
-
-    // for (auto &KV : Symbols) {
-    //   auto &Name = KV.first;
-
-    //   if ((*Name).empty())
-    //     continue;
-
-    //   if (HasGlobalPrefix && (*Name).front() != m_GlobalPrefix)
-    //     continue;
-
-    //   std::string Tmp((*Name).data() + HasGlobalPrefix,
-    //                   (*Name).size() - HasGlobalPrefix);
-    //   void *Addr = sys::DynamicLibrary::SearchForAddressOfSymbol(Tmp.c_str());
-    //   // FIXME: Here we will load random libraries due to weak symbols which is
-    //   // suboptimal. We should let the JIT create them.
-    //   if (!Addr)
-    //     Addr = m_IncrExecutor.NotifyLazyFunctionCreators(Tmp.c_str());
-    //   if (Addr) {
-    //     NewSymbols[Name] = JITEvaluatedSymbol(
-    //         static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(Addr)),
-    //         JITSymbolFlags::Exported);
-    //   }
-    // }
-
-    // if (NewSymbols.empty())
-    //   return Error::success();
-
-    // return JD.define(absoluteSymbols(std::move(NewSymbols)));
-    SymbolNameSet Missing;
-    for (llvm::orc::SymbolStringPtr Name : Symbols.getSymbolNames())
-       if (!m_IncrExecutor.NotifyLazyFunctionCreators((*Name).str()))
-          Missing.insert(Name);
-
-    if (!Missing.empty())
-      return make_error<SymbolsNotFound>(std::move(Missing));
-    return llvm::Error::success();
-  }
-};
-
-namespace {
-  // This replaces llvm::orc::ExecutionSession::logErrorsToStdErr:
-  // IncrementalExecutor has its own diagnostics (for now); these
-  // diagnostics here might be superior as they show *all* unresolved
-  // symbols, so show them in case of "verbose" nonetheless.
-  static void silenceJITErrors(Error Err) {
-    if (!Err || Err.isA<SymbolsNotFound>())
-      return;
-    logAllUnhandledErrors(std::move(Err), errs(), "cling JIT session error: ");
-  }
-}
-
 IncrementalJIT::IncrementalJIT(
     IncrementalExecutor& Executor, std::unique_ptr<TargetMachine> TM,
     std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err,
@@ -152,24 +81,36 @@ IncrementalJIT::IncrementalJIT(
   }
   Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
 
-  // Lazy symbol generation callback
-  auto Notifier =
-    std::make_unique<HostLookupLazyFallbackGenerator>(Executor, LinkerPrefix);
-  Jit->getMainJITDylib().addGenerator(std::move(Notifier));
+  // This replaces llvm::orc::ExecutionSession::logErrorsToStdErr:
+  auto&& ErrorReporter = [&Executor, LinkerPrefix, Verbose](Error Err) {
+    Err = handleErrors(std::move(Err),
+                       [&](std::unique_ptr<SymbolsNotFound> Err) -> Error {
+                         // IncrementalExecutor has its own diagnostics (for
+                         // now) that tries to guess which library needs to be
+                         // loaded.
+                         for (auto&& symbol : Err->getSymbols()) {
+                           std::string symbolStr = (*symbol).str();
+                           if (LinkerPrefix != '\0' &&
+                               symbolStr[0] == LinkerPrefix) {
+                             symbolStr.erase(0, 1);
+                           }
+                           Executor.HandleMissingFunction(symbolStr);
+                         }
 
-  // Process symbol resolution after the callback.
-  // FIXME: if we resolve the FIXME in HostLookupLazyFallbackGenerator, we will
-  // need just one generator.
-  HostProcessLookup =
-      DynamicLibrarySearchGenerator::GetForCurrentProcess(LinkerPrefix);
-  if (!HostProcessLookup) {
-    Err = HostProcessLookup.takeError();
-    return;
-  }
-  Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
+                         // However, the diagnstic here might be superior as
+                         // they show *all* unresolved symbols, so show them in
+                         // case of "verbose" nonetheless.
+                         if (Verbose)
+                           return Error(std::move(Err));
+                         return Error::success();
+                       });
 
-  if (!Verbose)
-    Jit->getExecutionSession().setErrorReporter(silenceJITErrors);
+    if (!Err)
+      return;
+
+    logAllUnhandledErrors(std::move(Err), errs(), "cling JIT session error: ");
+  };
+  Jit->getExecutionSession().setErrorReporter(ErrorReporter);
 }
 
 void IncrementalJIT::addModule(Transaction& T) {

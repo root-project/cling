@@ -190,21 +190,6 @@ IncrementalExecutor::HandleMissingFunction(const std::string& mangled_name) cons
   return utils::FunctionToVoidPtr(&unresolvedSymbol);
 }
 
-void*
-IncrementalExecutor::NotifyLazyFunctionCreators(const std::string& mangled_name) const {
-  for (auto it = m_lazyFuncCreator.begin(), et = m_lazyFuncCreator.end();
-       it != et; ++it) {
-    void* ret = (void*)((LazyFunctionCreatorFunc_t)*it)(mangled_name);
-    if (ret)
-      return ret;
-  }
-  void *address = nullptr;
-  if (m_externalIncrementalExecutor)
-   address = m_externalIncrementalExecutor->getAddressOfGlobal(mangled_name);
-
-  return (address ? address : HandleMissingFunction(mangled_name));
-}
-
 #if 0
 // FIXME: employ to empty module dependencies *within* the *current* module.
 static void
@@ -315,10 +300,9 @@ void IncrementalExecutor::setCallbacks(InterpreterCallbacks* callbacks) {
   m_DyLibManager.setCallbacks(callbacks);
 }
 
-void
-IncrementalExecutor::installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp)
-{
-  m_lazyFuncCreator.push_back(fp);
+void IncrementalExecutor::addGenerator(
+    std::unique_ptr<llvm::orc::DefinitionGenerator> G) {
+  m_JIT->addGenerator(std::move(G));
 }
 
 void IncrementalExecutor::replaceSymbol(const char* Name, void* Addr) const {

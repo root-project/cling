@@ -42,6 +42,9 @@ namespace llvm {
   class GlobalValue;
   class Module;
   class TargetMachine;
+  namespace orc {
+    class DefinitionGenerator;
+  }
 }
 
 namespace cling {
@@ -50,9 +53,6 @@ namespace cling {
   class Value;
 
   class IncrementalExecutor {
-  public:
-    typedef void* (*LazyFunctionCreatorFunc_t)(const std::string&);
-
   private:
     ///\brief Our JIT interface.
     ///
@@ -126,11 +126,6 @@ namespace cling {
     ///
     std::vector<llvm::Module*> m_ModulesToJIT;
 
-    ///\brief Lazy function creator, which is a final callback which the
-    /// JIT fires if there is unresolved symbol.
-    ///
-    std::vector<LazyFunctionCreatorFunc_t> m_lazyFuncCreator;
-
     ///\brief Set of the symbols that the JIT couldn't resolve.
     ///
     mutable std::unordered_set<std::string> m_unresolvedSymbols;
@@ -175,7 +170,9 @@ namespace cling {
       return m_DyLibManager;
     }
 
-    void installLazyFunctionCreator(LazyFunctionCreatorFunc_t fp);
+    /// Register a DefinitionGenerator to dynamically provide symbols for
+    /// generated code that are not already available within the process.
+    void addGenerator(std::unique_ptr<llvm::orc::DefinitionGenerator> G);
 
     ///\brief Unload a set of JIT symbols.
     llvm::Error unloadModule(const Transaction& T) const {
@@ -240,10 +237,6 @@ namespace cling {
     ///
     void AddAtExitFunc(void (*func)(void*), void* arg, const Transaction* T);
 
-    ///\brief Try to resolve a symbol through our LazyFunctionCreators;
-    /// print an error message if that fails.
-    void* NotifyLazyFunctionCreators(const std::string&) const;
-
   private:
     ///\brief Emit a llvm::Module to the JIT.
     ///
@@ -262,9 +255,11 @@ namespace cling {
     bool diagnoseUnresolvedSymbols(llvm::StringRef trigger,
                                llvm::StringRef title = llvm::StringRef()) const;
 
+  public:
     ///\brief Remember that the symbol could not be resolved by the JIT.
     void* HandleMissingFunction(const std::string& symbol) const;
 
+  private:
     ///\brief Runs an initializer function.
     ExecutionResult executeInit(llvm::StringRef function) const {
       typedef void (*InitFun_t)();

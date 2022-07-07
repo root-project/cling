@@ -1616,9 +1616,10 @@ namespace cling {
                                       transactions.size(), 0);
   }
 
-  void Interpreter::installLazyFunctionCreator(void* (*fp)(const std::string&)) {
+  void
+  Interpreter::addGenerator(std::unique_ptr<llvm::orc::DefinitionGenerator> G) {
     if (m_Executor)
-      m_Executor->installLazyFunctionCreator(fp);
+      m_Executor->addGenerator(std::move(G));
   }
 
   Value Interpreter::Evaluate(const char* expr, DeclContext* DC,
