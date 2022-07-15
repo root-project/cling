@@ -149,7 +149,7 @@ script:
     $TIMEOUTEXE -s SIGTERM $TIMEOUT tools/packaging/cpt.py -y \
       --check-requirements \
       --current-dev=tar \
-      --with-binary-llvm \
+      --with-llvm-binary \
       --with-llvm-tar \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
       --with-clang-url=http://root.cern.ch/git/clang.git \
@@ -158,7 +158,7 @@ script:
   else
     tools/packaging/cpt.py -y \
       --check-requirements \
-      --with-binary-llvm \
+      --with-llvm-binary \
       --with-llvm-tar \
       --tarball-tag=$([[ $TRAVIS_TAG = cling-nightlies ]] && echo "master" || echo "$TRAVIS_TAG") \
       --with-cling-url=https://github.com/$TRAVIS_REPO_SLUG \
