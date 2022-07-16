@@ -240,7 +240,7 @@ def download_llvm_binary():
     global llvm_flags, tar_required
     box_draw("Fetching LLVM binary")
     print('Current working directory is: ' + workdir + '\n')
-    if DIST=="Ubuntu":
+    if DIST == "Ubuntu":
         subprocess.call(
             "sudo -H {0} -m pip install lit".format(sys.executable), shell=True
             )
@@ -266,17 +266,17 @@ def download_llvm_binary():
         raise Exception("Building clang using LLVM binary not possible. Please invoke cpt without --with-llvm-binary and --with-llvm-tar flags")
     if tar_required:
         llvm_flags = llvm_flag_setter(llvm_dir, llvm_config_path)
-        if DIST=="Ubuntu" and REV=='16.04' and is_os_64bit():
+        if DIST == "Ubuntu" and REV == '16.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
             exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz', workdir)
             exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04 %s' % srcdir, workdir)
-        elif DIST=="Ubuntu" and REV=='14.04' and is_os_64bit():
+        elif DIST == "Ubuntu" and REV == '14.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
             exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
             exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04 %s' % srcdir, workdir)
-        elif DIST=='MacOSX' and is_os_64bit():
+        elif DIST == 'MacOSX' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
             exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz', workdir)
@@ -1314,7 +1314,7 @@ def get_win_dep():
         try:
             rslt = exec_subprocess_check_output(cmake + ' --version', TMP_PREFIX)
             vers = [int(v) for v in rslt.split()[2].split('.')]
-            if vers[0] >= 3 and (vers[1] > 6 or (vers[1]==6 and vers[2] >= 2)):
+            if vers[0] >= 3 and (vers[1] > 6 or (vers[1] == 6 and vers[2] >= 2)):
                 return cmake
         except:
             pass
@@ -1687,15 +1687,15 @@ def make_dmg():
         os.path.join(workdir, '%s.app'%(APP_NAME), 'Contents', 'MacOS')
     )
 
-    os.makedirs(os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Resources'))
+    os.makedirs(os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'Resources'))
     shutil.copyfile(
         os.path.join(CPT_SRC_DIR, 'LLVM.icns'),
-        os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Resources', 'LLVM.icns')
+        os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'Resources', 'LLVM.icns')
     )
 
 
     print('Configuring Info.plist file')
-    plist_path = os.path.join(workdir, '%s.app'% (APP_NAME), 'Contents', 'Info.plist')
+    plist_path = os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'Info.plist')
     f = open(plist_path, 'w')
     plist_xml = '''
 <?xml version="1.0" encoding="UTF-8"?>
@@ -1863,7 +1863,7 @@ TRAVIS_BUILD_DIR = os.environ.get('TRAVIS_BUILD_DIR', None)
 APPVEYOR_BUILD_FOLDER = os.environ.get('APPVEYOR_BUILD_FOLDER', None)
 
 # Make sure git log is invoked without a pager.
-os.environ['GIT_PAGER']=''
+os.environ['GIT_PAGER'] = ''
 
 ###############################################################################
 #                           Platform initialization                           #
