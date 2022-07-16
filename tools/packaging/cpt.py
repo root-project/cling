@@ -48,6 +48,7 @@ from urllib.request import urlopen
 #              Platform independent functions (formerly indep.py)             #
 ###############################################################################
 
+
 def _convert_subprocess_cmd(cmd):
     if OS == 'Windows':
         cmd = cmd.replace('\\','/')
@@ -83,13 +84,17 @@ def exec_subprocess_check_output(cmd, cwd):
     finally:
         return out
 
+
 def travis_fold_start(tag):
     if os.environ.get('TRAVIS_BUILD_DIR', None):
        print('travis_fold:start:cpt-%s:' % (tag))
 
+
 def travis_fold_end(tag):
    if os.environ.get('TRAVIS_BUILD_DIR', None):
+
       print('travis_fold:end:cpt-%s:' % (tag))
+
 
 def box_draw_header():
     msg = 'cling (' + platform.machine() + ')' + formatdate(time.time(), tzinfo())
@@ -227,6 +232,7 @@ def fetch_llvm(llvm_revision):
     else:
         get_fresh_llvm()
 
+
 def llvm_flag_setter(llvm_dir, llvm_config_path):
     flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
                   -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
@@ -235,6 +241,7 @@ def llvm_flag_setter(llvm_dir, llvm_config_path):
     if args['verbose']:
         flags += " -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
     return flags
+
 
 def download_llvm_binary():
     global llvm_flags, tar_required
@@ -286,6 +293,8 @@ def download_llvm_binary():
     # FIXME: Add Fedora and SUSE support
 
 # TODO Refactor all fetch_ functions to use this class will remove a lot of dup
+
+
 class RepoCache(object):
     def __init__(self, url, rootDir, depth=10):
         self.__url = url
@@ -301,6 +310,7 @@ class RepoCache(object):
             exec_subprocess_call('git clone %s' % self.__url, self.__projDir)
 
         exec_subprocess_call('git checkout %s' % branch, self.__workDir)
+
 
 def fetch_clang(llvm_revision):
     if "github.com" in CLANG_GIT_URL and args['create_dev_env'] is None and args['use_wget']:
@@ -355,6 +365,7 @@ def fetch_clang(llvm_revision):
     else:
         get_fresh_clang()
 
+
 def fetch_cling(arg):
 
     if args["with_llvm_binary"]:
@@ -407,6 +418,7 @@ def fetch_cling(arg):
     else:
         get_fresh_cling()
 
+
 def set_version():
     global VERSION
     global REVISION
@@ -453,6 +465,7 @@ def set_vars():
     print('SHLIBEXT: ' + SHLIBEXT)
     print('CLANG_VERSION: ' + CLANG_VERSION)
 
+
 def set_vars_for_lit():
     global tar_required, srcdir
 
@@ -485,9 +498,11 @@ def set_vars_for_lit():
         with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
             file.writelines(lines)
 
+
 def allow_clang_tool():
     with open(os.path.join(workdir, 'clang', 'tools', 'CMakeLists.txt'), 'a') as file:
         file.writelines('add_llvm_external_project(cling)')
+
 
 class Build(object):
     def __init__(self, target=None):
@@ -520,6 +535,7 @@ class Build(object):
         else:
             exec_subprocess_call('make -j %d %s %s' % (self.cores, targets, flags),
                                  LLVM_OBJ_ROOT)
+
 
 def compile(arg):
     travis_fold_start("compile")
@@ -565,7 +581,9 @@ def compile(arg):
                                   + ' -v ".I"', shell=True)
         except Exception as e:
             print(e)
+
     travis_fold_end("compile")
+
 
 def compile_for_binary(arg):
     travis_fold_start("compile")
@@ -606,6 +624,7 @@ def compile_for_binary(arg):
             print(e)
     travis_fold_end("compile")
 
+
 def install_prefix():
     travis_fold_start("install")
     global prefix
@@ -633,6 +652,7 @@ def install_prefix():
                     shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
                     break
     travis_fold_end("install")
+
 
 def install_prefix_for_binary():
     travis_fold_start("install")
@@ -685,7 +705,9 @@ def runSingleTest(test, Idx = 2, Recurse = True):
 
     except Exception as err:
         print("Error running '%s': %s" % (test, err))
+
         pass
+
 
 def setup_tests():
     global tar_required
@@ -765,14 +787,19 @@ def test_cling():
     # runSingleTest('Prompt/ValuePrinter')
     build = Build('check-cling')
 
+
 def tarball():
     box_draw("Compress binaries into a bzip2 tarball")
     tar = tarfile.open(prefix + '.tar.bz2', 'w:bz2')
     print('Creating archive: ' + os.path.basename(prefix) + '.tar.bz2')
+
     tar.add(prefix, arcname=os.path.basename(prefix))
     tar.close()
 
+
 gInCleanup = False
+
+
 def cleanup():
     global gInCleanup
     if gInCleanup:
@@ -829,6 +856,7 @@ def cleanup():
             print('Remove directory: ' + os.path.join(workdir, 'Install'))
             shutil.rmtree(os.path.join(workdir, 'Install'))
     gInCleanup = False
+
 
 def check_version_string_ge(vstring, min_vstring):
     version_fields = [int(x) for x in vstring.split('.')]
@@ -1290,8 +1318,10 @@ def check_win(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
 
 
+
 def is_os_64bit():
     return platform.machine().endswith('64')
+
 
 def get_win_dep():
 
@@ -1823,6 +1853,7 @@ args = vars(parser.parse_args())
 ###############################################################################
 #                           Customized input                                  #
 ###############################################################################
+
 
 def custom_input(prompt, always_yes=False):
     if always_yes:
