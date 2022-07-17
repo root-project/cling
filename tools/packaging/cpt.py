@@ -2457,7 +2457,7 @@ if args['create_dev_env']:
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
     fetch_cling('master')
-
+    args['skip_cleanup'] = True
     set_version()
     if OS == 'Windows':
         get_win_dep()
