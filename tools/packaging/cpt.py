@@ -230,8 +230,8 @@ def fetch_llvm(llvm_revision):
 def llvm_flag_setter(llvm_dir, llvm_config_path):
     flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
                   -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
-                  os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
-                  os.path.join(llvm_dir, 'bin'))
+                                                                                 os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
+                                                                                 os.path.join(llvm_dir, 'bin'))
     if args['verbose']:
         flags += " -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
     return flags
@@ -1813,8 +1813,8 @@ parser.add_argument('--make-proper', help='Internal option to support calls from
 parser.add_argument('--with-verbose-output', help='Tell CMake to build with verbosity', action='store_true')
 parser.add_argument('--with-cmake-flags', help='Additional CMake configuration flags', default='')
 parser.add_argument('--with-stdlib', help=('C++ Library to use, stdlibc++ or libc++.'
-                                     '  To build a spcific llvm <tag> of libc++ with cling '
-                                     'specify libc++,<tag>'),
+                                           '  To build a spcific llvm <tag> of libc++ with cling '
+                                           'specify libc++,<tag>'),
                     default='')
 parser.add_argument('-y', help='Non-interactive mode (yes to all)', action='store_true')
 
@@ -2007,15 +2007,15 @@ if args['check_requirements']:
                 if choice in yes:
                     # Need to communicate values to the shell. Do not use exec_subprocess_call()
                     subprocess.Popen(['sudo apt-get update'],
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=None,
-                                    stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+                                     shell=True,
+                                     stdin=subprocess.PIPE,
+                                     stdout=None,
+                                     stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                     subprocess.Popen(['sudo apt-get install ' + install_line],
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=None,
-                                    stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+                                     shell=True,
+                                     stdin=subprocess.PIPE,
+                                     stdout=None,
+                                     stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                     break
                 elif choice in no:
                     print('''
@@ -2063,10 +2063,10 @@ Refer to the documentation of CPT for information on setting up your Windows env
                 if choice in yes:
                     # Need to communicate values to the shell. Do not use exec_subprocess_call()
                     subprocess.Popen(['sudo yum install ' + install_line],
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=None,
-                                    stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+                                     shell=True,
+                                     stdin=subprocess.PIPE,
+                                     stdout=None,
+                                     stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                     break
                 elif choice in no:
                     print('''
@@ -2100,15 +2100,15 @@ Refer to the documentation of CPT for information on setting up your Windows env
                 if choice in yes:
                     # Need to communicate values to the shell. Do not use exec_subprocess_call()
                     subprocess.Popen(['sudo port -v selfupdate'],
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=None,
-                                    stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+                                     shell=True,
+                                     stdin=subprocess.PIPE,
+                                     stdout=None,
+                                     stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                     subprocess.Popen(['sudo port install ' + install_line],
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=None,
-                                    stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
+                                     shell=True,
+                                     stdin=subprocess.PIPE,
+                                     stdout=None,
+                                     stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
                     break
                 elif choice in no:
                     print('''
