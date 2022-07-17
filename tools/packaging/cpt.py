@@ -1276,7 +1276,7 @@ rm -rf %{buildroot}
 def check_win(pkg):
     # Check for Microsoft Visual Studio 14.0
     if pkg == "msvc":
-        if exec_subprocess_check_output('REG QUERY HKEY_CLASSES_ROOT\VisualStudio.DTE.14.0', 'C:\\').find(
+        if exec_subprocess_check_output('REG QUERY HKEY_CLASSES_ROOT\\VisualStudio.DTE.14.0', 'C:\\').find(
                 'ERROR') == -1:
             print(pkg.ljust(20) + '[OK]'.ljust(30))
         else:
@@ -1369,7 +1369,7 @@ def make_nsi():
 !define MAIN_APP_EXE "cling.exe"
 !define INSTALL_TYPE "SetShellVarContext current"
 !define PRODUCT_ROOT_KEY "HKLM"
-!define PRODUCT_KEY "Software\Cling"
+!define PRODUCT_KEY "Software\\Cling"
 
 ###############################################################################
 
@@ -1459,7 +1459,7 @@ SectionEnd
 Section make_uninstaller
  ; Write the uninstall keys for Windows
  SetOutPath "$INSTDIR"
- WriteRegStr HKLM "Software\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "DisplayName" "Cling"
+ WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "DisplayName" "Cling"
  WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "UninstallString" "$INSTDIR\\uninstall.exe"
  WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoModify" 1
  WriteRegDWORD HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling" "NoRepair" 1
@@ -1472,7 +1472,7 @@ Section "Shortcuts"
 
  CreateDirectory "$SMPROGRAMS\\Cling"
  CreateShortCut "$SMPROGRAMS\\Cling\\Uninstall.lnk" "$INSTDIR\\uninstall.exe" "" "$INSTDIR\\uninstall.exe" 0
- CreateShortCut "$SMPROGRAMS\Cling\\Cling.lnk" "$INSTDIR\\bin\\cling.exe" "" "${MUI_ICON}" 0
+ CreateShortCut "$SMPROGRAMS\\Cling\\Cling.lnk" "$INSTDIR\\bin\\cling.exe" "" "${MUI_ICON}" 0
  CreateDirectory "$SMPROGRAMS\\Cling\\Documentation"
  CreateShortCut "$SMPROGRAMS\\Cling\\Documentation\\Cling (PS).lnk" "$INSTDIR\\docs\\llvm\\ps\\cling.ps" "" "" 0
  CreateShortCut "$SMPROGRAMS\\Cling\\Documentation\\Cling (HTML).lnk" "$INSTDIR\\docs\\llvm\\html\\cling\\cling.html" "" "" 0
@@ -1481,14 +1481,14 @@ SectionEnd
 
 Section "Uninstall"
 
- DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\\Uninstall\Cling"
- DeleteRegKey HKLM "Software\Cling"
+ DeleteRegKey HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Cling"
+ DeleteRegKey HKLM "Software\\Cling"
 
  ; Remove shortcuts
- Delete "$SMPROGRAMS\Cling\*.*"
- Delete "$SMPROGRAMS\Cling\Documentation\*.*"
- Delete "$SMPROGRAMS\Cling\Documentation"
- RMDir "$SMPROGRAMS\Cling"
+ Delete "$SMPROGRAMS\\Cling\\*.*"
+ Delete "$SMPROGRAMS\\Cling\\Documentation\\*.*"
+ Delete "$SMPROGRAMS\\Cling\\Documentation"
+ RMDir "$SMPROGRAMS\\Cling"
 
 '''
     f.write(template)
@@ -1521,7 +1521,7 @@ SectionEnd
 Function DetectWinVer
   Push $0
   Push $1
-  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" CurrentVersion
+  ReadRegStr $0 HKLM "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" CurrentVersion
   IfErrors is_error is_winnt
 is_winnt:
   StrCpy $1 $0 1
@@ -1543,9 +1543,9 @@ is_winnt_8:
   Goto done
 is_error:
   StrCpy $1 $0
-  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion" ProductName
+  ReadRegStr $0 HKLM "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" ProductName
   IfErrors 0 +4
-  ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion" Version
+  ReadRegStr $0 HKLM "SOFTWARE\\Microsoft\\Windows\\CurrentVersion" Version
   IfErrors 0 +2
   StrCpy $0 "Unknown"
   MessageBox MB_ICONSTOP|MB_OK "This version of Cling cannot be installed on this system. Cling is supported only on Windows NT systems. Current system: $0 (version: $1)"
@@ -1560,7 +1560,7 @@ Function CheckPrevVersion
   Push $0
   Push $1
   Push $2
-  IfFileExists "$INSTDIR\\bin\cling.exe" 0 otherver
+  IfFileExists "$INSTDIR\\bin\\cling.exe" 0 otherver
   MessageBox MB_OK|MB_ICONSTOP "Another Cling installation (with the same version) has been detected. Please uninstall it first."
   Abort
 otherver:
