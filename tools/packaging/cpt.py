@@ -51,7 +51,7 @@ from urllib.request import urlopen
 
 def _convert_subprocess_cmd(cmd):
     if OS == 'Windows':
-        cmd = cmd.replace('\\','/')
+        cmd = cmd.replace('\\', '/')
     return shlex.split(cmd, posix=True, comments=True)
 
 
@@ -64,7 +64,8 @@ def _perror(e):
 
 
 def exec_subprocess_call(cmd, cwd, showCMD=False):
-    if showCMD: print(cmd)
+    if showCMD:
+        print(cmd)
     cmd = _convert_subprocess_cmd(cmd)
     try:
         subprocess.check_call(cmd, cwd=cwd, shell=False,
@@ -87,13 +88,13 @@ def exec_subprocess_check_output(cmd, cwd):
 
 def travis_fold_start(tag):
     if os.environ.get('TRAVIS_BUILD_DIR', None):
-       print('travis_fold:start:cpt-%s:' % (tag))
+        print('travis_fold:start:cpt-%s:' % (tag))
 
 
 def travis_fold_end(tag):
-   if os.environ.get('TRAVIS_BUILD_DIR', None):
+    if os.environ.get('TRAVIS_BUILD_DIR', None):
 
-      print('travis_fold:end:cpt-%s:' % (tag))
+        print('travis_fold:end:cpt-%s:' % (tag))
 
 
 def box_draw_header():
@@ -223,7 +224,7 @@ def fetch_llvm(llvm_revision):
         checkout()
         exec_subprocess_call('git fetch --tags', srcdir)
         exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s'
-                                % llvm_revision, srcdir)
+                             % llvm_revision, srcdir)
 
     if os.path.isdir(srcdir):
         update_old_llvm()
@@ -300,6 +301,7 @@ class RepoCache(object):
         self.__depth = depth
         self.__projDir = rootDir
         self.__workDir = os.path.join(rootDir, url.split('/')[-1])
+
     def fetch(self, branch):
         if os.path.isdir(self.__workDir):
             exec_subprocess_call('git stash', self.__workDir)
@@ -337,7 +339,9 @@ def fetch_clang(llvm_revision):
     else:
         dir = os.path.join(srcdir, 'tools')
     global clangdir
+
     clangdir = os.path.join(dir, 'clang')
+
     def checkout():
         exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, clangdir)
 
@@ -353,9 +357,10 @@ def fetch_clang(llvm_revision):
         exec_subprocess_call('git fetch --tags', clangdir)
 
         checkout()
+
         exec_subprocess_call('git fetch --tags', clangdir)
         exec_subprocess_call('git pull origin refs/tags/cling-patches-r%s' % llvm_revision,
-                                clangdir)
+                             clangdir)
 
     if os.path.isdir(clangdir):
         update_old_clang()
@@ -551,8 +556,8 @@ def compile(arg):
         print("Creating build directory: " + LLVM_OBJ_ROOT)
         os.makedirs(LLVM_OBJ_ROOT)
 
-    ### FIX: Target isn't being set properly on Travis OS X
-    ### Either because ccache(when enabled) or maybe the virtualization environment
+    # FIX: Target isn't being set properly on Travis OS X
+    # Either because ccache(when enabled) or maybe the virtualization environment
     if TRAVIS_BUILD_DIR and OS == 'Darwin':
         triple = exec_subprocess_check_output('sh %s/cmake/config.guess' % srcdir, srcdir)
         if triple:
@@ -572,7 +577,7 @@ def compile(arg):
     build.make('install')
 
     if TRAVIS_BUILD_DIR:
-        ### Run cling once, dumping the include paths, helps debug issues
+        # Run cling once, dumping the include paths, helps debug issues
         try:
             subprocess.check_call(os.path.join(workdir, 'builddir', 'bin', 'cling')
                                   + ' -v ".I"', shell=True)
@@ -613,7 +618,7 @@ def compile_for_binary(arg):
     build.make('install')
 
     if TRAVIS_BUILD_DIR:
-        ### Run cling once, dumping the include paths, helps debug issues
+        # Run cling once, dumping the include paths, helps debug issues
         try:
             subprocess.check_call(os.path.join(workdir, 'builddir', 'bin', 'cling')
                                   + ' -v ".I"', shell=True)
@@ -632,8 +637,8 @@ def install_prefix():
     regex_array = []
     regex_filename = os.path.join(CPT_SRC_DIR, 'dist-files.txt')
     for line in open(regex_filename).read().splitlines():
-      if line and not line.startswith('#'):
-        regex_array.append(line)
+        if line and not line.startswith('#'):
+            regex_array.append(line)
 
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
@@ -641,9 +646,10 @@ def install_prefix():
             if OS == 'Windows':
                 f = f.replace('\\', '/')
             for regex in regex_array:
-                if args['with_verbose_output']: print ("Applying regex " + regex + " to file " + f)
+                if args['with_verbose_output']:
+                    print("Applying regex " + regex + " to file " + f)
                 if re.search(regex, f):
-                    print ("Adding to final binary " + f)
+                    print("Adding to final binary " + f)
                     if not os.path.isdir(os.path.join(prefix, os.path.dirname(f))):
                         os.makedirs(os.path.join(prefix, os.path.dirname(f)))
                     shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
@@ -662,8 +668,8 @@ def install_prefix_for_binary():
     regex_array = []
     regex_filename = os.path.join(CPT_SRC_DIR, 'dist-files.txt')
     for line in open(regex_filename).read().splitlines():
-      if line and not line.startswith('#'):
-        regex_array.append(line)
+        if line and not line.startswith('#'):
+            regex_array.append(line)
 
     for root, dirs, files in os.walk(TMP_PREFIX):
         for file in files:
@@ -671,9 +677,10 @@ def install_prefix_for_binary():
             if OS == 'Windows':
                 f = f.replace('\\', '/')
             for regex in regex_array:
-                if args['with_verbose_output']: print ("Applying regex " + regex + " to file " + f)
+                if args['with_verbose_output']:
+                    print("Applying regex " + regex + " to file " + f)
                 if re.search(regex, f):
-                    print ("Adding to final binary " + f)
+                    print("Adding to final binary " + f)
                     if not os.path.isdir(os.path.join(prefix, os.path.dirname(f))):
                         os.makedirs(os.path.join(prefix, os.path.dirname(f)))
                     shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
@@ -681,7 +688,7 @@ def install_prefix_for_binary():
     travis_fold_end("install")
 
 
-def runSingleTest(test, Idx = 2, Recurse = True):
+def runSingleTest(test, Idx=2, Recurse=True):
     try:
         test = os.path.join(CLING_SRC_DIR, 'test', test)
 
@@ -756,7 +763,7 @@ def setup_tests():
             else:
                 llvm_dir = os.path.join("/usr", "lib", "llvm-" + llvm_vers, "build")
         subprocess.Popen(
-            ["sudo mkdir {1}/utils/".format(commit, llvm_dir)],
+            ["sudo mkdir {0}/utils/".format(llvm_dir)],
             cwd=os.path.join(CLING_SRC_DIR, "tools"),
             shell=True,
             stdin=subprocess.PIPE,
@@ -858,7 +865,7 @@ def cleanup():
 def check_version_string_ge(vstring, min_vstring):
     version_fields = [int(x) for x in vstring.split('.')]
     min_versions = [int(x) for x in min_vstring.split('.')]
-    for i in range(0,len(min_versions)):
+    for i in range(0, len(min_versions)):
         if version_fields[i] < min_versions[i]:
             return False
         elif version_fields[i] > min_versions[i]:
@@ -1083,7 +1090,7 @@ Comment: Cling can also be licensed under University of Illinois/NCSA
 # -*- makefile -*-
 
 %:
-	dh $@
+    dh $@
 
 override_dh_auto_build:
 
@@ -1315,7 +1322,6 @@ def check_win(pkg):
             print(pkg.ljust(20) + '[OK]'.ljust(30))
 
 
-
 def is_os_64bit():
     return platform.machine().endswith('64')
 
@@ -1343,7 +1349,7 @@ def get_win_dep():
             vers = [int(v) for v in rslt.split()[2].split('.')]
             if vers[0] >= 3 and (vers[1] > 6 or (vers[1] == 6 and vers[2] >= 2)):
                 return cmake
-        except:
+        except Exception:
             pass
         return False
 
@@ -1674,7 +1680,7 @@ def check_mac(pkg):
 def make_dmg():
     box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
-    DMG_BACKGROUND_IMG = 'graphic.png'
+    # DMG_BACKGROUND_IMG = 'graphic.png'
     APP_EXE = '%s.app/Contents/MacOS/bin/%s' % (APP_NAME, APP_NAME.lower())
     VOL_NAME = "%s-%s" % (APP_NAME.lower(), VERSION)
     DMG_TMP = "%s-temp.dmg" % (VOL_NAME)
@@ -1700,7 +1706,6 @@ def make_dmg():
         print("Remove file: " + os.path.join(workdir, DMG_FINAL))
         os.remove(os.path.join(workdir, DMG_FINAL))
 
-
     if os.path.isdir(os.path.join(workdir, '%s.app' % (APP_NAME))):
         print("Remove directory:", os.path.join(workdir, '%s.app' % (APP_NAME)))
         shutil.rmtree(os.path.join(workdir, '%s.app' % (APP_NAME)))
@@ -1711,7 +1716,7 @@ def make_dmg():
     print('Populate directory: ' + os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'MacOS'))
     shutil.copytree(
         prefix,
-        os.path.join(workdir, '%s.app'%(APP_NAME), 'Contents', 'MacOS')
+        os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'MacOS')
     )
 
     os.makedirs(os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'Resources'))
@@ -1719,8 +1724,6 @@ def make_dmg():
         os.path.join(CPT_SRC_DIR, 'LLVM.icns'),
         os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'Resources', 'LLVM.icns')
     )
-
-
     print('Configuring Info.plist file')
     plist_path = os.path.join(workdir, '%s.app' % (APP_NAME), 'Contents', 'Info.plist')
     f = open(plist_path, 'w')
@@ -1762,11 +1765,8 @@ def make_dmg():
 
     f.write(plist_xml)
     f.close()
-
-
     print('Copy APP Bundle to staging area: ' + STAGING_DIR)
     shutil.copytree(os.path.join(workdir, '%s.app' % (APP_NAME)), STAGING_DIR)
-
     print('Stripping file: ' + APP_EXE)
     exec_subprocess_call('strip -u -r %s' % os.path.join(workdir, APP_EXE), workdir)
 
@@ -1870,6 +1870,7 @@ def custom_input(prompt, always_yes=False):
 #                               Global variables                              #
 ###############################################################################
 
+
 if __name__ == "__main__":
     workdir = os.path.abspath(os.path.expanduser(args['with_workdir']))
 srcdir = os.path.join(workdir, 'cling-src')
@@ -1921,7 +1922,7 @@ if OS == 'Windows':
 elif OS == 'Linux':
     try:
         import distro
-    except:
+    except Exception:
         yes = {'yes', 'y', 'ye', ''}
         choice = custom_input('''
             CPT will now attempt to install the distro package automatically.
@@ -2007,7 +2008,7 @@ elif args['with_llvm_binary'] is False and args['with_llvm_url']:
     LLVM_GIT_URL = args['with_llvm_url']
 else:
     LLVM_GIT_URL = "http://root.cern.ch/git/llvm.git"
-    
+
 if args['with_binary_llvm'] and args['with_llvm_tar']:
     raise Exception("Cannot specify flags --with-binary-llvm and --with-llvm-tar together")
 
@@ -2087,7 +2088,7 @@ if args['check_requirements']:
                                  stdin=subprocess.PIPE,
                                  stdout=None,
                                  stderr=subprocess.STDOUT).communicate('yes'.encode('utf-8'))
-            except:
+            except Exception:
                 tar_required = True
 
     elif OS == 'Windows':
