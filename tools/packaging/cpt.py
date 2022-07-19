@@ -237,7 +237,7 @@ def llvm_flag_setter(llvm_dir, llvm_config_path):
                   -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(llvm_dir, llvm_config_path,
                                                                                  os.path.join(llvm_dir, 'lib'), os.path.join(llvm_dir, 'include'), os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
                                                                                  os.path.join(llvm_dir, 'bin'))
-    if args['verbose']:
+    if args['with_verbose_output']:
         flags += " -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
     return flags
 
@@ -275,18 +275,22 @@ def download_llvm_binary():
     else:
         raise Exception("Building clang using LLVM binary not possible. Please invoke cpt without --with-llvm-binary and --with-llvm-tar flags")
     if tar_required:
+        if DIST == 'Ubuntu':
+            llvm_dir = os.path.join("/usr", "lib", "llvm-"+llvm_vers)
+        elif DIST == 'MacOSX':
+            llvm_dir = os.path.join("/opt", "local", "libexec", "llvm-"+llvm_vers)
         llvm_flags = llvm_flag_setter(llvm_dir, llvm_config_path)
         if DIST == "Ubuntu" and REV == '16.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
-            exec_subprocess_call('wget %s' % download_link, workdir)
+            wget(url=download_link, out_dir=workdir)
             extract_tar(srcdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz')
         elif DIST == "Ubuntu" and REV == '14.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
-            exec_subprocess_call('wget %s' % download_link, workdir)
+            wget(url=download_link, out_dir=workdir)
             extract_tar(srcdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz')
         elif DIST == 'MacOSX' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
-            exec_subprocess_call('wget %s' % download_link, workdir)
+            wget(url=download_link, out_dir=workdir)
             extract_tar(srcdir, 'clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz')
         else:
             raise Exception("Building clang using LLVM binary not possible. Please invoke cpt without --with-llvm-binary and --with-llvm-tar flags")
@@ -2007,8 +2011,8 @@ elif args['with_llvm_binary'] is False and args['with_llvm_url']:
     LLVM_GIT_URL = args['with_llvm_url']
 else:
     LLVM_GIT_URL = "http://root.cern.ch/git/llvm.git"
-
-if args['with_binary_llvm'] and args['with_llvm_tar']:
+    
+if args['with_llvm_binary'] and args['with_llvm_tar']:
     raise Exception("Cannot specify flags --with-binary-llvm and --with-llvm-tar together")
 
 if args['with_llvm_tar'] and args['with_llvm_url']:
@@ -2309,7 +2313,7 @@ if args['last_stable']:
 
     args["with_llvm_binary"] = True
 
-    if args["with_binary_llvm"]:
+    if args["with_llvm_binary"]:
         download_llvm_binary()
         compile = compile_for_binary
         install_prefix = install_prefix_for_binary
