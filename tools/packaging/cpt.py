@@ -1802,7 +1802,6 @@ def make_dmg():
 ###############################################################################
 
 parser = argparse.ArgumentParser(description='Cling Packaging Tool')
-parser.add_argument('-build', "help")
 parser.add_argument('-c', '--check-requirements', help='Check if packages required by the script are installed',
                     action='store_true')
 parser.add_argument('--current-dev',
