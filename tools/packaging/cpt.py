@@ -1814,6 +1814,14 @@ parser.add_argument('--rpm-tag', help='Package the snapshot of a given tag in an
 parser.add_argument('--nsis-tag', help='Package the snapshot of a given tag in an NSIS installer (.exe)')
 parser.add_argument('--dmg-tag', help='Package the snapshot of a given tag in a DMG package (.dmg)')
 
+parser.add_argument('--tarball-tag-build', help='Build the snapshot of a given tar tag')
+parser.add_argument('--deb-tag-build', help='Build the snapshot of a given deb tag')
+parser.add_argument('--rpm-tag-build', help='Build the snapshot of a given rpm tag')
+parser.add_argument('--nsis-tag-build', help='Build the snapshot of a given nsis tag')
+parser.add_argument('--dmg-tag-build', help='Build the snapshot of a given dmg tag')
+
+
+
 # Variable overrides
 parser.add_argument('--with-llvm-url', action='store', help='Specify an alternate URL of LLVM repo')
 parser.add_argument('--with-clang-url', action='store', help='Specify an alternate URL of Clang repo',
@@ -2372,7 +2380,8 @@ if args['last_stable']:
         tarball()
         cleanup()
 
-if args['tarball_tag']:
+if bool(args['tarball_tag']) ^ bool(args['tarball_tag_build']):
+    tar_tag_cond = args['tarball_tag'] if args['tarball_tag'] else args['tarball_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'tarball_tag']).readline().strip().decode(
@@ -2385,7 +2394,7 @@ if args['tarball_tag']:
     else:
         fetch_llvm(llvm_revision)
         fetch_clang(llvm_revision)
-    fetch_cling(args['tarball_tag'])
+    fetch_cling(tar_tag_cond)
 
     set_version()
 
@@ -2404,78 +2413,87 @@ if args['tarball_tag']:
         if args['with_llvm_binary']:
             setup_tests()
         test_cling()
-    tarball()
+    if args['tarball_tag']:
+        tarball()
     cleanup()
 
-if args['deb_tag']:
+if bool(args['deb_tag']) ^ bool(args['deb_tag_build']):
+    deb_tag_cond = args['deb_tag'] if args['deb_tag'] else args['deb_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'deb_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
-    fetch_cling(args['deb_tag'])
+    fetch_cling(deb_tag_cond)
 
     set_version()
     compile(os.path.join(workdir, 'cling-' + VERSION))
     install_prefix()
     if not args['no_test']:
         test_cling()
-    tarball_deb()
-    debianize()
+    if args['deb_tag']:
+        tarball_deb()
+        debianize()
     cleanup()
 
-if args['rpm_tag']:
+if bool(args['rpm_tag']) ^ bool(args['rpm_tag_build']):
+    rpm_tag_cond = args['rpm_tag'] if args['rpm_tag'] else args['rpm_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'rpm_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
-    fetch_cling(args['rpm_tag'])
+    fetch_cling(rpm_tag_cond)
 
     set_version()
     compile(os.path.join(workdir, 'cling-' + VERSION))
     install_prefix()
     if not args['no_test']:
         test_cling()
-    tarball()
-    rpm_build()
+    if args['rpm_tag']:
+        tarball()
+        rpm_build()
     cleanup()
 
-if args['nsis_tag']:
+if bool(args['nsis_tag']) ^ bool(args['nsis_tag_build']):
+    nsis_tag_build = args['nsis_tag'] if args['nsis_tag'] else args['nsis_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'nsis_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
-    fetch_cling(args['nsis_tag'])
+    fetch_cling(nsis_tag_build)
     set_version()
     get_win_dep()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
     install_prefix()
     if not args['no_test']:
         test_cling()
-    make_nsi()
-    build_nsis()
+    if args['nsis_tag']:
+        make_nsi()
+        build_nsis()
     cleanup()
 
-if args['dmg_tag']:
+if bool(args['dmg_tag']) ^ bool(args['dmg_tag_build']):
+    dmg_tag_cond = args['dmg_tag'] if args['dmg_tag'] else args['dmg_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
             'dmg_tag']).readline().strip().decode(
         'utf-8')
     fetch_llvm(llvm_revision)
     fetch_clang(llvm_revision)
-    fetch_cling(args['dmg_tag'])
+    fetch_cling(dmg_tag_cond)
 
     set_version()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
     install_prefix()
     if not args['no_test']:
         test_cling()
-    make_dmg()
+    if args['dmg_tag']:
+        make_dmg()
     cleanup()
 
 if args['create_dev_env']:
