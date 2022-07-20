@@ -520,6 +520,8 @@ class Build(object):
         # Travis CI, GCC crashes if more than 4 cores used.
         if os.environ.get('TRAVIS_OS_NAME', None):
             self.cores = min(self.cores, 4)
+        if args['number_of_cores']:
+            self.cores = args['number_of_cores']
         if target:
             self.make(target)
 
@@ -1800,6 +1802,7 @@ def make_dmg():
 ###############################################################################
 
 parser = argparse.ArgumentParser(description='Cling Packaging Tool')
+parser.add_argument('-build', "help")
 parser.add_argument('-c', '--check-requirements', help='Check if packages required by the script are installed',
                     action='store_true')
 parser.add_argument('--current-dev',
@@ -1829,6 +1832,7 @@ parser.add_argument('--with-clang-url', action='store', help='Specify an alterna
 parser.add_argument('--with-cling-url', action='store', help='Specify an alternate URL of Cling repo',
                     default='https://github.com/root-project/cling.git')
 parser.add_argument('--with-cling-branch', help='Specify a particular Cling branch')
+parser.add_argument('--number-of-cores', action='store', help='Specify the number of cores used during make')
 
 parser.add_argument('--with-llvm-binary', help='Download LLVM binary and use it to build Cling in dev mode', action='store_true')
 parser.add_argument('--with-llvm-tar', help='Download and use LLVM binary release tar to build Cling for debugging', action='store_true')
@@ -1836,7 +1840,6 @@ parser.add_argument('--no-test', help='Do not run test suite of Cling', action='
 parser.add_argument('--skip-cleanup', help='Do not clean up after a build', action='store_true')
 parser.add_argument('--use-wget', help='Do not use Git to fetch sources', action='store_true')
 parser.add_argument('--create-dev-env', help='Set up a release/debug environment')
-
 if platform.system() != 'Windows':
     parser.add_argument('--with-workdir', action='store', help='Specify an alternate working directory for CPT',
                         default=os.path.expanduser(os.path.join('~', 'ci', 'build')))
