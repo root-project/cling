@@ -197,9 +197,7 @@ def fetch_llvm(llvm_revision):
              out_dir=workdir)
 
         print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
-        tar = tarfile.open(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
-        tar.extractall(path=workdir)
-        tar.close()
+        extract_tar(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision)
 
         os.rename(os.path.join(workdir, 'llvm-cling-patches-r%s' % llvm_revision), srcdir)
 
@@ -242,6 +240,10 @@ def llvm_flag_setter(llvm_dir, llvm_config_path):
         flags += " -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
     return flags
 
+def extract_tar(extractpath, tarfilename):
+    tar = tarfile.open(os.path.join(workdir, tarfilename))
+    tar.extractall(path=extractpath)
+    tar.close()
 
 def download_llvm_binary():
     global llvm_flags, tar_required
@@ -276,18 +278,15 @@ def download_llvm_binary():
         if DIST == "Ubuntu" and REV == '16.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
-            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz', workdir)
-            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04 %s' % srcdir, workdir)
+            extract_tar(workdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz')
         elif DIST == "Ubuntu" and REV == '14.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
-            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz', workdir)
-            exec_subprocess_call('mv clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04 %s' % srcdir, workdir)
+            extract_tar(workdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz')
         elif DIST == 'MacOSX' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
-            exec_subprocess_call('tar xvf clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz', workdir)
-            exec_subprocess_call('sudo mv clang+llvm-5.0.2-x86_64-apple-darwin %s' % srcdir, workdir)
+            extract_tar(workdir, 'clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz')
         else:
             raise Exception("Building clang using LLVM binary not possible. Please invoke cpt without --with-llvm-binary and --with-llvm-tar flags")
     # FIXME: Add Fedora and SUSE support
@@ -321,9 +320,7 @@ def fetch_clang(llvm_revision):
              out_dir=workdir)
 
         print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
-        tar = tarfile.open(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
-        tar.extractall(path=os.path.join(srcdir, 'tools'))
-        tar.close()
+        extract_tar(os.path.join(srcdir, 'tools'), 'cling-patches-r%s.tar.gz' % llvm_revision)
 
         os.rename(os.path.join(srcdir, 'tools', 'clang-cling-patches-r%s' % llvm_revision),
                   os.path.join(srcdir, 'tools', 'clang'))
