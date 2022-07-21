@@ -99,10 +99,12 @@ def travis_fold_end(tag):
 
 
 def box_draw_header():
-    msg = 'cling (' + platform.machine() + ')' + formatdate(time.time(), tzinfo())
+    msg = 'cling (' + platform.machine() + ')'
+    + formatdate(time.time(), tzinfo())
     spaces_no = 80 - len(msg) - 4
     spacer = ' ' * spaces_no
-    msg = 'cling (' + platform.machine() + ')' + spacer + formatdate(time.time(), tzinfo())
+    msg = 'cling (' + platform.machine() + ')'
+    + spacer + formatdate(time.time(), tzinfo())
 
     if OS != 'Windows':
         print('''
@@ -136,7 +138,8 @@ def pip_install(package):
     # Needs brew install python. We should only install if we need the
     # functionality
     import pip
-    pip.main(['install', '--ignore-installed', '--prefix', os.path.join(workdir, 'pip'), '--upgrade', package])
+    pip.main(['install', '--ignore-installed', '--prefix',
+              os.path.join(workdir, 'pip'), '--upgrade', package])
 
 
 def wget(url, out_dir, rename_file=None, retries=3):
@@ -174,7 +177,8 @@ def wget(url, out_dir, rename_file=None, retries=3):
 
             file_size_dl += len(buffer)
             f.write(buffer)
-            status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+            status = r"%10d  [%3.2f%%]" % (file_size_dl,
+                                           file_size_dl * 100. / file_size)
             status += chr(8) * (len(status) + 1)
             print(status, end=' ')
         f.close()
@@ -201,7 +205,9 @@ def fetch_llvm(llvm_revision):
         print('Extracting: ' + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
         extract_tar(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision)
 
-        os.rename(os.path.join(workdir, 'llvm-cling-patches-r%s' % llvm_revision), srcdir)
+        os.rename(os.path.join(workdir,
+                               'llvm-cling-patches-r%s' % llvm_revision),
+                  srcdir)
 
         if os.path.isfile(os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision)):
             print("Remove file: " + os.path.join(workdir, 'cling-patches-r%s.tar.gz' % llvm_revision))
@@ -211,10 +217,12 @@ def fetch_llvm(llvm_revision):
         return
 
     def checkout():
-        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision, srcdir)
+        exec_subprocess_call('git checkout cling-patches-r%s' % llvm_revision,
+                             srcdir)
 
     def get_fresh_llvm():
-        exec_subprocess_call('git clone %s %s' % (LLVM_GIT_URL, srcdir), workdir)
+        exec_subprocess_call('git clone %s %s' % (LLVM_GIT_URL, srcdir),
+                             workdir)
         checkout()
 
     def update_old_llvm():
@@ -385,9 +393,11 @@ def fetch_cling(arg):
     def get_fresh_cling():
         if CLING_BRANCH:
             exec_subprocess_call('git clone --depth=10 --branch %s %s cling'
-                                 % (CLING_BRANCH, CLING_GIT_URL), os.path.join(dir, 'tools'))
+                                 % (CLING_BRANCH, CLING_GIT_URL),
+                                 os.path.join(dir, 'tools'))
         else:
-            exec_subprocess_call('git clone %s cling' % CLING_GIT_URL, os.path.join(dir, 'tools'))
+            exec_subprocess_call('git clone %s cling' % CLING_GIT_URL,
+                                 os.path.join(dir, 'tools'))
 
         # if arg == 'last-stable':
         #    checkout_branch = exec_subprocess_check_output('git describe --match v* --abbrev=0 --tags | head -n 1',
@@ -398,7 +408,8 @@ def fetch_cling(arg):
         else:
             checkout_branch = arg
 
-        exec_subprocess_call('git checkout %s' % checkout_branch, CLING_SRC_DIR)
+        exec_subprocess_call('git checkout %s' % checkout_branch,
+                             CLING_SRC_DIR)
 
     def update_old_cling():
         # exec_subprocess_call('git stash', CLING_SRC_DIR)
@@ -416,9 +427,11 @@ def fetch_cling(arg):
         else:
             checkout_branch = arg
 
-        exec_subprocess_call('git checkout %s' % checkout_branch, CLING_SRC_DIR)
+        exec_subprocess_call('git checkout %s' % checkout_branch,
+                             CLING_SRC_DIR)
 
-        exec_subprocess_call('git pull origin %s' % checkout_branch, CLING_SRC_DIR)
+        exec_subprocess_call('git pull origin %s' % checkout_branch,
+                             CLING_SRC_DIR)
 
     if os.path.isdir(CLING_SRC_DIR):
         update_old_cling()
@@ -429,10 +442,12 @@ def fetch_cling(arg):
 def set_version():
     global VERSION
     box_draw("Set Cling version")
-    VERSION = open(os.path.join(CLING_SRC_DIR, 'VERSION'), 'r').readline().strip()
+    VERSION = open(os.path.join(CLING_SRC_DIR, 'VERSION'),
+                   'r').readline().strip()
 
     # If development release, then add revision to the version
-    REVISION = exec_subprocess_check_output('git log -n 1 --pretty=format:%H', CLING_SRC_DIR).strip()
+    REVISION = exec_subprocess_check_output('git log -n 1 --pretty=format:%H',
+                                            CLING_SRC_DIR).strip()
 
     if '~dev' in VERSION:
         VERSION = VERSION + '-' + REVISION[:7]
@@ -447,26 +462,35 @@ def set_vars():
     global SHLIBEXT
     global CLANG_VERSION
     box_draw("Set variables")
-    if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT, 'test', 'lit.site.cfg')):
+    if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT,
+                                       'test', 'lit.site.cfg')):
         if not os.path.exists(os.path.join(LLVM_OBJ_ROOT, 'test')):
             os.mkdir(os.path.join(LLVM_OBJ_ROOT, 'test'))
 
-    with open(os.path.join(LLVM_OBJ_ROOT, 'test', 'lit.site.cfg.py'), 'r') as lit_site_cfg:
+    with open(os.path.join(LLVM_OBJ_ROOT, 'test',
+                           'lit.site.cfg.py'), 'r') as lit_site_cfg:
         for line in lit_site_cfg:
             if re.match('^config.llvm_shlib_ext = ', line):
-                SHLIBEXT = re.sub('^config.llvm_shlib_ext = ', '', line).replace('"', '').strip()
+                SHLIBEXT = re.sub('^config.llvm_shlib_ext = ', '',
+                                  line).replace('"', '').strip()
             elif re.match('^config.llvm_exe_ext = ', line):
-                EXEEXT = re.sub('^config.llvm_exe_ext = ', '', line).replace('"', '').strip()
+                EXEEXT = re.sub('^config.llvm_exe_ext = ', '',
+                                line).replace('"', '').strip()
 
-    if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang', 'include', 'clang', 'Basic', 'Version.inc')):
+    if not os.path.isfile(os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang',
+                                       'include', 'clang',
+                                       'Basic', 'Version.inc')):
         exec_subprocess_call('make Version.inc',
-                             os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang', 'include', 'clang', 'Basic'))
+                             os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang',
+                                          'include', 'clang', 'Basic'))
 
-    with open(os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang', 'include', 'clang', 'Basic', 'Version.inc'),
+    with open(os.path.join(LLVM_OBJ_ROOT, 'tools', 'clang', 'include',
+                           'clang', 'Basic', 'Version.inc'),
               'r') as Version_inc:
         for line in Version_inc:
             if re.match('^#define CLANG_VERSION ', line):
-                CLANG_VERSION = re.sub('^#define CLANG_VERSION ', '', line).strip()
+                CLANG_VERSION = re.sub('^#define CLANG_VERSION ',
+                                       '', line).strip()
 
     print('EXEEXT: ' + EXEEXT)
     print('SHLIBEXT: ' + SHLIBEXT)
@@ -476,38 +500,46 @@ def set_vars():
 def set_vars_for_lit():
     global tar_required, srcdir
 
-    with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
+    with open(os.path.join(CLING_SRC_DIR, "test",
+                           "lit.site.cfg.in"), "r") as file:
         lines = file.readlines()
     for i in range(len(lines)):
         if lines[i].startswith("config.llvm_tools_dir ="):
             lines[i] = 'config.llvm_tools_dir = "{0}"\n'.format(os.path.join(LLVM_OBJ_ROOT, "bin"))
             break
-    with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
+    with open(os.path.join(CLING_SRC_DIR, "test",
+                           "lit.site.cfg.in"), "w") as file:
         file.writelines(lines)
 
     if tar_required:
-        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
+        with open(os.path.join(CLING_SRC_DIR, "test",
+                               "lit.site.cfg.in"), "r") as file:
             lines = file.readlines()
         for i in range(len(lines)):
             if lines[i].startswith("config.llvm_src_root ="):
                 lines[i] = 'config.llvm_src_root = "{0}"\n'.format(srcdir)
                 break
-        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
+        with open(os.path.join(CLING_SRC_DIR, "test",
+                               "lit.site.cfg.in"), "w") as file:
             file.writelines(lines)
     elif DIST == 'MacOSX' and tar_required is False:
-        llvm_dir = os.path.join("/opt", "local", "libexec", "llvm-" + llvm_vers)
-        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "r") as file:
+        llvm_dir = os.path.join("/opt", "local", "libexec",
+                                "llvm-" + llvm_vers)
+        with open(os.path.join(CLING_SRC_DIR, "test",
+                               "lit.site.cfg.in"), "r") as file:
             lines = file.readlines()
         for i in range(len(lines)):
             if lines[i].startswith("config.llvm_src_root ="):
                 lines[i] = 'config.llvm_src_root = "{0}"\n'.format(llvm_dir)
                 break
-        with open(os.path.join(CLING_SRC_DIR, "test", "lit.site.cfg.in"), "w") as file:
+        with open(os.path.join(CLING_SRC_DIR, "test",
+                               "lit.site.cfg.in"), "w") as file:
             file.writelines(lines)
 
 
 def allow_clang_tool():
-    with open(os.path.join(workdir, 'clang', 'tools', 'CMakeLists.txt'), 'a') as file:
+    with open(os.path.join(workdir, 'clang', 'tools',
+                           'CMakeLists.txt'), 'a') as file:
         file.writelines('add_llvm_external_project(cling)')
 
 
@@ -532,7 +564,8 @@ class Build(object):
 
     def config(self, configFlags=''):
         box_draw('Configure Cling with CMake ' + configFlags)
-        exec_subprocess_call('%s %s' % (CMAKE, configFlags), LLVM_OBJ_ROOT, True)
+        exec_subprocess_call('%s %s' % (CMAKE, configFlags),
+                             LLVM_OBJ_ROOT, True)
 
     def make(self, targets, flags=''):
         box_draw('Building %s (using %d cores)' % (targets, self.cores))
@@ -542,7 +575,8 @@ class Build(object):
                 exec_subprocess_call('%s --build . --target %s %s'
                                      % (CMAKE, target, flags), LLVM_OBJ_ROOT)
         else:
-            exec_subprocess_call('make -j %d %s %s' % (self.cores, targets, flags),
+            exec_subprocess_call('make -j %d %s %s' % (self.cores,
+                                                       targets, flags),
                                  LLVM_OBJ_ROOT)
 
 
