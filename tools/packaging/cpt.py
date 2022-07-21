@@ -2345,7 +2345,7 @@ if bool(args['last_stable']) ^ bool(args['last_stable_build']):
 
     args["with_llvm_binary"] = True
 
-    if args["with_llvm_binary"]:
+    if args["with_binary_llvm"]:
         download_llvm_binary()
         compile = compile_for_binary
         install_prefix = install_prefix_for_binary
