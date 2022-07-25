@@ -2014,6 +2014,22 @@ if args['with_binary_llvm'] and args['with_llvm_tar']:
 if args['with_llvm_tar'] and args['with_llvm_url']:
     raise Exception("Cannot specify flags --with-llvm-tar and --with-llvm-url together")
 
+if args['tarball_tag'] and args['tarball_tag_build']:
+    raise Exception('You cannot specify both the tarball_tag and tarball_tag_build flags')
+
+if args['deb_tag'] and args['deb_tag_build']:
+    raise Exception('You cannot specify both the deb_tag and deb_tag_build flags')
+
+if args['rpm_tag'] and args['rpm_tag_build']:
+    raise Exception('You cannot specify both the rpm_tag and rpm_tag_build flags')
+
+if args['nsis_tag'] and args['nsis_tag_build']:
+    raise Exception('You cannot specify both the nsis_tag and nsis_tag_build flags')
+
+if args['dmg_tag'] and args['dmg_tag_build']:
+    raise Exception('You cannot specify both the dmg_tag and dmg_tag_build flags')
+
+
 if args['with_llvm_tar']:
     tar_required = True
 
@@ -2380,7 +2396,7 @@ if args['last_stable']:
         tarball()
         cleanup()
 
-if bool(args['tarball_tag']) ^ bool(args['tarball_tag_build']):
+if args['tarball_tag'] or args['tarball_tag_build']:
     tar_tag_cond = args['tarball_tag'] if args['tarball_tag'] else args['tarball_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
@@ -2417,7 +2433,7 @@ if bool(args['tarball_tag']) ^ bool(args['tarball_tag_build']):
         tarball()
     cleanup()
 
-if bool(args['deb_tag']) ^ bool(args['deb_tag_build']):
+if args['deb_tag'] or args['deb_tag_build']:
     deb_tag_cond = args['deb_tag'] if args['deb_tag'] else args['deb_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
@@ -2437,7 +2453,7 @@ if bool(args['deb_tag']) ^ bool(args['deb_tag_build']):
         debianize()
     cleanup()
 
-if bool(args['rpm_tag']) ^ bool(args['rpm_tag_build']):
+if args['rpm_tag'] or args['rpm_tag_build']:
     rpm_tag_cond = args['rpm_tag'] if args['rpm_tag'] else args['rpm_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
@@ -2457,7 +2473,7 @@ if bool(args['rpm_tag']) ^ bool(args['rpm_tag_build']):
         rpm_build()
     cleanup()
 
-if bool(args['nsis_tag']) ^ bool(args['nsis_tag_build']):
+if args['nsis_tag'] or args['nsis_tag_build']:
     nsis_tag_build = args['nsis_tag'] if args['nsis_tag'] else args['nsis_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
@@ -2477,7 +2493,7 @@ if bool(args['nsis_tag']) ^ bool(args['nsis_tag_build']):
         build_nsis()
     cleanup()
 
-if bool(args['dmg_tag']) ^ bool(args['dmg_tag_build']):
+if args['dmg_tag'] or args['dmg_tag_build']:
     dmg_tag_cond = args['dmg_tag'] if args['dmg_tag'] else args['dmg_tag_build']
     llvm_revision = urlopen(
         "https://raw.githubusercontent.com/root-project/cling/%s/LastKnownGoodLLVMSVNRevision.txt" % args[
