@@ -278,15 +278,15 @@ def download_llvm_binary():
         if DIST == "Ubuntu" and REV == '16.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
-            extract_tar(workdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz')
+            extract_tar(srcdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz')
         elif DIST == "Ubuntu" and REV == '14.04' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
-            extract_tar(workdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz')
+            extract_tar(srcdir, 'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz')
         elif DIST == 'MacOSX' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
             exec_subprocess_call('wget %s' % download_link, workdir)
-            extract_tar(workdir, 'clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz')
+            extract_tar(srcdir, 'clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz')
         else:
             raise Exception("Building clang using LLVM binary not possible. Please invoke cpt without --with-llvm-binary and --with-llvm-tar flags")
     # FIXME: Add Fedora and SUSE support
