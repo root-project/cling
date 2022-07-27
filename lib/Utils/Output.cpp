@@ -80,10 +80,12 @@ namespace cling {
 
     bool ColorizeOutput(unsigned Which) {
 #define COLOR_FLAG(Fv, Fn) (Which == 8 ? llvm::sys::Process::Fn() : Which & Fv)
-      return static_cast<ColoredOutput &>(outs()).Colors(
-                              COLOR_FLAG(1, StandardOutIsDisplayed)) |
-             static_cast<ColoredOutput &>(errs()).Colors(
-                              COLOR_FLAG(2, StandardErrIsDisplayed));
+      bool colorStdout = COLOR_FLAG(1, StandardOutIsDisplayed);
+      bool colorStderr = COLOR_FLAG(2, StandardErrIsDisplayed);
+      // The following calls have side effects because they set m_Colorize!
+      static_cast<ColoredOutput &>(outs()).Colors(colorStdout);
+      static_cast<ColoredOutput &>(errs()).Colors(colorStderr);
+      return colorStdout || colorStderr;
     }
   }
 }
