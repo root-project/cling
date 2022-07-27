@@ -121,7 +121,7 @@ namespace cling {
       llvm::errs()
           << "IncrementalCUDADeviceCompiler: No valid c++ standard is set.\n";
 
-    uint32_t smVersion = 20;
+    uint32_t smVersion = 35;
     if (!invocationOptions.CompilerOpts.CUDAGpuArch.empty()) {
       llvm::StringRef(invocationOptions.CompilerOpts.CUDAGpuArch)
           .drop_front(3 /* sm_ */)

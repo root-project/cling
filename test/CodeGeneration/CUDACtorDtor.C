@@ -6,9 +6,10 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// The Test checks, if the symbols __cuda_module_ctor and __cuda_module_dtor are
-// unique for every module. Attention, for a working test case, a cuda
-// fatbinary is necessary.
+// The Test checks, if the symbols __cuda_module_ctor, __cuda_module_dtor,
+// __cuda_register_globals, __cuda_fatbin_wrapper and __cuda_gpubin_handle are
+// unique for every module. Attention, for a working test case, a cuda fatbinary
+// is necessary.
 // RUN: cat %s | %cling -x cuda --cuda-path=%cudapath %cudasmlevel -Xclang -verify 2>&1 | FileCheck %s
 // REQUIRES: cuda-runtime
 
@@ -17,58 +18,113 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
 #include <iostream>
+#include <map>
+#include <vector>
 
-// Compare the cuda module ctor and dtor of two random modules.
-std::string ctor1, ctor2, dtor1, dtor2;
+// for each key in the map, the test searches for a symbol in a module and
+// stores the full name in the vector in the value
+std::map<std::string, std::vector<std::string>> module_compare;
+for (std::string const& s :
+     {"__cuda_module_ctor", "__cuda_module_dtor", "__cuda_register_globals",
+      "__cuda_fatbin_wrapper", "__cuda_gpubin_handle"}) {
+  module_compare.emplace(s, std::vector<std::string>{});
+}
 
 auto T1 = gCling->getLatestTransaction();
-// only __global__ CUDA kernel definitions has the cuda module ctor and dtor
+// only __global__ CUDA kernel definitions has the cuda specific functions and
+// variables to register a kernel
 __global__ void g1() { int i = 1; }
-auto M1 = T1->getNext()->getModule();
+auto M1 = T1->getNext()->getCompiledModule();
 
-for(auto &I : *M1){
-  // The trailing '_' identify the function name as modified name.
-  if(I.getName().startswith_lower("__cuda_module_ctor_")){
-    ctor1 = I.getName().str();
+// search for the symbols in the llvm::Module M1
+for (auto const& key_value : module_compare) {
+  for (auto& I : *M1) {
+    if (I.getName().startswith(key_value.first)) {
+      module_compare[key_value.first].push_back(I.getName().str());
+    }
   }
+  for (auto& I : M1->globals()) {
+    if (I.getName().startswith(key_value.first)) {
+      module_compare[key_value.first].push_back(I.getName().str());
+    }
+  }
+}
 
-  if(I.getName().startswith_lower("__cuda_module_dtor_")){
-    dtor1 = I.getName().str();
+// verify, that each symbol was found in the module
+// if a symbol was not found, the vector should be empty
+for (auto const& key_value : module_compare) {
+  if (key_value.second.size() < 1) {
+    std::cout << "could not find symbol" << std::endl;
+    // CHECK-NOT: could not find symbol
+    std::cout << "\"" << key_value.first << "\" is not in transaction T1"
+              << std::endl;
   }
 }
 
 auto T2 = gCling->getLatestTransaction();
 __global__ void g2() { int i = 2; }
-auto M2 = T2->getNext()->getModule();
+auto M2 = T2->getNext()->getCompiledModule();
 
-// The two modules should have different names, because of the for loop.
-M1->getName().str() != M2->getName().str()
-// CHECK: (bool) true
-
-for(auto &I : *M2){
-  if(I.getName().startswith_lower("__cuda_module_ctor_")){
-    ctor2 = I.getName().str();
+// search for the symbols in the llvm::Module M2
+for (auto const& key_value : module_compare) {
+  for (auto& I : *M2) {
+    if (I.getName().startswith(key_value.first)) {
+      module_compare[key_value.first].push_back(I.getName().str());
+    }
   }
-
-  if(I.getName().startswith_lower("__cuda_module_dtor_")){
-    dtor2 = I.getName().str();
+  for (auto& I : M2->globals()) {
+    if (I.getName().startswith(key_value.first)) {
+      module_compare[key_value.first].push_back(I.getName().str());
+    }
   }
 }
 
-// Check if the ctor and dtor of the two modules are different.
-ctor1 != ctor2 // expected-note {{use '|=' to turn this inequality comparison into an or-assignment}}
-// CHECK: (bool) true
-dtor1 != dtor2 // expected-note {{use '|=' to turn this inequality comparison into an or-assignment}}
-// CHECK: (bool) true
+// verify, that each symbol was found in the second module
+for (auto const& key_value : module_compare) {
+  if (key_value.second.size() < 2) {
+    std::cout << "could not find symbol" << std::endl;
+    // CHECK-NOT: could not find symbol
+    std::cout << "\"" << key_value.first << "\" is not in transaction T2"
+              << std::endl;
+  }
+}
 
-// Check if the ctor symbol starts with the correct prefix.
-std::string expectedCtorPrefix = "__cuda_module_ctor_cling_module_";
-ctor1.compare(0, expectedCtorPrefix.length(), expectedCtorPrefix)
-// CHECK: (int) 0
+for (auto const& key_value : module_compare) {
+  std::string const generic_symbol_name = key_value.first;
+  std::string const symbol_name_suffix = generic_symbol_name + "_cling_module_";
+  std::string const T1_symbol_name = key_value.second[0];
+  std::string const T2_symbol_name = key_value.second[1];
 
-// Check if the dtor symbol starts with the correct prefix.
-std::string expectedDtorPrefix = "__cuda_module_dtor_cling_module_";
-dtor1.compare(0, expectedDtorPrefix.length(), expectedDtorPrefix)
-// CHECK: (int) 0
+  // check if each symbols are different for different modules
+  if (T1_symbol_name != T2_symbol_name) {
+    std::cout << "T1_symbol_name and T2_symbol_name are unique" << std::endl;
+    // CHECK: T1_symbol_name and T2_symbol_name are unique
+  } else {
+    std::cerr << "T1_symbol_name and T2_symbol_name are equals" << std::endl;
+    // CHECK-NOT: T1_symbol_name and T2_symbol_name are equals
+    std::cerr << T1_symbol_name << " == " << T2_symbol_name << std::endl;
+  }
 
+  // only the module number is difference for each symbol
+  // therefor the begin of the symbol name can be checked
+  if (0 != T1_symbol_name.compare(0, symbol_name_suffix.length(),
+                                  symbol_name_suffix)) {
+    std::cerr << "Wrong suffix" << std::endl;
+    // CHECK-NOT: Wrong suffix
+    std::cerr << "T1_symbol_name: " << T1_symbol_name << std::endl;
+    std::cerr << "expected symbol + suffix: " << symbol_name_suffix
+              << std::endl;
+  }
+
+  if (0 != T2_symbol_name.compare(0, symbol_name_suffix.length(),
+                                  symbol_name_suffix)) {
+    std::cerr << "Wrong suffix" << std::endl;
+    // CHECK-NOT: Wrong suffix
+    std::cerr << "T2_symbol_name: " << T2_symbol_name << std::endl;
+    std::cerr << "expected symbol + suffix: " << symbol_name_suffix
+              << std::endl;
+  }
+}
+
+// expected-no-diagnostics
 .q

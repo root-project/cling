@@ -127,29 +127,55 @@ char WeakTypeinfoVTablePass::ID = 0;
 
 namespace {
 
-  // Add a suffix to the CUDA module ctor/dtor to generate a unique name.
-  // This is necessary for lazy compilation. Without suffix, cling cannot
-  // distinguish ctor/dtor of subsequent modules.
+  // Add a suffix to the CUDA module ctor/dtor, CUDA specific functions and
+  // variables to generate a unique name. This is necessary for lazy
+  // compilation. Without suffix, cling cannot distinguish ctor/dtor, register
+  // function and and ptx code string of subsequent modules.
   class UniqueCUDAStructorName : public ModulePass {
     static char ID;
 
-    bool runOnFunction(Function& F, const StringRef ModuleName){
-      if(F.hasName() && (F.getName() == "__cuda_module_ctor"
-          || F.getName() == "__cuda_module_dtor") ){
-        llvm::SmallString<128> NewFunctionName;
-        NewFunctionName.append(F.getName());
-        NewFunctionName.append("_");
-        NewFunctionName.append(ModuleName);
+    // append a suffix to a symbol to make it unique
+    // the suffix is "_cling_module_<module number>"
+    llvm::SmallString<128> add_module_suffix(const StringRef SymbolName,
+                                             const StringRef ModuleName) {
+      llvm::SmallString<128> NewFunctionName;
+      NewFunctionName.append(SymbolName);
+      NewFunctionName.append("_");
+      NewFunctionName.append(ModuleName);
 
-        for (size_t i = 0; i < NewFunctionName.size(); ++i) {
-          // Replace everything that is not [a-zA-Z0-9._] with a _. This set
-          // happens to be the set of C preprocessing numbers.
-          if (!isPreprocessingNumberBody(NewFunctionName[i]))
-            NewFunctionName[i] = '_';
-        }
+      for (size_t i = 0; i < NewFunctionName.size(); ++i) {
+        // Replace everything that is not [a-zA-Z0-9._] with a _. This set
+        // happens to be the set of C preprocessing numbers.
+        if (!isPreprocessingNumberBody(NewFunctionName[i]))
+          NewFunctionName[i] = '_';
+      }
 
-        F.setName(NewFunctionName);
+      return NewFunctionName;
+    }
 
+    // make CUDA specific variables unique
+    bool runOnGlobal(GlobalValue& GV, const StringRef ModuleName) {
+      if (GV.isDeclaration())
+        return false; // no change.
+
+      if (!GV.hasName())
+        return false;
+
+      if (GV.getName().equals("__cuda_fatbin_wrapper") ||
+          GV.getName().equals("__cuda_gpubin_handle")) {
+        GV.setName(add_module_suffix(GV.getName(), ModuleName));
+        return true;
+      }
+
+      return false;
+    }
+
+    // make CUDA specific functions unique
+    bool runOnFunction(Function& F, const StringRef ModuleName) {
+      if (F.hasName() && (F.getName().equals("__cuda_module_ctor") ||
+                          F.getName().equals("__cuda_module_dtor") ||
+                          F.getName().equals("__cuda_register_globals"))) {
+        F.setName(add_module_suffix(F.getName(), ModuleName));
         return true;
       }
 
@@ -159,15 +185,17 @@ namespace {
   public:
     UniqueCUDAStructorName() : ModulePass(ID) {}
 
-    bool runOnModule(Module &M) override {
+    bool runOnModule(Module& M) override {
       bool ret = false;
       const StringRef ModuleName = M.getName();
-      for (auto &&F: M)
+      for (auto&& F : M)
         ret |= runOnFunction(F, ModuleName);
+      for (auto&& G : M.globals())
+        ret |= runOnGlobal(G, ModuleName);
       return ret;
     }
   };
-}
+} // namespace
 
 char UniqueCUDAStructorName::ID = 0;
 
