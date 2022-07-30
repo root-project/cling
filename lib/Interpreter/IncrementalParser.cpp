@@ -919,7 +919,12 @@ namespace cling {
     FilteringDiagConsumer::RAAI RAAITmp(*m_DiagConsumer, CO.IgnorePromptDiags);
 
     DiagnosticErrorTrap Trap(Diags);
+    // FIXME: SavePendingInstantiationsRAII should be obsolvete as
+    // GlobalEagerInstantiationScope and LocalEagerInstantiationScope do the
+    // same thing.
     Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
+    Sema::GlobalEagerInstantiationScope GlobalInstantiations(S, /*Enabled=*/true);
+    Sema::LocalEagerInstantiationScope LocalInstantiations(S);
 
     Parser::DeclGroupPtrTy ADecl;
     while (!m_Parser->ParseTopLevelDecl(ADecl)) {
@@ -947,7 +952,8 @@ namespace cling {
 
       return kSuccess;
     }
-
+    LocalInstantiations.perform();
+    GlobalInstantiations.perform();
 #ifdef _WIN32
     // Microsoft-specific:
     // Late parsed templates can leave unswallowed "macro"-like tokens.
