@@ -423,7 +423,6 @@ def fetch_cling(arg):
 
 def set_version():
     global VERSION
-    global REVISION
     box_draw("Set Cling version")
     VERSION = open(os.path.join(CLING_SRC_DIR, 'VERSION'), 'r').readline().strip()
 
@@ -435,6 +434,7 @@ def set_version():
 
     print('Version: ' + VERSION)
     print('Revision: ' + REVISION)
+    return REVISION
 
 
 def set_vars():
@@ -657,6 +657,7 @@ def install_prefix():
                     shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
                     break
     travis_fold_end("install")
+    return CPT_SRC_DIR
 
 
 def install_prefix_for_binary():
@@ -688,6 +689,7 @@ def install_prefix_for_binary():
                     shutil.copy(os.path.join(TMP_PREFIX, f), os.path.join(prefix, f))
                     break
     travis_fold_end("install")
+    return CPT_SRC_DIR
 
 
 def runSingleTest(test, Idx=2, Recurse=True):
@@ -1201,8 +1203,7 @@ def check_redhat(pkg):
             return True
 
 
-def rpm_build():
-    global REVISION
+def rpm_build(REVISION):
     box_draw("Set up RPM build environment")
     if os.path.isdir(os.path.join(workdir, 'rpmbuild')):
         shutil.rmtree(os.path.join(workdir, 'rpmbuild'))
@@ -1301,6 +1302,7 @@ rm -rf %{buildroot}
     box_draw('Run rpmbuild program')
     exec_subprocess_call('rpmbuild --define "_topdir ${PWD}" -bb %s' % (
         os.path.join(workdir, 'rpmbuild', 'SPECS', 'cling-%s.spec' % (VERSION))), os.path.join(workdir, 'rpmbuild'))
+    return REVISION
 
 
 ###############################################################################
@@ -1385,7 +1387,7 @@ def get_win_dep():
     print()
 
 
-def make_nsi():
+def make_nsi(CPT_SRC_DIR):
     box_draw("Generating cling.nsi")
     NSIS = os.path.join(TMP_PREFIX, 'bin', 'nsis')
     VIProductVersion = \
@@ -1679,7 +1681,7 @@ def check_mac(pkg):
             return True
 
 
-def make_dmg():
+def make_dmg(CPT_SRC_DIR):
     box_draw("Building Apple Disk Image")
     APP_NAME = 'Cling'
     # DMG_BACKGROUND_IMG = 'graphic.png'
@@ -1877,7 +1879,6 @@ if __name__ == "__main__":
     workdir = os.path.abspath(os.path.expanduser(args['with_workdir']))
 srcdir = os.path.join(workdir, 'cling-src')
 CLING_SRC_DIR = os.path.join(srcdir, 'tools', 'cling')
-CPT_SRC_DIR = os.path.join(CLING_SRC_DIR, 'tools', 'packaging')
 LLVM_OBJ_ROOT = os.path.join(workdir, 'builddir')
 
 prefix = ''
@@ -1892,11 +1893,7 @@ CLING_GIT_URL = args['with_cling_url']
 EXTRA_CMAKE_FLAGS = args.get('with_cmake_flags')
 CMAKE = os.environ.get('CMAKE', None)
 
-# llvm_revision = urlopen(
-#    "https://raw.githubusercontent.com/root-project/cling/master/LastKnownGoodLLVMSVNRevision.txt").readline().strip().decode(
-#   'utf-8')
 VERSION = ''
-REVISION = ''
 # Travis needs some special behaviour
 TRAVIS_BUILD_DIR = os.environ.get('TRAVIS_BUILD_DIR', None)
 APPVEYOR_BUILD_FOLDER = os.environ.get('APPVEYOR_BUILD_FOLDER', None)
@@ -2228,7 +2225,7 @@ if args['current_dev']:
         fetch_cling(CLING_BRANCH if CLING_BRANCH else 'master')
     travis_fold_end("git-clone")
 
-    set_version()
+    revision = set_version()
     if args['current_dev'] == 'tar':
         if OS == 'Windows':
             get_win_dep()
@@ -2259,32 +2256,32 @@ if args['current_dev']:
         cleanup()
 
     elif args['current_dev'] == 'rpm' or (args['current_dev'] == 'pkg' and platform.dist()[0] == 'redhat'):
-        compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + REVISION[:7], '')))
+        compile(os.path.join(workdir, 'cling-' + VERSION.replace('-' + revision[:7], '')))
         install_prefix()
         if not args['no_test']:
             test_cling()
         tarball()
-        rpm_build()
+        rpm_build(revision)
         cleanup()
 
     elif args['current_dev'] == 'nsis' or (args['current_dev'] == 'pkg' and OS == 'Windows'):
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + RELEASE + '-' + platform.machine().lower() + '-' + VERSION))
-        install_prefix()
+        CPT_SRC_DIR = install_prefix()
         if not args['no_test']:
             test_cling()
-        make_nsi()
+        make_nsi(CPT_SRC_DIR)
         build_nsis()
         cleanup()
 
     elif args['current_dev'] == 'dmg' or (args['current_dev'] == 'pkg' and OS == 'Darwin'):
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
-        install_prefix()
+        CPT_SRC_DIR = install_prefix()
         if not args['no_test']:
             if args['with_llvm_binary']:
                 setup_tests()
             test_cling()
-        make_dmg()
+        make_dmg(CPT_SRC_DIR)
         cleanup()
 
     elif args['current_dev'] == 'pkg':
@@ -2370,22 +2367,22 @@ if args['last_stable']:
         set_version()
         get_win_dep()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
-        install_prefix()
+        CPT_SRC_DIR = install_prefix()
         if not args['no_test']:
             test_cling()
-        make_nsi()
+        make_nsi(CPT_SRC_DIR)
         build_nsis()
         cleanup()
 
     elif args['last_stable'] == 'dmg' or (args['last_stable'] == 'pkg' and OS == 'Darwin'):
         set_version()
         compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
-        install_prefix()
+        CPT_SRC_DIR = install_prefix()
         if not args['no_test']:
             if args['with_llvm_binary']:
                 setup_tests()
             test_cling()
-        make_dmg()
+        make_dmg(CPT_SRC_DIR)
         cleanup()
 
     elif args['last_stable'] == 'pkg':
@@ -2488,11 +2485,11 @@ if args['nsis_tag'] or args['nsis_tag_build']:
     set_version()
     get_win_dep()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine() + '-' + VERSION))
-    install_prefix()
+    CPT_SRC_DIR = install_prefix()
     if not args['no_test']:
         test_cling()
     if args['nsis_tag']:
-        make_nsi()
+        make_nsi(CPT_SRC_DIR)
         build_nsis()
     cleanup()
 
@@ -2508,11 +2505,11 @@ if args['dmg_tag'] or args['dmg_tag_build']:
 
     set_version()
     compile(os.path.join(workdir, 'cling-' + DIST + '-' + REV + '-' + platform.machine().lower() + '-' + VERSION))
-    install_prefix()
+    CPT_SRC_DIR = install_prefix()
     if not args['no_test']:
         test_cling()
     if args['dmg_tag']:
-        make_dmg()
+        make_dmg(CPT_SRC_DIR)
     cleanup()
 
 if args['create_dev_env']:
