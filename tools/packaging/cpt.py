@@ -2043,6 +2043,12 @@ if args['nsis_tag'] and args['nsis_tag_build']:
 if args['dmg_tag'] and args['dmg_tag_build']:
     raise Exception('You cannot specify both the dmg_tag and dmg_tag_build flags')
 
+if args['current_dev'] and args['current_dev_build']:
+    raise Exception('You cannot specify both the current_dev and current_dev_build flags')
+
+if args['last_stable'] and args['last_stable_build']:
+    raise Exception('You cannot specify both the last_stable and last_stable_build flags')
+
 if args['with_llvm_tar']:
     tar_required = True
 
@@ -2327,7 +2333,7 @@ if bool(args['current_dev']) or bool(args['current_dev_build']):
             tarball()
         cleanup()
 
-if bool(args['last_stable']) ^ bool(args['last_stable_build']):
+if bool(args['last_stable']) or bool(args['last_stable_build']):
     stable_packaging_mode = args['last_stable'] if args['last_stable'] else args['last_stable_build']
     tag = json.loads(urlopen("https://api.github.com/repos/vgvassilev/cling/tags")
                      .read().decode('utf-8'))[0]['name'].encode('ascii', 'ignore').decode("utf-8")
