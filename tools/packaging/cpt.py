@@ -99,11 +99,11 @@ def travis_fold_end(tag):
 
 
 def box_draw_header():
-    msg = 'cling (' + platform.machine() + ')'
-    + formatdate(time.time(), tzinfo())
+    msg = 'cling (' + platform.machine() + ')' \
+    + formatdate(time.time(), tzinfo()) 
     spaces_no = 80 - len(msg) - 4
     spacer = ' ' * spaces_no
-    msg = 'cling (' + platform.machine() + ')'
+    msg = 'cling (' + platform.machine() + ')' \
     + spacer + formatdate(time.time(), tzinfo())
 
     if OS != 'Windows':
