@@ -18,6 +18,7 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Path.h"
 
+#include <fstream>
 #include <system_error>
 #include <sys/stat.h>
 
@@ -459,12 +460,26 @@ namespace cling {
       return false;
     }
 
-    file_magic Magic;
-    const std::error_code Error = identify_magic(libFullPath, Magic);
-    if (exists)
-      *exists = !Error;
+    // Do not use the identify_magic overload taking a path: It will open the
+    // file and then mmap its contents, possibly causing bus errors when another
+    // process truncates the file while we are trying to read it. Instead just
+    // read the first 1024 bytes, which should be enough for identify_magic to
+    // do its work.
+    // TODO: Fix the code upstream and consider going back to calling the
+    // convenience function after a future LLVM upgrade.
+    std::ifstream in(libFullPath.str(), std::ios::binary);
+    char header[1024] = {0};
+    in.read(header, sizeof(header));
+    if (in.fail()) {
+      if (exists)
+        *exists = false;
+      return false;
+    }
 
-    bool result = !Error &&
+    StringRef headerStr(header, in.gcount());
+    file_magic Magic = identify_magic(headerStr);
+
+    bool result =
 #ifdef __APPLE__
       (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
        || Magic == file_magic::macho_dynamically_linked_shared_lib
