@@ -26,6 +26,64 @@ namespace clang {
   class RecordDecl;
 }
 
+// FIXME: Merge with clang::BuiltinType::getName
+#define BUILTIN_TYPES                                                  \
+  /*  X(void, Void) */                                                 \
+  X(bool, Bool)                                                        \
+  X(char, Char_S)                                                      \
+  /*X(char, Char_U)*/                                                  \
+  X(signed char, SChar)                                                \
+  X(short, Short)                                                      \
+  X(int, Int)                                                          \
+  X(long, Long)                                                        \
+  X(long long, LongLong)                                               \
+  /*X(__int128, Int128)*/                                              \
+  X(unsigned char, UChar)                                              \
+  X(unsigned short, UShort)                                            \
+  X(unsigned int, UInt)                                                \
+  X(unsigned long, ULong)                                              \
+  X(unsigned long long, ULongLong)                                     \
+  /*X(unsigned __int128, UInt128)*/                                    \
+  /*X(half, Half)*/                                                    \
+  /*X(__bf16, BFloat16)*/                                              \
+  X(float, Float)                                                      \
+  X(double, Double)                                                    \
+  X(long double, LongDouble)                                           \
+  /*X(short _Accum, ShortAccum)                                        \
+    X(_Accum, Accum)                                                   \
+    X(long _Accum, LongAccum)                                          \
+    X(unsigned short _Accum, UShortAccum)                              \
+    X(unsigned _Accum, UAccum)                                         \
+    X(unsigned long _Accum, ULongAccum)                                \
+    X(short _Fract, ShortFract)                                        \
+    X(_Fract, Fract)                                                   \
+    X(long _Fract, LongFract)                                          \
+    X(unsigned short _Fract, UShortFract)                              \
+    X(unsigned _Fract, UFract)                                         \
+    X(unsigned long _Fract, ULongFract)                                \
+    X(_Sat short _Accum, SatShortAccum)                                \
+    X(_Sat _Accum, SatAccum)                                           \
+    X(_Sat long _Accum, SatLongAccum)                                  \
+    X(_Sat unsigned short _Accum, SatUShortAccum)                      \
+    X(_Sat unsigned _Accum, SatUAccum)                                 \
+    X(_Sat unsigned long _Accum, SatULongAccum)                        \
+    X(_Sat short _Fract, SatShortFract)                                \
+    X(_Sat _Fract, SatFract)                                           \
+    X(_Sat long _Fract, SatLongFract)                                  \
+    X(_Sat unsigned short _Fract, SatUShortFract)                      \
+    X(_Sat unsigned _Fract, SatUFract)                                 \
+    X(_Sat unsigned long _Fract, SatULongFract)                        \
+    X(_Float16, Float16)                                               \
+    X(__float128, Float128)                                            \
+    X(__ibm128, Ibm128)*/                                              \
+  X(wchar_t, WChar_S)                                                  \
+  /*X(wchar_t, WChar_U)*/                                              \
+  /*X(char8_t, Char8)*/                                                \
+  X(char16_t, Char16)                                                  \
+  X(char32_t, Char32)                                                  \
+  /*X(std::nullptr_t, NullPtr)*/
+
+
 namespace cling {
   class Interpreter;
 
@@ -40,18 +98,19 @@ namespace cling {
   /// and parameters for function calls.
   ///
   class CLING_LIB_EXPORT Value {
-  protected:
+  public:
     ///\brief Multi-purpose storage.
     ///
     union Storage {
-      long long m_LL;
-      unsigned long long m_ULL;
+#define X(type, name) type m_##name;
+
+      BUILTIN_TYPES
+
+#undef X
       void* m_Ptr; /// Can point to allocation, see needsManagedAllocation().
-      float m_Float;
-      double m_Double;
-      long double m_LongDouble;
     };
 
+  protected:
     /// \brief The actual value.
     Storage m_Storage;
 
@@ -129,21 +188,18 @@ namespace cling {
         EStorageType storageType = V.getStorageType();
         switch (storageType) {
         case kSignedIntegerOrEnumerationType:
-          return (T) V.getAs<long long>();
         case kUnsignedIntegerOrEnumerationType:
-          return (T) V.getAs<unsigned long long>();
         case kDoubleType:
-          return (T) V.getAs<double>();
         case kFloatType:
-          return (T) V.getAs<float>();
         case kLongDoubleType:
-          return (T) V.getAs<long double>();
+          return (T) V.getAs<T>();
         case kPointerType:
         case kManagedAllocation:
           return (T) (uintptr_t) V.getAs<void*>();
         case kUnsupportedType:
-          V.AssertOnUnsupportedTypeCast();
+          break; // assert
         }
+        V.AssertOnUnsupportedTypeCast();
         return T();
       }
     };
@@ -152,8 +208,7 @@ namespace cling {
     struct CastFwd<T*> {
       static T* cast(const Value& V) {
         EStorageType storageType = V.getStorageType();
-        if (storageType == kPointerType
-            || storageType == kManagedAllocation)
+        if (storageType == kPointerType  || storageType == kManagedAllocation)
           return (T*) (uintptr_t) V.getAs<void*>();
         V.AssertOnUnsupportedTypeCast();
         return 0;
@@ -232,36 +287,23 @@ namespace cling {
 
     /// \brief Get a reference to the value without type checking.
     /// T *must* correspond to type. Else use simplisticCastAs()!
-    template <typename T>
-    T& getAs() { return getAs((T*)0); }
-
-    /// \brief Get the value without type checking.
-    /// T *must* correspond to type. Else use simplisticCastAs()!
-    template <typename T>
-    T getAs() const { return const_cast<Value*>(this)->getAs<T>(); }
-
-    template <typename T>
-    T*& getAs(T**) { return (T*&)getAs((void**)0); }
-    void*& getAs(void**) { return m_Storage.m_Ptr; }
-    double& getAs(double*) { return m_Storage.m_Double; }
-    long double& getAs(long double*) { return m_Storage.m_LongDouble; }
-    float& getAs(float*) { return m_Storage.m_Float; }
-    long long& getAs(long long*) { return m_Storage.m_LL; }
-    unsigned long long& getAs(unsigned long long*) { return m_Storage.m_ULL; }
+    template <typename T> T getAs() const;
+    template <typename T> T& getAs();
 
     void*& getPtr() { return m_Storage.m_Ptr; }
+    void* getPtr() const { return m_Storage.m_Ptr; }
+
     double& getDouble() { return m_Storage.m_Double; }
     long double& getLongDouble() { return m_Storage.m_LongDouble; }
     float& getFloat() { return m_Storage.m_Float; }
-    long long& getLL() { return m_Storage.m_LL; }
-    unsigned long long& getULL() { return m_Storage.m_ULL; }
+    long long& getLL() { return m_Storage.m_LongLong; }
+    unsigned long long& getULL() { return m_Storage.m_ULongLong; }
 
-    void* getPtr() const { return m_Storage.m_Ptr; }
     double getDouble() const { return m_Storage.m_Double; }
     long double getLongDouble() const { return m_Storage.m_LongDouble; }
     float getFloat() const { return m_Storage.m_Float; }
-    long long getLL() const { return m_Storage.m_LL; }
-    unsigned long long getULL() const { return m_Storage.m_ULL; }
+    long long getLL() const { return m_Storage.m_LongLong; }
+    unsigned long long getULL() const { return m_Storage.m_ULongLong; }
 
     /// \brief Get the value with cast.
     //
@@ -284,6 +326,17 @@ namespace cling {
     void print(llvm::raw_ostream& Out, bool escape = false) const;
     void dump(bool escape = true) const;
   };
+
+  //template <> void*& Value::getAs() { return m_Storage.m_Ptr; }
+  template <> inline void* Value::getAs() const { return m_Storage.m_Ptr; }
+  template <> inline void*& Value::getAs() { return m_Storage.m_Ptr; }
+#define X(type, name)                                                   \
+  template <> type Value::getAs() const;                                \
+  template <> type& Value::getAs();                                     \
+
+  BUILTIN_TYPES
+
+#undef X
 } // end namespace cling
 
 #endif // CLING_VALUE_H

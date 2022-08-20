@@ -258,6 +258,37 @@ namespace cling {
                                                     GetNumberOfElements());
   }
 
+  template <typename T> T convert(clang::QualType QT, Value::Storage& S) {
+    if (const auto *ET = llvm::dyn_cast<clang::EnumType>(QT.getTypePtr()))
+      QT = ET->getDecl()->getIntegerType();
+
+    QT = QT.getCanonicalType();
+
+    assert(QT->isBuiltinType());
+
+    const auto* BT = llvm::cast<const clang::BuiltinType>(QT.getTypePtr());
+    switch (BT->getKind()) {
+    default:
+      llvm_unreachable("Unknown type");
+#define X(type, name) \
+      case clang::BuiltinType::name: return (T) S.m_##name;
+      BUILTIN_TYPES
+#undef X
+    }
+  }
+
+#define X(type, name)                                                   \
+  template <> type Value::getAs() const {                               \
+    return convert<type>(getType(), const_cast<Value::Storage&>(m_Storage)); \
+  }                                                                     \
+  template <> type& Value::getAs() {                                    \
+    return convert<type&>(getType(), m_Storage);                        \
+  }                                                                     \
+
+  BUILTIN_TYPES
+
+#undef X
+
   void Value::AssertOnUnsupportedTypeCast() const {
     assert("unsupported type in Value, cannot cast simplistically!" && 0);
   }
