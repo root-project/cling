@@ -279,6 +279,11 @@ namespace cling {
       int forward = 0;
       std::string args;
       llvm::StringRef file(getCurTok().getBufStart());
+
+      if (file.empty()) {
+        return false; // FIXME: Issue proper diagnostics
+      }
+
       while (!lookAhead(forward).is(tok::eof))
 	++forward;
 
