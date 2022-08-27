@@ -15,14 +15,17 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/FrontendTool/Utils.h"
 
-#include "llvm/Support/Signals.h"
-#include "llvm/Support/PrettyStackTrace.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/ManagedStatic.h"
+#include "llvm/Support/Path.h"
+#include "llvm/Support/PrettyStackTrace.h"
+#include "llvm/Support/Signals.h"
 
-#include <iostream>
+#include <algorithm>
 #include <fstream>
-#include <vector>
+#include <iostream>
 #include <string>
+#include <vector>
 
 #if defined(WIN32) && defined(_MSC_VER)
 #include <crtdbg.h>
@@ -51,6 +54,58 @@ static int checkDiagErrors(clang::CompilerInstance* CI, unsigned* OutErrs = 0) {
   return Errs ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+static llvm::SmallString<512> getConfigDirPath() {
+  llvm::SmallString<512> DirPath{
+      std::getenv("CLING_HOME")}; // nullptr is also fine
+
+  if (!DirPath.empty()) {
+    return DirPath;
+  }
+
+  if (llvm::sys::path::user_config_directory(DirPath)) {
+    llvm::sys::path::append(DirPath, "cling");
+    return DirPath;
+  }
+
+  if (llvm::sys::path::home_directory(DirPath)) {
+    return DirPath;
+  }
+
+  return {};
+}
+
+static void runStartupFiles(cling::UserInterface& Ui) {
+  llvm::SmallString<512> StartupFilesDir{getConfigDirPath()};
+
+  if (StartupFilesDir.empty()) {
+    return;
+  }
+
+  llvm::sys::path::append(StartupFilesDir, ".cling.d");
+
+  std::vector<std::string> FilePaths;
+  std::error_code EC;
+
+  for (llvm::sys::fs::directory_iterator DirIt(StartupFilesDir, EC), DirEnd;
+       DirIt != DirEnd && !EC; DirIt.increment(EC)) {
+    if (DirIt->type() == llvm::sys::fs::file_type::regular_file &&
+        llvm::sys::path::extension(DirIt->path()) == ".C") {
+      FilePaths.emplace_back(DirIt->path());
+    }
+  }
+
+  std::sort(FilePaths.begin(), FilePaths.end());
+
+  for (const auto& File : FilePaths) {
+    auto Result{cling::Interpreter::CompilationResult::kSuccess};
+
+    Ui.getMetaProcessor()->process(".x " + File, Result, nullptr);
+
+    if (Result != cling::Interpreter::CompilationResult::kSuccess) {
+      std::cerr << "Error running startup file " << File << '\n';
+    }
+  }
+}
 
 int main( int argc, char **argv ) {
 
@@ -106,6 +161,9 @@ int main( int argc, char **argv ) {
     Interp.loadFile(Lib);
 
   cling::UserInterface Ui(Interp);
+
+  runStartupFiles(Ui);
+
   // If we are not interactive we're supposed to parse files
   if (!Opts.IsInteractive()) {
     for (const std::string &Input : Opts.Inputs) {
