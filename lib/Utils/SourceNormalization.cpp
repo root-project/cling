@@ -163,8 +163,13 @@ public:
   ///
   /// \param Tok - Token, advanced to first token to test
   /// \param First - First token identifier.
+  /// \param[out] HasBody - if set to `true`, the function/class body follows;
+  ///                       thus, the caller needs to consume tokens until the
+  ///                       closing `}`
   /// \return - Typeof definition, function/method or class
-  DefinitionType IsClassOrFunction(Token& Tok, llvm::StringRef First) {
+  DefinitionType IsClassOrFunction(Token& Tok, llvm::StringRef First,
+                                   bool& HasBody) {
+    HasBody = true;
     /// ###TODO: Allow preprocessor expansion
     if (!Lexer::isIdentifierBodyChar(First.front(), getLangOpts()))
       return kNONE;
@@ -174,6 +179,8 @@ public:
       return kNONE;
 
     bool Ctor = false;
+    bool Dtor = false;
+
     if (getLangOpts().CPlusPlus && Tok.is(tok::coloncolon)) {
       // CLASS::CLASS() or CLASS::~CLASS()
       // CLASS::NESTED::NESTED()
@@ -201,6 +208,8 @@ public:
       } while (Tok.is(tok::coloncolon));
 
       if (Tok.is(tok::tilde)) {
+        Dtor = true;
+
         if (!LexClean(Tok))
           return kNONE;
         if (!Ident.empty())
@@ -227,6 +236,7 @@ public:
           return kNONE;
 
         Ctor = false;
+        Dtor = false;
       }
     } else {
       bool SeenSignedness = false;
@@ -300,6 +310,19 @@ public:
       // constructor initialization 'CLASS::CLASS() :'
       if (Ctor && Tok.is(tok::colon))
         return !AdvanceTo(Tok, tok::l_brace) ? kFunction : kNONE;
+
+      if (Ctor || Dtor) {
+        // e.g. CLASS::CLASS() = default;
+        //      CLASS::~CLASS();
+        if (Tok.is(tok::equal)) {
+          if ((!LexClean(Tok) && Tok.isNot(tok::raw_identifier)) ||
+              (!LexClean(Tok) && Tok.isNot(tok::semi)))
+            return kNONE;
+
+          HasBody = false;
+          return kFunction;
+        }
+      }
 
       // class const method 'CLASS::method() const {'
       if (!Ctor && Identifier(Tok).equals("const")) {
@@ -464,12 +487,18 @@ size_t cling::utils::getWrapPoint(std::string& source,
       if (keyword.equals("template"))
         return std::string::npos;
 
+      auto HasBody{false};
+
       if (const MinimalPPLexer::DefinitionType T =
-                                          Lex.IsClassOrFunction(Tok, keyword)) {
-        assert(Tok.is(tok::l_brace) && "Lexer begin location invalid");
-        if (!Lex.CheckBalance(Tok))
-          return offset;
-        assert(Tok.is(tok::r_brace) && "Lexer end location invalid");
+              Lex.IsClassOrFunction(Tok, keyword, HasBody)) {
+        if (HasBody) {
+          assert(Tok.is(tok::l_brace) && "Lexer begin location invalid");
+
+          if (!Lex.CheckBalance(Tok))
+            return offset;
+
+          assert(Tok.is(tok::r_brace) && "Lexer end location invalid");
+        }
 
         const size_t rBrace = getFileOffset(Tok);
         // Wrap everything after '}'
