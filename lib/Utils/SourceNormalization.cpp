@@ -462,9 +462,10 @@ size_t cling::utils::getWrapPoint(std::string& source,
       Lex.Lex(Tok);
     }
 
-    const tok::TokenKind kind = Tok.getKind();
+    if (Tok.getKind() == tok::coloncolon)
+      Lex.LexClean(Tok);
 
-    if (kind == tok::raw_identifier && !Tok.needsCleaning()) {
+    if (Tok.getKind() == tok::raw_identifier && !Tok.needsCleaning()) {
       StringRef keyword(Tok.getRawIdentifier());
       if (keyword.equals("using")) {
         // FIXME: Using definitions and declarations should be decl extracted.
