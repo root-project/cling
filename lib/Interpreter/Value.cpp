@@ -200,9 +200,9 @@ namespace cling {
     return isValid() && Ctx.hasSameType(getType(), Ctx.VoidTy);
   }
 
-  size_t Value::GetNumberOfElements() const {
+  static size_t GetNumberOfElements(clang::QualType QT) {
     if (const clang::ConstantArrayType* ArrTy
-        = llvm::dyn_cast<clang::ConstantArrayType>(getType())) {
+        = llvm::dyn_cast<clang::ConstantArrayType>(QT.getTypePtr())) {
       llvm::APInt arrSize(sizeof(size_t)*8, 1);
       do {
         arrSize *= ArrTy->getSize();
@@ -255,7 +255,7 @@ namespace cling {
     const clang::ASTContext& ctx = getASTContext();
     unsigned payloadSize = ctx.getTypeSizeInChars(getType()).getQuantity();
     m_Storage.m_Ptr = AllocatedValue::CreatePayload(payloadSize, dtorFunc,
-                                                    GetNumberOfElements());
+                                                GetNumberOfElements(getType()));
   }
 
   template <typename T> T convert(clang::QualType QT, Value::Storage& S) {

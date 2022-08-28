@@ -12,8 +12,7 @@
 
 #include "cling/Interpreter/Visibility.h"
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdint>
 #include <type_traits>
 
 namespace llvm {
@@ -23,7 +22,6 @@ namespace llvm {
 namespace clang {
   class ASTContext;
   class QualType;
-  class RecordDecl;
 }
 
 // FIXME: Merge with clang::BuiltinType::getName
@@ -178,8 +176,6 @@ namespace cling {
     /// \brief Assert in case of an unsupported type. Outlined to reduce include
     ///   dependencies.
     void AssertOnUnsupportedTypeCast() const;
-
-    size_t GetNumberOfElements() const;
 
     // Allow simplisticCastAs to be partially specialized.
     template<typename T>
