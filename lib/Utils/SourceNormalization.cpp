@@ -21,12 +21,19 @@ namespace {
 ///\brief A Lexer that exposes preprocessor directives.
 class MinimalPPLexer: public Lexer {
 
-  ///\brief Jump to last Identifier in a scope chain A::B::C::D
+  ///\brief Jump to the next token after a scope chain A::B::C::D
   ///
   bool SkipScopes(Token& Tok) {
+    Token LastTok;
+    return SkipScopes(Tok, LastTok);
+  }
+
+  bool SkipScopes(Token& Tok, Token& LastTok) {
+    LastTok = Tok;
+
     if (getLangOpts().CPlusPlus) {
       while (Tok.is(tok::coloncolon)) {
-        if (!LexClean(Tok) || Identifier(Tok).empty())
+        if (!LexClean(LastTok) || Identifier(LastTok).empty())
           return false;
         if (!LexClean(Tok))
           return false;
@@ -38,9 +45,7 @@ class MinimalPPLexer: public Lexer {
   ///\brief Skips all contiguous '*' '&' tokens
   ///
   bool SkipPointerRefs(Token& Tok) {
-    while (Tok.isNot(tok::raw_identifier)) {
-      if (!Tok.isOneOf(tok::star, tok::amp))
-        return false;
+    while (Tok.isOneOf(tok::star, tok::amp)) {
       if (!LexClean(Tok))
         return false;
     }
@@ -71,13 +76,33 @@ class MinimalPPLexer: public Lexer {
         return false;
     }
 
-    // Function or class name should be in Tok now
-    if (Identifier(Tok).empty())
+    auto LastTok{Tok};
+    // skip scopes in function name
+    // e.g. int ::the_namespace::class_a::mem_func() { return 3; }
+    if ((Tok.is(tok::coloncolon) && !SkipScopes(Tok, LastTok)) ||
+        (!LexClean(Tok) ||
+         (Tok.is(tok::coloncolon) && !SkipScopes(Tok, LastTok))))
       return false;
 
-    // Advance to argument list or method name
-    if (!LexClean(Tok))
+    const auto Ident{Identifier(LastTok)}; // function, operator or class name
+
+    if (Ident.empty())
       return false;
+
+    if (Ident.equals("operator")) {
+      // Tok is the operator, e.g. <=, ==, +...
+      // however, for operator() and [], Tok only contains the
+      // left side so we need to parse the closing right side
+      // TODO: tok::spaceship operator<=>
+      if ((Tok.isOneOf(tok::l_paren, tok::l_square) && !CheckBalance(Tok)) ||
+          // user-defined literal, e.g. double operator "" _dd(long double t)
+          // TODO: parse without the space right after "",
+          // e.g. double operator ""_dd(long double t)
+          (Tok.is(tok::string_literal) && !LexClean(Tok)) ||
+          // Advance to argument list or method name
+          !LexClean(Tok))
+        return false;
+    }
 
     if (!SkipScopes(Tok))
       return false;
@@ -228,7 +253,7 @@ public:
           return kNONE;
 
         // Advance to argument list, or next scope
-        if (!LexClean(Tok))
+        if (!SkipIdentifier(Tok))
           return kNONE;
 
         // Function name should be last on scope chain
