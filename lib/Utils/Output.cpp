@@ -22,7 +22,7 @@ namespace cling {
       class ColoredOutput : public llvm::raw_os_ostream {
         bool m_Colorize = true;
 
-        raw_ostream& changeColor(enum Colors colors, bool bold, bool bg) {
+        raw_ostream& changeColor(enum Colors colors, bool bold, bool bg) override {
           if (m_Colorize) {
             if (llvm::sys::Process::ColorNeedsFlush()) flush();
             if (const char* colorcode =
@@ -33,7 +33,7 @@ namespace cling {
           }
           return *this;
         }
-        raw_ostream& resetColor() {
+        raw_ostream& resetColor() override {
           if (m_Colorize) {
             if (llvm::sys::Process::ColorNeedsFlush()) flush();
             if (const char* colorcode = llvm::sys::Process::ResetColor())
@@ -42,7 +42,7 @@ namespace cling {
           return *this;
         }
 
-        raw_ostream& reverseColor() {
+        raw_ostream& reverseColor() override {
           if (m_Colorize) {
             if (llvm::sys::Process::ColorNeedsFlush()) flush();
 
@@ -51,15 +51,15 @@ namespace cling {
           }
           return *this;
         }
-        bool has_colors() const { return m_Colorize; }
-        bool is_displayed() const { return m_Colorize; }
+        bool has_colors() const override { return m_Colorize; }
+        bool is_displayed() const override { return m_Colorize; }
       public:
 
         ColoredOutput(std::ostream& Out, bool Unbufferd = true)
             : raw_os_ostream(Out) {
           if (Unbufferd) SetUnbuffered();
         }
-        
+
         bool Colors(bool C) { m_Colorize = C; return m_Colorize; }
       };
     } // anonymous namespace
