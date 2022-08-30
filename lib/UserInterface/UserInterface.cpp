@@ -31,7 +31,7 @@ namespace {
   ///
   class UITabCompletion : public textinput::TabCompletion {
     const cling::Interpreter& m_ParentInterpreter;
-  
+
   public:
     UITabCompletion(const cling::Interpreter& Parent) :
                     m_ParentInterpreter(Parent) {}
@@ -89,13 +89,11 @@ namespace cling {
         llvm::sys::path::append(histfilePath, ".cling_history");
     }
 
+    const auto Completion =
+        std::make_unique<UITabCompletion>(m_MetaProcessor->getInterpreter());
     TextInputHolder TI(histfilePath);
 
-    // Inform text input about the code complete consumer
-    // TextInput owns the TabCompletion.
-    UITabCompletion* Completion =
-                      new UITabCompletion(m_MetaProcessor->getInterpreter());
-    TI->SetCompletion(Completion);
+    TI->SetCompletion(Completion.get());
 
     bool Done = false;
     std::string Line;
