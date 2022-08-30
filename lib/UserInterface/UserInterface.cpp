@@ -13,9 +13,10 @@
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "cling/Utils/Output.h"
 #include "textinput/Callbacks.h"
-#include "textinput/TextInput.h"
+#include "textinput/History.h"
 #include "textinput/StreamReader.h"
 #include "textinput/TerminalDisplay.h"
+#include "textinput/TextInput.h"
 
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -94,6 +95,17 @@ namespace cling {
     TextInputHolder TI(histfilePath);
 
     TI->SetCompletion(Completion.get());
+
+    if (const char* HistSizeEnvvar = std::getenv("CLING_HISTSIZE")) {
+      const size_t HistSize = std::strtoull(HistSizeEnvvar, nullptr, 0);
+
+      // std::strtoull() returns 0 if the parsing fails.
+      // zero HistSize will disable history logging to file.
+      // refer to textinput::History::AppendToFile()
+      TI->SetHistoryMaxDepth(HistSize);
+      TI->SetHistoryPruneLength(
+          static_cast<size_t>(textinput::History::kPruneLengthDefault));
+    }
 
     bool Done = false;
     std::string Line;
