@@ -338,6 +338,16 @@ namespace textinput {
                   [](Display *D) { return D->NotifyWindowChange(); });
   }
 
+  void TextInput::SetHistoryMaxDepth(size_t maxDepth) const
+  {
+     fContext->GetHistory()->SetMaxDepth(maxDepth);
+  }
+
+  void TextInput::SetHistoryPruneLength(size_t pruneLength) const
+  {
+     fContext->GetHistory()->SetPruneLength(pruneLength);
+  }
+
   void
   TextInput::AddHistoryLine(const char* line) {
     if (!line) return;

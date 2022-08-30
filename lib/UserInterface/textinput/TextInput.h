@@ -84,6 +84,8 @@ namespace textinput {
     void ReleaseInputOutput() const;
 
     // History interface
+    void SetHistoryMaxDepth(size_t maxDepth) const;
+    void SetHistoryPruneLength(size_t pruneLength) const;
     bool IsAutoHistAddEnabled() const { return fAutoHistAdd; }
     void EnableAutoHistAdd(bool enable = true) { fAutoHistAdd = enable; }
     void AddHistoryLine(const char* line);
