@@ -141,7 +141,7 @@ namespace cling {
       return (m_Interpreter.echo(OS.str(), ret) == Interpreter::kSuccess)
               ? CR_Success : CR_Failure;
     };
-    
+
     cling::Transaction* T = nullptr;
     if (actOnLCommand(file, &T) != AR_Success || !T)
       return AR_Failure;
@@ -193,7 +193,7 @@ namespace cling {
     auto interpreterHasTransaction = [] (const Interpreter& Interp,
                                          const Transaction* T) {
       for (const Transaction* I = Interp.getFirstTransaction();
-           I != 0; I = I->getNext())
+           I != nullptr; I = I->getNext())
         if (I == T)
           return true;
       return false;

@@ -220,7 +220,7 @@ namespace cling {
       WrapperDC->addDecl(FD);
     }
 
-    return hasNoErrors ? FD : 0;
+    return hasNoErrors ? FD != nullptr : false;
   }
 
   void DeclExtractor::createUniqueName(std::string& out) {
@@ -342,7 +342,7 @@ namespace cling {
 
     IdentifierInfo* Name = NewTD->getIdentifier();
     // If this is not a definition, it must have a name.
-    assert((Name != 0 || NewTD->isThisDeclarationADefinition()) &&
+    assert((Name != nullptr || NewTD->isThisDeclarationADefinition()) &&
            "Nameless record must be a definition!");
 
     // Figure out the underlying type if this a enum declaration. We need to do
@@ -369,7 +369,7 @@ namespace cling {
         // integral type; any cv-qualification is ignored.
 
         SourceLocation UnderlyingLoc;
-        TypeSourceInfo* TI = 0;
+        TypeSourceInfo* TI = nullptr;
         if ((TI = ED->getIntegerTypeSourceInfo()))
           UnderlyingLoc = TI->getTypeLoc().getBeginLoc();
 
@@ -562,7 +562,7 @@ namespace cling {
               Kind = PrevTagDecl->getTagKind();
             else {
               // Recover by making this an anonymous redefinition.
-              Name = 0;
+              Name = nullptr;
               Previous.clear();
               Invalid = true;
             }
@@ -624,7 +624,7 @@ namespace cling {
                   // If this is a redefinition, recover by making this
                   // struct be anonymous, which will make any later
                   // references get the previous definition.
-                  Name = 0;
+                  Name = nullptr;
                   Previous.clear();
                   Invalid = true;
                 }
@@ -637,7 +637,7 @@ namespace cling {
                   m_Sema->Diag(NameLoc, diag::err_nested_redefinition) << Name;
                   m_Sema->Diag(PrevTagDecl->getLocation(),
                                diag::note_previous_definition);
-                  Name = 0;
+                  Name = nullptr;
                   Previous.clear();
                   Invalid = true;
                 }
@@ -691,7 +691,7 @@ namespace cling {
           // issue an error and recover by making this tag be anonymous.
           m_Sema->Diag(NameLoc, diag::err_redefinition_different_kind) << Name;
           m_Sema->Diag(PrevDecl->getLocation(), diag::note_previous_definition);
-          Name = 0;
+          Name = nullptr;
           Invalid = true;
         }
 

@@ -308,7 +308,7 @@ namespace cling {
   void ClangInternalState::printLLVMModule(llvm::raw_ostream& Out,
                                            const llvm::Module& M,
                                            CodeGenerator& CG) {
-    M.print(Out, /*AssemblyAnnotationWriter*/ 0);
+    M.print(Out, /*AssemblyAnnotationWriter*/ nullptr);
     CG.print(Out);
   }
 

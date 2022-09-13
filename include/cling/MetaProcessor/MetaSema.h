@@ -61,7 +61,7 @@ namespace cling {
     ///\param[out] transaction - Transaction containing the loaded file.
     ///
     ActionResult actOnLCommand(llvm::StringRef file,
-                               Transaction** transaction = 0);
+                               Transaction** transaction = nullptr);
 
     ///\brief O command sets the optimization level.
     ///

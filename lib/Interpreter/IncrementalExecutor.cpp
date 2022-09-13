@@ -277,7 +277,7 @@ IncrementalExecutor::getPointerToGlobalFromJIT(llvm::StringRef name) const {
   void* addr = m_JIT->getSymbolAddress(name, false /*no dlsym*/);
 
   if (diagnoseUnresolvedSymbols(name, "symbol"))
-    return 0;
+    return nullptr;
   return addr;
 }
 

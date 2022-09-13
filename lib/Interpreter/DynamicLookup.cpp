@@ -153,9 +153,9 @@ namespace cling {
 
   // Constructors
   EvaluateTSynthesizer::EvaluateTSynthesizer(Sema* S)
-    : ASTTransformer(S), m_EvalDecl(0), m_LifetimeHandlerDecl(0),
-      m_LHgetMemoryDecl(0), m_DynamicExprInfoDecl(0), m_DeclContextDecl(0),
-      m_gCling(0), m_CurDeclContext(0), m_Context(&S->getASTContext()),
+    : ASTTransformer(S), m_EvalDecl(nullptr), m_LifetimeHandlerDecl(nullptr),
+      m_LHgetMemoryDecl(nullptr), m_DynamicExprInfoDecl(nullptr), m_DeclContextDecl(nullptr),
+      m_gCling(nullptr), m_CurDeclContext(nullptr), m_Context(&S->getASTContext()),
       m_UniqueNameCounter(0), m_NestedCompoundStmts(0)
   { }
 
@@ -266,7 +266,7 @@ namespace cling {
           D->dump();
           if (NewBody.hasSingleNode())
             NewBody.getAs<Expr>()->dump();
-          return Result(0, false); // Signal a fatal error.
+          return Result(nullptr, false); // Signal a fatal error.
         }
         FD->setBody(NewBody.getAsSingleNode());
       }
@@ -527,9 +527,9 @@ namespace cling {
                                               /*IsArrow=*/false,
                                               SS,
                                               m_NoSLoc,
-                                              /*FirstQualifierInScope=*/0,
+                                              /*FirstQualifierInScope=*/nullptr,
                                               MemberLookup,
-                                              /*TemplateArgs=*/0,
+                                              /*TemplateArgs=*/nullptr,
                                               /*Scope*/nullptr).get();
         // 3.3 Build the actual call
         Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
@@ -719,7 +719,7 @@ namespace cling {
     // 3. Build the array of addresses
     QualType VarAddrTy = m_Sema->BuildArrayType(m_Context->VoidPtrTy,
                                                 ArrayType::Normal,
-                                                /*ArraySize*/0,
+                                                /*ArraySize*/nullptr,
                                                 /*IndexTypeQuals*/0,
                                                 m_NoRange,
                                                 DeclarationName() );
@@ -734,7 +734,7 @@ namespace cling {
       if (!UnOp) {
         // Not good, return what we had.
         cling::errs() << "Error while creating dynamic expression for:\n  ";
-        SubTree->printPretty(cling::errs(), 0 /*PrinterHelper*/,
+        SubTree->printPretty(cling::errs(), nullptr /*PrinterHelper*/,
                              m_Context->getPrintingPolicy(), 2);
         cling::errs() << "\n";
 #ifndef NDEBUG
@@ -768,7 +768,7 @@ namespace cling {
                               CK_ArrayToPointerDecay);
 
     // Is the result of the expression to be printed or not
-    Expr* VPReq = 0;
+    Expr* VPReq = nullptr;
     if (ValuePrinterReq)
       VPReq = m_Sema->ActOnCXXBoolLiteral(m_NoSLoc, tok::kw_true).get();
     else

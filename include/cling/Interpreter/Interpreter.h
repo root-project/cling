@@ -255,7 +255,7 @@ namespace cling {
     ///
     CompilationResult DeclareInternal(const std::string& input,
                                       const CompilationOptions& CO,
-                                      Transaction** T = 0) const;
+                                      Transaction** T = nullptr) const;
 
     ///\brief Worker function, building block for interpreter's public
     /// interfaces.
@@ -272,8 +272,8 @@ namespace cling {
     ///
     CompilationResult EvaluateInternal(const std::string& input,
                                        CompilationOptions CO,
-                                       Value* V = 0,
-                                       Transaction** T = 0,
+                                       Value* V = nullptr,
+                                       Transaction** T = nullptr,
                                        size_t wrapPoint = 0);
 
     ///\brief Worker function to code complete after all the mechanism
@@ -312,7 +312,7 @@ namespace cling {
     ///\returns The result of the execution.
     ///
     ExecutionResult RunFunction(const clang::FunctionDecl* FD,
-                                Value* res = 0);
+                                Value* res = nullptr);
 
     ///\brief Compile the function definition and return its Decl.
     ///
@@ -357,7 +357,7 @@ namespace cling {
     ///\param[in] extraLibHandle - resolve symbols also from this dylib
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
-    Interpreter(int argc, const char* const* argv, const char* llvmdir = 0,
+    Interpreter(int argc, const char* const* argv, const char* llvmdir = nullptr,
                 const ModuleFileExtensions& moduleExtensions = {},
                 void *extraLibHandle = nullptr, bool noRuntime = false)
         : Interpreter(argc, argv, llvmdir, moduleExtensions, extraLibHandle,
@@ -374,7 +374,7 @@ namespace cling {
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
     Interpreter(const Interpreter& parentInterpreter, int argc,
-                const char* const* argv, const char* llvmdir = 0,
+                const char* const* argv, const char* llvmdir = nullptr,
                 const ModuleFileExtensions& moduleExtensions = {},
                 void *extraLibHandle = nullptr, bool noRuntime = true);
 
@@ -521,8 +521,8 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult process(const std::string& input, Value* V = 0,
-                              Transaction** T = 0,
+    CompilationResult process(const std::string& input, Value* V = nullptr,
+                              Transaction** T = nullptr,
                               bool disableValuePrinting = false);
 
     ///\brief Parses input line, which doesn't contain statements. No code
@@ -537,7 +537,7 @@ namespace cling {
     ///\returns Whether the operation was fully successful.
     ///
     CompilationResult parse(const std::string& input,
-                            Transaction** T = 0) const;
+                            Transaction** T = nullptr) const;
     /// Loads a C++ Module with a given name by synthesizing an Import decl.
     /// This routine checks if there is a modulemap in the current directory
     /// and loads it.
@@ -594,7 +594,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult declare(const std::string& input, Transaction** T = 0);
+    CompilationResult declare(const std::string& input, Transaction** T = nullptr);
 
     ///\brief Compiles input line, which contains only expressions.
     ///
@@ -623,7 +623,7 @@ namespace cling {
     ///
     ///\returns Whether the operation was fully successful.
     ///
-    CompilationResult echo(const std::string& input, Value* V = 0);
+    CompilationResult echo(const std::string& input, Value* V = nullptr);
 
     ///\brief Compiles input line and runs.
     ///
@@ -673,7 +673,7 @@ namespace cling {
     ///\returns result of the compilation.
     ///
     CompilationResult loadHeader(const std::string& filename,
-                                 Transaction** T = 0);
+                                 Transaction** T = nullptr);
 
     ///\brief Loads header file or shared library.
     ///
@@ -685,7 +685,7 @@ namespace cling {
     ///
     CompilationResult loadFile(const std::string& filename,
                                bool allowSharedLib = true,
-                               Transaction** T = 0);
+                               Transaction** T = nullptr);
 
     ///\brief Unloads (forgets) a transaction from AST and JITed symbols.
     ///
@@ -810,7 +810,7 @@ namespace cling {
     ///\param[in]  D       - the global's Decl to find
     ///\param[out] fromJIT - whether the symbol was JITted.
     void* getAddressOfGlobal(const clang::GlobalDecl& D,
-                             bool* fromJIT = 0) const;
+                             bool* fromJIT = nullptr) const;
 
     ///\brief Gets the address of an existing global and whether it was JITted.
     ///
@@ -820,7 +820,7 @@ namespace cling {
     ///\param[in]  SymName - the name of the global to search
     ///\param[out] fromJIT - whether the symbol was JITted.
     ///
-    void* getAddressOfGlobal(llvm::StringRef SymName, bool* fromJIT = 0) const;
+    void* getAddressOfGlobal(llvm::StringRef SymName, bool* fromJIT = nullptr) const;
 
     ///\brief Get a given macro definition by name.
     ///
@@ -860,7 +860,7 @@ namespace cling {
                         clang::ASTContext& Ctx,
                         llvm::raw_ostream& out,
                         bool enableMacros = false,
-                        llvm::raw_ostream* logs = 0,
+                        llvm::raw_ostream* logs = nullptr,
                         IgnoreFilesFunc_t ignoreFiles =
                           [](const clang::PresumedLoc&) { return false;}) const;
 

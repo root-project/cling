@@ -102,7 +102,7 @@ namespace cling {
     ///
     const clang::Decl* findScope(llvm::StringRef className,
                                  DiagSetting diagOnOff,
-                                 const clang::Type** resultType = 0,
+                                 const clang::Type** resultType = nullptr,
                                  bool instantiateTemplate = true) const;
 
 

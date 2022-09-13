@@ -399,7 +399,7 @@ namespace cling {
     // and the ASTContext. For that to happen we shut down the IncrementalParser
     // explicitly, before the implicit destruction (through the unique_ptr) of
     // the callbacks.
-    m_IncrParser.reset(0);
+    m_IncrParser.reset(nullptr);
   }
 
   Transaction* Interpreter::Initialize(bool NoRuntime, bool SyntaxOnly,
@@ -1267,7 +1267,7 @@ namespace cling {
                      clang::diag::Severity::Warning, SourceLocation());
 
     if (CR != cling::Interpreter::kSuccess)
-      return 0;
+      return nullptr;
 
     for (cling::Transaction::const_iterator I = T->decls_begin(),
            E = T->decls_end(); I != E; ++I) {
@@ -1285,7 +1285,7 @@ namespace cling {
         }
       }
     }
-    return 0;
+    return nullptr;
   }
 
   void*
@@ -1296,7 +1296,7 @@ namespace cling {
     //
 
     if (isInSyntaxOnlyMode())
-      return 0;
+      return nullptr;
 
     if (ifUnique) {
       if (void* Addr = (void*)getAddressOfGlobal(name)) {
@@ -1307,7 +1307,7 @@ namespace cling {
     Transaction* T = nullptr;
     const FunctionDecl* FD = DeclareCFunction(name, code, withAccessControl, T);
     if (!FD || !T)
-      return 0;
+      return nullptr;
 
     //  Get the wrapper function pointer from the ExecutionEngine (the JIT).
     return m_Executor->getPointerToGlobalFromJIT(name);
@@ -1440,16 +1440,16 @@ namespace cling {
     // Clang doc says:
     // "LookupFrom is set when this is a \#include_next directive, it
     // specifies the file to start searching from."
-    const DirectoryLookup* FromDir = 0;
-    const FileEntry* FromFile = 0;
-    const DirectoryLookup* CurDir = 0;
+    const DirectoryLookup* FromDir = nullptr;
+    const FileEntry* FromFile = nullptr;
+    const DirectoryLookup* CurDir = nullptr;
     Preprocessor& PP = getCI()->getPreprocessor();
     // PP::LookupFile uses it to issue 'nice' diagnostic
     SourceLocation fileNameLoc;
     auto FE = PP.LookupFile(fileNameLoc, canonicalFile, isAngled, FromDir,
-                            FromFile, CurDir, /*SearchPath*/0,
-                            /*RelativePath*/ 0, /*suggestedModule*/0,
-                            0 /*IsMapped*/, /*IsFrameworkFound*/ nullptr,
+                            FromFile, CurDir, /*SearchPath*/nullptr,
+                            /*RelativePath*/ nullptr, /*suggestedModule*/nullptr,
+                            /*IsMapped*/ nullptr, /*IsFrameworkFound*/ nullptr,
                             /*SkipCache*/ false, /*OpenFile*/ false,
                             /*CacheFail*/ false);
     if (FE)
@@ -1748,7 +1748,7 @@ namespace cling {
                                         bool* fromJIT /*=0*/) const {
     // Return a symbol's address, and whether it was jitted.
     if (isInSyntaxOnlyMode())
-      return 0;
+      return nullptr;
     return m_Executor->getAddressOfGlobal(SymName, fromJIT);
   }
 

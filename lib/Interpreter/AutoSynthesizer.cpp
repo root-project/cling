@@ -23,7 +23,7 @@ namespace cling {
     llvm::DenseSet<NamedDecl*> m_HandledDecls;
   private:
   public:
-    AutoFixer(Sema* S) : m_Sema(S), m_FoundDRE(0) {}
+    AutoFixer(Sema* S) : m_Sema(S), m_FoundDRE(nullptr) {}
 
     CompoundStmt* Fix(CompoundStmt* CS) {
       if (!CS->size())

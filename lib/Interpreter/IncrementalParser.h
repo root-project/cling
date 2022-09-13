@@ -174,7 +174,7 @@ namespace cling {
     ///
     const Transaction* getFirstTransaction() const {
       if (m_Transactions.empty())
-        return 0;
+        return nullptr;
       return m_Transactions.front();
     }
 
@@ -182,7 +182,7 @@ namespace cling {
     ///
     Transaction* getLastTransaction() {
       if (m_Transactions.empty())
-        return 0;
+        return nullptr;
       return m_Transactions.back();
     }
 
@@ -190,7 +190,7 @@ namespace cling {
     ///
     const Transaction* getLastTransaction() const {
       if (m_Transactions.empty())
-        return 0;
+        return nullptr;
       return m_Transactions.back();
     }
 

@@ -46,7 +46,7 @@ namespace cling {
     ///\param[in] S - The semantic analysis object.
     ///
     ASTTransformer(clang::Sema* S):
-      m_Sema(S), m_Consumer(0), m_Transaction(nullptr) {}
+      m_Sema(S), m_Consumer(nullptr), m_Transaction(nullptr) {}
     virtual ~ASTTransformer();
 
     ///\brief Retrieves the semantic analysis object used for this transaction

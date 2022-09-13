@@ -79,7 +79,7 @@ namespace cling {
     ///
     bool differentContent(const std::string& file1, const std::string& file2,
                           const char* type = nullptr, bool verbose = false,
-               const llvm::SmallVectorImpl<llvm::StringRef>* ignores = 0) const;
+               const llvm::SmallVectorImpl<llvm::StringRef>* ignores = nullptr) const;
 
     ///\brief Return the llvm::Module this state is bound too.
     ///
@@ -95,7 +95,7 @@ namespace cling {
                                       const clang::Preprocessor& PP);
   private:
     llvm::raw_fd_ostream* createOutputFile(llvm::StringRef OutFile,
-                                           std::string* TempPathName = 0,
+                                           std::string* TempPathName = nullptr,
                                            bool RemoveFileOnSignal = true);
   };
 } // end namespace cling

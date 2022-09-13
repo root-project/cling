@@ -166,7 +166,7 @@ namespace cling {
 
     void PrintTemplateParameters(llvm::raw_ostream& Stream,
                                  clang::TemplateParameterList *Params,
-                                 const clang::TemplateArgumentList *Args = 0);
+                                 const clang::TemplateArgumentList *Args = nullptr);
     void prettyPrintAttributes(clang::Decl *D);
 
     bool isOperator(clang::FunctionDecl* D);
@@ -270,7 +270,7 @@ namespace cling {
       largestream m_Stream;
       bool m_HavePopped;
     public:
-      StreamRAII(ForwardDeclPrinter& pr, clang::PrintingPolicy* pol = 0):
+      StreamRAII(ForwardDeclPrinter& pr, clang::PrintingPolicy* pol = nullptr):
         m_pr(pr), m_oldPol(pr.m_Policy), m_HavePopped(false) {
         m_pr.m_StreamStack.push(&static_cast<llvm::raw_ostream&>(m_Stream));
         if (pol)

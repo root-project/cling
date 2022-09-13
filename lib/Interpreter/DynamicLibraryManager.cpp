@@ -401,7 +401,7 @@ namespace cling {
     if (!isLibraryLoaded(canonicalLoadedLib))
       return;
 
-    DyLibHandle dyLibHandle = 0;
+    DyLibHandle dyLibHandle = nullptr;
     for (DyLibs::const_iterator I = m_DyLibs.begin(), E = m_DyLibs.end();
          I != E; ++I) {
       if (I->second == canonicalLoadedLib) {

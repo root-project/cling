@@ -232,7 +232,7 @@ namespace cling {
 
   public:
     InterpreterExternalSemaSource(InterpreterCallbacks* C)
-      : m_Callbacks(C), m_Sema(0) {}
+      : m_Callbacks(C), m_Sema(nullptr) {}
 
     ~InterpreterExternalSemaSource() {
       // FIXME: Another gross hack due to the missing multiplexing AST external
@@ -250,7 +250,7 @@ namespace cling {
     }
 
     void ForgetSema() override {
-      m_Sema = 0;
+      m_Sema = nullptr;
     }
 
     InterpreterCallbacks* getCallbacks() const { return m_Callbacks; }
@@ -297,7 +297,7 @@ namespace cling {
                              bool enableExternalSemaSourceCallbacks/* = false*/,
                         bool enableDeserializationListenerCallbacks/* = false*/,
                                              bool enablePPCallbacks/* = false*/)
-    : m_Interpreter(interp), m_ExternalSemaSource(0), m_PPCallbacks(0),
+    : m_Interpreter(interp), m_ExternalSemaSource(nullptr), m_PPCallbacks(nullptr),
       m_IsRuntime(false) {
     Sema& SemaRef = interp->getSema();
     ASTReader* Reader = m_Interpreter->getCI()->getASTReader().get();

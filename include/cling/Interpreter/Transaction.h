@@ -272,22 +272,22 @@ namespace cling {
     const_nested_iterator nested_begin() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->begin();
-      return 0;
+      return nullptr;
     }
     const_nested_iterator nested_end() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->end();
-      return 0;
+      return nullptr;
     }
     const_reverse_nested_iterator rnested_begin() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->rbegin();
-      return const_reverse_nested_iterator(0);
+      return const_reverse_nested_iterator(nullptr);
     }
     const_reverse_nested_iterator rnested_end() const {
       if (hasNestedTransactions())
         return m_NestedTransactions->rend();
-      return const_reverse_nested_iterator(0);
+      return const_reverse_nested_iterator(nullptr);
     }
 
     /// Macro iteration
@@ -432,7 +432,7 @@ namespace cling {
 
     Transaction* getLastNestedTransaction() const {
       if (!hasNestedTransactions())
-        return 0;
+        return nullptr;
       return m_NestedTransactions->back();
     }
 

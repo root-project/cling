@@ -208,7 +208,7 @@ namespace cling {
     ///\param[out] exists - sets if the file exists. Useful to distinguish if it
     ///            is a library but of incompatible file format.
     ///
-    static bool isSharedLibrary(llvm::StringRef libFullPath, bool* exists = 0);
+    static bool isSharedLibrary(llvm::StringRef libFullPath, bool *exists = nullptr);
   };
 } // end namespace cling
 #endif // CLING_DYNAMIC_LIBRARY_MANAGER_H
