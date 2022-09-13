@@ -42,7 +42,7 @@ namespace textinput {
     };
 
     TextInput(Reader& reader, Display& display,
-              const char* histFile = 0);
+              const char* histFile = nullptr);
     ~TextInput();
 
     // Getters

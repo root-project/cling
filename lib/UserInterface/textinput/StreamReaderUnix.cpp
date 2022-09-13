@@ -67,7 +67,7 @@ namespace {
   public:
     ExtKeyMap& operator[](char k) {
       std::map<char, ExtKeyMap*>::iterator I = Map.find(k);
-      ExtKeyMap* N = 0;
+      ExtKeyMap *N = nullptr;
       if (I == Map.end()) {
         N = &BumpAlloc();
         Map.insert(std::make_pair(k, N));
@@ -88,7 +88,7 @@ namespace {
 
     ExtKeyMap* find(char c) const {
       std::map<char, ExtKeyMap*>::const_iterator I = Map.find(c);
-      if (I == Map.end()) return 0;
+      if (I == Map.end()) return nullptr;
       return I->second;
     }
 
@@ -188,9 +188,9 @@ namespace textinput {
     FD_ZERO(&PollSet);
     FD_SET(fileno(stdin), &PollSet);
     timeval timeout = {0,0}; // sec, musec
-    int avail = select(fileno(stdin) /*fd*/ + 1, &PollSet, 0, 0,
-                       wait ? 0 : &timeout);
-    return (avail == 1);
+    int avail = select(fileno(stdin) /*fd*/ + 1, &PollSet, nullptr, nullptr,
+                       wait ? nullptr : &timeout);
+    return avail == 1;
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -246,7 +246,7 @@ namespace textinput {
       if (EKM->haveExtInp()) {
         ret = EKM->getExtInp();
         mod = EKM->getMod();
-        EKM = 0;
+        EKM = nullptr;
       } else {
         char c1 = ReadRawCharacter();
         rwd.push(c1);

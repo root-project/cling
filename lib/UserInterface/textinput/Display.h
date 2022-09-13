@@ -40,7 +40,7 @@ namespace textinput {
       size_t fLine;
     };
 
-    Display(): fContext(0) {}
+    Display(): fContext(nullptr) {}
     virtual ~Display();
 
     const TextInputContext* GetContext() const { return fContext; }

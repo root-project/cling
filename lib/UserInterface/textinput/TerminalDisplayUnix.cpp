@@ -38,7 +38,7 @@ using std::strstr;
 
 namespace {
   textinput::TerminalDisplayUnix*& gTerminalDisplayUnix() {
-    static textinput::TerminalDisplayUnix* S = 0;
+    static textinput::TerminalDisplayUnix* S = nullptr;
     return S;
   }
 
