@@ -12,6 +12,7 @@
 
 #include "llvm/ADT/FunctionExtras.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/IR/Module.h"
 #include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
@@ -84,6 +85,7 @@ private:
   std::unique_ptr<llvm::orc::LLJIT> Jit;
   llvm::orc::SymbolMap m_InjectedSymbols;
   SharedAtomicFlag SkipHostProcessLookup;
+  llvm::StringSet<> m_ForbidDlSymbols;
 
   /// FIXME: If the relation between modules and transactions is a bijection, the
   /// mapping via module pointers here is unnecessary. The transaction should

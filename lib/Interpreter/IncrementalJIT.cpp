@@ -68,13 +68,13 @@ IncrementalJIT::IncrementalJIT(
       m_CompiledModules[Unsafe] = std::move(TSM);
     });
 
-  // FIXME: Make host process symbol lookup optional on a per-query basis
-
   char LinkerPrefix = this->TM->createDataLayout().getGlobalPrefix();
 
   // Process symbol resolution
-  Expected<std::unique_ptr<DynamicLibrarySearchGenerator>> HostProcessLookup =
-    DynamicLibrarySearchGenerator::GetForCurrentProcess(LinkerPrefix);
+  auto HostProcessLookup = DynamicLibrarySearchGenerator::GetForCurrentProcess(
+                                                                  LinkerPrefix,
+                                              [&](const SymbolStringPtr &Sym) {
+                                  return !m_ForbidDlSymbols.contains(*Sym); });
   if (!HostProcessLookup) {
     Err = HostProcessLookup.takeError();
     return;
@@ -179,7 +179,18 @@ void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols) 
   if (!IncludeHostSymbols)
     G.lock();
 
+  std::pair<llvm::StringMapIterator<llvm::NoneType>, bool> insertInfo;
+  if (!IncludeHostSymbols)
+    insertInfo = m_ForbidDlSymbols.insert(Name);
+
   Expected<JITEvaluatedSymbol> Symbol = Jit->lookup(Name);
+
+  // If m_ForbidDlSymbols already contained Name before we tried to insert it
+  // then some calling frame has added it and will remove it later because its
+  // insertInfo.second is true.
+  if (!IncludeHostSymbols && insertInfo.second)
+    m_ForbidDlSymbols.erase(insertInfo.first);
+
   if (!Symbol) {
     // This interface is allowed to return nullptr on a missing symbol without
     // diagnostics.
