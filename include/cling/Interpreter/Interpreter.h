@@ -344,7 +344,8 @@ namespace cling {
     /// constructors. parentInterp might be nullptr.
     ///
     Interpreter(int argc, const char* const* argv, const char* llvmdir,
-                const ModuleFileExtensions& moduleExtensions, bool noRuntime,
+                const ModuleFileExtensions& moduleExtensions,
+                void *extraLibHandle, bool noRuntime,
                 const Interpreter* parentInterp);
 
   public:
@@ -353,13 +354,14 @@ namespace cling {
     ///\param[in] argc - no. of args.
     ///\param[in] argv - arguments passed when driver is invoked.
     ///\param[in] llvmdir - ???
+    ///\param[in] extraLibHandle - resolve symbols also from this dylib
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
     Interpreter(int argc, const char* const* argv, const char* llvmdir = 0,
                 const ModuleFileExtensions& moduleExtensions = {},
-                bool noRuntime = false)
-        : Interpreter(argc, argv, llvmdir, moduleExtensions, noRuntime,
-                      nullptr) {}
+                void *extraLibHandle = nullptr, bool noRuntime = false)
+        : Interpreter(argc, argv, llvmdir, moduleExtensions, extraLibHandle,
+                      noRuntime, nullptr) {}
 
     ///\brief Constructor for child Interpreter.
     /// If the parent Interpreter has a replacement DiagnosticConsumer, it is
@@ -368,12 +370,13 @@ namespace cling {
     ///\param[in] argc - no. of args.
     ///\param[in] argv - arguments passed when driver is invoked.
     ///\param[in] llvmdir - ???
+    ///\param[in] extraLibHandle - resolve symbols also from this dylib
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
     Interpreter(const Interpreter& parentInterpreter, int argc,
                 const char* const* argv, const char* llvmdir = 0,
                 const ModuleFileExtensions& moduleExtensions = {},
-                bool noRuntime = true);
+                void *extraLibHandle = nullptr, bool noRuntime = true);
 
     virtual ~Interpreter();
 

@@ -199,14 +199,6 @@ namespace cling {
       return getSymbolLocation(reinterpret_cast<void*>(func));
     }
 
-
-    ///\brief Explicitly tell the execution engine to use symbols from
-    ///       a shared library that would otherwise not be used for symbol
-    ///       resolution, e.g. because it was dlopened with RTLD_LOCAL.
-    ///\param [in] handle - the system specific shared library handle.
-    ///
-    static void ExposeHiddenSharedLibrarySymbols(void* handle);
-
     static std::string normalizePath(llvm::StringRef path);
 
     /// Returns true if file is a shared library.

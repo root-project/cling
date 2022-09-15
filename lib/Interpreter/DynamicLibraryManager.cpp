@@ -444,10 +444,6 @@ namespace cling {
     }
   }
 
-  void DynamicLibraryManager::ExposeHiddenSharedLibrarySymbols(void* handle) {
-    llvm::sys::DynamicLibrary::addPermanentLibrary(const_cast<void*>(handle));
-  }
-
   bool DynamicLibraryManager::isSharedLibrary(llvm::StringRef libFullPath,
                                               bool* exists /*=0*/) {
     using namespace llvm;

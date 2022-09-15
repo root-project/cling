@@ -109,7 +109,7 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
 
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
                                          const clang::CompilerInstance& CI,
-                                         bool Verbose):
+                                         void *ExtraLibHandle, bool Verbose):
   m_Callbacks(nullptr), m_externalIncrementalExecutor(nullptr)
 #if 0
   : m_Diags(diags)
@@ -125,7 +125,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
   llvm::Error Err = llvm::Error::success();
   auto EPC = llvm::cantFail(llvm::orc::SelfExecutorProcessControl::Create());
   m_JIT.reset(new IncrementalJIT(*this, std::move(TM), std::move(EPC), Err,
-    Verbose));
+    ExtraLibHandle, Verbose));
   if (Err) {
     llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "Fatal: ");
     llvm_unreachable("Propagate this error and exit gracefully");

@@ -200,7 +200,8 @@ namespace cling {
   Interpreter::Interpreter(int argc, const char* const *argv,
                            const char* llvmdir /*= 0*/,
                            const ModuleFileExtensions& moduleExtensions,
-                           bool noRuntime, const Interpreter* parentInterp) :
+                           void *extraLibHandle, bool noRuntime,
+                           const Interpreter* parentInterp) :
     m_Opts(argc, argv),
     m_UniqueCounter(parentInterp ? parentInterp->m_UniqueCounter + 1 : 0),
     m_PrintDebug(false), m_DynamicLookupDeclared(false),
@@ -258,7 +259,7 @@ namespace cling {
 
     if (!isInSyntaxOnlyMode()) {
       m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI(),
-        m_Opts.Verbose()));
+        extraLibHandle, m_Opts.Verbose()));
 
       if (!m_Executor)
         return;
@@ -350,8 +351,8 @@ namespace cling {
                            const char* const *argv,
                            const char* llvmdir /*= 0*/,
                            const ModuleFileExtensions& moduleExtensions/*={}*/,
-                           bool noRuntime /*= true*/) :
-    Interpreter(argc, argv, llvmdir, moduleExtensions, noRuntime,
+                           void *ExtraLibHandle, bool noRuntime /*= true*/) :
+    Interpreter(argc, argv, llvmdir, moduleExtensions, ExtraLibHandle, noRuntime,
                 &parentInterpreter) {
     // Do the "setup" of the connection between this interpreter and
     // its parent interpreter.
@@ -1769,7 +1770,8 @@ namespace cling {
     std::string llvmdir
       = getCI()->getHeaderSearchOpts().ResourceDir + "/../../../";
     cling::Interpreter fwdGen(1, &dummy, llvmdir.c_str(),
-                              /*moduleExtensions*/ {}, /*noRuntime=*/true);
+                              /*moduleExtensions*/ {},
+                              /*ExtraLibHandle*/ nullptr, /*noRuntime=*/true);
 
     // Copy the same header search options to the new instance.
     Preprocessor& fwdGenPP = fwdGen.getCI()->getPreprocessor();

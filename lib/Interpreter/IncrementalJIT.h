@@ -54,7 +54,7 @@ public:
   IncrementalJIT(IncrementalExecutor& Executor,
                  std::unique_ptr<llvm::TargetMachine> TM,
                  std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC,
-                 llvm::Error &Err, bool Verbose = false);
+                 llvm::Error &Err, void *ExtraLibHandle, bool Verbose);
 
   /// Register a DefinitionGenerator to dynamically provide symbols for
   /// generated code that are not already available within the process.

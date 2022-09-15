@@ -27,7 +27,7 @@ namespace cling {
 IncrementalJIT::IncrementalJIT(
     IncrementalExecutor& Executor, std::unique_ptr<TargetMachine> TM,
     std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err,
-    bool Verbose)
+    void *ExtraLibHandle, bool Verbose)
     : SkipHostProcessLookup(false),
       TM(std::move(TM)),
       SingleThreadedContext(std::make_unique<LLVMContext>()) {
@@ -80,6 +80,14 @@ IncrementalJIT::IncrementalJIT(
     return;
   }
   Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
+
+  // This must come after process resolution, to  consistently resolve global
+  // symbols (e.g. std::cout) to the same address.
+  auto LibLookup = std::make_unique<DynamicLibrarySearchGenerator>(
+                       llvm::sys::DynamicLibrary(ExtraLibHandle), LinkerPrefix,
+                                              [&](const SymbolStringPtr &Sym) {
+                                  return !m_ForbidDlSymbols.contains(*Sym); });
+  Jit->getMainJITDylib().addGenerator(std::move(LibLookup));
 
   // This replaces llvm::orc::ExecutionSession::logErrorsToStdErr:
   auto&& ErrorReporter = [&Executor, LinkerPrefix, Verbose](Error Err) {
