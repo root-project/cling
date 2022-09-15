@@ -11,6 +11,8 @@
 
 #include "IncrementalJIT.h"
 
+#include "cling/Utils/Platform.h"
+
 #include "llvm/Analysis/InlineCost.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
@@ -218,8 +220,15 @@ namespace {
       if (!GV.isDiscardableIfUnused(LT) || !GV.isWeakForLinker(LT))
         return false;
 
-      // Find the symbol in JIT or shared libraries.
-      if (m_JIT.getSymbolAddress(GV.getName(), /*IncludeHostSymbols*/ true)) {
+      // Find the symbol in JIT or shared libraries (without auto-loading).
+      std::string Name =  GV.getName().str();
+      if (
+#if !defined(_WIN32)
+        llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(Name)
+#else
+        platform::DLSym(Name)
+#endif
+      ) {
 #if !defined(_WIN32)
         // Heuristically, Windows cannot handle cross-library variables; they
         // must be library-local.
