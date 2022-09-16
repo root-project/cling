@@ -156,11 +156,6 @@ namespace cling {
       }
     };
 
-    // Value(void* QualTypeAsOpaquePtr, Interpreter& Interp):
-    //   m_Type(QualTypeAsOpaquePtr),
-    //   m_Interpreter(&Interp) {
-    // }
-
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
     Value():
