@@ -55,7 +55,7 @@ namespace runtime {
         // Check whether the expected return type and the actual return type are
         // compatible with Sema::CheckAssingmentConstraints or
         // ASTContext::typesAreCompatible.
-        return result.simplisticCastAs<T>();
+        return result.castAs<T>();
       return T();
     }
 

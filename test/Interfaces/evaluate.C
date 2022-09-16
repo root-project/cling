@@ -141,7 +141,7 @@ namespace cling {
   }
 }
 void dumpTracerSVR(cling::Value& svr) {
-  ((Tracer*)svr.getAs<void*>())->dump("dump");
+  ((Tracer*)svr.castAs<void*>())->dump("dump");
 }
 .rawInput 0
 

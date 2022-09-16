@@ -133,7 +133,7 @@ namespace cling {
     bool hasPointerType() const;
     bool hasBuiltinType() const;
 
-    // Allow simplisticCastAs to be partially specialized.
+    // Allow castAs to be partially specialized.
     template<typename T>
     struct CastFwd {
       static T cast(const Value& V) {
@@ -145,7 +145,6 @@ namespace cling {
         return T();
       }
     };
-
     template<typename T>
     struct CastFwd<T*> {
       static T* cast(const Value& V) {
@@ -155,6 +154,9 @@ namespace cling {
         return nullptr;
       }
     };
+
+    /// \brief Get a reference to the value with type checking.
+    template <typename T> T getAs() const;
 
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
@@ -249,7 +251,7 @@ namespace cling {
     /// casting the value of builtins (except void), enums and pointers.
     /// Values referencing an object are treated as pointers to the object.
     template <typename T>
-    T simplisticCastAs() const {
+    T castAs() const {
       return CastFwd<T>::cast(*this);
     }
 

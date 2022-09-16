@@ -958,7 +958,7 @@ namespace cling {
       Value res = Interp->Evaluate(ctor.c_str(), DC,
                                    ExprInfo->isValuePrinterRequested()
                                    );
-      m_Memory = (void*)res.getAs<void*>();
+      m_Memory = res.getPtr();
     }
 
     LifetimeHandler::~LifetimeHandler() {
