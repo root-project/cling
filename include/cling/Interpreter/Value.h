@@ -158,6 +158,7 @@ namespace cling {
     /// \brief Get a reference to the value with type checking.
     template <typename T> T getAs() const;
 
+    void AssertTypeMismatch(const char* Type) const;
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
     Value():
@@ -223,12 +224,8 @@ namespace cling {
     /// \brief Determine whether the Value is set and not void.
     //
     /// Determine whether the Value is set and not void.
-    /// Only in this case can getAs() or simplisticCastAs() be called.
+    /// Only in this case can we can get the represented value.
     bool hasValue() const { return isValid() && !isVoid(); }
-
-    /// \brief Get a reference to the value without type checking.
-    /// T *must* correspond to type. Else use simplisticCastAs()!
-    template <typename T> T getAs() const;
 
     // FIXME: If the cling::Value is destroyed and it handed out an address that
     // might be accessing invalid memory.
@@ -236,10 +233,26 @@ namespace cling {
     void* getPtr() const { return m_Storage.m_Ptr; }
     void setPtr(void* Val) { m_Storage.m_Ptr = Val; }
 
-    // FIXME: Add AssertInvalid("##name")
+#ifndef NDEBUG
+#define _STRINGIFY(x) #x
+#define STRINGIFY(x) _STRINGIFY(x)
+    // FIXME: Uncomment and debug the various type mismatches.
+    //#define ASSERT_TYPE_MISMATCH(name) AssertTypeMismatch(STRINGIFY(name))
+    #define ASSERT_TYPE_MISMATCH(name)
+#undef STRINGIFY
+#undef _STRINGIFY
+#else
+    #define ASSERT_TYPE_MISMATCH(name)
+#endif // NDEBUG
 #define X(type, name)                                    \
-    type get##name() const {return m_Storage.m_##name;}  \
-    void set##name(type Val) {m_Storage.m_##name = Val;} \
+    type get##name() const {                             \
+      ASSERT_TYPE_MISMATCH(name);                        \
+      return m_Storage.m_##name;                         \
+    }                                                    \
+    void set##name(type Val) {                           \
+      ASSERT_TYPE_MISMATCH(name);                        \
+      m_Storage.m_##name = Val;                          \
+    }                                                    \
 
   BUILTIN_TYPES
 

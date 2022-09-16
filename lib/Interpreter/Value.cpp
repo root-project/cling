@@ -251,6 +251,15 @@ namespace cling {
     return QT.getCanonicalType();
   }
 
+  void Value::AssertTypeMismatch(const char* Type) const {
+#ifndef NDEBUG
+    assert(hasBuiltinType() && "Must be a builtin!");
+    const clang::BuiltinType *BT = getType()->castAs<clang::BuiltinType>();
+    clang::PrintingPolicy Policy = getASTContext().getPrintingPolicy();
+#endif // NDEBUG
+    assert(BT->getName(Policy).equals(Type));
+  }
+
   template <typename T> T convert(clang::QualType QT, Value::Storage& S) {
     QT = getBuiltinCanonicalType(QT);
     assert(QT->isBuiltinType());
@@ -310,7 +319,7 @@ namespace cling {
   }
 
   void Value::AssertOnUnsupportedTypeCast() const {
-    assert("unsupported type in Value, cannot cast simplistically!" && 0);
+    assert("unsupported type in Value, cannot cast!" && 0);
   }
 
   namespace valuePrinterInternal {
