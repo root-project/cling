@@ -762,7 +762,7 @@ static std::string printEnumValue(const Value &V) {
   const clang::EnumType *EnumTy = Ty.getNonReferenceType()->getAs<clang::EnumType>();
   assert(EnumTy && "ValuePrinter.cpp: ERROR, printEnumValue invoked for a non enum type.");
   clang::EnumDecl *ED = EnumTy->getDecl();
-  uint64_t value = V.getULL();
+  uint64_t value = V.getULongLong();
   bool IsFirst = true;
   llvm::APSInt ValAsAPSInt = C.MakeIntValue(value, Ty);
   for (clang::EnumDecl::enumerator_iterator I = ED->enumerator_begin(),
@@ -906,33 +906,33 @@ static std::string printUnpackedClingValue(const Value &V) {
       = llvm::dyn_cast<clang::BuiltinType>(Td.getCanonicalType().getTypePtr())) {
     switch (BT->getKind()) {
       case clang::BuiltinType::Bool:
-        return executePrintValue<bool>(V, V.getLL());
+        return executePrintValue<bool>(V, V.getLongLong());
 
       case clang::BuiltinType::Char_S:
-        return executePrintValue<signed char>(V, V.getLL());
+        return executePrintValue<signed char>(V, V.getLongLong());
       case clang::BuiltinType::SChar:
-        return executePrintValue<signed char>(V, V.getLL());
+        return executePrintValue<signed char>(V, V.getLongLong());
       case clang::BuiltinType::Short:
-        return executePrintValue<short>(V, V.getLL());
+        return executePrintValue<short>(V, V.getLongLong());
       case clang::BuiltinType::Int:
-        return executePrintValue<int>(V, V.getLL());
+        return executePrintValue<int>(V, V.getLongLong());
       case clang::BuiltinType::Long:
-        return executePrintValue<long>(V, V.getLL());
+        return executePrintValue<long>(V, V.getLongLong());
       case clang::BuiltinType::LongLong:
-        return executePrintValue<long long>(V, V.getLL());
+        return executePrintValue<long long>(V, V.getLongLong());
 
       case clang::BuiltinType::Char_U:
-        return executePrintValue<unsigned char>(V, V.getULL());
+        return executePrintValue<unsigned char>(V, V.getULongLong());
       case clang::BuiltinType::UChar:
-        return executePrintValue<unsigned char>(V, V.getULL());
+        return executePrintValue<unsigned char>(V, V.getULongLong());
       case clang::BuiltinType::UShort:
-        return executePrintValue<unsigned short>(V, V.getULL());
+        return executePrintValue<unsigned short>(V, V.getULongLong());
       case clang::BuiltinType::UInt:
-        return executePrintValue<unsigned int>(V, V.getULL());
+        return executePrintValue<unsigned int>(V, V.getULongLong());
       case clang::BuiltinType::ULong:
-        return executePrintValue<unsigned long>(V, V.getULL());
+        return executePrintValue<unsigned long>(V, V.getULongLong());
       case clang::BuiltinType::ULongLong:
-        return executePrintValue<unsigned long long>(V, V.getULL());
+        return executePrintValue<unsigned long long>(V, V.getULongLong());
 
       case clang::BuiltinType::Float:
         return executePrintValue<float>(V, V.getFloat());

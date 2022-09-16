@@ -135,15 +135,25 @@ namespace {
 namespace cling {
 
   Value::Value(const Value& other):
-    m_Storage(other.m_Storage), m_StorageType(other.m_StorageType),
+    m_Storage(other.m_Storage), m_NeedsManagedAlloc(other.m_NeedsManagedAlloc),
     m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
     if (other.needsManagedAllocation())
       AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
   }
 
+  static bool needsManagedAlloc(clang::QualType QT) {
+    clang::QualType Canon = QT.getCanonicalType();
+    if (Canon->isPointerType() || Canon->isObjectType() ||
+        Canon->isReferenceType())
+      if (Canon->isRecordType() || Canon->isConstantArrayType() ||
+          Canon->isMemberPointerType())
+        return true;
+    return false;
+  }
+
   Value::Value(clang::QualType clangTy, Interpreter& Interp):
-    m_StorageType(determineStorageType(clangTy)),
-    m_Type(clangTy.getAsOpaquePtr()),
+    m_NeedsManagedAlloc(needsManagedAlloc(clangTy)),
+    m_Type(clangTy.getAsOpaquePtr()), // FIXME: What happens clangTy is freed?
     m_Interpreter(&Interp) {
     if (needsManagedAllocation())
       ManagedAllocate();
@@ -157,7 +167,7 @@ namespace cling {
     // Retain new one.
     m_Type = other.m_Type;
     m_Storage = other.m_Storage;
-    m_StorageType = other.m_StorageType;
+    m_NeedsManagedAlloc = other.m_NeedsManagedAlloc;
     m_Interpreter = other.m_Interpreter;
     if (needsManagedAllocation())
       AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
@@ -172,10 +182,10 @@ namespace cling {
     // Move new one.
     m_Type = other.m_Type;
     m_Storage = other.m_Storage;
-    m_StorageType = other.m_StorageType;
+    m_NeedsManagedAlloc = other.m_NeedsManagedAlloc;
     m_Interpreter = other.m_Interpreter;
     // Invalidate other so it will not release.
-    other.m_StorageType = kUnsupportedType;
+    other.m_NeedsManagedAlloc = false;
 
     return *this;
   }
@@ -214,30 +224,6 @@ namespace cling {
     return 1;
   }
 
-  Value::EStorageType Value::determineStorageType(clang::QualType QT) {
-    const clang::Type* desugCanon = QT.getCanonicalType().getTypePtr();
-    if (desugCanon->isSignedIntegerOrEnumerationType())
-      return kSignedIntegerOrEnumerationType;
-    else if (desugCanon->isUnsignedIntegerOrEnumerationType())
-      return kUnsignedIntegerOrEnumerationType;
-    else if (desugCanon->isRealFloatingType()) {
-      const clang::BuiltinType* BT = desugCanon->getAs<clang::BuiltinType>();
-      if (BT->getKind() == clang::BuiltinType::Double)
-        return kDoubleType;
-      else if (BT->getKind() == clang::BuiltinType::Float)
-        return kFloatType;
-      else if (BT->getKind() == clang::BuiltinType::LongDouble)
-        return kLongDoubleType;
-    } else if (desugCanon->isPointerType() || desugCanon->isObjectType()
-               || desugCanon->isReferenceType()) {
-      if (desugCanon->isRecordType() || desugCanon->isConstantArrayType()
-          || desugCanon->isMemberPointerType())
-        return kManagedAllocation;
-      return kPointerType;
-    }
-    return kUnsupportedType;
-  }
-
   void Value::ManagedAllocate() {
     assert(needsManagedAllocation() && "Does not need managed allocation");
     void* dtorFunc = 0;
@@ -258,12 +244,15 @@ namespace cling {
                                                 GetNumberOfElements(getType()));
   }
 
-  template <typename T> T convert(clang::QualType QT, Value::Storage& S) {
+  static clang::QualType getBuiltinCanonicalType(clang::QualType QT) {
     if (const auto *ET = llvm::dyn_cast<clang::EnumType>(QT.getTypePtr()))
       QT = ET->getDecl()->getIntegerType();
 
-    QT = QT.getCanonicalType();
+    return QT.getCanonicalType();
+  }
 
+  template <typename T> T convert(clang::QualType QT, Value::Storage& S) {
+    QT = getBuiltinCanonicalType(QT);
     assert(QT->isBuiltinType());
 
     const auto* BT = llvm::cast<const clang::BuiltinType>(QT.getTypePtr());
@@ -277,17 +266,28 @@ namespace cling {
     }
   }
 
+  template <> void* Value::getAs() const {
+    if (needsManagedAllocation() || hasPointerType())
+      return m_Storage.m_Ptr;
+    return (void*)convert<uintptr_t>(getType(), const_cast<Value::Storage&>(m_Storage));
+  }
+
 #define X(type, name)                                                   \
   template <> type Value::getAs() const {                               \
     return convert<type>(getType(), const_cast<Value::Storage&>(m_Storage)); \
-  }                                                                     \
-  template <> type& Value::getAs() {                                    \
-    return convert<type&>(getType(), m_Storage);                        \
   }                                                                     \
 
   BUILTIN_TYPES
 
 #undef X
+  bool Value::hasPointerType() const {
+    clang::QualType Canon = getType().getCanonicalType();
+    return Canon->hasPointerRepresentation() /*|| Canon->isObjectType()*/;
+  }
+
+  bool Value::hasBuiltinType() const {
+    return getBuiltinCanonicalType(getType())->isBuiltinType();
+  }
 
   void Value::AssertOnUnsupportedTypeCast() const {
     assert("unsupported type in Value, cannot cast simplistically!" && 0);

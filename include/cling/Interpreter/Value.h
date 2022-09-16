@@ -112,19 +112,8 @@ namespace cling {
     /// \brief The actual value.
     Storage m_Storage;
 
-    enum EStorageType {
-      kSignedIntegerOrEnumerationType,
-      kUnsignedIntegerOrEnumerationType,
-      kDoubleType,
-      kFloatType,
-      kLongDoubleType,
-      kPointerType,
-      kManagedAllocation,
-      kUnsupportedType
-    };
-
-    /// \brief Which part in m_Storage is active.
-    EStorageType m_StorageType;
+    /// \brief If the \c Value class needs to alloc and dealloc memory.
+    bool m_NeedsManagedAlloc;
 
     /// \brief The value's type, stored as opaque void* to reduce
     /// dependencies.
@@ -177,24 +166,17 @@ namespace cling {
     ///   dependencies.
     void AssertOnUnsupportedTypeCast() const;
 
+    bool hasPointerType() const;
+    bool hasBuiltinType() const;
+
     // Allow simplisticCastAs to be partially specialized.
     template<typename T>
     struct CastFwd {
       static T cast(const Value& V) {
-        EStorageType storageType = V.getStorageType();
-        switch (storageType) {
-        case kSignedIntegerOrEnumerationType:
-        case kUnsignedIntegerOrEnumerationType:
-        case kDoubleType:
-        case kFloatType:
-        case kLongDoubleType:
-          return (T) V.getAs<T>();
-        case kPointerType:
-        case kManagedAllocation:
+        if (V.needsManagedAllocation() || V.hasPointerType())
           return (T) (uintptr_t) V.getAs<void*>();
-        case kUnsupportedType:
-          break; // assert
-        }
+        if (V.hasBuiltinType())
+          return (T) V.getAs<T>();
         V.AssertOnUnsupportedTypeCast();
         return T();
       }
@@ -203,33 +185,31 @@ namespace cling {
     template<typename T>
     struct CastFwd<T*> {
       static T* cast(const Value& V) {
-        EStorageType storageType = V.getStorageType();
-        if (storageType == kPointerType  || storageType == kManagedAllocation)
+        if (V.needsManagedAllocation() || V.hasPointerType())
           return (T*) (uintptr_t) V.getAs<void*>();
         V.AssertOnUnsupportedTypeCast();
-        return 0;
+        return nullptr;
       }
     };
 
-    Value(void* QualTypeAsOpaquePtr, Interpreter& Interp, EStorageType stType):
-      m_StorageType(stType),
-      m_Type(QualTypeAsOpaquePtr),
-      m_Interpreter(&Interp) {
-    }
+    // Value(void* QualTypeAsOpaquePtr, Interpreter& Interp):
+    //   m_Type(QualTypeAsOpaquePtr),
+    //   m_Interpreter(&Interp) {
+    // }
 
   public:
     /// \brief Default constructor, creates a value that IsInvalid().
     Value():
-      m_StorageType(kUnsupportedType), m_Type(nullptr),
+      m_NeedsManagedAlloc(false), m_Type(nullptr),
       m_Interpreter(nullptr) {}
     /// \brief Copy a value.
     Value(const Value& other);
     /// \brief Move a value.
     Value(Value&& other):
-      m_Storage(other.m_Storage), m_StorageType(other.m_StorageType),
+      m_Storage(other.m_Storage), m_NeedsManagedAlloc(other.m_NeedsManagedAlloc),
       m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
       // Invalidate other so it will not release.
-      other.m_StorageType = kUnsupportedType;
+      other.m_NeedsManagedAlloc = false;
     }
 
     /// \brief Construct a valid but uninitialized Value. After this call the
@@ -263,7 +243,7 @@ namespace cling {
     /// by the m_Storage member is insufficient, or a non-trivial destructor
     /// must be called.
     bool needsManagedAllocation() const {
-      return getStorageType() == kManagedAllocation;
+      return m_NeedsManagedAlloc;
     }
 
     /// \brief Determine whether the Value has been set.
@@ -284,22 +264,21 @@ namespace cling {
     /// \brief Get a reference to the value without type checking.
     /// T *must* correspond to type. Else use simplisticCastAs()!
     template <typename T> T getAs() const;
-    template <typename T> T& getAs();
 
-    void*& getPtr() { return m_Storage.m_Ptr; }
+    // FIXME: If the cling::Value is destroyed and it handed out an address that
+    // might be accessing invalid memory.
+    void** getPtrAddress() { return &m_Storage.m_Ptr; }
     void* getPtr() const { return m_Storage.m_Ptr; }
+    void setPtr(void* Val) { m_Storage.m_Ptr = Val; }
 
-    double& getDouble() { return m_Storage.m_Double; }
-    long double& getLongDouble() { return m_Storage.m_LongDouble; }
-    float& getFloat() { return m_Storage.m_Float; }
-    long long& getLL() { return m_Storage.m_LongLong; }
-    unsigned long long& getULL() { return m_Storage.m_ULongLong; }
+    // FIXME: Add AssertInvalid("##name")
+#define X(type, name)                                    \
+    type get##name() const {return m_Storage.m_##name;}  \
+    void set##name(type Val) {m_Storage.m_##name = Val;} \
 
-    double getDouble() const { return m_Storage.m_Double; }
-    long double getLongDouble() const { return m_Storage.m_LongDouble; }
-    float getFloat() const { return m_Storage.m_Float; }
-    long long getLL() const { return m_Storage.m_LongLong; }
-    unsigned long long getULL() const { return m_Storage.m_ULongLong; }
+  BUILTIN_TYPES
+
+#undef X
 
     /// \brief Get the value with cast.
     //
@@ -323,12 +302,9 @@ namespace cling {
     void dump(bool escape = true) const;
   };
 
-  //template <> void*& Value::getAs() { return m_Storage.m_Ptr; }
-  template <> inline void* Value::getAs() const { return m_Storage.m_Ptr; }
-  template <> inline void*& Value::getAs() { return m_Storage.m_Ptr; }
+  template <> void* Value::getAs() const;
 #define X(type, name)                                                   \
   template <> type Value::getAs() const;                                \
-  template <> type& Value::getAs();                                     \
 
   BUILTIN_TYPES
 

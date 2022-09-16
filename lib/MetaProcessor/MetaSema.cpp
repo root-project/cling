@@ -469,7 +469,7 @@ namespace cling {
       clang::ASTContext& Ctx = m_Interpreter.getCI()->getASTContext();
       if (result) {
         *result = Value(Ctx.IntTy, m_Interpreter);
-        result->getAs<long long>() = exitStatus;
+        result->setLongLong(exitStatus); // FIXME: This should assert.
       }
       return (exitStatus == 0) ? AR_Success : AR_Failure;
     }
