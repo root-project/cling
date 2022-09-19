@@ -347,8 +347,8 @@ namespace cling {
       return Context.LongTy;
     }
     if (typeName.equals("long long")) {
-      if (isunsigned) return Context.LongLongTy;
-      return Context.UnsignedLongLongTy;
+      if (isunsigned) return Context.UnsignedLongLongTy;
+      return Context.LongLongTy;
     }
     if (!issigned && !isunsigned) {
       if (typeName.equals("bool")) return Context.BoolTy;
