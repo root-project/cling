@@ -260,7 +260,7 @@ namespace cling {
     assert(BT->getName(Policy).equals(Type));
   }
 
-  template <typename T> T convert(clang::QualType QT, Value::Storage& S) {
+  template <typename T> T convert(clang::QualType QT, const Value::Storage& S) {
     QT = getBuiltinCanonicalType(QT);
     assert(QT->isBuiltinType());
 
@@ -291,12 +291,12 @@ namespace cling {
   template <> void* Value::getAs() const {
     if (needsManagedAllocation() || hasPointerType())
       return m_Storage.m_Ptr;
-    return (void*)convert<uintptr_t>(getType(), const_cast<Value::Storage&>(m_Storage));
+    return (void*)convert<uintptr_t>(getType(), m_Storage);
   }
 
 #define X(type, name)                                                   \
   template <> type Value::getAs() const {                               \
-    return convert<type>(getType(), const_cast<Value::Storage&>(m_Storage)); \
+    return convert<type>(getType(), m_Storage);                         \
   }                                                                     \
   template <> Value Value::Create(Interpreter& Interp, type val) {      \
     clang::ASTContext &C = Interp.getCI()->getASTContext();             \
