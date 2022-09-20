@@ -12,8 +12,7 @@
 
 #include "cling/Interpreter/Visibility.h"
 
-#include <cstdint>
-#include <type_traits>
+#include <cstdint> // for uintptr_t
 
 namespace llvm {
   class raw_ostream;
@@ -25,7 +24,7 @@ namespace clang {
 }
 
 // FIXME: Merge with clang::BuiltinType::getName
-#define BUILTIN_TYPES                                                  \
+#define CLING_VALUE_BUILTIN_TYPES                                      \
   /*  X(void, Void) */                                                 \
   X(bool, Bool)                                                        \
   X(char, Char_S)                                                      \
@@ -79,7 +78,7 @@ namespace clang {
   /*X(char8_t, Char8)*/                                                \
   X(char16_t, Char16)                                                  \
   X(char32_t, Char32)                                                  \
-  /*X(std::nullptr_t, NullPtr)*/
+  /*X(std::nullptr_t, NullPtr) same as kPtrOrObjTy*/
 
 
 namespace cling {
@@ -101,11 +100,19 @@ namespace cling {
     ///
     union Storage {
 #define X(type, name) type m_##name;
-
-      BUILTIN_TYPES
-
+      CLING_VALUE_BUILTIN_TYPES
 #undef X
       void* m_Ptr; /// Can point to allocation, see needsManagedAllocation().
+    };
+
+    enum TypeKind : short {
+      kInvalid = 0,
+#define X(type, name) \
+      k##name,
+      CLING_VALUE_BUILTIN_TYPES
+#undef X
+      kVoid,
+      kPtrOrObjTy
     };
 
   protected:
@@ -113,15 +120,17 @@ namespace cling {
     Storage m_Storage;
 
     /// \brief If the \c Value class needs to alloc and dealloc memory.
-    bool m_NeedsManagedAlloc;
+    bool m_NeedsManagedAlloc = false;
+
+    TypeKind m_TypeKind = Value::kInvalid;
 
     /// \brief The value's type, stored as opaque void* to reduce
     /// dependencies.
-    void* m_Type;
+    void* m_Type = nullptr;
 
     ///\brief Interpreter that produced the value.
     ///
-    Interpreter* m_Interpreter;
+    Interpreter* m_Interpreter = nullptr;
 
     /// \brief Allocate storage as needed by the type.
     void ManagedAllocate();
@@ -130,48 +139,67 @@ namespace cling {
     ///   dependencies.
     void AssertOnUnsupportedTypeCast() const;
 
-    bool hasPointerType() const;
-    bool hasBuiltinType() const;
+    bool isPointerOrObjectType() const { return m_TypeKind == kPtrOrObjTy; }
+    bool isBuiltinType() const {
+      return m_TypeKind != kInvalid && !isPointerOrObjectType();
+    };
 
     // Allow castAs to be partially specialized.
     template<typename T>
     struct CastFwd {
       static T cast(const Value& V) {
-        if (V.needsManagedAllocation() || V.hasPointerType())
+        if (V.isPointerOrObjectType())
           return (T) (uintptr_t) V.getAs<void*>();
-        if (V.hasBuiltinType())
-          return (T) V.getAs<T>();
-        V.AssertOnUnsupportedTypeCast();
-        return T();
+        if (V.isInvalid() || V.isVoid()) {
+#ifndef NDEBUG // Removing this might break inlining
+           V.AssertOnUnsupportedTypeCast();
+#endif // NDEBUG
+           return T();
+        }
+        return V.getAs<T>();
       }
     };
     template<typename T>
     struct CastFwd<T*> {
       static T* cast(const Value& V) {
-        if (V.needsManagedAllocation() || V.hasPointerType())
+        if (V.isPointerOrObjectType())
           return (T*) (uintptr_t) V.getAs<void*>();
+#ifndef NDEBUG // Removing this might break inlining
         V.AssertOnUnsupportedTypeCast();
+#endif // NDEBUG
         return nullptr;
       }
     };
 
-    /// \brief Get a reference to the value with type checking.
-    template <typename T> T getAs() const;
+    /// \brief Get to the value with type checking casting the underlying
+    /// stored value to T.
+    template <typename T> T getAs() const {
+      switch (m_TypeKind) {
+      default:
+#ifndef NDEBUG
+        AssertOnUnsupportedTypeCast();
+#endif // NDEBUG
+        return T();
+#define X(type, name)                                           \
+        case Value::k##name: return (T) m_Storage.m_##name;
+        CLING_VALUE_BUILTIN_TYPES
+#undef X
+      }
+    }
 
     void AssertTypeMismatch(const char* Type) const;
   public:
-    /// \brief Default constructor, creates a value that IsInvalid().
-    Value():
-      m_NeedsManagedAlloc(false), m_Type(nullptr),
-      m_Interpreter(nullptr) {}
+    Value() = default;
     /// \brief Copy a value.
     Value(const Value& other);
     /// \brief Move a value.
     Value(Value&& other):
       m_Storage(other.m_Storage), m_NeedsManagedAlloc(other.m_NeedsManagedAlloc),
+      m_TypeKind(other.m_TypeKind),
       m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
       // Invalidate other so it will not release.
       other.m_NeedsManagedAlloc = false;
+      other.m_TypeKind = kInvalid;
     }
 
     /// \brief Construct a valid but uninitialized Value. After this call the
@@ -208,18 +236,17 @@ namespace cling {
     /// \brief Whether this type needs managed heap, i.e. the storage provided
     /// by the m_Storage member is insufficient, or a non-trivial destructor
     /// must be called.
-    bool needsManagedAllocation() const {
-      return m_NeedsManagedAlloc;
-    }
+    bool needsManagedAllocation() const { return m_NeedsManagedAlloc; }
 
     /// \brief Determine whether the Value has been set.
     //
     /// Determine whether the Value has been set by checking
     /// whether the type is valid.
-    bool isValid() const;
+    bool isValid() const { return m_TypeKind != Value::kInvalid; }
+    bool isInvalid() const { return !isValid(); }
 
     /// \brief Determine whether the Value is set but void.
-    bool isVoid() const;
+    bool isVoid() const { return m_TypeKind == Value::kVoid; }
 
     /// \brief Determine whether the Value is set and not void.
     //
@@ -254,7 +281,7 @@ namespace cling {
       m_Storage.m_##name = Val;                          \
     }                                                    \
 
-  BUILTIN_TYPES
+  CLING_VALUE_BUILTIN_TYPES
 
 #undef X
 
@@ -280,14 +307,19 @@ namespace cling {
     void dump(bool escape = true) const;
   };
 
-  template <> void* Value::getAs() const;
+  template <> inline void* Value::getAs() const {
+    if (isPointerOrObjectType())
+      return m_Storage.m_Ptr;
+    return (void*)getAs<uintptr_t>();
+  }
+
 #define X(type, name)                                                   \
-  template <> type Value::getAs() const;                                \
   template <> Value Value::Create(Interpreter& Interp, type val);       \
 
-  BUILTIN_TYPES
+  CLING_VALUE_BUILTIN_TYPES
 
 #undef X
+
 } // end namespace cling
 
 #endif // CLING_VALUE_H

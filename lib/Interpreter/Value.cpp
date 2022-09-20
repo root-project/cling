@@ -136,25 +136,52 @@ namespace cling {
 
   Value::Value(const Value& other):
     m_Storage(other.m_Storage), m_NeedsManagedAlloc(other.m_NeedsManagedAlloc),
+    m_TypeKind(other.m_TypeKind),
     m_Type(other.m_Type), m_Interpreter(other.m_Interpreter) {
     if (other.needsManagedAllocation())
       AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
   }
 
-  static bool needsManagedAlloc(clang::QualType QT) {
-    clang::QualType Canon = QT.getCanonicalType();
-    if (Canon->isPointerType() || Canon->isObjectType() ||
-        Canon->isReferenceType())
-      if (Canon->isRecordType() || Canon->isConstantArrayType() ||
-          Canon->isMemberPointerType())
-        return true;
-    return false;
+  static Value::TypeKind getCorrespondingTypeKind(clang::QualType QT,
+                                                  const clang::ASTContext &C) {
+    using namespace clang;
+
+    if (C.hasSameType(QT, C.VoidTy))
+      return Value::kVoid;
+
+    if (const auto *ET = dyn_cast<EnumType>(QT.getTypePtr()))
+      QT = ET->getDecl()->getIntegerType();
+
+    if (!QT->isBuiltinType() || QT->castAs<BuiltinType>()->isNullPtrType())
+      return Value::kPtrOrObjTy;
+
+    switch(QT->getAs<BuiltinType>()->getKind()) {
+    default:
+#ifndef NDEBUG
+      QT->dump();
+#endif // NDEBUG
+      assert(false && "Type not supported");
+      return Value::kInvalid;
+#define X(type, name) \
+      case BuiltinType::name: return Value::k##name;
+      CLING_VALUE_BUILTIN_TYPES
+#undef X
+    }
   }
 
   Value::Value(clang::QualType clangTy, Interpreter& Interp):
-    m_NeedsManagedAlloc(needsManagedAlloc(clangTy)),
-    m_Type(clangTy.getAsOpaquePtr()), // FIXME: What happens clangTy is freed?
+    m_TypeKind(getCorrespondingTypeKind(clangTy, Interp.getCI()->getASTContext())),
+    m_Type(clangTy.getAsOpaquePtr()), // FIXME: What if clangTy is freed?
     m_Interpreter(&Interp) {
+    if (m_TypeKind == Value::kPtrOrObjTy) {
+      clang::QualType Canon = clangTy.getCanonicalType();
+      if (Canon->isPointerType() || Canon->isObjectType() ||
+          Canon->isReferenceType())
+        if (Canon->isRecordType() || Canon->isConstantArrayType() ||
+            Canon->isMemberPointerType())
+          m_NeedsManagedAlloc = true;
+    }
+
     if (needsManagedAllocation())
       ManagedAllocate();
   }
@@ -168,6 +195,7 @@ namespace cling {
     m_Type = other.m_Type;
     m_Storage = other.m_Storage;
     m_NeedsManagedAlloc = other.m_NeedsManagedAlloc;
+    m_TypeKind = other.m_TypeKind;
     m_Interpreter = other.m_Interpreter;
     if (needsManagedAllocation())
       AllocatedValue::getFromPayload(m_Storage.m_Ptr)->Retain();
@@ -183,9 +211,11 @@ namespace cling {
     m_Type = other.m_Type;
     m_Storage = other.m_Storage;
     m_NeedsManagedAlloc = other.m_NeedsManagedAlloc;
+    m_TypeKind = other.m_TypeKind;
     m_Interpreter = other.m_Interpreter;
     // Invalidate other so it will not release.
     other.m_NeedsManagedAlloc = false;
+    other.m_TypeKind = kInvalid;
 
     return *this;
   }
@@ -201,13 +231,6 @@ namespace cling {
 
   clang::ASTContext& Value::getASTContext() const {
     return m_Interpreter->getCI()->getASTContext();
-  }
-
-  bool Value::isValid() const { return !getType().isNull(); }
-
-  bool Value::isVoid() const {
-    const clang::ASTContext& Ctx = getASTContext();
-    return isValid() && Ctx.hasSameType(getType(), Ctx.VoidTy);
   }
 
   static size_t GetNumberOfElements(clang::QualType QT) {
@@ -244,35 +267,13 @@ namespace cling {
                                                 GetNumberOfElements(getType()));
   }
 
-  static clang::QualType getBuiltinCanonicalType(clang::QualType QT) {
-    if (const auto *ET = llvm::dyn_cast<clang::EnumType>(QT.getTypePtr()))
-      QT = ET->getDecl()->getIntegerType();
-
-    return QT.getCanonicalType();
-  }
-
   void Value::AssertTypeMismatch(const char* Type) const {
 #ifndef NDEBUG
-    assert(hasBuiltinType() && "Must be a builtin!");
+    assert(isBuiltinType() && "Must be a builtin!");
     const clang::BuiltinType *BT = getType()->castAs<clang::BuiltinType>();
     clang::PrintingPolicy Policy = getASTContext().getPrintingPolicy();
 #endif // NDEBUG
     assert(BT->getName(Policy).equals(Type));
-  }
-
-  template <typename T> T convert(clang::QualType QT, const Value::Storage& S) {
-    QT = getBuiltinCanonicalType(QT);
-    assert(QT->isBuiltinType());
-
-    const auto* BT = llvm::cast<const clang::BuiltinType>(QT.getTypePtr());
-    switch (BT->getKind()) {
-    default:
-      llvm_unreachable("Unknown type");
-#define X(type, name) \
-      case clang::BuiltinType::name: return (T) S.m_##name;
-      BUILTIN_TYPES
-#undef X
-    }
   }
 
   static clang::QualType getCorrespondingBuiltin(clang::ASTContext &C,
@@ -288,16 +289,7 @@ namespace cling {
     }
   }
 
-  template <> void* Value::getAs() const {
-    if (needsManagedAllocation() || hasPointerType())
-      return m_Storage.m_Ptr;
-    return (void*)convert<uintptr_t>(getType(), m_Storage);
-  }
-
 #define X(type, name)                                                   \
-  template <> type Value::getAs() const {                               \
-    return convert<type>(getType(), m_Storage);                         \
-  }                                                                     \
   template <> Value Value::Create(Interpreter& Interp, type val) {      \
     clang::ASTContext &C = Interp.getCI()->getASTContext();             \
     clang::BuiltinType::Kind K = clang::BuiltinType::name;              \
@@ -306,17 +298,9 @@ namespace cling {
     return res;                                                         \
   }                                                                     \
 
-  BUILTIN_TYPES
+  CLING_VALUE_BUILTIN_TYPES
 
 #undef X
-  bool Value::hasPointerType() const {
-    clang::QualType Canon = getType().getCanonicalType();
-    return Canon->hasPointerRepresentation() /*|| Canon->isObjectType()*/;
-  }
-
-  bool Value::hasBuiltinType() const {
-    return getBuiltinCanonicalType(getType())->isBuiltinType();
-  }
 
   void Value::AssertOnUnsupportedTypeCast() const {
     assert("unsupported type in Value, cannot cast!" && 0);
