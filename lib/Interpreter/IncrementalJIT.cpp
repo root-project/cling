@@ -61,7 +61,8 @@ IncrementalJIT::IncrementalJIT(
 
   // We use this callback to transfer the ownership of the ThreadSafeModule,
   // which owns the Transaction's llvm::Module, to m_CompiledModules.
-  Jit->getIRCompileLayer().setNotifyCompiled([this](auto &MR, ThreadSafeModule TSM) {
+  Jit->getIRCompileLayer().setNotifyCompiled([this](auto &MR,
+                                                    ThreadSafeModule TSM) {
       // FIXME: Don't store them mapped by raw pointers.
       const Module *Unsafe = TSM.getModuleUnlocked();
       assert(!m_CompiledModules.count(Unsafe) && "Modules are compiled once");
