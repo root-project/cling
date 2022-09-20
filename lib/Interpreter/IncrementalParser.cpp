@@ -11,7 +11,6 @@
 
 #include "ASTTransformer.h"
 #include "AutoSynthesizer.h"
-#include "BackendPasses.h"
 #include "CheckEmptyTransactionTransformer.h"
 #include "ClingPragmas.h"
 #include "DeclCollector.h"

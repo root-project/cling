@@ -131,11 +131,7 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
     llvm_unreachable("Propagate this error and exit gracefully");
   }
 
-  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(),
-                                          CI.getTargetOpts(),
-                                          CI.getLangOpts(),
-                                          TMRef,
-                                          *m_JIT));
+  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(), TMRef));
 }
 
 IncrementalExecutor::~IncrementalExecutor() {}
