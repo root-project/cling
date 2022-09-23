@@ -116,11 +116,6 @@ namespace cling {
 
     bool Successful = true;
     if (getExecutor()) {
-      if (llvm::Error Err = getExecutor()->unloadModule(*T)) {
-        llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "Unload: ");
-        Successful = false;
-      }
-
       if (T->getState() == Transaction::kCommitted && !T->isNestedTransaction()) {
         if (const llvm::Module *CompiledM = T->getCompiledModule())
           Successful = unloadModule(const_cast<llvm::Module*>(CompiledM)) &&
@@ -128,6 +123,13 @@ namespace cling {
         else
           assert((!T->getModule() || isPracticallyEmptyModule(T->getModule()))
                  && "Must have already compiled this module");
+      }
+
+      // getExecutor()->unloadModule() will free globals - so first run
+      // this->unloadModule().
+      if (llvm::Error Err = getExecutor()->unloadModule(*T)) {
+        llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "Unload: ");
+        Successful = false;
       }
 
       // Cleanup the module from unused global values.
