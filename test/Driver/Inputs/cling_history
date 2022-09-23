@@ -1,0 +1,8 @@
+/*
+comment
+ * */
+static const int i = 37;
+};
+// another comment
+using std::cout;
+std::cout << "test\n";
