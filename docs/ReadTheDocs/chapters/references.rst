@@ -29,7 +29,7 @@ What is Cling?
 
 *Axel Naumann (CERN) discusses Cling’s most relevant features: abstract syntax tree (AST) production, wrapped functions, global initialization of a function, delay expression evaluation at runtime, and dynamic scopes.*
 
-`Creating Cling, an interactive interpreter interface” <https://www.youtube.com/watch?v=BjmGOMJWeAo>`_
+`Creating Cling, an interactive interpreter interface <https://www.youtube.com/watch?v=BjmGOMJWeAo>`_
 
 *Axel Naumann* 2010 LLVM Developers’ meeting
 
@@ -56,7 +56,7 @@ What is Cling?
    * - `Introducing Cling, a C++ Interpreter Based on Clang/LLVM <https://www.youtube.com/watch?v=f9Xfh8pv3Fs>`_
      - *Axel Naumann* 2012  Googletechtalks
      - Axel Naumann (CERN) discusses Cling’s most relevant features: abstract syntax tree (AST) production, wrapped functions, global initialization of a function, delay expression evaluation at runtime, and dynamic scopes.
-   * - `Creating Cling, an interactive interpreter interface” <https://www.youtube.com/watch?v=BjmGOMJWeAo>`_
+   * - `Creating Cling, an interactive interpreter interface <https://www.youtube.com/watch?v=BjmGOMJWeAo>`_
      - *Axel Naumann* 2010 LLVM Developers’ meeting
      - This presentation introduces Cling, an ahead-of-time compiler that extends C++ for ease of use as an interpreter.
 
