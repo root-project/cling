@@ -273,6 +273,7 @@ module "std" [system] {
   }
   module "regex" {
     export *
+    export vector
     header "regex"
   }
   module "scoped_allocator" {
