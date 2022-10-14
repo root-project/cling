@@ -1,13 +1,44 @@
-.. Cling documentation master file, created by
-   sphinx-quickstart on Sun Sep 14 20:01:55 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Cling interprets C++
+====================
 
-.. title:: Welcome to Cling's documentation!
+.. figure:: images/fig1.jpeg
 
-.. toctree::
-   :maxdepth: 1
+**Cling** is an interactive C++ interpreter built on top of `Clang
+<https://clang.llvm.org/>`_ and `LLVM <https://llvm.org/>`_.  It uses LLVM's
+*Just-In-Time* (`JIT <https://en.wikipedia.org/wiki/Just-in-time_compilation>`_)
+compiler to provide a fast and optimized compilation pipeline. Cling uses the
+`read-eval-print-loop
+<https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop>`_
+(**REPL**) approach, making rapid application development in C++ possible,
+avoiding the classic edit-compile-run-debug cycle approach.
 
-Using Cling
-===========
 
+Cling's last release, download instructions, dependencies, and any other useful
+information for developers can be found on `Cling's GitHub webpage
+<https://github.com/vgvassilev/cling>`_.
+
+Find out more about **Interpreting C++** on the `Compiler Research Group
+<https://compiler-research.org/>`_'s webpage.
+   
+
+Table of Contents
+-----------------
+
+ .. toctree::
+    :numbered:
+   
+    chapters/background
+    chapters/interactivity
+    chapters/implementation
+    chapters/REPL
+    chapters/XEUS
+    chapters/cudaC++
+    chapters/grammar
+    chapters/references
+    chapters/conclusion
+    chapters/why_interpreting
+
+.. note::
+
+  This project is under active development.
+  Cling has its documentation hosted on Read the Docs.

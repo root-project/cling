@@ -1,5 +1,5 @@
 Conclusion
------------------------------------
+----------
 
 Cling is not just a REPL, it is an embeddable and extensible execution system
 for efficient incremental execution of C++. Cling allows us to decide how much

@@ -1,5 +1,5 @@
 C++ in Jupyter Notebook - Xeus Cling
------------------------------------
+------------------------------------
 
 The Jupyter Notebook technology allows users to create and share documents that
 contain live code, equations, visualizations and narrative text. It enables data
