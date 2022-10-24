@@ -57,7 +57,7 @@ if(MSVC)
     _Init_thread_footer _Init_thread_header _tls_index
   )
 
-  if("${CMAKE_GENERATOR_PLATFORM}" MATCHES "x64")
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     # new/delete variants needed when linking to static msvc runtime (esp. Debug)
     set(cling_exports ${cling_exports}
       ??2@YAPEAX_K@Z
