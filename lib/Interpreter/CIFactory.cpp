@@ -15,6 +15,7 @@
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 #include "cling/Utils/Platform.h"
+#include "cling/Utils/Utils.h"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/TargetInfo.h"
@@ -1243,6 +1244,11 @@ namespace {
     std::vector<const char*> argvCompile(argv, argv+1);
     argvCompile.reserve(argc+32);
 
+    bool debuggingEnabled =
+        cling::utils::ConvertEnvValueToBool(std::getenv("CLING_DEBUG"));
+    bool profilingEnabled =
+        cling::utils::ConvertEnvValueToBool(std::getenv("CLING_PROFILE"));
+
 #if __APPLE__ && __arm64__
     argvCompile.push_back("--target=arm64-apple-darwin20.3.0");
 #endif
@@ -1325,12 +1331,12 @@ namespace {
 
 #ifdef __linux__
     // Keep frame pointer to make JIT stack unwinding reliable for profiling
-    if (std::getenv("CLING_PROFILE"))
+    if (profilingEnabled)
       argvCompile.push_back("-fno-omit-frame-pointer");
 #endif
 
     // Disable optimizations and keep frame pointer when debugging
-    if (std::getenv("CLING_DEBUG"))
+    if (debuggingEnabled)
       argvCompile.push_back("-O0 -fno-omit-frame-pointer");
 
     // argv[0] already inserted, get the rest
@@ -1672,7 +1678,7 @@ namespace {
     CGOpts.setInlining(CodeGenOptions::NormalInlining);
 
     // Add debugging info when debugging or profiling
-    if (std::getenv("CLING_DEBUG") || std::getenv("CLING_PROFILE"))
+    if (debuggingEnabled || profilingEnabled)
       CGOpts.setDebugInfo(clang::codegenoptions::FullDebugInfo);
 
     // CGOpts.EmitDeclMetadata = 1; // For unloading, for later
