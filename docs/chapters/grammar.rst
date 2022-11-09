@@ -9,7 +9,6 @@ Once we start Cling it automatically includes several header files and its own
 runtime universe. Thus it creates the minimal environment for the user to start.
 
 
-
 Grammar
 -------
 
