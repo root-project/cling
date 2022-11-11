@@ -1329,10 +1329,6 @@ namespace {
       argvCompile.push_back("-fno-omit-frame-pointer");
 #endif
 
-    // Disable optimizations and keep frame pointer when debugging
-    if (std::getenv("CLING_DEBUG"))
-      argvCompile.push_back("-O0 -fno-omit-frame-pointer");
-
     // argv[0] already inserted, get the rest
     argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
 
