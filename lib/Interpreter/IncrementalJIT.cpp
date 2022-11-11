@@ -11,7 +11,6 @@
 
 #include "IncrementalExecutor.h"
 #include "cling/Utils/Platform.h"
-#include "cling/Utils/Utils.h"
 
 #include "llvm/ExecutionEngine/Orc/Legacy.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
@@ -360,12 +359,12 @@ IncrementalJIT::IncrementalJIT(IncrementalExecutor& exe,
   llvm::sys::DynamicLibrary::LoadLibraryPermanently(0, 0);
 
   // Enable GDB JIT listener for debugging if CLING_DEBUG is set
-  if (cling::utils::ConvertEnvValueToBool(std::getenv("CLING_DEBUG")))
+  if (std::getenv("CLING_DEBUG"))
     m_Listeners.push_back(JITEventListener::createGDBRegistrationListener());
 
 #ifdef __linux__
   // Enable perf profiling of JITted code on Linux if CLING_PROFILE is set
-  if (cling::utils::ConvertEnvValueToBool(std::getenv("CLING_PROFILE")))
+  if (std::getenv("CLING_PROFILE"))
     m_Listeners.push_back(cling::createPerfJITEventListener());
 #endif
 
