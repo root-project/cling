@@ -554,6 +554,8 @@ namespace cling {
       //   behavior is Intel x86-specific.
       static const unsigned long _tls_array = 0x2C;
       m_Executor->replaceSymbol("_tls_array", (void *)&_tls_array);
+      // Support SEH on Windows.
+      m_Executor->replaceSymbol("_CxxThrowException@8", &_CxxThrowException);
 #endif
 
 #ifdef CLING_WIN_SEH_EXCEPTIONS
