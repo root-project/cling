@@ -152,13 +152,25 @@ llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
   return llvm::Error::success();
 }
 
-JITTargetAddress IncrementalJIT::addOrReplaceDefinition(StringRef LinkerMangledName,
-                                                        JITTargetAddress KnownAddr) {
-  void* Symbol = getSymbolAddress(LinkerMangledName, /*IncludeFromHost=*/true);
+JITTargetAddress
+IncrementalJIT::addOrReplaceDefinition(StringRef Name,
+                                       JITTargetAddress KnownAddr) {
+
+  void* Symbol = getSymbolAddress(Name, /*IncludeFromHost=*/true);
 
   // Nothing to define, we are redefining the same function. FIXME: Diagnose.
   if (Symbol && (JITTargetAddress)Symbol == KnownAddr)
     return KnownAddr;
+
+  llvm::SmallString<128> LinkerMangledName;
+  char LinkerPrefix = this->TM->createDataLayout().getGlobalPrefix();
+  bool HasLinkerPrefix = LinkerPrefix != '\0';
+  if (HasLinkerPrefix && Name.front() == LinkerPrefix) {
+    LinkerMangledName.assign(1, LinkerPrefix);
+    LinkerMangledName.append(Name);
+  } else {
+    LinkerMangledName.assign(Name);
+  }
 
   // Let's inject it
   bool Inserted;

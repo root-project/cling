@@ -74,8 +74,9 @@ public:
   /// should include symbols from the host process (via dlsym) or not.
   void* getSymbolAddress(llvm::StringRef Name, bool IncludeHostSymbols);
 
-  /// Inject a symbol with a known address.
-  llvm::JITTargetAddress addOrReplaceDefinition(llvm::StringRef LinkerMangledName,
+  /// Inject a symbol with a known address. Name is not linker mangled, i.e.
+  /// as known by the IR.
+  llvm::JITTargetAddress addOrReplaceDefinition(llvm::StringRef Name,
                                                 llvm::JITTargetAddress KnownAddr);
 
   llvm::Error runCtors() const {
