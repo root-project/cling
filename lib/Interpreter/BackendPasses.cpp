@@ -89,6 +89,57 @@ namespace {
 char KeepLocalGVPass::ID = 0;
 
 namespace {
+  class PreventLocalOptPass: public ModulePass {
+    static char ID;
+
+    bool runOnGlobal(GlobalValue& GV) {
+      if (!GV.isDeclaration())
+        return false; // no change.
+
+      // GV is a declaration with no definition. Make sure to prevent any
+      // optimization that tries to take advantage of the actual definition
+      // being "local" because we have no influence on the memory layout of
+      // data sections and how "close" they are to the code.
+
+      bool changed = false;
+
+      if (GV.hasLocalLinkage()) {
+        GV.setLinkage(llvm::GlobalValue::ExternalLinkage);
+        changed = true;
+      }
+
+      if (!GV.hasDefaultVisibility()) {
+        GV.setVisibility(llvm::GlobalValue::DefaultVisibility);
+        changed = true;
+      }
+
+      // Set DSO locality last because setLinkage() and setVisibility() check
+      // isImplicitDSOLocal().
+      if (GV.isDSOLocal()) {
+        GV.setDSOLocal(false);
+        changed = true;
+      }
+
+      return changed;
+    }
+
+  public:
+    PreventLocalOptPass() : ModulePass(ID) {}
+
+    bool runOnModule(Module &M) override {
+      bool ret = false;
+      for (auto &&F: M)
+        ret |= runOnGlobal(F);
+      for (auto &&G: M.globals())
+        ret |= runOnGlobal(G);
+      return ret;
+    }
+  };
+}
+
+char PreventLocalOptPass::ID = 0;
+
+namespace {
   class WeakTypeinfoVTablePass: public ModulePass {
     static char ID;
 
@@ -339,6 +390,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel].reset(new legacy::PassManager());
 
   m_MPM[OptLevel]->add(new KeepLocalGVPass());
+  m_MPM[OptLevel]->add(new PreventLocalOptPass());
   m_MPM[OptLevel]->add(new WeakTypeinfoVTablePass());
   m_MPM[OptLevel]->add(new ReuseExistingWeakSymbols());
 
