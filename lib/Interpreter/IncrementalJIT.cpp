@@ -12,15 +12,145 @@
 // FIXME: Merge IncrementalExecutor and IncrementalJIT.
 #include "IncrementalExecutor.h"
 
+#include "cling/Utils/Output.h"
+
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
-#include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
+#include <llvm/ExecutionEngine/SectionMemoryManager.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <sstream>
 
 using namespace llvm;
 using namespace llvm::orc;
+
+namespace {
+
+  // A memory manager for Cling that reserves memory for code and data sections
+  // to keep them contiguous for the emission of one module. This is required
+  // for working exception handling support since one .eh_frame section will
+  // refer to many separate .text sections. However, stack unwinding in libgcc
+  // assumes that two unwinding objects (for example coming from two modules)
+  // are non-overlapping, which is hard to guarantee with separate allocations
+  // for the individual code sections.
+  class ClingMemoryManager : public SectionMemoryManager {
+    using Super = SectionMemoryManager;
+
+    struct AllocInfo {
+      uint8_t* m_End = nullptr;
+      uint8_t* m_Current = nullptr;
+
+      void setAllocation(uint8_t* Addr, uintptr_t Size) {
+        m_Current = Addr;
+        m_End = Addr + Size;
+      }
+
+      uint8_t* getNextAddr(uintptr_t Size, unsigned Alignment) {
+        if (!Alignment)
+          Alignment = 16;
+
+        assert(!(Alignment & (Alignment - 1)) &&
+               "Alignment must be a power of two.");
+
+        uintptr_t RequiredSize =
+            Alignment * ((Size + Alignment - 1) / Alignment + 1);
+        if ((m_Current + RequiredSize) > m_End) {
+          // This must be the last block.
+          if ((m_Current + Size) <= m_End) {
+            RequiredSize = Size;
+          } else {
+            cling::errs()
+                << "Error in block allocation by ClingMemoryManager.\n"
+                << "Not enough memory was reserved for the current module.\n"
+                << Size << " (with alignment: " << RequiredSize
+                << " ) is needed but we only have " << (m_End - m_Current)
+                << ".\n";
+            return nullptr;
+          }
+        }
+
+        uintptr_t Addr = (uintptr_t)m_Current;
+
+        // Align the address.
+        Addr = (Addr + Alignment - 1) & ~(uintptr_t)(Alignment - 1);
+
+        m_Current = (uint8_t*)(Addr + Size);
+
+        return (uint8_t*)Addr;
+      }
+
+      operator bool() { return m_Current != nullptr; }
+    };
+
+    AllocInfo m_Code;
+    AllocInfo m_ROData;
+    AllocInfo m_RWData;
+
+  public:
+    ClingMemoryManager() {}
+
+    uint8_t* allocateCodeSection(uintptr_t Size, unsigned Alignment,
+                                 unsigned SectionID,
+                                 StringRef SectionName) override {
+      uint8_t* Addr = nullptr;
+      if (m_Code) {
+        Addr = m_Code.getNextAddr(Size, Alignment);
+      }
+      if (!Addr) {
+        Addr =
+            Super::allocateCodeSection(Size, Alignment, SectionID, SectionName);
+      }
+
+      return Addr;
+    }
+
+    uint8_t* allocateDataSection(uintptr_t Size, unsigned Alignment,
+                                 unsigned SectionID, StringRef SectionName,
+                                 bool IsReadOnly) override {
+
+      uint8_t* Addr = nullptr;
+      if (IsReadOnly) {
+        if (m_ROData) {
+          Addr = m_ROData.getNextAddr(Size, Alignment);
+        }
+      } else if (m_RWData) {
+        Addr = m_RWData.getNextAddr(Size, Alignment);
+      }
+      if (!Addr) {
+        Addr = Super::allocateDataSection(Size, Alignment, SectionID,
+                                          SectionName, IsReadOnly);
+      }
+      return Addr;
+    }
+
+    void reserveAllocationSpace(uintptr_t CodeSize, uint32_t CodeAlign,
+                                uintptr_t RODataSize, uint32_t RODataAlign,
+                                uintptr_t RWDataSize,
+                                uint32_t RWDataAlign) override {
+      m_Code.setAllocation(
+          Super::allocateCodeSection(CodeSize, CodeAlign,
+                                     /*SectionID=*/0,
+                                     /*SectionName=*/"codeReserve"),
+          CodeSize);
+      m_ROData.setAllocation(
+          Super::allocateDataSection(RODataSize, RODataAlign,
+                                     /*SectionID=*/0,
+                                     /*SectionName=*/"rodataReserve",
+                                     /*IsReadOnly=*/true),
+          RODataSize);
+      m_RWData.setAllocation(
+          Super::allocateDataSection(RWDataSize, RWDataAlign,
+                                     /*SectionID=*/0,
+                                     /*SectionName=*/"rwataReserve",
+                                     /*IsReadOnly=*/false),
+          RWDataSize);
+    }
+
+    bool needsToReserveAllocationSpace() override { return true; }
+  };
+
+} // unnamed namespace
 
 namespace cling {
 
@@ -45,12 +175,25 @@ IncrementalJIT::IncrementalJIT(
   Builder.setJITTargetMachineBuilder(std::move(JTMB));
   Builder.setExecutorProcessControl(std::move(EPC));
 
-  // FIXME: In LLVM 13 this only works for ELF and MachO platforms
-  // Builder.setObjectLinkingLayerCreator(
-  //     [&](ExecutionSession &ES, const Triple &TT) {
-  //       return std::make_unique<ObjectLinkingLayer>(
-  //           ES, std::make_unique<jitlink::InProcessMemoryManager>());
-  //     });
+  // Create ObjectLinkingLayer with our own MemoryManager.
+  Builder.setObjectLinkingLayerCreator([&](ExecutionSession& ES,
+                                           const Triple& TT) {
+    auto GetMemMgr = []() { return std::make_unique<ClingMemoryManager>(); };
+    auto Layer =
+        std::make_unique<RTDyldObjectLinkingLayer>(ES, std::move(GetMemMgr));
+
+    // The following is based on LLJIT::createObjectLinkingLayer.
+    if (TT.isOSBinFormatCOFF()) {
+      Layer->setOverrideObjectFlagsWithResponsibilityFlags(true);
+      Layer->setAutoClaimResponsibilityForObjectSymbols(true);
+    }
+
+    if (TT.isOSBinFormatELF() && (TT.getArch() == Triple::ArchType::ppc64 ||
+                                  TT.getArch() == Triple::ArchType::ppc64le))
+      Layer->setAutoClaimResponsibilityForObjectSymbols(true);
+
+    return Layer;
+  });
 
   if (Expected<std::unique_ptr<LLJIT>> JitInstance = Builder.create()) {
     Jit = std::move(*JitInstance);
