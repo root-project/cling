@@ -27,6 +27,35 @@ using namespace llvm::orc;
 
 namespace {
 
+  class ClingMMapper final : public SectionMemoryManager::MemoryMapper {
+  public:
+    sys::MemoryBlock
+    allocateMappedMemory(SectionMemoryManager::AllocationPurpose Purpose,
+                         size_t NumBytes,
+                         const sys::MemoryBlock* const NearBlock,
+                         unsigned Flags, std::error_code& EC) override {
+      return sys::Memory::allocateMappedMemory(NumBytes, NearBlock, Flags, EC);
+    }
+
+    std::error_code protectMappedMemory(const sys::MemoryBlock& Block,
+                                        unsigned Flags) override {
+      return sys::Memory::protectMappedMemory(Block, Flags);
+    }
+
+    std::error_code releaseMappedMemory(sys::MemoryBlock& M) override {
+      // Disabled until CallFunc is informed about unloading, and can
+      // re-generate the wrapper (if the decl is still available). See
+      // https://github.com/root-project/root/issues/10898
+#if 0
+      return sys::Memory::releaseMappedMemory(M);
+#else
+      return {};
+#endif
+    }
+  };
+
+  ClingMMapper MMapperInstance;
+
   // A memory manager for Cling that reserves memory for code and data sections
   // to keep them contiguous for the emission of one module. This is required
   // for working exception handling support since one .eh_frame section will
@@ -88,7 +117,7 @@ namespace {
     AllocInfo m_RWData;
 
   public:
-    ClingMemoryManager() {}
+    ClingMemoryManager() : Super(&MMapperInstance) {}
 
     uint8_t* allocateCodeSection(uintptr_t Size, unsigned Alignment,
                                  unsigned SectionID,
