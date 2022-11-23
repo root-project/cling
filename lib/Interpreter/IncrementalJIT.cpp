@@ -20,8 +20,6 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include <sstream>
-
 using namespace llvm;
 using namespace llvm::orc;
 
@@ -298,9 +296,6 @@ void IncrementalJIT::addModule(Transaction& T) {
   ResourceTrackerSP RT = Jit->getMainJITDylib().createResourceTracker();
   m_ResourceTrackers[&T] = RT;
 
-  std::ostringstream sstr;
-  sstr << T.getModule()->getModuleIdentifier() << '-' << std::hex
-       << std::showbase << (size_t)&T;
   ThreadSafeModule TSM(T.takeModule(), SingleThreadedContext);
 
   const Module *Unsafe = TSM.getModuleUnlocked();
