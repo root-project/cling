@@ -177,6 +177,111 @@ namespace {
     bool needsToReserveAllocationSpace() override { return true; }
   };
 
+
+  /// A DynamicLibrarySearchGenerator that uses ResourceTracker to remember
+  /// which symbols were resolved through dlsym during a transaction's reign.
+  /// Enables JITDyLib forgetting symbols upon unloading of a shared library.
+  /// While JITDylib::define() *is* invoked for these symbols, there is no RT
+  /// provided, and thus resource tracking doesn't work, no symbol removal
+  /// happens upon unloading the corresponding shared library.
+  ///
+  /// This might remove more symbols than strictly needed:
+  /// 1. libA is loaded
+  /// 2. libB is loaded
+  /// 3. symbol is resolved from libA
+  /// 4. libB is unloaded, removing the symbol, too
+  /// That's fine, it will trigger a subsequent dlsym to re-create the symbol.
+class RTDynamicLibrarySearchGenerator : public DefinitionGenerator {
+public:
+  using SymbolPredicate = std::function<bool(const SymbolStringPtr &)>;
+  using RTGetterFunc = std::function<ResourceTrackerSP()>;
+
+  /// Create a RTDynamicLibrarySearchGenerator that searches for symbols in the
+  /// given sys::DynamicLibrary.
+  ///
+  /// If the Allow predicate is given then only symbols matching the predicate
+  /// will be searched for. If the predicate is not given then all symbols will
+  /// be searched for.
+  RTDynamicLibrarySearchGenerator(sys::DynamicLibrary Dylib, char GlobalPrefix,
+                                  RTGetterFunc RT,
+                                  SymbolPredicate Allow = SymbolPredicate());
+
+  /// Permanently loads the library at the given path and, on success, returns
+  /// a DynamicLibrarySearchGenerator that will search it for symbol definitions
+  /// in the library. On failure returns the reason the library failed to load.
+  static Expected<std::unique_ptr<RTDynamicLibrarySearchGenerator>>
+  Load(const char *FileName, char GlobalPrefix, RTGetterFunc RT,
+       SymbolPredicate Allow = SymbolPredicate());
+
+  /// Creates a RTDynamicLibrarySearchGenerator that searches for symbols in
+  /// the current process.
+  static Expected<std::unique_ptr<RTDynamicLibrarySearchGenerator>>
+  GetForCurrentProcess(char GlobalPrefix, RTGetterFunc RT,
+                       SymbolPredicate Allow = SymbolPredicate()) {
+    return Load(nullptr, GlobalPrefix, std::move(RT), std::move(Allow));
+  }
+
+  Error tryToGenerate(LookupState &LS, LookupKind K, JITDylib &JD,
+                      JITDylibLookupFlags JDLookupFlags,
+                      const SymbolLookupSet &Symbols) override;
+
+private:
+  sys::DynamicLibrary Dylib;
+  RTGetterFunc CurrentRT;
+  SymbolPredicate Allow;
+  char GlobalPrefix;
+};
+
+RTDynamicLibrarySearchGenerator::RTDynamicLibrarySearchGenerator(
+    sys::DynamicLibrary Dylib, char GlobalPrefix, RTGetterFunc RT,
+    SymbolPredicate Allow)
+    : Dylib(std::move(Dylib)), CurrentRT(std::move(RT)),
+      Allow(std::move(Allow)), GlobalPrefix(GlobalPrefix) {}
+
+Expected<std::unique_ptr<RTDynamicLibrarySearchGenerator>>
+RTDynamicLibrarySearchGenerator::Load(const char *FileName, char GlobalPrefix,
+                                      RTGetterFunc RT, SymbolPredicate Allow) {
+  std::string ErrMsg;
+  auto Lib = sys::DynamicLibrary::getPermanentLibrary(FileName, &ErrMsg);
+  if (!Lib.isValid())
+    return make_error<StringError>(std::move(ErrMsg), inconvertibleErrorCode());
+  return std::make_unique<RTDynamicLibrarySearchGenerator>(
+      std::move(Lib), GlobalPrefix, RT, std::move(Allow));
+}
+
+Error RTDynamicLibrarySearchGenerator::tryToGenerate(
+    LookupState &LS, LookupKind K, JITDylib &JD,
+    JITDylibLookupFlags JDLookupFlags, const SymbolLookupSet &Symbols) {
+  orc::SymbolMap NewSymbols;
+
+  bool HasGlobalPrefix = (GlobalPrefix != '\0');
+
+  for (auto &KV : Symbols) {
+    auto &Name = KV.first;
+
+    if ((*Name).empty())
+      continue;
+
+    if (Allow && !Allow(Name))
+      continue;
+
+    if (HasGlobalPrefix && (*Name).front() != GlobalPrefix)
+      continue;
+
+    std::string Tmp((*Name).data() + HasGlobalPrefix,
+                    (*Name).size() - HasGlobalPrefix);
+    if (void *Addr = Dylib.getAddressOfSymbol(Tmp.c_str())) {
+      NewSymbols[Name] = JITEvaluatedSymbol(
+          static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(Addr)),
+          JITSymbolFlags::Exported);
+    }
+  }
+
+  if (NewSymbols.empty())
+    return Error::success();
+
+  return JD.define(absoluteSymbols(std::move(NewSymbols)), CurrentRT());
+}
 } // unnamed namespace
 
 namespace cling {
@@ -242,8 +347,9 @@ IncrementalJIT::IncrementalJIT(
   char LinkerPrefix = this->TM->createDataLayout().getGlobalPrefix();
 
   // Process symbol resolution
-  auto HostProcessLookup = DynamicLibrarySearchGenerator::GetForCurrentProcess(
-                                                                  LinkerPrefix,
+  auto HostProcessLookup
+    = RTDynamicLibrarySearchGenerator::GetForCurrentProcess(LinkerPrefix,
+                                              [&]{ return m_CurrentRT; },
                                               [&](const SymbolStringPtr &Sym) {
                                   return !m_ForbidDlSymbols.contains(*Sym); });
   if (!HostProcessLookup) {
@@ -254,8 +360,9 @@ IncrementalJIT::IncrementalJIT(
 
   // This must come after process resolution, to  consistently resolve global
   // symbols (e.g. std::cout) to the same address.
-  auto LibLookup = std::make_unique<DynamicLibrarySearchGenerator>(
+  auto LibLookup = std::make_unique<RTDynamicLibrarySearchGenerator>(
                        llvm::sys::DynamicLibrary(ExtraLibHandle), LinkerPrefix,
+                                              [&]{ return m_CurrentRT; },
                                               [&](const SymbolStringPtr &Sym) {
                                   return !m_ForbidDlSymbols.contains(*Sym); });
   Jit->getMainJITDylib().addGenerator(std::move(LibLookup));
@@ -300,6 +407,7 @@ void IncrementalJIT::addModule(Transaction& T) {
 
   const Module *Unsafe = TSM.getModuleUnlocked();
   T.m_CompiledModule = Unsafe;
+  m_CurrentRT = RT;
 
   if (Error Err = Jit->addIRModule(RT, std::move(TSM))) {
     logAllUnhandledErrors(std::move(Err), errs(),

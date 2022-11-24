@@ -87,6 +87,7 @@ private:
   llvm::orc::SymbolMap m_InjectedSymbols;
   SharedAtomicFlag SkipHostProcessLookup;
   llvm::StringSet<> m_ForbidDlSymbols;
+  llvm::orc::ResourceTrackerSP m_CurrentRT;
 
   /// FIXME: If the relation between modules and transactions is a bijection, the
   /// mapping via module pointers here is unnecessary. The transaction should
