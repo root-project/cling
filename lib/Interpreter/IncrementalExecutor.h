@@ -122,10 +122,6 @@ namespace cling {
       utils::OrderedMap<const Transaction*, std::vector<CXAAtExitElement>>;
     AtExitFunctions m_AtExitFuncs;
 
-    ///\brief Modules to emit upon the next call to the JIT.
-    ///
-    std::vector<llvm::Module*> m_ModulesToJIT;
-
     ///\brief Set of the symbols that the JIT couldn't resolve.
     ///
     mutable std::unordered_set<std::string> m_unresolvedSymbols;
@@ -135,10 +131,6 @@ namespace cling {
     /// incremental executor.
     clang::DiagnosticsEngine& m_Diags;
 #endif
-
-    ///\brief The list of llvm::Module-s to return the transaction
-    /// after the JIT has emitted them.
-    std::map<const llvm::Module*, Transaction*> m_PendingModules;
 
     /// Dynamic library manager object.
     ///
