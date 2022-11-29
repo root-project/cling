@@ -290,7 +290,7 @@ namespace cling {
       : m_Interpreter(interp) {
     std::unique_ptr<cling::DeclCollector> consumer;
     consumer.reset(m_Consumer = new cling::DeclCollector());
-    m_CI.reset(CIFactory::createCI("", interp->getOptions(), llvmdir,
+    m_CI.reset(CIFactory::createCI("\n", interp->getOptions(), llvmdir,
                                    std::move(consumer), moduleExtensions));
 
     if (!m_CI) {
