@@ -73,6 +73,7 @@ static const char kNoStdInc[] = "-nostdinc";
 #ifndef NDEBUG
   void setDebugOnlyTypes(const char *FlagsStr) {
     llvm::SmallString<64> MutFlagsStr(FlagsStr);
+    MutFlagsStr += '\0'; // Code below assumes null-termination
 
     // Collect single flags and replace seperators with null-terminators
     std::vector<const char *> DebugTypes;
