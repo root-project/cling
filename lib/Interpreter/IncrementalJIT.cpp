@@ -13,6 +13,7 @@
 #include "IncrementalExecutor.h"
 
 #include "cling/Utils/Output.h"
+#include "cling/Utils/Utils.h"
 
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
@@ -286,6 +287,9 @@ Error RTDynamicLibrarySearchGenerator::tryToGenerate(
 
 namespace cling {
 
+///\brief Creates JIT event listener to allow profiling of JITted code with perf
+llvm::JITEventListener* createPerfJITEventListener();
+
 IncrementalJIT::IncrementalJIT(
     IncrementalExecutor& Executor, std::unique_ptr<TargetMachine> TM,
     std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err,
@@ -313,6 +317,16 @@ IncrementalJIT::IncrementalJIT(
     auto GetMemMgr = []() { return std::make_unique<ClingMemoryManager>(); };
     auto Layer =
         std::make_unique<RTDyldObjectLinkingLayer>(ES, std::move(GetMemMgr));
+
+    // Register JIT event listeners if enabled
+    if (cling::utils::ConvertEnvValueToBool(std::getenv("CLING_DEBUG")))
+      Layer->registerJITEventListener(
+          *JITEventListener::createGDBRegistrationListener());
+
+#ifdef __linux__
+    if (cling::utils::ConvertEnvValueToBool(std::getenv("CLING_PROFILE")))
+      Layer->registerJITEventListener(*cling::createPerfJITEventListener());
+#endif
 
     // The following is based on LLJIT::createObjectLinkingLayer.
     if (TT.isOSBinFormatCOFF()) {
