@@ -120,23 +120,25 @@ namespace cling {
           FE = m_PrevFE.first;
         else if (FileName.equals(m_PrevFileName.second))
           FE = m_PrevFE.second;
-        else {
-          auto FERef = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
-                                        FromDir, FromFile, CurDir,
-                                        /*SearchPath*/0, /*RelativePath*/ 0,
-                                        /*suggestedModule*/0, /*IsMapped*/0,
-                                        /*IsFrameworkFound*/ nullptr,
-                                        /*SkipCache*/ false,
-                                        /*OpenFile*/ false, /*CacheFail*/ true);
-          FE = &FERef->getFileEntry();
+        else if (auto FERef = m_PP->LookupFile(fileNameLoc, FileName, isAngled,
+                                               FromDir, FromFile, CurDir,
+                                               /*SearchPath*/0, /*RelativePath*/ 0,
+                                               /*suggestedModule*/0, /*IsMapped*/0,
+                                               /*IsFrameworkFound*/ nullptr,
+                                               /*SkipCache*/ false,
+                                               /*OpenFile*/ false,
+                                               /*CacheFail*/ true)) {
           needCacheUpdate = true;
+          FE = &FERef->getFileEntry();
         }
 
         if (FE) {
           auto& Vec = (*m_Map)[FE];
           Vec.push_back(decl);
-          if (needCacheUpdate) return FE;
-          else return (const FileEntry*)nullptr;
+          if (needCacheUpdate)
+             return FE;
+          else
+             return (const FileEntry*)nullptr;
         } else if (warn) {
           // If the top level header is expected to be findable at run-time,
           // the direct header might not because the include path might be
@@ -154,11 +156,10 @@ namespace cling {
             cling::errs() << "\n";
           }
           return (const FileEntry*)nullptr;
-        } else {
-          // Case of the direct header that is not a top level header, no
-          // warning in this case (to likely to be a false positive).
-          return (const FileEntry*)nullptr;
         }
+        // Case of the direct header that is not a top level header, no
+        // warning in this case (to likely to be a false positive).
+        return (const FileEntry*)nullptr;
       };
 
       const FileEntry* cacheUpdate;
