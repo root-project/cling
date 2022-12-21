@@ -27,6 +27,10 @@
 #include <string>
 #include <utility>
 
+namespace clang {
+class CompilerInstance;
+}
+
 namespace cling {
 
 class IncrementalExecutor;
@@ -52,7 +56,7 @@ private:
 class IncrementalJIT {
 public:
   IncrementalJIT(IncrementalExecutor& Executor,
-                 std::unique_ptr<llvm::TargetMachine> TM,
+                 const clang::CompilerInstance &CI,
                  std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC,
                  llvm::Error &Err, void *ExtraLibHandle, bool Verbose);
 
@@ -82,6 +86,11 @@ public:
   llvm::Error runCtors() const {
     return Jit->initialize(Jit->getMainJITDylib());
   }
+
+  /// @brief Get the TargetMachine used by the JIT.
+  /// Non-const because BackendPasses need to update OptLevel.
+  llvm::TargetMachine &getTargetMachine() { return *TM; }
+
 private:
   std::unique_ptr<llvm::orc::LLJIT> Jit;
   llvm::orc::SymbolMap m_InjectedSymbols;

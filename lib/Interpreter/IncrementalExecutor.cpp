@@ -20,92 +20,18 @@
 #include "cling/Utils/Platform.h"
 
 #include "clang/Basic/Diagnostic.h"
-#include "clang/Basic/TargetOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
 
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
-#include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/ADT/SmallPtrSet.h"
-#include "llvm/ADT/Triple.h"
-#include "llvm/Support/Host.h"
-#include "llvm/Support/TargetRegistry.h"
-#include "llvm/Target/TargetMachine.h"
 
 #include <iostream>
 
 using namespace llvm;
 
 namespace cling {
-
-namespace {
-
-static std::unique_ptr<TargetMachine>
-CreateHostTargetMachine(const clang::CompilerInstance& CI) {
-  const clang::TargetOptions& TargetOpts = CI.getTargetOpts();
-  const clang::CodeGenOptions& CGOpt = CI.getCodeGenOpts();
-  const std::string& Triple = TargetOpts.Triple;
-
-  std::string Error;
-  const Target *TheTarget = TargetRegistry::lookupTarget(Triple, Error);
-  if (!TheTarget) {
-    cling::errs() << "cling::IncrementalExecutor: unable to find target:\n"
-                  << Error;
-    return std::unique_ptr<TargetMachine>();
-  }
-
-  CodeGenOpt::Level OptLevel = CodeGenOpt::Default;
-  switch (CGOpt.OptimizationLevel) {
-    case 0: OptLevel = CodeGenOpt::None; break;
-    case 1: OptLevel = CodeGenOpt::Less; break;
-    case 2: OptLevel = CodeGenOpt::Default; break;
-    case 3: OptLevel = CodeGenOpt::Aggressive; break;
-    default: OptLevel = CodeGenOpt::Default;
-  }
-  using namespace llvm::orc;
-  auto JTMB = JITTargetMachineBuilder::detectHost();
-  if (!JTMB)
-    logAllUnhandledErrors(JTMB.takeError(), llvm::errs(),
-                          "Error detecting host");
-
-  JTMB->setCodeGenOptLevel(OptLevel);
-#ifdef _WIN32
-  JTMB->getOptions().EmulatedTLS = false;
-#endif // _WIN32
-
-#if defined(__powerpc64__) || defined(__PPC64__)
-  // We have to use large code model for PowerPC64 because TOC and text sections
-  // can be more than 2GB apart.
-  JTMB->setCodeModel(CodeModel::Large);
-#endif
-
-  std::unique_ptr<TargetMachine> TM = cantFail(JTMB->createTargetMachine());
-
-  // Forcefully disable GlobalISel, it might be enabled on AArch64 without
-  // optimizations. In tests on an Apple M1 after the upgrade to LLVM 9, this
-  // new instruction selection framework emits branches / calls that expect all
-  // code to be reachable in +/- 128 MB. This cannot be guaranteed during JIT,
-  // which generates code into allocated pages on the heap and could span the
-  // entire address space of the process.
-  //
-  // TODO:
-  // 1. Try to reproduce the problem with vanilla lli of LLVM 9 to check that
-  //    this is not related to the way Cling incrementally JITs and executes.
-  // 2. Figure out exactly why GlobalISel emits different branch instructions,
-  //    and whether this is a problem in the framework or of the generated IR.
-  // 3. Verify if the same happens with LLVM 11/12 (whatever Cling will move to
-  //    next), and possibly fix the underlying issue in LLVM upstream's `main`.
-  //
-  // FIXME: Lift this restriction and allow the target to enable GlobalISel,
-  // if deemed ready by upstream developers.
-  TM->setGlobalISel(false);
-
-  return TM;
-}
-
-} // anonymous namespace
 
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
                                          const clang::CompilerInstance& CI,
@@ -120,18 +46,16 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
   // MSVC doesn't support m_AtExitFuncsSpinLock=ATOMIC_FLAG_INIT; in the class definition
   std::atomic_flag_clear( &m_AtExitFuncsSpinLock );
 
-  std::unique_ptr<TargetMachine> TM(CreateHostTargetMachine(CI));
-  auto &TMRef = *TM;
   llvm::Error Err = llvm::Error::success();
   auto EPC = llvm::cantFail(llvm::orc::SelfExecutorProcessControl::Create());
-  m_JIT.reset(new IncrementalJIT(*this, std::move(TM), std::move(EPC), Err,
+  m_JIT.reset(new IncrementalJIT(*this, CI, std::move(EPC), Err,
     ExtraLibHandle, Verbose));
   if (Err) {
     llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "Fatal: ");
     llvm_unreachable("Propagate this error and exit gracefully");
   }
 
-  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(), TMRef));
+  m_BackendPasses.reset(new BackendPasses(CI.getCodeGenOpts(), m_JIT->getTargetMachine()));
 }
 
 IncrementalExecutor::~IncrementalExecutor() {}
