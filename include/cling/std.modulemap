@@ -63,6 +63,11 @@ module "std" [system] {
     export *
     header "cmath"
   }
+  module "compare" {
+    requires cplusplus20
+    export *
+    header "compare"
+  }
   module "complex" {
     export *
     header "complex"
@@ -70,6 +75,11 @@ module "std" [system] {
   module "complex.h" {
     export *
     header "complex.h"
+  }
+  module "concepts" {
+    requires cplusplus20
+    export *
+    header "concepts"
   }
   module "condition_variable" {
     export *
@@ -172,6 +182,7 @@ module "std" [system] {
   }
   module "future" {
     export *
+    export bits_alloc_traits_h
     header "future"
   }
 /*  module "hash_map" {
@@ -396,6 +407,15 @@ module "std" [system] {
     export *
     header "ext/numeric"
   }
+  module "ext/type_traits.h" {
+    export *
+    header "ext/type_traits.h"
+  }
+
+  module "bits_alloc_traits_h" {
+    export *
+    header "bits/alloc_traits.h"
+  }
   module "bits/allocator.h" {
     export *
     header "bits/allocator.h"
@@ -416,13 +436,28 @@ module "std" [system] {
     export *
     header "bits/ios_base.h"
   }
+  module "bits/iterator_concepts.h" {
+    requires cplusplus20
+    export *
+    header "bits/iterator_concepts.h"
+  }
   module "bits/locale_facets.h" {
     export *
     header "bits/locale_facets.h"
   }
-  module "bits/stl_algobase.h" {
+  module "bits_stl_algobase_h" {
     export *
     header "bits/stl_algobase.h"
+  }
+  module "bits_stl_iterator_h" {
+    export bits_stl_algobase_h
+    export *
+    header "bits/stl_iterator.h"
+  }
+  module "bits/stl_iterator_base_types.h" {
+    export *
+    export bits_stl_algobase_h
+    header "bits/stl_iterator_base_types.h"
   }
   module "bits/stl_map.h" {
     export *
@@ -436,5 +471,32 @@ module "std" [system] {
   explicit module "bits_stl_tree_h" {
     export *
     header "bits/stl_tree.h"
+  }
+  module "bits/ranges_algo.h" {
+    requires cplusplus20
+    export *
+    export utility
+    header "bits/ranges_algo.h"
+  }
+  module "bits/ranges_algobase.h" {
+    requires cplusplus20
+    export *
+    header "bits/ranges_algobase.h"
+  }
+  module "bits/ranges_base.h" {
+    requires cplusplus20
+    export *
+    export bits_stl_iterator_h
+    header "bits/ranges_base.h"
+  }
+  module "bits/uses_allocator_args.h" {
+    requires cplusplus20
+    export *
+    header "bits/uses_allocator_args.h"
+  }
+  module "bits/uniform_int_dist.h" {
+    export *
+    export bits_stl_algobase_h
+    header "bits/uniform_int_dist.h"
   }
 }
