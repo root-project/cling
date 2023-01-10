@@ -19,7 +19,9 @@
 #include <clang/Frontend/CompilerInstance.h>
 
 #include <llvm/ADT/Triple.h>
+#include <llvm/ExecutionEngine/JITLink/EHFrameSupport.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
+#include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
 #include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 #include <llvm/IR/LLVMContext.h>
@@ -29,6 +31,7 @@
 #include <llvm/Target/TargetMachine.h>
 
 using namespace llvm;
+using namespace llvm::jitlink;
 using namespace llvm::orc;
 
 namespace {
@@ -185,6 +188,117 @@ namespace {
     bool needsToReserveAllocationSpace() override { return true; }
   };
 
+  /// A JITLinkMemoryManager for Cling that never frees its allocations.
+  class ClingJITLinkMemoryManager : public JITLinkMemoryManager {
+  public:
+    Expected<std::unique_ptr<Allocation>>
+    allocate(const JITLinkDylib* JD,
+             const SegmentsRequestMap& Request) override {
+      // A copy of InProcessMemoryManager::allocate with an empty implementation
+      // of IPMMAlloc::deallocate.
+
+      using AllocationMap = DenseMap<unsigned, sys::MemoryBlock>;
+
+      // Local class for allocation.
+      class IPMMAlloc : public Allocation {
+      public:
+        IPMMAlloc(AllocationMap SegBlocks) : SegBlocks(std::move(SegBlocks)) {}
+        MutableArrayRef<char> getWorkingMemory(ProtectionFlags Seg) override {
+          assert(SegBlocks.count(Seg) && "No allocation for segment");
+          return {static_cast<char*>(SegBlocks[Seg].base()),
+                  SegBlocks[Seg].allocatedSize()};
+        }
+        JITTargetAddress getTargetMemory(ProtectionFlags Seg) override {
+          assert(SegBlocks.count(Seg) && "No allocation for segment");
+          return pointerToJITTargetAddress(SegBlocks[Seg].base());
+        }
+        void finalizeAsync(FinalizeContinuation OnFinalize) override {
+          OnFinalize(applyProtections());
+        }
+        Error deallocate() override {
+          // Disabled until CallFunc is informed about unloading, and can
+          // re-generate the wrapper (if the decl is still available). See
+          // https://github.com/root-project/root/issues/10898
+          return Error::success();
+        }
+
+      private:
+        Error applyProtections() {
+          for (auto& KV : SegBlocks) {
+            auto& Prot = KV.first;
+            auto& Block = KV.second;
+            if (auto EC = sys::Memory::protectMappedMemory(Block, Prot))
+              return errorCodeToError(EC);
+            if (Prot & sys::Memory::MF_EXEC)
+              sys::Memory::InvalidateInstructionCache(Block.base(),
+                                                      Block.allocatedSize());
+          }
+          return Error::success();
+        }
+
+        AllocationMap SegBlocks;
+      };
+
+      if (!isPowerOf2_64((uint64_t)sys::Process::getPageSizeEstimate()))
+        return make_error<StringError>("Page size is not a power of 2",
+                                       inconvertibleErrorCode());
+
+      AllocationMap Blocks;
+      const sys::Memory::ProtectionFlags ReadWrite =
+          static_cast<sys::Memory::ProtectionFlags>(sys::Memory::MF_READ |
+                                                    sys::Memory::MF_WRITE);
+
+      // Compute the total number of pages to allocate.
+      size_t TotalSize = 0;
+      for (auto& KV : Request) {
+        const auto& Seg = KV.second;
+
+        if (Seg.getAlignment() > sys::Process::getPageSizeEstimate())
+          return make_error<StringError>("Cannot request higher than page "
+                                         "alignment",
+                                         inconvertibleErrorCode());
+
+        TotalSize = alignTo(TotalSize, sys::Process::getPageSizeEstimate());
+        TotalSize += Seg.getContentSize();
+        TotalSize += Seg.getZeroFillSize();
+      }
+
+      // Allocate one slab to cover all the segments.
+      std::error_code EC;
+      auto SlabRemaining =
+          sys::Memory::allocateMappedMemory(TotalSize, nullptr, ReadWrite, EC);
+
+      if (EC)
+        return errorCodeToError(EC);
+
+      // Allocate segment memory from the slab.
+      for (auto& KV : Request) {
+
+        const auto& Seg = KV.second;
+
+        uint64_t SegmentSize =
+            alignTo(Seg.getContentSize() + Seg.getZeroFillSize(),
+                    sys::Process::getPageSizeEstimate());
+        assert(SlabRemaining.allocatedSize() >= SegmentSize &&
+               "Mapping exceeds allocation");
+
+        sys::MemoryBlock SegMem(SlabRemaining.base(), SegmentSize);
+        SlabRemaining =
+            sys::MemoryBlock((char*)SlabRemaining.base() + SegmentSize,
+                             SlabRemaining.allocatedSize() - SegmentSize);
+
+        // Zero out the zero-fill memory.
+        memset(static_cast<char*>(SegMem.base()) + Seg.getContentSize(), 0,
+               Seg.getZeroFillSize());
+
+        // Record the block for this segment.
+        Blocks[KV.first] = std::move(SegMem);
+      }
+
+      return std::unique_ptr<InProcessMemoryManager::Allocation>(
+          new IPMMAlloc(std::move(Blocks)));
+    }
+  };
 
   /// A DynamicLibrarySearchGenerator that uses ResourceTracker to remember
   /// which symbols were resolved through dlsym during a transaction's reign.
@@ -371,7 +485,32 @@ IncrementalJIT::IncrementalJIT(
 
   // Create ObjectLinkingLayer with our own MemoryManager.
   Builder.setObjectLinkingLayerCreator([&](ExecutionSession& ES,
-                                           const Triple& TT) {
+                                           const Triple& TT)
+                                           -> std::unique_ptr<ObjectLayer> {
+    bool jitLink = false;
+    // Default to JITLink on macOS, as done in LLVM by
+    // LLJITBuilderState::prepareForConstruction.
+    if (TT.isOSBinFormatMachO() &&
+        (TT.getArch() == Triple::aarch64 || TT.getArch() == Triple::x86_64)) {
+      jitLink = true;
+    }
+    // Finally, honor the user's choice by setting an environment variable.
+    if (const char* clingJitLink = std::getenv("CLING_JITLINK")) {
+      jitLink = cling::utils::ConvertEnvValueToBool(clingJitLink);
+    }
+
+    if (jitLink) {
+      // For JITLink, we only need a custom memory manager to avoid freeing the
+      // memory segments; the default InProcessMemoryManager (which is mostly
+      // copied above) already does slab allocation to keep all segments
+      // together which is needed for exception handling support.
+      auto ObjLinkingLayer = std::make_unique<ObjectLinkingLayer>(
+          ES, std::make_unique<ClingJITLinkMemoryManager>());
+      ObjLinkingLayer->addPlugin(std::make_unique<EHFrameRegistrationPlugin>(
+          ES, std::make_unique<InProcessEHFrameRegistrar>()));
+      return ObjLinkingLayer;
+    }
+
     auto GetMemMgr = []() { return std::make_unique<ClingMemoryManager>(); };
     auto Layer =
         std::make_unique<RTDyldObjectLinkingLayer>(ES, std::move(GetMemMgr));
