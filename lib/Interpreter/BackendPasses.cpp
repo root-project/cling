@@ -261,41 +261,47 @@ namespace {
     static char ID;
     cling::IncrementalJIT &m_JIT;
 
-    bool runOnGlobal(GlobalValue& GV) {
-      if (GV.isDeclaration())
-        return false; // no change.
-
-      // GV is a definition.
-
-      if (auto *Func = dyn_cast<Function>(&GV))
-        if (Func->getInstructionCount() < 50) {
-          // This is a small function. Keep its definition to retain it for
-          // inlining: the cost for JITting it is small, and the likelihood
-          // that the call will be inlined is high.
-          return false;
-        }
-
-
+    bool shouldRemoveGlobalDefinition(GlobalValue& GV) {
+      // Existing *weak* symbols can be re-used thanks to ODR.
       llvm::GlobalValue::LinkageTypes LT = GV.getLinkage();
       if (!GV.isDiscardableIfUnused(LT) || !GV.isWeakForLinker(LT))
         return false;
 
       // Find the symbol as existing, previously compiled symbol in the JIT,
       // or in shared libraries (without auto-loading).
-      if (m_JIT.getSymbolAddress(GV.getName(), /*IncludeHostSyms*/ true)) {
+      return (m_JIT.getSymbolAddress(GV.getName(), /*IncludeHostSyms*/ true));
+    }
+
+    bool runOnVar(GlobalVariable& GV) {
 #if !defined(_WIN32)
-        // Heuristically, Windows cannot handle cross-library variables; they
-        // must be library-local.
-        if (auto *Var = dyn_cast<GlobalVariable>(&GV)) {
-          Var->setInitializer(nullptr); // make this a declaration
-        } else
-#endif
-        if (auto *Func = dyn_cast<Function>(&GV)) {
-          Func->deleteBody(); // make this a declaration
-        }
+      // Heuristically, Windows cannot handle cross-library variables; they
+      // must be library-local.
+
+      if (GV.isDeclaration())
+        return false; // no change.
+      if (shouldRemoveGlobalDefinition(GV)) {
+        GV.setInitializer(nullptr); // make this a declaration
         return true; // a change!
       }
-      return false;
+#endif
+      return false; // no change.
+    }
+
+    bool runOnFunc(Function& Func) {
+      if (Func.isDeclaration())
+        return false; // no change.
+
+      if (Func.getInstructionCount() < 50) {
+        // This is a small function. Keep its definition to retain it for
+        // inlining: the cost for JITting it is small, and the likelihood
+        // that the call will be inlined is high.
+        return false;
+      }
+      if (shouldRemoveGlobalDefinition(Func)) {
+        Func.deleteBody(); // make this a declaration
+        return true; // a change!
+      }
+      return false; // no change.
     }
 
   public:
@@ -305,9 +311,9 @@ namespace {
     bool runOnModule(Module &M) override {
       bool ret = false;
       for (auto &&F: M)
-        ret |= runOnGlobal(F);
+        ret |= runOnFunc(F);
       for (auto &&G: M.globals())
-        ret |= runOnGlobal(G);
+        ret |= runOnVar(G);
       return ret;
     }
   };
