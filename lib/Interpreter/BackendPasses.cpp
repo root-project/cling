@@ -259,6 +259,7 @@ namespace {
   // declarations. This reduces the amount of emitted symbols.
   class ReuseExistingWeakSymbols : public ModulePass {
     static char ID;
+    cling::IncrementalJIT &m_JIT;
 
     bool runOnGlobal(GlobalValue& GV) {
       if (GV.isDeclaration())
@@ -270,15 +271,9 @@ namespace {
       if (!GV.isDiscardableIfUnused(LT) || !GV.isWeakForLinker(LT))
         return false;
 
-      // Find the symbol in JIT or shared libraries (without auto-loading).
-      std::string Name =  GV.getName().str();
-      if (
-#if !defined(_WIN32)
-        llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(Name)
-#else
-        platform::DLSym(Name)
-#endif
-      ) {
+      // Find the symbol as existing, previously compiled symbol in the JIT,
+      // or in shared libraries (without auto-loading).
+      if (m_JIT.getSymbolAddress(GV.getName(), /*IncludeHostSyms*/ true)) {
 #if !defined(_WIN32)
         // Heuristically, Windows cannot handle cross-library variables; they
         // must be library-local.
@@ -295,8 +290,8 @@ namespace {
     }
 
   public:
-    ReuseExistingWeakSymbols() :
-      ModulePass(ID) {}
+    ReuseExistingWeakSymbols(IncrementalJIT &JIT) :
+      ModulePass(ID), m_JIT(JIT) {}
 
     bool runOnModule(Module &M) override {
       bool ret = false;
@@ -313,8 +308,9 @@ char ReuseExistingWeakSymbols::ID = 0;
 
 
 BackendPasses::BackendPasses(const clang::CodeGenOptions &CGOpts,
-                             llvm::TargetMachine& TM):
+                             IncrementalJIT &JIT, llvm::TargetMachine& TM):
    m_TM(TM),
+   m_JIT(JIT),
    m_CGOpts(CGOpts)
 {}
 
@@ -392,7 +388,7 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel]->add(new KeepLocalGVPass());
   m_MPM[OptLevel]->add(new PreventLocalOptPass());
   m_MPM[OptLevel]->add(new WeakTypeinfoVTablePass());
-  m_MPM[OptLevel]->add(new ReuseExistingWeakSymbols());
+  m_MPM[OptLevel]->add(new ReuseExistingWeakSymbols(m_JIT));
 
   // The function __cuda_module_ctor and __cuda_module_dtor will just generated,
   // if a CUDA fatbinary file exist. Without file path there is no need for the

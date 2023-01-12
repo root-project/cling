@@ -44,12 +44,13 @@ namespace cling {
     std::array<std::unique_ptr<llvm::legacy::FunctionPassManager>, 4> m_FPM;
 
     llvm::TargetMachine& m_TM;
+    IncrementalJIT &m_JIT;
     const clang::CodeGenOptions &m_CGOpts;
 
     void CreatePasses(llvm::Module& M, int OptLevel);
 
   public:
-    BackendPasses(const clang::CodeGenOptions &CGOpts,
+    BackendPasses(const clang::CodeGenOptions &CGOpts, IncrementalJIT &JIT,
                   llvm::TargetMachine& TM);
     ~BackendPasses();
 
