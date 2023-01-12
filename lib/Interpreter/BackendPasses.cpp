@@ -267,9 +267,17 @@ namespace {
       if (!GV.isDiscardableIfUnused(LT) || !GV.isWeakForLinker(LT))
         return false;
 
-      // Find the symbol as existing, previously compiled symbol in the JIT,
-      // or in shared libraries (without auto-loading).
-      return (m_JIT.getSymbolAddress(GV.getName(), /*IncludeHostSyms*/ true));
+      // Find the symbol as existing, previously compiled symbol in the JIT...
+      if (m_JIT.doesSymbolAlreadyExist(GV.getName()))
+        return true;
+
+      // ...or in shared libraries (without auto-loading).
+      std::string Name = GV.getName().str();
+#if !defined(_WIN32)
+        return llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(Name);
+#else
+        return platform::DLSym(Name);
+#endif
     }
 
     bool runOnVar(GlobalVariable& GV) {
@@ -310,6 +318,7 @@ namespace {
 
     bool runOnModule(Module &M) override {
       bool ret = false;
+      // FIXME: use SymbolLookupSet, rather than looking up symbol by symbol.
       for (auto &&F: M)
         ret |= runOnFunc(F);
       for (auto &&G: M.globals())

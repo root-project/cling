@@ -504,6 +504,10 @@ llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
   m_ResourceTrackers.erase(&T);
   if (Error Err = RT->remove())
     return Err;
+  auto iMod = m_CompiledModules.find(T.m_CompiledModule);
+  if (iMod != m_CompiledModules.end())
+    m_CompiledModules.erase(iMod);
+
   return llvm::Error::success();
 }
 
@@ -550,7 +554,7 @@ IncrementalJIT::addOrReplaceDefinition(StringRef Name,
   return KnownAddr;
 }
 
-void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols) {
+void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols){
   std::unique_lock<SharedAtomicFlag> G(SkipHostProcessLookup, std::defer_lock);
   if (!IncludeHostSymbols)
     G.lock();
@@ -575,6 +579,15 @@ void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols) 
   }
 
   return jitTargetAddressToPointer<void*>(Symbol->getAddress());
+}
+
+bool IncrementalJIT::doesSymbolAlreadyExist(StringRef UnmangledName) {
+  auto Name = Jit->mangle(UnmangledName);
+  for (auto &&M: m_CompiledModules) {
+    if (M.first->getNamedValue(Name))
+      return true;
+  }
+  return false;
 }
 
 } // namespace cling

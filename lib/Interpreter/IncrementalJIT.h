@@ -78,6 +78,10 @@ public:
   /// should include symbols from the host process (via dlsym) or not.
   void* getSymbolAddress(llvm::StringRef Name, bool IncludeHostSymbols);
 
+  /// @brief Check whether the JIT already has emitted or knows how to emit
+  /// a symbol based on its IR name (as coming from clang's mangler).
+  bool doesSymbolAlreadyExist(llvm::StringRef UnmangledName);
+
   /// Inject a symbol with a known address. Name is not linker mangled, i.e.
   /// as known by the IR.
   llvm::JITTargetAddress addOrReplaceDefinition(llvm::StringRef Name,
