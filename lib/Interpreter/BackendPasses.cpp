@@ -267,6 +267,15 @@ namespace {
 
       // GV is a definition.
 
+      if (auto *Func = dyn_cast<Function>(&GV))
+        if (Func->getInstructionCount() < 50) {
+          // This is a small function. Keep its definition to retain it for
+          // inlining: the cost for JITting it is small, and the likelihood
+          // that the call will be inlined is high.
+          return false;
+        }
+
+
       llvm::GlobalValue::LinkageTypes LT = GV.getLinkage();
       if (!GV.isDiscardableIfUnused(LT) || !GV.isWeakForLinker(LT))
         return false;
