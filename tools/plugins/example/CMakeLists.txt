@@ -14,7 +14,7 @@ endif()
 
 set_target_properties(clingDemoPlugin PROPERTIES  LIBRARY_OUTPUT_DIRECTORY ".")
 if(APPLE)
-  target_link_libraries(clingDemoPlugin PUBLIC -Wl,-bind_at_load -Wl,-undefined -Wl,dynamic_lookup)
+  target_link_libraries(clingDemoPlugin PUBLIC -Wl,-w -Wl,-bind_at_load -Wl,-undefined,dynamic_lookup)
 elseif(NOT MSVC)
   target_link_libraries(clingDemoPlugin PUBLIC -Wl,--unresolved-symbols=ignore-in-object-files)
 endif()
