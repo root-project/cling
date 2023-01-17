@@ -74,11 +74,11 @@ namespace cling {
       ConsumerCallInfo m_Call;
       DelayCallInfo(clang::DeclGroupRef DGR, ConsumerCallInfo CCI)
         : m_DGR(DGR), m_Call(CCI) {}
-      inline bool operator==(const DelayCallInfo& rhs) {
+      inline bool operator==(const DelayCallInfo& rhs) const {
         return m_DGR.getAsOpaquePtr() == rhs.m_DGR.getAsOpaquePtr()
           && m_Call == rhs.m_Call;
       }
-      inline bool operator!=(const DelayCallInfo& rhs) {
+      inline bool operator!=(const DelayCallInfo& rhs) const {
         return !operator==(rhs);
       }
       void dump() const;
@@ -100,10 +100,10 @@ namespace cling {
       MacroDirectiveInfo(clang::IdentifierInfo* II,
                          const clang::MacroDirective* MD)
                 : m_II(II), m_MD(MD) {}
-      inline bool operator==(const MacroDirectiveInfo& rhs) {
+      inline bool operator==(const MacroDirectiveInfo& rhs) const {
         return m_II == rhs.m_II && m_MD == rhs.m_MD;
       }
-      inline bool operator!=(const MacroDirectiveInfo& rhs) {
+      inline bool operator!=(const MacroDirectiveInfo& rhs) const {
         return !operator==(rhs);
       }
       void dump(const clang::Preprocessor& PP) const;
