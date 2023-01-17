@@ -298,13 +298,15 @@ namespace {
     bool runOnFunc(Function& Func) {
       if (Func.isDeclaration())
         return false; // no change.
-
+#ifndef _WIN32
+      // MSVC's stdlib gets symbol issues; i.e. apparently: JIT all or none.
       if (Func.getInstructionCount() < 50) {
         // This is a small function. Keep its definition to retain it for
         // inlining: the cost for JITting it is small, and the likelihood
         // that the call will be inlined is high.
         return false;
       }
+#endif
       if (shouldRemoveGlobalDefinition(Func)) {
         Func.deleteBody(); // make this a declaration
         return true; // a change!
