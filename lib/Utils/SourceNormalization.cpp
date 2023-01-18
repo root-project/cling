@@ -21,6 +21,8 @@ namespace {
 ///\brief A Lexer that exposes preprocessor directives.
 class MinimalPPLexer: public Lexer {
 
+  const LangOptions &LangOpts;
+
   ///\brief Jump to the next token after a scope chain A::B::C::D
   ///
   bool SkipScopes(Token& Tok) {
@@ -31,7 +33,7 @@ class MinimalPPLexer: public Lexer {
   bool SkipScopes(Token& Tok, Token& LastTok) {
     LastTok = Tok;
 
-    if (getLangOpts().CPlusPlus) {
+    if (LangOpts.CPlusPlus) {
       while (Tok.is(tok::coloncolon)) {
         if (!LexClean(LastTok) || Identifier(LastTok).empty())
           return false;
@@ -59,7 +61,7 @@ class MinimalPPLexer: public Lexer {
   llvm::StringRef Identifier(Token& Tok) const {
     if (Tok.is(tok::raw_identifier)) {
       StringRef Id(Tok.getRawIdentifier());
-      if (Lexer::isIdentifierBodyChar(Id.front(), getLangOpts()))
+      if (Lexer::isAsciiIdentifierContinueChar(Id.front(), LangOpts))
         return Id;
     }
     return llvm::StringRef();
@@ -114,7 +116,8 @@ public:
   ///\brief Construct a Lexer from LangOpts and source.
   MinimalPPLexer(const LangOptions &LOpts, llvm::StringRef source):
     Lexer(SourceLocation(), LOpts,
-          source.begin(), source.begin(), source.end()) {}
+          source.begin(), source.begin(), source.end()),
+    LangOpts(LOpts) {}
 
   bool inPPDirective() const { return ParsingPreprocessorDirective; }
 
@@ -196,7 +199,7 @@ public:
                                    bool& HasBody) {
     HasBody = true;
     /// ###TODO: Allow preprocessor expansion
-    if (!Lexer::isIdentifierBodyChar(First.front(), getLangOpts()))
+    if (!Lexer::isAsciiIdentifierContinueChar(First.front(), LangOpts))
       return kNONE;
 
     // Early out calling a function/macro Ident()
@@ -206,7 +209,7 @@ public:
     bool Ctor = false;
     bool Dtor = false;
 
-    if (getLangOpts().CPlusPlus && Tok.is(tok::coloncolon)) {
+    if (LangOpts.CPlusPlus && Tok.is(tok::coloncolon)) {
       // CLASS::CLASS() or CLASS::~CLASS()
       // CLASS::NESTED::NESTED()
       // CLASS::type func()
@@ -276,7 +279,7 @@ public:
           // Identifier(Tok).empty() is redundant 1st time, but simplifies code
           if (Identifier(Tok).empty() || !LexClean(Tok))
             return kNONE;
-        } while (getLangOpts().CPlusPlus && Tok.is(tok::coloncolon) &&
+        } while (LangOpts.CPlusPlus && Tok.is(tok::coloncolon) &&
                  LexClean(Tok));
 
         // 'class T {' 'struct T {' 'class T :'
@@ -336,7 +339,7 @@ public:
     if (Tok.is(tok::l_brace))
       return kFunction;
 
-    if (getLangOpts().CPlusPlus) {
+    if (LangOpts.CPlusPlus) {
       // constructor initialization 'CLASS::CLASS() :'
       if (Ctor && Tok.is(tok::colon))
         return !AdvanceTo(Tok, tok::l_brace) ? kFunction : kNONE;
