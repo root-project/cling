@@ -239,58 +239,60 @@ namespace cling {
 
     std::string FunctionName = "__fd";
     createUniqueName(FunctionName);
-    IdentifierInfo& IIFD = m_Context->Idents.get(FunctionName);
+    clang::DeclarationName DeclName = &m_Context->Idents.get(FunctionName);
     SourceLocation Loc;
-    NamedDecl* ND = m_Sema->ImplicitlyDefineFunction(Loc, IIFD, TUScope);
-    if (FunctionDecl* FD = dyn_cast_or_null<FunctionDecl>(ND)) {
-      Sema::SynthesizedFunctionScope Scope(*m_Sema, FD);
-      FD->setImplicit(false); // Better for debugging
+    clang::QualType FnTy =
+        m_Context->getFunctionType(m_Context->IntTy, {},
+                                   clang::FunctionProtoType::ExtProtoInfo());
+    clang::FunctionDecl* FD = clang::FunctionDecl::Create(
+        *m_Context, m_Context->getTranslationUnitDecl(), Loc, Loc, DeclName,
+        FnTy, m_Context->getTrivialTypeSourceInfo(FnTy), clang::SC_None);
 
-      // Add a return statement if it doesn't exist
-      if (!isa<ReturnStmt>(Stmts.back())) {
-        Sema::ContextRAII pushedDC(*m_Sema, FD);
-        // Generate the return statement:
-        // First a literal 0, then the return taking that literal.
-        // One bit is enough:
-        llvm::APInt ZeroInt(m_Context->getIntWidth(m_Context->IntTy), 0,
-                            /*isSigned=*/true);
-        IntegerLiteral* ZeroLit
-          = IntegerLiteral::Create(*m_Context, ZeroInt, m_Context->IntTy,
-                                   SourceLocation());
-        Stmts.push_back(m_Sema->ActOnReturnStmt(ZeroLit->getExprLoc(),
-                                                ZeroLit,
-                                                m_Sema->getCurScope()).get());
-      }
+    Sema::SynthesizedFunctionScope Scope(*m_Sema, FD);
+    FD->setImplicit(false); // Better for debugging
 
-      // Wrap Stmts into a function body.
-      llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
-      CompoundStmt* CS = CompoundStmt::Create(*m_Context, StmtsRef, Loc, Loc);
-      FD->setBody(CS);
-      Emit(FD);
-
-      // Create the VarDecl with the init
-      std::string VarName = "__vd";
-      createUniqueName(VarName);
-      IdentifierInfo& IIVD = m_Context->Idents.get(VarName);
-      VarDecl* VD = VarDecl::Create(*m_Context, TUDC, Loc, Loc, &IIVD,
-                                    FD->getReturnType(), (TypeSourceInfo*)0,
-                                    SC_None);
-      LookupResult R(*m_Sema, FD->getDeclName(), Loc, Sema::LookupMemberName);
-      R.addDecl(FD);
-      CXXScopeSpec CSS;
-      Expr* UnresolvedLookup
-        = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
-      Expr* TheCall = m_Sema->ActOnCallExpr(TUScope, UnresolvedLookup, Loc,
-                                            MultiExprArg(), Loc).get();
-      assert(VD && TheCall && "Missing VD or its init!");
-      VD->setInit(TheCall);
-
-      Emit(VD); // Add it to the transaction for codegenning
-      TUDC->addHiddenDecl(VD);
-      Stmts.clear();
-      return;
+    // Add a return statement if it doesn't exist
+    if (!isa<ReturnStmt>(Stmts.back())) {
+      Sema::ContextRAII pushedDC(*m_Sema, FD);
+      // Generate the return statement:
+      // First a literal 0, then the return taking that literal.
+      // One bit is enough:
+      llvm::APInt ZeroInt(m_Context->getIntWidth(m_Context->IntTy), 0,
+                          /*isSigned=*/true);
+      IntegerLiteral* ZeroLit
+        = IntegerLiteral::Create(*m_Context, ZeroInt, m_Context->IntTy,
+                                 SourceLocation());
+      Stmts.push_back(m_Sema->ActOnReturnStmt(ZeroLit->getExprLoc(),
+                                              ZeroLit,
+                                              m_Sema->getCurScope()).get());
     }
-    llvm_unreachable("Must be able to enforce init order.");
+
+    // Wrap Stmts into a function body.
+    llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
+    CompoundStmt* CS = CompoundStmt::Create(*m_Context, StmtsRef, Loc, Loc);
+    FD->setBody(CS);
+    Emit(FD);
+
+    // Create the VarDecl with the init
+    std::string VarName = "__vd";
+    createUniqueName(VarName);
+    IdentifierInfo& IIVD = m_Context->Idents.get(VarName);
+    VarDecl* VD = VarDecl::Create(*m_Context, TUDC, Loc, Loc, &IIVD,
+                                  FD->getReturnType(), (TypeSourceInfo*)0,
+                                  SC_None);
+    LookupResult R(*m_Sema, FD->getDeclName(), Loc, Sema::LookupMemberName);
+    R.addDecl(FD);
+    CXXScopeSpec CSS;
+    Expr* UnresolvedLookup
+      = m_Sema->BuildDeclarationNameExpr(CSS, R, /*ADL*/ false).get();
+    Expr* TheCall = m_Sema->ActOnCallExpr(TUScope, UnresolvedLookup, Loc,
+                                          MultiExprArg(), Loc).get();
+    assert(VD && TheCall && "Missing VD or its init!");
+    VD->setInit(TheCall);
+
+    Emit(VD); // Add it to the transaction for codegenning
+    TUDC->addHiddenDecl(VD);
+    Stmts.clear();
   }
 
   ///\brief Checks for clashing names when trying to extract a declaration.
