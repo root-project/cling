@@ -1441,9 +1441,9 @@ namespace cling {
     // Clang doc says:
     // "LookupFrom is set when this is a \#include_next directive, it
     // specifies the file to start searching from."
-    const DirectoryLookup* FromDir = nullptr;
+    ConstSearchDirIterator FromDir = nullptr;
     const FileEntry* FromFile = nullptr;
-    const DirectoryLookup* CurDir = nullptr;
+    ConstSearchDirIterator* CurDir = nullptr;
     Preprocessor& PP = getCI()->getPreprocessor();
     // PP::LookupFile uses it to issue 'nice' diagnostic
     SourceLocation fileNameLoc;

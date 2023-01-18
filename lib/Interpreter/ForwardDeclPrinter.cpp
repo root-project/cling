@@ -211,9 +211,9 @@ namespace cling {
      auto isDirectlyReacheable = [&PP](llvm::StringRef FileName) {
        SourceLocation fileNameLoc;
        bool isAngled = false;
-       const DirectoryLookup* FromDir = nullptr;
+       ConstSearchDirIterator FromDir = nullptr;
        const FileEntry* FromFile = nullptr;
-       const DirectoryLookup* CurDir = nullptr;
+       ConstSearchDirIterator* CurDir = nullptr;
 
        auto FE = PP.LookupFile(fileNameLoc, FileName, isAngled, FromDir,
                                FromFile,

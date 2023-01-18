@@ -111,9 +111,9 @@ namespace cling {
         SourceLocation fileNameLoc;
         // Remember this file wth full path, not "./File.h" (ROOT-8863).
         bool isAngled = true;
-        const DirectoryLookup* FromDir = 0;
+        ConstSearchDirIterator FromDir = nullptr;
         const FileEntry* FromFile = 0;
-        const DirectoryLookup* CurDir = 0;
+        ConstSearchDirIterator* CurDir = nullptr;
         bool needCacheUpdate = false;
 
         if (FileName.equals(m_PrevFileName.first))

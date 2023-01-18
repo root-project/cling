@@ -162,7 +162,7 @@ namespace {
         // a call to interpreter parsing header file. It will suffer the same
         // issue as if we included the file within the pragma.
         if (m_Interp.loadLibrary(FI.FileName, true) != Interpreter::kSuccess) {
-          const clang::DirectoryLookup *CurDir = nullptr;
+          clang::ConstSearchDirIterator *CurDir = nullptr;
           if (PP.getHeaderSearchInfo().LookupFile(FI.FileName, FI.StartLoc,
               /*isAngled*/ false, /*fromDir*/ nullptr, /*CurDir*/ CurDir, /*Includers*/ {},
               /*SearchPath*/ nullptr, /*RelativePath*/ nullptr, /*RequestingModule*/ nullptr,
