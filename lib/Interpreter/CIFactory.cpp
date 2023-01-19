@@ -1389,10 +1389,6 @@ namespace {
     }
 
     llvm::Triple TheTriple(llvm::sys::getProcessTriple());
-#ifdef _WIN32
-    // COFF format currently needs a few changes in LLVM to function properly.
-    TheTriple.setObjectFormat(llvm::Triple::COFF);
-#endif
     clang::driver::Driver Drvr(argv[0], TheTriple.getTriple(), *Diags);
     //Drvr.setWarnMissingInput(false);
     Drvr.setCheckInputsExist(false); // think foo.C(12)
