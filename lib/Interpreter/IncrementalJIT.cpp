@@ -262,8 +262,6 @@ Error RTDynamicLibrarySearchGenerator::tryToGenerate(
     JITDylibLookupFlags JDLookupFlags, const SymbolLookupSet &Symbols) {
   orc::SymbolMap NewSymbols;
 
-  bool HasGlobalPrefix = (GlobalPrefix != '\0');
-
   for (auto &KV : Symbols) {
     auto &Name = KV.first;
 
@@ -273,11 +271,10 @@ Error RTDynamicLibrarySearchGenerator::tryToGenerate(
     if (Allow && !Allow(Name))
       continue;
 
-    if (HasGlobalPrefix && (*Name).front() != GlobalPrefix)
-      continue;
+    bool StripGlobalPrefix = (GlobalPrefix != '\0' && (*Name).front() == GlobalPrefix);
 
-    std::string Tmp((*Name).data() + HasGlobalPrefix,
-                    (*Name).size() - HasGlobalPrefix);
+    std::string Tmp((*Name).data() + StripGlobalPrefix,
+                    (*Name).size() - StripGlobalPrefix);
     if (void *Addr = Dylib.getAddressOfSymbol(Tmp.c_str())) {
       NewSymbols[Name] = JITEvaluatedSymbol(
           static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(Addr)),
