@@ -57,12 +57,12 @@ namespace cling {
       m_Callbacks->EnteredSubmodule(M, ImportLoc, ForPragma);
     }
 
-    bool FileNotFound(llvm::StringRef FileName,
-                      llvm::SmallVectorImpl<char>& RecoveryPath) override {
+    bool FileNotFound(llvm::StringRef FileName) override {
       if (m_Callbacks)
-        return m_Callbacks->FileNotFound(FileName, RecoveryPath);
+        return m_Callbacks->FileNotFound(FileName);
 
-      // Returning true would mean that the preprocessor should try to recover.
+      // Returning true would mean that the preprocessor should silently skip
+      // this file.
       return false;
     }
   };
@@ -387,8 +387,7 @@ namespace cling {
     return m_DeserializationListener.get();
   }
 
-  bool InterpreterCallbacks::FileNotFound(llvm::StringRef,
-                                          llvm::SmallVectorImpl<char>&) {
+  bool InterpreterCallbacks::FileNotFound(llvm::StringRef) {
     // Default implementation is no op.
     return false;
   }

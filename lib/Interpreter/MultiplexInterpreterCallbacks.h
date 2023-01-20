@@ -48,11 +48,10 @@ namespace cling {
         cb->EnteredSubmodule(M, ImportLoc, ForPragma);
     }
 
-    bool FileNotFound(llvm::StringRef FileName,
-                      llvm::SmallVectorImpl<char>& RecoveryPath) override {
+    bool FileNotFound(llvm::StringRef FileName) override {
       bool result = false;
       for (auto&& cb : m_Callbacks)
-        result = cb->FileNotFound(FileName, RecoveryPath) || result;
+        result = cb->FileNotFound(FileName) || result;
       return result;
     }
 

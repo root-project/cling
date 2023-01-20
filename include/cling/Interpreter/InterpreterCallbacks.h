@@ -116,8 +116,7 @@ namespace cling {
                                   clang::SourceLocation /*ImportLoc*/,
                                   bool /*ForPragma*/) {}
 
-    virtual bool FileNotFound(llvm::StringRef FileName,
-                              llvm::SmallVectorImpl<char>& RecoveryPath);
+    virtual bool FileNotFound(llvm::StringRef FileName);
 
     /// \brief This callback is invoked whenever the interpreter needs to
     /// resolve the type and the adress of an object, which has been marked for
