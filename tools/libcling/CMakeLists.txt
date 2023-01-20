@@ -10,21 +10,25 @@ set(SOURCES
   ADDITIONAL_HEADERS
   )
 
-set(LIBS
-  clangAnalysis
-  clangDriver
-  clangFrontend
-  clangParse
-  clangSema
-  clangAST
-  clangLex
-  clangSerialization
-  clangCodeGen
-  clangBasic
-  clangEdit
+if (LLVM_LIB_IS_SHARED)
+    set(LIBS clang-cpp)
+else()
+    set(LIBS
+        clangAnalysis
+        clangDriver
+        clangFrontend
+        clangParse
+        clangSema
+        clangAST
+        clangLex
+        clangSerialization
+        clangCodeGen
+        clangBasic
+        clangEdit
 
-  clingUtils
-)
+        clingUtils
+        )
+endif()
 
 set( LLVM_LINK_COMPONENTS
   analysis
@@ -62,10 +66,6 @@ option(LIBCLING_BUILD_STATIC
   # KB835326
 #  set(LLVM_EXPORTED_SYMBOL_FILE)
 #endif()
-
-if( LLVM_ENABLE_PIC )
-  set(ENABLE_SHARED SHARED)
-endif()
 
 if((NOT LLVM_ENABLE_PIC OR LIBCLING_BUILD_STATIC) AND NOT WIN32)
   set(ENABLE_STATIC STATIC)

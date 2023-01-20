@@ -10,7 +10,16 @@ set( LLVM_LINK_COMPONENTS
   core
   support
   binaryformat
-)
+  )
+
+if (LLVM_LIB_IS_SHARED)
+    set(LIBS clang-cpp)
+else()
+    set(LIBS
+        clangLex
+        clangAST
+        clangBasic)
+endif()
 
 add_cling_library(clingMetaProcessor OBJECT
   Display.cpp
@@ -21,10 +30,7 @@ add_cling_library(clingMetaProcessor OBJECT
   MetaSema.cpp
 
   LINK_LIBS
-  clangLex
-  clangAST
-  clangBasic
-
+  ${LIBS}
   clingInterpreter
   clingUtils
 )

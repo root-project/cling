@@ -6,22 +6,28 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-set(LIBS
-  clingUtils
-  clangCodeGen
-  clangDriver
-  clangFrontend
-  clangParse
-  clangSema
-  clangAnalysis
-  clangEdit
-  clangRewrite
-  clangRewriteFrontend
-  clangSerialization
-  clangAST
-  clangBasic
-  clangLex
-)
+if (LLVM_LIB_IS_SHARED)
+    set(LIBS
+        clang-cpp
+        clingUtils)
+else()
+    set(LIBS
+        clingUtils
+        clangCodeGen
+        clangDriver
+        clangFrontend
+        clangParse
+        clangSema
+        clangAnalysis
+        clangEdit
+        clangRewrite
+        clangRewriteFrontend
+        clangSerialization
+        clangAST
+        clangBasic
+        clangLex
+        )
+endif()
 
 set(LLVM_LINK_COMPONENTS
   analysis
