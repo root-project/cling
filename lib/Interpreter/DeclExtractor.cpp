@@ -210,8 +210,12 @@ namespace cling {
     }
 
     // Create a new body.
-    auto newCS = CompoundStmt::Create(*m_Context, Stmts, CS->getLBracLoc(),
-                                      CS->getRBracLoc());
+    FPOptionsOverride FPFeatures;
+    if (CS->hasStoredFPFeatures()) {
+      FPFeatures = CS->getStoredFPFeatures();
+    }
+    auto newCS = CompoundStmt::Create(*m_Context, Stmts, FPFeatures,
+                                      CS->getLBracLoc(), CS->getRBracLoc());
     FD->setBody(newCS);
 
     if (hasNoErrors && !TouchedDecls.empty()) {
@@ -268,7 +272,7 @@ namespace cling {
 
     // Wrap Stmts into a function body.
     llvm::ArrayRef<Stmt*> StmtsRef(Stmts.data(), Stmts.size());
-    CompoundStmt* CS = CompoundStmt::Create(*m_Context, StmtsRef, Loc, Loc);
+    CompoundStmt* CS = CompoundStmt::Create(*m_Context, StmtsRef, {}, Loc, Loc);
     FD->setBody(CS);
     Emit(FD);
 

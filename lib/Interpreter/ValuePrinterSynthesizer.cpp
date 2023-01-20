@@ -180,8 +180,12 @@ namespace cling {
       return 0;
 
     if (CS->size() != FBody.size()) {
-      auto BodyCS = CompoundStmt::Create(*m_Context, FBody, CS->getLBracLoc(),
-                                         CS->getRBracLoc());
+      FPOptionsOverride FPFeatures;
+      if (CS->hasStoredFPFeatures()) {
+        FPFeatures = CS->getStoredFPFeatures();
+      }
+      auto BodyCS = CompoundStmt::Create(*m_Context, FBody, FPFeatures,
+                                         CS->getLBracLoc(), CS->getRBracLoc());
       FD->setBody(BodyCS);
     }
 

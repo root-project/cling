@@ -671,7 +671,7 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
     return "ERROR in cling's callPrintValue(): cannot build return expression";
 
   auto *Body
-    = clang::CompoundStmt::Create(Ctx, {RetStmt.get()}, noSrcLoc, noSrcLoc);
+    = clang::CompoundStmt::Create(Ctx, {RetStmt.get()}, {}, noSrcLoc, noSrcLoc);
   WrapperFD->setBody(Body);
   auto &Consumer = Interp.getCI()->getASTConsumer();
   Consumer.HandleTopLevelDecl(clang::DeclGroupRef(WrapperFD));

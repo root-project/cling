@@ -389,7 +389,11 @@ namespace cling {
       }
     }
 
-    auto* NewCS = CompoundStmt::Create(*m_Context, NewChildren,
+    FPOptionsOverride FPFeatures;
+    if (Node->hasStoredFPFeatures()) {
+      FPFeatures = Node->getStoredFPFeatures();
+    }
+    auto* NewCS = CompoundStmt::Create(*m_Context, NewChildren, FPFeatures,
                                        Node->getLBracLoc(),
                                        Node->getRBracLoc());
 

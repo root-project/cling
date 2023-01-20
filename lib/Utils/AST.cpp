@@ -150,8 +150,12 @@ namespace utils {
               newBody.insert(newBody.begin() + indexOfLastExpr, DRE);
 
               // Attach a new body.
+              FPOptionsOverride FPFeatures;
+              if (CS->hasStoredFPFeatures()) {
+                FPFeatures = CS->getStoredFPFeatures();
+              }
               auto newCS = CompoundStmt::Create(S->getASTContext(), newBody,
-                                                CS->getLBracLoc(),
+                                                FPFeatures, CS->getLBracLoc(),
                                                 CS->getRBracLoc());
               FD->setBody(newCS);
               if (FoundAt)

@@ -43,9 +43,14 @@ namespace cling {
           m_HandledDecls.insert(m_FoundDRE->getDecl());
         }
       }
-      if (CS->size() != Stmts.size())
-        return CompoundStmt::Create(m_Sema->getASTContext(), Stmts,
+      if (CS->size() != Stmts.size()) {
+        FPOptionsOverride FPFeatures;
+        if (CS->hasStoredFPFeatures()) {
+          FPFeatures = CS->getStoredFPFeatures();
+        }
+        return CompoundStmt::Create(m_Sema->getASTContext(), Stmts, FPFeatures,
                                     CS->getLBracLoc(), CS->getRBracLoc());
+      }
       return nullptr;
     }
 
