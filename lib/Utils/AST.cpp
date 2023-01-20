@@ -218,9 +218,12 @@ namespace utils {
       NNS = CreateNestedNameSpecifierForScopeOf(Ctx, argtdecl, true);
     }
     if (NNS) {
+      TemplateName UnderlyingTN(argtdecl);
+      if (UsingShadowDecl *USD = tname.getAsUsingShadowDecl())
+        UnderlyingTN = TemplateName(USD);
       tname = Ctx.getQualifiedTemplateName(NNS,
                                            /*TemplateKeyword=*/ false,
-                                           argtdecl);
+                                           UnderlyingTN);
       changed = true;
     }
     return changed;
