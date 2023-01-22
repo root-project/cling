@@ -61,6 +61,12 @@ module "std" [system] {
     export *
     header "chrono"
   }
+  module "__msvc_chrono.hpp" {
+    requires missing
+    export xtimec_h
+    export *
+    header "__msvc_chrono.hpp"
+  }
   module "cinttypes" {
     export *
     header "cinttypes"
@@ -439,14 +445,6 @@ module "std" [system] {
     export *
     header "xlocbuf"
   }
-  module "xlocinfo" {
-    export *
-    header "xlocinfo"
-  }
-  module "xlocinfo.h" {
-    export *
-    header "xlocinfo.h"
-  }
   module "xlocmes" {
     export *
     header "xlocmes"
@@ -484,12 +482,14 @@ module "std" [system] {
     header "xstring"
   }
   module "xthreads.h" {
+    export thread
     export *
-    textual header "xthreads.h"
+    header "xthreads.h"
   }
-  module "xtimec.h" {
+  module "xtimec_h" {
+    export chrono
     export *
-    textual header "xtimec.h"
+    header "xtimec.h"
   }
   module "xtr1common" {
     export *
