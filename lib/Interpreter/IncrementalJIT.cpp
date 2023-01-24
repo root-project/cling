@@ -480,7 +480,24 @@ void IncrementalJIT::addModule(Transaction& T) {
   ResourceTrackerSP RT = Jit->getMainJITDylib().createResourceTracker();
   m_ResourceTrackers[&T] = RT;
 
-  ThreadSafeModule TSM(T.takeModule(), SingleThreadedContext);
+  std::unique_ptr<Module> module = T.takeModule();
+
+  // Reset the sections of all functions so that they end up in the same text
+  // section. This is important for TCling on macOS to catch exceptions raised
+  // by constructors, which requires unwinding information. The addresses in
+  // the __eh_frame table are relocated against a single __text section when
+  // loading the MachO binary, which breaks if the call sites of constructors
+  // end up in a separate init section.
+  // (see clang::TargetInfo::getStaticInitSectionSpecifier())
+  for (auto &Fn : module->functions()) {
+    if (Fn.hasSection()) {
+      // dbgs() << "Resetting section '" << Fn.getSection() << "' of function "
+      //        << Fn.getName() << "\n";
+      Fn.setSection("");
+    }
+  }
+
+  ThreadSafeModule TSM(std::move(module), SingleThreadedContext);
 
   const Module *Unsafe = TSM.getModuleUnlocked();
   T.m_CompiledModule = Unsafe;
