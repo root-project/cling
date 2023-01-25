@@ -906,33 +906,33 @@ static std::string printUnpackedClingValue(const Value &V) {
       = llvm::dyn_cast<clang::BuiltinType>(Td.getCanonicalType().getTypePtr())) {
     switch (BT->getKind()) {
       case clang::BuiltinType::Bool:
-        return executePrintValue<bool>(V, V.getLongLong());
+        return executePrintValue<bool>(V, V.castAs<bool>());
 
       case clang::BuiltinType::Char_S:
-        return executePrintValue<signed char>(V, V.getLongLong());
+        return executePrintValue<signed char>(V, V.castAs<signed char>());
       case clang::BuiltinType::SChar:
-        return executePrintValue<signed char>(V, V.getLongLong());
+         return executePrintValue<signed char>(V, V.castAs<signed char>());
       case clang::BuiltinType::Short:
-        return executePrintValue<short>(V, V.getLongLong());
+        return executePrintValue<short>(V, V.castAs<short>());
       case clang::BuiltinType::Int:
-        return executePrintValue<int>(V, V.getLongLong());
+        return executePrintValue<int>(V, V.castAs<int>());
       case clang::BuiltinType::Long:
-        return executePrintValue<long>(V, V.getLongLong());
+        return executePrintValue<long>(V, V.castAs<long>());
       case clang::BuiltinType::LongLong:
-        return executePrintValue<long long>(V, V.getLongLong());
+        return executePrintValue<long long>(V, V.castAs<long long>());
 
       case clang::BuiltinType::Char_U:
-        return executePrintValue<unsigned char>(V, V.getULongLong());
+        return executePrintValue<unsigned char>(V, V.castAs<unsigned char>());
       case clang::BuiltinType::UChar:
-        return executePrintValue<unsigned char>(V, V.getULongLong());
+        return executePrintValue<unsigned char>(V, V.castAs<unsigned char>());
       case clang::BuiltinType::UShort:
-        return executePrintValue<unsigned short>(V, V.getULongLong());
+        return executePrintValue<unsigned short>(V, V.castAs<unsigned short>());
       case clang::BuiltinType::UInt:
-        return executePrintValue<unsigned int>(V, V.getULongLong());
+        return executePrintValue<unsigned int>(V, V.castAs<unsigned int>());
       case clang::BuiltinType::ULong:
-        return executePrintValue<unsigned long>(V, V.getULongLong());
+        return executePrintValue<unsigned long>(V, V.castAs<unsigned long>());
       case clang::BuiltinType::ULongLong:
-        return executePrintValue<unsigned long long>(V, V.getULongLong());
+        return executePrintValue<unsigned long long>(V, V.castAs<unsigned long long>());
 
       case clang::BuiltinType::Float:
         return executePrintValue<float>(V, V.getFloat());
