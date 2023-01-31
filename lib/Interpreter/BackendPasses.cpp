@@ -59,8 +59,7 @@ namespace {
       if (!GV.isDiscardableIfUnused(LT))
         return false;
 
-      if (LT == llvm::GlobalValue::InternalLinkage
-          || LT == llvm::GlobalValue::PrivateLinkage) {
+      if (LT == llvm::GlobalValue::InternalLinkage) {
         // We want to keep this GlobalValue around, but have to tell the JIT
         // linker that it should not error on duplicate symbols.
         // FIXME: Ideally the frontend would never emit duplicate symbols and
