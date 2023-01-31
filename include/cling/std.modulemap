@@ -373,6 +373,11 @@ module "std" [system] {
     export *
     header "valarray"
   }
+  module "variant" {
+    requires cplusplus17
+    export *
+    header "variant"
+  }
   module "vector" {
     export *
     header "vector"
