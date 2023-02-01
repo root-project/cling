@@ -405,10 +405,11 @@ Error RTDynamicLibrarySearchGenerator::tryToGenerate(
 
 static bool UseJITLink(const Triple& TT) {
   bool jitLink = false;
-  // Default to JITLink on macOS, as done in LLVM by
+  // Default to JITLink on macOS and RISC-V, as done in (recent) LLVM by
   // LLJITBuilderState::prepareForConstruction.
-  if (TT.isOSBinFormatMachO() &&
-      (TT.getArch() == Triple::aarch64 || TT.getArch() == Triple::x86_64)) {
+  if (TT.getArch() == Triple::riscv64 ||
+      (TT.isOSBinFormatMachO() &&
+       (TT.getArch() == Triple::aarch64 || TT.getArch() == Triple::x86_64))) {
     jitLink = true;
   }
   // Finally, honor the user's choice by setting an environment variable.
