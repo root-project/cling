@@ -15,6 +15,7 @@
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Utils.h"
 
+#include <clang/Basic/TargetInfo.h>
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Frontend/CompilerInstance.h>
 
@@ -402,8 +403,23 @@ Error RTDynamicLibrarySearchGenerator::tryToGenerate(
   return JD.define(absoluteSymbols(std::move(NewSymbols)), CurrentRT());
 }
 
+static bool UseJITLink(const Triple& TT) {
+  bool jitLink = false;
+  // Default to JITLink on macOS, as done in LLVM by
+  // LLJITBuilderState::prepareForConstruction.
+  if (TT.isOSBinFormatMachO() &&
+      (TT.getArch() == Triple::aarch64 || TT.getArch() == Triple::x86_64)) {
+    jitLink = true;
+  }
+  // Finally, honor the user's choice by setting an environment variable.
+  if (const char* clingJitLink = std::getenv("CLING_JITLINK")) {
+    jitLink = cling::utils::ConvertEnvValueToBool(clingJitLink);
+  }
+  return jitLink;
+}
+
 static std::unique_ptr<TargetMachine>
-CreateHostTargetMachine(const clang::CompilerInstance& CI) {
+CreateHostTargetMachine(const clang::CompilerInstance& CI, bool JITLink) {
   const clang::TargetOptions& TargetOpts = CI.getTargetOpts();
   const clang::CodeGenOptions& CGOpt = CI.getCodeGenOpts();
   const std::string& Triple = TargetOpts.Triple;
@@ -441,6 +457,13 @@ CreateHostTargetMachine(const clang::CompilerInstance& CI) {
   JTMB->setCodeModel(CodeModel::Large);
 #endif
 
+  if (JITLink) {
+    // Set up the TargetMachine as otherwise done by
+    // LLJITBuilderState::prepareForConstruction.
+    JTMB->setRelocationModel(Reloc::PIC_);
+    JTMB->setCodeModel(CodeModel::Small);
+  }
+
   std::unique_ptr<TargetMachine> TM = cantFail(JTMB->createTargetMachine());
 
   // Forcefully disable GlobalISel, it might be enabled on AArch64 without
@@ -476,7 +499,8 @@ IncrementalJIT::IncrementalJIT(
     std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err,
     void *ExtraLibHandle, bool Verbose)
     : SkipHostProcessLookup(false),
-      TM(CreateHostTargetMachine(CI)),
+      m_JITLink(UseJITLink(CI.getTarget().getTriple())),
+      m_TM(CreateHostTargetMachine(CI, m_JITLink)),
       SingleThreadedContext(std::make_unique<LLVMContext>()) {
   ErrorAsOutParameter _(&Err);
 
@@ -487,19 +511,7 @@ IncrementalJIT::IncrementalJIT(
   Builder.setObjectLinkingLayerCreator([&](ExecutionSession& ES,
                                            const Triple& TT)
                                            -> std::unique_ptr<ObjectLayer> {
-    bool jitLink = false;
-    // Default to JITLink on macOS, as done in LLVM by
-    // LLJITBuilderState::prepareForConstruction.
-    if (TT.isOSBinFormatMachO() &&
-        (TT.getArch() == Triple::aarch64 || TT.getArch() == Triple::x86_64)) {
-      jitLink = true;
-    }
-    // Finally, honor the user's choice by setting an environment variable.
-    if (const char* clingJitLink = std::getenv("CLING_JITLINK")) {
-      jitLink = cling::utils::ConvertEnvValueToBool(clingJitLink);
-    }
-
-    if (jitLink) {
+    if (m_JITLink) {
       // For JITLink, we only need a custom memory manager to avoid freeing the
       // memory segments; the default InProcessMemoryManager (which is mostly
       // copied above) already does slab allocation to keep all segments
@@ -540,7 +552,7 @@ IncrementalJIT::IncrementalJIT(
 
   Builder.setCompileFunctionCreator([&](llvm::orc::JITTargetMachineBuilder)
   -> llvm::Expected<std::unique_ptr<llvm::orc::IRCompileLayer::IRCompiler>> {
-    return std::make_unique<SimpleCompiler>(*TM);
+    return std::make_unique<SimpleCompiler>(*m_TM);
   });
 
   if (Expected<std::unique_ptr<LLJIT>> JitInstance = Builder.create()) {
@@ -560,7 +572,7 @@ IncrementalJIT::IncrementalJIT(
       m_CompiledModules[Unsafe] = std::move(TSM);
     });
 
-  char LinkerPrefix = this->TM->createDataLayout().getGlobalPrefix();
+  char LinkerPrefix = this->m_TM->createDataLayout().getGlobalPrefix();
 
   // Process symbol resolution
   auto HostProcessLookup
@@ -675,7 +687,7 @@ IncrementalJIT::addOrReplaceDefinition(StringRef Name,
     return KnownAddr;
 
   llvm::SmallString<128> LinkerMangledName;
-  char LinkerPrefix = this->TM->createDataLayout().getGlobalPrefix();
+  char LinkerPrefix = this->m_TM->createDataLayout().getGlobalPrefix();
   bool HasLinkerPrefix = LinkerPrefix != '\0';
   if (HasLinkerPrefix && Name.front() == LinkerPrefix) {
     LinkerMangledName.assign(1, LinkerPrefix);
