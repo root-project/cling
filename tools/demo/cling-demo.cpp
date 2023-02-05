@@ -31,13 +31,13 @@ void useHeader(cling::Interpreter& interp) {
 
   cling::Value res; // Will hold the result of the expression evaluation.
   interp.process("aGlobal;", &res);
-  std::cout << "aGlobal is " << res.getAs<long long>() << '\n';
+  std::cout << "aGlobal is " << res.castAs<long long>() << '\n';
   interp.process("getAnotherGlobal();", &res);
-  std::cout << "getAnotherGlobal() returned " << res.getAs<float>() << '\n';
+  std::cout << "getAnotherGlobal() returned " << res.getFloat() << '\n';
 
   setAnotherGlobal(1.); // We modify the compiled value,
   interp.process("getAnotherGlobal();", &res); // does the interpreter see it?
-  std::cout << "getAnotherGlobal() returned " << res.getAs<float>() << '\n';
+  std::cout << "getAnotherGlobal() returned " << res.getFloat() << '\n';
 
   // We modify using the interpreter, now the binary sees the new value.
   interp.process("setAnotherGlobal(7.777); getAnotherGlobal();");
