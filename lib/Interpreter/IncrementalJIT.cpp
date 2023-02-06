@@ -429,8 +429,10 @@ CreateTargetMachine(const clang::CompilerInstance& CI, bool JITLink) {
     default: OptLevel = CodeGenOpt::Default;
   }
 
+  const Triple &TT = CI.getTarget().getTriple();
+
   using namespace llvm::orc;
-  auto JTMB = JITTargetMachineBuilder(CI.getTarget().getTriple());
+  auto JTMB = JITTargetMachineBuilder(TT);
   JTMB.addFeatures(CI.getTargetOpts().Features);
 
   JTMB.setCodeGenOptLevel(OptLevel);
@@ -448,7 +450,12 @@ CreateTargetMachine(const clang::CompilerInstance& CI, bool JITLink) {
     // Set up the TargetMachine as otherwise done by
     // LLJITBuilderState::prepareForConstruction.
     JTMB.setRelocationModel(Reloc::PIC_);
-    JTMB.setCodeModel(CodeModel::Small);
+    // Set the small code except for macOS on AArch64 - it results in relocation
+    // targets that are out-of-range.
+    // TODO: Investigate / report upstream and re-evaluate after a future LLVM
+    // upgrade.
+    if (!(TT.isOSBinFormatMachO() && TT.getArch() == Triple::aarch64))
+      JTMB.setCodeModel(CodeModel::Small);
   }
 
   std::unique_ptr<TargetMachine> TM = cantFail(JTMB.createTargetMachine());
