@@ -391,10 +391,10 @@ module "std" [system] {
     export *
     header "cuchar"
   }
-  //module "experimental/algorithm" {
-  //  export *
-  //  header "experimental/algorithm"
-  //}
+  module "experimental/string_view" {
+    export *
+    header "experimental/string_view"
+  }
   module "ext/functional" {
     export *
     header "ext/functional"
