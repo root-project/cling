@@ -494,11 +494,6 @@ module "std" [system] {
     export bits_stl_iterator_h
     header "bits/ranges_base.h"
   }
-  module "bits/uses_allocator_args.h" {
-    requires cplusplus20
-    export *
-    header "bits/uses_allocator_args.h"
-  }
   module "bits/uniform_int_dist.h" {
     export *
     export bits_stl_algobase_h
