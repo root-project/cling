@@ -435,6 +435,7 @@ CreateTargetMachine(const clang::CompilerInstance& CI, bool JITLink) {
   using namespace llvm::orc;
   auto JTMB = JITTargetMachineBuilder(TT);
   JTMB.addFeatures(CI.getTargetOpts().Features);
+  JTMB.getOptions().MCOptions.ABIName = CI.getTarget().getABI().str();
 
   JTMB.setCodeGenOptLevel(OptLevel);
 #ifdef _WIN32
