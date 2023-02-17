@@ -62,7 +62,7 @@ module "std" [system] {
     header "chrono"
   }
   module "__msvc_chrono.hpp" {
-    requires missing
+    requires msvc1934
     export xtimec_h
     export *
     header "__msvc_chrono.hpp"
@@ -514,5 +514,15 @@ module "std" [system] {
   module "yvals_core.h" {
     export *
     header "yvals_core.h"
+  }
+  module "xnode_handle.h" {
+    requires cplusplus17
+    export *
+    header "xnode_handle.h"
+  }
+  module "__msvc_iter_core.hpp" {
+    requires msvc1934
+    export *
+    header "__msvc_iter_core.hpp"
   }
 }
