@@ -439,13 +439,13 @@ namespace cling {
     const char* Linkage = LangOpts.CPlusPlus ? "extern \"C\"" : "";
     if (!NoRuntime) {
       if (LangOpts.CPlusPlus) {
-        Strm << "#include \"cling/Interpreter/RuntimeUniverse.h\"\n";
+        Strm << "#include <cling/Interpreter/RuntimeUniverse.h>\n";
         if (EmitDefinitions)
           Strm << "namespace cling { class Interpreter; namespace runtime { "
                   "Interpreter* gCling=(Interpreter*)" << ThisP << ";\n"
                   "RuntimeOptions* gClingOpts=(RuntimeOptions*)" << &this->m_RuntimeOptions << ";}}\n";
       } else {
-        Strm << "#include \"cling/Interpreter/CValuePrinter.h\"\n"
+        Strm << "#include <cling/Interpreter/CValuePrinter.h>\n"
              << "void* gCling";
         if (EmitDefinitions)
           Strm << "=(void*)" << ThisP;
@@ -1692,7 +1692,7 @@ namespace cling {
     if (!m_DynamicLookupDeclared && value) {
       // No dynlookup for the dynlookup header!
       m_DynamicLookupEnabled = false;
-      declare("#include \"cling/Interpreter/DynamicLookupRuntimeUniverse.h\"");
+      declare("#include <cling/Interpreter/DynamicLookupRuntimeUniverse.h>");
     }
     m_DynamicLookupDeclared = true;
 
