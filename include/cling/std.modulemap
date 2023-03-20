@@ -459,6 +459,10 @@ module "std" [system] {
     export *
     header "bits/stl_iterator.h"
   }
+  module "bits/stl_iterator_base_funcs.h" {
+    export *
+    header "bits/stl_iterator_base_funcs.h"
+  }
   module "bits/stl_iterator_base_types.h" {
     export *
     export bits_stl_algobase_h
