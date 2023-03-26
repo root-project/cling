@@ -429,6 +429,11 @@ module "std" [system] {
     export *
     header "bits/basic_ios.h"
   }
+  module "bits/chrono.h" {
+    requires cplusplus20
+    export *
+    header "bits/chrono.h"
+  }
   module "bits/cpp_type_traits.h" {
     export *
     header "bits/cpp_type_traits.h"
@@ -461,9 +466,10 @@ module "std" [system] {
   }
   module "bits/stl_iterator_base_funcs.h" {
     export *
+    export bits_stl_iterator_base_types_h
     header "bits/stl_iterator_base_funcs.h"
   }
-  module "bits/stl_iterator_base_types.h" {
+  module "bits_stl_iterator_base_types_h" {
     export *
     export bits_stl_algobase_h
     header "bits/stl_iterator_base_types.h"
@@ -485,18 +491,30 @@ module "std" [system] {
     requires cplusplus20
     export *
     export utility
+    export bits_stl_algo_h
     header "bits/ranges_algo.h"
   }
-  module "bits/ranges_algobase.h" {
+   module "bits/ranges_algobase.h" {
     requires cplusplus20
     export *
+    export initializer_list
     header "bits/ranges_algobase.h"
   }
-  module "bits/ranges_base.h" {
+  explicit module "bits_ranges_base_h" {
     requires cplusplus20
     export *
     export bits_stl_iterator_h
+    export initializer_list
     header "bits/ranges_base.h"
+  }
+  module "bits_stl_algo_h" {
+    export *
+    header "bits/stl_algo.h"
+  }
+  module "bits/stl_construct.h" {
+    export *
+    export bits_stl_iterator_base_types_h
+    header "bits/stl_construct.h"
   }
   module "bits/uniform_int_dist.h" {
     export *
