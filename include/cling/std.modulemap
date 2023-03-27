@@ -429,8 +429,8 @@ module "std" [system] {
     export *
     header "bits/basic_ios.h"
   }
-  module "bits/chrono.h" {
-    requires cplusplus20
+  module "bits/chrono.h" [optional] {
+    requires cplusplus17
     export *
     header "bits/chrono.h"
   }
