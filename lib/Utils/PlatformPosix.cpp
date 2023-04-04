@@ -182,6 +182,19 @@ bool GetSystemLibraryPaths(llvm::SmallVectorImpl<std::string>& Paths) {
   Paths.push_back("/lib64/");
  #endif
 #else
+  // Power-user mode: See if the result of this query is cached/provided in env
+  // variable to avoid sys-calls and spawning processes
+  auto ldsyspath = std::getenv("CLING_LDSYSPATH");
+  if (ldsyspath != nullptr) {
+    std::string SysPath(ldsyspath);
+    llvm::SmallVector<llvm::StringRef, 10> CurPaths;
+    SplitPaths(SysPath, CurPaths);
+    for (const auto& Path : CurPaths) {
+      Paths.push_back(Path.str());
+    }
+    return true;
+  }
+
   llvm::SmallString<1024> Buf;
   platform::Popen("LD_DEBUG=libs LD_PRELOAD=DOESNOTEXIST ls", Buf, true);
   const llvm::StringRef Result = Buf.str();
