@@ -25,4 +25,9 @@ printf("j=%d\n",j); // CHECK:j=12
 std::string str("abc");
 printf("str=%s\n",str.c_str()); // CHECK: str=abc
 
+[[nodiscard]] int f() { return 0; }
+void g() { f(); } // expected-warning@1 {{ignoring return value of function declared with 'nodiscard' attribute}}
+// -Wunused-result is filtered for code parsed via `Interpreter::EvaluateInternal()`
+f();
+
 .q

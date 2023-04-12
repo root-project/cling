@@ -773,7 +773,7 @@ namespace cling {
     CO.CodeGeneration = m_IncrParser->hasCodeGenerator();
     CO.DynamicScoping = isDynamicLookupEnabled();
     CO.Debug = isPrintingDebug();
-    CO.IgnorePromptDiags = !isRawInputEnabled();
+    CO.IgnorePromptDiags = 0;
     CO.CheckPointerValidity = !isRawInputEnabled();
     CO.OptLevel = getDefaultOptLevel();
     return CO;

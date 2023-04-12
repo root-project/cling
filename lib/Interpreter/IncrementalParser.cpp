@@ -164,6 +164,7 @@ namespace {
                           const Diagnostic &Info) override {
       if (Ignoring()) {
         if (Info.getID() == diag::warn_unused_expr
+            || Info.getID() == diag::warn_unused_result
             || Info.getID() == diag::warn_unused_call
             || Info.getID() == diag::warn_unused_comparison)
           return; // ignore!
