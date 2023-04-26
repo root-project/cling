@@ -63,7 +63,7 @@ set(_clad_cmake_logging_settings
 
 list(APPEND _clad_cmake_logging_settings LOG_OUTPUT_ON_FAILURE ON)
 
-list(APPEND _clad_patches_list "clad_array_size_type.patch" "clad_local_array.patch")
+list(APPEND _clad_patches_list "clad_array_size_type.patch" "clad_local_array.patch" "clad_fma.patch")
 set(_clad_patch_command
       ${CMAKE_COMMAND} -E copy_directory
       ${CMAKE_SOURCE_DIR}/interpreter/cling/tools/plugins/clad/patches <SOURCE_DIR>
