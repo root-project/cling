@@ -266,6 +266,11 @@ module "std" [system] {
     export *
     header "numeric"
   }
+  module "optional" {
+    requires cplusplus17
+    export *
+    header "optional"
+  }
   module "ostream" {
     export *
     header "ostream"
@@ -486,6 +491,11 @@ module "std" [system] {
     export *
     header "bits/stl_tree.h"
   }
+  module "bits/range_access.h" {
+    export *
+    export bits_stl_iterator_h
+    header "bits/range_access.h"
+  }
   module "bits/ranges_algo.h" {
     requires cplusplus20
     export *
@@ -499,7 +509,7 @@ module "std" [system] {
     export initializer_list
     header "bits/ranges_algobase.h"
   }
-  explicit module "bits_ranges_base_h" {
+  explicit module "bits_ranges_base_h" [optional] {
     requires cplusplus20
     export *
     export bits_stl_iterator_h
