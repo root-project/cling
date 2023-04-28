@@ -304,6 +304,11 @@ module "std" [system] {
 //    export *
 //    header "setjmp.h"
 //  }
+  module "span" {
+    requires cplusplus20
+    export *
+    header "span"
+  }
   module "sstream" {
     export *
     header "sstream"
@@ -446,6 +451,11 @@ module "std" [system] {
     export *
     header "bits/exception_defines.h"
   }
+  module "bits_invoke_h" {
+    export *
+    export bits_move_h
+    header "bits/invoke.h"
+  }
   module "bits/ios_base.h" {
     export *
     header "bits/ios_base.h"
@@ -458,6 +468,10 @@ module "std" [system] {
   module "bits/locale_facets.h" {
     export *
     header "bits/locale_facets.h"
+  }
+  module "bits_move_h" {
+    export *
+    header "bits/move.h"
   }
   module "bits_stl_algobase_h" {
     export *
@@ -515,6 +529,13 @@ module "std" [system] {
     export bits_stl_iterator_h
     export initializer_list
     header "bits/ranges_base.h"
+  }
+  module "bits/ranges_util.h" [optional] {
+    requires cplusplus20
+    export *
+    export bits_invoke_h
+    export utility
+    header "bits/ranges_util.h"
   }
   module "bits_stl_algo_h" {
     export *
