@@ -530,4 +530,9 @@ module "std" [system] {
     export bits_stl_algobase_h
     header "bits/uniform_int_dist.h"
   }
+  module "bits/uses_allocator_args.h" [optional] {
+    requires cplusplus20
+    export *
+    header "bits/uses_allocator_args.h"
+  }
 }
