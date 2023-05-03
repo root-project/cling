@@ -254,6 +254,11 @@ module "std" [system] {
     export *
     header "memory"
   }
+  module "memory_resource" [optional] {
+    requires cplusplus17
+    export *
+    header "memory_resource"
+  }
   module "mutex" {
     export *
     header "mutex"
@@ -552,7 +557,7 @@ module "std" [system] {
     header "bits/uniform_int_dist.h"
   }
   module "bits/uses_allocator_args.h" [optional] {
-    requires cplusplus20
+    requires cplusplus17
     export *
     header "bits/uses_allocator_args.h"
   }
