@@ -35,7 +35,9 @@ namespace cling {
            && (SM.getFileID(SM.getIncludeLoc(FID)) == SM.getMainFileID());
   }
 
-  /// \brief Returns whether the given {Function,Tag,Var}Decl/TemplateDecl is a definition.
+  /// \brief Returns whether a declaration is a definition.  A `TemplateDecl` is
+  /// a definition if the templated decl is itself a definition; a concept is
+  /// always considered a definition.
   static bool isDefinition(const Decl *D) {
     if (auto FD = dyn_cast<FunctionDecl>(D))
       return FD->isThisDeclarationADefinition();
@@ -44,7 +46,7 @@ namespace cling {
     if (auto VD = dyn_cast<VarDecl>(D))
       return VD->isThisDeclarationADefinition();
     if (auto TD = dyn_cast<TemplateDecl>(D))
-      return isDefinition(TD->getTemplatedDecl());
+      return isa<ConceptDecl>(TD) || isDefinition(TD->getTemplatedDecl());
     return true;
   }
 

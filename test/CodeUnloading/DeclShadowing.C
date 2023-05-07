@@ -6,14 +6,17 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling 2>&1 | FileCheck %s
+// RUN: cat %s | %cling 2>&1 | FileCheck --implicit-check-not error: %s
 #include "cling/Interpreter/Interpreter.h"
 #include "cling/Utils/AST.h"
 #include "clang/AST/Decl.h"
 
-#include <type_traits>
+#if __cplusplus > 202002L
+#include <concepts>
+#endif
 #include <cstdlib>
 #include <string>
+#include <type_traits>
 
 unsigned _i;
 struct _X {};
@@ -97,6 +100,18 @@ f(33)
 //CHECK-NEXT: (int) 43605
 f(3.3f)
 //CHECK-NEXT: (int) 21930
+
+#if __cplusplus > 202002L
+template <typename T>
+concept IsIntegral = false;
+
+// Replace concept definition; no error is expected in `constrained_fn(10)` below
+template <typename T>
+concept IsIntegral = std::is_integral<T>::value;
+
+void constrained_fn(IsIntegral auto x) {}
+void g() { constrained_fn(10); }
+#endif
 
 cling::runtime::gClingOpts->AllowRedefinition = 0;
 
