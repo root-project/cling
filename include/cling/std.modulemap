@@ -557,7 +557,6 @@ module "std" [system] {
     header "bits/uniform_int_dist.h"
   }
   module "bits/utility.h" [optional] {
-    requires cplusplus17
     export *
     header "bits/utility.h"
   }
