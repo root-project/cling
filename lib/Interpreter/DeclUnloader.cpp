@@ -682,16 +682,29 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
 
   bool DeclUnloader::VisitDeclContext(DeclContext* DC) {
     bool Successful = true;
-    typedef llvm::SmallVector<Decl*, 64> Decls;
-    Decls declsToErase;
-    // Removing from single-linked list invalidates the iterators.
+    llvm::SmallVector<Decl*, 64> tagDecls, otherDecls;
+
+    // The order in which declarations are removed makes a difference, e.g.
+    // `MaybeRemoveDeclFromModule()` may require access to type information to
+    // make up the mangled name.
+    // Thus, we segregate declarations to be removed in `TagDecl`s (i.e., struct
+    // / union / class / enum) and other declarations.  Removal of `TagDecl`s
+    // is deferred until all the other declarations have been processed.
+    // Declarations in each group are iterated in reverse order.
+    // Note that removing from single-linked list invalidates the iterators.
     for (DeclContext::decl_iterator I = DC->noload_decls_begin();
          I != DC->noload_decls_end(); ++I) {
-      declsToErase.push_back(*I);
+      if (isa<TagDecl>(*I))
+        tagDecls.push_back(*I);
+      else
+        otherDecls.push_back(*I);
     }
 
-    for(Decls::reverse_iterator I = declsToErase.rbegin(),
-          E = declsToErase.rend(); I != E; ++I) {
+    for (auto I = otherDecls.rbegin(), E = otherDecls.rend(); I != E; ++I) {
+      Successful = Visit(*I) && Successful;
+      assert(Successful);
+    }
+    for (auto I = tagDecls.rbegin(), E = tagDecls.rend(); I != E; ++I) {
       Successful = Visit(*I) && Successful;
       assert(Successful);
     }
