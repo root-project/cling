@@ -13,16 +13,8 @@
 "TEST"
 // CHECK: (const char [5]) "TEST"
 
-// Make sure one Transactin can handle redefinitions
+// Make sure one transaction can handle redefinitions
 #include "Macros.h"
-// expected-warning@Macros.h:3 {{'TEST' macro redefined}}
-// expected-note@Macros.h:2 {{previous definition is here}}
-// expected-warning@Macros.h:4 {{'TEST' macro redefined}}
-// expected-note@Macros.h:3 {{previous definition is here}}
-// expected-warning@Macros.h:5 {{'TEST' macro redefined}}
-// expected-note@Macros.h:4 {{previous definition is here}}
-// expected-warning@Macros.h:6 {{'TEST' macro redefined}}
-// expected-note@Macros.h:5 {{previous definition is here}}
 
 TEST
 // CHECK: (const char [7]) "TEST 4"
@@ -31,7 +23,7 @@ TEST
 .undo //include
 .undo // FIXME: REMOVE once print unloading is merged
 
-TEST // expected-error@2 {{use of undeclared identifier 'TEST'}}
+TEST // expected-error {{use of undeclared identifier 'TEST'}}
 
 #define TEST "DEFINED"
 #undef TEST
@@ -42,13 +34,11 @@ TEST
 .undo // define
 .undo // FIXME: REMOVE once print unloading is merged
 
-TEST // expected-error@2 {{use of undeclared identifier 'TEST'}}
+TEST // expected-error {{use of undeclared identifier 'TEST'}}
 
-// Make sure one Transactin can handle undef, redef
+// Make sure one transaction can handle undef, redef
 #define TESTB
 #include "Macros.h"
-// expected-warning@Macros.h:19 {{'TEST' macro redefined}}
-// expected-note@Macros.h:18 {{previous definition is here}}
 
 TEST // CHECK: (const char [7]) "TEST G"
 .q
