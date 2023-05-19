@@ -71,19 +71,20 @@
 #include "../lib/Interpreter/DynamicLibraryManagerSymbol.cpp"
 
 .rawInput 1
-void test_realpath(std::string path) {
+void test_realpath(const std::string &path) {
+  int err_s = 0, err_c = 0;
+
   // system realpath
-  errno = 0;
-  char system_resolved_path[4096];
-  system_resolved_path[0] = '\0';
-  realpath(path.c_str(), system_resolved_path);
-  int err_s = errno;
-  if (err_s !=0 ) system_resolved_path[0] = '\0';
+  char system_resolved_path[4096]{};
+  if (!realpath(path.c_str(), system_resolved_path)) {
+    system_resolved_path[0] = '\0';
+    err_s = errno;
+  }
 
   // cached_realpath
-  errno = 0;
   std::string cached_resolved_path = cached_realpath(path);
-  int err_c = errno;
+  if (cached_resolved_path.empty())
+    err_c = errno;
 
   if (err_s != err_c || std::string(system_resolved_path) != cached_resolved_path) {
     std::cout << "realpath: " << path.c_str() << "\n";
