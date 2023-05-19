@@ -13,7 +13,7 @@
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_B.c -o%t-dir/rlib1/libcall_lib_B%shlibext
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_AA.c -o%t-dir/rlib2/libcall_lib_A%shlibext
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_BB.c -o%t-dir/rlib2/libcall_lib_B%shlibext
-// RUN: %clang %fPIC -shared -Wl,-rpath,%t-dir/rlib1 -DCLING_EXPORT=%dllexport %S/call_lib_L_AB.c -o%t-dir/lib/libcall_lib_L_AB%shlibext -L %t-dir/rlib1 -lcall_lib_A -lcall_lib_B
+// RUN: %clang %fPIC -shared -Wl,--enable-new-dtags -Wl,-rpath,%t-dir/rlib1 -DCLING_EXPORT=%dllexport %S/call_lib_L_AB.c -o%t-dir/lib/libcall_lib_L_AB%shlibext -L %t-dir/rlib1 -lcall_lib_A -lcall_lib_B
 // RUN: cat %s | LD_LIBRARY_PATH="%t-dir/lib:%t-dir/rlib2" %cling 2>&1 | FileCheck %s
 
 // Test: Lookup and load library Lib_L_AB that depends on two libraries Lib_A
