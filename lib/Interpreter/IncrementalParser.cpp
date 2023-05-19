@@ -162,15 +162,15 @@ namespace {
 
     void HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
                           const Diagnostic &Info) override {
+      if (Info.getID() == diag::warn_falloff_nonvoid_function) {
+        DiagLevel = DiagnosticsEngine::Error;
+      }
       if (Ignoring()) {
         if (Info.getID() == diag::warn_unused_expr
             || Info.getID() == diag::warn_unused_result
             || Info.getID() == diag::warn_unused_call
             || Info.getID() == diag::warn_unused_comparison)
           return; // ignore!
-        if (Info.getID() == diag::warn_falloff_nonvoid_function) {
-          DiagLevel = DiagnosticsEngine::Error;
-        }
         if (Info.getID() == diag::ext_return_has_expr) {
           // An error that we need to suppress.
           auto Diags = const_cast<DiagnosticsEngine*>(Info.getDiags());
