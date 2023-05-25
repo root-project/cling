@@ -29,7 +29,7 @@ index 0c38c68..381c3f4 100644
 @@ -322,6 +322,59 @@ double func5(int k) {
  //CHECK-NEXT:     * _d_k += _d_n;
  //CHECK-NEXT: }
-
+ 
 +double func6(double seed) {
 +  double sum = 0;
 +  for (int i = 0; i < 3; i++) {

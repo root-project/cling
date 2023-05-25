@@ -16,7 +16,7 @@ index 3c41d89..7e7b04f 100644
 @@ -110,6 +110,25 @@ CUDA_HOST_DEVICE void pow_pullback(T1 x, T2 exponent, T3 d_y,
    *d_exponent += t.pushforward * d_y;
  }
-
+ 
 +template <typename T1, typename T2, typename T3>
 +CUDA_HOST_DEVICE ValueAndPushforward<decltype(::std::fma(T1(), T2(), T3())),
 +                                     decltype(::std::fma(T1(), T2(), T3()))>
@@ -56,7 +56,7 @@ index bd9eed2..cbf2d28 100644
 @@ -247,6 +247,15 @@ double f11(double x, double y) {
  // CHECK-NEXT:     }
  // CHECK-NEXT: }
-
+ 
 +double f12(double a, double b) { return std::fma(a, b, b); }
 +
 +//CHECK: double f12_darg1(double a, double b) {
@@ -70,9 +70,9 @@ index bd9eed2..cbf2d28 100644
    float f_result[2];
    double d_result[2];
 @@ -313,5 +322,8 @@ int main () { //expected-no-diagnostics
-
+ 
    TEST_GRADIENT(f11, /*numOfDerivativeArgs=*/2, -1, 1, &d_result[0], &d_result[1]); // CHECK-EXEC: {-4.00, 0.00}
-
+ 
 +  auto f12_darg1 = clad::differentiate(f12, 1);
 +  printf("Result is = %f\n", f12_darg1.execute(2, 1)); //CHECK-EXEC: Result is = 3.000000
 +
@@ -87,11 +87,11 @@ index c19cf3c..d62505a 100644
 +// RUN: %cladclang %s -I%S/../../include -lstdc++ -lm -oReverseAssignments.out 2>&1 | FileCheck %s
  // RUN: ./ReverseAssignments.out | FileCheck -check-prefix=CHECK-EXEC %s
  //CHECK-NOT: {{.*error|warning|note:.*}}
-
+ 
 @@ -812,6 +812,35 @@ double f18(double i, double j, double k) {
  // CHECK-NEXT:     }
  // CHECK-NEXT: }
-
+ 
 +double f19(double a, double b) {
 +  return std::fma(a, b, b);
 +}

@@ -25,6 +25,6 @@ index c5f7b46..59c5178 100644
 +  CUDA_HOST_DEVICE T& operator[](std::ptrdiff_t i) { return m_arr[i]; }
    /// Returns the reference to the underlying array
    CUDA_HOST_DEVICE T& operator*() { return *m_arr; }
-
+ 
 --
 2.17.1
