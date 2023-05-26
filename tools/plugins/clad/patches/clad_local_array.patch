@@ -10,10 +10,10 @@ Subject: [PATCH] Fill clad::array with 0s when assigned an empty brace-init
  2 files changed, 60 insertions(+), 2 deletions(-)
 
 diff --git a/include/clad/Differentiator/Array.h b/include/clad/Differentiator/Array.h
-index 3844502..c5f7b46 100644
+index 38445024..c5f7b464 100644
 --- a/include/clad/Differentiator/Array.h
 +++ b/include/clad/Differentiator/Array.h
-@@ -86,7 +86,7 @@ public:
+@@ -86,7 +86,7 @@ template <typename T> class array {
    /// Initializes the clad::array to the given array
    CUDA_HOST_DEVICE array<T>& operator=(T* arr) {
      for (std::size_t i = 0; i < m_size; i++)
@@ -23,7 +23,7 @@ index 3844502..c5f7b46 100644
    }
    /// Performs element wise addition
 diff --git a/test/Arrays/ArrayInputsReverseMode.C b/test/Arrays/ArrayInputsReverseMode.C
-index 0c38c68..381c3f4 100644
+index 0c38c680..381c3f4f 100644
 --- a/test/Arrays/ArrayInputsReverseMode.C
 +++ b/test/Arrays/ArrayInputsReverseMode.C
 @@ -322,6 +322,59 @@ double func5(int k) {
@@ -98,5 +98,3 @@ index 0c38c68..381c3f4 100644
 +  localArray.execute(1, &dseed);
 +  printf("Result = {%.2f}", dseed); // CHECK-EXEC: Result = {9.00}
  }
---
-2.17.1

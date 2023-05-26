@@ -10,7 +10,7 @@ Subject: [PATCH] Add std::fma to custom derivatives.
  3 files changed, 64 insertions(+), 1 deletion(-)
 
 diff --git a/include/clad/Differentiator/BuiltinDerivatives.h b/include/clad/Differentiator/BuiltinDerivatives.h
-index 3c41d89..7e7b04f 100644
+index 3c41d892e..7e7b04f59 100644
 --- a/include/clad/Differentiator/BuiltinDerivatives.h
 +++ b/include/clad/Differentiator/BuiltinDerivatives.h
 @@ -110,6 +110,25 @@ CUDA_HOST_DEVICE void pow_pullback(T1 x, T2 exponent, T3 d_y,
@@ -48,9 +48,9 @@ index 3c41d89..7e7b04f 100644
 +using std::fma_pullback;
  } // namespace custom_derivatives
  } // namespace clad
-
+ 
 diff --git a/test/FirstDerivative/BuiltinDerivatives.C b/test/FirstDerivative/BuiltinDerivatives.C
-index bd9eed2..cbf2d28 100644
+index bd9eed2e1..cbf2d2854 100644
 --- a/test/FirstDerivative/BuiltinDerivatives.C
 +++ b/test/FirstDerivative/BuiltinDerivatives.C
 @@ -247,6 +247,15 @@ double f11(double x, double y) {
@@ -79,7 +79,7 @@ index bd9eed2..cbf2d28 100644
    return 0;
  }
 diff --git a/test/Gradient/Assignments.C b/test/Gradient/Assignments.C
-index c19cf3c..d62505a 100644
+index c19cf3cb4..d62505aff 100644
 --- a/test/Gradient/Assignments.C
 +++ b/test/Gradient/Assignments.C
 @@ -1,4 +1,4 @@
@@ -130,5 +130,3 @@ index c19cf3c..d62505a 100644
    VAR_TEST(f18, "i, j", 3, 4, 5, &result[0], &result[1]); // CHECK-EXEC: {3.00, 2.00}
 +  TEST(f19, 1, 2); // CHECK-EXEC: {2.00, 2.00}
  }
---
-2.17.1
