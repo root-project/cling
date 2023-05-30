@@ -262,9 +262,8 @@ namespace cling {
       IntegerLiteral* ZeroLit
         = IntegerLiteral::Create(*m_Context, ZeroInt, m_Context->IntTy,
                                  SourceLocation());
-      Stmts.push_back(m_Sema->ActOnReturnStmt(ZeroLit->getExprLoc(),
-                                              ZeroLit,
-                                              m_Sema->getCurScope()).get());
+      Stmts.push_back(
+          m_Sema->BuildReturnStmt(ZeroLit->getExprLoc(), ZeroLit).get());
     }
 
     // Wrap Stmts into a function body.
