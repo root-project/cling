@@ -64,10 +64,6 @@ namespace cling {
     ///\brief Whom to call upon invocation of user code.
     InterpreterCallbacks* m_Callbacks;
 
-    ///\brief A pointer to the IncrementalExecutor of the parent Interpreter.
-    ///
-    IncrementalExecutor* m_externalIncrementalExecutor;
-
     ///\brief Helper that manages when the destructor of an object to be called.
     ///
     /// The object is registered first as an CXAAtExitElement and then cling
@@ -151,9 +147,11 @@ namespace cling {
 
     ~IncrementalExecutor();
 
-    void setExternalIncrementalExecutor(IncrementalExecutor *extIncrExec) {
-      m_externalIncrementalExecutor = extIncrExec;
-    }
+    /// Register a different `IncrementalExecutor` object that can provide
+    /// addresses for external symbols.  This is used by child interpreters to
+    /// lookup symbols defined in the parent.
+    void registerExternalIncrementalExecutor(IncrementalExecutor& IE);
+
     void setCallbacks(InterpreterCallbacks* callbacks);
 
     const DynamicLibraryManager& getDynamicLibraryManager() const {

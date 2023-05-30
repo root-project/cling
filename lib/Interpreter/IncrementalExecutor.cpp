@@ -36,7 +36,7 @@ namespace cling {
 IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
                                          const clang::CompilerInstance& CI,
                                          void *ExtraLibHandle, bool Verbose):
-  m_Callbacks(nullptr), m_externalIncrementalExecutor(nullptr)
+  m_Callbacks(nullptr)
 #if 0
   : m_Diags(diags)
 #endif
@@ -59,6 +59,11 @@ IncrementalExecutor::IncrementalExecutor(clang::DiagnosticsEngine& /*diags*/,
 }
 
 IncrementalExecutor::~IncrementalExecutor() {}
+
+void IncrementalExecutor::registerExternalIncrementalExecutor(
+    IncrementalExecutor& IE) {
+  m_JIT->addGenerator(IE.m_JIT->getGenerator());
+}
 
 void IncrementalExecutor::runAtExitFuncs() {
   // It is legal to register an atexit handler from within another atexit

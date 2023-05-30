@@ -66,6 +66,12 @@ public:
     Jit->getMainJITDylib().addGenerator(std::move(G));
   }
 
+  /// Return a `DefinitionGenerator` that can provide addresses for symbols
+  /// reachable from this IncrementalJIT object.  This function can be used in
+  /// conjunction with `addGenerator()` to provide symbol resolution across
+  /// diferent IncrementalJIT instances.
+  std::unique_ptr<llvm::orc::DefinitionGenerator> getGenerator();
+
   // FIXME: Accept a LLVMContext as well, e.g. the one that was used for the
   // particular module in Interpreter, CIFactory or BackendPasses (would be
   // more efficient)

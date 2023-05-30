@@ -372,7 +372,8 @@ namespace cling {
 
       // Give my IncrementalExecutor a pointer to the Incremental executor of the
       // parent Interpreter.
-      m_Executor->setExternalIncrementalExecutor(parentInterpreter.m_Executor.get());
+      m_Executor->registerExternalIncrementalExecutor(
+          *parentInterpreter.m_Executor);
 
       if (auto C = parentInterpreter.m_IncrParser->getDiagnosticConsumer())
         m_IncrParser->setDiagnosticConsumer(C, /*Own=*/false);
