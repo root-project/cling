@@ -37,6 +37,26 @@
 #include <unordered_set>
 #include <vector>
 
+#if defined (__FreeBSD__)
+#include <sys/user.h>
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/queue.h>
+
+// libprocstat pulls in sys/elf.h which seems to clash with llvm/BinaryFormat/ELF.h
+// similar collision happens with ZFS. Defining ZFS disables this include.
+# ifndef ZFS
+#   define ZFS
+#   define defined_ZFS_for_libprocstat
+# endif
+#include <libprocstat.h>
+# ifdef defined_ZFS_for_libprocstat
+#   undef ZFS
+#   undef defined_ZFS_for_libprocstat
+# endif
+
+#include <libutil.h>
+#endif
 
 #ifdef LLVM_ON_UNIX
 #include <dlfcn.h>
@@ -1363,6 +1383,17 @@ namespace cling {
       if (_NSGetExecutablePath(buf, &bufsize) >= 0)
         return cached_realpath(buf);
       return cached_realpath(info.dli_fname);
+# elif defined (__FreeBSD__)
+      procstat* ps = procstat_open_sysctl();
+      kinfo_proc* kp = kinfo_getproc(getpid());
+
+      char buf[PATH_MAX] = "";
+      if (kp!=NULL) {
+        procstat_getpathname(ps, kp, buf, sizeof(buf));
+      };
+      free(kp);
+      procstat_close(ps);
+      return cached_realpath(buf);
 # elif defined(LLVM_ON_UNIX)
       char buf[PATH_MAX] = { 0 };
       // Cross our fingers that /proc/self/exe exists.
