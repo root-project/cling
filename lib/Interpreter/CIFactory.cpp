@@ -414,7 +414,7 @@ namespace {
     Opts.MathErrno = 0;
 #endif
 
-#ifdef _REENTRANT
+#ifndef _WIN32
     Opts.POSIXThreads = 1;
 #endif
 #ifdef __FAST_MATH__
