@@ -32,6 +32,7 @@ set( LLVM_LINK_COMPONENTS
   coverage
   executionengine
   ipo
+  jitlink
   mc
   object
   option
