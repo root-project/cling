@@ -941,8 +941,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     bool Successful = true;
 
     // Remove specializations:
-    for (FunctionTemplateDecl::spec_iterator I = FTD->spec_begin(),
-           E = FTD->spec_end(); I != E; ++I)
+    for (FunctionTemplateDecl::spec_iterator I = FTD->loaded_spec_begin(),
+           E = FTD->loaded_spec_end(); I != E; ++I)
       Successful &= Visit(*I);
 
     Successful &= VisitRedeclarableTemplateDecl(FTD);
@@ -954,8 +954,8 @@ bool DeclUnloader::VisitRedeclarable(clang::Redeclarable<T>* R, DeclContext* DC)
     // ClassTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = true;
     // Remove specializations:
-    for (ClassTemplateDecl::spec_iterator I = CTD->spec_begin(),
-           E = CTD->spec_end(); I != E; ++I)
+    for (ClassTemplateDecl::spec_iterator I = CTD->loaded_spec_begin(),
+           E = CTD->loaded_spec_end(); I != E; ++I)
       Successful &= Visit(*I);
 
     Successful &= VisitRedeclarableTemplateDecl(CTD);
