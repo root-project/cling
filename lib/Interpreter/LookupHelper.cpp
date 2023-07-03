@@ -1674,6 +1674,8 @@ namespace cling {
                                     llvm::StringRef("func.prototype.file"),
                                     diagOnOff);
 
+      // ParseTypeName might trigger deserialization.
+      Interpreter::PushTransactionRAII TforDeser(Interp);
       unsigned int nargs = 0;
       while (P.getCurToken().isNot(tok::eof)) {
         TypeResult Res(P.ParseTypeName());
