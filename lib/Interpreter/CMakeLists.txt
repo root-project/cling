@@ -374,3 +374,9 @@ if ((NOT builtin_llvm) AND builtin_clang)
   list(INSERT P 0 ${FixInclude})
   set_property(SOURCE TransactionUnloader.cpp PROPERTY INCLUDE_DIRECTORIES "${P}")
 endif()
+
+# If both LLVM and Clang are external, we need to define LLVM_PATH in order for
+# cling to use the correct (external) LLVM/Clang directories.
+if ((NOT builtin_llvm) AND (NOT builtin_clang))
+  target_compile_definitions(clingInterpreter PUBLIC "LLVM_PATH=\"${LLVM_BINARY_DIR}\"")
+endif()

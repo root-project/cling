@@ -10,6 +10,10 @@
 #ifndef CLING_INTERPRETER_H
 #define CLING_INTERPRETER_H
 
+#ifndef LLVM_PATH
+#define LLVM_PATH nullptr
+#endif
+
 #include "cling/Interpreter/InvocationOptions.h"
 #include "cling/Interpreter/RuntimeOptions.h"
 
@@ -357,7 +361,7 @@ namespace cling {
     ///\param[in] extraLibHandle - resolve symbols also from this dylib
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
-    Interpreter(int argc, const char* const* argv, const char* llvmdir = nullptr,
+    Interpreter(int argc, const char* const* argv, const char* llvmdir = LLVM_PATH,
                 const ModuleFileExtensions& moduleExtensions = {},
                 void *extraLibHandle = nullptr, bool noRuntime = false)
         : Interpreter(argc, argv, llvmdir, moduleExtensions, extraLibHandle,
@@ -374,7 +378,7 @@ namespace cling {
     ///\param[in] noRuntime - flag to control the presence of runtime universe
     ///
     Interpreter(const Interpreter& parentInterpreter, int argc,
-                const char* const* argv, const char* llvmdir = nullptr,
+                const char* const* argv, const char* llvmdir = LLVM_PATH,
                 const ModuleFileExtensions& moduleExtensions = {},
                 void *extraLibHandle = nullptr, bool noRuntime = true);
 
