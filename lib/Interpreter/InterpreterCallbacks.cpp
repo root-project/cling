@@ -329,7 +329,7 @@ namespace cling {
           // Wrap both the existing source and our source. We give our own
           // source preference to the existing one.
           IntrusiveRefCntPtr<ExternalASTSource> S;
-          S = new MultiplexExternalSemaSource(*m_ExternalSemaSource, *wrapper);
+          S = new MultiplexExternalSemaSource(m_ExternalSemaSource, wrapper);
 
           Ctx.setExternalSource(S);
         } else {

@@ -210,7 +210,7 @@ namespace cling {
                                  SourceLocation(), SourceLocation(),
                                  &m_Context.Idents.get("__cling_N5"
                                        + std::to_string(m_UniqueNameCounter++)),
-                                 nullptr);
+                                 /*PrevDecl=*/nullptr, /*Nested=*/false);
       //NS->setImplicit();
       m_TU->addDecl(NS);
       T->setDefinitionShadowNS(NS);

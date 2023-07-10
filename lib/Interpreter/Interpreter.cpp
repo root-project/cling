@@ -872,7 +872,8 @@ namespace cling {
     Preprocessor& PP = getCI()->getPreprocessor();
     HeaderSearch &HS = PP.getHeaderSearchInfo();
 
-    if (Module *M = HS.lookupModule(moduleName, /*AllowSearch*/true,
+    if (Module *M = HS.lookupModule(moduleName, SourceLocation(),
+                                    /*AllowSearch*/true,
                                     /*AllowExtraSearch*/ true))
       return loadModule(M, complain);
 

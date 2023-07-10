@@ -1213,7 +1213,7 @@ namespace {
       DumpModuleInfoListener Listener(Out);
       HeaderSearchOptions &HSOpts =
         PP.getHeaderSearchInfo().getHeaderSearchOpts();
-      ASTReader::readASTFileControlBlock(CurInput, FileMgr,
+      ASTReader::readASTFileControlBlock(CurInput, FileMgr, CI.getModuleCache(),
                                          CI.getPCHContainerReader(),
                                          /*FindModuleFileExtensions=*/true,
                                          Listener,
@@ -1499,6 +1499,7 @@ namespace {
         PCHListener listener(Invocation);
         if (ASTReader::readASTFileControlBlock(PCHFile,
                                                CI->getFileManager(),
+                                               CI->getModuleCache(),
                                                CI->getPCHContainerReader(),
                                                false /*FindModuleFileExt*/,
                                                listener,

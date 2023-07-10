@@ -317,6 +317,7 @@ namespace cling {
       auto CG
         = std::unique_ptr<clang::CodeGenerator>(CreateLLVMCodeGen(Diag,
                                                                makeModuleName(),
+                                                  &m_CI->getVirtualFileSystem(),
                                                     m_CI->getHeaderSearchOpts(),
                                                     m_CI->getPreprocessorOpts(),
                                                          m_CI->getCodeGenOpts(),
@@ -927,7 +928,8 @@ namespace cling {
     Sema::LocalEagerInstantiationScope LocalInstantiations(S);
 
     Parser::DeclGroupPtrTy ADecl;
-    while (!m_Parser->ParseTopLevelDecl(ADecl)) {
+    Sema::ModuleImportState IS = Sema::ModuleImportState::NotACXX20Module;
+    while (!m_Parser->ParseTopLevelDecl(ADecl, IS)) {
       // If we got a null return and something *was* parsed, ignore it.  This
       // is due to a top-level semicolon, an action override, or a parse error
       // skipping something.
