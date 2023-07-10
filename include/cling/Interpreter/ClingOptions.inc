@@ -6,10 +6,10 @@
 // Prefixes
 
 #define COMMA ,
-PREFIX(prefix_0, {0})
-PREFIX(prefix_1, {"-" COMMA 0})
-PREFIX(prefix_3, {"-" COMMA "--" COMMA 0})
-PREFIX(prefix_2, {"--" COMMA 0})
+PREFIX(prefix_0, {llvm::StringLiteral("")})
+PREFIX(prefix_1, {llvm::StringLiteral("-") COMMA llvm::StringLiteral("")})
+PREFIX(prefix_3, {llvm::StringLiteral("-") COMMA llvm::StringLiteral("--") COMMA llvm::StringLiteral("")})
+PREFIX(prefix_2, {llvm::StringLiteral("--") COMMA llvm::StringLiteral("")})
 #undef COMMA
 
 #ifndef OPTION
