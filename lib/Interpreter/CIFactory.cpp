@@ -742,8 +742,11 @@ namespace {
       if (!FS.get())
         llvm::errs() << "Error in modulemap.overlay!\n";
 
-      // Load virtual modulemap overlay file
-      CI.getInvocation().addOverlay(FS);
+      // Load virtual modulemap overlay file - we set up an OverlayFileSystem
+      // when calling createFileManager.
+      auto& OverlayVFS =
+          static_cast<llvm::vfs::OverlayFileSystem&>(CI.getVirtualFileSystem());
+      OverlayVFS.pushOverlay(FS);
     }
   }
 
@@ -1450,7 +1453,9 @@ namespace {
       return CI.release();
     }
 
-    CI->createFileManager();
+    IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> Overlay =
+        new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem());
+    CI->createFileManager(Overlay);
     clang::CompilerInvocation& Invocation = CI->getInvocation();
     std::string& PCHFile = Invocation.getPreprocessorOpts().ImplicitPCHInclude;
     bool InitLang = true, InitTarget = true;
