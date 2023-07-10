@@ -849,12 +849,14 @@ namespace cling {
     // Before instantiation we need the canonical type
     TemplateArgument Arg(InstTy.getCanonicalType());
     TemplateArgumentList TemplateArgs(TemplateArgumentList::OnStack, Arg);
+    MultiLevelTemplateArgumentList MLTAL(m_EvalDecl, TemplateArgs.asArray(),
+                                         /*Final=*/false);
 
     // Substitute the declaration of the templated function, with the
     // specified template argument
     Decl* D = m_Sema->SubstDecl(m_EvalDecl,
                                 m_EvalDecl->getDeclContext(),
-                                MultiLevelTemplateArgumentList(TemplateArgs));
+                                MLTAL);
 
     FunctionDecl* Fn = dyn_cast<FunctionDecl>(D);
 
