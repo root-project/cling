@@ -195,7 +195,7 @@ namespace {
     } else {
       std::string resourcePath;
       llvm::SmallString<512> tmp(llvmdir);
-      llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_STRING);
+      llvm::sys::path::append(tmp, "lib", "clang", CLANG_VERSION_MAJOR_STRING);
       resourcePath.assign(&tmp[0], tmp.size());
       return resourcePath;
     }
