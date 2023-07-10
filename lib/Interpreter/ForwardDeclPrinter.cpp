@@ -1273,7 +1273,7 @@ namespace cling {
       Visit(TN.getAsTemplateDecl());
       break;
     case clang::TemplateName::QualifiedTemplate:
-      Visit(TN.getAsQualifiedTemplateName()->getTemplateDecl());
+      Visit(TN.getAsQualifiedTemplateName()->getUnderlyingTemplate().getAsTemplateDecl());
       break;
     case clang::TemplateName::DependentTemplate:
       VisitNestedNameSpecifier(TN.getAsDependentTemplateName()->getQualifier());
