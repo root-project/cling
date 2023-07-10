@@ -1364,7 +1364,6 @@ namespace cling {
 
   bool ForwardDeclPrinter::shouldSkipImpl(EnumDecl *D) {
     if (!D->getIdentifier()){
-      D->printName(Log());
       Log() << "Enum: Empty name\n";
       return true;
     }
