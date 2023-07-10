@@ -167,23 +167,23 @@ namespace {
       return Addr;
     }
 
-    void reserveAllocationSpace(uintptr_t CodeSize, uint32_t CodeAlign,
-                                uintptr_t RODataSize, uint32_t RODataAlign,
+    void reserveAllocationSpace(uintptr_t CodeSize, Align CodeAlign,
+                                uintptr_t RODataSize, Align RODataAlign,
                                 uintptr_t RWDataSize,
-                                uint32_t RWDataAlign) override {
+                                Align RWDataAlign) override {
       m_Code.setAllocation(
-          Super::allocateCodeSection(CodeSize, CodeAlign,
+          Super::allocateCodeSection(CodeSize, CodeAlign.value(),
                                      /*SectionID=*/0,
                                      /*SectionName=*/"codeReserve"),
           CodeSize);
       m_ROData.setAllocation(
-          Super::allocateDataSection(RODataSize, RODataAlign,
+          Super::allocateDataSection(RODataSize, RODataAlign.value(),
                                      /*SectionID=*/0,
                                      /*SectionName=*/"rodataReserve",
                                      /*IsReadOnly=*/true),
           RODataSize);
       m_RWData.setAllocation(
-          Super::allocateDataSection(RWDataSize, RWDataAlign,
+          Super::allocateDataSection(RWDataSize, RWDataAlign.value(),
                                      /*SectionID=*/0,
                                      /*SectionName=*/"rwataReserve",
                                      /*IsReadOnly=*/false),
