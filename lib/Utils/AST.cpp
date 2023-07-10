@@ -274,15 +274,12 @@ namespace utils {
 
       bool mightHaveChanged = false;
       llvm::SmallVector<TemplateArgument, 4> desArgs;
-      for (TemplateSpecializationType::iterator
-             I = TST->begin(), E = TST->end();
-          I != E; ++I) {
-
+      for (const TemplateArgument& Arg : TST->template_arguments()) {
         // cheap to copy and potentially modified by
         // GetFullyQualifedTemplateArgument
-        TemplateArgument arg(*I);
-        mightHaveChanged |= GetFullyQualifiedTemplateArgument(Ctx,arg);
-        desArgs.push_back(arg);
+        TemplateArgument CopiedArg = Arg;
+        mightHaveChanged |= GetFullyQualifiedTemplateArgument(Ctx, CopiedArg);
+        desArgs.push_back(CopiedArg);
       }
 
       // If desugaring happened allocate new type in the AST.
@@ -1232,10 +1229,12 @@ namespace utils {
 
       bool mightHaveChanged = false;
       llvm::SmallVector<TemplateArgument, 4> desArgs;
+      llvm::ArrayRef<clang::TemplateArgument> template_arguments =
+          TST->template_arguments();
       unsigned int argi = 0;
-      for(TemplateSpecializationType::iterator I = TST->begin(), E = TST->end();
-          I != E; ++I, ++argi) {
-
+      for (const clang::TemplateArgument *I = template_arguments.begin(),
+                                         *E = template_arguments.end();
+           I != E; ++I, ++argi) {
         if (I->getKind() == TemplateArgument::Expression) {
           // If we have an expression, we need to replace it / desugar it
           // as it could contain unqualifed (or partially qualified or

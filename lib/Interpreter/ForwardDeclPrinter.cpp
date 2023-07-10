@@ -1184,7 +1184,7 @@ namespace cling {
       {
         const TemplateSpecializationType* TST
           = static_cast<const TemplateSpecializationType*>(typ);
-        for (const TemplateArgument& TA: *TST) {
+        for (const TemplateArgument& TA : TST->template_arguments()) {
           VisitTemplateArgument(TA);
           if (m_SkipFlag) {
             skipDecl(nullptr, "template argument failed");
