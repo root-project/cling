@@ -110,7 +110,7 @@ namespace cling {
   CompilationException::~CompilationException() noexcept {}
 
   void CompilationException::throwingHandler(void * /*user_data*/,
-                                             const std::string& reason,
+                                             const char* reason,
                                              bool /*gen_crash_diag*/) {
     // See https://github.com/root-project/root/issues/7541 and
     // https://bugs.llvm.org/show_bug.cgi?id=49692 :

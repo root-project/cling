@@ -814,7 +814,7 @@ namespace cling {
                                                              ArrayType::Normal,
                                                           /*IndexTypeQuals=*/0);
 
-    StringLiteral::StringKind Kind = StringLiteral::Ascii;
+    StringLiteral::StringKind Kind = StringLiteral::Ordinary;
     Expr* Result = StringLiteral::Create(*m_Context,
                                          Value,
                                          Kind,

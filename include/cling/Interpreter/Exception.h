@@ -65,7 +65,7 @@ namespace cling {
     // Yes, throwing exceptions in error handlers is bad.
     // Doing nothing is pretty terrible, too.
     static void throwingHandler(void * /*user_data*/,
-                                const std::string& reason,
+                                const char* reason,
                                 bool /*gen_crash_diag*/);
   };
 } // end namespace cling

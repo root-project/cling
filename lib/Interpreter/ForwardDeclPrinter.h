@@ -107,7 +107,7 @@ namespace cling {
 
     llvm::DenseMap<const clang::Decl*, bool> m_Visited; // fwd decl success
     std::stack<llvm::raw_ostream*> m_StreamStack;
-    std::set<const char*> m_BuiltinNames;
+    std::set<llvm::StringRef> m_BuiltinNames;
     IgnoreFilesFunc_t m_IgnoreFile; // Call back to ignore some top level files.
 
     void printTypedefOrAliasDecl(clang::TypedefNameDecl* D);

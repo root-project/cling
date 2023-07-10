@@ -1841,7 +1841,7 @@ namespace cling {
         }();
         if (!ret.isValid()) {
           std::string msg = "Error evaluating expression ";
-          CompilationException::throwingHandler(nullptr, msg + DEI->getExpr(),
+          CompilationException::throwingHandler(nullptr, (msg + DEI->getExpr()).c_str(),
                                                 false /*backtrace*/);
         }
         return ret;
