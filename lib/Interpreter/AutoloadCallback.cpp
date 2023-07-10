@@ -333,7 +333,7 @@ namespace cling {
                                             llvm::StringRef /*FileName*/,
                                             bool /*IsAngled*/,
                                        clang::CharSourceRange /*FilenameRange*/,
-                                            const clang::FileEntry *File,
+                                            clang::OptionalFileEntryRef File,
                                             llvm::StringRef /*SearchPath*/,
                                             llvm::StringRef /*RelativePath*/,
                                             const clang::Module */*Imported*/,
@@ -342,7 +342,7 @@ namespace cling {
     if (!File)
       return;
 
-    auto found = m_Map.find(File);
+    auto found = m_Map.find(*File);
     if (found == m_Map.end())
      return; // nothing to do, file not referred in any annotation
 
