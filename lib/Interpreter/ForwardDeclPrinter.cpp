@@ -223,7 +223,7 @@ namespace cling {
                                /*SkipCache*/ false,
                                /*OpenFile*/ false, /*CacheFail*/ true);
        // Return true if we can '#include' the given filename
-       return FE.hasValue();
+       return FE.has_value();
      };
 
      SourceLocation spellingLoc = m_SMgr.getSpellingLoc(D->getBeginLoc());
