@@ -1656,7 +1656,7 @@ namespace utils {
     }
 
     NestedNameSpecifier* prefix = nullptr;
-    Qualifiers prefix_qualifiers;
+    Qualifiers prefix_qualifiers = QT.getLocalQualifiers();
     if (const ElaboratedType* etype_input
         = llvm::dyn_cast<ElaboratedType>(QT.getTypePtr())) {
       // Intentionally, we do not care about the other compononent of
@@ -1667,15 +1667,14 @@ namespace utils {
         const NamespaceDecl *ns = prefix->getAsNamespace();
         if (prefix != NestedNameSpecifier::GlobalSpecifier(Ctx)
             && !(ns && ns->isAnonymousNamespace())) {
-          prefix_qualifiers = QT.getLocalQualifiers();
           prefix = GetFullyQualifiedNameSpecifier(Ctx, prefix);
-          QT = QualType(etype_input->getNamedType().getTypePtr(), 0);
         } else {
           prefix = nullptr;
         }
       }
-    } else {
-
+      QT = etype_input->getNamedType();
+    }
+    if (prefix == nullptr) {
       // Create a nested name specifier if needed (i.e. if the decl context
       // is not the global scope.
       prefix = CreateNestedNameSpecifierForScopeOf(Ctx,QT.getTypePtr(),
@@ -1683,7 +1682,7 @@ namespace utils {
 
       // move the qualifiers on the outer type (avoid 'std::const string'!)
       if (prefix) {
-        prefix_qualifiers = QT.getLocalQualifiers();
+        prefix_qualifiers.addQualifiers(QT.getLocalQualifiers());
         QT = QualType(QT.getTypePtr(),0);
       }
     }
@@ -1710,6 +1709,8 @@ namespace utils {
       // We intentionally always use ETK_None, we never want
       // the keyword (humm ... what about anonymous types?)
       QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
+    }
+    if (prefix_qualifiers) {
       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
     }
     return QT;
