@@ -421,14 +421,6 @@ void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
   m_MPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
                                                    m_TM.getTargetIRAnalysis()));
 
-  m_TM.adjustPassManager(PMBuilder);
-
-  PMBuilder.addExtension(PassManagerBuilder::EP_EarlyAsPossible,
-                         [&](const PassManagerBuilder &,
-                             legacy::PassManagerBase &PM) {
-                              PM.add(createAddDiscriminatorsPass());
-                            });
-
   //if (!CGOpts.RewriteMapFiles.empty())
   //  addSymbolRewriterPass(CGOpts, m_MPM);
 
