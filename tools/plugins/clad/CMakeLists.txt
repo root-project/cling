@@ -63,18 +63,18 @@ set(_clad_cmake_logging_settings
 
 list(APPEND _clad_cmake_logging_settings LOG_OUTPUT_ON_FAILURE ON)
 
-list(APPEND _clad_patches_list "clad_array_size_type.patch" "clad_local_array.patch" "clad_fma.patch")
-set(_clad_patch_command
-      ${CMAKE_COMMAND} -E copy_directory
-      ${CMAKE_SOURCE_DIR}/interpreter/cling/tools/plugins/clad/patches <SOURCE_DIR>
-      && git checkout <SOURCE_DIR>
-      && git apply --ignore-space-change --ignore-whitespace ${_clad_patches_list}
-      )
+#list(APPEND _clad_patches_list "patch1.patch" "patch2.patch")
+#set(_clad_patch_command
+#      ${CMAKE_COMMAND} -E copy_directory
+#      ${CMAKE_SOURCE_DIR}/interpreter/cling/tools/plugins/clad/patches <SOURCE_DIR>
+#      && git checkout <SOURCE_DIR>
+#      && git apply --ignore-space-change --ignore-whitespace ${_clad_patches_list}
+#      )
 
 ExternalProject_Add(
   clad
   GIT_REPOSITORY https://github.com/vgvassilev/clad.git
-  GIT_TAG v1.1
+  GIT_TAG v1.2
   UPDATE_COMMAND ""
   PATCH_COMMAND ${_clad_patch_command}
   CMAKE_ARGS -G ${CMAKE_GENERATOR}
