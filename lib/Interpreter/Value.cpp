@@ -146,7 +146,7 @@ namespace cling {
                                                   const clang::ASTContext &C) {
     using namespace clang;
 
-    if (C.hasSameType(QT, C.VoidTy))
+    if (QT->isVoidType())
       return Value::kVoid;
 
     if (const auto *ET = dyn_cast<EnumType>(QT.getTypePtr()))

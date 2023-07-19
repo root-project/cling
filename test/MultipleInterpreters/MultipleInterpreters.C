@@ -33,5 +33,9 @@ const char* argV[1] = {"cling"};
   ChildInterp.declare("void foo(int i){ printf(\"foo(int) = %d\\n\", i); }\n");
   ChildInterp.echo("foo()"); //CHECK: (int) 42
   ChildInterp.execute("foo(1)"); //CHECK: foo(int) = 1
+
+  // The following should not crash, even if the child interpreter has a
+  // different ASTContext.VoidTy.
+  ChildInterp.echo("(void)1");
 }
 .q
