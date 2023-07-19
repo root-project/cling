@@ -32,6 +32,6 @@ const char* argV[1] = {"cling"};
   cling::Interpreter ChildInterp(*gCling, 1, argV);
   ChildInterp.declare("void foo(int i){ printf(\"foo(int) = %d\\n\", i); }\n");
   ChildInterp.echo("foo()"); //CHECK: (int) 42
-  ChildInterp.echo("foo(1)"); //CHECK: foo(int) = 1
+  ChildInterp.execute("foo(1)"); //CHECK: foo(int) = 1
 }
 .q
