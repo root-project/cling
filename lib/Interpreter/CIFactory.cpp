@@ -386,6 +386,7 @@ namespace {
 #else
     Opts.RTTIData = 0;
 #endif // _CPPRTTI
+    Opts.MSVolatile = 1;
     Opts.Trigraphs = 0;
     Opts.setDefaultCallingConv(clang::LangOptions::DCC_CDecl);
 #else // !_MSC_VER
@@ -1671,7 +1672,6 @@ namespace {
     // Set CodeGen options.
     CodeGenOptions& CGOpts = CI->getCodeGenOpts();
 #ifdef _MSC_VER
-    CGOpts.MSVolatile = 1;
     CGOpts.RelaxedAliasing = 1;
     CGOpts.EmitCodeView = 1;
     CGOpts.CXXCtorDtorAliases = 1;
