@@ -31,6 +31,10 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 
+#ifdef __linux__
+#include <sys/stat.h>
+#endif
+
 using namespace llvm;
 using namespace llvm::jitlink;
 using namespace llvm::orc;
@@ -489,6 +493,32 @@ CreateTargetMachine(const clang::CompilerInstance& CI, bool JITLink) {
 
   return cantFail(JTMB.createTargetMachine());
 }
+
+#if defined(__linux__) && defined(__GLIBC__)
+static SymbolMap GetListOfLibcNonsharedSymbols(const LLJIT& Jit) {
+  // Inject a number of symbols that may be in libc_nonshared.a where they are
+  // not found automatically. Before DefinitionGenerators in ORCv2, this used
+  // to be done by RTDyldMemoryManager::getSymbolAddressInProcess See also the
+  // upstream issue https://github.com/llvm/llvm-project/issues/61289.
+
+  static const std::pair<const char*, const void*> NamePtrList[] = {
+      {"stat", (void*)&stat},       {"fstat", (void*)&fstat},
+      {"lstat", (void*)&lstat},     {"stat64", (void*)&stat64},
+      {"fstat64", (void*)&fstat64}, {"lstat64", (void*)&lstat64},
+      {"fstatat", (void*)&fstatat}, {"fstatat64", (void*)&fstatat64},
+      {"mknod", (void*)&mknod},     {"mknodat", (void*)&mknodat},
+  };
+
+  SymbolMap LibcNonsharedSymbols;
+  for (const auto& NamePtr : NamePtrList) {
+    auto Addr = static_cast<JITTargetAddress>(
+        reinterpret_cast<uintptr_t>(NamePtr.second));
+    LibcNonsharedSymbols[Jit.mangleAndIntern(NamePtr.first)] =
+        JITEvaluatedSymbol(Addr, JITSymbolFlags::Exported);
+  }
+  return LibcNonsharedSymbols;
+}
+#endif
 } // unnamed namespace
 
 namespace cling {
@@ -597,6 +627,12 @@ IncrementalJIT::IncrementalJIT(
                                               [&](const SymbolStringPtr &Sym) {
                                   return !m_ForbidDlSymbols.contains(*Sym); });
   Jit->getMainJITDylib().addGenerator(std::move(LibLookup));
+
+#if defined(__linux__) && defined(__GLIBC__)
+  // See comment in ListOfLibcNonsharedSymbols.
+  cantFail(Jit->getMainJITDylib().define(
+      absoluteSymbols(GetListOfLibcNonsharedSymbols(*Jit))));
+#endif
 
   // This replaces llvm::orc::ExecutionSession::logErrorsToStdErr:
   auto&& ErrorReporter = [&Executor, LinkerPrefix, Verbose](Error Err) {
