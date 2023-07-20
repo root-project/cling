@@ -33,6 +33,7 @@ namespace clang {
   class TemplateDecl;
   class Type;
   class TypedefNameDecl;
+  class UsingShadowDecl;
 }
 
 namespace cling {
@@ -344,6 +345,19 @@ namespace utils {
     clang::NestedNameSpecifier*
     CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
                               const clang::TypedefNameDecl *TD,
+                              bool FullyQualify);
+
+    ///\brief Create a NestedNameSpecifier for UsingShadowDecl and its enclosing
+    /// scopes.
+    ///
+    ///\param[in] Ctx - the AST Context to be used.
+    ///\param[in] USD - the UsingShadowDecl for which a NestedNameSpecifier is
+    /// requested.
+    ///\param[in] FullyQualify - Convert all template arguments (of possible
+    /// parent scopes) into fully qualified names.
+    clang::NestedNameSpecifier*
+    CreateNestedNameSpecifier(const clang::ASTContext& Ctx,
+                              const clang::UsingShadowDecl *USD,
                               bool FullyQualify);
 
   } // end namespace TypeName

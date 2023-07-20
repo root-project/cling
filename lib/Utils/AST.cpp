@@ -378,6 +378,9 @@ namespace utils {
       } else if (const TypedefType* TDD = dyn_cast<TypedefType>(type)) {
         return TypeName::CreateNestedNameSpecifier(Ctx, TDD->getDecl(),
                                                    true /*FullyQualified*/);
+      } else if (const UsingType* UT = dyn_cast<UsingType>(type)) {
+        return TypeName::CreateNestedNameSpecifier(Ctx, UT->getFoundDecl(),
+                                                   true /*FullyQualified*/);
       }
     } else if (const NamespaceDecl* NS = scope->getAsNamespace()) {
       return TypeName::CreateNestedNameSpecifier(Ctx, NS);
@@ -558,8 +561,12 @@ namespace utils {
         Decl* decl = nullptr;
         const TypedefType* typedeftype =
           dyn_cast_or_null<TypedefType>(&(*desugared));
+        const UsingType* usingtype =
+          dyn_cast_or_null<UsingType>(&(*desugared));
         if (typedeftype) {
           decl = typedeftype->getDecl();
+        } else if (usingtype) {
+          decl = usingtype->getFoundDecl();
         } else {
           // There are probably other cases ...
           const TagType* tagdecltype = dyn_cast_or_null<TagType>(&(*desugared));
@@ -734,6 +741,11 @@ namespace utils {
         QT = Ty->desugar();
         return true;
       }
+      case Type::Using: {
+        const UsingType* Ty = llvm::cast<UsingType>(QTy);
+        QT = Ty->desugar();
+        return true;
+      }
       case Type::TypeOf: {
         const TypeOfType* Ty = llvm::cast<TypeOfType>(QTy);
         QT = Ty->desugar();
@@ -846,6 +858,7 @@ namespace utils {
       QualType SubTy = arg.getAsType();
       // Check if the type needs more desugaring and recurse.
       if (isa<TypedefType>(SubTy)
+          || isa<UsingType>(SubTy)
           || isa<TemplateSpecializationType>(SubTy)
           || isa<ElaboratedType>(SubTy)
           || fullyQualifyTmpltArg) {
@@ -1125,8 +1138,12 @@ namespace utils {
       Decl *decl = nullptr;
       const TypedefType* typedeftype =
         dyn_cast_or_null<TypedefType>(QT.getTypePtr());
+      const UsingType* usingtype =
+        dyn_cast_or_null<UsingType>(QT.getTypePtr());
       if (typedeftype) {
         decl = typedeftype->getDecl();
+      } else if (usingtype) {
+        decl = usingtype->getFoundDecl();
       } else {
         // There are probably other cases ...
         const TagType* tagdecltype = dyn_cast_or_null<TagType>(QT.getTypePtr());
@@ -1286,6 +1303,7 @@ namespace utils {
         QualType SubTy = I->getAsType();
         // Check if the type needs more desugaring and recurse.
         if (isa<TypedefType>(SubTy)
+            || isa<UsingType>(SubTy)
             || isa<TemplateSpecializationType>(SubTy)
             || isa<ElaboratedType>(SubTy)
             || fullyQualifyTmpltArg) {
@@ -1357,6 +1375,7 @@ namespace utils {
             QualType SubTy = templateArgs[I].getAsType();
             // Check if the type needs more desugaring and recurse.
             if (isa<TypedefType>(SubTy)
+                || isa<UsingType>(SubTy)
                 || isa<TemplateSpecializationType>(SubTy)
                 || isa<ElaboratedType>(SubTy)
                 || fullyQualifyTmpltArg) {
@@ -1549,6 +1568,8 @@ namespace utils {
     Decl *decl = nullptr;
     if (const TypedefType* typedeftype = llvm::dyn_cast<TypedefType>(TypePtr)) {
       decl = typedeftype->getDecl();
+    } else if (const UsingType* usingtype = llvm::dyn_cast<UsingType>(TypePtr)) {
+      decl = usingtype->getFoundDecl();
     } else {
       // There are probably other cases ...
       if (const TagType* tagdecltype = llvm::dyn_cast_or_null<TagType>(TypePtr))
@@ -1586,6 +1607,16 @@ namespace utils {
                                                            FullyQualify),
                                        true /*Template*/,
                                        TD->getTypeForDecl());
+  }
+
+  NestedNameSpecifier*
+  TypeName::CreateNestedNameSpecifier(const ASTContext& Ctx,
+                                      const UsingShadowDecl* USD,
+                                      bool FullyQualify) {
+    return NestedNameSpecifier::Create(Ctx, CreateOuterNNS(Ctx, USD,
+                                                           FullyQualify),
+                                       true /*Template*/,
+                                       cast<TypeDecl>(USD)->getTypeForDecl());
   }
 
   NestedNameSpecifier*
