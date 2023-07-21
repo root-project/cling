@@ -425,8 +425,10 @@ public:
                       const SymbolLookupSet& LookupSet) override {
     SymbolMap Symbols;
     for (auto& KV : LookupSet) {
-      if (auto Addr = lookup(*KV.first))
-        Symbols[KV.first] = Addr.get();
+      auto Addr = lookup(*KV.first);
+      if (auto Err = Addr.takeError())
+        return Err;
+      Symbols[KV.first] = Addr.get();
     }
     if (Symbols.empty())
       return Error::success();

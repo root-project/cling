@@ -1141,9 +1141,13 @@ namespace cling {
 
     auto ObjF = llvm::object::ObjectFile::createObjectFile(FileName);
     if (!ObjF) {
+      std::string Message;
+      handleAllErrors(ObjF.takeError(), [&](llvm::ErrorInfoBase &EIB) {
+        Message += EIB.message() + "; ";
+      });
       if (DEBUG > 1)
         cling::errs() << "[DyLD] Failed to read object file "
-                      << FileName << "\n";
+                      << FileName << ". Message: '" << Message << "\n";
       return true;
     }
 
