@@ -11,13 +11,13 @@
 
 // Invoke the printer to get it in the undo queue early
 "TEST"
-// CHECK: (const char [5]) "TEST"
+// CHECK: (const char[5]) "TEST"
 
 // Make sure one transaction can handle redefinitions
 #include "Macros.h"
 
 TEST
-// CHECK: (const char [7]) "TEST 4"
+// CHECK: (const char[7]) "TEST 4"
 
 .undo //print
 .undo //include
@@ -29,7 +29,7 @@ TEST // expected-error {{use of undeclared identifier 'TEST'}}
 #undef TEST
 .undo
 TEST
-// CHECK: (const char [8]) "DEFINED"
+// CHECK: (const char[8]) "DEFINED"
 .undo // print
 .undo // define
 .undo // FIXME: REMOVE once print unloading is merged
@@ -40,5 +40,5 @@ TEST // expected-error {{use of undeclared identifier 'TEST'}}
 #define TESTB
 #include "Macros.h"
 
-TEST // CHECK: (const char [7]) "TEST G"
+TEST // CHECK: (const char[7]) "TEST G"
 .q

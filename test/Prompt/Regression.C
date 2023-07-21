@@ -28,9 +28,9 @@ gCling->process("a;", &V);
 // End PR #96277
 // PR #98146
 gCling->process("\"Root\"", &V);
-// CHECK: (const char [5]) "Root"
+// CHECK: (const char[5]) "Root"
 V
-// CHECK: (cling::Value &) boxes [(const char [5]) "Root"]
+// CHECK: (cling::Value &) boxes [(const char[5]) "Root"]
 // End PR #98146
 
 .rawInput 1

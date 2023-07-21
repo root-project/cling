@@ -1357,7 +1357,7 @@ dumpDecl("func_global_tmpltcheck_f_double", func_global_tmpltcheck_f_double);
 //
 
 "abc"
-//CHECK: (const char [4]) "abc"
+//CHECK: (const char[4]) "abc"
 
 //
 //  Cleanup.

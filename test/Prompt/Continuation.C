@@ -52,15 +52,15 @@ C
  " C D"
 
 CLING_MULTILINE_STRING
-// CHECK-NEXT: (const char [7]) "AB C D"
+// CHECK-NEXT: (const char[7]) "AB C D"
 
 "Multinline" \
  " String " \
   "Constant"
 "Separate"
 
-// CHECK-NEXT: (const char [27]) "Multinline String Constant"
-// CHECK-NEXT: (const char [9]) "Separate"
+// CHECK-NEXT: (const char[27]) "Multinline String Constant"
+// CHECK-NEXT: (const char[9]) "Separate"
 
 // Common error handling macro
 #define CLING_MULTILINE_MACRO(STR)  do { \
@@ -75,6 +75,6 @@ CLING_MULTILINE_MACRO("DOWHILE");
   " End" // expected-warning@1 {{backslash and newline separated by space}} // expected-warning@2 {{backslash and newline separated by space}}
 
 CLING_MULTILINE_TRAILING_SPACE
-// CHECK-NEXT: (const char [29]) "Trailing Space And A Tab End"
+// CHECK-NEXT: (const char[29]) "Trailing Space And A Tab End"
 
 .q
