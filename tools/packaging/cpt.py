@@ -799,12 +799,10 @@ def setup_tests():
     exec_subprocess_call("cmake {0}".format(LLVM_OBJ_ROOT), CLING_SRC_DIR)
     exec_subprocess_call("cmake --build . --target FileCheck -- -j{0}".format(multiprocessing.cpu_count()), LLVM_OBJ_ROOT)
     if not os.path.exists(os.path.join(CLING_SRC_DIR, "..", "clang", "test")):
-        llvm_dir = exec_subprocess_check_output("llvm-config --src-root", ".").strip()
-        if llvm_dir == "":
-            if tar_required:
-                llvm_dir = copy.copy(srcdir)
-            else:
-                llvm_dir = os.path.join("/usr", "lib", "llvm-" + llvm_vers, "build")
+        if tar_required:
+            llvm_dir = copy.copy(srcdir)
+        else:
+            llvm_dir = os.path.join("/usr", "lib", "llvm-" + llvm_vers, "build")
         subprocess.Popen(
             ["sudo mkdir {0}/utils/".format(llvm_dir)],
             cwd=os.path.join(CLING_SRC_DIR, "tools"),
