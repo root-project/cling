@@ -25,7 +25,7 @@
 class MyClass {
   struct {
     int a;
-    error_here; // expected-error {{C++ requires a type specifier for all declarations}}
+    error_here; // expected-error {{a type specifier is required for all declarations}}
   };
 };
 .compareState "testMyClass"

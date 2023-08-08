@@ -24,4 +24,4 @@ int my_funct() {
   return 10;
 }
 
-error_here; // expected-error {{C++ requires a type specifier for all declarations}}
+error_here; // expected-error {{use of undeclared identifier}}

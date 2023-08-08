@@ -12,5 +12,5 @@ int f() {
   return NN+1;
 }
 int n = f();
-error_here; // expected-error {{C++ requires a type specifier for all declarations}}
+error_here; // expected-error {{use of undeclared identifier}}
 #endif // HEADER_FILE_PROTECTOR
