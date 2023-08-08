@@ -14,7 +14,7 @@ const char* b = "b" // CHECK: (const char *) "b"
    const char* n = 0 // CHECK: (const char *) nullptr
 
 struct C {int d;} E = {22};
-E // CHECK: (struct C &) @0x{{[0-9A-Fa-f]{5,12}.}}
+E // CHECK: (C &) @0x{{[0-9A-Fa-f]{5,12}.}}
 E.d // CHECK: (int) 22
 
 #include <string>

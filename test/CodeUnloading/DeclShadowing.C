@@ -47,7 +47,7 @@ struct MyStruct { unsigned u; };
 MyStruct{1111U}.u
 //CHECK-NEXT: (unsigned int) 1111
 struct MyStruct { int i, j; } foo{33, 0}
-//CHECK-NEXT: (struct MyStruct &)
+//CHECK-NEXT: (MyStruct &)
 foo.i
 //CHECK-NEXT: (int) 33
 struct MyStruct;  // nop
