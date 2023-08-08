@@ -167,7 +167,11 @@ Please install Python or specify the PYTHON_EXECUTABLE CMake variable.")
 
   set( CLING_BUILT_STANDALONE 1 )
   set(BACKEND_PACKAGE_STRING "LLVM ${LLVM_PACKAGE_VERSION}")
-else() # Building as part of LLVM
+elseif(DEFINED CLING_ROOT_BUILD)
+  message(STATUS "Building Cling as part of ROOT")
+  # we do not need to include LLVMConfig again, already done
+else()
+  message(STATUS "Building Cling as part of LLVM")
   set(BACKEND_PACKAGE_STRING "${PACKAGE_STRING}")
   # Try finding the LLVMConfig.cmake if we build against prebuilt LLVM
   set(LLVM_CMAKE_PATH "${LLVM_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}/cmake/llvm")
@@ -195,7 +199,7 @@ endif()
 set(CLING_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CLING_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(LLVM_TOOLS_BINARY_DIR "${LLVM_BINARY_DIR}/bin")
-if(DEFINED ROOT_BINARY_DIR)
+if(DEFINED CLING_ROOT_BUILD)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${LLVM_TOOLS_BINARY_DIR}")
 endif()
 
@@ -295,7 +299,7 @@ endif ()
 # The package needs to be compiler without RTTI information
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -GR-")
-  if(NOT DEFINED ROOT_BINARY_DIR)
+  if(NOT DEFINED CLING_ROOT_BUILD)
     # Add the /std:c++XX flag for Visual Studio if not building as part of ROOT
     if(MSVC_VERSION GREATER_EQUAL 1920)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std:c++17")
@@ -327,7 +331,7 @@ file (STRINGS "VERSION" CLING_VERSION)
 string(REGEX REPLACE "([0-9]).[0-9]+~[a-zA-Z]+" "\\1" CLING_VERSION_MAJOR ${CLING_VERSION})
 string(REGEX REPLACE "[0-9].([0-9]+)~[a-zA-Z]+" "\\1" CLING_VERSION_MINOR ${CLING_VERSION})
 
-if(DEFINED ROOT_BINARY_DIR)
+if(DEFINED CLING_ROOT_BUILD)
   # Building as part of ROOT; visibility is "inherited" from ROOT/interpreter.
   set(CLING_VERSION ROOT_${CLING_VERSION})
 else()
