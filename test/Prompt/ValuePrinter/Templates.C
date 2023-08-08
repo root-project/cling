@@ -14,6 +14,6 @@ template<> struct F<0> {
   enum {RET = 1};
 };
 F<7>::RET
-//CHECK: (F<7>::(anonymous)) (F<7>::RET) : ({{(unsigned )?}}int) 5040
+//CHECK: (F<7>::(unnamed enum {{.*}})) (F<7>::RET) : ({{(unsigned )?}}int) 5040
 
 .q

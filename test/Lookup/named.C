@@ -46,7 +46,7 @@ E foo = k1
 //CHECK: (E) (k1) : (unsigned int) 1
 struct X { enum { k0, k1 = 2 }; } bar
 X::k1
-//CHECK: (X::(anonymous)) (X::k1) : (unsigned int) 2
+//CHECK: (X::(unnamed enum {{.*}})) (X::k1) : (unsigned int) 2
 
 clang::Sema& S = gCling->getSema();
 const LookupHelper& lookup = gCling->getLookupHelper();

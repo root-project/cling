@@ -32,13 +32,13 @@ std::weak_ptr<int> i_wptr
 //CHECK: (std::weak_ptr<int> &) std::weak_ptr -> nullptr
 
 i_uptr = std::unique_ptr<int>(new int (3))
-//CHECK: (std::unique_ptr &) std::unique_ptr -> 0x{{[0-9a-f]+}} 
+//CHECK: (std::unique_ptr<int, std::default_delete<int> > &) std::unique_ptr -> 0x{{[0-9a-f]+}}
 
 i_uptr
 //CHECK: (std::unique_ptr<int> &) std::unique_ptr -> 0x{{[0-9a-f]+}} 
 
 i_sptr = std::make_shared<int>(6)
-//CHECK: (std::shared_ptr &) std::shared_ptr -> 0x{{[0-9a-f]+}} 
+//CHECK: (std::shared_ptr<int> &) std::shared_ptr -> 0x{{[0-9a-f]+}}
 
 i_sptr
 //CHECK: (std::shared_ptr<int> &) std::shared_ptr -> 0x{{[0-9a-f]+}} 

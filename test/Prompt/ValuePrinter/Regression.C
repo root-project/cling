@@ -51,7 +51,7 @@ q // CHECK: (const int *) 0x123 <invalid memory address>
 // PR ROOT-5467
 &A::someFunc // CHECK: (int (A::*)(float)) Function @0x{{[0-9a-f]+}}
 
-nullptr // CHECK: (nullptr_t) nullptr
+nullptr // CHECK: (std::nullptr_t) nullptr
 
 true // CHECK: (bool) true
 false // CHECK: (bool) false
@@ -89,7 +89,7 @@ auto bla=[](double *x, double *par, int blub){return x[0]*blub;} // CHECK: ((lam
 
 #include <functional>
 using namespace std::placeholders;
-auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ({{.*\(lambda\).*}}> &) @0x{{[0-9a-f]+}}
+auto fn_moo = std::bind (bla, _1,_2,10) // CHECK: ({{.*\(lambda\).*}} &) @0x{{[0-9a-f]+}}
 
 // Make sure cling survives
 12 // CHECK: (int) 12
@@ -137,4 +137,4 @@ namespace PR180 {
   using Foo = Derived<base>;
 }
 auto bar = PR180::Foo()
-// CHECK: (PR180::Derived<PR180::base> &) @0x{{[0-9a-f]+}}
+// CHECK: (PR180::Foo &) @0x{{[0-9a-f]+}}

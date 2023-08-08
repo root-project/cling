@@ -81,7 +81,7 @@ gTest
 
 // Don't call destructor on printed lambda
 [] {}
-// CHECK-NEXT: () @0x{{[0-9a-f]+}}
+// CHECK-NEXT: ((lambda {{.*}}) @0x{{[0-9a-f]+}}
 
 // expected-no-diagnostics
 .q
