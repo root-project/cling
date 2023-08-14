@@ -34,7 +34,7 @@ namespace {
 DiagnosticsStore::DiagnosticsStore(clang::DiagnosticsEngine& Diags, bool Own,
                                     bool Report, bool Reset) :
   DiagnosticsOverride(Diags, Own),
-  m_Flags(Report | (Reset << 1)) {
+  m_Flags((Report ? kReport : 0) | (Reset ? kReset : 0)) {
 }
 
 DiagnosticsStore::~DiagnosticsStore() {
