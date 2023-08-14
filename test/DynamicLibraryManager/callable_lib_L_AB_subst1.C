@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// UNSUPPORTED: windows, linux
+// UNSUPPORTED: system-windows, system-linux
 // RUN: mkdir -p %t-dir/rlib
 // RUN: mkdir -p %t-dir/lib
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_A.c -o%t-dir/rlib/libcall_lib_A%shlibext
