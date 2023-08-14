@@ -157,7 +157,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
 
   InputArgList Args(OptsC1.ParseArgs(ArgStrings, MissingArgIndex,
                     MissingArgCount, 0,
-                    options::NoDriverOption | options::CLOption));
+                    options::NoDriverOption | options::CLOption | options::DXCOption));
 
   std::vector<const char*> LLVMArgs;
   LLVMArgs.push_back("cling (LLVM option parsing)");
