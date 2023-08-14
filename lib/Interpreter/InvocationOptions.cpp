@@ -186,7 +186,7 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
       case options::OPT_fmodules_cache_path: CachePath = arg->getValue(); break;
       case options::OPT_cuda_path_EQ: CUDAPath = arg->getValue(); break;
       case options::OPT_offload_arch_EQ: CUDAGpuArch = arg->getValue(); break;
-      case options::OPT_cuda_device_only:
+      case options::OPT_offload_device_only:
         Language = true;
         CUDADevice = true;
         CUDAHost = false;
