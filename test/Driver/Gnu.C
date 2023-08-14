@@ -10,7 +10,7 @@
 // RUN: cat %s | %cling -D__STRICT_ANSI__ -std=gnu++11 -Xclang -verify 2>&1 | FileCheck %s
 // RUN: cat %s | %cling -D__STRICT_ANSI__ -std=gnu++14 -Xclang -verify 2>&1 | FileCheck %s
 // RUN: cat %s | %cling -D__STRICT_ANSI__ -std=gnu++1z -Xclang -verify 2>&1 | FileCheck %s
-// REQUIRES: not_system-windows
+// UNSUPPORTED: system-windows
 
 #ifdef __cplusplus
 extern "C" int printf(const char*, ...);

@@ -10,7 +10,7 @@
 // RUN: %rm /tmp/__testing_cling_history
 // RUN: cat %s | env --unset=CLING_NOHISTORY CLING_HISTSIZE=8 CLING_HISTFILE="/tmp/__testing_cling_history" %cling - 2>&1
 // RUN: diff /tmp/__testing_cling_history "%S/Inputs/cling_history"
-// REQUIRES: not_system-windows
+// UNSUPPORTED: system-windows
 
 #include <iostream>
 

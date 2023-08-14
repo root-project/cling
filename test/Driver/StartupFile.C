@@ -7,7 +7,7 @@
 //------------------------------------------------------------------------------
 
 // RUN: cat %s | env CLING_HOME="%S/Inputs" %cling %s 2>&1 | FileCheck %s
-// REQUIRES: not_system-windows
+// UNSUPPORTED: system-windows
 
 // CHECK: Startup file ran, magic # was 43210
 

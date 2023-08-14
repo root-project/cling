@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// REQUIRES: not_system-windows
+// UNSUPPORTED: system-windows
 
 // RUN: mkdir -p %t-dir/lib
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_A.c -o%t-dir/lib/libcall_lib_A%shlibext

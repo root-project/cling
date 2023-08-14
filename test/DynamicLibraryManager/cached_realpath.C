@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// REQUIRES: not_system-windows
+// UNSUPPORTED: system-windows
 
 // RUN: %rm -fr %t-dir
 // RUN: %mkdir %t-dir
