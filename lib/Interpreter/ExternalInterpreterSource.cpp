@@ -111,7 +111,7 @@ namespace cling {
       const Decl* To = llvm::cantFail(m_Importer->Import(declToImport));
       assert(To && "Import did not work!");
       assert((DS.empty() ||
-              DS[0].getID() == clang::diag::err_unsupported_ast_node) &&
+              DS[0].getID() != clang::diag::err_unsupported_ast_node) &&
              "Import not supported!");
 #endif
       return;
