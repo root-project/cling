@@ -295,7 +295,14 @@ namespace {
       if (const ConstantArrayType* constArray
           = dyn_cast<ConstantArrayType>(desugaredTy.getTypePtr())) {
         CallArgs.clear();
-        CallArgs.push_back(E);
+        // Get a pointer to the base element type so the instantiated copyArray
+        // template can do placement new.
+        QualType baseElementType = m_Context->getBaseElementType(desugaredTy);
+        TypeSourceInfo* TSI = m_Context->getTrivialTypeSourceInfo(
+            m_Context->getPointerType(baseElementType), noLoc);
+        Expr* srcPointer =
+            m_Sema->BuildCStyleCastExpr(noLoc, TSI, noLoc, E).get();
+        CallArgs.push_back(srcPointer);
         CallArgs.push_back(placement);
         size_t arrSize
           = m_Context->getConstantArrayElementCount(constArray);
