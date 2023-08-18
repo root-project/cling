@@ -257,7 +257,7 @@ namespace cling {
     if (!m_LookupHelper)
       return;
 
-    if (!isInSyntaxOnlyMode()) {
+    if (!isInSyntaxOnlyMode() && !m_Opts.CompilerOpts.CUDADevice) {
       m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI(),
         extraLibHandle, m_Opts.Verbose()));
 
