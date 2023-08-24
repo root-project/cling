@@ -65,7 +65,7 @@ namespace {
       getLink(First).setLatest(Latest);
     }
 #ifdef __clang__
-#pragma clang diagnostic push
+#pragma clang diagnostic pop
 #endif // __clang__
     };
 
