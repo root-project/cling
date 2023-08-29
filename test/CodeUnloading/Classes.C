@@ -8,6 +8,9 @@
 
 // RUN: cat %s | %cling 2>&1 | FileCheck %s
 
+#include <memory>
+#include <string>
+
 extern "C" int printf(const char* fmt, ...);
 .storeState "preUnload"
 class MyClass{
@@ -22,5 +25,20 @@ public:
 .compareState "preUnload"
 //CHECK-NOT: Differences
 float MyClass = 1.1
-//CHECK: (float) 1.1
+//CHECK: (float) 1.10000f
+
+template <typename T>
+struct MyStruct { T f(T x) { return x; } };
+MyStruct<float> obj;
+obj.f(42.0)
+//CHECK: (float) 42.0000f
+.undo
+obj.f(42.0)
+//CHECK: (float) 42.0000f
+
+auto p = std::make_unique<std::string>("string");
+(unsigned long)p.size() // expected-error{{no member named 'size' in 'std::unique_ptr<std::basic_string<char>>'; did you mean to use '->' instead of '.'?}}
+(unsigned long)p->size()
+//CHECK: (unsigned long) 6
+
 .q

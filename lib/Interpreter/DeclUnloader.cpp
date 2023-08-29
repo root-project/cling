@@ -678,6 +678,36 @@ namespace cling {
     // DeclContext and when trying to remove them we need the full redecl chain
     // still in place.
     bool Successful = VisitDeclContext(FD);
+    // The body of member functions of a templated class only gets instantiated
+    // when the function is used, i.e.
+    // `-ClassTemplateDecl
+    //   |-TemplateTypeParmDecl referenced typename depth 0 index 0 T
+    //   |-CXXRecordDecl struct Foo definition
+    //   | |-DefinitionData
+    //   | `-CXXMethodDecl f 'T (T)'
+    //   |   |-ParmVarDecl 0x55e5787cac70 referenced x 'T'
+    //   |   `-CompoundStmt
+    //   |     `-ReturnStmt
+    //   |       `-DeclRefExpr 'T' lvalue ParmVar 0x55e5787cac70 'x' 'T'
+    //   `-ClassTemplateSpecializationDecl struct Foo definition
+    //     |-DefinitionData
+    //     |-TemplateArgument type 'int'
+    //     | `-BuiltinType 'int'
+    //     |-CXXMethodDecl f 'int (int)'    <<<< Instantiation pending
+    //     | `-ParmVarDecl x 'int':'int'
+    //     |-CXXConstructorDecl implicit used constexpr Foo 'void () noexcept'
+    //     inline default trivial
+    //
+    // Such functions should not be deleted from the AST, but returned to the
+    // 'pending instantiation' state.
+    if (auto MSI = FD->getMemberSpecializationInfo()) {
+      MSI->setPointOfInstantiation(SourceLocation());
+      MSI->setTemplateSpecializationKind(
+          TemplateSpecializationKind::TSK_ImplicitInstantiation);
+      FD->setBody(nullptr);
+      FD->setInstantiationIsPending(true);
+      return Successful;
+    }
     Successful &= VisitRedeclarable(FD, FD->getDeclContext());
     Successful &= VisitDeclaratorDecl(FD);
 
