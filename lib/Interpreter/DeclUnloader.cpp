@@ -327,24 +327,6 @@ namespace {
     }
   }
 
-  typedef llvm::SmallVector<VarDecl*, 2> Vars;
-  class StaticVarCollector : public RecursiveASTVisitor<StaticVarCollector> {
-    Vars& m_V;
-
-  public:
-    StaticVarCollector(FunctionDecl* FD, Vars& V) : m_V(V) {
-      TraverseStmt(FD->getBody());
-    }
-    bool VisitDeclStmt(DeclStmt* DS) {
-      for (DeclStmt::decl_iterator I = DS->decl_begin(), E = DS->decl_end();
-           I != E; ++I)
-        if (VarDecl* VD = dyn_cast<VarDecl>(*I))
-          if (VD->isStaticLocal())
-            m_V.push_back(VD);
-      return true;
-    }
-  };
-
   // Template instantiation of templated function first creates a canonical
   // declaration and after the actual template specialization. For example:
   // template<typename T> T TemplatedF(T t);
@@ -677,15 +659,18 @@ namespace cling {
       // which we will remove soon. (Eg. mangleDeclName iterates the redecls)
       GlobalDecl GD(FD);
       MaybeRemoveDeclFromModule(GD);
+
       // Handle static locals. void func() { static int var; } is represented in
       // the llvm::Module is a global named @func.var
-      Vars V;
-      StaticVarCollector c(FD, V);
-      for (Vars::iterator I = V.begin(), E = V.end(); I != E; ++I) {
-        GlobalDecl GD(*I);
-        MaybeRemoveDeclFromModule(GD);
+      for (auto D : FunctionDecl::castToDeclContext(FD)->noload_decls()) {
+        if (auto VD = dyn_cast<VarDecl>(D))
+          if (VD->isStaticLocal()) {
+            GlobalDecl GD(VD);
+            MaybeRemoveDeclFromModule(GD);
+          }
       }
     }
+
     // VisitRedeclarable() will mess around with this!
     bool wasCanonical = FD->isCanonicalDecl();
     // FunctionDecl : DeclaratiorDecl, DeclContext, Redeclarable
