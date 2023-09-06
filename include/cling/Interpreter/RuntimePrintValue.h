@@ -245,67 +245,23 @@ namespace cling {
     return str + " }";
   }
 
-  // Tuples
-  template <class... ARGS>
-  inline std::string printValue(std::tuple<ARGS...> *);
-
-  namespace collectionPrinterInternal {
-    // We loop at compile time from element 0 to element TUPLE_SIZE - 1
-    // of the tuple. The running index is N which has as initial value
-    // TUPLE_SIZE. We can therefore stop the iteration and account for the
-    // empty tuple case with one single specialisation.
-    template <class TUPLE,
-              std::size_t N = std::tuple_size<TUPLE>(),
-              std::size_t TUPLE_SIZE = std::tuple_size<TUPLE>()>
-    struct tuplePrinter {
-      static std::string print(TUPLE *t)
-      {
-        constexpr std::size_t elementNumber = TUPLE_SIZE - N;
-        using Element_t = decltype(std::get<elementNumber>(*t));
-        std::string ret;
-        if (elementNumber)
-           ret += ", ";
-        ret += cling::printValue(&std::get<elementNumber>(*t));
-        // If N+1 is not smaller than the size of the tuple,
-        // reroute the call to the printing function to the
-        // no-op specialisation to stop recursion.
-        constexpr std::size_t Nm1 = N - 1;
-        ret += tuplePrinter<TUPLE, Nm1>::print((TUPLE *)t);
-        return ret;
-      }
-    };
-
-    // Special case: no op if last element reached or empty tuple
-    template <class TUPLE, std::size_t TUPLE_SIZE>
-    struct tuplePrinter<TUPLE, 0, TUPLE_SIZE>
-    {
-      static std::string print(TUPLE *t) {return "";}
-    };
-
-    template <class T>
-    inline std::string tuplePairPrintValue(T *val)
-    {
-      std::string ret("{ ");
-      ret += collectionPrinterInternal::tuplePrinter<T>::print(val);
-      ret += " }";
-      return ret;
-    }
-  }
-
-  template <class... ARGS>
-  inline std::string printValue(std::tuple<ARGS...> *val)
-  {
-    using T = std::tuple<ARGS...>;
-    if (std::tuple_size<T>::value == 0)
+  // Tuples and pairs
+  template <template <class...> typename TUPLE, typename... ARGS,
+            std::size_t NARGS = std::tuple_size<TUPLE<ARGS...>>::value>
+  inline std::string printValue(TUPLE<ARGS...>* val) {
+    if (NARGS == 0)
       return valuePrinterInternal::kEmptyCollection;
-    return collectionPrinterInternal::tuplePairPrintValue<T>(val);
-  }
 
-  template <class... ARGS>
-  inline std::string printValue(std::pair<ARGS...> *val)
-  {
-    using T = std::pair<ARGS...>;
-    return collectionPrinterInternal::tuplePairPrintValue<T>(val);
+    std::string tuple_string = "{ ";
+    auto concatToStr = [&](ARGS&... args) {
+      std::size_t iarg = 0;
+      ((tuple_string +=
+        cling::printValue(&args) + (++iarg != NARGS ? ", " : " ")),
+       ...);
+      tuple_string += "}";
+    };
+    std::apply(concatToStr, *val);
+    return tuple_string;
   }
 
   namespace collectionPrinterInternal {
