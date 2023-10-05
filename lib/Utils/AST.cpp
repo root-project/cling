@@ -788,13 +788,12 @@ namespace utils {
         return false;
       }
       case Type::UnaryTransform: {
+        const UnaryTransformType* Ty = llvm::cast<UnaryTransformType>(QTy);
+        if (Ty->isSugared()) {
+          QT = Ty->desugar();
+          return true;
+        }
         return false;
-        //const UnaryTransformType* Ty = llvm::cast<UnaryTransformType>(QTy);
-        //if (Ty->isSugared()) {
-        //  QT = Ty->desugar();
-        //  return true;
-        //}
-        //return false;
       }
       case Type::Auto: {
         return false;
