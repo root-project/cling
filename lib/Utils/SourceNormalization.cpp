@@ -264,7 +264,12 @@ public:
         Dtor = false;
       }
     } else {
-      bool SeenSignedness = false;
+      bool SeenModifier = false;
+      auto AnalyzeModifier = [&SeenModifier](llvm::StringRef Modifier) {
+        if (Modifier.equals("signed") || Modifier.equals("unsigned")) {
+          SeenModifier = true;
+        }
+      };
       if (First.equals("struct") || First.equals("class")) {
         do {
           // Identifier(Tok).empty() is redundant 1st time, but simplifies code
@@ -281,24 +286,23 @@ public:
 
       } else if (First.equals("static") || First.equals("constexpr") ||
                  First.equals("inline") || First.equals("const")) {
-        // First check if the current keyword is "unsigned".
+        // First check if the current keyword is a modifier.
         llvm::StringRef Modifier = Identifier(Tok);
-        if (Modifier.equals("signed") || Modifier.equals("unsigned"))
-          SeenSignedness = true;
+        AnalyzeModifier(Modifier);
 
         // Advance past keyword for below
         if (!LexClean(Tok))
           return kNONE;
-      } else if (First.equals("signed") || First.equals("unsigned")) {
-        SeenSignedness = true;
+      } else {
+        AnalyzeModifier(First);
       }
 
       if (!SkipIdentifier(Tok))
         return kNONE;
 
-      // If we have not yet reached the argument list and seen a signedness
-      // modifier keyword, try to skip this once.
-      if (SeenSignedness && Tok.isNot(tok::l_paren) && !SkipIdentifier(Tok))
+      // If we have not yet reached the argument list and seen a modifier
+      // keyword, try to skip this once.
+      if (SeenModifier && Tok.isNot(tok::l_paren) && !SkipIdentifier(Tok))
         return kNONE;
     }
 
