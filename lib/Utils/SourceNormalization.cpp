@@ -266,7 +266,8 @@ public:
     } else {
       bool SeenModifier = false;
       auto AnalyzeModifier = [&SeenModifier](llvm::StringRef Modifier) {
-        if (Modifier.equals("signed") || Modifier.equals("unsigned")) {
+        if (Modifier.equals("signed") || Modifier.equals("unsigned") ||
+            Modifier.equals("short") || Modifier.equals("long")) {
           SeenModifier = true;
         }
       };

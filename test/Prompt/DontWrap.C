@@ -98,6 +98,50 @@ suiFun(11, 12)
 // CHECK: suiFun(11, 12)
 // CHECK: (unsigned int) 13
 
+long lFun(int a) {
+  printf("lFun(%d)\n", a);
+  return 15;
+}
+
+long int liFun(int a, int b) {
+  printf("liFun(%d, %d)\n", a, b);
+  return 17;
+}
+
+lFun(13)
+// CHECK: lFun(13)
+// CHECK: (long) 15
+
+liFun(14, 15)
+// CHECK: liFun(14, 15)
+// CHECK: (long) 17
+
+
+static long slFun(int a) {
+  printf("slFun(%d)\n", a);
+  return 19;
+}
+
+static long int sliFun(int a, int b) {
+  printf("sliFun(%d, %d)\n", a, b);
+  return 21;
+}
+
+slFun(16)
+// CHECK: slFun(16)
+// CHECK: (long) 19
+
+sliFun(17, 18)
+// CHECK: sliFun(17, 18)
+// CHECK: (long) 21
+
+long double ldFun(long double x) {
+  return x * x;
+}
+
+ldFun(2.0)
+// CHECK: (long double) 4.0
+
   
 class Test {
 public:
