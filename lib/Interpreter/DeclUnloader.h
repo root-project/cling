@@ -60,7 +60,7 @@ namespace cling {
     ///\returns true on success.
     ///
     bool UnloadDecl(clang::Decl* D) {
-      if (D->isFromASTFile() || isInstantiatedInPCH(D))
+      if (D->isFromASTFile())
         return true;
       return Visit(D);
     }
@@ -269,8 +269,6 @@ namespace cling {
     ///\param[in] Loc - The source location of the unloaded declaration.
     ///
     void CollectFilesToUncache(clang::SourceLocation Loc);
-
-    bool isInstantiatedInPCH(const clang::Decl *D);
 
     template <typename T>
     bool VisitRedeclarable(clang::Redeclarable<T>* R, clang::DeclContext* DC);

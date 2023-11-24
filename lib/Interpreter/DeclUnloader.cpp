@@ -473,21 +473,6 @@ namespace {
 namespace cling {
   using namespace clang;
 
-  ///\brief Return whether `D' is a template that was first instantiated non-
-  /// locally, i.e. in a PCH/module. If `D' is not an instantiation, return
-  /// false.
-  bool DeclUnloader::isInstantiatedInPCH(const Decl* D) {
-    SourceManager& SM = D->getASTContext().getSourceManager();
-    if (const auto FD = dyn_cast<FunctionDecl>(D))
-      return FD->isTemplateInstantiation() &&
-             !SM.isLocalSourceLocation(FD->getPointOfInstantiation());
-    else if (const auto CTSD = dyn_cast<ClassTemplateSpecializationDecl>(D))
-      return !SM.isLocalSourceLocation(CTSD->getPointOfInstantiation());
-    else if (const auto VTSD = dyn_cast<VarTemplateSpecializationDecl>(D))
-      return !SM.isLocalSourceLocation(VTSD->getPointOfInstantiation());
-    return false;
-  }
-
   void DeclUnloader::resetDefinitionData(TagDecl* decl) {
     auto canon = dyn_cast<CXXRecordDecl>(decl->getCanonicalDecl());
     assert(canon && "Only CXXRecordDecl have DefinitionData");
