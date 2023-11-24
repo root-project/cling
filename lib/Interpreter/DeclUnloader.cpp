@@ -327,6 +327,22 @@ namespace {
     }
   }
 
+  template <class EntryType>
+  void removeSpecializationImpl(llvm::FoldingSetVector<EntryType>& Specs,
+                                const EntryType* Entry) {
+    // Remove only Entry from Specs, keep all others.
+    llvm::FoldingSetVector<EntryType> Keep;
+    for (auto& Spec : Specs) {
+      if (&Spec != Entry) {
+        // Avoid assertion on add.
+        Spec.SetNextInBucket(nullptr);
+        Keep.InsertNode(&Spec);
+      }
+    }
+
+    std::swap(Specs, Keep);
+  }
+
   // Template instantiation of templated function first creates a canonical
   // declaration and after the actual template specialization. For example:
   // template<typename T> T TemplatedF(T t);
@@ -344,43 +360,18 @@ namespace {
   class FunctionTemplateDeclExt : public FunctionTemplateDecl {
   public:
     static void removeSpecialization(FunctionTemplateDecl* self,
-                                     const FunctionDecl* specialization) {
-      assert(self && specialization && "Cannot be null!");
-      assert(specialization == specialization->getCanonicalDecl() &&
+                                     const FunctionDecl* spec) {
+      assert(self && spec && "Cannot be null!");
+      assert(spec == spec->getCanonicalDecl() &&
              "Not the canonical specialization!?");
-      typedef llvm::SmallVector<FunctionDecl*, 4> Specializations;
-      typedef llvm::FoldingSetVector<FunctionTemplateSpecializationInfo> Set;
 
-      FunctionTemplateDeclExt* This = (FunctionTemplateDeclExt*)self;
-      Specializations specializations;
-      const Set& specs = This->getCommonPtr()->Specializations;
+      auto* This = static_cast<FunctionTemplateDeclExt*>(self);
+      auto& specs = This->getCommonPtr()->Specializations;
+      removeSpecializationImpl(specs, spec->getTemplateSpecializationInfo());
 
-      if (!specs.size()) // nothing to remove
-        return;
-
-      // Collect all the specializations without the one to remove.
-      for (Set::const_iterator I = specs.begin(), E = specs.end(); I != E;
-           ++I) {
-        assert(I->getFunction() && "Must have a specialization.");
-        if (I->getFunction() != specialization)
-          specializations.push_back(I->getFunction());
-      }
-
-      This->getCommonPtr()->Specializations.clear();
-
-      // Readd the collected specializations.
-      void* InsertPos = nullptr;
-      FunctionTemplateSpecializationInfo* FTSI = nullptr;
-      for (size_t i = 0, e = specializations.size(); i < e; ++i) {
-        FTSI = specializations[i]->getTemplateSpecializationInfo();
-        assert(FTSI && "Must not be null.");
-        // Avoid assertion on add.
-        FTSI->SetNextInBucket(nullptr);
-        This->addSpecialization(FTSI, InsertPos);
-      }
 #ifndef NDEBUG
-      const TemplateArgumentList* args =
-          specialization->getTemplateSpecializationArgs();
+      const TemplateArgumentList* args = spec->getTemplateSpecializationArgs();
+      void* InsertPos = nullptr;
       assert(!self->findSpecialization(args->asArray(), InsertPos) &&
              "Finds the removed decl again!");
 #endif
@@ -399,35 +390,10 @@ namespace {
       assert(self && spec && "Cannot be null!");
       assert(spec == spec->getCanonicalDecl() &&
              "Not the canonical specialization!?");
-      typedef llvm::SmallVector<ClassTemplateSpecializationDecl*, 4>
-          Specializations;
-      typedef llvm::FoldingSetVector<ClassTemplateSpecializationDecl> Set;
 
-      ClassTemplateDeclExt* This = (ClassTemplateDeclExt*)self;
-      Specializations specializations;
-      Set& specs = This->getCommonPtr()->Specializations;
-
-      if (!specs.size()) // nothing to remove
-        return;
-
-      // Collect all the specializations without the one to remove.
-      for (Set::iterator I = specs.begin(), E = specs.end(); I != E; ++I) {
-        if (&*I != spec)
-          specializations.push_back(&*I);
-      }
-
-      This->getCommonPtr()->Specializations.clear();
-
-      // Readd the collected specializations.
-      void* InsertPos = nullptr;
-      ClassTemplateSpecializationDecl* CTSD = nullptr;
-      for (size_t i = 0, e = specializations.size(); i < e; ++i) {
-        CTSD = specializations[i];
-        assert(CTSD && "Must not be null.");
-        // Avoid assertion on add.
-        CTSD->SetNextInBucket(nullptr);
-        This->AddSpecialization(CTSD, InsertPos);
-      }
+      auto* This = static_cast<ClassTemplateDeclExt*>(self);
+      auto& specs = This->getCommonPtr()->Specializations;
+      removeSpecializationImpl(specs, spec);
     }
 
     static void
@@ -436,36 +402,10 @@ namespace {
       assert(self && spec && "Cannot be null!");
       assert(spec == spec->getCanonicalDecl() &&
              "Not the canonical specialization!?");
-      typedef llvm::SmallVector<ClassTemplatePartialSpecializationDecl*, 4>
-          Specializations;
-      typedef llvm::FoldingSetVector<ClassTemplatePartialSpecializationDecl>
-          Set;
 
-      ClassTemplateDeclExt* This = (ClassTemplateDeclExt*)self;
-      Specializations specializations;
-      Set& specs = This->getPartialSpecializations();
-
-      if (!specs.size()) // nothing to remove
-        return;
-
-      // Collect all the specializations without the one to remove.
-      for (Set::iterator I = specs.begin(), E = specs.end(); I != E; ++I) {
-        if (&*I != spec)
-          specializations.push_back(&*I);
-      }
-
-      This->getPartialSpecializations().clear();
-
-      // Readd the collected specializations.
-      void* InsertPos = nullptr;
-      ClassTemplatePartialSpecializationDecl* CTPSD = nullptr;
-      for (size_t i = 0, e = specializations.size(); i < e; ++i) {
-        CTPSD = specializations[i];
-        assert(CTPSD && "Must not be null.");
-        // Avoid assertion on add.
-        CTPSD->SetNextInBucket(nullptr);
-        This->AddPartialSpecialization(CTPSD, InsertPos);
-      }
+      auto* This = static_cast<ClassTemplateDeclExt*>(self);
+      auto& specs = This->getPartialSpecializations();
+      removeSpecializationImpl(specs, spec);
     }
   };
 } // end anonymous namespace
