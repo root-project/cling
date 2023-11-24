@@ -408,6 +408,37 @@ namespace {
       removeSpecializationImpl(specs, spec);
     }
   };
+
+  // A template specialization is attached to the list of specialization of
+  // the templated variable.
+  //
+  class VarTemplateDeclExt : public VarTemplateDecl {
+  public:
+    static void removeSpecialization(VarTemplateDecl* self,
+                                     VarTemplateSpecializationDecl* spec) {
+      assert(!isa<VarTemplatePartialSpecializationDecl>(spec) &&
+             "Use removePartialSpecialization");
+      assert(self && spec && "Cannot be null!");
+      assert(spec == spec->getCanonicalDecl() &&
+             "Not the canonical specialization!?");
+
+      auto* This = static_cast<VarTemplateDeclExt*>(self);
+      auto& specs = This->getCommonPtr()->Specializations;
+      removeSpecializationImpl(specs, spec);
+    }
+
+    static void
+    removePartialSpecialization(VarTemplateDecl* self,
+                                VarTemplatePartialSpecializationDecl* spec) {
+      assert(self && spec && "Cannot be null!");
+      assert(spec == spec->getCanonicalDecl() &&
+             "Not the canonical specialization!?");
+
+      auto* This = static_cast<VarTemplateDeclExt*>(self);
+      auto& specs = This->getPartialSpecializations();
+      removeSpecializationImpl(specs, spec);
+    }
+  };
 } // end anonymous namespace
 
 namespace cling {
@@ -1016,5 +1047,42 @@ namespace cling {
   bool DeclUnloader::VisitClassTemplateSpecializationDecl(
       ClassTemplateSpecializationDecl* CTSD) {
     return VisitClassTemplateSpecializationDecl(CTSD, /*RemoveSpec=*/true);
+  }
+
+  bool DeclUnloader::VisitVarTemplateDecl(VarTemplateDecl* VTD) {
+    // VarTemplateDecl: TemplateDecl, Redeclarable
+    bool Successful = true;
+    // Remove specializations, but do not invalidate the iterator!
+    for (VarTemplateDecl::spec_iterator I = VTD->loaded_spec_begin(),
+                                        E = VTD->loaded_spec_end();
+         I != E; ++I)
+      Successful &=
+          VisitVarTemplateSpecializationDecl(*I, /*RemoveSpec=*/false);
+
+    Successful &= VisitRedeclarableTemplateDecl(VTD);
+    Successful &= Visit(VTD->getTemplatedDecl());
+    return Successful;
+  }
+
+  bool DeclUnloader::VisitVarTemplateSpecializationDecl(
+      VarTemplateSpecializationDecl* VTSD, bool RemoveSpec) {
+    // VarTemplateSpecializationDecl: VarDecl, FoldingSet
+    bool Successful = VisitVarDecl(VTSD);
+    if (RemoveSpec) {
+      VarTemplateSpecializationDecl* CanonVTSD =
+          static_cast<VarTemplateSpecializationDecl*>(VTSD->getCanonicalDecl());
+      if (auto D = dyn_cast<VarTemplatePartialSpecializationDecl>(CanonVTSD))
+        VarTemplateDeclExt::removePartialSpecialization(
+            D->getSpecializedTemplate(), D);
+      else
+        VarTemplateDeclExt::removeSpecialization(VTSD->getSpecializedTemplate(),
+                                                 CanonVTSD);
+    }
+    return Successful;
+  }
+
+  bool DeclUnloader::VisitVarTemplateSpecializationDecl(
+      VarTemplateSpecializationDecl* VTSD) {
+    return VisitVarTemplateSpecializationDecl(VTSD, /*RemoveSpec=*/true);
   }
 } // end namespace cling

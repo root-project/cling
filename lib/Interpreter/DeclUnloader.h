@@ -258,6 +258,34 @@ namespace cling {
     bool VisitClassTemplateSpecializationDecl(
         clang::ClassTemplateSpecializationDecl* CTSD);
 
+    ///\brief Removes a var template declaration from clang's internal
+    /// structures.
+    /// @param[in] VTD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitVarTemplateDecl(clang::VarTemplateDecl* VTD);
+
+    ///\brief Removes a var template specialization declaration from clang's
+    /// internal structures.
+    /// @param[in] CTSD - The declaration to be removed.
+    /// @param[in] RemoveSpec - Whether to remove the specialization from its
+    /// parent.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitVarTemplateSpecializationDecl(
+        clang::VarTemplateSpecializationDecl* VTSD, bool RemoveSpec);
+
+    ///\brief Removes a var template specialization declaration from clang's
+    /// internal structures.
+    /// @param[in] CTSD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitVarTemplateSpecializationDecl(
+        clang::VarTemplateSpecializationDecl* VTSD);
+
     ///@}
 
     void MaybeRemoveDeclFromModule(clang::GlobalDecl& GD) const;
