@@ -123,6 +123,16 @@ namespace cling {
     ///\brief Removes the declaration from the lookup chains and from the
     /// declaration context and it rebuilds the redeclaration chain.
     /// @param[in] FD - The declaration to be removed.
+    /// @param[in] RemoveSpec - If a template specialization, whether to remove
+    ///    it from the parent.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitFunctionDecl(clang::FunctionDecl* FD, bool RemoveSpec);
+
+    ///\brief Removes the declaration from the lookup chains and from the
+    /// declaration context and it rebuilds the redeclaration chain.
+    /// @param[in] FD - The declaration to be removed.
     ///
     ///\returns true on success.
     ///
@@ -231,11 +241,22 @@ namespace cling {
     ///\brief Removes a class template specialization declaration from clang's
     /// internal structures.
     /// @param[in] CTSD - The declaration to be removed.
+    /// @param[in] RemoveSpec - Whether to remove the specialization from its
+    /// parent.
     ///
     ///\returns true on success.
     ///
     bool VisitClassTemplateSpecializationDecl(
-                                  clang::ClassTemplateSpecializationDecl* CTSD);
+        clang::ClassTemplateSpecializationDecl* CTSD, bool RemoveSpec);
+
+    ///\brief Removes a class template specialization declaration from clang's
+    /// internal structures.
+    /// @param[in] CTSD - The declaration to be removed.
+    ///
+    ///\returns true on success.
+    ///
+    bool VisitClassTemplateSpecializationDecl(
+        clang::ClassTemplateSpecializationDecl* CTSD);
 
     ///@}
 

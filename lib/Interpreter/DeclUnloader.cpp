@@ -636,7 +636,7 @@ namespace cling {
     return Successful;
   }
 
-  bool DeclUnloader::VisitFunctionDecl(FunctionDecl* FD) {
+  bool DeclUnloader::VisitFunctionDecl(FunctionDecl* FD, bool RemoveSpec) {
     // The Structors need to be handled differently.
     if (!isa<CXXConstructorDecl>(FD) && !isa<CXXDestructorDecl>(FD)) {
       // Cleanup the module if the transaction was committed and code was
@@ -696,7 +696,7 @@ namespace cling {
     Successful &= VisitRedeclarable(FD, FD->getDeclContext());
     Successful &= VisitDeclaratorDecl(FD);
 
-    if (FD->isFunctionTemplateSpecialization() && wasCanonical) {
+    if (RemoveSpec && FD->isFunctionTemplateSpecialization() && wasCanonical) {
       // Only the canonical declarations are registered in the list of the
       // specializations.
       FunctionTemplateDecl* FTD
@@ -722,6 +722,10 @@ namespace cling {
     }
 
     return Successful;
+  }
+
+  bool DeclUnloader::VisitFunctionDecl(FunctionDecl* FD) {
+    return VisitFunctionDecl(FD, /*RemoveSpec=*/true);
   }
 
   bool DeclUnloader::VisitCXXConstructorDecl(CXXConstructorDecl* CXXCtor) {
@@ -1027,10 +1031,10 @@ namespace cling {
   bool DeclUnloader::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
     bool Successful = true;
 
-    // Remove specializations:
+    // Remove specializations, but do not invalidate the iterator!
     for (FunctionTemplateDecl::spec_iterator I = FTD->loaded_spec_begin(),
            E = FTD->loaded_spec_end(); I != E; ++I)
-      Successful &= Visit(*I);
+      Successful &= VisitFunctionDecl(*I, /*RemoveSpec=*/false);
 
     Successful &= VisitRedeclarableTemplateDecl(FTD);
     Successful &= VisitFunctionDecl(FTD->getTemplatedDecl());
@@ -1040,10 +1044,11 @@ namespace cling {
   bool DeclUnloader::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
     // ClassTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = true;
-    // Remove specializations:
+    // Remove specializations, but do not invalidate the iterator!
     for (ClassTemplateDecl::spec_iterator I = CTD->loaded_spec_begin(),
            E = CTD->loaded_spec_end(); I != E; ++I)
-      Successful &= Visit(*I);
+      Successful &=
+          VisitClassTemplateSpecializationDecl(*I, /*RemoveSpec=*/false);
 
     Successful &= VisitRedeclarableTemplateDecl(CTD);
     Successful &= Visit(CTD->getTemplatedDecl());
@@ -1051,18 +1056,25 @@ namespace cling {
   }
 
   bool DeclUnloader::VisitClassTemplateSpecializationDecl(
-                                        ClassTemplateSpecializationDecl* CTSD) {
+      ClassTemplateSpecializationDecl* CTSD, bool RemoveSpec) {
     // ClassTemplateSpecializationDecl: CXXRecordDecl, FoldingSet
     bool Successful = VisitCXXRecordDecl(CTSD);
-    ClassTemplateSpecializationDecl* CanonCTSD =
-      static_cast<ClassTemplateSpecializationDecl*>(CTSD->getCanonicalDecl());
-    if (auto D = dyn_cast<ClassTemplatePartialSpecializationDecl>(CanonCTSD))
-      ClassTemplateDeclExt::removePartialSpecialization(
-                                                    D->getSpecializedTemplate(),
-                                                    D);
-    else
-      ClassTemplateDeclExt::removeSpecialization(CTSD->getSpecializedTemplate(),
-                                                 CanonCTSD);
+    if (RemoveSpec) {
+      ClassTemplateSpecializationDecl* CanonCTSD =
+          static_cast<ClassTemplateSpecializationDecl*>(
+              CTSD->getCanonicalDecl());
+      if (auto D = dyn_cast<ClassTemplatePartialSpecializationDecl>(CanonCTSD))
+        ClassTemplateDeclExt::removePartialSpecialization(
+            D->getSpecializedTemplate(), D);
+      else
+        ClassTemplateDeclExt::removeSpecialization(
+            CTSD->getSpecializedTemplate(), CanonCTSD);
+    }
     return Successful;
+  }
+
+  bool DeclUnloader::VisitClassTemplateSpecializationDecl(
+      ClassTemplateSpecializationDecl* CTSD) {
+    return VisitClassTemplateSpecializationDecl(CTSD, /*RemoveSpec=*/true);
   }
 } // end namespace cling
