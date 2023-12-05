@@ -190,6 +190,9 @@ else()
     set (CLANG_INCLUDE_DIRS "${CLANG_INCLUDE_DIRS}"
       "${LLVM_BINARY_DIR}/tools/clang/include")
   endif()
+  if (NOT LLVM_INCLUDE_DIRS)
+    set (LLVM_INCLUDE_DIRS "${LLVM_MAIN_SRC_DIR}/include" "${LLVM_BINARY_DIR}/include")
+  endif()
 endif()
 
 if( NOT "NVPTX" IN_LIST LLVM_TARGETS_TO_BUILD)
