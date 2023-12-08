@@ -16,9 +16,11 @@
 #include "llvm/Analysis/InlineCost.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
@@ -32,15 +34,14 @@
 #include "clang/Basic/CharInfo.h"
 #include "clang/Basic/CodeGenOptions.h"
 
+#include <optional>
+
 using namespace cling;
 using namespace clang;
 using namespace llvm;
-using namespace llvm::legacy;
 
 namespace {
-  class KeepLocalGVPass: public ModulePass {
-    static char ID;
-
+  class KeepLocalGVPass : public PassInfoMixin<KeepLocalGVPass> {
     bool runOnGlobal(GlobalValue& GV) {
       if (GV.isDeclaration())
         return false; // no change.
@@ -72,25 +73,19 @@ namespace {
     }
 
   public:
-    KeepLocalGVPass() : ModulePass(ID) {}
-
-    bool runOnModule(Module &M) override {
-      bool ret = false;
+    PreservedAnalyses run(llvm::Module& M, ModuleAnalysisManager& AM) {
+      bool changed = false;
       for (auto &&F: M)
-        ret |= runOnGlobal(F);
+        changed |= runOnGlobal(F);
       for (auto &&G: M.globals())
-        ret |= runOnGlobal(G);
-      return ret;
+        changed |= runOnGlobal(G);
+      return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
     }
   };
 }
 
-char KeepLocalGVPass::ID = 0;
-
 namespace {
-  class PreventLocalOptPass: public ModulePass {
-    static char ID;
-
+  class PreventLocalOptPass : public PassInfoMixin<PreventLocalOptPass> {
     bool runOnGlobal(GlobalValue& GV) {
       if (!GV.isDeclaration())
         return false; // no change.
@@ -123,25 +118,19 @@ namespace {
     }
 
   public:
-    PreventLocalOptPass() : ModulePass(ID) {}
-
-    bool runOnModule(Module &M) override {
-      bool ret = false;
+    PreservedAnalyses run(llvm::Module& M, ModuleAnalysisManager& AM) {
+      bool changed = false;
       for (auto &&F: M)
-        ret |= runOnGlobal(F);
+        changed |= runOnGlobal(F);
       for (auto &&G: M.globals())
-        ret |= runOnGlobal(G);
-      return ret;
+        changed |= runOnGlobal(G);
+      return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
     }
   };
 }
 
-char PreventLocalOptPass::ID = 0;
-
 namespace {
-  class WeakTypeinfoVTablePass: public ModulePass {
-    static char ID;
-
+  class WeakTypeinfoVTablePass : public PassInfoMixin<WeakTypeinfoVTablePass> {
     bool runOnGlobalVariable(GlobalVariable& GV) {
       // Only need to consider symbols with external linkage because only
       // these could be reported as duplicate.
@@ -164,18 +153,14 @@ namespace {
     }
 
   public:
-    WeakTypeinfoVTablePass() : ModulePass(ID) {}
-
-    bool runOnModule(Module &M) override {
-      bool ret = false;
+    PreservedAnalyses run(llvm::Module& M, ModuleAnalysisManager& AM) {
+      bool changed = false;
       for (auto &&GV : M.globals())
-        ret |= runOnGlobalVariable(GV);
-      return ret;
+        changed |= runOnGlobalVariable(GV);
+      return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
     }
   };
 }
-
-char WeakTypeinfoVTablePass::ID = 0;
 
 namespace {
 
@@ -183,9 +168,7 @@ namespace {
   // variables to generate a unique name. This is necessary for lazy
   // compilation. Without suffix, cling cannot distinguish ctor/dtor, register
   // function and and ptx code string of subsequent modules.
-  class UniqueCUDAStructorName : public ModulePass {
-    static char ID;
-
+  class UniqueCUDAStructorName : public PassInfoMixin<UniqueCUDAStructorName> {
     // append a suffix to a symbol to make it unique
     // the suffix is "_cling_module_<module number>"
     llvm::SmallString<128> add_module_suffix(const StringRef SymbolName,
@@ -235,29 +218,24 @@ namespace {
     }
 
   public:
-    UniqueCUDAStructorName() : ModulePass(ID) {}
-
-    bool runOnModule(Module& M) override {
-      bool ret = false;
+    PreservedAnalyses run(llvm::Module& M, ModuleAnalysisManager& AM) {
+      bool changed = false;
       const StringRef ModuleName = M.getName();
       for (auto&& F : M)
-        ret |= runOnFunction(F, ModuleName);
+        changed |= runOnFunction(F, ModuleName);
       for (auto&& G : M.globals())
-        ret |= runOnGlobal(G, ModuleName);
-      return ret;
+        changed |= runOnGlobal(G, ModuleName);
+      return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
     }
   };
 } // namespace
-
-char UniqueCUDAStructorName::ID = 0;
-
 
 namespace {
 
   // Replace definitions of weak symbols for which symbols already exist by
   // declarations. This reduces the amount of emitted symbols.
-  class ReuseExistingWeakSymbols : public ModulePass {
-    static char ID;
+  class ReuseExistingWeakSymbols
+      : public PassInfoMixin<ReuseExistingWeakSymbols> {
     cling::IncrementalJIT &m_JIT;
 
     bool shouldRemoveGlobalDefinition(GlobalValue& GV) {
@@ -314,23 +292,43 @@ namespace {
     }
 
   public:
-    ReuseExistingWeakSymbols(IncrementalJIT &JIT) :
-      ModulePass(ID), m_JIT(JIT) {}
+    ReuseExistingWeakSymbols(IncrementalJIT& JIT) : m_JIT(JIT) {}
 
-    bool runOnModule(Module &M) override {
-      bool ret = false;
+    PreservedAnalyses run(llvm::Module& M, ModuleAnalysisManager& AM) {
+      bool changed = false;
       // FIXME: use SymbolLookupSet, rather than looking up symbol by symbol.
       for (auto &&F: M)
-        ret |= runOnFunc(F);
+        changed |= runOnFunc(F);
       for (auto &&G: M.globals())
-        ret |= runOnVar(G);
-      return ret;
+        changed |= runOnVar(G);
+      return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
     }
   };
 }
 
-char ReuseExistingWeakSymbols::ID = 0;
+// From clang/lib/CodeGen/BackendUtil.cpp
+static OptimizationLevel mapToLevel(const CodeGenOptions& Opts) {
+  switch (Opts.OptimizationLevel) {
+    default: llvm_unreachable("Invalid optimization level!");
 
+    case 0: return OptimizationLevel::O0;
+
+    case 1: return OptimizationLevel::O1;
+
+    case 2:
+      switch (Opts.OptimizeSize) {
+        default: llvm_unreachable("Invalid optimization level for size!");
+
+        case 0: return OptimizationLevel::O2;
+
+        case 1: return OptimizationLevel::Os;
+
+        case 2: return OptimizationLevel::Oz;
+      }
+
+    case 3: return OptimizationLevel::O3;
+  }
+}
 
 BackendPasses::BackendPasses(const clang::CodeGenOptions &CGOpts,
                              IncrementalJIT &JIT, llvm::TargetMachine& TM):
@@ -344,94 +342,60 @@ BackendPasses::~BackendPasses() {
   //delete m_PMBuilder->Inliner;
 }
 
-void BackendPasses::CreatePasses(llvm::Module& M, int OptLevel)
-{
-  // From BackEndUtil's clang::EmitAssemblyHelper::CreatePasses().
+void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
+                                 llvm::LoopAnalysisManager& LAM,
+                                 llvm::FunctionAnalysisManager& FAM,
+                                 llvm::CGSCCAnalysisManager& CGAM,
+                                 llvm::ModuleAnalysisManager& MAM,
+                                 PassInstrumentationCallbacks& PIC,
+                                 StandardInstrumentations& SI) {
 
-#if 0
-  CodeGenOptions::InliningMethod Inlining = m_CGOpts.getInlining();
-  CodeGenOptions& CGOpts_ = const_cast<CodeGenOptions&>(m_CGOpts);
-  // DON'T: we will not find our symbols...
-  //CGOpts_.CXXCtorDtorAliases = 1;
+  MPM.addPass(KeepLocalGVPass());
+  MPM.addPass(PreventLocalOptPass());
+  MPM.addPass(WeakTypeinfoVTablePass());
+  MPM.addPass(ReuseExistingWeakSymbols(m_JIT));
 
-  // Default clang -O2 on Linux 64bit also has the following, but see
-  // CIFactory.cpp.
-  CGOpts_.DisableFPElim = 0;
-  CGOpts_.DiscardValueNames = 1;
-  CGOpts_.OmitLeafFramePointer = 1;
-  CGOpts_.OptimizationLevel = 2;
-  CGOpts_.RelaxAll = 0;
-  CGOpts_.UnrollLoops = 1;
-  CGOpts_.VectorizeLoop = 1;
-  CGOpts_.VectorizeSLP = 1;
-#endif
-
-#if 0 // def __GNUC__
-  // Better inlining is pending https://bugs.llvm.org//show_bug.cgi?id=19668
-  // and its consequence https://sft.its.cern.ch/jira/browse/ROOT-7111
-  // shown e.g. by roottest/cling/stl/map/badstringMap
-  if (Inlining > CodeGenOptions::NormalInlining)
-    Inlining = CodeGenOptions::NormalInlining;
-#endif
+  // Run verifier after local passes to make sure that IR remains untouched.
+  if (m_CGOpts.VerifyModule)
+    MPM.addPass(VerifierPass());
 
   // Handle disabling of LLVM optimization, where we want to preserve the
   // internal module before any optimization.
   if (m_CGOpts.DisableLLVMPasses) {
-    OptLevel = 0;
     // Always keep at least ForceInline - NoInlining is deadly for libc++.
     // Inlining = CGOpts.NoInlining;
+    MPM.addPass(AlwaysInlinerPass());
+  } else if (OptLevel <= 1) {
+    // At O0 and O1 we only run the always inliner which is more efficient. At
+    // higher optimization levels we run the normal inliner.
+    MPM.addPass(AlwaysInlinerPass());
   }
 
-  llvm::PassManagerBuilder PMBuilder;
-  PMBuilder.OptLevel = OptLevel;
-  PMBuilder.SizeLevel = m_CGOpts.OptimizeSize;
-  PMBuilder.SLPVectorize = OptLevel > 1 ? 1 : 0; // m_CGOpts.VectorizeSLP
-  PMBuilder.LoopVectorize = OptLevel > 1 ? 1 : 0; // m_CGOpts.VectorizeLoop
+  SI.registerCallbacks(PIC, &FAM);
 
-  PMBuilder.DisableUnrollLoops = !m_CGOpts.UnrollLoops;
-  PMBuilder.MergeFunctions = m_CGOpts.MergeFunctions;
+  PipelineTuningOptions PTO;
+  std::optional<PGOOptions> PGOOpt;
+  PassBuilder PB(&m_TM, PTO, PGOOpt, &PIC);
 
-  PMBuilder.LibraryInfo = new TargetLibraryInfoImpl(m_TM.getTargetTriple());
-
-  // At O0 and O1 we only run the always inliner which is more efficient. At
-  // higher optimization levels we run the normal inliner.
-  // See also call to `CGOpts.setInlining()` in CIFactory!
-  if (PMBuilder.OptLevel <= 1) {
-    bool InsertLifetimeIntrinsics = PMBuilder.OptLevel != 0;
-    PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
-  } else {
-    PMBuilder.Inliner = createFunctionInliningPass(OptLevel,
-                                                   PMBuilder.SizeLevel,
-            (!m_CGOpts.SampleProfileFile.empty() && m_CGOpts.PrepareForThinLTO));
+  if (!m_CGOpts.DisableLLVMPasses) {
+    // Use the default pass pipeline. We also have to map our optimization
+    // levels into one of the distinct levels used to configure the pipeline.
+    OptimizationLevel Level = mapToLevel(m_CGOpts);
+    MPM.addPass(PB.buildPerModuleDefaultPipeline(Level));
   }
-
-  // Set up the per-module pass manager.
-  m_MPM[OptLevel].reset(new legacy::PassManager());
-
-  m_MPM[OptLevel]->add(new KeepLocalGVPass());
-  m_MPM[OptLevel]->add(new PreventLocalOptPass());
-  m_MPM[OptLevel]->add(new WeakTypeinfoVTablePass());
-  m_MPM[OptLevel]->add(new ReuseExistingWeakSymbols(m_JIT));
 
   // The function __cuda_module_ctor and __cuda_module_dtor will just generated,
   // if a CUDA fatbinary file exist. Without file path there is no need for the
   // function pass.
   if(!m_CGOpts.CudaGpuBinaryFileName.empty())
-    m_MPM[OptLevel]->add(new UniqueCUDAStructorName());
-  m_MPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
-                                                   m_TM.getTargetIRAnalysis()));
+    MPM.addPass(UniqueCUDAStructorName());
 
-  //if (!CGOpts.RewriteMapFiles.empty())
-  //  addSymbolRewriterPass(CGOpts, m_MPM);
-
-  PMBuilder.populateModulePassManager(*m_MPM[OptLevel]);
-
-  m_FPM[OptLevel].reset(new legacy::FunctionPassManager(&M));
-  m_FPM[OptLevel]->add(createTargetTransformInfoWrapperPass(
-                                                   m_TM.getTargetIRAnalysis()));
-  if (m_CGOpts.VerifyModule)
-      m_FPM[OptLevel]->add(createVerifierPass());
-  PMBuilder.populateFunctionPassManager(*m_FPM[OptLevel]);
+  // Register all the basic analyses with the managers.
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 }
 
 void BackendPasses::runOnModule(Module& M, int OptLevel) {
@@ -441,8 +405,16 @@ void BackendPasses::runOnModule(Module& M, int OptLevel) {
   if (OptLevel > 3)
     OptLevel = 3;
 
-  if (!m_MPM[OptLevel])
-    CreatePasses(M, OptLevel);
+  ModulePassManager MPM;
+  LoopAnalysisManager LAM;
+  FunctionAnalysisManager FAM;
+  CGSCCAnalysisManager CGAM;
+  ModuleAnalysisManager MAM;
+
+  PassInstrumentationCallbacks PIC;
+  StandardInstrumentations SI(M.getContext(), m_CGOpts.DebugPassManager);
+
+  CreatePasses(OptLevel, MPM, LAM, FAM, CGAM, MAM, PIC, SI);
 
   static constexpr std::array<llvm::CodeGenOpt::Level, 4> CGOptLevel {{
     llvm::CodeGenOpt::None,
@@ -453,12 +425,6 @@ void BackendPasses::runOnModule(Module& M, int OptLevel) {
   // TM's OptLevel is used to build orc::SimpleCompiler passes for every Module.
   m_TM.setOptLevel(CGOptLevel[OptLevel]);
 
-  // Run the per-function passes on the module.
-  m_FPM[OptLevel]->doInitialization();
-  for (auto&& I: M.functions())
-    if (!I.isDeclaration())
-      m_FPM[OptLevel]->run(I);
-  m_FPM[OptLevel]->doFinalization();
-
-  m_MPM[OptLevel]->run(M);
+  // Now that we have all of the passes ready, run them.
+  MPM.run(M, MAM);
 }
