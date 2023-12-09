@@ -37,23 +37,17 @@ Our nightly binary snapshots can be found
 [here](https://root.cern.ch/download/cling/).
 
 
-### Building from Source with Cling Packaging Tool
-Cling's tree has a user-friendly, command-line utility written in Python called
-Cling Packaging Tool (CPT) which can build Cling from source and generate
-installer bundles for a wide range of platforms. CPT requires Python 3 or
-later.
-
-If you have Cling's source cloned locally, you can find the tool in
-`tools/packaging` directory. Alternatively, you can download the script
-manually, or by using `wget`:
+### Building from Source
 
 ```sh
-wget https://raw.githubusercontent.com/root-project/cling/master/tools/packaging/cpt.py
-chmod +x cpt.py
-./cpt.py --check-requirements && ./cpt.py --create-dev-env Debug --with-workdir=./cling-build/
+git clone https://github.com/root-project/llvm-project.git
+cd llvm-project
+git checkout cling-latest
+cd ../
+git clone <cling>
+mkdir cling-build && cd cling-build
+cmake -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;nvptx" ../llvm-project/llvm
 ```
-Full documentation of CPT can be found in [tools/packaging](tools/packaging).
-
 
 Usage
 -----
