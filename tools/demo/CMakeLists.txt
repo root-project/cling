@@ -11,8 +11,8 @@ cmake_minimum_required(VERSION 3.5)
 # Keep symbols for JIT resolution
 set(LLVM_NO_DEAD_STRIP 1)
 
-# Cling needs at least C++11; so does this demo.
-set(CMAKE_CXX_STANDARD 14)
+# Cling needs at least C++17; so does this demo.
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (CMAKE_PROJECT_NAME)
