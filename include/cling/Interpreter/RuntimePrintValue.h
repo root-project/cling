@@ -17,6 +17,12 @@
 #include <cling/Interpreter/Visibility.h>
 
 #include <memory>
+#if __cplusplus >= 202002L
+#include <version>
+#endif
+#ifdef __cpp_lib_source_location
+#include <source_location>
+#endif
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -140,6 +146,11 @@ namespace cling {
   inline std::string printValue(char const (*val)[N]) {
     return toUTF8(reinterpret_cast<const char * const>(val), N, 1);
   }
+
+#ifdef __cpp_lib_source_location
+  CLING_LIB_EXPORT
+  std::string printValue(const std::source_location* location);
+#endif
 
   // cling::Value
   CLING_LIB_EXPORT
