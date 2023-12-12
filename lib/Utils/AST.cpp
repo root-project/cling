@@ -114,8 +114,7 @@ namespace utils {
 
     Expr* result = nullptr;
     if (CompoundStmt* CS = dyn_cast<CompoundStmt>(FD->getBody())) {
-      ArrayRef<Stmt*> Stmts
-        = llvm::makeArrayRef(CS->body_begin(), CS->size());
+      ArrayRef<Stmt*> Stmts(CS->body_begin(), CS->size());
       int indexOfLastExpr = Stmts.size();
       while(indexOfLastExpr--) {
         if (!isa<NullStmt>(Stmts[indexOfLastExpr]))

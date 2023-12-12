@@ -1149,8 +1149,9 @@ namespace cling {
           S.AddMethodCandidate(MD, I.getPair(), MD->getParent(),
                                /*ObjectType=*/ClassType,
                                /*ObjectClassification=*/ObjExprClassification,
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                   Candidates);
+                               llvm::ArrayRef<Expr*>(GivenArgs.data(),
+                                                     GivenArgs.size()),
+                               Candidates);
         }
         else {
           const FunctionProtoType* Proto = dyn_cast<FunctionProtoType>(
@@ -1164,7 +1165,8 @@ namespace cling {
              continue;
           }
           S.AddOverloadCandidate(FD, I.getPair(),
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+                                 llvm::ArrayRef<Expr*>(GivenArgs.data(),
+                                                       GivenArgs.size()),
                                  Candidates);
         }
       }
@@ -1175,19 +1177,20 @@ namespace cling {
             !isa<CXXConstructorDecl>(FTD->getTemplatedDecl())) {
           // Class method template, not static, not a constructor, so has
           // an implicit object argument.
-          S.AddMethodTemplateCandidate(FTD, I.getPair(),
-                                      cast<CXXRecordDecl>(FTD->getDeclContext()),
-                         const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-                                       /*ObjectType=*/ClassType,
-                                  /*ObjectClassification=*/ObjExprClassification,
-                   llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                                       Candidates);
+          S.AddMethodTemplateCandidate(
+              FTD, I.getPair(), cast<CXXRecordDecl>(FTD->getDeclContext()),
+              const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
+              /*ObjectType=*/ClassType,
+              /*ObjectClassification=*/ObjExprClassification,
+              llvm::ArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+              Candidates);
         }
         else {
-          S.AddTemplateOverloadCandidate(FTD, I.getPair(),
-                const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
-                llvm::makeArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
-                Candidates, /*SuppressUserConversions=*/false);
+          S.AddTemplateOverloadCandidate(
+              FTD, I.getPair(),
+              const_cast<TemplateArgumentListInfo*>(FuncTemplateArgs),
+              llvm::ArrayRef<Expr*>(GivenArgs.data(), GivenArgs.size()),
+              Candidates, /*SuppressUserConversions=*/false);
         }
       }
       else {
