@@ -16,7 +16,7 @@
 #include "clang/Basic/FileManager.h" // for DenseMap<FileEntry*>
 
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/Optional.h"
+#include <optional>
 
 namespace llvm {
   class StringRef;
@@ -153,7 +153,7 @@ namespace cling {
     ///
     ///\param[in] mode - either on/off or toggle.
     ///
-    void actOndebugCommand(llvm::Optional<int> mode) const;
+    void actOndebugCommand(std::optional<int> mode) const;
 
     ///\brief Prints out the the Debug information of the state changes.
     ///

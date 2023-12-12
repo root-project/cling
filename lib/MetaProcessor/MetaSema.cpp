@@ -250,7 +250,7 @@ namespace cling {
       m_Interpreter.enableRawInput(mode);
   }
 
-  void MetaSema::actOndebugCommand(llvm::Optional<int> mode) const {
+  void MetaSema::actOndebugCommand(std::optional<int> mode) const {
     constexpr clang::codegenoptions::DebugInfoKind DebugInfo[] = {
       clang::codegenoptions::NoDebugInfo,
       clang::codegenoptions::LocTrackingOnly,

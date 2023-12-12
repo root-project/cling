@@ -18,9 +18,10 @@
 #include "cling/Utils/Output.h"
 #include "cling/Utils/Paths.h"
 
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
+
+#include <optional>
 
 namespace cling {
 
@@ -433,7 +434,7 @@ namespace cling {
   bool MetaParser::isdebugCommand() {
     if (getCurTok().is(tok::ident) &&
         getCurTok().getIdent().equals("debug")) {
-      llvm::Optional<int> mode;
+      std::optional<int> mode;
       consumeToken();
       skipWhitespace();
       if (getCurTok().is(tok::constant))

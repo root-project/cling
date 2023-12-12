@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <optional>
 #include <string>
 #include <system_error>
 
@@ -292,8 +293,8 @@ namespace cling {
     }
 
     // is not important, because PTX does not use any object format
-    llvm::Optional<llvm::Reloc::Model> RM =
-        llvm::Optional<llvm::Reloc::Model>(llvm::Reloc::Model::PIC_);
+    std::optional<llvm::Reloc::Model> RM =
+        std::optional<llvm::Reloc::Model>(llvm::Reloc::Model::PIC_);
 
     llvm::TargetOptions TO = llvm::TargetOptions();
 

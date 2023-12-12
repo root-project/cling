@@ -21,6 +21,8 @@
 #include "clang/Serialization/ASTDeserializationListener.h"
 #include "clang/Serialization/ASTReader.h"
 
+#include <optional>
+
 using namespace clang;
 
 namespace cling {
@@ -154,7 +156,7 @@ namespace cling {
       return m_Source->getModule(ID);
     }
 
-    virtual llvm::Optional<ASTSourceDescriptor>
+    virtual std::optional<ASTSourceDescriptor>
     getSourceDescriptor(unsigned ID) override {
       return m_Source->getSourceDescriptor(ID);
     }
