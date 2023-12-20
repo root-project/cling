@@ -10,7 +10,7 @@ platorm and bundle it into an installer. If you want to manually compile Cling
 from source, go through the [README] of Cling or the build instructions [here].
 
 [README]:https://github.com/root-project/cling/blob/master/README.md
-[here]:http://root.cern.ch/drupal/content/cling-build-instructions
+[here]:https://root.cern/cling/cling_build_instructions/
 
 Below is a list of platforms currently supported by CPT:
   * Ubuntu and distros based on Debian - *DEB packages*

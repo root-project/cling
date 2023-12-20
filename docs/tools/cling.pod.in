@@ -553,7 +553,7 @@ targets.
 
 =head1 BUGS
 
-To report bugs, please visit L<http://root.cern.ch/drupal/content/bug-tracker>.
+To report bugs, please visit L<https://github.com/root-project/root/issues/new>.
 Most bug reports should include preprocessed source files and the full output
 of the compiler, along with information to reproduce.
 
