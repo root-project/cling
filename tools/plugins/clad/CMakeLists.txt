@@ -12,7 +12,7 @@ set(clad_install_dir ${CMAKE_BINARY_DIR}/etc/cling/)
 # Specify include dirs for clad
 set(CLAD_INCLUDE_DIRS ${clad_install_dir})
 # Clad Libraries
-set(_CLAD_LIBRARY_PATH ${clad_install_dir}/plugins/lib)
+set(_CLAD_LIBRARY_PATH ${clad_install_dir}/plugins/lib${LLVM_LIBDIR_SUFFIX})
 
 # build byproducts only needed by Ninja
 if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
