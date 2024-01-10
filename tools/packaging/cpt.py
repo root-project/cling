@@ -21,10 +21,6 @@
 
 
 import sys
-
-if sys.version_info < (3, 0):
-    raise Exception("cpt needs Python 3")
-
 import argparse
 import copy
 import os
@@ -100,7 +96,7 @@ def travis_fold_end(tag):
 
 def box_draw_header():
     msg = 'cling (' + platform.machine() + ')' \
-    + formatdate(time.time(), tzinfo()) 
+    + formatdate(time.time(), tzinfo())
     spaces_no = 80 - len(msg) - 4
     spacer = ' ' * spaces_no
     msg = 'cling (' + platform.machine() + ')' \
@@ -1842,7 +1838,7 @@ def make_dmg(CPT_SRC_DIR):
 
 parser = argparse.ArgumentParser(description='Cling Packaging Tool')
 parser.add_argument('--last-stable-build', help='Build the last stable snapshot in one of these formats: tar | deb | nsis | rpm | dmg | pkg')
-parser.add_argument('--current-dev-build', 
+parser.add_argument('--current-dev-build',
                     help=('--current-dev:<tar | deb | nsis | rpm | dmg | pkg> will build the latest development snapshot in the given format'
                           + '\n--current-dev:branch:<branch> will build <branch> on llvm, clang, and cling'
                           + '\n--current-dev:branches:<a,b,c> will build branch <a> on llvm, <b> on clang, and <c> on cling'))
