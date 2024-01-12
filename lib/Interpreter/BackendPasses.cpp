@@ -369,6 +369,22 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
     // At O0 and O1 we only run the always inliner which is more efficient. At
     // higher optimization levels we run the normal inliner.
     MPM.addPass(AlwaysInlinerPass());
+
+    // Register a callback for disabling all other inliner passes.
+    PIC.registerShouldRunOptionalPassCallback([](StringRef P, Any) {
+      if (P.equals("ModuleInlinerWrapperPass") ||
+          P.equals("InlineAdvisorAnalysisPrinterPass") ||
+          P.equals("PartialInlinerPass") || P.equals("buildInlinerPipeline") ||
+          P.equals("ModuleInlinerPass") || P.equals("InlinerPass") ||
+          P.equals("InlineAdvisorAnalysis") ||
+          P.equals("PartiallyInlineLibCallsPass") ||
+          P.equals("InlineCostAnnotationPrinterPass") ||
+          P.equals("InlineSizeEstimatorAnalysisPrinterPass") ||
+          P.equals("InlineSizeEstimatorAnalysis"))
+        return false;
+
+      return true;
+    });
   }
 
   SI.registerCallbacks(PIC, &FAM);
