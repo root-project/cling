@@ -397,7 +397,12 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
     // Use the default pass pipeline. We also have to map our optimization
     // levels into one of the distinct levels used to configure the pipeline.
     OptimizationLevel Level = mapToLevel(m_CGOpts);
-    MPM.addPass(PB.buildPerModuleDefaultPipeline(Level));
+    if (m_CGOpts.OptimizationLevel == 0) {
+      // TODO: Remove this after https://reviews.llvm.org/D146200
+      MPM.addPass(PB.buildO0DefaultPipeline(Level));
+    } else {
+      MPM.addPass(PB.buildPerModuleDefaultPipeline(Level));
+    }
   }
 
   // The function __cuda_module_ctor and __cuda_module_dtor will just generated,
