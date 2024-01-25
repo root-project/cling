@@ -102,6 +102,13 @@ namespace cling {
   void MetaLexer::LexAnyString(Token& Tok) {
     Tok.startToken(curPos);
     // consume until we reach one of the "AnyString" delimiters or EOF.
+    if (*curPos == '\0') {
+      Tok.setBufStart(curPos);
+      Tok.setKind(tok::eof);
+      Tok.setLength(0);
+      return;
+    }
+
     while(*curPos != ' ' && *curPos != '\t' && *curPos != '\0') {
       curPos++;
     }

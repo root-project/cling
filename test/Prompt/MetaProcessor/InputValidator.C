@@ -6,6 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
+// clang-format off
 // RUN: cat %s | %cling | FileCheck %s
 "simple"
 //CHECK: (const char[7]) "simple"
@@ -17,4 +18,6 @@
 //CHECK: (const char[24]) "http://foo/bar/whatever"
 ("http://foo.bar/whatever")
 //CHECK: (const char[24]) "http://foo.bar/whatever"
+#
+// CHECK-EMPTY:
 .q

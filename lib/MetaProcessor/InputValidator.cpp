@@ -82,17 +82,19 @@ namespace cling {
       case tok::hash:
         Lex.SkipWhitespace();
         Lex.LexAnyString(Tok);
-        const llvm::StringRef PPtk = Tok.getIdent();
-        if (PPtk.startswith("if")) {
-          m_ParenStack.push_back(tok::hash);
-        } else if (PPtk.startswith("endif") &&
-                   (PPtk.size() == 5 || PPtk[5]=='/' || isspace(PPtk[5]))) {
+        if (Tok.isNot(tok::eof)) {
+          const llvm::StringRef PPtk = Tok.getIdent();
+          if (PPtk.startswith("if")) {
+            m_ParenStack.push_back(tok::hash);
+          } else if (PPtk.startswith("endif") &&
+                     (PPtk.size() == 5 || PPtk[5] == '/' || isspace(PPtk[5]))) {
             if (m_ParenStack.empty() || m_ParenStack.back() != tok::hash)
               Res = kMismatch;
             else
               m_ParenStack.pop_back();
+          }
+          break;
         }
-        break;
       }
     } while (Tok.isNot(tok::eof) && Res != kMismatch);
 
