@@ -144,13 +144,13 @@ namespace cling {
     for (auto i = clang::Builtin::NotBuiltin+1;
          i != clang::Builtin::FirstTSBuiltin; ++i) {
       llvm::StringRef Name(BuiltinCtx.getName(i));
-      if (Name.startswith("__builtin"))
+      if (Name.starts_with("__builtin"))
         builtinNames.emplace_back(Name);
     }
 
     for (auto&& BuiltinInfo: m_ASTContext.getTargetInfo().getTargetBuiltins()) {
       llvm::StringRef Name(BuiltinInfo.Name);
-      if (!Name.startswith("__builtin"))
+      if (!Name.starts_with("__builtin"))
         builtinNames.emplace_back(Name);
 #ifndef NDEBUG
       else // Make sure it's already in the list

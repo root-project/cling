@@ -84,9 +84,9 @@ namespace cling {
         Lex.LexAnyString(Tok);
         if (Tok.isNot(tok::eof)) {
           const llvm::StringRef PPtk = Tok.getIdent();
-          if (PPtk.startswith("if")) {
+          if (PPtk.starts_with("if")) {
             m_ParenStack.push_back(tok::hash);
-          } else if (PPtk.startswith("endif") &&
+          } else if (PPtk.starts_with("endif") &&
                      (PPtk.size() == 5 || PPtk[5] == '/' || isspace(PPtk[5]))) {
             if (m_ParenStack.empty() || m_ParenStack.back() != tok::hash)
               Res = kMismatch;

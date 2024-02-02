@@ -191,7 +191,7 @@ namespace cling {
        // start in this case as the '<header>' still has the correct value.
        // FIXME: Once the C++ modules replaced the forward decls, remove this.
        if (D->getASTContext().getLangOpts().Modules &&
-           llvm::StringRef(includeText).startswith("include ")) {
+           llvm::StringRef(includeText).starts_with("include ")) {
          includeText += strlen("include ");
        }
 

@@ -320,11 +320,11 @@ namespace cling {
   {
     bool issigned = false;
     bool isunsigned = false;
-    if (typeName.startswith("signed ")) {
+    if (typeName.starts_with("signed ")) {
       issigned = true;
       typeName = StringRef(typeName.data()+7, typeName.size()-7);
     }
-    if (!issigned && typeName.startswith("unsigned ")) {
+    if (!issigned && typeName.starts_with("unsigned ")) {
       isunsigned = true;
       typeName = StringRef(typeName.data()+9, typeName.size()-9);
     }
@@ -386,7 +386,7 @@ namespace cling {
     llvm::StringRef quickTypeName = typeName.trim();
     bool innerConst = false;
     bool outerConst = false;
-    if (quickTypeName.startswith("const ")) {
+    if (quickTypeName.starts_with("const ")) {
       // Use this syntax to avoid the redudant tests in substr.
       quickTypeName = StringRef(quickTypeName.data()+6,
                                 quickTypeName.size()-6);
@@ -395,7 +395,7 @@ namespace cling {
 
     enum PointerType { kPointerType, kLRefType, kRRefType, };
 
-    if (quickTypeName.endswith("const")) {
+    if (quickTypeName.ends_with("const")) {
       if (quickTypeName.size() < 6) return true;
       auto c = quickTypeName[quickTypeName.size()-6];
       if (c==' ' || c=='&' || c=='*') {

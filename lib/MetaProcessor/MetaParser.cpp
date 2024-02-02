@@ -373,7 +373,7 @@ namespace cling {
     const Token& currTok = getCurTok();
     if (currTok.is(tok::ident)) {
       llvm::StringRef ident = currTok.getIdent();
-      if (ident.startswith("O")) {
+      if (ident.starts_with("O")) {
         if (ident.size() > 1) {
           int level = 0;
           if (!ident.substr(1).getAsInteger(10, level) && level >= 0) {

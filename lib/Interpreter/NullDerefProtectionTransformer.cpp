@@ -234,7 +234,7 @@ class PointerCheckInjector : public RecursiveASTVisitor<PointerCheckInjector> {
         return true;
       else if (Ann->getAnnotation() == "__cling__ptrcheck(on)")
         return false;
-      else if (Ann->getAnnotation().startswith("__cling__ptrcheck(")) {
+      else if (Ann->getAnnotation().starts_with("__cling__ptrcheck(")) {
         DiagnosticsEngine& Diags = S->getDiagnostics();
         Diags.Report(Ann->getLocation(),
                     Diags.getCustomDiagID(

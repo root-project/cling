@@ -73,7 +73,7 @@ namespace cling {
 
   bool DefinitionShadower::isClingShadowNamespace(const DeclContext *DC) {
     auto NS = dyn_cast<NamespaceDecl>(DC);
-    return NS && NS->getName().startswith("__cling_N5");
+    return NS && NS->getName().starts_with("__cling_N5");
   }
 
   void DefinitionShadower::hideDecl(clang::NamedDecl *D) const {

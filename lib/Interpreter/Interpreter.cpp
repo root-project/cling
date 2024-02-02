@@ -193,7 +193,7 @@ namespace cling {
 
     // Disable suggestions for ROOT
     bool showSuggestions =
-        !llvm::StringRef(ClingStringify(CLING_VERSION)).startswith("ROOT");
+        !llvm::StringRef(ClingStringify(CLING_VERSION)).starts_with("ROOT");
 
     std::unique_ptr<InterpreterCallbacks> AutoLoadCB(
         new AutoloadCallback(&Interp, showSuggestions));
@@ -1125,7 +1125,7 @@ namespace cling {
   }
 
   bool Interpreter::isUniqueName(llvm::StringRef name) {
-    return name.startswith(utils::Synthesize::UniquePrefix);
+    return name.starts_with(utils::Synthesize::UniquePrefix);
   }
 
   clang::SourceLocation Interpreter::getSourceLocation(bool skipWrapper) const {
