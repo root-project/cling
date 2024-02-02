@@ -895,9 +895,9 @@ namespace cling {
     FileID FID;
     // Create FileEntry and FileID for the current buffer.
     // Enabling the completion point only works on FileEntries.
-    const clang::FileEntry* FE
-      = SM.getFileManager().getVirtualFile(source_name.str(), InputSize,
-                                           0 /* mod time*/);
+    FileEntryRef FE =
+        SM.getFileManager().getVirtualFileRef(source_name.str(), InputSize,
+                                              0 /* mod time*/);
     SM.overrideFileContents(FE, std::move(MB));
     FID = SM.createFileID(FE, NewLoc, SrcMgr::C_User);
     if (CO.CodeCompletionOffset != -1) {

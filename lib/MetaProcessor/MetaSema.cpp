@@ -405,7 +405,7 @@ namespace cling {
 
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
-      m_MetaProcessor.getOuts() << (*I).first->getName();
+      m_MetaProcessor.getOuts() << (*I).first.getName();
       m_MetaProcessor.getOuts() << "\n";
     }
 #if 0

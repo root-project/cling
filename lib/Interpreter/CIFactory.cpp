@@ -1583,7 +1583,7 @@ namespace {
     // Build the virtual file, Give it a name that's likely not to ever
     // be #included (so we won't get a clash in clang's cache).
     const char* Filename = "<<< cling interactive line includer >>>";
-    const FileEntry* FE = FM.getVirtualFile(Filename, 1U << 15U, time(0));
+    FileEntryRef FE = FM.getVirtualFileRef(Filename, 1U << 15U, time(0));
 
     // Tell ASTReader to create a FileID even if this file does not exist:
     SM->setFileIsTransient(FE);
@@ -1745,7 +1745,7 @@ namespace {
     DClient.BeginSourceFile(CI->getLangOpts(), &PP);
 
     for (const auto& ModuleMapFile : FrontendOpts.ModuleMapFiles) {
-      auto File = FM.getFile(ModuleMapFile);
+      auto File = FM.getFileRef(ModuleMapFile);
       if (!File) {
         CI->getDiagnostics().Report(diag::err_module_map_not_found)
            << ModuleMapFile;
