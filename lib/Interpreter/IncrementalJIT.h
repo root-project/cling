@@ -13,11 +13,13 @@
 #include "llvm/ADT/FunctionExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSet.h"
-#include "llvm/IR/Module.h"
 #include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
+#include "llvm/ExecutionEngine/Orc/Shared/ExecutorAddress.h"
+#include "llvm/ExecutionEngine/Orc/Shared/ExecutorSymbolDef.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
+#include "llvm/IR/Module.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Target/TargetMachine.h"
 
@@ -90,8 +92,9 @@ public:
 
   /// Inject a symbol with a known address. Name is not linker mangled, i.e.
   /// as known by the IR.
-  llvm::JITTargetAddress addOrReplaceDefinition(llvm::StringRef Name,
-                                                llvm::JITTargetAddress KnownAddr);
+  llvm::orc::ExecutorAddr
+  addOrReplaceDefinition(llvm::StringRef Name,
+                         llvm::orc::ExecutorAddr KnownAddr);
 
   llvm::Error runCtors() const {
     return Jit->initialize(Jit->getMainJITDylib());

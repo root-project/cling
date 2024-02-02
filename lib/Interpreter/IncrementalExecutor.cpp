@@ -235,7 +235,7 @@ void IncrementalExecutor::replaceSymbol(const char* Name, void* Addr) const {
   // FIXME: Look at the registration of at_quick_exit and uncomment.
   // assert(m_JIT->getSymbolAddress(Name, /*IncludeHostSymbols*/true) &&
   //        "The symbol must exist");
-  m_JIT->addOrReplaceDefinition(Name, llvm::pointerToJITTargetAddress(Addr));
+  m_JIT->addOrReplaceDefinition(Name, orc::ExecutorAddr::fromPtr(Addr));
 }
 
 void* IncrementalExecutor::getAddressOfGlobal(llvm::StringRef symbolName,

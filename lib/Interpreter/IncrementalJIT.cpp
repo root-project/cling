@@ -304,10 +304,9 @@ Error RTDynamicLibrarySearchGenerator::tryToGenerate(
 
     std::string Tmp((*Name).data() + StripGlobalPrefix,
                     (*Name).size() - StripGlobalPrefix);
-    if (void *Addr = Dylib.getAddressOfSymbol(Tmp.c_str())) {
-      NewSymbols[Name] = JITEvaluatedSymbol(
-          static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(Addr)),
-          JITSymbolFlags::Exported);
+    if (void* P = Dylib.getAddressOfSymbol(Tmp.c_str())) {
+      NewSymbols[Name] = {orc::ExecutorAddr::fromPtr(P),
+                          JITSymbolFlags::Exported};
     }
   }
 
@@ -338,9 +337,7 @@ public:
       auto Addr = lookup(*KV.first);
       if (auto Err = Addr.takeError())
         return Err;
-      Symbols[KV.first] = JITEvaluatedSymbol(
-          Addr->getValue(),
-          JITSymbolFlags::Exported);
+      Symbols[KV.first] = {Addr.get(), JITSymbolFlags::Exported};
     }
     if (Symbols.empty())
       return Error::success();
@@ -426,10 +423,8 @@ static SymbolMap GetListOfLibcNonsharedSymbols(const LLJIT& Jit) {
 
   SymbolMap LibcNonsharedSymbols;
   for (const auto& NamePtr : NamePtrList) {
-    auto Addr = static_cast<JITTargetAddress>(
-        reinterpret_cast<uintptr_t>(NamePtr.second));
-    LibcNonsharedSymbols[Jit.mangleAndIntern(NamePtr.first)] =
-        JITEvaluatedSymbol(Addr, JITSymbolFlags::Exported);
+    LibcNonsharedSymbols[Jit.mangleAndIntern(NamePtr.first)] = {
+        orc::ExecutorAddr::fromPtr(NamePtr.second), JITSymbolFlags::Exported};
   }
   return LibcNonsharedSymbols;
 }
@@ -639,16 +634,16 @@ llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
   return llvm::Error::success();
 }
 
-JITTargetAddress
+orc::ExecutorAddr
 IncrementalJIT::addOrReplaceDefinition(StringRef Name,
-                                       JITTargetAddress KnownAddr) {
+                                       orc::ExecutorAddr KnownAddr) {
 
   // Let's inject it
   bool Inserted;
   SymbolMap::iterator It;
   std::tie(It, Inserted) = m_InjectedSymbols.try_emplace(
       Jit->mangleAndIntern(Name),
-      JITEvaluatedSymbol(KnownAddr, JITSymbolFlags::Exported));
+      ExecutorSymbolDef(KnownAddr, JITSymbolFlags::Exported));
   assert(Inserted && "Why wasn't this found in the initial Jit lookup?");
 
   JITDylib& DyLib = Jit->getMainJITDylib();
@@ -658,7 +653,7 @@ IncrementalJIT::addOrReplaceDefinition(StringRef Name,
   if (Error Err = DyLib.define(absoluteSymbols({*It}))) {
     logAllUnhandledErrors(std::move(Err), errs(),
                           "[IncrementalJIT] define() failed: ");
-    return JITTargetAddress{};
+    return orc::ExecutorAddr();
   }
 
   return KnownAddr;
@@ -688,7 +683,7 @@ void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols){
     return nullptr;
   }
 
-  return jitTargetAddressToPointer<void*>(Symbol->getValue());
+  return (Symbol.get()).toPtr<void*>();
 }
 
 bool IncrementalJIT::doesSymbolAlreadyExist(StringRef UnmangledName) {
