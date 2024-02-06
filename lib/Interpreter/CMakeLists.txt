@@ -47,9 +47,9 @@ set(LLVM_LINK_COMPONENTS
 
 # clingInterpreter depends on Options.inc to be tablegen-ed
 # (target ClangDriverOptions) from in-tree builds.
-set(CLING_DEPENDS)
+set(CLING_DEPENDS ClingDriverOptions)
 if(TARGET ClangDriverOptions)
-  set(CLING_DEPENDS ClangDriverOptions)
+  set(CLING_DEPENDS "${CLING_DEPENDS};ClangDriverOptions")
 endif()
 # clangSema will make sure all of the dependencies of clingInterpreter are met.
 if(TARGET clangSema)
