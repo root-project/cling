@@ -378,12 +378,18 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
           P.equals("ModuleInlinerPass") || P.equals("InlinerPass") ||
           P.equals("InlineAdvisorAnalysis") ||
           P.equals("PartiallyInlineLibCallsPass") ||
+          P.equals("RelLookupTableConverterPass") ||
           P.equals("InlineCostAnnotationPrinterPass") ||
           P.equals("InlineSizeEstimatorAnalysisPrinterPass") ||
           P.equals("InlineSizeEstimatorAnalysis"))
         return false;
 
       return true;
+    });
+  } else {
+    // Register a callback for disabling RelLookupTableConverterPass.
+    PIC.registerShouldRunOptionalPassCallback([](StringRef P, Any) {
+      return !P.equals("RelLookupTableConverterPass");
     });
   }
 
