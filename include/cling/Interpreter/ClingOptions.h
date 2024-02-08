@@ -10,14 +10,15 @@
 #ifndef CLING_CLINGOPTIONS_H
 #define CLING_CLINGOPTIONS_H
 
+#include "llvm/Option/OptTable.h"
+
 namespace cling {
 namespace driver {
 namespace clingoptions {
    enum ID {
     OPT_INVALID = 0, // This is not an option ID.
 #define PREFIX(NAME, VALUE)
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
-               HELPTEXT, METAVAR, VALUES) OPT_##ID,
+#define OPTION(...) LLVM_MAKE_OPT_ID(__VA_ARGS__),
 #include "cling/Interpreter/ClingOptions.inc"
     LastOption
 #undef OPTION

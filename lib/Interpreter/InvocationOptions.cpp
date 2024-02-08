@@ -16,8 +16,8 @@
 
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
-#include "llvm/Option/Option.h"
 #include "llvm/Option/OptTable.h"
+#include "llvm/Option/Option.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 
@@ -46,18 +46,14 @@ static const char kNoStdInc[] = "-nostdinc";
   static constexpr llvm::StringLiteral NAME##_init[] = VALUE;                  \
   static constexpr llvm::ArrayRef<llvm::StringLiteral> NAME(                   \
       NAME##_init, std::size(NAME##_init) - 1);
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
-               HELPTEXT, METAVAR, VALUES)
+#define OPTION(...)
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
 #undef PREFIX
 
   static const OptTable::Info ClingInfoTable[] = {
 #define PREFIX(NAME, VALUE)
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
-               HELPTEXT, METAVAR, VALUES)   \
-  { PREFIX, NAME, HELPTEXT, METAVAR, OPT_##ID, Option::KIND##Class, PARAM, \
-    FLAGS, OPT_##GROUP, OPT_##ALIAS, ALIASARGS, VALUES },
+#define OPTION(...) LLVM_CONSTRUCT_OPT_INFO(__VA_ARGS__),
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
 #undef PREFIX
