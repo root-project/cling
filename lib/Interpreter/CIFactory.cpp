@@ -1342,18 +1342,21 @@ namespace {
     if(COpts.CUDAHost)
       argvCompile.push_back("--cuda-host-only");
 
+    // argv[0] already inserted, get the rest
+    argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
+
 #ifdef __linux__
     // Keep frame pointer to make JIT stack unwinding reliable for profiling
     if (profilingEnabled)
       argvCompile.push_back("-fno-omit-frame-pointer");
 #endif
 
-    // Disable optimizations and keep frame pointer when debugging
-    if (debuggingEnabled)
-      argvCompile.push_back("-O0 -fno-omit-frame-pointer");
-
-    // argv[0] already inserted, get the rest
-    argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
+    // Disable optimizations and keep frame pointer when debugging, overriding
+    // other optimization options that might be in argv
+    if (debuggingEnabled) {
+      argvCompile.push_back("-O0");
+      argvCompile.push_back("-fno-omit-frame-pointer");
+    }
 
     // Add host specific includes, -resource-dir if necessary, and -isysroot
     std::string ClingBin = GetExecutablePath(argv[0]);
