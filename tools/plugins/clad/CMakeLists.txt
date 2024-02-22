@@ -12,7 +12,7 @@ set(clad_install_dir ${CMAKE_BINARY_DIR}/etc/cling/)
 # Specify include dirs for clad
 set(CLAD_INCLUDE_DIRS ${clad_install_dir})
 # Clad Libraries
-set(_CLAD_LIBRARY_PATH ${clad_install_dir}/plugins/lib${LLVM_LIBDIR_SUFFIX})
+set(_CLAD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/clad-prefix/src/clad-build/${CMAKE_CFG_INTDIR}/lib${LLVM_LIBDIR_SUFFIX})
 
 # build byproducts only needed by Ninja
 if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
@@ -74,7 +74,7 @@ list(APPEND _clad_cmake_logging_settings LOG_OUTPUT_ON_FAILURE ON)
 ExternalProject_Add(
   clad
   GIT_REPOSITORY https://github.com/vgvassilev/clad.git
-  GIT_TAG v1.3
+  GIT_TAG v1.4
   UPDATE_COMMAND ""
   PATCH_COMMAND ${_clad_patch_command}
   CMAKE_ARGS -G ${CMAKE_GENERATOR}
