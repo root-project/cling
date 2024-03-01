@@ -52,16 +52,16 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CL
 Usage
 -----
 ```c++
-./cling '#include <stdio.h>' 'printf("Hello World!\n")'
+bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'
 ```
 
 To get started run:
 ```bash
-./cling --help
+bin/cling --help
 ```
 or type
 ```
-./cling
+bin/cling
 [cling]$ .help
 ```
 
