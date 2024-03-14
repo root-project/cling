@@ -610,7 +610,7 @@ namespace {
       llvm::sys::path::append(systemLoc, modulemapFilename);
       // Check if we need to mount a custom modulemap. We may have it, for
       // instance when we are on osx or using libc++.
-      if (AllowModulemapOverride &&llvm::sys::fs::exists(systemLoc.str())) {
+      if (AllowModulemapOverride && llvm::sys::fs::exists(systemLoc.str())) {
         if (HSOpts.Verbose)
           cling::log() << "Loading '" << systemLoc.str() << "'\n";
 
@@ -693,6 +693,12 @@ namespace {
                             clingIncLoc.str().str(), MOverlay,
                             /*RegisterModuleMap=*/ true,
                             /*AllowModulemapOverride=*/ false);
+#elif __APPLE__
+    if (Triple.isMacOSX() && CI.getTarget().getSDKVersion() >= VersionTuple(14, 4))
+      maybeAppendOverlayEntry(stdIncLoc.str(), "std_darwin.modulemap",
+                              clingIncLoc.str().str(), MOverlay,
+                              /*RegisterModuleMap=*/ true,
+                              /*AllowModulemapOverride=*/ false);
 #else
     maybeAppendOverlayEntry(cIncLoc.str(), "libc.modulemap",
                             clingIncLoc.str().str(), MOverlay,
@@ -702,11 +708,6 @@ namespace {
                             clingIncLoc.str().str(), MOverlay,
                             /*RegisterModuleMap=*/ true,
                             /*AllowModulemapOverride=*/true);
-    if (Triple.isMacOSX() && CI.getTarget().getSDKVersion() >= VersionTuple(14, 4))
-      maybeAppendOverlayEntry(stdIncLoc.str(), "std_darwin.modulemap",
-                              clingIncLoc.str().str(), MOverlay,
-                              /*RegisterModuleMap=*/ true,
-                              /*AllowModulemapOverride=*/ false);
 #endif // _WIN32
 
     if (!tinyxml2IncLoc.empty())
