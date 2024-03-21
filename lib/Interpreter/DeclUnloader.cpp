@@ -226,7 +226,7 @@ namespace {
     /// Find values that are marked as llvm.used.
     void FindUsedValues(const llvm::Module& m) {
       for (const llvm::GlobalVariable& GV : m.globals()) {
-        if (!GV.getName().startswith("llvm.used"))
+        if (!GV.getName().starts_with("llvm.used"))
           continue;
 
         const llvm::ConstantArray* Inits
@@ -934,8 +934,9 @@ namespace cling {
         // clang cannot mangle everything in the ms-abi.
 #ifndef NDEBUG
         utils::DiagnosticsStore Errors(m_Sema->getDiagnostics(), false, false);
-        assert(Errors.empty() || (Errors.size() == 1 &&
-               Errors[0].getMessage().startswith("cannot mangle this")));
+        assert(Errors.empty() ||
+               (Errors.size() == 1 &&
+                Errors[0].getMessage().starts_with("cannot mangle this")));
 #else
         utils::DiagnosticsOverride IgnoreMangleErrors(m_Sema->getDiagnostics());
 #endif

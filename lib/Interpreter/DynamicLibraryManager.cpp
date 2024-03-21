@@ -69,7 +69,7 @@ namespace cling {
   /// Example: substFront("@rpath/abc", "@rpath/", "/tmp") -> "/tmp/abc"
   static std::string substFront(llvm::StringRef original, llvm::StringRef pattern,
                                 llvm::StringRef replacement) {
-    if (!original.startswith_insensitive(pattern))
+    if (!original.starts_with_insensitive(pattern))
       return original.str();
     llvm::SmallString<512> result(replacement);
     result.append(original.drop_front(pattern.size()));
@@ -307,7 +307,7 @@ namespace cling {
     // Subst all known linker variables ($origin, @rpath, etc.)
 #ifdef __APPLE__
     // On MacOS @rpath is preplaced by all paths in RPATH one by one.
-    if (libStem.startswith_insensitive("@rpath")) {
+    if (libStem.starts_with_insensitive("@rpath")) {
       for (auto& P : RPath) {
         std::string result = substFront(libStem, "@rpath", P);
         if (isSharedLibrary(result))
@@ -328,7 +328,7 @@ namespace cling {
       foundName = lookupLibMaybeAddExt(libStem, RPath, RunPath, libLoader);
       if (foundName.empty()) {
         llvm::StringRef libStemName = llvm::sys::path::filename(libStem);
-        if (!libStemName.startswith("lib")) {
+        if (!libStemName.starts_with("lib")) {
           // try with "lib" prefix:
           foundName = lookupLibMaybeAddExt(
              libStem.str().insert(libStem.size()-libStemName.size(), "lib"),

@@ -227,7 +227,7 @@ static bool getWindows10SDKVersion(std::string& SDKPath,
     // There could be subfolders like "wdf" in the "Include" directory, so only
     // test names that start with "10." or match input.
     const bool Match = Candidate == UcrtCompiledVers;
-    if (Match || (Candidate.startswith("10.") && Candidate > SDKVersion)) {
+    if (Match || (Candidate.starts_with("10.") && Candidate > SDKVersion)) {
       SDKPath = DirIt->path();
       Candidate.str().swap(SDKVersion);
       if (Match)

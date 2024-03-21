@@ -546,6 +546,7 @@ if (TARGET clang-headers)
   list(APPEND LLVM_COMMON_DEPENDS clang-headers)
 endif()
 
+add_subdirectory(include/cling/Interpreter)
 add_subdirectory(lib)
 
 if( CLING_INCLUDE_TESTS )

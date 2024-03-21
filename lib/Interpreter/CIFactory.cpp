@@ -631,7 +631,7 @@ namespace {
         cling::log() << "'" << systemLoc << "' does not exist. Mounting '"
                      << originalLoc.str() << "' as '" << systemLoc << "'\n";
 
-      if (!HSOpts.ImplicitModuleMaps) {
+      if (!HSOpts.ImplicitModuleMaps && !llvm::sys::fs::exists(systemLoc.str())) {
          modulemapFilename = Filename;
          llvm::sys::path::remove_filename(systemLoc);
          llvm::sys::path::append(systemLoc, modulemapFilename);
@@ -652,6 +652,8 @@ namespace {
         ModuleMapFiles.push_back(systemLoc.str().str());
     };
 
+    const llvm::Triple &Triple = CI.getTarget().getTriple();
+
     if (!HSOpts.ImplicitModuleMaps) {
       // Register the modulemap files.
       llvm::SmallString<512> resourceDirLoc(HSOpts.ResourceDir);
@@ -660,17 +662,20 @@ namespace {
       llvm::SmallString<512> clingModuleMap(clingIncLoc);
       llvm::sys::path::append(clingModuleMap, "module.modulemap");
       ModuleMapFiles.push_back(clingModuleMap.str().str());
-#ifdef __APPLE__
-      llvm::SmallString<512> libcModuleMap(cIncLoc);
-      llvm::sys::path::append(libcModuleMap, "module.modulemap");
-      ModuleMapFiles.push_back(libcModuleMap.str().str());
-      llvm::SmallString<512> stdModuleMap(stdIncLoc);
-      llvm::sys::path::append(stdModuleMap, "module.modulemap");
-      ModuleMapFiles.push_back(stdModuleMap.str().str());
-#endif // __APPLE__
+      if (Triple.isMacOSX()) {
+        llvm::SmallString<512> libcModuleMap(cIncLoc);
+        llvm::sys::path::append(libcModuleMap, "module.modulemap");
+        ModuleMapFiles.push_back(libcModuleMap.str().str());
+        if (CI.getTarget().getSDKVersion() < VersionTuple(14, 4)) {
+          llvm::SmallString<512> stdModuleMap(stdIncLoc);
+          llvm::sys::path::append(stdModuleMap, "module.modulemap");
+          ModuleMapFiles.push_back(stdModuleMap.str().str());
+        }
+      }
     }
 
     std::string MOverlay;
+
 #ifdef _WIN32
     maybeAppendOverlayEntry(vcIncLoc.str(), "vcruntime.modulemap",
                             clingIncLoc.str().str(), MOverlay,
@@ -697,6 +702,11 @@ namespace {
                             clingIncLoc.str().str(), MOverlay,
                             /*RegisterModuleMap=*/ true,
                             /*AllowModulemapOverride=*/true);
+    if (Triple.isMacOSX() && CI.getTarget().getSDKVersion() >= VersionTuple(14, 4))
+      maybeAppendOverlayEntry(stdIncLoc.str(), "std_darwin.modulemap",
+                              clingIncLoc.str().str(), MOverlay,
+                              /*RegisterModuleMap=*/ true,
+                              /*AllowModulemapOverride=*/ false);
 #endif // _WIN32
 
     if (!tinyxml2IncLoc.empty())
@@ -1342,18 +1352,21 @@ namespace {
     if(COpts.CUDAHost)
       argvCompile.push_back("--cuda-host-only");
 
+    // argv[0] already inserted, get the rest
+    argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
+
 #ifdef __linux__
     // Keep frame pointer to make JIT stack unwinding reliable for profiling
     if (profilingEnabled)
       argvCompile.push_back("-fno-omit-frame-pointer");
 #endif
 
-    // Disable optimizations and keep frame pointer when debugging
-    if (debuggingEnabled)
-      argvCompile.push_back("-O0 -fno-omit-frame-pointer");
-
-    // argv[0] already inserted, get the rest
-    argvCompile.insert(argvCompile.end(), argv+1, argv + argc);
+    // Disable optimizations and keep frame pointer when debugging, overriding
+    // other optimization options that might be in argv
+    if (debuggingEnabled) {
+      argvCompile.push_back("-O0");
+      argvCompile.push_back("-fno-omit-frame-pointer");
+    }
 
     // Add host specific includes, -resource-dir if necessary, and -isysroot
     std::string ClingBin = GetExecutablePath(argv[0]);

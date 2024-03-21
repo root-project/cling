@@ -53,7 +53,7 @@ namespace {
       if (!GV.hasName())
         return false;
 
-      if (GV.getName().startswith(".str"))
+      if (GV.getName().starts_with(".str"))
         return false;
 
       llvm::GlobalValue::LinkageTypes LT = GV.getLinkage();
@@ -137,7 +137,7 @@ namespace {
       if (GV.getLinkage() != llvm::GlobalValue::ExternalLinkage)
         return false;
 
-      if (GV.getName().startswith("_ZT")) {
+      if (GV.getName().starts_with("_ZT")) {
         // Currently, if Cling sees the "key function" of a virtual class, it
         // emits typeinfo and vtable variables in every transaction llvm::Module
         // that reference them. Turn them into weak linkage to avoid duplicate

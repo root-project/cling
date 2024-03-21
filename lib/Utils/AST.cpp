@@ -70,7 +70,7 @@ namespace utils {
     if (!ND->getDeclName().isIdentifier())
       return false;
 
-    return ND->getName().startswith(Synthesize::UniquePrefix);
+    return ND->getName().starts_with(Synthesize::UniquePrefix);
   }
 
   void Analyze::maybeMangleDeclName(const GlobalDecl& GD,

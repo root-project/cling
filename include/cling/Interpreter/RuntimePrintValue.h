@@ -16,6 +16,9 @@
 
 #include <cling/Interpreter/Visibility.h>
 
+#if __cplusplus >= 201703L
+#include <filesystem>
+#endif
 #include <memory>
 #if __cplusplus >= 202002L
 #include <version>
@@ -240,6 +243,13 @@ namespace cling {
   -> decltype(collectionPrinterInternal::printValue_impl(obj), std::string()) {
     return collectionPrinterInternal::printValue_impl(obj);
   }
+
+#if __cplusplus >= 201703L
+  // For std::filesystem::path
+  inline std::string printValue(const std::filesystem::path* obj) {
+    return obj->string();
+  }
+#endif
 
   // Arrays
   template<typename T, size_t N>

@@ -277,7 +277,7 @@ bool SplitPaths(llvm::StringRef PathStr,
   }
 
   // Trim trailing sep in case of A:B:C:D:
-  if (!PathStr.empty() && PathStr.endswith(Delim))
+  if (!PathStr.empty() && PathStr.ends_with(Delim))
     PathStr = PathStr.substr(0, PathStr.size()-Delim.size());
 
   if (!PathStr.empty()) {

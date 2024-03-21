@@ -61,17 +61,19 @@ namespace cling {
                                                   CodeCompletionResult Result) {
     switch (Result.Kind) {
       case CodeCompletionResult::RK_Declaration: {
-        return !(Result.Declaration->getIdentifier() &&
-            Result.Declaration->getIdentifier()->getName().startswith(Filter));
+        return !(
+            Result.Declaration->getIdentifier() &&
+            Result.Declaration->getIdentifier()->getName().starts_with(Filter));
       }
       case CodeCompletionResult::RK_Keyword: {
-        return !((StringRef(Result.Keyword)).startswith(Filter));
+        return !((StringRef(Result.Keyword)).starts_with(Filter));
       }
       case CodeCompletionResult::RK_Macro: {
-        return !(Result.Macro->getName().startswith(Filter));
+        return !(Result.Macro->getName().starts_with(Filter));
       }
       case CodeCompletionResult::RK_Pattern: {
-        return !(StringRef((Result.Pattern->getAsString())).startswith(Filter));
+        return !(
+            StringRef((Result.Pattern->getAsString())).starts_with(Filter));
       }
       default: llvm_unreachable("Unknown code completion result Kind.");
     }

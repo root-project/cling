@@ -51,7 +51,7 @@ namespace cling {
       = sema.getDiagnostics().getCustomDiagID(DiagnosticsEngine::Level::Note,
                                                 "Type : %0 , Full Path: %1")*/;
 
-    if (header.startswith(llvm::StringRef(annoTag, lenAnnoTag)))
+    if (header.starts_with(llvm::StringRef(annoTag, lenAnnoTag)))
       sema.Diags.Report(l, id) << name << header.drop_front(lenAnnoTag);
 
   }
@@ -89,7 +89,7 @@ namespace cling {
         if (!attr->isInherited()) {
           llvm::StringRef annotation = attr->getAnnotation();
           assert(!annotation.empty() && "Empty annotation!");
-          if (annotation.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
+          if (annotation.starts_with(llvm::StringRef(annoTag, lenAnnoTag))) {
             // autoload annotation.
             return true;
           }
@@ -223,7 +223,7 @@ namespace cling {
       {
         if (!attr->isInherited()) {
           auto annot = attr->getAnnotation();
-          if (annot.startswith(llvm::StringRef(annoTag, lenAnnoTag))) {
+          if (annot.starts_with(llvm::StringRef(annoTag, lenAnnoTag))) {
             if (annotations.first.empty()) {
               annotations.first = annot.drop_front(lenAnnoTag);
             } else {
