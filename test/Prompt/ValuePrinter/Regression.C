@@ -138,3 +138,69 @@ namespace PR180 {
 }
 auto bar = PR180::Foo()
 // CHECK: (PR180::Foo &) @0x{{[0-9a-f]+}}
+
+namespace PR14968 {
+  struct non_common_range {
+    struct iterator;
+    struct sentinel;
+
+    struct iterator {
+      int value;
+
+      iterator(int value) : value(value) {}
+
+      int operator*() const noexcept { return value; }
+
+      iterator& operator++() {
+        ++value;
+        return *this;
+      }
+
+      iterator operator++(int) {
+        iterator tmp = *this;
+        ++value;
+        return tmp;
+      }
+
+      friend bool operator==(const iterator& lhs, const iterator& rhs) {
+        return lhs.value == rhs.value;
+      }
+
+      friend bool operator!=(const iterator& lhs, const iterator& rhs) {
+        return !(lhs == rhs);
+      }
+    };
+
+    struct sentinel {
+      const non_common_range* base;
+
+      sentinel(const non_common_range* base) : base(base) {}
+
+      friend bool operator==(const iterator& i, const sentinel& s) {
+        return i.value == s.base->last;
+      }
+      friend bool operator!=(const iterator& i, const sentinel& s) {
+        return !(i == s);
+      }
+      friend bool operator==(const sentinel& s, const iterator& i) {
+        return i == s;
+      }
+      friend bool operator!=(const sentinel& s, const iterator& i) {
+        return i != s;
+      }
+    };
+
+    int last;
+
+    non_common_range(int last) : last(last) {}
+
+    iterator begin() { return iterator{0}; }
+    iterator begin() const { return iterator{0}; }
+
+    sentinel end() { return sentinel{this}; }
+    sentinel end() const { return sentinel{this}; }
+  };
+}
+
+PR14968::non_common_range(5)
+// CHECK: { 0, 1, 2, 3, 4 }
