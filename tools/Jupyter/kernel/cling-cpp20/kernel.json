@@ -1,0 +1,10 @@
+{
+  "display_name": "C++20",
+  "argv": [
+      "jupyter-cling-kernel",
+      "-f",
+      "{connection_file}",
+      "--std=c++20"
+  ],
+  "language": "C++"
+}
