@@ -46,22 +46,22 @@ git checkout cling-latest
 cd ../
 git clone <cling>
 mkdir cling-build && cd cling-build
-cmake -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;nvptx" ../llvm-project/llvm
+cmake -DCMAKE_BUILD_TYPE=Debug -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;NVPTX" ../llvm-project/llvm
 ```
 
 Usage
 -----
 ```c++
-./cling '#include <stdio.h>' 'printf("Hello World!\n")'
+bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'
 ```
 
 To get started run:
 ```bash
-./cling --help
+bin/cling --help
 ```
 or type
 ```
-./cling
+bin/cling
 [cling]$ .help
 ```
 
