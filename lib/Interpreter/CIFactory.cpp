@@ -631,7 +631,7 @@ namespace {
         cling::log() << "'" << systemLoc << "' does not exist. Mounting '"
                      << originalLoc.str() << "' as '" << systemLoc << "'\n";
 
-      if (!HSOpts.ImplicitModuleMaps && !llvm::sys::fs::exists(systemLoc.str())) {
+      if (!HSOpts.ImplicitModuleMaps) {
          modulemapFilename = Filename;
          llvm::sys::path::remove_filename(systemLoc);
          llvm::sys::path::append(systemLoc, modulemapFilename);
