@@ -1,8 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # A tool to parse cling.pod.in and generate cling.pod dynamically
 
-from __future__ import print_function
 import subprocess
 import sys
 import os
