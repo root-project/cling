@@ -20,6 +20,7 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/PassPlugin.h"
 #include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
@@ -398,6 +399,14 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
   PipelineTuningOptions PTO;
   std::optional<PGOOptions> PGOOpt;
   PassBuilder PB(&m_TM, PTO, PGOOpt, &PIC);
+
+  // Attempt to load pass plugins and register their callbacks with PB.
+  for (auto& PluginFN : m_CGOpts.PassPlugins) {
+    auto PassPlugin = PassPlugin::Load(PluginFN);
+    if (PassPlugin) {
+      PassPlugin->registerPassBuilderCallbacks(PB);
+    }
+  }
 
   if (!m_CGOpts.DisableLLVMPasses) {
     // Use the default pass pipeline. We also have to map our optimization

@@ -220,6 +220,21 @@ namespace cling {
     if (!m_IncrParser->isValid(false))
       return;
 
+    // Load any requested plugins.
+    getCI()->LoadRequestedPlugins();
+
+    // Honor set of `-mllvm` options. This should happen AFTER plugins have been
+    // loaded!
+    if (!m_Opts.CompilerOpts.LLVMArgs.empty()) {
+      unsigned NumArgs = m_Opts.CompilerOpts.LLVMArgs.size();
+      auto Args = std::make_unique<const char*[]>(NumArgs + 2);
+      Args[0] = "cling (LLVM option parsing)";
+      for (unsigned i = 0; i != NumArgs; ++i)
+        Args[i + 1] = m_Opts.CompilerOpts.LLVMArgs[i].c_str();
+      Args[NumArgs + 1] = nullptr;
+      llvm::cl::ParseCommandLineOptions(NumArgs + 1, Args.get());
+    }
+
     // Initialize the opt level to what CodeGenOpts says.
     if (m_OptLevel == -1)
       setDefaultOptLevel(getCI()->getCodeGenOpts().OptimizationLevel);

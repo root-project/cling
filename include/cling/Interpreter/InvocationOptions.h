@@ -74,6 +74,9 @@ namespace cling {
     ///\brief The remaining arguments to pass to clang.
     ///
     std::vector<const char*> Remaining;
+
+    /// A list of arguments to forward to LLVM's option processing.
+    std::vector<std::string> LLVMArgs;
   };
 
   class InvocationOptions {
