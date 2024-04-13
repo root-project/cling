@@ -7,9 +7,8 @@ Cling, release 1.1. Cling is built on top of [Clang](http://clang.llvm.org) and
 describe the status of Cling in some detail, including major
 improvements from the previous release and new feature work.
 
-Note that if you are reading this file from a git checkout or the main
-[Cling web page](https://rawgit.com/root-project/cling/master/www/index.html),
-this document applies to the *next* release, not the current one.
+Note that if you are reading this file from a git checkout or the main Cling
+web page, this document applies to the *next* release, not the current one.
 
 What's New in Cling 1.1?
 ========================
