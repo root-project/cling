@@ -18,6 +18,7 @@
 #include "cling/Interpreter/RuntimeOptions.h"
 
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 
 #include <cstdlib>
 #include <memory>
@@ -178,9 +179,9 @@ namespace cling {
     ///
     InvocationOptions m_Opts;
 
-    ///\brief The llvm library state, a per-thread object.
+    ///\brief Thread-safe llvm library state.
     ///
-    std::unique_ptr<llvm::LLVMContext> m_LLVMContext;
+    std::unique_ptr<llvm::orc::ThreadSafeContext> TSCtx;
 
     ///\brief Cling's execution engine - a well wrapped llvm execution engine.
     ///
@@ -395,10 +396,10 @@ namespace cling {
     cling::runtime::RuntimeOptions& getRuntimeOptions() { return m_RuntimeOptions; }
 
     const llvm::LLVMContext* getLLVMContext() const {
-      return m_LLVMContext.get();
+      return TSCtx->getContext();
     }
 
-    llvm::LLVMContext* getLLVMContext() { return m_LLVMContext.get(); }
+    llvm::LLVMContext* getLLVMContext() { return TSCtx->getContext(); }
 
     LookupHelper& getLookupHelper() const { return *m_LookupHelper; }
 

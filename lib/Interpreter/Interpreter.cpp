@@ -215,7 +215,8 @@ namespace cling {
     if (handleSimpleOptions(m_Opts))
       return;
 
-    m_LLVMContext.reset(new llvm::LLVMContext);
+    auto LLVMCtx = std::make_unique<llvm::LLVMContext>();
+    TSCtx = std::make_unique<llvm::orc::ThreadSafeContext>(std::move(LLVMCtx));
     m_IncrParser.reset(new IncrementalParser(this, llvmdir, moduleExtensions));
     if (!m_IncrParser->isValid(false))
       return;
@@ -355,7 +356,7 @@ namespace cling {
 
     m_IncrParser->SetTransformers(parentInterp);
 
-    if (!m_LLVMContext) {
+    if (!TSCtx->getContext()) {
       // Never true, but don't tell the compiler.
       // Force symbols needed by runtime to be included in binaries.
       // Prevents stripping the symbol due to dead-code optimization.
