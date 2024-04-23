@@ -918,24 +918,21 @@ namespace cling {
     if (!ParseOrWrapTopLevelDecl())
       return kFailed;
 
-#ifdef _WIN32
-    // Microsoft-specific:
-    // Late parsed templates can leave unswallowed "macro"-like tokens.
-    // They will seriously confuse the Parser when entering the next
-    // source file. So lex until we are EOF.
-    Token Tok;
-    Tok.setKind(tok::eof);
-    do {
-      PP.Lex(Tok);
-    } while (Tok.isNot(tok::eof));
-#endif
+    if (PP.getLangOpts().DelayedTemplateParsing) {
+      // Microsoft-specific:
+      // Late parsed templates can leave unswallowed "macro"-like tokens.
+      // They will seriously confuse the Parser when entering the next
+      // source file. So lex until we are EOF.
+      Token Tok;
+      do {
+        PP.Lex(Tok);
+      } while (Tok.isNot(tok::eof));
+    }
 
-#ifndef NDEBUG
     Token AssertTok;
     PP.Lex(AssertTok);
     assert(AssertTok.is(tok::eof) &&
            "Lexer must be EOF when starting incremental parse!");
-#endif
 
     DiagnosticsEngine& Diags = getCI()->getDiagnostics();
     if (m_Consumer->getTransaction()->getIssuedDiags() == Transaction::kErrors)
