@@ -253,6 +253,8 @@ namespace cling {
     ///
     EParseResult ParseInternal(llvm::StringRef input);
 
+    llvm::Expected<bool> ParseOrWrapTopLevelDecl();
+
     ///\brief Create a unique name for the next llvm::Module
     ///
     std::string makeModuleName();
