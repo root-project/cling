@@ -964,16 +964,15 @@ namespace cling {
     FilteringDiagConsumer::RAAI RAAITmp(*m_DiagConsumer, CO.IgnorePromptDiags);
 
     DiagnosticErrorTrap Trap(Diags);
-    // FIXME: SavePendingInstantiationsRAII should be obsolvete as
-    // GlobalEagerInstantiationScope and LocalEagerInstantiationScope do the
-    // same thing.
-    Sema::SavePendingInstantiationsRAII SavedPendingInstantiations(S);
+
+    llvm::CrashRecoveryContextCleanupRegistrar<Sema> CleanupSema(&S);
     Sema::GlobalEagerInstantiationScope GlobalInstantiations(S, /*Enabled=*/true);
     Sema::LocalEagerInstantiationScope LocalInstantiations(S);
 
     Parser::DeclGroupPtrTy ADecl;
-    Sema::ModuleImportState IS = Sema::ModuleImportState::NotACXX20Module;
-    while (!m_Parser->ParseTopLevelDecl(ADecl, IS)) {
+    Sema::ModuleImportState ImportState =
+        Sema::ModuleImportState::NotACXX20Module;
+    while (!m_Parser->ParseTopLevelDecl(ADecl, ImportState)) {
       // If we got a null return and something *was* parsed, ignore it.  This
       // is due to a top-level semicolon, an action override, or a parse error
       // skipping something.
