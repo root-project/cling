@@ -873,7 +873,8 @@ namespace cling {
     PP.enableIncrementalProcessing();
 
     smallstream source_name;
-    source_name << "input_line_" << (m_MemoryBuffers.size() + 1);
+    // FIXME: Pre-increment to avoid failing tests.
+    source_name << "input_line_" << ++InputCount;
 
     // Create an uninitialized memory buffer, copy code in and append "\n"
     size_t InputSize = input.size(); // don't include trailing 0
@@ -891,8 +892,6 @@ namespace cling {
     // candidates for example
     SourceLocation NewLoc = getNextAvailableUniqueSourceLoc();
 
-    llvm::MemoryBuffer* MBNonOwn = MB.get();
-
     // Create FileID for the current buffer.
     FileID FID;
     // Create FileEntry and FileID for the current buffer.
@@ -908,8 +907,6 @@ namespace cling {
       PP.SetCodeCompletionPoint(FE, 1/* start point 1-based line*/,
                                 CO.CodeCompletionOffset+1/* 1-based column*/);
     }
-
-    m_MemoryBuffers.push_back(std::make_pair(MBNonOwn, FID));
 
     // NewLoc only used for diags.
     PP.EnterSourceFile(FID, /*DirLookup*/nullptr, NewLoc);

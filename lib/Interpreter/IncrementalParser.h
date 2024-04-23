@@ -64,8 +64,8 @@ namespace cling {
     // parser (incremental)
     std::unique_ptr<clang::Parser> m_Parser;
 
-    // One buffer for each command line, owner by the source file manager
-    std::deque<std::pair<llvm::MemoryBuffer*, clang::FileID>> m_MemoryBuffers;
+    /// Counts the number of direct user input lines that have been parsed.
+    unsigned InputCount = 0;
 
     // file ID of the memory buffer
     clang::FileID m_VirtualFileID;
