@@ -952,8 +952,6 @@ namespace cling {
         m_Consumer->getTransaction()->getCompilationOpts();
     FilteringDiagConsumer::RAAI RAAITmp(*m_DiagConsumer, CO.IgnorePromptDiags);
 
-    DiagnosticErrorTrap Trap(Diags);
-
     llvm::CrashRecoveryContextCleanupRegistrar<Sema> CleanupSema(&S);
     Sema::GlobalEagerInstantiationScope GlobalInstantiations(S, /*Enabled=*/true);
     Sema::LocalEagerInstantiationScope LocalInstantiations(S);
@@ -972,7 +970,7 @@ namespace cling {
     }
 
     // If never entered the while block, there's a chance an error occured
-    if (Trap.hasErrorOccurred()) {
+    if (Diags.hasErrorOccurred()) {
       m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
       // Diags.Reset(/*soft=*/true);
       // Diags.getClient()->clear();
