@@ -959,20 +959,26 @@ namespace cling {
     Sema::LocalEagerInstantiationScope LocalInstantiations(S);
 
     Parser::DeclGroupPtrTy ADecl;
-    Sema::ModuleImportState ImportState =
-        Sema::ModuleImportState::NotACXX20Module;
-    while (!m_Parser->ParseTopLevelDecl(ADecl, ImportState)) {
-      // If we got a null return and something *was* parsed, ignore it.  This
-      // is due to a top-level semicolon, an action override, or a parse error
-      // skipping something.
-      if (Trap.hasErrorOccurred())
+    Sema::ModuleImportState ImportState;
+    for (bool AtEOF = m_Parser->ParseFirstTopLevelDecl(ADecl, ImportState);
+         !AtEOF; AtEOF = m_Parser->ParseTopLevelDecl(ADecl, ImportState)) {
+      if (ADecl && !m_Consumer->HandleTopLevelDecl(ADecl.get())) {
         m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
-      if (ADecl)
-        m_Consumer->HandleTopLevelDecl(ADecl.get());
-    };
+        return llvm::make_error<llvm::StringError>(
+            "Parsing failed. "
+            "The consumer rejected a decl",
+            std::error_code());
+      }
+    }
+
     // If never entered the while block, there's a chance an error occured
-    if (Trap.hasErrorOccurred())
+    if (Trap.hasErrorOccurred()) {
       m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
+      // Diags.Reset(/*soft=*/true);
+      // Diags.getClient()->clear();
+      return llvm::make_error<llvm::StringError>("Parsing failed.",
+                                                 std::error_code());
+    }
 
     if (CO.CodeCompletionOffset != -1) {
       assert((int)SM.getFileOffset(PP.getCodeCompletionLoc())
