@@ -21,7 +21,7 @@ namespace cling {
 
   public:
     MultiplexInterpreterCallbacks(Interpreter* interp)
-      : InterpreterCallbacks(interp, true, true, true) {}
+      : InterpreterCallbacks(interp, true, true) {}
 
     void addCallback(std::unique_ptr<InterpreterCallbacks> newCb) {
       m_Callbacks.push_back(std::move(newCb));
@@ -119,18 +119,6 @@ namespace cling {
      void DefinitionShadowed(const clang::NamedDecl* D) override {
        for (auto&& cb : m_Callbacks) {
          cb->DefinitionShadowed(D);
-       }
-     }
-
-     void DeclDeserialized(const clang::Decl* D) override {
-       for (auto&& cb : m_Callbacks) {
-         cb->DeclDeserialized(D);
-       }
-     }
-
-     void TypeDeserialized(const clang::Type* Ty) override {
-       for (auto&& cb : m_Callbacks) {
-         cb->TypeDeserialized(Ty);
        }
      }
 

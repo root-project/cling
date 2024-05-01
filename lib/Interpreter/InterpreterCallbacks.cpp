@@ -13,12 +13,10 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/MultiplexConsumer.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/CodeCompleteConsumer.h"
 #include "clang/Sema/MultiplexExternalSemaSource.h"
 #include "clang/Sema/Sema.h"
-#include "clang/Serialization/ASTDeserializationListener.h"
 #include "clang/Serialization/ASTReader.h"
 
 #include <optional>
@@ -27,8 +25,8 @@ using namespace clang;
 
 namespace cling {
 
-  ///\brief Translates 'interesting' for the interpreter
-  /// ASTDeserializationListener events into interpreter callback.
+  ///\brief Translates 'interesting' for the interpreter into interpreter
+  /// callback.
   ///
   class InterpreterPPCallbacks : public PPCallbacks {
   private:
@@ -66,40 +64,6 @@ namespace cling {
       // Returning true would mean that the preprocessor should silently skip
       // this file.
       return false;
-    }
-  };
-
-  ///\brief Translates 'interesting' for the interpreter
-  /// ASTDeserializationListener events into interpreter callback.
-  ///
-  class InterpreterDeserializationListener : public ASTDeserializationListener {
-  private:
-    cling::InterpreterCallbacks* m_Callbacks;
-  public:
-    InterpreterDeserializationListener(InterpreterCallbacks* C)
-      : m_Callbacks(C) {}
-
-    void DeclRead(serialization::DeclID, const Decl *D) override {
-      if (m_Callbacks)
-        m_Callbacks->DeclDeserialized(D);
-    }
-
-    void TypeRead(serialization::TypeIdx, QualType T) override {
-      if (m_Callbacks)
-        m_Callbacks->TypeDeserialized(T.getTypePtr());
-    }
-  };
-
-  /// \brief Wraps an ASTDeserializationListener in an ASTConsumer so that
-  /// it can be used with a MultiplexConsumer.
-  class DeserializationListenerWrapper : public ASTConsumer {
-    ASTDeserializationListener* m_Listener;
-
-  public:
-    DeserializationListenerWrapper(ASTDeserializationListener* Listener)
-        : m_Listener(Listener) {}
-    ASTDeserializationListener* GetASTDeserializationListener() override {
-      return m_Listener;
     }
   };
 
@@ -297,7 +261,6 @@ namespace cling {
 
   InterpreterCallbacks::InterpreterCallbacks(Interpreter* interp,
                              bool enableExternalSemaSourceCallbacks/* = false*/,
-                        bool enableDeserializationListenerCallbacks/* = false*/,
                                              bool enablePPCallbacks/* = false*/)
     : m_Interpreter(interp), m_ExternalSemaSource(nullptr), m_PPCallbacks(nullptr),
       m_IsRuntime(false) {
@@ -340,27 +303,6 @@ namespace cling {
         }
     }
 
-    if (enableDeserializationListenerCallbacks && Reader) {
-      // Create a new deserialization listener.
-      m_DeserializationListener.
-        reset(new InterpreterDeserializationListener(this));
-
-      // Wrap the deserialization listener in an MultiplexConsumer and then
-      // combine it with the existing Consumer.
-      // FIXME: Maybe it's better to make MultiplexASTDeserializationListener
-      // public instead. See also: https://reviews.llvm.org/D37475
-      std::unique_ptr<DeserializationListenerWrapper> wrapper(
-          new DeserializationListenerWrapper(m_DeserializationListener.get()));
-
-      std::vector<std::unique_ptr<ASTConsumer>> Consumers;
-      Consumers.push_back(std::move(wrapper));
-      Consumers.push_back(m_Interpreter->getCI()->takeASTConsumer());
-
-      std::unique_ptr<clang::MultiplexConsumer> multiConsumer(
-          new clang::MultiplexConsumer(std::move(Consumers)));
-      m_Interpreter->getCI()->setASTConsumer(std::move(multiConsumer));
-    }
-
     if (enablePPCallbacks) {
       Preprocessor& PP = m_Interpreter->getCI()->getPreprocessor();
       m_PPCallbacks = new InterpreterPPCallbacks(this);
@@ -382,11 +324,6 @@ namespace cling {
   ExternalSemaSource*
   InterpreterCallbacks::getInterpreterExternalSemaSource() const {
     return m_ExternalSemaSource;
-  }
-
-  ASTDeserializationListener*
-  InterpreterCallbacks::getInterpreterDeserializationListener() const {
-    return m_DeserializationListener.get();
   }
 
   bool InterpreterCallbacks::FileNotFound(llvm::StringRef) {
