@@ -976,11 +976,15 @@ namespace cling {
     }
 
     if (CO.CodeCompletionOffset != -1) {
+#ifndef NDEBUG
+      Preprocessor& PP = m_CI->getPreprocessor();
+      SourceManager& SM = getCI()->getSourceManager();
       assert((int)SM.getFileOffset(PP.getCodeCompletionLoc())
              == CO.CodeCompletionOffset
              && "Completion point wrongly set!");
       assert(PP.isCodeCompletionReached()
              && "Code completion set but not reached!");
+#endif
 
       // Let's ignore this transaction:
       m_Consumer->getTransaction()->setIssuedDiags(Transaction::kErrors);
