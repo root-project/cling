@@ -37,6 +37,13 @@ namespace AnotherNext {
 class Inside_AnotherNext {};
 }
 
+namespace A {
+  class C;
+}
+namespace B {
+  using namespace A;
+}
+
 .rawInput 0
 
 // ROOT-6095: names introduced in a scopeless enum should be available in the
@@ -106,3 +113,20 @@ decl
 decl = utils::Lookup::Named(&S, "EvenLess", context);
 decl
 //CHECK: (const clang::NamedDecl *) {{0x0*$|nullptr}}
+
+// Lookup the declaration for namespace B.
+decl = utils::Lookup::Named(&S, "B", nullptr);
+decl
+// CHECK: (const clang::NamedDecl *) 0x{{[1-9a-f][0-9a-f]*$}}
+
+const clang::DeclContext* contextB = llvm::dyn_cast<clang::DeclContext>(decl);
+contextB
+// CHECK: (const clang::DeclContext *) 0x{{[1-9a-f][0-9a-f]*$}}
+
+// Lookup 'C' from namespace B.
+decl = utils::Lookup::Named(&S, "C", contextB);
+decl
+// CHECK: (const clang::NamedDecl *) 0x{{[1-9a-f][0-9a-f]*$}}
+
+decl->getQualifiedNameAsString()
+// CHECK: (std::string) "A::C"

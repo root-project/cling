@@ -1501,7 +1501,15 @@ namespace utils {
         // No definition, no lookup result.
         return;
       }
-      S->LookupQualifiedName(R, const_cast<DeclContext*>(primaryWithin));
+      bool res =
+          S->LookupQualifiedName(R, const_cast<DeclContext*>(primaryWithin));
+
+      // If the lookup fails and the context is a namespace, try to lookup in
+      // the namespaces by setting NotForRedeclaration.
+      if (!res && primaryWithin->isNamespace()) {
+        R.setRedeclarationKind(Sema::NotForRedeclaration);
+        S->LookupQualifiedName(R, const_cast<DeclContext*>(primaryWithin));
+      }
     }
   }
 
