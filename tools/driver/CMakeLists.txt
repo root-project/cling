@@ -63,6 +63,8 @@ if(MSVC)
       ??_U@YAPEAX_K@Z
       ??_V@YAXPEAX@Z
       ??3@YAXPEAX_K@Z
+      ??2@YAPEAX_KAEBUnothrow_t@std@@@Z
+      ??_U@YAPEAX_KAEBUnothrow_t@std@@@Z
       ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@H@Z
       ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@M@Z
       ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV01@N@Z
@@ -80,6 +82,8 @@ if(MSVC)
       ??_U@YAPAXI@Z
       ??_V@YAXPAX@Z
       ??_V@YAXPAXI@Z
+      ??2@YAPAXIABUnothrow_t@std@@@Z
+      ??_U@YAPAXIABUnothrow_t@std@@@Z
       ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@H@Z
       ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@M@Z
       ??6?$basic_ostream@DU?$char_traits@D@std@@@std@@QAEAAV01@N@Z
