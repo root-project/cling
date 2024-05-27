@@ -105,7 +105,7 @@ namespace cling {
   void IncrementalCUDADeviceCompiler::setCuArgs(
       const clang::LangOptions& langOpts,
       const cling::InvocationOptions& invocationOptions,
-      const clang::codegenoptions::DebugInfoKind debugInfo,
+      const llvm::codegenoptions::DebugInfoKind debugInfo,
       const llvm::Triple hostTriple) {
     std::string cppStdVersion;
     // Set the c++ standard. Just one condition is possible.
@@ -132,9 +132,9 @@ namespace cling {
     // FIXME : Should not reduce the fine granulated debug options to a simple.
     // -g
     bool debug = false;
-    if (debugInfo == clang::codegenoptions::DebugLineTablesOnly ||
-        debugInfo == clang::codegenoptions::LimitedDebugInfo ||
-        debugInfo == clang::codegenoptions::FullDebugInfo)
+    if (debugInfo == llvm::codegenoptions::DebugLineTablesOnly ||
+        debugInfo == llvm::codegenoptions::LimitedDebugInfo ||
+        debugInfo == llvm::codegenoptions::FullDebugInfo)
       debug = true;
 
     // FIXME : Cling has problems to detect these arguments.

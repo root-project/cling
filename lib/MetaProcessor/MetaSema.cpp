@@ -251,22 +251,21 @@ namespace cling {
   }
 
   void MetaSema::actOndebugCommand(std::optional<int> mode) const {
-    constexpr clang::codegenoptions::DebugInfoKind DebugInfo[] = {
-      clang::codegenoptions::NoDebugInfo,
-      clang::codegenoptions::LocTrackingOnly,
-      clang::codegenoptions::DebugLineTablesOnly,
-      clang::codegenoptions::LimitedDebugInfo,
-      clang::codegenoptions::FullDebugInfo
-    };
+    constexpr llvm::codegenoptions::DebugInfoKind DebugInfo[] = {
+        llvm::codegenoptions::NoDebugInfo,
+        llvm::codegenoptions::LocTrackingOnly,
+        llvm::codegenoptions::DebugLineTablesOnly,
+        llvm::codegenoptions::LimitedDebugInfo,
+        llvm::codegenoptions::FullDebugInfo};
     constexpr int N = (int)std::extent<decltype(DebugInfo)>::value;
 
     clang::CodeGenOptions& CGO = m_Interpreter.getCI()->getCodeGenOpts();
     if (!mode) {
-      bool flag = (CGO.getDebugInfo() == clang::codegenoptions::NoDebugInfo);
+      bool flag = (CGO.getDebugInfo() == llvm::codegenoptions::NoDebugInfo);
       if (flag)
-        CGO.setDebugInfo(clang::codegenoptions::LimitedDebugInfo);
+        CGO.setDebugInfo(llvm::codegenoptions::LimitedDebugInfo);
       else
-        CGO.setDebugInfo(clang::codegenoptions::NoDebugInfo);
+        CGO.setDebugInfo(llvm::codegenoptions::NoDebugInfo);
       m_MetaProcessor.getOuts() << (flag ? "G" : "Not g") << "enerating debug symbols\n";
     } else {
       mode = (*mode < 0) ? 0 : ((*mode >= N) ? N - 1 : *mode);

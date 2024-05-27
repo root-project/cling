@@ -121,7 +121,7 @@ namespace cling {
     ///\param [in] hostTriple - The llvm triple of the host system
     void setCuArgs(const clang::LangOptions& langOpts,
                    const cling::InvocationOptions& invocationOptions,
-                   const clang::codegenoptions::DebugInfoKind debugInfo,
+                   const llvm::codegenoptions::DebugInfoKind debugInfo,
                    const llvm::Triple hostTriple);
 
   public:

@@ -1709,7 +1709,7 @@ namespace {
 
     // Add debugging info when debugging or profiling
     if (debuggingEnabled || profilingEnabled)
-      CGOpts.setDebugInfo(codegenoptions::FullDebugInfo);
+      CGOpts.setDebugInfo(llvm::codegenoptions::FullDebugInfo);
 
     // CGOpts.EmitDeclMetadata = 1; // For unloading, for later
     // aliasing the complete ctor to the base ctor causes the JIT to crash
