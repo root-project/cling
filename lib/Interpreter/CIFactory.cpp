@@ -1494,7 +1494,7 @@ namespace {
           bool ReadLanguageOptions(const LangOptions &LangOpts,
                                    bool /*Complain*/,
                                    bool /*AllowCompatibleDifferences*/) override {
-            *m_Invocation.getLangOpts() = LangOpts;
+            m_Invocation.getLangOpts() = LangOpts;
             m_ReadLang = true;
             return false;
           }
