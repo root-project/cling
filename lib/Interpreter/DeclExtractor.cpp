@@ -358,7 +358,7 @@ namespace cling {
            && "Cannot handle that yet!");
     bool isExplicitSpecialization = false;
 
-    if (Kind == TTK_Enum) {
+    if (Kind == TagTypeKind::Enum) {
       EnumDecl* ED = cast<EnumDecl>(NewTD);
       bool ScopedEnum = ED->isScoped();
       const QualType QT = ED->getIntegerType();
@@ -549,8 +549,9 @@ namespace cling {
           if (!m_Sema->isAcceptableTagRedeclaration(PrevTagDecl, Kind,
                                           NewTD->isThisDeclarationADefinition(),
                                                     KWLoc, Name)) {
-            bool SafeToContinue
-              = (PrevTagDecl->getTagKind() != TTK_Enum && Kind != TTK_Enum);
+            bool SafeToContinue =
+                (PrevTagDecl->getTagKind() != TagTypeKind::Enum &&
+                 Kind != TagTypeKind::Enum);
 
             if (SafeToContinue)
               m_Sema->Diag(KWLoc, diag::err_use_with_wrong_tag)
@@ -571,7 +572,8 @@ namespace cling {
             }
           }
 
-          if (Kind == TTK_Enum && PrevTagDecl->getTagKind() == TTK_Enum) {
+          if (Kind == TagTypeKind::Enum &&
+              PrevTagDecl->getTagKind() == TagTypeKind::Enum) {
             const EnumDecl *NewEnum = cast<EnumDecl>(NewTD);
             const EnumDecl *PrevEnum = cast<EnumDecl>(PrevTagDecl);
 

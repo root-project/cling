@@ -452,12 +452,9 @@ void BackendPasses::runOnModule(Module& M, int OptLevel) {
 
   CreatePasses(OptLevel, MPM, LAM, FAM, CGAM, MAM, PIC, SI);
 
-  static constexpr std::array<llvm::CodeGenOpt::Level, 4> CGOptLevel {{
-    llvm::CodeGenOpt::None,
-    llvm::CodeGenOpt::Less,
-    llvm::CodeGenOpt::Default,
-    llvm::CodeGenOpt::Aggressive
-  }};
+  static constexpr std::array<llvm::CodeGenOptLevel, 4> CGOptLevel{
+      {llvm::CodeGenOptLevel::None, llvm::CodeGenOptLevel::Less,
+       llvm::CodeGenOptLevel::Default, llvm::CodeGenOptLevel::Aggressive}};
   // TM's OptLevel is used to build orc::SimpleCompiler passes for every Module.
   m_TM.setOptLevel(CGOptLevel[OptLevel]);
 

@@ -245,11 +245,10 @@ namespace {
                                              (uintptr_t)ETy.getAsOpaquePtr());
 
     // Pass whether to Value::dump() or not:
-    Expr* EVPOn
-      = new (*m_Context) CharacterLiteral(getCompilationOpts().ValuePrinting,
-                                          CharacterLiteral::Ascii,
-                                          m_Context->CharTy,
-                                          SourceLocation());
+    Expr* EVPOn =
+        new (*m_Context) CharacterLiteral(getCompilationOpts().ValuePrinting,
+                                          CharacterLiteralKind::Ascii,
+                                          m_Context->CharTy, SourceLocation());
 
     llvm::SmallVector<Expr*, 6> CallArgs;
     CallArgs.push_back(gClingDRE.get());

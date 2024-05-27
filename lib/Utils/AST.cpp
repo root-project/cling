@@ -1403,9 +1403,9 @@ namespace utils {
     // TODO: Find a way to avoid creating new types, if the input is already
     // fully qualified.
     if (prefix) {
-      // We intentionally always use ETK_None, we never want
+      // We intentionally always use ElaboratedTypeKeyword::None, we never want
       // the keyword (humm ... what about anonymous types?)
-      QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
+      QT = Ctx.getElaboratedType(ElaboratedTypeKeyword::None, prefix, QT);
       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
     } else if (original_prefix) {
       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);
@@ -1735,9 +1735,9 @@ namespace utils {
 
     }
     if (prefix) {
-      // We intentionally always use ETK_None, we never want
+      // We intentionally always use ElaboratedTypeKeyword::None, we never want
       // the keyword (humm ... what about anonymous types?)
-      QT = Ctx.getElaboratedType(ETK_None,prefix,QT);
+      QT = Ctx.getElaboratedType(ElaboratedTypeKeyword::None, prefix, QT);
     }
     if (prefix_qualifiers) {
       QT = Ctx.getQualifiedType(QT, prefix_qualifiers);

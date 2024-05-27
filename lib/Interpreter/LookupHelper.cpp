@@ -668,10 +668,11 @@ namespace cling {
                 // Note: Do we need to check for a dependent type here?
                 NestedNameSpecifier *prefix = NNS->getPrefix();
                 if (prefix) {
-                   QualType temp
-                     = Context.getElaboratedType(ETK_None,prefix,
-                                                 QualType(NNS->getAsType(),0));
-                   *setResultType = temp.getTypePtr();
+                  QualType temp =
+                      Context.getElaboratedType(ElaboratedTypeKeyword::None,
+                                                prefix,
+                                                QualType(NNS->getAsType(), 0));
+                  *setResultType = temp.getTypePtr();
                 } else {
                    *setResultType = NNS->getAsType();
                 }
