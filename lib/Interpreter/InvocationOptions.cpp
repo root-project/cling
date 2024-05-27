@@ -156,8 +156,8 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
   ArrayRef<const char *> ArgStrings(argv+1, argv + argc);
 
   InputArgList Args(OptsC1.ParseArgs(ArgStrings, MissingArgIndex,
-                    MissingArgCount, 0,
-                    options::NoDriverOption | options::CLOption | options::DXCOption));
+                                     MissingArgCount, 0,
+                                     options::CLOption | options::DXCOption));
 
   for (const Arg* arg : Args) {
     switch (arg->getOption().getID()) {
@@ -225,8 +225,7 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
   std::unique_ptr<OptTable> Opts(CreateClingOptTable());
 
   InputArgList Args(Opts->ParseArgs(ArgStrings, MissingArgIndex,
-                    MissingArgCount, 0,
-                    options::NoDriverOption | options::CLOption));
+                                    MissingArgCount, 0, options::CLOption));
 
   // Forward unknown arguments.
   for (const Arg* arg : Args) {
