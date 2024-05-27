@@ -1600,12 +1600,12 @@ namespace {
     MainFileCC.setBuffer(std::move(Buffer));
 
     // Create TargetInfo for the other side of CUDA and OpenMP compilation.
-    if ((CI->getLangOpts().CUDA || CI->getLangOpts().OpenMPIsDevice) &&
+    if ((CI->getLangOpts().CUDA || CI->getLangOpts().OpenMPIsTargetDevice) &&
         !CI->getFrontendOpts().AuxTriple.empty()) {
-          auto TO = std::make_shared<TargetOptions>();
-          TO->Triple = CI->getFrontendOpts().AuxTriple;
-          TO->HostTriple = CI->getTarget().getTriple().str();
-          CI->setAuxTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(), TO));
+      auto TO = std::make_shared<TargetOptions>();
+      TO->Triple = CI->getFrontendOpts().AuxTriple;
+      TO->HostTriple = CI->getTarget().getTriple().str();
+      CI->setAuxTarget(TargetInfo::CreateTargetInfo(CI->getDiagnostics(), TO));
     }
 
     // Set up the preprocessor
