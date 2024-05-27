@@ -19,7 +19,6 @@
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Frontend/CompilerInstance.h>
 
-#include <llvm/ADT/Triple.h>
 #include <llvm/ExecutionEngine/JITLink/EHFrameSupport.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
@@ -28,8 +27,9 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Support/Host.h>
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
 
 #include <optional>
 
