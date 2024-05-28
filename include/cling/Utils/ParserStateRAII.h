@@ -12,6 +12,7 @@
 
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Parse/Parser.h"
+#include "clang/Sema/EnterExpressionEvaluationContext.h"
 
 namespace clang {
   class Preprocessor;

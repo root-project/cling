@@ -37,6 +37,7 @@
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Sema.h"
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Format.h"
 
 #include <locale>
