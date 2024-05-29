@@ -386,7 +386,8 @@ namespace cling {
         llvm::StringRef magicStr(magic,in.gcount());
         llvm::file_magic fileType
           = llvm::identify_magic(magicStr);
-        if (fileType != llvm::file_magic::unknown)
+        if (fileType != llvm::file_magic::unknown &&
+            fileType != llvm::file_magic::tapi_file)
           return reportIOErr(filename, "read from binary");
 
         unsigned printable = 0;
