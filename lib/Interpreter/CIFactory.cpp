@@ -1450,6 +1450,10 @@ namespace {
       CI->getDiagnosticOpts().ShowColors =
         llvm::sys::Process::StandardOutIsDisplayed() ||
         llvm::sys::Process::StandardErrIsDisplayed();
+    // Disable line numbers in error messages and warnings, they don't add much
+    // to the output and are rather confusing.
+    CI->getDiagnosticOpts().SnippetLineLimit = 1;
+    CI->getDiagnosticOpts().ShowLineNumbers = 0;
 
     // Copied from CompilerInstance::createDiagnostics:
     // Chain in -verify checker, if requested.
