@@ -404,6 +404,7 @@ namespace {
     }
 
     //Opts.Modules = 1;
+    Opts.BuiltinHeadersInSystemModules = 1;
 
     // See test/CodeUnloading/PCH/VTables.cpp which implicitly compares clang
     // to cling lang options. They should be the same, we should not have to
