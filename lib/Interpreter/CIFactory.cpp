@@ -1362,6 +1362,11 @@ namespace {
       argvCompile.push_back("-fno-omit-frame-pointer");
 #endif
 
+#ifdef __cpp_sized_deallocation
+      // Propagate the setting of the compiler to the interpreter
+      argvCompile.push_back("-fsized-deallocation");
+#endif
+
     // Disable optimizations and keep frame pointer when debugging, overriding
     // other optimization options that might be in argv
     if (debuggingEnabled) {
