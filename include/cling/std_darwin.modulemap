@@ -450,10 +450,6 @@ module std_inttypes_h [system] {
   export *
 }
 // <iso646.h> provided by compiler.
-module std_limits_h [system] {
-  header "limits.h"
-  export *
-}
 module std_locale_h [system] {
   header "locale.h"
   export *
@@ -462,10 +458,7 @@ module std_math_h [system] {
   header "math.h"
   export *
 }
-module std_setjmp_h [system] {
-  header "setjmp.h"
-  export *
-}
+// <setjmp.h> provided by C library.
 // <signal.h> provided by C library.
 // FIXME: <stdalign.h> is missing.
 // <stdarg.h> provided by compiler.
@@ -522,69 +515,24 @@ module std_wctype_h [system] {
 
 // Experimental C++ standard library interfaces
 module std_experimental [system] {
-  module deque {
-    header "experimental/deque"
-    export *
-  }
-  module forward_list {
-    header "experimental/forward_list"
-    export *
-  }
   module iterator {
     header "experimental/iterator"
-    export *
-  }
-  module list {
-    header "experimental/list"
-    export *
-  }
-  module map {
-    header "experimental/map"
-    export *
-  }
-  module memory_resource {
-    header "experimental/memory_resource"
     export *
   }
   module propagate_const {
     header "experimental/propagate_const"
     export *
   }
-  module regex {
-    
-    header "experimental/regex"
-    export *
-  }
   module simd {
     header "experimental/simd"
-    export *
-  }
-  module set {
-    header "experimental/set"
-    export *
-  }
-  module string {
-    header "experimental/string"
     export *
   }
   module type_traits {
     header "experimental/type_traits"
     export *
   }
-  module unordered_map {
-    header "experimental/unordered_map"
-    export *
-  }
-  module unordered_set {
-    header "experimental/unordered_set"
-    export *
-  }
   module utility {
     header "experimental/utility"
-    export *
-  }
-  module vector {
-    header "experimental/vector"
     export *
   }
   module __config {
@@ -1983,7 +1931,6 @@ module std_private_type_traits_nat                                       [system
 module std_private_type_traits_negation                                  [system] { header "__type_traits/negation.h" }
 module std_private_type_traits_noexcept_move_assign_container            [system] { header "__type_traits/noexcept_move_assign_container.h" }
 module std_private_type_traits_operation_traits                          [system] { header "__type_traits/operation_traits.h" }
-module std_private_type_traits_predicate_traits                          [system] { header "__type_traits/predicate_traits.h" }
 module std_private_type_traits_promote                                   [system] { header "__type_traits/promote.h" }
 module std_private_type_traits_rank                                      [system] { header "__type_traits/rank.h" }
 module std_private_type_traits_remove_all_extents                        [system] { header "__type_traits/remove_all_extents.h" }
@@ -2056,7 +2003,6 @@ module std_private_utility_swap                   [system] {
   header "__utility/swap.h"
   export std_private_type_traits_is_swappable
 }
-module std_private_utility_terminate_on_exception [system] { header "__utility/terminate_on_exception.h" }
 module std_private_utility_to_underlying          [system] { header "__utility/to_underlying.h" }
 module std_private_utility_unreachable            [system] { header "__utility/unreachable.h" }
 
