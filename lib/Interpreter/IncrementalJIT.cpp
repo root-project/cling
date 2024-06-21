@@ -648,21 +648,11 @@ IncrementalJIT::addOrReplaceDefinition(StringRef Name,
   if (Symbol && (JITTargetAddress)Symbol == KnownAddr)
     return KnownAddr;
 
-  llvm::SmallString<128> LinkerMangledName;
-  char LinkerPrefix = this->m_TM->createDataLayout().getGlobalPrefix();
-  bool HasLinkerPrefix = LinkerPrefix != '\0';
-  if (HasLinkerPrefix && Name.front() == LinkerPrefix) {
-    LinkerMangledName.assign(1, LinkerPrefix);
-    LinkerMangledName.append(Name);
-  } else {
-    LinkerMangledName.assign(Name);
-  }
-
   // Let's inject it
   bool Inserted;
   SymbolMap::iterator It;
   std::tie(It, Inserted) = m_InjectedSymbols.try_emplace(
-      Jit->getExecutionSession().intern(LinkerMangledName),
+      Jit->mangleAndIntern(Name),
       JITEvaluatedSymbol(KnownAddr, JITSymbolFlags::Exported));
   assert(Inserted && "Why wasn't this found in the initial Jit lookup?");
 
