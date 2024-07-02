@@ -658,14 +658,28 @@ IncrementalJIT::addOrReplaceDefinition(StringRef Name,
       ExecutorSymbolDef(KnownAddr, JITSymbolFlags::Exported));
   assert(Inserted && "Why wasn't this found in the initial Jit lookup?");
 
-  JITDylib& DyLib = Jit->getMainJITDylib();
-  // We want to replace a symbol with a custom provided one.
-  llvm::consumeError(DyLib.remove({It->first}));
+  bool Defined = false;
+  for (auto* Dylib :
+       {&Jit->getMainJITDylib(), Jit->getPlatformJITDylib().get()}) {
+    if (Dylib->remove({It->first})) {
+      continue;
+    }
 
-  if (Error Err = DyLib.define(absoluteSymbols({*It}))) {
-    logAllUnhandledErrors(std::move(Err), errs(),
-                          "[IncrementalJIT] define() failed: ");
-    return orc::ExecutorAddr();
+    if (Error Err = Dylib->define(absoluteSymbols({*It}))) {
+      logAllUnhandledErrors(std::move(Err), errs(),
+                            "[IncrementalJIT] define() failed: ");
+      return orc::ExecutorAddr();
+    }
+    Defined = true;
+  }
+
+  if (!Defined) {
+    // Symbol was not found, just define it in the main library.
+    if (Error Err = Jit->getMainJITDylib().define(absoluteSymbols({*It}))) {
+      logAllUnhandledErrors(std::move(Err), errs(),
+                            "[IncrementalJIT] define() failed: ");
+      return orc::ExecutorAddr();
+    }
   }
 
   return KnownAddr;
