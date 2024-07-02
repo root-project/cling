@@ -334,12 +334,10 @@ namespace cling {
     ///
     ///\param[in] NoRuntime - Don't include the runtime headers / gCling
     ///\param[in] SyntaxOnly - In SyntaxOnly mode
-    ///\param[out] Globals - Global symbols that need to be emitted
     ///
     ///\returns The resulting Transation of initialization.
     ///
-    Transaction* Initialize(bool NoRuntime, bool SyntaxOnly,
-                            llvm::SmallVectorImpl<llvm::StringRef>& Globals);
+    Transaction* Initialize(bool NoRuntime, bool SyntaxOnly);
 
     ///\ Shut down the interpreter runtime.
     ///
