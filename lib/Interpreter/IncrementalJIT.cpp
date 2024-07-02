@@ -642,12 +642,6 @@ JITTargetAddress
 IncrementalJIT::addOrReplaceDefinition(StringRef Name,
                                        JITTargetAddress KnownAddr) {
 
-  void* Symbol = getSymbolAddress(Name, /*IncludeFromHost=*/true);
-
-  // Nothing to define, we are redefining the same function. FIXME: Diagnose.
-  if (Symbol && (JITTargetAddress)Symbol == KnownAddr)
-    return KnownAddr;
-
   // Let's inject it
   bool Inserted;
   SymbolMap::iterator It;
@@ -658,9 +652,7 @@ IncrementalJIT::addOrReplaceDefinition(StringRef Name,
 
   JITDylib& DyLib = Jit->getMainJITDylib();
   // We want to replace a symbol with a custom provided one.
-  if (Symbol && KnownAddr)
-     // The symbol be in the DyLib or in-process.
-     llvm::consumeError(DyLib.remove({It->first}));
+  llvm::consumeError(DyLib.remove({It->first}));
 
   if (Error Err = DyLib.define(absoluteSymbols({*It}))) {
     logAllUnhandledErrors(std::move(Err), errs(),
