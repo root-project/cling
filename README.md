@@ -44,9 +44,10 @@ git clone https://github.com/root-project/llvm-project.git
 cd llvm-project
 git checkout cling-latest
 cd ../
-git clone <cling>
+git clone https://github.com/root-project/cling.git
 mkdir cling-build && cd cling-build
-cmake -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;nvptx" ../llvm-project/llvm
+cmake -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;NVPTX" ../llvm-project/llvm # if failed, try `nvptx` instead
+cmake --build . --target cling
 ```
 
 Usage
