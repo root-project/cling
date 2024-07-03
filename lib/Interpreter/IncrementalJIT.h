@@ -65,7 +65,7 @@ public:
   /// Register a DefinitionGenerator to dynamically provide symbols for
   /// generated code that are not already available within the process.
   void addGenerator(std::unique_ptr<llvm::orc::DefinitionGenerator> G) {
-    Jit->getMainJITDylib().addGenerator(std::move(G));
+    Jit->getProcessSymbolsJITDylib()->addGenerator(std::move(G));
   }
 
   /// Return a `DefinitionGenerator` that can provide addresses for symbols
@@ -109,13 +109,14 @@ private:
   llvm::orc::SymbolMap m_InjectedSymbols;
   SharedAtomicFlag SkipHostProcessLookup;
   llvm::StringSet<> m_ForbidDlSymbols;
-  llvm::orc::ResourceTrackerSP m_CurrentRT;
+  llvm::orc::ResourceTrackerSP m_CurrentProcessRT;
 
   /// FIXME: If the relation between modules and transactions is a bijection, the
   /// mapping via module pointers here is unnecessary. The transaction should
   /// store the resource tracker directly and pass it to `remove()` for
   /// unloading.
-  std::map<const Transaction*, llvm::orc::ResourceTrackerSP> m_ResourceTrackers;
+  std::map<const Transaction*, llvm::orc::ResourceTrackerSP> m_MainResourceTrackers;
+  std::map<const Transaction*, llvm::orc::ResourceTrackerSP> m_ProcessResourceTrackers;
   std::map<const llvm::Module *, llvm::orc::ThreadSafeModule> m_CompiledModules;
 
   bool m_JITLink;

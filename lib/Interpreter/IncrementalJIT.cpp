@@ -502,6 +502,34 @@ IncrementalJIT::IncrementalJIT(
     return std::make_unique<SimpleCompiler>(*m_TM);
   });
 
+  char LinkerPrefix = this->m_TM->createDataLayout().getGlobalPrefix();
+
+  Builder.setProcessSymbolsJITDylibSetup([&](LLJIT& J) -> Expected<JITDylibSP> {
+    auto& JD = J.getExecutionSession().createBareJITDylib("<Process Symbols>");
+    // Process symbol resolution
+    auto HostProcessLookup =
+        RTDynamicLibrarySearchGenerator::GetForCurrentProcess(
+            LinkerPrefix, [this] { return m_CurrentProcessRT; },
+            [this](const SymbolStringPtr& Sym) {
+              return !m_ForbidDlSymbols.contains(*Sym);
+            });
+    if (!HostProcessLookup) {
+      return HostProcessLookup.takeError();
+    }
+    JD.addGenerator(std::move(*HostProcessLookup));
+
+    // This must come after process resolution, to  consistently resolve global
+    // symbols (e.g. std::cout) to the same address.
+    auto LibLookup = std::make_unique<RTDynamicLibrarySearchGenerator>(
+        llvm::sys::DynamicLibrary(ExtraLibHandle), LinkerPrefix,
+        [this] { return m_CurrentProcessRT; },
+        [this](const SymbolStringPtr& Sym) {
+          return !m_ForbidDlSymbols.contains(*Sym);
+        });
+    JD.addGenerator(std::move(LibLookup));
+    return &JD;
+  });
+
   if (Expected<std::unique_ptr<LLJIT>> JitInstance = Builder.create()) {
     Jit = std::move(*JitInstance);
   } else {
@@ -519,32 +547,9 @@ IncrementalJIT::IncrementalJIT(
       m_CompiledModules[Unsafe] = std::move(TSM);
     });
 
-  char LinkerPrefix = this->m_TM->createDataLayout().getGlobalPrefix();
-
-  // Process symbol resolution
-  auto HostProcessLookup
-    = RTDynamicLibrarySearchGenerator::GetForCurrentProcess(LinkerPrefix,
-                                              [&]{ return m_CurrentRT; },
-                                              [&](const SymbolStringPtr &Sym) {
-                                  return !m_ForbidDlSymbols.contains(*Sym); });
-  if (!HostProcessLookup) {
-    Err = HostProcessLookup.takeError();
-    return;
-  }
-  Jit->getMainJITDylib().addGenerator(std::move(*HostProcessLookup));
-
-  // This must come after process resolution, to  consistently resolve global
-  // symbols (e.g. std::cout) to the same address.
-  auto LibLookup = std::make_unique<RTDynamicLibrarySearchGenerator>(
-                       llvm::sys::DynamicLibrary(ExtraLibHandle), LinkerPrefix,
-                                              [&]{ return m_CurrentRT; },
-                                              [&](const SymbolStringPtr &Sym) {
-                                  return !m_ForbidDlSymbols.contains(*Sym); });
-  Jit->getMainJITDylib().addGenerator(std::move(LibLookup));
-
 #if defined(__linux__) && defined(__GLIBC__)
   // See comment in ListOfLibcNonsharedSymbols.
-  cantFail(Jit->getMainJITDylib().define(
+  cantFail(Jit->getProcessSymbolsJITDylib()->define(
       absoluteSymbols(GetListOfLibcNonsharedSymbols(*Jit))));
 #endif
 
@@ -586,8 +591,11 @@ std::unique_ptr<llvm::orc::DefinitionGenerator> IncrementalJIT::getGenerator() {
 }
 
 void IncrementalJIT::addModule(Transaction& T) {
-  ResourceTrackerSP RT = Jit->getMainJITDylib().createResourceTracker();
-  m_ResourceTrackers[&T] = RT;
+  ResourceTrackerSP MainRT = Jit->getMainJITDylib().createResourceTracker();
+  m_MainResourceTrackers[&T] = MainRT;
+  ResourceTrackerSP ProcessRT =
+      Jit->getProcessSymbolsJITDylib()->createResourceTracker();
+  m_ProcessResourceTrackers[&T] = ProcessRT;
 
   std::unique_ptr<Module> module = T.takeModule();
 
@@ -610,9 +618,9 @@ void IncrementalJIT::addModule(Transaction& T) {
 
   const Module *Unsafe = TSM.getModuleUnlocked();
   T.m_CompiledModule = Unsafe;
-  m_CurrentRT = RT;
+  m_CurrentProcessRT = ProcessRT;
 
-  if (Error Err = Jit->addIRModule(RT, std::move(TSM))) {
+  if (Error Err = Jit->addIRModule(MainRT, std::move(TSM))) {
     logAllUnhandledErrors(std::move(Err), errs(),
                           "[IncrementalJIT] addModule() failed: ");
     return;
@@ -620,12 +628,16 @@ void IncrementalJIT::addModule(Transaction& T) {
 }
 
 llvm::Error IncrementalJIT::removeModule(const Transaction& T) {
-  ResourceTrackerSP RT = std::move(m_ResourceTrackers[&T]);
-  if (!RT)
+  ResourceTrackerSP MainRT = std::move(m_MainResourceTrackers[&T]);
+  if (!MainRT)
     return llvm::Error::success();
+  ResourceTrackerSP ProcessRT = std::move(m_ProcessResourceTrackers[&T]);
 
-  m_ResourceTrackers.erase(&T);
-  if (Error Err = RT->remove())
+  m_MainResourceTrackers.erase(&T);
+  m_ProcessResourceTrackers.erase(&T);
+  if (Error Err = MainRT->remove())
+    return Err;
+  if (Error Err = ProcessRT->remove())
     return Err;
   auto iMod = m_CompiledModules.find(T.m_CompiledModule);
   if (iMod != m_CompiledModules.end())
@@ -668,7 +680,14 @@ void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols){
   if (!IncludeHostSymbols)
     insertInfo = m_ForbidDlSymbols.insert(Name);
 
-  Expected<llvm::orc::ExecutorAddr> Symbol = Jit->lookup(Name);
+  Expected<llvm::orc::ExecutorAddr> Symbol =
+      Jit->lookup(Jit->getMainJITDylib(), Name);
+  if (!Symbol) {
+    // FIXME: We should take advantage of the fact that all process symbols
+    // are now in a separate JITDylib; see also the comments and ideas in
+    // IncrementalExecutor::getAddressOfGlobal().
+    Symbol = Jit->lookup(*Jit->getProcessSymbolsJITDylib(), Name);
+  }
 
   // If m_ForbidDlSymbols already contained Name before we tried to insert it
   // then some calling frame has added it and will remove it later because its
