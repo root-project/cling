@@ -23,8 +23,8 @@ the fact that translating code at run time adds to the overhead and therefore
 causes the execution speed to be slower. This issue is overcome by exploiting
 the *Just-In-Time* (`JIT
 <https://en.wikipedia.org/wiki/Just-in-time_compilation>`_) compilation method,
-which allows an efficient meory management (for example, by evaluating whether a
-certain part of the source code is executed often, and then compile this part,
+which allows an efficient memory management (for example, by evaluating whether
+a certain part of the source code is executed often, and then compile this part,
 therefore reducing the overall execution time).
 
 With the JIT approach, the developer types the code in Cling's command
