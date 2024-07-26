@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
 
 #------------------------------------------------------------------------------
@@ -11,8 +11,6 @@
 # LICENSE.TXT for details.
 #------------------------------------------------------------------------------
 
-from __future__ import print_function
-
 # the name of the project
 name = 'clingkernel'
 
@@ -23,12 +21,10 @@ name = 'clingkernel'
 import sys
 
 v = sys.version_info
-if v[:2] < (2,7) or (v[0] >= 3 and v[:2] < (3,3)):
-    error = "ERROR: %s requires Python version 2.7 or 3.3 or above." % name
+if v[0] >= 3 and v[:2] < (3,3):
+    error = "ERROR: %s requires Python version 3.3 or above." % name
     print(error, file=sys.stderr)
     sys.exit(1)
-
-PY3 = (sys.version_info[0] >= 3)
 
 #-----------------------------------------------------------------------------
 # get on with it

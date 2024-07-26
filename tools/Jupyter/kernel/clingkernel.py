@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #------------------------------------------------------------------------------
 # CLING - the C++ LLVM-based InterpreterG :)
 # author:  Min RK
@@ -14,8 +14,6 @@ Cling Kernel for Jupyter
 
 Talks to Cling via ctypes
 """
-
-from __future__ import print_function
 
 __version__ = '0.0.3'
 
