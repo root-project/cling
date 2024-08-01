@@ -50,10 +50,13 @@ cling::ParserStateRAII::~ParserStateRAII() {
   // Note: Consuming the EOF token will pop the include stack.
   //
   {
-    // Cleanup the TemplateIds before swapping the previous set back.
-    Parser::DestroyTemplateIdAnnotationsRAIIObj CleanupTemplateIds(*P);
+    // Forcefully clean up the TemplateIds, ignoring additional checks in
+    // MaybeDestroyTemplateIds called from DestroyTemplateIdAnnotationsRAIIObj,
+    // before swapping the previous set back.
+    P->DestroyTemplateIds();
   }
   P->TemplateIds.swap(OldTemplateIds);
+  assert(OldTemplateIds.empty());
   if (SkipToEOF)
     P->SkipUntil(tok::eof);
   else
