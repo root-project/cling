@@ -870,7 +870,6 @@ namespace cling {
              nullptr, SourceLocation());
     }
     assert(PP.isIncrementalProcessingEnabled() && "Not in incremental mode!?");
-    PP.enableIncrementalProcessing();
 
     smallstream source_name;
     // FIXME: Pre-increment to avoid failing tests.

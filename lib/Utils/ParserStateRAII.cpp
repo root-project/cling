@@ -16,8 +16,6 @@ using namespace clang;
 
 cling::ParserStateRAII::ParserStateRAII(Parser& p, bool skipToEOF)
   : P(&p), PP(p.getPreprocessor()),
-    ResetIncrementalProcessing(p.getPreprocessor()
-                               .isIncrementalProcessingEnabled()),
     PPDiagHadErrors(PP.getDiagnostics().hasErrorOccurred()),
     SemaDiagHadErrors(P->getActions().getDiagnostics().hasErrorOccurred()),
     OldSuppressAllDiagnostics(P->getActions().getDiagnostics()
@@ -61,7 +59,6 @@ cling::ParserStateRAII::~ParserStateRAII() {
     P->SkipUntil(tok::eof);
   else
     P->Tok = OldTok;
-  PP.enableIncrementalProcessing(ResetIncrementalProcessing);
   if (!SemaDiagHadErrors) {
     // Doesn't reset the diagnostic mappings
     P->getActions().getDiagnostics().Reset(/*soft=*/true);

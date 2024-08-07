@@ -266,9 +266,6 @@ namespace cling {
 
     Sema& SemaRef = getSema();
     Preprocessor& PP = SemaRef.getPreprocessor();
-    // Enable incremental processing, which prevents the preprocessor destroying
-    // the lexer on EOF token.
-    PP.enableIncrementalProcessing();
 
     m_LookupHelper.reset(new LookupHelper(new Parser(PP, SemaRef,
                                                      /*SkipFunctionBodies*/false,

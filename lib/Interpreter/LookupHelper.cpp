@@ -89,15 +89,6 @@ namespace cling {
     //  Tell the parser to not attempt spelling correction.
     //
     const_cast<LangOptions&>(PP.getLangOpts()).SpellChecking = 0;
-    //
-    //  Turn on ignoring of the main file eof token.
-    //
-    //  Note: We need this because token readahead in the following
-    //        routine calls ends up parsing it multiple times.
-    //
-    if (!PP.isIncrementalProcessingEnabled()) {
-      PP.enableIncrementalProcessing();
-    }
     assert(!code.empty() &&
            "prepareForParsing should only be called when need");
 

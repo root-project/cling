@@ -396,6 +396,8 @@ namespace {
 //    Opts.StackProtector = 0;
 #endif // _MSC_VER
 
+    Opts.IncrementalExtensions = 1;
+
     Opts.Exceptions = 1;
     if (Opts.CPlusPlus) {
       Opts.CXXExceptions = 1;

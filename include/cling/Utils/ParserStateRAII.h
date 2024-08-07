@@ -30,7 +30,6 @@ namespace cling {
     clang::Parser* P;
     clang::Preprocessor& PP;
     decltype(clang::Parser::TemplateIds) OldTemplateIds;
-    bool ResetIncrementalProcessing;
     bool PPDiagHadErrors;
     bool SemaDiagHadErrors;
     bool OldSuppressAllDiagnostics;
