@@ -446,7 +446,7 @@ size_t cling::utils::getWrapPoint(std::string& source,
       continue; // Skip PP directives; they just move the wrap point.
     }
 
-    if (Tok.is(tok::eof)) {
+    if (Tok.is(tok::annot_repl_input_end)) {
       // Reached EOF before seeing a non-preproc token.
       // Nothing to wrap.
       return std::string::npos;

@@ -56,7 +56,7 @@ cling::ParserStateRAII::~ParserStateRAII() {
   P->TemplateIds.swap(OldTemplateIds);
   assert(OldTemplateIds.empty());
   if (SkipToEOF)
-    P->SkipUntil(tok::eof);
+    P->SkipUntil(tok::annot_repl_input_end);
   else
     P->Tok = OldTok;
   if (!SemaDiagHadErrors) {

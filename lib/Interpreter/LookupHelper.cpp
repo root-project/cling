@@ -494,7 +494,7 @@ namespace cling {
                                    clang::AS_none, 0, &Attrs));
     if (Res.isUsable()) {
       // Accept it only if the whole name was parsed.
-      if (P.NextToken().getKind() == clang::tok::eof) {
+      if (P.NextToken().getKind() == clang::tok::annot_repl_input_end) {
         TypeSourceInfo* TSI = 0;
         TheQT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
       }
@@ -633,7 +633,7 @@ namespace cling {
         NestedNameSpecifier* NNS = SS.getScopeRep();
         NestedNameSpecifier::SpecifierKind Kind = NNS->getKind();
         // Only accept the parse if we consumed all of the name.
-        if (P.NextToken().getKind() == clang::tok::eof) {
+        if (P.NextToken().getKind() == clang::tok::annot_repl_input_end) {
           //
           //  Be careful, not all nested name specifiers refer to classes
           //  and namespaces, and those are the only things we want.
@@ -741,7 +741,7 @@ namespace cling {
     //
     //  Cleanup after failed parse as a nested-name-specifier.
     //
-    P.SkipUntil(clang::tok::eof);
+    P.SkipUntil(clang::tok::annot_repl_input_end);
     // Doesn't reset the diagnostic mappings
     S.getDiagnostics().Reset(/*soft=*/true);
     //
@@ -769,7 +769,7 @@ namespace cling {
     if (P.getCurToken().getKind() == tok::annot_typename) {
       TypeResult T = P.getTypeAnnotation(const_cast<Token&>(P.getCurToken()));
       // Only accept the parse if we consumed all of the name.
-      if (P.NextToken().getKind() == clang::tok::eof)
+      if (P.NextToken().getKind() == clang::tok::annot_repl_input_end)
         if (!T.get().get().isNull()) {
           TypeSourceInfo *TSI = 0;
           clang::QualType QT =
@@ -1672,7 +1672,7 @@ namespace cling {
       // ParseTypeName might trigger deserialization.
       Interpreter::PushTransactionRAII TforDeser(Interp);
       unsigned int nargs = 0;
-      while (P.getCurToken().isNot(tok::eof)) {
+      while (P.getCurToken().isNot(tok::annot_repl_input_end)) {
         TypeResult Res(P.ParseTypeName());
         if (!Res.isUsable()) {
           // Bad parse, done.
@@ -1706,14 +1706,14 @@ namespace cling {
         Expr* val = (OpaqueValueExpr*)( &ExprMemory[slot] );
         GivenArgs.push_back(val);
       }
-      if (P.getCurToken().isNot(tok::eof)) {
+      if (P.getCurToken().isNot(tok::annot_repl_input_end)) {
         // We did not consume all of the prototype, bad parse.
         return false;
       }
       //
       //  Cleanup after prototype parse.
       //
-      P.SkipUntil(clang::tok::eof);
+      P.SkipUntil(clang::tok::annot_repl_input_end);
       // Doesn't reset the diagnostic mappings
       Sema& S = P.getActions();
       S.getDiagnostics().Reset(/*soft=*/true);
@@ -1950,7 +1950,7 @@ namespace cling {
       std::string proto;
       {
         bool first_time = true;
-        while (P.getCurToken().isNot(tok::eof)) {
+        while (P.getCurToken().isNot(tok::annot_repl_input_end)) {
           ExprResult Res = P.ParseAssignmentExpression();
           if (Res.isUsable()) {
             Expr* expr = Res.get();
@@ -1974,14 +1974,14 @@ namespace cling {
       }
       // For backward compatibility with CINT accept (for now?) a trailing close
       // parenthesis.
-      if (P.getCurToken().isNot(tok::eof) && P.getCurToken().isNot(tok::r_paren) ) {
+      if (P.getCurToken().isNot(tok::annot_repl_input_end) && P.getCurToken().isNot(tok::r_paren) ) {
         // We did not consume all of the arg list, bad parse.
         return false;
       }
       //
       //  Cleanup after the arg list parse.
       //
-      P.SkipUntil(clang::tok::eof);
+      P.SkipUntil(clang::tok::annot_repl_input_end);
       // Doesn't reset the diagnostic mappings
       S.getDiagnostics().Reset(/*soft=*/true);
       return true;
@@ -2025,7 +2025,7 @@ namespace cling {
     //
     {
       bool hasUnusableResult = false;
-      while (P.getCurToken().isNot(tok::eof)) {
+      while (P.getCurToken().isNot(tok::annot_repl_input_end)) {
         ExprResult Res = P.ParseAssignmentExpression();
         if (Res.isUsable()) {
           argExprs.push_back(Res.get());

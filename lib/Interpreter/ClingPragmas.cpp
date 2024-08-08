@@ -44,7 +44,7 @@ namespace {
       ~SkipToEOD() {
         // Can't use Preprocessor::DiscardUntilEndOfDirective, as we may
         // already be on an eod token
-        while (!m_Tok.isOneOf(tok::eod, tok::eof))
+        while (!m_Tok.isOneOf(tok::eod, tok::annot_repl_input_end))
           m_PP.LexUnexpandedToken(m_Tok);
       }
     };

@@ -653,10 +653,10 @@ namespace cling {
       // They will seriously confuse the Parser when entering the next
       // source file. So lex until we are EOF.
       Token Tok;
-      Tok.setKind(tok::eof);
+      Tok.setKind(tok::annot_repl_input_end);
       do {
         getCI()->getSema().getPreprocessor().Lex(Tok);
-      } while (Tok.isNot(tok::eof));
+      } while (Tok.isNot(tok::annot_repl_input_end));
 #endif
 
       ParseResultTransaction nestedPRT = endTransaction(nestedT);
@@ -922,12 +922,12 @@ namespace cling {
       Token Tok;
       do {
         PP.Lex(Tok);
-      } while (Tok.isNot(tok::eof));
+      } while (Tok.isNot(tok::annot_repl_input_end));
     }
 
     Token AssertTok;
     PP.Lex(AssertTok);
-    assert(AssertTok.is(tok::eof) &&
+    assert(AssertTok.is(tok::annot_repl_input_end) &&
            "Lexer must be EOF when starting incremental parse!");
 
     DiagnosticsEngine& Diags = getCI()->getDiagnostics();
@@ -951,6 +951,11 @@ namespace cling {
     llvm::CrashRecoveryContextCleanupRegistrar<Sema> CleanupSema(&S);
     Sema::GlobalEagerInstantiationScope GlobalInstantiations(S, /*Enabled=*/true);
     Sema::LocalEagerInstantiationScope LocalInstantiations(S);
+
+    // Skip previous eof due to last incremental input.
+    if (m_Parser->getCurToken().is(tok::annot_repl_input_end)) {
+      m_Parser->ConsumeAnyToken();
+    }
 
     Parser::DeclGroupPtrTy ADecl;
     Sema::ModuleImportState ImportState;
