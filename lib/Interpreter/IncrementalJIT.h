@@ -62,6 +62,8 @@ public:
                  std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC,
                  llvm::Error &Err, void *ExtraLibHandle, bool Verbose);
 
+  ~IncrementalJIT();
+
   /// Register a DefinitionGenerator to dynamically provide symbols for
   /// generated code that are not already available within the process.
   void addGenerator(std::unique_ptr<llvm::orc::DefinitionGenerator> G) {

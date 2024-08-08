@@ -436,6 +436,24 @@ namespace cling {
 ///\brief Creates JIT event listener to allow profiling of JITted code with perf
 llvm::JITEventListener* createPerfJITEventListener();
 
+IncrementalJIT::~IncrementalJIT() {
+  // FIXME: This should ideally happen in the right order without explicitly
+  // doing this. We started seeing failing tests (eg, tutorial-hist-cumulative,
+  // JITLink turned on) with assertion failure in ~FinalizedAlloc after commit
+  // [cling] Move generators to ProcessSymbols JITDylib
+  // This likely changed the destruction order that caused the assertion to
+  // trigger.
+  if (auto Err = Jit->getMainJITDylib().clear()) {
+    llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(),
+                                "Error clearing MainJITDylib: ");
+  }
+
+  if (auto Err = Jit->getProcessSymbolsJITDylib()->clear()) {
+    llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(),
+                                "Error clearing ProcessSymbolsJITDylib: ");
+  }
+}
+
 IncrementalJIT::IncrementalJIT(
     IncrementalExecutor& Executor, const clang::CompilerInstance &CI,
     std::unique_ptr<llvm::orc::ExecutorProcessControl> EPC, Error& Err,
