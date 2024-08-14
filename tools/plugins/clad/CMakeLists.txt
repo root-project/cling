@@ -19,6 +19,7 @@ if(MSVC)
   else()
     set(_clad_build_type Release)
   endif()
+  set(EXTRA_BUILD_ARGS --config ${_clad_build_type})
 endif(MSVC)
 set(_CLAD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/clad-prefix/src/clad-build/${_clad_build_type}/lib${LLVM_LIBDIR_SUFFIX})
 
@@ -86,8 +87,8 @@ ExternalProject_Add(
              -DLLVM_DIR=${LLVM_BINARY_DIR}
              -DCLANG_INCLUDE_DIRS=${CLANG_INCLUDE_DIRS}
              ${_clad_extra_cmake_args}
-  BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${_clad_build_type}
-  INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config ${_clad_build_type} --target install
+  BUILD_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS}
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS} --target install
   BUILD_BYPRODUCTS ${CLAD_BYPRODUCTS}
   ${_clad_cmake_logging_settings}
   # We need the target clangBasic to be built before building clad. However, we
