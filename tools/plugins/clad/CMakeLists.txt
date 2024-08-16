@@ -49,11 +49,7 @@ if (LLVM_FORCE_USE_OLD_TOOLCHAIN)
   list(APPEND _clad_extra_cmake_args -DLLVM_FORCE_USE_OLD_TOOLCHAIN=${LLVM_FORCE_USE_OLD_TOOLCHAIN})
 endif(LLVM_FORCE_USE_OLD_TOOLCHAIN)
 
-if (CLING_INCLUDE_TESTS)
-  list(APPEND _clad_extra_cmake_args -DLLVM_EXTERNAL_LIT=${LLVM_MAIN_SRC_DIR}/utils/lit/lit.py)
-else()
-  list(APPEND _clad_extra_cmake_args -DCLAD_BUILD_STATIC_ONLY=ON)
-endif()
+list(APPEND _clad_extra_cmake_args -DCLAD_BUILD_STATIC_ONLY=ON)
 
 # Wrap download, configure and build steps in a script to log output
 set(_clad_cmake_logging_settings
