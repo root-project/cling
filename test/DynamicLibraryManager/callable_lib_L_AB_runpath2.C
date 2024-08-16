@@ -6,6 +6,8 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
+// UNSUPPORTED: system-darwin
+
 // RUN: mkdir -p %t-dir/rlib1
 // RUN: mkdir -p %t-dir/rlib2
 // RUN: mkdir -p %t-dir/lib

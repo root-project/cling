@@ -6,6 +6,8 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
+// UNSUPPORTED: system-darwin
+
 // RUN: mkdir -p %t-dir/lib
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_A.c -o%t-dir/lib/libcall_lib_A%shlibext
 // RUN: %clang -shared -DCLING_EXPORT=%dllexport %S/call_lib_B.c -o%t-dir/lib/libcall_lib_B%shlibext
