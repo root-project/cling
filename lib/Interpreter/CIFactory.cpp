@@ -929,10 +929,7 @@ namespace {
   SetupCompiler(CompilerInstance* CI, const CompilerOptions& CompilerOpts,
                 bool Lang = true, bool Targ = true) {
     LangOptions& LangOpts = CI->getLangOpts();
-    // Set the language options, which cling needs.
-    // This may have already been done via a precompiled header
-    if (Lang)
-      SetClingCustomLangOpts(LangOpts, CompilerOpts);
+    SetClingCustomLangOpts(LangOpts, CompilerOpts);
 
     PreprocessorOptions& PPOpts = CI->getInvocation().getPreprocessorOpts();
     SetPreprocessorFromBinary(PPOpts);
