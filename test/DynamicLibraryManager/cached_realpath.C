@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// UNSUPPORTED: system-windows
+// UNSUPPORTED: system-darwin, system-windows
 
 // RUN: %rm -fr %t-dir
 // RUN: %mkdir %t-dir
