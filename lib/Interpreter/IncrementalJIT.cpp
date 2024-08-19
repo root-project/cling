@@ -586,7 +586,7 @@ IncrementalJIT::IncrementalJIT(
 
 std::unique_ptr<llvm::orc::DefinitionGenerator> IncrementalJIT::getGenerator() {
   return std::make_unique<DelegateGenerator>(
-      [&](StringRef UnmangledName) { return Jit->lookup(UnmangledName); });
+      [&](StringRef Name) { return Jit->lookupLinkerMangled(Name); });
 }
 
 void IncrementalJIT::addModule(Transaction& T) {
