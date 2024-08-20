@@ -151,9 +151,9 @@ void CompilerOptions::Parse(int argc, const char* const argv[],
   const OptTable& OptsC1 = getDriverOptTable();
   ArrayRef<const char *> ArgStrings(argv+1, argv + argc);
 
+  llvm::opt::Visibility VisibilityMask(options::ClangOption);
   InputArgList Args(OptsC1.ParseArgs(ArgStrings, MissingArgIndex,
-                                     MissingArgCount, 0,
-                                     options::CLOption | options::DXCOption));
+                                     MissingArgCount, VisibilityMask));
 
   for (const Arg* arg : Args) {
     switch (arg->getOption().getID()) {
