@@ -105,13 +105,13 @@ decl = lookup.findDataMember(class_tempFlt,"gValue", diags);
 printScope(decl->getDeclContext());
 decl->dump(cling::outs());
 //CHECK-NEXT: Context is aTemplate
-//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:13 gValue 'float':'float' static
+//CHECK-NEXT: VarDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:13 gValue 'float' implicit_instantiation static
 
 decl = lookup.findDataMember(class_tempFlt,"fMember", diags);
 printScope(decl->getDeclContext());
 decl->dump(cling::outs());
 //CHECK-NEXT: Context is aTemplate
-//CHECK-NEXT: FieldDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:6 fMember 'float':'float'
+//CHECK-NEXT: FieldDecl 0x{{[1-9a-f][0-9a-f]*}} <{{.*}}> col:6 fMember 'float'
 
 decl = lookup.findDataMember(namespace_NS,"gValue", diags);
 printScope(decl->getDeclContext());
