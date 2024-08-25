@@ -351,9 +351,9 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
                                  StandardInstrumentations& SI) {
 
   MPM.addPass(KeepLocalGVPass());
-  MPM.addPass(PreventLocalOptPass());
   MPM.addPass(WeakTypeinfoVTablePass());
   MPM.addPass(ReuseExistingWeakSymbols(m_JIT));
+  MPM.addPass(PreventLocalOptPass());
 
   // Run verifier after local passes to make sure that IR remains untouched.
   if (m_CGOpts.VerifyModule)
