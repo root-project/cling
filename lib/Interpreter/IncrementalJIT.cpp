@@ -70,8 +70,6 @@ namespace {
     }
   };
 
-  ClingMMapper MMapperInstance;
-
   // A memory manager for Cling that reserves memory for code and data sections
   // to keep them contiguous for the emission of one module. This is required
   // for working exception handling support since one .eh_frame section will
@@ -133,7 +131,7 @@ namespace {
     AllocInfo m_RWData;
 
   public:
-    ClingMemoryManager() : Super(&MMapperInstance) {}
+    ClingMemoryManager(ClingMMapper& MMapper) : Super(&MMapper) {}
 
     uint8_t* allocateCodeSection(uintptr_t Size, unsigned Alignment,
                                  unsigned SectionID,
@@ -474,7 +472,10 @@ IncrementalJIT::IncrementalJIT(
       return ObjLinkingLayer;
     }
 
-    auto GetMemMgr = []() { return std::make_unique<ClingMemoryManager>(); };
+    auto MMapper = std::make_unique<ClingMMapper>();
+    auto GetMemMgr = [MMapper = std::move(MMapper)]() {
+      return std::make_unique<ClingMemoryManager>(*MMapper);
+    };
     auto Layer =
         std::make_unique<RTDyldObjectLinkingLayer>(ES, std::move(GetMemMgr));
 
