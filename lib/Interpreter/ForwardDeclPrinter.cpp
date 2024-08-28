@@ -618,7 +618,7 @@ namespace cling {
     if (!hasTrailingReturn)
       prettyPrintAttributes(D);
 
-    if (D->isPure())
+    if (D->isPureVirtual())
       Out() << " = 0";
     else if (D->isDeletedAsWritten())
       Out() << " = delete";
