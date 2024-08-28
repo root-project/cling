@@ -19,49 +19,23 @@ infrastructure are described first.
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM r0000000.
+* Upgrade to LLVM LLVM16 and further reduce our technical debt
+* Require C++17
 
 Major New Features
 ------------------
-* A major new feature
-
-Misc
-----
-* A misc feature
-
-Experimental Features
----------------------
-* An experimental feature
-
-Jupyter
--------
-* A Jupyter feature
-
+* Support ppc64 in jitlink
+* Support LLVM plugins
+* Improve the modulemap handling on Darwin
 
 Fixed Bugs
 ----------
-[ROOT-XXXX](https://sft.its.cern.ch/jira/browse/ROOT-XXXX)
-
-<!---Get release bugs
-git log v1.0..master | grep 'ROOT-' | sed -E \
-  's,^.*(ROOT-[0-9]+).*$,[\1]\(https://sft.its.cern.ch/jira/browse/\1\),' | \
-  sort | uniq
---->
-<!---Standard MarkDown doesn't support neither variables nor <base>
-[ROOT-XXX](https://sft.its.cern.ch/jira/browse/ROOT-XXX)
---->
-
-<!---Additional Information
-----------------------
-A wide variety of additional information is available on the
-[Cling web page](http://root.cern/cling). The web page contains versions of
-the API documentation which are up-to-date with the git version of the source
-code. You can access versions of these documents specific to this release by
-going into the “clang/docs/” directory in the Cling source tree.
-
-If you have any questions or comments about Cling, please feel free to contact
-us via the mailing list.--->
-
+[442](https://github.com/root-project/cling/issues/442)
+[14593](https://github.com/root-project/root/issues/14593)
+[16219](https://github.com/root-project/root/issues/16219)
+[11190](https://github.com/root-project/root/issues/11190)
+[14964](https://github.com/root-project/root/issues/14964)
+[16121](https://github.com/root-project/root/issues/16121)
 
 Special Kudos
 =============
@@ -70,7 +44,20 @@ listed in the form of Firstname Lastname (#contributions):
 
 FirstName LastName (#commits)
 
-<!---Find contributor list for this release
-git log --pretty=format:"%an"  v1.0...master | sort | uniq -c | sort -rn |\
-  sed -E 's,^ *([0-9]+) (.*)$,\2 \(\1\),'
---->
+Jonas Hahnfeld (53)
+Devajith Valaparambil Sreeramaswamy (18)
+Vassil Vassilev (10)
+Bertrand Bellenot (6)
+ferdymercury (4)
+Devajth Valaparambil Sreeramaswamy (3)
+Yong Gyu Lee (2)
+Jonas Rembser (2)
+Vincenzo Eduardo Padulano (1)
+saisoma123 (1)
+Olivier Couet (1)
+Maxim Cournoyer (1)
+LiAuTraver (1)
+Kai Luo (1)
+Devajith (1)
+Danilo Piparo (1)
+Axel Naumann (1)
