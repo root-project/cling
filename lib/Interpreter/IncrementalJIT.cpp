@@ -508,7 +508,8 @@ IncrementalJIT::IncrementalJIT(
       Layer->setAutoClaimResponsibilityForObjectSymbols(true);
     }
 
-    if (TT.isOSBinFormatELF() && (TT.getArch() == Triple::ArchType::ppc64 ||
+    if (TT.isOSBinFormatELF() && (TT.getArch() == Triple::ArchType::aarch64 ||
+                                  TT.getArch() == Triple::ArchType::ppc64 ||
                                   TT.getArch() == Triple::ArchType::ppc64le))
       Layer->setAutoClaimResponsibilityForObjectSymbols(true);
 
