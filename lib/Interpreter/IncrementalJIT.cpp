@@ -396,12 +396,13 @@ CreateTargetMachine(const clang::CompilerInstance& CI, bool JITLink) {
     // Set up the TargetMachine as otherwise done by
     // LLJITBuilderState::prepareForConstruction.
     JTMB.setRelocationModel(Reloc::PIC_);
-    // Set the small code except for macOS on AArch64 - it results in relocation
-    // targets that are out-of-range.
-    // TODO: Investigate / report upstream and re-evaluate after a future LLVM
-    // upgrade.
-    if (!(TT.isOSBinFormatMachO() && TT.getArch() == Triple::aarch64))
-      JTMB.setCodeModel(CodeModel::Small);
+    // However, do not change the code model: While the small code model would
+    // be enough if we created a new JITDylib per Module, Cling adds multiple
+    // modules to the same library. This causes problems because weak symbols
+    // are merged and may end up more than 2 GB apart. This is especially
+    // visible for DW.ref.__gxx_personality_v0 related to exception handling.
+    // TODO: Investigate if we can use one JITDylib per Module as recommended
+    // by upstream.
   }
 
   return cantFail(JTMB.createTargetMachine());
