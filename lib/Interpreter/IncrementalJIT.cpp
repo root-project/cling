@@ -352,7 +352,8 @@ static bool UseJITLink(const Triple& TT) {
   if (TT.getArch() == Triple::riscv64 ||
       (TT.isOSBinFormatMachO() &&
        (TT.getArch() == Triple::aarch64 || TT.getArch() == Triple::x86_64)) ||
-      (TT.isOSBinFormatELF() && TT.getArch() == Triple::ppc64le)) {
+      (TT.isOSBinFormatELF() &&
+       (TT.getArch() == Triple::aarch64 || TT.getArch() == Triple::ppc64le))) {
     jitLink = true;
   }
   // Finally, honor the user's choice by setting an environment variable.
