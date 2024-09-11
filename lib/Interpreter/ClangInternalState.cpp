@@ -256,21 +256,26 @@ namespace cling {
     std::vector<std::string> ParsedOpen, Parsed, AST;
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
-      const clang::FileEntry *FE = I->first;
+      const clang::FileEntryRef FE = I->first;
       // Our error recovery purges the cache of the FileEntry, but keeps
       // the FileEntry's pointer so that if it was used by smb (like the
       // SourceManager) it wouldn't be dangling. In that case we shouldn't
       // print the FileName, because semantically it is not there.
       if (!I->second)
         continue;
-      std::string fileName(FE->getName());
+      std::string fileName(FE.getName());
       if (!(fileName.compare(0, 5, "/usr/") == 0 &&
             fileName.find("/bits/") != std::string::npos) &&
           fileName.compare("-")) {
         if (I->second->getBufferDataIfLoaded()) {
           // There is content - a memory buffer or a file.
           // We know it's a file because we started off the FileEntry.
-          if (FE->isOpen())
+
+          // FIXME: LLVM will completely migrate to FileEntryRef.
+          // We added `isOpen()` in our commit:
+          // `Accessor to "is file opened"; this is crucial info for us.`
+          // Move this logic to FileEntryRef or have a workaround.
+          if (FE.getFileEntry().isOpen())
             ParsedOpen.emplace_back(std::move(fileName));
           else
             Parsed.emplace_back(std::move(fileName));

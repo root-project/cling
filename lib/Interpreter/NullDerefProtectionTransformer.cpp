@@ -284,7 +284,7 @@ namespace cling {
     if (FID.isInvalid())
       return false;
 
-    auto FE = SM.getFileEntryForID(FID);
+    auto FE = SM.getFileEntryRefForID(FID);
     if (!FE)
       return false;
 
@@ -296,7 +296,7 @@ namespace cling {
     if (IterAndInserted.second == false)
       return IterAndInserted.first->second;
 
-    if (llvm::sys::fs::can_write(Dir->getName()))
+    if (llvm::sys::fs::can_write(Dir.getName()))
       return true; // `true` is already emplaced above.
 
     // Remember that this dir is not writable and should not be visited.
