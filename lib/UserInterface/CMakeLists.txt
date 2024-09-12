@@ -7,40 +7,12 @@
 #------------------------------------------------------------------------------
 
 set( LLVM_LINK_COMPONENTS
+  LineEditor
   support
 )
 
-if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/textinput)
-  set(TEXTINPUTSRC ${CMAKE_SOURCE_DIR}/core/textinput/src/)
-  include_directories(${TEXTINPUTSRC})
-else()
-  # For cling, install textinput *.h in include/cling/UserInterface/textinput.
-  install(DIRECTORY ${TEXTINPUTSRC}textinput
-    DESTINATION include/cling/UserInterface
-    FILES_MATCHING
-    PATTERN "CMakeFiles" EXCLUDE
-    PATTERN "*.cpp" EXCLUDE
-    PATTERN "doc" EXCLUDE
-    PATTERN "*.h"
-    )
-endif()
-
 add_cling_library(clingUserInterface
   UserInterface.cpp
-  ${TEXTINPUTSRC}textinput/Editor.cpp
-  ${TEXTINPUTSRC}textinput/History.cpp
-  ${TEXTINPUTSRC}textinput/KeyBinding.cpp
-  ${TEXTINPUTSRC}textinput/Range.cpp
-  ${TEXTINPUTSRC}textinput/SignalHandler.cpp
-  ${TEXTINPUTSRC}textinput/StreamReader.cpp
-  ${TEXTINPUTSRC}textinput/StreamReaderUnix.cpp
-  ${TEXTINPUTSRC}textinput/StreamReaderWin.cpp
-  ${TEXTINPUTSRC}textinput/TerminalConfigUnix.cpp
-  ${TEXTINPUTSRC}textinput/TerminalDisplay.cpp
-  ${TEXTINPUTSRC}textinput/TerminalDisplayUnix.cpp
-  ${TEXTINPUTSRC}textinput/TerminalDisplayWin.cpp
-  ${TEXTINPUTSRC}textinput/TextInput.cpp
-  ${TEXTINPUTSRC}textinput/TextInputContext.cpp
 
   LINK_LIBS
   clingMetaProcessor

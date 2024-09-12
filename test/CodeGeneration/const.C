@@ -33,5 +33,5 @@ a.val
 a.getVal()
 // CHECK-NEXT: (int) 1
 
-// CHECK-NEXT: ~A(1), this = [[PTR]]
+// CHECK: ~A(1), this = [[PTR]]
 // CHECK-NOT: ~A

@@ -72,7 +72,7 @@ CLING_MULTILINE_MACRO("DOWHILE");
 #define CLING_MULTILINE_TRAILING_SPACE   \    
   "Trailing Space "   \    
   "And A Tab" \		
-  " End" // expected-warning@1 {{backslash and newline separated by space}} // expected-warning@2 {{backslash and newline separated by space}}
+  " End" // expected-warning@1 {{backslash and newline separated by space}} // expected-warning@2 {{backslash and newline separated by space}} // expected-warning@3 {{backslash and newline separated by space}}
 
 CLING_MULTILINE_TRAILING_SPACE
 // CHECK-NEXT: (const char[29]) "Trailing Space And A Tab End"

@@ -12,13 +12,9 @@
 #include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "cling/Utils/Output.h"
-#include "textinput/Callbacks.h"
-#include "textinput/History.h"
-#include "textinput/StreamReader.h"
-#include "textinput/TerminalDisplay.h"
-#include "textinput/TextInput.h"
 
 #include "llvm/ADT/SmallString.h"
+#include "llvm/LineEditor/LineEditor.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Path.h"
 
@@ -30,43 +26,39 @@ namespace {
   /// to code complete through its own textinput mechanism which is part of the
   /// UserInterface.
   ///
-  class UITabCompletion : public textinput::TabCompletion {
-    const cling::Interpreter& m_ParentInterpreter;
 
-  public:
-    UITabCompletion(const cling::Interpreter& Parent) :
-                    m_ParentInterpreter(Parent) {}
-    ~UITabCompletion() {}
+  struct ClingListCompleter {
+    const cling::Interpreter& MainInterp;
 
-    bool Complete(textinput::Text& Line /*in+out*/,
-                  size_t& Cursor /*in+out*/,
-                  textinput::EditorRange& R /*out*/,
-                  std::vector<std::string>& Completions /*out*/) override {
-      m_ParentInterpreter.codeComplete(Line.GetText(), Cursor, Completions);
-      return true;
-    }
+    ClingListCompleter(const cling::Interpreter& Interp) : MainInterp(Interp) {}
+
+    std::vector<llvm::LineEditor::Completion> operator()(llvm::StringRef Buffer,
+                                                         size_t Pos) const;
+    std::vector<llvm::LineEditor::Completion>
+    operator()(llvm::StringRef Buffer, size_t Pos, llvm::Error& ErrRes) const;
   };
 
-  ///\brief Delays ~TextInput until after ~StreamReader and ~TerminalDisplay
-  ///
-  class TextInputHolder {
-    textinput::StreamReader* m_Reader;
-    textinput::TerminalDisplay* m_Display;
-    textinput::TextInput m_Input;
+  std::vector<llvm::LineEditor::Completion>
+  ClingListCompleter::operator()(llvm::StringRef Buffer, size_t Pos) const {
+    auto Err = llvm::Error::success();
+    auto res = (*this)(Buffer, Pos, Err);
+    if (Err)
+      llvm::logAllUnhandledErrors(std::move(Err), llvm::errs(), "error: ");
+    return res;
+  }
 
-  public:
-    TextInputHolder(llvm::SmallString<512>& Hist)
-        : m_Reader(textinput::StreamReader::Create()),
-          m_Display(textinput::TerminalDisplay::Create()),
-          m_Input(*m_Reader, *m_Display, Hist.empty() ? 0 : Hist.c_str()) {}
+  std::vector<llvm::LineEditor::Completion>
+  ClingListCompleter::operator()(llvm::StringRef Buffer, size_t Pos,
+                                 llvm::Error& ErrRes) const {
+    std::vector<llvm::LineEditor::Completion> Comps;
+    std::vector<std::string> Results;
 
-    ~TextInputHolder() {
-      delete m_Reader;
-      delete m_Display;
+    MainInterp.codeComplete(Buffer.str(), Pos, Results);
+    for (auto c : Results) {
+      Comps.push_back(llvm::LineEditor::Completion(c, c));
     }
-
-    textinput::TextInput* operator -> () { return &m_Input; }
-  };
+    return Comps;
+  }
 
   llvm::SmallString<512> GetHistoryFilePath() {
     if (std::getenv("CLING_NOHISTORY")) {
@@ -123,42 +115,27 @@ namespace cling {
     }
 
     auto histfilePath{GetHistoryFilePath()};
-
-    const auto Completion =
-        std::make_unique<UITabCompletion>(m_MetaProcessor->getInterpreter());
-    TextInputHolder TI(histfilePath);
-
-    TI->SetCompletion(Completion.get());
+    llvm::LineEditor LE("cling", histfilePath);
+    std::string Input;
+    std::string Prompt("[cling]$ ");
 
     if (const char* HistSizeEnvvar = std::getenv("CLING_HISTSIZE")) {
       const size_t HistSize = std::strtoull(HistSizeEnvvar, nullptr, 0);
 
       // std::strtoull() returns 0 if the parsing fails.
       // zero HistSize will disable history logging to file.
-      // refer to textinput::History::AppendToFile()
-      TI->SetHistoryMaxDepth(HistSize);
-      TI->SetHistoryPruneLength(
-          static_cast<size_t>(textinput::History::kPruneLengthDefault));
+      LE.setHistorySize(HistSize);
     }
 
-    bool Done = false;
-    std::string Line;
-    std::string Prompt("[cling]$ ");
+    LE.setPrompt(Prompt);
 
-    while (!Done) {
+    LE.setListCompleter(ClingListCompleter(m_MetaProcessor->getInterpreter()));
+    while (std::optional<std::string> Line = LE.readLine()) {
       try {
-        m_MetaProcessor->getOuts().flush();
-        {
-          MetaProcessor::MaybeRedirectOutputRAII RAII(*m_MetaProcessor);
-          TI->SetPrompt(Prompt.c_str());
-          Done = TI->ReadInput() == textinput::TextInput::kRREOF;
-          TI->TakeInput(Line);
-          if (Done && Line.empty())
-            break;
-        }
+        m_MetaProcessor->getOuts().flush(); // Do we need this now?
 
         cling::Interpreter::CompilationResult compRes;
-        const int indent = m_MetaProcessor->process(Line, compRes);
+        const int indent = m_MetaProcessor->process(*Line, compRes);
 
         // Quit requested?
         if (indent < 0)
@@ -186,8 +163,10 @@ namespace cling {
       catch(...) {
         cling::errs() << "Exception occurred. Recovering...\n";
       }
+
+      LE.setPrompt(Prompt);
     }
-    m_MetaProcessor->getOuts().flush();
+    m_MetaProcessor->getOuts().flush(); // Do we need this now?
   }
 
   void UserInterface::PrintLogo() {

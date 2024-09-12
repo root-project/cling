@@ -115,7 +115,7 @@ struct ShutdownRecursion {
 
 // Reversed registration order
 
-// CHECK-NEXT: ~ShutdownRecursion
+// CHECK: ~ShutdownRecursion
 // CHECK-NEXT: ShutdownRecursion2
 // CHECK-NEXT: ShutdownRecursion1
 // CHECK-NEXT: ShutdownRecursion0

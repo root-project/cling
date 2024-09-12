@@ -350,6 +350,6 @@ N::X<int> funcReturnsXint() {
 funcReturnsXint()
 // CHECK-NEXT: (N::X<int>) @0x{{.*}}
 
-// CHECK-NEXT: Nested::~Nested(80)
+// CHECK: Nested::~Nested(80)
 
 // expected-no-diagnostics

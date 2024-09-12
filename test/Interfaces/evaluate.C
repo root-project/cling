@@ -224,7 +224,8 @@ gCling->evaluate("arrV", V);
 
 // Destruct the variables with static storage:
 // Destruct arrV:
-//CHECK-NEXT: MADE{7}:dtor
+// The error `err_verify_no_directives` will add a new line here.
+//CHECK: MADE{7}:dtor
 //CHECK-NEXT: MADE{6}:dtor
 //CHECK-NEXT: MADE{5}:dtor
 

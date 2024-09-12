@@ -37,5 +37,5 @@ inst02();
 // expected-no-diagnostics
 .q
 
-// CHECK-NEXT: TERD::~TERD::inst02
+// CHECK: TERD::~TERD::inst02
 // CHECK-NEXT: TERD::~TERD::inst01

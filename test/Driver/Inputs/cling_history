@@ -1,8 +1,9 @@
-/*
-comment
- * */
-static const int i = 37;
-};
-// another comment
-using std::cout;
-std::cout << "test\n";
+_HiStOrY_V2_
+/*\012
+\011\011comment\012
+\040*\040*/\012
+\011static\040const\040int\040i\040=\04037;\012
+};\012
+//\040another\040comment\012
+using\040std::cout;\012
+std::cout\040<<\040"test\134n";\012
