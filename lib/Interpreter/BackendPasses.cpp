@@ -41,6 +41,70 @@ using namespace clang;
 using namespace llvm;
 
 namespace {
+  class WorkAroundConstructorPriorityBugPass
+      : public PassInfoMixin<WorkAroundConstructorPriorityBugPass> {
+  public:
+    PreservedAnalyses run(llvm::Module& M, ModuleAnalysisManager& AM) {
+      llvm::GlobalVariable* GlobalCtors = M.getNamedGlobal("llvm.global_ctors");
+      if (!GlobalCtors)
+        return PreservedAnalyses::all();
+
+      auto* OldCtors = llvm::dyn_cast_or_null<llvm::ConstantArray>(
+          GlobalCtors->getInitializer());
+      if (!OldCtors)
+        return PreservedAnalyses::all();
+
+      // LLVM had a bug where constructors with the same priority would not be
+      // stably sorted. This has been fixed upstream by
+      // https://github.com/llvm/llvm-project/pull/95532, but to avoid relying
+      // on a backport this pass works around the issue: The idea is that we
+      // lower the default priority of concerned constructors to make them sort
+      // correctly.
+      static constexpr uint64_t DefaultPriority = 65535;
+
+      unsigned NumCtors = OldCtors->getNumOperands();
+      const uint64_t NewDefaultPriorityStart = DefaultPriority - NumCtors;
+      uint64_t NewDefaultPriority = NewDefaultPriorityStart;
+
+      llvm::SmallVector<Constant*> NewCtors;
+      for (unsigned I = 0; I < NumCtors; I++) {
+        auto* Ctor =
+            llvm::dyn_cast<llvm::ConstantStruct>(OldCtors->getOperand(I));
+        auto* PriorityC = llvm::cast<llvm::ConstantInt>(Ctor->getOperand(0));
+        uint64_t Priority = PriorityC->getZExtValue();
+        if (Priority >= NewDefaultPriorityStart && Priority < DefaultPriority) {
+          llvm::errs() << "Found priority " << Priority
+                       << ", not changing anything\n";
+          return PreservedAnalyses::all();
+        }
+
+        if (Priority == DefaultPriority) {
+          Priority = NewDefaultPriority;
+          NewDefaultPriority++;
+        }
+
+        llvm::SmallVector<Constant*> NewCtorArgs;
+        NewCtorArgs.push_back(
+            llvm::ConstantInt::get(PriorityC->getIntegerType(), Priority));
+        // Copy the function and data Constant, if present.
+        NewCtorArgs.push_back(Ctor->getOperand(1));
+        if (Ctor->getNumOperands() >= 3) {
+          NewCtorArgs.push_back(Ctor->getOperand(2));
+        }
+
+        NewCtors.push_back(
+            llvm::ConstantStruct::get(Ctor->getType(), NewCtorArgs));
+      }
+
+      GlobalCtors->setInitializer(
+          llvm::ConstantArray::get(OldCtors->getType(), NewCtors));
+
+      return PreservedAnalyses::none();
+    }
+  };
+} // namespace
+
+namespace {
   class KeepLocalGVPass : public PassInfoMixin<KeepLocalGVPass> {
     bool runOnGlobal(GlobalValue& GV) {
       if (GV.isDeclaration())
@@ -350,6 +414,8 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
                                  PassInstrumentationCallbacks& PIC,
                                  StandardInstrumentations& SI) {
 
+  // TODO: Remove this pass once we upgrade past LLVM 19 that includes the fix.
+  MPM.addPass(WorkAroundConstructorPriorityBugPass());
   MPM.addPass(KeepLocalGVPass());
   MPM.addPass(WeakTypeinfoVTablePass());
   MPM.addPass(ReuseExistingWeakSymbols(m_JIT));
