@@ -154,6 +154,9 @@ namespace cling {
 
     void setCallbacks(InterpreterCallbacks* callbacks);
 
+    ///\brief Return the LLJIT held by the IncrementalJIT
+    llvm::orc::LLJIT* getLLJIT() { return m_JIT ? m_JIT->getLLJIT() : nullptr; }
+
     const DynamicLibraryManager& getDynamicLibraryManager() const {
       return const_cast<IncrementalExecutor*>(this)->m_DyLibManager;
     }

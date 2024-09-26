@@ -102,6 +102,9 @@ public:
     return Jit->initialize(Jit->getMainJITDylib());
   }
 
+  /// @brief Return a pointer to the JIT held by IncrementalJIT object
+  llvm::orc::LLJIT* getLLJIT() { return Jit.get(); }
+
   /// @brief Get the TargetMachine used by the JIT.
   /// Non-const because BackendPasses need to update OptLevel.
   llvm::TargetMachine &getTargetMachine() { return *m_TM; }

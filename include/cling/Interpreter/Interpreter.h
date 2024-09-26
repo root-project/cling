@@ -36,6 +36,7 @@ namespace llvm {
   template <typename T> class SmallVectorImpl;
   namespace orc {
     class DefinitionGenerator;
+    class LLJIT;
   }
 }
 
@@ -770,6 +771,11 @@ namespace cling {
     void setCallbacks(std::unique_ptr<InterpreterCallbacks> C);
     const InterpreterCallbacks* getCallbacks() const {return m_Callbacks.get();}
     InterpreterCallbacks* getCallbacks() { return m_Callbacks.get(); }
+
+    ///\brief Returns the JIT managed by the Interpreter.
+    /// Accesses and returns the JIT held in the IncrementalJIT instance
+    /// managed by m_Executor
+    llvm::orc::LLJIT* getExecutionEngine();
 
     const DynamicLibraryManager* getDynamicLibraryManager() const;
     DynamicLibraryManager* getDynamicLibraryManager();

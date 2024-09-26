@@ -1670,6 +1670,13 @@ namespace cling {
       ->addCallback(std::move(C));
   }
 
+  llvm::orc::LLJIT* Interpreter::getExecutionEngine() {
+    if (!m_Executor)
+      return nullptr;
+
+    return m_Executor->getLLJIT();
+  }
+
   const DynamicLibraryManager* Interpreter::getDynamicLibraryManager() const {
     assert(m_Executor.get() && "We must have an executor");
     return &m_Executor->getDynamicLibraryManager();
