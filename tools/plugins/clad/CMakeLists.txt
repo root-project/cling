@@ -52,14 +52,20 @@ endif(LLVM_FORCE_USE_OLD_TOOLCHAIN)
 list(APPEND _clad_extra_cmake_args -DCLAD_BUILD_STATIC_ONLY=ON)
 
 # Wrap download, configure and build steps in a script to log output
-set(_clad_cmake_logging_settings
+set(_clad_extra_settings
   LOG_DOWNLOAD ON
   LOG_CONFIGURE ON
   LOG_BUILD ON
   LOG_INSTALL ON
+  LOG_OUTPUT_ON_FAILURE ON
 )
 
-list(APPEND _clad_cmake_logging_settings LOG_OUTPUT_ON_FAILURE ON)
+# If the CLAD_SOURCE_DIR variable is defined in the CMake configuration, we're
+# skipping the download of the repository and use the passed directory.
+if (DEFINED CLAD_SOURCE_DIR)
+  list(APPEND _clad_extra_settings DOWNLOAD_COMMAND "")
+  list(APPEND _clad_extra_settings SOURCE_DIR ${CLAD_SOURCE_DIR})
+endif()
 
 #list(APPEND _clad_patches_list "patch1.patch" "patch2.patch")
 #set(_clad_patch_command
@@ -88,7 +94,7 @@ ExternalProject_Add(
   BUILD_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS}
   INSTALL_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS} --target install
   BUILD_BYPRODUCTS ${CLAD_BYPRODUCTS}
-  ${_clad_cmake_logging_settings}
+  ${_clad_extra_settings}
   # We need the target clangBasic to be built before building clad. However, we
   # support building prebuilt clang and adding clangBasic breaks this case.
   # Delegate the dependency resolution to the clingInterpreter target (which
