@@ -12,12 +12,16 @@ set(clad_install_dir ${CMAKE_BINARY_DIR}/etc/cling/)
 # Specify include dirs for clad
 set(CLAD_INCLUDE_DIRS ${clad_install_dir})
 # Clad Libraries
+set(CLAD_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 set(_clad_build_type ${CMAKE_CFG_INTDIR})
 if(MSVC)
   if (winrtdebug)
     set(_clad_build_type Debug)
   else()
     set(_clad_build_type Release)
+  endif()
+  if(asan)
+    set(CLAD_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ASAN_EXTRA_CXX_FLAGS}")
   endif()
 endif(MSVC)
 if(NOT _clad_build_type STREQUAL "" AND NOT _clad_build_type STREQUAL ".")
@@ -86,7 +90,7 @@ ExternalProject_Add(
              -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
              -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
              -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-             -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+             -DCMAKE_CXX_FLAGS=${CLAD_CXX_FLAGS}
              -DCMAKE_INSTALL_PREFIX=${clad_install_dir}/plugins
              -DLLVM_DIR=${LLVM_BINARY_DIR}
              -DCLANG_INCLUDE_DIRS=${CLANG_INCLUDE_DIRS}
