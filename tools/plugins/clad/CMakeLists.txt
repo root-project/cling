@@ -95,8 +95,12 @@ ExternalProject_Add(
              -DLLVM_DIR=${LLVM_BINARY_DIR}
              -DCLANG_INCLUDE_DIRS=${CLANG_INCLUDE_DIRS}
              ${_clad_extra_cmake_args}
-  BUILD_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS}
-  INSTALL_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS} --target install
+  # FIXME
+  # Building with 1 core is a temporary workaround for #16654 and has to be 
+  # there until the behaviour of the clad build on ubuntu 24.10 is understood.
+  # The performance penalty in the build is negligible.
+  BUILD_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS} -j 1
+  INSTALL_COMMAND ${CMAKE_COMMAND} --build . ${EXTRA_BUILD_ARGS} -j 1 --target install
   BUILD_BYPRODUCTS ${CLAD_BYPRODUCTS}
   ${_clad_extra_settings}
   # We need the target clangBasic to be built before building clad. However, we
