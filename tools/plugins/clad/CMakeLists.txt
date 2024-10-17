@@ -14,7 +14,7 @@ set(CLAD_INCLUDE_DIRS ${clad_install_dir})
 # Clad Libraries
 set(CLAD_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 set(_clad_build_type ${CMAKE_CFG_INTDIR})
-if(MSVC)
+if(MSVC AND NOT CMAKE_GENERATOR MATCHES Ninja)
   if (winrtdebug)
     set(_clad_build_type Debug)
   else()
@@ -23,6 +23,7 @@ if(MSVC)
   if(asan)
     set(CLAD_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ASAN_EXTRA_CXX_FLAGS}")
   endif()
+  set(EXTRA_BUILD_ARGS --config ${_clad_build_type})
 endif(MSVC)
 if(NOT _clad_build_type STREQUAL "" AND NOT _clad_build_type STREQUAL ".")
   set(EXTRA_BUILD_ARGS --config ${_clad_build_type})
@@ -30,9 +31,9 @@ endif()
 set(_CLAD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/clad-prefix/src/clad-build/${_clad_build_type}/lib${LLVM_LIBDIR_SUFFIX})
 
 # build byproducts only needed by Ninja
-if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
+if(CMAKE_GENERATOR MATCHES Ninja)
   set(CLAD_BYPRODUCTS
-     ${_CLAD_LIBRARY_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}cladPlugin${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${_CLAD_LIBRARY_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}cladPlugin${CMAKE_STATIC_LIBRARY_SUFFIX}
     ${_CLAD_LIBRARY_PATH}/${CMAKE_STATIC_LIBRARY_PREFIX}cladDifferentiator${CMAKE_STATIC_LIBRARY_SUFFIX}
   )
 endif()
