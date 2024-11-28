@@ -310,7 +310,7 @@ namespace cling {
 
     ///\brief Runs given wrapper function.
     ///
-    ///\param [in] fname - The function name.
+    ///\param [in] FD - The function declaration.
     ///\param [in,out] res - The return result of the run function. Must be
     ///       initialized to point to the return value's location if the
     ///       expression result is an aggregate.
@@ -580,7 +580,7 @@ namespace cling {
     ///
     /// @param[in] line - The input containing the string to be completed.
     /// @param[in] cursor - The offset for the completion point.
-    /// @param[out] completions - The results for teh completion
+    /// @param[out] completions - The results for the completion.
     ///
     ///\returns Whether the operation was fully successful.
     ///

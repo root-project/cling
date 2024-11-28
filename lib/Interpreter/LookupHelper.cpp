@@ -192,7 +192,7 @@ namespace cling {
 
   ///\brief Look for a tag decl based on its name
   ///
-  ///\param declName name of the class, enum, uniorn or namespace being
+  ///\param declName name of the class, enum, union or namespace being
   ///       looked for
   ///\param resultDecl pointer that will be updated with the answer
   ///\param P Parse to use for the search
@@ -358,7 +358,7 @@ namespace cling {
 
   ///\brief Look for a tag decl based on its name
   ///
-  ///\param typeName name of the class, enum, uniorn or namespace being
+  ///\param typeName name of the class, enum, union or namespace being
   ///       looked for
   ///\param resultType reference to QualType that will be updated with the answer
   ///\param P Parse to use for the search
