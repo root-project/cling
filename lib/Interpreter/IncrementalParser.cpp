@@ -911,8 +911,11 @@ namespace cling {
     PP.EnterSourceFile(FID, /*DirLookup*/nullptr, NewLoc);
     m_Consumer->getTransaction()->setBufferFID(FID);
 
-    if (!ParseOrWrapTopLevelDecl())
+    llvm::Expected<bool> res = ParseOrWrapTopLevelDecl();
+    if (!res) {
+      llvm::consumeError(std::move(res.takeError()));
       return kFailed;
+    }
 
     if (PP.getLangOpts().DelayedTemplateParsing) {
       // Microsoft-specific:
