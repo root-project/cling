@@ -15,6 +15,7 @@
 #include "llvm/ADT/PointerIntPair.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Error.h"
 
 #include <vector>
 #include <deque>
@@ -253,7 +254,7 @@ namespace cling {
     ///
     EParseResult ParseInternal(llvm::StringRef input);
 
-    llvm::Expected<bool> ParseOrWrapTopLevelDecl();
+    llvm::Error ParseOrWrapTopLevelDecl();
 
     ///\brief Create a unique name for the next llvm::Module
     ///
