@@ -730,6 +730,7 @@ void* IncrementalJIT::getSymbolAddress(StringRef Name, bool IncludeHostSymbols){
   Expected<llvm::orc::ExecutorAddr> Symbol =
       Jit->lookup(Jit->getMainJITDylib(), Name);
   if (!Symbol) {
+    consumeError(Symbol.takeError());
     // FIXME: We should take advantage of the fact that all process symbols
     // are now in a separate JITDylib; see also the comments and ideas in
     // IncrementalExecutor::getAddressOfGlobal().
