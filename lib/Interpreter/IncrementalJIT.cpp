@@ -682,7 +682,19 @@ IncrementalJIT::addOrReplaceDefinition(StringRef Name,
   bool Defined = false;
   for (auto* Dylib :
        {&Jit->getMainJITDylib(), Jit->getPlatformJITDylib().get()}) {
-    if (Dylib->remove({It->first})) {
+    if (Error Err = Dylib->remove({It->first})) {
+      Err = handleErrors(std::move(Err),
+                         [&](std::unique_ptr<SymbolsNotFound> Err) -> Error {
+                           // This is fine, we will try in the next Dylib.
+                           return Error::success();
+                         });
+
+      if (Err) {
+        logAllUnhandledErrors(std::move(Err), errs(),
+                              "[IncrementalJIT] remove() failed: ");
+        return orc::ExecutorAddr();
+      }
+
       continue;
     }
 
