@@ -479,7 +479,7 @@ IncrementalJIT::IncrementalJIT(
       // memory segments; the default InProcessMemoryManager (which is mostly
       // copied above) already does slab allocation to keep all segments
       // together which is needed for exception handling support.
-      unsigned PageSize = *sys::Process::getPageSize();
+      unsigned PageSize = cantFail(sys::Process::getPageSize());
       auto ObjLinkingLayer = std::make_unique<ObjectLinkingLayer>(
           ES, std::make_unique<ClingJITLinkMemoryManager>(PageSize));
       ObjLinkingLayer->addPlugin(std::make_unique<EHFrameRegistrationPlugin>(
