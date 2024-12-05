@@ -23,6 +23,18 @@ set(LIBS
   clangLex
 )
 
+if(experimental_adaptivecpp)
+  list(APPEND LIBS AdaptiveCpp acpp-rt)
+
+  set(ACPP_EXPORTS acpp-rt acpp-common)
+
+  foreach(target IN LISTS ACPP_EXPORTS)
+    install(TARGETS ${target} EXPORT ClingTargets)
+  endforeach()
+
+  set_property(GLOBAL APPEND PROPERTY CLING_EXPORTS ${ACPP_EXPORTS})
+endif()
+
 set(LLVM_LINK_COMPONENTS
   analysis
   core

@@ -1391,6 +1391,11 @@ namespace {
       argvCompile.push_back("-fno-omit-frame-pointer");
     }
 
+#ifdef CLING_WITH_ADAPTIVECPP
+    argvCompile.push_back("-D__ACPP_ENABLE_LLVM_SSCP_TARGET__");
+    argvCompile.push_back("-Xclang");
+    argvCompile.push_back("-disable-O0-optnone");
+#endif
     // Add host specific includes, -resource-dir if necessary, and -isysroot
     std::string ClingBin = GetExecutablePath(argv[0]);
     AddHostArguments(ClingBin, argvCompile, LLVMDir, COpts);

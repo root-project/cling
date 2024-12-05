@@ -1033,9 +1033,11 @@ namespace cling {
       // Don't protect against crashes if we cannot run anything.
       // cling might also be in a PCH-generation mode; don't inject our Sema
       // pointer into the PCH.
+#ifndef CLING_WITH_ADAPTIVECPP
       if (!isCUDADevice && m_Interpreter->getOptions().PtrCheck)
         ASTTransformers.emplace_back(
             new NullDerefProtectionTransformer(m_Interpreter));
+#endif
       if (isCUDADevice)
         ASTTransformers.emplace_back(
             new DeviceKernelInliner(TheSema));

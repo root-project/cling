@@ -36,6 +36,10 @@
 
 #include <optional>
 
+#ifdef CLING_WITH_ADAPTIVECPP
+llvm::PassPluginLibraryInfo getAdaptiveCppPluginInfo();
+#endif
+
 using namespace cling;
 using namespace clang;
 using namespace llvm;
@@ -510,6 +514,10 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
   PipelineTuningOptions PTO;
   std::optional<PGOOptions> PGOOpt;
   PassBuilder PB(&m_TM, PTO, PGOOpt, &PIC);
+
+#ifdef CLING_WITH_ADAPTIVECPP
+  getAdaptiveCppPluginInfo().RegisterPassBuilderCallbacks(PB);
+#endif
 
   // Attempt to load pass plugins and register their callbacks with PB.
   for (auto& PluginFN : m_CGOpts.PassPlugins) {
