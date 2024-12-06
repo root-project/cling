@@ -748,11 +748,14 @@ namespace cling {
           auto ObjFileOrErr =
             llvm::object::ObjectFile::createObjectFile(FileName);
           if (llvm::Error Err = ObjFileOrErr.takeError()) {
+            // Note: It is important to always call handleAllErrors, otherwise
+            // the destructor of llvm::Error will abort the program "due to an
+            // unhandled Error"
+            std::string Message;
+            handleAllErrors(std::move(Err), [&](llvm::ErrorInfoBase& EIB) {
+              Message += EIB.message() + "; ";
+            });
             if (DEBUG > 1) {
-              std::string Message;
-              handleAllErrors(std::move(Err), [&](llvm::ErrorInfoBase &EIB) {
-                Message += EIB.message() + "; ";
-              });
               cling::errs()
                 << "Dyld::ScanForLibraries: Failed to read object file "
                 << FileName.str() << " Errors: " << Message << "\n";
@@ -1007,11 +1010,14 @@ namespace cling {
 
     auto ObjF = llvm::object::ObjectFile::createObjectFile(library_filename);
     if (llvm::Error Err = ObjF.takeError()) {
+      // Note: It is important to always call handleAllErrors, otherwise the
+      // destructor of llvm::Error will abort the program "due to an unhandled
+      // Error"
+      std::string Message;
+      handleAllErrors(std::move(Err), [&](llvm::ErrorInfoBase& EIB) {
+        Message += EIB.message() + "; ";
+      });
       if (DEBUG > 1) {
-        std::string Message;
-        handleAllErrors(std::move(Err), [&](llvm::ErrorInfoBase &EIB) {
-            Message += EIB.message() + "; ";
-          });
         cling::errs() << "Dyld::ContainsSymbol: Failed to read object file "
                       << library_filename << " Errors: " << Message << "\n";
       }
@@ -1141,6 +1147,9 @@ namespace cling {
 
     auto ObjF = llvm::object::ObjectFile::createObjectFile(FileName);
     if (!ObjF) {
+      // Note: It is important to always call handleAllErrors, otherwise the
+      // destructor of llvm::Error will abort the program "due to an unhandled
+      // Error"
       std::string Message;
       handleAllErrors(ObjF.takeError(), [&](llvm::ErrorInfoBase &EIB) {
         Message += EIB.message() + "; ";
