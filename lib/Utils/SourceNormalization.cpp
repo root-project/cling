@@ -339,6 +339,25 @@ public:
     if (Tok.is(tok::l_brace))
       return kFunction;
 
+    // Handle trailing return type: `int func() ->`
+    if (LangOpts.CPlusPlus && Tok.is(tok::arrow)) {
+      if (!LexClean(Tok))
+        return kNONE;
+
+      // Parse the return type
+      // eg, `int` or `std::vector<int>` or `int*` or `int&`
+      while (Tok.is(tok::raw_identifier) || Tok.is(tok::coloncolon) ||
+             Tok.is(tok::less) || Tok.is(tok::greater) || Tok.is(tok::star) ||
+             Tok.is(tok::amp)) {
+        if (!LexClean(Tok))
+          return kNONE;
+      }
+
+      // `int func() -> int {`
+      if (Tok.is(tok::l_brace))
+        return kFunction;
+    }
+
     if (LangOpts.CPlusPlus) {
       // constructor initialization 'CLASS::CLASS() :'
       if (Ctor && Tok.is(tok::colon))
