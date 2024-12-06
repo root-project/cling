@@ -142,7 +142,32 @@ long double ldFun(long double x) {
 ldFun(2.0)
 // CHECK: (long double) 4.0
 
-  
+auto simpleTrailingReturn() -> int {
+  return 22;
+}
+simpleTrailingReturn()
+// CHECK: (int) 22
+
+#include <vector>
+auto vectorReturn() -> std::vector<int> {
+  return {1, 2, 3};
+}
+vectorReturn()
+// CHECK: (std::vector<int>) { 1, 2, 3 }
+
+int globalValue = 50;
+auto referenceReturn() -> int& {
+  return globalValue;
+}
+referenceReturn()
+// CHECK: (int) 50
+
+auto pointerReturn() -> int* {
+  return &globalValue;
+}
+*pointerReturn()
+// CHECK: (int) 50
+
 class Test {
 public:
   Test(int a, int b);
