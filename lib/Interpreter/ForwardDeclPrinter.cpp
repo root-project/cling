@@ -192,7 +192,7 @@ namespace cling {
        // FIXME: Once the C++ modules replaced the forward decls, remove this.
        if (D->getASTContext().getLangOpts().Modules &&
            llvm::StringRef(includeText).starts_with("include ")) {
-         includeText += strlen("include ");
+         includeText += std::char_traits<char>::length("include ");
        }
 
        assert((includeText[0] == '<' || includeText[0] == '"') &&
