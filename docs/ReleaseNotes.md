@@ -2,7 +2,7 @@ Introduction
 ============
 
 This document contains the release notes for the interactive C++ interpreter
-Cling, release 1.2. Cling is built on top of [Clang](http://clang.llvm.org) and
+Cling, release 1.3. Cling is built on top of [Clang](http://clang.llvm.org) and
 [LLVM](http://llvm.org>) compiler infrastructure. Here we
 describe the status of Cling in some detail, including major
 improvements from the previous release and new feature work.
@@ -10,7 +10,7 @@ improvements from the previous release and new feature work.
 Note that if you are reading this file from a git checkout or the main Cling
 web page, this document applies to the *next* release, not the current one.
 
-What's New in Cling 1.2?
+What's New in Cling 1.3?
 ========================
 
 Some of the major new features and improvements to Cling are listed
@@ -19,17 +19,15 @@ infrastructure are described first.
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM18.
+* Upgrade to LLVM r0000000.
 
 Major New Features
 ------------------
-* Improvements in stability
+* A major new feature
 
 Misc
 ----
-* Better handling of llvm::Error
-* Better integration with Clad
-* Modulemap fixes
+* A misc feature
 
 Experimental Features
 ---------------------
@@ -42,7 +40,14 @@ Jupyter
 
 Fixed Bugs
 ----------
-[16654](https://github.com/root-project/cling/issues/16654)
+[ROOT-XXXX](https://sft.its.cern.ch/jira/browse/ROOT-XXXX)
+
+<!---Get release bugs
+git log v1.2..master | grep -i "fix" | grep '#' | sed -E 's,.*\#([0-9]*).*,\[\1\]\(https://github.com/root-project/cling/issues/\1\),g' | sort
+--->
+<!---Standard MarkDown doesn't support neither variables nor <base>
+[ROOT-XXX](https://sft.its.cern.ch/jira/browse/ROOT-XXX)
+--->
 
 <!---Additional Information
 ----------------------
@@ -63,14 +68,7 @@ listed in the form of Firstname Lastname (#contributions):
 
 FirstName LastName (#commits)
 
-Devajith Valaparambil Sreeramaswamy (22)
-Jonas Hahnfeld (18)
-Jonas Rembser (2)
-Bertrand Bellenot (2)
-ferdymercury (1)
-dbonner (1)
-Vipul Cariappa (1)
-Vassil Vassilev (1)
-Fredrik (1)
-Danilo Piparo (1)
-Aaron Jomy (1)
+<!---Find contributor list for this release
+git log --pretty=format:"%an"  v1.2...master | sort | uniq -c | sort -rn |\
+  sed -E 's,^ *([0-9]+) (.*)$,\2 \(\1\),'
+--->
