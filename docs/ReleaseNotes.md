@@ -19,15 +19,17 @@ infrastructure are described first.
 
 External Dependencies
 ---------------------
-* Upgrade to LLVM r0000000.
+* Upgrade to LLVM18.
 
 Major New Features
 ------------------
-* A major new feature
+* Improvements in stability
 
 Misc
 ----
-* A misc feature
+* Better handling of llvm::Error
+* Better integration with Clad
+* Modulemap fixes
 
 Experimental Features
 ---------------------
@@ -40,14 +42,7 @@ Jupyter
 
 Fixed Bugs
 ----------
-[ROOT-XXXX](https://sft.its.cern.ch/jira/browse/ROOT-XXXX)
-
-<!---Get release bugs
-git log v1.1..master | grep -i "fix" | grep '#' | sed -E 's,.*\#([0-9]*).*,\[\1\]\(https://github.com/root-project/cling/issues/\1\),g' | sort
---->
-<!---Standard MarkDown doesn't support neither variables nor <base>
-[ROOT-XXX](https://sft.its.cern.ch/jira/browse/ROOT-XXX)
---->
+[16654](https://github.com/root-project/cling/issues/16654)
 
 <!---Additional Information
 ----------------------
@@ -68,7 +63,14 @@ listed in the form of Firstname Lastname (#contributions):
 
 FirstName LastName (#commits)
 
-<!---Find contributor list for this release
-git log --pretty=format:"%an"  v1.1...master | sort | uniq -c | sort -rn |\
-  sed -E 's,^ *([0-9]+) (.*)$,\2 \(\1\),'
---->
+Devajith Valaparambil Sreeramaswamy (22)
+Jonas Hahnfeld (18)
+Jonas Rembser (2)
+Bertrand Bellenot (2)
+ferdymercury (1)
+dbonner (1)
+Vipul Cariappa (1)
+Vassil Vassilev (1)
+Fredrik (1)
+Danilo Piparo (1)
+Aaron Jomy (1)
