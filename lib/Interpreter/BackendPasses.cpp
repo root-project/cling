@@ -151,19 +151,24 @@ namespace {
 namespace {
   class PreventLocalOptPass : public PassInfoMixin<PreventLocalOptPass> {
     bool runOnGlobal(GlobalValue& GV) {
-      if (!GV.isDeclaration())
-        return false; // no change.
-
-      // GV is a declaration with no definition. Make sure to prevent any
-      // optimization that tries to take advantage of the actual definition
-      // being "local" because we have no influence on the memory layout of
-      // data sections and how "close" they are to the code.
-
       bool changed = false;
 
+      // Prevent any optimization that tries to take advantage of the actual
+      // definition being "local" because we have no influence on the memory
+      // layout of sections and how "close" they are.
+
       if (GV.hasLocalLinkage()) {
-        GV.setLinkage(llvm::GlobalValue::ExternalLinkage);
-        changed = true;
+        if (GV.isDeclaration()) {
+          // For declarations with no definition, we can simply adjust the
+          // linkage.
+          GV.setLinkage(llvm::GlobalValue::ExternalLinkage);
+          changed = true;
+        } else {
+          // FIXME: Not clear what would be the right linkage. We also cannot
+          // continue because "GlobalValue with local linkage [...] must be
+          // dso_local!"
+          return false;
+        }
       }
 
       if (!GV.hasDefaultVisibility()) {
@@ -172,7 +177,7 @@ namespace {
       }
 
       // Set DSO locality last because setLinkage() and setVisibility() check
-      // isImplicitDSOLocal().
+      // isImplicitDSOLocal() and then might call setDSOLocal(true).
       if (GV.isDSOLocal()) {
         GV.setDSOLocal(false);
         changed = true;
