@@ -68,8 +68,10 @@ set(_clad_extra_settings
 # If the CLAD_SOURCE_DIR variable is defined in the CMake configuration, we're
 # skipping the download of the repository and use the passed directory.
 if (DEFINED CLAD_SOURCE_DIR)
-  list(APPEND _clad_extra_settings DOWNLOAD_COMMAND "")
   list(APPEND _clad_extra_settings SOURCE_DIR ${CLAD_SOURCE_DIR})
+else()
+  list(APPEND _clad_extra_settings GIT_REPOSITORY https://github.com/vgvassilev/clad.git)
+  list(APPEND _clad_extra_settings GIT_TAG v1.7)
 endif()
 
 #list(APPEND _clad_patches_list "patch1.patch" "patch2.patch")
@@ -82,8 +84,6 @@ endif()
 
 ExternalProject_Add(
   clad
-  GIT_REPOSITORY https://github.com/vgvassilev/clad.git
-  GIT_TAG v1.7
   UPDATE_COMMAND ""
   PATCH_COMMAND ${_clad_patch_command}
   CMAKE_ARGS -G ${CMAKE_GENERATOR}
