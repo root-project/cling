@@ -265,13 +265,6 @@ namespace cling {
     }
 
     Sema& SemaRef = getSema();
-    Preprocessor& PP = SemaRef.getPreprocessor();
-
-    m_LookupHelper.reset(new LookupHelper(new Parser(PP, SemaRef,
-                                                     /*SkipFunctionBodies*/false,
-                                                     /*isTemp*/true), this));
-    if (!m_LookupHelper)
-      return;
 
     if (!isInSyntaxOnlyMode() && !m_Opts.CompilerOpts.CUDADevice) {
       m_Executor.reset(new IncrementalExecutor(SemaRef.Diags, *getCI(),
@@ -316,6 +309,10 @@ namespace cling {
         m_IncrParser->commitTransaction(I, false);
       return;
     }
+
+    m_LookupHelper.reset(new LookupHelper(m_IncrParser->getParser(), this));
+    if (!m_LookupHelper)
+      return;
 
     // When not using C++ modules, we now have a PCH and we can safely setup
     // our callbacks without fearing that they get overwritten by clang code.
