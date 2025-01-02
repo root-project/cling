@@ -264,10 +264,10 @@ def fetch_llvm(llvm_revision):
 def llvm_flag_setter(llvm_dir, llvm_config_path):
     flags = "-DLLVM_BINARY_DIR={0} -DLLVM_CONFIG={1} -DLLVM_LIBRARY_DIR={2} -DLLVM_MAIN_INCLUDE_DIR={3} -DLLVM_TABLEGEN_EXE={4} \
                   -DLLVM_TOOLS_BINARY_DIR={5} -DLLVM_TOOL_CLING_BUILD=ON".format(
-        llvm_dir, llvm_config_path, os.path.join(llvm_dir, 'lib'),
-        os.path.join(llvm_dir, 'include'),
-        os.path.join(llvm_dir, 'bin', 'llvm-tblgen'),
-        os.path.join(llvm_dir, 'bin'))
+        llvm_dir, llvm_config_path, os.path.join(srcdir, 'lib'),
+        os.path.join(srcdir, 'include'),
+        os.path.join(srcdir, 'bin', 'llvm-tblgen'),
+        os.path.join(srcdir, 'bin'))
     if args['with_verbose_output']:
         flags += " -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON"
     return flags
@@ -287,12 +287,10 @@ def download_llvm_binary():
         subprocess.call("sudo -H {0} -m pip install lit".format(
             sys.executable),
                         shell=True)
-        llvm_config_path = exec_subprocess_check_output(
-            "which llvm-config-{0}".format(llvm_vers), workdir)
+        llvm_config_path = exec_subprocess_check_output("find . -name llvm-config", workdir)
         if llvm_config_path != '' and tar_required is False:
-            llvm_dir = os.path.join("/usr", "lib", "llvm-" + llvm_vers)
-            if llvm_config_path[-1:] == "\n":
-                llvm_config_path = llvm_config_path[:-1]
+            llvm_dir = os.path.join(srcdir, "bin")
+            llvm_config_path = os.path.join(llvm_dir, "llvm-config")
             llvm_flags = llvm_flag_setter(llvm_dir, llvm_config_path)
         else:
             tar_required = True
@@ -313,23 +311,16 @@ def download_llvm_binary():
         )
     if tar_required:
         if DIST == 'Ubuntu':
-            llvm_dir = os.path.join("/usr", "lib", "llvm-" + llvm_vers)
+            llvm_dir = os.path.join(srcdir, "bin")
+            llvm_config_path = os.path.join(llvm_dir, "llvm-config")
         elif DIST == 'MacOSX':
             llvm_dir = os.path.join("/opt", "local", "libexec",
                                     "llvm-" + llvm_vers)
         llvm_flags = llvm_flag_setter(llvm_dir, llvm_config_path)
-        if DIST == "Ubuntu" and REV == '16.04' and is_os_64bit():
-            download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz'
+        if DIST == "Ubuntu" and REV == '20.04' and is_os_64bit():
+            download_link = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz'
             wget(url=download_link, out_dir=workdir)
-            extract_tar(
-                srcdir,
-                'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz')
-        elif DIST == "Ubuntu" and REV == '14.04' and is_os_64bit():
-            download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz'
-            wget(url=download_link, out_dir=workdir)
-            extract_tar(
-                srcdir,
-                'clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-14.04.tar.xz')
+            extract_tar(srcdir, 'clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz')
         elif DIST == 'MacOSX' and is_os_64bit():
             download_link = 'http://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-apple-darwin.tar.xz'
             wget(url=download_link, out_dir=workdir)
