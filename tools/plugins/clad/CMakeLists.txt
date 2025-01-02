@@ -46,10 +46,6 @@ if (CMAKE_CXX_STANDARD)
   list(APPEND _clad_extra_cmake_args -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD})
 endif(CMAKE_CXX_STANDARD)
 
-if (Clang_DIR)
-  list(APPEND _clad_extra_cmake_args -DClang_DIR=${Clang_DIR} -DClang_CONFIG_EXTRA_PATH_HINTS=${Clang_Config_ExtraPathHints})
-endif(Clang_DIR)
-
 if (LLVM_FORCE_USE_OLD_TOOLCHAIN)
   list(APPEND _clad_extra_cmake_args -DLLVM_FORCE_USE_OLD_TOOLCHAIN=${LLVM_FORCE_USE_OLD_TOOLCHAIN})
 endif(LLVM_FORCE_USE_OLD_TOOLCHAIN)
@@ -94,7 +90,7 @@ ExternalProject_Add(
              -DCMAKE_CXX_FLAGS=${CLAD_CXX_FLAGS}
              -DCMAKE_INSTALL_PREFIX=${clad_install_dir}/plugins
              -DLLVM_DIR=${LLVM_BINARY_DIR}
-             -DCLANG_INCLUDE_DIRS=${CLANG_INCLUDE_DIRS}
+             -DClang_DIR=${CLANG_CMAKE_DIR}
              ${_clad_extra_cmake_args}
   # FIXME
   # Building with 1 core is a temporary workaround for #16654 and has to be 

@@ -23,7 +23,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
 
   find_package(Clang REQUIRED CONFIG)
   message(STATUS "Found supported version: Clang ${CLANG_PACKAGE_VERSION}")
-  message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
+  message(STATUS "Using ClangConfig.cmake in: ${CLANG_CMAKE_DIR}")
 
   find_program(LLVM_TABLEGEN_EXE "llvm-tblgen" ${LLVM_TOOLS_BINARY_DIR}
     NO_DEFAULT_PATH)
@@ -111,6 +111,7 @@ else()
     list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_PATH}")
     include(${LLVMCONFIG_FILE})
   endif()
+  set(CLANG_CMAKE_DIR "${CMAKE_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}/cmake/clang")
   if (NOT CLANG_INCLUDE_DIRS)
     set (CLANG_INCLUDE_DIRS "${LLVM_MAIN_SRC_DIR}/tools/clang/include")
     if (NOT EXISTS ${CLANG_INCLUDE_DIRS})

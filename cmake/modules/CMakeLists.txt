@@ -13,7 +13,7 @@ export(TARGETS ${CLING_EXPORTS} FILE ${cling_cmake_builddir}/ClingTargets.cmake)
 
 # Generate ClingConfig.cmake for the build tree.
 set(CLING_CONFIG_CMAKE_DIR "${cling_cmake_builddir}")
-set(CLING_CONFIG_CLANG_CMAKE_DIR "${clang_cmake_builddir}")
+set(CLING_CONFIG_CLANG_CMAKE_DIR "${CLANG_CMAKE_DIR}")
 set(CLING_CONFIG_EXPORTS_FILE "${cling_cmake_builddir}/ClingTargets.cmake")
 set(CLING_CONFIG_INCLUDE_DIRS
   "${CLING_SOURCE_DIR}/include"
