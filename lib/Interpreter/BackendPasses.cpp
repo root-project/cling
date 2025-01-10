@@ -41,6 +41,48 @@ using namespace clang;
 using namespace llvm;
 
 namespace {
+  class UniqueInitFunctionNamePass
+      : public PassInfoMixin<UniqueInitFunctionNamePass> {
+    // append a suffix to a symbol to make it unique
+    // the suffix is "_cling_module_<module number>"
+    llvm::SmallString<128> add_module_suffix(const StringRef OriginalName,
+                                             const StringRef ModuleName) {
+      llvm::SmallString<128> NewFunctionName;
+      NewFunctionName.append(ModuleName);
+      NewFunctionName.append("_");
+
+      for (size_t i = 0; i < NewFunctionName.size(); ++i) {
+        // Replace everything that is not [a-zA-Z0-9._] with a _. This set
+        // happens to be the set of C preprocessing numbers.
+        if (!isPreprocessingNumberBody(NewFunctionName[i]))
+          NewFunctionName[i] = '_';
+      }
+
+      return NewFunctionName;
+    }
+
+    // make static initialization function names (__cxx_global_var_init) unique
+    bool runOnFunction(Function& F, const StringRef ModuleName) {
+      if (F.hasName() && F.getName().starts_with("__cxx_global_var_init")) {
+        F.setName(add_module_suffix(F.getName(), ModuleName));
+        return true;
+      }
+
+      return false;
+    }
+
+  public:
+    PreservedAnalyses run(llvm::Module& M, ModuleAnalysisManager& AM) {
+      bool changed = false;
+      const StringRef ModuleName = M.getName();
+      for (auto&& F : M)
+        changed |= runOnFunction(F, ModuleName);
+      return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    }
+  };
+} // namespace
+
+namespace {
   class WorkAroundConstructorPriorityBugPass
       : public PassInfoMixin<WorkAroundConstructorPriorityBugPass> {
   public:
@@ -421,6 +463,7 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
 
   // TODO: Remove this pass once we upgrade past LLVM 19 that includes the fix.
   MPM.addPass(WorkAroundConstructorPriorityBugPass());
+  MPM.addPass(UniqueInitFunctionNamePass());
   MPM.addPass(KeepLocalGVPass());
   MPM.addPass(WeakTypeinfoVTablePass());
   MPM.addPass(ReuseExistingWeakSymbols(m_JIT));
