@@ -237,7 +237,7 @@ if (UNIX)
         endif()
       endif()
     elseif (APPLE)
-      set(CLING_CXX_PATH_ARGS "-isysroot;${CMAKE_OSX_SYSROOT}")
+      set(CLING_CXX_PATH_ARGS "-isysroot ${CMAKE_OSX_SYSROOT}")
     endif()
   endif()
 
