@@ -1071,7 +1071,7 @@ lib/* /usr/lib
 
     print('Create file: ' + os.path.join(prefix, 'debian', 'compat'))
     f = open(os.path.join(prefix, 'debian', 'compat'), 'w')
-    f.write("9")
+    f.write("13")
     f.close()
 
     print('Create file: ' + os.path.join(prefix, 'debian', 'control'))
