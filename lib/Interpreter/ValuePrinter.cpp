@@ -38,6 +38,7 @@
 #include "clang/Sema/Sema.h"
 
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/Format.h"
 
 #include <locale>
@@ -48,15 +49,6 @@
 #include <source_location>
 #endif
 #include <string>
-
-// GCC 4.x doesn't have the proper UTF-8 conversion routines. So use the
-// LLVM conversion routines (which require a buffer 4x string length).
-#if !defined(__GLIBCXX__) || (__GNUC__ >= 5)
- #include <codecvt>
-#else
- #define LLVM_UTF8
- #include "llvm/Support/ConvertUTF.h"
-#endif
 
 using namespace cling;
 
@@ -401,7 +393,6 @@ namespace cling {
     return quoteString(std::string(Str, Str[N-1] == 0 ? (N-1) : N), Prefix);
   }
 
-#ifdef LLVM_UTF8
   using llvm::ConversionResult;
   using llvm::ConversionFlags;
   using llvm::lenientConversion;
@@ -460,23 +451,6 @@ namespace cling {
     Result.resize(ResultPtr - &Result[0]);
     return quoteString(std::move(Result), Prfx);
   }
-
-#else // !LLVM_UTF8
-
-  template <class T> struct CharTraits { typedef T value_type; };
-#if defined(_WIN32) // Likely only to be needed when _MSC_VER < 19??
-  template <> struct CharTraits<char16_t> { typedef unsigned short value_type; };
-  template <> struct CharTraits<char32_t> { typedef unsigned int value_type; };
-#endif
-
-  template <typename T>
-  static std::string encodeUTF8(const T* const Str, size_t N, const char Prfx) {
-    typedef typename CharTraits<T>::value_type value_type;
-    std::wstring_convert<std::codecvt_utf8_utf16<value_type>, value_type> Convert;
-    const value_type* Src = reinterpret_cast<const value_type*>(Str);
-    return quoteString(Convert.to_bytes(Src, Src + N), Prfx);
-  }
-#endif // LLVM_UTF8
 
   template <typename T>
   std::string utf8Value(const T* const Str, size_t N, const char Prefix,
