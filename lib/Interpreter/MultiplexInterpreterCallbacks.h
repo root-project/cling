@@ -35,11 +35,12 @@ namespace cling {
                             llvm::StringRef SearchPath,
                             llvm::StringRef RelativePath,
                             const clang::Module* Imported,
+                            bool ModuleImported,
                           clang::SrcMgr::CharacteristicKind FileType) override {
       for (auto&& cb : m_Callbacks)
         cb->InclusionDirective(HashLoc, IncludeTok, FileName, IsAngled,
                                FilenameRange, File, SearchPath, RelativePath,
-                               Imported, FileType);
+                               Imported, ModuleImported, FileType);
     }
 
     void EnteredSubmodule(clang::Module* M, clang::SourceLocation ImportLoc,

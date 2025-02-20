@@ -16,12 +16,13 @@
 #include "cling/Utils/ParserStateRAII.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/LocInfoType.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Parse/Parser.h"
 #include "clang/Parse/RAIIObjectsForParser.h"
-#include "clang/Sema/Scope.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/Overload.h"
+#include "clang/Sema/Scope.h"
 #include "clang/Sema/Sema.h"
 #include "clang/Sema/Template.h"
 #include "clang/Sema/TemplateDeduction.h"
@@ -1500,10 +1501,8 @@ namespace cling {
       CXXScopeSpec SS;
       if (scopeNNS)
         SS.MakeTrivial(Context, scopeNNS, scopeSrcRange);
-      bool MemberOfUnknownSpecialization;
       S.LookupTemplateName(Result, P.getCurScope(), SS, QualType(),
-                           /*EnteringContext*/false,
-                           MemberOfUnknownSpecialization);
+                           /*EnteringContext*/false);
       // "Translation" of the TemplateDecl to the specialization is done
       // in findAnyFunctionSelector() given the ExplicitTemplateArgs.
       if (Result.empty())

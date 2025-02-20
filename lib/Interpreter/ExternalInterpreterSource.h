@@ -66,7 +66,8 @@ namespace cling {
 
         bool FindExternalVisibleDeclsByName(
                               const clang::DeclContext *childCurrentDeclContext,
-                              clang::DeclarationName childDeclName) override;
+                              clang::DeclarationName childDeclName,
+                              const clang::DeclContext *OriginalDC) override;
 
         bool Import(clang::DeclContext::lookup_result lookupResult,
                     const clang::DeclContext *childCurrentDeclContext,

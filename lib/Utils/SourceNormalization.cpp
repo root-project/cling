@@ -584,12 +584,11 @@ size_t cling::utils::getWrapPoint(std::string& source,
               // Support lack of semi-colon value printing 'struct T {} t'
               if (Tok.is(tok::raw_identifier))
                 return 0;
-              if (!LangOpts.HeinousExtensions) {
-                // Let's fix 'class NoTerminatingSemi { ... }' for them!
-                // ### TODO DiagnosticOptions.ShowFixits might be better
-                source.insert(rBrace+1, ";");
-                return source.size();
-              }
+
+              // Let's fix 'class NoTerminatingSemi { ... }' for them!
+              // ### TODO DiagnosticOptions.ShowFixits might be better
+              source.insert(rBrace + 1, ";");
+              return source.size();
             }
           }
           return std::string::npos;

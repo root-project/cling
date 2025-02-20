@@ -337,6 +337,7 @@ namespace cling {
                                             llvm::StringRef /*SearchPath*/,
                                             llvm::StringRef /*RelativePath*/,
                                             const clang::Module */*Imported*/,
+                                            bool /*ModuleImported*/,
                                clang::SrcMgr::CharacteristicKind /*FileType*/) {
     // If File is 0 this means that the #included file doesn't exist.
     if (!File)

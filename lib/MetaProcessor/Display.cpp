@@ -1356,7 +1356,7 @@ void NamespacePrinter::ProcessNamespaceDeclaration(decl_iterator declIt,
       name += "::";
     name += nsDecl->getNameAsString();
 
-    if (nsDecl->isOriginalNamespace()) {
+    if (nsDecl->isFirstDecl()) {
       fOut.Print(name.c_str());
       fOut.Print("\n");
     }

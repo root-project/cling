@@ -81,12 +81,6 @@ void CopyIncludePaths(const clang::HeaderSearchOptions& Opts,
       if (withFlags) incpaths.push_back("-isystem");
       break;
 
-    case frontend::IndexHeaderMap:
-      if (!withSystem) continue;
-      if (withFlags) incpaths.push_back("-index-header-map");
-      if (withFlags) incpaths.push_back(E.IsFramework? "-F" : "-I");
-      break;
-
     case frontend::CSystem:
       if (!withSystem) continue;
       if (withFlags) incpaths.push_back("-c-isystem");

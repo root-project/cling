@@ -12,6 +12,7 @@
 #include "cling/Interpreter/Interpreter.h"
 
 #include "clang/AST/ASTContext.h"
+#include "clang/Basic/ASTSourceDescriptor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/CodeCompleteConsumer.h"
@@ -44,11 +45,12 @@ namespace cling {
                             llvm::StringRef SearchPath,
                             llvm::StringRef RelativePath,
                             const clang::Module *Imported,
+                            bool ModuleImported,
                             SrcMgr::CharacteristicKind FileType) override {
       m_Callbacks->InclusionDirective(HashLoc, IncludeTok, FileName,
                                       IsAngled, FilenameRange, File,
                                       SearchPath, RelativePath, Imported,
-                                      FileType);
+                                      ModuleImported, FileType);
     }
 
     void EnteredSubmodule(clang::Module* M,
@@ -77,7 +79,7 @@ namespace cling {
       assert(m_Source && "Can't wrap nullptr ExternalASTSource");
     }
 
-    Decl* GetExternalDecl(uint32_t ID) override {
+    Decl* GetExternalDecl(GlobalDeclID ID) override {
       return m_Source->GetExternalDecl(ID);
     }
 
@@ -102,13 +104,14 @@ namespace cling {
       return m_Source->GetExternalCXXBaseSpecifiers(Offset);
     }
 
-    void updateOutOfDateIdentifier(IdentifierInfo& II) override {
+    void updateOutOfDateIdentifier(const IdentifierInfo& II) override {
       m_Source->updateOutOfDateIdentifier(II);
     }
 
-    bool FindExternalVisibleDeclsByName(const DeclContext* DC,
-                                        DeclarationName Name) override {
-      return m_Source->FindExternalVisibleDeclsByName(DC, Name);
+    bool
+    FindExternalVisibleDeclsByName(const DeclContext* DC, DeclarationName Name,
+                                   const DeclContext* OriginalDC) override {
+      return m_Source->FindExternalVisibleDeclsByName(DC, Name, OriginalDC);
     }
 
     bool LoadExternalSpecializations(const Decl* D, bool OnlyPartial) override {
@@ -238,7 +241,8 @@ namespace cling {
     }
 
     bool FindExternalVisibleDeclsByName(const clang::DeclContext* DC,
-                                        clang::DeclarationName Name) override {
+                                        clang::DeclarationName Name,
+                                        const DeclContext *OriginalDC) override {
       if (m_Callbacks)
         return m_Callbacks->LookupObject(DC, Name);
 

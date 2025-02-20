@@ -56,6 +56,7 @@ namespace cling {
                             llvm::StringRef SearchPath,
                             llvm::StringRef RelativePath,
                             const clang::Module *Imported,
+                            bool ModuleImported,
                             clang::SrcMgr::CharacteristicKind FileType) override;
     void TransactionCommitted(const Transaction& T) override;
 

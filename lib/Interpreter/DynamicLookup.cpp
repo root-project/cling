@@ -851,9 +851,7 @@ namespace cling {
     Sema::InstantiatingTemplate Inst(*m_Sema, m_NoSLoc, m_EvalDecl);
     // Before instantiation we need the canonical type
     TemplateArgument Arg(InstTy.getCanonicalType());
-    TemplateArgumentList TemplateArgs(TemplateArgumentList::OnStack, Arg);
-    MultiLevelTemplateArgumentList MLTAL(m_EvalDecl, TemplateArgs.asArray(),
-                                         /*Final=*/false);
+    MultiLevelTemplateArgumentList MLTAL(m_EvalDecl, Arg, /*Final=*/false);
 
     // Substitute the declaration of the templated function, with the
     // specified template argument

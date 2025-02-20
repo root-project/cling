@@ -96,6 +96,7 @@ namespace cling {
                                    llvm::StringRef /*SearchPath*/,
                                    llvm::StringRef /*RelativePath*/,
                                    const clang::Module* /*Imported*/,
+                                   bool /*ModuleImported*/,
                               clang::SrcMgr::CharacteristicKind /*FileType*/) {}
     virtual void EnteredSubmodule(clang::Module* /*M*/,
                                   clang::SourceLocation /*ImportLoc*/,

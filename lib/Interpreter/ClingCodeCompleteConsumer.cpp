@@ -107,7 +107,8 @@ namespace cling {
     ExternalSource(ASTContext& ChildASTCtxt, FileManager& ChildFM,
                    ASTContext& ParentASTCtxt, FileManager& ParentFM);
     bool FindExternalVisibleDeclsByName(const DeclContext* DC,
-                                        DeclarationName Name) override;
+                                        DeclarationName Name,
+                                        const DeclContext* OriginalDC) override;
     void completeVisibleDeclsMap(
         const clang::DeclContext* childDeclContext) override;
   };
@@ -151,8 +152,9 @@ namespace cling {
     Importer.reset(importer);
   }
 
-  bool ExternalSource::FindExternalVisibleDeclsByName(const DeclContext* DC,
-                                                      DeclarationName Name) {
+  bool ExternalSource::FindExternalVisibleDeclsByName(
+      const DeclContext* DC, DeclarationName Name,
+      const DeclContext* OriginalDC) {
 
     IdentifierTable& ParentIdTable = ParentASTCtxt.Idents;
 

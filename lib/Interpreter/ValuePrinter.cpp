@@ -611,11 +611,12 @@ static const char* BuildAndEmitVPWrapperBody(cling::Interpreter &Interp,
   clang::Expr *OverldExpr
     = clang::UnresolvedLookupExpr::Create(Ctx, nullptr /*namingClass*/,
                                           NNSLBld.getTemporary(),
-                                  clang::DeclarationNameInfo(PVDN, noSrcLoc),
+                                          clang::DeclarationNameInfo(PVDN, noSrcLoc),
                                           /*RequiresADL*/false,
-                                          R.isOverloadedResult(),
                                           R.begin(),
-                                          R.end());
+                                          R.end(),
+                                          /*KnownDependent=*/false,
+                                          /*KnownInstantiationDependent=*/false);
 
   // For `auto foo = bar;` decls, we are interested in the deduced type, i.e.
   // AutoType 0x55e5ac848030 'int *' sugar
