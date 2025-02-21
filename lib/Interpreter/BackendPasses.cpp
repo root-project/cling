@@ -307,8 +307,8 @@ namespace {
       if (!GV.hasName())
         return false;
 
-      if (GV.getName().equals("__cuda_fatbin_wrapper") ||
-          GV.getName().equals("__cuda_gpubin_handle")) {
+      if (GV.getName() == "__cuda_fatbin_wrapper" ||
+          GV.getName() == "__cuda_gpubin_handle") {
         GV.setName(add_module_suffix(GV.getName(), ModuleName));
         return true;
       }
@@ -318,9 +318,9 @@ namespace {
 
     // make CUDA specific functions unique
     bool runOnFunction(Function& F, const StringRef ModuleName) {
-      if (F.hasName() && (F.getName().equals("__cuda_module_ctor") ||
-                          F.getName().equals("__cuda_module_dtor") ||
-                          F.getName().equals("__cuda_register_globals"))) {
+      if (F.hasName() && (F.getName() == "__cuda_module_ctor" ||
+                          F.getName() == "__cuda_module_dtor" ||
+                          F.getName() == "__cuda_register_globals")) {
         F.setName(add_module_suffix(F.getName(), ModuleName));
         return true;
       }
@@ -486,25 +486,23 @@ void BackendPasses::CreatePasses(int OptLevel, llvm::ModulePassManager& MPM,
 
     // Register a callback for disabling all other inliner passes.
     PIC.registerShouldRunOptionalPassCallback([](StringRef P, Any) {
-      if (P.equals("ModuleInlinerWrapperPass") ||
-          P.equals("InlineAdvisorAnalysisPrinterPass") ||
-          P.equals("PartialInlinerPass") || P.equals("buildInlinerPipeline") ||
-          P.equals("ModuleInlinerPass") || P.equals("InlinerPass") ||
-          P.equals("InlineAdvisorAnalysis") ||
-          P.equals("PartiallyInlineLibCallsPass") ||
-          P.equals("RelLookupTableConverterPass") ||
-          P.equals("InlineCostAnnotationPrinterPass") ||
-          P.equals("InlineSizeEstimatorAnalysisPrinterPass") ||
-          P.equals("InlineSizeEstimatorAnalysis"))
+      if (P == "ModuleInlinerWrapperPass" ||
+          P == "InlineAdvisorAnalysisPrinterPass" ||
+          P == "PartialInlinerPass" || P == "buildInlinerPipeline" ||
+          P == "ModuleInlinerPass" || P == "InlinerPass" ||
+          P == "InlineAdvisorAnalysis" || P == "PartiallyInlineLibCallsPass" ||
+          P == "RelLookupTableConverterPass" ||
+          P == "InlineCostAnnotationPrinterPass" ||
+          P == "InlineSizeEstimatorAnalysisPrinterPass" ||
+          P == "InlineSizeEstimatorAnalysis")
         return false;
 
       return true;
     });
   } else {
     // Register a callback for disabling RelLookupTableConverterPass.
-    PIC.registerShouldRunOptionalPassCallback([](StringRef P, Any) {
-      return !P.equals("RelLookupTableConverterPass");
-    });
+    PIC.registerShouldRunOptionalPassCallback(
+        [](StringRef P, Any) { return P != "RelLookupTableConverterPass"; });
   }
 
   SI.registerCallbacks(PIC, &MAM);

@@ -82,7 +82,7 @@ namespace cling {
     bool VisitDeclRefExpr(DeclRefExpr* DRE) {
       const Decl* D = DRE->getDecl();
       if (const AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-        if (A->getAnnotation().equals("__Auto")) {
+        if (A->getAnnotation() == "__Auto") {
           m_FoundDRE = DRE;
           return false; // we abort on the first found candidate.
         }

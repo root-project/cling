@@ -91,7 +91,7 @@ class MinimalPPLexer: public Lexer {
     if (Ident.empty())
       return false;
 
-    if (Ident.equals("operator")) {
+    if (Ident == "operator") {
       // Tok is the operator, e.g. <=, ==, +...
       // however, for operator() and [], Tok only contains the
       // left side so we need to parse the closing right side
@@ -251,7 +251,7 @@ public:
         Ctor = true;
 
       // Constructor and Destructor identifiers must match
-      if (!First.equals(Ident)) {
+      if (First != Ident) {
         if (!SkipPointerRefs(Tok))
           return kNONE;
 
@@ -269,12 +269,12 @@ public:
     } else {
       bool SeenModifier = false;
       auto AnalyzeModifier = [&SeenModifier](llvm::StringRef Modifier) {
-        if (Modifier.equals("signed") || Modifier.equals("unsigned") ||
-            Modifier.equals("short") || Modifier.equals("long")) {
+        if (Modifier == "signed" || Modifier == "unsigned" ||
+            Modifier == "short" || Modifier == "long") {
           SeenModifier = true;
         }
       };
-      if (First.equals("struct") || First.equals("class")) {
+      if (First == "struct" || First == "class") {
         do {
           // Identifier(Tok).empty() is redundant 1st time, but simplifies code
           if (Identifier(Tok).empty() || !LexClean(Tok))
@@ -288,8 +288,8 @@ public:
         if (Tok.is(tok::colon))
           return !AdvanceTo(Tok, tok::l_brace) ? kClass : kNONE;
 
-      } else if (First.equals("static") || First.equals("constexpr") ||
-                 First.equals("inline") || First.equals("const")) {
+      } else if (First == "static" || First == "constexpr" ||
+                 First == "inline" || First == "const") {
         // First check if the current keyword is a modifier.
         llvm::StringRef Modifier = Identifier(Tok);
         AnalyzeModifier(Modifier);
@@ -377,7 +377,7 @@ public:
       }
 
       // class const method 'CLASS::method() const {'
-      if (!Ctor && Identifier(Tok).equals("const")) {
+      if (!Ctor && Identifier(Tok) == "const") {
         if (LexClean(Tok) && Tok.is(tok::l_brace))
           return kFunction;
       }
@@ -478,8 +478,8 @@ size_t cling::utils::getWrapPoint(std::string& source,
       do {
         if (Tok.getKind() == tok::raw_identifier) {
           StringRef keyword(Tok.getRawIdentifier());
-          if (keyword.equals("__global__") || keyword.equals("__device__") ||
-              keyword.equals("__host__"))
+          if (keyword == "__global__" || keyword == "__device__" ||
+              keyword == "__host__")
             // if attribute was found, skip the token and use the function
             // detection later
             Lex.Lex(Tok);
@@ -519,7 +519,7 @@ size_t cling::utils::getWrapPoint(std::string& source,
 
     if (Tok.getKind() == tok::raw_identifier && !Tok.needsCleaning()) {
       StringRef keyword(Tok.getRawIdentifier());
-      if (keyword.equals("using")) {
+      if (keyword == "using") {
         // FIXME: Using definitions and declarations should be decl extracted.
         // Until we have that, don't wrap them if they are the only input.
         if (Lex.AdvanceTo(Tok, tok::semi)) {
@@ -533,11 +533,11 @@ size_t cling::utils::getWrapPoint(std::string& source,
         // non-wrapped statement.
         return getFileOffset(Tok) + 1;
       }
-      if (keyword.equals("extern"))
+      if (keyword == "extern")
         return std::string::npos;
-      if (keyword.equals("namespace"))
+      if (keyword == "namespace")
         return std::string::npos;
-      if (keyword.equals("template"))
+      if (keyword == "template")
         return std::string::npos;
 
       auto HasBody{false};

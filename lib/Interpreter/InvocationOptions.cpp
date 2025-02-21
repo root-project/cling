@@ -234,7 +234,7 @@ InvocationOptions::InvocationOptions(int argc, const char* const* argv) :
       case Option::UnknownClass:
       case Option::InputClass:
         // prune "-" we need to control where it appears when invoking clang
-        if (!arg->getSpelling().equals("-")) {
+        if (arg->getSpelling() != "-") {
           if (const char* Arg = argv[arg->getIndex()]) {
 #ifdef CLING_TRANSLATE_NOSTDINCxx
             if (!::strcmp(Arg, "-nostdinc++"))

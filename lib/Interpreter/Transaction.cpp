@@ -73,7 +73,7 @@ namespace cling {
     for (auto I = decls_begin(), E = decls_end(); I != E; ++I) {
       for (auto DI : I->m_DGR) {
         if (NamedDecl* ND = dyn_cast<NamedDecl>(DI)) {
-          if (name.equals(ND->getNameAsString()))
+          if (name == ND->getNameAsString())
             return ND;
         }
       }
@@ -84,7 +84,7 @@ namespace cling {
         if (LinkageSpecDecl* LSD = dyn_cast<LinkageSpecDecl>(DI)) {
           for (Decl* DI : LSD->decls()) {
             if (NamedDecl* ND = dyn_cast<NamedDecl>(DI)) {
-              if (name.equals(ND->getNameAsString()))
+              if (name == ND->getNameAsString())
                 return ND;
             }
           }

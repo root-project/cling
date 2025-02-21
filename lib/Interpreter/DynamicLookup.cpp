@@ -910,7 +910,7 @@ namespace cling {
   bool EvaluateTSynthesizer::ShouldVisit(FunctionDecl* D) {
     // FIXME: Here we should have our custom attribute.
     if (AnnotateAttr* A = D->getAttr<AnnotateAttr>())
-      if (A->getAnnotation().equals("__ResolveAtRuntime"))
+      if (A->getAnnotation() == "__ResolveAtRuntime")
         return true;
     return false;
   }

@@ -672,7 +672,7 @@ namespace cling {
     llvm::raw_ostream &where = cling::log();
     // `.stats decl' and `.stats asttree FILTER' cause deserialization; force transaction
     PushTransactionRAII RAII(this);
-    if (what.equals("asttree")) {
+    if (what == "asttree") {
       std::unique_ptr<clang::ASTConsumer> printer =
         clang::CreateASTDumper(nullptr /*Dump to stdout.*/,
                                filter, true  /*DumpDecls*/,
@@ -681,11 +681,11 @@ namespace cling {
                                false /*DumpDeclTypes*/,
                                ADOF_Default /*DumpFormat*/);
       printer->HandleTranslationUnit(getSema().getASTContext());
-    } else if (what.equals("ast"))
+    } else if (what == "ast")
       getSema().getASTContext().PrintStats();
-    else if (what.equals("decl"))
+    else if (what == "decl")
       ClangInternalState::printLookupTables(where, getSema().getASTContext());
-    else if (what.equals("undo"))
+    else if (what == "undo")
       m_IncrParser->printTransactionStructure();
   }
 

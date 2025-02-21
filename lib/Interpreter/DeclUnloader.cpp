@@ -206,7 +206,7 @@ namespace {
             continue;
 
           // Required by ::DwarfEHPrepare::InsertUnwindResumeCalls (in the JIT)
-          if ((*I)->getName().equals("_Unwind_Resume"))
+          if ((*I)->getName() == "_Unwind_Resume")
             continue;
 
           m_CodeGen->forgetGlobal(*I);

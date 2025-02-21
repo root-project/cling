@@ -690,7 +690,8 @@ namespace utils {
         {1,1,1,2,2,2,2};
       StringRef name = Template.getName();
       for(int k=0;stls[k];k++) {
-        if ( name.equals(stls[k]) ) return values[k];
+        if (name == stls[k])
+          return values[k];
       }
     }
     // Check in some struct if the Template decl is registered something like

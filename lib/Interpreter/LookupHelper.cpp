@@ -121,7 +121,7 @@ namespace cling {
       // Compare the contents of the cached buffer and the string we should
       // process. If there are hash collisions this assert should trigger
       // making it easier to debug.
-      CacheIsValid = FIDContents.equals(llvm::StringRef(code.str() + "\n"));
+      CacheIsValid = FIDContents == llvm::StringRef(code.str() + "\n");
       assert(CacheIsValid && "Hash collision!");
       if (CacheIsValid) {
         // We have already included this file once. Reuse the include loc.
@@ -319,35 +319,42 @@ namespace cling {
       isunsigned = true;
       typeName = StringRef(typeName.data()+9, typeName.size()-9);
     }
-    if (typeName.equals("char")) {
+    if (typeName == "char") {
       if (isunsigned) return Context.UnsignedCharTy;
       return Context.SignedCharTy;
     }
-    if (typeName.equals("short")) {
+    if (typeName == "short") {
       if (isunsigned) return Context.UnsignedShortTy;
       return Context.ShortTy;
     }
-    if (typeName.equals("int")) {
+    if (typeName == "int") {
       if (isunsigned) return Context.UnsignedIntTy;
       return Context.IntTy;
     }
-    if (typeName.equals("long")) {
+    if (typeName == "long") {
       if (isunsigned) return Context.UnsignedLongTy;
       return Context.LongTy;
     }
-    if (typeName.equals("long long")) {
+    if (typeName == "long long") {
       if (isunsigned) return Context.UnsignedLongLongTy;
       return Context.LongLongTy;
     }
     if (!issigned && !isunsigned) {
-      if (typeName.equals("bool")) return Context.BoolTy;
-      if (typeName.equals("float")) return Context.FloatTy;
-      if (typeName.equals("double")) return Context.DoubleTy;
-      if (typeName.equals("long double")) return Context.LongDoubleTy;
+      if (typeName == "bool")
+        return Context.BoolTy;
+      if (typeName == "float")
+        return Context.FloatTy;
+      if (typeName == "double")
+        return Context.DoubleTy;
+      if (typeName == "long double")
+        return Context.LongDoubleTy;
 
-      if (typeName.equals("wchar_t")) return Context.WCharTy;
-      if (typeName.equals("char16_t")) return Context.Char16Ty;
-      if (typeName.equals("char32_t")) return Context.Char32Ty;
+      if (typeName == "wchar_t")
+        return Context.WCharTy;
+      if (typeName == "char16_t")
+        return Context.Char16Ty;
+      if (typeName == "char32_t")
+        return Context.Char32Ty;
     }
     /* Missing
    CanQualType WideCharTy; // Same as WCharTy in C++, integer type in C99.
@@ -1320,12 +1327,12 @@ namespace cling {
        TagDecl *decl = llvm::dyn_cast<TagDecl>(foundDC);
        if (decl) {
           // We have a class or struct or something.
-          if (funcName.substr(1).equals(decl->getName())) {
-             ParsedType PT;
-             QualType QT( decl->getTypeForDecl(), 0 );
-             PT.set(QT);
-             FuncId.setDestructorName(SourceLocation(),PT,SourceLocation());
-             return true;
+          if (funcName.substr(1) == decl->getName()) {
+            ParsedType PT;
+            QualType QT(decl->getTypeForDecl(), 0);
+            PT.set(QT);
+            FuncId.setDestructorName(SourceLocation(), PT, SourceLocation());
+            return true;
           }
        }
        // So it starts with ~ but is not followed by the name of
@@ -1336,14 +1343,14 @@ namespace cling {
        TagDecl *decl = llvm::dyn_cast<TagDecl>(foundDC);
        if (decl) {
           // We have a class or struct or something.
-          if (funcName.equals(decl->getName())) {
-             ParsedType PT;
-             QualType QT( decl->getTypeForDecl(), 0 );
-             PT.set(QT);
-             FuncId.setConstructorName(PT,SourceLocation(),SourceLocation());
+          if (funcName == decl->getName()) {
+            ParsedType PT;
+            QualType QT(decl->getTypeForDecl(), 0);
+            PT.set(QT);
+            FuncId.setConstructorName(PT, SourceLocation(), SourceLocation());
           } else {
-             IdentifierInfo *TypeInfoII = &PP.getIdentifierTable().get(funcName);
-             FuncId.setIdentifier (TypeInfoII, SourceLocation() );
+            IdentifierInfo* TypeInfoII = &PP.getIdentifierTable().get(funcName);
+            FuncId.setIdentifier(TypeInfoII, SourceLocation());
           }
           return true;
        } else {
