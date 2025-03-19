@@ -1,12 +1,4 @@
-if(WIN32)
-  # We need cmake to support exporting of symbols not only from libraries but
-  # from executables too. This way cling can find symbols from its own
-  # executable during runtime.
-  cmake_minimum_required(VERSION 3.6.2)
-else(WIN32)
-  # support of earlier cmake versions will be removed soon
-  cmake_minimum_required(VERSION 3.5)
-endif(WIN32)
+cmake_minimum_required(VERSION 3.10)
 
 # If we are not building as a part of LLVM, build Cling as an
 # standalone project, using LLVM as an external library:
