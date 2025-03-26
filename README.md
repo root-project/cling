@@ -38,6 +38,18 @@ Our nightly binary snapshots are currently unavailable.
 
 ### Building from Source
 
+#### If Clang and LLVM in cling-latest version are Already Installed
+
+```bash
+git clone https://github.com/root-project/cling.git
+mkdir cling-build && cd cling-build
+cmake ../cling
+cmake --build .
+```
+
+#### Build Cling Along with LLVM
+If Clang and LLVM are not installed, you can build them together with Cling:
+
 ```bash
 git clone https://github.com/root-project/llvm-project.git
 cd llvm-project
@@ -46,16 +58,25 @@ cd ..
 git clone https://github.com/root-project/cling.git
 mkdir cling-build && cd cling-build
 cmake -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;NVPTX" -DCMAKE_BUILD_TYPE=Release ../llvm-project/llvm
-cmake --build . --target cling
+cmake --build . --target clang cling
 ```
 
 See also the instructions [on the webpage](https://root.cern/cling/cling_build_instructions/).
 
 Usage
 -----
-Assuming we're in the build folder:
+Assuming we're in the build folder.
+
+If Cling is built as a standalone project, you need to specify the include directory for headers:
+
 ```bash
-./bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'
+./bin/cling -I"../cling/include" '#include <stdio.h>' 'printf("Hello World!\n");'
+```
+
+If build Cling as part of LLVM:
+
+```bash
+./bin/cling '#include <stdio.h>' 'printf("Hello World!\n");'
 ```
 
 To get started run:
