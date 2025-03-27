@@ -256,15 +256,6 @@ namespace cling {
         m_CurDeclContext = FD;
         ASTNodeInfo NewBody = Visit(D->getBody());
         if (NewBody.hasErrorOccurred()) {
-          // Report unsupported feature.
-          DiagnosticsEngine& Diags = m_Sema->getDiagnostics();
-          unsigned diagID
-          = Diags.getCustomDiagID(DiagnosticsEngine::Error,
-                                  "Syntax error");
-          Diags.Report(NewBody.getAsSingleNode()->getBeginLoc(), diagID);
-          D->dump();
-          if (NewBody.hasSingleNode())
-            NewBody.getAs<Expr>()->dump();
           return Result(nullptr, false); // Signal a fatal error.
         }
         FD->setBody(NewBody.getAsSingleNode());
@@ -412,7 +403,16 @@ namespace cling {
           continue;
 
         QualType CuredDeclTy = CuredDecl->getType();
+
+        // Handle cases where we have `auto p = expression;` where `expression`
+        // is unknown.
         if (isa<AutoType>(CuredDeclTy)) {
+          DiagnosticsEngine& Diags = m_Sema->getDiagnostics();
+          unsigned DiagID = Diags.getCustomDiagID(
+              DiagnosticsEngine::Error,
+              "cannot deduce 'auto' from unknown expression");
+
+          auto Builder = Diags.Report(InitExpr->getBeginLoc(), DiagID);
           ASTNodeInfo result(Node, false);
           result.setErrorOccurred();
           return result;
@@ -586,6 +586,11 @@ namespace cling {
       Expr* Replacement = ContentTransform.getAs<Expr>();
       return ASTNodeInfo(Replacement, ContentTransform.isForReplacement());
     }
+    // Report unsupported feature.
+    DiagnosticsEngine& Diags = m_Sema->getDiagnostics();
+    unsigned diagID =
+        Diags.getCustomDiagID(DiagnosticsEngine::Error, "Syntax error");
+    Diags.Report(Node->getBeginLoc(), diagID);
     ContentTransform.setErrorOccurred();
     return ContentTransform;
   }
