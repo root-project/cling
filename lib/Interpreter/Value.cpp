@@ -272,7 +272,7 @@ namespace cling {
     const clang::BuiltinType *BT = getType()->castAs<clang::BuiltinType>();
     clang::PrintingPolicy Policy = getASTContext().getPrintingPolicy();
 #endif // NDEBUG
-    assert(BT->getName(Policy).equals(Type));
+    assert(BT->getName(Policy) == Type);
   }
 
   static clang::QualType getCorrespondingBuiltin(clang::ASTContext &C,
