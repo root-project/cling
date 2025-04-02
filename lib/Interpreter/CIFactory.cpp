@@ -704,13 +704,8 @@ namespace {
 #elif __APPLE__
     if (Triple.isMacOSX()) {
       if (CI.getTarget().getSDKVersion() < VersionTuple(14, 4)) {
-        maybeAppendOverlayEntry(stdIncLoc.str(), "std_darwin.MacOSX14.2.sdk.modulemap",
-                                clingIncLoc.str().str(), MOverlay,
-                                /*RegisterModuleMap=*/ true,
-                                /*AllowModulemapOverride=*/ false);
-      } else if (CI.getTarget().getSDKVersion() < VersionTuple(15, 4)) {
         maybeAppendOverlayEntry(stdIncLoc.str(),
-                                "std_darwin.MacOSX15.2.sdk.modulemap",
+                                "std_darwin.MacOSX14.2.sdk.modulemap",
                                 clingIncLoc.str().str(), MOverlay,
                                 /*RegisterModuleMap=*/true,
                                 /*AllowModulemapOverride=*/false);
