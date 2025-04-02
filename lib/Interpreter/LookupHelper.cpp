@@ -26,6 +26,8 @@
 #include "clang/Sema/Template.h"
 #include "clang/Sema/TemplateDeduction.h"
 
+#include "EnterUserCodeRAII.h"
+
 using namespace clang;
 
 namespace cling {
@@ -471,6 +473,13 @@ namespace cling {
     QualType TheQT;
 
     if (typeName.empty()) return TheQT;
+
+    // findType is called from TClingLookupHelper::GetPartiallyDesugaredNameWithScopeHandling
+    // which is called indirectly from TClassEdit::GetNormalizedName via
+    // the ResolvedTypedef code paths.  Through that code path nothing is
+    // taking the ROOT/Interpreter lock and since this code can modify the
+    // interpreter, we do need to take lock.
+    LockCompilationDuringUserCodeExecutionRAII LCDUCER(*m_Interpreter);
 
     // Could trigger deserialization of decls.
     Interpreter::PushTransactionRAII RAII(m_Interpreter);
