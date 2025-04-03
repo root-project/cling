@@ -13,7 +13,7 @@ concept, in order to leverage rapid application development. Implemented as a
 small extension to LLVM and Clang, the interpreter reuses their strengths such
 as the praised concise and expressive compiler diagnostics.
 
-See also [cling's web page.](https://rawcdn.githack.com/root-project/cling/d59d27ad61f2f3a78cd46e652cd9fb8adb893565/www/index.html)
+See also [cling's web page.](https://rawcdn.githack.com/root-project/cling/master/www/index.html)
 
 Please note that some of the resources are rather old and most of the stated
 limitations are outdated.
@@ -38,6 +38,42 @@ Our nightly binary snapshots are currently unavailable.
 
 ### Building from Source
 
+See also the instructions [on the webpage](https://root.cern/cling/cling_build_instructions/).
+
+#### Building Cling as a Standalone Project
+
+If Clang and LLVM (cling-latest version) are not installed, you need to build them first:
+
+```bash
+git clone https://github.com/root-project/llvm-project.git
+cd llvm-project
+git checkout cling-latest
+cd ..
+mkdir llvm-build && cd llvm-build
+cmake -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;NVPTX" -DCMAKE_BUILD_TYPE=Release ./llvm-project/llvm
+cmake --build .
+```
+
+Once Clang and LLVM (cling-latest version) are installed, you can build Cling. If they are already installed, you can skip the previous step and proceed with the following:
+
+> Note: Ensure you are outside the llvm-project and llvm-build directories before proceeding, as LLVM, Clang, and Cling do not allow building inside the source directory.
+
+```bash
+git clone https://github.com/root-project/cling.git
+mkdir cling-build && cd cling-build
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="The root of your LLVM build directory" -DLLVM_DIR="The directory containing LLVM's CMake modules" ../cling
+cmake --build .
+```
+
+Example CMake command:
+
+```bash
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=../llvm-build -DLLVM_DIR=../llvm-build/lib/cmake/llvm ../cling
+```
+
+#### Building Cling Along with LLVM (Recommended)
+If Clang and LLVM are not installed, you can build them together with Cling:
+
 ```bash
 git clone https://github.com/root-project/llvm-project.git
 cd llvm-project
@@ -46,16 +82,31 @@ cd ..
 git clone https://github.com/root-project/cling.git
 mkdir cling-build && cd cling-build
 cmake -DLLVM_EXTERNAL_PROJECTS=cling -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;NVPTX" -DCMAKE_BUILD_TYPE=Release ../llvm-project/llvm
-cmake --build . --target cling
+cmake --build . --target clang cling
 ```
 
-See also the instructions [on the webpage](https://root.cern/cling/cling_build_instructions/).
+#### Jupyter notebooks
+
+To enable support for cling in Jupyter notebooks, after building cling, run:
+
+```bash
+cmake --build . --target libclingJupyter
+```
 
 Usage
 -----
-Assuming we're in the build folder:
+Assuming we're in the build folder.
+
+If Cling is built as a standalone project, you need to specify the include directory for headers:
+
 ```bash
-./bin/cling '#include <stdio.h>' 'printf("Hello World!\n")'
+./bin/cling -I"../cling/include" '#include <stdio.h>' 'printf("Hello World!\n");'
+```
+
+If build Cling as part of LLVM:
+
+```bash
+./bin/cling '#include <stdio.h>' 'printf("Hello World!\n");'
 ```
 
 To get started run:
