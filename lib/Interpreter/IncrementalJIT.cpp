@@ -408,6 +408,28 @@ CreateTargetMachine(const clang::CompilerInstance& CI, bool JITLink) {
   return cantFail(JTMB.createTargetMachine());
 }
 
+#ifdef __APPLE__
+// Forward-declare compiler-rt complex division helpers
+extern "C" {
+void __divsc3();
+void __divdc3();
+}
+
+static SymbolMap GetListOfMacOSCompilerRTSymbols(const LLJIT& Jit) {
+  // Inject symbols that may not be resolved while JIT'ing on macOS
+  static const std::pair<const char*, const void*> NamePtrList[] = {
+      {"__divsc3", (void*)&__divsc3},
+      {"__divdc3", (void*)&__divdc3},
+  };
+  SymbolMap CompilerRTSymbols;
+  for (const auto& NamePtr : NamePtrList) {
+    CompilerRTSymbols[Jit.mangleAndIntern(NamePtr.first)] = {
+        orc::ExecutorAddr::fromPtr(NamePtr.second), JITSymbolFlags::Exported};
+  }
+  return CompilerRTSymbols;
+}
+#endif
+
 #if defined(__linux__) && defined(__GLIBC__)
 static SymbolMap GetListOfLibcNonsharedSymbols(const LLJIT& Jit) {
   // Inject a number of symbols that may be in libc_nonshared.a where they are
@@ -572,6 +594,11 @@ IncrementalJIT::IncrementalJIT(
   // See comment in ListOfLibcNonsharedSymbols.
   cantFail(Jit->getProcessSymbolsJITDylib()->define(
       absoluteSymbols(GetListOfLibcNonsharedSymbols(*Jit))));
+#endif
+
+#if defined(__APPLE__)
+  cantFail(Jit->getProcessSymbolsJITDylib()->define(
+      absoluteSymbols(GetListOfMacOSCompilerRTSymbols(*Jit))));
 #endif
 
   // This replaces llvm::orc::ExecutionSession::logErrorsToStdErr:
