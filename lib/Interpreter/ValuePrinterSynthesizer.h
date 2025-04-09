@@ -46,7 +46,7 @@ public:
     ///\param[in] S - The semantic analysis object
     ValuePrinterSynthesizer(clang::Sema* S);
 
-    virtual ~ValuePrinterSynthesizer();
+    ~ValuePrinterSynthesizer() override;
 
     Result Transform(clang::Decl* D) override;
 

@@ -36,7 +36,7 @@ namespace {
   class PerfJITEventListener : public JITEventListener {
   public:
     PerfJITEventListener();
-    ~PerfJITEventListener() {
+    ~PerfJITEventListener() override {
       if (m_Perfmap)
         fclose(m_Perfmap);
     }

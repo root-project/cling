@@ -177,7 +177,7 @@ namespace cling {
 
     EvaluateTSynthesizer(clang::Sema* S);
 
-    ~EvaluateTSynthesizer();
+    ~EvaluateTSynthesizer() override;
 
     Result Transform(clang::Decl* D) override;
 

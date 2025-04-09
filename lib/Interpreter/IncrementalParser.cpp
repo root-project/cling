@@ -205,7 +205,7 @@ namespace {
   public:
     FilteringDiagConsumer(DiagnosticsEngine& Diags, bool Own)
       : DiagnosticsOverride(Diags, Own) {}
-    virtual ~FilteringDiagConsumer() { setTargetConsumer(nullptr); }
+    ~FilteringDiagConsumer() override { setTargetConsumer(nullptr); }
 
     /// \brief Sets the DiagnosticConsumer that sees `HandleDiagnostic()` calls.
     /// \param[in] Consumer - The target DiagnosticConsumer, or `nullptr` to

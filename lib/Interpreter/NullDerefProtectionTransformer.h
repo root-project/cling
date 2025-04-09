@@ -41,7 +41,7 @@ namespace cling {
     ///
     NullDerefProtectionTransformer(cling::Interpreter* I);
 
-    virtual ~NullDerefProtectionTransformer();
+    ~NullDerefProtectionTransformer() override;
     Result Transform(clang::Decl* D) override;
   };
 

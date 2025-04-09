@@ -45,8 +45,7 @@ namespace {
                       Sema* S) :
       m_Policy(Policy), m_Addresses(Addresses), m_Sema(S) {}
 
-    virtual ~StmtPrinterHelper() {}
-
+    ~StmtPrinterHelper() override {}
 
     // Handle only DeclRefExprs since they are local and the call wrapper
     // won't "see" them. Consequently we don't need to handle:

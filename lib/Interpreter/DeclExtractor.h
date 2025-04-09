@@ -39,7 +39,7 @@ namespace cling {
   public:
     DeclExtractor(clang::Sema* S);
 
-    virtual ~DeclExtractor();
+    ~DeclExtractor() override;
 
     ///\brief Scans the wrapper for declarations and extracts them onto the
     /// global scope.

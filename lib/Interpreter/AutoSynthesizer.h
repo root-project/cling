@@ -33,7 +33,7 @@ namespace cling {
     ///
     AutoSynthesizer(clang::Sema* S);
 
-    virtual ~AutoSynthesizer();
+    ~AutoSynthesizer() override;
 
     Result Transform(clang::Decl*) override;
   };

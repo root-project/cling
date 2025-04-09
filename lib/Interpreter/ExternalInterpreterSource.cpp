@@ -32,7 +32,7 @@ namespace {
                      cling::ExternalInterpreterSource& source):
       ASTImporter(ToContext, ToFileManager, FromContext, FromFileManager,
                   MinimalImport), m_Source(source) {}
-    virtual ~ClingASTImporter() = default;
+    ~ClingASTImporter() override = default;
 
     void Imported(Decl *From, Decl *To) override {
       ASTImporter::Imported(From, To);

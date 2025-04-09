@@ -60,7 +60,7 @@ namespace cling {
       public:
         ExternalInterpreterSource(const cling::Interpreter *parent,
                                   cling::Interpreter *child);
-        virtual ~ExternalInterpreterSource();
+        ~ExternalInterpreterSource() override;
 
         void completeVisibleDeclsMap(const clang::DeclContext *DC) override;
 

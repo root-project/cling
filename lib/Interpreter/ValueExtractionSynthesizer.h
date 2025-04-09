@@ -56,7 +56,7 @@ public:
     ///
     ValueExtractionSynthesizer(clang::Sema* S, bool isChildInterpreter);
 
-    virtual ~ValueExtractionSynthesizer();
+    ~ValueExtractionSynthesizer() override;
 
     Result Transform(clang::Decl* D) override;
 
