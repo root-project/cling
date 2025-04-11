@@ -580,7 +580,9 @@ namespace {
 
     // We can't use "assert.h" because it is defined in the resource dir, too.
 #ifdef _WIN32
+    #ifdef CLING_SUPPORT_VC
     llvm::SmallString<256> vcIncLoc(getIncludePathForHeader(HS, "vcruntime.h"));
+    #endif
     llvm::SmallString<256> servIncLoc(getIncludePathForHeader(HS, "windows.h"));
 #endif
     llvm::SmallString<128> cIncLoc(getIncludePathForHeader(HS, "time.h"));
@@ -593,7 +595,9 @@ namespace {
     llvm::SmallString<256> boostIncLoc(getIncludePathForHeader(HS, "boost/version.hpp"));
     llvm::SmallString<256> tinyxml2IncLoc(getIncludePathForHeader(HS, "tinyxml2.h"));
     llvm::SmallString<256> cudaIncLoc(getIncludePathForHeader(HS, "cuda.h"));
+    #ifdef CLING_SUPPORT_VC
     llvm::SmallString<256> vcVcIncLoc(getIncludePathForHeader(HS, "Vc/Vc"));
+    #endif
     llvm::SmallString<256> clingIncLoc(getIncludePathForHeader(HS,
                                         "cling/Interpreter/RuntimeUniverse.h"));
 
@@ -679,10 +683,12 @@ namespace {
     std::string MOverlay;
 
 #ifdef _WIN32
+    #ifdef CLING_SUPPORT_VC
     maybeAppendOverlayEntry(vcIncLoc.str(), "vcruntime.modulemap",
                             clingIncLoc.str().str(), MOverlay,
                             /*RegisterModuleMap=*/ true,
                             /*AllowModulemapOverride=*/ false);
+    #endif
     maybeAppendOverlayEntry(servIncLoc.str(), "services_msvc.modulemap",
                             clingIncLoc.str().str(), MOverlay,
                             /*RegisterModuleMap=*/ true,
@@ -736,11 +742,13 @@ namespace {
                               clingIncLoc.str().str(), MOverlay,
                               /*RegisterModuleMap=*/ true,
                               /*AllowModulemapOverride=*/ false);
+    #ifdef CLING_SUPPORT_VC
     if (!vcVcIncLoc.empty())
       maybeAppendOverlayEntry(vcVcIncLoc.str(), "vc.modulemap",
                               clingIncLoc.str().str(), MOverlay,
                               /*RegisterModuleMap=*/ true,
                               /*AllowModulemapOverride=*/ false);
+    #endif
     if (!boostIncLoc.empty()) {
       // Add the modulemap in the include/boost folder not in include.
       llvm::sys::path::append(boostIncLoc, "boost");
