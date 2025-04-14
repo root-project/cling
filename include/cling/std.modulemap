@@ -288,6 +288,11 @@ module "std" [system] {
     export *
     header "random"
   }
+  module "ranges" {
+    requires cplusplus20
+    export *
+    header "ranges"
+  }
   module "ratio" {
     export *
     header "ratio"
