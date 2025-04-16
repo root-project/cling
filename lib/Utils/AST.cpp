@@ -357,6 +357,8 @@ namespace utils {
   static
   NestedNameSpecifier* GetFullyQualifiedNameSpecifier(const ASTContext& Ctx,
                                                   NestedNameSpecifier* scope) {
+    if (!scope)
+      return nullptr;
     // Return a fully qualified version of this name specifier
     if (scope->getKind() == NestedNameSpecifier::Global) {
       // Already fully qualified.
