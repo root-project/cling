@@ -479,7 +479,7 @@ namespace cling {
     // the ResolvedTypedef code paths.  Through that code path nothing is
     // taking the ROOT/Interpreter lock and since this code can modify the
     // interpreter, we do need to take lock.
-    LockCompilationDuringUserCodeExecutionRAII LCDUCER(*m_Interpreter);
+    InterpreterAccessRAII LockAccess(*m_Interpreter);
 
     // Could trigger deserialization of decls.
     Interpreter::PushTransactionRAII RAII(m_Interpreter);

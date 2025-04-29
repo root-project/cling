@@ -11,6 +11,7 @@
 #define CLING_ENTERUSERCODERAII_H
 
 #include "cling/Interpreter/Interpreter.h"
+#include "cling/Interpreter/InterpreterAccessRAII.h"
 #include "cling/Interpreter/InterpreterCallbacks.h"
 
 namespace cling {
@@ -34,25 +35,7 @@ struct EnterUserCodeRAII {
   }
 };
 
-struct LockCompilationDuringUserCodeExecutionRAII {
-  /// Callbacks used to un/lock.
-  InterpreterCallbacks* fCallbacks;
-  /// Info provided to UnlockCompilationDuringUserCodeExecution().
-  void* fStateInfo = nullptr;
-  LockCompilationDuringUserCodeExecutionRAII(InterpreterCallbacks* callbacks):
-  fCallbacks(callbacks) {
-    if (fCallbacks)
-      fStateInfo = fCallbacks->LockCompilationDuringUserCodeExecution();
-  }
-
-  LockCompilationDuringUserCodeExecutionRAII(Interpreter& interp):
-  LockCompilationDuringUserCodeExecutionRAII(interp.getCallbacks()) {}
-
-  ~LockCompilationDuringUserCodeExecutionRAII() {
-    if (fCallbacks)
-      fCallbacks->UnlockCompilationDuringUserCodeExecution(fStateInfo);
-  }
-};
+using LockCompilationDuringUserCodeExecutionRAII = cling::InterpreterAccessRAII;
 }
 
 #endif // CLING_ENTERUSERCODERAII_H
