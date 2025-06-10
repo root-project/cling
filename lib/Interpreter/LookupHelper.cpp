@@ -698,13 +698,6 @@ namespace cling {
                   TagDecl* TD = TagTy->getDecl();
                   if (TD) {
                     TheDecl = TD->getDefinition();
-                    // NOTE: if (TheDecl) ... check for theDecl->isInvalidDecl()
-                    if (TD && TD->isInvalidDecl()) {
-                      printf("Warning: FindScope got an invalid tag decl\n");
-                    }
-                    if (TheDecl && TheDecl->isInvalidDecl()) {
-                      printf("ERROR: FindScope about to return an invalid decl\n");
-                    }
                     if (!TheDecl && instantiateTemplate) {
 
                       // Make sure it is not just forward declared, and
