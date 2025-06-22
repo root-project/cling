@@ -6,7 +6,7 @@
 // LICENSE.TXT for details.
 //------------------------------------------------------------------------------
 
-// RUN: cat %s | %cling -I%p 2>&1 | FileCheck %s
+// RUN: cat %s | %cling -I%p -Xclang -verify 2>&1
 
 // Test failures of dynamic lookups.
 
@@ -27,11 +27,10 @@
 std::unique_ptr<cling::test::SymbolResolverCallback> SRC;
 SRC.reset(new cling::test::SymbolResolverCallback(gCling, false))
 gCling->setCallbacks(std::move(SRC));
-p.q // CHECK: {{input_line_.*: error: use of undeclared identifier 'p'}}
+p.q
+// expected-error@input_line_28:2 {{use of undeclared identifier 'p'}}
 
 // `auto` is not supported
 auto x = unknownexpression()
-// CHECK: error: cannot deduce 'auto' from unknown expression
-// CHECK-NEXT: auto x = unknownexpression
-// CHECK-NEXT:          ^
+// expected-error@input_line_31:2 {{cannot deduce 'auto' from unknown expression}}
 .q
