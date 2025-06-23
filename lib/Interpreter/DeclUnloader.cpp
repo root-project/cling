@@ -603,6 +603,15 @@ namespace cling {
     // * variables and parameters with dependent context;
     // * mangled names for parameters;
     if (!isa<ParmVarDecl>(VD) && !VD->getDeclContext()->isDependentContext()) {
+      // Exception variables without identifiers are not added to scope and will
+      // fail in the steps after the `if` block.
+      // Assuming this rule extends to non-exception variables too.
+      if (!VD->getIdentifier()) {
+        DeclContext* DC = VD->getLexicalDeclContext();
+        if (DC->containsDecl(VD))
+          DC->removeDecl(VD);
+        return true;
+      }
       // Cleanup the module if the transaction was committed and code was
       // generated. This has to go first, because it may need the AST
       // information which we will remove soon. (Eg. mangleDeclName iterates the
