@@ -1407,10 +1407,6 @@ namespace {
 #endif
 
     if (!COpts.HasOutput || !HasInput) {
-      // suppress the warning "argument unused during compilation: -c" of the
-      // device interpreter instance
-      if (!COpts.CUDADevice)
-        argvCompile.push_back("-c");
       argvCompile.push_back("-");
     }
 
