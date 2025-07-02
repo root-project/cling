@@ -97,7 +97,7 @@ set_target_properties(libcling
 if(ENABLE_SHARED)
   if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(LIBCLING_LINK_FLAGS " -Wl,-compatibility_version -Wl,1")
-    if (DEFINED ${LLVM_SUBMIT_VERSION})
+    if (DEFINED LLVM_SUBMIT_VERSION)
       set(LIBCLING_LINK_FLAGS
         "${LIBCLING_LINK_FLAGS} -Wl,-current_version -Wl,${LLVM_SUBMIT_VERSION}.${LLVM_SUBMIT_SUBVERSION}")
     endif()
