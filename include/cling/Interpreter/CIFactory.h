@@ -38,7 +38,8 @@ namespace cling {
     clang::CompilerInstance*
     createCI(llvm::StringRef Code, const InvocationOptions& Opts,
              const char* LLVMDir, std::unique_ptr<clang::ASTConsumer> consumer,
-             const ModuleFileExtensions& moduleExtensions);
+             const ModuleFileExtensions& moduleExtensions,
+             bool AutoComplete = false);
 
     clang::CompilerInstance*
     createCI(MemBufPtr_t Buffer, int Argc, const char* const* Argv,

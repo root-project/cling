@@ -1306,11 +1306,10 @@ namespace {
 
   static CompilerInstance*
   createCIImpl(std::unique_ptr<llvm::MemoryBuffer> Buffer,
-               const CompilerOptions& COpts,
-               const char* LLVMDir,
+               const CompilerOptions& COpts, const char* LLVMDir,
                std::unique_ptr<clang::ASTConsumer> customConsumer,
                const CIFactory::ModuleFileExtensions& moduleExtensions,
-               bool OnlyLex, bool HasInput = false) {
+               bool OnlyLex, bool HasInput = false, bool AutoComplete = false) {
     // Follow clang -v convention of printing version on first line
     if (COpts.Verbose)
       cling::log() << "cling version " << ClingStringify(CLING_VERSION) << '\n';
@@ -1457,9 +1456,14 @@ namespace {
   #endif
     }
 #endif
-
-    if (!COpts.HasOutput || !HasInput) {
+    if ((!COpts.HasOutput || !HasInput) && !AutoComplete) {
       argvCompile.push_back("-");
+    }
+
+    if (AutoComplete) {
+      // Put a dummy C++ file on to ensure there's at least one compile job for
+      // the driver to construct.
+      argvCompile.push_back("<<< cling interactive line includer >>>");
     }
 
     // add prefix to diagnostic messages if second compiler instance is existing
@@ -1631,13 +1635,13 @@ namespace {
     SM->setFileIsTransient(FE);
     FileID MainFileID = SM->createFileID(FE, SourceLocation(), SrcMgr::C_User);
     SM->setMainFileID(MainFileID);
-    const SrcMgr::SLocEntry& MainFileSLocE = SM->getSLocEntry(MainFileID);
-    const SrcMgr::FileInfo& MainFileFI = MainFileSLocE.getFile();
-    SrcMgr::ContentCache& MainFileCC
-      = const_cast<SrcMgr::ContentCache&>(MainFileFI.getContentCache());
     if (!Buffer)
       Buffer = llvm::MemoryBuffer::getMemBuffer("/*CLING DEFAULT MEMBUF*/;\n");
-    MainFileCC.setBuffer(std::move(Buffer));
+
+    // Adapted from upstream clang/lib/Interpreter/Interpreter.cpp
+    // FIXME: Merge with CompilerInstance::ExecuteAction.
+    llvm::MemoryBuffer* MB = Buffer.release();
+    CI->getPreprocessorOpts().addRemappedFile(Filename, MB);
 
     // Create TargetInfo for the other side of CUDA and OpenMP compilation.
     if ((CI->getLangOpts().CUDA || CI->getLangOpts().OpenMPIsTargetDevice) &&
@@ -1805,16 +1809,17 @@ namespace {
 
 namespace cling {
 
-CompilerInstance*
-CIFactory::createCI(llvm::StringRef Code, const InvocationOptions& Opts,
-                    const char* LLVMDir,
-                    std::unique_ptr<clang::ASTConsumer> consumer,
-                    const ModuleFileExtensions& moduleExtensions) {
-  return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code), Opts.CompilerOpts,
-                      LLVMDir, std::move(consumer), moduleExtensions,
-                      false /*OnlyLex*/,
-                      !Opts.IsInteractive());
-}
+  CompilerInstance*
+  CIFactory::createCI(llvm::StringRef Code, const InvocationOptions& Opts,
+                      const char* LLVMDir,
+                      std::unique_ptr<clang::ASTConsumer> consumer,
+                      const ModuleFileExtensions& moduleExtensions,
+                      bool AutoComplete /*false*/) {
+    return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code),
+                        Opts.CompilerOpts, LLVMDir, std::move(consumer),
+                        moduleExtensions, false /*OnlyLex*/,
+                        !Opts.IsInteractive(), AutoComplete);
+  }
 
 CompilerInstance* CIFactory::createCI(
     MemBufPtr_t Buffer, int argc, const char* const* argv, const char* LLVMDir,
