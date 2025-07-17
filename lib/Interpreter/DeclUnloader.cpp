@@ -1042,7 +1042,15 @@ namespace cling {
       Successful &=
           VisitClassTemplateSpecializationDecl(*I, /*RemoveSpec=*/false);
 
-    Successful &= VisitRedeclarableTemplateDecl(CTD);
+    // Visit all redeclarations of this template to ensure the full
+    // redecl chain is unloaded properly.
+    // Not doing this will lead to a corrupted decl chain and can cause
+    // assertions later down the line.
+    // We also need to make a copy of `CTD->redecls()` to not mess up the chain
+    llvm::SmallVector<RedeclarableTemplateDecl*> redecls(CTD->redecls());
+    for (auto* Redecl : redecls)
+      Successful &= VisitRedeclarableTemplateDecl(Redecl);
+
     Successful &= Visit(CTD->getTemplatedDecl());
     return Successful;
   }
