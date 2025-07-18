@@ -849,6 +849,9 @@ namespace {
     PPOpts.addMacroDef("__CLING__GNUC_MINOR__=" ClingStringify(__GNUC_MINOR__));
 #elif defined(_MSC_VER)
     PPOpts.addMacroDef("__CLING__MSVC__=" ClingStringify(_MSC_VER));
+#if defined(_WIN64) && defined(_DEBUG)
+    PPOpts.addMacroDef("_ITERATOR_DEBUG_LEVEL=0");
+#endif
 #endif
 
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
