@@ -1691,7 +1691,9 @@ namespace cling {
         clang::QualType QT = clang::Sema::GetTypeFromParser(Res.get(), &TSI);
         QT = QT.getCanonicalType();
         {
-          ExprValueKind VK = VK_PRValue;
+          // XValue is an object that can be "moved" whereas PRValue is temporary value
+          // This enables overloads that require the object to be moved
+          ExprValueKind VK = VK_XValue;
           if (QT->getAs<LValueReferenceType>()) {
             VK = VK_LValue;
           }
