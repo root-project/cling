@@ -1,0 +1,43 @@
+From 6f7cc80d755cc8472a9c574317fa3ce35b9adb03 Mon Sep 17 00:00:00 2001
+From: Jonas Rembser <jonas.rembser@cern.ch>
+Date: Tue, 29 Jul 2025 11:39:55 +0200
+Subject: [PATCH] Add missing includes in case `NDEBUG` is not defined
+
+---
+ include/clad/Differentiator/BaseForwardModeVisitor.h | 4 ++++
+ include/clad/Differentiator/ReverseModeVisitor.h     | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/include/clad/Differentiator/BaseForwardModeVisitor.h b/include/clad/Differentiator/BaseForwardModeVisitor.h
+index c9e6dc4..83439ea 100644
+--- a/include/clad/Differentiator/BaseForwardModeVisitor.h
++++ b/include/clad/Differentiator/BaseForwardModeVisitor.h
+@@ -16,6 +16,10 @@
+ #include <stack>
+ #include <unordered_map>
+ 
++#ifndef NDEBUG
++#include <exception> // for std::terminate
++#endif
++
+ namespace clad {
+ /// A visitor for processing the function code in forward mode.
+ /// Used to compute derivatives by clad::differentiate.
+diff --git a/include/clad/Differentiator/ReverseModeVisitor.h b/include/clad/Differentiator/ReverseModeVisitor.h
+index 5374171..b0e6dd4 100644
+--- a/include/clad/Differentiator/ReverseModeVisitor.h
++++ b/include/clad/Differentiator/ReverseModeVisitor.h
+@@ -30,6 +30,10 @@
+ #include <stack>
+ #include <unordered_map>
+ 
++#ifndef NDEBUG
++#include <exception> // for std::terminate
++#endif
++
+ namespace llvm {
+ template <typename T> class SmallVectorImpl;
+ }
+-- 
+2.50.1
+
