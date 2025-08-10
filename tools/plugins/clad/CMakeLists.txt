@@ -82,7 +82,7 @@ list(APPEND _clad_patches_list "Add-missing-exception-include.patch")
 set(_clad_patch_command
       ${CMAKE_COMMAND} -E copy_directory
       ${CMAKE_SOURCE_DIR}/interpreter/cling/tools/plugins/clad/patches <SOURCE_DIR>
-      && git checkout <SOURCE_DIR>
+      && git checkout -q <SOURCE_DIR>
       && git apply --ignore-space-change --ignore-whitespace ${_clad_patches_list}
       )
 
