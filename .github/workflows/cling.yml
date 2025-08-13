@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest] # Remove macos-latest until exceptions are not supported by JITed code on Apple Silicon
     steps:
       - name: Checkout LLVM
         uses: actions/checkout@v4
