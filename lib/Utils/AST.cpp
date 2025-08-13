@@ -849,7 +849,13 @@ namespace utils {
 
     if (arg.getKind() == TemplateArgument::Template) {
       TemplateName tname = arg.getAsTemplate();
-      // Note: should we not also desugar?
+      // Desugar before fully qualifying.
+      if (std::optional<TemplateName> UnderlyingOrNone = tname.desugar(/*IgnoreDeduced=*/false)) {
+        if (*UnderlyingOrNone != tname) {
+          tname = *UnderlyingOrNone;
+          changed = true;
+        }
+      }
       changed = GetFullyQualifiedTemplateName(Ctx, tname);
       if (changed) {
         arg = TemplateArgument(tname);
@@ -1286,8 +1292,18 @@ namespace utils {
 
         if (I->getKind() == TemplateArgument::Template) {
           TemplateName tname = I->getAsTemplate();
-          // Note: should we not also desugar?
-          bool changed = GetFullyQualifiedTemplateName(Ctx, tname);
+          bool changed = false;
+
+          // Sometimes tname can still be sugared and can cause lookup failures.
+          // The following example fixed:
+          // __common_pool_policy<__pool,true> -> __common_pool_policy<__gnu_cxx::__pool, true>
+          if (std::optional<TemplateName> UnderlyingOrNone = tname.desugar(/*IgnoreDeduced=*/false)) {
+            if (*UnderlyingOrNone != tname) {
+              tname = *UnderlyingOrNone;
+              changed = true;
+            }
+          }
+          changed |= GetFullyQualifiedTemplateName(Ctx, tname);
           if (changed) {
             desArgs.push_back(TemplateArgument(tname));
             mightHaveChanged = true;
