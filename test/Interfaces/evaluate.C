@@ -33,6 +33,7 @@ gCling->evaluate("cond = false; if (cond) return \"true\"; else return 0;", V);
 V // CHECK-NEXT: (cling::Value &) boxes [(int) 0]
 
 gCling->evaluate("bool a = [](){return true;};", V);
+// expected-warning@input_line_38:2 {{address of lambda function pointer conversion operator will always evaluate to 'true'}}
 V // CHECK-NEXT: (cling::Value &) boxes [(bool) true]
 
 gCling->evaluate("auto a = 12.3; a;", V);
