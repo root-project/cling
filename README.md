@@ -50,7 +50,7 @@ cd llvm-project
 git checkout cling-latest
 cd ..
 mkdir llvm-build && cd llvm-build
-cmake -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;NVPTX" -DCMAKE_BUILD_TYPE=Release ./llvm-project/llvm
+cmake -DLLVM_ENABLE_PROJECTS="clang" -DLLVM_TARGETS_TO_BUILD="host;NVPTX" -DCMAKE_BUILD_TYPE=Release ../llvm-project/llvm
 cmake --build .
 ```
 
