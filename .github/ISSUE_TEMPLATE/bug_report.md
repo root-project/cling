@@ -37,7 +37,7 @@ Steps to reproduce the behavior:
 <!--
 1. Cling version
 2. Operating system
-3. How you obtained Cling, such as with cpt.py (also mention flags) / you built it yourself.
+3. How you obtained Cling or what flags you used to build it yourself.
 -->
 
 ### Additional context
