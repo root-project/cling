@@ -28,6 +28,24 @@ class C {};
 } // namespace M
 } // namespace N
 typedef int my_int;
+
+namespace O {
+   class IncompleteType;
+   template<class> struct id {};
+   constexpr bool alwaysFalse(...) { return false; }
+
+   template<class T>
+   struct try_recovery_expr {
+    static_assert(alwaysFalse(id<T>{}));
+   };
+
+   template<class T>
+   inline constexpr bool try_recovery_expr_v = try_recovery_expr<T>::value;
+
+   template <class T, bool = try_recovery_expr_v<T>>
+   struct S {};
+} // namespace O
+
 using clang::QualType;
 using cling::LookupHelper;
 .rawInput 0
@@ -54,5 +72,10 @@ builtin_int.getAsString().c_str()
 QualType typedef_my_int = lookup.findType("my_int", LookupHelper::WithDiagnostics);
 typedef_my_int.getAsString().c_str()
 //CHECK: ({{[^)]+}}) "my_int"
+
+// This made Clang build a RecoveryExpr in LLVM 20 (and trigger an assert)
+QualType rec = lookup.findType("O::S<O::IncompleteType>", LookupHelper::NoDiagnostics);
+rec.isNull()
+//CHECK: (bool) true
 
 .q
