@@ -384,7 +384,7 @@ namespace cling {
       closeBraces = PrintEnclosingDeclContexts(Out(), D->getDeclContext());
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       Out() << "__module_private__ ";
-    Out() << D->getKindName();
+    Out() << D->getKindName() << ' ';
     prettyPrintAttributes(D);
     if (D->getIdentifier())
       Out() << ' ' << *D << ';' << closeBraces << '\n';
@@ -892,7 +892,7 @@ namespace cling {
                                                          D->getDeclContext());
     if (!m_Policy.SuppressSpecifiers && D->isModulePrivate())
       Out() << "__module_private__ ";
-    Out() << D->getKindName();
+    Out() << D->getKindName() << ' ';
 
 //    if (D->isCompleteDefinition())
       prettyPrintAttributes(D);
