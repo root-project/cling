@@ -9,6 +9,10 @@
 
 #include "DeviceKernelInliner.h"
 
+#ifdef _MSC_VER
+// FIXME: Needed on Windows after LLVM 20 update to build
+#include <clang/AST/ASTContext.h>
+#endif
 #include <clang/AST/Attr.h>
 
 #include <llvm/Support/Casting.h>
