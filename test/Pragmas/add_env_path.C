@@ -14,7 +14,7 @@
 extern "C" int cling_testlibrary_function();
 
 #ifndef _WIN32
- #include <stdlib.h>
+ #include <cstdlib>
 #else
  extern "C" int _putenv_s(const char *name, const char *value);
  #define setenv(n, v, o) _putenv_s(n,v)

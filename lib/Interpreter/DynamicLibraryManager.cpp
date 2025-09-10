@@ -47,7 +47,7 @@ namespace cling {
     // Behaviour is to not add paths that don't exist...In an interpreted env
     // does this make sense? Path could pop into existance at any time.
     for (const char* Var : kSysLibraryEnv) {
-      if (const char* Env = ::getenv(Var)) {
+      if (const char* Env = std::getenv(Var)) {
         llvm::SmallVector<llvm::StringRef, 10> CurPaths;
         SplitPaths(Env, CurPaths, utils::kPruneNonExistant, platform::kEnvDelim);
         for (const auto& Path : CurPaths)

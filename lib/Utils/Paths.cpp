@@ -39,7 +39,7 @@ bool ExpandEnvVars(std::string& Str, bool Path) {
 
     std::string EnvVar = Str.substr(DPos + 1, Length -1); //"HOME"
     std::string FullPath;
-    if (const char* Tok = ::getenv(EnvVar.c_str()))
+    if (const char* Tok = std::getenv(EnvVar.c_str()))
       FullPath = Tok;
 
     Str.replace(DPos, Length, FullPath);

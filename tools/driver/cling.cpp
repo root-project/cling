@@ -118,7 +118,7 @@ int main( int argc, char **argv ) {
   // Suppress error dialogs to avoid hangs on build nodes.
   // One can use an environment variable (Cling_GuiOnAssert) to enable
   // the error dialogs.
-  const char *EnablePopups = getenv("Cling_GuiOnAssert");
+  const char *EnablePopups = std::getenv("Cling_GuiOnAssert");
   if (EnablePopups == nullptr || EnablePopups[0] == '0') {
     ::_set_error_mode(_OUT_TO_STDERR);
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);

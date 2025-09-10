@@ -258,7 +258,7 @@ public:
 EscapeSequence::EscapeSequence() : m_Utf8Out(false) {
 #if !defined(_WIN32)
   if (!::strcasestr(m_Loc.name().c_str(), "utf-8")) {
-    if (const char* LANG = ::getenv("LANG")) {
+    if (const char* LANG = std::getenv("LANG")) {
       if (::strcasestr(LANG, "utf-8")) {
  #if !defined(__APPLE__) || !defined(__GLIBCXX__)
         m_Loc = std::locale(LANG);

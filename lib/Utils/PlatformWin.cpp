@@ -22,7 +22,7 @@
 
 #include <map>
 #include <sstream>
-#include <stdlib.h>
+#include <cstdlib>
 #include <vector>
 #include <TCHAR.H>
 
@@ -178,7 +178,7 @@ static bool getVSEnvironmentString(int VSVersion, std::string& Path,
                                    const char* Verbose) {
   std::ostringstream Key;
   Key << "VS" << VSVersion * 10 << "COMNTOOLS";
-  const char* Tools = ::getenv(Key.str().c_str());
+  const char* Tools = std::getenv(Key.str().c_str());
   if (!Tools) {
     if (Verbose)
       logSearch("Environment", Key.str());
@@ -437,7 +437,7 @@ bool GetVisualStudioDirs(std::string& Path, std::string* WinSDK,
   // The Visual Studio 2017 path is very different than the previous versions,
   // and even the registry entries are different, so for now let's try the
   // trivial way first (using the 'VCToolsInstallDir' environment variable)
-  if (const char* VCToolsInstall = ::getenv("VCToolsInstallDir")) {
+  if (const char* VCToolsInstall = std::getenv("VCToolsInstallDir")) {
     trimString(VCToolsInstall, "\\DUMMY", Path);
     if (Verbose)
       cling::errs() << "Using VCToolsInstallDir '" << VCToolsInstall << "'\n";
@@ -453,7 +453,7 @@ bool GetVisualStudioDirs(std::string& Path, std::string* WinSDK,
 
   // Check the environment variables that vsvars32.bat sets.
   // We don't do this first so we can run from other VSStudio shells properly
-  if (const char* VCInstall = ::getenv("VCINSTALLDIR")) {
+  if (const char* VCInstall = std::getenv("VCINSTALLDIR")) {
     trimString(VCInstall, "\\VC", Path);
     if (Verbose)
       cling::errs() << "Using VCINSTALLDIR '" << VCInstall << "'\n";

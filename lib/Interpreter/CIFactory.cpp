@@ -786,7 +786,7 @@ namespace {
     clang::HeaderSearchOptions& HSOpts = CI.getHeaderSearchOpts();
     // Register prebuilt module paths where we will lookup module files.
     addPrebuiltModulePaths(HSOpts,
-                           getPathsFromEnv(getenv("CLING_PREBUILT_MODULE_PATH")));
+                           getPathsFromEnv(std::getenv("CLING_PREBUILT_MODULE_PATH")));
 
     // Register all modulemaps necessary for cling to run. If we have specified
     // -fno-implicit-module-maps then we have to add them explicitly to the list

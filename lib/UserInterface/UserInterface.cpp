@@ -69,7 +69,7 @@ namespace {
   };
 
   llvm::SmallString<512> GetHistoryFilePath() {
-    if (getenv("CLING_NOHISTORY")) {
+    if (std::getenv("CLING_NOHISTORY")) {
       return {};
     }
 
