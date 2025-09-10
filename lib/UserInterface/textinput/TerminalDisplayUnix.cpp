@@ -18,9 +18,9 @@
 #include "textinput/TerminalDisplayUnix.h"
 
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 // putenv not in cstdlib on Solaris
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <termios.h>
@@ -118,7 +118,7 @@ namespace textinput {
     TerminalConfigUnix::Get().TIOS()->c_lflag &= ~(ECHO);
     TerminalConfigUnix::Get().TIOS()->c_lflag |= ECHOCTL|ECHOKE|ECHOE;
 #endif
-    const char* TERM = getenv("TERM");
+    const char* TERM = std::getenv("TERM");
     if (TERM &&  strstr(TERM, "256")) {
       fNColors = 256;
     }
@@ -153,7 +153,7 @@ namespace textinput {
     }
 #else
     // try $COLUMNS
-    const char* COLUMNS = getenv("COLUMNS");
+    const char* COLUMNS = std::getenv("COLUMNS");
     if (COLUMNS) {
       long width = atol(COLUMNS);
       if (width > 4 && width < 1024*16) {
