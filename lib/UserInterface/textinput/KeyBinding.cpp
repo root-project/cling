@@ -14,7 +14,7 @@
 
 #include "textinput/KeyBinding.h"
 
-#include <ctype.h>
+#include <cctype>
 
 namespace textinput {
   KeyBinding::KeyBinding(): fEscPending(false), fEscCmdEnabled(false) {}

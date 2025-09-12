@@ -19,7 +19,7 @@
 #include <sstream>
 
 #ifdef WIN32
-# include <stdio.h>
+# include <cstdio>
 extern "C" unsigned long __stdcall GetCurrentProcessId(void);
 #else
 # include <unistd.h>

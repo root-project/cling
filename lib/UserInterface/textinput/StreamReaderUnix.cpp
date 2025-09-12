@@ -21,9 +21,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <termios.h>
-#include <stdio.h>
+#include <cstdio>
 #ifdef __APPLE__
-#include <errno.h> // For EINTR
+#include <cerrno> // For EINTR
 #endif
 
 #include <cctype>

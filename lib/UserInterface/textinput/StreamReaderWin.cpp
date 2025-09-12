@@ -17,7 +17,7 @@
 #include "textinput/StreamReaderWin.h"
 
 #include <io.h>
-#include <stdio.h>
+#include <cstdio>
 #include <Windows.h>
 
 // MSVC 7.1 is missing these definitions:

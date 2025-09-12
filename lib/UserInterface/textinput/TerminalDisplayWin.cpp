@@ -17,7 +17,7 @@
 #include "textinput/TerminalDisplayWin.h"
 #include "textinput/Color.h"
 
-#include <assert.h>
+#include <cassert>
 
 #ifdef UNICODE
 #define filename L"CONOUT$"
