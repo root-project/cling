@@ -1627,7 +1627,7 @@ namespace {
     // name), clang will call $PWD "." which is terrible if we ever change
     // directories (see ROOT-7114). By asking for $PWD (and not ".") it will
     // be registered as $PWD instead, which is stable even after chdirs.
-    FM.getDirectory(platform::GetCwd());
+    llvm::consumeError(FM.getDirectoryRef(platform::GetCwd()).takeError());
 
     // Build the virtual file, Give it a name that's likely not to ever
     // be #included (so we won't get a clash in clang's cache).

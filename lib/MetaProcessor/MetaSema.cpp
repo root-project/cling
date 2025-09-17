@@ -201,10 +201,12 @@ namespace cling {
     clang::FileManager& FM = m_Interpreter.getSema().getSourceManager().getFileManager();
 
     std::string pathname(m_Interpreter.lookupFileOrLibrary(file));
-    const auto FE = FM.getFile(pathname, /*OpenFile=*/false,
-                               /*CacheFailure=*/false);
-    if (!FE)
+    auto FE = FM.getFileRef(pathname, /*OpenFile=*/false,
+                            /*CacheFailure=*/false);
+    if (!FE) {
+      llvm::consumeError(FE.takeError());
       return AR_Failure;
+    }
 
     auto TI = m_FEToTransaction.find(*FE);
     if (TI == m_FEToTransaction.end())
@@ -486,9 +488,12 @@ namespace cling {
       pathname = filename.str();
 
     clang::FileManager& FM = m_Interpreter.getSema().getSourceManager().getFileManager();
-    auto FE = FM.getFile(pathname, /*OpenFile=*/false, /*CacheFailure=*/false);
-    if (!FE)
+    auto FE =
+        FM.getFileRef(pathname, /*OpenFile=*/false, /*CacheFailure=*/false);
+    if (!FE) {
+      llvm::consumeError(FE.takeError());
       return;
+    }
 
     if (*FE && !m_FEToTransaction[*FE]) {
       m_FEToTransaction[*FE] = unloadPoint;
