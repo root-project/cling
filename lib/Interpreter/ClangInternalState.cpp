@@ -160,6 +160,9 @@ namespace cling {
     }
 
     builtinNames.push_back(".*__builtin.*");
+    // Ignore TopLevelStmt for now, an invalid TopLevelStmt can still exist
+    // after a failed statement (introduced by llvm/llvm-project@4b70d17bcf)
+    builtinNames.push_back("StoredDeclsMap TopLevelStmt");
 
     differentContent(m_LookupTablesFile, m_DiffPair->m_LookupTablesFile,
                      "lookup tables", verbose, &builtinNames);
@@ -302,7 +305,17 @@ namespace cling {
     bool PrintInstantiation = false;
     std::string ErrMsg;
     clang::PrintingPolicy policy = C.getPrintingPolicy();
-    TU->print(Out, policy, Indentation, PrintInstantiation);
+    for (Decl* D : TU->decls()) {
+      if (auto* TLSD = dyn_cast<TopLevelStmtDecl>(D)) {
+        if (!TLSD->getStmt()) {
+          // Skip invalid TopLevelStmt. The change llvm/llvm-project@4b70d17bcf
+          // caused an invalid TopLevelStatement to be added to the AST, which
+          // can trigger assertions when dumping.
+          continue;
+        }
+      }
+      D->print(Out, policy, Indentation, PrintInstantiation);
+    }
     // TODO: For future when we relpace the bump allocation with slab.
     //
     //Out << "Allocated memory: " << C.getAllocatedMemory();
