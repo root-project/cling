@@ -1487,8 +1487,13 @@ namespace {
     // Chain in -verify checker, if requested.
     if (DiagOpts.VerifyDiagnostics)
       Diags->setClient(new clang::VerifyDiagnosticConsumer(*Diags));
+
+    IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> Overlay =
+        new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem());
+    auto FileMgr = CI->createFileManager(Overlay);
+    llvm::vfs::FileSystem &VFS = FileMgr->getVirtualFileSystem();
     // Configure our handling of diagnostics.
-    ProcessWarningOptions(*Diags, DiagOpts);
+    ProcessWarningOptions(*Diags, DiagOpts, VFS);
 
     if (COpts.HasOutput && !OnlyLex) {
       ActionScan scan(clang::driver::Action::PrecompileJobClass,
@@ -1501,13 +1506,10 @@ namespace {
       if (!SetupCompiler(CI.get(), COpts))
         return nullptr;
 
-      ProcessWarningOptions(*Diags, DiagOpts);
+      ProcessWarningOptions(*Diags, DiagOpts, VFS);
       return CI.release();
     }
 
-    IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> Overlay =
-        new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem());
-    CI->createFileManager(Overlay);
     clang::CompilerInvocation& Invocation = CI->getInvocation();
     std::string& PCHFile = Invocation.getPreprocessorOpts().ImplicitPCHInclude;
     bool InitLang = true, InitTarget = true;
