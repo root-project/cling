@@ -309,8 +309,8 @@ namespace cling {
 
       if (TagDecl* TD = dyn_cast<TagDecl>(ND)) {
         LookupResult Previous(*m_Sema, ND->getDeclName(), ND->getLocation(),
-                              Sema::LookupTagName, Sema::ForVisibleRedeclaration
-                              );
+                              Sema::LookupTagName,
+                              RedeclarationKind::ForVisibleRedeclaration);
 
         m_Sema->LookupQualifiedName(Previous, DC);
 
@@ -323,8 +323,8 @@ namespace cling {
       }
       else if (VarDecl* VD = dyn_cast<VarDecl>(ND)) {
         LookupResult Previous(*m_Sema, ND->getDeclName(), ND->getLocation(),
-                              Sema::LookupOrdinaryName, Sema::ForVisibleRedeclaration
-                              );
+                              Sema::LookupOrdinaryName,
+                              RedeclarationKind::ForVisibleRedeclaration);
         m_Sema->LookupQualifiedName(Previous, DC);
         m_Sema->CheckVariableDeclaration(VD, Previous);
         if (VD->isInvalidDecl())

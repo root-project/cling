@@ -173,7 +173,7 @@ namespace cling {
     DeclarationName Name = &m_Context->Idents.get("EvaluateT");
 
     LookupResult R(*m_Sema, Name, SourceLocation(), Sema::LookupOrdinaryName,
-                     Sema::ForVisibleRedeclaration);
+                   RedeclarationKind::ForVisibleRedeclaration);
     assert(NSD && "There must be a valid namespace.");
     m_Sema->LookupQualifiedName(R, NSD);
     // We have specialized EvaluateT but we don't care because the templated

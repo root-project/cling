@@ -439,7 +439,7 @@ namespace {
     }
     LookupResult R(*m_Sema, &m_Context->Idents.get("setValueNoAlloc"),
                    SourceLocation(), Sema::LookupOrdinaryName,
-                   Sema::ForVisibleRedeclaration);
+                   RedeclarationKind::ForVisibleRedeclaration);
 
     m_Sema->LookupQualifiedName(R, NSD);
     if (R.empty())

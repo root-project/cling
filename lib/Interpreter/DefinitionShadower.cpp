@@ -101,7 +101,8 @@ namespace cling {
   void DefinitionShadower::invalidatePreviousDefinitions(NamedDecl *D) const {
     // NotForRedeclaration: lookup anything visible; follows using directives
     LookupResult Previous(*m_Sema, D->getDeclName(), D->getLocation(),
-                   Sema::LookupOrdinaryName, Sema::NotForRedeclaration);
+                          Sema::LookupOrdinaryName,
+                          RedeclarationKind::NotForRedeclaration);
     Previous.suppressDiagnostics();
     m_Sema->LookupQualifiedName(Previous, m_TU);
     bool shadowsDeclInStd = false;

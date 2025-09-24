@@ -1647,7 +1647,7 @@ namespace {
     }
 
     // Set up the preprocessor
-    auto TUKind = COpts.ModuleName.empty() ? TU_Complete : TU_Module;
+    auto TUKind = COpts.ModuleName.empty() ? TU_Complete : TU_ClangModule;
     CI->createPreprocessor(TUKind);
 
     // With modules, we now start adding prebuilt module paths to the CI.

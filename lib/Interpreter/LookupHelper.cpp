@@ -1477,7 +1477,7 @@ namespace cling {
     DeclarationName FuncName = FuncNameInfo.getName();
     SourceLocation FuncNameLoc = FuncNameInfo.getLoc();
     LookupResult Result(S, FuncName, FuncNameLoc, Sema::LookupMemberName,
-                        Sema::NotForRedeclaration);
+                        RedeclarationKind::NotForRedeclaration);
     Result.suppressDiagnostics();
 
     bool LookupSuccess = true;
@@ -1811,12 +1811,12 @@ namespace cling {
         SourceLocation loc;
         sema::TemplateDeductionInfo Info(loc);
         FunctionDecl *fdecl = 0;
-        Sema::TemplateDeductionResult TemplDedResult
+        clang::TemplateDeductionResult TemplDedResult
           = S.DeduceTemplateArguments(MethodTmpl,
                     const_cast<TemplateArgumentListInfo*>(ExplicitTemplateArgs),
                                       fdecl,
                                       Info);
-        if (TemplDedResult != Sema::TDK_Success) {
+        if (TemplDedResult != clang::TemplateDeductionResult::Success) {
           // Deduction failure.
           return 0;
         } else {

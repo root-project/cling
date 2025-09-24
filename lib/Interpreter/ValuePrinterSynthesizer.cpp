@@ -199,7 +199,7 @@ namespace cling {
     DeclarationName PVName = &m_Context->Idents.get("cling_PrintValue");
     m_LookupResult = new LookupResult(*m_Sema, PVName, sourceLoc,
                                       Sema::LookupOrdinaryName,
-                                      Sema::ForVisibleRedeclaration);
+                                      RedeclarationKind::ForVisibleRedeclaration);
 
     Scope* S = m_Sema->getScopeForContext(m_Sema->CurContext);
     m_Sema->LookupName(*m_LookupResult, S);
