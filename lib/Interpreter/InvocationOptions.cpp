@@ -42,27 +42,26 @@ namespace {
 static const char kNoStdInc[] = "-nostdinc";
 #endif
 
-#define PREFIX(NAME, VALUE)                                                    \
-  static constexpr llvm::StringLiteral NAME##_init[] = VALUE;                  \
-  static constexpr llvm::ArrayRef<llvm::StringLiteral> NAME(                   \
-      NAME##_init, std::size(NAME##_init) - 1);
+#define OPTTABLE_STR_TABLE_CODE
 #define OPTION(...)
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
-#undef PREFIX
+#undef OPTTABLE_STR_TABLE_CODE
+
+#define OPTTABLE_PREFIXES_TABLE_CODE
+#include "cling/Interpreter/ClingOptions.inc"
+#undef OPTTABLE_PREFIXES_TABLE_CODE
 
   static const OptTable::Info ClingInfoTable[] = {
-#define PREFIX(NAME, VALUE)
 #define OPTION(...) LLVM_CONSTRUCT_OPT_INFO(__VA_ARGS__),
 #include "cling/Interpreter/ClingOptions.inc"
 #undef OPTION
-#undef PREFIX
   };
 
   class ClingOptTable : public GenericOptTable {
   public:
     ClingOptTable()
-      : GenericOptTable(ClingInfoTable) {}
+      : GenericOptTable(OptionStrTable, OptionPrefixesTable, ClingInfoTable) {}
   };
 
   static OptTable* CreateClingOptTable() {
