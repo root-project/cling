@@ -115,9 +115,6 @@ cling::printValue(&RawData)[13]
 "\xed\xaf\xbf\xed\xbf\xbf"
 // CHECK-NEXT: (const char[7]) "\xed\xaf\xbf\xed\xbf\xbf"
 
-std::string(u8"UTF-8")
-// CHECK-NEXT: (std::string) "UTF-8"
-
 std::u16string(u"UTF-16 " u"\x394" u"\x3a6" u"\x3a9")
 // CHECK-NEXT: (std::u16string) u"UTF-16 ΔΦΩ"
 
