@@ -427,8 +427,13 @@ namespace test {
         return false;
 
       // Only for demo resolve all unknown objects to cling::test::Tester
+      // but skip unresolved names coming from system headers,
+      // like __path_iter_distance from <filesystem>
+      clang::Sema& SemaR = m_Interpreter->getSema();
+      clang::SourceManager& SM = SemaR.getSourceManager();
+      if (SM.isInSystemHeader(R.getNameLoc()))
+        return false;
       if (!m_TesterDecl) {
-        clang::Sema& SemaR = m_Interpreter->getSema();
         clang::NamespaceDecl* NSD = utils::Lookup::Namespace(&SemaR, "cling");
         NSD = utils::Lookup::Namespace(&SemaR, "test", NSD);
         m_TesterDecl = utils::Lookup::Named(&SemaR, "Tester", NSD);
