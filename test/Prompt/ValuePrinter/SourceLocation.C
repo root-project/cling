@@ -6,24 +6,30 @@
 // LICENSE.TXT for details.
 
 //------------------------------------------------------------------------------
-// RUN: cat %s | %cling | FileCheck %s
+// std::source_location is a C++20 feature.
+// RUN: cat %s | %cling -std=c++20 | FileCheck %s
 
+.rawInput 1
 #include <iostream>
 #if __cplusplus >= 202002L
 #include <version>
 #endif
 
-#ifndef __cpp_lib_source_location
-// Hack to prevent failure if __cpp_lib_source_location feature does not exist!
-std::cout << "(std::source_location) ";
-std::cout << "CHECK_SRCLOC:42:std::source_location getsrcloc()\n";
-#else
+#ifdef __cpp_lib_source_location
 #include <source_location>
 std::source_location getsrcloc() {
 #line 42 "CHECK_SRCLOC"
   return std::source_location::current();
 }
-getsrcloc()
+#else
+// Hack to prevent failure if __cpp_lib_source_location feature does not exist!
+void getsrcloc() {
+  std::cout << "(std::source_location) ";
+  std::cout << "CHECK_SRCLOC:42:std::source_location getsrcloc()\n";
+}
 #endif
+.rawInput 0
+
+getsrcloc()
 // CHECK: (std::source_location)
 // CHECK: CHECK_SRCLOC:42:std::source_location getsrcloc()
