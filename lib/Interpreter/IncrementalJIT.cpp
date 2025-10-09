@@ -19,8 +19,6 @@
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Frontend/CompilerInstance.h>
 
-#include <llvm/ExecutionEngine/JITLink/EHFrameSupport.h>
-#include <llvm/ExecutionEngine/Orc/EHFrameRegistrationPlugin.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
 #include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
@@ -505,8 +503,6 @@ IncrementalJIT::IncrementalJIT(
       unsigned PageSize = cantFail(sys::Process::getPageSize());
       auto ObjLinkingLayer = std::make_unique<ObjectLinkingLayer>(
           ES, std::make_unique<ClingJITLinkMemoryManager>(PageSize));
-      ObjLinkingLayer->addPlugin(std::make_unique<EHFrameRegistrationPlugin>(
-          ES, std::make_unique<InProcessEHFrameRegistrar>()));
       return ObjLinkingLayer;
     }
 
