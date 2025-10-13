@@ -209,13 +209,22 @@ if (UNIX)
         set(_path "__THISREALLYBETTERNOTBEINPATH_THANKS__")
       endif()
     else()
-      # FIXME: In some ccache setups we can have a soft link pointing to ccache
-      # binary. Eg. /usr/local/gcc -> /usr/bin/ccache. Resolving the realpath
-      # we will get to the ccache and not the intended compiler binary. This
-      # could be fixed if we run 'gcc -###' which will give us the correct info.
       get_filename_component(_realpath ${CMAKE_CXX_COMPILER} REALPATH)
-      get_filename_component(_name ${_realpath} NAME)
-      get_filename_component(_path ${_realpath} PATH)
+      if(${_realpath} MATCHES "ccache" OR ${_realpath} MATCHES "distcc")
+        # In some setups we can have a soft link pointing to ccache binary.
+        # Eg. /usr/local/gcc -> /usr/bin/ccache where /usr/local comes first
+        # in the PATH env variable than /usr/bin. Resolving the realpath
+        # got us to the ccache and not the intended compiler binary, i.e.
+        # CLING_CXX_RLTV will be wrong. As a fallback / best-effort basis,
+        # try to rescue the compiler binary name by looking at the
+        # link name rather than at the the link destination.
+        get_filename_component(_realpath ${CMAKE_CXX_COMPILER} PATH)
+        get_filename_component(_name ${CMAKE_CXX_COMPILER} NAME)
+        get_filename_component(_path ${CMAKE_CXX_COMPILER} PATH)
+      else()
+        get_filename_component(_name ${_realpath} NAME)
+        get_filename_component(_path ${_realpath} PATH)
+      endif()
     endif()
 
     # Test if path compiler is on PATH.
