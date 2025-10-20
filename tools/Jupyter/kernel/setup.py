@@ -31,7 +31,6 @@ if v[0] >= 3 and v[:2] < (3,3):
 #-----------------------------------------------------------------------------
 
 import os
-from glob import glob
 
 from distutils.core import setup
 
@@ -44,7 +43,11 @@ setup_args = dict(
     name            = name,
     version         = '0.0.2',
     py_modules      = ['clingkernel'],
-    scripts         = glob(pjoin('scripts', '*')),
+    entry_points    = {
+        'console_scripts': [
+            'jupyter-cling-kernel=clingkernel:main'
+        ],
+    },
     description     = "C++ Kernel for Jupyter with Cling",
     author          = 'Min RK, Axel Naumann',
     author_email    = 'cling-dev@cern.ch',

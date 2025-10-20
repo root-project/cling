@@ -18,14 +18,13 @@ Talks to Cling via ctypes
 __version__ = '0.0.3'
 
 import ctypes
-from contextlib import contextmanager
-from fcntl import fcntl, F_GETFL, F_SETFL
 import os
 import shutil
 import select
 import struct
 import sys
 import threading
+import time
 
 from traitlets import Unicode, Float, Dict, List, CaselessStrEnum
 from ipykernel.kernelbase import Kernel
@@ -39,14 +38,44 @@ from jupyter_client.session import Session
 class my_void_p(ctypes.c_void_p):
   pass
 
-libc = ctypes.CDLL(None)
-try:
-    c_stdout_p = ctypes.c_void_p.in_dll(libc, 'stdout')
-    c_stderr_p = ctypes.c_void_p.in_dll(libc, 'stderr')
-except ValueError:
-    # libc.stdout is has a funny name on OS X
-    c_stdout_p = ctypes.c_void_p.in_dll(libc, '__stdoutp')
-    c_stderr_p = ctypes.c_void_p.in_dll(libc, '__stderrp')
+if sys.platform == 'win32':
+    import msvcrt
+    libc = ctypes.cdll.msvcrt
+
+    class FILE(ctypes.Structure):
+        pass
+
+    FILE_p = ctypes.POINTER(FILE)
+
+    libc._fdopen.argtypes = [ctypes.c_int, ctypes.c_char_p]
+    libc._fdopen.restype = FILE_p
+
+    c_stdout_p = libc._fdopen(sys.stdout.fileno(), b"w")
+    c_stderr_p = libc._fdopen(sys.stderr.fileno(), b"w")
+
+    peek_named_pipe = ctypes.windll.kernel32.PeekNamedPipe
+    peek_named_pipe.argtypes = [
+        ctypes.wintypes.HANDLE,
+        ctypes.c_void_p,
+        ctypes.wintypes.DWORD,
+        ctypes.POINTER(ctypes.wintypes.DWORD),
+        ctypes.POINTER(ctypes.wintypes.DWORD),
+        ctypes.POINTER(ctypes.wintypes.DWORD),
+    ]
+    peek_named_pipe.restype = ctypes.c_bool
+
+    libc.fflush.argtypes = [FILE_p]
+    libc.fflush.restype = ctypes.c_int
+else:
+    libc = ctypes.CDLL(None)
+
+    try:
+        c_stdout_p = ctypes.c_void_p.in_dll(libc, 'stdout')
+        c_stderr_p = ctypes.c_void_p.in_dll(libc, 'stderr')
+    except ValueError:
+        # libc.stdout is has a funny name on OS X
+        c_stdout_p = ctypes.c_void_p.in_dll(libc, '__stdoutp')
+        c_stderr_p = ctypes.c_void_p.in_dll(libc, '__stderrp')
 
 
 class FdReplacer:
@@ -59,8 +88,9 @@ class FdReplacer:
         os.dup2(pipe_in, self.real_fd)
         os.close(pipe_in)
         # make pipe_out non-blocking
-        flags = fcntl(self.pipe_out, F_GETFL)
-        fcntl(self.pipe_out, F_SETFL, flags|os.O_NONBLOCK)
+        # flags = fcntl(self.pipe_out, F_GETFL)
+        # fcntl(self.pipe_out, F_SETFL, flags|os.O_NONBLOCK)
+        os.set_blocking(self.pipe_out, False)
 
     def restore(self):
         os.close(self.real_fd)
@@ -120,7 +150,7 @@ class ClingKernel(Kernel):
         else:
             raise RuntimeError('cling at ' + clingInPath + ' is unusable. No cling, no fun.')
 
-        for libFolder in ["/lib/libclingJupyter.", "/libexec/lib/libclingJupyter."]:
+        for libFolder in ["/bin/libclingJupyter.", "/lib/libclingJupyter.", "/libexec/lib/libclingJupyter."]:
 
             for ext in ['so', 'dylib', 'dll']:
                 libFilename = clingInstDir + libFolder + ext
@@ -225,6 +255,44 @@ class ClingKernel(Kernel):
 
     def handle_input(self):
         """Capture stdout, stderr and sideband. Forward them as stream messages."""
+        if sys.platform == 'win32':
+            pipes = {"sideband": self.sideband_pipe}
+            for rs in self.replaced_streams:
+                if rs:
+                    pipes[rs.name] = rs.pipe_out
+
+            # wait for the flush interval before peeking at the pipe
+            time.sleep(self.flush_interval)
+
+            pipe_bytes = {}
+            total_bytes = 0
+            for name, pipe in pipes.items():
+                bytes_available = ctypes.wintypes.DWORD(0)
+                peek_named_pipe(
+                    ctypes.wintypes.HANDLE(msvcrt.get_osfhandle(pipe)),
+                    None,
+                    0,
+                    None,
+                    ctypes.byref(bytes_available),
+                    None,
+                )
+                pipe_bytes[name] = bytes_available.value
+                total_bytes += bytes_available.value
+
+            if total_bytes == 0:
+                libc.fflush(c_stdout_p)
+                libc.fflush(c_stderr_p)
+                return False
+
+            for name, n_bytes in pipe_bytes.items():
+                if n_bytes == 0:
+                    continue
+
+                if name == "sideband":
+                    self._process_sideband_data()
+                else:
+                    self._process_stdio_data(pipes[name], name)
+            return True
         # create pipe for stdout, stderr
         select_on = [self.sideband_pipe]
         for rs in self.replaced_streams:
@@ -287,7 +355,8 @@ class ClingKernel(Kernel):
         run_cell_thread.join()
 
         # Any leftovers?
-        while self.handle_input(): True
+        while self.handle_input():
+            pass
 
         self.close_forwards()
         status = 'ok'
